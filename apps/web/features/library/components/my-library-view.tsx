@@ -10,7 +10,6 @@ import { QueryError } from "../../../components/query-error";
 import type { LibraryLoan } from "../api";
 import { useMyLibraryProfileQuery } from "../me-api";
 
-import { LibraryTitleName } from "./library-title-name";
 import { MyLibraryLoanRow } from "./my-library-loan-row";
 import { MyLibraryReservations } from "./my-library-reservations";
 
@@ -22,9 +21,7 @@ function HistoryRow({ loan }: { loan: LibraryLoan }): ReactElement {
   const locale = useLocale() as Locale;
   return (
     <li className="flex items-center justify-between gap-3 text-[13px]">
-      <span className="min-w-0 truncate text-fg">
-        <LibraryTitleName titleId={loan.title_id} />
-      </span>
+      <span className="min-w-0 truncate text-fg">{loan.title_name ?? loan.title_id}</span>
       <span className="shrink-0 text-fg-muted">
         {formatDate(loan.returned_at ?? loan.borrowed_at, { locale })}
       </span>

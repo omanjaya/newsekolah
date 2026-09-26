@@ -53,8 +53,14 @@ vi.mock("../../../library/me-api", () => ({
   useMyLibraryProfileQuery: mocks.library,
 }));
 
-vi.mock("../../../library/components/library-title-name", () => ({
-  LibraryTitleName: ({ titleId }: { titleId: string }) => titleId,
+// A student only holds view_own_library_loans, never view_library: the
+// library card must never resolve a loan's title through this hook (GET
+// /v1/library/titles/{titleId}), which 403s for them. Throwing here turns
+// any regression into a loud test failure instead of a silent UUID.
+vi.mock("../../../library/api", () => ({
+  useLibraryTitleQuery: () => {
+    throw new Error("useLibraryTitleQuery must not be called from the student dashboard block");
+  },
 }));
 
 import { EMPTY_BLOCK, type Me } from "../types";
@@ -228,6 +234,112 @@ describe("useStudentBlock", () => {
     expect(result.current.hero?.chip).toContain("10");
   });
 
+  it("shows only today's lessons and picks the hero from them, ignoring blocks on other weekdays", () => {
+    vi.useFakeTimers();
+    // 2026-09-26T01:30:00Z is 08:30 in Asia/Jakarta (UTC+7), a Saturday
+    // (ISO weekday 6).
+    vi.setSystemTime(new Date("2026-09-26T01:30:00Z"));
+
+    mocks.schedules.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        data: [
+          // Monday's block: an earlier future start than today's block, so
+          // an unfiltered pick-next would wrongly surface it as the hero.
+          {
+            schedule_ids: ["s-mon"],
+            class_id: "c1",
+            subject_id: "history",
+            teacher_user_id: "t1",
+            day_of_week: 1,
+            start_seq: 3,
+            end_seq: 3,
+            source: "manual",
+          },
+          // Today (Saturday, day_of_week 6): the only block that should
+          // appear in "Jadwal hari ini" and drive the hero.
+          {
+            schedule_ids: ["s-sat"],
+            class_id: "c1",
+            subject_id: "science",
+            teacher_user_id: "t2",
+            day_of_week: 6,
+            start_seq: 4,
+            end_seq: 4,
+            source: "manual",
+          },
+          // Every other weekday repeats the same slot as Monday (the
+          // reported bug: one lesson per day rendered as 7 identical rows).
+          {
+            schedule_ids: ["s-tue"],
+            class_id: "c1",
+            subject_id: "history",
+            teacher_user_id: "t1",
+            day_of_week: 2,
+            start_seq: 3,
+            end_seq: 3,
+            source: "manual",
+          },
+        ],
+      },
+    });
+    mocks.periods.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        data: [
+          {
+            id: "p3",
+            template_id: "tpl",
+            name: "3",
+            sequence: 3,
+            starts_at: "08:40",
+            ends_at: "09:20",
+            is_break: false,
+          },
+          {
+            id: "p4",
+            template_id: "tpl",
+            name: "4",
+            sequence: 4,
+            starts_at: "09:20",
+            ends_at: "10:00",
+            is_break: false,
+          },
+        ],
+      },
+    });
+    mocks.subjects.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        data: [
+          { id: "history", code: "SEJ", name: "Sejarah" },
+          { id: "science", code: "IPA", name: "IPA" },
+        ],
+      },
+    });
+    mocks.teachers.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        data: [
+          { id: "t1", name: "Bu Sari", username: "sari" },
+          { id: "t2", name: "Pak Budi", username: "budi" },
+        ],
+      },
+    });
+
+    const { result } = renderHook(() => useStudentBlock(me(), true));
+
+    expect(result.current.hero?.title).toBe("IPA");
+
+    render(<>{result.current.left.find((slot) => slot.key === "student.schedule")?.node}</>);
+    expect(screen.getByText("IPA")).toBeInTheDocument();
+    expect(screen.queryByText("Sejarah")).not.toBeInTheDocument();
+  });
+
   it("computes a 75% attendance rate for 3 of 4 known days", () => {
     mocks.calendar.mockReturnValue({
       ...idleQuery,
@@ -284,6 +396,39 @@ describe("useStudentBlock", () => {
     render(<>{libraryNode}</>);
 
     expect(screen.getByText("libraryEmpty")).toBeInTheDocument();
+  });
+
+  it("shows the loan's title text from /v1/library/me, never a raw title id", () => {
+    mocks.library.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        active_loans: [
+          {
+            id: "loan1",
+            copy_id: "copy1",
+            title_id: "11111111-1111-1111-1111-111111111111",
+            title_name: "Matematika Dasar",
+            member_user_id: "u1",
+            borrowed_at: "2026-09-01T00:00:00Z",
+            due_on: "2026-10-01",
+            renewal_count: 0,
+            status: "active",
+            fine_amount: 0,
+          },
+        ],
+        history: [],
+        reservations: [],
+        violations: [],
+      },
+    });
+
+    const { result } = renderHook(() => useStudentBlock(me(), true));
+    const libraryNode = result.current.right.find((slot) => slot.key === "student.library")?.node;
+    render(<>{libraryNode}</>);
+
+    expect(screen.getByText("Matematika Dasar")).toBeInTheDocument();
+    expect(screen.queryByText("11111111-1111-1111-1111-111111111111")).not.toBeInTheDocument();
   });
 
   it("shows no tiles while the tile data sources are still loading", () => {

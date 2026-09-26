@@ -22,6 +22,15 @@ vi.mock("./my-library-reservations", () => ({
   MyLibraryReservations: () => null,
 }));
 
+// A member only holds view_own_library_loans, never view_library: history
+// rows must never resolve a title through this hook (GET
+// /v1/library/titles/{titleId}), which 403s for them.
+vi.mock("../api", () => ({
+  useLibraryTitleQuery: () => {
+    throw new Error("useLibraryTitleQuery must not be called from the history row");
+  },
+}));
+
 const mocks = vi.hoisted(() => ({ data: undefined as LibraryMyProfile | undefined }));
 
 vi.mock("../me-api", () => ({
@@ -84,5 +93,30 @@ describe("MyLibraryView", () => {
     render(<MyLibraryView />);
 
     expect(screen.queryByText("unpaidFines")).not.toBeInTheDocument();
+  });
+
+  it("shows a history row's title text from /v1/library/me, never a raw title id", () => {
+    mocks.data = {
+      ...profile([]),
+      history: [
+        {
+          id: "loan1",
+          copy_id: "copy1",
+          title_id: "11111111-1111-1111-1111-111111111111",
+          title_name: "Matematika Dasar",
+          member_user_id: "u1",
+          borrowed_at: "2026-09-01T00:00:00Z",
+          returned_at: "2026-09-10T00:00:00Z",
+          due_on: "2026-09-08",
+          renewal_count: 0,
+          status: "returned",
+          fine_amount: 0,
+        },
+      ],
+    } as unknown as LibraryMyProfile;
+    render(<MyLibraryView />);
+
+    expect(screen.getByText("Matematika Dasar")).toBeInTheDocument();
+    expect(screen.queryByText("11111111-1111-1111-1111-111111111111")).not.toBeInTheDocument();
   });
 });

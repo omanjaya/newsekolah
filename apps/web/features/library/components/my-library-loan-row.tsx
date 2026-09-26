@@ -13,7 +13,6 @@ import { classifyDueDate } from "../lib/due-date";
 import { useRenewMyLoanMutation } from "../me-api";
 
 import { DueBadge } from "./due-badge";
-import { LibraryTitleName } from "./library-title-name";
 
 /** One of the reader's own active loans: title, due-date urgency, and a Perpanjang button -- the one action this row needs, so it stays a visible button rather than a "..." menu for just one item. */
 export function MyLibraryLoanRow({
@@ -36,9 +35,7 @@ export function MyLibraryLoanRow({
   return (
     <li className="flex items-center justify-between gap-3 py-2">
       <div className="flex min-w-0 flex-col gap-1">
-        <span className="truncate text-[13px] text-fg">
-          <LibraryTitleName titleId={loan.title_id} />
-        </span>
+        <span className="truncate text-[13px] text-fg">{loan.title_name ?? loan.title_id}</span>
         <DueBadge dueOn={loan.due_on} today={today} locale={locale} />
       </div>
       <Button

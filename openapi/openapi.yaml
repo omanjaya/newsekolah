@@ -24857,6 +24857,12 @@ components:
             - desk
             - self_service
             - mobile
+        title_name:
+          type: string
+          description: "The title's name, present only on GET /v1/library/me (active_loans, history): a member holding only
+            view_own_library_loans cannot call GET /v1/library/titles/{titleId} (view_library) themselves."
+        title_author:
+          type: string
     LibraryReservationStatus:
       type: string
       enum:

@@ -33,12 +33,16 @@ func (s *Service) MyProfile(ctx context.Context, tenantID, userID uuid.UUID) (My
 		} else if found {
 			out.Member = &member
 		}
-		active, err := s.repo.ListLoansForMember(ctx, tenantID, userID, false, myHistoryLimit, 0)
+		// Title joined in (ListLoansForMemberWithTitle rather than the
+		// plain ListLoansForMember): the caller only holds
+		// view_own_library_loans, not view_library, so this is the only
+		// permitted way for them to see a loan's book title.
+		active, err := s.repo.ListLoansForMemberWithTitle(ctx, tenantID, userID, false, myHistoryLimit, 0)
 		if err != nil {
 			return err
 		}
 		out.ActiveLoans = active
-		history, err := s.repo.ListLoansForMember(ctx, tenantID, userID, true, myHistoryLimit, 0)
+		history, err := s.repo.ListLoansForMemberWithTitle(ctx, tenantID, userID, true, myHistoryLimit, 0)
 		if err != nil {
 			return err
 		}
