@@ -25,6 +25,8 @@ import calendarEn from "./calendar.en.json";
 import calendarId from "./calendar.id.json";
 import dashboardPersonaEn from "./dashboardPersona.en.json";
 import dashboardPersonaId from "./dashboardPersona.id.json";
+import dashboardTeachingEn from "./dashboardTeaching.en.json";
+import dashboardTeachingId from "./dashboardTeaching.id.json";
 import disciplineEn from "./discipline.en.json";
 import disciplineId from "./discipline.id.json";
 import documentsEn from "./documents.en.json";
@@ -85,6 +87,11 @@ registerFeatureMessages({
   namespace: "dashboardPersona",
   id: dashboardPersonaId,
   en: dashboardPersonaEn,
+});
+registerFeatureMessages({
+  namespace: "dashboardTeaching",
+  id: dashboardTeachingId,
+  en: dashboardTeachingEn,
 });
 registerFeatureMessages({ namespace: "billing", id: billingId, en: billingEn });
 registerFeatureMessages({ namespace: "discipline", id: disciplineId, en: disciplineEn });
