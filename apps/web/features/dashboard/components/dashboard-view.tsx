@@ -7,6 +7,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  cn,
   HeroCard,
   Skeleton,
   StatTile,
@@ -14,7 +15,7 @@ import {
 import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
-import { Fragment, type ReactElement } from "react";
+import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { AnnouncementFeed } from "../../announcements/components/announcement-feed";
@@ -27,7 +28,7 @@ import { useLibrarianBlock } from "../home/blocks/librarian";
 import { usePicketBlock } from "../home/blocks/picket";
 import { useStudentBlock } from "../home/blocks/student";
 import { useTeacherBlock } from "../home/blocks/teacher";
-import { collectBlocks } from "../home/compose";
+import { bentoCells, collectBlocks, tileColumns } from "../home/compose";
 import { resolvePersonas } from "../home/personas";
 import type { Me, PersonaBlock, PersonaKey } from "../home/types";
 
@@ -79,7 +80,9 @@ export function DashboardView(): ReactElement {
           <Skeleton className="h-[104px] w-full" />
           <Skeleton className="h-[104px] w-full" />
         </div>
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
           <Skeleton className="h-64 w-full" />
           <Skeleton className="h-64 w-full" />
         </div>
@@ -115,6 +118,28 @@ export function DashboardView(): ReactElement {
     counselor,
     librarian,
     notifications,
+  ]);
+
+  const tileGrid = tileColumns(tiles.length);
+  const cards = bentoCells([
+    ...left,
+    ...right,
+    {
+      key: "announcements",
+      node: (
+        <Card className="h-full">
+          <CardHeader className="flex-row items-center justify-between gap-3">
+            <CardTitle>{t("announcementsTitle")}</CardTitle>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/announcements">{t("openAnnouncements")}</Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <AnnouncementFeed limit={3} compact />
+          </CardContent>
+        </Card>
+      ),
+    },
   ]);
 
   return (
@@ -164,57 +189,50 @@ export function DashboardView(): ReactElement {
         />
       )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {tiles.map((tile) =>
-          tile.href ? (
-            <Link
-              key={tile.key}
-              href={tile.href}
-              className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              <StatTile
-                icon={tile.icon}
-                tone={tile.tone}
-                value={tile.value}
-                label={tile.label}
-                hint={tile.hint}
-              />
-            </Link>
-          ) : (
+      <div className={tileGrid.container} data-testid="dashboard-tiles">
+        {tiles.map((tile, index) => {
+          const isLast = index === tiles.length - 1;
+          const content = (
             <StatTile
-              key={tile.key}
+              className="h-full"
               icon={tile.icon}
               tone={tile.tone}
               value={tile.value}
               label={tile.label}
               hint={tile.hint}
             />
-          ),
-        )}
+          );
+          return (
+            <div
+              key={tile.key}
+              data-testid={`dashboard-tile-${tile.key}`}
+              className={cn("h-full", isLast && tileGrid.lastTileClassName)}
+            >
+              {tile.href ? (
+                <Link
+                  href={tile.href}
+                  className="block h-full rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  {content}
+                </Link>
+              ) : (
+                content
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        <div className="flex min-w-0 flex-col gap-4">
-          {left.map((slot) => (
-            <Fragment key={slot.key}>{slot.node}</Fragment>
-          ))}
-        </div>
-        <div className="flex min-w-0 flex-col gap-4">
-          {right.map((slot) => (
-            <Fragment key={slot.key}>{slot.node}</Fragment>
-          ))}
-          <Card>
-            <CardHeader className="flex-row items-center justify-between gap-3">
-              <CardTitle>{t("announcementsTitle")}</CardTitle>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/announcements">{t("openAnnouncements")}</Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <AnnouncementFeed limit={3} compact />
-            </CardContent>
-          </Card>
-        </div>
+      <div className="grid gap-4 lg:grid-cols-2" data-testid="dashboard-cards">
+        {cards.map((cell) => (
+          <div
+            key={cell.key}
+            data-testid={`dashboard-card-${cell.key}`}
+            className={cn("flex flex-col", cell.span === "full" && "lg:col-span-2")}
+          >
+            <div className="flex-1">{cell.node}</div>
+          </div>
+        ))}
       </div>
     </div>
   );

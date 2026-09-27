@@ -96,7 +96,7 @@ function PicketQueueCard({
 }): ReactElement {
   const t = useTranslations("app.dashboardDuty");
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>{t("picket.cardTitle")}</CardTitle>
       </CardHeader>

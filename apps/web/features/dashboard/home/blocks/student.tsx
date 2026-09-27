@@ -206,7 +206,7 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
     .slice(0, 3);
 
   const scheduleNode: ReactElement = (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>{t("scheduleTitle")}</CardTitle>
       </CardHeader>
@@ -259,7 +259,7 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
   );
 
   const leaveNode: ReactElement = (
-    <Card>
+    <Card className="h-full">
       <CardHeader className="flex-row items-center justify-between gap-2">
         <CardTitle>{t("leaveTitle")}</CardTitle>
         <Button asChild variant="ghost" size="sm">
@@ -298,7 +298,7 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
 
   const activeLoans = library.data?.active_loans ?? [];
   const libraryNode: ReactElement = (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>{t("libraryTitle")}</CardTitle>
       </CardHeader>

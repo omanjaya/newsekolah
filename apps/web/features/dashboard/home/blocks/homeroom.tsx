@@ -128,7 +128,7 @@ function HomeroomClassCard({
   const codes = Object.entries(counts).filter(([, count]) => count > 0);
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
         <CardTitle>
           {className ? t("card.title", { className }) : t("card.titleFallback")}

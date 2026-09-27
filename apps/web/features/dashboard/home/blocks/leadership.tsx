@@ -193,7 +193,7 @@ function SchoolQueueCard({
   const t = useTranslations("app.dashboardSchool.leadership.queue");
   const format = useFormatter();
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
       </CardHeader>
@@ -261,7 +261,7 @@ function SchoolActivityCard({
   const t = useTranslations("app.dashboardSchool.leadership.activity");
   const format = useFormatter();
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
       </CardHeader>
@@ -317,7 +317,7 @@ function AtRiskCard({
   const levelLabel = useTranslations("app.analytics.level");
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader className="flex-row items-center justify-between gap-3">
         <CardTitle>{t("title")}</CardTitle>
         <Link
