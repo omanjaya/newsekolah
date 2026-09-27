@@ -174,4 +174,110 @@ describe("DashboardView", () => {
     expect(screen.getByText("tiles.notifications.label")).toBeInTheDocument();
     expect(screen.getByTestId("announcement-feed")).toBeInTheDocument();
   });
+
+  it("lays out a single tile (the notifications filler) in one column on lg", () => {
+    render(<DashboardView />);
+
+    expect(screen.getByTestId("dashboard-tiles")).toHaveClass(
+      "grid",
+      "grid-cols-1",
+      "gap-3",
+      "lg:grid-cols-1",
+    );
+  });
+
+  it("lays out n tiles in n equal lg columns", () => {
+    teacherBlock.mockReturnValue({
+      ...emptyBlock(),
+      tiles: [tile("t1", 90), tile("t2", 85)],
+    });
+    leadershipBlock.mockReturnValue({
+      ...emptyBlock(),
+      tiles: [tile("t3", 75)],
+    });
+
+    render(<DashboardView />);
+
+    // t1, t2, t3 plus the notifications filler tile = 4 tiles -> lg:grid-cols-4.
+    expect(screen.getByTestId("dashboard-tiles")).toHaveClass("lg:grid-cols-4");
+  });
+
+  it("spans the last tile full-width on small screens when the tile count is odd", () => {
+    teacherBlock.mockReturnValue({
+      ...emptyBlock(),
+      tiles: [tile("t1", 90), tile("t2", 85)],
+    });
+
+    render(<DashboardView />);
+
+    // t1, t2 plus the notifications filler tile (lowest priority, so it is
+    // last after merging) = 3 tiles (odd).
+    expect(screen.getByTestId("dashboard-tiles")).toHaveClass("lg:grid-cols-3");
+    expect(screen.getByTestId("dashboard-tile-t1")).not.toHaveClass("col-span-2");
+    expect(screen.getByTestId("dashboard-tile-t2")).not.toHaveClass("col-span-2");
+    expect(screen.getByTestId("dashboard-tile-common.notifications")).toHaveClass(
+      "col-span-2",
+      "lg:col-span-1",
+    );
+  });
+
+  it("spans the only card (announcements) full width when no persona block adds a card", () => {
+    render(<DashboardView />);
+
+    expect(screen.getByTestId("dashboard-card-announcements")).toHaveClass("lg:col-span-2");
+  });
+
+  it("pairs two cards half-width with no span override", () => {
+    const leftSlot = (key: string, text: string) => ({ key, node: <p>{text}</p> });
+    teacherBlock.mockReturnValue({ ...emptyBlock(), left: [leftSlot("teacher", "Teacher left")] });
+
+    render(<DashboardView />);
+
+    // teacher.left + announcements = 2 cards (even) -> neither spans both columns.
+    expect(screen.getByTestId("dashboard-card-teacher")).not.toHaveClass("lg:col-span-2");
+    expect(screen.getByTestId("dashboard-card-announcements")).not.toHaveClass("lg:col-span-2");
+  });
+
+  it("spans the last card full-width when the card count is odd", () => {
+    const leftSlot = (key: string, text: string) => ({ key, node: <p>{text}</p> });
+    const rightSlot = (key: string, text: string) => ({ key, node: <p>{text}</p> });
+    teacherBlock.mockReturnValue({ ...emptyBlock(), left: [leftSlot("teacher", "Teacher left")] });
+    homeroomBlock.mockReturnValue({
+      ...emptyBlock(),
+      right: [rightSlot("homeroom", "Homeroom right")],
+    });
+
+    render(<DashboardView />);
+
+    // teacher.left + homeroom.right + announcements = 3 cards (odd) -> the
+    // last one (announcements) spans both columns; the first two stay half.
+    expect(screen.getByTestId("dashboard-card-teacher")).not.toHaveClass("lg:col-span-2");
+    expect(screen.getByTestId("dashboard-card-homeroom")).not.toHaveClass("lg:col-span-2");
+    expect(screen.getByTestId("dashboard-card-announcements")).toHaveClass("lg:col-span-2");
+  });
+
+  it("orders cards as every left slot, then every right slot, then announcements last", () => {
+    const leftSlot = (key: string, text: string) => ({ key, node: <p>{text}</p> });
+    const rightSlot = (key: string, text: string) => ({ key, node: <p>{text}</p> });
+    teacherBlock.mockReturnValue({ ...emptyBlock(), left: [leftSlot("teacher", "Teacher left")] });
+    homeroomBlock.mockReturnValue({
+      ...emptyBlock(),
+      left: [leftSlot("homeroom", "Homeroom left")],
+    });
+    librarianBlock.mockReturnValue({
+      ...emptyBlock(),
+      right: [rightSlot("librarian", "Librarian right")],
+    });
+
+    render(<DashboardView />);
+
+    const cardsGrid = screen.getByTestId("dashboard-cards");
+    const order = [...cardsGrid.children].map((child) => child.getAttribute("data-testid"));
+    expect(order).toEqual([
+      "dashboard-card-teacher",
+      "dashboard-card-homeroom",
+      "dashboard-card-librarian",
+      "dashboard-card-announcements",
+    ]);
+  });
 });

@@ -172,7 +172,7 @@ function TeacherTodayCard({
   t: ReturnType<typeof useTranslations>;
 }): ReactElement {
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
         <CardTitle>{t("card.title")}</CardTitle>
         <Button asChild variant="ghost" size="sm">

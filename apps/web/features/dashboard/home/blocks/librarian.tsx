@@ -100,7 +100,7 @@ function OverdueCard({
   const locale = useLocale() as Locale;
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
       </CardHeader>
