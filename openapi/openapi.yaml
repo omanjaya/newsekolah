@@ -2739,8 +2739,8 @@ paths:
         - analytics
       operationId: listAtRiskStudents
       x-permission: view_early_warning
-      summary: "Early-warning risk list, scoped to the caller: a counselor or school leadership sees every class, a homeroom
-        teacher sees only their own class."
+      summary: "Early-warning risk list, scoped to the caller: a counselor, school leadership, or an
+        admin/super_admin/principal sees every class, a homeroom teacher sees only their own class."
       responses:
         "200":
           description: Students

@@ -42,8 +42,15 @@ func mapError(err error) error {
 	return httpx.Internal(err)
 }
 
+// ListAtRiskStudents grants the isAdminCaller (admin/super_admin/
+// principal) roles school-wide scope through service.ListAtRiskStudents'
+// isOverseer parameter, on top of the counselor/leadership duty bypass
+// the service already applies: those system roles hold view_early_warning
+// without necessarily holding a counseling/leadership duty or being a
+// homeroom teacher, and would otherwise be turned away with
+// ErrNotHomeroomTeacher despite the permission check having let them in.
 func (h *AnalyticsHandler) ListAtRiskStudents(ctx context.Context, _ api.ListAtRiskStudentsRequestObject) (api.ListAtRiskStudentsResponseObject, error) {
-	results, err := h.service.ListAtRiskStudents(ctx, tenantID(ctx), userID(ctx))
+	results, err := h.service.ListAtRiskStudents(ctx, tenantID(ctx), userID(ctx), isAdminCaller(ctx))
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -54,8 +61,10 @@ func (h *AnalyticsHandler) ListAtRiskStudents(ctx context.Context, _ api.ListAtR
 	return api.ListAtRiskStudents200JSONResponse{Data: data}, nil
 }
 
+// GetStudentRisk applies the same isAdminCaller bypass as
+// ListAtRiskStudents (see its comment).
 func (h *AnalyticsHandler) GetStudentRisk(ctx context.Context, request api.GetStudentRiskRequestObject) (api.GetStudentRiskResponseObject, error) {
-	result, err := h.service.GetStudentRisk(ctx, tenantID(ctx), userID(ctx), request.StudentId)
+	result, err := h.service.GetStudentRisk(ctx, tenantID(ctx), userID(ctx), request.StudentId, isAdminCaller(ctx))
 	if err != nil {
 		return nil, mapError(err)
 	}
