@@ -82,6 +82,11 @@ jobs:
   simulate:
     name: simulate
     needs: deploy
+    # The suite logs in as the demo seed accounts (guru, kepsek, ...). Since
+    # 2026-09-27 staging holds the real SION data instead, so the suite is
+    # opt-in: set the repository variable STAGING_SIMULATE=1 after reseeding
+    # staging with demo data. CI's own e2e-sim job still runs on every push.
+    if: vars.STAGING_SIMULATE == '1'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
