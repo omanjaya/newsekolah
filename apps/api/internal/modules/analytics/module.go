@@ -2,7 +2,9 @@
 // level composed from the attendance, discipline and grading modules'
 // own read APIs, scored by a pure domain rule against a tenant policy,
 // recomputed on a schedule by transport/jobs, and served to a homeroom
-// teacher (own class only), a counselor, or school leadership.
+// teacher (own class only), a counselor, school leadership, or an
+// admin/super_admin/principal caller (school-wide, same as counselor/
+// leadership -- see service/list.go's resolveScope).
 package analytics
 
 import (

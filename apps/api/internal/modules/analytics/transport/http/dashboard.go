@@ -8,14 +8,21 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
-// isAdminCaller restricts the admin dashboard to the admin/super_admin/
-// principal system roles, matching the old app's explicit role check
-// (reference/sion-rebuild-go admin_dashboard.go) on top of the
-// view_dashboard permission every role with dashboard access holds. The
-// principal role is included so "Kepala Sekolah" lands on a useful
-// dashboard by reusing this overview (active users, pending queues,
-// sign-in activity) rather than a new screen being built for it
-// (docs/analysis/audit-pra-deploy-2026-09-23.md's role matrix).
+// isAdminCaller reports whether the caller holds one of the admin/
+// super_admin/principal system roles, matching the old app's explicit
+// role check (reference/sion-rebuild-go admin_dashboard.go). It restricts
+// the admin dashboard (GetAdminDashboard) on top of the view_dashboard
+// permission every role with dashboard access holds; the principal role
+// is included so "Kepala Sekolah" lands on a useful dashboard by reusing
+// this overview (active users, pending queues, sign-in activity) rather
+// than a new screen being built for it (docs/analysis/
+// audit-pra-deploy-2026-09-23.md's role matrix).
+//
+// It is reused by ListAtRiskStudents/GetStudentRisk (handler.go) to grant
+// the same three roles school-wide scope for the early-warning list and
+// detail endpoints: they hold view_early_warning without necessarily
+// holding a counseling/leadership duty or being a homeroom teacher, and
+// service.resolveScope treats this the same as those duties.
 func isAdminCaller(ctx context.Context) bool {
 	for _, slug := range authz.IdentityFromContext(ctx).Roles {
 		if slug == authz.RoleSlugAdmin || slug == authz.RoleSlugSuperAdmin || slug == authz.RoleSlugPrincipal {
