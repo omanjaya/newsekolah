@@ -4,15 +4,16 @@ import { ACTORS, assertNoNavigation, closeAll, expect, loginAs, test } from "./f
  * Scenario c) Attendance: the homeroom teacher saves today's attendance
  * session for X-A, and the principal's already-open dashboard shows the
  * "classes currently in session" progress figure update live
- * (apps/web/features/dashboard/components/admin-dashboard-panel.tsx's
- * "Presensi kelas berjalan" line, wired to `attendance.submitted` ->
- * `role:principal`/`role:admin`).
+ * (the leadership block's hero in
+ * apps/web/features/dashboard/home/blocks/leadership.tsx, fed by the admin
+ * dashboard query that `attendance.submitted` -> `role:principal`/
+ * `role:admin` invalidates).
  *
  * cmd/seed gives X-A one schedule block spanning every lesson period of
  * the day, every day of the week (apps/api/cmd/seed/operations.go), so
  * exactly one class is always "in session" here regardless of when this
- * spec runs -- the dashboard figure settles at "1 dari 1 kelas sudah
- * presensi" once saved, which is what this spec waits for rather than a
+ * spec runs -- the dashboard hero settles at "1 dari 1 sesi sudah
+ * dipresensi" once saved, which is what this spec waits for rather than a
  * before/after delta: re-running the suite the same day re-opens the same
  * (already submitted) session in correction mode, and a correction save
  * publishes the same event, so the assertion holds either way.
@@ -23,7 +24,7 @@ test("attendance: teacher saves -> principal dashboard progress live", async ({ 
 
   try {
     await principal.page.goto("/dashboard");
-    await expect(principal.page.getByText("Presensi kelas berjalan")).toBeVisible({
+    await expect(principal.page.getByText("Sesi dipresensi")).toBeVisible({
       timeout: 20_000,
     });
 
@@ -47,7 +48,7 @@ test("attendance: teacher saves -> principal dashboard progress live", async ({ 
     });
 
     await assertNoNavigation(principal.page, async () => {
-      await expect(principal.page.getByText("1 dari 1 kelas sudah presensi")).toBeVisible({
+      await expect(principal.page.getByText("1 dari 1 sesi sudah dipresensi")).toBeVisible({
         timeout: 20_000,
       });
     });
