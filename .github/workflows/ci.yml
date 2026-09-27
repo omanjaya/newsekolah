@@ -50,7 +50,7 @@ jobs:
 
       - name: Check for relevant changes
         id: changes
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             api:
@@ -103,7 +103,7 @@ jobs:
 
       - name: Check for relevant changes
         id: changes
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             web: &web
@@ -169,7 +169,7 @@ jobs:
 
       - name: Check for relevant changes
         id: changes
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             mobile:
@@ -234,7 +234,7 @@ jobs:
 
       - name: Check for relevant changes
         id: changes
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             openapi:
@@ -349,7 +349,7 @@ jobs:
 
       - name: Check for relevant changes
         id: changes
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             migrations:
@@ -377,7 +377,7 @@ jobs:
 
       - name: Check for relevant changes
         id: changes
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             sim:
