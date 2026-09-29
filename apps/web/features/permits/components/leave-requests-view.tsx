@@ -1,15 +1,10 @@
 "use client";
 
-import type { Locale } from "@newsekolah/i18n";
-import { formatDate } from "@newsekolah/i18n";
 import {
   Alert,
   Button,
-  Dialog,
-  DialogContent,
   EmptyState,
   PageHeader,
-  Skeleton,
   Tabs,
   TabsContent,
   TabsList,
@@ -18,19 +13,15 @@ import {
 } from "@newsekolah/ui";
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
-import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
-import { useCan, useSession } from "../../../lib/session/session-provider";
-import { useMyLeaveRequestsQuery } from "../api";
+import { useCan } from "../../../lib/session/session-provider";
 
-import { LeaveRequestDetail } from "./leave-request-detail";
-import { SubmitForm } from "./leave-request-submit-form";
 import { ReviewQueue } from "./leave-review-queue";
-import { WorkflowStatusBadge } from "./workflow-stepper";
+import { MyLeaveRequests } from "./my-leave-requests";
 
 export function LeaveRequestsView(): ReactElement {
   const t = useTranslations("app.permits.leave");
@@ -42,6 +33,7 @@ export function LeaveRequestsView(): ReactElement {
   // alone would get a 403, so the queue is only fetched for reviewers.
   // Issuers still get the tab, explaining where their requests arrive.
   const showQueueTab = canReviewStage || canIssueLetter;
+  const [creating, setCreating] = useState(false);
 
   const tabs = [
     showQueueTab && {
@@ -49,7 +41,11 @@ export function LeaveRequestsView(): ReactElement {
       label: t("tabQueue"),
       content: canReviewStage ? <ReviewQueue /> : <IssuerQueueUnavailable />,
     },
-    canSubmit && { value: "mine", label: t("tabMine"), content: <MyLeaveRequests /> },
+    canSubmit && {
+      value: "mine",
+      label: t("tabMine"),
+      content: <MyLeaveRequests creating={creating} onCreatingChange={setCreating} />,
+    },
   ].filter((entry): entry is { value: string; label: string; content: ReactElement } =>
     Boolean(entry),
   );
@@ -59,9 +55,25 @@ export function LeaveRequestsView(): ReactElement {
     tabs[0]?.value ?? "mine",
   );
 
+  // Radix's `TabsContent` unmounts an inactive tab, so the button that
+  // opens `MyLeaveRequests`' create dialog only renders in the header
+  // while that tab (or the only tab there is) is actually on screen.
+  const showHeaderSubmit = canSubmit && (tabs.length <= 1 || tab === "mine");
+  const headerActions = showHeaderSubmit ? (
+    <Button
+      size="sm"
+      icon={<Plus />}
+      onClick={() => {
+        setCreating(true);
+      }}
+    >
+      {t("submit")}
+    </Button>
+  ) : undefined;
+
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={headerActions} />
       {tabs.length > 1 ? (
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
@@ -86,95 +98,6 @@ export function LeaveRequestsView(): ReactElement {
           description={t("noAccessBody")}
         />
       )}
-    </div>
-  );
-}
-
-function MyLeaveRequests(): ReactElement {
-  const t = useTranslations("app.permits.leave");
-  const locale = useLocale() as Locale;
-  const { me } = useSession();
-  const { data, isLoading, isError, refetch } = useMyLeaveRequestsQuery();
-  const [creating, setCreating] = useState(false);
-  const [openId, setOpenId] = useState<string | null>(null);
-  const items = data?.data ?? [];
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <Button
-          size="sm"
-          icon={<Plus />}
-          onClick={() => {
-            setCreating(true);
-          }}
-        >
-          {t("submit")}
-        </Button>
-      </div>
-      {isLoading ? (
-        <Skeleton className="h-40 w-full" aria-busy="true" />
-      ) : isError && !data ? (
-        <QueryError retry={() => refetch()} />
-      ) : items.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.exitPermit aria-hidden="true" />}
-          title={t("emptyTitle")}
-          description={t("emptyBody")}
-        />
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {items.map((item) => {
-            const range = `${formatDate(item.starts_on, { locale, timeZone: me?.tenant.timezone })} - ${formatDate(item.ends_on, { locale, timeZone: me?.tenant.timezone })}`;
-            return (
-              <li key={item.instance_id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpenId(item.instance_id);
-                  }}
-                  className="flex w-full items-center justify-between gap-3 rounded-sm border border-border bg-surface px-4 py-3 text-left hover:bg-bg"
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[14px] font-medium text-fg">
-                      {t(`categories.${item.category}`)}
-                    </span>
-                    <span className="text-[13px] text-fg-muted">{range}</span>
-                    {item.letter_number && (
-                      <span className="text-[12px] text-fg-muted">
-                        {t("letterNumber")}: {item.letter_number}
-                      </span>
-                    )}
-                  </div>
-                  <WorkflowStatusBadge status={item.status} />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      <Dialog open={creating} onOpenChange={setCreating}>
-        <DialogContent title={t("submit")}>
-          {creating && (
-            <SubmitForm
-              onDone={(id) => {
-                setCreating(false);
-                setOpenId(id);
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={openId !== null}
-        onOpenChange={(open) => {
-          if (!open) setOpenId(null);
-        }}
-      >
-        <DialogContent title={t("detailTitle")} className="max-w-xl">
-          {openId && <LeaveRequestDetail id={openId} />}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

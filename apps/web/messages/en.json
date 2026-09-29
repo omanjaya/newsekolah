@@ -960,6 +960,18 @@
         "emptyTitle": "No requests yet",
         "emptyBody": "Sick, ceremony or dispensation leave you request shows up here.",
         "detailTitle": "Leave request",
+        "mine": {
+          "tileTotal": "Total requests",
+          "tileInProgress": "In progress",
+          "tileApproved": "Approved",
+          "tileRejected": "Rejected",
+          "opened": "Requested {date}",
+          "stageSubmitted": "Submitted",
+          "stageHomeroom": "Homeroom teacher",
+          "stageCounselor": "Counselor",
+          "stageDone": "Done",
+          "stageTrackLabel": "Request stages"
+        },
         "student": "Student",
         "dates": "Dates",
         "letterNumber": "Letter number",

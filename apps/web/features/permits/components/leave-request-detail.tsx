@@ -71,18 +71,20 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
 
   return (
     <div className="flex flex-col gap-5">
-      <dl className="grid grid-cols-2 gap-2 text-[13px]">
-        <dt className="text-fg-muted">{t("student")}</dt>
-        <dd>
-          {data.student_name} ({data.class_name})
-        </dd>
-        <dt className="text-fg-muted">{t("form.category")}</dt>
-        <dd>{t(`categories.${data.category}`)}</dd>
-        <dt className="text-fg-muted">{t("dates")}</dt>
-        <dd>
+      <div className="flex flex-col gap-1">
+        <p className="font-heading text-[16px] font-bold tracking-tight text-fg">
+          {t(`categories.${data.category}`)} <span className="text-fg-muted">&middot;</span>{" "}
           {formatDate(data.starts_on, { locale, timeZone: me?.tenant.timezone })} -{" "}
           {formatDate(data.ends_on, { locale, timeZone: me?.tenant.timezone })}
-        </dd>
+        </p>
+        <p className="text-[13px] text-fg-muted">
+          {t("student")}: {data.student_name} ({data.class_name})
+        </p>
+      </div>
+
+      <WorkflowStepper instance={inst} />
+
+      <dl className="grid grid-cols-2 gap-2 text-[13px]">
         <dt className="text-fg-muted">{t("form.reason")}</dt>
         <dd>{data.reason}</dd>
         {data.letter_number && (
@@ -92,7 +94,6 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
           </>
         )}
       </dl>
-      <WorkflowStepper instance={inst} />
 
       <div className="flex flex-wrap gap-2">
         {data.has_evidence ? (
