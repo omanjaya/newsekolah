@@ -74,11 +74,10 @@ test("resilience: homeroom offline -> student submits -> resync on reconnect", a
       await expect(queueRow).toBeVisible({ timeout: 20_000 });
     });
 
-    // The unified permits queue (/leave-requests) opens each item in a
-    // detail dialog ("Tindak lanjuti"); the approve action lives there.
-    await queueRow.getByRole("button", { name: "Tindak lanjuti" }).click();
-    const reviewDialog = homeroom.page.getByRole("dialog");
-    await reviewDialog.getByRole("button", { name: "Setujui" }).click();
+    // The unified permits queue (/leave-requests) shows a leave request
+    // already at the homeroom stage as a bento card with Setujui/Tolak
+    // right on it, so approving does not need the detail dialog.
+    await queueRow.getByRole("button", { name: "Setujui" }).click();
     await expect(queueRow).toBeHidden({ timeout: 20_000 });
 
     await counselor.page.goto(`/leave-requests/${instanceId}`);

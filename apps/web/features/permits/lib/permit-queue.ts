@@ -4,6 +4,8 @@ interface QueueRow {
   id: string;
   studentId: string;
   studentName: string;
+  /** Only available for leave and exit (their summaries carry it); late arrivals have none. */
+  className?: string;
   openedAt: string;
   description: string;
   status: LeaveRequestSummary["status"];
@@ -27,6 +29,7 @@ export function mergePermitQueues({
       id: item.instance_id,
       studentId: item.student_user_id,
       studentName: item.student_name,
+      className: item.class_name,
       openedAt: item.opened_at,
       description: item.reason ?? "",
       status: item.status,
@@ -36,6 +39,7 @@ export function mergePermitQueues({
       id: item.instance_id,
       studentId: item.student_user_id,
       studentName: item.student_name ?? "",
+      className: item.class_name,
       openedAt: item.opened_at,
       description: item.destination,
       status: item.status,
