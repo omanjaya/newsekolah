@@ -523,8 +523,14 @@ func (r *Repository) GetAsset(ctx context.Context, tenantID, assetID uuid.UUID) 
 	return service.AssetInfo{ObjectKey: row.ObjectKey, Mime: row.Mime, SizeBytes: row.SizeBytes}, true, nil
 }
 
-func (r *Repository) HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, classID uuid.NullUUID) (bool, error) {
-	return r.queries(ctx).DisciplineHasActiveDuty(ctx, db.DisciplineHasActiveDutyParams{TenantID: tenantID, AcademicYearID: yearID, UserID: userID, Slug: slug, ClassID: pdatabase.NullUUID(classID)})
+func (r *Repository) HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, classID uuid.NullUUID, today time.Time) (bool, error) {
+	return r.queries(ctx).DisciplineHasActiveDuty(ctx, db.DisciplineHasActiveDutyParams{
+		TenantID: tenantID, AcademicYearID: yearID, UserID: userID, Slug: slug, ClassID: pdatabase.NullUUID(classID), Today: pdatabase.Date(today),
+	})
+}
+
+func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error) {
+	return r.queries(ctx).DisciplineGetTenantTimezone(ctx, tenantID)
 }
 
 func (r *Repository) ActiveClassID(ctx context.Context, tenantID, yearID, studentID uuid.UUID) (uuid.NullUUID, error) {

@@ -478,6 +478,14 @@ type Querier interface {
 	DisciplineCreatePolicy(ctx context.Context, arg DisciplineCreatePolicyParams) error
 	DisciplineGetAsset(ctx context.Context, arg DisciplineGetAssetParams) (DisciplineGetAssetRow, error)
 	DisciplineGetLatestPolicy(ctx context.Context, arg DisciplineGetLatestPolicyParams) (DisciplineGetLatestPolicyRow, error)
+	// Mirrors attendance's GetTenantTimezoneForAttendance / permits'
+	// GetTenantTimezoneForPermits: discipline must resolve HasActiveDuty's
+	// duty window in the tenant's own timezone, never the server's UTC clock.
+	DisciplineGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
+	// today is the tenant-local calendar date (s.tenantNow), not current_date:
+	// the Postgres session timezone is never set per tenant, so comparing
+	// against bare current_date would evaluate the duty window in whatever
+	// timezone the connection happens to be in, matching permits' HasActiveDuty.
 	DisciplineHasActiveDuty(ctx context.Context, arg DisciplineHasActiveDutyParams) (bool, error)
 	// Backs the RecordViolation/CreateCounseling regression fix: the subject
 	// must be an active user account with an active enrollment in the given
@@ -1342,9 +1350,17 @@ type Querier interface {
 	MentoringGetGroup(ctx context.Context, arg MentoringGetGroupParams) (MentorGroup, error)
 	MentoringGetGroupSizeLimit(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	MentoringGetMeetingNote(ctx context.Context, arg MentoringGetMeetingNoteParams) (MentorMeetingNote, error)
+	// Mirrors attendance's GetTenantTimezoneForAttendance / permits'
+	// GetTenantTimezoneForPermits: mentoring must resolve HasActiveDuty's
+	// duty window in the tenant's own timezone, never the server's UTC clock.
+	MentoringGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
 	MentoringGetTermSummary(ctx context.Context, arg MentoringGetTermSummaryParams) (MentorTermSummary, error)
 	// cross-module read: duty_assignments/duty_types (identity), for resolving
 	// whether a reader may open a meeting note (counselor, leadership).
+	// today is the tenant-local calendar date (s.tenantNow), not current_date:
+	// the Postgres session timezone is never set per tenant, so comparing
+	// against bare current_date would evaluate the duty window in whatever
+	// timezone the connection happens to be in, matching permits' HasActiveDuty.
 	MentoringHasActiveDuty(ctx context.Context, arg MentoringHasActiveDutyParams) (bool, error)
 	MentoringListGroupMembers(ctx context.Context, arg MentoringListGroupMembersParams) ([]MentorGroupMember, error)
 	MentoringListGroupsForMentor(ctx context.Context, arg MentoringListGroupsForMentorParams) ([]MentorGroup, error)
@@ -1463,8 +1479,16 @@ type Querier interface {
 	SupervisionGetObservation(ctx context.Context, arg SupervisionGetObservationParams) (SupervisionObservation, error)
 	SupervisionGetObservationByScheduled(ctx context.Context, arg SupervisionGetObservationByScheduledParams) (SupervisionObservation, error)
 	SupervisionGetScheduledObservation(ctx context.Context, arg SupervisionGetScheduledObservationParams) (SupervisionScheduledObservation, error)
+	// Mirrors attendance's GetTenantTimezoneForAttendance / permits'
+	// GetTenantTimezoneForPermits: supervision must resolve HasActiveDuty's
+	// duty window in the tenant's own timezone, never the server's UTC clock.
+	SupervisionGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
 	// cross-module read: duty_assignments/duty_types (identity), for resolving
 	// whether a reader may open an observation report (leadership).
+	// today is the tenant-local calendar date (s.tenantNow), not current_date:
+	// the Postgres session timezone is never set per tenant, so comparing
+	// against bare current_date would evaluate the duty window in whatever
+	// timezone the connection happens to be in, matching permits' HasActiveDuty.
 	SupervisionHasActiveDuty(ctx context.Context, arg SupervisionHasActiveDutyParams) (bool, error)
 	SupervisionListCyclesForYear(ctx context.Context, arg SupervisionListCyclesForYearParams) ([]SupervisionCycle, error)
 	SupervisionListObservationsForCycle(ctx context.Context, arg SupervisionListObservationsForCycleParams) ([]SupervisionObservation, error)
@@ -1570,9 +1594,17 @@ type Querier interface {
 	// e.visible_to_student=TRUE"). Hidden adjustments still count toward the
 	// real (StarBalance) total a teacher works from.
 	VisibleStarBalance(ctx context.Context, arg VisibleStarBalanceParams) (int32, error)
+	// Mirrors attendance's GetTenantTimezoneForAttendance / permits'
+	// GetTenantTimezoneForPermits: visitors must resolve HasActiveDuty's duty
+	// window in the tenant's own timezone, never the server's UTC clock.
+	VisitorsGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
 	// cross-module read: duty_assignments/duty_types (identity/school), to
 	// decide whether a reader may open an incident as campus security or
 	// school leadership rather than only its reporter.
+	// today is the tenant-local calendar date (s.tenantNow), not current_date:
+	// the Postgres session timezone is never set per tenant, so comparing
+	// against bare current_date would evaluate the duty window in whatever
+	// timezone the connection happens to be in, matching permits' HasActiveDuty.
 	VisitorsHasActiveDuty(ctx context.Context, arg VisitorsHasActiveDutyParams) (bool, error)
 	// "Lainnya" for a visit whose member has no active enrollment (or is not
 	// a member at all -- a walk-in guest) is applied by the service layer,

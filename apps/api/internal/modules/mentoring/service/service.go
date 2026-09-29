@@ -6,6 +6,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -44,8 +45,11 @@ type Repository interface {
 	GetTermSummary(ctx context.Context, tenantID, termID, studentUserID uuid.UUID) (domain.TermSummary, bool, error)
 	ListTermSummariesForGroup(ctx context.Context, tenantID, termID, groupID uuid.UUID) ([]domain.TermSummary, error)
 
-	HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string) (bool, error)
+	HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, today time.Time) (bool, error)
 	StudentInfo(ctx context.Context, tenantID, yearID, studentUserID uuid.UUID) (StudentInfo, error)
+	// GetTenantTimezone resolves the tenant's configured IANA timezone, for
+	// HasActiveDuty's tenant-local "today" (tenantNow, see tenant.go).
+	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
 }
 
 type StudentInfo struct {
@@ -220,11 +224,12 @@ func (s *Service) open(enc EncryptedMeetingNote) (domain.MeetingNote, error) {
 
 func (s *Service) noteReaderRole(ctx context.Context, tenantID, yearID, userID, authorID uuid.UUID) (domain.MeetingNoteReader, error) {
 	role := domain.MeetingNoteReader{IsAuthor: userID == authorID}
+	today := s.tenantNow(ctx, tenantID)
 	var err error
-	if role.IsCounselor, err = s.repo.HasActiveDuty(ctx, tenantID, yearID, userID, "counselor"); err != nil {
+	if role.IsCounselor, err = s.repo.HasActiveDuty(ctx, tenantID, yearID, userID, "counselor", today); err != nil {
 		return role, err
 	}
-	if role.IsLeadership, err = s.repo.HasActiveDuty(ctx, tenantID, yearID, userID, "leadership"); err != nil {
+	if role.IsLeadership, err = s.repo.HasActiveDuty(ctx, tenantID, yearID, userID, "leadership", today); err != nil {
 		return role, err
 	}
 	return role, nil

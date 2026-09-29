@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -251,14 +252,18 @@ func (r *Repository) ListTermSummariesForGroup(ctx context.Context, tenantID, te
 	return out, nil
 }
 
-func (r *Repository) HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string) (bool, error) {
+func (r *Repository) HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, today time.Time) (bool, error) {
 	has, err := r.queries(ctx).MentoringHasActiveDuty(ctx, db.MentoringHasActiveDutyParams{
-		TenantID: tenantID, AcademicYearID: yearID, UserID: userID, Slug: slug,
+		TenantID: tenantID, AcademicYearID: yearID, UserID: userID, Slug: slug, Today: pdatabase.Date(today),
 	})
 	if err != nil {
 		return false, fmt.Errorf("has active duty: %w", err)
 	}
 	return has, nil
+}
+
+func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error) {
+	return r.queries(ctx).MentoringGetTenantTimezone(ctx, tenantID)
 }
 
 func (r *Repository) StudentInfo(ctx context.Context, tenantID, yearID, studentUserID uuid.UUID) (service.StudentInfo, error) {

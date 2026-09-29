@@ -8,10 +8,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/repository"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 // TestSimulatedCheckInCheckOutFollowSimulatedClock proves a guard's
@@ -67,4 +72,69 @@ func TestSimulatedCheckInCheckOutFollowSimulatedClock(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, realClock.Equal(other.ArrivedAt), "a request without the simulation header must keep the real fallback clock")
+}
+
+// TestSimulatedFutureDutyHonoredWithinSimulatedWindow proves
+// VisitorsHasActiveDuty (readerRole's security/leadership check) reads its
+// "today" from the simulated clock: a security duty whose starts_on is
+// well into the future is not yet active under the real wall-clock date,
+// but becomes active once a request carries a simulated date that falls
+// inside the duty's [starts_on, ends_on] window -- the fix
+// cross_module.sql's VisitorsHasActiveDuty now documents (sqlc.arg
+// ('today') instead of bare current_date).
+func TestSimulatedFutureDutyHonoredWithinSimulatedWindow(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	slug := "visitor-duty-sim-" + uuid.NewString()
+	tenantID, _, _ := seedVisitorsWorld(t, ctx, pg.AdminPool, slug)
+
+	q := db.New(pg.AdminPool)
+	year, err := q.CreateAcademicYear(ctx, db.CreateAcademicYearParams{
+		TenantID: tenantID, Label: "2026/2027",
+		StartsOn: database.Date(time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)),
+		EndsOn:   database.Date(time.Date(2027, 6, 30, 0, 0, 0, 0, time.UTC)),
+		IsActive: true,
+	})
+	require.NoError(t, err)
+
+	reporter, err := q.CreateUser(ctx, db.CreateUserParams{
+		TenantID: tenantID, Username: "pelapor-" + slug, PasswordHash: "x", Name: "Pelapor", Status: "active", Locale: "id",
+	})
+	require.NoError(t, err)
+	securityReader, err := q.CreateUser(ctx, db.CreateUserParams{
+		TenantID: tenantID, Username: "satpam-" + slug, PasswordHash: "x", Name: "Satpam Duty", Status: "active", Locale: "id",
+	})
+	require.NoError(t, err)
+
+	dutyType, err := q.CreateDutyType(ctx, db.CreateDutyTypeParams{
+		TenantID: tenantID, Slug: "security", Name: "Satpam", ScopeKind: "school",
+	})
+	require.NoError(t, err)
+	futureStart := time.Now().AddDate(0, 0, 10)
+	_, err = q.CreateDutyAssignment(ctx, db.CreateDutyAssignmentParams{
+		TenantID: tenantID, AcademicYearID: year.ID, DutyTypeID: dutyType.ID, UserID: securityReader.ID,
+		StartsOn: database.Date(futureStart),
+	})
+	require.NoError(t, err)
+
+	schoolModule := school.Register(pg.AppPool, tenant.ModeSingle, nil)
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool), schoolModule.Service, nil, nil, nil, nil, nil, clock.Real{})
+
+	incident, err := svc.CreateIncident(ctx, tenantID, reporter.ID, service.IncidentInput{
+		OccurredAt: time.Now(), Severity: domain.SeverityLow, Description: "Kejadian test",
+	})
+	require.NoError(t, err)
+
+	// Without a simulation header, the real wall-clock date is still
+	// before starts_on, so the duty is not yet active and securityReader
+	// (not the reporter) cannot open the incident.
+	_, err = svc.GetIncident(ctx, tenantID, incident.ID, securityReader.ID)
+	require.ErrorIs(t, err, domain.ErrIncidentForbidden,
+		"the duty starts in the future, so without simulation it must not be active yet")
+
+	// A simulated date inside the (open-ended) window starting at
+	// futureStart must honor the duty.
+	simCtx := clock.WithTime(ctx, futureStart.AddDate(0, 0, 2))
+	_, err = svc.GetIncident(simCtx, tenantID, incident.ID, securityReader.ID)
+	require.NoError(t, err, "a simulated date inside the duty's window must be honored")
 }

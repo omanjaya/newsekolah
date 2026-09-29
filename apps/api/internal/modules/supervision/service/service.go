@@ -6,6 +6,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -35,8 +36,11 @@ type Repository interface {
 	ListObservationsForTeacherCycle(ctx context.Context, tenantID, cycleID, teacherUserID uuid.UUID) ([]domain.Observation, error)
 	ListObservationsForCycle(ctx context.Context, tenantID, cycleID uuid.UUID) ([]domain.Observation, error)
 
-	HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string) (bool, error)
+	HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, today time.Time) (bool, error)
 	TeacherName(ctx context.Context, tenantID, teacherUserID uuid.UUID) (string, error)
+	// GetTenantTimezone resolves the tenant's configured IANA timezone, for
+	// HasActiveDuty's tenant-local "today" (tenantNow, see tenant.go).
+	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
 }
 
 // AcademicYearReader is what supervision needs from the school module.
@@ -127,7 +131,7 @@ func (s *Service) requireEnabled(ctx context.Context, tenantID uuid.UUID) error 
 }
 
 func (s *Service) observationReaderRole(ctx context.Context, tenantID, yearID, readerUserID, observerUserID, teacherUserID uuid.UUID) (domain.ObservationReader, error) {
-	leadership, err := s.repo.HasActiveDuty(ctx, tenantID, yearID, readerUserID, "leadership")
+	leadership, err := s.repo.HasActiveDuty(ctx, tenantID, yearID, readerUserID, "leadership", s.tenantNow(ctx, tenantID))
 	if err != nil {
 		return domain.ObservationReader{}, err
 	}

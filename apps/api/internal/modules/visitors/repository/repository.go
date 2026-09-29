@@ -252,8 +252,14 @@ func (r *Repository) IncidentSeverityCounts(ctx context.Context, tenantID uuid.U
 
 // Cross-module.
 
-func (r *Repository) HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string) (bool, error) {
-	return r.queries(ctx).VisitorsHasActiveDuty(ctx, db.VisitorsHasActiveDutyParams{TenantID: tenantID, AcademicYearID: yearID, UserID: userID, Slug: slug})
+func (r *Repository) HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, today time.Time) (bool, error) {
+	return r.queries(ctx).VisitorsHasActiveDuty(ctx, db.VisitorsHasActiveDutyParams{
+		TenantID: tenantID, AcademicYearID: yearID, UserID: userID, Slug: slug, Today: pdatabase.Date(today),
+	})
+}
+
+func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error) {
+	return r.queries(ctx).VisitorsGetTenantTimezone(ctx, tenantID)
 }
 
 func toExpectedGuest(row db.VisitorExpectedGuest) domain.ExpectedGuest {

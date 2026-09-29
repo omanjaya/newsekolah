@@ -67,11 +67,12 @@ func (in *CounselingInput) validate() error {
 
 func (s *Service) readerRole(ctx context.Context, tenantID, yearID, userID, authorID uuid.UUID) (domain.ReaderRole, error) {
 	role := domain.ReaderRole{IsAuthor: userID == authorID}
+	today := s.tenantNow(ctx, tenantID)
 	var err error
-	if role.IsCounselor, err = s.repo.HasActiveDuty(ctx, tenantID, yearID, userID, "counselor", uuid.NullUUID{}); err != nil {
+	if role.IsCounselor, err = s.repo.HasActiveDuty(ctx, tenantID, yearID, userID, "counselor", uuid.NullUUID{}, today); err != nil {
 		return role, err
 	}
-	if role.IsLeadership, err = s.repo.HasActiveDuty(ctx, tenantID, yearID, userID, "leadership", uuid.NullUUID{}); err != nil {
+	if role.IsLeadership, err = s.repo.HasActiveDuty(ctx, tenantID, yearID, userID, "leadership", uuid.NullUUID{}, today); err != nil {
 		return role, err
 	}
 	return role, nil
@@ -308,7 +309,7 @@ func (s *Service) ListBKTeamCounselings(ctx context.Context, tenantID, readerUse
 		if err != nil {
 			return err
 		}
-		isCounselor, err := s.repo.HasActiveDuty(ctx, tenantID, yearID, readerUserID, "counselor", uuid.NullUUID{})
+		isCounselor, err := s.repo.HasActiveDuty(ctx, tenantID, yearID, readerUserID, "counselor", uuid.NullUUID{}, s.tenantNow(ctx, tenantID))
 		if err != nil {
 			return err
 		}
