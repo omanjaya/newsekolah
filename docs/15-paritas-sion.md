@@ -132,6 +132,13 @@ Sisa dari pekerjaan ini: redesain layar per peran di web, sekitar 20 layar mobil
 - **Jadwal**: blok pelajaran berwarna per mapel (`subject-tone.ts`) mengisi rentang jamnya, hari ini dan jam berjalan disorot. Ikon peringatan di blok berarti blok melewati jam istirahat (`break-warning.ts`), bukan bug; di data seed muncul di semua hari karena satu blok seed membentang jam 1-11.
 - Live di staging dan production (commit `bc07fc1`).
 
+## Pembaruan 29 September (lanjutan): simulasi waktu bisnis
+
+- **Simulasi waktu** untuk pengujian (header `X-Simulation-Time`, hanya pemegang `platform_superadmin` lewat sesi interaktif; rincian di `docs/testing-time-simulation.md`) kini dipakai oleh seluruh keputusan waktu bisnis: web (hero beranda, editor presensi, tanggal default form, laporan "bulan ini"), dan modul API presensi, jadwal, akademik (jam hari ini, duty per tanggal, pengumuman terjadwal), izin, perpustakaan, kedisiplinan, penilaian, laporan, tamu, mentoring, supervisi. Sesi, token, audit, notifikasi, dan job latar belakang tetap memakai waktu asli. Setiap modul punya test integrasi simulasi dengan Postgres sungguhan.
+- **Perbaikan zona waktu**: pengecekan duty di kedisiplinan, mentoring, supervisi, dan tamu memakai tanggal lokal sekolah, bukan `current_date` Postgres (UTC), yang sebelumnya salah hari antara pukul 00.00 dan 08.00 WITA.
+- Simulasi sengaja aktif di production karena production saat ini hanya dipakai pemilik. Akun hasil migrasi `superadmin` dan `arimartana` juga memegang `super_admin`; perlu diputuskan apakah diturunkan.
+- Live di staging dan production (commit `2bf317e`).
+
 ## Yang tersisa
 
 Diurutkan dari yang paling berdampak bagi pengguna.
