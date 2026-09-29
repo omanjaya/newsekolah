@@ -710,6 +710,12 @@
           "title": "Violations",
           "empty": "No violation types."
         }
+      },
+      "editor": {
+        "timeRange": "Period {start}-{end}",
+        "saveSummary": "{total} students · {changed} changed from present",
+        "recapSummary": "This year: {summary}",
+        "recapAllClear": "This year: nothing to note."
       }
     },
     "homeroom": {

@@ -258,6 +258,10 @@ export function SessionEditor({
         subjectName={subjectName}
         isCorrection={isCorrection}
         timeZone={me?.tenant.timezone}
+        onMarkAllPresent={markAllPresent}
+        onResetChanges={resetChanges}
+        canReset={isDirty}
+        disabled={save.isPending}
       />
 
       {draftOffer && (
@@ -313,9 +317,6 @@ export function SessionEditor({
             onStatusChange={handleStatusChange}
             onNoteChange={handleNoteChange}
             onToggleViolation={handleToggleViolation}
-            onMarkAllPresent={markAllPresent}
-            onResetChanges={resetChanges}
-            canReset={isDirty}
           />
         </TabsContent>
         <TabsContent value="journal">
@@ -336,8 +337,8 @@ export function SessionEditor({
         isCorrection={isCorrection}
         reason={reason}
         onReasonChange={setReason}
-        isDirty={isDirty}
-        pendingChanges={pendingChanges}
+        studentTotal={session.roster.length}
+        changedFromDefaultCount={session.roster.length - (counts[defaultCode] ?? 0)}
         saving={save.isPending}
         formError={formError}
         onSave={() => void submit()}
