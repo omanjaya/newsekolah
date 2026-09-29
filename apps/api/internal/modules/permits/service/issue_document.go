@@ -11,6 +11,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/documents"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 )
@@ -55,7 +56,10 @@ type IssuedDocumentResult struct {
 func (s *Service) IssueDocument(ctx context.Context, tenantID uuid.UUID, in IssueDocumentInput) (IssuedDocumentResult, error) {
 	var out IssuedDocumentResult
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		now := s.clock.Now()
+		// Letter numbering by month/year is a business decision (the
+		// simulated clock lets a tenant test cross-month/cross-year
+		// numbering), not bookkeeping.
+		now := clock.Now(ctx, s.clock)
 		seq, err := s.repo.NextSequenceValue(ctx, tenantID, string(in.Kind), in.AcademicYearID)
 		if err != nil {
 			return fmt.Errorf("next document number: %w", err)

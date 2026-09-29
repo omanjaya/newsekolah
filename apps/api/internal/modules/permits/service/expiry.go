@@ -26,6 +26,11 @@ func (s *Service) ExpireHangingInstances(ctx context.Context) (int, error) {
 		if err != nil {
 			loc = time.UTC
 		}
+		// s.clock.Now(), not clock.Now(ctx, s.clock): this is a
+		// background job with no per-request context or simulated
+		// business time to read -- it iterates every tenant on its own
+		// schedule (transport/jobs), so it stays on the real clock like
+		// CleanupExpiredScanTokens below.
 		midnight := startOfDay(s.clock.Now().In(loc))
 
 		err = s.withTx(ctx, t.ID, func(ctx context.Context) error {

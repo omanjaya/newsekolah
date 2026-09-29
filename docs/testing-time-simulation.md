@@ -21,6 +21,25 @@ Simulasi disimpan per tab browser dan terikat ke sekolah serta akun superadmin a
 
 **Kembali ke waktu asli hanya menghentikan simulasi. Data absensi/jadwal yang disimpan selama testing tetap tersimpan.** Mode ini bukan database sementara atau mekanisme undo. Modul di luar cakupan di atas belum mendukung simulasi waktu secara menyeluruh.
 
+## Cakupan permits
+
+Modul permits (izin terlambat, izin keluar, cuti/leave request, workflow engine, template dokumen, antrean duty, scan gerbang) mengikuti simulasi waktu untuk setiap keputusan bisnis:
+
+- Waktu dan hari/periode pencatatan keterlambatan (late arrival): `opened_at`, `local_date`, dan waktu setiap event tahap workflow.
+- Jendela izin keluar (exit permit): pengecekan "satu izin keluar per hari", `IssueGateToken`'s periode berakhir, dan waktu scan gerbang (`GateScan`'s `exited_at`) yang menentukan kembali tepat waktu atau terlambat.
+- Tanggal "aktif hari ini" untuk leave request: kelayakan approver berbasis duty (`tenantNow`) di `ReviewLeaveRequest`/`ListLeaveRequestsForReview`, dan `LeaveOverride`/`GetIssuedLeaveCoveringDate` yang menerima tanggal dari pemanggil.
+- Penomoran surat (letter numbering) berbasis bulan/tahun: `IssueDocument` dan `IssueLeaveLetter`.
+- Perhitungan tanggal lokal (local date) di zona waktu sekolah untuk seluruh keputusan di atas, lewat `service.tenantNow`.
+
+Tetap memakai waktu asli (real time), bukan simulasi, karena berupa keamanan atau pekerjaan latar belakang tanpa request context:
+
+- Penerbitan dan konsumsi scan token (`IssueScanToken`, `ConsumeScanToken`) -- termasuk kedaluwarsa token gerbang (`gate_exit`) -- adalah kontrol anti-replay, bukan keputusan bisnis.
+- URL upload bukti (evidence) yang di-presign (`RequestEvidenceUpload`'s `ExpiresAt`) dan tampilan sisa detik token (`toAPIToken`'s `ExpiresInSeconds`) mengikuti waktu asli token itu sendiri.
+- Job latar belakang tanpa request context: `ExpireHangingInstances` dan `CleanupExpiredScanTokens`.
+- Bookkeeping `effective_from` saat `tenant_policies` diisi otomatis pertama kali (`evidenceRequired`, `lateArrivalActions`).
+
+Tes: `apps/api/internal/modules/permits/simulation_integration_test.go` membuktikan keterlambatan yang dibuka pada konteks Senin 07:20 simulasi jatuh di hari itu, status kembali tepat waktu/terlambat pada izin keluar mengikuti jam simulasi, dan kelayakan reviewer "aktif hari ini" pada leave request mengikuti tanggal simulasi.
+
 ## Implementasi
 
 Browser mengirim `X-Simulation-Time` berisi waktu efektif dalam RFC3339 pada request yang mendukung simulasi. Backend mewajibkan sesi login interaktif dan memeriksa izin `platform_superadmin` pada pelaku asli, termasuk saat impersonation. Header yang tidak valid atau tanpa izin ditolak.

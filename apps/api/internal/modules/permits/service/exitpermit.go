@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // CreateExitPermitInput is what a student submits to start an exit
@@ -154,7 +155,7 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 		}
 
 		if isLast {
-			_, err = s.repo.MarkExitPermitIssued(ctx, tenantID, instanceID, s.clock.Now())
+			_, err = s.repo.MarkExitPermitIssued(ctx, tenantID, instanceID, clock.Now(ctx, s.clock))
 		} else if stage, stageErr := def.StageAt(updated.CurrentStageIndex); stageErr == nil {
 			nextStageKey = stage.Key
 		}
@@ -276,7 +277,10 @@ func (s *Service) GateScan(ctx context.Context, tenantID, instanceID, securityUs
 			return err
 		}
 
-		now := s.clock.Now()
+		// Gate scan time is the domain event time a return is judged
+		// "on time" or "late" against, so it must follow the simulated
+		// business clock, not the server's real one.
+		now := clock.Now(ctx, s.clock)
 		updated, err = s.repo.AdvanceInstance(ctx, tenantID, instanceID, inst.CurrentStageIndex, domain.StatusCompleted, &now)
 		if err != nil {
 			return err
