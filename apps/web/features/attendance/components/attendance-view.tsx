@@ -47,7 +47,6 @@ import { AttendanceSessionCard } from "./attendance-session-card";
 
 /** Teachers see a day of sessions to fill; everyone else sees their own calendar. */
 export function AttendanceView(): ReactElement {
-  const t = useTranslations("app.attendance");
   const canManage = useCan("manage_attendance");
 
   if (canManage) {
@@ -60,7 +59,7 @@ export function AttendanceView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      {/* The calendar renders its own page heading and month navigator. */}
       <AttendanceCalendar />
     </div>
   );

@@ -39,7 +39,8 @@ const STATUS_DOT_CLASS: Record<string, string> = {
   I: "bg-status-excused",
   D: "bg-status-dispensation",
   A: "bg-status-absent",
-  INCOMPLETE: "bg-status-late",
+  // Not an absence: a neutral dot keeps real statuses (sick, absent) readable.
+  INCOMPLETE: "bg-fg-muted/40",
   MIXED: "bg-fg-muted",
 };
 
@@ -152,9 +153,9 @@ export function AttendanceCalendar(): ReactElement {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="mb-1 text-[13px] font-medium text-fg-muted">{t("eyebrow")}</p>
-          <h2 className="font-heading text-[20px] font-bold tracking-tight text-fg">
+          <h1 className="font-heading text-[24px] font-bold tracking-tight text-fg">
             {tMine("title")}
-          </h2>
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           <IconButton

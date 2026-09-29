@@ -75,7 +75,7 @@ describe("AttendanceCalendar", () => {
     const pastCell = dayButton("20");
     const futureCell = dayButton("28");
 
-    expect(pastCell.querySelector("span.rounded-full")?.className).toContain("bg-status-late");
+    expect(pastCell.querySelector("span.rounded-full")?.className).toContain("bg-fg-muted/40");
     expect(futureCell.querySelector("span.rounded-full")).toBeNull();
     expect(futureCell).toHaveAttribute("aria-label", expect.stringContaining("codes.NONE"));
   });
