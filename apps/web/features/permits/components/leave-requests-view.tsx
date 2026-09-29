@@ -19,12 +19,14 @@ import { useState } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
+import { useLeaveReviewQueueQuery } from "../api";
 
 import { ReviewQueue } from "./leave-review-queue";
 import { MyLeaveRequests } from "./my-leave-requests";
 
 export function LeaveRequestsView(): ReactElement {
   const t = useTranslations("app.permits.leave");
+  const tReview = useTranslations("app.permits.review");
   const canSubmit = useCan("submit_leave_requests");
   const canReviewStage = useCan("review_leave_requests");
   const canIssueLetter = useCan("issue_leave_letters");
@@ -34,11 +36,18 @@ export function LeaveRequestsView(): ReactElement {
   // Issuers still get the tab, explaining where their requests arrive.
   const showQueueTab = canReviewStage || canIssueLetter;
   const [creating, setCreating] = useState(false);
+  // Same cached query ReviewQueue reads (live topics are ref-counted), so the
+  // tab can carry the queue's count without a second request.
+  const reviewQueue = useLeaveReviewQueueQuery(canReviewStage);
+  const queueCount = reviewQueue.data?.data.length;
 
   const tabs = [
     showQueueTab && {
       value: "queue",
-      label: t("tabQueue"),
+      label:
+        queueCount === undefined
+          ? t("tabQueue")
+          : tReview("tabWithCount", { label: t("tabQueue"), count: queueCount }),
       content: canReviewStage ? <ReviewQueue /> : <IssuerQueueUnavailable />,
     },
     canSubmit && {

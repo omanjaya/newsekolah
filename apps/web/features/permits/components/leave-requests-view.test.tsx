@@ -24,6 +24,14 @@ vi.mock("../../../lib/session/session-provider", () => ({
   },
 }));
 
+let queueLength: number | undefined;
+
+vi.mock("../api", () => ({
+  useLeaveReviewQueueQuery: () => ({
+    data: queueLength === undefined ? undefined : { data: Array.from({ length: queueLength }) },
+  }),
+}));
+
 vi.mock("./leave-review-queue", () => ({
   ReviewQueue: () => <div data-testid="review-queue-stub" />,
 }));
@@ -79,5 +87,15 @@ describe("LeaveRequestsView", () => {
     render(<LeaveRequestsView />);
     expect(screen.getByText("noAccessTitle")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "submit" })).not.toBeInTheDocument();
+  });
+
+  it("carries the review queue's count on the queue tab label", () => {
+    canSubmit = true;
+    canReview = true;
+    canIssue = false;
+    queueLength = 2;
+    render(<LeaveRequestsView />);
+    expect(screen.getByRole("tab", { name: "tabWithCount" })).toBeInTheDocument();
+    queueLength = undefined;
   });
 });

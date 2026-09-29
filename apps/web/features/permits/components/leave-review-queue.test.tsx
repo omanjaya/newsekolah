@@ -59,11 +59,11 @@ function item(
 }
 
 describe("ReviewQueue (leave requests)", () => {
-  it("shows one tile carrying the queue's own count", () => {
+  it("shows no tile row for its single count, which the queue tab already carries", () => {
     queueItems = [item({ instance_id: "a" }), item({ instance_id: "b" })];
     render(<ReviewQueue />);
 
-    expect(screen.getByTestId("leave-queue-tile-waiting")).toHaveTextContent("2");
+    expect(screen.queryByTestId("leave-queue-tiles")).not.toBeInTheDocument();
   });
 
   it("spans the last card full width for an odd item count", () => {

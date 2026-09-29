@@ -145,7 +145,8 @@ export function ReviewQueue(): ReactElement {
         <QueryError retry={() => refetch()} />
       ) : (
         <>
-          {tiles.length > 0 && (
+          {/* A lone count already shows on the queue tab, so one tile would only repeat it. */}
+          {tiles.length > 1 && (
             <div className={grid.container} data-testid="leave-queue-tiles">
               {tiles.map((tile, index) => (
                 <div

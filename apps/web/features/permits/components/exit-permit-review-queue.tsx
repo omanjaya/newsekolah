@@ -110,7 +110,8 @@ export function ExitPermitReviewQueue({
 
   return (
     <div className="flex flex-col gap-4">
-      {tiles.length > 0 && (
+      {/* A lone count already shows on the queue tab, so one tile would only repeat it. */}
+      {tiles.length > 1 && (
         <div className={grid.container} data-testid="exit-permit-queue-tiles">
           {tiles.map((tile, index) => (
             <div

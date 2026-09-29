@@ -58,7 +58,7 @@ describe("ExitPermitReviewQueue", () => {
     expect(screen.getByTestId("exit-permit-queue-tile-awaitingGate")).toHaveTextContent("1");
   });
 
-  it("omits the gate tile for a caller who cannot gate", () => {
+  it("drops the tile row when only one count applies (the tab already shows it)", () => {
     const items = [item({ instance_id: "a", status: "in_progress" })];
     render(
       <ExitPermitReviewQueue
@@ -69,8 +69,7 @@ describe("ExitPermitReviewQueue", () => {
       />,
     );
 
-    expect(screen.getByTestId("exit-permit-queue-tile-waitingApproval")).toBeInTheDocument();
-    expect(screen.queryByTestId("exit-permit-queue-tile-awaitingGate")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("exit-permit-queue-tiles")).not.toBeInTheDocument();
   });
 
   it("spans the last card full width for an odd item count", () => {
