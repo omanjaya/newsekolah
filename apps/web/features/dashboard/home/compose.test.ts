@@ -1,8 +1,8 @@
 import { CalendarCheck } from "lucide-react";
 import { describe, expect, it } from "vitest";
 
-import { bentoCells, collectBlocks, mergeTiles, pickHero, tileColumns } from "./compose";
-import { HERO_PRIORITY, type BlockSlot, type TileSpec } from "./types";
+import { collectBlocks, mergeTiles, pickHero } from "./compose";
+import { HERO_PRIORITY, type TileSpec } from "./types";
 
 const tile = (key: string, priority: number): TileSpec => ({
   key,
@@ -58,67 +58,5 @@ describe("collectBlocks", () => {
   });
 });
 
-describe("bentoCells", () => {
-  const slot = (key: string): BlockSlot => ({ key, node: null });
-
-  it("returns an empty list for no slots", () => {
-    expect(bentoCells([])).toEqual([]);
-  });
-
-  it("spans the only card full-width for a single slot", () => {
-    expect(bentoCells([slot("a")]).map((c) => c.span)).toEqual(["full"]);
-  });
-
-  it("pairs two slots half-width", () => {
-    expect(bentoCells([slot("a"), slot("b")]).map((c) => c.span)).toEqual(["half", "half"]);
-  });
-
-  it("spans only the last of three slots full-width", () => {
-    expect(bentoCells([slot("a"), slot("b"), slot("c")]).map((c) => c.span)).toEqual([
-      "half",
-      "half",
-      "full",
-    ]);
-  });
-
-  it("pairs four slots half-width with no leftover", () => {
-    expect(bentoCells([slot("a"), slot("b"), slot("c"), slot("d")]).map((c) => c.span)).toEqual([
-      "half",
-      "half",
-      "half",
-      "half",
-    ]);
-  });
-
-  it("spans only the last of five slots full-width", () => {
-    const cells = bentoCells([slot("a"), slot("b"), slot("c"), slot("d"), slot("e")]);
-    expect(cells.map((c) => c.span)).toEqual(["half", "half", "half", "half", "full"]);
-    expect(cells.map((c) => c.key)).toEqual(["a", "b", "c", "d", "e"]);
-  });
-});
-
-describe("tileColumns", () => {
-  it("uses a single column on small screens and lg for one tile", () => {
-    const layout = tileColumns(1);
-    expect(layout.container).toBe("grid grid-cols-1 gap-3 lg:grid-cols-1");
-    expect(layout.lastTileClassName).toBe("");
-  });
-
-  it("uses two equal columns for two tiles, no leftover span", () => {
-    const layout = tileColumns(2);
-    expect(layout.container).toBe("grid grid-cols-2 gap-3 lg:grid-cols-2");
-    expect(layout.lastTileClassName).toBe("");
-  });
-
-  it("spans the third tile full-width on small screens only", () => {
-    const layout = tileColumns(3);
-    expect(layout.container).toBe("grid grid-cols-2 gap-3 lg:grid-cols-3");
-    expect(layout.lastTileClassName).toBe("col-span-2 lg:col-span-1");
-  });
-
-  it("uses four equal columns for four tiles, no leftover span", () => {
-    const layout = tileColumns(4);
-    expect(layout.container).toBe("grid grid-cols-2 gap-3 lg:grid-cols-4");
-    expect(layout.lastTileClassName).toBe("");
-  });
-});
+// `bentoCells`/`tileColumns` moved to `apps/web/lib/layout/bento.ts` (shared
+// with the attendance day list); see `bento.test.ts` there.

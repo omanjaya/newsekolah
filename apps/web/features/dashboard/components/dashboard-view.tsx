@@ -18,6 +18,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { bentoCells, tileColumns } from "../../../lib/layout/bento";
 import { AnnouncementFeed } from "../../announcements/components/announcement-feed";
 import { useUnreadCountQuery } from "../../notifications/api";
 import { useDashboardData } from "../api";
@@ -28,7 +29,7 @@ import { useLibrarianBlock } from "../home/blocks/librarian";
 import { usePicketBlock } from "../home/blocks/picket";
 import { useStudentBlock } from "../home/blocks/student";
 import { useTeacherBlock } from "../home/blocks/teacher";
-import { bentoCells, collectBlocks, tileColumns } from "../home/compose";
+import { collectBlocks } from "../home/compose";
 import { resolvePersonas } from "../home/personas";
 import type { Me, PersonaBlock, PersonaKey } from "../home/types";
 

@@ -5,23 +5,24 @@ import {
   Button,
   EmptyState,
   IconButton,
-  Input,
   PageHeader,
   Select,
   Skeleton,
+  cn,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
 import { ChevronLeft, ChevronRight, FileBarChart, MonitorSmartphone } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { bentoCells } from "../../../lib/layout/bento";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
   useClassesQuery,
@@ -41,7 +42,7 @@ import {
 import { classifyPeriodTiming, deriveFillStatus, findNextSessionId } from "../lib/session-schedule";
 
 import { AttendanceCalendar } from "./attendance-calendar";
-import { AttendanceDaySummary } from "./attendance-day-summary";
+import { AttendanceDayStats } from "./attendance-day-summary";
 import { AttendanceSessionCard } from "./attendance-session-card";
 
 /** Teachers see a day of sessions to fill; everyone else sees their own calendar. */
@@ -49,10 +50,18 @@ export function AttendanceView(): ReactElement {
   const t = useTranslations("app.attendance");
   const canManage = useCan("manage_attendance");
 
+  if (canManage) {
+    return (
+      <div className="flex flex-col gap-4 p-4 md:p-6">
+        <DaySessions />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      {canManage ? <DaySessions /> : <AttendanceCalendar />}
+      <AttendanceCalendar />
     </div>
   );
 }
@@ -71,8 +80,10 @@ function isoWeekday(date: string): number {
   return jsDay === 0 ? 7 : jsDay;
 }
 
-function DaySessions(): ReactElement {
+/** The teacher's day of sessions: the bento header, stat tiles, and the session card grid. */
+export function DaySessions(): ReactElement {
   const t = useTranslations("app.attendance");
+  const format = useFormatter();
   const { me } = useSession();
   const router = useRouter();
   const toast = useToast();
@@ -86,6 +97,7 @@ function DaySessions(): ReactElement {
 
   const today = todayInZone(me?.tenant.timezone);
   const [date, setDate] = useDateFilter("date", today);
+  const dateInputRef = useRef<HTMLInputElement>(null);
   // A teacher defaults to their own day. An administrator who does not
   // teach starts with nobody picked: calling "own today" for someone with
   // no schedule would just be another dead end, so they see a prompt
@@ -222,75 +234,146 @@ function DaySessions(): ReactElement {
     );
   }, [isToday, sortedItems, periodMap, now]);
 
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("dateLabel")}</span>
-          <div className="flex items-center gap-1">
-            <IconButton
-              icon={<ChevronLeft />}
-              aria-label={t("prevDay")}
-              variant="outline"
-              onClick={() => {
-                setDate((d) => shiftDate(d, -1));
-              }}
-            />
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => {
-                if (e.target.value) setDate(e.target.value);
-              }}
-              aria-label={t("dateLabel")}
-              className="w-40"
-            />
-            <IconButton
-              icon={<ChevronRight />}
-              aria-label={t("nextDay")}
-              variant="outline"
-              onClick={() => {
-                setDate((d) => shiftDate(d, 1));
-              }}
-            />
-          </div>
-        </label>
-        {date !== today && (
+  // Noon UTC so the tenant-zone weekday/day/month label never rolls to the
+  // neighboring calendar date for a timezone behind or ahead of UTC.
+  const dateLabel = format.dateTime(new Date(`${date}T12:00:00Z`), {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: me?.tenant.timezone,
+  });
+
+  const headerActions = (
+    <>
+      <div className="flex items-center gap-1">
+        <IconButton
+          icon={<ChevronLeft />}
+          aria-label={t("prevDay")}
+          variant="outline"
+          className="rounded-full"
+          onClick={() => {
+            setDate((d) => shiftDate(d, -1));
+          }}
+        />
+        <div className="relative">
           <Button
+            type="button"
             variant="secondary"
             size="sm"
-            onClick={() => {
-              setDate(today);
-            }}
+            aria-hidden="true"
+            tabIndex={-1}
+            className="pointer-events-none rounded-full"
           >
-            {t("today")}
+            {dateLabel}
           </Button>
-        )}
-        {showTeacherPicker && (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("teacherLabel")}</span>
-            <Select
-              options={teacherSelectOptions}
-              value={selectedTeacherId}
-              onValueChange={setSelectedTeacherId}
-              placeholder={t("teacherPlaceholder")}
-              disabled={teacherOptions.isLoading}
-              aria-label={t("teacherLabel")}
-              className="w-56"
-            />
-          </label>
-        )}
-      </div>
-
-      {isTeacher && (
-        <div>
-          <Button asChild variant="secondary" size="sm">
-            <Link href="/attendance/reports?tab=mine">
-              <FileBarChart className="size-4" aria-hidden="true" />
-              {t("myReportLink")}
-            </Link>
-          </Button>
+          <input
+            ref={dateInputRef}
+            type="date"
+            value={date}
+            onChange={(e) => {
+              if (e.target.value) setDate(e.target.value);
+            }}
+            aria-label={t("dateLabel")}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
         </div>
+        <IconButton
+          icon={<ChevronRight />}
+          aria-label={t("nextDay")}
+          variant="outline"
+          className="rounded-full"
+          onClick={() => {
+            setDate((d) => shiftDate(d, 1));
+          }}
+        />
+      </div>
+      {date !== today && (
+        <Button
+          variant="secondary"
+          size="sm"
+          className="rounded-full"
+          onClick={() => {
+            setDate(today);
+          }}
+        >
+          {t("today")}
+        </Button>
+      )}
+      {isTeacher && (
+        <Button asChild variant="secondary" size="sm" className="rounded-full">
+          <Link href="/attendance/reports?tab=mine">
+            <FileBarChart className="size-4" aria-hidden="true" />
+            {t("myReportLink")}
+          </Link>
+        </Button>
+      )}
+      {selectedTeacherId === "" && canViewReports && (
+        <Button asChild variant="secondary" size="sm" className="rounded-full">
+          <Link href="/attendance/reports">
+            <FileBarChart className="size-4" aria-hidden="true" />
+            {t("openReports")}
+          </Link>
+        </Button>
+      )}
+      {selectedTeacherId === "" && canViewMonitor && (
+        <Button asChild variant="secondary" size="sm" className="rounded-full">
+          <Link href="/monitor">
+            <MonitorSmartphone className="size-4" aria-hidden="true" />
+            {t("openMonitor")}
+          </Link>
+        </Button>
+      )}
+    </>
+  );
+
+  const sessionCells = bentoCells(
+    sortedItems.map((session) => {
+      const start = periodMap.get(session.start_period_id);
+      const end = periodMap.get(session.end_period_id);
+      const fillStatus = deriveFillStatus(session.submitted_at, session.date || date, today);
+      const timing: "ongoing" | "next" | null =
+        session.schedule_id === ongoingScheduleId
+          ? "ongoing"
+          : session.schedule_id === nextScheduleId
+            ? "next"
+            : null;
+      return {
+        key: session.schedule_id,
+        node: (
+          <AttendanceSessionCard
+            session={session}
+            className={classMap.get(session.class_id)?.name ?? t("unknownClass")}
+            subjectName={subjectMap.get(session.subject_id)?.name ?? t("unknownSubject")}
+            start={start}
+            end={end}
+            fillStatus={fillStatus}
+            timing={timing}
+            submitting={open.isPending && open.variables.schedule_id === session.schedule_id}
+            timeZone={me?.tenant.timezone}
+            onOpen={() => void openSession(session)}
+          />
+        ),
+      };
+    }),
+  );
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={headerActions} />
+
+      {showTeacherPicker && (
+        <label className="flex flex-col gap-1 text-[13px]">
+          <span className="font-medium text-fg">{t("teacherLabel")}</span>
+          <Select
+            options={teacherSelectOptions}
+            value={selectedTeacherId}
+            onValueChange={setSelectedTeacherId}
+            placeholder={t("teacherPlaceholder")}
+            disabled={teacherOptions.isLoading}
+            aria-label={t("teacherLabel")}
+            className="w-56"
+          />
+        </label>
       )}
 
       {selectedTeacherId === "" ? (
@@ -298,31 +381,21 @@ function DaySessions(): ReactElement {
           icon={<domainIcons.attendance aria-hidden="true" />}
           title={t("pickTeacherTitle")}
           description={t("pickTeacherBody")}
-          action={
-            (canViewReports || canViewMonitor) && (
-              <div className="flex flex-wrap justify-center gap-2">
-                {canViewReports && (
-                  <Button asChild variant="secondary" size="sm">
-                    <Link href="/attendance/reports">
-                      <FileBarChart className="size-4" aria-hidden="true" />
-                      {t("openReports")}
-                    </Link>
-                  </Button>
-                )}
-                {canViewMonitor && (
-                  <Button asChild variant="secondary" size="sm">
-                    <Link href="/monitor">
-                      <MonitorSmartphone className="size-4" aria-hidden="true" />
-                      {t("openMonitor")}
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            )
-          }
         />
       ) : loading ? (
-        <Skeleton className="h-40 w-full" aria-busy="true" />
+        <div className="flex flex-col gap-4" aria-busy="true">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+            <Skeleton className="h-[104px] w-full" />
+            <Skeleton className="h-[104px] w-full" />
+            <Skeleton className="h-[104px] w-full" />
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+          </div>
+        </div>
       ) : items.length === 0 ? (
         !isSchoolDay ? (
           <EmptyState
@@ -345,54 +418,21 @@ function DaySessions(): ReactElement {
         )
       ) : (
         <section className="flex flex-col gap-4">
-          <AttendanceDaySummary
-            compact
-            className="md:hidden"
+          <AttendanceDayStats
             total={sortedItems.length}
             saved={sortedItems.filter((s) => Boolean(s.submitted_at)).length}
             pending={sortedItems.filter((s) => !s.submitted_at).length}
           />
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_16rem]">
-            <ul className="flex flex-col gap-2">
-              {sortedItems.map((session) => {
-                const start = periodMap.get(session.start_period_id);
-                const end = periodMap.get(session.end_period_id);
-                const fillStatus = deriveFillStatus(
-                  session.submitted_at,
-                  session.date || date,
-                  today,
-                );
-                const timing: "ongoing" | "next" | null =
-                  session.schedule_id === ongoingScheduleId
-                    ? "ongoing"
-                    : session.schedule_id === nextScheduleId
-                      ? "next"
-                      : null;
-                return (
-                  <AttendanceSessionCard
-                    key={session.schedule_id}
-                    session={session}
-                    className={classMap.get(session.class_id)?.name ?? t("unknownClass")}
-                    subjectName={subjectMap.get(session.subject_id)?.name ?? t("unknownSubject")}
-                    start={start}
-                    end={end}
-                    fillStatus={fillStatus}
-                    timing={timing}
-                    submitting={
-                      open.isPending && open.variables.schedule_id === session.schedule_id
-                    }
-                    timeZone={me?.tenant.timezone}
-                    onOpen={() => void openSession(session)}
-                  />
-                );
-              })}
-            </ul>
-            <AttendanceDaySummary
-              className="hidden md:block"
-              total={sortedItems.length}
-              saved={sortedItems.filter((s) => Boolean(s.submitted_at)).length}
-              pending={sortedItems.filter((s) => !s.submitted_at).length}
-            />
+          <div className="grid gap-4 lg:grid-cols-2" data-testid="attendance-session-cards">
+            {sessionCells.map((cell) => (
+              <div
+                key={cell.key}
+                data-testid={`attendance-session-cell-${cell.key}`}
+                className={cn("flex h-full flex-col", cell.span === "full" && "lg:col-span-2")}
+              >
+                <div className="flex-1">{cell.node}</div>
+              </div>
+            ))}
           </div>
         </section>
       )}
