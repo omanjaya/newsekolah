@@ -42,6 +42,11 @@ func (s *Service) IssueScanToken(ctx context.Context, in IssueScanTokenInput) (d
 	rawValue := base64.RawURLEncoding.EncodeToString(raw)
 	hash := hashScanToken(rawValue)
 
+	// s.clock.Now(), not clock.Now(ctx, s.clock): a scan token's expiry is
+	// an anti-replay security control, not a business decision, so it must
+	// never follow the simulated business clock -- see
+	// docs/testing-time-simulation.md's "kept real" list. Every ConsumeScanToken/
+	// CleanupExpiredScanTokens call below applies the same rule.
 	now := s.clock.Now()
 	expiresAt := now.Add(domain.TokenTTL(in.Purpose, now, in.PeriodEndsAt))
 
@@ -206,6 +211,8 @@ func (s *Service) CleanupExpiredScanTokens(ctx context.Context) (int64, error) {
 		return 0, fmt.Errorf("list tenants for token cleanup: %w", err)
 	}
 
+	// Background job, no request context: stays on the real clock like
+	// ExpireHangingInstances above.
 	cutoff := s.clock.Now().Add(-24 * time.Hour)
 	var total int64
 	for _, t := range tenants {

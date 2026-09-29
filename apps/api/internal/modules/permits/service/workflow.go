@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // EnsureDefaultDefinitions creates version-1 definitions for every Kind the
@@ -180,7 +181,7 @@ func (s *Service) createInstance(ctx context.Context, in newInstanceInput) (doma
 	inst, err := s.repo.CreateInstance(ctx, domain.Instance{
 		TenantID: in.tenantID, AcademicYearID: yearID, DefinitionID: def.ID, Kind: in.kind,
 		SubjectUserID: in.subjectUserID, ClassID: in.classID, Status: domain.StatusInProgress,
-		Payload: in.payload, OpenedAt: s.clock.Now(),
+		Payload: in.payload, OpenedAt: clock.Now(ctx, s.clock),
 		// LocalDate is the tenant-local calendar day, not the server's
 		// UTC one -- see domain.Instance.LocalDate and migration 0120.
 		LocalDate: s.tenantNow(ctx, in.tenantID), CreatedBy: uuid.NullUUID{UUID: in.createdBy, Valid: true},
@@ -193,7 +194,7 @@ func (s *Service) createInstance(ctx context.Context, in newInstanceInput) (doma
 	_, err = s.repo.CreateEvent(ctx, domain.Event{
 		TenantID: in.tenantID, InstanceID: inst.ID, StageKey: firstStage.Key,
 		FromStatus: "", ToStatus: domain.StatusInProgress, ActorUserID: uuid.NullUUID{UUID: in.createdBy, Valid: true},
-		Verification: domain.VerificationAuto, Note: "opened", OccurredAt: s.clock.Now(),
+		Verification: domain.VerificationAuto, Note: "opened", OccurredAt: clock.Now(ctx, s.clock),
 	})
 	if err != nil {
 		return domain.Instance{}, domain.Definition{}, err
@@ -253,7 +254,7 @@ func (s *Service) approveCurrentStage(ctx context.Context, in stageTransitionInp
 	if isLast {
 		newStatus = in.onLastStageStatus
 		if newStatus.IsTerminal() {
-			now := s.clock.Now()
+			now := clock.Now(ctx, s.clock)
 			closedAt = &now
 		}
 	}
@@ -266,7 +267,7 @@ func (s *Service) approveCurrentStage(ctx context.Context, in stageTransitionInp
 	_, err = s.repo.CreateEvent(ctx, domain.Event{
 		TenantID: in.tenantID, InstanceID: in.instanceID, StageKey: stage.Key,
 		FromStatus: inst.Status, ToStatus: newStatus, ActorUserID: uuid.NullUUID{UUID: in.actorUserID, Valid: true},
-		Verification: stage.Verification, ScanTokenID: in.scanTokenID, Note: in.note, OccurredAt: s.clock.Now(),
+		Verification: stage.Verification, ScanTokenID: in.scanTokenID, Note: in.note, OccurredAt: clock.Now(ctx, s.clock),
 	})
 	if err != nil {
 		return domain.Instance{}, domain.Definition{}, false, err
@@ -305,7 +306,7 @@ func (s *Service) rejectInstance(ctx context.Context, tenantID, instanceID, acto
 		return domain.Instance{}, err
 	}
 
-	now := s.clock.Now()
+	now := clock.Now(ctx, s.clock)
 	updated, err := s.repo.AdvanceInstance(ctx, tenantID, instanceID, inst.CurrentStageIndex, domain.StatusRejected, &now)
 	if err != nil {
 		return domain.Instance{}, err
@@ -332,7 +333,7 @@ func (s *Service) cancelInstance(ctx context.Context, tenantID, instanceID, acto
 		return domain.Instance{}, domain.ErrInstanceNotInProgress
 	}
 
-	now := s.clock.Now()
+	now := clock.Now(ctx, s.clock)
 	updated, err := s.repo.AdvanceInstance(ctx, tenantID, instanceID, inst.CurrentStageIndex, domain.StatusCancelled, &now)
 	if err != nil {
 		return domain.Instance{}, err

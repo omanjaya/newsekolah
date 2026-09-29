@@ -43,6 +43,10 @@ func (s *Service) evidenceRequired(ctx context.Context, tenantID uuid.UUID) (boo
 		if err != nil {
 			return true, err
 		}
+		// s.clock.Now(), not clock.Now(ctx, s.clock): this is the one-time
+		// lazy seed of a tenant_policies row's own effective_from
+		// bookkeeping (like a created_at), not a business decision a
+		// simulated request should be able to move.
 		if err := s.repo.CreatePolicy(ctx, tenantID, policyKindPermits, 1, encoded, s.clock.Now(), uuid.NullUUID{}); err != nil {
 			return true, err
 		}
@@ -79,6 +83,7 @@ func (s *Service) lateArrivalActions(ctx context.Context, tenantID uuid.UUID) (m
 		if err != nil {
 			return def, err
 		}
+		// Same bookkeeping reasoning as evidenceRequired's seed above.
 		if err := s.repo.CreatePolicy(ctx, tenantID, policyKindLateArrivalActions, 1, encoded, s.clock.Now(), uuid.NullUUID{}); err != nil {
 			return def, err
 		}

@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // staffRecordNote is attached to every event a duty teacher writes on
@@ -97,7 +98,7 @@ func (s *Service) RecordExitPermitByStaff(ctx context.Context, in RecordExitPerm
 			return err
 		}
 
-		now := s.clock.Now()
+		now := clock.Now(ctx, s.clock)
 		lastIndex := len(def.Stages) - 1
 		lastStage, _ := def.StageAt(lastIndex)
 		if inst, err = s.repo.AdvanceInstance(ctx, in.TenantID, inst.ID, lastIndex, domain.StatusCompleted, &now); err != nil {
@@ -213,7 +214,7 @@ func (s *Service) RecordLateArrivalByStaff(ctx context.Context, in RecordLateArr
 			return err
 		}
 
-		now := s.clock.Now()
+		now := clock.Now(ctx, s.clock)
 		lastIndex := len(def.Stages) - 1
 		lastStage, _ := def.StageAt(lastIndex)
 		if inst, err = s.repo.AdvanceInstance(ctx, in.TenantID, inst.ID, lastIndex, domain.StatusCompleted, &now); err != nil {

@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // tenantLocation loads the tenant's configured IANA timezone, falling back
@@ -26,11 +28,17 @@ func (s *Service) tenantLocation(ctx context.Context, tenantID uuid.UUID) *time.
 	return loc
 }
 
-// tenantNow is the tenant-local wall clock instant: s.clock.Now()
-// converted into the tenant's own timezone. Callers that combine this with
-// a period's starts_at/ends_at (combineDateAndDuration) or read its
-// weekday/hour (the "teacher_of_class_now" approver rule) need the local
-// calendar day and time of day, not the server's UTC one.
+// tenantNow is the request's business-time instant -- the simulated
+// business clock (docs/testing-time-simulation.md) when the request
+// carries one, s.clock.Now() otherwise -- converted into the tenant's own
+// timezone. Callers that combine this with a period's starts_at/ends_at
+// (combineDateAndDuration) or read its weekday/hour (the
+// "teacher_of_class_now" approver rule) need the local calendar day and
+// time of day, not the server's UTC one. Every caller here is a BUSINESS
+// decision (today's exit-permit/late-arrival/leave-request guards, duty
+// windows, approver eligibility); security-sensitive time (scan-token
+// expiry, auth) intentionally stays on s.clock.Now() directly -- see
+// scantoken.go.
 func (s *Service) tenantNow(ctx context.Context, tenantID uuid.UUID) time.Time {
-	return s.clock.Now().In(s.tenantLocation(ctx, tenantID))
+	return clock.Now(ctx, s.clock).In(s.tenantLocation(ctx, tenantID))
 }

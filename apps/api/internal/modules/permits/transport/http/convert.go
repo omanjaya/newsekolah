@@ -195,6 +195,11 @@ func toAPIInstance(inst domain.Instance, def domain.Definition, events []domain.
 	return out
 }
 
+// toAPIToken's now is deliberately the caller's h.clock.Now() (real time),
+// never the simulated business clock: ExpiresInSeconds is display math over
+// a scan token's real-time, security anti-replay expiry (see
+// docs/testing-time-simulation.md and service/scantoken.go), which the
+// simulated clock never overrides.
 func toAPIToken(r domain.IssueResult, now time.Time) api.IssuedScanToken {
 	return api.IssuedScanToken{
 		Token: r.RawValue, Purpose: api.ScanPurpose(r.Token.Purpose), ContextId: uuidPtr(r.Token.ContextID),

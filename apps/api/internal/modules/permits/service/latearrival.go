@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // LateArrivalDetail bundles everything a client needs to render one flow.
@@ -182,7 +183,7 @@ func (s *Service) ReviewLateArrival(ctx context.Context, in ReviewLateArrivalInp
 			}
 		}
 		if isLast {
-			if late, err = s.repo.MarkLateArrivalCompleted(ctx, in.TenantID, in.InstanceID, s.clock.Now()); err != nil {
+			if late, err = s.repo.MarkLateArrivalCompleted(ctx, in.TenantID, in.InstanceID, clock.Now(ctx, s.clock)); err != nil {
 				return err
 			}
 		}
@@ -231,7 +232,7 @@ func (s *Service) LateArrivalScan(ctx context.Context, tenantID, instanceID, stu
 			return err
 		}
 		if isLast {
-			if late, err = s.repo.MarkLateArrivalCompleted(ctx, tenantID, instanceID, s.clock.Now()); err != nil {
+			if late, err = s.repo.MarkLateArrivalCompleted(ctx, tenantID, instanceID, clock.Now(ctx, s.clock)); err != nil {
 				return err
 			}
 		}

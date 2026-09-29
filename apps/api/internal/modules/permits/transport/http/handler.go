@@ -64,7 +64,11 @@ func (h *PermitsHandler) ScanClassroomEntry(ctx context.Context, request api.Sca
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.ScanClassroomEntry200JSONResponse{TeacherUserId: result.TeacherUserID, TeacherName: result.TeacherName, ScannedAt: h.clock.Now()}, nil
+	// ScannedAt is the classroom-entry business event time (analogous to a
+	// gate scan's domain event time), so it follows the simulated business
+	// clock -- unlike toAPIToken's use of h.clock.Now() below, which is
+	// display math over a token's real-time security expiry.
+	return api.ScanClassroomEntry200JSONResponse{TeacherUserId: result.TeacherUserID, TeacherName: result.TeacherName, ScannedAt: clock.Now(ctx, h.clock)}, nil
 }
 
 // Workflow definitions.
