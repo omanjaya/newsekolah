@@ -1,6 +1,16 @@
 "use client";
 
-import { EmptyState, Skeleton, domainIcons } from "@newsekolah/ui";
+import {
+  EmptyState,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  domainIcons,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -25,27 +35,23 @@ export function DdcClassesTab(): ReactElement {
   }
 
   return (
-    <div className="overflow-x-auto rounded-sm border border-border bg-surface md:h-full md:min-h-0 md:overflow-y-auto">
-      <table className="w-full text-[13px]">
-        <thead>
-          <tr className="bg-bg text-left text-fg-muted">
-            <th scope="col" className="w-24 px-3 py-2 font-medium">
-              {t("columns.code")}
-            </th>
-            <th scope="col" className="px-3 py-2 font-medium">
-              {t("columns.name")}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {items.map((item) => (
-            <tr key={item.code}>
-              <td className="px-3 py-2 font-medium tabular-nums text-fg">{item.code}</td>
-              <td className="px-3 py-2 text-fg">{item.name}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table containerClassName="md:h-full md:min-h-0 md:overflow-y-auto">
+      <TableHeader>
+        <TableRow>
+          <TableHead scope="col" className="w-24">
+            {t("columns.code")}
+          </TableHead>
+          <TableHead scope="col">{t("columns.name")}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {items.map((item) => (
+          <TableRow key={item.code}>
+            <TableCell className="font-medium tabular-nums">{item.code}</TableCell>
+            <TableCell>{item.name}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

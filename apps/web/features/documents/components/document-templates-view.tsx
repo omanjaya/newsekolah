@@ -9,6 +9,12 @@ import {
   EmptyState,
   PageHeader,
   Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
@@ -82,64 +88,54 @@ export function DocumentTemplatesView(): ReactElement {
           description={t("emptyBody")}
         />
       ) : (
-        <div className="overflow-x-auto rounded-sm border border-border bg-surface">
-          <table className="w-full min-w-[640px] text-[13px]">
-            <thead>
-              <tr className="bg-bg text-left text-fg-muted">
-                <th scope="col" className="border-b border-border px-3 py-2 font-medium">
-                  {t("columns.name")}
-                </th>
-                <th scope="col" className="border-b border-border px-3 py-2 font-medium">
-                  {t("columns.kind")}
-                </th>
-                <th scope="col" className="border-b border-border px-3 py-2 font-medium">
-                  {t("columns.status")}
-                </th>
-                <th scope="col" className="border-b border-border px-3 py-2 font-medium">
-                  {t("columns.actions")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {templates.map((template) => (
-                <tr key={template.id}>
-                  <td className="px-3 py-2 text-fg">{template.name}</td>
-                  <td className="px-3 py-2 text-fg-muted">{tKind(template.kind)}</td>
-                  <td className="px-3 py-2">
-                    {template.is_default && <Badge variant="accent">{t("default")}</Badge>}
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex gap-2">
-                      {canManage && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => {
-                            setEditing(template);
-                          }}
-                        >
-                          {t("edit")}
-                        </Button>
-                      )}
-                      {canManage && !template.is_default && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          loading={setDefault.isPending}
-                          onClick={() => {
-                            handleSetDefault(template.id);
-                          }}
-                        >
-                          {t("setDefault")}
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table className="min-w-[640px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">{t("columns.name")}</TableHead>
+              <TableHead scope="col">{t("columns.kind")}</TableHead>
+              <TableHead scope="col">{t("columns.status")}</TableHead>
+              <TableHead scope="col">{t("columns.actions")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {templates.map((template) => (
+              <TableRow key={template.id}>
+                <TableCell>{template.name}</TableCell>
+                <TableCell className="text-fg-muted">{tKind(template.kind)}</TableCell>
+                <TableCell>
+                  {template.is_default && <Badge variant="accent">{t("default")}</Badge>}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    {canManage && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setEditing(template);
+                        }}
+                      >
+                        {t("edit")}
+                      </Button>
+                    )}
+                    {canManage && !template.is_default && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        loading={setDefault.isPending}
+                        onClick={() => {
+                          handleSetDefault(template.id);
+                        }}
+                      >
+                        {t("setDefault")}
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       <Dialog

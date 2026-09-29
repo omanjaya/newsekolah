@@ -8,6 +8,12 @@ import {
   Input,
   PageHeader,
   Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -277,43 +283,33 @@ function LoansReportTable({ from, to }: { from: string; to: string }): ReactElem
           </li>
         ))}
       </ul>
-      <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
-        <table className="w-full min-w-[560px] text-[13px]">
-          <thead>
-            <tr className="bg-bg text-left text-fg-muted">
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.copy")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.member")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.borrowedAt")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.dueOn")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.status")}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+      <div className="hidden md:block">
+        <Table className="min-w-[560px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">{t("columns.copy")}</TableHead>
+              <TableHead scope="col">{t("columns.member")}</TableHead>
+              <TableHead scope="col">{t("columns.borrowedAt")}</TableHead>
+              <TableHead scope="col">{t("columns.dueOn")}</TableHead>
+              <TableHead scope="col">{t("columns.status")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {loans.map((row) => (
-              <tr key={row.loan.id}>
-                <td className="px-3 py-2 text-fg">{row.title}</td>
-                <td className="px-3 py-2 text-fg">{row.member_name}</td>
-                <td className="px-3 py-2 text-fg-muted">
+              <TableRow key={row.loan.id}>
+                <TableCell>{row.title}</TableCell>
+                <TableCell>{row.member_name}</TableCell>
+                <TableCell className="text-fg-muted">
                   {formatDate(row.loan.borrowed_at, { locale })}
-                </td>
-                <td className="px-3 py-2 text-fg-muted">
+                </TableCell>
+                <TableCell className="text-fg-muted">
                   {formatDate(row.loan.due_on, { locale })}
-                </td>
-                <td className="px-3 py-2 text-fg-muted">{statusLabel(row.loan.status)}</td>
-              </tr>
+                </TableCell>
+                <TableCell className="text-fg-muted">{statusLabel(row.loan.status)}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </>
   );
@@ -339,31 +335,25 @@ function OverdueMembersReportTable(): ReactElement {
           </li>
         ))}
       </ul>
-      <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
-        <table className="w-full min-w-[480px] text-[13px]">
-          <thead>
-            <tr className="bg-bg text-left text-fg-muted">
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.member")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.loanCount")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.fine")}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+      <div className="hidden md:block">
+        <Table className="min-w-[480px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">{t("columns.member")}</TableHead>
+              <TableHead scope="col">{t("columns.loanCount")}</TableHead>
+              <TableHead scope="col">{t("columns.fine")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {members.map((member) => (
-              <tr key={member.member_user_id}>
-                <td className="px-3 py-2 text-fg">{member.member_user_id}</td>
-                <td className="px-3 py-2 text-fg-muted">{member.loan_count}</td>
-                <td className="px-3 py-2 text-fg-muted">{member.total_fine}</td>
-              </tr>
+              <TableRow key={member.member_user_id}>
+                <TableCell>{member.member_user_id}</TableCell>
+                <TableCell className="text-fg-muted">{member.loan_count}</TableCell>
+                <TableCell className="text-fg-muted">{member.total_fine}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </>
   );
@@ -388,27 +378,23 @@ function MostBorrowedReportTable({ from, to }: { from: string; to: string }): Re
           </li>
         ))}
       </ul>
-      <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
-        <table className="w-full min-w-[480px] text-[13px]">
-          <thead>
-            <tr className="bg-bg text-left text-fg-muted">
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.title")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.loanCount")}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+      <div className="hidden md:block">
+        <Table className="min-w-[480px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">{t("columns.title")}</TableHead>
+              <TableHead scope="col">{t("columns.loanCount")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {titles.map((entry) => (
-              <tr key={entry.title.id}>
-                <td className="px-3 py-2 text-fg">{entry.title.title}</td>
-                <td className="px-3 py-2 text-fg-muted">{entry.loan_count}</td>
-              </tr>
+              <TableRow key={entry.title.id}>
+                <TableCell>{entry.title.title}</TableCell>
+                <TableCell className="text-fg-muted">{entry.loan_count}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </>
   );

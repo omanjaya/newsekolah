@@ -1,7 +1,19 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, Skeleton, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  Input,
+  Select,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  useToast,
+} from "@newsekolah/ui";
 import { Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -178,112 +190,110 @@ function TPMappingTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-sm border border-border">
-      <table className="w-full text-[13px]">
-        <thead>
-          <tr className="border-b border-border text-left text-fg-muted">
-            <th className="px-3 py-2 font-medium">{t("columns.component")}</th>
-            <th className="px-3 py-2 font-medium">{t("columns.exportCode")}</th>
-            <th className="px-3 py-2 font-medium">{t("columns.rRange")}</th>
-            <th className="px-3 py-2 font-medium">{t("columns.tRange")}</th>
-            <th className="px-3 py-2 font-medium">{t("columns.actions")}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {components.map((component) => {
-            const row = rows[component.id] ?? emptyRow();
-            const hasMapping = mappingByComponent.has(component.id);
-            return (
-              <tr key={component.id}>
-                <td className="px-3 py-2 text-fg">{component.code}</td>
-                <td className="px-3 py-2">
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>{t("columns.component")}</TableHead>
+          <TableHead>{t("columns.exportCode")}</TableHead>
+          <TableHead>{t("columns.rRange")}</TableHead>
+          <TableHead>{t("columns.tRange")}</TableHead>
+          <TableHead>{t("columns.actions")}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {components.map((component) => {
+          const row = rows[component.id] ?? emptyRow();
+          const hasMapping = mappingByComponent.has(component.id);
+          return (
+            <TableRow key={component.id}>
+              <TableCell>{component.code}</TableCell>
+              <TableCell>
+                <Input
+                  className="w-28"
+                  value={row.export_code}
+                  maxLength={32}
+                  onChange={(e) => {
+                    updateRow(component.id, { export_code: e.target.value });
+                  }}
+                />
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1">
                   <Input
-                    className="w-28"
-                    value={row.export_code}
-                    maxLength={32}
+                    className="w-16"
+                    type="number"
+                    aria-label={t("columns.rMin")}
+                    value={row.r_min}
                     onChange={(e) => {
-                      updateRow(component.id, { export_code: e.target.value });
+                      updateRow(component.id, { r_min: e.target.value });
                     }}
                   />
-                </td>
-                <td className="px-3 py-2">
-                  <div className="flex items-center gap-1">
-                    <Input
-                      className="w-16"
-                      type="number"
-                      aria-label={t("columns.rMin")}
-                      value={row.r_min}
-                      onChange={(e) => {
-                        updateRow(component.id, { r_min: e.target.value });
-                      }}
-                    />
-                    <span className="text-fg-muted">-</span>
-                    <Input
-                      className="w-16"
-                      type="number"
-                      aria-label={t("columns.rMax")}
-                      value={row.r_max}
-                      onChange={(e) => {
-                        updateRow(component.id, { r_max: e.target.value });
-                      }}
-                    />
-                  </div>
-                </td>
-                <td className="px-3 py-2">
-                  <div className="flex items-center gap-1">
-                    <Input
-                      className="w-16"
-                      type="number"
-                      aria-label={t("columns.tMin")}
-                      value={row.t_min}
-                      onChange={(e) => {
-                        updateRow(component.id, { t_min: e.target.value });
-                      }}
-                    />
-                    <span className="text-fg-muted">-</span>
-                    <Input
-                      className="w-16"
-                      type="number"
-                      aria-label={t("columns.tMax")}
-                      value={row.t_max}
-                      onChange={(e) => {
-                        updateRow(component.id, { t_max: e.target.value });
-                      }}
-                    />
-                  </div>
-                </td>
-                <td className="px-3 py-2">
-                  <div className="flex items-center gap-2">
+                  <span className="text-fg-muted">-</span>
+                  <Input
+                    className="w-16"
+                    type="number"
+                    aria-label={t("columns.rMax")}
+                    value={row.r_max}
+                    onChange={(e) => {
+                      updateRow(component.id, { r_max: e.target.value });
+                    }}
+                  />
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1">
+                  <Input
+                    className="w-16"
+                    type="number"
+                    aria-label={t("columns.tMin")}
+                    value={row.t_min}
+                    onChange={(e) => {
+                      updateRow(component.id, { t_min: e.target.value });
+                    }}
+                  />
+                  <span className="text-fg-muted">-</span>
+                  <Input
+                    className="w-16"
+                    type="number"
+                    aria-label={t("columns.tMax")}
+                    value={row.t_max}
+                    onChange={(e) => {
+                      updateRow(component.id, { t_max: e.target.value });
+                    }}
+                  />
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    loading={save.isPending}
+                    disabled={!row.export_code.trim()}
+                    onClick={() => {
+                      saveRow(component.id);
+                    }}
+                  >
+                    {t("save")}
+                  </Button>
+                  {hasMapping && (
                     <Button
                       size="sm"
-                      loading={save.isPending}
-                      disabled={!row.export_code.trim()}
+                      variant="secondary"
+                      icon={<Trash2 />}
+                      loading={remove.isPending}
                       onClick={() => {
-                        saveRow(component.id);
+                        deleteRow(component.id);
                       }}
                     >
-                      {t("save")}
+                      {t("remove")}
                     </Button>
-                    {hasMapping && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        icon={<Trash2 />}
-                        loading={remove.isPending}
-                        onClick={() => {
-                          deleteRow(component.id);
-                        }}
-                      >
-                        {t("remove")}
-                      </Button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
   );
 }

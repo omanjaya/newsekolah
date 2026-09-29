@@ -2,7 +2,15 @@
 
 import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { Skeleton } from "@newsekolah/ui";
+import {
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -23,50 +31,38 @@ export function ReportVisitsTable({ from, to }: { from: string; to: string }): R
     <div className="flex flex-col gap-6">
       <p className="text-[13px] text-fg-muted">{t("total", { count: data.total })}</p>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div className="overflow-x-auto rounded-sm border border-border bg-surface">
-          <table className="w-full min-w-[280px] text-[13px]">
-            <thead>
-              <tr className="bg-bg text-left text-fg-muted">
-                <th scope="col" className="px-3 py-2 font-medium">
-                  {t("columns.day")}
-                </th>
-                <th scope="col" className="px-3 py-2 font-medium">
-                  {t("columns.count")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {data.per_day.map((row) => (
-                <tr key={row.day}>
-                  <td className="px-3 py-2 text-fg">{formatDate(row.day, { locale })}</td>
-                  <td className="px-3 py-2 tabular-nums text-fg-muted">{row.count}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="overflow-x-auto rounded-sm border border-border bg-surface">
-          <table className="w-full min-w-[280px] text-[13px]">
-            <thead>
-              <tr className="bg-bg text-left text-fg-muted">
-                <th scope="col" className="px-3 py-2 font-medium">
-                  {t("columns.class")}
-                </th>
-                <th scope="col" className="px-3 py-2 font-medium">
-                  {t("columns.count")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {data.per_class.map((row) => (
-                <tr key={row.class_name}>
-                  <td className="px-3 py-2 text-fg">{row.class_name}</td>
-                  <td className="px-3 py-2 tabular-nums text-fg-muted">{row.count}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table className="min-w-[280px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">{t("columns.day")}</TableHead>
+              <TableHead scope="col">{t("columns.count")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.per_day.map((row) => (
+              <TableRow key={row.day}>
+                <TableCell>{formatDate(row.day, { locale })}</TableCell>
+                <TableCell className="tabular-nums text-fg-muted">{row.count}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <Table className="min-w-[280px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">{t("columns.class")}</TableHead>
+              <TableHead scope="col">{t("columns.count")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.per_class.map((row) => (
+              <TableRow key={row.class_name}>
+                <TableCell>{row.class_name}</TableCell>
+                <TableCell className="tabular-nums text-fg-muted">{row.count}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
