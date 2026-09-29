@@ -13,6 +13,7 @@ import {
   PageHeader,
   Textarea,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus, Trophy } from "lucide-react";
@@ -20,10 +21,11 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
-import { useDirectoryQuery } from "../../reference/api";
+import { useClassesQuery, useDirectoryQuery } from "../../reference/api";
 import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   type Achievement,
@@ -62,7 +64,9 @@ export function AchievementsView(): ReactElement {
   const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.activities.achievements");
   const canManage = useCan("manage_achievements");
-  const { data, isLoading } = useAchievementsQuery();
+  const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
+  const { data, isLoading } = useAchievementsQuery(undefined, classId || undefined);
+  const classes = useClassesQuery();
   const [editing, setEditing] = useState<Achievement | "new" | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Achievement | null>(null);
   const remove = useDeleteAchievementMutation();
@@ -70,6 +74,17 @@ export function AchievementsView(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
 
   const achievements = data?.data ?? [];
+  const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "class",
+      label: t("filters.class"),
+      value: classId,
+      onChange: setClassId,
+      options: classOptions,
+    },
+  ];
 
   const columns = useMemo<ColumnDef<Achievement>[]>(
     () => [
@@ -156,6 +171,11 @@ export function AchievementsView(): ReactElement {
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter=""
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.reset"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
+          }}
           isLoading={isLoading}
           getRowId={(item) => item.id}
           fillHeight

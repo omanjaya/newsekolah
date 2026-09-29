@@ -5,13 +5,13 @@ import {
   Badge,
   Button,
   ConfirmDialog,
-  Checkbox,
   DataTable,
   Dialog,
   DialogContent,
   EmptyState,
   PageHeader,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus, Users } from "lucide-react";
@@ -20,6 +20,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
@@ -39,7 +40,12 @@ export function ClubsView(): ReactElement {
   const t = useTranslations("app.activities.clubs");
   const canManage = useCan("manage_extracurriculars");
   const canManagePolicy = useCan("manage_settings");
-  const [includeInactive, setIncludeInactive] = useState(false);
+  const [includeInactiveParam, setIncludeInactiveParam] = useUrlState<"" | "true">(
+    "include_inactive",
+    ["", "true"],
+    "",
+  );
+  const includeInactive = includeInactiveParam === "true";
   const { data, isLoading } = useExtracurricularsQuery(includeInactive);
   const [editing, setEditing] = useState<Extracurricular | "new" | null>(null);
 
@@ -50,6 +56,19 @@ export function ClubsView(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
 
   const clubs = data?.data ?? [];
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "includeInactive",
+      label: t("includeInactive"),
+      value: includeInactiveParam,
+      onChange: (value) => {
+        setIncludeInactiveParam(value as "" | "true");
+      },
+      type: "boolean",
+      activeValue: "true",
+    },
+  ];
 
   const columns = useMemo<ColumnDef<Extracurricular>[]>(
     () => [
@@ -141,16 +160,7 @@ export function ClubsView(): ReactElement {
       <ActivitiesWorkspaceNav />
       <PageHeader eyebrow={t("eyebrow")} title={workspace("activities")} />
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="flex min-h-11 items-center gap-2 text-[13px] sm:min-h-0">
-          <Checkbox
-            checked={includeInactive}
-            onCheckedChange={(v) => {
-              setIncludeInactive(v === true);
-            }}
-          />
-          {t("includeInactive")}
-        </label>
+      <div className="flex flex-wrap items-center justify-end gap-2">
         {(canManage || canManagePolicy) && (
           <div className="grid w-full gap-2 sm:flex sm:w-auto">
             {canManagePolicy && (
@@ -192,6 +202,11 @@ export function ClubsView(): ReactElement {
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter=""
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.reset"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
+          }}
           isLoading={isLoading}
           getRowId={(item) => item.id}
           fillHeight
