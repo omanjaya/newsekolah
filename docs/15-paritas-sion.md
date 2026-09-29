@@ -139,6 +139,14 @@ Sisa dari pekerjaan ini: redesain layar per peran di web, sekitar 20 layar mobil
 - Simulasi sengaja aktif di production karena production saat ini hanya dipakai pemilik. Akun hasil migrasi `superadmin` dan `arimartana` juga memegang `super_admin`; perlu diputuskan apakah diturunkan.
 - Live di staging dan production (commit `2bf317e`).
 
+## Pembaruan 30 September: role testing, workspace, tabel, dan filter
+
+- **Role testing** (superadmin berpindah peran lewat sesi anak bercookie tersegel, 30 menit, tercatat di audit) dan **navigasi workspace** (sidebar per area, antrean izin gabungan) dari pemilik digabung ke main; bagian akun orang tua dibuang karena fitur itu sudah dihapus. Antrean izin gabungan memakai kartu bento dengan Setujui/Tolak langsung untuk izin terencana.
+- **Tabel**: `DataTable` kini berkepadatan lega (baris sekitar 52px, header berlatar lembut, tinggi mengikuti isi); komponen baru `Table` di `packages/ui` untuk tabel manual (gradebook sengaja `compact`); sembilan tabel manual lain diselaraskan.
+- **Filter**: `DataTableFilters` (pil filter, chip aktif, reset, tersimpan di URL) dipasang di katalog, anggota, pengguna, pelanggaran, SP, konseling BK, tamu, insiden, kegiatan, prestasi, pengumuman, audit log, dan pelanggaran perpustakaan, hanya memakai filter yang sudah didukung API. Audit layar lain: `docs/analysis/table-filters-audit-2026-09-30.md`. Belum ada jenis filter rentang tanggal.
+- Test e2e presensi kepala sekolah dilewati hanya pada 00.00-07.00 WITA, saat jadwal seed memang tidak punya kelas berjalan.
+- Live di staging dan production (commit `949968a`).
+
 ## Yang tersisa
 
 Diurutkan dari yang paling berdampak bagi pengguna.
