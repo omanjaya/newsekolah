@@ -1,6 +1,14 @@
 export { DataTable, selectionColumn, type DataTableProps } from "./data-table.js";
 export { DataTableStateProvider, type DataTableLocalState } from "./data-table-state.js";
 export {
+  DataTableFilters,
+  DEFAULT_DATA_TABLE_FILTERS_LABELS,
+  type DataTableFilterDef,
+  type DataTableFilterOption,
+  type DataTableFiltersLabels,
+  type DataTableFiltersProps,
+} from "./data-table-filters.js";
+export {
   DataTableToolbar,
   DEFAULT_TOOLBAR_LABELS,
   type DataTableToolbarLabels,

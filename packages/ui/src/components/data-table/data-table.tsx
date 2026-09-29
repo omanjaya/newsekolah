@@ -11,7 +11,6 @@ import {
   type RowSelectionState,
   type SortingState,
 } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -25,6 +24,8 @@ import { cn } from "../../utils/cn.js";
 
 import { DataTableCards } from "./data-table-cards.js";
 import { DataTableSearchEmptyState } from "./data-table-empty-state.js";
+import type { DataTableFilterDef, DataTableFiltersLabels } from "./data-table-filters.js";
+import { DataTableHead } from "./data-table-head.js";
 import { DataTablePagination, type DataTablePaginationLabels } from "./data-table-pagination.js";
 import { useDataTableState } from "./data-table-state.js";
 import {
@@ -61,6 +62,15 @@ export interface DataTableProps<TData> {
   rowSelection?: RowSelectionState;
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
   bulkActions?: ReactNode;
+  /**
+   * `normal` (default) is a comfortable row: ~52px min height, `px-4 py-3`
+   * cells, vertically centered content -- a table read at a glance, not
+   * one with rows barely taller than the buttons inside them. `compact`
+   * keeps the tighter ~40px row every screen had before this default
+   * changed, for a screen that genuinely relies on seeing more rows at
+   * once; the in-toolbar density toggle lets a reader switch between the
+   * two regardless of which one this prop (or its absence) picked.
+   */
   density?: "normal" | "compact";
   onDensityChange?: (density: "normal" | "compact") => void;
   storageKey?: string;
@@ -70,11 +80,18 @@ export interface DataTableProps<TData> {
   onRowActivate?: (row: TData) => void;
   toolbarLabels?: Partial<DataTableToolbarLabels>;
   paginationLabels?: Partial<DataTablePaginationLabels>;
+  /** Rendered in the toolbar next to the search box; see `DataTableFilters`. */
+  filters?: DataTableFilterDef[];
+  filtersLabels?: Partial<DataTableFiltersLabels>;
   /**
-   * Desktop-only viewport-fit mode: the table fills its flex parent's height
-   * and scrolls its rows internally under a sticky header, so the page around
-   * it never scrolls. The parent chain must pass height down (`min-h-0`
-   * flex). Mobile keeps the card list and normal document scroll.
+   * Desktop-only viewport-fit mode: the table's parent chain must pass
+   * height down (`min-h-0` flex) for this to do anything. The table area
+   * still sizes to its own rows first -- a short result list stays short,
+   * it does not stretch to fill the parent's height and leave a blank
+   * area below the last row. Only once the rows would be taller than the
+   * space the parent actually has does the header stick and the body
+   * scroll internally, so the page itself never scrolls. Mobile keeps the
+   * card list and normal document scroll.
    */
   fillHeight?: boolean;
   /**
@@ -94,7 +111,13 @@ export interface DataTableProps<TData> {
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_PAGINATION: PaginationState = { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE };
 
-const ROW_HEIGHT = { normal: "h-10", compact: "h-8" } as const;
+// `normal`'s row is a min-height, not a fixed one, so a cell that wraps (a
+// long title, a multi-line badge stack) still grows the row instead of
+// clipping it. `compact` keeps the exact row and cell padding every screen
+// had before `normal` became this roomy, for a table that deliberately
+// trades comfort for seeing more rows at once.
+const ROW_HEIGHT = { normal: "min-h-[52px]", compact: "h-10" } as const;
+const CELL_PADDING = { normal: "px-4 py-3", compact: "px-3" } as const;
 
 /**
  * A TanStack table for local rows, offset-paginated server rows, and cursor
@@ -126,6 +149,8 @@ export function DataTable<TData>({
   onRowActivate,
   toolbarLabels,
   paginationLabels,
+  filters,
+  filtersLabels,
   fillHeight,
   defaultPageSize,
 }: DataTableProps<TData>) {
@@ -312,6 +337,8 @@ export function DataTable<TData>({
         selectedCount={selectedCount}
         columnLabels={columnLabelsRef.current}
         labels={toolbarLabels}
+        filters={filters}
+        filtersLabels={filtersLabels}
       />
       {/*
         Below md the same rows render as cards: a table that only scrolls
@@ -337,7 +364,13 @@ export function DataTable<TData>({
       <div
         className={cn(
           "hidden overflow-x-auto rounded-lg border border-border bg-surface shadow-(--shadow-card) md:block",
-          fillHeight && "md:min-h-0 md:flex-1 md:overflow-y-auto",
+          // No `flex-1`: the card sizes to its own rows first, growing no
+          // taller than that. Only once that content would exceed the
+          // parent's available height does `max-h-full` cap it and the
+          // header stick while the body scrolls -- a short result list
+          // never stretches to fill the page and leave a blank area below
+          // the last row.
+          fillHeight && "md:min-h-0 md:max-h-full md:overflow-y-auto",
         )}
       >
         <table className="w-full border-collapse text-[13px] tabular-nums">
@@ -345,36 +378,7 @@ export function DataTable<TData>({
             With collapsed borders a sticky header's border-b does not stick,
             so the separator rides along as a shadow on the header itself.
           */}
-          <thead
-            className={cn(fillHeight && "sticky top-0 z-10 shadow-[0_1px_0_0_var(--color-line)]")}
-          >
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b border-line bg-bg">
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="px-3 text-left text-[12px] font-medium text-fg-muted"
-                    style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
-                  >
-                    {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                      <button
-                        type="button"
-                        className="flex items-center gap-1 py-2 hover:text-fg"
-                        onClick={header.column.getToggleSortingHandler()}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        <SortIcon direction={header.column.getIsSorted()} />
-                      </button>
-                    ) : (
-                      <span className="block py-2">
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                      </span>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
+          <DataTableHead table={table} fillHeight={fillHeight} density={density} />
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- rows use roving focus for j/k/Enter activation. */}
           <tbody onKeyDown={handleKeyDown}>
             {isLoading ? (
@@ -388,7 +392,7 @@ export function DataTable<TData>({
                   className={cn("animate-pulse border-b border-line", ROW_HEIGHT[density])}
                 >
                   {columns.map((_column, columnIndex) => (
-                    <td key={columnIndex} className="px-3">
+                    <td key={columnIndex} className={cn(CELL_PADDING[density], "align-middle")}>
                       <div
                         role="presentation"
                         className="h-4 w-full max-w-40 rounded-xs bg-border/60"
@@ -425,7 +429,7 @@ export function DataTable<TData>({
                   )}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-3">
+                    <td key={cell.id} className={cn(CELL_PADDING[density], "align-middle")}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
@@ -448,10 +452,4 @@ export function DataTable<TData>({
       )}
     </div>
   );
-}
-
-function SortIcon({ direction }: { direction: false | "asc" | "desc" }) {
-  if (direction === "asc") return <ArrowUp className="size-3.5" aria-hidden="true" />;
-  if (direction === "desc") return <ArrowDown className="size-3.5" aria-hidden="true" />;
-  return <ArrowUpDown className="size-3.5 opacity-40" aria-hidden="true" />;
 }

@@ -1,5 +1,5 @@
 import type { ColumnDef, PaginationState, SortingState } from "@tanstack/react-table";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -66,6 +66,30 @@ function LocalHarness({ data, defaultPageSize }: { data: Row[]; defaultPageSize?
       data={data}
       columns={columns}
       defaultPageSize={defaultPageSize}
+      emptyState={<EmptyState title="Belum ada data" />}
+    />
+  );
+}
+
+function DensityHarness({ density }: { density?: "normal" | "compact" }) {
+  return (
+    <DataTable
+      mode="local"
+      data={ROWS}
+      columns={columns}
+      density={density}
+      emptyState={<EmptyState title="Belum ada data" />}
+    />
+  );
+}
+
+function FillHeightHarness({ data }: { data: Row[] }) {
+  return (
+    <DataTable
+      mode="local"
+      data={data}
+      columns={columns}
+      fillHeight
       emptyState={<EmptyState title="Belum ada data" />}
     />
   );
@@ -295,6 +319,29 @@ describe("DataTable", () => {
     );
   });
 
+  it("renders filters in the toolbar next to the search box", () => {
+    const onChange = vi.fn();
+    render(
+      <DataTable
+        mode="local"
+        data={ROWS}
+        columns={columns}
+        filters={[
+          {
+            id: "type",
+            label: "Jenis",
+            value: "",
+            onChange,
+            options: [{ value: "a", label: "A" }],
+          },
+        ]}
+        emptyState={<EmptyState title="Belum ada data" />}
+      />,
+    );
+    expect(screen.getByRole("searchbox", { name: "Cari" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Jenis" })).toBeInTheDocument();
+  });
+
   it("provides select all for mobile cards", () => {
     render(<SelectionHarness />);
     expect(screen.getAllByLabelText("Pilih semua baris").length).toBeGreaterThan(1);
@@ -368,6 +415,36 @@ describe("DataTable", () => {
     if (!finalRow) throw new Error("Final row is missing");
     view.rerender(<AsyncRememberedHarness data={[finalRow]} isLoading={false} />);
     expect(screen.getAllByText("Siti Aminah").length).toBeGreaterThan(0);
+  });
+
+  it("renders a comfortable row by default: min-height and generous cell padding", () => {
+    render(<DensityHarness />);
+    const [, firstRow] = screen.getAllByRole("row");
+    if (!firstRow) throw new Error("Missing table row");
+    expect(firstRow).toHaveClass("min-h-[52px]");
+    const [, firstCell] = within(firstRow).getAllByRole("cell");
+    if (!firstCell) throw new Error("Missing table cell");
+    expect(firstCell).toHaveClass("px-4", "py-3", "align-middle");
+  });
+
+  it("keeps the tighter row when density=compact is passed explicitly", () => {
+    render(<DensityHarness density="compact" />);
+    const [, firstRow] = screen.getAllByRole("row");
+    if (!firstRow) throw new Error("Missing table row");
+    expect(firstRow).toHaveClass("h-10");
+    const [, firstCell] = within(firstRow).getAllByRole("cell");
+    if (!firstCell) throw new Error("Missing table cell");
+    expect(firstCell).toHaveClass("px-3");
+  });
+
+  it("does not force the fillHeight table area to fill its parent when rows are few", () => {
+    render(<FillHeightHarness data={ROWS} />);
+    const wrapper = screen.getByRole("table").parentElement;
+    if (!wrapper) throw new Error("Missing table wrapper");
+    // No flex-1 (which would force it to grow to the parent's full height
+    // regardless of content): it only ever caps at that height.
+    expect(wrapper.className).not.toMatch(/flex-1/);
+    expect(wrapper).toHaveClass("md:max-h-full", "md:overflow-y-auto");
   });
 
   it("does not expose remembered state across scopes", () => {

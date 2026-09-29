@@ -13,6 +13,12 @@ import { IconButton } from "../icon-button.js";
 import { SearchInput } from "../search-input.js";
 import { useUiLabels } from "../ui-labels.js";
 
+import {
+  DataTableFilters,
+  type DataTableFilterDef,
+  type DataTableFiltersLabels,
+} from "./data-table-filters.js";
+
 export interface DataTableToolbarLabels {
   searchPlaceholder: string;
   columns: string;
@@ -57,6 +63,9 @@ export interface DataTableToolbarProps<TData> {
   selectedCount: number;
   columnLabels: Record<string, ReactNode>;
   labels?: Partial<DataTableToolbarLabels>;
+  /** Rendered next to the search box, front page-level filters through `DataTableFilters`. */
+  filters?: DataTableFilterDef[];
+  filtersLabels?: Partial<DataTableFiltersLabels>;
 }
 
 export function DataTableToolbar<TData>({
@@ -70,6 +79,8 @@ export function DataTableToolbar<TData>({
   selectedCount,
   columnLabels,
   labels: labelsOverride,
+  filters,
+  filtersLabels,
 }: DataTableToolbarProps<TData>) {
   const labels = { ...DEFAULT_TOOLBAR_LABELS, ...labelsOverride };
   const uiLabels = useUiLabels();
@@ -88,18 +99,23 @@ export function DataTableToolbar<TData>({
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
-      {showSearch && (
-        <SearchInput
-          value={localSearch}
-          onChange={(event) => {
-            setLocalSearch(event.target.value);
-            onSearchChange(event.target.value);
-          }}
-          placeholder={labels.searchPlaceholder}
-          aria-label={labels.searchPlaceholder}
-          className="w-full max-w-sm"
-        />
-      )}
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+        {showSearch && (
+          <SearchInput
+            value={localSearch}
+            onChange={(event) => {
+              setLocalSearch(event.target.value);
+              onSearchChange(event.target.value);
+            }}
+            placeholder={labels.searchPlaceholder}
+            aria-label={labels.searchPlaceholder}
+            className="w-full max-w-sm"
+          />
+        )}
+        {filters && filters.length > 0 && (
+          <DataTableFilters filters={filters} labels={filtersLabels} />
+        )}
+      </div>
       <div className="flex items-center gap-1">
         <IconButton
           icon={<Rows3 />}

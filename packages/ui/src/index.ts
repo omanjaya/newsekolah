@@ -119,10 +119,16 @@ export {
 export { QrPanel, type QrPanelProps } from "./components/qr-panel.js";
 export {
   DataTable,
+  DataTableFilters,
   DataTablePagination,
   DataTableToolbar,
   DataTableStateProvider,
+  DEFAULT_DATA_TABLE_FILTERS_LABELS,
   selectionColumn,
+  type DataTableFilterDef,
+  type DataTableFilterOption,
+  type DataTableFiltersLabels,
+  type DataTableFiltersProps,
   type DataTableLocalState,
   type DataTableProps,
 } from "./components/data-table/index.js";
