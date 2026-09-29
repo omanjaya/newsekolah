@@ -697,6 +697,12 @@
           "title": "Pelanggaran",
           "empty": "Tidak ada jenis pelanggaran."
         }
+      },
+      "editor": {
+        "timeRange": "Jam {start}-{end}",
+        "saveSummary": "{total} siswa · {changed} diubah dari hadir",
+        "recapSummary": "Tahun ini: {summary}",
+        "recapAllClear": "Tahun ini: tidak ada catatan."
       }
     },
     "homeroom": {

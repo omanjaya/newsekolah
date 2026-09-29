@@ -9,20 +9,34 @@ import { statusToken } from "../lib/status-tokens";
 
 type AttendanceStatus = SessionDetail["statuses"][number];
 
-const CHIP_ACTIVE_CLASS: Record<StatusName, string> = {
-  present: "border-status-present bg-status-present/15 text-status-present-fg",
-  sick: "border-status-sick bg-status-sick/15 text-status-sick-fg",
-  excused: "border-status-excused bg-status-excused/15 text-status-excused-fg",
-  dispensation: "border-status-dispensation bg-status-dispensation/15 text-status-dispensation-fg",
-  absent: "border-status-absent bg-status-absent/15 text-status-absent-fg",
-  late: "border-status-late bg-status-late/15 text-status-late-fg",
+// Full class names so Tailwind's scanner generates them (module-level static
+// maps, same approach as `attendance-status-radio-group.tsx`).
+const TILE_TONE_CLASS: Record<StatusName, string> = {
+  present: "border-status-present/30 bg-status-present/10 text-status-present-fg",
+  sick: "border-status-sick/30 bg-status-sick/10 text-status-sick-fg",
+  excused: "border-status-excused/30 bg-status-excused/10 text-status-excused-fg",
+  dispensation:
+    "border-status-dispensation/30 bg-status-dispensation/10 text-status-dispensation-fg",
+  absent: "border-status-absent/30 bg-status-absent/10 text-status-absent-fg",
+  late: "border-status-late/30 bg-status-late/10 text-status-late-fg",
+};
+
+const TILE_RING_CLASS: Record<StatusName, string> = {
+  present: "ring-status-present",
+  sick: "ring-status-sick",
+  excused: "ring-status-excused",
+  dispensation: "ring-status-dispensation",
+  absent: "ring-status-absent",
+  late: "ring-status-late",
 };
 
 /**
- * Per-status counts as a sticky chip row: tapping a chip filters the
- * roster to that status, and a second tap clears it. Replaces the old
- * "hanya yang tidak hadir" switch -- any status (including "Hadir") can
- * now be isolated, which a single not-present toggle could not do.
+ * Per-status counts as a row of equal bento tiles (docs/07-ui-ux.md
+ * "Hijau Segar"), replacing the old horizontally-scrolling chip row: five
+ * status tiles fit one screen without a swipe, and the count reads as a
+ * number (Manrope), not a small badge next to a label. Tapping a tile
+ * filters the roster to that status, a second tap clears it -- same
+ * behaviour as the chips this replaces, including "Hadir" itself.
  */
 export function AttendanceStatusFilterChips({
   statuses,
@@ -37,20 +51,11 @@ export function AttendanceStatusFilterChips({
 }): ReactElement {
   const t = useTranslations("app.attendance.session");
   return (
-    // One horizontally scrollable line on a phone (flex-wrap would make
-    // this bar two lines tall, eating into the roster's scroll budget)
-    // with snap points so a swipe lands on a whole chip, and the
-    // scrollbar hidden since touch scrolling doesn't need a visible one.
-    // The caller's own sticky wrapper already bleeds to the screen edge
-    // and pads back, so this only needs to fill that width.
     <div
       role="group"
       aria-label={t("filterByStatus")}
-      className={cn(
-        "flex snap-x snap-mandatory gap-2 overflow-x-auto py-0.5",
-        "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-        "md:flex-wrap md:overflow-visible",
-      )}
+      className="grid gap-1.5 md:gap-2"
+      style={{ gridTemplateColumns: `repeat(${statuses.length}, minmax(0, 1fr))` }}
     >
       {statuses.map((status) => {
         const selected = active.has(status.code);
@@ -60,22 +65,34 @@ export function AttendanceStatusFilterChips({
             key={status.code}
             type="button"
             aria-pressed={selected}
+            title={status.label}
             onClick={() => {
               onToggle(status.code);
             }}
-            style={token ? undefined : { borderColor: status.color, color: status.color }}
-            className={cn(
-              "flex min-h-8 shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] font-medium transition-colors",
+            style={
               token
-                ? selected
-                  ? CHIP_ACTIVE_CLASS[token]
-                  : "border-border text-fg-muted hover:bg-bg"
-                : undefined,
-              selected && !token && "bg-bg",
+                ? undefined
+                : selected
+                  ? {
+                      backgroundColor: `color-mix(in srgb, ${status.color} 10%, transparent)`,
+                      borderColor: status.color,
+                      color: status.color,
+                    }
+                  : { borderColor: status.color, color: status.color }
+            }
+            className={cn(
+              "flex min-h-[64px] flex-col items-center justify-center gap-0.5 rounded-lg border p-1.5 text-center transition-colors",
+              token ? TILE_TONE_CLASS[token] : undefined,
+              selected &&
+                (token
+                  ? cn("ring-2 ring-offset-1", TILE_RING_CLASS[token])
+                  : "ring-2 ring-offset-1 ring-accent"),
             )}
           >
-            <span>{status.label}</span>
-            <span className="tabular-nums">{counts[status.code] ?? 0}</span>
+            <span className="font-heading text-[18px] leading-none font-bold tabular-nums md:text-[20px]">
+              {counts[status.code] ?? 0}
+            </span>
+            <span className="truncate text-[11px] font-medium">{status.label}</span>
           </button>
         );
       })}

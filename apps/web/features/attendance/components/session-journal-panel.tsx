@@ -1,5 +1,6 @@
 "use client";
 
+import { Card, CardContent } from "@newsekolah/ui";
 import type { ReactElement } from "react";
 
 import { JournalFields } from "../../journal/components/journal-fields";
@@ -32,17 +33,19 @@ export function SessionJournalPanel({
   onReflectionChange: (value: string) => void;
 }): ReactElement {
   return (
-    <section className="rounded-sm border border-border bg-surface p-4">
-      <JournalFields
-        previousTopic={previousTopic}
-        topic={topic}
-        activities={activities}
-        reflection={reflection}
-        disabled={disabled}
-        onTopicChange={onTopicChange}
-        onActivitiesChange={onActivitiesChange}
-        onReflectionChange={onReflectionChange}
-      />
-    </section>
+    <Card>
+      <CardContent className="p-4 md:p-5">
+        <JournalFields
+          previousTopic={previousTopic}
+          topic={topic}
+          activities={activities}
+          reflection={reflection}
+          disabled={disabled}
+          onTopicChange={onTopicChange}
+          onActivitiesChange={onActivitiesChange}
+          onReflectionChange={onReflectionChange}
+        />
+      </CardContent>
+    </Card>
   );
 }
