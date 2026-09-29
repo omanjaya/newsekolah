@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
 
-import { type LibraryTitle, useOpacTitlesQuery } from "../api";
+import { type LibraryTitle } from "../api";
+import { useOpacTitlesQuery } from "../opac-api";
 
 /** Search-and-pick a title from the public catalogue, for a member's own reservation request. */
 export function MyLibraryTitlePicker({

@@ -56,6 +56,17 @@
     "addTitle": "Add title",
     "browseCopies": "Browse copies",
     "exportCatalogue": "Export catalogue (XLSX)",
+    "more": "More",
+    "filters": {
+      "materialType": "Material type",
+      "classification": "Classification",
+      "availability": "Available only",
+      "sort": "Sort",
+      "sortTitle": "Title A-Z",
+      "sortNewest": "Newest",
+      "reset": "Reset filters",
+      "removeFilter": "Remove {label} filter"
+    },
     "columns": {
       "title": "Title",
       "author": "Author",
@@ -384,8 +395,10 @@
       "statusAll": "All statuses",
       "type": "Member type",
       "typeAll": "All types",
-      "clear": "Clear filters"
+      "clear": "Clear filters",
+      "removeFilter": "Remove {label} filter"
     },
+    "more": "More",
     "status": {
       "pending": "Pending",
       "active": "Active",

@@ -56,6 +56,17 @@
     "addTitle": "Tambah judul",
     "browseCopies": "Jelajahi eksemplar",
     "exportCatalogue": "Ekspor katalog (XLSX)",
+    "more": "Lainnya",
+    "filters": {
+      "materialType": "Jenis bahan",
+      "classification": "Klasifikasi",
+      "availability": "Hanya tersedia",
+      "sort": "Urutkan",
+      "sortTitle": "Judul A-Z",
+      "sortNewest": "Terbaru",
+      "reset": "Reset filter",
+      "removeFilter": "Hapus filter {label}"
+    },
     "columns": {
       "title": "Judul",
       "author": "Penulis",
@@ -384,8 +395,10 @@
       "statusAll": "Semua status",
       "type": "Jenis anggota",
       "typeAll": "Semua jenis",
-      "clear": "Bersihkan filter"
+      "clear": "Bersihkan filter",
+      "removeFilter": "Hapus filter {label}"
     },
+    "more": "Lainnya",
     "status": {
       "pending": "Menunggu",
       "active": "Aktif",

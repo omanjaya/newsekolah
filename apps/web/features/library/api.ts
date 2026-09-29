@@ -22,7 +22,6 @@ export type LibraryPolicy = components["schemas"]["LibraryPolicy"];
 export type LibraryPolicyWrite = components["schemas"]["LibraryPolicyWrite"];
 export type LibraryOverdueMember = components["schemas"]["LibraryOverdueMember"];
 export type LibraryMostBorrowedTitle = components["schemas"]["LibraryMostBorrowedTitle"];
-export type LibraryOpacTitleDetail = components["schemas"]["LibraryOpacTitleDetail"];
 
 /**
  * Query keys local to this feature, all under `["library", ...]` so a
@@ -39,8 +38,6 @@ const keys = {
   loanRenewals: (loanId: string) => ["library", "loans", loanId, "renewals"] as const,
   memberLoans: (userId: string) => ["library", "members", userId, "loans"] as const,
   memberReservations: (userId: string) => ["library", "members", userId, "reservations"] as const,
-  opac: (search: string) => ["library", "opac", search] as const,
-  opacTitle: (titleId: string) => ["library", "opac", "titles", titleId] as const,
 };
 
 function useInvalidateLibrary() {
@@ -68,12 +65,43 @@ export function useUpdateLibraryPolicyMutation() {
 
 // Catalogue.
 
-export function useLibraryTitlesQuery(search: string) {
+export interface LibraryTitlesQueryParams {
+  search?: string;
+  materialTypeId?: string;
+  ddcClass?: string;
+  availability?: "available" | "";
+  sort?: "title" | "newest" | "";
+  limit?: number;
+  offset?: number;
+}
+
+export function useLibraryTitlesQuery(params: LibraryTitlesQueryParams) {
   const client = useApiClient();
+  const search = params.search === "" ? undefined : params.search;
+  const materialTypeId = params.materialTypeId === "" ? undefined : params.materialTypeId;
+  const ddcClass = params.ddcClass === "" ? undefined : params.ddcClass;
+  const availability = params.availability === "" ? undefined : params.availability;
+  const sort = params.sort === "" ? undefined : params.sort;
   return useQuery({
-    queryKey: keys.titles(search),
+    queryKey: keys.titles(
+      [materialTypeId, ddcClass, availability, sort, params.limit, params.offset, search]
+        .map((value) => value ?? "")
+        .join(":"),
+    ),
     queryFn: () =>
-      client.GET("/v1/library/titles", { params: { query: { search: search || undefined } } }),
+      client.GET("/v1/library/titles", {
+        params: {
+          query: {
+            search,
+            material_type_id: materialTypeId,
+            ddc_class: ddcClass,
+            availability,
+            sort,
+            limit: params.limit,
+            offset: params.offset,
+          },
+        },
+      }),
   });
 }
 
@@ -453,41 +481,5 @@ export function downloadLibraryCatalogueExportXlsx(): Promise<void> {
   return downloadPDF("/v1/library/catalogue/export.xlsx", "katalog-perpustakaan.xlsx");
 }
 
-// Public OPAC.
-
-export function useOpacTitlesQuery(search: string) {
-  const client = useApiClient();
-  return useQuery({
-    queryKey: keys.opac(search),
-    queryFn: () =>
-      client.GET("/v1/opac/titles", { params: { query: { search: search || undefined } } }),
-  });
-}
-
-/**
- * GET /v1/opac/titles/{titleId}: public title detail with its visible
- * copies (no session required), for the OPAC title detail page.
- */
-export function useOpacTitleQuery(titleId: string) {
-  const client = useApiClient();
-  return useQuery({
-    queryKey: keys.opacTitle(titleId),
-    queryFn: () => client.GET("/v1/opac/titles/{titleId}", { params: { path: { titleId } } }),
-    enabled: Boolean(titleId),
-  });
-}
-
-export type OpacHighlights = components["schemas"]["LibraryOpacHighlights"];
-
-/**
- * GET /v1/opac/highlights: newest and most-borrowed titles for the OPAC
- * landing page, plus the library's own display name. Public (x-public:
- * true, no security requirement), so it loads before any session exists.
- */
-export function useOpacHighlightsQuery() {
-  const client = useApiClient();
-  return useQuery({
-    queryKey: ["library", "opac", "highlights"] as const,
-    queryFn: () => client.GET("/v1/opac/highlights"),
-  });
-}
+// Public OPAC: see opac-api.ts (split out to keep this file under the
+// lint line-count limit).

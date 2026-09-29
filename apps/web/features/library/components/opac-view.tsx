@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
-import { useOpacTitlesQuery } from "../api";
+import { useOpacTitlesQuery } from "../opac-api";
 
 import { OpacHighlights } from "./opac-highlights";
 

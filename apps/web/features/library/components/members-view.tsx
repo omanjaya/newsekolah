@@ -10,20 +10,25 @@ import {
   DataTable,
   Dialog,
   DialogContent,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   EmptyState,
   PageHeader,
   RowActionsMenu,
-  Select,
   selectionColumn,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CreditCard, Plus, Printer, UsersRound } from "lucide-react";
+import { ChevronDown, CreditCard, Plus, Printer, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
@@ -38,25 +43,29 @@ import {
 } from "../members-api";
 import { useOrderedSelection } from "../use-ordered-selection";
 
-import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { MemberBulkRegisterDialog } from "./member-bulk-register-dialog";
 import { MemberCardPrintBar } from "./member-card-print-bar";
 import { MemberRegisterForm } from "./member-register-form";
 
 const STATUSES: LibraryMemberStatus[] = ["pending", "active", "inactive", "suspended", "cleared"];
+const STATUS_VALUES = ["", ...STATUSES] as const;
 
 export function MembersView(): ReactElement {
   const t = useTranslations("app.library.members");
   const tMemberCards = useTranslations("app.library.memberCards");
+  const tWorkspace = useTranslations("app.library.workspace");
   const locale = useLocale() as Locale;
   const toast = useToast();
   const canManage = useCan("manage_library_members");
+  const canSettings = useCan("manage_library_settings");
+  const canReport = useCan("view_library_reports");
 
-  const [status, setStatus] = useRememberedViewState<LibraryMemberStatus | "">(
-    "members-status",
+  const [status, setStatus] = useUrlState<(typeof STATUS_VALUES)[number]>(
+    "status",
+    STATUS_VALUES,
     "",
   );
-  const [memberTypeId, setMemberTypeId] = useRememberedViewState("members-type", "");
+  const [memberTypeId, setMemberTypeId] = useUrlState<string>("member_type", () => true, "");
   const [search, setSearch] = useRememberedViewState("members-search", "");
   const [registering, setRegistering] = useState(false);
   const [bulkRegistering, setBulkRegistering] = useState(false);
@@ -77,6 +86,25 @@ export function MembersView(): ReactElement {
     value: mt.id,
     label: mt.name,
   }));
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "status",
+      label: t("filters.status"),
+      value: status,
+      onChange: (value) => {
+        setStatus(value as (typeof STATUS_VALUES)[number]);
+      },
+      options: STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) })),
+    },
+    {
+      id: "type",
+      label: t("filters.type"),
+      value: memberTypeId,
+      onChange: setMemberTypeId,
+      options: typeOptions,
+    },
+  ];
 
   const columns = useMemo<ColumnDef<LibraryMember>[]>(
     () => [
@@ -153,72 +181,56 @@ export function MembersView(): ReactElement {
     // filter row and header actions stay put. See school/users-view.tsx for
     // the reference pattern.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          canManage && (
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  setBulkRegistering(true);
-                }}
-              >
-                {t("bulkRegister.title")}
-              </Button>
-              <Button
-                size="sm"
-                icon={<Plus />}
-                onClick={() => {
-                  setRegistering(true);
-                }}
-              >
-                {t("register")}
-              </Button>
-            </div>
-          )
-        }
-      />
-      <LibraryWorkspaceNav area="members" />
-
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("filters.status")}</span>
-          <Select
-            options={STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) }))}
-            value={status}
-            onValueChange={(v) => {
-              setStatus(v as LibraryMemberStatus);
-            }}
-            placeholder={t("filters.statusAll")}
-            className="w-44"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("filters.type")}</span>
-          <Select
-            options={typeOptions}
-            value={memberTypeId}
-            onValueChange={setMemberTypeId}
-            placeholder={t("filters.typeAll")}
-            className="w-48"
-          />
-        </label>
-        {(status !== "" || memberTypeId !== "") && (
-          <button
-            type="button"
-            className="text-[13px] text-accent underline underline-offset-2"
+      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {canManage && (
+          <Button
+            size="sm"
+            variant="secondary"
             onClick={() => {
-              setStatus("");
-              setMemberTypeId("");
+              setBulkRegistering(true);
             }}
           >
-            {t("filters.clear")}
-          </button>
+            {t("bulkRegister.title")}
+          </Button>
         )}
-        {memberTypeId !== "" && (
+        {canManage && (
+          <Button
+            size="sm"
+            icon={<Plus />}
+            onClick={() => {
+              setRegistering(true);
+            }}
+          >
+            {t("register")}
+          </Button>
+        )}
+        {(canSettings || canReport) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="secondary">
+                {t("more")}
+                <ChevronDown aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {canSettings && (
+                <DropdownMenuItem asChild>
+                  <Link href="/library/member-types">{tWorkspace("loanSettings")}</Link>
+                </DropdownMenuItem>
+              )}
+              {canReport && (
+                <DropdownMenuItem asChild>
+                  <Link href="/library/reports?tab=members">{tWorkspace("report")}</Link>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+
+      {memberTypeId !== "" && (
+        <div className="flex justify-end">
           <Button
             size="sm"
             variant="secondary"
@@ -241,8 +253,8 @@ export function MembersView(): ReactElement {
           >
             {tMemberCards("printFiltered")}
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       <MemberCardPrintBar selectedIds={orderedIds} onClear={clear} />
 
@@ -259,6 +271,11 @@ export function MembersView(): ReactElement {
           globalFilter={search}
           onGlobalFilterChange={setSearch}
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.clear"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
+          }}
           isLoading={isLoading}
           rowSelection={selection}
           onRowSelectionChange={onSelectionChange}

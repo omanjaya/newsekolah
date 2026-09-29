@@ -53,7 +53,10 @@ const policy: LibraryPolicy = {
   auto_register_members: false,
 };
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/library/catalogue" }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/library/catalogue",
+  useSearchParams: () => new URLSearchParams(),
+}));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));

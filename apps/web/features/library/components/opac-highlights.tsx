@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
-import { useOpacHighlightsQuery } from "../api";
+import { useOpacHighlightsQuery } from "../opac-api";
 
 /**
  * Newest arrivals and most-borrowed titles on the OPAC landing page

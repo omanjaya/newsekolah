@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
-import { useOpacTitleQuery } from "../api";
+import { useOpacTitleQuery } from "../opac-api";
 
 /**
  * Public title detail with its visible copies, no session required.

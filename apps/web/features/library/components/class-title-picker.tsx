@@ -32,7 +32,7 @@ export function ClassTitlePicker({
     };
   }, [query]);
 
-  const { data } = useLibraryTitlesQuery(debounced);
+  const { data } = useLibraryTitlesQuery({ search: debounced });
   const results = debounced.trim().length >= 2 ? (data?.data ?? []) : [];
 
   if (selected) {

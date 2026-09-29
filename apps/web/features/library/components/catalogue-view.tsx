@@ -7,19 +7,25 @@ import {
   DataTable,
   Dialog,
   DialogContent,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   EmptyState,
   PageHeader,
   RowActionsMenu,
   domainIcons,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { BookOpen, Pencil, Plus, Trash2 } from "lucide-react";
+import { BookOpen, ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import {
@@ -28,23 +34,96 @@ import {
   useDeleteLibraryTitleMutation,
   useLibraryTitlesQuery,
 } from "../api";
+import { useLibraryCatalogueOptionsQuery } from "../master-data-api";
 import { useLibraryErrorMessage } from "../use-library-error-message";
 
-import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { TitleForm } from "./title-form";
+
+const AVAILABILITY_VALUES = ["", "available"] as const;
+const SORT_VALUES = ["", "newest"] as const;
 
 export function CatalogueView(): ReactElement {
   const t = useTranslations("app.library.catalogue");
+  const tWorkspace = useTranslations("app.library.workspace");
   const toast = useToast();
   const libraryErrorMessage = useLibraryErrorMessage();
   const canManage = useCan("manage_library_catalog");
+  const canView = useCan("view_library");
+  const canReport = useCan("view_library_reports");
   const [search, setSearch] = useRememberedViewState("catalogue-search", "");
+  const [materialTypeId, setMaterialTypeId] = useUrlState<string>("material_type", () => true, "");
+  const [ddcClass, setDdcClass] = useUrlState<string>("ddc_class", () => true, "");
+  const [availability, setAvailability] = useUrlState<(typeof AVAILABILITY_VALUES)[number]>(
+    "availability",
+    AVAILABILITY_VALUES,
+    "",
+  );
+  const [sort, setSort] = useUrlState<(typeof SORT_VALUES)[number]>("sort", SORT_VALUES, "");
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<LibraryTitle | null>(null);
   const [deleting, setDeleting] = useState<LibraryTitle | null>(null);
-  const { data, isLoading } = useLibraryTitlesQuery(search);
+  const { data, isLoading } = useLibraryTitlesQuery({
+    search,
+    materialTypeId,
+    ddcClass,
+    availability,
+    sort,
+  });
+  const catalogueOptions = useLibraryCatalogueOptionsQuery();
   const deleteTitle = useDeleteLibraryTitleMutation();
   const titles = data?.data ?? [];
+
+  const materialTypeOptions = (catalogueOptions.data?.material_types ?? []).map((type) => ({
+    value: type.id,
+    label: type.name,
+  }));
+  const ddcOptions = (catalogueOptions.data?.ddc_classes ?? []).map((ddc) => ({
+    value: ddc.code,
+    label: `${ddc.code} — ${ddc.name}`,
+  }));
+
+  // The table always shows the catalogue's first page (`pagination` below
+  // is a fixed `{ pageIndex: 0, ... }`, not wired to a real offset
+  // control), so a filter change already lands on page one without an
+  // explicit reset -- there is no further-along page state to clear.
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "materialType",
+      label: t("filters.materialType"),
+      value: materialTypeId,
+      onChange: setMaterialTypeId,
+      options: materialTypeOptions,
+    },
+    {
+      id: "classification",
+      label: t("filters.classification"),
+      value: ddcClass,
+      onChange: setDdcClass,
+      options: ddcOptions,
+    },
+    {
+      id: "availability",
+      label: t("filters.availability"),
+      value: availability,
+      onChange: (value) => {
+        setAvailability(value as (typeof AVAILABILITY_VALUES)[number]);
+      },
+      type: "boolean",
+      activeValue: "available",
+    },
+    {
+      id: "sort",
+      label: t("filters.sort"),
+      value: sort,
+      onChange: (value) => {
+        setSort(value as (typeof SORT_VALUES)[number]);
+      },
+      options: [
+        { value: "", label: t("filters.sortTitle") },
+        { value: "newest", label: t("filters.sortNewest") },
+      ],
+    },
+  ];
 
   const columns = useMemo<ColumnDef<LibraryTitle>[]>(
     () => [
@@ -111,30 +190,78 @@ export function CatalogueView(): ReactElement {
     // pattern.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <LibraryWorkspaceNav area="catalogue" />
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        {canManage && (
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => {
-              void downloadLibraryCatalogueExportXlsx();
-            }}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <nav
+          aria-label={tWorkspace("catalogue")}
+          className="inline-flex w-fit items-center gap-1 rounded-full bg-bg p-1"
+        >
+          <Link
+            href="/library/catalogue"
+            aria-current="page"
+            className="flex h-11 items-center justify-center rounded-full bg-surface px-4 text-[13px] font-medium text-fg shadow-(--shadow-card) md:h-8"
           >
-            {t("exportCatalogue")}
-          </Button>
-        )}
-        {canManage && (
-          <Button
-            size="sm"
-            icon={<Plus />}
-            onClick={() => {
-              setAdding(true);
-            }}
+            {tWorkspace("titles")}
+          </Link>
+          <Link
+            href="/library/copies"
+            className="flex h-11 items-center justify-center rounded-full px-4 text-[13px] font-medium text-fg-muted hover:text-fg md:h-8"
           >
-            {t("addTitle")}
-          </Button>
-        )}
+            {tWorkspace("copies")}
+          </Link>
+        </nav>
+        <div className="flex flex-wrap items-center gap-2">
+          {canManage && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                void downloadLibraryCatalogueExportXlsx();
+              }}
+            >
+              {t("exportCatalogue")}
+            </Button>
+          )}
+          {canManage && (
+            <Button
+              size="sm"
+              icon={<Plus />}
+              onClick={() => {
+                setAdding(true);
+              }}
+            >
+              {t("addTitle")}
+            </Button>
+          )}
+          {(canManage || canView || canReport) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="secondary">
+                  {t("more")}
+                  <ChevronDown aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {canManage && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/library/import">{tWorkspace("importBooks")}</Link>
+                  </DropdownMenuItem>
+                )}
+                {canView && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/library/master-data">{tWorkspace("catalogueSettings")}</Link>
+                  </DropdownMenuItem>
+                )}
+                {canReport && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/library/reports?tab=accessionRegister">
+                      {tWorkspace("report")}
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col md:min-h-0 md:flex-1">
@@ -150,6 +277,11 @@ export function CatalogueView(): ReactElement {
           globalFilter={search}
           onGlobalFilterChange={setSearch}
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.reset"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
+          }}
           isLoading={isLoading}
           getRowId={(item) => item.id}
           fillHeight
