@@ -5,6 +5,11 @@ import type { ScheduleBlock } from "../api";
 
 import { LessonCell } from "./schedule-grid-cells";
 
+// LessonSubstitutionAction's own permission/session wiring is covered by
+// lesson-substitution-action.test.tsx; this file only cares that LessonCell
+// renders it, not what it renders as.
+vi.mock("./lesson-substitution-action", () => ({ LessonSubstitutionAction: () => null }));
+
 const t = (key: string) => key;
 
 function block(overrides: Partial<ScheduleBlock> = {}): ScheduleBlock {

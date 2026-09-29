@@ -3,23 +3,34 @@
 import { Tabs, TabsList, TabsTrigger } from "@newsekolah/ui";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ComponentType, ReactElement } from "react";
 
 import { ForbiddenPage } from "../../../components/forbidden-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useSession } from "../../../lib/session/session-provider";
 
-const SchoolReports = dynamic(() => import("./reports-view").then((module) => module.ReportsView));
-const LibraryReports = dynamic(() =>
+interface SectionViewProps {
+  tabKey?: string;
+}
+
+const SchoolReports: ComponentType<SectionViewProps> = dynamic(() =>
+  import("./reports-view").then((module) => module.ReportsView),
+);
+const LibraryReports: ComponentType<SectionViewProps> = dynamic(() =>
   import("../../library/components/library-reports-view").then(
     (module) => module.LibraryReportsView,
   ),
 );
-const VisitorReports = dynamic(() =>
+const VisitorReports: ComponentType<SectionViewProps> = dynamic(() =>
   import("../../visitors/components/visitor-recap-view").then((module) => module.VisitorRecapView),
 );
 
-const SECTIONS = [
+const SECTIONS: {
+  key: string;
+  label: string;
+  permission: string;
+  View: ComponentType<SectionViewProps>;
+}[] = [
   { key: "school", label: "schoolReports", permission: "view_reports", View: SchoolReports },
   {
     key: "library",
