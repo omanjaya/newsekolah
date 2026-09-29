@@ -403,6 +403,10 @@
       "unread": "Baru",
       "manageEmptyTitle": "Belum ada pengumuman dibuat",
       "manageEmptyBody": "Buat draf, pilih penerima, lalu terbitkan atau jadwalkan.",
+      "filters": {
+        "reset": "Reset filter",
+        "removeFilter": "Hapus filter {label}"
+      },
       "columns": {
         "title": "Judul",
         "status": "Status",

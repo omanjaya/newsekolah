@@ -403,6 +403,10 @@
       "unread": "New",
       "manageEmptyTitle": "No announcements created yet",
       "manageEmptyBody": "Create a draft, pick the audience, then publish or schedule it.",
+      "filters": {
+        "reset": "Reset filter",
+        "removeFilter": "Remove {label} filter"
+      },
       "columns": {
         "title": "Title",
         "status": "Status",
