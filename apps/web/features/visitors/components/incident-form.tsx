@@ -7,6 +7,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { businessNow } from "../../../lib/simulation/clock";
 import { toDateTimeLocalValue } from "../../../lib/tenant-date";
 import {
   type Incident,
@@ -20,7 +21,7 @@ type Severity = IncidentWrite["severity"];
 const SEVERITIES: Severity[] = ["low", "medium", "high", "critical"];
 
 function nowLocal(): string {
-  return toDateTimeLocalValue(new Date());
+  return toDateTimeLocalValue(businessNow());
 }
 
 export function IncidentForm({

@@ -7,6 +7,7 @@ import { Printer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { businessNow } from "../../../lib/simulation/clock";
 import type { DeskBasketItem, DeskMode } from "../lib/desk-basket";
 
 import type { DeskSelectedMember } from "./desk-member-panel";
@@ -111,7 +112,7 @@ export function DeskReceiptDialog({
               onClick={() => {
                 printReceipt(t("title"), [
                   {
-                    label: formatDateTime(new Date(), { locale }),
+                    label: formatDateTime(businessNow(), { locale }),
                     rows: [],
                   },
                   ...settled.map((section) => ({

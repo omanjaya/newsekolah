@@ -19,6 +19,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useCan } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import {
   type LibraryVisit,
@@ -29,11 +30,11 @@ import {
 import { VisitRecordDialog } from "./visit-record-dialog";
 
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessNow().toISOString().slice(0, 10);
 }
 
 function firstOfMonthIso(): string {
-  const now = new Date();
+  const now = businessNow();
   return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
 }
 

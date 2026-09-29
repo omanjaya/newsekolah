@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
+import { businessNow } from "../../../../lib/simulation/clock";
 import { todayInZone, useTodaySessionsQuery } from "../../../attendance/api";
 import {
   useAllPeriodsQuery,
@@ -83,7 +84,7 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
       start: parseClock(periodMap.get(session.start_period_id)?.starts_at ?? "00:00"),
       end: parseClock(periodMap.get(session.end_period_id)?.ends_at ?? "00:00"),
     }));
-    const now = minutesInZone(new Date(), me.tenant.timezone);
+    const now = minutesInZone(businessNow(), me.tenant.timezone);
     // The running session still highlights in the card below even once it is
     // submitted; the hero, though, has nothing left to ask for from it, so it
     // is excluded from the pick and the hero falls through to whatever is

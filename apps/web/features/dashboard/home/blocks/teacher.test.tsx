@@ -1,6 +1,12 @@
 import { render, renderHook, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { Me as SessionMe } from "../../../../lib/session/session-provider";
+import {
+  clearSimulation,
+  setSimulation,
+  syncSimulationIdentity,
+} from "../../../../lib/simulation/clock";
 import type * as ReferenceApi from "../../../reference/api";
 import { HERO_PRIORITY, type Me } from "../types";
 
@@ -31,6 +37,14 @@ vi.mock("next-intl", () => ({
 }));
 
 import { useTeacherBlock } from "./teacher";
+
+function superadmin(): SessionMe {
+  return {
+    id: "admin",
+    permissions: ["platform_superadmin"],
+    tenant: { tenant_id: "school", timezone: "Asia/Jakarta", name: "School", locale: "id" },
+  } as unknown as SessionMe;
+}
 
 const me = { tenant: { timezone: "Asia/Jakarta" } } as unknown as Me;
 
@@ -84,6 +98,8 @@ describe("useTeacherBlock", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    clearSimulation();
+    syncSimulationIdentity(undefined);
   });
 
   it("returns EMPTY_BLOCK and disables every query when inactive", () => {
@@ -94,6 +110,40 @@ describe("useTeacherBlock", () => {
     expect(periodsQuery).toHaveBeenCalledWith(false);
     expect(classesQuery).toHaveBeenCalledWith(false);
     expect(subjectsQuery).toHaveBeenCalledWith(false);
+  });
+
+  it("follows a superadmin's simulated clock, not the real system clock, to pick the running session", () => {
+    // Real system time: well outside teaching hours (03:00 in Asia/Jakarta),
+    // so reading the real clock would fall through to "next" or no hero.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-26T20:00:00Z"));
+
+    // The simulated clock is set to 08:50 Jakarta instead -- the same
+    // instant the sibling "teacherNowPending" test above reaches via
+    // vi.setSystemTime -- so the same fixture should pick the same hero.
+    syncSimulationIdentity(superadmin());
+    setSimulation("frozen", new Date("2026-09-26T01:50:00Z"));
+
+    sessionsQuery.mockReturnValue({
+      data: { data: [session({ submitted_at: undefined })] },
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn(),
+    });
+    periodsQuery.mockReturnValue({
+      data: { data: PERIODS },
+      isSuccess: true,
+      isLoading: false,
+      isError: false,
+    });
+    classesQuery.mockReturnValue({ data: { data: [{ id: "c1", name: "X-A" }] } });
+    subjectsQuery.mockReturnValue({ data: { data: [{ id: "sub1", name: "Matematika" }] } });
+
+    const { result } = renderHook(() => useTeacherBlock(me, true));
+
+    expect(result.current.hero?.priority).toBe(HERO_PRIORITY.teacherNowPending);
+    expect(result.current.hero?.action?.href).toBe("/attendance");
   });
 
   it("shows a teacherNowPending hero for a running, unsubmitted session", () => {

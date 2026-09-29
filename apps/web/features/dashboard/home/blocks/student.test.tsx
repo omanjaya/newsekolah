@@ -63,9 +63,23 @@ vi.mock("../../../library/api", () => ({
   },
 }));
 
+import type { Me as SessionMe } from "../../../../lib/session/session-provider";
+import {
+  clearSimulation,
+  setSimulation,
+  syncSimulationIdentity,
+} from "../../../../lib/simulation/clock";
 import { EMPTY_BLOCK, type Me } from "../types";
 
 import { useStudentBlock } from "./student";
+
+function superadmin(): SessionMe {
+  return {
+    id: "admin",
+    permissions: ["platform_superadmin"],
+    tenant: { tenant_id: "school", timezone: "Asia/Jakarta", name: "School", locale: "id" },
+  } as unknown as SessionMe;
+}
 
 const idleQuery = {
   data: undefined,
@@ -112,6 +126,8 @@ describe("useStudentBlock", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    clearSimulation();
+    syncSimulationIdentity(undefined);
   });
 
   it("returns EMPTY_BLOCK and disables every query when inactive", () => {
@@ -134,6 +150,118 @@ describe("useStudentBlock", () => {
     vi.useFakeTimers();
     // 2026-09-26T01:30:00Z is 08:30 in Asia/Jakarta (UTC+7).
     vi.setSystemTime(new Date("2026-09-26T01:30:00Z"));
+
+    mocks.schedules.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        data: [
+          {
+            schedule_ids: ["s1"],
+            class_id: "c1",
+            subject_id: "math",
+            teacher_user_id: "t1",
+            day_of_week: 6,
+            start_seq: 1,
+            end_seq: 2,
+            source: "manual",
+          },
+          {
+            schedule_ids: ["s2"],
+            class_id: "c1",
+            subject_id: "science",
+            teacher_user_id: "t2",
+            day_of_week: 6,
+            start_seq: 3,
+            end_seq: 4,
+            source: "manual",
+          },
+        ],
+      },
+    });
+    mocks.periods.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        data: [
+          {
+            id: "p1",
+            template_id: "tpl",
+            name: "1",
+            sequence: 1,
+            starts_at: "07:00",
+            ends_at: "07:40",
+            is_break: false,
+          },
+          {
+            id: "p2",
+            template_id: "tpl",
+            name: "2",
+            sequence: 2,
+            starts_at: "07:40",
+            ends_at: "08:20",
+            is_break: false,
+          },
+          {
+            id: "p3",
+            template_id: "tpl",
+            name: "3",
+            sequence: 3,
+            starts_at: "08:40",
+            ends_at: "09:20",
+            is_break: false,
+          },
+          {
+            id: "p4",
+            template_id: "tpl",
+            name: "4",
+            sequence: 4,
+            starts_at: "09:20",
+            ends_at: "10:00",
+            is_break: false,
+          },
+        ],
+      },
+    });
+    mocks.subjects.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        data: [
+          { id: "math", code: "MTK", name: "Matematika" },
+          { id: "science", code: "IPA", name: "IPA" },
+        ],
+      },
+    });
+    mocks.teachers.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        data: [
+          { id: "t1", name: "Bu Sari", username: "sari" },
+          { id: "t2", name: "Pak Budi", username: "budi" },
+        ],
+      },
+    });
+
+    const { result } = renderHook(() => useStudentBlock(me(), true));
+
+    expect(result.current.hero?.title).toBe("IPA");
+    expect(result.current.hero?.chip).toContain("10");
+  });
+
+  it("follows a superadmin's simulated clock, not the real system clock, to pick today's lesson", () => {
+    // Real system time: a Tuesday (day_of_week 2), which has no lesson in
+    // this fixture -- if the block read the real clock the hero would be
+    // empty. Asia/Jakarta is UTC+7, so 2026-09-22T01:30:00Z is 08:30 local.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-22T01:30:00Z"));
+
+    // The simulated clock is set to Saturday 08:30 Jakarta instead --
+    // 2026-09-26T01:30:00Z -- the same instant the sibling test above uses
+    // via vi.setSystemTime, so the same fixture picks the same hero.
+    syncSimulationIdentity(superadmin());
+    setSimulation("frozen", new Date("2026-09-26T01:30:00Z"));
 
     mocks.schedules.mockReturnValue({
       ...idleQuery,

@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
 import { useDirectoryQuery } from "../../reference/api";
 import {
   type Counseling,
@@ -55,7 +56,7 @@ export function CounselingForm({
 
   const [studentId, setStudentId] = useState(initial?.student_user_id ?? "");
   const [sessionAt, setSessionAt] = useState(
-    toLocalInput(initial?.session_at ?? new Date().toISOString()),
+    toLocalInput(initial?.session_at ?? businessNow().toISOString()),
   );
   const [kind, setKind] = useState<CounselingKind>(initial?.kind ?? "individual");
   const [topic, setTopic] = useState<CounselingTopic>(initial?.topic ?? "problem");

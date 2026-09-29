@@ -1,11 +1,25 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
+  clearSimulation,
+  setSimulation,
+  syncSimulationIdentity,
+} from "../../../lib/simulation/clock";
+
+import {
   clearAttendanceDraft,
   loadAttendanceDraft,
   parseAttendanceDraft,
   saveAttendanceDraft,
 } from "./attendance-draft";
+
+function superadmin() {
+  return {
+    id: "admin",
+    permissions: ["platform_superadmin"],
+    tenant: { tenant_id: "school", timezone: "Asia/Jakarta", name: "School", locale: "id" },
+  } as unknown as Parameters<typeof syncSimulationIdentity>[0];
+}
 
 const BASE_DRAFT = {
   statuses: { s1: "H" },
@@ -42,6 +56,18 @@ describe("saveAttendanceDraft / loadAttendanceDraft", () => {
     saveAttendanceDraft("session-1", BASE_DRAFT);
     clearAttendanceDraft("session-1");
     expect(loadAttendanceDraft("session-1")).toBeNull();
+  });
+
+  it("stamps a draft with the simulated business clock, not the real one", () => {
+    syncSimulationIdentity(superadmin());
+    setSimulation("frozen", new Date("2026-09-30T00:15:00Z"));
+    try {
+      saveAttendanceDraft("session-1", BASE_DRAFT);
+      expect(loadAttendanceDraft("session-1")?.savedAt).toBe("2026-09-30T00:15:00.000Z");
+    } finally {
+      clearSimulation();
+      syncSimulationIdentity(undefined);
+    }
   });
 });
 

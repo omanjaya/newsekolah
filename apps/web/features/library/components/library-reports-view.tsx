@@ -25,6 +25,7 @@ import {
 } from "../../../components/report-export-dialog";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { businessNow } from "../../../lib/simulation/clock";
 import {
   downloadMonthlyLibraryReportPdf,
   useLoansReportQuery,
@@ -83,16 +84,16 @@ const REPORT_EXPORT_COLUMN_KEYS: Record<Exclude<ReportTab, "summary">, readonly 
 };
 
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessNow().toISOString().slice(0, 10);
 }
 
 function firstOfMonthIso(): string {
-  const now = new Date();
+  const now = businessNow();
   return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
 }
 
 function monthIso(): string {
-  return new Date().toISOString().slice(0, 7);
+  return businessNow().toISOString().slice(0, 7);
 }
 
 export function LibraryReportsView(): ReactElement {

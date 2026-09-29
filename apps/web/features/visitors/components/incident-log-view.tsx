@@ -21,6 +21,7 @@ import { useMemo, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useCan } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
 import { type Incident, useIncidentsQuery } from "../api";
 
 import { IncidentDetailDialog } from "./incident-detail-dialog";
@@ -34,14 +35,14 @@ const SEVERITY_VARIANT: Record<Incident["severity"], "accent" | "neutral"> = {
 };
 
 function daysAgoIso(days: number): string {
-  const d = new Date();
+  const d = businessNow();
   d.setDate(d.getDate() - days);
   d.setHours(0, 0, 0, 0);
   return d.toISOString();
 }
 
 function tomorrowIso(): string {
-  const d = new Date();
+  const d = businessNow();
   d.setDate(d.getDate() + 1);
   d.setHours(0, 0, 0, 0);
   return d.toISOString();

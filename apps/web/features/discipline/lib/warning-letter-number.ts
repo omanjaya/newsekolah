@@ -1,3 +1,5 @@
+import { businessNow } from "../../../lib/simulation/clock";
+
 const MONTH_ROMAN = [
   "",
   "I",
@@ -27,7 +29,7 @@ export interface WarningLetterPreviewSample {
 }
 
 export function defaultPreviewSample(): WarningLetterPreviewSample {
-  return { seq: 1, spLevelNumber: 1, date: new Date() };
+  return { seq: 1, spLevelNumber: 1, date: businessNow() };
 }
 
 /**

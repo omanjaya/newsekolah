@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import {
   decodeScanPayload,
@@ -153,7 +154,7 @@ export function GatePanel(): ReactElement {
                 key: `${instanceId}:${Date.now()}`,
                 studentName: result.student_name,
                 className: result.class_name,
-                at: new Date().toISOString(),
+                at: businessNow().toISOString(),
               },
               ...prev,
             ].slice(0, 20),

@@ -21,6 +21,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { businessNow } from "../../../lib/simulation/clock";
 import { useAcademicYearsQuery } from "../../academic/api";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import {
@@ -48,7 +49,7 @@ export function PromotionView(): ReactElement {
   const [plan, setPlan] = useState<PromotionPlanItem[] | undefined>(undefined);
   const [overrides, setOverrides] = useState<Record<string, PromotionOverride>>({});
   const [confirming, setConfirming] = useState(false);
-  const [effectiveOn, setEffectiveOn] = useState(() => new Date().toISOString().slice(0, 10));
+  const [effectiveOn, setEffectiveOn] = useState(() => businessNow().toISOString().slice(0, 10));
 
   const fromClasses = useClassesForYearQuery(fromYearId);
   const fromClassMap = useLookup(fromClasses.data?.data);

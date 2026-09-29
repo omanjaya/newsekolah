@@ -1,3 +1,4 @@
+import { businessNow } from "../../../lib/simulation/clock";
 import type { Edits } from "../components/gradebook-types";
 
 /**
@@ -30,7 +31,7 @@ export function saveGradebookDraft(sheetKey: string, edits: Edits): void {
     const payload: GradebookDraft = {
       version: DRAFT_VERSION,
       sheetKey,
-      savedAt: new Date().toISOString(),
+      savedAt: businessNow().toISOString(),
       edits,
     };
     window.localStorage.setItem(storageKey(sheetKey), JSON.stringify(payload));

@@ -7,6 +7,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { businessNow } from "../../../lib/simulation/clock";
 import {
   type MentorGroupMember,
   type MentorMeetingNote,
@@ -43,7 +44,7 @@ export function MentorMeetingNoteForm({
   const create = useCreateMentorMeetingNoteMutation(groupId);
   const update = useUpdateMentorMeetingNoteMutation();
 
-  const [metAt, setMetAt] = useState(toLocalInput(initial?.met_at ?? new Date().toISOString()));
+  const [metAt, setMetAt] = useState(toLocalInput(initial?.met_at ?? businessNow().toISOString()));
   const [kind, setKind] = useState<(typeof KINDS)[number]>(initial?.kind ?? "group");
   const [attendeeIds, setAttendeeIds] = useState<Set<string>>(
     new Set(initial?.attendee_user_ids ?? []),

@@ -25,6 +25,7 @@ import { useMemo, useState } from "react";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryQuery } from "../../reference/api";
 import {
@@ -84,7 +85,7 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
   const leave = useLeaveClubMutation();
 
   const [studentId, setStudentId] = useState("");
-  const [joinedOn, setJoinedOn] = useState(() => new Date().toISOString().slice(0, 10));
+  const [joinedOn, setJoinedOn] = useState(() => businessNow().toISOString().slice(0, 10));
 
   const nameById = useMemo(
     () => new Map((directory.data?.data ?? []).map((u) => [u.id, u.name])),
@@ -198,7 +199,7 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
                     variant="secondary"
                     onClick={() => {
                       leave.mutate(
-                        { membershipId: m.id, leftOn: new Date().toISOString().slice(0, 10) },
+                        { membershipId: m.id, leftOn: businessNow().toISOString().slice(0, 10) },
                         {
                           onSuccess: () => {
                             toast.success(t("left"));
@@ -233,7 +234,7 @@ function MeetingsPanel({ clubId }: { clubId: string }): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const { data } = useMeetingsQuery(clubId);
   const createMeeting = useCreateMeetingMutation(clubId);
-  const [meetingDate, setMeetingDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [meetingDate, setMeetingDate] = useState(() => businessNow().toISOString().slice(0, 10));
   const [selectedMeeting, setSelectedMeeting] = useState<string | null>(null);
 
   const meetings = data?.data ?? [];

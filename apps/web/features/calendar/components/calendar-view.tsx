@@ -19,6 +19,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
 import { useGradeLevelsQuery } from "../../school/api";
 import {
   type CalendarEvent,
@@ -52,12 +53,12 @@ export function CalendarView(): ReactElement {
   const canManage = useCan("manage_academic_years");
 
   const [month, setMonth] = useState(() => {
-    const now = new Date();
+    const now = businessNow();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<CalendarEvent | undefined>(undefined);
-  const [defaultDate, setDefaultDate] = useState(() => toISODate(new Date()));
+  const [defaultDate, setDefaultDate] = useState(() => toISODate(businessNow()));
   const [deleting, setDeleting] = useState<CalendarEvent | undefined>(undefined);
 
   const query = useCalendarEventsQuery();
@@ -103,7 +104,7 @@ export function CalendarView(): ReactElement {
               icon={<Plus />}
               onClick={() => {
                 setEditing(undefined);
-                setDefaultDate(toISODate(new Date()));
+                setDefaultDate(toISODate(businessNow()));
                 setFormOpen(true);
               }}
             >

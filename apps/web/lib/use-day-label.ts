@@ -4,6 +4,7 @@ import { useFormatter, useTranslations } from "next-intl";
 
 import { dayKey, shiftDayKey } from "./group-by-day";
 import { useSession } from "./session/session-provider";
+import { businessNow, useSimulation } from "./simulation/clock";
 
 /**
  * "Hari ini" / "Kemarin" for the two most recent day groups, a plain long
@@ -13,11 +14,12 @@ import { useSession } from "./session/session-provider";
  * more naturally with "kemarin" than a bare date for the second group).
  */
 export function useDayLabel(): (key: string) => string {
+  useSimulation();
   const t = useTranslations("app.common");
   const format = useFormatter();
   const { me } = useSession();
   const timeZone = me?.tenant.timezone;
-  const todayKey = dayKey(new Date().toISOString(), timeZone);
+  const todayKey = dayKey(businessNow().toISOString(), timeZone);
   const yesterdayKey = shiftDayKey(todayKey, -1);
 
   return (key: string) => {

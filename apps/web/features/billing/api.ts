@@ -4,6 +4,7 @@ import { type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
+import { businessNow } from "../../lib/simulation/clock";
 import { todayInZone } from "../../lib/tenant-date";
 
 export type FeeType = components["schemas"]["FeeType"];
@@ -296,6 +297,6 @@ export function today(): string {
 
 /** The current billing period as `YYYY-MM`, the default for generation. */
 export function currentPeriod(): string {
-  const now = new Date();
+  const now = businessNow();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }

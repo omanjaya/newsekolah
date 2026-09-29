@@ -22,6 +22,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
 import { useDirectoryQuery } from "../../reference/api";
 import {
   type Achievement,
@@ -230,7 +231,7 @@ function AchievementForm({
   const [level, setLevel] = useState<AchievementLevel>(initial?.level ?? "school");
   const [placement, setPlacement] = useState(initial?.placement ?? "");
   const [achievedOn, setAchievedOn] = useState(
-    initial?.achieved_on ?? new Date().toISOString().slice(0, 10),
+    initial?.achieved_on ?? businessNow().toISOString().slice(0, 10),
   );
   const [notes, setNotes] = useState(initial?.notes ?? "");
 

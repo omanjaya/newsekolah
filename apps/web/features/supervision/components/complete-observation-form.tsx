@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useUnsavedChangesProtection } from "../../../lib/navigation/use-unsaved-changes-protection";
 import { useSession } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
 import {
   type ScheduledObservation,
   type SupervisionInstrument,
@@ -25,7 +26,7 @@ import {
 import { ObservationScoreControl } from "./observation-score-control";
 
 function nowLocal(): string {
-  const d = new Date();
+  const d = businessNow();
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
@@ -129,7 +130,9 @@ export function CompleteObservationForm({
       setSavedSuccessfully(true);
       clearObservationDraft(scheduled.id);
       toast.success(
-        t("savedAt", { time: formatTime(new Date(), { locale, timeZone: me?.tenant.timezone }) }),
+        t("savedAt", {
+          time: formatTime(businessNow(), { locale, timeZone: me?.tenant.timezone }),
+        }),
       );
       onDone();
     } catch (error) {

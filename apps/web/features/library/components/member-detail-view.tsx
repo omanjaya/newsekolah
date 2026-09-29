@@ -22,6 +22,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import { printMemberCard, useMemberLoanHistoryQuery, useMemberReservationsQuery } from "../api";
 import {
@@ -40,7 +41,7 @@ import { MemberProfileForm } from "./member-profile-form";
 import { MemberStatusMenu } from "./member-status-menu";
 
 function todayIso(): string {
-  return new Date().toLocaleDateString("en-CA");
+  return businessNow().toLocaleDateString("en-CA");
 }
 
 export function MemberDetailView({ userId }: { userId: string }): ReactElement {

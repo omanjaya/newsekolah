@@ -5,6 +5,8 @@
  * `attendance/lib/attendance-draft.ts`, scoped instead to one class,
  * subject, and lesson date (a journal has no session id of its own).
  */
+import { businessNow } from "../../../lib/simulation/clock";
+
 const DRAFT_VERSION = 1;
 const KEY_PREFIX = "newsekolah:journal-draft:";
 
@@ -38,7 +40,7 @@ export function saveJournalDraft(
       classId,
       subjectId,
       lessonDate,
-      savedAt: new Date().toISOString(),
+      savedAt: businessNow().toISOString(),
     };
     window.localStorage.setItem(
       storageKey(classId, subjectId, lessonDate),

@@ -12,6 +12,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useUnsavedChangesProtection } from "../../../lib/navigation/use-unsaved-changes-protection";
 import { useSession } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
 import { type ViolationType, useViolationTypesQuery } from "../../discipline/api";
 import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import { type SessionDetail, useSaveEntriesMutation } from "../api";
@@ -237,7 +238,9 @@ export function SessionEditor({
       setSavedSuccessfully(true);
       clearAttendanceDraft(session.id);
       toast.success(
-        t("savedAt", { time: formatTime(new Date(), { locale, timeZone: me?.tenant.timezone }) }),
+        t("savedAt", {
+          time: formatTime(businessNow(), { locale, timeZone: me?.tenant.timezone }),
+        }),
       );
       router.push("/attendance");
     } catch (error) {
