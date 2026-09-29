@@ -203,44 +203,49 @@ function SchoolQueueCard({
         ) : isLoading || !data ? (
           <Skeleton className="h-24 w-full" aria-busy="true" />
         ) : (
-          <table className="w-full text-[13px]">
-            <thead className="border-b border-border text-left text-[12px] text-fg-muted">
-              <tr>
-                <th scope="col" className="pb-2 font-normal">
-                  {t("type")}
-                </th>
-                <th scope="col" className="pb-2 text-right font-normal">
-                  {t("count")}
-                </th>
-                <th scope="col">
-                  <span className="sr-only">{t("open")}</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {PENDING_LINKS.map(({ key, href }) => (
-                <tr key={key}>
-                  <th scope="row" className="text-left font-normal text-fg">
-                    {t(`labels.${key}`)}
+          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-line bg-bg text-left">
+                  <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
+                    {t("type")}
                   </th>
-                  <td className="text-right tabular-nums">
-                    <Badge variant={data.pending[key] > 0 ? "accent" : "neutral"}>
-                      {format.number(data.pending[key])}
-                    </Badge>
-                  </td>
-                  <td className="w-11 text-right">
-                    <Link
-                      href={href}
-                      aria-label={`${t("open")}: ${t(`labels.${key}`)}`}
-                      className="inline-flex size-11 items-center justify-center rounded-xs text-fg-muted hover:bg-bg hover:text-fg"
-                    >
-                      <ArrowUpRight className="size-4" aria-hidden="true" />
-                    </Link>
-                  </td>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-right text-[12px] font-semibold text-fg-muted"
+                  >
+                    {t("count")}
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    <span className="sr-only">{t("open")}</span>
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {PENDING_LINKS.map(({ key, href }) => (
+                  <tr key={key} className="border-b border-line last:border-b-0 hover:bg-bg">
+                    <th scope="row" className="px-4 py-3 text-left font-normal text-fg">
+                      {t(`labels.${key}`)}
+                    </th>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      <Badge variant={data.pending[key] > 0 ? "accent" : "neutral"}>
+                        {format.number(data.pending[key])}
+                      </Badge>
+                    </td>
+                    <td className="w-11 px-4 py-3 text-right">
+                      <Link
+                        href={href}
+                        aria-label={`${t("open")}: ${t(`labels.${key}`)}`}
+                        className="inline-flex size-11 items-center justify-center rounded-xs text-fg-muted hover:bg-bg hover:text-fg"
+                      >
+                        <ArrowUpRight className="size-4" aria-hidden="true" />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </Card>

@@ -28,23 +28,23 @@ export function UserImportPreviewTable({
   const resultByRow = new Map(results.map((r) => [r.row_number, r]));
 
   return (
-    <div className="overflow-x-auto rounded-xs border border-border">
+    <div className="overflow-x-auto rounded-lg border border-border bg-surface">
       <table className="w-full min-w-[720px] text-[13px]">
-        <thead className="bg-bg text-left text-fg-muted">
-          <tr>
-            <th scope="col" className="px-3 py-2">
+        <thead>
+          <tr className="border-b border-line bg-bg text-left">
+            <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
               {t("table.row")}
             </th>
-            <th scope="col" className="px-3 py-2">
+            <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
               {t("table.name")}
             </th>
-            <th scope="col" className="px-3 py-2">
+            <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
               {t("table.kind")}
             </th>
-            <th scope="col" className="px-3 py-2">
+            <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
               {t("table.username")}
             </th>
-            <th scope="col" className="px-3 py-2">
+            <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
               {t("table.status")}
             </th>
           </tr>
@@ -58,18 +58,21 @@ export function UserImportPreviewTable({
             const action = result?.action;
             const changedFields = result?.changed_fields ?? [];
             return (
-              <tr key={rowNumber} className="border-t border-border align-top">
-                <td className="px-3 py-2 text-fg-muted">{rowNumber}</td>
-                <td className="px-3 py-2">{orDash(row.name)}</td>
-                <td className="px-3 py-2">
+              <tr
+                key={rowNumber}
+                className="border-b border-line align-top last:border-b-0 hover:bg-bg"
+              >
+                <td className="px-4 py-3 text-fg-muted">{rowNumber}</td>
+                <td className="px-4 py-3">{orDash(row.name)}</td>
+                <td className="px-4 py-3">
                   {tKinds.has(row.profile_kind)
                     ? tKinds(row.profile_kind)
                     : orDash(row.profile_kind)}
                 </td>
-                <td className="px-3 py-2 text-fg-muted">
+                <td className="px-4 py-3 text-fg-muted">
                   {orDash(result?.username ?? row.username ?? "")}
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-4 py-3">
                   {hasError ? (
                     <div className="flex flex-col gap-1">
                       <Badge variant="accent">{t("table.invalid")}</Badge>

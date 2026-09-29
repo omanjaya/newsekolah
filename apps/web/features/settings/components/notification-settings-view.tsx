@@ -76,30 +76,34 @@ export function NotificationSettingsView(): ReactElement {
         {prefs.isLoading ? (
           <Skeleton className="h-64 w-full" />
         ) : (
-          <div className="hidden overflow-x-auto md:block">
+          <div className="hidden overflow-x-auto rounded-lg border border-border bg-surface md:block">
             <table className="w-full min-w-[560px] text-[13px]">
               <thead>
-                <tr className="text-left text-fg-muted">
-                  <th scope="col" className="py-2 pr-4 font-medium">
+                <tr className="border-b border-line bg-bg text-left">
+                  <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
                     {t("kindColumn")}
                   </th>
                   {NOTIFICATION_CHANNELS.map((channel) => (
-                    <th key={channel} scope="col" className="px-2 py-2 text-center font-medium">
+                    <th
+                      key={channel}
+                      scope="col"
+                      className="px-4 py-3 text-center text-[12px] font-semibold text-fg-muted"
+                    >
                       {t(`channels.${channel}`)}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody>
                 {NOTIFICATION_KINDS.map((kind) => {
                   const row = prefs.data?.[kind] ?? {};
                   return (
-                    <tr key={kind}>
-                      <th scope="row" className="py-2 pr-4 text-left font-normal text-fg">
+                    <tr key={kind} className="border-b border-line last:border-b-0 hover:bg-bg">
+                      <th scope="row" className="px-4 py-3 text-left font-normal text-fg">
                         {tKinds(kind)}
                       </th>
                       {NOTIFICATION_CHANNELS.map((channel) => (
-                        <td key={channel} className="px-2 py-2 text-center">
+                        <td key={channel} className="px-4 py-3 text-center">
                           <Switch
                             checked={row[channel] ?? false}
                             disabled={channel === "inapp"}

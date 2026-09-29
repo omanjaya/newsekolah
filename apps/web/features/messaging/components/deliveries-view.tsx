@@ -82,36 +82,39 @@ export function DeliveriesView(): ReactElement {
       ) : deliveries.length === 0 ? (
         <p className="text-[13px] text-fg-muted">{t("empty")}</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-lg border border-border bg-surface">
           <table className="w-full min-w-[720px] text-[13px]">
             <thead>
-              <tr className="text-left text-fg-muted">
-                <th scope="col" className="py-2 pr-4 font-medium">
+              <tr className="border-b border-line bg-bg text-left">
+                <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
                   {t("columns.target")}
                 </th>
-                <th scope="col" className="px-2 py-2 font-medium">
+                <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
                   {t("columns.provider")}
                 </th>
-                <th scope="col" className="px-2 py-2 font-medium">
+                <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
                   {t("columns.status")}
                 </th>
-                <th scope="col" className="px-2 py-2 font-medium">
+                <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
                   {t("columns.attempts")}
                 </th>
-                <th scope="col" className="px-2 py-2 font-medium">
+                <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
                   {t("columns.createdAt")}
                 </th>
-                <th scope="col" className="px-2 py-2 text-right font-medium">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-right text-[12px] font-semibold text-fg-muted"
+                >
                   {t("columns.actions")}
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody>
               {deliveries.map((delivery) => (
-                <tr key={delivery.id}>
-                  <td className="py-2 pr-4 text-fg">{delivery.target}</td>
-                  <td className="px-2 py-2 text-fg-muted">{delivery.provider}</td>
-                  <td className="px-2 py-2">
+                <tr key={delivery.id} className="border-b border-line last:border-b-0 hover:bg-bg">
+                  <td className="px-4 py-3 text-fg">{delivery.target}</td>
+                  <td className="px-4 py-3 text-fg-muted">{delivery.provider}</td>
+                  <td className="px-4 py-3">
                     <div className="flex flex-col gap-0.5">
                       <Badge className={STATUS_CLASS[delivery.status]}>
                         {t(`status.${delivery.status}`)}
@@ -123,11 +126,11 @@ export function DeliveriesView(): ReactElement {
                       )}
                     </div>
                   </td>
-                  <td className="px-2 py-2 text-fg-muted">{delivery.attempts}</td>
-                  <td className="px-2 py-2 text-fg-muted">
+                  <td className="px-4 py-3 text-fg-muted">{delivery.attempts}</td>
+                  <td className="px-4 py-3 text-fg-muted">
                     {formatDateTime(delivery.created_at, { locale, timeZone })}
                   </td>
-                  <td className="px-2 py-2 text-right">
+                  <td className="px-4 py-3 text-right">
                     {delivery.status === "failed" && (
                       <Button
                         variant="ghost"

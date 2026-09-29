@@ -187,33 +187,36 @@ export function StaffAttendanceImportView(): ReactElement {
             <h3 className="text-[13px] font-medium text-fg">
               {t("previewTitle", { count: resolved.length })}
             </h3>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg border border-border bg-surface">
               <table className="w-full min-w-[560px] text-[13px]">
                 <thead>
-                  <tr className="text-left text-fg-muted">
-                    <th scope="col" className="py-2 pr-4 font-medium">
+                  <tr className="border-b border-line bg-bg text-left">
+                    <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
                       {t("columnEmployee")}
                     </th>
-                    <th scope="col" className="py-2 pr-4 font-medium">
+                    <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
                       {t("columnDate")}
                     </th>
-                    <th scope="col" className="py-2 pr-4 font-medium">
+                    <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
                       {t("columnArrival")}
                     </th>
-                    <th scope="col" className="py-2 font-medium">
+                    <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
                       {t("columnDeparture")}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody>
                   {resolved.map((item) => (
-                    <tr key={`${item.employeeUserId}-${item.row.date}`}>
-                      <td className="py-2 pr-4 text-fg">{item.employeeName}</td>
-                      <td className="py-2 pr-4 text-fg-muted">{item.row.date}</td>
-                      <td className="py-2 pr-4 text-fg-muted">
+                    <tr
+                      key={`${item.employeeUserId}-${item.row.date}`}
+                      className="border-b border-line last:border-b-0 hover:bg-bg"
+                    >
+                      <td className="px-4 py-3 text-fg">{item.employeeName}</td>
+                      <td className="px-4 py-3 text-fg-muted">{item.row.date}</td>
+                      <td className="px-4 py-3 text-fg-muted">
                         {item.row.arrivalAt?.slice(11, 16) ?? "-"}
                       </td>
-                      <td className="py-2 text-fg-muted">
+                      <td className="px-4 py-3 text-fg-muted">
                         {item.row.departureAt?.slice(11, 16) ?? "-"}
                       </td>
                     </tr>

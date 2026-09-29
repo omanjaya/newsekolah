@@ -288,27 +288,27 @@ function PeriodTable({ templateId }: { templateId: string }): ReactElement {
           {t("addPeriod")}
         </Button>
       </div>
-      <div className="overflow-x-auto rounded-sm border border-border bg-surface">
+      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
         <table className="w-full text-[13px]">
           <thead>
-            <tr className="text-left text-fg-muted">
-              <th className="px-3 py-2 font-medium">#</th>
-              <th className="px-3 py-2 font-medium">{t("name")}</th>
-              <th className="px-3 py-2 font-medium">{t("time")}</th>
-              <th className="px-3 py-2 font-medium">{t("kind")}</th>
-              <th className="px-3 py-2" />
+            <tr className="border-b border-line bg-bg text-left">
+              <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">#</th>
+              <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">{t("name")}</th>
+              <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">{t("time")}</th>
+              <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">{t("kind")}</th>
+              <th className="px-4 py-3" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
+          <tbody>
             {rows.map((p) => (
-              <tr key={p.id} className="group transition-colors hover:bg-bg">
-                <td className="px-3 py-2 tabular-nums text-fg-muted">{p.sequence}</td>
-                <td className="px-3 py-2">{p.name}</td>
-                <td className="px-3 py-2 tabular-nums">
+              <tr key={p.id} className="group border-b border-line last:border-b-0 hover:bg-bg">
+                <td className="px-4 py-3 tabular-nums text-fg-muted">{p.sequence}</td>
+                <td className="px-4 py-3">{p.name}</td>
+                <td className="px-4 py-3 tabular-nums">
                   {p.starts_at.slice(0, 5)}-{p.ends_at.slice(0, 5)}
                 </td>
-                <td className="px-3 py-2 text-fg-muted">{p.is_break ? t("break") : t("lesson")}</td>
-                <td className="px-3 py-2">
+                <td className="px-4 py-3 text-fg-muted">{p.is_break ? t("break") : t("lesson")}</td>
+                <td className="px-4 py-3">
                   <div className="flex justify-end gap-1">
                     <IconButton
                       icon={<Pencil />}
@@ -332,7 +332,7 @@ function PeriodTable({ templateId }: { templateId: string }): ReactElement {
             ))}
             {rows.length === 0 && !periods.isLoading && (
               <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-fg-muted">
+                <td colSpan={5} className="px-4 py-6 text-center text-fg-muted">
                   {t("noPeriods")}
                 </td>
               </tr>
