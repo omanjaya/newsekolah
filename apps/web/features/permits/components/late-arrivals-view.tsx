@@ -1,18 +1,10 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import type { Locale } from "@newsekolah/i18n";
-import { formatDateTime } from "@newsekolah/i18n";
 import {
   Alert,
   type BarcodeScanEvent,
   BarcodeScannerField,
-  Button,
-  Checkbox,
-  Dialog,
-  DialogContent,
-  EmptyState,
-  Input,
   PageHeader,
   Skeleton,
   Tabs,
@@ -20,33 +12,29 @@ import {
   TabsList,
   TabsTrigger,
   Textarea,
-  domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
-import { formatDisplayName } from "../../../lib/text/format-name";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
 import {
-  type LateArrivalSummary,
   decodeScanPayload,
   useCurrentLateArrivalQuery,
-  useLateArrivalQuery,
   useLateArrivalQueueQuery,
   useOpenLateArrivalMutation,
-  useReviewLateArrivalMutation,
   useScanLateArrivalStageMutation,
 } from "../api";
 
-import { WorkflowStatusBadge, WorkflowStepper } from "./workflow-stepper";
+import { ReviewQueue } from "./late-arrival-review-queue";
+import { WorkflowStepper } from "./workflow-stepper";
 
 export function LateArrivalsView(): ReactElement {
   const t = useTranslations("app.permits.late");
+  const tReview = useTranslations("app.permits.review");
   const { me } = useSession();
   // Reviewing a late arrival is scoped server-side to the duty teacher who
   // opened it (or a manage_attendance administrator, per
@@ -56,32 +44,60 @@ export function LateArrivalsView(): ReactElement {
   // that only some of them hold.
   const canReview = me?.profile_kind === "teacher" || me?.profile_kind === "staff";
   const isStudent = useCan("submit_leave_requests");
+  const showTabs = canReview && isStudent;
   const [tab, setTab] = useUrlState<string>(
     "tab",
     canReview ? ["queue", "mine"] : ["mine"],
     canReview ? "queue" : "mine",
   );
 
+  // Fetched once here, at the view level, rather than inside ReviewQueue:
+  // the "Antrean piket" tab label needs the count too, and a second call
+  // to the same query hook would double the realtime subscription it
+  // opens (features/permits/api.ts's own comment on why that wiring lives
+  // in the query hook).
+  const queue = useLateArrivalQueueQuery(canReview);
+  const queueCount = queue.data?.data.length ?? 0;
+
+  const tabs = showTabs
+    ? [
+        {
+          value: "queue",
+          label: tReview("tabWithCount", { label: t("tabQueue"), count: queueCount }),
+        },
+        { value: "mine", label: t("tabMine") },
+      ]
+    : [];
+
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      {canReview && isStudent ? (
+      {showTabs ? (
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
-            <TabsTrigger value="queue">{t("tabQueue")}</TabsTrigger>
-            <TabsTrigger value="mine">{t("tabMine")}</TabsTrigger>
-          </TabsList>
+          <PageHeader
+            eyebrow={t("eyebrow")}
+            title={t("title")}
+            actions={
+              <TabsList>
+                {tabs.map((item) => (
+                  <TabsTrigger key={item.value} value={item.value}>
+                    {item.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            }
+          />
           <TabsContent value="queue" className="pt-4">
-            <ReviewQueue />
+            <ReviewQueue queue={queue} />
           </TabsContent>
           <TabsContent value="mine" className="pt-4">
             <MyLateArrival />
           </TabsContent>
         </Tabs>
-      ) : canReview ? (
-        <ReviewQueue />
       ) : (
-        <MyLateArrival />
+        <>
+          <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+          {canReview ? <ReviewQueue queue={queue} /> : <MyLateArrival />}
+        </>
       )}
     </div>
   );
@@ -187,177 +203,5 @@ function MyLateArrival(): ReactElement {
         </p>
       )}
     </div>
-  );
-}
-
-function ReviewQueue(): ReactElement {
-  const t = useTranslations("app.permits.late");
-  const locale = useLocale() as Locale;
-  const { me } = useSession();
-  const queue = useLateArrivalQueueQuery();
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
-  const [reviewing, setReviewing] = useState<LateArrivalSummary | null>(null);
-  const [search, setSearch] = useState("");
-  const items = useMemo(() => queue.data?.data ?? [], [queue.data]);
-  const visibleItems = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return items;
-    return items.filter((item) =>
-      (studentMap.get(item.student_user_id)?.name ?? "").toLowerCase().includes(query),
-    );
-  }, [items, search, studentMap]);
-
-  return (
-    <div className="flex flex-col gap-4">
-      {items.length > 0 && (
-        <Input
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-          }}
-          placeholder={t("searchPlaceholder")}
-          aria-label={t("searchPlaceholder")}
-          className="w-full sm:w-64"
-        />
-      )}
-      {queue.isLoading ? (
-        <Skeleton className="h-40 w-full" aria-busy="true" />
-      ) : items.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.late aria-hidden="true" />}
-          title={t("queueEmptyTitle")}
-          description={t("queueEmptyBody")}
-        />
-      ) : visibleItems.length === 0 ? (
-        <p className="px-1 py-6 text-center text-[13px] text-fg-muted">{t("noMatch")}</p>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {visibleItems.map((item) => {
-            const studentName = studentMap.get(item.student_user_id)?.name;
-            return (
-              <li
-                key={item.instance_id}
-                className="flex flex-col gap-1.5 rounded-sm border border-border bg-surface px-4 py-2.5 md:flex-row md:items-center md:justify-between"
-              >
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[14px] font-medium text-fg">
-                    {studentName ? formatDisplayName(studentName) : t("unknownStudent")}
-                  </span>
-                  <span className="text-[13px] text-fg-muted">
-                    {formatDateTime(item.opened_at, { locale, timeZone: me?.tenant.timezone })} ·{" "}
-                    {t("occurrenceValue", { n: item.occurrence_number })}
-                  </span>
-                  {item.reason && <span className="text-[13px]">{item.reason}</span>}
-                </div>
-                <div className="flex items-center gap-3">
-                  <WorkflowStatusBadge status={item.status} />
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setReviewing(item);
-                    }}
-                  >
-                    {t("review")}
-                  </Button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      <Dialog
-        open={reviewing !== null}
-        onOpenChange={(open) => {
-          if (!open) setReviewing(null);
-        }}
-      >
-        <DialogContent title={t("reviewTitle")}>
-          {reviewing && (
-            <ReviewForm
-              item={reviewing}
-              onDone={() => {
-                setReviewing(null);
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-function ReviewForm({
-  item,
-  onDone,
-}: {
-  item: LateArrivalSummary;
-  onDone: () => void;
-}): ReactElement {
-  const t = useTranslations("app.permits.late");
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
-  const detail = useLateArrivalQuery(item.instance_id);
-  const review = useReviewLateArrivalMutation();
-  const [reason, setReason] = useState(item.reason);
-  const [homeroomReported, setHomeroomReported] = useState(item.homeroom_reported ?? false);
-
-  return (
-    <form
-      className="flex flex-col gap-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        review.mutate(
-          {
-            id: item.instance_id,
-            reason: reason.trim() || undefined,
-            homeroom_reported: homeroomReported,
-          },
-          {
-            onSuccess: () => {
-              toast.success(t("reviewed"));
-              onDone();
-            },
-            onError: (error) => {
-              toast.error(
-                error instanceof ApiError
-                  ? apiErrorMessage(error.code)
-                  : apiErrorMessage("UNKNOWN"),
-              );
-            },
-          },
-        );
-      }}
-    >
-      {detail.data && <WorkflowStepper instance={detail.data.instance} />}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("reasonLabel")}</span>
-        <Input
-          value={reason}
-          onChange={(e) => {
-            setReason(e.target.value);
-          }}
-          maxLength={500}
-        />
-      </label>
-      <label className="flex items-center gap-2 text-[13px]">
-        <Checkbox
-          checked={homeroomReported}
-          onCheckedChange={(v) => {
-            setHomeroomReported(v === true);
-          }}
-        />
-        {t("homeroomReported")}
-      </label>
-      <p className="text-[13px] text-fg-muted">{t("reviewHint")}</p>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
-        <Button type="button" variant="secondary" onClick={onDone}>
-          {t("cancel")}
-        </Button>
-        <Button type="submit" loading={review.isPending}>
-          {t("submitReview")}
-        </Button>
-      </div>
-    </form>
   );
 }

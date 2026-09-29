@@ -1020,6 +1020,14 @@
           "submitted": "Pengajuan terkirim ke wali kelas",
           "send": "Kirim pengajuan"
         }
+      },
+      "review": {
+        "tabWithCount": "{label} {count}",
+        "exitWaitingApproval": "Menunggu Anda",
+        "exitAwaitingGate": "Menunggu gerbang",
+        "lateWaiting": "Menunggu",
+        "lateToday": "Tercatat hari ini",
+        "leaveWaiting": "Menunggu Anda"
       }
     },
     "verify": {

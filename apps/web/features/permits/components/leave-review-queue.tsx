@@ -5,18 +5,21 @@ import {
   Button,
   Dialog,
   DialogContent,
-  EmptyState,
   Skeleton,
+  StatTile,
+  cn,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { bentoCells, tileColumns } from "../../../lib/layout/bento";
 import { useLeaveReviewQueueQuery, useReviewLeaveRequestMutation } from "../api";
+import { buildLeaveQueueTiles } from "../lib/leave-queue-tiles";
 
 import { QueueRow } from "./leave-queue-row";
 import { LeaveRequestDetail } from "./leave-request-detail";
@@ -24,6 +27,7 @@ import { LeaveRequestDetail } from "./leave-request-detail";
 /** The homeroom (or counselor-scoped) review queue: every item is already at the caller's own stage. */
 export function ReviewQueue(): ReactElement {
   const t = useTranslations("app.permits.leave");
+  const tReview = useTranslations("app.permits.review");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const { data, isLoading, isError, refetch } = useLeaveReviewQueueQuery();
@@ -33,6 +37,8 @@ export function ReviewQueue(): ReactElement {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkPending, setBulkPending] = useState(false);
   const items = data?.data ?? [];
+  const tiles = useMemo(() => buildLeaveQueueTiles(items.length), [items.length]);
+  const grid = tileColumns(tiles.length);
 
   const fail = (error: unknown) => {
     toast.error(
@@ -100,71 +106,105 @@ export function ReviewQueue(): ReactElement {
     });
   }
 
+  const cells = bentoCells(
+    items.map((item) => ({
+      key: item.instance_id,
+      node: (
+        <QueueRow
+          item={item}
+          selectable={items.length > 1}
+          selected={selected.has(item.instance_id)}
+          onToggleSelected={() => {
+            toggleSelected(item.instance_id);
+          }}
+          approving={
+            (pendingId === item.instance_id && review.variables?.approve === true) || bulkPending
+          }
+          rejecting={
+            (pendingId === item.instance_id && review.variables?.approve === false) || bulkPending
+          }
+          onApprove={() => {
+            approve(item.instance_id);
+          }}
+          onReject={(reason) => {
+            reject(item.instance_id, reason);
+          }}
+          onOpenDetail={() => {
+            setOpenId(item.instance_id);
+          }}
+        />
+      ),
+    })),
+  );
+
   return (
     <div className="flex flex-col gap-4">
       {isLoading ? (
         <Skeleton className="h-40 w-full" aria-busy="true" />
       ) : isError && !data ? (
         <QueryError retry={() => refetch()} />
-      ) : items.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.exitPermit aria-hidden="true" />}
-          title={t("queueEmptyTitle")}
-          description={t("queueEmptyBody")}
-        />
       ) : (
         <>
-          {selected.size > 0 && (
-            <div className="flex flex-wrap items-center gap-2 rounded-sm border border-accent/40 bg-accent/5 px-3 py-2 text-[13px]">
-              <span className="font-medium text-fg">
-                {t("bulkSelected", { count: selected.size })}
-              </span>
-              <Button size="sm" loading={bulkPending} onClick={() => void approveSelected()}>
-                {t("bulkApprove")}
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={bulkPending}
-                onClick={() => {
-                  setSelected(new Set());
-                }}
-              >
-                {t("bulkClear")}
-              </Button>
-              <span className="w-full text-[12px] text-fg-muted">{t("bulkApproveHint")}</span>
+          {tiles.length > 0 && (
+            <div className={grid.container} data-testid="leave-queue-tiles">
+              {tiles.map((tile, index) => (
+                <div
+                  key={tile.key}
+                  data-testid={`leave-queue-tile-${tile.key}`}
+                  className={cn("h-full", index === tiles.length - 1 && grid.lastTileClassName)}
+                >
+                  <StatTile
+                    className="h-full"
+                    icon={tile.icon}
+                    tone={tile.tone}
+                    value={tile.value}
+                    label={tReview(tile.labelKey)}
+                  />
+                </div>
+              ))}
             </div>
           )}
-          <ul className="flex flex-col gap-2">
-            {items.map((item) => (
-              <QueueRow
-                key={item.instance_id}
-                item={item}
-                selectable={items.length > 1}
-                selected={selected.has(item.instance_id)}
-                onToggleSelected={() => {
-                  toggleSelected(item.instance_id);
-                }}
-                approving={
-                  (pendingId === item.instance_id && review.variables?.approve === true) ||
-                  bulkPending
-                }
-                rejecting={
-                  (pendingId === item.instance_id && review.variables?.approve === false) ||
-                  bulkPending
-                }
-                onApprove={() => {
-                  approve(item.instance_id);
-                }}
-                onReject={(reason) => {
-                  reject(item.instance_id, reason);
-                }}
-                onOpenDetail={() => {
-                  setOpenId(item.instance_id);
-                }}
-              />
-            ))}
-          </ul>
+
+          {items.length === 0 ? (
+            <p className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-3 text-[13px] text-fg-muted">
+              <domainIcons.exitPermit className="size-4 shrink-0" aria-hidden="true" />
+              {t("queueEmptyBody")}
+            </p>
+          ) : (
+            <>
+              {selected.size > 0 && (
+                <div className="flex flex-wrap items-center gap-2 rounded-sm border border-accent/40 bg-accent/5 px-3 py-2 text-[13px]">
+                  <span className="font-medium text-fg">
+                    {t("bulkSelected", { count: selected.size })}
+                  </span>
+                  <Button size="sm" loading={bulkPending} onClick={() => void approveSelected()}>
+                    {t("bulkApprove")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={bulkPending}
+                    onClick={() => {
+                      setSelected(new Set());
+                    }}
+                  >
+                    {t("bulkClear")}
+                  </Button>
+                  <span className="w-full text-[12px] text-fg-muted">{t("bulkApproveHint")}</span>
+                </div>
+              )}
+              <ul className="grid gap-4 lg:grid-cols-2">
+                {cells.map((cell) => (
+                  <li
+                    key={cell.key}
+                    className={cn("flex h-full flex-col", cell.span === "full" && "lg:col-span-2")}
+                  >
+                    {cell.node}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </>
       )}
       <Dialog

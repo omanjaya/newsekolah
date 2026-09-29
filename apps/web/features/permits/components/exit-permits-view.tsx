@@ -4,9 +4,9 @@ import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
 import {
   Button,
+  Card,
   Dialog,
   DialogContent,
-  EmptyState,
   PageHeader,
   Skeleton,
   Tabs,
@@ -22,7 +22,11 @@ import { useState } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
-import { type WorkflowInstance, useMyExitPermitsQuery } from "../api";
+import {
+  type WorkflowInstance,
+  useExitPermitReviewQueueQuery,
+  useMyExitPermitsQuery,
+} from "../api";
 
 import { CreateForm, ExitPermitDetail } from "./exit-permit-detail";
 import { ApprovePanel, GatePanel } from "./exit-permit-panels";
@@ -36,13 +40,30 @@ import { WorkflowStatusBadge } from "./workflow-stepper";
  */
 export function ExitPermitsView(): ReactElement {
   const t = useTranslations("app.permits.exit");
+  const tReview = useTranslations("app.permits.review");
   const canSubmit = useCan("submit_leave_requests");
   const canApprove = useCan("issue_scan_tokens");
   const canGate = useCan("scan_exit_permits");
   const [prefillId, setPrefillId] = useState<string | undefined>(undefined);
 
+  // Fetched once here, at the view level, rather than inside
+  // ExitPermitReviewQueue: the "Antrean" tab label needs the count too, and
+  // a second call to the same query hook would double the realtime
+  // subscription it opens (features/permits/api.ts's own comment on why
+  // that wiring lives in the query hook).
+  const queueEnabled = canApprove || canGate;
+  const reviewQueue = useExitPermitReviewQueueQuery(queueEnabled);
+  const queueCount = reviewQueue.data?.data.length ?? 0;
+
   const tabs = [
-    ...(canApprove || canGate ? [{ value: "queue", label: t("tabQueue") }] : []),
+    ...(queueEnabled
+      ? [
+          {
+            value: "queue",
+            label: tReview("tabWithCount", { label: t("tabQueue"), count: queueCount }),
+          },
+        ]
+      : []),
     ...(canSubmit ? [{ value: "mine", label: t("tabMine") }] : []),
     ...(canApprove ? [{ value: "approve", label: t("tabApprove") }] : []),
     ...(canGate ? [{ value: "gate", label: t("tabGate") }] : []),
@@ -53,55 +74,65 @@ export function ExitPermitsView(): ReactElement {
     tabs[0]?.value ?? "mine",
   );
 
+  if (tabs.length === 0) {
+    return (
+      <div className="flex flex-col gap-6 p-4 md:p-6">
+        <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+        <p className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-3 text-[13px] text-fg-muted">
+          <domainIcons.exitPermit className="size-4 shrink-0" aria-hidden="true" />
+          {t("noAccessBody")}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      {tabs.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.exitPermit aria-hidden="true" />}
-          title={t("noAccessTitle")}
-          description={t("noAccessBody")}
+      <Tabs value={tab} onValueChange={setTab}>
+        <PageHeader
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+          actions={
+            tabs.length > 1 ? (
+              <TabsList>
+                {tabs.map((item) => (
+                  <TabsTrigger key={item.value} value={item.value}>
+                    {item.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            ) : undefined
+          }
         />
-      ) : (
-        <Tabs value={tab} onValueChange={setTab}>
-          {tabs.length > 1 && (
-            <TabsList>
-              {tabs.map((item) => (
-                <TabsTrigger key={item.value} value={item.value}>
-                  {item.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          )}
-          {(canApprove || canGate) && (
-            <TabsContent value="queue" className="pt-4">
-              <ExitPermitReviewQueue
-                canApprove={canApprove}
-                canGate={canGate}
-                onProcess={(instanceId) => {
-                  setPrefillId(instanceId);
-                  setTab("approve");
-                }}
-              />
-            </TabsContent>
-          )}
-          {canSubmit && (
-            <TabsContent value="mine" className="pt-4">
-              <MyExitPermits />
-            </TabsContent>
-          )}
-          {canApprove && (
-            <TabsContent value="approve" className="pt-4">
-              <ApprovePanel key={prefillId ?? "manual"} prefillId={prefillId} />
-            </TabsContent>
-          )}
-          {canGate && (
-            <TabsContent value="gate" className="pt-4">
-              <GatePanel />
-            </TabsContent>
-          )}
-        </Tabs>
-      )}
+        {queueEnabled && (
+          <TabsContent value="queue" className="pt-4">
+            <ExitPermitReviewQueue
+              queue={reviewQueue}
+              canApprove={canApprove}
+              canGate={canGate}
+              onProcess={(instanceId) => {
+                setPrefillId(instanceId);
+                setTab("approve");
+              }}
+            />
+          </TabsContent>
+        )}
+        {canSubmit && (
+          <TabsContent value="mine" className="pt-4">
+            <MyExitPermits />
+          </TabsContent>
+        )}
+        {canApprove && (
+          <TabsContent value="approve" className="pt-4">
+            <ApprovePanel key={prefillId ?? "manual"} prefillId={prefillId} />
+          </TabsContent>
+        )}
+        {canGate && (
+          <TabsContent value="gate" className="pt-4">
+            <GatePanel />
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }
@@ -134,11 +165,10 @@ function MyExitPermits(): ReactElement {
       {isLoading ? (
         <Skeleton className="h-40 w-full" aria-busy="true" />
       ) : items.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.exitPermit aria-hidden="true" />}
-          title={t("emptyTitle")}
-          description={t("emptyBody")}
-        />
+        <p className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-3 text-[13px] text-fg-muted">
+          <domainIcons.exitPermit className="size-4 shrink-0" aria-hidden="true" />
+          {t("emptyBody")}
+        </p>
       ) : (
         <ul className="flex flex-col gap-2">
           {items.map((inst: WorkflowInstance) => (
@@ -148,19 +178,21 @@ function MyExitPermits(): ReactElement {
                 onClick={() => {
                   setOpenId(inst.id);
                 }}
-                className="flex w-full items-center justify-between gap-3 rounded-sm border border-border bg-surface px-4 py-3 text-left hover:bg-bg"
+                className="block w-full text-left"
               >
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[14px] text-fg">
-                    {formatDateTime(inst.opened_at, { locale, timeZone: me?.tenant.timezone })}
-                  </span>
-                  <span className="text-[13px] text-fg-muted">
-                    {inst.current_stage
-                      ? t("stageLabel", { stage: inst.current_stage.label })
-                      : t("finished")}
-                  </span>
-                </div>
-                <WorkflowStatusBadge status={inst.status} />
+                <Card className="flex w-full items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-bg">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[14px] text-fg">
+                      {formatDateTime(inst.opened_at, { locale, timeZone: me?.tenant.timezone })}
+                    </span>
+                    <span className="text-[13px] text-fg-muted">
+                      {inst.current_stage
+                        ? t("stageLabel", { stage: inst.current_stage.label })
+                        : t("finished")}
+                    </span>
+                  </div>
+                  <WorkflowStatusBadge status={inst.status} />
+                </Card>
               </button>
             </li>
           ))}
