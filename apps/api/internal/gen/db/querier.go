@@ -607,6 +607,10 @@ type Querier interface {
 	// The class a teacher is homeroom (wali kelas) duty holder of this
 	// academic year, if any -- duty slug "homeroom", scope_class_id per
 	// docs/analysis/backend-inventory.md section 1.9's global-corrector rule.
+	// as_of is the caller's business date (the attendance record/session date,
+	// or the simulated/real "today" -- see internal/platform/clock), so the
+	// global-corrector scope check follows the same date a superadmin is
+	// simulating instead of always the database server's today.
 	GetHomeroomClassForAttendance(ctx context.Context, arg GetHomeroomClassForAttendanceParams) (pgtype.UUID, error)
 	// permits.AttendanceBlocker: a student mid-flow cannot be marked present
 	// for today's attendance until this resolves, per
@@ -865,6 +869,10 @@ type Querier interface {
 	IsActiveTeacherOrStaff(ctx context.Context, arg IsActiveTeacherOrStaffParams) (bool, error)
 	IsActiveTeacherRef(ctx context.Context, arg IsActiveTeacherRefParams) (bool, error)
 	IsSchoolDayRef(ctx context.Context, arg IsSchoolDayRefParams) (bool, error)
+	// Authentication: whether the session itself is still valid. Always the
+	// real clock -- never the simulated business time (see
+	// docs/testing-time-simulation.md), so a simulated future date can never
+	// extend a session's real-world lifetime.
 	IsSessionActive(ctx context.Context, arg IsSessionActiveParams) (pgtype.Bool, error)
 	// Missing rule: classroom-entry tokens may only be consumed by a student
 	// profile (a teacher or any other staff scanning it is not "entering
@@ -884,12 +892,31 @@ type Querier interface {
 	// GET /v1/me/announcements: published, inside the active window, pinned
 	// first then most recent. Recipient filtering (does this user's audience
 	// match) happens in the service, since audience is a jsonb blob evaluated
-	// against role/class membership resolved separately.
-	ListActiveAnnouncementsForUser(ctx context.Context, tenantID uuid.UUID) ([]Announcement, error)
+	// against role/class membership resolved separately. as_of is the caller's
+	// business "now" (the simulated time when a superadmin is testing, the
+	// real clock otherwise -- see internal/platform/clock), so a scheduled
+	// announcement's publish window can be exercised without waiting for it.
+	ListActiveAnnouncementsForUser(ctx context.Context, arg ListActiveAnnouncementsForUserParams) ([]Announcement, error)
 	// cross-module read: enrollments is owned by the academic module.
 	ListActiveClassIDsForStudent(ctx context.Context, arg ListActiveClassIDsForStudentParams) ([]uuid.UUID, error)
 	ListActiveDiscounts(ctx context.Context, arg ListActiveDiscountsParams) ([]FeeDiscount, error)
+	// as_of is the effective-permissions caller's business date: the
+	// simulated date when a superadmin is running a time simulation for this
+	// request (including while impersonating another user), the real date
+	// otherwise -- see internal/platform/clock and
+	// identity/service.loadPrincipal, which feeds this into authz.Principal.
+	// This decides which duties are active; it never decides whether the
+	// session itself is valid (see session_active.sql's IsSessionActive,
+	// which stays on the real clock).
 	ListActiveDutyAssignmentsForUser(ctx context.Context, arg ListActiveDutyAssignmentsForUserParams) ([]ListActiveDutyAssignmentsForUserRow, error)
+	// Despite living alongside session queries, this is not a session/token
+	// query: it is the permission half of the same duty-validity computation
+	// as duties.sql's ListActiveDutyAssignmentsForUser (identity/repository's
+	// ListActiveDuties calls both for the same user/year to build one
+	// authz.Principal). as_of must be the same business date passed there, or
+	// a duty could show "active" with none of its permissions attached (or
+	// vice versa). See ListActiveDutyAssignmentsForUser's comment for what
+	// as_of is.
 	ListActiveDutyAssignmentsWithPermissions(ctx context.Context, arg ListActiveDutyAssignmentsWithPermissionsParams) ([]ListActiveDutyAssignmentsWithPermissionsRow, error)
 	// cross-module read; replace with academic/identity/school reader
 	// interfaces after merge. Every query in this file reads a table owned by
@@ -1241,8 +1268,12 @@ type Querier interface {
 	ListUserIDsByRoleSlugs(ctx context.Context, arg ListUserIDsByRoleSlugsParams) ([]uuid.UUID, error)
 	// Who currently holds a duty in the active academic year: every holder of
 	// a school-scoped duty, or the holders scoped to class_id when it is given.
-	// Used by the wiring layer to address notifications (homeroom of a class,
-	// security staff at the gate).
+	// Used by the wiring layer/event bus to address notifications (homeroom of
+	// a class, security staff at the gate) when an unrelated event fires; that
+	// always runs on the real clock like the rest of business-time simulation's
+	// background/event-delivery paths (docs/testing-time-simulation.md), so
+	// current_date here is intentionally left as the database's own real date,
+	// not the simulated clock ListActiveDutyAssignmentsForUser above follows.
 	ListUserIDsWithActiveDuty(ctx context.Context, arg ListUserIDsWithActiveDutyParams) ([]uuid.UUID, error)
 	ListUserRoleSlugs(ctx context.Context, userID uuid.UUID) ([]string, error)
 	ListUsersAdmin(ctx context.Context, arg ListUsersAdminParams) ([]ListUsersAdminRow, error)

@@ -31,7 +31,7 @@ type Repository interface {
 	ListForAdmin(ctx context.Context, tenantID uuid.UUID, status string, cursor Cursor, limit int) ([]domain.Announcement, error)
 	ListDueScheduled(ctx context.Context) ([]domain.Announcement, error)
 	ListActiveTenantIDs(ctx context.Context) ([]uuid.UUID, error)
-	ListActiveForTenant(ctx context.Context, tenantID uuid.UUID) ([]domain.Announcement, error)
+	ListActiveForTenant(ctx context.Context, tenantID uuid.UUID, asOf time.Time) ([]domain.Announcement, error)
 
 	MarkRead(ctx context.Context, tenantID, announcementID, userID uuid.UUID) error
 	CountReads(ctx context.Context, tenantID, announcementID uuid.UUID) (int64, error)

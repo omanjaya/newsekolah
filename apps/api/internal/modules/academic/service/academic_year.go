@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // yearRepository is the data-access boundary for academic years, terms,
@@ -89,7 +90,7 @@ func (s *Service) CreateAcademicYear(ctx context.Context, tenantID uuid.UUID, la
 // semesters) when the policy is absent or malformed -- seeding terms
 // should never block year creation.
 func (s *Service) termCountPolicy(ctx context.Context, tenantID uuid.UUID) int {
-	raw, ok, err := s.repo.GetCalendarPolicyConfig(ctx, tenantID, s.clock.Now())
+	raw, ok, err := s.repo.GetCalendarPolicyConfig(ctx, tenantID, clock.Now(ctx, s.clock))
 	if err != nil || !ok {
 		return domain.DefaultTermCount
 	}

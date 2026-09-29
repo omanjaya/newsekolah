@@ -8,6 +8,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/i18n"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
@@ -65,7 +66,7 @@ func (h *TenantHandler) PreviewTenantReportHeader(ctx context.Context, request a
 	if err != nil {
 		return nil, mapReportHeaderError(err)
 	}
-	now := h.clock.Now()
+	now := clock.Now(ctx, h.clock)
 	if sig != nil {
 		sig.Date = reportdoc.FormatDate(locale, now)
 	}

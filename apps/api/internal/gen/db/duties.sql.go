@@ -148,14 +148,15 @@ where da.tenant_id = $1
   and da.is_active
   and dt.is_active
   and dt.deleted_at is null
-  and da.starts_on <= current_date
-  and (da.ends_on is null or da.ends_on >= current_date)
+  and da.starts_on <= $4::date
+  and (da.ends_on is null or da.ends_on >= $4::date)
 `
 
 type ListActiveDutyAssignmentsForUserParams struct {
-	TenantID       uuid.UUID `json:"tenant_id"`
-	UserID         uuid.UUID `json:"user_id"`
-	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	UserID         uuid.UUID   `json:"user_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	AsOf           pgtype.Date `json:"as_of"`
 }
 
 type ListActiveDutyAssignmentsForUserRow struct {
@@ -166,8 +167,21 @@ type ListActiveDutyAssignmentsForUserRow struct {
 	ScopeStudentID pgtype.UUID `json:"scope_student_id"`
 }
 
+// as_of is the effective-permissions caller's business date: the
+// simulated date when a superadmin is running a time simulation for this
+// request (including while impersonating another user), the real date
+// otherwise -- see internal/platform/clock and
+// identity/service.loadPrincipal, which feeds this into authz.Principal.
+// This decides which duties are active; it never decides whether the
+// session itself is valid (see session_active.sql's IsSessionActive,
+// which stays on the real clock).
 func (q *Queries) ListActiveDutyAssignmentsForUser(ctx context.Context, arg ListActiveDutyAssignmentsForUserParams) ([]ListActiveDutyAssignmentsForUserRow, error) {
-	rows, err := q.db.Query(ctx, listActiveDutyAssignmentsForUser, arg.TenantID, arg.UserID, arg.AcademicYearID)
+	rows, err := q.db.Query(ctx, listActiveDutyAssignmentsForUser,
+		arg.TenantID,
+		arg.UserID,
+		arg.AcademicYearID,
+		arg.AsOf,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -247,8 +261,12 @@ type ListUserIDsWithActiveDutyParams struct {
 
 // Who currently holds a duty in the active academic year: every holder of
 // a school-scoped duty, or the holders scoped to class_id when it is given.
-// Used by the wiring layer to address notifications (homeroom of a class,
-// security staff at the gate).
+// Used by the wiring layer/event bus to address notifications (homeroom of
+// a class, security staff at the gate) when an unrelated event fires; that
+// always runs on the real clock like the rest of business-time simulation's
+// background/event-delivery paths (docs/testing-time-simulation.md), so
+// current_date here is intentionally left as the database's own real date,
+// not the simulated clock ListActiveDutyAssignmentsForUser above follows.
 func (q *Queries) ListUserIDsWithActiveDuty(ctx context.Context, arg ListUserIDsWithActiveDutyParams) ([]uuid.UUID, error) {
 	rows, err := q.db.Query(ctx, listUserIDsWithActiveDuty, arg.TenantID, arg.Slug, arg.ClassID)
 	if err != nil {

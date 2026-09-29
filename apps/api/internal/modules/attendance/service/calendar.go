@@ -239,7 +239,7 @@ func (s *Service) GetHomeroomAttendance(ctx context.Context, tenantID uuid.UUID,
 		if err != nil {
 			return err
 		}
-		classID, ok, err := s.repo.GetHomeroomClassForTeacher(ctx, tenantID, yearID, actor.UserID)
+		classID, ok, err := s.repo.GetHomeroomClassForTeacher(ctx, tenantID, yearID, actor.UserID, date)
 		if err != nil {
 			return err
 		}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
@@ -43,7 +44,7 @@ func (h *AcademicHandler) CommitEnrollmentImport(ctx context.Context, request ap
 	}
 	moveExisting := request.Params.MoveExisting != nil && *request.Params.MoveExisting
 	partial := request.Params.Partial != nil && *request.Params.Partial
-	rows, err := h.service.ImportCommit(ctx, tenantID, request.Params.AcademicYearId, file, h.clock.Now(), moveExisting, partial)
+	rows, err := h.service.ImportCommit(ctx, tenantID, request.Params.AcademicYearId, file, clock.Now(ctx, h.clock), moveExisting, partial)
 	if err != nil {
 		return nil, mapDomainError(err)
 	}

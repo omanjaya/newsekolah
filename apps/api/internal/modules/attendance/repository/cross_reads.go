@@ -49,9 +49,9 @@ func (r *Repository) GetEnrolledClass(ctx context.Context, tenantID, academicYea
 	return classID, true, nil
 }
 
-func (r *Repository) GetHomeroomClassForTeacher(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID) (uuid.UUID, bool, error) {
+func (r *Repository) GetHomeroomClassForTeacher(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID, asOf time.Time) (uuid.UUID, bool, error) {
 	classID, err := r.queries(ctx).GetHomeroomClassForAttendance(ctx, db.GetHomeroomClassForAttendanceParams{
-		TenantID: tenantID, AcademicYearID: academicYearID, UserID: teacherUserID,
+		TenantID: tenantID, AcademicYearID: academicYearID, UserID: teacherUserID, AsOf: pdatabase.Date(asOf),
 	})
 	if err != nil {
 		return uuid.UUID{}, false, nil //nolint:nilerr // no homeroom duty is the common case, not an error.

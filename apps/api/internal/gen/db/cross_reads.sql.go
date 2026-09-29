@@ -160,22 +160,32 @@ where da.tenant_id = $1
   and da.is_active
   and dt.is_active
   and da.scope_class_id is not null
-  and da.starts_on <= current_date
-  and (da.ends_on is null or da.ends_on >= current_date)
+  and da.starts_on <= $4::date
+  and (da.ends_on is null or da.ends_on >= $4::date)
 limit 1
 `
 
 type GetHomeroomClassForAttendanceParams struct {
-	TenantID       uuid.UUID `json:"tenant_id"`
-	AcademicYearID uuid.UUID `json:"academic_year_id"`
-	UserID         uuid.UUID `json:"user_id"`
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	UserID         uuid.UUID   `json:"user_id"`
+	AsOf           pgtype.Date `json:"as_of"`
 }
 
 // The class a teacher is homeroom (wali kelas) duty holder of this
 // academic year, if any -- duty slug "homeroom", scope_class_id per
 // docs/analysis/backend-inventory.md section 1.9's global-corrector rule.
+// as_of is the caller's business date (the attendance record/session date,
+// or the simulated/real "today" -- see internal/platform/clock), so the
+// global-corrector scope check follows the same date a superadmin is
+// simulating instead of always the database server's today.
 func (q *Queries) GetHomeroomClassForAttendance(ctx context.Context, arg GetHomeroomClassForAttendanceParams) (pgtype.UUID, error) {
-	row := q.db.QueryRow(ctx, getHomeroomClassForAttendance, arg.TenantID, arg.AcademicYearID, arg.UserID)
+	row := q.db.QueryRow(ctx, getHomeroomClassForAttendance,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.UserID,
+		arg.AsOf,
+	)
 	var scope_class_id pgtype.UUID
 	err := row.Scan(&scope_class_id)
 	return scope_class_id, err

@@ -52,7 +52,13 @@ type AuthRepository interface {
 
 	ListRolesForUser(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.Role, error)
 	ListPermissionCodesForRoles(ctx context.Context, roleIDs []uuid.UUID) ([]string, error)
-	ListActiveDuties(ctx context.Context, tenantID, userID, academicYearID uuid.UUID) ([]authz.Duty, error)
+	// asOf decides which duty assignments count as active: the request's
+	// simulated business time when one is attached to ctx (a superadmin
+	// running a time simulation, including while impersonating another
+	// user -- see internal/platform/clock.Now), the real date otherwise.
+	// This never affects whether the session/authentication itself is
+	// valid; see IsSessionActive below.
+	ListActiveDuties(ctx context.Context, tenantID, userID, academicYearID uuid.UUID, asOf time.Time) ([]authz.Duty, error)
 	ListUserIDsWithActiveDuty(ctx context.Context, tenantID uuid.UUID, slug string, classID uuid.NullUUID) ([]uuid.UUID, error)
 
 	CreateSession(ctx context.Context, s NewSession) (domain.Session, error)
@@ -345,7 +351,7 @@ func (s *Service) loadPrincipal(ctx context.Context, tenantID, userID uuid.UUID)
 	principal := authz.Principal{UserID: userID, RolePerms: rolePerms}
 
 	if yearID, ok, err := s.years.GetActiveAcademicYearID(ctx, tenantID); err == nil && ok {
-		duties, err := s.repo.ListActiveDuties(ctx, tenantID, userID, yearID)
+		duties, err := s.repo.ListActiveDuties(ctx, tenantID, userID, yearID, clock.Now(ctx, s.clock))
 		if err == nil {
 			principal.Duties = duties
 		}
