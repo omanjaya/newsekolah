@@ -27,8 +27,8 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { statusToken } from "../../../lib/attendance-status";
+import { tileColumns } from "../../../lib/layout/bento";
 import { useSession } from "../../../lib/session/session-provider";
-import { tileColumns } from "../../dashboard/home/compose";
 import { todayInZone, useMyCalendarQuery } from "../api";
 import { monthAttendanceStats } from "../lib/attendance-stats";
 
