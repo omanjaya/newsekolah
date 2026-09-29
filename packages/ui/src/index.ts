@@ -11,6 +11,17 @@ export {
   CardTitle,
 } from "./components/card.js";
 export { IconButton, type IconButtonProps } from "./components/icon-button.js";
+export {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  type TableDensity,
+  type TableProps,
+} from "./components/table.js";
 export { Input, type InputProps } from "./components/input.js";
 export { SearchInput } from "./components/search-input.js";
 export { UiLabelsProvider, useUiLabels, type UiLabels } from "./components/ui-labels.js";

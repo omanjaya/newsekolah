@@ -1,7 +1,19 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Button, Select, Skeleton, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  Button,
+  Select,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  useToast,
+} from "@newsekolah/ui";
 import { Download } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -152,29 +164,29 @@ export function EraporExport(): ReactElement {
             {rows.length === 0 ? (
               <p className="text-[13px] text-fg-muted">{t("rowsEmpty")}</p>
             ) : (
-              <div className="overflow-x-auto rounded-sm border border-border">
-                <table className="w-full text-[13px]">
-                  <thead>
-                    <tr className="border-b border-border text-left text-fg-muted">
-                      <th className="px-3 py-2 font-medium">{t("rowsColumnNisn")}</th>
-                      <th className="px-3 py-2 font-medium">{t("rowsColumnSubject")}</th>
-                      <th className="px-3 py-2 font-medium">{t("rowsColumnScore")}</th>
-                      <th className="px-3 py-2 font-medium">{t("rowsColumnPredicate")}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
+              <div className="overflow-hidden rounded-lg border border-border">
+                <Table containerClassName="rounded-none border-0">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("rowsColumnNisn")}</TableHead>
+                      <TableHead>{t("rowsColumnSubject")}</TableHead>
+                      <TableHead>{t("rowsColumnScore")}</TableHead>
+                      <TableHead>{t("rowsColumnPredicate")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {rows.slice(0, MAX_ROWS_SHOWN).map((row) => (
-                      <tr key={`${row.nisn}-${row.subject_code}`}>
-                        <td className="px-3 py-2 text-fg">{row.nisn}</td>
-                        <td className="px-3 py-2 text-fg">{row.subject_code}</td>
-                        <td className="px-3 py-2 text-fg">{row.score}</td>
-                        <td className="px-3 py-2 text-fg">{row.predicate}</td>
-                      </tr>
+                      <TableRow key={`${row.nisn}-${row.subject_code}`}>
+                        <TableCell>{row.nisn}</TableCell>
+                        <TableCell>{row.subject_code}</TableCell>
+                        <TableCell>{row.score}</TableCell>
+                        <TableCell>{row.predicate}</TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
                 {rows.length > MAX_ROWS_SHOWN && (
-                  <p className="border-t border-border px-3 py-2 text-[13px] text-fg-muted">
+                  <p className="border-t border-border bg-surface px-4 py-2 text-[13px] text-fg-muted">
                     {t("rowsMore", { count: rows.length - MAX_ROWS_SHOWN })}
                   </p>
                 )}

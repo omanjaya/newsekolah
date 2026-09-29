@@ -1,6 +1,15 @@
 "use client";
 
-import { Badge, Button } from "@newsekolah/ui";
+import {
+  Badge,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -77,46 +86,36 @@ export function ImportPreviewTable({
         ))}
       </ul>
 
-      <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
-        <table className="w-full min-w-[560px] text-[13px]">
-          <thead>
-            <tr className="bg-bg text-left text-fg-muted">
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.row")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.title")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.copies")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.status")}
-              </th>
-              <th scope="col" className="px-3 py-2 font-medium">
-                {t("columns.message")}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+      <div className="hidden md:block">
+        <Table className="min-w-[560px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">{t("columns.row")}</TableHead>
+              <TableHead scope="col">{t("columns.title")}</TableHead>
+              <TableHead scope="col">{t("columns.copies")}</TableHead>
+              <TableHead scope="col">{t("columns.status")}</TableHead>
+              <TableHead scope="col">{t("columns.message")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {preview.rows.map((row) => (
-              <tr
+              <TableRow
                 key={row.row_number}
                 className={row.status === "error" ? "bg-status-absent/5" : ""}
               >
-                <td className="px-3 py-2 tabular-nums text-fg-muted">{row.row_number}</td>
-                <td className="px-3 py-2 text-fg">{row.title || "-"}</td>
-                <td className="px-3 py-2 tabular-nums text-fg-muted">{row.copies}</td>
-                <td className="px-3 py-2">
+                <TableCell className="tabular-nums text-fg-muted">{row.row_number}</TableCell>
+                <TableCell>{row.title || "-"}</TableCell>
+                <TableCell className="tabular-nums text-fg-muted">{row.copies}</TableCell>
+                <TableCell>
                   <Badge variant={row.status === "error" ? "neutral" : "accent"}>
                     {t(`status.${row.status}`)}
                   </Badge>
-                </td>
-                <td className="px-3 py-2 text-fg-muted">{row.message || "-"}</td>
-              </tr>
+                </TableCell>
+                <TableCell className="text-fg-muted">{row.message || "-"}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       <div className="flex justify-between gap-2 border-t border-border pt-4">
