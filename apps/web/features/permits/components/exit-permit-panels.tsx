@@ -6,6 +6,7 @@ import { formatTime } from "@newsekolah/i18n";
 import {
   type BarcodeScanEvent,
   BarcodeScannerField,
+  Card,
   IconButton,
   QrPanel,
   useToast,
@@ -98,13 +99,13 @@ export function ApprovePanel({ prefillId }: { prefillId?: string } = {}): ReactE
             renewLabel={tQr("renew")}
           />
           {detail.data && (
-            <div className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4 text-[13px]">
+            <Card className="flex flex-col gap-3 p-4 text-[13px]">
               <span className="text-[15px] font-medium text-fg">
                 {formatDisplayName(detail.data.student_name)} ({detail.data.class_name})
               </span>
               <span>{detail.data.destination}</span>
               <WorkflowStepper instance={detail.data.instance} />
-            </div>
+            </Card>
           )}
         </div>
       )}
@@ -186,29 +187,28 @@ export function GatePanel(): ReactElement {
           <h2 className="text-[13px] font-medium text-fg">{t("todayListTitle")}</h2>
           <ul className="flex flex-col gap-1.5">
             {log.map((entry, index) => (
-              <li
-                key={entry.key}
-                className="flex items-center justify-between gap-2 rounded-sm border border-border bg-surface px-3 py-2"
-              >
-                <div className="flex min-w-0 flex-col">
-                  <span className="truncate text-[14px] text-fg">
-                    {formatDisplayName(entry.studentName)}{" "}
-                    <span className="text-[12px] text-fg-muted">({entry.className})</span>
-                  </span>
-                  <span className="text-[12px] text-fg-muted">
-                    {formatTime(entry.at, { locale, timeZone: me?.tenant.timezone })}
-                  </span>
-                </div>
-                {index === 0 && (
-                  <IconButton
-                    icon={<Undo2 />}
-                    aria-label={t("undoLast")}
-                    variant="ghost"
-                    onClick={() => {
-                      setLog((prev) => prev.slice(1));
-                    }}
-                  />
-                )}
+              <li key={entry.key}>
+                <Card className="flex items-center justify-between gap-2 px-3 py-2">
+                  <div className="flex min-w-0 flex-col">
+                    <span className="truncate text-[14px] text-fg">
+                      {formatDisplayName(entry.studentName)}{" "}
+                      <span className="text-[12px] text-fg-muted">({entry.className})</span>
+                    </span>
+                    <span className="text-[12px] text-fg-muted">
+                      {formatTime(entry.at, { locale, timeZone: me?.tenant.timezone })}
+                    </span>
+                  </div>
+                  {index === 0 && (
+                    <IconButton
+                      icon={<Undo2 />}
+                      aria-label={t("undoLast")}
+                      variant="ghost"
+                      onClick={() => {
+                        setLog((prev) => prev.slice(1));
+                      }}
+                    />
+                  )}
+                </Card>
               </li>
             ))}
           </ul>

@@ -3,7 +3,9 @@
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
 import {
+  Badge,
   Button,
+  Card,
   Checkbox,
   IconButton,
   Popover,
@@ -21,13 +23,13 @@ import { formatDisplayName } from "../../../lib/text/format-name";
 import type { LeaveRequestSummary } from "../api";
 
 /**
- * A quick-decision row shared by the homeroom queue: every item returned
- * by the review-queue endpoint is already scoped to the caller's own
- * pending stage (see the query's comment), so "Setujui" acts immediately
- * and "Tolak" only needs a small reason prompt -- neither has to open the
- * full detail dialog for the common case. The row body still opens that
- * dialog, for the times a reviewer wants the full context (evidence,
- * letter, prior notes) before deciding.
+ * A quick-decision card on the bento queue grid (docs/07-ui-ux.md): every
+ * item returned by the review-queue endpoint is already scoped to the
+ * caller's own pending stage (see the query's comment), so "Setujui" acts
+ * immediately and "Tolak" only needs a small reason prompt -- neither has
+ * to open the full detail dialog for the common case. The card body still
+ * opens that dialog, for the times a reviewer wants the full context
+ * (evidence, letter, prior notes) before deciding.
  */
 export function QueueRow({
   item,
@@ -59,31 +61,34 @@ export function QueueRow({
   const busy = approving || rejecting;
 
   return (
-    <li className="flex items-start gap-2 rounded-sm border border-border bg-surface px-4 py-2.5">
-      {selectable && (
-        <Checkbox
-          checked={selected}
-          disabled={busy}
-          onCheckedChange={onToggleSelected}
-          aria-label={t("selectRow", { student: item.student_name })}
-          className="mt-1 shrink-0"
-        />
-      )}
-      <button
-        type="button"
-        onClick={onOpenDetail}
-        className="flex min-w-0 flex-1 flex-col gap-0.5 text-left"
-      >
-        <span className="truncate text-[14px] font-medium text-fg">
-          {formatDisplayName(item.student_name)}{" "}
-          <span className="font-normal text-fg-muted">({item.class_name})</span>
-        </span>
-        <span className="text-[13px] text-fg-muted">
-          {t(`categories.${item.category}`)} · {range}
-        </span>
-        {item.reason && <span className="truncate text-[13px] text-fg">{item.reason}</span>}
-      </button>
-      <div className="flex shrink-0 items-center gap-1.5">
+    <Card className="flex h-full flex-col gap-3 p-4">
+      <div className="flex items-start gap-2">
+        {selectable && (
+          <Checkbox
+            checked={selected}
+            disabled={busy}
+            onCheckedChange={onToggleSelected}
+            aria-label={t("selectRow", { student: item.student_name })}
+            className="mt-1 shrink-0"
+          />
+        )}
+        <button
+          type="button"
+          onClick={onOpenDetail}
+          className="flex min-w-0 flex-1 flex-col gap-1.5 text-left"
+        >
+          <span className="truncate text-[14px] font-medium text-fg">
+            {formatDisplayName(item.student_name)}{" "}
+            <span className="font-normal text-fg-muted">({item.class_name})</span>
+          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="neutral">{t(`categories.${item.category}`)}</Badge>
+            <span className="text-[13px] text-fg-muted">{range}</span>
+          </div>
+          {item.reason && <span className="truncate text-[13px] text-fg">{item.reason}</span>}
+        </button>
+      </div>
+      <div className="mt-auto flex shrink-0 items-center justify-end gap-1.5">
         <IconButton
           icon={<Check />}
           aria-label={t("approve")}
@@ -147,6 +152,6 @@ export function QueueRow({
           </PopoverContent>
         </Popover>
       </div>
-    </li>
+    </Card>
   );
 }

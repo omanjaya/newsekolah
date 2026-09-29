@@ -1008,6 +1008,14 @@
           "submitted": "Request sent to the homeroom teacher",
           "send": "Send request"
         }
+      },
+      "review": {
+        "tabWithCount": "{label} {count}",
+        "exitWaitingApproval": "Waiting on you",
+        "exitAwaitingGate": "Awaiting the gate",
+        "lateWaiting": "Waiting",
+        "lateToday": "Recorded today",
+        "leaveWaiting": "Waiting on you"
       }
     },
     "verify": {
