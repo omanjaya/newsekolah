@@ -1,13 +1,13 @@
 {
   "assignments": {
-    "title": "Penugasan",
+    "title": "Pembagian Tugas",
     "description": "Kelola pembagian mengajar dan tugas tambahan warga sekolah.",
     "teaching": "Mengajar",
     "duties": "Tugas Tambahan",
     "types": "Jenis Tugas"
   },
   "learning": {
-    "title": "Pembelajaran",
+    "title": "Mata Pelajaran",
     "description": "Kelola mata pelajaran, alokasi per tahun ajaran, dan jam pelajaran.",
     "subjects": "Mapel",
     "offerings": "Mapel per Tahun Ajaran",
@@ -248,5 +248,36 @@
   "today": {
     "noPeriodNow": "Tidak ada jam pelajaran sekarang",
     "break": "Istirahat"
+  },
+  "workspace": {
+    "attendance": "Absensi & Jurnal",
+    "sessions": "Sesi Mengajar",
+    "journal": "Riwayat Jurnal",
+    "reports": "Rekap Absensi",
+    "schedule": "Jadwal & Kalender",
+    "timetable": "Jadwal Pelajaran",
+    "calendar": "Kalender Akademik",
+    "substitutions": "Guru Pengganti",
+    "pendingSubstitutions": "Permintaan masuk: {count}",
+    "years": "Tahun Ajaran",
+    "yearList": "Tahun & Semester",
+    "setup": "Siapkan Tahun Baru",
+    "promotion": "Kenaikan & Penempatan",
+    "yearHelp": "Siapkan kelas dan mata pelajaran tahun tujuan, tinjau kenaikan siswa, lalu aktifkan tahun ajaran ketika sekolah siap. Setiap langkah dapat dibuka kembali secara mandiri.",
+    "users": "Pengguna & Akses",
+    "accounts": "Akun Pengguna",
+    "roles": "Pengaturan Akses",
+    "importEnrollment": "Impor Penempatan",
+    "backToClasses": "Kembali ke Siswa & Kelas",
+    "requestSubstitute": "Ajukan Pengganti",
+    "openAttendance": "Buka Absensi & Jurnal",
+    "scanEntry": "Pindai Masuk Kelas",
+    "personalAttendance": "Kehadiran Saya",
+    "journalQuick": "Lengkapi Jurnal Mengajar",
+    "continuePromotion": "Lanjut ke Kenaikan Kelas",
+    "journalSaved": "Jurnal tersimpan",
+    "journalMissing": "Jurnal belum diisi",
+    "journalHelp": "Absensi dan jurnal disimpan bersama untuk pertemuan ini.",
+    "yearScope": "Tahun ajaran: {year}"
   }
 }

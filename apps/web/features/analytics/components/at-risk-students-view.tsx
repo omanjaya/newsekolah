@@ -14,6 +14,7 @@ import { useMemo, useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
+import { CounselingWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { type StudentRisk, useAtRiskStudentsQuery } from "../api";
 
 import { PolicyDialog } from "./policy-dialog";
@@ -27,6 +28,7 @@ import { RiskLevelSummary } from "./risk-level-summary";
  * anything this screen chooses.
  */
 export function AtRiskStudentsView(): ReactElement {
+  const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.analytics.list");
   const canManage = useCan("manage_early_warning_rules");
   const [policyOpen, setPolicyOpen] = useState(false);
@@ -104,9 +106,10 @@ export function AtRiskStudentsView(): ReactElement {
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN");
     return (
       <div className="p-4 md:p-6">
+        <CounselingWorkspaceNav />
         <PageHeader
           eyebrow={t("eyebrow")}
-          title={t("title")}
+          title={workspace("monitoring")}
           actions={
             canManage && (
               <Button
@@ -131,9 +134,10 @@ export function AtRiskStudentsView(): ReactElement {
     // itself never scrolls; the table scrolls its rows internally while the
     // header and description stay put. See users-view.tsx for the pattern.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
+      <CounselingWorkspaceNav />
       <PageHeader
         eyebrow={t("eyebrow")}
-        title={t("title")}
+        title={workspace("monitoring")}
         actions={
           canManage && (
             <Button

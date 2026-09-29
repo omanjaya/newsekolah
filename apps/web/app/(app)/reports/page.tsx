@@ -1,7 +1,12 @@
+import { Suspense } from "react";
 import type { ReactElement } from "react";
 
-import { ReportsView } from "../../../features/reports/components/reports-view";
+import { ReportsWorkspaceView } from "../../../features/reports/components/reports-workspace-view";
 
-export default function ReportsPage(): ReactElement {
-  return <ReportsView />;
+export default function Page(): ReactElement {
+  return (
+    <Suspense>
+      <ReportsWorkspaceView />
+    </Suspense>
+  );
 }

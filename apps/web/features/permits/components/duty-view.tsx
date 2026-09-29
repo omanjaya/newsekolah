@@ -15,6 +15,7 @@ import type { ReactElement } from "react";
 import { useEffect } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { DutyWorkspaceActions } from "../../student-services/components/service-workspace-nav";
 import { type ScanPurpose, encodeScanPayload, useIssueScanTokenMutation } from "../api";
 
 import { DutyManualRecordPanel } from "./duty-manual-record-panel";
@@ -28,6 +29,7 @@ export function DutyView(): ReactElement {
   const t = useTranslations("app.duty");
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
+      <DutyWorkspaceActions />
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <p className="max-w-2xl text-[13px] text-fg-muted">{t("intro")}</p>
       <Tabs defaultValue="classroom_entry">

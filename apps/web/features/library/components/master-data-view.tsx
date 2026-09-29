@@ -9,6 +9,7 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { AcquisitionSourcesTab } from "./acquisition-sources-tab";
 import { CollectionCategoriesTab } from "./collection-categories-tab";
 import { DdcClassesTab } from "./ddc-classes-tab";
+import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { LocationsTab } from "./locations-tab";
 import { MaterialTypesTab } from "./material-types-tab";
 import { PartnersTab } from "./partners-tab";
@@ -45,6 +46,7 @@ export function MasterDataView(): ReactElement {
     // itself never scrolls; the active tab's panel scrolls internally.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <LibraryWorkspaceNav area="catalogue" />
 
       <Tabs
         value={tab}

@@ -96,10 +96,10 @@ function monthIso(): string {
   return businessNow().toISOString().slice(0, 7);
 }
 
-export function LibraryReportsView(): ReactElement {
+export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {}): ReactElement {
   const t = useTranslations("app.library.reports");
   const [tab, setTab] = useUrlState<ReportTab>(
-    "tab",
+    tabKey,
     [
       "loans",
       "overdueMembers",

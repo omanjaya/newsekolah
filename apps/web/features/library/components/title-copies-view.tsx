@@ -31,6 +31,7 @@ import { CopiesBatchForm } from "./copies-batch-form";
 import { CopyDetailSheet } from "./copy-detail-sheet";
 import { CopyForm } from "./copy-form";
 import { CopyLabelPrintBar } from "./copy-label-print-bar";
+import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { ReadInPlaceDialog } from "./read-in-place-dialog";
 
 export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement {
@@ -130,6 +131,7 @@ export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement 
           ) : undefined
         }
       />
+      <LibraryWorkspaceNav area="catalogue" />
 
       <CopyLabelPrintBar selectedIds={orderedIds} onClear={clear} />
 

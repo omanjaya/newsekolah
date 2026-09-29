@@ -27,15 +27,17 @@ import {
   type LibraryViolationKind,
   type LibraryViolationStatus,
   useLibraryViolationsQuery,
+  useMemberViolationsQuery,
 } from "../violations-api";
 
+import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { ViolationRecordDialog } from "./violation-record-dialog";
 import { ViolationSettleDialog } from "./violation-settle-dialog";
 
 const STATUSES: LibraryViolationStatus[] = ["unpaid", "paid", "waived"];
 const KINDS: LibraryViolationKind[] = ["late", "lost", "damaged", "other"];
 
-export function ViolationsView(): ReactElement {
+export function ViolationsView({ memberUserId }: { memberUserId?: string }): ReactElement {
   const t = useTranslations("app.library.violations");
   const locale = useLocale() as Locale;
   const canRecord = useCan("manage_library_circulation");
@@ -49,11 +51,15 @@ export function ViolationsView(): ReactElement {
     status: "paid" | "waived";
   } | null>(null);
 
-  const { data, isLoading } = useLibraryViolationsQuery({ status, kind });
+  const allViolations = useLibraryViolationsQuery({ status, kind }, !memberUserId);
+  const memberViolations = useMemberViolationsQuery(memberUserId ?? "");
+  const { data, isLoading } = memberUserId ? memberViolations : allViolations;
   const directory = useDirectoryQuery();
   const directoryMap = useLookup(directory.data?.data);
 
-  const items = data?.data ?? [];
+  const items = (data?.data ?? []).filter(
+    (item) => (!status || item.status === status) && (!kind || item.kind === kind),
+  );
   const isFiltered = status !== "" || kind !== "";
 
   const columns = useMemo<ColumnDef<LibraryViolation>[]>(
@@ -154,6 +160,18 @@ export function ViolationsView(): ReactElement {
           )
         }
       />
+      <LibraryWorkspaceNav area="circulation" />
+
+      {memberUserId && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-border bg-surface p-3 text-[13px]">
+          <span>
+            {t("memberScope", { name: directoryMap.get(memberUserId)?.name ?? memberUserId })}
+          </span>
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/library/violations">{t("allMembers")}</Link>
+          </Button>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-[13px]">
@@ -218,6 +236,8 @@ export function ViolationsView(): ReactElement {
       />
 
       <ViolationRecordDialog
+        key={memberUserId ?? "all"}
+        initialMemberUserId={memberUserId}
         open={recording}
         onOpenChange={setRecording}
         onRecorded={() => {

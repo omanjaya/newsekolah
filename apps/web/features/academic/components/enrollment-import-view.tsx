@@ -3,12 +3,14 @@
 import { ApiError } from "@newsekolah/api-client";
 import { Badge, Button, Checkbox, PageHeader, Select, useToast } from "@newsekolah/ui";
 import { Download, FileSpreadsheet, FileUp } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useCan } from "../../../lib/session/session-provider";
 import { useAcademicYearsQuery } from "../api";
 import { type ImportRowResult, useEnrollmentImportMutation } from "../api-enrollment";
 import { downloadEnrollmentImportTemplate } from "../lib/enrollment-import";
@@ -27,6 +29,8 @@ const ERROR_ACTION_TEXT: Record<ImportRowResult["action"], string> = {
  * uploaded workbook is re-sent to `commit` once the preview looks right.
  */
 export function EnrollmentImportView(): ReactElement {
+  const canViewClasses = useCan("view_academic_data");
+  const tWorkspace = useTranslations("app.academic.workspace");
   const t = useTranslations("app.academic.enrollmentImport");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -55,6 +59,11 @@ export function EnrollmentImportView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
+      {canViewClasses && (
+        <Button asChild variant="secondary" size="sm" className="self-start">
+          <Link href="/school/classes">{tWorkspace("backToClasses")}</Link>
+        </Button>
+      )}
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
 

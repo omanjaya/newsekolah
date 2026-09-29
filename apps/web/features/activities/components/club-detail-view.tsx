@@ -28,6 +28,7 @@ import { useCan } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryQuery } from "../../reference/api";
+import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   useClubMembersQuery,
   useCreateMeetingMutation,
@@ -53,6 +54,7 @@ export function ClubDetailView({ clubId }: { clubId: string }): ReactElement {
 
   return (
     <div className="flex flex-col gap-6 p-4 pb-24 md:p-6 md:pb-24">
+      <ActivitiesWorkspaceNav />
       <PageHeader eyebrow={t("eyebrow")} title={club?.name ?? "..."} />
       {club?.description && <p className="text-[13px] text-muted-foreground">{club.description}</p>}
       <Tabs value={tab} onValueChange={setTab}>

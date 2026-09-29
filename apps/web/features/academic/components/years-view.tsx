@@ -30,6 +30,7 @@ import {
   useUpdateAcademicYearMutation,
 } from "../api";
 
+import { AcademicWorkspaceLinks } from "./academic-workspace-links";
 import { TermsPanel } from "./terms-panel";
 import { YearFormDialog } from "./year-form-dialog";
 
@@ -39,6 +40,7 @@ interface PendingAction {
 }
 
 export function YearsView(): ReactElement {
+  const tWorkspace = useTranslations("app.academic.workspace");
   const t = useTranslations("app.academic.years");
   const format = useFormatter();
   const toast = useToast();
@@ -145,6 +147,7 @@ export function YearsView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
+      <AcademicWorkspaceLinks area="years" />
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -162,7 +165,7 @@ export function YearsView(): ReactElement {
           )
         }
       />
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
+      <p className="text-[13px] text-fg-muted">{tWorkspace("yearHelp")}</p>
 
       <label className="flex w-fit items-center gap-2 text-[13px]">
         <Switch checked={includeArchived} onCheckedChange={setIncludeArchived} />

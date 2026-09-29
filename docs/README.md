@@ -25,6 +25,8 @@ Mulai dari dokumen 15 untuk tahu posisi pekerjaan terkini.
 
 Panduan pengujian: [Simulasi tanggal dan jam untuk superadmin](testing-time-simulation.md).
 
+Untuk menguji izin dan data pengguna: [Ganti role dari topbar](testing-role-switch.md).
+
 Lampiran (sumber kebenaran fitur lama, sangat rinci):
 
 - [A. Inventaris frontend](analysis/frontend-inventory.md)

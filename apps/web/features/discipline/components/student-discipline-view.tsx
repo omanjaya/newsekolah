@@ -23,6 +23,7 @@ import { useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { DisciplineWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   type ViolationRecord,
   useIssueWarningLetterMutation,
@@ -87,6 +88,7 @@ export function StudentDisciplineView({ studentId }: { studentId: string }): Rea
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
+      <DisciplineWorkspaceNav />
       <PageHeader
         eyebrow={t("eyebrow")}
         title={studentName}

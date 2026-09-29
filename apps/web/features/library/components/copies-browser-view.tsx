@@ -29,6 +29,7 @@ import { useOrderedSelection } from "../use-ordered-selection";
 
 import { CopyBulkStatusBar } from "./copy-bulk-status-bar";
 import { CopyLabelPrintBar } from "./copy-label-print-bar";
+import { LibraryWorkspaceNav } from "./library-workspace-nav";
 
 const STATUSES: LibraryCopyStatus[] = [
   "available",
@@ -122,6 +123,7 @@ export function CopiesBrowserView(): ReactElement {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <LibraryWorkspaceNav area="catalogue" />
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-[13px]">

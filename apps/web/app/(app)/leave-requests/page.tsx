@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
-import { LeaveRequestsView } from "../../../features/permits/components/leave-requests-view";
+import { PermitsWorkspaceView } from "../../../features/permits/components/permits-workspace-view";
 
 export default function Page(): ReactElement {
-  return <LeaveRequestsView />;
+  return <PermitsWorkspaceView initialType="allQueue" />;
 }

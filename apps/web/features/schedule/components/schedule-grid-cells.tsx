@@ -9,6 +9,7 @@ import { formatPeriodTime } from "../period-span";
 import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
 
 import { BlockAction } from "./block-action";
+import { LessonSubstitutionAction } from "./lesson-substitution-action";
 
 /** Thin accent edge marking "this is the period in session right now" --
  * shared by every cell kind so the line reads the same whether the current
@@ -277,7 +278,10 @@ export function LessonCell({
           <span className="truncate">{subject}</span>
           {crossesBreak && breakWarningLabel && <BreakWarningBadge label={breakWarningLabel} />}
         </span>
-        <span className="truncate text-[12px]">{detail}</span>
+        <div className="flex items-center justify-between gap-1">
+          <span className="truncate text-[12px]">{detail}</span>
+          <LessonSubstitutionAction block={block} compact />
+        </div>
         {canManage && (
           <div
             className={cn(

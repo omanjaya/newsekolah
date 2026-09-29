@@ -22,6 +22,7 @@ import { useCan } from "../../../lib/session/session-provider";
 import { type SupervisionCycle, useSupervisionCyclesQuery } from "../api";
 
 import { SupervisionCycleForm } from "./supervision-cycle-form";
+import { SupervisionWorkspaceNav } from "./supervision-workspace-nav";
 
 export function SupervisionCyclesView(): ReactElement {
   const t = useTranslations("app.supervision.cycles");
@@ -92,6 +93,7 @@ export function SupervisionCyclesView(): ReactElement {
           )
         }
       />
+      <SupervisionWorkspaceNav />
 
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable

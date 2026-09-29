@@ -37,6 +37,7 @@ import {
 import { useLibraryMemberTypesQuery } from "../members-api";
 
 import { LibraryPolicyDialog } from "./library-policy-dialog";
+import { LibraryWorkspaceNav } from "./library-workspace-nav";
 
 /** Dated loan rules per member type: shorten or extend limits, or close lending, for a period. */
 export function LoanRulesView(): ReactElement {
@@ -143,6 +144,7 @@ export function LoanRulesView(): ReactElement {
           )
         }
       />
+      <LibraryWorkspaceNav area="settings" />
 
       <DataTable
         stateKey="features/library/components/loan-rules-view:1"

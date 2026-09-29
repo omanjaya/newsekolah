@@ -38,7 +38,7 @@ import { WorkflowStatusBadge } from "./workflow-stepper";
  * then show the gate QR. Approvers and security: a shared queue of what is
  * waiting for them, then the existing approve/gate panels to act on it.
  */
-export function ExitPermitsView(): ReactElement {
+export function ExitPermitsView({ embedded = false }: { embedded?: boolean } = {}): ReactElement {
   const t = useTranslations("app.permits.exit");
   const tReview = useTranslations("app.permits.review");
   const canSubmit = useCan("submit_leave_requests");
@@ -77,7 +77,7 @@ export function ExitPermitsView(): ReactElement {
   if (tabs.length === 0) {
     return (
       <div className="flex flex-col gap-6 p-4 md:p-6">
-        <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+        {!embedded && <PageHeader eyebrow={t("eyebrow")} title={t("title")} />}
         <p className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-3 text-[13px] text-fg-muted">
           <domainIcons.exitPermit className="size-4 shrink-0" aria-hidden="true" />
           {t("noAccessBody")}
@@ -87,23 +87,34 @@ export function ExitPermitsView(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    <div className={embedded ? "flex flex-col gap-6" : "flex flex-col gap-6 p-4 md:p-6"}>
       <Tabs value={tab} onValueChange={setTab}>
-        <PageHeader
-          eyebrow={t("eyebrow")}
-          title={t("title")}
-          actions={
-            tabs.length > 1 ? (
-              <TabsList>
-                {tabs.map((item) => (
-                  <TabsTrigger key={item.value} value={item.value}>
-                    {item.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            ) : undefined
-          }
-        />
+        {!embedded && (
+          <PageHeader
+            eyebrow={t("eyebrow")}
+            title={t("title")}
+            actions={
+              tabs.length > 1 ? (
+                <TabsList>
+                  {tabs.map((item) => (
+                    <TabsTrigger key={item.value} value={item.value}>
+                      {item.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              ) : undefined
+            }
+          />
+        )}
+        {embedded && tabs.length > 1 && (
+          <TabsList>
+            {tabs.map((item) => (
+              <TabsTrigger key={item.value} value={item.value}>
+                {item.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        )}
         {queueEnabled && (
           <TabsContent value="queue" className="pt-4">
             <ExitPermitReviewQueue

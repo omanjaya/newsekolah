@@ -9,7 +9,9 @@ export function mobileNavigation(items: NavItem[], profile?: NavProfileKind): Na
   // registry only grants the "counseling" item via manage_counseling, which
   // ordinary teachers never hold, so its presence is a safe proxy -- no new
   // signal needs to be threaded through from the caller.
-  const isCounselor = items.some((item) => item.key === "counseling");
+  const isCounselor = items.some((item) =>
+    item.aliases ? item.aliases.includes("counseling") : item.key === "counseling",
+  );
   const priorities =
     profile === "teacher"
       ? isCounselor

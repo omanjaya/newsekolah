@@ -29,6 +29,7 @@ import {
 } from "../api";
 
 import { ScheduleObservationForm } from "./schedule-observation-form";
+import { SupervisionWorkspaceNav } from "./supervision-workspace-nav";
 
 export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): ReactElement {
   const t = useTranslations("app.supervision.cycleDetail");
@@ -127,6 +128,7 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
           </div>
         }
       />
+      <SupervisionWorkspaceNav cycleId={cycleId} />
 
       <DataTable
         stateKey="features/supervision/components/supervision-cycle-detail-view:1"

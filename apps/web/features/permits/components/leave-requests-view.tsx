@@ -24,7 +24,7 @@ import { useLeaveReviewQueueQuery } from "../api";
 import { ReviewQueue } from "./leave-review-queue";
 import { MyLeaveRequests } from "./my-leave-requests";
 
-export function LeaveRequestsView(): ReactElement {
+export function LeaveRequestsView({ embedded = false }: { embedded?: boolean } = {}): ReactElement {
   const t = useTranslations("app.permits.leave");
   const tReview = useTranslations("app.permits.review");
   const canSubmit = useCan("submit_leave_requests");
@@ -81,8 +81,12 @@ export function LeaveRequestsView(): ReactElement {
   ) : undefined;
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={headerActions} />
+    <div className={embedded ? "flex flex-col gap-6" : "flex flex-col gap-6 p-4 md:p-6"}>
+      {embedded ? (
+        headerActions && <div className="flex justify-end">{headerActions}</div>
+      ) : (
+        <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={headerActions} />
+      )}
       {tabs.length > 1 ? (
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>

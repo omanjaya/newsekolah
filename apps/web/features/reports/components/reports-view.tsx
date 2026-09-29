@@ -29,7 +29,7 @@ import { SchedulesView } from "./schedules-view";
  * rather than routing to a separate page, since most reports need only one
  * or two inputs before the download is ready.
  */
-export function ReportsView(): ReactElement {
+export function ReportsView({ tabKey = "tab" }: { tabKey?: string } = {}): ReactElement {
   const t = useTranslations("app.reports");
   const canManageSchedules = useCan("manage_report_schedules");
 
@@ -47,14 +47,14 @@ export function ReportsView(): ReactElement {
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
-      <ReportsTabs />
+      <ReportsTabs tabKey={tabKey} />
     </div>
   );
 }
 
-function ReportsTabs(): ReactElement {
+function ReportsTabs({ tabKey }: { tabKey: string }): ReactElement {
   const t = useTranslations("app.reports");
-  const [tab, setTab] = useUrlState<string>("tab", ["exports", "schedules"], "exports");
+  const [tab, setTab] = useUrlState<string>(tabKey, ["exports", "schedules"], "exports");
 
   return (
     <Tabs value={tab} onValueChange={setTab}>

@@ -26,15 +26,19 @@ function useInvalidateViolations() {
   };
 }
 
-export function useLibraryViolationsQuery(params: {
-  status?: LibraryViolationStatus | "";
-  kind?: LibraryViolationKind | "";
-}) {
+export function useLibraryViolationsQuery(
+  params: {
+    status?: LibraryViolationStatus | "";
+    kind?: LibraryViolationKind | "";
+  },
+  enabled = true,
+) {
   const client = useApiClient();
   const status = params.status === "" ? undefined : params.status;
   const kind = params.kind === "" ? undefined : params.kind;
   return useQuery({
     queryKey: keys.list(status, kind),
+    enabled,
     queryFn: () =>
       client.GET("/v1/library/violations", {
         params: { query: { status, kind, limit: 200 } },

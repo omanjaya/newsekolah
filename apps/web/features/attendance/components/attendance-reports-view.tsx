@@ -17,6 +17,7 @@ import type { ReactElement } from "react";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
+import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import { todayInZone, useOwnDailyAttendanceReportQuery } from "../api";
 
 import { AttendanceDailySessions } from "./attendance-daily-sessions";
@@ -39,6 +40,7 @@ export function AttendanceReportsView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
+      <AcademicWorkspaceLinks area="attendance" />
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>

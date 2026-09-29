@@ -5,6 +5,9 @@ import {
   Alert,
   type BarcodeScanEvent,
   BarcodeScannerField,
+  Button,
+  Checkbox,
+  Input,
   PageHeader,
   Skeleton,
   Tabs,
@@ -23,16 +26,19 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
   decodeScanPayload,
+  type LateArrivalSummary,
   useCurrentLateArrivalQuery,
   useLateArrivalQueueQuery,
+  useLateArrivalQuery,
   useOpenLateArrivalMutation,
+  useReviewLateArrivalMutation,
   useScanLateArrivalStageMutation,
 } from "../api";
 
 import { ReviewQueue } from "./late-arrival-review-queue";
 import { WorkflowStepper } from "./workflow-stepper";
 
-export function LateArrivalsView(): ReactElement {
+export function LateArrivalsView({ embedded = false }: { embedded?: boolean } = {}): ReactElement {
   const t = useTranslations("app.permits.late");
   const tReview = useTranslations("app.permits.review");
   const { me } = useSession();
@@ -70,22 +76,33 @@ export function LateArrivalsView(): ReactElement {
     : [];
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    <div className={embedded ? "flex flex-col gap-6" : "flex flex-col gap-6 p-4 md:p-6"}>
       {showTabs ? (
         <Tabs value={tab} onValueChange={setTab}>
-          <PageHeader
-            eyebrow={t("eyebrow")}
-            title={t("title")}
-            actions={
-              <TabsList>
-                {tabs.map((item) => (
-                  <TabsTrigger key={item.value} value={item.value}>
-                    {item.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            }
-          />
+          {!embedded && (
+            <PageHeader
+              eyebrow={t("eyebrow")}
+              title={t("title")}
+              actions={
+                <TabsList>
+                  {tabs.map((item) => (
+                    <TabsTrigger key={item.value} value={item.value}>
+                      {item.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              }
+            />
+          )}
+          {embedded && (
+            <TabsList>
+              {tabs.map((item) => (
+                <TabsTrigger key={item.value} value={item.value}>
+                  {item.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          )}
           <TabsContent value="queue" className="pt-4">
             <ReviewQueue queue={queue} />
           </TabsContent>
@@ -95,7 +112,7 @@ export function LateArrivalsView(): ReactElement {
         </Tabs>
       ) : (
         <>
-          <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+          {!embedded && <PageHeader eyebrow={t("eyebrow")} title={t("title")} />}
           {canReview ? <ReviewQueue queue={queue} /> : <MyLateArrival />}
         </>
       )}
@@ -203,5 +220,80 @@ function MyLateArrival(): ReactElement {
         </p>
       )}
     </div>
+  );
+}
+
+export function LateArrivalReviewForm({
+  item,
+  onDone,
+}: {
+  item: LateArrivalSummary;
+  onDone: () => void;
+}): ReactElement {
+  const t = useTranslations("app.permits.late");
+  const toast = useToast();
+  const apiErrorMessage = useApiErrorMessage();
+  const detail = useLateArrivalQuery(item.instance_id);
+  const review = useReviewLateArrivalMutation();
+  const [reason, setReason] = useState(item.reason);
+  const [homeroomReported, setHomeroomReported] = useState(item.homeroom_reported ?? false);
+
+  return (
+    <form
+      className="flex flex-col gap-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        review.mutate(
+          {
+            id: item.instance_id,
+            reason: reason.trim() || undefined,
+            homeroom_reported: homeroomReported,
+          },
+          {
+            onSuccess: () => {
+              toast.success(t("reviewed"));
+              onDone();
+            },
+            onError: (error) => {
+              toast.error(
+                error instanceof ApiError
+                  ? apiErrorMessage(error.code)
+                  : apiErrorMessage("UNKNOWN"),
+              );
+            },
+          },
+        );
+      }}
+    >
+      {detail.data && <WorkflowStepper instance={detail.data.instance} />}
+      <label className="flex flex-col gap-1 text-[13px]">
+        <span className="font-medium">{t("reasonLabel")}</span>
+        <Input
+          value={reason}
+          onChange={(e) => {
+            setReason(e.target.value);
+          }}
+          maxLength={500}
+        />
+      </label>
+      <label className="flex items-center gap-2 text-[13px]">
+        <Checkbox
+          checked={homeroomReported}
+          onCheckedChange={(v) => {
+            setHomeroomReported(v === true);
+          }}
+        />
+        {t("homeroomReported")}
+      </label>
+      <p className="text-[13px] text-fg-muted">{t("reviewHint")}</p>
+      <div className="flex justify-end gap-2 border-t border-border pt-4">
+        <Button type="button" variant="secondary" onClick={onDone}>
+          {t("cancel")}
+        </Button>
+        <Button type="submit" loading={review.isPending}>
+          {t("submitReview")}
+        </Button>
+      </div>
+    </form>
   );
 }

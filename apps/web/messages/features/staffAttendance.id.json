@@ -1,6 +1,6 @@
 {
   "navLabel": "Presensi pegawai",
-  "title": "Presensi pegawai",
+  "title": "Absensi Pegawai",
   "eyebrow": "Kepegawaian",
   "tabs": {
     "today": "Hari Ini",
@@ -148,7 +148,7 @@
   "self": {
     "navLabel": "Presensi kerja",
     "eyebrow": "Kepegawaian",
-    "title": "Presensi kerja saya",
+    "title": "Absensi Saya",
     "today": "Hari ini",
     "arrival": "Datang",
     "departure": "Pulang",

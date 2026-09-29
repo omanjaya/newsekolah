@@ -10,6 +10,7 @@ export interface CommandPaletteItem {
   label: string;
   icon?: ReactNode;
   shortcut?: string;
+  keywords?: string[];
   onSelect: () => void;
 }
 
@@ -86,6 +87,7 @@ export function CommandPalette({
                     <CommandPrimitive.Item
                       key={item.id}
                       value={`${item.label} ${group.heading} ${item.id}`}
+                      keywords={item.keywords}
                       onSelect={item.onSelect}
                       className={cn(
                         "flex min-h-11 cursor-pointer items-center gap-2 rounded-xs px-2 py-2 text-[13px] text-fg md:min-h-9",

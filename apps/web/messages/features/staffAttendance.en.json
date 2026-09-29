@@ -1,6 +1,6 @@
 {
   "navLabel": "Staff attendance",
-  "title": "Staff attendance",
+  "title": "Staff Attendance",
   "eyebrow": "Staff",
   "tabs": {
     "today": "Today",
@@ -148,7 +148,7 @@
   "self": {
     "navLabel": "Work check-in",
     "eyebrow": "Staff",
-    "title": "My work attendance",
+    "title": "My Attendance",
     "today": "Today",
     "arrival": "Arrival",
     "departure": "Departure",

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useSyncExternalStore } from "react";
 
 import type { NavItem } from "../navigation";
 
+import { activeNavHref } from "./active-href";
+
 const EMPTY = '{"favorites":[],"recent":[]}';
 const EVENT = "newsekolah:navigation-preferences";
 interface Preferences {
@@ -66,9 +68,8 @@ export function useNavigationPreferences(
     },
     [key, scope],
   );
-  const active = items
-    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
-    .sort((a, b) => b.href.length - a.href.length)[0]?.key;
+  const activeHref = activeNavHref(pathname, items);
+  const active = items.find((item) => item.href === activeHref)?.key;
   useEffect(() => {
     if (!active) return;
     write((current) => ({
@@ -76,11 +77,17 @@ export function useNavigationPreferences(
       recent: [active, ...current.recent.filter((id) => id !== active)].slice(0, 5),
     }));
   }, [active, write]);
-  const resolve = (ids: string[]) =>
-    ids.flatMap((id) => {
-      const item = items.find((candidate) => candidate.key === id);
-      return item ? [item] : [];
+  const resolve = (ids: string[]) => {
+    const seen = new Set<string>();
+    return ids.flatMap((id) => {
+      const item = items.find(
+        (candidate) => candidate.key === id || candidate.aliases?.includes(id),
+      );
+      if (!item || seen.has(item.key) || item.sidebarPlacement === "hidden") return [];
+      seen.add(item.key);
+      return [item];
     });
+  };
   return {
     favorites: resolve(preferences.favorites),
     recent: resolve(preferences.recent),
@@ -88,9 +95,11 @@ export function useNavigationPreferences(
       if (!items.some((item) => item.key === id)) return;
       write((current) => ({
         ...current,
-        favorites: current.favorites.includes(id)
-          ? current.favorites.filter((item) => item !== id)
-          : [...current.favorites, id].slice(-20),
+        favorites: resolve(current.favorites).some((item) => item.key === id)
+          ? resolve(current.favorites)
+              .filter((item) => item.key !== id)
+              .map((item) => item.key)
+          : [...resolve(current.favorites).map((item) => item.key), id].slice(-20),
       }));
     },
   };

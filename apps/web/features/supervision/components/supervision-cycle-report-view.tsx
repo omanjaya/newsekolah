@@ -11,6 +11,8 @@ import { QueryError } from "../../../components/query-error";
 import { useLookup, useTeachersQuery } from "../../reference/api";
 import { useScheduledObservationsQuery, useSupervisionCycleQuery } from "../api";
 
+import { SupervisionWorkspaceNav } from "./supervision-workspace-nav";
+
 interface TeacherRow {
   teacherUserId: string;
   scheduledCount: number;
@@ -83,6 +85,7 @@ export function SupervisionCycleReportView({ cycleId }: { cycleId: string }): Re
         ]}
         title={t("title", { cycle: cycle.data.name })}
       />
+      <SupervisionWorkspaceNav cycleId={cycleId} />
 
       <DataTable
         stateKey="features/supervision/components/supervision-cycle-report-view:1"

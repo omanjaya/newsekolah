@@ -12,11 +12,14 @@ import {
   useToast,
 } from "@newsekolah/ui";
 import { CalendarPlus } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useCan } from "../../../lib/session/session-provider";
 import { useLookup, useSubjectsQuery } from "../../reference/api";
 import { useAcademicYearsQuery } from "../api";
 import {
@@ -26,12 +29,17 @@ import {
 } from "../api-enrollment";
 import { useGradeLevelsQuery } from "../api-master-data";
 
+import { AcademicWorkspaceLinks } from "./academic-workspace-links";
+
 /**
  * Copies subject offerings and classes from one academic year into another
  * that does not have them yet -- the usual first step when opening a new
  * school year. Nothing is written until the plan is reviewed and confirmed.
  */
 export function NewYearSetupView(): ReactElement {
+  const canPromote = useCan("manage_enrollments");
+  const tWorkspace = useTranslations("app.academic.workspace");
+  const [completedYears, setCompletedYears] = useState<{ from: string; to: string } | null>(null);
   const t = useTranslations("app.academic.newYearSetup");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -43,9 +51,23 @@ export function NewYearSetupView(): ReactElement {
   const gradeLevels = useGradeLevelsQuery();
   const gradeLevelMap = useLookup(gradeLevels.data?.data);
 
-  const [fromYearId, setFromYearId] = useState("");
-  const [toYearId, setToYearId] = useState("");
-  const [plan, setPlan] = useState<NewYearSetupPlan | null>(null);
+  const [fromYearId, setFromYearId] = useUrlState(
+    "fromYear",
+    yearOptions.map((year) => year.id),
+    "",
+  );
+  const [toYearId, setToYearId] = useUrlState(
+    "toYear",
+    yearOptions.map((year) => year.id),
+    "",
+  );
+  const [previewResult, setPreviewResult] = useState<{
+    from: string;
+    to: string;
+    plan: NewYearSetupPlan;
+  } | null>(null);
+  const plan =
+    previewResult?.from === fromYearId && previewResult.to === toYearId ? previewResult.plan : null;
   const [confirming, setConfirming] = useState(false);
 
   const preview = usePreviewNewYearSetupMutation();
@@ -61,7 +83,12 @@ export function NewYearSetupView(): ReactElement {
     if (!fromYearId || !toYearId) return;
     preview.mutate(
       { from_year_id: fromYearId, to_year_id: toYearId },
-      { onSuccess: setPlan, onError: fail },
+      {
+        onSuccess: (result) => {
+          setPreviewResult({ from: fromYearId, to: toYearId, plan: result });
+        },
+        onError: fail,
+      },
     );
   }
 
@@ -71,8 +98,18 @@ export function NewYearSetupView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
+      <AcademicWorkspaceLinks area="years" />
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
+      {canPromote && completedYears?.from === fromYearId && completedYears.to === toYearId && (
+        <Button asChild className="self-start">
+          <Link
+            href={`/school/promotion?${new URLSearchParams({ fromYear: completedYears.from, toYear: completedYears.to }).toString()}`}
+          >
+            {tWorkspace("continuePromotion")}
+          </Link>
+        </Button>
+      )}
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-[13px]">
@@ -191,7 +228,7 @@ export function NewYearSetupView(): ReactElement {
       )}
 
       <ConfirmDialog
-        open={confirming}
+        open={confirming && plan !== null}
         onOpenChange={setConfirming}
         title={t("confirmTitle")}
         description={t("confirmBody", {
@@ -200,12 +237,14 @@ export function NewYearSetupView(): ReactElement {
         })}
         confirming={commit.isPending}
         onConfirm={async () => {
+          if (!plan) return;
           try {
             const result = await commit.mutateAsync({
               from_year_id: fromYearId,
               to_year_id: toYearId,
             });
-            setPlan(null);
+            setPreviewResult(null);
+            setCompletedYears({ from: fromYearId, to: toYearId });
             setConfirming(false);
             toast.success(
               t("committed", {

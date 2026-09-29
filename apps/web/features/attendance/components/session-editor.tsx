@@ -3,7 +3,16 @@
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatTime } from "@newsekolah/i18n";
-import { Alert, Button, Tabs, TabsContent, TabsList, TabsTrigger, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  Badge,
+  Button,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  useToast,
+} from "@newsekolah/ui";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -39,6 +48,7 @@ export function SessionEditor({
   openedInCorrection: boolean;
 }): ReactElement {
   const t = useTranslations("app.attendance.session");
+  const tWorkspace = useTranslations("app.academic.workspace");
   const tEditor = useTranslations("app.attendanceEditor");
   const router = useRouter();
   const toast = useToast();
@@ -267,6 +277,12 @@ export function SessionEditor({
         disabled={save.isPending}
       />
 
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant={session.journal_topic?.trim() ? "accent" : "neutral"}>
+          {tWorkspace(session.journal_topic?.trim() ? "journalSaved" : "journalMissing")}
+        </Badge>
+        <p className="text-[13px] text-fg-muted">{tWorkspace("journalHelp")}</p>
+      </div>
       {draftOffer && (
         <Alert variant="warning" title={t("draftFoundTitle")}>
           <p>

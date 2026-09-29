@@ -38,6 +38,7 @@ import {
 } from "../members-api";
 import { useOrderedSelection } from "../use-ordered-selection";
 
+import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { MemberBulkRegisterDialog } from "./member-bulk-register-dialog";
 import { MemberCardPrintBar } from "./member-card-print-bar";
 import { MemberRegisterForm } from "./member-register-form";
@@ -180,6 +181,7 @@ export function MembersView(): ReactElement {
           )
         }
       />
+      <LibraryWorkspaceNav area="members" />
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-[13px]">

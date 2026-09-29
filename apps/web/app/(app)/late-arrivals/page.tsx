@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
-import { LateArrivalsView } from "../../../features/permits/components/late-arrivals-view";
+import { PermitsWorkspaceView } from "../../../features/permits/components/permits-workspace-view";
 
 export default function Page(): ReactElement {
-  return <LateArrivalsView />;
+  return <PermitsWorkspaceView initialType="late" />;
 }

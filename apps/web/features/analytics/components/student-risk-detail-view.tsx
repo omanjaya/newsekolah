@@ -5,12 +5,15 @@ import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
 import { Alert, Button, EmptyState, PageHeader, Skeleton } from "@newsekolah/ui";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { CounselingWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { useStudentRiskQuery } from "../api";
 
 import { AttendanceRatioBar } from "./attendance-ratio-bar";
@@ -30,6 +33,8 @@ export interface StudentRiskDetailViewProps {
  */
 export function StudentRiskDetailView({ studentId }: StudentRiskDetailViewProps): ReactElement {
   const t = useTranslations("app.analytics.detail");
+  const workspace = useTranslations("app.serviceWorkspace");
+  const canCounsel = useCan("manage_counseling");
   const levelLabel = useTranslations("app.analytics.level");
   const locale = useLocale() as Locale;
   const router = useRouter();
@@ -77,7 +82,20 @@ export function StudentRiskDetailView({ studentId }: StudentRiskDetailViewProps)
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       {backButton}
-      <PageHeader eyebrow={t("eyebrow")} title={studentName} />
+      <CounselingWorkspaceNav />
+      <PageHeader
+        eyebrow={t("eyebrow")}
+        title={studentName}
+        actions={
+          canCounsel && (
+            <Button asChild size="sm">
+              <Link href={`/discipline/counseling?studentId=${encodeURIComponent(studentId)}`}>
+                {workspace("followUpCounseling")}
+              </Link>
+            </Button>
+          )
+        }
+      />
       <p className="text-[13px] text-fg-muted">
         {t("freshness", { time: formatDateTime(data.computed_at, { locale }) })}
       </p>

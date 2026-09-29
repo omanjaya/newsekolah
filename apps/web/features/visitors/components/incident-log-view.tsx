@@ -22,6 +22,7 @@ import { useMemo, useState } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useCan } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
+import { VisitorsWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { type Incident, useIncidentsQuery } from "../api";
 
 import { IncidentDetailDialog } from "./incident-detail-dialog";
@@ -56,6 +57,7 @@ function tomorrowIso(): string {
  * the audited read, not listing it.
  */
 export function IncidentLogView(): ReactElement {
+  const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.visitors.incidents");
   const locale = useLocale() as Locale;
   const canManage = useCan("manage_visitor_incidents");
@@ -131,9 +133,10 @@ export function IncidentLogView(): ReactElement {
     // filter row stays put. See school/components/users-view.tsx for the
     // reference pattern.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
+      <VisitorsWorkspaceNav />
       <PageHeader
         eyebrow={t("eyebrow")}
-        title={t("title")}
+        title={workspace("visitors")}
         actions={
           canManage && (
             <Button

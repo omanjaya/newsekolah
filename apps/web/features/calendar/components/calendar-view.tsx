@@ -20,6 +20,7 @@ import { useMemo, useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
+import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import { useGradeLevelsQuery } from "../../school/api";
 import {
   type CalendarEvent,
@@ -94,6 +95,7 @@ export function CalendarView(): ReactElement {
     // height and divides it across its week rows. Mobile keeps the normal
     // agenda list and document scroll.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
+      <AcademicWorkspaceLinks area="schedule" />
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}

@@ -29,6 +29,7 @@ import { useMemo, useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
+import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import {
   type AdminUser,
   type ProfileKind,
@@ -45,6 +46,7 @@ import { UsersTableEmptyState } from "./users-table-empty-state";
 const KINDS: ProfileKind[] = ["teacher", "staff", "student"];
 
 export function UsersView(): ReactElement {
+  const tWorkspace = useTranslations("app.academic.workspace");
   const t = useTranslations("app.school.users");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -211,9 +213,10 @@ export function UsersView(): ReactElement {
     // filter row and pagination stay put. See classes-view.tsx for the
     // reference pattern.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
+      <AcademicWorkspaceLinks area="users" />
       <PageHeader
         eyebrow={t("eyebrow")}
-        title={t("title")}
+        title={tWorkspace("users")}
         actions={
           canCreate && (
             <div className="flex gap-2">

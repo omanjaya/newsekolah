@@ -1,7 +1,12 @@
+import { Suspense } from "react";
 import type { ReactElement } from "react";
 
-import { DashboardView } from "../../../features/dashboard/components/dashboard-view";
+import { HomeWorkspaceView } from "../../../features/dashboard/components/home-workspace-view";
 
-export default function DashboardPage(): ReactElement {
-  return <DashboardView />;
+export default function Page(): ReactElement {
+  return (
+    <Suspense>
+      <HomeWorkspaceView />
+    </Suspense>
+  );
 }

@@ -7,7 +7,7 @@
     "types": "Duty Types"
   },
   "learning": {
-    "title": "Learning",
+    "title": "Subjects",
     "description": "Manage subjects, academic-year offerings, and lesson periods.",
     "subjects": "Subjects",
     "offerings": "Yearly Offerings",
@@ -248,5 +248,36 @@
   "today": {
     "noPeriodNow": "No lesson period right now",
     "break": "Break"
+  },
+  "workspace": {
+    "attendance": "Attendance & Journal",
+    "sessions": "Teaching Sessions",
+    "journal": "Journal History",
+    "reports": "Attendance Reports",
+    "schedule": "Schedule & Calendar",
+    "timetable": "Timetable",
+    "calendar": "Academic Calendar",
+    "substitutions": "Substitute Teachers",
+    "pendingSubstitutions": "Incoming requests: {count}",
+    "years": "Academic Year",
+    "yearList": "Years & Terms",
+    "setup": "Prepare New Year",
+    "promotion": "Promotion & Placement",
+    "yearHelp": "Prepare classes and subjects for the destination year, review student promotions, then activate the year when the school is ready. Each step remains available independently.",
+    "users": "Users & Access",
+    "accounts": "User Accounts",
+    "roles": "Access Settings",
+    "importEnrollment": "Import Placement",
+    "backToClasses": "Back to Students & Classes",
+    "requestSubstitute": "Request Substitute",
+    "openAttendance": "Open Attendance & Journal",
+    "scanEntry": "Scan Classroom Entry",
+    "personalAttendance": "My Attendance",
+    "journalQuick": "Complete Teaching Journal",
+    "continuePromotion": "Continue to Class Promotion",
+    "journalSaved": "Journal saved",
+    "journalMissing": "Journal not filled",
+    "journalHelp": "Attendance and the journal are saved together for this lesson.",
+    "yearScope": "Academic year: {year}"
   }
 }

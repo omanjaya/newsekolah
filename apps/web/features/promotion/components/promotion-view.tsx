@@ -20,9 +20,11 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { businessNow } from "../../../lib/simulation/clock";
 import { useAcademicYearsQuery } from "../../academic/api";
+import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import {
   type PromotionAction,
@@ -44,9 +46,23 @@ export function PromotionView(): ReactElement {
   const years = useAcademicYearsQuery();
   const yearOptions = years.data?.data ?? [];
 
-  const [fromYearId, setFromYearId] = useState("");
-  const [toYearId, setToYearId] = useState("");
-  const [plan, setPlan] = useState<PromotionPlanItem[] | undefined>(undefined);
+  const [fromYearId, setFromYearId] = useUrlState(
+    "fromYear",
+    yearOptions.map((year) => year.id),
+    "",
+  );
+  const [toYearId, setToYearId] = useUrlState(
+    "toYear",
+    yearOptions.map((year) => year.id),
+    "",
+  );
+  const [previewResult, setPreviewResult] = useState<
+    { from: string; to: string; plan: PromotionPlanItem[] } | undefined
+  >(undefined);
+  const plan =
+    previewResult?.from === fromYearId && previewResult.to === toYearId
+      ? previewResult.plan
+      : undefined;
   const [overrides, setOverrides] = useState<Record<string, PromotionOverride>>({});
   const [confirming, setConfirming] = useState(false);
   const [effectiveOn, setEffectiveOn] = useState(() => businessNow().toISOString().slice(0, 10));
@@ -74,10 +90,15 @@ export function PromotionView(): ReactElement {
   function runPreview() {
     if (!fromYearId || !toYearId) return;
     preview.mutate(
-      { from_year_id: fromYearId, to_year_id: toYearId, overrides: Object.values(overrides) },
+      {
+        from_year_id: fromYearId,
+        to_year_id: toYearId,
+        overrides: plan ? Object.values(overrides) : [],
+      },
       {
         onSuccess: (res) => {
-          setPlan(res.data);
+          if (!plan) setOverrides({});
+          setPreviewResult({ from: fromYearId, to: toYearId, plan: res.data });
         },
         onError: handleError,
       },
@@ -185,6 +206,7 @@ export function PromotionView(): ReactElement {
     // banners, and summary badges stay fixed; once a plan loads, the table
     // takes the remaining height and scrolls its rows internally.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
+      <AcademicWorkspaceLinks area="years" />
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
 
@@ -299,7 +321,7 @@ export function PromotionView(): ReactElement {
       )}
 
       <ConfirmDialog
-        open={confirming}
+        open={confirming && plan !== undefined}
         onOpenChange={setConfirming}
         title={t("confirmTitle")}
         description={t("confirmBody", { n: rows.length })}
@@ -315,7 +337,7 @@ export function PromotionView(): ReactElement {
             {
               onSuccess: () => {
                 setConfirming(false);
-                setPlan(undefined);
+                setPreviewResult(undefined);
                 setOverrides({});
                 toast.success(t("committed"));
               },

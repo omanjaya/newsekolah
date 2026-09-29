@@ -22,10 +22,12 @@ export function ViolationRecordDialog({
   open,
   onOpenChange,
   onRecorded,
+  initialMemberUserId = "",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRecorded: () => void;
+  initialMemberUserId?: string;
 }): ReactElement {
   const t = useTranslations("app.library.violations.form");
   const tViolations = useTranslations("app.library.violations");
@@ -33,7 +35,7 @@ export function ViolationRecordDialog({
   const directory = useDirectoryQuery();
   const create = useCreateLibraryViolationMutation();
 
-  const [memberUserId, setMemberUserId] = useState("");
+  const [memberUserId, setMemberUserId] = useState(initialMemberUserId);
   const [kind, setKind] = useState<LibraryViolationKind>("damaged");
   const [penalty, setPenalty] = useState<LibraryPenalty>("fine");
   const [amount, setAmount] = useState("0");
@@ -47,7 +49,7 @@ export function ViolationRecordDialog({
   }));
 
   function reset() {
-    setMemberUserId("");
+    setMemberUserId(initialMemberUserId);
     setKind("damaged");
     setPenalty("fine");
     setAmount("0");

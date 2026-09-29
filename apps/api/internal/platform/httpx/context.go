@@ -18,6 +18,8 @@ const (
 	actorIDKey
 	apiKeyIDKey
 	apiKeyNameKey
+	roleTestingCookieKey
+	roleTestingCookieSinkKey
 )
 
 // RequestMeta carries per-request client metadata that oapi-codegen's
@@ -116,4 +118,23 @@ func WithRefreshCookie(ctx context.Context, value string) context.Context {
 func RefreshCookieFromContext(ctx context.Context) (string, bool) {
 	v, ok := ctx.Value(refreshCookieKey).(string)
 	return v, ok && v != ""
+}
+
+func withRoleTestingCookie(ctx context.Context, value string) context.Context {
+	return context.WithValue(ctx, roleTestingCookieKey, value)
+}
+
+func RoleTestingCookieFromContext(ctx context.Context) (string, bool) {
+	v, ok := ctx.Value(roleTestingCookieKey).(string)
+	return v, ok && v != ""
+}
+
+type roleTestingCookieSink struct{ value string }
+
+// QueueRoleTestingCookie adds a second Set-Cookie header at the response
+// boundary; generated strict responses only expose one header slot.
+func QueueRoleTestingCookie(ctx context.Context, value string) {
+	if sink, ok := ctx.Value(roleTestingCookieSinkKey).(*roleTestingCookieSink); ok {
+		sink.value = value
+	}
 }

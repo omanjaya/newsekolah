@@ -187,7 +187,7 @@
   },
   "desk": {
     "eyebrow": "Perpustakaan",
-    "title": "Meja sirkulasi",
+    "title": "Peminjaman & Pengembalian",
     "scanSubmit": "Catat",
     "undoLastScan": "Batalkan pindai terakhir",
     "lookup": {
@@ -488,9 +488,9 @@
     "edit": "Ubah keanggotaan"
   },
   "violations": {
-    "navLabel": "Pelanggaran perpustakaan",
+    "navLabel": "Denda & Sanksi",
     "eyebrow": "Perpustakaan",
-    "title": "Pelanggaran dan denda",
+    "title": "Denda & Sanksi",
     "record": "Catat pelanggaran",
     "rowActions": "Aksi untuk {member}",
     "settle": {
@@ -555,7 +555,9 @@
       "notes": "Catatan",
       "cancel": "Batal",
       "submit": "Simpan"
-    }
+    },
+    "memberScope": "Anggota: {name}",
+    "allMembers": "Lihat Semua Anggota"
   },
   "import": {
     "navLabel": "Impor koleksi",
@@ -762,7 +764,7 @@
   },
   "stocktake": {
     "eyebrow": "Perpustakaan",
-    "title": "Opname",
+    "title": "Stok Opname",
     "startNew": "Mulai sesi baru",
     "form": {
       "name": "Nama sesi",
@@ -812,7 +814,7 @@
   },
   "masterData": {
     "eyebrow": "Perpustakaan",
-    "title": "Master data perpustakaan",
+    "title": "Pengaturan Katalog",
     "navLabel": "Master data",
     "tabs": {
       "materialTypes": "Jenis bahan",
@@ -1348,5 +1350,27 @@
     "LIBRARY_MASTER_DATA_CODE_EXISTS": "Kode ini sudah dipakai. Gunakan kode lain.",
     "LIBRARY_MASTER_DATA_IN_USE": "Data ini masih dipakai oleh eksemplar, sehingga tidak bisa dihapus. Nonaktifkan saja bila tidak dipakai lagi.",
     "LIBRARY_MODULE_DISABLED": "Modul perpustakaan belum diaktifkan untuk sekolah ini."
+  },
+  "workspace": {
+    "catalogue": "Katalog",
+    "circulation": "Peminjaman & Pengembalian",
+    "members": "Anggota",
+    "settings": "Pengaturan Peminjaman",
+    "visits": "Kunjungan",
+    "stocktake": "Stok Opname",
+    "titles": "Judul Buku",
+    "copies": "Eksemplar",
+    "importBooks": "Impor Buku",
+    "catalogueSettings": "Pengaturan Katalog",
+    "individual": "Individu",
+    "class": "Kelas",
+    "sanctions": "Denda & Sanksi",
+    "openKiosk": "Buka Kios Mandiri",
+    "loanSettings": "Pengaturan Peminjaman",
+    "memberTypes": "Jenis Anggota & Batas Pinjam",
+    "periodRules": "Aturan Periode & Kebijakan",
+    "openVisitKiosk": "Buka Kios Kunjungan",
+    "report": "Rekap",
+    "memberSanctions": "Denda & Sanksi Anggota"
   }
 }

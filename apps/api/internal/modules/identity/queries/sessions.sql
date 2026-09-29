@@ -7,7 +7,7 @@ returning *;
 select * from sessions where tenant_id = $1 and id = $2;
 
 -- name: GetSessionByRefreshHash :one
-select * from sessions where tenant_id = $1 and refresh_token_hash = $2;
+select * from sessions where tenant_id = $1 and refresh_token_hash = $2 for update;
 
 -- name: RevokeSession :exec
 update sessions set revoked_at = now(), revoked_reason = $3 where tenant_id = $1 and id = $2 and revoked_at is null;

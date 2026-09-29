@@ -2,6 +2,7 @@
 
 import { Avatar, Badge, Button } from "@newsekolah/ui";
 import { UserX } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -36,6 +37,7 @@ export function DeskMemberPanel({
 }): ReactElement {
   const t = useTranslations("app.library.desk.member");
   const tStatus = useTranslations("app.library.members.status");
+  const tWorkspace = useTranslations("app.library.workspace");
 
   if (!member) {
     return (
@@ -79,7 +81,16 @@ export function DeskMemberPanel({
           </span>
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="flex shrink-0 flex-wrap items-center gap-1">
+        <Button asChild variant="secondary" size="sm">
+          <Link
+            href={`/library/violations?member=${encodeURIComponent(member.userId)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {tWorkspace("memberSanctions")}
+          </Link>
+        </Button>
         <Button variant="secondary" size="sm" onClick={onClear}>
           {t("endSession")}
         </Button>

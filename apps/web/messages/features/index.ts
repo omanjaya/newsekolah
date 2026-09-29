@@ -61,6 +61,8 @@ import reportsEn from "./reports.en.json";
 import reportsId from "./reports.id.json";
 import securityEn from "./security.en.json";
 import securityId from "./security.id.json";
+import serviceWorkspaceEn from "./service-workspace.en.json";
+import serviceWorkspaceId from "./service-workspace.id.json";
 import ssoEn from "./sso.en.json";
 import ssoId from "./sso.id.json";
 import staffAttendanceEn from "./staffAttendance.en.json";
@@ -71,6 +73,15 @@ import visitorsEn from "./visitors.en.json";
 import visitorsId from "./visitors.id.json";
 import workflowsEn from "./workflows.en.json";
 import workflowsId from "./workflows.id.json";
+import workspaceEn from "./workspace.en.json";
+import workspaceId from "./workspace.id.json";
+
+registerFeatureMessages({ namespace: "workspace", id: workspaceId, en: workspaceEn });
+registerFeatureMessages({
+  namespace: "serviceWorkspace",
+  id: serviceWorkspaceId,
+  en: serviceWorkspaceEn,
+});
 
 registerFeatureMessages({
   namespace: "attendanceReports",

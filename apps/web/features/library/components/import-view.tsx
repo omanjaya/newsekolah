@@ -24,6 +24,7 @@ import { parseImportFile } from "../import-lib";
 
 import { ImportMappingStep } from "./import-mapping-step";
 import { ImportPreviewTable } from "./import-preview-table";
+import { LibraryWorkspaceNav } from "./library-workspace-nav";
 
 type Step = "upload" | "mapping" | "preview" | "result";
 
@@ -118,6 +119,7 @@ export function ImportView(): ReactElement {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <LibraryWorkspaceNav area="catalogue" />
       <Stepper steps={steps} currentIndex={Math.max(currentIndex, 0)} />
 
       {error && <Alert variant="warning" title={error} />}

@@ -46,4 +46,32 @@ describe("navigation preferences", () => {
     expect(result.current.favorites).toEqual([]);
     expect(result.current.recent.every((item) => item.key !== "users")).toBe(true);
   });
+  it("migrates old favorites to their workspace without duplication and lets users unpin it", () => {
+    window.localStorage.setItem(
+      "newsekolah:navigation:school:user",
+      JSON.stringify({ favorites: ["copies", "catalogue"], recent: ["copies"] }),
+    );
+    const consolidated: NavItem[] = [
+      {
+        key: "catalogue",
+        labelKey: "Catalogue",
+        href: "/library/catalogue",
+        icon: Home,
+        aliases: ["copies", "catalogue"],
+        activePaths: ["/library/copies"],
+      },
+    ];
+    const { result } = renderHook(() =>
+      useNavigationPreferences("school:user", consolidated, "/library/copies/private-id"),
+    );
+    expect(result.current.favorites.map((item) => item.key)).toEqual(["catalogue"]);
+    expect(result.current.recent.map((item) => item.key)).toEqual(["catalogue"]);
+    act(() => {
+      result.current.toggleFavorite("catalogue");
+    });
+    expect(result.current.favorites).toEqual([]);
+    expect(window.localStorage.getItem("newsekolah:navigation:school:user")).not.toContain(
+      "private-id",
+    );
+  });
 });

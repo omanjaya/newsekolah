@@ -22,6 +22,7 @@ import { filterNavigation, navigation } from "../lib/navigation";
 import { useSession } from "../lib/session/session-provider";
 
 import { useCommandPalette } from "./command-palette-provider";
+import { RoleTestingSwitcher } from "./role-testing-switcher";
 import { TenantBrand } from "./tenant-brand";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -102,6 +103,7 @@ export function Header(): ReactElement {
         unlabelled circles in a row read as one control otherwise.
       */}
       <div className="flex shrink-0 items-center gap-1">
+        <RoleTestingSwitcher />
         <ThemeToggle />
         <NotificationBell />
         <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-line md:block" />

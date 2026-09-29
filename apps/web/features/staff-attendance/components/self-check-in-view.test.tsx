@@ -14,8 +14,11 @@ vi.mock("next-intl", () => ({
   useLocale: () => "id",
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
-  useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+  useSession: () => ({
+    me: { profile_kind: "teacher", permissions: [], tenant: { timezone: "Asia/Jakarta" } },
+  }),
 }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/check-in" }));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (key: string) => key,
 }));

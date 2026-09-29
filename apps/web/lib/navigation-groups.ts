@@ -21,7 +21,16 @@ export const NAV_GROUP = {
   platform: "nav.platform.label",
 } as const;
 
-export const navGroupOrder: string[] = Object.values(NAV_GROUP);
+export const navGroupOrder: string[] = [
+  NAV_GROUP.academic,
+  NAV_GROUP.students,
+  NAV_GROUP.staff,
+  NAV_GROUP.library,
+  NAV_GROUP.administration,
+  NAV_GROUP.masterData,
+  NAV_GROUP.settings,
+  NAV_GROUP.platform,
+];
 
 export const navGroupIcons: Record<string, LucideIcon> = {
   [NAV_GROUP.academic]: GraduationCap,

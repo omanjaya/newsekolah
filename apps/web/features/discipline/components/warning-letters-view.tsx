@@ -5,12 +5,14 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { DisciplineWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 
 import { AtRiskPanel } from "./at-risk-panel";
 import { IssuedLettersPanel } from "./issued-letters-panel";
 import { WarningLetterTemplateView } from "./warning-letter-template-view";
 
 export function WarningLettersView(): ReactElement {
+  const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.discipline.warningLetters");
   const [tab, setTab] = useUrlState<string>("tab", ["issued", "atRisk", "template"], "issued");
 
@@ -18,7 +20,8 @@ export function WarningLettersView(): ReactElement {
     // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
     // itself never scrolls; the active tab's panel scrolls internally.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <DisciplineWorkspaceNav />
+      <PageHeader eyebrow={t("eyebrow")} title={workspace("discipline")} />
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
         <TabsList>
           <TabsTrigger value="issued">{t("tabs.issued")}</TabsTrigger>

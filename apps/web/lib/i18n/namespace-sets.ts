@@ -70,6 +70,8 @@ export const ROOT_NAMESPACES: readonly string[] = [
  * and `security` are already in `ROOT_APP_NAMESPACES`.
  */
 const APP_FEATURE_NAMESPACES = [
+  "app.workspace",
+  "app.serviceWorkspace",
   "app.academic",
   "app.activities",
   "app.analytics",
@@ -160,6 +162,7 @@ export const APP_NAMESPACES: readonly string[] = [
  * that's the ~102 kB raw this split exists to keep off `/library/*`.
  */
 export const LIBRARY_NAMESPACES: readonly string[] = [
+  "app.workspace",
   ...SHARED_NAMESPACES,
   ...ROOT_APP_NAMESPACES,
   "app.library",

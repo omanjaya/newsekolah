@@ -19,6 +19,8 @@ import {
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { downloadTeacherSupervisionReport, useTeacherSupervisionReportQuery } from "../api";
 
+import { SupervisionWorkspaceNav } from "./supervision-workspace-nav";
+
 /**
  * One teacher's observations within one cycle: overall and per-criterion
  * averages, then every observation's date and score for the reader to
@@ -134,6 +136,8 @@ export function TeacherSupervisionReportView({
           actions={exportButton}
         />
       )}
+
+      {!hideHeader && <SupervisionWorkspaceNav cycleId={cycleId} />}
 
       <ReportExportDialog
         open={dialogOpen}

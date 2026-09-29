@@ -6,7 +6,7 @@ import { MentorGroupsView } from "../../../../features/mentoring/components/ment
 export default function MentorGroupsPage(): ReactElement {
   return (
     <RouteGuard requiredPermission="view_mentoring">
-      <MentorGroupsView />
+      <MentorGroupsView initialScope="all" />
     </RouteGuard>
   );
 }

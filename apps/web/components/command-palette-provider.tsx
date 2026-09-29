@@ -10,6 +10,8 @@ import type { ReactElement, ReactNode } from "react";
 import { groupNavigation } from "../lib/group-navigation";
 import { navigation, filterNavigation } from "../lib/navigation";
 import { confirmUnsavedChangesBeforeNavigation } from "../lib/navigation/use-unsaved-changes-protection";
+import { canOpenPath } from "../lib/navigation-permissions";
+import { consolidateNavigation } from "../lib/navigation-workspaces";
 import { useSession } from "../lib/session/session-provider";
 
 interface CommandPaletteContextValue {
@@ -56,17 +58,36 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
   }, []);
 
   const groups: CommandPaletteGroup[] = useMemo(() => {
-    const items = filterNavigation(
+    const authorizedItems = filterNavigation(
       navigation,
       (permission) => me?.permissions.includes(permission) ?? false,
       me?.profile_kind,
       (me?.roles ?? []).map((role) => role.slug),
+    );
+    const workspaces = consolidateNavigation(authorizedItems, {
+      profileKind: me?.profile_kind,
+      duties: me?.duties,
+      canManageSchool: me?.permissions.some((code) =>
+        ["manage_master_data", "manage_enrollments", "view_users"].includes(code),
+      ),
+    });
+    const hrefs = new Set(workspaces.map((item) => item.href));
+    const items = [
+      ...workspaces,
+      ...authorizedItems.filter((item) => !hrefs.has(item.href)),
+    ].filter((item) =>
+      canOpenPath(
+        item.href,
+        (permission) => me?.permissions.includes(permission) ?? false,
+        me?.profile_kind,
+      ),
     );
     return groupNavigation(items).map((group) => ({
       heading: tNav(group.labelKey),
       items: group.items.map((item) => ({
         id: item.key,
         label: tNav(item.labelKey),
+        keywords: item.searchTerms?.map((key) => tNav(key)),
         icon: <item.icon aria-hidden="true" />,
         onSelect: () => {
           if (!confirmUnsavedChangesBeforeNavigation()) return;
@@ -75,7 +96,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
         },
       })),
     }));
-  }, [me?.permissions, me?.profile_kind, me?.roles, router, tNav]);
+  }, [me?.permissions, me?.profile_kind, me?.roles, me?.duties, router, tNav]);
 
   const open = useCallback(() => {
     setHasOpened(true);

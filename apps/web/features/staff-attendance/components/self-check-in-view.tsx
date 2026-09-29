@@ -28,6 +28,8 @@ import {
 } from "../api";
 import { shiftDateISO } from "../time";
 
+import { StaffAttendanceWorkspaceNav } from "./staff-attendance-workspace-nav";
+
 const STATUS_TOKEN: Partial<Record<AttendanceRecord["status_code"], StatusName>> = {
   present: "present",
   late: "late",
@@ -106,6 +108,7 @@ export function SelfCheckInView(): ReactElement {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <StaffAttendanceWorkspaceNav />
 
       <section className="flex w-full max-w-md flex-col gap-5 rounded-sm border border-border bg-surface p-5">
         <div className="flex flex-col gap-1">

@@ -261,14 +261,15 @@ func toDomainUser(row db.User) domain.User {
 
 func toDomainSession(row db.Session) domain.Session {
 	return domain.Session{
-		ID:        row.ID,
-		FamilyID:  row.FamilyID,
-		UserID:    row.UserID,
-		TenantID:  row.TenantID,
-		Kind:      domain.SessionKind(row.Kind),
-		Client:    domain.ClientKind(row.Client),
-		RevokedAt: pdatabase.TimePtr(row.RevokedAt),
-		ExpiresAt: pdatabase.TimeOrZero(row.ExpiresAt),
+		ID:          row.ID,
+		FamilyID:    row.FamilyID,
+		UserID:      row.UserID,
+		TenantID:    row.TenantID,
+		ActorUserID: pdatabase.UUIDOrNil(row.ActorUserID),
+		Kind:        domain.SessionKind(row.Kind),
+		Client:      domain.ClientKind(row.Client),
+		RevokedAt:   pdatabase.TimePtr(row.RevokedAt),
+		ExpiresAt:   pdatabase.TimeOrZero(row.ExpiresAt),
 	}
 }
 

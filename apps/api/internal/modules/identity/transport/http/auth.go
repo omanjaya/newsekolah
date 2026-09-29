@@ -70,9 +70,15 @@ func (h *Handler) RefreshToken(ctx context.Context, request api.RefreshTokenRequ
 	}
 
 	ip, userAgent := deviceInfoFromContext(ctx)
-	result, err := h.service.Refresh(ctx, tenantID, refreshToken, ip, userAgent)
+	var result service.AuthResult
+	var err error
+	if proof, roleTesting := httpx.RoleTestingCookieFromContext(ctx); roleTesting && viaCookie {
+		result, err = h.service.RefreshRoleTesting(ctx, tenantID, proof, refreshToken)
+	} else {
+		result, err = h.service.Refresh(ctx, tenantID, refreshToken, ip, userAgent)
+	}
 	if err != nil {
-		return nil, mapAuthError(err)
+		return nil, mapRoleTestingError(err)
 	}
 
 	tokens := h.toAuthTokensForRefresh(ctx, tenantID, result, viaCookie)
@@ -92,6 +98,14 @@ func (h *Handler) Logout(ctx context.Context, _ api.LogoutRequestObject) (api.Lo
 		return nil, httpx.ErrTokenInvalid
 	}
 	userID, _ := httpx.UserIDFromContext(ctx)
+	if proof, hasProof := httpx.RoleTestingCookieFromContext(ctx); hasProof {
+		if refresh, hasRefresh := httpx.RefreshCookieFromContext(ctx); hasRefresh {
+			if err := h.service.CancelRoleTesting(ctx, tenantID, proof, refresh); err == nil {
+				cookie := httpx.ExpiredRefreshCookie(h.isProduction)
+				return api.Logout204Response{Headers: api.Logout204ResponseHeaders{SetCookie: &cookie}}, nil
+			}
+		}
+	}
 
 	if err := h.service.Logout(ctx, tenantID, userID, sessionID); err != nil {
 		return nil, mapAuthError(err)

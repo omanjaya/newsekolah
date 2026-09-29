@@ -38,9 +38,11 @@ function toLocalInput(iso?: string): string {
 
 export function CounselingForm({
   initial,
+  initialStudentId,
   onDone,
 }: {
   initial?: Counseling;
+  initialStudentId?: string;
   onDone: () => void;
 }): ReactElement {
   const t = useTranslations("app.discipline.counseling.form");
@@ -52,9 +54,9 @@ export function CounselingForm({
   const create = useCreateCounselingMutation();
   const update = useUpdateCounselingMutation();
 
-  const draftId = initial?.id ?? "new";
+  const draftId = initial?.id ?? (initialStudentId ? `new:${initialStudentId}` : "new");
 
-  const [studentId, setStudentId] = useState(initial?.student_user_id ?? "");
+  const [studentId, setStudentId] = useState(initial?.student_user_id ?? initialStudentId ?? "");
   const [sessionAt, setSessionAt] = useState(
     toLocalInput(initial?.session_at ?? businessNow().toISOString()),
   );

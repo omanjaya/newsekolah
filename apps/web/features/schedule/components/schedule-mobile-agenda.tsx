@@ -9,6 +9,8 @@ import { blockCrossesBreak } from "../break-warning";
 import { isNowWithinBlock } from "../current-period";
 import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
 
+import { LessonSubstitutionAction } from "./lesson-substitution-action";
+
 type NamedLookup = Map<string, { name: string }>;
 
 interface Period {
@@ -238,6 +240,7 @@ export function ScheduleMobileAgenda({
                 )}
               </span>
               <span className="text-[13px]">{title}</span>
+              <LessonSubstitutionAction block={block} />
               {canManage && (
                 // The same three actions the wide grid offers. A phone is
                 // where a teacher fixes one lesson between classes, so

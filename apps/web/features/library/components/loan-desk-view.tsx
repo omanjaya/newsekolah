@@ -12,6 +12,7 @@ import { DeskModeTabs } from "./desk-mode-tabs";
 import { DeskOverdueTable } from "./desk-overdue-table";
 import { DeskReceiptDialog } from "./desk-receipt-dialog";
 import { DeskScanBasket } from "./desk-scan-basket";
+import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { useDeskSession } from "./use-desk-session";
 
 /**
@@ -49,6 +50,7 @@ export function LoanDeskView(): ReactElement {
           )
         }
       />
+      <LibraryWorkspaceNav area="circulation" />
 
       <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
         <DeskMemberPanel

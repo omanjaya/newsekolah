@@ -6,12 +6,14 @@ import type { ReactElement } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
+import { DisciplineWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 
 import { DisciplinePolicyView } from "./discipline-policy-view";
 import { ViolationCatalogView } from "./violation-catalog-view";
 import { ViolationsLedgerView } from "./violations-ledger-view";
 
 export function ViolationsView(): ReactElement {
+  const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.discipline.violations");
   const canManageCatalog = useCan("manage_discipline_catalog");
   const canManagePolicy = useCan("manage_settings");
@@ -27,7 +29,8 @@ export function ViolationsView(): ReactElement {
     // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
     // itself never scrolls; the active tab's panel scrolls internally.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <DisciplineWorkspaceNav />
+      <PageHeader eyebrow={t("eyebrow")} title={workspace("discipline")} />
       {showTabs ? (
         <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
           <TabsList>

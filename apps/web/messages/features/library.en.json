@@ -187,7 +187,7 @@
   },
   "desk": {
     "eyebrow": "Library",
-    "title": "Loan desk",
+    "title": "Loans & Returns",
     "scanSubmit": "Record",
     "undoLastScan": "Undo last scan",
     "lookup": {
@@ -488,9 +488,9 @@
     "edit": "Edit membership"
   },
   "violations": {
-    "navLabel": "Library violations",
+    "navLabel": "Fines & Sanctions",
     "eyebrow": "Library",
-    "title": "Violations and fines",
+    "title": "Fines & Sanctions",
     "record": "Record violation",
     "rowActions": "Actions for {member}",
     "settle": {
@@ -555,7 +555,9 @@
       "notes": "Notes",
       "cancel": "Cancel",
       "submit": "Save"
-    }
+    },
+    "memberScope": "Member: {name}",
+    "allMembers": "View All Members"
   },
   "import": {
     "navLabel": "Import collection",
@@ -812,7 +814,7 @@
   },
   "masterData": {
     "eyebrow": "Library",
-    "title": "Library master data",
+    "title": "Catalogue Settings",
     "navLabel": "Master data",
     "tabs": {
       "materialTypes": "Material types",
@@ -1348,5 +1350,27 @@
     "LIBRARY_MASTER_DATA_CODE_EXISTS": "This code is already in use. Choose another code.",
     "LIBRARY_MASTER_DATA_IN_USE": "This entry is still used by copies, so it cannot be deleted. Deactivate it instead if it is no longer needed.",
     "LIBRARY_MODULE_DISABLED": "The library module is not enabled for this school."
+  },
+  "workspace": {
+    "catalogue": "Catalogue",
+    "circulation": "Loans & Returns",
+    "members": "Members",
+    "settings": "Loan Settings",
+    "visits": "Visits",
+    "stocktake": "Stocktake",
+    "titles": "Book Titles",
+    "copies": "Copies",
+    "importBooks": "Import Books",
+    "catalogueSettings": "Catalogue Settings",
+    "individual": "Individual",
+    "class": "Class",
+    "sanctions": "Fines & Sanctions",
+    "openKiosk": "Open Self-service Kiosk",
+    "loanSettings": "Loan Settings",
+    "memberTypes": "Member Types & Loan Limits",
+    "periodRules": "Period Rules & Policy",
+    "openVisitKiosk": "Open Visit Kiosk",
+    "report": "Reports",
+    "memberSanctions": "Member Fines & Sanctions"
   }
 }

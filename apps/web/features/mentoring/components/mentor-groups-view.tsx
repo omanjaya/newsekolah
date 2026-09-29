@@ -14,6 +14,7 @@ import {
   EmptyState,
   IconButton,
   PageHeader,
+  Select,
   Tabs,
   TabsContent,
   TabsList,
@@ -28,29 +29,48 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useLookup, useTeachersQuery } from "../../reference/api";
-import { type MentorGroup, useDeleteMentorGroupMutation, useMentorGroupsQuery } from "../api";
+import {
+  type MentorGroup,
+  useDeleteMentorGroupMutation,
+  useMentorGroupsQuery,
+  useMyMentorGroupsQuery,
+} from "../api";
 
 import { GroupSizeLimitPanel } from "./group-size-limit-panel";
 import { MentorGroupForm } from "./mentor-group-form";
 
-export function MentorGroupsView(): ReactElement {
+export function MentorGroupsView({
+  initialScope = "mine",
+}: {
+  initialScope?: "mine" | "all";
+}): ReactElement {
+  const workspace = useTranslations("app.serviceWorkspace");
+  const mine = useTranslations("app.mentoring.myGroups");
+  const [scope, setScope] = useUrlState<string>("scope", ["mine", "all"], initialScope);
   const t = useTranslations("app.mentoring.groups");
   const router = useRouter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_mentor_groups");
 
-  const { data, isLoading } = useMentorGroupsQuery();
+  const allGroups = useMentorGroupsQuery(scope === "all");
+  const myGroups = useMyMentorGroupsQuery(scope === "mine");
+  const { data, isLoading, isError, refetch } = scope === "mine" ? myGroups : allGroups;
   const teachers = useTeachersQuery();
   const teacherMap = useLookup(teachers.data?.data);
   const remove = useDeleteMentorGroupMutation();
 
-  const [tab, setTab] = useUrlState<string>("tab", ["groups", "limit"], "groups");
+  const [tab, setTab] = useUrlState<string>(
+    "tab",
+    canManage ? ["groups", "limit"] : ["groups"],
+    "groups",
+  );
   const [editing, setEditing] = useState<MentorGroup | "new" | null>(null);
   const [pendingDelete, setPendingDelete] = useState<MentorGroup | null>(null);
 
@@ -118,7 +138,7 @@ export function MentorGroupsView(): ReactElement {
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader
         eyebrow={t("eyebrow")}
-        title={t("title")}
+        title={workspace("mentoring")}
         actions={
           canManage &&
           tab === "groups" && (
@@ -135,11 +155,25 @@ export function MentorGroupsView(): ReactElement {
         }
       />
 
+      <label className="flex max-w-xs flex-col gap-1 text-[13px]">
+        <span className="font-medium">{workspace("groupScope")}</span>
+        <Select
+          value={scope}
+          onValueChange={setScope}
+          options={[
+            { value: "mine", label: workspace("mine") },
+            { value: "all", label: workspace("allGroups") },
+          ]}
+        />
+      </label>
+      {isError && <QueryError retry={() => refetch()} />}
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
-        <TabsList>
-          <TabsTrigger value="groups">{t("tabs.groups")}</TabsTrigger>
-          <TabsTrigger value="limit">{t("tabs.limit")}</TabsTrigger>
-        </TabsList>
+        {canManage && (
+          <TabsList>
+            <TabsTrigger value="groups">{t("tabs.groups")}</TabsTrigger>
+            <TabsTrigger value="limit">{t("tabs.limit")}</TabsTrigger>
+          </TabsList>
+        )}
         <TabsContent value="groups" className="pt-4 md:min-h-0 md:flex-1">
           <div className="flex flex-col md:h-full md:min-h-0">
             <DataTable
@@ -162,8 +196,8 @@ export function MentorGroupsView(): ReactElement {
               emptyState={
                 <EmptyState
                   icon={<domainIcons.mentoring aria-hidden="true" />}
-                  title={t("emptyTitle")}
-                  description={t("emptyBody")}
+                  title={scope === "mine" ? mine("emptyTitle") : t("emptyTitle")}
+                  description={scope === "mine" ? mine("emptyBody") : t("emptyBody")}
                   action={
                     canManage && (
                       <Button
@@ -182,9 +216,11 @@ export function MentorGroupsView(): ReactElement {
             />
           </div>
         </TabsContent>
-        <TabsContent value="limit" className="pt-4 md:min-h-0 md:flex-1 md:overflow-y-auto">
-          <GroupSizeLimitPanel />
-        </TabsContent>
+        {canManage && (
+          <TabsContent value="limit" className="pt-4 md:min-h-0 md:flex-1 md:overflow-y-auto">
+            <GroupSizeLimitPanel />
+          </TabsContent>
+        )}
       </Tabs>
 
       <Dialog

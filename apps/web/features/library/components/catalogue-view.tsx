@@ -30,6 +30,7 @@ import {
 } from "../api";
 import { useLibraryErrorMessage } from "../use-library-error-message";
 
+import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { TitleForm } from "./title-form";
 
 export function CatalogueView(): ReactElement {
@@ -110,10 +111,8 @@ export function CatalogueView(): ReactElement {
     // pattern.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <LibraryWorkspaceNav area="catalogue" />
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <Button asChild size="sm" variant="secondary">
-          <Link href="/library/copies">{t("browseCopies")}</Link>
-        </Button>
         {canManage && (
           <Button
             size="sm"

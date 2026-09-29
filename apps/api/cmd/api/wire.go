@@ -440,6 +440,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	router.Use(validateRequest)
 	router.Use(tenant.Middleware(mode, schoolModule.Loader, cfg.BaseDomain))
 	router.Use(httpx.RefreshCookieMiddleware)
+	router.Use(httpx.RoleTestingCookieMiddleware(cfg.IsProduction()))
 	router.Use(authenticator.Middleware)
 	router.Use(impersonationActionLogger(identityModule.Service))
 	router.Use(simulationTimeMiddleware(identityModule.Service))

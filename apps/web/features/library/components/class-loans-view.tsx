@@ -8,6 +8,7 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 
 import { ClassLoanBorrowPanel } from "./class-loan-borrow-panel";
 import { ClassLoanReturnPanel } from "./class-loan-return-panel";
+import { LibraryWorkspaceNav } from "./library-workspace-nav";
 
 type Tab = "borrow" | "returns";
 
@@ -22,6 +23,7 @@ export function ClassLoansView(): ReactElement {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <LibraryWorkspaceNav area="circulation" />
 
       <Tabs
         value={tab}

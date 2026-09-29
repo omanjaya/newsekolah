@@ -38,14 +38,15 @@ const (
 )
 
 type Session struct {
-	ID        uuid.UUID
-	FamilyID  uuid.UUID
-	UserID    uuid.UUID
-	TenantID  uuid.UUID
-	Kind      SessionKind
-	Client    ClientKind
-	RevokedAt *time.Time
-	ExpiresAt time.Time
+	ID          uuid.UUID
+	FamilyID    uuid.UUID
+	UserID      uuid.UUID
+	TenantID    uuid.UUID
+	ActorUserID uuid.NullUUID
+	Kind        SessionKind
+	Client      ClientKind
+	RevokedAt   *time.Time
+	ExpiresAt   time.Time
 }
 
 type RefreshOutcome int

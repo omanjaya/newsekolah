@@ -249,7 +249,7 @@ func (q *Queries) GetSessionByID(ctx context.Context, arg GetSessionByIDParams) 
 }
 
 const getSessionByRefreshHash = `-- name: GetSessionByRefreshHash :one
-select id, tenant_id, user_id, kind, actor_user_id, refresh_token_hash, family_id, client, device_id, device_name, user_agent, ip, created_at, last_seen_at, expires_at, revoked_at, revoked_reason from sessions where tenant_id = $1 and refresh_token_hash = $2
+select id, tenant_id, user_id, kind, actor_user_id, refresh_token_hash, family_id, client, device_id, device_name, user_agent, ip, created_at, last_seen_at, expires_at, revoked_at, revoked_reason from sessions where tenant_id = $1 and refresh_token_hash = $2 for update
 `
 
 type GetSessionByRefreshHashParams struct {

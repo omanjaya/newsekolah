@@ -36,7 +36,7 @@ export const settingsNavItems: NavItem[] = [
     labelKey: "app.reports.navLabel",
     href: "/reports",
     icon: FileSpreadsheet,
-    permission: "view_reports",
+    permissionsAny: ["view_reports", "view_library_reports", "view_visitor_reports"],
   },
   {
     key: "setup",

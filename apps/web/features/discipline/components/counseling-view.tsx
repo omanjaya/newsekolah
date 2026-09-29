@@ -21,6 +21,7 @@ import {
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -29,6 +30,7 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { CounselingWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { type Counseling } from "../api";
 import { useDeleteCounselingMutation, useMyCounselingsQuery } from "../api-counseling-extras";
 
@@ -37,18 +39,23 @@ import { CounselingDetailDialog } from "./counseling-detail-dialog";
 import { CounselingForm } from "./counseling-form";
 
 export function CounselingView(): ReactElement {
+  const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.discipline.counseling");
   const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_counseling");
+  const searchParams = useSearchParams();
+  const initialStudentId = searchParams.get("studentId") ?? undefined;
 
   const { data, isLoading } = useMyCounselingsQuery();
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
   const remove = useDeleteCounselingMutation();
 
-  const [editing, setEditing] = useState<Counseling | "new" | null>(null);
+  const [editing, setEditing] = useState<Counseling | "new" | null>(() =>
+    canManage && initialStudentId ? "new" : null,
+  );
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Counseling | null>(null);
   const [tab, setTab] = useUrlState<string>("tab", ["mine", "bkTeam"], "mine");
@@ -95,9 +102,10 @@ export function CounselingView(): ReactElement {
     // itself never scrolls; the active tab's table scrolls its rows
     // internally. See users-view.tsx / learning-view.tsx for the pattern.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
+      <CounselingWorkspaceNav />
       <PageHeader
         eyebrow={t("eyebrow")}
-        title={t("title")}
+        title={workspace("counseling")}
         actions={
           canManage && (
             <Button
@@ -169,6 +177,7 @@ export function CounselingView(): ReactElement {
           {editing !== null && (
             <CounselingForm
               initial={editing === "new" ? undefined : editing}
+              initialStudentId={initialStudentId}
               onDone={() => {
                 setEditing(null);
               }}

@@ -8,6 +8,8 @@ import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
 import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
 
+import { LessonSubstitutionAction } from "./lesson-substitution-action";
+
 interface Named {
   id: string;
   name: string;
@@ -112,6 +114,7 @@ export function ScheduleMobileDayList({
                       <span className="text-[12px]">
                         {teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher")}
                       </span>
+                      <LessonSubstitutionAction block={block} />
                       {canManage && (
                         <div className="mt-1 flex w-fit flex-wrap items-center gap-2 rounded-full bg-surface/70 px-1">
                           <DayAction

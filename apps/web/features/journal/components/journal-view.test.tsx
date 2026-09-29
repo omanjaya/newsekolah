@@ -21,6 +21,9 @@ vi.mock("../../reference/api", () => ({
   useSubjectsQuery: () => ({ data: { data: [] } }),
   useLookup: () => new Map(),
 }));
+vi.mock("../../academic/components/academic-workspace-links", () => ({
+  AcademicWorkspaceLinks: () => null,
+}));
 vi.mock("./journal-form", () => ({ JournalForm: () => null }));
 vi.mock("./journal-today-panel", () => ({ JournalTodayPanel: () => null }));
 vi.mock("../api", () => ({

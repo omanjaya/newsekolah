@@ -11,6 +11,8 @@ import {
   EmptyState,
   PageHeader,
   SearchInput,
+  Select,
+  Skeleton,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
@@ -19,10 +21,15 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useCan } from "../../../lib/session/session-provider";
+import { VisitorsWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { type BoardEntry, useCheckOutVisitMutation, useVisitorBoardQuery } from "../api";
 
 import { CheckInForm } from "./check-in-form";
+import { ExpectedTodayPanel } from "./expected-today-panel";
 
 function BoardCard({ entry }: { entry: BoardEntry }): ReactElement {
   const t = useTranslations("app.visitors.board");
@@ -30,6 +37,7 @@ function BoardCard({ entry }: { entry: BoardEntry }): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const checkOut = useCheckOutVisitMutation();
+  const canManage = useCan("manage_visitors");
   const { visit } = entry;
 
   return (
@@ -54,27 +62,29 @@ function BoardCard({ entry }: { entry: BoardEntry }): ReactElement {
         <dt className="text-fg-muted">{t("badgeNumber")}</dt>
         <dd>{visit.badge_number || t("noBadge")}</dd>
       </dl>
-      <Button
-        variant="secondary"
-        loading={checkOut.isPending}
-        className="min-h-14 text-[16px] font-semibold"
-        onClick={() => {
-          checkOut.mutate(visit.id, {
-            onSuccess: () => {
-              toast.success(t("signedOut", { name: visit.full_name }));
-            },
-            onError: (error) => {
-              toast.error(
-                error instanceof ApiError
-                  ? apiErrorMessage(error.code)
-                  : apiErrorMessage("UNKNOWN"),
-              );
-            },
-          });
-        }}
-      >
-        {t("checkOut")}
-      </Button>
+      {canManage && (
+        <Button
+          variant="secondary"
+          loading={checkOut.isPending}
+          className="min-h-14 text-[16px] font-semibold"
+          onClick={() => {
+            checkOut.mutate(visit.id, {
+              onSuccess: () => {
+                toast.success(t("signedOut", { name: visit.full_name }));
+              },
+              onError: (error) => {
+                toast.error(
+                  error instanceof ApiError
+                    ? apiErrorMessage(error.code)
+                    : apiErrorMessage("UNKNOWN"),
+                );
+              },
+            });
+          }}
+        >
+          {t("checkOut")}
+        </Button>
+      )}
     </li>
   );
 }
@@ -86,8 +96,11 @@ function BoardCard({ entry }: { entry: BoardEntry }): ReactElement {
  * least 44px tall even at desk-tablet width.
  */
 export function GateBoardView(): ReactElement {
+  const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.visitors.board");
   const board = useVisitorBoardQuery();
+  const canManage = useCan("manage_visitors");
+  const [status, setStatus] = useUrlState<string>("status", ["all", "onSite", "expected"], "all");
   const [checkingIn, setCheckingIn] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -105,52 +118,74 @@ export function GateBoardView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <VisitorsWorkspaceNav />
+      <PageHeader eyebrow={t("eyebrow")} title={workspace("visitors")} />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[13px] text-fg-muted">{t("count", { count: entries.length })}</p>
-        <Button
-          icon={<Plus />}
-          className="min-h-14 text-[16px] font-semibold"
-          onClick={() => {
-            setCheckingIn(true);
-          }}
-        >
-          {t("newVisitor")}
-        </Button>
+        {canManage && (
+          <Button
+            icon={<Plus />}
+            className="min-h-14 text-[16px] font-semibold"
+            onClick={() => {
+              setCheckingIn(true);
+            }}
+          >
+            {t("newVisitor")}
+          </Button>
+        )}
       </div>
 
-      {entries.length > 3 && (
-        <SearchInput
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-          }}
-          placeholder={t("searchPlaceholder")}
-          aria-label={t("searchPlaceholder")}
-          className="max-w-sm"
+      <label className="flex max-w-xs flex-col gap-1 text-sm">
+        <span>{workspace("visitStatus")}</span>
+        <Select
+          value={status}
+          onValueChange={setStatus}
+          options={[
+            { value: "all", label: workspace("allToday") },
+            { value: "onSite", label: workspace("onSite") },
+            { value: "expected", label: workspace("expectedToday") },
+          ]}
         />
-      )}
+      </label>
+      <SearchInput
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+        }}
+        placeholder={t("searchPlaceholder")}
+        aria-label={t("searchPlaceholder")}
+        className="max-w-sm"
+      />
 
-      {entries.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.visitor aria-hidden="true" />}
-          title={t("emptyTitle")}
-          description={t("emptyBody")}
-        />
-      ) : visibleEntries.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.visitor aria-hidden="true" />}
-          title={t("searchEmptyTitle")}
-          description={t("searchEmptyBody", { query: search.trim() })}
-        />
-      ) : (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {visibleEntries.map((entry) => (
-            <BoardCard key={entry.visit.id} entry={entry} />
-          ))}
-        </ul>
+      {status !== "expected" && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-base font-semibold">{workspace("onSite")}</h2>
+          {board.isLoading ? (
+            <Skeleton className="h-24 w-full" aria-busy="true" />
+          ) : board.isError ? (
+            <QueryError retry={() => board.refetch()} />
+          ) : entries.length === 0 ? (
+            <EmptyState
+              icon={<domainIcons.visitor aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          ) : visibleEntries.length === 0 ? (
+            <EmptyState
+              icon={<domainIcons.visitor aria-hidden="true" />}
+              title={t("searchEmptyTitle")}
+              description={t("searchEmptyBody", { query: search.trim() })}
+            />
+          ) : (
+            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {visibleEntries.map((entry) => (
+                <BoardCard key={entry.visit.id} entry={entry} />
+              ))}
+            </ul>
+          )}
+        </section>
       )}
-
+      {status !== "onSite" && <ExpectedTodayPanel search={search} />}
       <Dialog
         open={checkingIn}
         onOpenChange={(open) => {

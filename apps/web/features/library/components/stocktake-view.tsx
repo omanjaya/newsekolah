@@ -30,6 +30,8 @@ import {
   useStartStocktakeMutation,
 } from "../stocktake-api";
 
+import { LibraryWorkspaceNav } from "./library-workspace-nav";
+
 export function StocktakeView(): ReactElement {
   const t = useTranslations("app.library.stocktake");
   const router = useRouter();
@@ -77,6 +79,7 @@ export function StocktakeView(): ReactElement {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <LibraryWorkspaceNav area="stocktake" />
       <div className="flex justify-end">
         <Button
           size="sm"

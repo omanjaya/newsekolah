@@ -26,6 +26,7 @@ import {
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { thisMonthInZone, todayInZone } from "../../../lib/tenant-date";
+import { VisitorsWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   type VisitorRecap,
   useDailyRecapQuery,
@@ -188,13 +189,15 @@ function MonthlyRecapTab(): ReactElement {
 }
 
 /** The security office's daily/monthly recap, exportable as a workbook. */
-export function VisitorRecapView(): ReactElement {
+export function VisitorRecapView({ tabKey = "tab" }: { tabKey?: string } = {}): ReactElement {
+  const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.visitors.recap");
-  const [tab, setTab] = useUrlState<string>("tab", ["daily", "monthly"], "daily");
+  const [tab, setTab] = useUrlState<string>(tabKey, ["daily", "monthly"], "daily");
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <VisitorsWorkspaceNav />
+      <PageHeader eyebrow={t("eyebrow")} title={workspace("visitors")} />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="daily">{t("tabs.daily")}</TabsTrigger>

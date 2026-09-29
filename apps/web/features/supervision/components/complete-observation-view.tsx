@@ -15,6 +15,7 @@ import { useScheduledObservationsQuery, useSupervisionCycleQuery } from "../api"
 import { useLessonContext } from "../lib/use-lesson-context";
 
 import { CompleteObservationForm } from "./complete-observation-form";
+import { SupervisionWorkspaceNav } from "./supervision-workspace-nav";
 
 /**
  * The full-page "fill the instrument" screen for one scheduled observation:
@@ -105,6 +106,7 @@ export function CompleteObservationView({
           {contextLine && <> &middot; {contextLine}</>}
         </p>
       </div>
+      <SupervisionWorkspaceNav cycleId={cycleId} />
 
       <CompleteObservationForm
         scheduled={scheduled}

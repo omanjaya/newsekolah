@@ -60,18 +60,20 @@ export function useSetGroupSizeLimitMutation() {
 
 // Groups.
 
-export function useMentorGroupsQuery() {
+export function useMentorGroupsQuery(enabled = true) {
   const client = useApiClient();
   return useQuery({
     queryKey: keys.groups(),
+    enabled,
     queryFn: () => client.GET("/v1/mentoring/groups"),
   });
 }
 
-export function useMyMentorGroupsQuery() {
+export function useMyMentorGroupsQuery(enabled = true) {
   const client = useApiClient();
   return useQuery({
     queryKey: keys.myGroups(),
+    enabled,
     queryFn: () => client.GET("/v1/mentoring/my-groups"),
   });
 }

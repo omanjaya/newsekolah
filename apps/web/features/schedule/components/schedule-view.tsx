@@ -24,6 +24,7 @@ import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useSimulation } from "../../../lib/simulation/clock";
 import { todayInZone } from "../../../lib/tenant-date";
 import { usePeriodTodayQuery } from "../../academic/api-enrollment";
+import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import {
   useClassesQuery,
   useLookup,
@@ -65,6 +66,7 @@ function todayOfWeek(timeZone?: string): number {
  * teachers land on their own timetable.
  */
 export function ScheduleView(): ReactElement {
+  const tWorkspace = useTranslations("app.academic.workspace");
   const t = useTranslations("app.schedule");
   const tDays = useTranslations("app.common.weekdays");
   const tApp = useTranslations("app");
@@ -312,7 +314,8 @@ export function ScheduleView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={headerActions} />
+      <AcademicWorkspaceLinks area="schedule" />
+      <PageHeader eyebrow={t("eyebrow")} title={tWorkspace("schedule")} actions={headerActions} />
 
       <CopyBanner
         copied={copied}

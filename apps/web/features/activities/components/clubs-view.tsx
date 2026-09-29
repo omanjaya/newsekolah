@@ -22,6 +22,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   type Extracurricular,
   useDeleteExtracurricularMutation,
@@ -34,6 +35,7 @@ import { MembershipPolicyForm } from "./membership-policy-form";
 const WEEKDAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
 export function ClubsView(): ReactElement {
+  const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.activities.clubs");
   const canManage = useCan("manage_extracurriculars");
   const canManagePolicy = useCan("manage_settings");
@@ -136,7 +138,8 @@ export function ClubsView(): ReactElement {
     // filter row stays put. See school/components/users-view.tsx for the
     // reference pattern.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <ActivitiesWorkspaceNav />
+      <PageHeader eyebrow={t("eyebrow")} title={workspace("activities")} />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <label className="flex min-h-11 items-center gap-2 text-[13px] sm:min-h-0">

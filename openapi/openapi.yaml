@@ -7734,6 +7734,89 @@ paths:
                 $ref: "#/components/schemas/AuthTokens"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /v1/auth/role-testing:
+    get:
+      tags:
+        - auth
+      operationId: getRoleTesting
+      x-permission: authenticated
+      summary: Discover roles and active users available for superadmin role testing
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Capability and one page of selectable users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleTestingState"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/auth/role-testing/start:
+    post:
+      tags:
+        - auth
+      operationId: startRoleTesting
+      x-permission: authenticated
+      summary: Start or switch to an existing user's account for role testing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleTestingStart"
+      responses:
+        "200":
+          description: Tokens for the selected account
+          headers:
+            Set-Cookie:
+              description: Refresh and HttpOnly role-testing continuation cookies
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthTokens"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/auth/role-testing/stop:
+    post:
+      tags:
+        - auth
+      operationId: stopRoleTesting
+      x-public: true
+      security: []
+      summary: Return to the original superadmin using the protected continuation cookie
+      responses:
+        "200":
+          description: Restored superadmin tokens
+          headers:
+            Set-Cookie:
+              description: Rotated refresh and expired role-testing continuation cookies
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthTokens"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /v1/auth/logout:
     post:
       tags:
@@ -22671,6 +22754,76 @@ components:
           format: date-time
         user:
           $ref: "#/components/schemas/Me"
+    RoleTestingStart:
+      type: object
+      required:
+        - user_id
+        - role
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+    RoleTestingState:
+      type: object
+      required:
+        - available
+        - active
+        - roles
+        - users
+      properties:
+        available:
+          type: boolean
+        active:
+          type: boolean
+        actor:
+          type: object
+          required:
+            - id
+            - name
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+        expires_at:
+          type: string
+          format: date-time
+        selected_role_slug:
+          type: string
+        roles:
+          type: array
+          items:
+            type: object
+            required:
+              - slug
+              - name
+            properties:
+              slug:
+                type: string
+              name:
+                type: string
+        users:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - username
+              - name
+            properties:
+              id:
+                type: string
+                format: uuid
+              username:
+                type: string
+              name:
+                type: string
+        next_cursor:
+          type: string
+          format: uuid
     Session:
       type: object
       required:

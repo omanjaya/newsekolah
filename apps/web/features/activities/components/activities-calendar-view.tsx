@@ -21,6 +21,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   type ActivityEvent,
   type ActivityEventWrite,
@@ -33,6 +34,7 @@ import {
 import { ActivityParticipants } from "./activity-participants";
 
 export function ActivitiesCalendarView(): ReactElement {
+  const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.activities.events");
   const canManage = useCan("manage_activity_events");
   const { data, isLoading } = useActivityEventsQuery();
@@ -108,7 +110,8 @@ export function ActivitiesCalendarView(): ReactElement {
     // actions row stays put. See school/components/users-view.tsx for the
     // reference pattern.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <ActivitiesWorkspaceNav />
+      <PageHeader eyebrow={t("eyebrow")} title={workspace("activities")} />
 
       {canManage && (
         <div className="flex justify-end">

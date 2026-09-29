@@ -34,6 +34,7 @@ import {
 import { useMemberViolationsQuery } from "../violations-api";
 
 import { LibraryTitleName } from "./library-title-name";
+import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { LoanRenewalsDialog } from "./loan-renewals-dialog";
 import { MarkLostDialog } from "./mark-lost-dialog";
 import { MemberLoanRow, loanRowSortKey } from "./member-loan-row";
@@ -52,6 +53,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_library_members");
+  const canCirculate = useCan("manage_library_circulation");
   const today = todayIso();
 
   const member = useLibraryMemberQuery(userId);
@@ -144,6 +146,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
           </div>
         }
       />
+      <LibraryWorkspaceNav area="members" />
 
       <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4 md:flex-row md:flex-wrap md:items-center md:gap-6">
         <div className="flex flex-col gap-1">
@@ -235,9 +238,13 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
               </li>
             ))}
           </ul>
-          <Button asChild variant="secondary" size="sm" className="self-start">
-            <Link href="/library/violations">{tHistory("fines.manage")}</Link>
-          </Button>
+          {canCirculate && (
+            <Button asChild variant="secondary" size="sm" className="self-start">
+              <Link href={`/library/violations?member=${encodeURIComponent(userId)}`}>
+                {tHistory("fines.manage")}
+              </Link>
+            </Button>
+          )}
         </div>
       )}
 

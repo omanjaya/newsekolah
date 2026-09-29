@@ -44,6 +44,12 @@ export interface NavItem {
   icon: LucideIcon;
   /** Permission code required to see this item; omitted means "any signed-in user". */
   permission?: string;
+  /** A workspace may serve several independently authorized report domains. */
+  permissionsAny?: string[];
+  /** Legacy destinations owned by a consolidated menu entry. */
+  activePaths?: string[];
+  aliases?: string[];
+  searchTerms?: string[];
   /**
    * Alternative permission codes that also unlock this item, checked with
    * OR semantics (in addition to `permission`, if both are set): visible

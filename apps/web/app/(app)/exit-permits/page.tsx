@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
-import { ExitPermitsView } from "../../../features/permits/components/exit-permits-view";
+import { PermitsWorkspaceView } from "../../../features/permits/components/permits-workspace-view";
 
 export default function Page(): ReactElement {
-  return <ExitPermitsView />;
+  return <PermitsWorkspaceView initialType="exit" />;
 }

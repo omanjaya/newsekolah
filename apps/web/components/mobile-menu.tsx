@@ -27,7 +27,7 @@ export function MobileMenu({ items, scope }: { items: NavItem[]; scope?: string 
     ...(preferences.recent.length
       ? [{ labelKey: "app.shell.mobileMenu.recent", items: preferences.recent }]
       : []),
-    ...groupNavigation(items),
+    ...groupNavigation(items.filter((item) => item.sidebarPlacement !== "hidden")),
   ];
   return (
     <Sheet open={open} onOpenChange={setOpen}>

@@ -7,6 +7,7 @@ import type { ReactElement, ReactNode } from "react";
 import { useNotificationsSocket } from "../features/notifications/realtime";
 import { navigation, filterNavigation } from "../lib/navigation";
 import { canOpenPath } from "../lib/navigation-permissions";
+import { consolidateNavigation } from "../lib/navigation-workspaces";
 import { ConnectionStatusIndicator } from "../lib/realtime/connection-status-indicator";
 import { LiveSocketProvider } from "../lib/realtime/live-socket-provider";
 import { useSession } from "../lib/session/session-provider";
@@ -48,12 +49,19 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
   const pathname = usePathname();
   useNotificationsSocket();
   const roleSlugs = (me?.roles ?? []).map((role) => role.slug);
-  const items = filterNavigation(
+  const authorizedItems = filterNavigation(
     navigation,
     (permission) => me?.permissions.includes(permission) ?? false,
     me?.profile_kind,
     roleSlugs,
   );
+  const items = consolidateNavigation(authorizedItems, {
+    profileKind: me?.profile_kind,
+    duties: me?.duties,
+    canManageSchool: me?.permissions.some((code) =>
+      ["manage_master_data", "manage_enrollments", "view_users"].includes(code),
+    ),
+  });
 
   // A page the reader cannot use would otherwise render its own empty
   // state, because the API refuses each query separately and the screen

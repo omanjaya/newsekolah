@@ -112,11 +112,7 @@ export function Sidebar({
     (item) => !item.sidebarPlacement || item.sidebarPlacement === "main",
   );
   const ungrouped = mainItems.filter((item) => !item.group);
-  const footerGroups = new Map<string, NavItem[]>();
-  for (const item of items) {
-    if (item.sidebarPlacement !== "footer" || !item.group) continue;
-    footerGroups.set(item.group, [...(footerGroups.get(item.group) ?? []), item]);
-  }
+  const footerItems = items.filter((item) => item.sidebarPlacement === "footer");
   const groups = new Map<string, NavItem[]>();
   for (const item of mainItems) {
     if (!item.group) continue;
@@ -293,7 +289,7 @@ export function Sidebar({
                           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
                         )}
                       >
-                        <div className="overflow-hidden [contain:layout_paint]">
+                        <div inert={!open} className="overflow-hidden [contain:layout_paint]">
                           {/*
                             The guide rule is what makes these rows read as the
                             group's children rather than its siblings.
@@ -339,14 +335,15 @@ export function Sidebar({
         </div>
 
         <div className="flex shrink-0 flex-col gap-0.5 border-t border-line p-2">
-          {[...footerGroups.entries()].map(([group, groupItems]) => (
-            <GroupFlyout
-              key={group}
-              group={group}
-              items={groupItems}
+          {footerItems.map((item) => (
+            <NavLink
+              key={item.key}
+              item={item}
               animate={animate}
               activeHref={activeHref}
               rail={rail}
+              delayMs={0}
+              nested={false}
             />
           ))}
           <RailLabel label={tShell("sidebar.expand")} enabled={rail}>

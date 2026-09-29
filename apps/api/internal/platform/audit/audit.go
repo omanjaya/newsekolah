@@ -17,6 +17,20 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
+type explicitPrincipalKey struct{}
+
+type explicitPrincipal struct {
+	actorID    uuid.UUID
+	actingAsID uuid.UUID
+}
+
+// WithPrincipal gives cookie-authenticated control operations an explicit
+// audit identity when no live bearer is present (for example, returning
+// from a role-testing child after its access JWT expired).
+func WithPrincipal(ctx context.Context, actorID, actingAsID uuid.UUID) context.Context {
+	return context.WithValue(ctx, explicitPrincipalKey{}, explicitPrincipal{actorID: actorID, actingAsID: actingAsID})
+}
+
 // Record inserts one audit_logs row inside the transaction already bound to
 // ctx by database.WithTenantTx. actorUserID and actingAsUserID come from the
 // request's authenticated identity: outside impersonation, actorUserID is
@@ -51,6 +65,10 @@ func Record(ctx context.Context, tenantID uuid.UUID, action, entityType string, 
 		// owner as "who did this", and the session owner becomes "as whom".
 		actingAsUserID = pgtype.UUID{Bytes: actorUserID, Valid: true}
 		actorUserID = actorID
+	}
+	if principal, ok := ctx.Value(explicitPrincipalKey{}).(explicitPrincipal); ok {
+		actorUserID = principal.actorID
+		actingAsUserID = nullableUUID(principal.actingAsID)
 	}
 
 	meta := httpx.RequestMetaFromContext(ctx)

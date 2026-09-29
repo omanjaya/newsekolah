@@ -11,12 +11,16 @@ export function matchesHref(pathname: string, href: string): boolean {
  */
 export function activeNavHref(
   pathname: string,
-  items: readonly { href: string }[],
+  items: readonly { href: string; activePaths?: readonly string[] }[],
 ): string | undefined {
   let best: string | undefined;
-  for (const { href } of items) {
-    if (matchesHref(pathname, href) && (best === undefined || href.length > best.length)) {
-      best = href;
+  let matchedLength = -1;
+  for (const { href, activePaths = [] } of items) {
+    for (const path of [href.split("?")[0] ?? href, ...activePaths]) {
+      if (matchesHref(pathname, path) && path.length > matchedLength) {
+        best = href;
+        matchedLength = path.length;
+      }
     }
   }
   return best;

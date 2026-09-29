@@ -22,6 +22,8 @@ import {
 } from "../api";
 import { useLessonContext } from "../lib/use-lesson-context";
 
+import { SupervisionWorkspaceNav } from "./supervision-workspace-nav";
+
 /**
  * One observation: the scores, the observer's notes, and the teacher's own
  * response and agreed follow-up. `getObservation` already enforces who may
@@ -109,6 +111,7 @@ export function ObservationDetailView({ observationId }: { observationId: string
           {contextLine && <> &middot; {contextLine}</>}
         </p>
       </div>
+      <SupervisionWorkspaceNav cycleId={cycle.data.id} />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-[16px] font-medium">{t("scores")}</h2>

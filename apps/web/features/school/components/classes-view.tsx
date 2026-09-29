@@ -11,6 +11,7 @@ import {
   domainIcons,
 } from "@newsekolah/ui";
 import { Plus } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -32,6 +33,8 @@ export function ClassesView(): ReactElement {
   const year = useActiveYear();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_master_data");
+  const canImport = useCan("manage_enrollments");
+  const tWorkspace = useTranslations("app.academic.workspace");
   const classes = useClassesQuery();
   const [creating, setCreating] = useState(false);
   const items = useMemo(
@@ -62,17 +65,24 @@ export function ClassesView(): ReactElement {
         eyebrow={t("eyebrow")}
         title={t("title")}
         actions={
-          canManage && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                setCreating(true);
-              }}
-            >
-              {t("addClass")}
-            </Button>
-          )
+          <div className="flex flex-wrap gap-2">
+            {canImport && (
+              <Button asChild variant="secondary" size="sm">
+                <Link href="/academic/enrollment-import">{tWorkspace("importEnrollment")}</Link>
+              </Button>
+            )}
+            {canManage && (
+              <Button
+                size="sm"
+                icon={<Plus />}
+                onClick={() => {
+                  setCreating(true);
+                }}
+              >
+                {t("addClass")}
+              </Button>
+            )}
+          </div>
         }
       />
       {classes.isLoading ? (

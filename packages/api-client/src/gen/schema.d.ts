@@ -3380,6 +3380,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/role-testing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Discover roles and active users available for superadmin role testing */
+        get: operations["getRoleTesting"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/role-testing/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start or switch to an existing user's account for role testing */
+        post: operations["startRoleTesting"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/role-testing/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Return to the original superadmin using the protected continuation cookie */
+        post: operations["stopRoleTesting"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/logout": {
         parameters: {
             query?: never;
@@ -9751,6 +9802,35 @@ export interface components {
             /** Format: date-time */
             refresh_expires_at?: string;
             user: components["schemas"]["Me"];
+        };
+        RoleTestingStart: {
+            /** Format: uuid */
+            user_id: string;
+            role: string;
+        };
+        RoleTestingState: {
+            available: boolean;
+            active: boolean;
+            actor?: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            };
+            /** Format: date-time */
+            expires_at?: string;
+            selected_role_slug?: string;
+            roles: {
+                slug: string;
+                name: string;
+            }[];
+            users: {
+                /** Format: uuid */
+                id: string;
+                username: string;
+                name: string;
+            }[];
+            /** Format: uuid */
+            next_cursor?: string;
         };
         Session: {
             /** Format: uuid */
@@ -19078,6 +19158,83 @@ export interface operations {
             200: {
                 headers: {
                     /** @description Rotated `refresh_token` cookie for web clients */
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthTokens"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getRoleTesting: {
+        parameters: {
+            query?: {
+                role?: string;
+                q?: string;
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Capability and one page of selectable users */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleTestingState"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    startRoleTesting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleTestingStart"];
+            };
+        };
+        responses: {
+            /** @description Tokens for the selected account */
+            200: {
+                headers: {
+                    /** @description Refresh and HttpOnly role-testing continuation cookies */
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthTokens"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    stopRoleTesting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Restored superadmin tokens */
+            200: {
+                headers: {
+                    /** @description Rotated refresh and expired role-testing continuation cookies */
                     "Set-Cookie"?: string;
                     [name: string]: unknown;
                 };

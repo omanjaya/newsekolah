@@ -29,6 +29,7 @@ import {
   useLibraryMemberTypesQuery,
 } from "../members-api";
 
+import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { MemberTypeForm } from "./member-type-form";
 
 /** Manage member types: loan limits, renewal, fine rule, suspension, and validity per type. */
@@ -145,6 +146,7 @@ export function MemberTypesView(): ReactElement {
           )
         }
       />
+      <LibraryWorkspaceNav area="settings" />
 
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable

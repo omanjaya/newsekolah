@@ -31,6 +31,7 @@ import {
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import {
   downloadJournalExport,
@@ -186,6 +187,7 @@ export function JournalView(): ReactElement {
     // filter/export row stays put. See users-view.tsx for the reference
     // pattern.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
+      <AcademicWorkspaceLinks area="attendance" />
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}

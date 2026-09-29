@@ -24,6 +24,7 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { VisitorsWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { type ExpectedGuest, useCancelExpectedGuestMutation, useExpectedGuestsQuery } from "../api";
 
 import { CheckInForm } from "./check-in-form";
@@ -35,6 +36,7 @@ function today(): string {
 
 /** The office's ahead-of-time list, so the guard can find a name instead of typing it. */
 export function ExpectedGuestsView(): ReactElement {
+  const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.visitors.expected");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -120,7 +122,8 @@ export function ExpectedGuestsView(): ReactElement {
     // filter row stays put. See school/components/users-view.tsx for the
     // reference pattern.
     <div className="flex flex-col gap-4 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <VisitorsWorkspaceNav />
+      <PageHeader eyebrow={t("eyebrow")} title={workspace("visitors")} />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <label className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium">{t("filters.date")}</span>
