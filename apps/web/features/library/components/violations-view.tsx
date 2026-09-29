@@ -9,9 +9,9 @@ import {
   EmptyState,
   PageHeader,
   RowActionsMenu,
-  Select,
   domainIcons,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { BadgeCheck, HandCoins, Plus } from "lucide-react";
@@ -20,6 +20,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import {
@@ -36,6 +37,8 @@ import { ViolationSettleDialog } from "./violation-settle-dialog";
 
 const STATUSES: LibraryViolationStatus[] = ["unpaid", "paid", "waived"];
 const KINDS: LibraryViolationKind[] = ["late", "lost", "damaged", "other"];
+const STATUS_VALUES = ["", ...STATUSES] as const;
+const KIND_VALUES = ["", ...KINDS] as const;
 
 export function ViolationsView({ memberUserId }: { memberUserId?: string }): ReactElement {
   const t = useTranslations("app.library.violations");
@@ -43,8 +46,12 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
   const canRecord = useCan("manage_library_circulation");
 
   const toast = useToast();
-  const [status, setStatus] = useState<LibraryViolationStatus | "">("");
-  const [kind, setKind] = useState<LibraryViolationKind | "">("");
+  const [status, setStatus] = useUrlState<(typeof STATUS_VALUES)[number]>(
+    "status",
+    STATUS_VALUES,
+    "",
+  );
+  const [kind, setKind] = useUrlState<(typeof KIND_VALUES)[number]>("kind", KIND_VALUES, "");
   const [recording, setRecording] = useState(false);
   const [settling, setSettling] = useState<{
     violation: LibraryViolation;
@@ -57,10 +64,38 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
   const directory = useDirectoryQuery();
   const directoryMap = useLookup(directory.data?.data);
 
-  const items = (data?.data ?? []).filter(
-    (item) => (!status || item.status === status) && (!kind || item.kind === kind),
-  );
+  const rawItems = data?.data ?? [];
+  // The all-violations query already filters server-side; the member-scoped
+  // endpoint (`/v1/library/members/{userId}/violations`) takes no query
+  // params, so that view still filters its (small, single-member) result
+  // client-side.
+  const items = memberUserId
+    ? rawItems.filter(
+        (item) => (!status || item.status === status) && (!kind || item.kind === kind),
+      )
+    : rawItems;
   const isFiltered = status !== "" || kind !== "";
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "status",
+      label: t("filters.status"),
+      value: status,
+      onChange: (value) => {
+        setStatus(value as (typeof STATUS_VALUES)[number]);
+      },
+      options: STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) })),
+    },
+    {
+      id: "kind",
+      label: t("filters.kind"),
+      value: kind,
+      onChange: (value) => {
+        setKind(value as (typeof KIND_VALUES)[number]);
+      },
+      options: KINDS.map((k) => ({ value: k, label: t(`kinds.${k}`) })),
+    },
+  ];
 
   const columns = useMemo<ColumnDef<LibraryViolation>[]>(
     () => [
@@ -173,45 +208,6 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         </div>
       )}
 
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("filters.status")}</span>
-          <Select
-            options={STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) }))}
-            value={status}
-            onValueChange={(v) => {
-              setStatus(v as LibraryViolationStatus);
-            }}
-            placeholder={t("filters.statusAll")}
-            className="w-44"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("filters.kind")}</span>
-          <Select
-            options={KINDS.map((k) => ({ value: k, label: t(`kinds.${k}`) }))}
-            value={kind}
-            onValueChange={(v) => {
-              setKind(v as LibraryViolationKind);
-            }}
-            placeholder={t("filters.kindAll")}
-            className="w-44"
-          />
-        </label>
-        {isFiltered && (
-          <button
-            type="button"
-            className="text-[13px] text-accent underline underline-offset-2"
-            onClick={() => {
-              setStatus("");
-              setKind("");
-            }}
-          >
-            {t("filters.clear")}
-          </button>
-        )}
-      </div>
-
       <DataTable
         stateKey="features/library/components/violations-view:1"
         mode="local"
@@ -224,6 +220,11 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
+        filters={filters}
+        filtersLabels={{
+          reset: t("filters.clear"),
+          removeFilter: (label) => t("filters.removeFilter", { label }),
+        }}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

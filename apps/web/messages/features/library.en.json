@@ -537,7 +537,8 @@
       "statusAll": "All statuses",
       "kind": "Type",
       "kindAll": "All types",
-      "clear": "Clear filters"
+      "clear": "Clear filters",
+      "removeFilter": "Remove {label} filter"
     },
     "kinds": {
       "late": "Late",
