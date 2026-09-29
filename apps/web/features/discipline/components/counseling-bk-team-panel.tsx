@@ -2,17 +2,25 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
-import { Avatar, DataTable, EmptyState, Select, domainIcons } from "@newsekolah/ui";
+import {
+  Avatar,
+  DataTable,
+  EmptyState,
+  domainIcons,
+  type DataTableFilterDef,
+} from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import { type Counseling, type CounselingTopic } from "../api";
 import { useBKTeamCounselingsQuery } from "../api-counseling-extras";
 
 const TOPICS: CounselingTopic[] = ["career", "problem", "personal", "learning", "social", "other"];
+const TOPIC_VALUES = ["", ...TOPICS] as const;
 
 /**
  * Notes shared with the whole BK team (visibility "bk_team"), for a
@@ -23,19 +31,27 @@ const TOPICS: CounselingTopic[] = ["career", "problem", "personal", "learning", 
 export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void }): ReactElement {
   const t = useTranslations("app.discipline.counseling");
   const locale = useLocale() as Locale;
-  const [topic, setTopic] = useState<CounselingTopic | "">("");
+  const [topic, setTopic] = useUrlState<(typeof TOPIC_VALUES)[number]>("topic", TOPIC_VALUES, "");
 
   const { data, isLoading } = useBKTeamCounselingsQuery(topic);
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
 
   const items = data?.data ?? [];
-  const topicOptions = [
-    { value: "all", label: t("bkTeam.topicAll") },
-    ...TOPICS.map((topicOption) => ({
-      value: topicOption,
-      label: t(`form.topicOptions.${topicOption}`),
-    })),
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "topic",
+      label: t("bkTeam.topicFilter"),
+      value: topic,
+      onChange: (value) => {
+        setTopic(value as (typeof TOPIC_VALUES)[number]);
+      },
+      options: TOPICS.map((topicOption) => ({
+        value: topicOption,
+        label: t(`form.topicOptions.${topicOption}`),
+      })),
+    },
   ];
 
   const columns = useMemo<ColumnDef<Counseling>[]>(
@@ -75,18 +91,6 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
 
   return (
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("bkTeam.topicFilter")}</span>
-        <Select
-          options={topicOptions}
-          value={topic || "all"}
-          onValueChange={(v) => {
-            setTopic(v === "all" ? "" : (v as CounselingTopic));
-          }}
-          className="w-52"
-          aria-label={t("bkTeam.topicFilter")}
-        />
-      </label>
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/discipline/components/counseling-bk-team-panel:1"
@@ -99,6 +103,11 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter=""
+          filters={filters}
+          filtersLabels={{
+            reset: t("bkTeam.reset"),
+            removeFilter: (label) => t("bkTeam.removeFilter", { label }),
+          }}
           isLoading={isLoading}
           getRowId={(item) => item.id}
           onRowActivate={(item) => {

@@ -8,15 +8,14 @@ import {
   Avatar,
   Badge,
   Button,
-  Checkbox,
   DataTable,
   Dialog,
   DialogContent,
   EmptyState,
   Input,
-  Select,
   domainIcons,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
@@ -25,6 +24,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
@@ -54,10 +54,15 @@ export function ViolationsLedgerView(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canRecord = useCan("record_violations");
 
-  const [classId, setClassId] = useState("");
+  const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [includeVoided, setIncludeVoided] = useState(false);
+  const [includeVoidedParam, setIncludeVoidedParam] = useUrlState<"" | "true">(
+    "include_voided",
+    ["", "true"],
+    "",
+  );
+  const includeVoided = includeVoidedParam === "true";
   const [recording, setRecording] = useState(false);
   const [voiding, setVoiding] = useState<ViolationRecord | null>(null);
   const [saveSummaries, setSaveSummaries] = useState<SaveSummary[]>([]);
@@ -69,9 +74,26 @@ export function ViolationsLedgerView(): ReactElement {
   const issueLetter = useIssueWarningLetterMutation();
 
   const items = data?.data ?? [];
-  const classOptions = [
-    { value: "all", label: t("filters.classAll") },
-    ...(classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name })),
+  const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "class",
+      label: t("filters.class"),
+      value: classId,
+      onChange: setClassId,
+      options: classOptions,
+    },
+    {
+      id: "includeVoided",
+      label: t("filters.includeVoided"),
+      value: includeVoidedParam,
+      onChange: (value) => {
+        setIncludeVoidedParam(value as "" | "true");
+      },
+      type: "boolean",
+      activeValue: "true",
+    },
   ];
 
   const columns = useMemo<ColumnDef<ViolationRecord>[]>(
@@ -246,18 +268,6 @@ export function ViolationsLedgerView(): ReactElement {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
-          <label className="col-span-2 flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("filters.class")}</span>
-            <Select
-              options={classOptions}
-              value={classId || "all"}
-              onValueChange={(v) => {
-                setClassId(v === "all" ? "" : v);
-              }}
-              className="w-full sm:w-44"
-              aria-label={t("filters.class")}
-            />
-          </label>
           <label className="flex flex-col gap-1 text-[13px]">
             <span className="font-medium">{t("filters.from")}</span>
             <Input
@@ -277,15 +287,6 @@ export function ViolationsLedgerView(): ReactElement {
                 setTo(e.target.value);
               }}
             />
-          </label>
-          <label className="col-span-2 flex min-h-11 items-center gap-2 text-[13px] sm:min-h-0 sm:pb-2">
-            <Checkbox
-              checked={includeVoided}
-              onCheckedChange={(v) => {
-                setIncludeVoided(v === true);
-              }}
-            />
-            {t("filters.includeVoided")}
           </label>
         </div>
         {canRecord && (
@@ -313,6 +314,11 @@ export function ViolationsLedgerView(): ReactElement {
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter=""
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.reset"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
+          }}
           isLoading={isLoading}
           getRowId={(item) => item.id}
           onRowActivate={(item) => {

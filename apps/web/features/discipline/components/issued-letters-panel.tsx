@@ -8,16 +8,17 @@ import {
   Button,
   DataTable,
   EmptyState,
-  Select,
   domainIcons,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
@@ -35,7 +36,7 @@ export function IssuedLettersPanel(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const [classId, setClassId] = useState("");
+  const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
   const classes = useClassesQuery();
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
@@ -43,9 +44,16 @@ export function IssuedLettersPanel(): ReactElement {
   const documentUrl = useWarningLetterDocumentUrlMutation();
 
   const items = data?.data ?? [];
-  const classOptions = [
-    { value: "all", label: t("filters.classAll") },
-    ...(classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name })),
+  const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "class",
+      label: t("filters.class"),
+      value: classId,
+      onChange: setClassId,
+      options: classOptions,
+    },
   ];
 
   function download(letterId: string) {
@@ -113,15 +121,6 @@ export function IssuedLettersPanel(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <Select
-        options={classOptions}
-        value={classId || "all"}
-        onValueChange={(v) => {
-          setClassId(v === "all" ? "" : v);
-        }}
-        className="w-44"
-        aria-label={t("filters.class")}
-      />
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/discipline/components/issued-letters-panel:1"
@@ -134,6 +133,11 @@ export function IssuedLettersPanel(): ReactElement {
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter=""
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.reset"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
+          }}
           isLoading={isLoading}
           getRowId={(item) => item.id}
           onRowActivate={(item) => {

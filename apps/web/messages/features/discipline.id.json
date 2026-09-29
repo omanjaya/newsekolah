@@ -12,7 +12,9 @@
       "classAll": "Semua kelas",
       "from": "Dari tanggal",
       "to": "Sampai tanggal",
-      "includeVoided": "Tampilkan yang dibatalkan"
+      "includeVoided": "Tampilkan yang dibatalkan",
+      "reset": "Reset filter",
+      "removeFilter": "Hapus filter {label}"
     },
     "record": "Catat pelanggaran",
     "void": "Batalkan",
@@ -145,7 +147,9 @@
     },
     "filters": {
       "class": "Kelas",
-      "classAll": "Semua kelas"
+      "classAll": "Semua kelas",
+      "reset": "Reset filter",
+      "removeFilter": "Hapus filter {label}"
     },
     "columns": {
       "student": "Siswa",
@@ -218,6 +222,8 @@
     "bkTeam": {
       "topicFilter": "Topik",
       "topicAll": "Semua topik",
+      "reset": "Reset filter",
+      "removeFilter": "Hapus filter {label}",
       "emptyTitle": "Belum ada catatan yang dibagikan ke tim BK",
       "emptyBody": "Catatan yang ditandai konselor sebagai terlihat oleh seluruh tim BK muncul di sini. Anda perlu menjadi konselor piket untuk melihatnya."
     },
