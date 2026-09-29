@@ -5,8 +5,15 @@ import { AlertTriangle, Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import type { ReactElement, ReactNode } from "react";
 
 import type { ScheduleBlock } from "../api";
+import { formatPeriodTime } from "../period-span";
+import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
 
 import { BlockAction } from "./block-action";
+
+/** Thin accent edge marking "this is the period in session right now" --
+ * shared by every cell kind so the line reads the same whether the current
+ * slot holds a lesson, is empty, or cannot be edited. */
+const CURRENT_EDGE = "shadow-[inset_2px_0_0_var(--color-accent)]";
 
 export interface Named {
   id: string;
@@ -51,12 +58,12 @@ export function gridMinWidth(columnCount: number): number {
 const CELL = "h-px border-b border-l border-border p-0 align-top";
 
 /**
- * Most cells in a filled timetable hold a lesson, so tinting lessons tints
- * the whole page and says nothing. The empty slots are the rare ones, and
- * they are also what someone building a timetable is hunting for, so the
- * recess goes to them: a lesson is clean paper, a hole is a dent in it.
+ * The empty slots are what someone building a timetable is hunting for,
+ * so they get the recessed background: a hole is a dent in the surface. A
+ * lesson cell keeps the neutral surface too -- its subject-tinted card
+ * (see `LessonCell`) sits inset inside it, so the color is the block, not
+ * the row.
  */
-const FILLED = "bg-surface";
 const HOLLOW = "bg-bg";
 
 export function GridColumns({ columnCount }: { columnCount: number }): ReactElement {
@@ -89,7 +96,9 @@ export function HeadCell({
       className={cn(
         "h-10 truncate border-b-2 border-border px-3 text-left text-[13px] font-medium",
         !first && "border-l",
-        current ? "bg-accent/10 text-accent" : "text-fg-muted",
+        // "Accent text + soft background" for today's column (docs/07-ui-ux.md,
+        // "Hijau Segar"), the same AA-checked pairing Badge's accent variant uses.
+        current ? "bg-accent-soft text-accent-soft-fg" : "text-fg-muted",
       )}
     >
       {children}
@@ -123,7 +132,7 @@ export function PeriodCell({
         {period.name}
       </span>
       <span className="block text-[12px] text-fg-muted tabular-nums">
-        {period.starts_at.slice(0, 5)}-{period.ends_at.slice(0, 5)}
+        {formatPeriodTime(period)}
       </span>
     </th>
   );
@@ -134,8 +143,14 @@ export function PeriodCell({
  * cannot fill it. It still draws its share of the grid so the columns
  * below it stay aligned.
  */
-export function EmptyCell({ today }: { today?: boolean }): ReactElement {
-  return <td className={cn(CELL, HOLLOW, today && "bg-accent/5")} />;
+export function EmptyCell({
+  today,
+  current,
+}: {
+  today?: boolean;
+  current?: boolean;
+}): ReactElement {
+  return <td className={cn(CELL, HOLLOW, today && "bg-accent/5", current && CURRENT_EDGE)} />;
 }
 
 /**
@@ -148,15 +163,17 @@ export function EmptySlotCell({
   pasting,
   label,
   today,
+  current,
   onClick,
 }: {
   pasting: boolean;
   label: string;
   today?: boolean;
+  current?: boolean;
   onClick: () => void;
 }): ReactElement {
   return (
-    <td className={cn(CELL, HOLLOW, today && "bg-accent/5")}>
+    <td className={cn(CELL, HOLLOW, today && "bg-accent/5", current && CURRENT_EDGE)}>
       <button
         type="button"
         onClick={onClick}
@@ -183,7 +200,10 @@ export function EmptySlotCell({
  * normally an imported timetable built against a different period
  * template. The grid still draws the lesson edge to edge across that row
  * so the columns stay aligned, so this badge is the only thing on screen
- * telling the person building the timetable to take a second look.
+ * telling the person building the timetable to take a second look. The
+ * icon sits on its own light backing rather than bare on the block's
+ * soft-category card, so `status-late` stays legible no matter which of
+ * the five tones the block landed on.
  */
 function BreakWarningBadge({ label }: { label: string }): ReactElement {
   return (
@@ -191,21 +211,26 @@ function BreakWarningBadge({ label }: { label: string }): ReactElement {
       role="img"
       aria-label={label}
       title={label}
-      className="inline-flex shrink-0 text-status-late"
+      className="inline-flex shrink-0 items-center justify-center rounded-full bg-surface/80 p-0.5 text-status-late"
     >
-      <AlertTriangle className="size-3.5" aria-hidden="true" />
+      <AlertTriangle className="size-3" aria-hidden="true" />
     </span>
   );
 }
 
 /**
- * A lesson fills the periods it runs for, labelled at the top so that a
- * block running three periods still names itself on the row it starts on
- * and the eye can read straight across. Its three controls stay out of
- * sight until the pointer or the keyboard reaches the block: with every
- * cell holding a lesson, showing them always buried the subject names
- * under rows of identical grey icons. A touch screen has no hover to wait
- * for, so there they stay visible.
+ * A lesson fills the periods it runs for as one rounded card, tinted with
+ * its subject's soft-category tone (`subjectTone`, deterministic so the
+ * same subject always paints the same color) so a full week reads as
+ * subjects at a glance instead of a wall of identical white cells. The
+ * card is labelled at the top so a block running three periods still
+ * names itself on the row it starts on and the eye can read straight
+ * across. Its three controls stay out of sight until the pointer or the
+ * keyboard reaches the block: with every cell holding a lesson, showing
+ * them always buried the subject names under rows of identical grey
+ * icons. A touch screen has no hover to wait for, so there they stay
+ * visible, on their own light backing for the same contrast reason as
+ * `BreakWarningBadge`.
  */
 export function LessonCell({
   block,
@@ -214,6 +239,7 @@ export function LessonCell({
   detail,
   canManage,
   today,
+  current,
   crossesBreak,
   breakWarningLabel,
   onCopy,
@@ -227,6 +253,9 @@ export function LessonCell({
   detail: string;
   canManage: boolean;
   today?: boolean;
+  /** True when the period in session right now falls inside this block's
+   * span, on the day shown; draws the current-time accent edge. */
+  current?: boolean;
   /** True when this block's periods touch a break; see break-warning.ts. */
   crossesBreak?: boolean;
   breakWarningLabel?: string;
@@ -235,18 +264,25 @@ export function LessonCell({
   onDelete: (block: ScheduleBlock) => void;
   t: (key: string) => string;
 }): ReactElement {
+  const tone = subjectTone(block.subject_id);
   return (
-    <td rowSpan={span} className={cn(CELL, FILLED, today && "bg-accent/5")}>
-      <div className="group flex size-full flex-col gap-0.5 px-2.5 py-2 transition-colors hover:bg-accent/5">
-        <span className="flex items-center gap-1.5 truncate text-[14px] font-medium text-fg">
+    <td rowSpan={span} className={cn(CELL, "p-1", today && "bg-accent/5", current && CURRENT_EDGE)}>
+      <div
+        className={cn(
+          "group flex h-full flex-col gap-0.5 rounded-md px-2.5 py-2 transition-colors",
+          SUBJECT_TONE_CLASSES[tone],
+        )}
+      >
+        <span className="flex items-center gap-1.5 truncate text-[14px] font-medium">
           <span className="truncate">{subject}</span>
           {crossesBreak && breakWarningLabel && <BreakWarningBadge label={breakWarningLabel} />}
         </span>
-        <span className="truncate text-[12px] text-fg-muted">{detail}</span>
+        <span className="truncate text-[12px]">{detail}</span>
         {canManage && (
           <div
             className={cn(
-              "-mx-1 mt-0.5 flex items-center gap-0.5 opacity-0 transition-opacity",
+              "-mx-1 mt-auto flex w-fit items-center gap-0.5 rounded-full bg-surface/70 px-0.5",
+              "opacity-0 transition-opacity",
               "group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100",
             )}
           >

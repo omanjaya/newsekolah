@@ -22,7 +22,6 @@ import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { usePeriodTodayQuery } from "../../academic/api-enrollment";
-import { TodayPeriodBanner } from "../../academic/components/today-period-banner";
 import {
   useClassesQuery,
   useLookup,
@@ -40,6 +39,7 @@ import {
 import { conflictMessage } from "../conflict-message";
 
 import { CopyBanner } from "./copy-banner";
+import { ScheduleCurrentPeriodPill } from "./schedule-current-period-pill";
 import { ScheduleDayGrid } from "./schedule-day-grid";
 import { ScheduleDialogs } from "./schedule-dialogs";
 import { ScheduleMobileAgenda } from "./schedule-mobile-agenda";
@@ -258,36 +258,8 @@ export function ScheduleView(): ReactElement {
     }
   }
 
-  return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          canManage && (
-            <div className="flex gap-2">
-              <Button asChild variant="secondary" size="sm">
-                <Link href="/schedule/bulk">{t("bulk.navLink")}</Link>
-              </Button>
-              <Button
-                size="sm"
-                icon={<Plus />}
-                onClick={() => {
-                  setCreating({
-                    day: activeDays[0] ?? 1,
-                    startSeq: lessonPeriods[0]?.sequence ?? 1,
-                  });
-                }}
-              >
-                {t("addBlock")}
-              </Button>
-            </div>
-          )
-        }
-      />
-
-      <TodayPeriodBanner />
-
+  const headerActions = (
+    <>
       <ScheduleScopeBar
         mode={mode}
         onModeChange={setMode}
@@ -306,6 +278,33 @@ export function ScheduleView(): ReactElement {
         onTeacherChange={setTeacherId}
         yearLabel={year.label}
       />
+      <ScheduleCurrentPeriodPill />
+      {canManage && (
+        <>
+          <Button asChild variant="secondary" size="sm" className="rounded-full">
+            <Link href="/schedule/bulk">{t("bulk.navLink")}</Link>
+          </Button>
+          <Button
+            size="sm"
+            className="rounded-full"
+            icon={<Plus />}
+            onClick={() => {
+              setCreating({
+                day: activeDays[0] ?? 1,
+                startSeq: lessonPeriods[0]?.sequence ?? 1,
+              });
+            }}
+          >
+            {t("addBlock")}
+          </Button>
+        </>
+      )}
+    </>
+  );
+
+  return (
+    <div className="flex flex-col gap-6 p-4 md:p-6">
+      <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={headerActions} />
 
       <CopyBanner
         copied={copied}

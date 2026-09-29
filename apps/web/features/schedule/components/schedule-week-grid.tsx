@@ -1,10 +1,12 @@
 "use client";
 
-import { cn } from "@newsekolah/ui";
+import { Card, cn } from "@newsekolah/ui";
 import type { ReactElement } from "react";
 
 import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
+import { isCurrentPeriodCell, isNowWithinBlock } from "../current-period";
+import { periodSpan } from "../period-span";
 
 import {
   BREAK_ROW,
@@ -78,85 +80,93 @@ export function ScheduleWeekGrid({
   const today = todayOfWeek();
 
   return (
-    <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
-      <table
-        className="w-full table-fixed border-collapse text-[13px]"
-        style={{ minWidth: gridMinWidth(activeDays.length) }}
-      >
-        <GridColumns columnCount={activeDays.length} />
-        <thead>
-          <tr className="bg-bg text-left text-fg-muted">
-            <HeadCell first>{t("periodColumn")}</HeadCell>
-            {activeDays.map((day) => (
-              <HeadCell key={day} current={day === today}>
-                {tDays(String(day))}
-              </HeadCell>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {lessonPeriods.map((period) => (
-            <tr key={period.id} className={cn(period.is_break ? BREAK_ROW : LESSON_ROW)}>
-              <PeriodCell period={period} current={period.sequence === currentSeq} />
-              {activeDays.map((day) => {
-                const block = blocks.get(`${day}:${period.sequence}`);
-                // A cell already covered by a block that started in
-                // an earlier row emits nothing, break or not.
-                // Emitting one anyway pushed every later cell in the
-                // row one column to the right.
-                if (block && block.start_seq !== period.sequence) {
-                  return null;
-                }
-                // A block is drawn from its first row even when that row is
-                // a break: timetables imported against another period
-                // template can start on one, and skipping it left a hole
-                // that shifted every cell after it.
-                if (!block) {
-                  if (period.is_break || !canManage) {
-                    return <EmptyCell key={day} today={day === today} />;
+    <Card className="hidden overflow-hidden p-0 md:block">
+      <div className="overflow-x-auto">
+        <table
+          className="w-full table-fixed border-collapse text-[13px]"
+          style={{ minWidth: gridMinWidth(activeDays.length) }}
+        >
+          <GridColumns columnCount={activeDays.length} />
+          <thead>
+            <tr className="bg-bg text-left text-fg-muted">
+              <HeadCell first>{t("periodColumn")}</HeadCell>
+              {activeDays.map((day) => (
+                <HeadCell key={day} current={day === today}>
+                  {tDays(String(day))}
+                </HeadCell>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {lessonPeriods.map((period) => (
+              <tr key={period.id} className={cn(period.is_break ? BREAK_ROW : LESSON_ROW)}>
+                <PeriodCell period={period} current={period.sequence === currentSeq} />
+                {activeDays.map((day) => {
+                  const block = blocks.get(`${day}:${period.sequence}`);
+                  const isCurrent = isCurrentPeriodCell(day, today, period.sequence, currentSeq);
+                  // A cell already covered by a block that started in
+                  // an earlier row emits nothing, break or not.
+                  // Emitting one anyway pushed every later cell in the
+                  // row one column to the right.
+                  if (block && block.start_seq !== period.sequence) {
+                    return null;
+                  }
+                  // A block is drawn from its first row even when that row is
+                  // a break: timetables imported against another period
+                  // template can start on one, and skipping it left a hole
+                  // that shifted every cell after it.
+                  if (!block) {
+                    if (period.is_break || !canManage) {
+                      return <EmptyCell key={day} today={day === today} current={isCurrent} />;
+                    }
+                    return (
+                      <EmptySlotCell
+                        key={day}
+                        today={day === today}
+                        current={isCurrent}
+                        pasting={copied !== null}
+                        label={copied ? t("pasteHere") : t("addHere")}
+                        onClick={() => {
+                          if (copied) {
+                            onPaste(day, period.sequence);
+                            return;
+                          }
+                          onAdd(day, period.sequence);
+                        }}
+                      />
+                    );
                   }
                   return (
-                    <EmptySlotCell
+                    <LessonCell
                       key={day}
                       today={day === today}
-                      pasting={copied !== null}
-                      label={copied ? t("pasteHere") : t("addHere")}
-                      onClick={() => {
-                        if (copied) {
-                          onPaste(day, period.sequence);
-                          return;
-                        }
-                        onAdd(day, period.sequence);
-                      }}
+                      current={
+                        day === today &&
+                        isNowWithinBlock(block.start_seq, block.end_seq, currentSeq)
+                      }
+                      block={block}
+                      span={periodSpan(block)}
+                      subject={subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
+                      detail={
+                        mode === "class"
+                          ? (teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher"))
+                          : (classMap.get(block.class_id)?.name ?? t("unknownClass"))
+                      }
+                      canManage={canManage}
+                      crossesBreak={blockCrossesBreak(block, lessonPeriods)}
+                      breakWarningLabel={t("crossesBreakWarning")}
+                      onCopy={onCopy}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      t={t}
                     />
                   );
-                }
-                return (
-                  <LessonCell
-                    key={day}
-                    today={day === today}
-                    block={block}
-                    span={block.end_seq - block.start_seq + 1}
-                    subject={subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
-                    detail={
-                      mode === "class"
-                        ? (teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher"))
-                        : (classMap.get(block.class_id)?.name ?? t("unknownClass"))
-                    }
-                    canManage={canManage}
-                    crossesBreak={blockCrossesBreak(block, lessonPeriods)}
-                    breakWarningLabel={t("crossesBreakWarning")}
-                    onCopy={onCopy}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    t={t}
-                  />
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
   );
 }

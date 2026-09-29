@@ -1,9 +1,12 @@
 "use client";
 
+import { Card } from "@newsekolah/ui";
 import type { ReactElement } from "react";
 
 import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
+import { isNowWithinBlock } from "../current-period";
+import { periodSpan } from "../period-span";
 
 import {
   BREAK_ROW,
@@ -61,69 +64,75 @@ export function ScheduleDayGrid({
   currentSeq?: number;
 }): ReactElement {
   return (
-    <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
-      <table
-        className="w-full table-fixed border-collapse text-[13px]"
-        style={{ minWidth: gridMinWidth(classes.length) }}
-      >
-        <GridColumns columnCount={classes.length} />
-        <thead>
-          <tr className="bg-bg text-left text-fg-muted">
-            <HeadCell first>{t("periodColumn")}</HeadCell>
-            {classes.map((classItem) => (
-              <HeadCell key={classItem.id}>{classItem.name}</HeadCell>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {lessonPeriods.map((period) => (
-            <tr key={period.id} className={period.is_break ? BREAK_ROW : LESSON_ROW}>
-              <PeriodCell period={period} current={period.sequence === currentSeq} />
-              {classes.map((classItem) => {
-                const block = blocks.get(`${classItem.id}:${period.sequence}`);
-                if (block && block.start_seq !== period.sequence) return null;
-                // Drawn from its first row even on a break; see
-                // schedule-week-grid.tsx for why.
-                if (!block) {
-                  if (period.is_break || !canManage) {
-                    return <EmptyCell key={classItem.id} />;
+    <Card className="hidden overflow-hidden p-0 md:block">
+      <div className="overflow-x-auto">
+        <table
+          className="w-full table-fixed border-collapse text-[13px]"
+          style={{ minWidth: gridMinWidth(classes.length) }}
+        >
+          <GridColumns columnCount={classes.length} />
+          <thead>
+            <tr className="bg-bg text-left text-fg-muted">
+              <HeadCell first>{t("periodColumn")}</HeadCell>
+              {classes.map((classItem) => (
+                <HeadCell key={classItem.id}>{classItem.name}</HeadCell>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {lessonPeriods.map((period) => (
+              <tr key={period.id} className={period.is_break ? BREAK_ROW : LESSON_ROW}>
+                <PeriodCell period={period} current={period.sequence === currentSeq} />
+                {classes.map((classItem) => {
+                  const block = blocks.get(`${classItem.id}:${period.sequence}`);
+                  if (block && block.start_seq !== period.sequence) return null;
+                  // Drawn from its first row even on a break; see
+                  // schedule-week-grid.tsx for why.
+                  if (!block) {
+                    if (period.is_break || !canManage) {
+                      return (
+                        <EmptyCell key={classItem.id} current={period.sequence === currentSeq} />
+                      );
+                    }
+                    return (
+                      <EmptySlotCell
+                        key={classItem.id}
+                        current={period.sequence === currentSeq}
+                        pasting={copied !== null}
+                        label={copied ? t("pasteHere") : t("addHere")}
+                        onClick={() => {
+                          if (copied) {
+                            onPaste(classItem.id, period.sequence);
+                            return;
+                          }
+                          onAdd(classItem.id, period.sequence);
+                        }}
+                      />
+                    );
                   }
                   return (
-                    <EmptySlotCell
+                    <LessonCell
                       key={classItem.id}
-                      pasting={copied !== null}
-                      label={copied ? t("pasteHere") : t("addHere")}
-                      onClick={() => {
-                        if (copied) {
-                          onPaste(classItem.id, period.sequence);
-                          return;
-                        }
-                        onAdd(classItem.id, period.sequence);
-                      }}
+                      current={isNowWithinBlock(block.start_seq, block.end_seq, currentSeq)}
+                      block={block}
+                      span={periodSpan(block)}
+                      subject={subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
+                      detail={teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher")}
+                      canManage={canManage}
+                      crossesBreak={blockCrossesBreak(block, lessonPeriods)}
+                      breakWarningLabel={t("crossesBreakWarning")}
+                      onCopy={onCopy}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      t={t}
                     />
                   );
-                }
-                return (
-                  <LessonCell
-                    key={classItem.id}
-                    block={block}
-                    span={block.end_seq - block.start_seq + 1}
-                    subject={subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
-                    detail={teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher")}
-                    canManage={canManage}
-                    crossesBreak={blockCrossesBreak(block, lessonPeriods)}
-                    breakWarningLabel={t("crossesBreakWarning")}
-                    onCopy={onCopy}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    t={t}
-                  />
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
   );
 }
