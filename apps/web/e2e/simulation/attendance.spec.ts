@@ -18,7 +18,26 @@ import { ACTORS, assertNoNavigation, closeAll, expect, loginAs, test } from "./f
  * (already submitted) session in correction mode, and a correction save
  * publishes the same event, so the assertion holds either way.
  */
+/**
+ * cmd/seed's synthetic timetable covers 07:00-23:59 in the tenant zone but
+ * cannot wrap past midnight (apps/api/cmd/seed/operations.go explains why),
+ * so between 00:00 and 07:00 Asia/Makassar no class is "in session" and the
+ * dashboard's progress figure has nothing to count. Skip only that window
+ * rather than fail a CI run that merely happened at night.
+ */
+function seedTimetableIdle(now = new Date()): boolean {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Makassar",
+      hour: "2-digit",
+      hourCycle: "h23",
+    }).format(now),
+  );
+  return hour < 7;
+}
+
 test("attendance: teacher saves -> principal dashboard progress live", async ({ browser }) => {
+  test.skip(seedTimetableIdle(), "seed timetable has no class in session 00:00-07:00 WITA");
   const principal = await loginAs(browser, ACTORS.principal);
   const homeroom = await loginAs(browser, ACTORS.homeroom);
 
