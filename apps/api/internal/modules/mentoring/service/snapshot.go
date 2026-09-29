@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // StudentSnapshot combines what the platform already knows about one
@@ -28,7 +29,7 @@ func (s *Service) StudentSnapshot(ctx context.Context, tenantID, studentUserID u
 		}
 		out = domain.StudentSnapshot{StudentUserID: studentUserID, StudentName: info.Name, ClassName: info.ClassName}
 
-		month := s.clock.Now().Format("2006-01")
+		month := clock.Now(ctx, s.clock).Format("2006-01")
 		if s.attendance != nil {
 			counts, err := s.attendance.MonthlyStatusCounts(ctx, tenantID, studentUserID, month)
 			if err != nil {

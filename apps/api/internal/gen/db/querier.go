@@ -1508,6 +1508,9 @@ type Querier interface {
 	UpsertNotificationPreference(ctx context.Context, arg UpsertNotificationPreferenceParams) error
 	UpsertNotificationSettings(ctx context.Context, arg UpsertNotificationSettingsParams) (NotificationSetting, error)
 	UpsertPermission(ctx context.Context, arg UpsertPermissionParams) error
+	// published_at is the caller's business time (the simulated clock when a
+	// superadmin is testing), not now(): it is the timestamp shown to
+	// students as "grades published on", not bookkeeping.
 	UpsertPublication(ctx context.Context, arg UpsertPublicationParams) (GradePublication, error)
 	UpsertPushDevice(ctx context.Context, arg UpsertPushDeviceParams) (PushDevice, error)
 	// automatic_score always reflects the latest weighted-average
@@ -1515,6 +1518,9 @@ type Querier interface {
 	// (either passed here or already on the row), otherwise it mirrors
 	// automatic_score. This is what lets SetManualReportScore restore the
 	// automatic value by clearing the override, without a full recompute.
+	// computed_at is the caller's business time (the simulated clock when a
+	// superadmin is testing), not now(): it is the "report computed on" date
+	// shown alongside the score, not bookkeeping.
 	UpsertReportScore(ctx context.Context, arg UpsertReportScoreParams) (ReportScore, error)
 	UpsertStaffAttendanceRecord(ctx context.Context, arg UpsertStaffAttendanceRecordParams) (StaffAttendanceRecord, error)
 	UpsertStaffAttendanceScheduleDay(ctx context.Context, arg UpsertStaffAttendanceScheduleDayParams) (StaffAttendanceSchedule, error)

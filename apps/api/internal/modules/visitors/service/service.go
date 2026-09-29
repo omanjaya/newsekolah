@@ -126,6 +126,12 @@ func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, docs Doc
 	return &Service{pool: pool, repo: repo, years: years, docs: docs, flags: flags, audit: auditor, realtime: realtime, letterhead: letterhead, clock: clk}
 }
 
+// WithClock swaps the clock; tests use it to pin "now".
+func (s *Service) WithClock(c clock.Clock) *Service {
+	s.clock = c
+	return s
+}
+
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {
 	return database.WithTenantTx(ctx, s.pool, tenantID, fn)
 }

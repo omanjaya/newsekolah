@@ -160,10 +160,10 @@ func (r *Repository) ListGradesForStudent(ctx context.Context, tenantID, student
 
 // Publication.
 
-func (r *Repository) SetPublication(ctx context.Context, tenantID, yearID, termID, classID, subjectID uuid.UUID, published bool, actorID uuid.UUID) (service.Publication, error) {
+func (r *Repository) SetPublication(ctx context.Context, tenantID, yearID, termID, classID, subjectID uuid.UUID, published bool, publishedAt time.Time, actorID uuid.UUID) (service.Publication, error) {
 	row, err := r.queries(ctx).UpsertPublication(ctx, db.UpsertPublicationParams{
 		TenantID: tenantID, AcademicYearID: yearID, TermID: termID, ClassID: classID, SubjectID: subjectID,
-		IsPublished: published, PublishedBy: pgtype.UUID{Bytes: actorID, Valid: true},
+		IsPublished: published, PublishedAt: pdatabase.Timestamptz(publishedAt), PublishedBy: pgtype.UUID{Bytes: actorID, Valid: true},
 	})
 	if err != nil {
 		return service.Publication{}, fmt.Errorf("set publication: %w", err)
@@ -192,10 +192,11 @@ func (r *Repository) ListPublishedSubjects(ctx context.Context, tenantID, termID
 
 // Report scores.
 
-func (r *Repository) UpsertReportScore(ctx context.Context, tenantID, yearID, termID, classID, subjectID, studentID uuid.UUID, previous, manual *float64, automatic float64) (service.ReportScore, error) {
+func (r *Repository) UpsertReportScore(ctx context.Context, tenantID, yearID, termID, classID, subjectID, studentID uuid.UUID, previous, manual *float64, automatic float64, computedAt time.Time) (service.ReportScore, error) {
 	row, err := r.queries(ctx).UpsertReportScore(ctx, db.UpsertReportScoreParams{
 		TenantID: tenantID, AcademicYearID: yearID, TermID: termID, ClassID: classID, SubjectID: subjectID, StudentUserID: studentID,
 		PreviousScore: pdatabase.NumericPtr(previous), ManualScore: pdatabase.NumericPtr(manual), AutomaticScore: pdatabase.Numeric(automatic),
+		ComputedAt: pdatabase.Timestamptz(computedAt),
 	})
 	if err != nil {
 		return service.ReportScore{}, fmt.Errorf("upsert report score: %w", err)
@@ -203,10 +204,10 @@ func (r *Repository) UpsertReportScore(ctx context.Context, tenantID, yearID, te
 	return toReportScore(row), nil
 }
 
-func (r *Repository) SetManualReportScore(ctx context.Context, tenantID, yearID, termID, classID, subjectID, studentID uuid.UUID, manual *float64) (service.ReportScore, error) {
+func (r *Repository) SetManualReportScore(ctx context.Context, tenantID, yearID, termID, classID, subjectID, studentID uuid.UUID, manual *float64, computedAt time.Time) (service.ReportScore, error) {
 	row, err := r.queries(ctx).SetManualReportScore(ctx, db.SetManualReportScoreParams{
 		TenantID: tenantID, AcademicYearID: yearID, TermID: termID, ClassID: classID, SubjectID: subjectID, StudentUserID: studentID,
-		ManualScore: pdatabase.NumericPtr(manual),
+		ManualScore: pdatabase.NumericPtr(manual), ComputedAt: pdatabase.Timestamptz(computedAt),
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return service.ReportScore{}, domain.ErrComponentNotFound

@@ -195,6 +195,12 @@ func New(attendance AttendanceReader, discipline DisciplineReader, grading Gradi
 	return &Service{attendance: attendance, discipline: discipline, grading: grading, permits: permits, clock: clk}
 }
 
+// WithClock swaps the clock; tests use it to pin "now".
+func (s *Service) WithClock(c clock.Clock) *Service {
+	s.clock = c
+	return s
+}
+
 // SetReportDocDependencies wires the reportdoc-backed export path's
 // collaborators (attendance's grade-level class resolution, and the
 // tenant's letterhead/signature every kind's document uses). Both are
@@ -291,7 +297,7 @@ func (s *Service) attachLetterhead(ctx context.Context, tenantID uuid.UUID, args
 	if sig == nil {
 		return
 	}
-	when := s.clock.Now()
+	when := clock.Now(ctx, s.clock)
 	if args.Date != nil {
 		when = *args.Date
 	}

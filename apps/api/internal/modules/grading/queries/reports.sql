@@ -4,18 +4,21 @@
 -- (either passed here or already on the row), otherwise it mirrors
 -- automatic_score. This is what lets SetManualReportScore restore the
 -- automatic value by clearing the override, without a full recompute.
+-- computed_at is the caller's business time (the simulated clock when a
+-- superadmin is testing), not now(): it is the "report computed on" date
+-- shown alongside the score, not bookkeeping.
 insert into report_scores (tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, automatic_score, final_score, computed_at)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, coalesce($8::numeric, $9::numeric), now())
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, coalesce($8::numeric, $9::numeric), sqlc.arg(computed_at)::timestamptz)
 on conflict (academic_year_id, term_id, class_id, subject_id, student_user_id) do update
   set previous_score = excluded.previous_score,
       manual_score = coalesce(excluded.manual_score, report_scores.manual_score),
       automatic_score = excluded.automatic_score,
       final_score = coalesce(coalesce(excluded.manual_score, report_scores.manual_score), excluded.automatic_score),
-      computed_at = now()
+      computed_at = excluded.computed_at
 returning *;
 
 -- name: SetManualReportScore :one
-update report_scores set manual_score = $7, final_score = coalesce($7, automatic_score), computed_at = now()
+update report_scores set manual_score = $7, final_score = coalesce($7, automatic_score), computed_at = sqlc.arg(computed_at)::timestamptz
 where tenant_id = $1 and term_id = $2 and class_id = $3 and subject_id = $4 and student_user_id = $5 and academic_year_id = $6
 returning *;
 
