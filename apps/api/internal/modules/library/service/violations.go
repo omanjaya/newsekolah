@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // CreateViolationInput is a manual violation record (old app:
@@ -48,7 +49,7 @@ func (s *Service) CreateViolation(ctx context.Context, tenantID uuid.UUID, in Cr
 			}
 		}
 		if in.Penalty == domain.PenaltySuspend && in.SuspendDays > 0 {
-			suspendedUntil := nullableDatePtr(s.clock.Now().AddDate(0, 0, in.SuspendDays))
+			suspendedUntil := nullableDatePtr(clock.Now(ctx, s.clock).AddDate(0, 0, in.SuspendDays))
 			_, _, err = s.repo.UpdateMemberStatus(ctx, tenantID, in.MemberUserID, domain.MemberSuspended, suspendedUntil)
 		}
 		return err
@@ -97,7 +98,7 @@ func (s *Service) SettleViolation(ctx context.Context, tenantID, id uuid.UUID, s
 	}
 	var violation domain.Violation
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		now := s.clock.Now()
+		now := clock.Now(ctx, s.clock)
 		var found bool
 		var err error
 		violation, found, err = s.repo.SettleViolation(ctx, tenantID, id, status, now, settledBy)

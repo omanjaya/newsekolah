@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // maxMemberNoRetries mirrors the old app's retry budget for a member_no
@@ -105,7 +106,7 @@ func (s *Service) RegisterMember(ctx context.Context, tenantID uuid.UUID, in Reg
 		if !found {
 			return domain.ErrMemberTypeNotFound
 		}
-		now := s.clock.Now()
+		now := clock.Now(ctx, s.clock)
 		if in.MemberNo == "" {
 			member, err = s.createMemberWithGeneratedNo(ctx, tenantID, in.UserID, memberType, policy, now)
 			if err != nil {
@@ -156,7 +157,7 @@ func (s *Service) BulkRegisterByRole(ctx context.Context, tenantID, memberTypeID
 		if err != nil {
 			return err
 		}
-		now := s.clock.Now()
+		now := clock.Now(ctx, s.clock)
 		for _, c := range candidates {
 			member, err := s.createMemberWithGeneratedNo(ctx, tenantID, c.UserID, memberType, policy, now)
 			if err != nil {

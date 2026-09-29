@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // Reserve places a member in the queue for a title. It refuses to reserve
@@ -30,7 +31,7 @@ func (s *Service) Reserve(ctx context.Context, tenantID, titleID, memberUserID u
 			return domain.ErrCopyAvailableForLoan
 		}
 		reservation, err = s.repo.CreateReservation(ctx, domain.Reservation{
-			TenantID: tenantID, TitleID: titleID, MemberUserID: memberUserID, RequestedAt: s.clock.Now(),
+			TenantID: tenantID, TitleID: titleID, MemberUserID: memberUserID, RequestedAt: clock.Now(ctx, s.clock),
 		})
 		return err
 	})

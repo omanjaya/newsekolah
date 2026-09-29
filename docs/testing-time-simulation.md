@@ -17,6 +17,21 @@ Superadmin dapat mengatur tanggal dan jam melalui **Simulasi waktu untuk penguji
 - Scan masuk/pulang pegawai dan perhitungan keterlambatan, mengikuti zona waktu sekolah.
 - Tanggal pada dashboard dan tampilan terkait yang memakai sumber waktu simulasi.
 
+### Cakupan perpustakaan
+
+- Peminjaman (borrow): `borrowed_at` dan `due_on` dihitung dari waktu simulasi, mengikuti hari kerja kebijakan sirkulasi (libur akhir pekan dan kalender libur tenant).
+- Pengembalian (return): keterlambatan (hari kerja), denda (fine, termasuk `per_tenor`/`constant`), dan penalti (denda/suspend/peringatan) dihitung dari tanggal pengembalian simulasi.
+- Perpanjangan (renew): batas dasar perpanjangan (`max(due_on, sekarang)`) dan `due_on` baru mengikuti waktu simulasi.
+- Kehilangan (mark lost) dan pencatatan pelanggaran manual (denda, suspend) memakai waktu simulasi untuk `returned_at`/`suspended_until`.
+- Reservasi: waktu pemesanan (`requested_at`) dan jendela ambil (`ready_at`/`expires_at`) saat sebuah salinan diserahkan ke antrean berikutnya (lewat pengembalian atau pembatalan) memakai waktu simulasi.
+- Kunjungan (guest book) dan baca di tempat (read-in-place): `visited_at`/`started_at`, dedupe kunjungan 30 menit, dan ringkasan kunjungan hari ini mengikuti waktu simulasi serta zona waktu tenant.
+- Dashboard: peminjaman/pengembalian/kunjungan "hari ini", jumlah terlambat, dan tren 30 hari mengikuti waktu simulasi.
+- Registrasi anggota (manual, otomatis saat pinjam pertama, dan massal per peran/kelas): `registered_on`, `valid_until`, dan nomor anggota bertanggal mengikuti waktu simulasi. Profil `/v1/library/me` sendiri hanya membaca data tersimpan, tidak menghitung ulang waktu.
+- Laporan dan opname (stocktake): periode laporan default, ringkasan katalog, laporan bulanan, daftar anggota terlambat, dan waktu mulai/tutup sesi opname mengikuti waktu simulasi.
+- Kebijakan sirkulasi: versi kebijakan baru (dibuat otomatis maupun lewat pembaruan) mencatat waktu simulasi sebagai `created_at`.
+
+Tetap memakai waktu asli di modul perpustakaan: pengingat jatuh tempo harian dan auto-kedaluwarsa reservasi (pekerjaan latar belakang berjadwal, tanpa konteks request), cache hasil pencarian ISBN, tahun pada nomor aksesi eksemplar baru, dan tanggal cetak pada surat bebas pustaka.
+
 Simulasi disimpan per tab browser dan terikat ke sekolah serta akun superadmin asal. Request pengguna lain tetap memakai waktu asli. Autentikasi, kedaluwarsa token, izin berdasarkan penugasan, pencatatan audit/database, serta pekerjaan latar belakang tetap memakai waktu asli. Tahun ajaran aktif tetap mengikuti pengaturan sekolah. Tampilan monitor melalui WebSocket tidak memakai header simulasi.
 
 **Kembali ke waktu asli hanya menghentikan simulasi. Data absensi/jadwal yang disimpan selama testing tetap tersimpan.** Mode ini bukan database sementara atau mekanisme undo. Modul di luar cakupan di atas belum mendukung simulasi waktu secara menyeluruh.
