@@ -272,7 +272,7 @@ func (s *ScheduleService) ListSchedulesWithNextRun(ctx context.Context, tenantID
 		return nil, err
 	}
 	loc := s.tenantLocation(ctx, tenantID)
-	now := s.clock.Now()
+	now := clock.Now(ctx, s.clock)
 	out := make([]ScheduleView, len(scheds))
 	for i, sched := range scheds {
 		out[i] = ScheduleView{Schedule: sched, NextRunAt: sched.NextRunAfter(now, loc)}
@@ -314,7 +314,13 @@ func (s *ScheduleService) ListRuns(ctx context.Context, tenantID, scheduleID uui
 // does not otherwise have a reason to look up.
 func (s *ScheduleService) NextRunAt(ctx context.Context, tenantID uuid.UUID, sched domain.Schedule) time.Time {
 	loc := s.tenantLocation(ctx, tenantID)
-	return sched.NextRunAfter(s.clock.Now(), loc)
+	return sched.NextRunAfter(clock.Now(ctx, s.clock), loc)
+}
+
+// WithClock swaps the clock; tests use it to pin "now".
+func (s *ScheduleService) WithClock(c clock.Clock) *ScheduleService {
+	s.clock = c
+	return s
 }
 
 func (s *ScheduleService) tenantLocation(ctx context.Context, tenantID uuid.UUID) *time.Location {

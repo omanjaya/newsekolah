@@ -55,10 +55,28 @@ Tetap memakai waktu asli (real time), bukan simulasi, karena berupa keamanan ata
 
 Tes: `apps/api/internal/modules/permits/simulation_integration_test.go` membuktikan keterlambatan yang dibuka pada konteks Senin 07:20 simulasi jatuh di hari itu, status kembali tepat waktu/terlambat pada izin keluar mengikuti jam simulasi, dan kelayakan reviewer "aktif hari ini" pada leave request mengikuti tanggal simulasi.
 
+## Cakupan kesiswaan dan pelaporan (student affairs and reporting coverage)
+
+Modul-modul berikut mengikuti waktu simulasi lewat `clock.Now(ctx, s.clock)` pada keputusan bisnis yang terikat waktu:
+
+- **discipline**: tahun pada nomor surat peringatan (SP) yang diterbitkan lokal, saat tidak ada `DocumentIssuer` terpasang.
+- **grading**: `published_at` pada publikasi nilai rapor (`Publish`) dan `computed_at` pada `report_scores` (rekomputasi otomatis maupun override manual) -- keduanya kolom bisnis yang dibaca siswa/orang tua, bukan bookkeeping, sehingga kolomnya diganti dari `now()` SQL menjadi parameter dari clock yang tersimulasi.
+- **reports**: tanggal tanda tangan (`Signature.Date`) pada laporan yang diekspor interaktif (`RunDocument`/`attachLetterhead`), dan tanggal "jadwal berikutnya" pada `ListSchedulesWithNextRun`/`NextRunAt` (layar admin, bukan job latar belakang).
+- **visitors**: `arrived_at`/`departed_at` saat tamu check-in/check-out, nomor badge tamu yang dinomori lokal (tanpa `DocumentIssuer`), status "overstay" pada gate board (`Board`), dan `closed_at` saat insiden ditutup.
+- **mentoring**: bulan default ("bulan ini") pada `StudentSnapshot` yang membaca rekap kehadiran bulanan siswa.
+- **supervision**: tanggal tanda tangan pada laporan siklus supervisi guru yang diekspor (`ExportTeacherReport`).
+- **analytics** dan **activities**: tidak ada keputusan bisnis yang bergantung pada "sekarang/hari ini" di luar apa yang sudah diteruskan lewat `ctx` dari modul lain (mis. `analytics.TodaySubmittedCount` meneruskan `ctx` ke pembaca attendance). Semua tanggal aktivitas/pertemuan/keanggotaan klub (`meeting_date`, `joined_on`, `left_on`, dll.) adalah input wajib dari pemanggil, bukan default "hari ini".
+
+Sengaja tetap memakai waktu asli (didokumentasikan, bukan terlewat):
+
+- **reports**: `ScheduleService.RunDueSchedules`, `runOne`, `failRun`, dan `FinalizeRun` -- job periodik River tanpa request dan tanpa header simulasi, persis seperti contoh "rekomputasi at-risk malam hari" di bawah.
+- **analytics**: `Recompute`/`RecomputeAllTenants` -- job periodik River yang menghitung ulang skor risiko setiap siswa; belum ada endpoint interaktif yang memanggilnya.
+- Setiap modul di atas: `effective_from` pada versi kebijakan tenant (`tenant_policies`, mis. skala penilaian, tingkatan SP) hanya dicatat sebagai bookkeeping (pembacaan kebijakan selalu mengambil versi terbaru, tidak memfilter berdasarkan `effective_from`), dan pengecekan `HasActiveDuty` (`starts_on <= current_date` / `ends_on >= current_date`) tetap memakai `current_date` di SQL -- ini adalah "izin berdasarkan penugasan" yang menurut aturan di atas tetap memakai waktu asli, sama seperti pola yang sudah ada di `attendance`.
+
 ## Implementasi
 
 Browser mengirim `X-Simulation-Time` berisi waktu efektif dalam RFC3339 pada request yang mendukung simulasi. Backend mewajibkan sesi login interaktif dan memeriksa izin `platform_superadmin` pada pelaku asli, termasuk saat impersonation. Header yang tidak valid atau tanpa izin ditolak.
 
 Middleware memasang waktu pada context request; service bisnis mengambilnya lewat `clock.Now(ctx, fallback)`. Jam proses, database, dan `clock.Real` tidak diubah. Jangan mengganti jam autentikasi atau audit dengan helper simulasi.
 
-Pengujian mencakup isolasi request, penolakan pengguna tanpa izin, impersonation, pergantian tanggal WITA, scan masuk/pulang, batas koreksi, dan batas edit jadwal.
+Pengujian mencakup isolasi request, penolakan pengguna tanpa izin, impersonation, pergantian tanggal WITA, scan masuk/pulang, batas koreksi, dan batas edit jadwal. Untuk kesiswaan dan pelaporan: nomor surat peringatan mengikuti tahun simulasi (`discipline/simulation_integration_test.go`), tanggal publikasi rapor mengikuti waktu simulasi (`grading/simulation_integration_test.go`), dan waktu check-in/check-out tamu plus status overstay di gate board mengikuti waktu simulasi (`visitors/service/simulation_integration_test.go`) -- setiap kasus juga membuktikan request tanpa header simulasi tetap memakai jam asli.

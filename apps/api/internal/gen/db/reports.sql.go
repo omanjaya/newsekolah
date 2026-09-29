@@ -568,19 +568,20 @@ func (q *Queries) ReplaceGradeRangesScope(ctx context.Context, arg ReplaceGradeR
 }
 
 const setManualReportScore = `-- name: SetManualReportScore :one
-update report_scores set manual_score = $7, final_score = coalesce($7, automatic_score), computed_at = now()
+update report_scores set manual_score = $7, final_score = coalesce($7, automatic_score), computed_at = $8::timestamptz
 where tenant_id = $1 and term_id = $2 and class_id = $3 and subject_id = $4 and student_user_id = $5 and academic_year_id = $6
 returning id, tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, final_score, computed_at, automatic_score
 `
 
 type SetManualReportScoreParams struct {
-	TenantID       uuid.UUID      `json:"tenant_id"`
-	TermID         uuid.UUID      `json:"term_id"`
-	ClassID        uuid.UUID      `json:"class_id"`
-	SubjectID      uuid.UUID      `json:"subject_id"`
-	StudentUserID  uuid.UUID      `json:"student_user_id"`
-	AcademicYearID uuid.UUID      `json:"academic_year_id"`
-	ManualScore    pgtype.Numeric `json:"manual_score"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	TermID         uuid.UUID          `json:"term_id"`
+	ClassID        uuid.UUID          `json:"class_id"`
+	SubjectID      uuid.UUID          `json:"subject_id"`
+	StudentUserID  uuid.UUID          `json:"student_user_id"`
+	AcademicYearID uuid.UUID          `json:"academic_year_id"`
+	ManualScore    pgtype.Numeric     `json:"manual_score"`
+	ComputedAt     pgtype.Timestamptz `json:"computed_at"`
 }
 
 func (q *Queries) SetManualReportScore(ctx context.Context, arg SetManualReportScoreParams) (ReportScore, error) {
@@ -592,6 +593,7 @@ func (q *Queries) SetManualReportScore(ctx context.Context, arg SetManualReportS
 		arg.StudentUserID,
 		arg.AcademicYearID,
 		arg.ManualScore,
+		arg.ComputedAt,
 	)
 	var i ReportScore
 	err := row.Scan(
@@ -631,26 +633,27 @@ func (q *Queries) StarBalance(ctx context.Context, arg StarBalanceParams) (int32
 
 const upsertReportScore = `-- name: UpsertReportScore :one
 insert into report_scores (tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, automatic_score, final_score, computed_at)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, coalesce($8::numeric, $9::numeric), now())
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, coalesce($8::numeric, $9::numeric), $10::timestamptz)
 on conflict (academic_year_id, term_id, class_id, subject_id, student_user_id) do update
   set previous_score = excluded.previous_score,
       manual_score = coalesce(excluded.manual_score, report_scores.manual_score),
       automatic_score = excluded.automatic_score,
       final_score = coalesce(coalesce(excluded.manual_score, report_scores.manual_score), excluded.automatic_score),
-      computed_at = now()
+      computed_at = excluded.computed_at
 returning id, tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, final_score, computed_at, automatic_score
 `
 
 type UpsertReportScoreParams struct {
-	TenantID       uuid.UUID      `json:"tenant_id"`
-	AcademicYearID uuid.UUID      `json:"academic_year_id"`
-	TermID         uuid.UUID      `json:"term_id"`
-	ClassID        uuid.UUID      `json:"class_id"`
-	SubjectID      uuid.UUID      `json:"subject_id"`
-	StudentUserID  uuid.UUID      `json:"student_user_id"`
-	PreviousScore  pgtype.Numeric `json:"previous_score"`
-	ManualScore    pgtype.Numeric `json:"manual_score"`
-	AutomaticScore pgtype.Numeric `json:"automatic_score"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	AcademicYearID uuid.UUID          `json:"academic_year_id"`
+	TermID         uuid.UUID          `json:"term_id"`
+	ClassID        uuid.UUID          `json:"class_id"`
+	SubjectID      uuid.UUID          `json:"subject_id"`
+	StudentUserID  uuid.UUID          `json:"student_user_id"`
+	PreviousScore  pgtype.Numeric     `json:"previous_score"`
+	ManualScore    pgtype.Numeric     `json:"manual_score"`
+	AutomaticScore pgtype.Numeric     `json:"automatic_score"`
+	ComputedAt     pgtype.Timestamptz `json:"computed_at"`
 }
 
 // automatic_score always reflects the latest weighted-average
@@ -658,6 +661,9 @@ type UpsertReportScoreParams struct {
 // (either passed here or already on the row), otherwise it mirrors
 // automatic_score. This is what lets SetManualReportScore restore the
 // automatic value by clearing the override, without a full recompute.
+// computed_at is the caller's business time (the simulated clock when a
+// superadmin is testing), not now(): it is the "report computed on" date
+// shown alongside the score, not bookkeeping.
 func (q *Queries) UpsertReportScore(ctx context.Context, arg UpsertReportScoreParams) (ReportScore, error) {
 	row := q.db.QueryRow(ctx, upsertReportScore,
 		arg.TenantID,
@@ -669,6 +675,7 @@ func (q *Queries) UpsertReportScore(ctx context.Context, arg UpsertReportScorePa
 		arg.PreviousScore,
 		arg.ManualScore,
 		arg.AutomaticScore,
+		arg.ComputedAt,
 	)
 	var i ReportScore
 	err := row.Scan(

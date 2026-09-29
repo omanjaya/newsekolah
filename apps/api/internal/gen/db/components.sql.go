@@ -452,22 +452,26 @@ func (q *Queries) UpsertGrade(ctx context.Context, arg UpsertGradeParams) (Grade
 
 const upsertPublication = `-- name: UpsertPublication :one
 insert into grade_publications (tenant_id, academic_year_id, term_id, class_id, subject_id, is_published, published_at, published_by)
-values ($1, $2, $3, $4, $5, $6, case when $6 then now() else null end, $7)
+values ($1, $2, $3, $4, $5, $6, $8::timestamptz, $7)
 on conflict (academic_year_id, term_id, class_id, subject_id) do update
   set is_published = excluded.is_published, published_at = excluded.published_at, published_by = excluded.published_by
 returning id, tenant_id, academic_year_id, term_id, class_id, subject_id, is_published, published_at, published_by
 `
 
 type UpsertPublicationParams struct {
-	TenantID       uuid.UUID   `json:"tenant_id"`
-	AcademicYearID uuid.UUID   `json:"academic_year_id"`
-	TermID         uuid.UUID   `json:"term_id"`
-	ClassID        uuid.UUID   `json:"class_id"`
-	SubjectID      uuid.UUID   `json:"subject_id"`
-	IsPublished    bool        `json:"is_published"`
-	PublishedBy    pgtype.UUID `json:"published_by"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	AcademicYearID uuid.UUID          `json:"academic_year_id"`
+	TermID         uuid.UUID          `json:"term_id"`
+	ClassID        uuid.UUID          `json:"class_id"`
+	SubjectID      uuid.UUID          `json:"subject_id"`
+	IsPublished    bool               `json:"is_published"`
+	PublishedBy    pgtype.UUID        `json:"published_by"`
+	PublishedAt    pgtype.Timestamptz `json:"published_at"`
 }
 
+// published_at is the caller's business time (the simulated clock when a
+// superadmin is testing), not now(): it is the timestamp shown to
+// students as "grades published on", not bookkeeping.
 func (q *Queries) UpsertPublication(ctx context.Context, arg UpsertPublicationParams) (GradePublication, error) {
 	row := q.db.QueryRow(ctx, upsertPublication,
 		arg.TenantID,
@@ -477,6 +481,7 @@ func (q *Queries) UpsertPublication(ctx context.Context, arg UpsertPublicationPa
 		arg.SubjectID,
 		arg.IsPublished,
 		arg.PublishedBy,
+		arg.PublishedAt,
 	)
 	var i GradePublication
 	err := row.Scan(

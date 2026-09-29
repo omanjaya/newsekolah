@@ -45,8 +45,11 @@ where g.tenant_id = $1 and g.student_user_id = $2 and c.term_id = $3
 order by c.subject_id, c.sequence;
 
 -- name: UpsertPublication :one
+-- published_at is the caller's business time (the simulated clock when a
+-- superadmin is testing), not now(): it is the timestamp shown to
+-- students as "grades published on", not bookkeeping.
 insert into grade_publications (tenant_id, academic_year_id, term_id, class_id, subject_id, is_published, published_at, published_by)
-values ($1, $2, $3, $4, $5, $6, case when $6 then now() else null end, $7)
+values ($1, $2, $3, $4, $5, $6, sqlc.arg(published_at)::timestamptz, $7)
 on conflict (academic_year_id, term_id, class_id, subject_id) do update
   set is_published = excluded.is_published, published_at = excluded.published_at, published_by = excluded.published_by
 returning *;

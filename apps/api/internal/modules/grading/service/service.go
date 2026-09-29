@@ -38,16 +38,21 @@ type Repository interface {
 	ListGradesForComponents(ctx context.Context, tenantID uuid.UUID, componentIDs []uuid.UUID) ([]domain.Grade, error)
 	ListGradesForStudent(ctx context.Context, tenantID, studentID, termID uuid.UUID) ([]StudentGradeRow, error)
 
-	SetPublication(ctx context.Context, tenantID, yearID, termID, classID, subjectID uuid.UUID, published bool, actorID uuid.UUID) (Publication, error)
+	// SetPublication flips the publication flag. publishedAt is the
+	// business time the "grades published on" column records: the caller's
+	// simulated clock when publishing, the zero time when unpublishing
+	// (stored as NULL).
+	SetPublication(ctx context.Context, tenantID, yearID, termID, classID, subjectID uuid.UUID, published bool, publishedAt time.Time, actorID uuid.UUID) (Publication, error)
 	GetPublication(ctx context.Context, tenantID, termID, classID, subjectID uuid.UUID) (Publication, bool, error)
 	ListPublishedSubjects(ctx context.Context, tenantID, termID, classID uuid.UUID) ([]uuid.UUID, error)
 
 	// UpsertReportScore writes the freshly recomputed automatic value.
 	// final_score becomes the manual override when one already exists (or
 	// is set in the same call), otherwise it mirrors automatic -- see
-	// domain.ComputeReportScore's doc comment for the full rule.
-	UpsertReportScore(ctx context.Context, tenantID, yearID, termID, classID, subjectID, studentID uuid.UUID, previous, manual *float64, automatic float64) (ReportScore, error)
-	SetManualReportScore(ctx context.Context, tenantID, yearID, termID, classID, subjectID, studentID uuid.UUID, manual *float64) (ReportScore, error)
+	// domain.ComputeReportScore's doc comment for the full rule. computedAt
+	// is the caller's business time, stored in computed_at.
+	UpsertReportScore(ctx context.Context, tenantID, yearID, termID, classID, subjectID, studentID uuid.UUID, previous, manual *float64, automatic float64, computedAt time.Time) (ReportScore, error)
+	SetManualReportScore(ctx context.Context, tenantID, yearID, termID, classID, subjectID, studentID uuid.UUID, manual *float64, computedAt time.Time) (ReportScore, error)
 	ListReportScores(ctx context.Context, tenantID, termID, classID, subjectID uuid.UUID) ([]ReportScore, error)
 	ListReportScoresForStudent(ctx context.Context, tenantID, termID, studentID uuid.UUID) ([]ReportScore, error)
 
@@ -216,6 +221,12 @@ func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, flags Fl
 		clk = clock.Real{}
 	}
 	return &Service{pool: pool, repo: repo, years: years, flags: flags, realtime: realtime, clock: clk}
+}
+
+// WithClock swaps the clock; tests use it to pin "now".
+func (s *Service) WithClock(c clock.Clock) *Service {
+	s.clock = c
+	return s
 }
 
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {

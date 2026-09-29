@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 type CheckInInput struct {
@@ -60,7 +61,7 @@ func (s *Service) CheckIn(ctx context.Context, tenantID, guardUserID uuid.UUID, 
 			}
 		}
 
-		now := s.clock.Now()
+		now := clock.Now(ctx, s.clock)
 		visit := domain.Visit{
 			TenantID: tenantID, ExpectedGuestID: in.ExpectedGuestID, FullName: strings.TrimSpace(in.FullName),
 			Organization: strings.TrimSpace(in.Organization), HostUserID: in.HostUserID, Purpose: strings.TrimSpace(in.Purpose),
@@ -92,7 +93,7 @@ func (s *Service) CheckIn(ctx context.Context, tenantID, guardUserID uuid.UUID, 
 // configured).
 func (s *Service) issueBadge(ctx context.Context, tenantID, guardUserID uuid.UUID, v domain.Visit) (IssuedBadge, error) {
 	if s.docs == nil {
-		return IssuedBadge{Number: fmt.Sprintf("TAMU-%s", s.clock.Now().Format("20060102-150405"))}, nil
+		return IssuedBadge{Number: fmt.Sprintf("TAMU-%s", clock.Now(ctx, s.clock).Format("20060102-150405"))}, nil
 	}
 	yearID, _, err := s.activeYear(ctx, tenantID)
 	if err != nil {
@@ -138,7 +139,7 @@ func (s *Service) CheckOut(ctx context.Context, tenantID, id, guardUserID uuid.U
 		if !visit.OnCampus() {
 			return domain.ErrVisitAlreadyCheckedOut
 		}
-		updated, _, err := s.repo.CheckOutVisit(ctx, tenantID, id, s.clock.Now(), guardUserID)
+		updated, _, err := s.repo.CheckOutVisit(ctx, tenantID, id, clock.Now(ctx, s.clock), guardUserID)
 		if err != nil {
 			return err
 		}
@@ -240,7 +241,7 @@ func (s *Service) Board(ctx context.Context, tenantID uuid.UUID) ([]domain.Board
 	if err != nil {
 		return nil, err
 	}
-	return domain.Board(visits, s.clock.Now()), nil
+	return domain.Board(visits, clock.Now(ctx, s.clock)), nil
 }
 
 // ListVisits is the visit history for a date range, most recent first.

@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 const (
@@ -100,7 +101,7 @@ func (s *Service) CloseIncident(ctx context.Context, tenantID, id, closedBy uuid
 		if current.IsClosed {
 			return domain.ErrIncidentAlreadyClosed
 		}
-		updated, _, err := s.repo.CloseIncident(ctx, tenantID, id, s.clock.Now(), closedBy)
+		updated, _, err := s.repo.CloseIncident(ctx, tenantID, id, clock.Now(ctx, s.clock), closedBy)
 		if err != nil {
 			return err
 		}

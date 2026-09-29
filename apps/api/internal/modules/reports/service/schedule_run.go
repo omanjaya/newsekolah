@@ -26,6 +26,9 @@ func (s *ScheduleService) RunDueSchedules(ctx context.Context) ([]PendingNotific
 
 	var pending []PendingNotification
 	var errs []error
+	// Deliberately real time, not clock.Now(ctx, s.clock): this runs from
+	// River's periodic job, a background loop with no request and no
+	// simulated-time header to read.
 	now := s.clock.Now()
 
 	for _, t := range tenants {

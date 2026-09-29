@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
@@ -144,7 +145,7 @@ func (s *Service) ExportTeacherReport(ctx context.Context, tenantID, cycleID, te
 		return nil, err
 	}
 
-	doc := buildTeacherReportDocument(report, supervisorName, s.clock.Now(), locale)
+	doc := buildTeacherReportDocument(report, supervisorName, clock.Now(ctx, s.clock), locale)
 	if s.letterhead != nil {
 		if lh, _, err := s.letterhead.Letterhead(ctx, tenantID); err == nil {
 			// The report's own two-signer block (supervisor, principal)

@@ -3,11 +3,13 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // PreviousTerm returns the term immediately before currentTermID in
@@ -79,13 +81,14 @@ func (s *Service) recomputeReportScores(ctx context.Context, tenantID, yearID, t
 	if err != nil {
 		return err
 	}
+	computedAt := clock.Now(ctx, s.clock)
 	for studentID, scores := range byStudent {
 		raw, ok := domain.WeightedAverage(components, scores)
 		if !ok {
 			continue
 		}
 		result := domain.ComputeReportScore(scale, scale.Round(raw), previous[studentID], nil, ranges)
-		if _, err := s.repo.UpsertReportScore(ctx, tenantID, yearID, termID, classID, subjectID, studentID, previous[studentID], nil, result.Automatic); err != nil {
+		if _, err := s.repo.UpsertReportScore(ctx, tenantID, yearID, termID, classID, subjectID, studentID, previous[studentID], nil, result.Automatic, computedAt); err != nil {
 			return err
 		}
 	}
@@ -171,7 +174,8 @@ func (s *Service) SetManualScore(ctx context.Context, tenantID, actorID uuid.UUI
 		if manual != nil && !scale.InRange(*manual) {
 			return domain.ErrScoreOutOfRange
 		}
-		out, err = s.repo.SetManualReportScore(ctx, tenantID, yearID, term.ID, classID, subjectID, studentID, manual)
+		computedAt := clock.Now(ctx, s.clock)
+		out, err = s.repo.SetManualReportScore(ctx, tenantID, yearID, term.ID, classID, subjectID, studentID, manual, computedAt)
 		if err == nil {
 			return nil
 		}
@@ -182,7 +186,7 @@ func (s *Service) SetManualScore(ctx context.Context, tenantID, actorID uuid.UUI
 		if err != nil {
 			return err
 		}
-		out, err = s.repo.UpsertReportScore(ctx, tenantID, yearID, term.ID, classID, subjectID, studentID, previous, manual, automatic)
+		out, err = s.repo.UpsertReportScore(ctx, tenantID, yearID, term.ID, classID, subjectID, studentID, previous, manual, automatic, computedAt)
 		return err
 	})
 	return out, err
@@ -257,12 +261,14 @@ func (s *Service) Publish(ctx context.Context, tenantID, actorID uuid.UUID, canM
 		if err != nil {
 			return err
 		}
+		publishedAt := time.Time{}
 		if published {
 			if err := s.recomputeReportScores(ctx, tenantID, yearID, term.ID, classID, subjectID, scale); err != nil {
 				return err
 			}
+			publishedAt = clock.Now(ctx, s.clock)
 		}
-		out, err = s.repo.SetPublication(ctx, tenantID, yearID, term.ID, classID, subjectID, published, actorID)
+		out, err = s.repo.SetPublication(ctx, tenantID, yearID, term.ID, classID, subjectID, published, publishedAt, actorID)
 		if err != nil {
 			return err
 		}
