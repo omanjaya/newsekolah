@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // RecordVisitInput is one guest-book entry.
@@ -39,7 +40,7 @@ func (s *Service) RecordVisit(ctx context.Context, tenantID uuid.UUID, in Record
 	}
 	var visit domain.Visit
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		now := s.clock.Now()
+		now := clock.Now(ctx, s.clock)
 		if in.MemberUserID.Valid {
 			last, found, err := s.repo.GetLastVisitForMember(ctx, tenantID, in.MemberUserID.UUID)
 			if err != nil {
@@ -72,7 +73,7 @@ func (s *Service) TodayVisitSummary(ctx context.Context, tenantID uuid.UUID) (Vi
 			loc = l
 		}
 	}
-	now := s.clock.Now().In(loc)
+	now := clock.Now(ctx, s.clock).In(loc)
 	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 	var summary VisitSummary
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -109,7 +110,7 @@ func (s *Service) StartReadInPlace(ctx context.Context, tenantID uuid.UUID, copy
 		var err error
 		readInPlace, err = s.repo.CreateReadInPlace(ctx, domain.ReadInPlace{
 			TenantID: tenantID, CopyID: copyID, MemberUserID: memberUserID, VisitorName: visitorName,
-			StartedAt: s.clock.Now(), CreatedBy: createdBy,
+			StartedAt: clock.Now(ctx, s.clock), CreatedBy: createdBy,
 		})
 		return err
 	})

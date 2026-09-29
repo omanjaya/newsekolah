@@ -583,7 +583,7 @@ func (s *Service) loadPolicy(ctx context.Context, tenantID uuid.UUID) (domain.Po
 		if err != nil {
 			return domain.Policy{}, err
 		}
-		if err := s.repo.CreatePolicy(ctx, tenantID, def.Version, encoded, s.clock.Now(), uuid.NullUUID{}); err != nil {
+		if err := s.repo.CreatePolicy(ctx, tenantID, def.Version, encoded, clock.Now(ctx, s.clock), uuid.NullUUID{}); err != nil {
 			return domain.Policy{}, err
 		}
 		return def, nil
@@ -614,7 +614,7 @@ func (s *Service) UpdatePolicy(ctx context.Context, tenantID, actorUserID uuid.U
 		if err != nil {
 			return err
 		}
-		return s.repo.CreatePolicy(ctx, tenantID, next.Version, encoded, s.clock.Now(), uuid.NullUUID{UUID: actorUserID, Valid: true})
+		return s.repo.CreatePolicy(ctx, tenantID, next.Version, encoded, clock.Now(ctx, s.clock), uuid.NullUUID{UUID: actorUserID, Valid: true})
 	})
 	return next, err
 }

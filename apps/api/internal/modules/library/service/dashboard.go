@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // dashboardSeriesDays mirrors the old app's dashboard trend window.
@@ -57,7 +58,7 @@ func (s *Service) Dashboard(ctx context.Context, tenantID uuid.UUID) (Dashboard,
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return Dashboard{}, err
 	}
-	now := s.clock.Now()
+	now := clock.Now(ctx, s.clock)
 	dayStart := timeToDay(now)
 	dayEnd := dayStart.AddDate(0, 0, 1)
 

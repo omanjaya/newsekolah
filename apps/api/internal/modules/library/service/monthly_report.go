@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
@@ -60,7 +61,7 @@ func (s *Service) MonthlyReport(ctx context.Context, tenantID uuid.UUID, month s
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return MonthlyReport{}, err
 	}
-	from, to, err := parseReportMonth(month, s.clock.Now())
+	from, to, err := parseReportMonth(month, clock.Now(ctx, s.clock))
 	if err != nil {
 		return MonthlyReport{}, err
 	}

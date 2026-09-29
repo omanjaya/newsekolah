@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // BorrowInput is what the loan desk collects: the copy's barcode, who is
@@ -30,7 +31,7 @@ func (s *Service) Borrow(ctx context.Context, tenantID uuid.UUID, in BorrowInput
 	var loan domain.Loan
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		loan, err = s.borrowOne(ctx, tenantID, in, s.clock.Now())
+		loan, err = s.borrowOne(ctx, tenantID, in, clock.Now(ctx, s.clock))
 		return err
 	})
 	return loan, err
@@ -69,7 +70,7 @@ func (s *Service) BatchBorrow(ctx context.Context, tenantID uuid.UUID, in BatchB
 	}
 	var result BatchBorrowResult
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		now := s.clock.Now()
+		now := clock.Now(ctx, s.clock)
 		for _, barcode := range in.Barcodes {
 			loan, err := s.borrowOne(ctx, tenantID, BorrowInput{
 				Barcode: barcode, MemberUserID: in.MemberUserID, CheckedOutBy: in.CheckedOutBy, Channel: in.Channel,
@@ -270,7 +271,7 @@ func (s *Service) Return(ctx context.Context, tenantID uuid.UUID, in ReturnInput
 		if err != nil {
 			return err
 		}
-		now := s.clock.Now()
+		now := clock.Now(ctx, s.clock)
 
 		wdr, err := s.workingDayRule(ctx, tenantID, policy, existing.DueOn, 60)
 		if err != nil {
@@ -382,7 +383,7 @@ func (s *Service) releaseCopyAfterReturn(ctx context.Context, tenantID, copyID, 
 	if err != nil {
 		return domain.Reservation{}, false, err
 	}
-	now := s.clock.Now()
+	now := clock.Now(ctx, s.clock)
 	ready, _, err := s.repo.MarkReservationReady(ctx, tenantID, next.ID, copyID, now, now.AddDate(0, 0, policy.ReservationHoldDays))
 	if err != nil {
 		return domain.Reservation{}, false, err
@@ -448,7 +449,7 @@ func (s *Service) Renew(ctx context.Context, tenantID uuid.UUID, in RenewInput, 
 			return err
 		}
 		_, hasWaiting := domain.NextWaiting(waiting)
-		now := s.clock.Now()
+		now := clock.Now(ctx, s.clock)
 		if err := domain.CanRenew(existing, policy, now, hasWaiting); err != nil {
 			return err
 		}
@@ -529,7 +530,7 @@ func (s *Service) MarkLost(ctx context.Context, tenantID, loanID, checkedInBy uu
 		if existing.Status != domain.LoanActive {
 			return domain.ErrLoanAlreadyReturned
 		}
-		now := s.clock.Now()
+		now := clock.Now(ctx, s.clock)
 		fineAmount := 0
 		if penalty == domain.PenaltyFine {
 			fineAmount = replacementCost
@@ -573,7 +574,7 @@ func (s *Service) OverdueLoans(ctx context.Context, tenantID uuid.UUID) ([]domai
 	var out []domain.Loan
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.ListOverdueLoans(ctx, tenantID, s.clock.Now())
+		out, err = s.repo.ListOverdueLoans(ctx, tenantID, clock.Now(ctx, s.clock))
 		return err
 	})
 	return out, err
@@ -585,7 +586,7 @@ func (s *Service) OverdueLoansDetailed(ctx context.Context, tenantID uuid.UUID) 
 	var out []OverdueLoanDetail
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.ListOverdueLoansDetailed(ctx, tenantID, s.clock.Now())
+		out, err = s.repo.ListOverdueLoansDetailed(ctx, tenantID, clock.Now(ctx, s.clock))
 		return err
 	})
 	return out, err

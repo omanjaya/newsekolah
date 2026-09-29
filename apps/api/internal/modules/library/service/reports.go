@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // reportDefaultDays is the old app's default report window when from/to
@@ -18,8 +19,8 @@ const reportDefaultDays = 30
 // returned is a half-open [from, toExclusive) where toExclusive is the
 // day after "to" -- so a caller filtering with >= from and < toExclusive
 // still includes everything that happened on "to" itself.
-func (s *Service) resolveReportPeriod(from, to *time.Time) (time.Time, time.Time) {
-	now := s.clock.Now()
+func (s *Service) resolveReportPeriod(ctx context.Context, from, to *time.Time) (time.Time, time.Time) {
+	now := clock.Now(ctx, s.clock)
 	var toDay time.Time
 	if to != nil {
 		toDay = *to
@@ -53,7 +54,7 @@ func (s *Service) LoansInPeriod(ctx context.Context, tenantID uuid.UUID, from, t
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	fromDay, toExclusive := s.resolveReportPeriod(from, to)
+	fromDay, toExclusive := s.resolveReportPeriod(ctx, from, to)
 	var out []LoanReportRow
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		rows, err := s.repo.ListLoansInPeriodWithTitle(ctx, tenantID, fromDay, toExclusive)
@@ -92,7 +93,7 @@ func (s *Service) OverdueMembers(ctx context.Context, tenantID uuid.UUID) ([]Ove
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	now := s.clock.Now()
+	now := clock.Now(ctx, s.clock)
 	var out []OverdueMemberSummary
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		policy, err := s.loadPolicy(ctx, tenantID)
@@ -137,7 +138,7 @@ func (s *Service) MostBorrowedTitles(ctx context.Context, tenantID uuid.UUID, fr
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	fromDay, toExclusive := s.resolveReportPeriod(from, to)
+	fromDay, toExclusive := s.resolveReportPeriod(ctx, from, to)
 	var out []MostBorrowedTitle
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		counts, err := s.repo.MostBorrowedTitles(ctx, tenantID, fromDay, toExclusive, clampLimit(limit))
@@ -196,7 +197,7 @@ func (s *Service) PopularReport(ctx context.Context, tenantID uuid.UUID, from, t
 		if err != nil {
 			return err
 		}
-		fromDay, toExclusive := s.resolveReportPeriod(from, to)
+		fromDay, toExclusive := s.resolveReportPeriod(ctx, from, to)
 		rows, err := s.repo.TopBorrowersInPeriod(ctx, tenantID, fromDay, toExclusive, clampLimit(limit))
 		if err != nil {
 			return err
@@ -244,7 +245,7 @@ func (s *Service) VisitsReport(ctx context.Context, tenantID uuid.UUID, from, to
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return VisitsReport{}, err
 	}
-	fromDay, toExclusive := s.resolveReportPeriod(from, to)
+	fromDay, toExclusive := s.resolveReportPeriod(ctx, from, to)
 	var report VisitsReport
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		total, err := s.repo.CountVisitsBetween(ctx, tenantID, fromDay, toExclusive)
@@ -355,7 +356,7 @@ func (s *Service) CatalogueSummary(ctx context.Context, tenantID uuid.UUID, from
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return CatalogueSummary{}, err
 	}
-	fromDay, toExclusive := s.resolveReportPeriod(from, to)
+	fromDay, toExclusive := s.resolveReportPeriod(ctx, from, to)
 	var summary CatalogueSummary
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		byDDC, err := s.repo.TitlesByDDCClass(ctx, tenantID)
@@ -386,7 +387,7 @@ func (s *Service) CatalogueSummary(ctx context.Context, tenantID uuid.UUID, from
 		if err != nil {
 			return err
 		}
-		overdue, err := s.repo.CountOverdueNow(ctx, tenantID, s.clock.Now())
+		overdue, err := s.repo.CountOverdueNow(ctx, tenantID, clock.Now(ctx, s.clock))
 		if err != nil {
 			return err
 		}
@@ -438,7 +439,7 @@ func (s *Service) AccessionRegister(ctx context.Context, tenantID uuid.UUID, fro
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	fromDay, toExclusive := s.resolveReportPeriod(from, to)
+	fromDay, toExclusive := s.resolveReportPeriod(ctx, from, to)
 	toInclusive := toExclusive.AddDate(0, 0, -1)
 	var copies []domain.Copy
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {

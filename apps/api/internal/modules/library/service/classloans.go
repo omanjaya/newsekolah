@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // ClassLoanPair is one student matched to one copy of the class's textbook
@@ -108,7 +109,7 @@ func (s *Service) CommitClassLoans(ctx context.Context, tenantID uuid.UUID, pair
 	}
 	var result BatchBorrowResult
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		now := s.clock.Now()
+		now := clock.Now(ctx, s.clock)
 		for _, pair := range pairs {
 			loan, err := s.borrowOneWithQuota(ctx, tenantID, BorrowInput{
 				Barcode: pair.Barcode, MemberUserID: pair.StudentUserID, CheckedOutBy: checkedOutBy, Channel: domain.ChannelDesk,

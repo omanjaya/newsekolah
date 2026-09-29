@@ -9,6 +9,7 @@ import (
 	"github.com/xuri/excelize/v2"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 func (s *Service) StartStocktake(ctx context.Context, tenantID uuid.UUID, name string, coordinatorUserID uuid.UUID, notes string) (domain.Stocktake, error) {
@@ -22,7 +23,7 @@ func (s *Service) StartStocktake(ctx context.Context, tenantID uuid.UUID, name s
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		created, err = s.repo.CreateStocktake(ctx, domain.Stocktake{
-			TenantID: tenantID, Name: name, StartedOn: s.clock.Now(), CoordinatorUserID: coordinatorUserID, Notes: notes,
+			TenantID: tenantID, Name: name, StartedOn: clock.Now(ctx, s.clock), CoordinatorUserID: coordinatorUserID, Notes: notes,
 		})
 		return err
 	})
@@ -77,7 +78,7 @@ func (s *Service) ScanCodes(ctx context.Context, tenantID, stocktakeID uuid.UUID
 	if len(codes) == 0 {
 		return nil, domain.ErrInvalidInput
 	}
-	now := s.clock.Now()
+	now := clock.Now(ctx, s.clock)
 	var out []domain.StocktakeScan
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		st, found, err := s.repo.GetStocktake(ctx, tenantID, stocktakeID)
@@ -252,7 +253,7 @@ func (s *Service) Close(ctx context.Context, tenantID, stocktakeID uuid.UUID, no
 				}
 			}
 		}
-		_, _, err = s.repo.CloseStocktake(ctx, tenantID, stocktakeID, s.clock.Now(), notes, result, markMissingAs)
+		_, _, err = s.repo.CloseStocktake(ctx, tenantID, stocktakeID, clock.Now(ctx, s.clock), notes, result, markMissingAs)
 		return err
 	})
 	return result, err
