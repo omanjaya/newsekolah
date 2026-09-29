@@ -162,23 +162,26 @@ export function ScheduleBulkView(): ReactElement {
                   invalid: invalidCount,
                 })}
               </p>
-              <div className="overflow-x-auto rounded-sm border border-border">
+              <div className="overflow-x-auto rounded-lg border border-border bg-surface">
                 <table className="w-full min-w-[560px] text-[13px]">
                   <thead>
-                    <tr className="bg-bg text-left text-fg-muted">
-                      <th scope="col" className="px-3 py-2 font-medium">
+                    <tr className="border-b border-line bg-bg text-left">
+                      <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
                         {t("importSection.columnLine")}
                       </th>
-                      <th scope="col" className="px-3 py-2 font-medium">
+                      <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
                         {t("importSection.columnStatus")}
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border">
+                  <tbody>
                     {rows.map((row) => (
-                      <tr key={row.line}>
-                        <td className="px-3 py-2 text-fg">{row.line}</td>
-                        <td className="px-3 py-2">
+                      <tr
+                        key={row.line}
+                        className="border-b border-line last:border-b-0 hover:bg-bg"
+                      >
+                        <td className="px-4 py-3 text-fg">{row.line}</td>
+                        <td className="px-4 py-3">
                           {row.resolved ? (
                             <span className="text-fg">{t("importSection.statusValid")}</span>
                           ) : (

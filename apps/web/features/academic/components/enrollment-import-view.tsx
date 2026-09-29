@@ -174,29 +174,42 @@ export function EnrollmentImportView(): ReactElement {
             <Badge variant="neutral">{t("rowCount", { n: rows.length })}</Badge>
             {errorCount > 0 && <Badge variant="accent">{t("errorCount", { n: errorCount })}</Badge>}
           </div>
-          <div className="overflow-x-auto rounded-xs border border-border">
+          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
             <table className="w-full min-w-[720px] text-[13px]">
-              <thead className="bg-bg text-left text-fg-muted">
-                <tr>
-                  <th className="px-3 py-2">{t("table.row")}</th>
-                  <th className="px-3 py-2">{t("table.student")}</th>
-                  <th className="px-3 py-2">{t("table.class")}</th>
-                  <th className="px-3 py-2">{t("table.action")}</th>
-                  <th className="px-3 py-2">{t("table.message")}</th>
+              <thead>
+                <tr className="border-b border-line bg-bg text-left">
+                  <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
+                    {t("table.row")}
+                  </th>
+                  <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
+                    {t("table.student")}
+                  </th>
+                  <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
+                    {t("table.class")}
+                  </th>
+                  <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
+                    {t("table.action")}
+                  </th>
+                  <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
+                    {t("table.message")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.row_number} className="border-t border-border">
-                    <td className="px-3 py-2 text-fg-muted">{row.row_number}</td>
-                    <td className="px-3 py-2">
+                  <tr
+                    key={row.row_number}
+                    className="border-b border-line last:border-b-0 hover:bg-bg"
+                  >
+                    <td className="px-4 py-3 text-fg-muted">{row.row_number}</td>
+                    <td className="px-4 py-3">
                       {row.student_name ?? row.nis ?? row.username ?? "-"}
                     </td>
-                    <td className="px-3 py-2">{row.class_name ?? "-"}</td>
-                    <td className={`px-3 py-2 ${ERROR_ACTION_TEXT[row.action]}`}>
+                    <td className="px-4 py-3">{row.class_name ?? "-"}</td>
+                    <td className={`px-4 py-3 ${ERROR_ACTION_TEXT[row.action]}`}>
                       {t(`action.${row.action}`)}
                     </td>
-                    <td className="px-3 py-2 text-fg-muted">{row.message ?? "-"}</td>
+                    <td className="px-4 py-3 text-fg-muted">{row.message ?? "-"}</td>
                   </tr>
                 ))}
               </tbody>

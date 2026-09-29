@@ -30,21 +30,25 @@ export function NotificationDefaultsView(): ReactElement {
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <p className="text-[13px] text-fg-muted">{t("body")}</p>
 
-      <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
+      <div className="hidden overflow-x-auto rounded-lg border border-border bg-surface md:block">
         <table className="w-full min-w-[560px] text-[13px]">
           <thead>
-            <tr className="text-left text-fg-muted">
-              <th scope="col" className="py-2 pl-3 pr-4 font-medium">
+            <tr className="border-b border-line bg-bg text-left">
+              <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
                 {t("kindColumn")}
               </th>
               {NOTIFICATION_CHANNELS.map((channel) => (
-                <th key={channel} scope="col" className="px-2 py-2 text-center font-medium">
+                <th
+                  key={channel}
+                  scope="col"
+                  className="px-4 py-3 text-center text-[12px] font-semibold text-fg-muted"
+                >
                   {t(`channels.${channel}`)}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
+          <tbody>
             {NOTIFICATION_KINDS.map((kind) => (
               <NotificationDefaultRow key={kind} kind={kind} label={tKinds(kind)} />
             ))}
@@ -101,12 +105,12 @@ function NotificationDefaultRow({
   const { t, data, isLoading, toggle } = useNotificationDefaultRow(kind);
 
   return (
-    <tr>
-      <th scope="row" className="py-2 pl-3 pr-4 text-left font-normal text-fg">
+    <tr className="border-b border-line last:border-b-0 hover:bg-bg">
+      <th scope="row" className="px-4 py-3 text-left font-normal text-fg">
         {label}
       </th>
       {NOTIFICATION_CHANNELS.map((channel) => (
-        <td key={channel} className="px-2 py-2 text-center">
+        <td key={channel} className="px-4 py-3 text-center">
           {isLoading ? (
             <Skeleton className="mx-auto h-5 w-9" />
           ) : (
