@@ -651,6 +651,19 @@
           "NONE": "-"
         }
       },
+      "mine": {
+        "title": "Presensi saya",
+        "calendarTitle": "Kalender",
+        "detailEmptyTitle": "Pilih tanggal",
+        "detailEmptyBody": "Belum ada data presensi untuk bulan ini.",
+        "daySentence": "Status hari ini: {status}.",
+        "dayAriaLabel": "{date}, status {status}",
+        "legendLabel": "Ringkasan status bulan ini",
+        "statPresentLabel": "Hadir",
+        "statSickLabel": "Sakit",
+        "statExcusedLabel": "Izin",
+        "statAbsentLabel": "Alpha"
+      },
       "session": {
         "eyebrow": "Pertemuan ke-{meeting}",
         "title": "Presensi",

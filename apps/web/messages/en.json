@@ -651,6 +651,19 @@
           "NONE": "-"
         }
       },
+      "mine": {
+        "title": "My attendance",
+        "calendarTitle": "Calendar",
+        "detailEmptyTitle": "Select a date",
+        "detailEmptyBody": "No attendance data for this month yet.",
+        "daySentence": "Status for this day: {status}.",
+        "dayAriaLabel": "{date}, status {status}",
+        "legendLabel": "This month's status summary",
+        "statPresentLabel": "Present",
+        "statSickLabel": "Sick",
+        "statExcusedLabel": "Excused",
+        "statAbsentLabel": "Absent"
+      },
       "session": {
         "eyebrow": "Meeting {meeting}",
         "title": "Attendance",

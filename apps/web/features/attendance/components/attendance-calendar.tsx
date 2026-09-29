@@ -3,65 +3,82 @@
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
 import {
-  Button,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+  Badge,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  IconButton,
   Skeleton,
+  StatTile,
   StatusBadge,
   cn,
 } from "@newsekolah/ui";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  CalendarCheck,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Thermometer,
+  UserX,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { statusToken } from "../../../lib/attendance-status";
 import { useSession } from "../../../lib/session/session-provider";
+import { tileColumns } from "../../dashboard/home/compose";
 import { todayInZone, useMyCalendarQuery } from "../api";
+import { monthAttendanceStats } from "../lib/attendance-stats";
 
-const STATUS_CLASS: Record<string, string> = {
-  H: "bg-status-present/15 text-status-present",
-  S: "bg-status-sick/15 text-status-sick",
-  I: "bg-status-excused/15 text-status-excused",
-  D: "bg-status-dispensation/15 text-status-dispensation",
-  A: "bg-status-absent/15 text-status-absent",
-  INCOMPLETE: "bg-status-late/15 text-status-late",
-  MIXED: "bg-bg text-fg",
+/** Solid status dot for a calendar day cell -- distinct from the 15%-opacity blocks status-tokens.ts builds for the roster/report screens. */
+const STATUS_DOT_CLASS: Record<string, string> = {
+  H: "bg-status-present",
+  S: "bg-status-sick",
+  I: "bg-status-excused",
+  D: "bg-status-dispensation",
+  A: "bg-status-absent",
+  INCOMPLETE: "bg-status-late",
+  MIXED: "bg-fg-muted",
 };
 
-const STATUS_TOKEN: Record<
-  string,
-  "present" | "sick" | "excused" | "dispensation" | "absent" | "late"
-> = {
-  H: "present",
-  S: "sick",
-  I: "excused",
-  D: "dispensation",
-  A: "absent",
-  INCOMPLETE: "late",
-};
+/** Fixed display order for the legend, independent of the calendar's own day-of-month iteration order. */
+const LEGEND_ORDER = ["H", "S", "I", "D", "A", "INCOMPLETE", "MIXED"];
 
-/** A student's month view: one daily status per day from the API's algorithm. */
+/** A student's month view: a symmetric bento of month stats, a dot calendar, and a detail card for the selected day. */
 export function AttendanceCalendar(): ReactElement {
-  const t = useTranslations("app.attendance.calendar");
+  const t = useTranslations("app.attendance");
+  const tCal = useTranslations("app.attendance.calendar");
+  const tMine = useTranslations("app.attendance.mine");
   const tDays = useTranslations("app.common.weekdaysShort");
   const { me } = useSession();
   const locale = useLocale() as Locale;
-  const today = todayInZone(me?.tenant.timezone);
+  const timeZone = me?.tenant.timezone;
+  const today = todayInZone(timeZone);
   const [month, setMonth] = useState(today.slice(0, 7));
   const { data, isLoading } = useMyCalendarQuery(month);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const byDate = useMemo(() => new Map((data?.data ?? []).map((day) => [day.date, day])), [data]);
+  const days = useMemo(() => data?.data ?? [], [data]);
+  const byDate = useMemo(() => new Map(days.map((day) => [day.date, day])), [days]);
 
   const [yearNum, monthNum] = month.split("-").map(Number) as [number, number];
-  const first = new Date(Date.UTC(yearNum, monthNum - 1, 1));
-  const daysInMonth = new Date(Date.UTC(yearNum, monthNum, 0)).getUTCDate();
-  const leading = (first.getUTCDay() + 6) % 7;
-  const cells: (string | null)[] = [
-    ...Array.from({ length: leading }, () => null),
-    ...Array.from({ length: daysInMonth }, (_, i) => `${month}-${String(i + 1).padStart(2, "0")}`),
-  ];
-  while (cells.length % 7 !== 0) cells.push(null);
+  const { first, cells } = useMemo(() => {
+    const monthFirst = new Date(Date.UTC(yearNum, monthNum - 1, 1));
+    const daysInMonth = new Date(Date.UTC(yearNum, monthNum, 0)).getUTCDate();
+    const leading = (monthFirst.getUTCDay() + 6) % 7;
+    const grid: (string | null)[] = [
+      ...Array.from({ length: leading }, () => null),
+      ...Array.from(
+        { length: daysInMonth },
+        (_, i) => `${month}-${String(i + 1).padStart(2, "0")}`,
+      ),
+    ];
+    while (grid.length % 7 !== 0) grid.push(null);
+    return { first: monthFirst, cells: grid };
+  }, [yearNum, monthNum, month]);
+  const dateCells = useMemo(() => cells.filter((c): c is string => c !== null), [cells]);
 
   function shift(delta: number) {
     const d = new Date(Date.UTC(yearNum, monthNum - 1 + delta, 1));
@@ -74,138 +91,218 @@ export function AttendanceCalendar(): ReactElement {
     timeZone: "UTC",
   }).format(first);
 
-  const summary = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const day of data?.data ?? []) {
-      if (day.status_code === "NONE") continue;
-      // A day that has not happened yet cannot be "incomplete": exclude it
-      // from the tally so the legend matches what the grid actually shows.
-      if (day.date > today) continue;
-      counts[day.status_code] = (counts[day.status_code] ?? 0) + 1;
-    }
-    return counts;
-  }, [data, today]);
+  const stats = useMemo(() => monthAttendanceStats(days, today), [days, today]);
+  const legendEntries = LEGEND_ORDER.flatMap((code) => {
+    const count = stats.counts[code];
+    return count ? [[code, count] as const] : [];
+  });
+
+  // Today if this month's grid holds it, else the latest day with data,
+  // else nothing selected yet (an empty month, e.g. before the school year starts).
+  const defaultSelected = useMemo(() => {
+    if (dateCells.includes(today)) return today;
+    const known = [...days]
+      .filter((d) => d.date <= today && d.status_code !== "NONE")
+      .sort((a, b) => b.date.localeCompare(a.date));
+    return known[0]?.date ?? null;
+  }, [dateCells, days, today]);
+
+  const effectiveSelected =
+    selectedDate && dateCells.includes(selectedDate) ? selectedDate : defaultSelected;
+  const selectedDay = effectiveSelected ? byDate.get(effectiveSelected) : undefined;
+  const selectedIsFuture = effectiveSelected ? effectiveSelected > today : false;
+  const selectedCode = selectedIsFuture ? "NONE" : (selectedDay?.status_code ?? "NONE");
+  const selectedSessions = selectedIsFuture ? [] : (selectedDay?.sessions ?? []);
+  const selectedToken = selectedCode !== "NONE" ? statusToken(selectedCode) : undefined;
+
+  const tileGrid = tileColumns(4);
+  const tiles = [
+    {
+      key: "present",
+      icon: CalendarCheck,
+      tone: "green" as const,
+      value: stats.presentRate !== undefined ? `${stats.presentRate}%` : "-",
+      label: tMine("statPresentLabel"),
+    },
+    {
+      key: "sick",
+      icon: Thermometer,
+      tone: "amber" as const,
+      value: String(stats.counts.S ?? 0),
+      label: tMine("statSickLabel"),
+    },
+    {
+      key: "excused",
+      icon: FileText,
+      tone: "blue" as const,
+      value: String(stats.counts.I ?? 0),
+      label: tMine("statExcusedLabel"),
+    },
+    {
+      key: "absent",
+      icon: UserX,
+      tone: "red" as const,
+      value: String(stats.counts.A ?? 0),
+      label: tMine("statAbsentLabel"),
+    },
+  ];
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<ChevronLeft />}
-          onClick={() => {
-            shift(-1);
-          }}
-          aria-label={t("prevMonth")}
-        >
-          <span className="hidden sm:inline">{t("prevMonth")}</span>
-        </Button>
-        <h2 className="text-[16px] font-medium text-fg">{monthLabel}</h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<ChevronRight />}
-          onClick={() => {
-            shift(1);
-          }}
-          aria-label={t("nextMonth")}
-        >
-          <span className="hidden sm:inline">{t("nextMonth")}</span>
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="mb-1 text-[13px] font-medium text-fg-muted">{t("eyebrow")}</p>
+          <h2 className="font-heading text-[20px] font-bold tracking-tight text-fg">
+            {tMine("title")}
+          </h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <IconButton
+            icon={<ChevronLeft />}
+            variant="outline"
+            className="rounded-full"
+            aria-label={tCal("prevMonth")}
+            onClick={() => {
+              shift(-1);
+            }}
+          />
+          <span className="rounded-full border border-border bg-surface px-4 py-1.5 text-[13px] font-medium text-fg">
+            {monthLabel}
+          </span>
+          <IconButton
+            icon={<ChevronRight />}
+            variant="outline"
+            className="rounded-full"
+            aria-label={tCal("nextMonth")}
+            onClick={() => {
+              shift(1);
+            }}
+          />
+        </div>
       </div>
-      {isLoading ? (
-        <Skeleton className="h-80 w-full" aria-busy="true" />
-      ) : (
-        <div className="grid grid-cols-7 gap-1 rounded-sm border border-border bg-surface p-2">
-          {[1, 2, 3, 4, 5, 6, 7].map((d) => (
-            <div key={d} className="py-1 text-center text-[12px] font-medium text-fg-muted">
-              {tDays(String(d))}
-            </div>
-          ))}
-          {cells.map((date, index) => {
-            if (!date) return <div key={`empty-${index}`} />;
-            const day = byDate.get(date);
-            const isToday = date === today;
-            // A day that has not happened yet has no attendance status to
-            // show -- the API still returns "belum lengkap" for it (no
-            // sessions submitted), which would otherwise scare a student
-            // into thinking they missed a day that has not started.
-            const isFuture = date > today;
-            const code = isFuture ? "NONE" : (day?.status_code ?? "NONE");
-            const sessions = isFuture ? [] : (day?.sessions ?? []);
-            const cellClassName = cn(
-              "flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-xs border text-[13px]",
-              isToday ? "border-accent" : "border-transparent",
-              code !== "NONE" ? STATUS_CLASS[code] : "text-fg-muted",
-            );
-            const cellContent = (
+
+      <div className={tileGrid.container} data-testid="attendance-mine-tiles">
+        {tiles.map((tile, index) => (
+          <StatTile
+            key={tile.key}
+            className={cn("h-full", index === tiles.length - 1 && tileGrid.lastTileClassName)}
+            icon={tile.icon}
+            tone={tile.tone}
+            value={tile.value}
+            label={tile.label}
+          />
+        ))}
+      </div>
+
+      <div className="grid items-stretch gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle>{tMine("calendarTitle")}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 pt-0">
+            {isLoading ? (
+              <Skeleton className="h-72 w-full" aria-busy="true" />
+            ) : (
+              <div className="grid grid-cols-7 gap-1">
+                {[1, 2, 3, 4, 5, 6, 7].map((d) => (
+                  <div key={d} className="py-1 text-center text-[12px] font-medium text-fg-muted">
+                    {tDays(String(d))}
+                  </div>
+                ))}
+                {cells.map((date, index) => {
+                  if (!date) return <div key={`empty-${index}`} />;
+                  const day = byDate.get(date);
+                  const isToday = date === today;
+                  const isSelected = date === effectiveSelected;
+                  // A day that has not happened yet has no status to show --
+                  // the API still returns "belum lengkap" for it (no
+                  // sessions submitted), which would otherwise scare a
+                  // student into thinking they missed a day that has not
+                  // started.
+                  const isFuture = date > today;
+                  const code = isFuture ? "NONE" : (day?.status_code ?? "NONE");
+                  const muted = code === "NONE";
+                  const dotClass = STATUS_DOT_CLASS[code];
+                  const statusLabel = tCal(`codes.${code}`);
+                  return (
+                    <button
+                      key={date}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate(date);
+                      }}
+                      aria-pressed={isSelected}
+                      aria-label={tMine("dayAriaLabel", {
+                        date: formatDate(date, { locale, timeZone }),
+                        status: statusLabel,
+                      })}
+                      className={cn(
+                        "flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-xs border text-[13px]",
+                        "border-border bg-surface transition-colors hover:bg-bg",
+                        "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2",
+                        isToday && "border-accent",
+                        isSelected && "bg-accent-soft",
+                        muted && "text-fg-muted",
+                      )}
+                    >
+                      <span className={muted ? "text-fg-muted" : "text-fg"}>
+                        {Number(date.slice(-2))}
+                      </span>
+                      {dotClass && (
+                        <span
+                          aria-hidden="true"
+                          className={cn("size-1.5 shrink-0 rounded-full", dotClass)}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle>
+              {effectiveSelected
+                ? formatDate(effectiveSelected, { locale, timeZone })
+                : tMine("detailEmptyTitle")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-1 flex-col gap-3 pt-0">
+            {!effectiveSelected ? (
+              <p className="text-[13px] text-fg-muted">{tMine("detailEmptyBody")}</p>
+            ) : (
               <>
-                <span>{Number(date.slice(-2))}</span>
-                {code !== "NONE" && (
-                  // A phone gives each day about 45px, where "Belum lengkap"
-                  // breaks over two lines and stretches its row; the short
-                  // form fits on one, and the legend below spells it out.
-                  <span className="max-w-full truncate px-0.5 text-[11px] leading-tight font-semibold">
-                    <span className="sm:hidden">{t(`codesShort.${code}`)}</span>
-                    <span className="hidden sm:inline">{t(`codes.${code}`)}</span>
-                  </span>
+                {selectedToken ? (
+                  <StatusBadge status={selectedToken} label={tCal(`codes.${selectedCode}`)} />
+                ) : (
+                  <Badge variant="neutral">{tCal(`codes.${selectedCode}`)}</Badge>
                 )}
-              </>
-            );
-
-            if (sessions.length === 0) {
-              return (
-                <div
-                  key={date}
-                  className={cellClassName}
-                  title={
-                    day && !isFuture
-                      ? t("dayTitle", {
-                          expected: day.expected_sessions,
-                          submitted: day.submitted_sessions,
-                        })
-                      : undefined
-                  }
-                >
-                  {cellContent}
-                </div>
-              );
-            }
-
-            return (
-              <Popover key={date}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className={cn(cellClassName, "cursor-pointer hover:opacity-80")}
-                    aria-label={t("dayDetailLabel", { date })}
-                  >
-                    {cellContent}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[min(20rem,calc(100vw-2rem))]">
-                  <p className="mb-2 text-[13px] font-medium text-fg">
-                    {formatDate(date, { locale, timeZone: me?.tenant.timezone })}
-                  </p>
-                  <ul className="flex flex-col gap-3">
-                    {sessions.map((session) => {
+                {selectedSessions.length > 0 ? (
+                  <ul className="flex flex-col divide-y divide-border">
+                    {selectedSessions.map((session) => {
                       const sessionToken = session.status_code
-                        ? STATUS_TOKEN[session.status_code]
+                        ? statusToken(session.status_code)
                         : undefined;
                       return (
-                        <li key={session.schedule_id} className="flex flex-col gap-0.5 text-[13px]">
+                        <li
+                          key={session.schedule_id}
+                          className="flex flex-col gap-0.5 py-2 text-[13px]"
+                        >
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-medium text-fg">
-                              {session.subject_name ?? t("unknownSubject")}
+                              {session.subject_name ?? tCal("unknownSubject")}
                             </span>
                             {sessionToken ? (
                               <StatusBadge
                                 status={sessionToken}
-                                label={t(`codes.${session.status_code}`)}
+                                label={tCal(`codes.${session.status_code}`)}
                               />
                             ) : session.status_code ? (
                               <span className="text-fg-muted">
-                                {t(`codes.${session.status_code}`)}
+                                {tCal(`codes.${session.status_code}`)}
                               </span>
                             ) : null}
                           </div>
@@ -217,28 +314,33 @@ export function AttendanceCalendar(): ReactElement {
                           {session.note && <span className="text-fg-muted">{session.note}</span>}
                           {session.source && session.source !== "teacher" && (
                             <span className="text-fg-muted">
-                              {t(`sessionSource.${session.source}`)}
+                              {tCal(`sessionSource.${session.source}`)}
                             </span>
                           )}
                         </li>
                       );
                     })}
                   </ul>
-                </PopoverContent>
-              </Popover>
-            );
-          })}
-        </div>
-      )}
-      <dl className="flex flex-wrap gap-4 text-[13px]">
-        {Object.entries(summary).map(([code, count]) => (
+                ) : (
+                  <p className="text-[13px] text-fg-muted">
+                    {tMine("daySentence", { status: tCal(`codes.${selectedCode}`) })}
+                  </p>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <dl className="flex flex-wrap gap-4 text-[13px]" aria-label={tMine("legendLabel")}>
+        {legendEntries.map(([code, count]) => (
           <div key={code} className="flex items-center gap-1.5">
             <dt className="flex items-center gap-1.5 text-fg-muted">
               <span
                 aria-hidden="true"
-                className={cn("size-2.5 shrink-0 rounded-full", STATUS_CLASS[code])}
+                className={cn("size-2.5 shrink-0 rounded-full", STATUS_DOT_CLASS[code])}
               />
-              {t(`codes.${code}`)}
+              {tCal(`codes.${code}`)}
             </dt>
             <dd className="font-medium text-fg">{count}</dd>
           </div>
