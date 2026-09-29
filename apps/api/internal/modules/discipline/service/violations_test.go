@@ -190,9 +190,13 @@ func (f *fakeRecordRepo) StudentSnapshot(context.Context, uuid.UUID, uuid.UUID, 
 	f.unimplemented()
 	return StudentSnapshot{}, nil
 }
-func (f *fakeRecordRepo) HasActiveDuty(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, uuid.NullUUID) (bool, error) {
+func (f *fakeRecordRepo) HasActiveDuty(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, uuid.NullUUID, time.Time) (bool, error) {
 	f.unimplemented()
 	return false, nil
+}
+func (f *fakeRecordRepo) GetTenantTimezone(context.Context, uuid.UUID) (string, error) {
+	f.unimplemented()
+	return "", nil
 }
 func (f *fakeRecordRepo) ActiveClassID(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (uuid.NullUUID, error) {
 	f.unimplemented()

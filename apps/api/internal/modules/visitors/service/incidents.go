@@ -125,10 +125,11 @@ func (s *Service) readerRole(ctx context.Context, tenantID, readerUserID, report
 	if !ok {
 		return role, nil
 	}
-	if role.IsSecurity, err = s.repo.HasActiveDuty(ctx, tenantID, yearID, readerUserID, dutySlugSecurity); err != nil {
+	today := s.tenantNow(ctx, tenantID)
+	if role.IsSecurity, err = s.repo.HasActiveDuty(ctx, tenantID, yearID, readerUserID, dutySlugSecurity, today); err != nil {
 		return role, err
 	}
-	if role.IsLeadership, err = s.repo.HasActiveDuty(ctx, tenantID, yearID, readerUserID, dutySlugLeadership); err != nil {
+	if role.IsLeadership, err = s.repo.HasActiveDuty(ctx, tenantID, yearID, readerUserID, dutySlugLeadership, today); err != nil {
 		return role, err
 	}
 	return role, nil

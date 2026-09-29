@@ -38,7 +38,10 @@ type Repository interface {
 	ListIncidents(ctx context.Context, tenantID uuid.UUID, from, to time.Time, includeClosed bool, limit, offset int) ([]domain.Incident, error)
 	IncidentSeverityCounts(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (map[domain.Severity]int, error)
 
-	HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string) (bool, error)
+	HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, today time.Time) (bool, error)
+	// GetTenantTimezone resolves the tenant's configured IANA timezone, for
+	// HasActiveDuty's tenant-local "today" (tenantNow, see tenant.go).
+	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
 }
 
 // VisitRecapCounts is the aggregate figures behind the daily/monthly recap.

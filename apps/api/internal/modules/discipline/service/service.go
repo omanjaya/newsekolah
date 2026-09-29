@@ -72,8 +72,11 @@ type Repository interface {
 
 	StudentSnapshot(ctx context.Context, tenantID, studentID, yearID uuid.UUID) (StudentSnapshot, error)
 	StudentEligible(ctx context.Context, tenantID, yearID, studentID uuid.UUID) (enrolled, active bool, err error)
-	HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, classID uuid.NullUUID) (bool, error)
+	HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, classID uuid.NullUUID, today time.Time) (bool, error)
 	ActiveClassID(ctx context.Context, tenantID, yearID, studentID uuid.UUID) (uuid.NullUUID, error)
+	// GetTenantTimezone resolves the tenant's configured IANA timezone, for
+	// HasActiveDuty's tenant-local "today" (tenantNow, see tenant.go).
+	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
 
 	CreateAsset(ctx context.Context, tenantID uuid.UUID, bucket, objectKey, mime string, sizeBytes int64, sha256Hex, kind, visibility string, createdBy uuid.UUID) (uuid.UUID, error)
 	GetAsset(ctx context.Context, tenantID, assetID uuid.UUID) (AssetInfo, bool, error)

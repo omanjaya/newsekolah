@@ -328,14 +328,28 @@ func (q *Queries) DisciplineGetLatestPolicy(ctx context.Context, arg DisciplineG
 	return i, err
 }
 
+const disciplineGetTenantTimezone = `-- name: DisciplineGetTenantTimezone :one
+select timezone from tenants where id = $1
+`
+
+// Mirrors attendance's GetTenantTimezoneForAttendance / permits'
+// GetTenantTimezoneForPermits: discipline must resolve HasActiveDuty's
+// duty window in the tenant's own timezone, never the server's UTC clock.
+func (q *Queries) DisciplineGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, disciplineGetTenantTimezone, id)
+	var timezone string
+	err := row.Scan(&timezone)
+	return timezone, err
+}
+
 const disciplineHasActiveDuty = `-- name: DisciplineHasActiveDuty :one
 select exists (
   select 1 from duty_assignments da
   join duty_types dt on dt.id = da.duty_type_id
   where da.tenant_id = $1 and da.academic_year_id = $2 and da.user_id = $3 and dt.slug = $4
     and da.is_active and dt.is_active and dt.deleted_at is null
-    and da.starts_on <= current_date and (da.ends_on is null or da.ends_on >= current_date)
-    and (dt.scope_kind = 'school' or ($5::uuid is not null and da.scope_class_id = $5::uuid))
+    and da.starts_on <= $5::date and (da.ends_on is null or da.ends_on >= $5::date)
+    and (dt.scope_kind = 'school' or ($6::uuid is not null and da.scope_class_id = $6::uuid))
 )::bool as has_duty
 `
 
@@ -344,15 +358,21 @@ type DisciplineHasActiveDutyParams struct {
 	AcademicYearID uuid.UUID   `json:"academic_year_id"`
 	UserID         uuid.UUID   `json:"user_id"`
 	Slug           string      `json:"slug"`
+	Today          pgtype.Date `json:"today"`
 	ClassID        pgtype.UUID `json:"class_id"`
 }
 
+// today is the tenant-local calendar date (s.tenantNow), not current_date:
+// the Postgres session timezone is never set per tenant, so comparing
+// against bare current_date would evaluate the duty window in whatever
+// timezone the connection happens to be in, matching permits' HasActiveDuty.
 func (q *Queries) DisciplineHasActiveDuty(ctx context.Context, arg DisciplineHasActiveDutyParams) (bool, error) {
 	row := q.db.QueryRow(ctx, disciplineHasActiveDuty,
 		arg.TenantID,
 		arg.AcademicYearID,
 		arg.UserID,
 		arg.Slug,
+		arg.Today,
 		arg.ClassID,
 	)
 	var has_duty bool
@@ -1327,31 +1347,51 @@ func (q *Queries) ListActiveTenants(ctx context.Context) ([]ListActiveTenantsRow
 	return items, nil
 }
 
+const mentoringGetTenantTimezone = `-- name: MentoringGetTenantTimezone :one
+select timezone from tenants where id = $1
+`
+
+// Mirrors attendance's GetTenantTimezoneForAttendance / permits'
+// GetTenantTimezoneForPermits: mentoring must resolve HasActiveDuty's
+// duty window in the tenant's own timezone, never the server's UTC clock.
+func (q *Queries) MentoringGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, mentoringGetTenantTimezone, id)
+	var timezone string
+	err := row.Scan(&timezone)
+	return timezone, err
+}
+
 const mentoringHasActiveDuty = `-- name: MentoringHasActiveDuty :one
 select exists (
   select 1 from duty_assignments da
   join duty_types dt on dt.id = da.duty_type_id
   where da.tenant_id = $1 and da.academic_year_id = $2 and da.user_id = $3 and dt.slug = $4
     and da.is_active and dt.is_active and dt.deleted_at is null
-    and da.starts_on <= current_date and (da.ends_on is null or da.ends_on >= current_date)
+    and da.starts_on <= $5::date and (da.ends_on is null or da.ends_on >= $5::date)
 )::bool as has_duty
 `
 
 type MentoringHasActiveDutyParams struct {
-	TenantID       uuid.UUID `json:"tenant_id"`
-	AcademicYearID uuid.UUID `json:"academic_year_id"`
-	UserID         uuid.UUID `json:"user_id"`
-	Slug           string    `json:"slug"`
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	UserID         uuid.UUID   `json:"user_id"`
+	Slug           string      `json:"slug"`
+	Today          pgtype.Date `json:"today"`
 }
 
 // cross-module read: duty_assignments/duty_types (identity), for resolving
 // whether a reader may open a meeting note (counselor, leadership).
+// today is the tenant-local calendar date (s.tenantNow), not current_date:
+// the Postgres session timezone is never set per tenant, so comparing
+// against bare current_date would evaluate the duty window in whatever
+// timezone the connection happens to be in, matching permits' HasActiveDuty.
 func (q *Queries) MentoringHasActiveDuty(ctx context.Context, arg MentoringHasActiveDutyParams) (bool, error) {
 	row := q.db.QueryRow(ctx, mentoringHasActiveDuty,
 		arg.TenantID,
 		arg.AcademicYearID,
 		arg.UserID,
 		arg.Slug,
+		arg.Today,
 	)
 	var has_duty bool
 	err := row.Scan(&has_duty)
@@ -1386,31 +1426,51 @@ func (q *Queries) MentoringStudentInfo(ctx context.Context, arg MentoringStudent
 	return i, err
 }
 
+const supervisionGetTenantTimezone = `-- name: SupervisionGetTenantTimezone :one
+select timezone from tenants where id = $1
+`
+
+// Mirrors attendance's GetTenantTimezoneForAttendance / permits'
+// GetTenantTimezoneForPermits: supervision must resolve HasActiveDuty's
+// duty window in the tenant's own timezone, never the server's UTC clock.
+func (q *Queries) SupervisionGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, supervisionGetTenantTimezone, id)
+	var timezone string
+	err := row.Scan(&timezone)
+	return timezone, err
+}
+
 const supervisionHasActiveDuty = `-- name: SupervisionHasActiveDuty :one
 select exists (
   select 1 from duty_assignments da
   join duty_types dt on dt.id = da.duty_type_id
   where da.tenant_id = $1 and da.academic_year_id = $2 and da.user_id = $3 and dt.slug = $4
     and da.is_active and dt.is_active and dt.deleted_at is null
-    and da.starts_on <= current_date and (da.ends_on is null or da.ends_on >= current_date)
+    and da.starts_on <= $5::date and (da.ends_on is null or da.ends_on >= $5::date)
 )::bool as has_duty
 `
 
 type SupervisionHasActiveDutyParams struct {
-	TenantID       uuid.UUID `json:"tenant_id"`
-	AcademicYearID uuid.UUID `json:"academic_year_id"`
-	UserID         uuid.UUID `json:"user_id"`
-	Slug           string    `json:"slug"`
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	UserID         uuid.UUID   `json:"user_id"`
+	Slug           string      `json:"slug"`
+	Today          pgtype.Date `json:"today"`
 }
 
 // cross-module read: duty_assignments/duty_types (identity), for resolving
 // whether a reader may open an observation report (leadership).
+// today is the tenant-local calendar date (s.tenantNow), not current_date:
+// the Postgres session timezone is never set per tenant, so comparing
+// against bare current_date would evaluate the duty window in whatever
+// timezone the connection happens to be in, matching permits' HasActiveDuty.
 func (q *Queries) SupervisionHasActiveDuty(ctx context.Context, arg SupervisionHasActiveDutyParams) (bool, error) {
 	row := q.db.QueryRow(ctx, supervisionHasActiveDuty,
 		arg.TenantID,
 		arg.AcademicYearID,
 		arg.UserID,
 		arg.Slug,
+		arg.Today,
 	)
 	var has_duty bool
 	err := row.Scan(&has_duty)
@@ -1433,33 +1493,53 @@ func (q *Queries) SupervisionTeacherName(ctx context.Context, arg SupervisionTea
 	return name, err
 }
 
+const visitorsGetTenantTimezone = `-- name: VisitorsGetTenantTimezone :one
+select timezone from tenants where id = $1
+`
+
+// Mirrors attendance's GetTenantTimezoneForAttendance / permits'
+// GetTenantTimezoneForPermits: visitors must resolve HasActiveDuty's duty
+// window in the tenant's own timezone, never the server's UTC clock.
+func (q *Queries) VisitorsGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, visitorsGetTenantTimezone, id)
+	var timezone string
+	err := row.Scan(&timezone)
+	return timezone, err
+}
+
 const visitorsHasActiveDuty = `-- name: VisitorsHasActiveDuty :one
 select exists (
   select 1 from duty_assignments da
   join duty_types dt on dt.id = da.duty_type_id
   where da.tenant_id = $1 and da.academic_year_id = $2 and da.user_id = $3 and dt.slug = $4
     and da.is_active and dt.is_active and dt.deleted_at is null
-    and da.starts_on <= current_date and (da.ends_on is null or da.ends_on >= current_date)
+    and da.starts_on <= $5::date and (da.ends_on is null or da.ends_on >= $5::date)
     and dt.scope_kind = 'school'
 )::bool as has_duty
 `
 
 type VisitorsHasActiveDutyParams struct {
-	TenantID       uuid.UUID `json:"tenant_id"`
-	AcademicYearID uuid.UUID `json:"academic_year_id"`
-	UserID         uuid.UUID `json:"user_id"`
-	Slug           string    `json:"slug"`
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	UserID         uuid.UUID   `json:"user_id"`
+	Slug           string      `json:"slug"`
+	Today          pgtype.Date `json:"today"`
 }
 
 // cross-module read: duty_assignments/duty_types (identity/school), to
 // decide whether a reader may open an incident as campus security or
 // school leadership rather than only its reporter.
+// today is the tenant-local calendar date (s.tenantNow), not current_date:
+// the Postgres session timezone is never set per tenant, so comparing
+// against bare current_date would evaluate the duty window in whatever
+// timezone the connection happens to be in, matching permits' HasActiveDuty.
 func (q *Queries) VisitorsHasActiveDuty(ctx context.Context, arg VisitorsHasActiveDutyParams) (bool, error) {
 	row := q.db.QueryRow(ctx, visitorsHasActiveDuty,
 		arg.TenantID,
 		arg.AcademicYearID,
 		arg.UserID,
 		arg.Slug,
+		arg.Today,
 	)
 	var has_duty bool
 	err := row.Scan(&has_duty)

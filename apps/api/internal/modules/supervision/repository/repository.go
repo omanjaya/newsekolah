@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -200,14 +201,18 @@ func (r *Repository) ListObservationsForCycle(ctx context.Context, tenantID, cyc
 	return toObservationList(rows)
 }
 
-func (r *Repository) HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string) (bool, error) {
+func (r *Repository) HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, today time.Time) (bool, error) {
 	has, err := r.queries(ctx).SupervisionHasActiveDuty(ctx, db.SupervisionHasActiveDutyParams{
-		TenantID: tenantID, AcademicYearID: yearID, UserID: userID, Slug: slug,
+		TenantID: tenantID, AcademicYearID: yearID, UserID: userID, Slug: slug, Today: pdatabase.Date(today),
 	})
 	if err != nil {
 		return false, fmt.Errorf("has active duty: %w", err)
 	}
 	return has, nil
+}
+
+func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error) {
+	return r.queries(ctx).SupervisionGetTenantTimezone(ctx, tenantID)
 }
 
 func (r *Repository) TeacherName(ctx context.Context, tenantID, teacherUserID uuid.UUID) (string, error) {
