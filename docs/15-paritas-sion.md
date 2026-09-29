@@ -125,6 +125,13 @@ Sisa dari pekerjaan ini: redesain layar per peran di web, sekitar 20 layar mobil
 - **Simulasi staging** kini opt-in lewat variabel repo `STAGING_SIMULATE=1`, karena staging berisi data asli SION tanpa akun demo.
 - Semua di atas live di staging dan production (commit `9b09967`).
 
+## Pembaruan 29 September (lanjutan): izin dan jadwal
+
+- **Izin terencana (siswa)**: empat stat tile, kartu pengajuan berpasangan dengan jalur tahap ringkas (`WorkflowMineStageTrack`), tombol "Ajukan izin" di header.
+- **Antrean peninjau** (izin terencana, izin keluar, terlambat): tab pil dengan jumlah antrean, kartu dengan aksi langsung, pesan kosong satu kalimat; deret tile hanya tampil bila ada lebih dari satu angka.
+- **Jadwal**: blok pelajaran berwarna per mapel (`subject-tone.ts`) mengisi rentang jamnya, hari ini dan jam berjalan disorot. Ikon peringatan di blok berarti blok melewati jam istirahat (`break-warning.ts`), bukan bug; di data seed muncul di semua hari karena satu blok seed membentang jam 1-11.
+- Live di staging dan production (commit `bc07fc1`).
+
 ## Yang tersisa
 
 Diurutkan dari yang paling berdampak bagi pengguna.
