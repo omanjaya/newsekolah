@@ -46,7 +46,10 @@
     "eyebrow": "Tamu & insiden",
     "title": "Tamu dijadwalkan",
     "filters": {
-      "date": "Tanggal"
+      "date": "Tanggal",
+      "onlyPending": "Hanya yang menunggu",
+      "reset": "Reset filter",
+      "removeFilter": "Hapus filter {label}"
     },
     "add": "Tambah Tamu",
     "checkIn": "Catat Masuk",
@@ -87,7 +90,10 @@
     "record": "Catat Insiden",
     "open": "Buka",
     "filters": {
-      "includeClosed": "Tampilkan yang sudah ditutup"
+      "includeClosed": "Tampilkan yang sudah ditutup",
+      "onlyOpen": "Hanya yang terbuka",
+      "reset": "Reset filter",
+      "removeFilter": "Hapus filter {label}"
     },
     "columns": {
       "occurredAt": "Waktu kejadian",

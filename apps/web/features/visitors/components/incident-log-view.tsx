@@ -5,13 +5,13 @@ import type { Locale } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
-  Checkbox,
   DataTable,
   Dialog,
   DialogContent,
   EmptyState,
   PageHeader,
   domainIcons,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
@@ -20,6 +20,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
 import { VisitorsWorkspaceNav } from "../../student-services/components/service-workspace-nav";
@@ -64,12 +65,25 @@ export function IncidentLogView(): ReactElement {
 
   const [from] = useState(() => daysAgoIso(30));
   const [to] = useState(() => tomorrowIso());
-  const [includeClosed, setIncludeClosed] = useState(true);
+  const [onlyOpen, setOnlyOpen] = useUrlState<"" | "true">("only_open", ["", "true"], "");
   const [creating, setCreating] = useState(false);
   const [openIncidentId, setOpenIncidentId] = useState<string | null>(null);
 
-  const { data, isLoading, isError, refetch } = useIncidentsQuery(from, to, includeClosed);
+  const { data, isLoading, isError, refetch } = useIncidentsQuery(from, to, onlyOpen !== "true");
   const items = data?.data ?? [];
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "onlyOpen",
+      label: t("filters.onlyOpen"),
+      value: onlyOpen,
+      onChange: (value) => {
+        setOnlyOpen(value as "" | "true");
+      },
+      type: "boolean",
+      activeValue: "true",
+    },
+  ];
 
   const columns = useMemo<ColumnDef<Incident>[]>(
     () => [
@@ -151,16 +165,6 @@ export function IncidentLogView(): ReactElement {
         }
       />
 
-      <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-[13px] font-medium">
-        <Checkbox
-          checked={includeClosed}
-          onCheckedChange={(v) => {
-            setIncludeClosed(v === true);
-          }}
-        />
-        {t("filters.includeClosed")}
-      </label>
-
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/visitors/components/incident-log-view:1"
@@ -173,6 +177,11 @@ export function IncidentLogView(): ReactElement {
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter=""
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.reset"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
+          }}
           isLoading={isLoading}
           getRowId={(item) => item.id}
           fillHeight

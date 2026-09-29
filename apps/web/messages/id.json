@@ -403,6 +403,10 @@
       "unread": "Baru",
       "manageEmptyTitle": "Belum ada pengumuman dibuat",
       "manageEmptyBody": "Buat draf, pilih penerima, lalu terbitkan atau jadwalkan.",
+      "filters": {
+        "reset": "Reset filter",
+        "removeFilter": "Hapus filter {label}"
+      },
       "columns": {
         "title": "Judul",
         "status": "Status",
@@ -1110,6 +1114,13 @@
           "active": "Aktif",
           "inactive": "Diarsipkan",
           "invited": "Diundang"
+        },
+        "filters": {
+          "kind": "Jenis",
+          "status": "Status",
+          "role": "Peran",
+          "reset": "Reset filter",
+          "removeFilter": "Hapus filter {label}"
         },
         "includeArchived": "Tampilkan yang diarsipkan",
         "emptyTitle": "Belum ada pengguna",

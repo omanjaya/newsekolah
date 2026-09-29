@@ -16,9 +16,9 @@ import {
   DropdownMenuTrigger,
   EmptyState,
   IconButton,
-  Select,
   domainIcons,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Plus } from "lucide-react";
@@ -26,6 +26,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession, useCan } from "../../../lib/session/session-provider";
 import {
@@ -46,6 +47,9 @@ const STATUS_VARIANT: Record<AnnouncementStatus, "neutral" | "accent"> = {
   archived: "neutral",
 };
 
+const STATUSES: AnnouncementStatus[] = ["draft", "scheduled", "published", "archived"];
+const STATUS_VALUES = ["", ...STATUSES] as const;
+
 export function AnnouncementsManage(): ReactElement {
   const t = useTranslations("app.announcements");
   const locale = useLocale() as Locale;
@@ -57,7 +61,11 @@ export function AnnouncementsManage(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const [status, setStatus] = useState<AnnouncementStatus | "">("");
+  const [status, setStatus] = useUrlState<(typeof STATUS_VALUES)[number]>(
+    "status",
+    STATUS_VALUES,
+    "",
+  );
   const [cursors, setCursors] = useState<string[]>([""]);
   const cursor = cursors[cursors.length - 1] ?? "";
   const { data, isLoading } = useAnnouncementsQuery(status, cursor);
@@ -193,27 +201,22 @@ export function AnnouncementsManage(): ReactElement {
     [t, locale, timeZone, canEdit, canPublish, canDelete],
   );
 
-  const statusOptions = [
-    { value: "all", label: t("status.all") },
-    { value: "draft", label: t("status.draft") },
-    { value: "scheduled", label: t("status.scheduled") },
-    { value: "published", label: t("status.published") },
-    { value: "archived", label: t("status.archived") },
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "status",
+      label: t("columns.status"),
+      value: status,
+      onChange: (value) => {
+        setStatus(value as (typeof STATUS_VALUES)[number]);
+        setCursors([""]);
+      },
+      options: STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) })),
+    },
   ];
 
   return (
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Select
-          options={statusOptions}
-          value={status || "all"}
-          onValueChange={(value) => {
-            setStatus(value === "all" ? "" : (value as AnnouncementStatus));
-            setCursors([""]);
-          }}
-          aria-label={t("columns.status")}
-          className="w-48"
-        />
+      <div className="flex flex-wrap items-center justify-end gap-2">
         {canCreate && (
           <Button
             size="sm"
@@ -239,6 +242,11 @@ export function AnnouncementsManage(): ReactElement {
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter=""
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.reset"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
+          }}
           isLoading={isLoading}
           getRowId={(a) => a.id}
           fillHeight

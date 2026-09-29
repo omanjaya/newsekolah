@@ -12,6 +12,7 @@ import {
   PageHeader,
   domainIcons,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
@@ -20,6 +21,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
@@ -29,6 +31,8 @@ import { type ExpectedGuest, useCancelExpectedGuestMutation, useExpectedGuestsQu
 
 import { CheckInForm } from "./check-in-form";
 import { ExpectedGuestForm } from "./expected-guest-form";
+
+const ONLY_PENDING_VALUES = ["", "true"] as const;
 
 function today(): string {
   return todayInZone();
@@ -43,16 +47,34 @@ export function ExpectedGuestsView(): ReactElement {
   const canManage = useCan("manage_visitors");
 
   const [date, setDate] = useDateFilter("date", today());
+  const [onlyPending, setOnlyPending] = useUrlState<(typeof ONLY_PENDING_VALUES)[number]>(
+    "only_pending",
+    ONLY_PENDING_VALUES,
+    "",
+  );
   const [creating, setCreating] = useState(false);
   const [checkingIn, setCheckingIn] = useState<ExpectedGuest | null>(null);
 
   const staff = useDirectoryQuery("staff");
   const teachers = useDirectoryQuery("teacher");
   const hostMap = useLookup([...(staff.data?.data ?? []), ...(teachers.data?.data ?? [])]);
-  const { data, isLoading } = useExpectedGuestsQuery(date, true);
+  const { data, isLoading } = useExpectedGuestsQuery(date, onlyPending !== "true");
   const cancel = useCancelExpectedGuestMutation();
 
   const items = data?.data ?? [];
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "onlyPending",
+      label: t("filters.onlyPending"),
+      value: onlyPending,
+      onChange: (value) => {
+        setOnlyPending(value as (typeof ONLY_PENDING_VALUES)[number]);
+      },
+      type: "boolean",
+      activeValue: "true",
+    },
+  ];
 
   const columns = useMemo<ColumnDef<ExpectedGuest>[]>(
     () => [
@@ -161,6 +183,11 @@ export function ExpectedGuestsView(): ReactElement {
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter=""
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.reset"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
+          }}
           isLoading={isLoading}
           getRowId={(item) => item.id}
           fillHeight

@@ -12,7 +12,8 @@
     "from": "From date",
     "to": "To date",
     "reset": "Reset filters",
-    "entityTypeAll": "All types"
+    "entityTypeAll": "All types",
+    "removeFilter": "Remove {label} filter"
   },
   "columns": {
     "when": "When",

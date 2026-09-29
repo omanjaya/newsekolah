@@ -537,7 +537,8 @@
       "statusAll": "Semua status",
       "kind": "Jenis",
       "kindAll": "Semua jenis",
-      "clear": "Bersihkan filter"
+      "clear": "Bersihkan filter",
+      "removeFilter": "Hapus filter {label}"
     },
     "kinds": {
       "late": "Terlambat",

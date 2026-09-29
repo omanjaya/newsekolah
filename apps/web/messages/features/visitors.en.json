@@ -46,7 +46,10 @@
     "eyebrow": "Visitors & Incidents",
     "title": "Expected visitors",
     "filters": {
-      "date": "Date"
+      "date": "Date",
+      "onlyPending": "Pending only",
+      "reset": "Reset filter",
+      "removeFilter": "Remove {label} filter"
     },
     "add": "Add Guest",
     "checkIn": "Sign In",
@@ -87,7 +90,10 @@
     "record": "Record Incident",
     "open": "Open",
     "filters": {
-      "includeClosed": "Show closed incidents"
+      "includeClosed": "Show closed incidents",
+      "onlyOpen": "Open only",
+      "reset": "Reset filter",
+      "removeFilter": "Remove {label} filter"
     },
     "columns": {
       "occurredAt": "Occurred at",

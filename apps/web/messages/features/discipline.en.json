@@ -12,7 +12,9 @@
       "classAll": "All classes",
       "from": "From date",
       "to": "To date",
-      "includeVoided": "Show voided"
+      "includeVoided": "Show voided",
+      "reset": "Reset filter",
+      "removeFilter": "Remove {label} filter"
     },
     "record": "Record violation",
     "void": "Void",
@@ -145,7 +147,9 @@
     },
     "filters": {
       "class": "Class",
-      "classAll": "All classes"
+      "classAll": "All classes",
+      "reset": "Reset filter",
+      "removeFilter": "Remove {label} filter"
     },
     "columns": {
       "student": "Student",
@@ -218,6 +222,8 @@
     "bkTeam": {
       "topicFilter": "Topic",
       "topicAll": "Every topic",
+      "reset": "Reset filter",
+      "removeFilter": "Remove {label} filter",
       "emptyTitle": "No notes shared with the BK team",
       "emptyBody": "Notes any counselor marks visible to the whole BK team appear here. You need to be a duty counselor to see them."
     },
