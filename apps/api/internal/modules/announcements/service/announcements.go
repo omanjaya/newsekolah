@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // Detail is an announcement plus its live read count for the admin view.
@@ -165,7 +166,7 @@ func (s *Service) Schedule(ctx context.Context, tenantID, id uuid.UUID) (domain.
 		if current.Status != domain.StatusDraft {
 			return domain.ErrInvalidStatus
 		}
-		if current.StartsAt == nil || !current.StartsAt.After(s.clock.Now()) {
+		if current.StartsAt == nil || !current.StartsAt.After(clock.Now(ctx, s.clock)) {
 			return domain.ErrScheduleNeedsStart
 		}
 		out, err = s.repo.SetStatus(ctx, tenantID, id, domain.StatusScheduled)
@@ -235,7 +236,7 @@ type FeedItem struct {
 func (s *Service) ListForUser(ctx context.Context, tenantID, userID uuid.UUID) ([]FeedItem, error) {
 	var out []FeedItem
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		active, err := s.repo.ListActiveForTenant(ctx, tenantID)
+		active, err := s.repo.ListActiveForTenant(ctx, tenantID, clock.Now(ctx, s.clock))
 		if err != nil {
 			return err
 		}

@@ -143,12 +143,13 @@ func (s *Service) ListSessions(ctx context.Context, tenantID, teacherUserID uuid
 
 // canCorrectClass reports whether actor may open a session for classID
 // under SaveModeCorrection: a global corrector always may; the class's own
-// homeroom teacher may, for their class only.
-func (s *Service) canCorrectClass(ctx context.Context, tenantID uuid.UUID, actor Actor, academicYearID, classID uuid.UUID) (bool, error) {
+// homeroom teacher may, for their class only. date is the session's own
+// date, the same business date the homeroom scope check runs against.
+func (s *Service) canCorrectClass(ctx context.Context, tenantID uuid.UUID, actor Actor, academicYearID, classID uuid.UUID, date time.Time) (bool, error) {
 	if actor.IsGlobalCorrector {
 		return true, nil
 	}
-	homeroomClassID, hasHomeroom, err := s.repo.GetHomeroomClassForTeacher(ctx, tenantID, academicYearID, actor.UserID)
+	homeroomClassID, hasHomeroom, err := s.repo.GetHomeroomClassForTeacher(ctx, tenantID, academicYearID, actor.UserID, date)
 	if err != nil {
 		return false, err
 	}
@@ -198,7 +199,7 @@ func (s *Service) OpenSession(ctx context.Context, tenantID uuid.UUID, actor Act
 		isSubstitute = isSubstitute && actor.UserID != schedule.TeacherUserID
 		ok := isSubstitute || actor.UserID == schedule.TeacherUserID
 		if !ok && mode == domain.SaveModeCorrection {
-			ok, err = s.canCorrectClass(ctx, tenantID, actor, schedule.AcademicYearID, schedule.ClassID)
+			ok, err = s.canCorrectClass(ctx, tenantID, actor, schedule.AcademicYearID, schedule.ClassID, date)
 			if err != nil {
 				return err
 			}

@@ -57,7 +57,7 @@ func tenantLocale(ctx context.Context) string {
 // used only by GetPeriodToday, the one endpoint the scope calls out as
 // needing the tenant's local wall-clock time.
 func (h *AcademicHandler) tenantNow(ctx context.Context) time.Time {
-	now := h.clock.Now()
+	now := clock.Now(ctx, h.clock)
 	t, ok := tenant.FromContext(ctx)
 	if !ok || t.Timezone == "" {
 		return now

@@ -138,8 +138,10 @@ func (r *Repository) ListActiveTenantIDs(ctx context.Context) ([]uuid.UUID, erro
 	return ids, nil
 }
 
-func (r *Repository) ListActiveForTenant(ctx context.Context, tenantID uuid.UUID) ([]domain.Announcement, error) {
-	rows, err := r.queries(ctx).ListActiveAnnouncementsForUser(ctx, tenantID)
+func (r *Repository) ListActiveForTenant(ctx context.Context, tenantID uuid.UUID, asOf time.Time) ([]domain.Announcement, error) {
+	rows, err := r.queries(ctx).ListActiveAnnouncementsForUser(ctx, db.ListActiveAnnouncementsForUserParams{
+		TenantID: tenantID, AsOf: database.Timestamptz(asOf),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list active announcements: %w", err)
 	}

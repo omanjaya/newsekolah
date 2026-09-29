@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 type classRepository interface {
@@ -98,12 +99,12 @@ func (s *Service) syncHomeroomDuty(ctx context.Context, class domain.Class, befo
 	if assignmentID, _, found, err := s.repo.FindActiveHomeroomAssignment(ctx, class.TenantID, class.AcademicYearID, dutyTypeID, class.ID); err != nil {
 		return err
 	} else if found {
-		if err := s.repo.EndHomeroomAssignment(ctx, class.TenantID, assignmentID, s.clock.Now()); err != nil {
+		if err := s.repo.EndHomeroomAssignment(ctx, class.TenantID, assignmentID, clock.Now(ctx, s.clock)); err != nil {
 			return err
 		}
 	}
 	if after != nil {
-		return s.repo.CreateHomeroomAssignment(ctx, class.TenantID, class.AcademicYearID, dutyTypeID, *after, class.ID, s.clock.Now())
+		return s.repo.CreateHomeroomAssignment(ctx, class.TenantID, class.AcademicYearID, dutyTypeID, *after, class.ID, clock.Now(ctx, s.clock))
 	}
 	return nil
 }

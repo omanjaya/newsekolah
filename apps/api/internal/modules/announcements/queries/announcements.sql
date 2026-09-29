@@ -47,14 +47,17 @@ where status = 'scheduled' and deleted_at is null and starts_at <= now();
 -- GET /v1/me/announcements: published, inside the active window, pinned
 -- first then most recent. Recipient filtering (does this user's audience
 -- match) happens in the service, since audience is a jsonb blob evaluated
--- against role/class membership resolved separately.
+-- against role/class membership resolved separately. as_of is the caller's
+-- business "now" (the simulated time when a superadmin is testing, the
+-- real clock otherwise -- see internal/platform/clock), so a scheduled
+-- announcement's publish window can be exercised without waiting for it.
 select *
 from announcements
 where tenant_id = $1
   and deleted_at is null
   and status = 'published'
-  and (starts_at is null or starts_at <= now())
-  and (ends_at is null or ends_at >= now())
+  and (starts_at is null or starts_at <= sqlc.arg(as_of)::timestamptz)
+  and (ends_at is null or ends_at >= sqlc.arg(as_of)::timestamptz)
 order by is_pinned desc, published_at desc
 limit 200;
 

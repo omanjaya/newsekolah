@@ -119,18 +119,26 @@ from announcements
 where tenant_id = $1
   and deleted_at is null
   and status = 'published'
-  and (starts_at is null or starts_at <= now())
-  and (ends_at is null or ends_at >= now())
+  and (starts_at is null or starts_at <= $2::timestamptz)
+  and (ends_at is null or ends_at >= $2::timestamptz)
 order by is_pinned desc, published_at desc
 limit 200
 `
 
+type ListActiveAnnouncementsForUserParams struct {
+	TenantID uuid.UUID          `json:"tenant_id"`
+	AsOf     pgtype.Timestamptz `json:"as_of"`
+}
+
 // GET /v1/me/announcements: published, inside the active window, pinned
 // first then most recent. Recipient filtering (does this user's audience
 // match) happens in the service, since audience is a jsonb blob evaluated
-// against role/class membership resolved separately.
-func (q *Queries) ListActiveAnnouncementsForUser(ctx context.Context, tenantID uuid.UUID) ([]Announcement, error) {
-	rows, err := q.db.Query(ctx, listActiveAnnouncementsForUser, tenantID)
+// against role/class membership resolved separately. as_of is the caller's
+// business "now" (the simulated time when a superadmin is testing, the
+// real clock otherwise -- see internal/platform/clock), so a scheduled
+// announcement's publish window can be exercised without waiting for it.
+func (q *Queries) ListActiveAnnouncementsForUser(ctx context.Context, arg ListActiveAnnouncementsForUserParams) ([]Announcement, error) {
+	rows, err := q.db.Query(ctx, listActiveAnnouncementsForUser, arg.TenantID, arg.AsOf)
 	if err != nil {
 		return nil, err
 	}

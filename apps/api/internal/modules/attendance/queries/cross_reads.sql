@@ -35,6 +35,10 @@ limit 1;
 -- The class a teacher is homeroom (wali kelas) duty holder of this
 -- academic year, if any -- duty slug "homeroom", scope_class_id per
 -- docs/analysis/backend-inventory.md section 1.9's global-corrector rule.
+-- as_of is the caller's business date (the attendance record/session date,
+-- or the simulated/real "today" -- see internal/platform/clock), so the
+-- global-corrector scope check follows the same date a superadmin is
+-- simulating instead of always the database server's today.
 select da.scope_class_id
 from duty_assignments da
 join duty_types dt on dt.id = da.duty_type_id
@@ -45,8 +49,8 @@ where da.tenant_id = $1
   and da.is_active
   and dt.is_active
   and da.scope_class_id is not null
-  and da.starts_on <= current_date
-  and (da.ends_on is null or da.ends_on >= current_date)
+  and da.starts_on <= sqlc.arg(as_of)::date
+  and (da.ends_on is null or da.ends_on >= sqlc.arg(as_of)::date)
 limit 1;
 
 -- name: GetTenantTimezoneForAttendance :one

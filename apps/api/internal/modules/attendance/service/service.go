@@ -150,7 +150,13 @@ type Repository interface {
 	// -- cross-module read; replace with academic/identity reader interface after merge --
 	ListActiveEnrollments(ctx context.Context, tenantID, academicYearID, classID uuid.UUID) ([]StudentRef, error)
 	GetEnrolledClass(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (classID uuid.UUID, ok bool, err error)
-	GetHomeroomClassForTeacher(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID) (classID uuid.UUID, ok bool, err error)
+	// asOf is the business date the "wali kelas" (homeroom) check runs
+	// against -- the attendance record's own date wherever one already
+	// governs the call, otherwise the caller's simulated/real "today" (see
+	// internal/platform/clock), so a superadmin testing a homeroom
+	// assignment's start/end date sees the global-corrector scope change
+	// with it.
+	GetHomeroomClassForTeacher(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID, asOf time.Time) (classID uuid.UUID, ok bool, err error)
 	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
 	// GetClassName resolves one class's display name, for the class scope
 	// of a report export's Section name.

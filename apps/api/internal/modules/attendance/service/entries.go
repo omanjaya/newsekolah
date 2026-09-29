@@ -43,7 +43,7 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 			return err
 		}
 
-		homeroomClassID, hasHomeroom, err := s.repo.GetHomeroomClassForTeacher(ctx, tenantID, session.AcademicYearID, actor.UserID)
+		homeroomClassID, hasHomeroom, err := s.repo.GetHomeroomClassForTeacher(ctx, tenantID, session.AcademicYearID, actor.UserID, session.Date)
 		if err != nil {
 			return err
 		}

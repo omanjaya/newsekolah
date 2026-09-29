@@ -103,7 +103,7 @@ func (s *Service) TodaySubmittedCount(ctx context.Context, tenantID uuid.UUID) (
 			return err
 		}
 		loc := s.tenantLocation(ctx, tenantID)
-		now := s.clock.Now().In(loc)
+		now := clock.Now(ctx, s.clock).In(loc)
 		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 		dayOfWeek := domain.IsoWeekday(now)
 

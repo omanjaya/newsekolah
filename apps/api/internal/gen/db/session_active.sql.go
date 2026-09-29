@@ -23,6 +23,10 @@ type IsSessionActiveParams struct {
 	ID       uuid.UUID `json:"id"`
 }
 
+// Authentication: whether the session itself is still valid. Always the
+// real clock -- never the simulated business time (see
+// docs/testing-time-simulation.md), so a simulated future date can never
+// extend a session's real-world lifetime.
 func (q *Queries) IsSessionActive(ctx context.Context, arg IsSessionActiveParams) (pgtype.Bool, error) {
 	row := q.db.QueryRow(ctx, isSessionActive, arg.TenantID, arg.ID)
 	var active pgtype.Bool
@@ -41,14 +45,15 @@ where da.tenant_id = $1
   and da.is_active
   and dt.is_active
   and dt.deleted_at is null
-  and da.starts_on <= current_date
-  and (da.ends_on is null or da.ends_on >= current_date)
+  and da.starts_on <= $4::date
+  and (da.ends_on is null or da.ends_on >= $4::date)
 `
 
 type ListActiveDutyAssignmentsWithPermissionsParams struct {
-	TenantID       uuid.UUID `json:"tenant_id"`
-	UserID         uuid.UUID `json:"user_id"`
-	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	UserID         uuid.UUID   `json:"user_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	AsOf           pgtype.Date `json:"as_of"`
 }
 
 type ListActiveDutyAssignmentsWithPermissionsRow struct {
@@ -56,8 +61,21 @@ type ListActiveDutyAssignmentsWithPermissionsRow struct {
 	PermissionCode string `json:"permission_code"`
 }
 
+// Despite living alongside session queries, this is not a session/token
+// query: it is the permission half of the same duty-validity computation
+// as duties.sql's ListActiveDutyAssignmentsForUser (identity/repository's
+// ListActiveDuties calls both for the same user/year to build one
+// authz.Principal). as_of must be the same business date passed there, or
+// a duty could show "active" with none of its permissions attached (or
+// vice versa). See ListActiveDutyAssignmentsForUser's comment for what
+// as_of is.
 func (q *Queries) ListActiveDutyAssignmentsWithPermissions(ctx context.Context, arg ListActiveDutyAssignmentsWithPermissionsParams) ([]ListActiveDutyAssignmentsWithPermissionsRow, error) {
-	rows, err := q.db.Query(ctx, listActiveDutyAssignmentsWithPermissions, arg.TenantID, arg.UserID, arg.AcademicYearID)
+	rows, err := q.db.Query(ctx, listActiveDutyAssignmentsWithPermissions,
+		arg.TenantID,
+		arg.UserID,
+		arg.AcademicYearID,
+		arg.AsOf,
+	)
 	if err != nil {
 		return nil, err
 	}

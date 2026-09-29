@@ -90,9 +90,9 @@ func (r *Repository) ListPermissionCodesForRoles(ctx context.Context, roleIDs []
 	return r.queries(ctx).ListPermissionCodesForRoles(ctx, roleIDs)
 }
 
-func (r *Repository) ListActiveDuties(ctx context.Context, tenantID, userID, academicYearID uuid.UUID) ([]authz.Duty, error) {
+func (r *Repository) ListActiveDuties(ctx context.Context, tenantID, userID, academicYearID uuid.UUID, asOf time.Time) ([]authz.Duty, error) {
 	rows, err := r.queries(ctx).ListActiveDutyAssignmentsForUser(ctx, db.ListActiveDutyAssignmentsForUserParams{
-		TenantID: tenantID, UserID: userID, AcademicYearID: academicYearID,
+		TenantID: tenantID, UserID: userID, AcademicYearID: academicYearID, AsOf: pdatabase.Date(asOf),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list active duty assignments: %w", err)
@@ -112,7 +112,7 @@ func (r *Repository) ListActiveDuties(ctx context.Context, tenantID, userID, aca
 		}
 	}
 
-	permsByDutyType, err := r.permissionsByDutyType(ctx, tenantID, userID, academicYearID)
+	permsByDutyType, err := r.permissionsByDutyType(ctx, tenantID, userID, academicYearID, asOf)
 	if err != nil {
 		return nil, err
 	}
@@ -124,10 +124,11 @@ func (r *Repository) ListActiveDuties(ctx context.Context, tenantID, userID, aca
 }
 
 // permissionsByDutyType maps each active duty type slug (for this user and
-// academic year) to the permission codes it grants.
-func (r *Repository) permissionsByDutyType(ctx context.Context, tenantID, userID, academicYearID uuid.UUID) (map[string][]string, error) {
+// academic year) to the permission codes it grants, as of the same
+// business date ListActiveDuties resolved the active duties against.
+func (r *Repository) permissionsByDutyType(ctx context.Context, tenantID, userID, academicYearID uuid.UUID, asOf time.Time) (map[string][]string, error) {
 	rows, err := r.queries(ctx).ListActiveDutyAssignmentsWithPermissions(ctx, db.ListActiveDutyAssignmentsWithPermissionsParams{
-		TenantID: tenantID, UserID: userID, AcademicYearID: academicYearID,
+		TenantID: tenantID, UserID: userID, AcademicYearID: academicYearID, AsOf: pdatabase.Date(asOf),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list active duty permissions: %w", err)
