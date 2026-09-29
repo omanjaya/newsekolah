@@ -2,7 +2,15 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
-import { Badge, Button, DataTable, EmptyState, Input, PageHeader, Select } from "@newsekolah/ui";
+import {
+  Badge,
+  Button,
+  DataTable,
+  EmptyState,
+  Input,
+  PageHeader,
+  type DataTableFilterDef,
+} from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { History } from "lucide-react";
 import Link from "next/link";
@@ -10,6 +18,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useSession } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
@@ -26,8 +35,12 @@ export function AuditLogsView(): ReactElement {
   const { me } = useSession();
   const timeZone = me?.tenant.timezone;
 
-  const [actorUserId, setActorUserId] = useRememberedViewState("audit-actor", "");
-  const [entityType, setEntityType] = useRememberedViewState("audit-entity", "");
+  const [actorUserId, setActorUserId] = useUrlState<string>("actor", () => true, "");
+  const [entityType, setEntityType] = useUrlState<string>(
+    "entity_type",
+    ["", ...AUDIT_ENTITY_TYPES],
+    "",
+  );
   const [from, setFrom] = useRememberedViewState("audit-from", "");
   const [to, setTo] = useRememberedViewState("audit-to", "");
   const [cursors, setCursors] = useState<string[]>([""]);
@@ -49,6 +62,29 @@ export function AuditLogsView(): ReactElement {
   function resetPaging() {
     setCursors([""]);
   }
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "actor",
+      label: t("filters.actor"),
+      value: actorUserId,
+      onChange: (value) => {
+        setActorUserId(value);
+        resetPaging();
+      },
+      options: (directory.data?.data ?? []).map((user) => ({ value: user.id, label: user.name })),
+    },
+    {
+      id: "entityType",
+      label: t("filters.entityType"),
+      value: entityType,
+      onChange: (value) => {
+        setEntityType(value);
+        resetPaging();
+      },
+      options: AUDIT_ENTITY_TYPES.map((type) => ({ value: type, label: labels.entityType(type) })),
+    },
+  ];
 
   function actorName(id: string | undefined): string {
     if (!id) return t(SYSTEM_ACTOR);
@@ -134,44 +170,6 @@ export function AuditLogsView(): ReactElement {
       )}
 
       <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
-        <label className="col-span-2 flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("filters.actor")}</span>
-          <Select
-            options={[
-              { value: "all", label: t("filters.actorAll") },
-              ...(directory.data?.data ?? []).map((user) => ({
-                value: user.id,
-                label: user.name,
-              })),
-            ]}
-            value={actorUserId || "all"}
-            onValueChange={(value) => {
-              setActorUserId(value === "all" ? "" : value);
-              resetPaging();
-            }}
-            aria-label={t("filters.actor")}
-            className="w-full sm:w-56"
-          />
-        </label>
-        <label className="col-span-2 flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("filters.entityType")}</span>
-          <Select
-            options={[
-              { value: "all", label: t("filters.entityTypeAll") },
-              ...AUDIT_ENTITY_TYPES.map((type) => ({
-                value: type,
-                label: labels.entityType(type),
-              })),
-            ]}
-            value={entityType || "all"}
-            onValueChange={(value) => {
-              setEntityType(value === "all" ? "" : value);
-              resetPaging();
-            }}
-            aria-label={t("filters.entityType")}
-            className="w-full sm:w-48"
-          />
-        </label>
         <label className="flex min-w-0 flex-col gap-1 text-[13px]">
           <span className="font-medium text-fg">{t("filters.from")}</span>
           <Input
@@ -196,22 +194,6 @@ export function AuditLogsView(): ReactElement {
             }}
           />
         </label>
-        {(actorUserId || entityType || from || to) && (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="col-span-2 sm:col-span-1"
-            onClick={() => {
-              setActorUserId("");
-              setEntityType("");
-              setFrom("");
-              setTo("");
-              resetPaging();
-            }}
-          >
-            {t("filters.reset")}
-          </Button>
-        )}
       </div>
 
       <DataTable
@@ -225,6 +207,11 @@ export function AuditLogsView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
+        filters={filters}
+        filtersLabels={{
+          reset: t("filters.reset"),
+          removeFilter: (label) => t("filters.removeFilter", { label }),
+        }}
         isLoading={isLoading}
         getRowId={(entry) => entry.id}
         onRowActivate={setSelected}

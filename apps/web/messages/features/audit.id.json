@@ -12,7 +12,8 @@
     "from": "Dari tanggal",
     "to": "Sampai tanggal",
     "reset": "Reset filter",
-    "entityTypeAll": "Semua jenis"
+    "entityTypeAll": "Semua jenis",
+    "removeFilter": "Hapus filter {label}"
   },
   "columns": {
     "when": "Waktu",
