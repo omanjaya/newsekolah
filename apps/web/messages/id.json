@@ -960,6 +960,18 @@
         "emptyTitle": "Belum ada pengajuan",
         "emptyBody": "Izin sakit, upacara, atau dispensasi yang Anda ajukan tampil di sini.",
         "detailTitle": "Detail izin",
+        "mine": {
+          "tileTotal": "Total pengajuan",
+          "tileInProgress": "Sedang diproses",
+          "tileApproved": "Disetujui",
+          "tileRejected": "Ditolak",
+          "opened": "Diajukan {date}",
+          "stageSubmitted": "Diajukan",
+          "stageHomeroom": "Wali kelas",
+          "stageCounselor": "Guru BK",
+          "stageDone": "Selesai",
+          "stageTrackLabel": "Tahapan pengajuan"
+        },
         "student": "Siswa",
         "dates": "Tanggal",
         "letterNumber": "Nomor surat",

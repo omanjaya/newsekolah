@@ -1,6 +1,6 @@
 "use client";
 
-import { PageHeader } from "@newsekolah/ui";
+import { Card, CardContent, PageHeader } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -16,9 +16,11 @@ export function LeaveRequestPageView({ id }: { id: string }): ReactElement {
         title={t("detailTitle")}
         breadcrumb={[{ label: t("title"), href: "/leave-requests" }, { label: t("detailTitle") }]}
       />
-      <section className="max-w-2xl rounded-md border border-border bg-surface p-4 md:p-6">
-        <LeaveRequestDetail id={id} />
-      </section>
+      <Card className="max-w-2xl">
+        <CardContent className="p-4 md:p-6">
+          <LeaveRequestDetail id={id} />
+        </CardContent>
+      </Card>
     </div>
   );
 }
