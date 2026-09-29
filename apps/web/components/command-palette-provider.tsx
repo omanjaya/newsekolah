@@ -58,9 +58,10 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
   }, []);
 
   const groups: CommandPaletteGroup[] = useMemo(() => {
+    const can = (permission: string) => me?.permissions.includes(permission) ?? false;
     const authorizedItems = filterNavigation(
       navigation,
-      (permission) => me?.permissions.includes(permission) ?? false,
+      can,
       me?.profile_kind,
       (me?.roles ?? []).map((role) => role.slug),
     );
@@ -70,6 +71,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
       canManageSchool: me?.permissions.some((code) =>
         ["manage_master_data", "manage_enrollments", "view_users"].includes(code),
       ),
+      can,
     });
     const hrefs = new Set(workspaces.map((item) => item.href));
     const items = [

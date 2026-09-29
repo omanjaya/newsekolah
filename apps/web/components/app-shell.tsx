@@ -49,18 +49,15 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
   const pathname = usePathname();
   useNotificationsSocket();
   const roleSlugs = (me?.roles ?? []).map((role) => role.slug);
-  const authorizedItems = filterNavigation(
-    navigation,
-    (permission) => me?.permissions.includes(permission) ?? false,
-    me?.profile_kind,
-    roleSlugs,
-  );
+  const can = (permission: string) => me?.permissions.includes(permission) ?? false;
+  const authorizedItems = filterNavigation(navigation, can, me?.profile_kind, roleSlugs);
   const items = consolidateNavigation(authorizedItems, {
     profileKind: me?.profile_kind,
     duties: me?.duties,
     canManageSchool: me?.permissions.some((code) =>
       ["manage_master_data", "manage_enrollments", "view_users"].includes(code),
     ),
+    can,
   });
 
   // A page the reader cannot use would otherwise render its own empty

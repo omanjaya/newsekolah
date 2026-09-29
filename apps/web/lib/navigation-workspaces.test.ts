@@ -16,6 +16,7 @@ function menu(
     profileKind,
     duties,
     canManageSchool: permissions.includes("manage_master_data"),
+    can,
   });
 }
 

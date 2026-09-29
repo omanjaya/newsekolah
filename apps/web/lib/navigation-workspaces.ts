@@ -121,9 +121,18 @@ export interface NavigationContext {
   profileKind?: NavProfileKind;
   duties?: readonly { slug: string }[];
   canManageSchool?: boolean;
+  /**
+   * Checked against `item.routePermission` when present: a member whose
+   * own route guard (navigation-permissions.ts's `canOpenPath`) would
+   * refuse it is not offered as a workspace's sole/selected destination,
+   * even though it already passed the looser menu-visibility permission
+   * that got it into `items`.
+   */
+  can?: (permission: string) => boolean;
 }
 
 function relevant(item: NavItem, context: NavigationContext): boolean {
+  if (item.routePermission && context.can && !context.can(item.routePermission)) return false;
   if (item.key === "homeroom")
     return context.duties?.some((duty) => duty.slug === "homeroom") ?? false;
   const personal = context.profileKind === "student";
