@@ -15,10 +15,11 @@ import {
 import { CheckCircle2, LogIn, LogOut } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
+import { useBusinessNow } from "../../../lib/simulation/clock";
 import { todayInZone } from "../../../lib/tenant-date";
 import {
   type AttendanceRecord,
@@ -45,6 +46,7 @@ const WEEK_DAYS = 7;
  * in flight.
  */
 export function SelfCheckInView(): ReactElement {
+  const now = useBusinessNow();
   const t = useTranslations("app.staffAttendance.self");
   const tStatus = useTranslations("app.staffAttendance.statuses");
   const locale = useLocale() as Locale;
@@ -60,26 +62,16 @@ export function SelfCheckInView(): ReactElement {
   const week = useStaffAttendanceMyHistoryQuery(from, to);
 
   const [scanned, setScanned] = useState<AttendanceRecord | null>(null);
-  const [complete, setComplete] = useState(false);
+  const [completeDate, setCompleteDate] = useState<string | null>(null);
 
   const weekDays = useMemo(() => [...(week.data?.data ?? [])].reverse(), [week.data]);
-  const record = scanned ?? weekDays.find((day) => day.date === today) ?? null;
-
-  // A minute-fresh live clock. formatTime only shows hours:minutes, so a
-  // 10s tick keeps the display honest without re-rendering every second
-  // for no visible change.
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => {
-      setNow(new Date());
-    }, 10_000);
-    return () => {
-      clearInterval(id);
-    };
-  }, []);
+  const record =
+    (scanned?.date === today ? scanned : null) ??
+    weekDays.find((day) => day.date === today) ??
+    null;
 
   const hasArrival = Boolean(record?.arrival_at);
-  const done = complete || Boolean(record?.departure_at);
+  const done = completeDate === today || Boolean(record?.departure_at);
   const time = (iso: string | null | undefined) =>
     iso ? formatTime(iso, { locale, timeZone }) : "-";
   const statusToken = record ? STATUS_TOKEN[record.status_code] : undefined;
@@ -105,7 +97,7 @@ export function SelfCheckInView(): ReactElement {
       },
       onError: (error) => {
         const code = error instanceof ApiError ? error.code : "UNKNOWN";
-        if (code === "STAFF_ATTENDANCE_ALREADY_SCANNED") setComplete(true);
+        if (code === "STAFF_ATTENDANCE_ALREADY_SCANNED") setCompleteDate(today);
         toast.error(apiErrorMessage(code));
       },
     });

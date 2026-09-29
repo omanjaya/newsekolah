@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // GetMonitorDisplayToken exposes the repository's tenant_settings read so
@@ -35,7 +36,7 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 		}
 
 		loc := s.tenantLocation(ctx, tenantID)
-		now := s.clock.Now().In(loc)
+		now := clock.Now(ctx, s.clock).In(loc)
 		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 		dayOfWeek := domain.IsoWeekday(now)
 
@@ -79,7 +80,7 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 		}
 
 		out = MonitorSnapshot{
-			GeneratedAt: s.clock.Now(), Date: today, DayName: domain.IndonesianWeekdayName(now),
+			GeneratedAt: now, Date: today, DayName: domain.IndonesianWeekdayName(now),
 			CurrentPeriod: currentPeriod, StatusCounts: counts, Sessions: sessions,
 		}
 		return nil

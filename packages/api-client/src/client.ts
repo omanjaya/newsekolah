@@ -35,6 +35,8 @@ export interface CreateApiClientOptions {
   clientHeader: string;
   /** Returns a BCP 47 locale for `Accept-Language`. Defaults to "id". */
   getLocale?: () => string;
+  /** Optional per-request test clock; never attached to authentication requests. */
+  getSimulationTime?: () => string | null;
 }
 
 /**
@@ -255,6 +257,11 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       request.headers.set("X-Client", options.clientHeader);
       if (options.tenantSlug) {
         request.headers.set("X-Tenant", options.tenantSlug);
+      }
+      const requestPath = new URL(request.url).pathname;
+      if (!requestPath.startsWith("/v1/auth/") && requestPath !== "/v1/me") {
+        const simulationTime = options.getSimulationTime?.();
+        if (simulationTime) request.headers.set("X-Simulation-Time", simulationTime);
       }
       const method = request.method.toLowerCase() as HttpMethod;
       if (MUTATING_METHODS.includes(method) && !request.headers.has("Idempotency-Key")) {

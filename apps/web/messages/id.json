@@ -28,6 +28,23 @@
         "banner": "Dioperasikan oleh {adminName} sebagai {name}, sesi berakhir otomatis dalam 30 menit",
         "stop": "Hentikan impersonasi"
       },
+      "simulation": {
+        "title": "Simulasi waktu untuk pengujian",
+        "settings": "Atur waktu simulasi",
+        "intro": "Atur tanggal dan jam sekolah untuk menguji jadwal, presensi siswa, dan presensi pegawai.",
+        "active": "Waktu simulasi aktif: {time} ({zone})",
+        "warning": "Simulasi berlaku untuk jadwal, presensi siswa, dan presensi pegawai. Perubahan data tetap tersimpan setelah waktu diatur ulang. Gunakan sekolah pengujian.",
+        "date": "Tanggal sekolah",
+        "time": "Jam sekolah ({zone})",
+        "mode": "Mode",
+        "frozen": "Dibekukan",
+        "running": "Berjalan",
+        "apply": "Terapkan",
+        "plus15": "+15 menit",
+        "plusHour": "+1 jam",
+        "plusDay": "+1 hari",
+        "reset": "Atur ulang"
+      },
       "offline": {
         "banner": "Tidak ada koneksi, perubahan disimpan sementara di perangkat"
       },

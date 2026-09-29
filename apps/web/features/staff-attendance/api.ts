@@ -8,6 +8,7 @@ import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
 import { reportExportExtension, withReportExportParams } from "../../lib/api/report-export-query";
 import { API_URL } from "../../lib/env";
+import { businessNow } from "../../lib/simulation/clock";
 
 import { useStaffAttendanceTodayLive } from "./realtime";
 
@@ -226,7 +227,7 @@ export function todayInZone(timeZone?: string): string {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).formatToParts(new Date());
+  }).formatToParts(businessNow());
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
   return `${get("year")}-${get("month")}-${get("day")}`;
 }

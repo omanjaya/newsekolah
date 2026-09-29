@@ -18,6 +18,7 @@ import { ImpersonationBanner } from "./impersonation-banner";
 import { MobileTabBar } from "./mobile-tab-bar";
 import { OfflineIndicator } from "./offline-indicator";
 import { Sidebar } from "./sidebar";
+import { SimulationControls } from "./simulation-controls";
 import { UpdateAvailable } from "./update-available";
 
 /**
@@ -94,6 +95,7 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
             <div className="flex justify-end px-4 md:px-6">
               <ConnectionStatusIndicator />
             </div>
+            <SimulationControls />
           </div>
           <ImpersonationBanner />
           <OfflineIndicator />

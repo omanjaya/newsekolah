@@ -29,6 +29,7 @@ import { useMemo, useState } from "react";
 import { statusToken } from "../../../lib/attendance-status";
 import { tileColumns } from "../../../lib/layout/bento";
 import { useSession } from "../../../lib/session/session-provider";
+import { useSimulation } from "../../../lib/simulation/clock";
 import { todayInZone, useMyCalendarQuery } from "../api";
 import { monthAttendanceStats } from "../lib/attendance-stats";
 
@@ -49,6 +50,7 @@ const LEGEND_ORDER = ["H", "S", "I", "D", "A", "INCOMPLETE", "MIXED"];
 
 /** A student's month view: a symmetric bento of month stats, a dot calendar, and a detail card for the selected day. */
 export function AttendanceCalendar(): ReactElement {
+  useSimulation();
   const t = useTranslations("app.attendance");
   const tCal = useTranslations("app.attendance.calendar");
   const tMine = useTranslations("app.attendance.mine");
@@ -57,7 +59,10 @@ export function AttendanceCalendar(): ReactElement {
   const locale = useLocale() as Locale;
   const timeZone = me?.tenant.timezone;
   const today = todayInZone(timeZone);
-  const [month, setMonth] = useState(today.slice(0, 7));
+  // Keyed by `today` so a simulated clock jump re-anchors the calendar on
+  // the new month instead of keeping the month picked before the jump.
+  const [selection, setSelection] = useState<{ today: string; month: string } | null>(null);
+  const month = selection?.today === today ? selection.month : today.slice(0, 7);
   const { data, isLoading } = useMyCalendarQuery(month);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -83,7 +88,10 @@ export function AttendanceCalendar(): ReactElement {
 
   function shift(delta: number) {
     const d = new Date(Date.UTC(yearNum, monthNum - 1 + delta, 1));
-    setMonth(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+    setSelection({
+      today,
+      month: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
+    });
   }
 
   const monthLabel = new Intl.DateTimeFormat(me?.tenant.locale === "en" ? "en-US" : "id-ID", {

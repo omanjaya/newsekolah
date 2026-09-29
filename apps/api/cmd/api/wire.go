@@ -442,6 +442,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	router.Use(httpx.RefreshCookieMiddleware)
 	router.Use(authenticator.Middleware)
 	router.Use(impersonationActionLogger(identityModule.Service))
+	router.Use(simulationTimeMiddleware(identityModule.Service))
 
 	api.HandlerFromMux(strict, router)
 

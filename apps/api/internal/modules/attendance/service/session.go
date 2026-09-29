@@ -8,6 +8,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
 	scheduling "github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // ListSessionsOptions narrows ListSessions: Date defaults to today (in the
@@ -48,7 +49,7 @@ func (s *Service) ListSessions(ctx context.Context, tenantID, teacherUserID uuid
 		}
 
 		loc := s.tenantLocation(ctx, tenantID)
-		now := s.clock.Now().In(loc)
+		now := clock.Now(ctx, s.clock).In(loc)
 		date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 		if opts.Date != nil {
 			y, m, d := opts.Date.Date()

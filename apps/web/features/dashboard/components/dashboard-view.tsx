@@ -19,6 +19,7 @@ import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { bentoCells, tileColumns } from "../../../lib/layout/bento";
+import { businessNow, useSimulation } from "../../../lib/simulation/clock";
 import { AnnouncementFeed } from "../../announcements/components/announcement-feed";
 import { useUnreadCountQuery } from "../../notifications/api";
 import { useDashboardData } from "../api";
@@ -49,6 +50,7 @@ const LOADING_ME = { tenant: { timezone: "UTC" }, permissions: [], duties: [] } 
  * view (docs/superpowers/plans/2026-09-26-dashboard-per-peran.md Task 7).
  */
 export function DashboardView(): ReactElement {
+  useSimulation();
   const { data: me, isLoading, isError, refetch } = useDashboardData();
   const t = useTranslations("app.dashboard");
   const format = useFormatter();
@@ -149,7 +151,7 @@ export function DashboardView(): ReactElement {
         <div className="min-w-0">
           <p className="mb-1 text-[12px] text-fg-muted">
             {t("title")} ·{" "}
-            {format.dateTime(new Date(), {
+            {format.dateTime(businessNow(), {
               weekday: "long",
               day: "numeric",
               month: "long",

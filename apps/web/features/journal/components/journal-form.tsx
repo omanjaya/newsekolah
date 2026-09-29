@@ -10,20 +10,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
+import { useSimulation } from "../../../lib/simulation/clock";
+import { todayInZone } from "../../../lib/tenant-date";
 import { useTeachingAssignmentsForTeacherQuery } from "../../academic/api-offerings";
 import { useClassesQuery, useSubjectsQuery } from "../../reference/api";
 import { useUpsertJournalMutation, type Journal } from "../api";
 import { clearJournalDraft, loadJournalDraft, saveJournalDraft } from "../lib/journal-draft";
 
 import { JournalFields } from "./journal-fields";
-
-/** Today as a calendar date (YYYY-MM-DD) in the device's own time zone. */
-function todayISO(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
-}
 
 /**
  * Creates or replaces a journal entry: the API upserts by class/subject/date.
@@ -50,13 +44,21 @@ export function JournalForm({
   const apiErrorMessage = useApiErrorMessage();
   const locale = useLocale() as Locale;
   const { me } = useSession();
+  const { revision } = useSimulation();
   const year = useActiveYear();
   const upsert = useUpsertJournalMutation();
 
   const [classId, setClassId] = useState(initial?.class_id ?? prefillClassId ?? "");
   const [subjectId, setSubjectId] = useState(initial?.subject_id ?? prefillSubjectId ?? "");
   // A journal is almost always written the day the lesson happened.
-  const [lessonDate, setLessonDate] = useState(initial?.lesson_date ?? prefillDate ?? todayISO());
+  const [selectedDate, setSelectedDate] = useState<{ revision: number; date: string } | null>(null);
+  const lessonDate =
+    selectedDate?.revision === revision
+      ? selectedDate.date
+      : (initial?.lesson_date ?? prefillDate ?? todayInZone(me?.tenant.timezone));
+  const setLessonDate = (date: string) => {
+    setSelectedDate({ revision, date });
+  };
   const [topic, setTopic] = useState(initial?.topic ?? "");
   const [activities, setActivities] = useState(initial?.activities ?? "");
   const [reflection, setReflection] = useState(initial?.reflection ?? "");

@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // Scan is the QR self-service check-in/check-out: the first scan of the
@@ -15,7 +16,7 @@ import (
 // from s.clock rather than a caller-supplied time.Time, since
 // forbidigo/docs/04-clean-code.md ban time.Now() outside platform/clock.
 func (s *Service) Scan(ctx context.Context, tenantID, employeeUserID uuid.UUID) (RecordView, error) {
-	at := s.clock.Now()
+	at := clock.Now(ctx, s.clock).In(staffLocation(ctx))
 	date := time.Date(at.Year(), at.Month(), at.Day(), 0, 0, 0, 0, at.Location())
 	var out RecordView
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -163,10 +164,9 @@ func (s *Service) upsertFromSource(
 // record where one exists, or a live-computed one otherwise (mirrors
 // attendance/service's buildRoster/buildCalendarDays pattern of never
 // letting "no row yet" look different from "computed now"). date nil
-// means "today" in UTC -- this module does not yet resolve the tenant's
-// own timezone, unlike student-facing attendance.
+// means "today" in the school timezone resolved for this request.
 func (s *Service) GetTodayBoard(ctx context.Context, tenantID uuid.UUID, date *time.Time) ([]RecordView, error) {
-	resolved := s.today(time.UTC)
+	resolved := s.today(ctx, staffLocation(ctx))
 	if date != nil {
 		resolved = *date
 	}

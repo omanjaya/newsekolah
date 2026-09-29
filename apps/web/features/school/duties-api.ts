@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { setAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
 import { useActiveYear } from "../../lib/hooks/use-active-year";
+import { suspendSimulation } from "../../lib/simulation/clock";
 
 import { useInvalidate } from "./api";
 
@@ -172,6 +173,7 @@ export function useImpersonateUserMutation() {
         body: { client: "web" },
       }),
     onSuccess: (data) => {
+      suspendSimulation();
       setAccessToken(data.access_token);
       queryClient.setQueryData(queryKeys.me(), data.user);
       void queryClient.invalidateQueries({ queryKey: queryKeys.me() });

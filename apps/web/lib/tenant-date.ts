@@ -3,6 +3,7 @@
  * 08:00 in Asia/Makassar it still reports yesterday; these read the wall
  * clock of the tenant (or the browser) instead.
  */
+import { businessNow } from "./simulation/clock";
 
 /** "YYYY-MM-DD" for today in `timeZone` (the browser's zone when omitted). */
 export function todayInZone(timeZone?: string): string {
@@ -11,7 +12,7 @@ export function todayInZone(timeZone?: string): string {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).formatToParts(new Date());
+  }).formatToParts(businessNow());
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
   return `${get("year")}-${get("month")}-${get("day")}`;
 }

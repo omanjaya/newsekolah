@@ -7,6 +7,7 @@ import type { ReportExportOptions } from "../../components/report-export-dialog"
 import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
 import { API_URL } from "../../lib/env";
+import { businessNow } from "../../lib/simulation/clock";
 
 export type SessionSummary = components["schemas"]["AttendanceSessionSummary"];
 export type SessionDetail = components["schemas"]["AttendanceSessionDetail"];
@@ -280,7 +281,7 @@ export function todayInZone(timeZone?: string): string {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).formatToParts(new Date());
+  }).formatToParts(businessNow());
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
@@ -293,7 +294,7 @@ export function nowTimeInZone(timeZone?: string): string {
     minute: "2-digit",
     second: "2-digit",
     hourCycle: "h23",
-  }).formatToParts(new Date());
+  }).formatToParts(businessNow());
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
   return `${get("hour")}:${get("minute")}:${get("second")}`;
 }

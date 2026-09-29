@@ -11,6 +11,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 // FeatureFlagModule is the feature_flags.module value this package checks
@@ -126,8 +127,8 @@ func (s *Service) assertEnabled(ctx context.Context, tenantID uuid.UUID) error {
 // today truncates the clock's current instant to a calendar date in loc,
 // used wherever the caller does not name an explicit date (QR scan,
 // today's board).
-func (s *Service) today(loc *time.Location) time.Time {
-	now := s.clock.Now().In(loc)
+func (s *Service) today(ctx context.Context, loc *time.Location) time.Time {
+	now := clock.Now(ctx, s.clock).In(loc)
 	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 }
 
@@ -188,7 +189,7 @@ func (s *Service) computeStatus(
 	}
 
 	result := domain.ComputeLateness(domain.LatenessInput{
-		Date: date, Schedule: schedule, IsWorkingDay: isWorking, OnLeave: onLeave,
+		Date: staffDate(ctx, date), Schedule: schedule, IsWorkingDay: isWorking, OnLeave: onLeave,
 		ArrivalAt: arrival, DepartureAt: departure,
 	})
 
@@ -214,4 +215,22 @@ func toRecordView(rec domain.Record, employeeName string) RecordView {
 		StatusCode: rec.StatusCode, LateMinutes: rec.LateMinutes, EarlyLeaveMinutes: rec.EarlyLeaveMinutes,
 		Source: rec.Source, Notes: rec.Notes,
 	}
+}
+
+// staffLocation uses the school resolved by the tenant middleware. A service
+// invocation without tenant context retains its historical UTC fallback.
+func staffLocation(ctx context.Context) *time.Location {
+	if school, ok := tenant.FromContext(ctx); ok {
+		if loc, err := time.LoadLocation(school.Timezone); err == nil {
+			return loc
+		}
+	}
+	return time.UTC
+}
+
+// staffDate retains the calendar label from SQL while anchoring scheduled
+// start/end times in the school's zone for lateness comparisons.
+func staffDate(ctx context.Context, date time.Time) time.Time {
+	y, m, d := date.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, staffLocation(ctx))
 }

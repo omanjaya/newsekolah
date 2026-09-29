@@ -1,9 +1,13 @@
 "use client";
 
+import { useSimulation } from "../simulation/clock";
+
 import { useUrlState } from "./use-url-state";
 
 /** Dates are safe shareable context; free-text names and form drafts stay out of URLs. */
 export function useDateFilter(key: string, fallback: string, monthOnly = false) {
+  // Simulation changes refresh the fallback; a date explicitly chosen in the URL remains selected.
+  useSimulation();
   return useUrlState<string>(
     key,
     (value) => {

@@ -1,10 +1,12 @@
 import type * as UiModule from "@newsekolah/ui";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SelfCheckInView } from "./self-check-in-view";
 
 const weekQuery = vi.hoisted(() => vi.fn());
+const scanMutation = vi.hoisted(() => vi.fn());
+const clockDay = vi.hoisted(() => ({ value: "2026-09-24" }));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, vars?: Record<string, unknown>) =>
@@ -18,17 +20,22 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (key: string) => key,
 }));
 vi.mock("../../../lib/tenant-date", () => ({
-  todayInZone: () => "2026-09-24",
+  todayInZone: () => clockDay.value,
 }));
 vi.mock("../api", () => ({
-  useScanStaffAttendanceMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useScanStaffAttendanceMutation: () => ({ mutate: scanMutation, isPending: false }),
   useStaffAttendanceMyHistoryQuery: weekQuery,
 }));
 vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
   return { ...actual, useToast: () => ({ success: vi.fn(), error: vi.fn() }) };
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  clockDay.value = "2026-09-24";
+  scanMutation.mockReset();
+  weekQuery.mockReset();
+});
 
 function record(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -46,6 +53,32 @@ function record(overrides: Partial<Record<string, unknown>> = {}) {
 }
 
 describe("SelfCheckInView -- unscheduled vs. holiday", () => {
+  it("does not carry a completed scan into the next simulated school day", () => {
+    weekQuery.mockImplementation(() => ({
+      data: { data: [record({ date: clockDay.value })] },
+      isLoading: false,
+      isError: false,
+    }));
+    scanMutation.mockImplementation(
+      (_input: undefined, options: { onSuccess: (saved: unknown) => void }) => {
+        options.onSuccess(
+          record({
+            date: clockDay.value,
+            arrival_at: "2026-09-24T01:00:00Z",
+            departure_at: "2026-09-24T08:00:00Z",
+          }),
+        );
+      },
+    );
+    const view = render(<SelfCheckInView />);
+    fireEvent.click(screen.getByRole("button", { name: "recordArrival" }));
+    expect(screen.queryByRole("button", { name: "recordArrival" })).not.toBeInTheDocument();
+
+    clockDay.value = "2026-09-25";
+    view.rerender(<SelfCheckInView />);
+    expect(screen.getByRole("button", { name: "recordArrival" })).toBeEnabled();
+  });
+
   it("never labels an unscheduled day as a holiday, and keeps the primary action available", () => {
     weekQuery.mockReturnValue({
       data: { data: [record({ status_code: "unscheduled" })] },

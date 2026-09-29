@@ -12,6 +12,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 // Actor describes who is calling a mutating schedule operation: whether
@@ -58,7 +60,7 @@ func (s *Service) CreateSchedule(ctx context.Context, tenantID uuid.UUID, in Sch
 		}
 
 		if !actor.CanManage {
-			if err := s.enforceTeacherWindow(ctx, tenantID, candidate, s.now()); err != nil {
+			if err := s.enforceTeacherWindow(ctx, tenantID, candidate, s.now(ctx)); err != nil {
 				return err
 			}
 		}
@@ -99,10 +101,10 @@ func (s *Service) UpdateSchedule(ctx context.Context, tenantID, id uuid.UUID, in
 		}
 
 		if !actor.CanManage {
-			if err := s.enforceTeacherWindow(ctx, tenantID, existing, s.now()); err != nil {
+			if err := s.enforceTeacherWindow(ctx, tenantID, existing, s.now(ctx)); err != nil {
 				return err
 			}
-			if err := s.enforceTeacherWindow(ctx, tenantID, candidate, s.now()); err != nil {
+			if err := s.enforceTeacherWindow(ctx, tenantID, candidate, s.now(ctx)); err != nil {
 				return err
 			}
 		}
@@ -138,7 +140,7 @@ func (s *Service) DeleteSchedule(ctx context.Context, tenantID, id uuid.UUID, ac
 			if existing.TeacherUserID != actor.UserID {
 				return domain.ErrTeacherEditForbidden
 			}
-			if err := s.enforceTeacherWindow(ctx, tenantID, existing, s.now()); err != nil {
+			if err := s.enforceTeacherWindow(ctx, tenantID, existing, s.now(ctx)); err != nil {
 				return err
 			}
 		}
@@ -259,7 +261,7 @@ func (s *Service) MutationPolicyFor(ctx context.Context, tenantID uuid.UUID, sch
 		return MutationPolicy{Reason: domain.ErrTeacherEditForbidden.Error()}
 	}
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.enforceTeacherWindow(ctx, tenantID, sched, s.now())
+		return s.enforceTeacherWindow(ctx, tenantID, sched, s.now(ctx))
 	})
 	if err != nil {
 		return MutationPolicy{Reason: err.Error()}
@@ -480,7 +482,15 @@ func mapConstraintError(err error) error {
 }
 
 // now is the single injection point for the clock; tests may override it.
-func (s *Service) now() time.Time { return s.clock.Now() }
+func (s *Service) now(ctx context.Context) time.Time {
+	now := clock.Now(ctx, s.clock)
+	if school, ok := tenant.FromContext(ctx); ok {
+		if loc, err := time.LoadLocation(school.Timezone); err == nil {
+			return now.In(loc)
+		}
+	}
+	return now
+}
 
 // UpdateScheduleBlock collapses a displayed contiguous block to one span while
 // retaining its primary ID. Validation, sibling removal and update share a transaction.

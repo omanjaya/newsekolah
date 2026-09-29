@@ -12,6 +12,7 @@ import { QueryProvider } from "../lib/query/query-provider";
 import { isExcludedPath } from "../lib/session/access-cookie";
 import { markAuthRedirect } from "../lib/session/auth-redirect-flag";
 import { SessionProvider } from "../lib/session/session-provider";
+import { SimulationSync } from "../lib/simulation/simulation-sync";
 import { TenantProvider } from "../lib/tenant/tenant-provider";
 import { ThemeProvider } from "../lib/theme/theme-provider";
 
@@ -55,6 +56,7 @@ export function AppProviders({
       <ApiClientProvider locale={locale} onUnauthorized={handleUnauthorized}>
         <TenantProvider>
           <SessionProvider>
+            <SimulationSync />
             <ThemeProvider>
               {/*
                 Kept global (rather than scoped to `(app)`, docs/16-audit-performa-web.md

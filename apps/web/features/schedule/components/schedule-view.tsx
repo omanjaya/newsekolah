@@ -21,6 +21,8 @@ import { useMemo, useState } from "react";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
+import { useSimulation } from "../../../lib/simulation/clock";
+import { todayInZone } from "../../../lib/tenant-date";
 import { usePeriodTodayQuery } from "../../academic/api-enrollment";
 import {
   useClassesQuery,
@@ -52,8 +54,8 @@ type Mode = ScheduleMode;
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 /** 1 (Monday) through 7 (Sunday), matching the schedule's own numbering. */
-function todayOfWeek(): number {
-  const jsDay = new Date().getDay();
+function todayOfWeek(timeZone?: string): number {
+  const jsDay = new Date(`${todayInZone(timeZone)}T12:00:00Z`).getUTCDay();
   return jsDay === 0 ? 7 : jsDay;
 }
 
@@ -67,6 +69,7 @@ export function ScheduleView(): ReactElement {
   const tDays = useTranslations("app.common.weekdays");
   const tApp = useTranslations("app");
   const { me } = useSession();
+  const { revision } = useSimulation();
   const year = useActiveYear();
   const canManage = useCan("manage_schedules");
   const isTeacher = me?.roles.some((role) => role.slug === "teacher") ?? false;
@@ -83,7 +86,12 @@ export function ScheduleView(): ReactElement {
   const [mode, setMode] = useState<Mode>(isTeacher ? "teacher" : "class");
   // The day view opens on today, because that is the day a person almost
   // always came to look at.
-  const [dayFilter, setDayFilter] = useState<number>(todayOfWeek);
+  const [selectedDay, setSelectedDay] = useState<{ revision: number; day: number } | null>(null);
+  const dayFilter =
+    selectedDay?.revision === revision ? selectedDay.day : todayOfWeek(me?.tenant.timezone);
+  const setDayFilter = (day: number) => {
+    setSelectedDay({ revision, day });
+  };
   const [classId, setClassId] = useState("");
   const [teacherId, setTeacherId] = useState(isTeacher ? (me?.id ?? "") : "");
   const [creating, setCreating] = useState<{ day: number; startSeq: number } | null>(null);
@@ -220,7 +228,7 @@ export function ScheduleView(): ReactElement {
 
   // The phone agenda opens on today when the school meets today, because
   // "what do I teach now" is the question a teacher opens it with.
-  const today = todayOfWeek();
+  const today = todayOfWeek(me?.tenant.timezone);
   const mobileDay =
     mobileDayOverride ?? (activeDays.includes(today) ? today : (activeDays[0] ?? 1));
   const loading = periods.isLoading || schedules.isLoading || classes.isLoading;
@@ -366,7 +374,9 @@ export function ScheduleView(): ReactElement {
             onEdit={setEditing}
             onDelete={setPendingDelete}
             t={t}
-            currentSeq={dayFilter === todayOfWeek() ? periodNow.data?.sequence : undefined}
+            currentSeq={
+              dayFilter === todayOfWeek(me?.tenant.timezone) ? periodNow.data?.sequence : undefined
+            }
           />
         ) : (
           <ScheduleMobileDayList

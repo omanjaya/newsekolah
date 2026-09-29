@@ -10,6 +10,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 // fakeScheduleRepo embeds the (nil) Repository interface so it satisfies
@@ -60,11 +61,31 @@ func TestEnforceTeacherWindowAbsoluteDeadline(t *testing.T) {
 	sched := domain.Schedule{StartPeriodID: uuid.New(), DayOfWeek: 1}
 
 	before := &Service{repo: repo, clock: clock.Frozen{At: deadline.Add(-time.Hour)}}
-	require.NoError(t, before.enforceTeacherWindow(context.Background(), uuid.New(), sched, before.now()))
+	require.NoError(t, before.enforceTeacherWindow(context.Background(), uuid.New(), sched, before.now(context.Background())))
 
 	after := &Service{repo: repo, clock: clock.Frozen{At: deadline.Add(time.Hour)}}
-	err := after.enforceTeacherWindow(context.Background(), uuid.New(), sched, after.now())
+	err := after.enforceTeacherWindow(context.Background(), uuid.New(), sched, after.now(context.Background()))
 	require.ErrorIs(t, err, domain.ErrTeacherEditDeadline)
+}
+
+func TestSimulatedTeacherWindowUsesSchoolTimezone(t *testing.T) {
+	ctx := tenant.WithTenant(context.Background(), tenant.Tenant{Timezone: "Asia/Makassar"})
+	loc, err := time.LoadLocation("Asia/Makassar")
+	require.NoError(t, err)
+	start := time.Date(2026, 9, 28, 6, 0, 0, 0, loc)
+	svc := &Service{
+		repo: fakeScheduleRepo{settingFound: true, settingValue: "1h", period: PeriodRef{
+			StartsAt: time.Date(0, 1, 1, 8, 0, 0, 0, time.UTC),
+		}},
+		clock: clock.Frozen{At: start.UTC()},
+	}
+	sched := domain.Schedule{StartPeriodID: uuid.New(), DayOfWeek: 1}
+	require.NoError(t, svc.enforceTeacherWindow(ctx, uuid.New(), sched, svc.now(ctx)))
+	simCtx := clock.WithTime(ctx, start.Add(90*time.Minute).UTC())
+	require.Equal(t, time.Monday, svc.now(simCtx).Weekday())
+	require.Equal(t, 7, svc.now(simCtx).Hour())
+	require.ErrorIs(t, svc.enforceTeacherWindow(simCtx, uuid.New(), sched, svc.now(simCtx)), domain.ErrTeacherEditDeadline)
+	require.NoError(t, svc.enforceTeacherWindow(ctx, uuid.New(), sched, svc.now(ctx)), "simulation must not mutate the injected clock")
 }
 
 // TestEnforceTeacherWindowDurationDeadline covers the current rolling

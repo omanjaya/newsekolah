@@ -43,6 +43,41 @@ function createMemoryTokenStore(initialRefreshToken: string | null): TokenStore 
 }
 
 describe("createApiClient", () => {
+  it("scopes simulation to business requests and reads its latest instant per request", async () => {
+    const seen: [string, string | null][] = [];
+    server.use(
+      http.get(`${BASE_URL}/v1/me`, ({ request }) => {
+        seen.push(["me", request.headers.get("x-simulation-time")]);
+        return HttpResponse.json({ id: "u1" });
+      }),
+      http.get(`${BASE_URL}/v1/tenant/branding`, ({ request }) => {
+        seen.push(["business", request.headers.get("x-simulation-time")]);
+        return HttpResponse.json({ name: "School" });
+      }),
+      http.post(`${BASE_URL}/v1/auth/logout`, ({ request }) => {
+        seen.push(["auth", request.headers.get("x-simulation-time")]);
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    let current: string | null = "2026-09-30T00:00:00.000Z";
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => "token",
+      clientHeader: "web/1.0.0",
+      getSimulationTime: () => current,
+    });
+    await client.GET("/v1/me");
+    await client.GET("/v1/tenant/branding");
+    current = "2026-10-01T01:00:00.000Z";
+    await client.GET("/v1/tenant/branding");
+    await client.POST("/v1/auth/logout");
+    expect(seen).toEqual([
+      ["me", null],
+      ["business", "2026-09-30T00:00:00.000Z"],
+      ["business", "2026-10-01T01:00:00.000Z"],
+      ["auth", null],
+    ]);
+  });
   it("attaches Authorization, Accept-Language, X-Client, and X-Tenant headers", async () => {
     let seenHeaders: Headers | undefined;
     server.use(

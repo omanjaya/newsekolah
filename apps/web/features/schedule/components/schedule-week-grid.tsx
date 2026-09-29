@@ -3,6 +3,9 @@
 import { Card, cn } from "@newsekolah/ui";
 import type { ReactElement } from "react";
 
+import { useSession } from "../../../lib/session/session-provider";
+import { useSimulation } from "../../../lib/simulation/clock";
+import { todayInZone } from "../../../lib/tenant-date";
 import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
 import { isCurrentPeriodCell, isNowWithinBlock } from "../current-period";
@@ -30,8 +33,8 @@ import {
  * lands, not the mechanism that hides the other layout.
  */
 /** 1 (Monday) through 7 (Sunday), matching the schedule's own numbering. */
-function todayOfWeek(): number {
-  const jsDay = new Date().getDay();
+function todayOfWeek(timeZone?: string): number {
+  const jsDay = new Date(`${todayInZone(timeZone)}T12:00:00Z`).getUTCDay();
   return jsDay === 0 ? 7 : jsDay;
 }
 
@@ -77,7 +80,9 @@ export function ScheduleWeekGrid({
 }): ReactElement {
   // A timetable is opened to answer "where am I now" before anything
   // else, and a week grid says nothing about that on its own.
-  const today = todayOfWeek();
+  useSimulation();
+  const { me } = useSession();
+  const today = todayOfWeek(me?.tenant.timezone);
 
   return (
     <Card className="hidden overflow-hidden p-0 md:block">

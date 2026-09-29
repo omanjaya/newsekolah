@@ -9,6 +9,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
 	scheduling "github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // defaultCorrectionDays is used when a tenant has never set
@@ -76,7 +77,7 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 
 		loc := s.tenantLocation(ctx, tenantID)
 		if err := domain.ResolveSaveWindow(domain.SaveWindowInput{
-			Now: s.clock.Now().In(loc), SessionDate: session.Date, PeriodEndAt: periodEnd, CorrectionDays: correctionDays,
+			Now: clock.Now(ctx, s.clock).In(loc), SessionDate: session.Date, PeriodEndAt: periodEnd, CorrectionDays: correctionDays,
 			IsGlobalCorrector: actor.IsGlobalCorrector, IsHomeroomOfClass: isHomeroom, IsScheduleOwner: accessOK,
 		}, mode); err != nil {
 			return err

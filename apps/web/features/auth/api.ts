@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { setAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
+import { clearSimulation } from "../../lib/simulation/clock";
 import { getPasskey } from "../../lib/webauthn";
 
 /**
@@ -24,6 +25,7 @@ export function useLoginMutation() {
   const client = useApiClient();
   const mutation = useLoginBase(client, {
     onTokens: (data) => {
+      clearSimulation();
       setAccessToken(data.access_token);
     },
     // login-form.tsx already shows a failure inline (form.setError("root")).
@@ -55,6 +57,7 @@ export function useStopImpersonationMutation() {
       try {
         await mutation.mutateAsync();
       } finally {
+        clearSimulation();
         setAccessToken(null);
       }
     },
@@ -71,6 +74,7 @@ export function useLogoutMutation() {
       try {
         await mutation.mutateAsync();
       } finally {
+        clearSimulation();
         setAccessToken(null);
       }
     },
@@ -99,6 +103,7 @@ export function useGoogleLoginMutation() {
     mutationFn: (idToken: string) =>
       client.POST("/v1/auth/sso/google", { body: { id_token: idToken, client: "web" } }),
     onSuccess: (data) => {
+      clearSimulation();
       setAccessToken(data.access_token);
     },
     // google-sign-in-button.tsx's onError prop shows a failure inline.
@@ -128,6 +133,7 @@ export function usePasskeyLoginMutation() {
       });
     },
     onSuccess: (data) => {
+      clearSimulation();
       setAccessToken(data.access_token);
     },
     // passkey-login-button.tsx's onError prop shows a failure inline.

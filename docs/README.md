@@ -23,6 +23,8 @@ Platform sistem informasi sekolah multi-tenant, dibangun ulang dari SION (Go + N
 
 Mulai dari dokumen 15 untuk tahu posisi pekerjaan terkini.
 
+Panduan pengujian: [Simulasi tanggal dan jam untuk superadmin](testing-time-simulation.md).
+
 Lampiran (sumber kebenaran fitur lama, sangat rinci):
 
 - [A. Inventaris frontend](analysis/frontend-inventory.md)

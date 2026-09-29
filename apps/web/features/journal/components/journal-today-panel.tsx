@@ -10,6 +10,7 @@ import { useMemo, useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useSession } from "../../../lib/session/session-provider";
+import { useSimulation } from "../../../lib/simulation/clock";
 import { todayInZone } from "../../../lib/tenant-date";
 import {
   useClassesQuery,
@@ -39,6 +40,7 @@ interface PrefillTarget {
  * rather than an empty panel above an already-adequate history table.
  */
 export function JournalTodayPanel(): ReactElement | null {
+  useSimulation();
   const t = useTranslations("app.journal.recent");
   const tApp = useTranslations("app");
   const locale = useLocale() as Locale;

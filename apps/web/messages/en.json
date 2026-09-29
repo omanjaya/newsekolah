@@ -28,6 +28,23 @@
         "banner": "Operated by {adminName} as {name}, session ends automatically in 30 minutes",
         "stop": "Stop impersonating"
       },
+      "simulation": {
+        "title": "Time simulation for testing",
+        "settings": "Set simulation time",
+        "intro": "Set the school's date and time to test schedules, student attendance, and staff attendance.",
+        "active": "Simulation active: {time} ({zone})",
+        "warning": "Simulation affects schedules, student attendance, and staff attendance. Data changes remain saved after reset. Use a testing school.",
+        "date": "School date",
+        "time": "School time ({zone})",
+        "mode": "Mode",
+        "frozen": "Frozen",
+        "running": "Running",
+        "apply": "Apply",
+        "plus15": "+15 minutes",
+        "plusHour": "+1 hour",
+        "plusDay": "+1 day",
+        "reset": "Reset"
+      },
       "offline": {
         "banner": "No connection, changes are saved on this device for now"
       },
