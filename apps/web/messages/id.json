@@ -1111,6 +1111,13 @@
           "inactive": "Diarsipkan",
           "invited": "Diundang"
         },
+        "filters": {
+          "kind": "Jenis",
+          "status": "Status",
+          "role": "Peran",
+          "reset": "Reset filter",
+          "removeFilter": "Hapus filter {label}"
+        },
         "includeArchived": "Tampilkan yang diarsipkan",
         "emptyTitle": "Belum ada pengguna",
         "emptyBody": "Tambah guru, pegawai, dan siswa satu per satu atau lewat impor.",

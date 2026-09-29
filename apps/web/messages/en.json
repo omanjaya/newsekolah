@@ -1111,6 +1111,13 @@
           "inactive": "Archived",
           "invited": "Invited"
         },
+        "filters": {
+          "kind": "Kind",
+          "status": "Status",
+          "role": "Role",
+          "reset": "Reset filter",
+          "removeFilter": "Remove {label} filter"
+        },
         "includeArchived": "Show archived",
         "emptyTitle": "No users yet",
         "emptyBody": "Add teachers, staff and students one by one or through import.",

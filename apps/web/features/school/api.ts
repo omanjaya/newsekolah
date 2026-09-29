@@ -40,6 +40,7 @@ export interface UsersFilter {
   q?: string;
   profile_kind?: ProfileKind;
   status?: UserStatus;
+  role?: string;
   include_archived?: boolean;
   cursor?: string;
 }
@@ -55,6 +56,7 @@ export function useUsersQuery(filter: UsersFilter) {
             ...(filter.q ? { q: filter.q } : {}),
             ...(filter.profile_kind ? { profile_kind: filter.profile_kind } : {}),
             ...(filter.status ? { status: filter.status } : {}),
+            ...(filter.role ? { role: filter.role } : {}),
             ...(filter.include_archived ? { include_archived: true } : {}),
             ...(filter.cursor ? { cursor: filter.cursor } : {}),
             limit: 50,

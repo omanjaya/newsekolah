@@ -15,8 +15,8 @@ import {
   DropdownMenuTrigger,
   IconButton,
   PageHeader,
-  Select,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Plus, Upload } from "lucide-react";
@@ -26,6 +26,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
@@ -33,8 +34,10 @@ import { AcademicWorkspaceLinks } from "../../academic/components/academic-works
 import {
   type AdminUser,
   type ProfileKind,
+  type UserStatus,
   useArchiveUserMutation,
   useResetPasswordMutation,
+  useRolesQuery,
   useUsersQuery,
 } from "../api";
 import { useImpersonateUserMutation } from "../duties-api";
@@ -44,6 +47,10 @@ import { UsersCursorPagination } from "./users-cursor-pagination";
 import { UsersTableEmptyState } from "./users-table-empty-state";
 
 const KINDS: ProfileKind[] = ["teacher", "staff", "student"];
+const KIND_VALUES = ["", ...KINDS] as const;
+const STATUSES: UserStatus[] = ["active", "inactive", "invited"];
+const STATUS_VALUES = ["", ...STATUSES] as const;
+const ARCHIVED_VALUES = ["", "true"] as const;
 
 export function UsersView(): ReactElement {
   const tWorkspace = useTranslations("app.academic.workspace");
@@ -60,23 +67,81 @@ export function UsersView(): ReactElement {
   const [impersonating, setImpersonating] = useState<AdminUser | null>(null);
 
   const [search, setSearch] = useRememberedViewState("users-search", "");
-  const [kind, setKind] = useRememberedViewState<ProfileKind | "">("users-kind", "");
-  const [includeArchived, setIncludeArchived] = useRememberedViewState(
-    "users-include-archived",
-    false,
+  const [kind, setKind] = useUrlState<(typeof KIND_VALUES)[number]>("kind", KIND_VALUES, "");
+  const [status, setStatus] = useUrlState<(typeof STATUS_VALUES)[number]>(
+    "status",
+    STATUS_VALUES,
+    "",
   );
+  const [role, setRole] = useUrlState<string>("role", () => true, "");
+  const [includeArchivedParam, setIncludeArchivedParam] = useUrlState<
+    (typeof ARCHIVED_VALUES)[number]
+  >("include_archived", ARCHIVED_VALUES, "");
+  const includeArchived = includeArchivedParam === "true";
   const [cursors, setCursors] = useState<string[]>([""]);
   const cursor = cursors[cursors.length - 1] ?? "";
+  const resetPagination = () => {
+    setCursors([""]);
+  };
   const { data, isError, isLoading, refetch } = useUsersQuery({
     q: search || undefined,
     profile_kind: kind || undefined,
+    status: status || undefined,
+    role: role || undefined,
     include_archived: includeArchived,
     cursor: cursor || undefined,
   });
+  const roles = useRolesQuery();
   const archive = useArchiveUserMutation();
   const reset = useResetPasswordMutation();
   const [editing, setEditing] = useState<AdminUser | "new" | null>(null);
   const [resetToken, setResetToken] = useState<string | null>(null);
+
+  const roleOptions = (roles.data?.data ?? []).map((r) => ({ value: r.slug, label: r.name }));
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "kind",
+      label: t("filters.kind"),
+      value: kind,
+      onChange: (value) => {
+        setKind(value as (typeof KIND_VALUES)[number]);
+        resetPagination();
+      },
+      options: KINDS.map((k) => ({ value: k, label: t(`kinds.${k}`) })),
+    },
+    {
+      id: "status",
+      label: t("filters.status"),
+      value: status,
+      onChange: (value) => {
+        setStatus(value as (typeof STATUS_VALUES)[number]);
+        resetPagination();
+      },
+      options: STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) })),
+    },
+    {
+      id: "role",
+      label: t("filters.role"),
+      value: role,
+      onChange: (value) => {
+        setRole(value);
+        resetPagination();
+      },
+      options: roleOptions,
+    },
+    {
+      id: "includeArchived",
+      label: t("includeArchived"),
+      value: includeArchivedParam,
+      onChange: (value) => {
+        setIncludeArchivedParam(value as (typeof ARCHIVED_VALUES)[number]);
+        resetPagination();
+      },
+      type: "boolean",
+      activeValue: "true",
+    },
+  ];
 
   const fail = (error: unknown) => {
     toast.error(
@@ -236,31 +301,6 @@ export function UsersView(): ReactElement {
           )
         }
       />
-      <div className="flex flex-wrap items-center gap-2">
-        <Select
-          options={[
-            { value: "all", label: t("kinds.all") },
-            ...KINDS.map((k) => ({ value: k, label: t(`kinds.${k}`) })),
-          ]}
-          value={kind || "all"}
-          onValueChange={(v) => {
-            setKind(v === "all" ? "" : (v as ProfileKind));
-            setCursors([""]);
-          }}
-          aria-label={t("columns.kind")}
-          className="w-44"
-        />
-        <Button
-          variant={includeArchived ? "primary" : "secondary"}
-          size="sm"
-          onClick={() => {
-            setIncludeArchived((v) => !v);
-            setCursors([""]);
-          }}
-        >
-          {t("includeArchived")}
-        </Button>
-      </div>
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/school/components/users-view:1"
@@ -275,7 +315,12 @@ export function UsersView(): ReactElement {
           globalFilter={search}
           onGlobalFilterChange={(v) => {
             setSearch(v);
-            setCursors([""]);
+            resetPagination();
+          }}
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.reset"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
           }}
           isLoading={isLoading}
           getRowId={(u) => u.id}
