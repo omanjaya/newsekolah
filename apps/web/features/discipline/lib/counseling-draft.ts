@@ -8,6 +8,8 @@
  * half-matching data back to a newer editor. Mirrors the pattern in
  * `attendance/lib/attendance-draft.ts`.
  */
+import { businessNow } from "../../../lib/simulation/clock";
+
 const DRAFT_VERSION = 1;
 const KEY_PREFIX = "newsekolah:counseling-draft:";
 
@@ -37,7 +39,7 @@ export function saveCounselingDraft(
       ...draft,
       version: DRAFT_VERSION,
       draftId,
-      savedAt: new Date().toISOString(),
+      savedAt: businessNow().toISOString(),
     };
     window.localStorage.setItem(storageKey(draftId), JSON.stringify(payload));
   } catch {

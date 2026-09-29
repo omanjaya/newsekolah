@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { businessNow } from "../../../lib/simulation/clock";
 import type { LibraryLoan } from "../api";
 import { useMyLibraryProfileQuery } from "../me-api";
 
@@ -14,7 +15,7 @@ import { MyLibraryLoanRow } from "./my-library-loan-row";
 import { MyLibraryReservations } from "./my-library-reservations";
 
 function todayIso(): string {
-  return new Date().toLocaleDateString("en-CA");
+  return businessNow().toLocaleDateString("en-CA");
 }
 
 function HistoryRow({ loan }: { loan: LibraryLoan }): ReactElement {

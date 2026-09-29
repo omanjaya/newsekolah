@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useMemo, type ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
+import { businessNow } from "../../../../lib/simulation/clock";
 import { todayInZone, useMyCalendarQuery } from "../../../attendance/api";
 import { useMyGradesQuery } from "../../../grading/api";
 import { useMyLibraryProfileQuery } from "../../../library/me-api";
@@ -51,8 +52,8 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
   const locale = useLocale() as Locale;
   const timeZone = me.tenant.timezone;
   const today = todayInZone(timeZone);
-  const nowMinutes = minutesInZone(new Date(), timeZone);
-  const dayOfWeek = isoWeekdayInZone(new Date(), timeZone);
+  const nowMinutes = minutesInZone(businessNow(), timeZone);
+  const dayOfWeek = isoWeekdayInZone(businessNow(), timeZone);
 
   const schedules = useSchedulesQuery({
     academicYearId: active ? (me.active_academic_year?.id ?? "") : "",

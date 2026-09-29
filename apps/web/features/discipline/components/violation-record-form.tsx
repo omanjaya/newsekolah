@@ -8,6 +8,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { businessNow } from "../../../lib/simulation/clock";
 import { useDirectoryQuery } from "../../reference/api";
 import {
   type ViolationRecordResult,
@@ -21,7 +22,7 @@ const MAX_TYPES = 50;
 const MAX_STUDENTS = 50;
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessNow().toISOString().slice(0, 10);
 }
 
 /**

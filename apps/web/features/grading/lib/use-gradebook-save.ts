@@ -8,6 +8,7 @@ import { useState, type Dispatch, type SetStateAction } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
 import { type ScoreEntry, useSaveComponentScoresMutation } from "../api";
 import type { Edits } from "../components/gradebook-types";
 
@@ -66,7 +67,9 @@ export function useGradebookSave(
 
   function savedToast() {
     toast.success(
-      t("scoresSaved", { time: formatTime(new Date(), { locale, timeZone: me?.tenant.timezone }) }),
+      t("scoresSaved", {
+        time: formatTime(businessNow(), { locale, timeZone: me?.tenant.timezone }),
+      }),
     );
   }
 

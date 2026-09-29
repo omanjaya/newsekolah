@@ -14,6 +14,8 @@
  * `session-view.tsx`) or the teacher declines to restore it, so it never
  * outlives the session it was written for.
  */
+import { businessNow } from "../../../lib/simulation/clock";
+
 const DRAFT_VERSION = 1;
 const KEY_PREFIX = "newsekolah:attendance-draft:";
 
@@ -44,7 +46,7 @@ export function saveAttendanceDraft(
       ...draft,
       version: DRAFT_VERSION,
       sessionId,
-      savedAt: new Date().toISOString(),
+      savedAt: businessNow().toISOString(),
     };
     window.localStorage.setItem(storageKey(sessionId), JSON.stringify(payload));
   } catch {

@@ -7,6 +7,8 @@
  * `features/attendance/lib/attendance-draft.ts`'s shape and guarantees
  * (never throws, cleared on a successful save).
  */
+import { businessNow } from "../../../lib/simulation/clock";
+
 const DRAFT_VERSION = 1;
 const KEY_PREFIX = "newsekolah:supervision-observation-draft:";
 
@@ -34,7 +36,7 @@ export function saveObservationDraft(
       ...draft,
       version: DRAFT_VERSION,
       scheduledId,
-      savedAt: new Date().toISOString(),
+      savedAt: businessNow().toISOString(),
     };
     window.localStorage.setItem(storageKey(scheduledId), JSON.stringify(payload));
   } catch {
