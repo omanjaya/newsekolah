@@ -1,11 +1,13 @@
 "use client";
 
-import { cn } from "@newsekolah/ui";
+import { Badge, cn } from "@newsekolah/ui";
 import { AlertTriangle, Copy, Pencil, Trash2 } from "lucide-react";
 import type { ReactElement } from "react";
 
 import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
+import { isNowWithinBlock } from "../current-period";
+import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
 
 type NamedLookup = Map<string, { name: string }>;
 
@@ -199,24 +201,28 @@ export function ScheduleMobileAgenda({
               ? period.name
               : `${period.name} - ${endPeriod.name}`;
           const spanTime = `${period.starts_at.slice(0, 5)}-${endPeriod.ends_at.slice(0, 5)}`;
-          const isNow =
-            nowSeq !== undefined && nowSeq >= block.start_seq && nowSeq <= block.end_seq;
+          const isNow = isNowWithinBlock(block.start_seq, block.end_seq, nowSeq);
+          const tone = subjectTone(block.subject_id);
           return (
             <li
               key={period.id}
               aria-current={isNow ? "time" : undefined}
               className={cn(
-                "flex flex-col gap-1 rounded-xs border px-3 py-2",
-                isNow ? "border-accent bg-accent/15" : "border-accent/30 bg-accent/10",
+                "flex flex-col gap-1 rounded-md px-3 py-2",
+                SUBJECT_TONE_CLASSES[tone],
+                // Same accent-edge language as the desktop grid's
+                // current-period cell, adapted to a card: a ring instead
+                // of an inset shadow so it reads at card corners too.
+                isNow && "ring-2 ring-accent ring-offset-1 ring-offset-bg",
               )}
             >
-              <div className="flex items-center justify-between gap-2 text-[12px] text-fg-muted">
+              <div className="flex items-center justify-between gap-2 text-[12px]">
                 <span>
                   {spanLabel} <span className="tabular-nums">{spanTime}</span>
                 </span>
-                {isNow && <span className="font-medium text-accent">{t("now")}</span>}
+                {isNow && <Badge variant="accent">{t("now")}</Badge>}
               </div>
-              <span className="flex items-center gap-1.5 text-[15px] font-medium text-fg">
+              <span className="flex items-center gap-1.5 text-[15px] font-medium">
                 <span className="truncate">
                   {subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
                 </span>
@@ -225,19 +231,19 @@ export function ScheduleMobileAgenda({
                     role="img"
                     aria-label={t("crossesBreakWarning")}
                     title={t("crossesBreakWarning")}
-                    className="inline-flex shrink-0 text-status-late"
+                    className="inline-flex shrink-0 items-center justify-center rounded-full bg-surface/80 p-0.5 text-status-late"
                   >
-                    <AlertTriangle className="size-3.5" aria-hidden="true" />
+                    <AlertTriangle className="size-3" aria-hidden="true" />
                   </span>
                 )}
               </span>
-              <span className="text-[13px] text-fg-muted">{title}</span>
+              <span className="text-[13px]">{title}</span>
               {canManage && (
                 // The same three actions the wide grid offers. A phone is
                 // where a teacher fixes one lesson between classes, so
                 // leaving copy and edit out of it made the small screen the
                 // only place the job could not be done.
-                <div className="mt-1 flex flex-wrap items-center gap-2">
+                <div className="mt-1 flex w-fit flex-wrap items-center gap-2 rounded-full bg-surface/70 px-1">
                   <AgendaAction
                     label={t("copyBlock")}
                     icon={<Copy className="size-3.5" aria-hidden="true" />}

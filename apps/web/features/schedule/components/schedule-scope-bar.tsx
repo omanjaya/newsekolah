@@ -1,6 +1,6 @@
 "use client";
 
-import { Select, Tabs, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { Badge, Select, Tabs, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -85,7 +85,7 @@ export function ScheduleScopeBar({
             onDayFilterChange(Number(value));
           }}
           aria-label={t("pickDay")}
-          className="w-40"
+          className="w-40 rounded-full"
         />
       ) : mode === "class" ? (
         <Select
@@ -94,7 +94,7 @@ export function ScheduleScopeBar({
           onValueChange={onClassChange}
           placeholder={t("pickClass")}
           aria-label={t("pickClass")}
-          className="w-56"
+          className="w-56 rounded-full"
         />
       ) : canViewAll ? (
         <Select
@@ -103,10 +103,10 @@ export function ScheduleScopeBar({
           onValueChange={onTeacherChange}
           placeholder={t("pickTeacher")}
           aria-label={t("pickTeacher")}
-          className="w-64"
+          className="w-64 rounded-full"
         />
       ) : null}
-      <span className="text-[13px] text-fg-muted">{yearLabel}</span>
+      <Badge variant="neutral">{yearLabel}</Badge>
     </div>
   );
 }

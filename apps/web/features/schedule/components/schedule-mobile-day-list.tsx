@@ -6,6 +6,7 @@ import type { ReactElement } from "react";
 
 import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
+import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
 
 interface Named {
   id: string;
@@ -73,24 +74,27 @@ export function ScheduleMobileDayList({
             {lessons.map((period) => {
               const block = blocks.get(`${classItem.id}:${period.sequence}`);
               if (block && block.start_seq !== period.sequence) return null;
+              const tone = block ? subjectTone(block.subject_id) : null;
 
               return (
                 <li
                   key={period.id}
                   className={cn(
-                    "flex flex-col gap-1 rounded-xs px-3 py-2",
-                    block ? "border border-accent/30 bg-accent/10" : "border border-border",
+                    "flex flex-col gap-1 rounded-md px-3 py-2",
+                    tone ? SUBJECT_TONE_CLASSES[tone] : "border border-border",
                   )}
                 >
                   <div className="flex flex-col">
-                    <span className="text-[13px] text-fg-muted">{period.name}</span>
-                    <span className="text-[12px] text-fg-muted">
+                    <span className={cn("text-[13px]", !tone && "text-fg-muted")}>
+                      {period.name}
+                    </span>
+                    <span className={cn("text-[12px]", !tone && "text-fg-muted")}>
                       {period.starts_at.slice(0, 5)}-{period.ends_at.slice(0, 5)}
                     </span>
                   </div>
                   {block ? (
                     <>
-                      <span className="flex items-center gap-1.5 font-medium text-fg">
+                      <span className="flex items-center gap-1.5 font-medium">
                         <span className="truncate">
                           {subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
                         </span>
@@ -99,17 +103,17 @@ export function ScheduleMobileDayList({
                             role="img"
                             aria-label={t("crossesBreakWarning")}
                             title={t("crossesBreakWarning")}
-                            className="inline-flex shrink-0 text-status-late"
+                            className="inline-flex shrink-0 items-center justify-center rounded-full bg-surface/80 p-0.5 text-status-late"
                           >
-                            <AlertTriangle className="size-3.5" aria-hidden="true" />
+                            <AlertTriangle className="size-3" aria-hidden="true" />
                           </span>
                         )}
                       </span>
-                      <span className="text-[12px] text-fg-muted">
+                      <span className="text-[12px]">
                         {teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher")}
                       </span>
                       {canManage && (
-                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <div className="mt-1 flex w-fit flex-wrap items-center gap-2 rounded-full bg-surface/70 px-1">
                           <DayAction
                             label={t("copyBlock")}
                             icon={<Copy className="size-3.5" aria-hidden="true" />}
