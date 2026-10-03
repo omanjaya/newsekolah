@@ -89,6 +89,10 @@
   "catalog": {
     "includeInactive": "Tampilkan yang nonaktif",
     "add": "Tambah jenis",
+    "filters": {
+      "reset": "Reset filter",
+      "removeFilter": "Hapus filter {label}"
+    },
     "columns": {
       "code": "Kode",
       "name": "Nama",
@@ -168,7 +172,9 @@
         "class": "Kelas",
         "classAll": "Semua kelas",
         "level": "Tingkat",
-        "levelAll": "Semua tingkat"
+        "levelAll": "Semua tingkat",
+        "reset": "Reset filter",
+        "removeFilter": "Hapus filter {label}"
       },
       "searchPlaceholder": "Cari nama, NIS, atau kelas",
       "columns": {

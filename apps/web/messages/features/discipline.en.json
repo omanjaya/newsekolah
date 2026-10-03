@@ -89,6 +89,10 @@
   "catalog": {
     "includeInactive": "Show inactive",
     "add": "Add type",
+    "filters": {
+      "reset": "Reset filter",
+      "removeFilter": "Clear {label} filter"
+    },
     "columns": {
       "code": "Code",
       "name": "Name",
@@ -168,7 +172,9 @@
         "class": "Class",
         "classAll": "All classes",
         "level": "Level",
-        "levelAll": "All levels"
+        "levelAll": "All levels",
+        "reset": "Reset filter",
+        "removeFilter": "Clear {label} filter"
       },
       "searchPlaceholder": "Search by name, NIS or class",
       "columns": {
