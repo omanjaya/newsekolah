@@ -12,7 +12,6 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
-  Input,
   domainIcons,
   useToast,
   type DataTableFilterDef,
@@ -24,6 +23,8 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
@@ -55,8 +56,9 @@ export function ViolationsLedgerView(): ReactElement {
   const canRecord = useCan("record_violations");
 
   const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [from, setFrom] = useDateFilter("from", "");
+  const [to, setTo] = useDateFilter("to", "");
+  const presets = useDateRangePresets();
   const [includeVoidedParam, setIncludeVoidedParam] = useUrlState<"" | "true">(
     "include_voided",
     ["", "true"],
@@ -93,6 +95,18 @@ export function ViolationsLedgerView(): ReactElement {
       },
       type: "boolean",
       activeValue: "true",
+    },
+    {
+      id: "period",
+      label: t("filters.dateRange"),
+      type: "dateRange",
+      from,
+      to,
+      onChangeRange: ({ from: nextFrom, to: nextTo }) => {
+        setFrom(nextFrom);
+        setTo(nextTo);
+      },
+      presets,
     },
   ];
 
@@ -266,30 +280,8 @@ export function ViolationsLedgerView(): ReactElement {
         </Alert>
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-        <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("filters.from")}</span>
-            <Input
-              type="date"
-              value={from}
-              onChange={(e) => {
-                setFrom(e.target.value);
-              }}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("filters.to")}</span>
-            <Input
-              type="date"
-              value={to}
-              onChange={(e) => {
-                setTo(e.target.value);
-              }}
-            />
-          </label>
-        </div>
-        {canRecord && (
+      {canRecord && (
+        <div className="flex justify-end">
           <Button
             size="sm"
             icon={<Plus />}
@@ -299,8 +291,8 @@ export function ViolationsLedgerView(): ReactElement {
           >
             {t("record")}
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
@@ -318,6 +310,9 @@ export function ViolationsLedgerView(): ReactElement {
           filtersLabels={{
             reset: t("filters.reset"),
             removeFilter: (label) => t("filters.removeFilter", { label }),
+            dateRangeFrom: t("filters.from"),
+            dateRangeTo: t("filters.to"),
+            dateRangeInvalid: t("filters.invalidRange"),
           }}
           isLoading={isLoading}
           getRowId={(item) => item.id}

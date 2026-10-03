@@ -20,6 +20,8 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
@@ -36,26 +38,23 @@ const SEVERITY_VARIANT: Record<Incident["severity"], "accent" | "neutral"> = {
   critical: "accent",
 };
 
-function daysAgoIso(days: number): string {
+function daysAgoDateIso(days: number): string {
   const d = businessNow();
   d.setDate(d.getDate() - days);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
+  return d.toISOString().slice(0, 10);
 }
 
-function tomorrowIso(): string {
-  const d = businessNow();
-  d.setDate(d.getDate() + 1);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
+function todayDateIso(): string {
+  return businessNow().toISOString().slice(0, 10);
 }
 
 /**
- * The security office's incident log, covering the last 30 days. An
- * incident may name people, so the server already narrows the list to what
- * this reader may individually open (visitors/service.ListIncidents); this
- * view just renders what came back. Opening a row's detail is what records
- * the audited read, not listing it.
+ * The security office's incident log, defaulting to the last 30 days but
+ * adjustable through the date-range filter. An incident may name people, so
+ * the server already narrows the list to what this reader may individually
+ * open (visitors/service.ListIncidents); this view just renders what came
+ * back. Opening a row's detail is what records the audited read, not
+ * listing it.
  */
 export function IncidentLogView(): ReactElement {
   const workspace = useTranslations("app.serviceWorkspace");
@@ -63,13 +62,18 @@ export function IncidentLogView(): ReactElement {
   const locale = useLocale() as Locale;
   const canManage = useCan("manage_visitor_incidents");
 
-  const [from] = useState(() => daysAgoIso(30));
-  const [to] = useState(() => tomorrowIso());
+  const [from, setFrom] = useDateFilter("from", daysAgoDateIso(30));
+  const [to, setTo] = useDateFilter("to", todayDateIso());
+  const presets = useDateRangePresets();
   const [onlyOpen, setOnlyOpen] = useUrlState<"" | "true">("only_open", ["", "true"], "");
   const [creating, setCreating] = useState(false);
   const [openIncidentId, setOpenIncidentId] = useState<string | null>(null);
 
-  const { data, isLoading, isError, refetch } = useIncidentsQuery(from, to, onlyOpen !== "true");
+  const { data, isLoading, isError, refetch } = useIncidentsQuery(
+    `${from}T00:00:00Z`,
+    `${to}T23:59:59Z`,
+    onlyOpen !== "true",
+  );
   const items = data?.data ?? [];
 
   const filters: DataTableFilterDef[] = [
@@ -82,6 +86,18 @@ export function IncidentLogView(): ReactElement {
       },
       type: "boolean",
       activeValue: "true",
+    },
+    {
+      id: "period",
+      label: t("filters.dateRange"),
+      type: "dateRange",
+      from,
+      to,
+      onChangeRange: ({ from: nextFrom, to: nextTo }) => {
+        setFrom(nextFrom);
+        setTo(nextTo);
+      },
+      presets,
     },
   ];
 
@@ -181,6 +197,9 @@ export function IncidentLogView(): ReactElement {
           filtersLabels={{
             reset: t("filters.reset"),
             removeFilter: (label) => t("filters.removeFilter", { label }),
+            dateRangeFrom: t("filters.from"),
+            dateRangeTo: t("filters.to"),
+            dateRangeInvalid: t("filters.invalidRange"),
           }}
           isLoading={isLoading}
           getRowId={(item) => item.id}

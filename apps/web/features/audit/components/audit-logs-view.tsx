@@ -7,7 +7,6 @@ import {
   Button,
   DataTable,
   EmptyState,
-  Input,
   PageHeader,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
@@ -18,9 +17,10 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useSession } from "../../../lib/session/session-provider";
-import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import { type AuditLogEntry, useAuditLogsQuery } from "../api";
 
@@ -41,8 +41,9 @@ export function AuditLogsView(): ReactElement {
     ["", ...AUDIT_ENTITY_TYPES],
     "",
   );
-  const [from, setFrom] = useRememberedViewState("audit-from", "");
-  const [to, setTo] = useRememberedViewState("audit-to", "");
+  const [from, setFrom] = useDateFilter("from", "");
+  const [to, setTo] = useDateFilter("to", "");
+  const presets = useDateRangePresets();
   const [cursors, setCursors] = useState<string[]>([""]);
   const cursor = cursors[cursors.length - 1] ?? "";
   const [selected, setSelected] = useState<AuditLogEntry | null>(null);
@@ -83,6 +84,19 @@ export function AuditLogsView(): ReactElement {
         resetPaging();
       },
       options: AUDIT_ENTITY_TYPES.map((type) => ({ value: type, label: labels.entityType(type) })),
+    },
+    {
+      id: "period",
+      label: t("filters.dateRange"),
+      type: "dateRange",
+      from,
+      to,
+      onChangeRange: ({ from: nextFrom, to: nextTo }) => {
+        setFrom(nextFrom);
+        setTo(nextTo);
+        resetPaging();
+      },
+      presets,
     },
   ];
 
@@ -169,33 +183,6 @@ export function AuditLogsView(): ReactElement {
         </div>
       )}
 
-      <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
-        <label className="flex min-w-0 flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("filters.from")}</span>
-          <Input
-            type="date"
-            className="w-full"
-            value={from}
-            onChange={(e) => {
-              setFrom(e.target.value);
-              resetPaging();
-            }}
-          />
-        </label>
-        <label className="flex min-w-0 flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("filters.to")}</span>
-          <Input
-            type="date"
-            className="w-full"
-            value={to}
-            onChange={(e) => {
-              setTo(e.target.value);
-              resetPaging();
-            }}
-          />
-        </label>
-      </div>
-
       <DataTable
         stateKey="features/audit/components/audit-logs-view:1"
         mode="cursor"
@@ -211,6 +198,9 @@ export function AuditLogsView(): ReactElement {
         filtersLabels={{
           reset: t("filters.reset"),
           removeFilter: (label) => t("filters.removeFilter", { label }),
+          dateRangeFrom: t("filters.from"),
+          dateRangeTo: t("filters.to"),
+          dateRangeInvalid: t("filters.invalidRange"),
         }}
         isLoading={isLoading}
         getRowId={(entry) => entry.id}

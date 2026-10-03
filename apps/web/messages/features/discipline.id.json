@@ -14,7 +14,9 @@
       "to": "Sampai tanggal",
       "includeVoided": "Tampilkan yang dibatalkan",
       "reset": "Reset filter",
-      "removeFilter": "Hapus filter {label}"
+      "removeFilter": "Hapus filter {label}",
+      "dateRange": "Rentang tanggal",
+      "invalidRange": "Tanggal mulai harus sebelum atau sama dengan tanggal akhir"
     },
     "record": "Catat pelanggaran",
     "void": "Batalkan",

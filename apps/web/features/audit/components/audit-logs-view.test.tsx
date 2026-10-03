@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -16,9 +16,6 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { id: "me", tenant: { timezone: "Asia/Jakarta" } } }),
-}));
-vi.mock("../../../lib/view-state/view-state-provider", () => ({
-  useRememberedViewState: () => ["", vi.fn()],
 }));
 vi.mock("../../reference/api", () => ({
   useDirectoryQuery: () => ({
@@ -77,5 +74,34 @@ describe("AuditLogsView filters", () => {
       expect.objectContaining({ entityType: undefined }),
     );
     expect(new URLSearchParams(window.location.search).get("entity_type")).toBe("");
+  });
+
+  it("sets a date range from the two native date inputs and writes both bounds to the URL", async () => {
+    const user = userEvent.setup();
+    render(<AuditLogsView />);
+
+    await user.click(screen.getByRole("button", { name: "filters.dateRange" }));
+    fireEvent.change(screen.getByLabelText("filters.from"), {
+      target: { value: "2026-09-01" },
+    });
+    fireEvent.change(screen.getByLabelText("filters.to"), { target: { value: "2026-09-15" } });
+
+    expect(mocks.useAuditLogsQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ from: "2026-09-01", to: "2026-09-15" }),
+    );
+    expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-09-01");
+    expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-09-15");
+  });
+
+  it("clears both bounds from the date range chip's remove control", async () => {
+    window.history.replaceState(null, "", "/audit?from=2026-09-01&to=2026-09-15");
+    const user = userEvent.setup();
+    render(<AuditLogsView />);
+
+    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+
+    expect(mocks.useAuditLogsQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ from: undefined, to: undefined }),
+    );
   });
 });

@@ -81,7 +81,11 @@
     "from": "From",
     "to": "To",
     "empty": "No records in this date range",
-    "date": "Date"
+    "date": "Date",
+    "dateRange": "Date range",
+    "reset": "Reset filter",
+    "removeFilter": "Remove {label} filter",
+    "invalidRange": "The from date must be on or before the to date"
   },
   "recap": {
     "title": "Monthly recap",
