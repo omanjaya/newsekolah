@@ -32,6 +32,10 @@
     "active": "Aktif",
     "archived": "Diarsipkan",
     "showArchived": "Tampilkan yang diarsipkan",
+    "filters": {
+      "reset": "Reset filter",
+      "removeFilter": "Hapus filter {label}"
+    },
     "columns": {
       "label": "Nama",
       "period": "Periode",
