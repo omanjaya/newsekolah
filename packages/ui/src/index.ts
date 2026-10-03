@@ -136,6 +136,7 @@ export {
   DataTableStateProvider,
   DEFAULT_DATA_TABLE_FILTERS_LABELS,
   selectionColumn,
+  type DataTableDateRangePreset,
   type DataTableFilterDef,
   type DataTableFilterOption,
   type DataTableFiltersLabels,
