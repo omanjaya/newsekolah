@@ -5,9 +5,9 @@ import {
   DataTable,
   EmptyState,
   PageHeader,
-  Select,
   domainIcons,
   selectionColumn,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { useLookup } from "../../reference/api";
@@ -49,9 +50,13 @@ export function CopiesBrowserView(): ReactElement {
   const t = useTranslations("app.library.copiesBrowser");
   const canManage = useCan("manage_library_catalog");
   const [search, setSearch] = useRememberedViewState("copies-search", "");
-  const [status, setStatus] = useRememberedViewState<LibraryCopyStatus | "">("copies-status", "");
-  const [categoryId, setCategoryId] = useRememberedViewState("copies-category", "");
-  const [locationId, setLocationId] = useRememberedViewState("copies-location", "");
+  const [status, setStatus] = useUrlState<LibraryCopyStatus | "">(
+    "status",
+    (value) => STATUSES.includes(value as LibraryCopyStatus),
+    "",
+  );
+  const [categoryId, setCategoryId] = useUrlState<string>("category_id", () => true, "");
+  const [locationId, setLocationId] = useUrlState<string>("location_id", () => true, "");
   const { selection, onSelectionChange, orderedIds, clear } = useOrderedSelection();
 
   const { data, isLoading } = useLibraryCopiesFilteredQuery({
@@ -68,6 +73,32 @@ export function CopiesBrowserView(): ReactElement {
 
   const items = data?.data ?? [];
   const isFiltered = search !== "" || status !== "" || categoryId !== "" || locationId !== "";
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "status",
+      label: t("filters.status"),
+      value: status,
+      onChange: (value) => {
+        setStatus(value as LibraryCopyStatus | "");
+      },
+      options: STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) })),
+    },
+    {
+      id: "category",
+      label: t("filters.category"),
+      value: categoryId,
+      onChange: setCategoryId,
+      options: (categories.data?.data ?? []).map((c) => ({ value: c.id, label: c.name })),
+    },
+    {
+      id: "location",
+      label: t("filters.location"),
+      value: locationId,
+      onChange: setLocationId,
+      options: (locations.data?.data ?? []).map((l) => ({ value: l.id, label: l.name })),
+    },
+  ];
 
   const columns = useMemo<ColumnDef<LibraryCopy>[]>(
     () => [
@@ -125,55 +156,6 @@ export function CopiesBrowserView(): ReactElement {
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <LibraryWorkspaceNav area="catalogue" />
 
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("filters.status")}</span>
-          <Select
-            options={STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) }))}
-            value={status}
-            onValueChange={(v) => {
-              setStatus(v as LibraryCopyStatus);
-            }}
-            placeholder={t("filters.statusAll")}
-            className="w-40"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("filters.category")}</span>
-          <Select
-            options={(categories.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
-            value={categoryId}
-            onValueChange={setCategoryId}
-            placeholder={t("filters.categoryAll")}
-            className="w-44"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("filters.location")}</span>
-          <Select
-            options={(locations.data?.data ?? []).map((l) => ({ value: l.id, label: l.name }))}
-            value={locationId}
-            onValueChange={setLocationId}
-            placeholder={t("filters.locationAll")}
-            className="w-44"
-          />
-        </label>
-        {isFiltered && (
-          <button
-            type="button"
-            className="text-[13px] text-accent underline underline-offset-2"
-            onClick={() => {
-              setStatus("");
-              setCategoryId("");
-              setLocationId("");
-              setSearch("");
-            }}
-          >
-            {t("filters.clear")}
-          </button>
-        )}
-      </div>
-
       <CopyLabelPrintBar selectedIds={orderedIds} onClear={clear} />
       {canManage && <CopyBulkStatusBar selectedIds={orderedIds} onDone={clear} />}
 
@@ -189,6 +171,11 @@ export function CopiesBrowserView(): ReactElement {
         globalFilter={search}
         onGlobalFilterChange={setSearch}
         toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
+        filters={filters}
+        filtersLabels={{
+          reset: t("filters.clear"),
+          removeFilter: (label) => t("filters.removeFilter", { label }),
+        }}
         isLoading={isLoading}
         rowSelection={selection}
         onRowSelectionChange={onSelectionChange}
