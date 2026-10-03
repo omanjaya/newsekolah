@@ -17,13 +17,15 @@ export type JournalExportFormat = "xlsx" | "docx";
  * My own journals for the active year, or (class_id given, requires
  * `view_journals_all`) every journal for that class -- mirrors
  * apps/mobile's `useJournals` so both clients invalidate the same cache
- * entry after a write.
+ * entry after a write. `search` is a case-insensitive substring match on
+ * topic or activities, already supported by `GET /v1/journals` but unused
+ * by the web list until the filter bar rollout wired it up.
  */
-export function useJournalsQuery(classId?: string, pageIndex = 0, pageSize = 50) {
+export function useJournalsQuery(classId?: string, pageIndex = 0, pageSize = 50, search?: string) {
   const client = useApiClient();
   const year = useActiveYear();
   return useQuery({
-    queryKey: [...queryKeys.journals(year.id, classId), pageIndex, pageSize],
+    queryKey: [...queryKeys.journals(year.id, classId), pageIndex, pageSize, search],
     queryFn: () =>
       client.GET("/v1/journals", {
         params: {
@@ -32,6 +34,7 @@ export function useJournalsQuery(classId?: string, pageIndex = 0, pageSize = 50)
             limit: pageSize,
             offset: pageIndex * pageSize,
             ...(classId ? { class_id: classId } : {}),
+            ...(search ? { search } : {}),
           },
         },
       }),

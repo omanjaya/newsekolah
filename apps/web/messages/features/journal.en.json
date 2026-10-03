@@ -10,6 +10,11 @@
   "deleteBody": "\"{topic}\" will be permanently deleted. This cannot be undone.",
   "filterClass": "Class",
   "filterClassAll": "All classes",
+  "searchPlaceholder": "Search topic or activities",
+  "filters": {
+    "reset": "Reset filters",
+    "removeFilter": "Remove {label} filter"
+  },
   "exportXlsx": "Download Excel/PDF",
   "exportReportTitle": "Teaching Journal",
   "exportDocx": "Download Word",
