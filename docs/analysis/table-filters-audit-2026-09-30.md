@@ -158,7 +158,7 @@ Branch `worktree-agent-a28d287c320f716d8`, base `f51c9f0`. Commits:
 
 1. `48b97a9` `feat(web): filter billing lists` — `fee-types-view.tsx`, `bills-list-view.tsx`
 2. `d13f815` `feat(web): filter discipline catalog lists` — `violation-catalog-view.tsx`, `at-risk-panel.tsx`
-3. `feat(web): filter mentoring lists` (this commit) — `mentor-groups-view.tsx` (restyle only, no new param)
+3. `311e72a` `feat(web): filter mentoring lists` — `mentor-groups-view.tsx` (restyle only, no new param)
 
 Screens changed: 5 (billing fee types, billing bills list, discipline
 violation catalog, discipline at-risk panel, mentoring groups scope
