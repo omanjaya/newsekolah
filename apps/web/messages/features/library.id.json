@@ -685,7 +685,8 @@
       "categoryAll": "Semua kategori",
       "location": "Lokasi",
       "locationAll": "Semua lokasi",
-      "clear": "Bersihkan filter"
+      "clear": "Bersihkan filter",
+      "removeFilter": "Hapus filter {label}"
     },
     "status": {
       "available": "Tersedia",

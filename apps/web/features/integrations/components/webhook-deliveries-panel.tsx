@@ -3,7 +3,7 @@
 import { ApiError } from "@newsekolah/api-client";
 import { formatDateTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { Button, DataTable, EmptyState, Select, useToast } from "@newsekolah/ui";
+import { Button, DataTable, EmptyState, useToast, type DataTableFilterDef } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { History, RotateCw } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -105,30 +105,24 @@ export function WebhookDeliveriesPanel({
 
   const items = data?.data ?? [];
 
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "endpoint",
+      label: t("filterEndpoint"),
+      value: endpointId,
+      onChange: (value) => {
+        onEndpointChange(value);
+        resetPaging();
+      },
+      options: (endpoints.data?.data ?? []).map((endpoint) => ({
+        value: endpoint.id,
+        label: endpoint.url,
+      })),
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("filterEndpoint")}</span>
-          <Select
-            options={[
-              { value: "all", label: t("filterEndpointAll") },
-              ...(endpoints.data?.data ?? []).map((endpoint) => ({
-                value: endpoint.id,
-                label: endpoint.url,
-              })),
-            ]}
-            value={endpointId || "all"}
-            onValueChange={(value) => {
-              onEndpointChange(value === "all" ? "" : value);
-              resetPaging();
-            }}
-            aria-label={t("filterEndpoint")}
-            className="w-72"
-          />
-        </label>
-      </div>
-
       <DataTable
         stateKey="features/integrations/components/webhook-deliveries-panel:1"
         mode="cursor"
@@ -140,6 +134,11 @@ export function WebhookDeliveriesPanel({
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
+        filters={filters}
+        filtersLabels={{
+          reset: t("filters.reset"),
+          removeFilter: (label) => t("filters.removeFilter", { label }),
+        }}
         isLoading={isLoading}
         getRowId={(delivery) => delivery.id}
         emptyState={

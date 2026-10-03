@@ -685,7 +685,8 @@
       "categoryAll": "All categories",
       "location": "Location",
       "locationAll": "All locations",
-      "clear": "Clear filters"
+      "clear": "Clear filters",
+      "removeFilter": "Remove filter {label}"
     },
     "status": {
       "available": "Available",
