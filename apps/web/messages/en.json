@@ -773,6 +773,10 @@
       "statusFilterLabel": "Status",
       "statusFilterAll": "All statuses",
       "statusFilterClear": "Clear filter",
+      "filters": {
+        "reset": "Reset filters",
+        "removeFilter": "Remove {label} filter"
+      },
       "noGuardian": "No guardian on file",
       "noViolations": "None",
       "violationSummary": "{count} violations, {points} points",

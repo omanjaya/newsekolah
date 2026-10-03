@@ -773,6 +773,10 @@
       "statusFilterLabel": "Status",
       "statusFilterAll": "Semua status",
       "statusFilterClear": "Hapus filter",
+      "filters": {
+        "reset": "Reset filter",
+        "removeFilter": "Hapus filter {label}"
+      },
       "noGuardian": "Belum ada data wali",
       "noViolations": "Tidak ada",
       "violationSummary": "{count} pelanggaran, {points} poin",
