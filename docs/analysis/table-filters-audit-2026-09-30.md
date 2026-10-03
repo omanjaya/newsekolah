@@ -114,3 +114,63 @@ param to expose), `reports/schedules-view.tsx` (endpoint takes no query
 params at all), and the ~35 screens listed under "not in this pass's
 priority list" (outside the task's prioritized areas; left for a future
 pass).
+
+## Pass 2: library settings, integrations, platform, profile
+
+Scope: library master-data tabs, integrations, platform tenants, and the
+profile sessions list — the screens this file's "not in this pass's
+priority list" section above named as candidates. For each, every
+`openapi/modules/*.yaml` list endpoint behind the screen was checked for
+query parameters the UI did not yet expose.
+
+### Changed this pass
+
+| Screen                                                 | Endpoint                                  | Params supported                                                                | Exposed before                                                                                                                              | Added now                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `library/components/copies-browser-view.tsx`           | `GET /v1/library/copies`                  | `title_id`, `status`, `category_id`, `location_id`, `search`, `limit`, `offset` | `status`, `category_id`, `location_id` as three standalone `Select`s next to a manual "Bersihkan filter" link, local state (not URL-backed) | Same three filters moved into `DataTableFilters`, URL-backed (`status`, `category_id`, `location_id` query params), pill Reset/remove chips; `title_id` left unexposed (no title picker on this screen; used only by the per-title copies view, which calls a different endpoint)                                                                  |
+| `integrations/components/webhook-deliveries-panel.tsx` | `GET /v1/integrations/webhook-deliveries` | `endpoint_id`, `cursor`, `limit`                                                | `endpoint_id` as a standalone `Select` (with its own "Semua endpoint" option), state lifted to the parent tab so it survives switching tabs | Moved into `DataTableFilters` as a select pill (empty value = "Semua endpoint"), same lifted parent state and same cursor-reset-on-change behavior; this control turned out to be optional, not required — `endpoint_id` is an optional query param and the panel already had an "all endpoints" option, so no required-scope exception was needed |
+
+### Audited, no change needed (endpoint has no filterable params, or none at all)
+
+| Screen                                                | Endpoint(s)                                                                                                            | Notes                                                                                                          |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `library/components/loan-rules-view.tsx`              | `GET /v1/library/loan-rules`                                                                                           | No query params at all; small list (dated overrides), already uses the shared `DataTable` toolbar consistently |
+| `library/components/master-entry-tab.tsx`             | `GET /v1/library/collection-categories`, `/v1/library/acquisition-sources`, `/v1/library/locations` (shared component) | No query params on any of the three backing endpoints; small code/name master lists                            |
+| `library/components/material-types-tab.tsx`           | `GET /v1/library/material-types`                                                                                       | No query params at all; small master list                                                                      |
+| `library/components/member-types-view.tsx`            | `GET /v1/library/member-types`                                                                                         | No query params at all; small master list                                                                      |
+| `library/components/partners-tab.tsx`                 | `GET /v1/library/partners`                                                                                             | No query params at all; small master list                                                                      |
+| `library/components/title-copies-view.tsx`            | `GET /v1/library/titles/{titleId}/copies`                                                                              | Only a required `titleId` path param; no query params to expose on this single-title view                      |
+| `integrations/components/api-keys-panel.tsx`          | `GET /v1/integrations/api-keys`                                                                                        | No query params at all                                                                                         |
+| `integrations/components/webhook-endpoints-panel.tsx` | `GET /v1/integrations/webhook-endpoints`                                                                               | No query params at all                                                                                         |
+| `platform/components/tenants-view.tsx`                | `GET /v1/platform/tenants`                                                                                             | No query params at all; status/level are columns, not filters the API supports                                 |
+| `profile/components/sessions-table.tsx`               | `GET /v1/auth/sessions`                                                                                                | No query params at all; the existing search box already covers device/IP/client text search client-side        |
+
+All ten of these already render through the shared `DataTable` (and, where
+present, `DataTableToolbar`), so their toolbar styling was already
+consistent with the reference pattern before this pass — no code changes
+were needed to "say so" here, per the task's own carve-out for small
+master-data tabs with no endpoint filters.
+
+None of these screens had more than three header action buttons, so no
+"Lainnya" dropdown consolidation was needed either.
+
+### Summary
+
+Branch `worktree-agent-a033d4051ccfd3deb`, commits (base `f51c9f0`):
+
+1. `feat(web): filter library copies browser` — `copies-browser-view.tsx`
+2. `feat(web): filter integrations webhook deliveries` — `webhook-deliveries-panel.tsx`
+
+Screens changed: 2 (library copies browser; integrations webhook
+deliveries). Filters added: copies browser (`status`, `category_id`,
+`location_id`); webhook deliveries (`endpoint_id`, non-URL, lifted state
+unchanged).
+
+Skipped and why: `loan-rules-view.tsx`, `master-entry-tab.tsx`,
+`material-types-tab.tsx`, `member-types-view.tsx`, `partners-tab.tsx`,
+`title-copies-view.tsx`, `api-keys-panel.tsx`, `webhook-endpoints-panel.tsx`,
+`tenants-view.tsx`, `sessions-table.tsx` — every one of their backing list
+endpoints takes no select/boolean query parameter at all (several take no
+query parameters whatsoever), so there was nothing to move into
+`DataTableFilters` without inventing a filter the API does not support;
+each already uses the shared `DataTable` toolbar consistently.
