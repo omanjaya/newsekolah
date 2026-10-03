@@ -32,6 +32,10 @@
     "active": "Active",
     "archived": "Archived",
     "showArchived": "Show archived",
+    "filters": {
+      "reset": "Reset filters",
+      "removeFilter": "Remove {label} filter"
+    },
     "columns": {
       "label": "Name",
       "period": "Period",

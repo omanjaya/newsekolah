@@ -15,8 +15,8 @@ import {
   EmptyState,
   IconButton,
   PageHeader,
-  Select,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { Download, MoreHorizontal, NotebookPen, Plus } from "lucide-react";
@@ -29,8 +29,10 @@ import {
   type ReportExportOptions,
 } from "../../../components/report-export-dialog";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import {
@@ -70,7 +72,8 @@ export function JournalView(): ReactElement {
   const year = useActiveYear();
   const canViewAll = useCan("view_journals_all");
 
-  const [classId, setClassId] = useState("");
+  const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
+  const [search, setSearch] = useRememberedViewState("journal-search", "");
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
   const [editing, setEditing] = useState<Journal | "new" | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Journal | null>(null);
@@ -86,8 +89,24 @@ export function JournalView(): ReactElement {
     canViewAll && classId ? classId : undefined,
     pagination.pageIndex,
     pagination.pageSize,
+    search || undefined,
   );
   const remove = useDeleteJournalMutation();
+
+  const filters: DataTableFilterDef[] = canViewAll
+    ? [
+        {
+          id: "class",
+          label: t("filterClass"),
+          value: classId,
+          onChange: (value) => {
+            setClassId(value);
+            setPagination((current) => ({ ...current, pageIndex: 0 }));
+          },
+          options: (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name })),
+        },
+      ]
+    : [];
 
   const items = useMemo(
     () => [...(list.data?.data ?? [])].sort((a, b) => (a.lesson_date < b.lesson_date ? 1 : -1)),
@@ -206,45 +225,26 @@ export function JournalView(): ReactElement {
 
       <JournalTodayPanel />
 
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        {canViewAll && (
-          <label className="flex w-full flex-col gap-1 text-[13px] sm:w-auto">
-            <span className="font-medium text-fg">{t("filterClass")}</span>
-            <Select
-              options={(classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
-              value={classId}
-              onValueChange={(value) => {
-                setClassId(value);
-                setPagination((current) => ({ ...current, pageIndex: 0 }));
-              }}
-              placeholder={t("filterClassAll")}
-              disabled={classes.isLoading}
-              aria-label={t("filterClass")}
-              className="w-full sm:w-56"
-            />
-          </label>
-        )}
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => {
-              setExportOpen(true);
-            }}
-          >
-            <Download className="size-4" aria-hidden="true" />
-            {t("exportXlsx")}
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            loading={downloadingDocx}
-            onClick={() => void handleDocxExport()}
-          >
-            <Download className="size-4" aria-hidden="true" />
-            {t("exportDocx")}
-          </Button>
-        </div>
+      <div className="flex justify-end gap-2">
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => {
+            setExportOpen(true);
+          }}
+        >
+          <Download className="size-4" aria-hidden="true" />
+          {t("exportXlsx")}
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          loading={downloadingDocx}
+          onClick={() => void handleDocxExport()}
+        >
+          <Download className="size-4" aria-hidden="true" />
+          {t("exportDocx")}
+        </Button>
       </div>
 
       <ReportExportDialog
@@ -283,7 +283,17 @@ export function JournalView(): ReactElement {
             onPaginationChange={setPagination}
             sorting={[]}
             onSortingChange={() => undefined}
-            globalFilter=""
+            globalFilter={search}
+            onGlobalFilterChange={(value) => {
+              setSearch(value);
+              setPagination((current) => ({ ...current, pageIndex: 0 }));
+            }}
+            filters={filters}
+            filtersLabels={{
+              reset: t("filters.reset"),
+              removeFilter: (label) => t("filters.removeFilter", { label }),
+            }}
+            toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
             isLoading={list.isLoading}
             getRowId={(item) => item.id}
             fillHeight

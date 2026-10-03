@@ -10,6 +10,11 @@
   "deleteBody": "\"{topic}\" akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
   "filterClass": "Kelas",
   "filterClassAll": "Semua kelas",
+  "searchPlaceholder": "Cari topik atau kegiatan",
+  "filters": {
+    "reset": "Reset filter",
+    "removeFilter": "Hapus filter {label}"
+  },
   "exportXlsx": "Unduh Excel/PDF",
   "exportReportTitle": "Jurnal Mengajar",
   "exportDocx": "Unduh Word",

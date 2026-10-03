@@ -9,8 +9,8 @@ import {
   EmptyState,
   IconButton,
   PageHeader,
-  Switch,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Archive, CalendarRange, CircleCheck, Pencil, Plus, Rows3 } from "lucide-react";
@@ -18,9 +18,9 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
-import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import {
   type AcademicYear,
   useAcademicYearsQuery,
@@ -39,6 +39,8 @@ interface PendingAction {
   kind: "activate" | "archive";
 }
 
+const ARCHIVED_VALUES = ["", "true"] as const;
+
 export function YearsView(): ReactElement {
   const tWorkspace = useTranslations("app.academic.workspace");
   const t = useTranslations("app.academic.years");
@@ -46,10 +48,10 @@ export function YearsView(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_master_data");
-  const [includeArchived, setIncludeArchived] = useRememberedViewState(
-    "years-include-archived",
-    false,
-  );
+  const [includeArchivedParam, setIncludeArchivedParam] = useUrlState<
+    (typeof ARCHIVED_VALUES)[number]
+  >("include_archived", ARCHIVED_VALUES, "");
+  const includeArchived = includeArchivedParam === "true";
   const { data, isLoading } = useAcademicYearsQuery({ includeArchived });
   const create = useCreateAcademicYearMutation();
   const update = useUpdateAcademicYearMutation();
@@ -61,6 +63,19 @@ export function YearsView(): ReactElement {
   const [managingTerms, setManagingTerms] = useState<AcademicYear | null>(null);
 
   const rows = data?.data ?? [];
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "includeArchived",
+      label: t("showArchived"),
+      value: includeArchivedParam,
+      onChange: (value) => {
+        setIncludeArchivedParam(value as (typeof ARCHIVED_VALUES)[number]);
+      },
+      type: "boolean",
+      activeValue: "true",
+    },
+  ];
 
   const fail = (error: unknown) => {
     toast.error(
@@ -167,11 +182,6 @@ export function YearsView(): ReactElement {
       />
       <p className="text-[13px] text-fg-muted">{tWorkspace("yearHelp")}</p>
 
-      <label className="flex w-fit items-center gap-2 text-[13px]">
-        <Switch checked={includeArchived} onCheckedChange={setIncludeArchived} />
-        {t("showArchived")}
-      </label>
-
       <DataTable
         stateKey="features/academic/components/years-view:1"
         mode="local"
@@ -183,6 +193,11 @@ export function YearsView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
+        filters={filters}
+        filtersLabels={{
+          reset: t("filters.reset"),
+          removeFilter: (label) => t("filters.removeFilter", { label }),
+        }}
         isLoading={isLoading}
         getRowId={(y) => y.id}
         emptyState={

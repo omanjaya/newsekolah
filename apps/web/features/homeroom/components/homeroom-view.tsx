@@ -6,11 +6,11 @@ import {
   EmptyState,
   Input,
   PageHeader,
-  Select,
   Stat,
   StatGrid,
   StatusBadge,
   cn,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { UsersRound } from "lucide-react";
@@ -19,6 +19,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useSession } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
@@ -30,7 +31,8 @@ import { HomeroomDashboard } from "./homeroom-dashboard";
 
 type Entry = components["schemas"]["AttendanceHomeroomEntry"];
 
-const STATUS_FILTER_CODES = ["H", "S", "I", "D", "A", "INCOMPLETE"];
+const STATUS_FILTER_CODES = ["H", "S", "I", "D", "A", "INCOMPLETE"] as const;
+const STATUS_VALUES = ["", ...STATUS_FILTER_CODES] as const;
 /** Statuses that put a student on the "needs attention today" list. */
 const ATTENTION_CODES = new Set(["A", "INCOMPLETE"]);
 
@@ -47,7 +49,11 @@ export function HomeroomView(): ReactElement {
   const homeroom = me?.duties?.find((d) => d.slug === "homeroom");
   const [date, setDate] = useDateFilter("date", todayInZone(me?.tenant.timezone));
   const [search, setSearch] = useRememberedViewState("homeroom-search", "");
-  const [statusCode, setStatusCode] = useRememberedViewState("homeroom-status", "");
+  const [statusCode, setStatusCode] = useUrlState<(typeof STATUS_VALUES)[number]>(
+    "status",
+    STATUS_VALUES,
+    "",
+  );
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: PAGE_SIZE,
@@ -74,6 +80,19 @@ export function HomeroomView(): ReactElement {
 
   const rows = data?.data ?? [];
   const isFiltered = search !== "" || statusCode !== "";
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "status",
+      label: t("statusFilterLabel"),
+      value: statusCode,
+      onChange: (value) => {
+        setStatusCode(value as (typeof STATUS_VALUES)[number]);
+        setPagination((p) => ({ ...p, pageIndex: 0 }));
+      },
+      options: STATUS_FILTER_CODES.map((code) => ({ value: code, label: t(`codes.${code}`) })),
+    },
+  ];
 
   const attentionRows = useMemo(
     () => (dashboard.data?.data ?? []).filter((row) => ATTENTION_CODES.has(row.status_code)),
@@ -232,36 +251,6 @@ export function HomeroomView(): ReactElement {
         timeZone={me?.tenant.timezone}
       />
 
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("statusFilterLabel")}</span>
-          <Select
-            options={STATUS_FILTER_CODES.map((code) => ({
-              value: code,
-              label: t(`codes.${code}`),
-            }))}
-            value={statusCode}
-            onValueChange={(value) => {
-              setStatusCode(value);
-              setPagination((p) => ({ ...p, pageIndex: 0 }));
-            }}
-            placeholder={t("statusFilterAll")}
-            aria-label={t("statusFilterLabel")}
-            className="w-44"
-          />
-        </label>
-        {statusCode !== "" && (
-          <button
-            type="button"
-            className="text-[13px] text-accent underline underline-offset-2"
-            onClick={() => {
-              setStatusCode("");
-            }}
-          >
-            {t("statusFilterClear")}
-          </button>
-        )}
-      </div>
       <DataTable
         stateKey="features/homeroom/components/homeroom-view:1"
         data={rows}
@@ -275,6 +264,11 @@ export function HomeroomView(): ReactElement {
         onGlobalFilterChange={(value) => {
           setSearch(value);
           setPagination((p) => ({ ...p, pageIndex: 0 }));
+        }}
+        filters={filters}
+        filtersLabels={{
+          reset: t("filters.reset"),
+          removeFilter: (label) => t("filters.removeFilter", { label }),
         }}
         isLoading={isLoading}
         getRowId={(r) => r.student_user_id}
