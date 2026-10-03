@@ -13,7 +13,9 @@
     "to": "Sampai tanggal",
     "reset": "Reset filter",
     "entityTypeAll": "Semua jenis",
-    "removeFilter": "Hapus filter {label}"
+    "removeFilter": "Hapus filter {label}",
+    "dateRange": "Rentang tanggal",
+    "invalidRange": "Tanggal mulai harus sebelum atau sama dengan tanggal akhir"
   },
   "columns": {
     "when": "Waktu",

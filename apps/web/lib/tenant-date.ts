@@ -23,6 +23,34 @@ export function thisMonthInZone(timeZone?: string): string {
 }
 
 /**
+ * `iso` ("YYYY-MM-DD") shifted by a number of calendar days (may cross
+ * month/year boundaries). Pure calendar arithmetic -- once a date carries a
+ * tenant's timezone (e.g. via `todayInZone`), shifting it by whole days
+ * never needs the timezone again.
+ */
+export function shiftIsoDate(iso: string, days: number): string {
+  const [year, month, day] = iso.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+
+/** The first day of the month containing `iso` ("YYYY-MM-DD"). */
+export function startOfIsoMonth(iso: string): string {
+  return `${iso.slice(0, 7)}-01`;
+}
+
+/** The first day of the month before the one containing `iso`. */
+export function startOfPreviousIsoMonth(iso: string): string {
+  const [year, month] = iso.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(year, month - 2, 1)).toISOString().slice(0, 10);
+}
+
+/** The last day of the month before the one containing `iso`. */
+export function endOfPreviousIsoMonth(iso: string): string {
+  const [year, month] = iso.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(year, month - 1, 0)).toISOString().slice(0, 10);
+}
+
+/**
  * A `<input type="datetime-local">` value ("YYYY-MM-DDTHH:mm") in the
  * browser's own zone, which is how the input and `new Date(value)` read it.
  */

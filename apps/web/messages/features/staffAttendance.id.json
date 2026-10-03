@@ -81,7 +81,11 @@
     "from": "Dari",
     "to": "Sampai",
     "empty": "Tidak ada catatan pada rentang tanggal ini",
-    "date": "Tanggal"
+    "date": "Tanggal",
+    "dateRange": "Rentang tanggal",
+    "reset": "Reset filter",
+    "removeFilter": "Hapus filter {label}",
+    "invalidRange": "Tanggal mulai harus sebelum atau sama dengan tanggal akhir"
   },
   "recap": {
     "title": "Rekap bulanan",

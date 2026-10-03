@@ -306,3 +306,46 @@ scope picker (it selects between two different zero-param endpoints, not a
 narrowing filter on one) was restyled from a `label`+`Select` into a
 pill-style `Tabs` switch positioned directly above the table, closer to
 where the table's own search/filter row renders.
+
+## Date range
+
+Added a `dateRange` filter type to `DataTableFilters`
+(`packages/ui/src/components/data-table/data-table-filters.tsx`): a pill
+showing "Label: 1-15 Sep 2026" once both bounds are set, a popover with two
+native date inputs (`from <= to` validated before it commits) plus
+caller-supplied presets (`{label, from, to}`). The component never computes
+"today" itself; `apps/web/lib/hooks/use-date-range-presets.ts` computes the
+four shared presets ("Hari ini" / "7 hari terakhir" / "Bulan ini" / "Bulan
+lalu", labels from `app.common.dateRange.presets.*`) from `businessNow()` in
+the tenant's timezone (new pure helpers in `apps/web/lib/tenant-date.ts`:
+`shiftIsoDate`, `startOfIsoMonth`, `startOfPreviousIsoMonth`,
+`endOfPreviousIsoMonth`), so a superadmin's time simulation still lines up
+with what the filter bar offers.
+
+Screens moved from standalone date inputs into the filter bar (same query
+params, now URL-backed via `useDateFilter`, pagination/cursor reset
+preserved where it already existed):
+
+| Screen                                                                  | Params       | Before                                                                                         | After                                                                    |
+| ----------------------------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `audit/components/audit-logs-view.tsx`                                  | `from`, `to` | Two standalone date `Input`s, session-persisted (`useRememberedViewState`), not URL-backed     | One `dateRange` filter (`from`/`to`), URL-backed, cursor reset on change |
+| `discipline/components/violations-ledger-view.tsx`                      | `from`, `to` | Two standalone date `Input`s, local state only                                                 | One `dateRange` filter, URL-backed                                       |
+| `library/components/visits-view.tsx`                                    | `from`, `to` | Two standalone date `Input`s defaulting to first-of-month/today, local state only              | One `dateRange` filter, URL-backed, same defaults                        |
+| `visitors/components/incident-log-view.tsx`                             | `from`, `to` | Fixed last-30-days window, not exposed to the user at all                                      | One `dateRange` filter, URL-backed, same 30-day default, now adjustable  |
+| `staff-attendance/components/employee-recap-view.tsx` (history section) | `from`, `to` | Two standalone date `Input`s next to the history table, already URL-backed via `useDateFilter` | Moved into the history `DataTable`'s filter bar (same URL-backed state)  |
+
+i18n: new keys live under each screen's existing feature namespace
+(`filters.dateRange`/`filters.invalidRange` plus reusing each screen's
+existing `from`/`to` labels where present) in
+`apps/web/messages/features/{audit,discipline,library,visitors,staffAttendance}.{en,id}.json`;
+the shared preset labels are the new `app.common.dateRange.presets.*`
+subtree in `apps/web/messages/{en,id}.json`. No existing key was renamed.
+
+Not converted: `library-reports-view.tsx` and `visitor-recap-view.tsx` keep
+their standalone date/month inputs -- neither renders `<DataTable` (plain
+`Table`/`Stat` cards), so they are outside this pass's "DataTable + date
+input" scope. `messaging/deliveries-view.tsx` has no date range at all
+(status filter only). Screens with single-date (not range) inputs used as
+form fields, not list filters -- `club-detail-view.tsx`'s join date,
+`achievements-view.tsx`'s achieved-on date, `today-board-view.tsx`'s single
+date -- were left alone.

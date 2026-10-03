@@ -13,7 +13,9 @@
     "to": "To date",
     "reset": "Reset filters",
     "entityTypeAll": "All types",
-    "removeFilter": "Remove {label} filter"
+    "removeFilter": "Remove {label} filter",
+    "dateRange": "Date range",
+    "invalidRange": "The from date must be on or before the to date"
   },
   "columns": {
     "when": "When",

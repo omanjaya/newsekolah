@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -15,7 +15,10 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/visitors/incidents",
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
-vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => mocks.canManage }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useCan: () => mocks.canManage,
+  useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+}));
 vi.mock("../api", () => ({
   useIncidentsQuery: mocks.useIncidentsQuery,
   useIncidentQuery: () => ({ data: undefined, isLoading: false }),
@@ -74,12 +77,36 @@ describe("IncidentLogView filters", () => {
     const user = userEvent.setup();
     render(<IncidentLogView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    // The date range filter defaults to a non-empty 30-day window, so it is
+    // always "active" too; its own remove button uses the same (untranslated,
+    // mocked) label. The only-open pill is the first one in the bar.
+    const onlyOpenRemove = screen.getAllByRole("button", { name: "filters.removeFilter" })[0];
+    if (!onlyOpenRemove) throw new Error("Missing only-open filter's remove control");
+    await user.click(onlyOpenRemove);
     expect(mocks.useIncidentsQuery).toHaveBeenLastCalledWith(
       expect.any(String),
       expect.any(String),
       true,
     );
     expect(new URLSearchParams(window.location.search).get("only_open")).toBe("");
+  });
+
+  it("sets a date range from the two native date inputs and writes both bounds to the URL", async () => {
+    const user = userEvent.setup();
+    render(<IncidentLogView />);
+
+    await user.click(screen.getByRole("button", { name: /^filters\.dateRange/ }));
+    fireEvent.change(screen.getByLabelText("filters.from"), {
+      target: { value: "2026-09-01" },
+    });
+    fireEvent.change(screen.getByLabelText("filters.to"), { target: { value: "2026-09-15" } });
+
+    expect(mocks.useIncidentsQuery).toHaveBeenLastCalledWith(
+      "2026-09-01T00:00:00Z",
+      "2026-09-15T23:59:59Z",
+      true,
+    );
+    expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-09-01");
+    expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-09-15");
   });
 });

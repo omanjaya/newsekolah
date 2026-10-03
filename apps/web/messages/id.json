@@ -538,7 +538,15 @@
         "7": "Min"
       },
       "today": "Hari ini",
-      "yesterday": "Kemarin"
+      "yesterday": "Kemarin",
+      "dateRange": {
+        "presets": {
+          "today": "Hari ini",
+          "last7Days": "7 hari terakhir",
+          "thisMonth": "Bulan ini",
+          "lastMonth": "Bulan lalu"
+        }
+      }
     },
     "schedule": {
       "eyebrow": "Akademik",

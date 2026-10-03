@@ -93,7 +93,11 @@
       "includeClosed": "Tampilkan yang sudah ditutup",
       "onlyOpen": "Hanya yang terbuka",
       "reset": "Reset filter",
-      "removeFilter": "Hapus filter {label}"
+      "removeFilter": "Hapus filter {label}",
+      "dateRange": "Rentang tanggal",
+      "from": "Dari tanggal",
+      "to": "Sampai tanggal",
+      "invalidRange": "Tanggal mulai harus sebelum atau sama dengan tanggal akhir"
     },
     "columns": {
       "occurredAt": "Waktu kejadian",

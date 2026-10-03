@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -28,6 +28,22 @@ function availabilityFilter(overrides: Partial<DataTableFilterDef> = {}): DataTa
     onChange: vi.fn(),
     type: "boolean",
     activeValue: "available",
+    ...overrides,
+  };
+}
+
+function dateRangeFilter(overrides: Partial<DataTableFilterDef> = {}): DataTableFilterDef {
+  return {
+    id: "occurredAt",
+    label: "Tanggal",
+    type: "dateRange",
+    from: "",
+    to: "",
+    onChangeRange: vi.fn(),
+    presets: [
+      { label: "Hari ini", from: "2026-09-15", to: "2026-09-15" },
+      { label: "7 hari terakhir", from: "2026-09-09", to: "2026-09-15" },
+    ],
     ...overrides,
   };
 }
@@ -131,5 +147,121 @@ describe("DataTableFilters", () => {
       <DataTableFilters filters={[materialTypeFilter({ value: "book" }), availabilityFilter()]} />,
     );
     await expectNoAxeViolations(container);
+  });
+
+  describe("dateRange filter", () => {
+    it("shows only the label for an unset range, with no remove control", () => {
+      render(<DataTableFilters filters={[dateRangeFilter()]} />);
+      expect(screen.getByRole("button", { name: "Tanggal" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Hapus filter/ })).not.toBeInTheDocument();
+    });
+
+    it("renders an active range as a chip with a formatted range and a remove control", () => {
+      render(
+        <DataTableFilters filters={[dateRangeFilter({ from: "2026-09-01", to: "2026-09-15" })]} />,
+      );
+      expect(screen.getByRole("button", { name: "Tanggal: 1-15 Sep 2026" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Hapus filter Tanggal" })).toBeInTheDocument();
+    });
+
+    it("applies a caller-supplied preset and closes the popover", async () => {
+      const user = userEvent.setup();
+      const onChangeRange = vi.fn();
+      render(<DataTableFilters filters={[dateRangeFilter({ onChangeRange })]} />);
+
+      await user.click(screen.getByRole("button", { name: "Tanggal" }));
+      await user.click(await screen.findByRole("button", { name: "Hari ini" }));
+
+      expect(onChangeRange).toHaveBeenCalledWith({ from: "2026-09-15", to: "2026-09-15" });
+      await waitFor(() => {
+        expect(screen.queryByRole("button", { name: "7 hari terakhir" })).not.toBeInTheDocument();
+      });
+    });
+
+    it("sets the range from the two native date inputs", async () => {
+      const user = userEvent.setup();
+      const onChangeRange = vi.fn();
+      render(<DataTableFilters filters={[dateRangeFilter({ onChangeRange })]} />);
+
+      await user.click(screen.getByRole("button", { name: "Tanggal" }));
+      fireEvent.change(screen.getByLabelText("Dari"), { target: { value: "2026-09-01" } });
+      fireEvent.change(screen.getByLabelText("Sampai"), { target: { value: "2026-09-15" } });
+
+      expect(onChangeRange).toHaveBeenLastCalledWith({ from: "2026-09-01", to: "2026-09-15" });
+    });
+
+    it("rejects a from date after the to date without committing it", async () => {
+      const user = userEvent.setup();
+      const onChangeRange = vi.fn();
+      render(
+        <DataTableFilters
+          filters={[dateRangeFilter({ from: "2026-09-01", to: "2026-09-15", onChangeRange })]}
+        />,
+      );
+
+      await user.click(screen.getByRole("button", { name: /^Tanggal/ }));
+      fireEvent.change(screen.getByLabelText("Dari"), { target: { value: "2026-09-20" } });
+
+      expect(onChangeRange).not.toHaveBeenCalled();
+      expect(
+        screen.getByText("Tanggal mulai harus sebelum atau sama dengan tanggal akhir"),
+      ).toBeInTheDocument();
+    });
+
+    it("clears both bounds when the chip's remove control is clicked", async () => {
+      const user = userEvent.setup();
+      const onChangeRange = vi.fn();
+      render(
+        <DataTableFilters
+          filters={[dateRangeFilter({ from: "2026-09-01", to: "2026-09-15", onChangeRange })]}
+        />,
+      );
+
+      await user.click(screen.getByRole("button", { name: "Hapus filter Tanggal" }));
+      expect(onChangeRange).toHaveBeenCalledWith({ from: "", to: "" });
+    });
+
+    it("is cleared by the shared Reset filter alongside other filters", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const onChangeRange = vi.fn();
+      render(
+        <DataTableFilters
+          filters={[
+            materialTypeFilter({ value: "book", onChange }),
+            dateRangeFilter({ from: "2026-09-01", to: "2026-09-15", onChangeRange }),
+          ]}
+        />,
+      );
+
+      await user.click(screen.getByRole("button", { name: "Reset filter" }));
+      expect(onChange).toHaveBeenCalledWith("");
+      expect(onChangeRange).toHaveBeenCalledWith({ from: "", to: "" });
+    });
+
+    it("is keyboard operable: Tab to the pill, Enter opens it, inputs are reachable by Tab", async () => {
+      const user = userEvent.setup();
+      render(<DataTableFilters filters={[dateRangeFilter()]} />);
+
+      await user.tab();
+      expect(screen.getByRole("button", { name: "Tanggal" })).toHaveFocus();
+      await user.keyboard("{Enter}");
+      const fromInput = await screen.findByLabelText("Dari");
+      // The popover auto-focuses its first preset button; Tab from there
+      // walks through the remaining preset then into the date inputs.
+      await user.tab();
+      await user.tab();
+      expect(fromInput).toHaveFocus();
+    });
+
+    it("has no accessibility violations with the range popover open", async () => {
+      const user = userEvent.setup();
+      const { container } = render(
+        <DataTableFilters filters={[dateRangeFilter({ from: "2026-09-01", to: "2026-09-15" })]} />,
+      );
+      await user.click(screen.getByRole("button", { name: /^Tanggal/ }));
+      await screen.findByLabelText("Dari");
+      await expectNoAxeViolations(container);
+    });
   });
 });

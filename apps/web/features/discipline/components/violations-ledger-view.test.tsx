@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -16,7 +16,10 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
-vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => mocks.canRecord }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useCan: () => mocks.canRecord,
+  useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+}));
 vi.mock("../../reference/api", () => ({
   useClassesQuery: () => ({
     data: {
@@ -93,5 +96,22 @@ describe("ViolationsLedgerView filters", () => {
       expect.objectContaining({ includeVoided: false }),
     );
     expect(new URLSearchParams(window.location.search).get("include_voided")).toBe("");
+  });
+
+  it("sets a date range from the two native date inputs and writes both bounds to the URL", async () => {
+    const user = userEvent.setup();
+    render(<ViolationsLedgerView />);
+
+    await user.click(screen.getByRole("button", { name: "filters.dateRange" }));
+    fireEvent.change(screen.getByLabelText("filters.from"), {
+      target: { value: "2026-09-01" },
+    });
+    fireEvent.change(screen.getByLabelText("filters.to"), { target: { value: "2026-09-15" } });
+
+    expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ from: "2026-09-01", to: "2026-09-15" }),
+    );
+    expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-09-01");
+    expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-09-15");
   });
 });

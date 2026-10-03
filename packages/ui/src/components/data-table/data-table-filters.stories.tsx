@@ -3,11 +3,26 @@ import { useState } from "react";
 
 import { DataTableFilters, type DataTableFilterDef } from "./data-table-filters.js";
 
+/** A fixed "today" so the story's presets are stable across renders. */
+const STORY_TODAY = new Date("2026-09-15T00:00:00Z");
+
+function isoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function daysAgo(days: number): string {
+  const date = new Date(STORY_TODAY);
+  date.setDate(date.getDate() - days);
+  return isoDate(date);
+}
+
 function DataTableFiltersDemo() {
   const [materialType, setMaterialType] = useState("");
   const [classification, setClassification] = useState("");
   const [availability, setAvailability] = useState("");
   const [sort, setSort] = useState("");
+  const [recordedFrom, setRecordedFrom] = useState("");
+  const [recordedTo, setRecordedTo] = useState("");
 
   const filters: DataTableFilterDef[] = [
     {
@@ -49,6 +64,29 @@ function DataTableFiltersDemo() {
         { value: "newest", label: "Terbaru" },
       ],
     },
+    {
+      id: "recordedAt",
+      label: "Tanggal tercatat",
+      type: "dateRange",
+      from: recordedFrom,
+      to: recordedTo,
+      onChangeRange: ({ from, to }) => {
+        setRecordedFrom(from);
+        setRecordedTo(to);
+      },
+      // Presets are always computed by the caller -- here a fixed "today"
+      // for a stable story, but apps/web derives this from the business
+      // clock so a simulated date still lines up.
+      presets: [
+        { label: "Hari ini", from: isoDate(STORY_TODAY), to: isoDate(STORY_TODAY) },
+        { label: "7 hari terakhir", from: daysAgo(6), to: isoDate(STORY_TODAY) },
+        {
+          label: "Bulan ini",
+          from: isoDate(new Date(STORY_TODAY.getFullYear(), STORY_TODAY.getMonth(), 1)),
+          to: isoDate(STORY_TODAY),
+        },
+      ],
+    },
   ];
 
   return <DataTableFilters filters={filters} />;
@@ -81,6 +119,18 @@ export const WithActiveFilters: Story = {
           onChange: () => undefined,
           type: "boolean",
           activeValue: "available",
+        },
+        {
+          id: "recordedAt",
+          label: "Tanggal tercatat",
+          type: "dateRange",
+          from: "2026-09-01",
+          to: "2026-09-15",
+          onChangeRange: () => undefined,
+          presets: [
+            { label: "Hari ini", from: "2026-09-15", to: "2026-09-15" },
+            { label: "7 hari terakhir", from: "2026-09-09", to: "2026-09-15" },
+          ],
         },
       ]}
     />

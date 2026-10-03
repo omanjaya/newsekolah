@@ -3,6 +3,7 @@ export { DataTableStateProvider, type DataTableLocalState } from "./data-table-s
 export {
   DataTableFilters,
   DEFAULT_DATA_TABLE_FILTERS_LABELS,
+  type DataTableDateRangePreset,
   type DataTableFilterDef,
   type DataTableFilterOption,
   type DataTableFiltersLabels,

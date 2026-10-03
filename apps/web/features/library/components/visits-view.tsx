@@ -7,9 +7,9 @@ import {
   Button,
   DataTable,
   EmptyState,
-  Input,
   PageHeader,
   domainIcons,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
@@ -18,6 +18,8 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useCan } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
@@ -44,8 +46,9 @@ export function VisitsView(): ReactElement {
   const locale = useLocale() as Locale;
   const canRecord = useCan("manage_library_circulation");
 
-  const [from, setFrom] = useState(firstOfMonthIso());
-  const [to, setTo] = useState(todayIso());
+  const [from, setFrom] = useDateFilter("from", firstOfMonthIso());
+  const [to, setTo] = useDateFilter("to", todayIso());
+  const presets = useDateRangePresets();
   const [recording, setRecording] = useState(false);
 
   const { data, isLoading } = useLibraryVisitsQuery(`${from}T00:00:00Z`, `${to}T23:59:59Z`);
@@ -54,6 +57,21 @@ export function VisitsView(): ReactElement {
   const directoryMap = useLookup(directory.data?.data);
 
   const items = data?.data ?? [];
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "period",
+      label: t("dateRange"),
+      type: "dateRange",
+      from,
+      to,
+      onChangeRange: ({ from: nextFrom, to: nextTo }) => {
+        setFrom(nextFrom);
+        setTo(nextTo);
+      },
+      presets,
+    },
+  ];
 
   const columns = useMemo<ColumnDef<LibraryVisit>[]>(
     () => [
@@ -156,29 +174,6 @@ export function VisitsView(): ReactElement {
         </div>
       </dl>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("fromLabel")}</span>
-          <Input
-            type="date"
-            value={from}
-            onChange={(e) => {
-              setFrom(e.target.value);
-            }}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("toLabel")}</span>
-          <Input
-            type="date"
-            value={to}
-            onChange={(e) => {
-              setTo(e.target.value);
-            }}
-          />
-        </label>
-      </div>
-
       <DataTable
         stateKey="features/library/components/visits-view:1"
         mode="local"
@@ -191,6 +186,14 @@ export function VisitsView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
+        filters={filters}
+        filtersLabels={{
+          reset: t("reset"),
+          removeFilter: (label) => t("removeFilter", { label }),
+          dateRangeFrom: t("fromLabel"),
+          dateRangeTo: t("toLabel"),
+          dateRangeInvalid: t("invalidRange"),
+        }}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

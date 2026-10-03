@@ -8,6 +8,7 @@ import {
   Input,
   Select,
   StatusBadge,
+  type DataTableFilterDef,
   type StatusName,
   useToast,
 } from "@newsekolah/ui";
@@ -23,6 +24,7 @@ import {
   type ReportExportOptions,
 } from "../../../components/report-export-dialog";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   type AttendanceRecord,
@@ -70,9 +72,25 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
   const today = todayInZone();
   const [from, setFrom] = useDateFilter("from", today.slice(0, 8) + "01");
   const [to, setTo] = useDateFilter("to", today);
+  const presets = useDateRangePresets();
   const [month, setMonth] = useDateFilter("month", today.slice(0, 7), true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogAllOpen, setDialogAllOpen] = useState(false);
+
+  const historyFilters: DataTableFilterDef[] = [
+    {
+      id: "period",
+      label: t("history.dateRange"),
+      type: "dateRange",
+      from,
+      to,
+      onChangeRange: ({ from: nextFrom, to: nextTo }) => {
+        setFrom(nextFrom);
+        setTo(nextTo);
+      },
+      presets,
+    },
+  ];
 
   const recapColumns: ReportExportColumn[] = RECAP_COLUMN_KEYS.map((key) => ({
     key,
@@ -166,30 +184,6 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
         <>
           <section className="flex flex-col gap-3">
             <h2 className="text-[15px] font-medium text-fg">{t("history.title")}</h2>
-            <div className="flex flex-wrap items-end gap-3">
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="text-fg-muted">{t("history.from")}</span>
-                <Input
-                  type="date"
-                  value={from}
-                  onChange={(e) => {
-                    setFrom(e.target.value);
-                  }}
-                  className="w-44"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="text-fg-muted">{t("history.to")}</span>
-                <Input
-                  type="date"
-                  value={to}
-                  onChange={(e) => {
-                    setTo(e.target.value);
-                  }}
-                  className="w-44"
-                />
-              </label>
-            </div>
             <DataTable
               stateKey="features/staff-attendance/components/employee-recap-view:1"
               mode="local"
@@ -201,6 +195,14 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
               sorting={[]}
               onSortingChange={() => undefined}
               globalFilter=""
+              filters={historyFilters}
+              filtersLabels={{
+                reset: t("history.reset"),
+                removeFilter: (label) => t("history.removeFilter", { label }),
+                dateRangeFrom: t("history.from"),
+                dateRangeTo: t("history.to"),
+                dateRangeInvalid: t("history.invalidRange"),
+              }}
               isLoading={history.isLoading}
               getRowId={(r) => r.date}
               emptyState={

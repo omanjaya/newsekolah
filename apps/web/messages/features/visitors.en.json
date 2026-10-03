@@ -93,7 +93,11 @@
       "includeClosed": "Show closed incidents",
       "onlyOpen": "Open only",
       "reset": "Reset filter",
-      "removeFilter": "Remove {label} filter"
+      "removeFilter": "Remove {label} filter",
+      "dateRange": "Date range",
+      "from": "From date",
+      "to": "To date",
+      "invalidRange": "The from date must be on or before the to date"
     },
     "columns": {
       "occurredAt": "Occurred at",
