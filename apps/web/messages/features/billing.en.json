@@ -12,6 +12,10 @@
   },
   "feeTypes": {
     "includeInactive": "Show inactive",
+    "filters": {
+      "reset": "Reset filters",
+      "removeFilter": "Remove {label} filter"
+    },
     "add": "Add fee type",
     "saved": "Fee type saved",
     "deleted": "Fee type retired",
@@ -167,6 +171,10 @@
     "statusAll": "All statuses",
     "classLabel": "Class",
     "classAll": "All classes",
+    "filters": {
+      "reset": "Reset filters",
+      "removeFilter": "Remove {label} filter"
+    },
     "unknownStudent": "Unknown student",
     "emptyTitle": "No bills",
     "emptyBody": "No bills match this filter.",

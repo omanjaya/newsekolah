@@ -1,13 +1,21 @@
 "use client";
 
 import { type Locale, formatCurrency, formatDate } from "@newsekolah/i18n";
-import { Button, DataTable, EmptyState, Input, Select, domainIcons } from "@newsekolah/ui";
+import {
+  Button,
+  DataTable,
+  EmptyState,
+  Input,
+  domainIcons,
+  type DataTableFilterDef,
+} from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
 import { type Bill, type BillStatus, useBillsQuery } from "../api";
 
@@ -15,7 +23,7 @@ import { BillDetailSheet } from "./bill-detail-sheet";
 import { BillStatusBadge } from "./bill-status-badge";
 
 const STATUS_VALUES: BillStatus[] = ["unpaid", "partial", "paid"];
-const ALL = "all";
+const STATUS_FILTER_VALUES = ["", ...STATUS_VALUES] as const;
 const PAGE_SIZE = 50;
 
 /**
@@ -32,8 +40,12 @@ export function BillsListView(): ReactElement {
   const classes = useClassesQuery();
 
   const [period, setPeriod] = useState("");
-  const [status, setStatus] = useState<BillStatus | "">("");
-  const [classId, setClassId] = useState("");
+  const [status, setStatus] = useUrlState<(typeof STATUS_FILTER_VALUES)[number]>(
+    "status",
+    STATUS_FILTER_VALUES,
+    "",
+  );
+  const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
   const [page, setPage] = useState(0);
   const [selectedBillId, setSelectedBillId] = useState<string | null>(null);
 
@@ -44,9 +56,29 @@ export function BillsListView(): ReactElement {
   const rows = data?.data ?? [];
   const hasNext = rows.length === PAGE_SIZE;
 
-  const classOptions = [
-    { value: ALL, label: t("classAll") },
-    ...(classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name })),
+  const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "status",
+      label: t("statusLabel"),
+      value: status,
+      onChange: (value) => {
+        setStatus(value as (typeof STATUS_FILTER_VALUES)[number]);
+        setPage(0);
+      },
+      options: STATUS_VALUES.map((value) => ({ value, label: t(`status.${value}`) })),
+    },
+    {
+      id: "class",
+      label: t("classLabel"),
+      value: classId,
+      onChange: (value) => {
+        setClassId(value);
+        setPage(0);
+      },
+      options: classOptions,
+    },
   ];
 
   const columns = useMemo<ColumnDef<Bill>[]>(
@@ -99,52 +131,26 @@ export function BillsListView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
-        <label className="col-span-2 flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("columns.period")}</span>
-          <Input
-            type="month"
-            value={period}
-            onChange={(e) => {
-              setPeriod(e.target.value);
-              setPage(0);
-            }}
-            className="w-full sm:w-44"
-            aria-label={t("columns.period")}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("statusLabel")}</span>
-          <Select
-            options={[
-              { value: ALL, label: t("statusAll") },
-              ...STATUS_VALUES.map((value) => ({ value, label: t(`status.${value}`) })),
-            ]}
-            value={status || ALL}
-            onValueChange={(value) => {
-              setStatus(value === ALL ? "" : (value as BillStatus));
-              setPage(0);
-            }}
-            placeholder={t("statusAll")}
-            aria-label={t("statusLabel")}
-            className="w-full sm:w-44"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("classLabel")}</span>
-          <Select
-            options={classOptions}
-            value={classId || ALL}
-            onValueChange={(value) => {
-              setClassId(value === ALL ? "" : value);
-              setPage(0);
-            }}
-            placeholder={t("classAll")}
-            aria-label={t("classLabel")}
-            className="w-full sm:w-44"
-          />
-        </label>
-      </div>
+      {/*
+        `period` is a free-form month value, not a select/boolean the shared
+        `DataTableFilters` pill bar can represent (see
+        docs/analysis/table-filters-audit-2026-09-30.md), so it stays its
+        own labeled input, positioned next to the filter pills the table
+        toolbar renders below.
+      */}
+      <label className="flex flex-col gap-1 text-[13px]">
+        <span className="font-medium text-fg">{t("columns.period")}</span>
+        <Input
+          type="month"
+          value={period}
+          onChange={(e) => {
+            setPeriod(e.target.value);
+            setPage(0);
+          }}
+          className="w-full sm:w-44"
+          aria-label={t("columns.period")}
+        />
+      </label>
       {isError ? (
         <QueryError retry={refetch} />
       ) : (
@@ -156,6 +162,11 @@ export function BillsListView(): ReactElement {
             columns={columns}
             rowCount={rows.length}
             searchable={false}
+            filters={filters}
+            filtersLabels={{
+              reset: t("filters.reset"),
+              removeFilter: (label) => t("filters.removeFilter", { label }),
+            }}
             isLoading={isLoading}
             getRowId={(item) => item.id}
             onRowActivate={(row) => {

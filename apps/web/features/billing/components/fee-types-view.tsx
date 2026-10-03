@@ -5,7 +5,6 @@ import { type Locale, formatCurrency } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
-  Checkbox,
   ConfirmDialog,
   DataTable,
   Dialog,
@@ -18,6 +17,7 @@ import {
   IconButton,
   domainIcons,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Plus } from "lucide-react";
@@ -25,6 +25,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { type FeeType, useDeleteFeeTypeMutation, useFeeTypesQuery } from "../api";
@@ -39,7 +40,12 @@ export function FeeTypesView(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_fee_types");
 
-  const [includeInactive, setIncludeInactive] = useState(false);
+  const [includeInactiveParam, setIncludeInactiveParam] = useUrlState<"" | "true">(
+    "include_inactive",
+    ["", "true"],
+    "",
+  );
+  const includeInactive = includeInactiveParam === "true";
   const { data, isLoading } = useFeeTypesQuery(includeInactive);
   const remove = useDeleteFeeTypeMutation();
 
@@ -48,6 +54,19 @@ export function FeeTypesView(): ReactElement {
   const [discountsFor, setDiscountsFor] = useState<FeeType | null>(null);
 
   const items = data?.data ?? [];
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "includeInactive",
+      label: t("includeInactive"),
+      value: includeInactiveParam,
+      onChange: (value) => {
+        setIncludeInactiveParam(value as "" | "true");
+      },
+      type: "boolean",
+      activeValue: "true",
+    },
+  ];
 
   const columns = useMemo<ColumnDef<FeeType>[]>(
     () => [
@@ -129,16 +148,7 @@ export function FeeTypesView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="flex items-center gap-2 text-[13px]">
-          <Checkbox
-            checked={includeInactive}
-            onCheckedChange={(v) => {
-              setIncludeInactive(v === true);
-            }}
-          />
-          {t("includeInactive")}
-        </label>
+      <div className="flex flex-wrap items-center justify-end gap-2">
         {canManage && (
           <Button
             size="sm"
@@ -164,6 +174,11 @@ export function FeeTypesView(): ReactElement {
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter=""
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.reset"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
+          }}
           isLoading={isLoading}
           getRowId={(item) => item.id}
           fillHeight
