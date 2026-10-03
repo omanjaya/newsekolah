@@ -4,7 +4,6 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Badge,
   Button,
-  Checkbox,
   ConfirmDialog,
   DataTable,
   Dialog,
@@ -17,6 +16,7 @@ import {
   IconButton,
   domainIcons,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Plus } from "lucide-react";
@@ -24,6 +24,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { type ViolationType, useDeleteViolationTypeMutation, useViolationTypesQuery } from "../api";
 
@@ -33,7 +34,12 @@ export function ViolationCatalogView(): ReactElement {
   const t = useTranslations("app.discipline.catalog");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const [includeInactive, setIncludeInactive] = useState(false);
+  const [includeInactiveParam, setIncludeInactiveParam] = useUrlState<"" | "true">(
+    "include_inactive",
+    ["", "true"],
+    "",
+  );
+  const includeInactive = includeInactiveParam === "true";
   const { data, isLoading } = useViolationTypesQuery(includeInactive);
   const remove = useDeleteViolationTypeMutation();
 
@@ -41,6 +47,19 @@ export function ViolationCatalogView(): ReactElement {
   const [pendingDelete, setPendingDelete] = useState<ViolationType | null>(null);
 
   const items = data?.data ?? [];
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "includeInactive",
+      label: t("includeInactive"),
+      value: includeInactiveParam,
+      onChange: (value) => {
+        setIncludeInactiveParam(value as "" | "true");
+      },
+      type: "boolean",
+      activeValue: "true",
+    },
+  ];
 
   const columns = useMemo<ColumnDef<ViolationType>[]>(
     () => [
@@ -102,16 +121,7 @@ export function ViolationCatalogView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="flex items-center gap-2 text-[13px]">
-          <Checkbox
-            checked={includeInactive}
-            onCheckedChange={(v) => {
-              setIncludeInactive(v === true);
-            }}
-          />
-          {t("includeInactive")}
-        </label>
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <Button
           size="sm"
           icon={<Plus />}
@@ -135,6 +145,11 @@ export function ViolationCatalogView(): ReactElement {
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter=""
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.reset"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
+          }}
           isLoading={isLoading}
           getRowId={(item) => item.id}
           fillHeight

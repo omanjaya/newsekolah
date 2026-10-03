@@ -232,3 +232,77 @@ preview, not a filterable list), `activities-calendar-view.tsx` (the only
 unexposed params are a date range, deferred to the in-flight
 date-range filter type), and `at-risk-students-view.tsx` (endpoint has no
 query params).
+
+## Pass 2: billing, discipline catalog, mentoring, supervision
+
+Scope for this pass: `billing/components/{arrears-report-view,bills-list-view,
+fee-types-view,generation-view}.tsx`; `discipline/components/{at-risk-panel,
+student-counseling-history,violation-catalog-view}.tsx`;
+`mentoring/components/{mentor-group-members-panel,mentor-groups-view,
+mentor-meeting-notes-panel}.tsx`; `supervision/components/
+{supervision-cycle-detail-view,supervision-cycle-report-view,
+supervision-cycles-view}.tsx` — the screens this pass's own audit (above,
+"not in this pass's priority list") had already surveyed by grep only.
+This pass reads each screen's list endpoint in `openapi/modules/*.yaml` and
+its hook in the feature's own `api.ts` to confirm, rather than guess,
+whether a param is actually forwarded.
+
+### Changed
+
+| Screen                                             | Endpoint                                                                                | Params supported                                  | Exposed before                                                                                                          | Added now                                                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `billing/components/fee-types-view.tsx`            | `GET /v1/billing/fee-types` (`useFeeTypesQuery`)                                        | `include_inactive`                                | Standalone `Checkbox`, local state                                                                                      | Moved into `DataTableFilters`, URL-backed (`include_inactive`)                                                                                                                                                                                                                                                                                                                                  |
+| `billing/components/bills-list-view.tsx`           | `GET /v1/billing/bills` (`useBillsQuery`)                                               | `period`, `status`, `class_id`, `limit`, `offset` | `period` (date `Input`), `status` and `class_id` as standalone `Select`s — all local state                              | `status` and `class_id` moved into `DataTableFilters`, URL-backed (`status`, `class_id`); `period` stays its own labeled month input next to the filter pills (not a select/boolean value `DataTableFilterDef` can represent)                                                                                                                                                                   |
+| `discipline/components/violation-catalog-view.tsx` | `GET /v1/discipline/violation-types` (`useViolationTypesQuery`)                         | `include_inactive`, `search`                      | `include_inactive` as standalone `Checkbox`, local state                                                                | Moved into `DataTableFilters`, URL-backed (`include_inactive`); `search` is never forwarded by `useViolationTypesQuery` (its only caller), so per this pass's rule of only wiring a param the hook already forwards, it was left alone — the table's own `mode="local"` search box already covers the same need client-side                                                                     |
+| `discipline/components/at-risk-panel.tsx`          | `GET /v1/discipline/sp-candidates` (`useSPCandidatesQuery`)                             | `class_id`, `level`, `search`, `limit`, `offset`  | `class_id` and `level` as standalone `Select`s using `useRememberedViewState` (session-persisted, not URL-backed)       | Both moved into `DataTableFilters`, URL-backed (`class_id`, `level`); any change resets pagination                                                                                                                                                                                                                                                                                              |
+| `mentoring/components/mentor-groups-view.tsx`      | `GET /v1/mentoring/groups`, `GET /v1/mentoring/my-groups` (neither takes a query param) | n/a — not an optional filter                      | `scope` (`mine`/`all`) as a standalone `Select`, URL-backed via `useUrlState`, positioned in its own row above the tabs | Restyled only (no param to add): `scope` picks which of the two zero-param endpoints runs, not an optional narrowing filter, so it stays required rather than moving into `DataTableFilters`; restyled from a `label`+`Select` into a pill-style `Tabs` switch (matching `CounselingView`'s mine/bk-team pattern) positioned directly above the table, next to where its toolbar renders search |
+
+### Audited, no change possible (endpoint has no filterable query params)
+
+| Screen                                                     | Endpoint                                                                                       | Notes                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `billing/components/arrears-report-view.tsx`               | `GET /v1/billing/arrears` (`useArrearsReportQuery`)                                            | No parameters at all — the report is two fully aggregated, server-computed tables (`by_class`, `by_student`); no standalone filter existed either. Nothing to move or add.                                                                                                                                                                                                                                                     |
+| `billing/components/generation-view.tsx`                   | `POST /v1/billing/generation/{preview,run}`                                                    | Not a list endpoint — `period` is a required month the whole screen is scoped to (you cannot preview or generate without picking one), not an optional narrowing filter. It already renders as a labeled input directly above the result table, the same `label` + `Input` idiom used for every other required-scope picker in the app (e.g. `staff-attendance/employee-recap-view.tsx`'s employee/month pickers). Left as is. |
+| `discipline/components/student-counseling-history.tsx`     | `GET /v1/discipline/students/{studentId}/counselings` (`useStudentCounselingsQuery`)           | Only path param (`studentId`, supplied by the parent page's navigation, not a picker inside this component) — no query params at all. No standalone filter existed. Nothing to move or add.                                                                                                                                                                                                                                    |
+| `mentoring/components/mentor-group-members-panel.tsx`      | `GET /v1/mentoring/groups/{groupId}/members`                                                   | Only path param (`groupId`) — no query parameters. No standalone filter existed (the panel's only `Select` is the "assign a student" picker inside the add-member dialog, not a list filter). Nothing to move or add.                                                                                                                                                                                                          |
+| `mentoring/components/mentor-meeting-notes-panel.tsx`      | `GET /v1/mentoring/groups/{groupId}/notes`                                                     | Only path param (`groupId`) — no query parameters. No standalone filter existed. Nothing to move or add.                                                                                                                                                                                                                                                                                                                       |
+| `supervision/components/supervision-cycles-view.tsx`       | `GET /v1/supervision/cycles`                                                                   | No parameters at all. No standalone filter existed. Nothing to move or add.                                                                                                                                                                                                                                                                                                                                                    |
+| `supervision/components/supervision-cycle-detail-view.tsx` | `GET /v1/supervision/cycles/{cycleId}/scheduled`                                               | Only path param (`cycleId`, a route segment set by navigating from the cycles list — there is no in-page picker for it to restyle). No query parameters. No standalone filter existed. Nothing to move or add.                                                                                                                                                                                                                 |
+| `supervision/components/supervision-cycle-report-view.tsx` | Same `GET /v1/supervision/cycles/{cycleId}/scheduled` data, aggregated client-side per teacher | No separate endpoint or query params; same `cycleId` path-scoped navigation as the detail view. No standalone filter existed. Nothing to move or add.                                                                                                                                                                                                                                                                          |
+
+### Summary
+
+Branch `worktree-agent-a28d287c320f716d8`, base `f51c9f0`. Commits:
+
+1. `48b97a9` `feat(web): filter billing lists` — `fee-types-view.tsx`, `bills-list-view.tsx`
+2. `d13f815` `feat(web): filter discipline catalog lists` — `violation-catalog-view.tsx`, `at-risk-panel.tsx`
+3. `311e72a` `feat(web): filter mentoring lists` — `mentor-groups-view.tsx` (restyle only, no new param)
+
+Screens changed: 5 (billing fee types, billing bills list, discipline
+violation catalog, discipline at-risk panel, mentoring groups scope
+restyle). Screens audited with no change possible: 8 (billing arrears
+report and generation; discipline student counseling history; mentoring's
+member panel and meeting notes; all three supervision screens) — every one
+of those list endpoints takes either no query parameters at all or only the
+path parameter that already scopes it (student/group/cycle id), and none
+had a pre-existing standalone filter to move, so there was nothing this
+task's mandate ("move existing filters; add filters the endpoint already
+supports but the UI doesn't expose") covers.
+
+Filters added: billing (`include_inactive` on fee types; `status`,
+`class_id` on the bills list); discipline (`include_inactive` on the
+violation catalog; `class_id`, `level` on the at-risk panel). No new filter
+param for mentoring — `mentor-groups-view.tsx`'s required `scope` control
+was only restyled.
+
+No screen in this pass's scope had more than three header action buttons,
+so no primary/secondary/"Lainnya" dropdown consolidation was needed.
+
+Required-scope pickers were kept required rather than folded into the
+optional filter bar: `generation-view.tsx`'s period picker (the screen
+cannot preview or generate without one) stays a `label`+`Input`, the same
+idiom used elsewhere for that pattern; `mentor-groups-view.tsx`'s mine/all
+scope picker (it selects between two different zero-param endpoints, not a
+narrowing filter on one) was restyled from a `label`+`Select` into a
+pill-style `Tabs` switch positioned directly above the table, closer to
+where the table's own search/filter row renders.

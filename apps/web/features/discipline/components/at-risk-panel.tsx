@@ -6,9 +6,9 @@ import {
   Button,
   DataTable,
   EmptyState,
-  Select,
   domainIcons,
   useToast,
+  type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
@@ -51,8 +52,8 @@ export function AtRiskPanel(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canIssue = useCan("issue_warning_letters");
 
-  const [classId, setClassId] = useRememberedViewState("at-risk-class", "");
-  const [level, setLevel] = useRememberedViewState("at-risk-level", "");
+  const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
+  const [level, setLevel] = useUrlState<string>("level", () => true, "");
   const [search, setSearch] = useRememberedViewState("at-risk-search", "");
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -80,13 +81,30 @@ export function AtRiskPanel(): ReactElement {
   const hasNextPage = allRows.length > pagination.pageSize;
   const rowCount = pagination.pageIndex * pagination.pageSize + rows.length + (hasNextPage ? 1 : 0);
 
-  const classOptions = [
-    { value: "all", label: t("filters.classAll") },
-    ...(classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name })),
-  ];
-  const levelOptions = [
-    { value: "all", label: t("filters.levelAll") },
-    ...levels.map((l) => ({ value: String(l.level), label: l.label })),
+  const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
+  const levelOptions = levels.map((l) => ({ value: String(l.level), label: l.label }));
+
+  const filters: DataTableFilterDef[] = [
+    {
+      id: "class",
+      label: t("filters.class"),
+      value: classId,
+      onChange: (value) => {
+        setClassId(value);
+        setPagination((p) => ({ ...p, pageIndex: 0 }));
+      },
+      options: classOptions,
+    },
+    {
+      id: "level",
+      label: t("filters.level"),
+      value: level,
+      onChange: (value) => {
+        setLevel(value);
+        setPagination((p) => ({ ...p, pageIndex: 0 }));
+      },
+      options: levelOptions,
+    },
   ];
 
   const columns = useMemo<ColumnDef<SPCandidate>[]>(
@@ -192,35 +210,6 @@ export function AtRiskPanel(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("filters.class")}</span>
-          <Select
-            options={classOptions}
-            value={classId || "all"}
-            onValueChange={(v) => {
-              setClassId(v === "all" ? "" : v);
-              setPagination((p) => ({ ...p, pageIndex: 0 }));
-            }}
-            className="w-44"
-            aria-label={t("filters.class")}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("filters.level")}</span>
-          <Select
-            options={levelOptions}
-            value={level || "all"}
-            onValueChange={(v) => {
-              setLevel(v === "all" ? "" : v);
-              setPagination((p) => ({ ...p, pageIndex: 0 }));
-            }}
-            className="w-40"
-            aria-label={t("filters.level")}
-          />
-        </label>
-      </div>
-
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/discipline/components/at-risk-panel:1"
@@ -235,6 +224,11 @@ export function AtRiskPanel(): ReactElement {
           onGlobalFilterChange={(value) => {
             setSearch(value);
             setPagination((p) => ({ ...p, pageIndex: 0 }));
+          }}
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.reset"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
           }}
           isLoading={candidates.isLoading}
           getRowId={(item) => item.student_user_id}

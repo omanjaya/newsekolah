@@ -14,7 +14,6 @@ import {
   EmptyState,
   IconButton,
   PageHeader,
-  Select,
   Tabs,
   TabsContent,
   TabsList,
@@ -155,17 +154,6 @@ export function MentorGroupsView({
         }
       />
 
-      <label className="flex max-w-xs flex-col gap-1 text-[13px]">
-        <span className="font-medium">{workspace("groupScope")}</span>
-        <Select
-          value={scope}
-          onValueChange={setScope}
-          options={[
-            { value: "mine", label: workspace("mine") },
-            { value: "all", label: workspace("allGroups") },
-          ]}
-        />
-      </label>
       {isError && <QueryError retry={() => refetch()} />}
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
         {canManage && (
@@ -175,7 +163,22 @@ export function MentorGroupsView({
           </TabsList>
         )}
         <TabsContent value="groups" className="pt-4 md:min-h-0 md:flex-1">
-          <div className="flex flex-col md:h-full md:min-h-0">
+          <div className="flex flex-col gap-3 md:h-full md:min-h-0">
+            {/*
+              `scope` picks between two different endpoints (the caller's own
+              groups vs. every group), not an optional list filter -- there is
+              no "unset" state, so it stays its own required control rather
+              than a `DataTableFilters` pill, but as a pill-style `Tabs`
+              (matching `CounselingView`'s mine/bkTeam switch) positioned
+              directly above the table, next to the search box its toolbar
+              renders (see docs/analysis/table-filters-audit-2026-09-30.md).
+            */}
+            <Tabs value={scope} onValueChange={setScope} aria-label={workspace("groupScope")}>
+              <TabsList>
+                <TabsTrigger value="mine">{workspace("mine")}</TabsTrigger>
+                <TabsTrigger value="all">{workspace("allGroups")}</TabsTrigger>
+              </TabsList>
+            </Tabs>
             <DataTable
               stateKey="features/mentoring/components/mentor-groups-view:1"
               mode="local"
