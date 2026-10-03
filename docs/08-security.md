@@ -104,5 +104,6 @@ Ini bukan pelemahan isolasi tenant: ketiga endpoint tersebut sudah didesain publ
 
 - `security-review` pada setiap PR yang menyentuh auth, authz, upload, atau migrasi (skill tersedia di sesi Claude Code).
 - Dependabot/Renovate mingguan; `govulncheck` dan `pnpm audit` di CI dengan gagal pada severity tinggi.
+- Pengecualian `pnpm audit` (`pnpm.auditConfig.ignoreCves` di `package.json`) hanya untuk advisory yang belum punya versi perbaikan **dan** hanya mengenai alat pengembangan yang tidak ikut terkirim ke web, API, atau aplikasi terpasang. Per 3 Oktober 2026: `CVE-2026-85393` (`node-forge` via `@expo/cli`, alat build mobile) dan `CVE-2026-93687` (`braces` via `jest-expo`, alat test mobile). Hapus pengecualian begitu upstream merilis perbaikan; advisory yang punya versi perbaikan diselesaikan lewat `pnpm.overrides`, bukan dikecualikan.
 - Pengujian penetrasi internal sebelum onboarding sekolah ketiga; halaman `security.txt` dan alur pelaporan.
 - Checklist rilis: header keamanan lolos Mozilla Observatory grade A, tidak ada endpoint tanpa `x-permission`, test isolasi tenant hijau.
