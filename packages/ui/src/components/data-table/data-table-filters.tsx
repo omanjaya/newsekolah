@@ -279,15 +279,20 @@ function DataTableFilterPill({
 }
 
 /**
- * "YYYY-MM-DD" -> "6 Sep" / "6 Sep 2026". The month name comes from the
- * runtime's `Intl` (so it is never a hardcoded locale's spelling), but the
+ * "YYYY-MM-DD" -> "6 Sep" / "6 Sep 2026". The month name comes from `Intl`
+ * in the page's language (so it is never a hardcoded locale's spelling), but the
  * day-month-year order is fixed here rather than left to a full `Intl`
  * format, which in several locales would reorder it (e.g. "Sep 6, 2026").
  */
 function formatDayMonth(value: string, withYear: boolean): string {
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return value;
-  const month = new Intl.DateTimeFormat(undefined, { month: "short" }).format(date);
+  // The page's own language (set by the app on <html lang>), not the
+  // browser's, so an English-language browser still reads "Okt" on an
+  // Indonesian page.
+  const locale =
+    typeof document !== "undefined" ? document.documentElement.lang || undefined : undefined;
+  const month = new Intl.DateTimeFormat(locale, { month: "short" }).format(date);
   return withYear
     ? `${date.getDate()} ${month} ${date.getFullYear()}`
     : `${date.getDate()} ${month}`;
@@ -368,7 +373,7 @@ function DateRangeFilterPill({
               {triggerLabel}
             </button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-72 p-3">
+          <PopoverContent align="start" className="w-80 p-3">
             <div className="flex flex-col gap-3">
               {filter.presets && filter.presets.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
@@ -397,10 +402,11 @@ function DateRangeFilterPill({
                 </div>
               )}
               <div className="flex items-end gap-2">
-                <label className="flex flex-1 flex-col gap-1 text-[13px]">
+                <label className="flex min-w-0 flex-1 flex-col gap-1 text-[13px]">
                   <span className="font-medium text-fg">{fromLabel}</span>
                   <Input
                     type="date"
+                    className="w-full min-w-0"
                     value={draftFrom}
                     invalid={invalid}
                     onChange={(event) => {
@@ -408,10 +414,11 @@ function DateRangeFilterPill({
                     }}
                   />
                 </label>
-                <label className="flex flex-1 flex-col gap-1 text-[13px]">
+                <label className="flex min-w-0 flex-1 flex-col gap-1 text-[13px]">
                   <span className="font-medium text-fg">{toLabel}</span>
                   <Input
                     type="date"
+                    className="w-full min-w-0"
                     value={draftTo}
                     invalid={invalid}
                     onChange={(event) => {
