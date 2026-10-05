@@ -21,7 +21,7 @@ import {
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -50,11 +50,23 @@ const STATUS_VARIANT: Record<AnnouncementStatus, "neutral" | "accent"> = {
 const STATUSES: AnnouncementStatus[] = ["draft", "scheduled", "published", "archived"];
 const STATUS_VALUES = ["", ...STATUSES] as const;
 
-export function AnnouncementsManage(): ReactElement {
+/**
+ * `creating`/`onCreatingChange` mirror `MyLeaveRequests`'s own props: the
+ * primary "Buat pengumuman" action lives in the shared page header
+ * (`AnnouncementsView`), not here, so opening the blank editor is driven
+ * from outside while editing an existing row stays this component's own
+ * business.
+ */
+export function AnnouncementsManage({
+  creating,
+  onCreatingChange,
+}: {
+  creating: boolean;
+  onCreatingChange: (creating: boolean) => void;
+}): ReactElement {
   const t = useTranslations("app.announcements");
   const locale = useLocale() as Locale;
   const { me } = useSession();
-  const canCreate = useCan("create_announcements");
   const canEdit = useCan("edit_announcements");
   const canPublish = useCan("publish_announcements");
   const canDelete = useCan("delete_announcements");
@@ -72,7 +84,8 @@ export function AnnouncementsManage(): ReactElement {
   const transition = useAnnouncementTransitionMutation();
   const remove = useDeleteAnnouncementMutation();
 
-  const [editing, setEditing] = useState<Announcement | "new" | null>(null);
+  const [editingExisting, setEditingExisting] = useState<Announcement | null>(null);
+  const editing = creating ? "new" : editingExisting;
   const [pendingDelete, setPendingDelete] = useState<Announcement | null>(null);
   const [pendingPublish, setPendingPublish] = useState<Announcement | null>(null);
 
@@ -157,7 +170,7 @@ export function AnnouncementsManage(): ReactElement {
                 {canEdit && editable && (
                   <DropdownMenuItem
                     onSelect={() => {
-                      setEditing(a);
+                      setEditingExisting(a);
                     }}
                   >
                     {t("actions.edit")}
@@ -216,20 +229,6 @@ export function AnnouncementsManage(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        {canCreate && (
-          <Button
-            size="sm"
-            icon={<Plus />}
-            onClick={() => {
-              setEditing("new");
-            }}
-          >
-            {t("actions.create")}
-          </Button>
-        )}
-      </div>
-
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/announcements/components/announcements-manage:1"
@@ -285,7 +284,10 @@ export function AnnouncementsManage(): ReactElement {
       <Dialog
         open={editing !== null}
         onOpenChange={(open) => {
-          if (!open) setEditing(null);
+          if (!open) {
+            onCreatingChange(false);
+            setEditingExisting(null);
+          }
         }}
       >
         <DialogContent
@@ -296,10 +298,12 @@ export function AnnouncementsManage(): ReactElement {
             <AnnouncementForm
               initial={editing === "new" ? undefined : editing}
               onSaved={() => {
-                setEditing(null);
+                onCreatingChange(false);
+                setEditingExisting(null);
               }}
               onCancel={() => {
-                setEditing(null);
+                onCreatingChange(false);
+                setEditingExisting(null);
               }}
             />
           )}
