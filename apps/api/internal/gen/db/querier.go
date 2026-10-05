@@ -1193,6 +1193,11 @@ type Querier interface {
 	ListReportScores(ctx context.Context, arg ListReportScoresParams) ([]ReportScore, error)
 	ListReportScoresForStudent(ctx context.Context, arg ListReportScoresForStudentParams) ([]ReportScore, error)
 	ListReservationsForMember(ctx context.Context, arg ListReservationsForMemberParams) ([]LibraryReservation, error)
+	// GET /v1/library/me's own view of a member's reservations, title joined in
+	// the same way ListLoansForMemberWithTitle joins it for loans: the member
+	// (view_own_library_loans only, not view_library) cannot call GET
+	// /v1/library/titles/{titleId} themselves to resolve a reservation's title.
+	ListReservationsForMemberWithTitle(ctx context.Context, arg ListReservationsForMemberWithTitleParams) ([]ListReservationsForMemberWithTitleRow, error)
 	ListReservationsForTitle(ctx context.Context, arg ListReservationsForTitleParams) ([]LibraryReservation, error)
 	ListRolePermissionCodes(ctx context.Context, arg ListRolePermissionCodesParams) ([]string, error)
 	// cross-module read: roles/user_roles tables are owned by the identity module.

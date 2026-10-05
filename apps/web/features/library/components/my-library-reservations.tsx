@@ -14,7 +14,6 @@ import {
   useReserveMyLibraryTitleMutation,
 } from "../me-api";
 
-import { LibraryTitleName } from "./library-title-name";
 import { MyLibraryTitlePicker } from "./my-library-title-picker";
 
 const CANCELLABLE = new Set(["waiting", "ready"]);
@@ -52,7 +51,7 @@ export function MyLibraryReservations({
             >
               <div className="flex flex-col">
                 <span className="font-medium text-fg">
-                  <LibraryTitleName titleId={reservation.title_id} />
+                  {reservation.title_name ?? reservation.title_id}
                 </span>
                 <span className="text-[12px] text-fg-muted">
                   {reservation.status === "waiting" && reservation.position

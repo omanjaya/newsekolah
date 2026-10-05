@@ -47,7 +47,11 @@ func (s *Service) MyProfile(ctx context.Context, tenantID, userID uuid.UUID) (My
 			return err
 		}
 		out.History = history
-		reservations, err := s.repo.ListReservationsForMember(ctx, tenantID, userID)
+		// Title joined in (ListReservationsForMemberWithTitle rather than
+		// the plain ListReservationsForMember), for the same reason the
+		// active/history loans above use the WithTitle variant: the
+		// caller only holds view_own_library_loans, not view_library.
+		reservations, err := s.repo.ListReservationsForMemberWithTitle(ctx, tenantID, userID)
 		if err != nil {
 			return err
 		}

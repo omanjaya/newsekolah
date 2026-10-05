@@ -51,6 +51,27 @@ func (r *Repository) ListReservationsForMember(ctx context.Context, tenantID, me
 	return toReservations(rows), nil
 }
 
+// ListReservationsForMemberWithTitle is ListReservationsForMember plus each
+// reservation's title name/author, for GET /v1/library/me: the member
+// cannot call GET /v1/library/titles/{id} themselves (view_library, not
+// their view_own_library_loans), so the title is joined in here instead --
+// the same reasoning as ListLoansForMemberWithTitle.
+func (r *Repository) ListReservationsForMemberWithTitle(ctx context.Context, tenantID, memberID uuid.UUID) ([]domain.Reservation, error) {
+	rows, err := r.queries(ctx).ListReservationsForMemberWithTitle(ctx, db.ListReservationsForMemberWithTitleParams{
+		TenantID: tenantID, MemberUserID: memberID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list reservations for member with title: %w", err)
+	}
+	out := make([]domain.Reservation, len(rows))
+	for i, row := range rows {
+		res := toReservation(row.LibraryReservation)
+		res.TitleName, res.TitleAuthor = row.TitleName, row.TitleAuthor
+		out[i] = res
+	}
+	return out, nil
+}
+
 func (r *Repository) MarkReservationReady(ctx context.Context, tenantID, id, copyID uuid.UUID, readyAt, expiresAt time.Time) (domain.Reservation, bool, error) {
 	row, err := r.queries(ctx).MarkReservationReady(ctx, db.MarkReservationReadyParams{
 		TenantID: tenantID, ID: id, ReadyAt: pdatabase.Timestamptz(readyAt), ExpiresAt: pdatabase.Timestamptz(expiresAt),

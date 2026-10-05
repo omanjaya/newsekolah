@@ -213,6 +213,7 @@ type Repository interface {
 	GetReservation(ctx context.Context, tenantID, id uuid.UUID) (domain.Reservation, bool, error)
 	ListReservationsForTitle(ctx context.Context, tenantID, titleID uuid.UUID) ([]domain.Reservation, error)
 	ListReservationsForMember(ctx context.Context, tenantID, memberID uuid.UUID) ([]domain.Reservation, error)
+	ListReservationsForMemberWithTitle(ctx context.Context, tenantID, memberID uuid.UUID) ([]domain.Reservation, error)
 	MarkReservationReady(ctx context.Context, tenantID, id, copyID uuid.UUID, readyAt, expiresAt time.Time) (domain.Reservation, bool, error)
 	FulfillReservation(ctx context.Context, tenantID, id, loanID uuid.UUID) (domain.Reservation, bool, error)
 	CancelReservation(ctx context.Context, tenantID, id uuid.UUID) (domain.Reservation, bool, error)

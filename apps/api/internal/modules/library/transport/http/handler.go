@@ -319,6 +319,17 @@ func toAPIReservation(r domain.Reservation) api.LibraryReservation {
 		id := openapi_types.UUID(r.HeldCopyID.UUID)
 		out.HeldCopyId = &id
 	}
+	// Only ListReservationsForMemberWithTitle (GET /v1/library/me) populates
+	// these on the domain.Reservation; every other read leaves them
+	// zero-valued, so the wire field stays absent (omitempty) rather than
+	// an empty string -- mirrors toAPILoan's identical TitleName/TitleAuthor
+	// handling.
+	if r.TitleName != "" {
+		out.TitleName = &r.TitleName
+	}
+	if r.TitleAuthor != "" {
+		out.TitleAuthor = &r.TitleAuthor
+	}
 	return out
 }
 
