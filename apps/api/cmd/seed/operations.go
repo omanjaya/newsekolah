@@ -383,7 +383,7 @@ func ensureTeaching(ctx context.Context, svc *academicservice.Service, tenantID,
 // the whole school day, not just its first 90 minutes -- the e2e
 // simulation (apps/web/e2e/simulation) can then run at any daytime hour.
 func ensureTimetable(ctx context.Context, svc *schedulingservice.Service, tenantID, yearID, teacherID, subjectID, classID uuid.UUID, periods []academicdomain.Period) error {
-	existing, err := svc.ListByTeacher(ctx, tenantID, yearID, teacherID)
+	existing, err := svc.ListByTeacher(ctx, tenantID, yearID, teacherID, nil)
 	if err != nil {
 		return fmt.Errorf("list schedules: %w", err)
 	}

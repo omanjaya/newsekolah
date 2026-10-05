@@ -80,11 +80,10 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
   const lessons = useMemo<Lesson[]>(() => {
     return (
       (schedules.data?.data ?? [])
-        // day_of_week alone (sent by useSchedulesQuery) is not enough: the API
-        // ignores it whenever class_id is also present (its ListSchedules
-        // switch matches class_id first), so a class with one lesson per day
-        // otherwise renders every weekday's row as if it were today's. Filter
-        // client-side regardless of what the server already narrowed.
+        // The API now combines class_id and day_of_week itself, so this
+        // query already comes back narrowed to today. Filter again anyway
+        // as a harmless guard against a stale cached response (e.g. the
+        // query firing again right as dayOfWeek rolls over at midnight).
         .filter((block) => block.day_of_week === dayOfWeek)
         .map((block): Lesson | null => {
           const start = periodsBySequence.get(block.start_seq);

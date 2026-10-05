@@ -376,6 +376,196 @@ func TestListSubstitutionsWithSchedule(t *testing.T) {
 	require.Equal(t, class, incoming[0].ClassID)
 }
 
+// fullAccessPermissions grants manage_schedules unconditionally, putting
+// every ListSchedules call through this test into viewScope.fullAccess --
+// the scope that previously let class_id and day_of_week collide (the
+// switch in ListSchedules matched class_id and never looked at
+// day_of_week at all).
+type fullAccessPermissions struct{}
+
+func (fullAccessPermissions) EffectivePermissions(context.Context, uuid.UUID, uuid.UUID) (authz.Set, error) {
+	return authz.NewSet(authz.PermManageSchedules), nil
+}
+
+// TestListSchedulesCombinesClassAndDayFilters proves GET /v1/schedules
+// combines every filter the caller supplies instead of only acting on
+// one: class_id and day_of_week together must narrow to that class's
+// single day, teacher_user_id and day_of_week together must narrow to
+// that teacher's single day, and each filter alone must keep behaving
+// exactly as before (the whole week for class_id/teacher_user_id, every
+// class for day_of_week).
+func TestListSchedulesCombinesClassAndDayFilters(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test requires Docker")
+	}
+	ctx := context.Background()
+	pg := dbtest.Start(t)
+	pool := pg.AdminPool
+	insertID := func(sql string, args ...any) uuid.UUID {
+		t.Helper()
+		var id uuid.UUID
+		require.NoError(t, pool.QueryRow(ctx, sql+" returning id", args...).Scan(&id))
+		return id
+	}
+	exec := func(sql string, args ...any) {
+		t.Helper()
+		_, err := pool.Exec(ctx, sql, args...)
+		require.NoError(t, err)
+	}
+	tenant := insertID(`insert into tenants (slug,name,education_level,timezone,locale,status,plan) values ('schedule-filter-test','Test','sma','UTC','id','active','default')`)
+	year := insertID(`insert into academic_years (tenant_id,label,starts_on,ends_on) values ($1,'2026/2027','2026-01-01','2027-12-31')`, tenant)
+	grade := insertID(`insert into grade_levels (tenant_id,code,name,sequence) values ($1,'X','X',1)`, tenant)
+	class := insertID(`insert into classes (tenant_id,academic_year_id,grade_level_id,name) values ($1,$2,$3,'X-A')`, tenant, year, grade)
+	subject := insertID(`insert into subjects (tenant_id,code,name) values ($1,'MTK','Math')`, tenant)
+	teacher := insertID(`insert into users (tenant_id,username,password_hash,name,status,locale) values ($1,'teacher-filter','x','Teacher','active','id')`, tenant)
+	template := insertID(`insert into period_templates (tenant_id,name) values ($1,'Default')`, tenant)
+	p1 := insertID(`insert into periods (tenant_id,template_id,name,sequence,starts_at,ends_at) values ($1,$2,'P1',1,'08:00','09:00')`, tenant, template)
+	exec(`insert into teaching_assignments (tenant_id,academic_year_id,teacher_user_id,subject_id,class_id) values ($1,$2,$3,$4,$5)`, tenant, year, teacher, subject, class)
+	for day := 1; day <= 3; day++ {
+		exec(`insert into school_days (tenant_id,academic_year_id,day_of_week) values ($1,$2,$3)`, tenant, year, day)
+		exec(`insert into period_day_assignments (tenant_id,academic_year_id,day_of_week,template_id) values ($1,$2,$3,$4)`, tenant, year, day, template)
+	}
+
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool))
+	actor := service.Actor{CanManage: true, UserID: teacher}
+	for day := int16(1); day <= 3; day++ {
+		in := service.ScheduleInput{
+			AcademicYearID: year, ClassID: class, SubjectID: subject, TeacherUserID: teacher,
+			DayOfWeek: day, StartPeriodID: p1, EndPeriodID: p1, Source: domain.SourceAdmin,
+		}
+		_, err := svc.CreateSchedule(ctx, tenant, in, actor)
+		require.NoError(t, err)
+	}
+
+	handler := schedulehttp.New(svc, fullAccessPermissions{}, nil)
+	actorCtx := httpx.WithUserID(tenantctx.WithTenant(ctx, tenantctx.Tenant{ID: tenant}), teacher)
+	tuesday := 2
+	wednesday := 3
+
+	// class_id alone still returns every day the class meets (unchanged
+	// single-filter behaviour).
+	classOnly, err := handler.ListSchedules(actorCtx, api.ListSchedulesRequestObject{
+		Params: api.ListSchedulesParams{AcademicYearId: year, ClassId: &class},
+	})
+	require.NoError(t, err)
+	require.Len(t, classOnly.(api.ListSchedules200JSONResponse).Data, 3)
+
+	// class_id + day_of_week must narrow to that one day -- this is the
+	// bug: the old switch matched class_id first and never consulted
+	// day_of_week, so this used to come back with all 3 days' blocks.
+	classAndDay, err := handler.ListSchedules(actorCtx, api.ListSchedulesRequestObject{
+		Params: api.ListSchedulesParams{AcademicYearId: year, ClassId: &class, DayOfWeek: &tuesday},
+	})
+	require.NoError(t, err)
+	classAndDayData := classAndDay.(api.ListSchedules200JSONResponse).Data
+	require.Len(t, classAndDayData, 1)
+	require.Equal(t, tuesday, classAndDayData[0].DayOfWeek)
+
+	// teacher_user_id alone still returns every day too.
+	teacherOnly, err := handler.ListSchedules(actorCtx, api.ListSchedulesRequestObject{
+		Params: api.ListSchedulesParams{AcademicYearId: year, TeacherUserId: &teacher},
+	})
+	require.NoError(t, err)
+	require.Len(t, teacherOnly.(api.ListSchedules200JSONResponse).Data, 3)
+
+	// teacher_user_id + day_of_week must narrow the same way class_id does.
+	teacherAndDay, err := handler.ListSchedules(actorCtx, api.ListSchedulesRequestObject{
+		Params: api.ListSchedulesParams{AcademicYearId: year, TeacherUserId: &teacher, DayOfWeek: &wednesday},
+	})
+	require.NoError(t, err)
+	teacherAndDayData := teacherAndDay.(api.ListSchedules200JSONResponse).Data
+	require.Len(t, teacherAndDayData, 1)
+	require.Equal(t, wednesday, teacherAndDayData[0].DayOfWeek)
+
+	// day_of_week alone (no class_id/teacher_user_id) is unaffected: it
+	// stays the manage_schedules-only "every class, one day" grid.
+	dayOnly, err := handler.ListSchedules(actorCtx, api.ListSchedulesRequestObject{
+		Params: api.ListSchedulesParams{AcademicYearId: year, DayOfWeek: &tuesday},
+	})
+	require.NoError(t, err)
+	dayOnlyData := dayOnly.(api.ListSchedules200JSONResponse).Data
+	require.Len(t, dayOnlyData, 1)
+	require.Equal(t, tuesday, dayOnlyData[0].DayOfWeek)
+}
+
+// TestListSchedulesStudentScopeCombinesClassAndDay proves the student
+// "own class only" restriction still applies once class_id combines with
+// day_of_week: a student may narrow their own class's grid to one day,
+// but may not do the same for any other class.
+func TestListSchedulesStudentScopeCombinesClassAndDay(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test requires Docker")
+	}
+	ctx := context.Background()
+	pg := dbtest.Start(t)
+	pool := pg.AdminPool
+	insertID := func(sql string, args ...any) uuid.UUID {
+		t.Helper()
+		var id uuid.UUID
+		require.NoError(t, pool.QueryRow(ctx, sql+" returning id", args...).Scan(&id))
+		return id
+	}
+	exec := func(sql string, args ...any) {
+		t.Helper()
+		_, err := pool.Exec(ctx, sql, args...)
+		require.NoError(t, err)
+	}
+	tenant := insertID(`insert into tenants (slug,name,education_level,timezone,locale,status,plan) values ('schedule-student-test','Test','sma','UTC','id','active','default')`)
+	year := insertID(`insert into academic_years (tenant_id,label,starts_on,ends_on) values ($1,'2026/2027','2026-01-01','2027-12-31')`, tenant)
+	grade := insertID(`insert into grade_levels (tenant_id,code,name,sequence) values ($1,'X','X',1)`, tenant)
+	ownClass := insertID(`insert into classes (tenant_id,academic_year_id,grade_level_id,name) values ($1,$2,$3,'X-A')`, tenant, year, grade)
+	otherClass := insertID(`insert into classes (tenant_id,academic_year_id,grade_level_id,name) values ($1,$2,$3,'X-B')`, tenant, year, grade)
+	subject := insertID(`insert into subjects (tenant_id,code,name) values ($1,'MTK','Math')`, tenant)
+	teacher := insertID(`insert into users (tenant_id,username,password_hash,name,status,locale) values ($1,'teacher-student-filter','x','Teacher','active','id')`, tenant)
+	student := insertID(`insert into users (tenant_id,username,password_hash,name,status,locale) values ($1,'student-filter','x','Student','active','id')`, tenant)
+	template := insertID(`insert into period_templates (tenant_id,name) values ($1,'Default')`, tenant)
+	p1 := insertID(`insert into periods (tenant_id,template_id,name,sequence,starts_at,ends_at) values ($1,$2,'P1',1,'08:00','09:00')`, tenant, template)
+	p2 := insertID(`insert into periods (tenant_id,template_id,name,sequence,starts_at,ends_at) values ($1,$2,'P2',2,'09:00','10:00')`, tenant, template)
+	exec(`insert into teaching_assignments (tenant_id,academic_year_id,teacher_user_id,subject_id,class_id) values ($1,$2,$3,$4,$5)`, tenant, year, teacher, subject, ownClass)
+	exec(`insert into teaching_assignments (tenant_id,academic_year_id,teacher_user_id,subject_id,class_id) values ($1,$2,$3,$4,$5)`, tenant, year, teacher, subject, otherClass)
+	exec(`insert into enrollments (tenant_id,academic_year_id,student_user_id,class_id,status,joined_on) values ($1,$2,$3,$4,'active','2026-01-01')`, tenant, year, student, ownClass)
+	for day := 1; day <= 2; day++ {
+		exec(`insert into school_days (tenant_id,academic_year_id,day_of_week) values ($1,$2,$3)`, tenant, year, day)
+		exec(`insert into period_day_assignments (tenant_id,academic_year_id,day_of_week,template_id) values ($1,$2,$3,$4)`, tenant, year, day, template)
+	}
+
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool))
+	actor := service.Actor{CanManage: true, UserID: teacher}
+	// The same teacher cannot teach two classes in the same period, so
+	// otherClass's lessons sit in the next period -- the point of this
+	// fixture is two classes sharing a day, not a scheduling conflict.
+	for day := int16(1); day <= 2; day++ {
+		_, err := svc.CreateSchedule(ctx, tenant, service.ScheduleInput{
+			AcademicYearID: year, ClassID: ownClass, SubjectID: subject, TeacherUserID: teacher,
+			DayOfWeek: day, StartPeriodID: p1, EndPeriodID: p1, Source: domain.SourceAdmin,
+		}, actor)
+		require.NoError(t, err)
+		_, err = svc.CreateSchedule(ctx, tenant, service.ScheduleInput{
+			AcademicYearID: year, ClassID: otherClass, SubjectID: subject, TeacherUserID: teacher,
+			DayOfWeek: day, StartPeriodID: p2, EndPeriodID: p2, Source: domain.SourceAdmin,
+		}, actor)
+		require.NoError(t, err)
+	}
+
+	handler := schedulehttp.New(svc, journalExportPermissions{}, nil)
+	studentCtx := httpx.WithUserID(tenantctx.WithTenant(ctx, tenantctx.Tenant{ID: tenant}), student)
+	monday := 1
+
+	ownAndDay, err := handler.ListSchedules(studentCtx, api.ListSchedulesRequestObject{
+		Params: api.ListSchedulesParams{AcademicYearId: year, ClassId: &ownClass, DayOfWeek: &monday},
+	})
+	require.NoError(t, err)
+	ownAndDayData := ownAndDay.(api.ListSchedules200JSONResponse).Data
+	require.Len(t, ownAndDayData, 1)
+	require.Equal(t, monday, ownAndDayData[0].DayOfWeek)
+	require.Equal(t, ownClass, ownAndDayData[0].ClassId)
+
+	_, err = handler.ListSchedules(studentCtx, api.ListSchedulesRequestObject{
+		Params: api.ListSchedulesParams{AcademicYearId: year, ClassId: &otherClass, DayOfWeek: &monday},
+	})
+	require.ErrorIs(t, err, httpx.ErrForbidden)
+}
+
 func mustParseDate(t *testing.T, value string) time.Time {
 	t.Helper()
 	parsed, err := time.Parse("2006-01-02", value)

@@ -123,3 +123,26 @@ func TestEnforceTeacherWindowDurationDeadline(t *testing.T) {
 		require.ErrorIs(t, err, domain.ErrTeacherEditDeadline)
 	})
 }
+
+// TestFilterByDay covers the helper ListByClass/ListByTeacher now use to
+// combine their own filter with an optional day_of_week: a nil day leaves
+// every schedule in place (single-filter behaviour, unchanged), and a
+// given day narrows to exactly the matching rows -- this is what makes
+// GET /v1/schedules?class_id=...&day_of_week=... return one day instead
+// of the whole week once both filters are supplied together.
+func TestFilterByDay(t *testing.T) {
+	monday := domain.Schedule{ID: uuid.New(), DayOfWeek: 1}
+	tuesday := domain.Schedule{ID: uuid.New(), DayOfWeek: 2}
+	wednesday := domain.Schedule{ID: uuid.New(), DayOfWeek: 3}
+	schedules := []domain.Schedule{monday, tuesday, wednesday}
+
+	require.Equal(t, schedules, filterByDay(schedules, nil))
+
+	day := int16(2)
+	filtered := filterByDay(schedules, &day)
+	require.Len(t, filtered, 1)
+	require.Equal(t, tuesday.ID, filtered[0].ID)
+
+	noMatch := int16(7)
+	require.Empty(t, filterByDay(schedules, &noMatch))
+}
