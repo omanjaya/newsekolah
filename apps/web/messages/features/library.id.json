@@ -1365,7 +1365,8 @@
     "overdueSince": "Terlambat, jatuh tempo {date}",
     "renewAction": "Perpanjang",
     "renewed": "Diperpanjang sampai {date}",
-    "renewBlockedOverdue": "Peminjaman yang sudah terlambat tidak bisa diperpanjang sendiri, hubungi pustakawan"
+    "renewBlockedOverdue": "Peminjaman yang sudah terlambat tidak bisa diperpanjang sendiri, hubungi pustakawan",
+    "titleUnavailable": "Judul tidak tersedia"
   },
   "memberProfile": {
     "memberType": "Jenis anggota",

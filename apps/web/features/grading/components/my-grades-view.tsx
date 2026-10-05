@@ -23,6 +23,10 @@ import { useLookup, useSubjectsQuery } from "../../reference/api";
 import { type MySubjectGrade, useMyGradesQuery, useMyStarsQuery, useTermsQuery } from "../api";
 import { buildMyGradesTiles, isSubjectTuntas } from "../lib/my-grades-tiles";
 
+// Radix Select treats an empty value as "nothing chosen" and shows the
+// placeholder, so "all terms" needs a real option value of its own.
+const ALL_TERMS = "all";
+
 /**
  * The student's own grades: a stat-tile row (average, how many subjects
  * are tuntas, how many scores exist this term), a term pill, then one
@@ -43,7 +47,7 @@ export function MyGradesView(): ReactElement {
   const subjectMap = useLookup(subjects.data?.data);
 
   const termOptions = [
-    { value: "", label: tGrading("allTerms") },
+    { value: ALL_TERMS, label: tGrading("allTerms") },
     ...(terms.data?.data ?? []).map((term) => ({ value: term.id, label: term.name })),
   ];
 
@@ -103,8 +107,10 @@ export function MyGradesView(): ReactElement {
           <>
             <Select
               options={termOptions}
-              value={termId}
-              onValueChange={setTermId}
+              value={termId || ALL_TERMS}
+              onValueChange={(value) => {
+                setTermId(value === ALL_TERMS ? "" : value);
+              }}
               aria-label={tGrading("pickTerm")}
               className="w-full rounded-full md:w-40"
             />

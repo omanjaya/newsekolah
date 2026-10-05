@@ -63,7 +63,7 @@ describe("MyLibraryReservations", () => {
     expect(screen.getByText("Laskar Pelangi")).toBeInTheDocument();
   });
 
-  it("falls back to the raw title id when title_name is absent", () => {
+  it("shows a readable placeholder, not the raw title id, when title_name is absent", () => {
     render(
       <MyLibraryReservations
         reservations={[
@@ -79,6 +79,7 @@ describe("MyLibraryReservations", () => {
       />,
     );
 
-    expect(screen.getByText("title-2")).toBeInTheDocument();
+    expect(screen.getByText("titleUnavailable")).toBeInTheDocument();
+    expect(screen.queryByText("title-2")).not.toBeInTheDocument();
   });
 });

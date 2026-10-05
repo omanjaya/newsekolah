@@ -43,7 +43,7 @@ export function MyLibraryLoanRow({
     <Card className={cn("flex h-full flex-col justify-between gap-3 p-4", className)}>
       <div className="flex min-w-0 flex-col gap-1">
         <p className="truncate text-[15px] font-medium text-fg">
-          {loan.title_name ?? loan.title_id}
+          {loan.title_name ?? t("titleUnavailable")}
         </p>
         {loan.title_author && (
           <p className="truncate text-[13px] text-fg-muted">{loan.title_author}</p>

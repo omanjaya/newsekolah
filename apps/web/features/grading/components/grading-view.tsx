@@ -31,6 +31,10 @@ import { GradingEntryTiles } from "./grading-entry-tiles";
 import { GradingSettings } from "./grading-settings";
 import { TPMappingEditor } from "./tp-mapping-editor";
 
+// Radix Select treats an empty value as "nothing chosen" and shows the
+// placeholder, so "all terms" needs a real option value of its own.
+const ALL_TERMS = "all";
+
 type Tab = "gradebook" | "settings" | "erapor" | "tp";
 
 /** One (class, subject) pair this teacher is assigned to teach, deduplicated across terms. */
@@ -143,7 +147,7 @@ export function GradingView(): ReactElement {
   const classOptions = classList.map((c) => ({ value: c.id, label: c.name }));
   const subjectOptions = subjectList.map((s) => ({ value: s.id, label: s.name }));
   const termOptions = [
-    { value: "", label: t("allTerms") },
+    { value: ALL_TERMS, label: t("allTerms") },
     ...(terms.data?.data ?? []).map((term) => ({ value: term.id, label: term.name })),
   ];
   // A subject picked for one class may not be taught in the next, so the
@@ -238,10 +242,10 @@ export function GradingView(): ReactElement {
             />
             <Select
               options={termOptions}
-              value={termId}
+              value={termId || ALL_TERMS}
               onValueChange={(value) => {
                 changeScope(() => {
-                  setTermId(value);
+                  setTermId(value === ALL_TERMS ? "" : value);
                 });
               }}
               aria-label={t("pickTerm")}

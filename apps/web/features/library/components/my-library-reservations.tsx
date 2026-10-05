@@ -27,6 +27,7 @@ export function MyLibraryReservations({
   bookingEnabled: boolean;
 }): ReactElement {
   const t = useTranslations("app.library.me.reserve");
+  const tMe = useTranslations("app.library.me");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
@@ -51,7 +52,7 @@ export function MyLibraryReservations({
             >
               <div className="flex flex-col">
                 <span className="font-medium text-fg">
-                  {reservation.title_name ?? reservation.title_id}
+                  {reservation.title_name ?? tMe("titleUnavailable")}
                 </span>
                 <span className="text-[12px] text-fg-muted">
                   {reservation.status === "waiting" && reservation.position

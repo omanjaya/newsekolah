@@ -42,7 +42,7 @@ export function MyLibraryHistoryTable({
           <TableBody>
             {items.map((loan) => (
               <TableRow key={loan.id}>
-                <TableCell>{loan.title_name ?? loan.title_id}</TableCell>
+                <TableCell>{loan.title_name ?? t("titleUnavailable")}</TableCell>
                 <TableCell className="text-fg-muted">
                   {formatDate(loan.borrowed_at, { locale })}
                 </TableCell>

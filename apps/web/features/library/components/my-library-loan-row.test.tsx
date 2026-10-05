@@ -59,10 +59,11 @@ describe("MyLibraryLoanRow", () => {
     expect(screen.queryByText("11111111-1111-1111-1111-111111111111")).not.toBeInTheDocument();
   });
 
-  it("falls back to the raw title id when no title text is present", () => {
+  it("shows a readable placeholder, not the raw title id, when no title text is present", () => {
     render(<MyLibraryLoanRow loan={loan()} today="2026-09-15" locale="id" />);
 
-    expect(screen.getByText("11111111-1111-1111-1111-111111111111")).toBeInTheDocument();
+    expect(screen.getByText("titleUnavailable")).toBeInTheDocument();
+    expect(screen.queryByText("11111111-1111-1111-1111-111111111111")).not.toBeInTheDocument();
   });
 
   it("shows the author when the loan carries one", () => {

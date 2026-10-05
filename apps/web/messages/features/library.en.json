@@ -1365,7 +1365,8 @@
     "overdueSince": "Overdue, was due {date}",
     "renewAction": "Renew",
     "renewed": "Renewed until {date}",
-    "renewBlockedOverdue": "An overdue loan cannot be self-renewed, ask a librarian"
+    "renewBlockedOverdue": "An overdue loan cannot be self-renewed, ask a librarian",
+    "titleUnavailable": "Title unavailable"
   },
   "memberProfile": {
     "memberType": "Member type",
