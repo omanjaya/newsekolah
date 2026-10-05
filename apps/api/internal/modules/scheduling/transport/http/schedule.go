@@ -68,28 +68,38 @@ func (h *SchedulingHandler) ListSchedules(ctx context.Context, request api.ListS
 		return nil, err
 	}
 
+	// A day filter combines with class_id or teacher_user_id when both are
+	// given (e.g. a student's "today" request: class_id + day_of_week), so
+	// it is resolved once up front rather than inside the switch below --
+	// previously the switch matched class_id or teacher_user_id first and
+	// never looked at day_of_week at all, silently returning every weekday.
+	var day *int16
+	if params.DayOfWeek != nil {
+		d, dayErr := toDayOfWeek(*params.DayOfWeek)
+		if dayErr != nil {
+			return nil, dayErr
+		}
+		day = &d
+	}
+
 	var blocks []domain.Block
 	switch {
 	case params.ClassId != nil:
 		if !scope.canViewClass(*params.ClassId) {
 			return nil, httpx.ErrForbidden
 		}
-		blocks, err = h.service.ListByClass(ctx, tenantID, params.AcademicYearId, *params.ClassId)
+		blocks, err = h.service.ListByClass(ctx, tenantID, params.AcademicYearId, *params.ClassId, day)
 		blocks = scope.filterOwnTeacher(blocks)
 	case params.TeacherUserId != nil:
 		if !scope.canViewTeacher(*params.TeacherUserId) {
 			return nil, httpx.ErrForbidden
 		}
-		blocks, err = h.service.ListByTeacher(ctx, tenantID, params.AcademicYearId, *params.TeacherUserId)
-	case params.DayOfWeek != nil:
+		blocks, err = h.service.ListByTeacher(ctx, tenantID, params.AcademicYearId, *params.TeacherUserId, day)
+	case day != nil:
 		if !scope.fullAccess {
 			return nil, httpx.ErrForbidden
 		}
-		day, dayErr := toDayOfWeek(*params.DayOfWeek)
-		if dayErr != nil {
-			return nil, dayErr
-		}
-		blocks, err = h.service.ListByDay(ctx, tenantID, params.AcademicYearId, day)
+		blocks, err = h.service.ListByDay(ctx, tenantID, params.AcademicYearId, *day)
 	default:
 		return nil, httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "class_id", Code: "REQUIRED"})
 	}

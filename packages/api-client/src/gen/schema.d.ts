@@ -1196,7 +1196,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Early-warning risk list, scoped to the caller: a counselor or school leadership sees every class, a homeroom teacher sees only their own class. */
+        /** Early-warning risk list, scoped to the caller: a counselor, school leadership, or an admin/super_admin/principal sees every class, a homeroom teacher sees only their own class. */
         get: operations["listAtRiskStudents"];
         put?: never;
         post?: never;
@@ -10739,6 +10739,9 @@ export interface components {
             held_copy_id?: string;
             /** @description 1-based queue position, present only while waiting */
             position?: number;
+            /** @description The title's name, present only on GET /v1/library/me (reservations): a member holding only view_own_library_loans cannot call GET /v1/library/titles/{titleId} (view_library) themselves. */
+            title_name?: string;
+            title_author?: string;
         };
         /** @enum {string} */
         LibraryStocktakeStatus: "open" | "closed";

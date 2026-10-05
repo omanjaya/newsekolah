@@ -26,10 +26,6 @@ vi.mock("./my-library-title-picker", () => ({
   MyLibraryTitlePicker: () => null,
 }));
 
-vi.mock("./library-title-name", () => ({
-  LibraryTitleName: ({ titleId }: { titleId: string }) => <>{titleId}</>,
-}));
-
 describe("MyLibraryReservations", () => {
   it("invites the reader to search a title when self-service booking is enabled", () => {
     render(<MyLibraryReservations reservations={[]} bookingEnabled={true} />);
@@ -44,5 +40,45 @@ describe("MyLibraryReservations", () => {
     expect(screen.queryByText("emptyBody")).not.toBeInTheDocument();
     expect(screen.getByText("emptyBodyDisabled")).toBeInTheDocument();
     expect(screen.getByText("bookingDisabled")).toBeInTheDocument();
+  });
+
+  it("renders a reservation's title from the field GET /v1/library/me already joins in, without a separate titles lookup", () => {
+    render(
+      <MyLibraryReservations
+        reservations={[
+          {
+            id: "res-1",
+            title_id: "title-1",
+            member_user_id: "member-1",
+            status: "waiting",
+            requested_at: "2026-01-01T00:00:00Z",
+            title_name: "Laskar Pelangi",
+            title_author: "Andrea Hirata",
+          },
+        ]}
+        bookingEnabled={true}
+      />,
+    );
+
+    expect(screen.getByText("Laskar Pelangi")).toBeInTheDocument();
+  });
+
+  it("falls back to the raw title id when title_name is absent", () => {
+    render(
+      <MyLibraryReservations
+        reservations={[
+          {
+            id: "res-2",
+            title_id: "title-2",
+            member_user_id: "member-1",
+            status: "waiting",
+            requested_at: "2026-01-01T00:00:00Z",
+          },
+        ]}
+        bookingEnabled={true}
+      />,
+    );
+
+    expect(screen.getByText("title-2")).toBeInTheDocument();
   });
 });

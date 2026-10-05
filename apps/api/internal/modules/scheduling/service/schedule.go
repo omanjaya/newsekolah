@@ -199,8 +199,13 @@ func (s *Service) GetSchedule(ctx context.Context, tenantID, id uuid.UUID) (doma
 }
 
 // ListByClass returns a class's schedules merged into contiguous blocks
-// for display, per docs/analysis/backend-inventory.md section 1.8.
-func (s *Service) ListByClass(ctx context.Context, tenantID, academicYearID, classID uuid.UUID) ([]domain.Block, error) {
+// for display, per docs/analysis/backend-inventory.md section 1.8. When
+// dayOfWeek is non-nil (the caller also sent day_of_week), the result is
+// narrowed to that one day before merging -- so a student's "today" view
+// (class_id + day_of_week together) sees only today's lessons instead of
+// the whole week's, which is what ListSchedules used to return before
+// class_id and day_of_week were made to combine.
+func (s *Service) ListByClass(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek *int16) ([]domain.Block, error) {
 	var schedules []domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
@@ -210,12 +215,13 @@ func (s *Service) ListByClass(ctx context.Context, tenantID, academicYearID, cla
 	if err != nil {
 		return nil, err
 	}
-	return domain.MergeContiguous(schedules), nil
+	return domain.MergeContiguous(filterByDay(schedules, dayOfWeek)), nil
 }
 
 // ListByTeacher returns a teacher's own schedules merged into contiguous
-// blocks.
-func (s *Service) ListByTeacher(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID) ([]domain.Block, error) {
+// blocks, narrowed to dayOfWeek when it is non-nil -- see ListByClass's
+// doc comment for why.
+func (s *Service) ListByTeacher(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID, dayOfWeek *int16) ([]domain.Block, error) {
 	var schedules []domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
@@ -225,7 +231,24 @@ func (s *Service) ListByTeacher(ctx context.Context, tenantID, academicYearID, t
 	if err != nil {
 		return nil, err
 	}
-	return domain.MergeContiguous(schedules), nil
+	return domain.MergeContiguous(filterByDay(schedules, dayOfWeek)), nil
+}
+
+// filterByDay narrows schedules to dayOfWeek, when given; nil leaves the
+// list untouched. Filtering before domain.MergeContiguous (rather than
+// discarding whole blocks afterwards) keeps that function's own
+// same-day/contiguous grouping rules the only place blocks are built.
+func filterByDay(schedules []domain.Schedule, dayOfWeek *int16) []domain.Schedule {
+	if dayOfWeek == nil {
+		return schedules
+	}
+	out := make([]domain.Schedule, 0, len(schedules))
+	for _, sched := range schedules {
+		if sched.DayOfWeek == *dayOfWeek {
+			out = append(out, sched)
+		}
+	}
+	return out
 }
 
 // ListByDay returns one day's schedules across every class, merged into

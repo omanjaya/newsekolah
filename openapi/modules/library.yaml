@@ -1665,6 +1665,13 @@ components:
           }
         position:
           { type: integer, description: "1-based queue position, present only while waiting" }
+        title_name:
+          type: string
+          description: >-
+            The title's name, present only on GET /v1/library/me (reservations): a
+            member holding only view_own_library_loans cannot call GET
+            /v1/library/titles/{titleId} (view_library) themselves.
+        title_author: { type: string }
 
     LibraryStocktakeStatus:
       type: string

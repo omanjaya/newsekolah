@@ -2106,6 +2106,64 @@ func (q *Queries) ListReservationsForMember(ctx context.Context, arg ListReserva
 	return items, nil
 }
 
+const listReservationsForMemberWithTitle = `-- name: ListReservationsForMemberWithTitle :many
+select r.id, r.tenant_id, r.title_id, r.member_user_id, r.status, r.requested_at, r.ready_at, r.expires_at, r.fulfilled_loan_id, r.created_at, r.updated_at, r.held_copy_id, t.title as title_name, t.author as title_author
+from library_reservations r
+join library_titles t on t.id = r.title_id
+where r.tenant_id = $1 and r.member_user_id = $2
+order by r.requested_at desc
+`
+
+type ListReservationsForMemberWithTitleParams struct {
+	TenantID     uuid.UUID `json:"tenant_id"`
+	MemberUserID uuid.UUID `json:"member_user_id"`
+}
+
+type ListReservationsForMemberWithTitleRow struct {
+	LibraryReservation LibraryReservation `json:"library_reservation"`
+	TitleName          string             `json:"title_name"`
+	TitleAuthor        string             `json:"title_author"`
+}
+
+// GET /v1/library/me's own view of a member's reservations, title joined in
+// the same way ListLoansForMemberWithTitle joins it for loans: the member
+// (view_own_library_loans only, not view_library) cannot call GET
+// /v1/library/titles/{titleId} themselves to resolve a reservation's title.
+func (q *Queries) ListReservationsForMemberWithTitle(ctx context.Context, arg ListReservationsForMemberWithTitleParams) ([]ListReservationsForMemberWithTitleRow, error) {
+	rows, err := q.db.Query(ctx, listReservationsForMemberWithTitle, arg.TenantID, arg.MemberUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListReservationsForMemberWithTitleRow{}
+	for rows.Next() {
+		var i ListReservationsForMemberWithTitleRow
+		if err := rows.Scan(
+			&i.LibraryReservation.ID,
+			&i.LibraryReservation.TenantID,
+			&i.LibraryReservation.TitleID,
+			&i.LibraryReservation.MemberUserID,
+			&i.LibraryReservation.Status,
+			&i.LibraryReservation.RequestedAt,
+			&i.LibraryReservation.ReadyAt,
+			&i.LibraryReservation.ExpiresAt,
+			&i.LibraryReservation.FulfilledLoanID,
+			&i.LibraryReservation.CreatedAt,
+			&i.LibraryReservation.UpdatedAt,
+			&i.LibraryReservation.HeldCopyID,
+			&i.TitleName,
+			&i.TitleAuthor,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listReservationsForTitle = `-- name: ListReservationsForTitle :many
 select id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at, held_copy_id from library_reservations where tenant_id = $1 and title_id = $2 and status = 'waiting' order by requested_at
 `

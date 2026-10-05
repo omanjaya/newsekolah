@@ -304,6 +304,13 @@ type Reservation struct {
 	FulfilledLoanID uuid.NullUUID
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+	// TitleName and TitleAuthor are joined in only by the member-facing
+	// "my profile" read (repository.ListReservationsForMemberWithTitle),
+	// for the same reason Loan's identically named fields exist: GET
+	// /v1/library/titles/{id} requires view_library, which a plain member
+	// does not hold. Every other reservation read leaves them zero-valued.
+	TitleName   string
+	TitleAuthor string
 }
 
 // StocktakeStatus is the state of one opname session.

@@ -282,6 +282,17 @@ select * from library_reservations where tenant_id = $1 and title_id = $2 and st
 -- name: ListReservationsForMember :many
 select * from library_reservations where tenant_id = $1 and member_user_id = $2 order by requested_at desc;
 
+-- name: ListReservationsForMemberWithTitle :many
+-- GET /v1/library/me's own view of a member's reservations, title joined in
+-- the same way ListLoansForMemberWithTitle joins it for loans: the member
+-- (view_own_library_loans only, not view_library) cannot call GET
+-- /v1/library/titles/{titleId} themselves to resolve a reservation's title.
+select sqlc.embed(r), t.title as title_name, t.author as title_author
+from library_reservations r
+join library_titles t on t.id = r.title_id
+where r.tenant_id = $1 and r.member_user_id = $2
+order by r.requested_at desc;
+
 -- name: MarkReservationReady :one
 update library_reservations set status = 'ready', ready_at = $3, expires_at = $4, held_copy_id = $5
 where tenant_id = $1 and id = $2 and status = 'waiting'
