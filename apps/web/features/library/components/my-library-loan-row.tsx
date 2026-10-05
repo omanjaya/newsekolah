@@ -3,7 +3,7 @@
 import { ApiError } from "@newsekolah/api-client";
 import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { Button, useToast } from "@newsekolah/ui";
+import { Button, Card, cn, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -14,15 +14,22 @@ import { useRenewMyLoanMutation } from "../me-api";
 
 import { DueBadge } from "./due-badge";
 
-/** One of the reader's own active loans: title, due-date urgency, and a Perpanjang button -- the one action this row needs, so it stays a visible button rather than a "..." menu for just one item. */
+/**
+ * One of the reader's own active loans, as a bento card (docs/07-ui-ux.md):
+ * title, author, the due-date urgency badge, and a Perpanjang button --
+ * the one action this card needs, so it stays a visible button rather than
+ * a "..." menu for just one item.
+ */
 export function MyLibraryLoanRow({
   loan,
   today,
   locale,
+  className,
 }: {
   loan: LibraryLoan;
   today: string;
   locale: Locale;
+  className?: string;
 }): ReactElement {
   const t = useTranslations("app.library.me");
   const toast = useToast();
@@ -33,10 +40,15 @@ export function MyLibraryLoanRow({
   const canRenew = urgency !== "overdue";
 
   return (
-    <li className="flex items-center justify-between gap-3 py-2">
+    <Card className={cn("flex h-full flex-col justify-between gap-3 p-4", className)}>
       <div className="flex min-w-0 flex-col gap-1">
-        <span className="truncate text-[13px] text-fg">{loan.title_name ?? loan.title_id}</span>
-        <DueBadge dueOn={loan.due_on} today={today} locale={locale} />
+        <p className="truncate text-[15px] font-medium text-fg">
+          {loan.title_name ?? loan.title_id}
+        </p>
+        {loan.title_author && (
+          <p className="truncate text-[13px] text-fg-muted">{loan.title_author}</p>
+        )}
+        <DueBadge dueOn={loan.due_on} today={today} locale={locale} className="mt-1" />
       </div>
       <Button
         size="sm"
@@ -44,6 +56,7 @@ export function MyLibraryLoanRow({
         loading={renew.isPending}
         disabled={!canRenew}
         title={canRenew ? undefined : t("renewBlockedOverdue")}
+        className="self-start"
         onClick={() => {
           renew.mutate(loan.id, {
             onSuccess: (result) => {
@@ -61,6 +74,6 @@ export function MyLibraryLoanRow({
       >
         {t("renewAction")}
       </Button>
-    </li>
+    </Card>
   );
 }

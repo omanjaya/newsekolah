@@ -198,8 +198,14 @@
   },
   "desk": {
     "eyebrow": "Perpustakaan",
-    "title": "Peminjaman & Pengembalian",
+    "title": "Meja sirkulasi",
     "scanSubmit": "Catat",
+    "tiles": {
+      "loansToday": "Pinjam hari ini",
+      "returnsToday": "Kembali hari ini",
+      "overdue": "Terlambat",
+      "visitsToday": "Kunjungan hari ini"
+    },
     "undoLastScan": "Batalkan pindai terakhir",
     "lookup": {
       "label": "Cari anggota atau eksemplar",
@@ -1323,6 +1329,17 @@
     "noActiveLoans": "Tidak ada buku yang sedang dipinjam.",
     "history": "Riwayat peminjaman",
     "noHistory": "Belum ada riwayat peminjaman.",
+    "tiles": {
+      "nextDue": "Jatuh tempo terdekat",
+      "overdue": "Terlambat"
+    },
+    "historyTable": {
+      "columns": {
+        "title": "Judul",
+        "borrowedOn": "Tanggal pinjam",
+        "returnedOn": "Tanggal kembali"
+      }
+    },
     "reserve": {
       "heading": "Reservasi",
       "emptyBody": "Belum ada reservasi. Cari judul di bawah untuk memesan.",
