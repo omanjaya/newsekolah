@@ -5,7 +5,13 @@ import {
   Alert,
   Badge,
   Button,
+  Card,
+  CardContent,
   ConfirmDialog,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   EmptyState,
   SearchInput,
   Skeleton,
@@ -13,7 +19,7 @@ import {
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { Download, Plus } from "lucide-react";
+import { Download, MoreHorizontal, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -32,9 +38,15 @@ import {
   useSetGradePublicationMutation,
 } from "../api";
 import { type GradebookExportScope, downloadGradebookExport } from "../gradebook-export-api";
+import {
+  gradebookClassAverage,
+  gradebookTuntasRate,
+  gradebookUngradedCount,
+} from "../lib/gradebook-stats";
 
 import { ComponentDialog } from "./component-dialog";
 import { GradebookExportScopePicker } from "./gradebook-export-scope-picker";
+import { GradebookPageTiles } from "./gradebook-page-tiles";
 import { GradebookTable } from "./gradebook-table";
 import { ManualScoreDialog } from "./manual-score-dialog";
 import { StarDialog } from "./star-dialog";
@@ -42,19 +54,28 @@ import { StarDialog } from "./star-dialog";
 export interface GradebookSheetProps {
   classId: string;
   subjectId: string;
+  termId?: string;
+  /** The class's display name ("X-A"), for the page title -- not a CSS class. */
+  className?: string;
+  subjectName?: string;
   canManage: boolean;
   onPendingChangesChange?: (count: number) => void;
 }
 
 /**
- * One class-subject sheet: the score grid plus the actions around it
- * (add/edit/delete component, manual report-score override, publish
- * toggle, stars). docs/07-ui-ux.md section 4's roster-grid pattern applied
- * to grading instead of attendance.
+ * One class-subject sheet, restyled as the "Gradebook page"
+ * (docs/07-ui-ux.md): a header titled "Kelas · Mapel" with the publish
+ * switch and the e-Rapor export as pill actions, everything else
+ * (add component, legacy actions) tucked under "Lainnya"; a compact
+ * stat-tile row (class average, tuntas rate, not-yet-graded count); then
+ * the score grid, unchanged, inside a card.
  */
 export function GradebookSheet({
   classId,
   subjectId,
+  termId,
+  className: classDisplayName,
+  subjectName,
   canManage,
   onPendingChangesChange,
 }: GradebookSheetProps): ReactElement {
@@ -68,7 +89,7 @@ export function GradebookSheet({
     error,
     refetch,
     isRefetching,
-  } = useGradebookQuery({ classId, subjectId });
+  } = useGradebookQuery({ classId, subjectId, termId });
   const starBalancesQuery = useClassStarBalancesQuery(classId);
   const setPublication = useSetGradePublicationMutation();
   const classes = useClassesQuery();
@@ -115,6 +136,10 @@ export function GradebookSheet({
     [starBalancesQuery.data],
   );
 
+  const title = [classDisplayName, subjectName]
+    .filter((part) => part && part.trim() !== "")
+    .join(" · ");
+
   if (isLoading) {
     return <Skeleton className="h-96 w-full" aria-busy="true" />;
   }
@@ -156,59 +181,84 @@ export function GradebookSheet({
 
   return (
     <div className={canManage ? "flex flex-col gap-4 pb-24 md:pb-20" : "flex flex-col gap-4"}>
-      <div className="flex flex-wrap items-center gap-3">
-        <SearchInput
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-          }}
-          placeholder={t("searchPlaceholder")}
-          aria-label={t("searchPlaceholder")}
-          className="w-full md:w-64"
-        />
-        {canManage && (
+      {/*
+       * A local, `h2`-level header rather than `PageHeader` (which renders
+       * an `h1`): the page's own `h1` is the entry page's "Penilaian"
+       * title (GradingView's PageHeader) -- this is the opened sheet
+       * nested under it, not a second page.
+       */}
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-4">
+        <h2 className="font-heading text-[20px] font-bold tracking-tight text-fg">{title}</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Primary pill: the publish switch itself, kept exactly as
+                a `role="switch"` with its existing label so the existing
+                publish flow (and its tests) keep working -- only its
+                visual wrapper changed. A read-only viewer sees just the
+                status badge, no edit control at all. */}
+          <span
+            className={
+              sheet.is_published
+                ? "flex items-center gap-2 rounded-full border border-accent bg-accent-soft px-3 py-1.5"
+                : "flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5"
+            }
+          >
+            <Badge variant={sheet.is_published ? "accent" : "neutral"}>
+              {sheet.is_published ? t("publishedBadge") : t("draftBadge")}
+            </Badge>
+            {canManage && (
+              <label className="flex items-center gap-2 text-[13px]">
+                <span className="text-fg-muted">{t("publishToggleLabel")}</span>
+                <Switch
+                  checked={sheet.is_published}
+                  onCheckedChange={(checked) => {
+                    setPendingPublish(checked);
+                  }}
+                />
+              </label>
+            )}
+          </span>
+
           <Button
             size="sm"
             variant="secondary"
-            icon={<Plus />}
+            className="rounded-full"
+            icon={<Download />}
             onClick={() => {
-              setComponentDialog("new");
+              setExportScope({ kind: "class", classId });
+              setExportOpen(true);
             }}
           >
-            {t("addComponent")}
+            {t("exportGradebook")}
           </Button>
-        )}
-        <Button
-          size="sm"
-          variant="secondary"
-          icon={<Download />}
-          onClick={() => {
-            setExportScope({ kind: "class", classId });
-            setExportOpen(true);
-          }}
-        >
-          {t("exportGradebook")}
-        </Button>
-        <div className="ml-auto flex items-center gap-3">
-          {/* The badge is a read-only status indicator, so every reader
-              (canManage or not) keeps seeing it -- only the edit control
-              below is manage_grades-gated. */}
-          <Badge variant={sheet.is_published ? "accent" : "neutral"}>
-            {sheet.is_published ? t("publishedBadge") : t("draftBadge")}
-          </Badge>
+
           {canManage && (
-            <label className="flex items-center gap-2 text-[13px]">
-              <span className="text-fg-muted">{t("publishToggleLabel")}</span>
-              <Switch
-                checked={sheet.is_published}
-                onCheckedChange={(checked) => {
-                  setPendingPublish(checked);
-                }}
-              />
-            </label>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="ghost" className="rounded-full">
+                  <MoreHorizontal className="size-4" aria-hidden="true" />
+                  {t("moreActions")}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setComponentDialog("new");
+                  }}
+                >
+                  <Plus className="size-4" aria-hidden="true" />
+                  {t("addComponent")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
+
+      <GradebookPageTiles
+        classAverage={gradebookClassAverage(sheet.students)}
+        tuntasRate={gradebookTuntasRate(sheet.students, sheet.scale.default_kktp)}
+        ungradedCount={gradebookUngradedCount(sheet.students)}
+      />
 
       <ReportExportDialog
         open={exportOpen}
@@ -233,37 +283,53 @@ export function GradebookSheet({
         }
       />
 
-      {sheet.components.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.grades aria-hidden="true" />}
-          title={t("emptyTitle")}
-          description={t("emptyBody")}
-          action={
-            canManage && (
-              <Button
-                size="sm"
-                icon={<Plus />}
-                onClick={() => {
-                  setComponentDialog("new");
-                }}
-              >
-                {t("addComponent")}
-              </Button>
-            )
-          }
-        />
-      ) : (
-        <GradebookTable
-          sheet={sheet}
-          canManage={canManage}
-          search={search}
-          starBalances={starBalances}
-          onEditComponent={setComponentDialog}
-          onManualOverride={setManualTarget}
-          onGiveStar={setStarTarget}
-          onPendingChangesChange={onPendingChangesChange}
-        />
-      )}
+      <Card>
+        <CardContent className="flex flex-col gap-4 p-4 md:p-5">
+          <div className="flex flex-wrap items-center gap-3">
+            <SearchInput
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchPlaceholder")}
+              className="w-full md:w-64"
+            />
+          </div>
+
+          {sheet.components.length === 0 ? (
+            <EmptyState
+              icon={<domainIcons.grades aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+              action={
+                canManage && (
+                  <Button
+                    size="sm"
+                    icon={<Plus />}
+                    onClick={() => {
+                      setComponentDialog("new");
+                    }}
+                  >
+                    {t("addComponent")}
+                  </Button>
+                )
+              }
+            />
+          ) : (
+            <GradebookTable
+              sheet={sheet}
+              canManage={canManage}
+              search={search}
+              starBalances={starBalances}
+              onEditComponent={setComponentDialog}
+              onManualOverride={setManualTarget}
+              onGiveStar={setStarTarget}
+              onPendingChangesChange={onPendingChangesChange}
+            />
+          )}
+        </CardContent>
+      </Card>
 
       {componentDialog && (
         <ComponentDialog

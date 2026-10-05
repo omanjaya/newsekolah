@@ -3,11 +3,30 @@
   "title": "Penilaian",
   "pickClass": "Pilih kelas",
   "pickSubject": "Pilih mapel",
+  "pickTerm": "Pilih semester",
+  "allTerms": "Semester aktif",
   "pickBoth": "Pilih kelas dan mapel untuk membuka lembar nilai.",
   "tabGradebook": "Nilai",
   "tabSettings": "Pengaturan",
   "tabErapor": "e-Rapor",
   "tabTpMapping": "Pemetaan TP",
+  "entryTiles": {
+    "students": "Siswa",
+    "components": "Komponen",
+    "filled": "Nilai terisi",
+    "published": "Status",
+    "publishedValue": "Diterbitkan",
+    "draftValue": "Draf"
+  },
+  "pageTiles": {
+    "average": "Rata-rata kelas",
+    "tuntas": "Tuntas KKM",
+    "ungraded": "Belum dinilai"
+  },
+  "assignmentCard": {
+    "open": "Buka gradebook",
+    "studentCount": "{count, plural, other {# siswa}}"
+  },
   "kind": {
     "formative": "Formatif",
     "summative": "Sumatif",
@@ -31,8 +50,9 @@
     "unpublishConfirmBody": "Siswa dan orang tua tidak akan lagi melihat nilai mapel ini sampai diterbitkan kembali.",
     "confirmPublish": "Terbitkan",
     "confirmUnpublish": "Sembunyikan",
-    "exportGradebook": "Unduh buku nilai",
+    "exportGradebook": "Ekspor e-Rapor",
     "exportDefaultTitle": "Buku Nilai",
+    "moreActions": "Lainnya",
     "exportColumnName": "Nama Siswa",
     "exportColumnAverage": "Rata-rata",
     "exportColumnReportScore": "Nilai Rapor",
@@ -165,6 +185,11 @@
     "starsBreakdown": "Bintang per mapel dan guru",
     "starsBreakdownEmpty": "Belum ada bintang.",
     "starsBreakdownRow": "{count} dari {teacher}",
+    "statAverage": "Rata-rata",
+    "statTuntas": "Mapel tuntas",
+    "statNewScores": "Nilai baru",
+    "tuntasBadge": "Tuntas",
+    "notTuntasBadge": "Belum tuntas",
     "trend": {
       "up": "Naik",
       "down": "Turun",

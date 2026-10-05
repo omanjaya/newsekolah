@@ -38,6 +38,26 @@ vi.mock("./gradebook-sheet", () => ({
     <div data-testid="gradebook-sheet" data-can-manage={String(canManage)} />
   ),
 }));
+vi.mock("./grading-assignment-card", () => ({
+  GradingAssignmentCard: ({ classId, subjectId }: { classId: string; subjectId: string }) => (
+    <div data-testid={`grading-assignment-card-${classId}-${subjectId}`} />
+  ),
+}));
+vi.mock("../api", () => ({
+  useGradebookQuery: () => ({
+    data: {
+      class_id: "class-1",
+      subject_id: "subject-1",
+      term_id: "term-1",
+      is_published: false,
+      scale: { min: 0, max: 100, default_kktp: 75 },
+      components: [{ id: "c1" }],
+      students: [{ student_user_id: "s1", name: "Siswa", scores: {} }],
+    },
+    isLoading: false,
+  }),
+  useTermsQuery: () => ({ data: { data: [] }, isLoading: false }),
+}));
 
 const canFn = vi.hoisted(() => vi.fn<(permission: string) => boolean>());
 vi.mock("../../../lib/session/session-provider", () => ({
@@ -95,6 +115,21 @@ describe("GradingView read-only rendering for view_grades", () => {
     expect(screen.getByTestId("gradebook-sheet")).toHaveAttribute("data-can-manage", "true");
     expect(screen.getByRole("tab", { name: "tabTpMapping" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "tabErapor" })).toBeInTheDocument();
+  });
+
+  it("shows the entry stat-tile row and the teaching assignment as a bento card, alongside the opened sheet", () => {
+    grantManageGrades();
+    render(<GradingView />);
+
+    expect(screen.getByTestId("grading-entry-tiles")).toBeInTheDocument();
+    expect(screen.getByTestId("grading-entry-tile-students")).toBeInTheDocument();
+    expect(screen.getByTestId("grading-entry-tile-components")).toBeInTheDocument();
+    expect(screen.getByTestId("grading-entry-tile-filled")).toBeInTheDocument();
+    expect(screen.getByTestId("grading-entry-tile-published")).toBeInTheDocument();
+
+    expect(screen.getByTestId("grading-assignment-cards")).toBeInTheDocument();
+    expect(screen.getByTestId("grading-assignment-card-class-1-subject-1")).toBeInTheDocument();
+    expect(screen.getByTestId("gradebook-sheet")).toBeInTheDocument();
   });
 
   it("shows no tab bar at all for a reader with neither manage_grades nor view_grades", () => {

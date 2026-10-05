@@ -4,37 +4,58 @@ import {
   Alert,
   Badge,
   Button,
+  Card,
   EmptyState,
   PageHeader,
+  Select,
   Skeleton,
+  StatTile,
   cn,
   domainIcons,
 } from "@newsekolah/ui";
 import { Minus, Star, TrendingDown, TrendingUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+import { useState } from "react";
 
+import { bentoCells, tileColumns } from "../../../lib/layout/bento";
 import { useLookup, useSubjectsQuery } from "../../reference/api";
-import { type MySubjectGrade, useMyGradesQuery, useMyStarsQuery } from "../api";
+import { type MySubjectGrade, useMyGradesQuery, useMyStarsQuery, useTermsQuery } from "../api";
+import { buildMyGradesTiles, isSubjectTuntas } from "../lib/my-grades-tiles";
 
 /**
- * The student's own grades: one card per subject the teacher has
- * published, each with its components, average, and report score. Nothing
- * shows for a subject until its teacher publishes it (see docs/07-ui-ux.md
- * section 5's "umpan balik" and "tanpa halaman yang hanya reload").
+ * The student's own grades: a stat-tile row (average, how many subjects
+ * are tuntas, how many scores exist this term), a term pill, then one
+ * bento card per subject the teacher has published, each with its
+ * components, average, and report score. Nothing shows for a subject
+ * until its teacher publishes it (see docs/07-ui-ux.md section 5's
+ * "umpan balik" and "tanpa halaman yang hanya reload").
  */
 export function MyGradesView(): ReactElement {
   const t = useTranslations("app.grading.myGrades");
+  const tGrading = useTranslations("app.grading");
   const tApp = useTranslations("app");
-  const { data, isLoading, error, refetch, isRefetching } = useMyGradesQuery();
+  const [termId, setTermId] = useState("");
+  const terms = useTermsQuery();
+  const { data, isLoading, error, refetch, isRefetching } = useMyGradesQuery(termId || undefined);
   const stars = useMyStarsQuery();
   const subjects = useSubjectsQuery();
   const subjectMap = useLookup(subjects.data?.data);
+
+  const termOptions = [
+    { value: "", label: tGrading("allTerms") },
+    ...(terms.data?.data ?? []).map((term) => ({ value: term.id, label: term.name })),
+  ];
 
   if (isLoading) {
     return (
       <div className="flex flex-col gap-4 p-4 md:p-6" aria-busy="true">
         <Skeleton className="h-8 w-64" />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          <Skeleton className="h-[104px] w-full" />
+          <Skeleton className="h-[104px] w-full" />
+          <Skeleton className="h-[104px] w-full" />
+        </div>
         <Skeleton className="h-40 w-full" />
         <Skeleton className="h-40 w-full" />
       </div>
@@ -58,16 +79,40 @@ export function MyGradesView(): ReactElement {
     );
   }
 
+  const tiles = buildMyGradesTiles(data.subjects, data.scale.default_kktp);
+  const tileGrid = tileColumns(tiles.length);
+  const cells = bentoCells(
+    data.subjects.map((subject) => ({
+      key: subject.subject_id,
+      node: (
+        <SubjectCard
+          subject={subject}
+          subjectName={subjectMap.get(subject.subject_id)?.name ?? t("unknownSubject")}
+          defaultKktp={data.scale.default_kktp}
+        />
+      ),
+    })),
+  );
+
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title", { term: data.term_name })}
         actions={
-          <span className="flex items-center gap-1.5 text-[14px] font-medium text-fg">
-            <Star className="size-4" aria-hidden="true" />
-            {t("stars", { count: data.stars })}
-          </span>
+          <>
+            <Select
+              options={termOptions}
+              value={termId}
+              onValueChange={setTermId}
+              aria-label={tGrading("pickTerm")}
+              className="w-full rounded-full md:w-40"
+            />
+            <span className="flex items-center gap-1.5 text-[14px] font-medium text-fg">
+              <Star className="size-4" aria-hidden="true" />
+              {t("stars", { count: data.stars })}
+            </span>
+          </>
         }
       />
 
@@ -78,15 +123,37 @@ export function MyGradesView(): ReactElement {
           description={t("emptyBody")}
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {data.subjects.map((subject) => (
-            <SubjectCard
-              key={subject.subject_id}
-              subject={subject}
-              subjectName={subjectMap.get(subject.subject_id)?.name ?? t("unknownSubject")}
-            />
-          ))}
-        </div>
+        <>
+          <div className={tileGrid.container} data-testid="my-grades-tiles">
+            {tiles.map((tile, index) => (
+              <div
+                key={tile.key}
+                data-testid={`my-grades-tile-${tile.key}`}
+                className={cn("h-full", index === tiles.length - 1 && tileGrid.lastTileClassName)}
+              >
+                <StatTile
+                  className="h-full"
+                  icon={tile.icon}
+                  tone={tile.tone}
+                  value={tile.value}
+                  label={t(tile.labelKey)}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2" data-testid="my-grades-subject-cards">
+            {cells.map((cell) => (
+              <div
+                key={cell.key}
+                data-testid={`my-grades-subject-cell-${cell.key}`}
+                className={cn("flex h-full flex-col", cell.span === "full" && "md:col-span-2")}
+              >
+                <div className="flex-1">{cell.node}</div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {data.stars > 0 && (
@@ -145,19 +212,32 @@ const TREND_CLASS = {
 function SubjectCard({
   subject,
   subjectName,
+  defaultKktp,
 }: {
   subject: MySubjectGrade;
   subjectName: string;
+  defaultKktp: number;
 }): ReactElement {
   const t = useTranslations("app.grading.myGrades");
   const tKind = useTranslations("app.grading.kind");
   const trend = subjectTrend(subject.components);
   const TrendIcon = trend ? TREND_ICON[trend] : null;
+  const tuntas = isSubjectTuntas(subject, defaultKktp);
 
   return (
-    <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
+    <Card
+      className="flex h-full flex-col gap-3 p-4"
+      data-testid={`my-grades-subject-card-${subject.subject_id}`}
+    >
       <div className="flex items-start justify-between gap-3">
-        <h2 className="text-[16px] font-medium text-fg">{subjectName}</h2>
+        <div className="flex flex-col gap-1">
+          <h2 className="text-[16px] font-medium text-fg">{subjectName}</h2>
+          {tuntas !== undefined && (
+            <Badge variant={tuntas ? "accent" : "neutral"}>
+              {tuntas ? t("tuntasBadge") : t("notTuntasBadge")}
+            </Badge>
+          )}
+        </div>
         <div className="flex items-center gap-1.5">
           {trend && TrendIcon && (
             <span
@@ -202,10 +282,10 @@ function SubjectCard({
       )}
 
       {subject.average !== undefined && (
-        <p className="border-t border-border pt-2 text-[13px] text-fg-muted">
+        <p className="mt-auto border-t border-border pt-2 text-[13px] text-fg-muted">
           {t("average", { score: subject.average.toFixed(1) })}
         </p>
       )}
-    </section>
+    </Card>
   );
 }

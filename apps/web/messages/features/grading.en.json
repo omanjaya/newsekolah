@@ -3,11 +3,30 @@
   "title": "Grading",
   "pickClass": "Pick a class",
   "pickSubject": "Pick a subject",
+  "pickTerm": "Pick a term",
+  "allTerms": "Active term",
   "pickBoth": "Pick a class and a subject to open the score sheet.",
   "tabGradebook": "Grades",
   "tabSettings": "Settings",
   "tabErapor": "e-Rapor",
   "tabTpMapping": "TP mapping",
+  "entryTiles": {
+    "students": "Students",
+    "components": "Components",
+    "filled": "Scores filled",
+    "published": "Status",
+    "publishedValue": "Published",
+    "draftValue": "Draft"
+  },
+  "pageTiles": {
+    "average": "Class average",
+    "tuntas": "Passing KKTP",
+    "ungraded": "Not yet graded"
+  },
+  "assignmentCard": {
+    "open": "Open gradebook",
+    "studentCount": "{count, plural, one {# student} other {# students}}"
+  },
   "kind": {
     "formative": "Formative",
     "summative": "Summative",
@@ -31,8 +50,9 @@
     "unpublishConfirmBody": "Students and parents will no longer see this subject's grades until it is published again.",
     "confirmPublish": "Publish",
     "confirmUnpublish": "Hide",
-    "exportGradebook": "Download gradebook",
+    "exportGradebook": "Export e-Rapor",
     "exportDefaultTitle": "Gradebook",
+    "moreActions": "More",
     "exportColumnName": "Student Name",
     "exportColumnAverage": "Average",
     "exportColumnReportScore": "Report Score",
@@ -165,6 +185,11 @@
     "starsBreakdown": "Stars by subject and teacher",
     "starsBreakdownEmpty": "No stars yet.",
     "starsBreakdownRow": "{count} from {teacher}",
+    "statAverage": "Average",
+    "statTuntas": "Passing subjects",
+    "statNewScores": "New scores",
+    "tuntasBadge": "Passing",
+    "notTuntasBadge": "Not yet passing",
     "trend": {
       "up": "Up",
       "down": "Down",
