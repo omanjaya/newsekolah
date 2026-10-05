@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import type { LibraryLoan } from "../api";
 import type { LibraryMyProfile } from "../me-api";
 
 import { MyLibraryView } from "./my-library-view";
@@ -15,7 +16,7 @@ vi.mock("@newsekolah/i18n", () => ({
 }));
 
 vi.mock("./my-library-loan-row", () => ({
-  MyLibraryLoanRow: () => null,
+  MyLibraryLoanRow: ({ loan }: { loan: LibraryLoan }) => <p>{loan.title_name ?? loan.id}</p>,
 }));
 
 vi.mock("./my-library-reservations", () => ({
@@ -51,6 +52,21 @@ function profile(violations: LibraryMyProfile["violations"]): LibraryMyProfile {
     violations,
     booking_enabled: true,
   } as unknown as LibraryMyProfile;
+}
+
+function loan(patch: Partial<LibraryLoan> = {}): LibraryLoan {
+  return {
+    id: "loan1",
+    copy_id: "copy1",
+    title_id: "11111111-1111-1111-1111-111111111111",
+    member_user_id: "u1",
+    borrowed_at: "2026-09-01T00:00:00Z",
+    due_on: "2026-10-01",
+    renewal_count: 0,
+    status: "active",
+    fine_amount: 0,
+    ...patch,
+  };
 }
 
 describe("MyLibraryView", () => {
@@ -118,5 +134,50 @@ describe("MyLibraryView", () => {
 
     expect(screen.getByText("Matematika Dasar")).toBeInTheDocument();
     expect(screen.queryByText("11111111-1111-1111-1111-111111111111")).not.toBeInTheDocument();
+  });
+
+  it("shows four equal-width stat tiles for active loans, next due date, overdue, and reservations", () => {
+    mocks.data = {
+      ...profile([]),
+      active_loans: [
+        loan({ id: "a", due_on: "2026-09-20" }),
+        loan({ id: "b", due_on: "2026-10-05" }),
+      ],
+      reservations: [{ id: "r1", title_id: "t1", member_user_id: "u1", status: "waiting" }],
+    } as unknown as LibraryMyProfile;
+
+    render(<MyLibraryView />);
+
+    const tiles = screen.getByTestId("my-library-tiles");
+    expect(tiles).toHaveClass("lg:grid-cols-4");
+    expect(screen.getByTestId("my-library-tile-activeLoans")).toBeInTheDocument();
+    expect(screen.getByTestId("my-library-tile-nextDue")).toBeInTheDocument();
+    expect(screen.getByTestId("my-library-tile-overdue")).toBeInTheDocument();
+    expect(screen.getByTestId("my-library-tile-reservations")).toBeInTheDocument();
+  });
+
+  it("spans the last loan card full width when the active loan count is odd", () => {
+    mocks.data = {
+      ...profile([]),
+      active_loans: [loan({ id: "a" }), loan({ id: "b" }), loan({ id: "c" })],
+    };
+
+    render(<MyLibraryView />);
+
+    expect(screen.getByTestId("my-library-loan-cell-a")).not.toHaveClass("lg:col-span-2");
+    expect(screen.getByTestId("my-library-loan-cell-b")).not.toHaveClass("lg:col-span-2");
+    expect(screen.getByTestId("my-library-loan-cell-c")).toHaveClass("lg:col-span-2");
+  });
+
+  it("keeps an even number of loan cards in two equal columns", () => {
+    mocks.data = {
+      ...profile([]),
+      active_loans: [loan({ id: "a" }), loan({ id: "b" })],
+    };
+
+    render(<MyLibraryView />);
+
+    expect(screen.getByTestId("my-library-loan-cell-a")).not.toHaveClass("lg:col-span-2");
+    expect(screen.getByTestId("my-library-loan-cell-b")).not.toHaveClass("lg:col-span-2");
   });
 });

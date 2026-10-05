@@ -64,4 +64,28 @@ describe("MyLibraryLoanRow", () => {
 
     expect(screen.getByText("11111111-1111-1111-1111-111111111111")).toBeInTheDocument();
   });
+
+  it("shows the author when the loan carries one", () => {
+    render(
+      <MyLibraryLoanRow
+        loan={loan({ title_name: "Matematika Dasar", title_author: "Budi Santoso" })}
+        today="2026-09-15"
+        locale="id"
+      />,
+    );
+
+    expect(screen.getByText("Budi Santoso")).toBeInTheDocument();
+  });
+
+  it("omits the author line when the loan has none", () => {
+    render(
+      <MyLibraryLoanRow
+        loan={loan({ title_name: "Matematika Dasar" })}
+        today="2026-09-15"
+        locale="id"
+      />,
+    );
+
+    expect(screen.queryByText("Budi Santoso")).not.toBeInTheDocument();
+  });
 });

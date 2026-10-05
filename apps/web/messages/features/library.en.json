@@ -1329,6 +1329,17 @@
     "noActiveLoans": "No books on loan right now.",
     "history": "Loan history",
     "noHistory": "No loan history yet.",
+    "tiles": {
+      "nextDue": "Next due date",
+      "overdue": "Overdue"
+    },
+    "historyTable": {
+      "columns": {
+        "title": "Title",
+        "borrowedOn": "Borrowed on",
+        "returnedOn": "Returned on"
+      }
+    },
     "reserve": {
       "heading": "Reservations",
       "emptyBody": "No reservations yet. Search a title below to reserve one.",
