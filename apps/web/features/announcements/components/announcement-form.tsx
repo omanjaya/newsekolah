@@ -5,6 +5,10 @@ import { type Locale, formatDateTime } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
   Checkbox,
   Input,
   SafeHtml,
@@ -171,97 +175,117 @@ export function AnnouncementForm({
         </TabsList>
 
         <TabsContent value="compose" className="flex flex-col gap-4 pt-4">
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("title")}</span>
-            <Input
-              value={title}
-              maxLength={180}
-              onChange={(e) => {
-                setTitle(e.target.value);
-              }}
-              required
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("body")}</span>
-            <Textarea
-              value={body}
-              rows={8}
-              onChange={(e) => {
-                setBody(e.target.value);
-              }}
-              required
-            />
-            <span className="text-fg-muted">{t("bodyHint")}</span>
-          </label>
-          <div className="flex flex-col gap-2 text-[13px]">
-            <span className="font-medium">{t("audience")}</span>
-            <Select
-              options={audienceOptions}
-              value={audienceType}
-              onValueChange={(value) => {
-                setAudienceType(value as AudienceType);
-              }}
-              className="w-full md:w-64"
-            />
-            {audienceType === "roles" && (
-              <div className="flex flex-wrap gap-4">
-                {ROLE_SLUGS.map((slug) => (
-                  <label key={slug} className="flex items-center gap-2">
-                    <Checkbox
-                      checked={roleSlugs.includes(slug)}
-                      onCheckedChange={() => {
-                        toggle(roleSlugs, slug, setRoleSlugs);
-                      }}
-                    />
-                    {tRoles(slug)}
-                  </label>
-                ))}
-              </div>
-            )}
-            {audienceType === "classes" && (
-              <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto rounded-xs border border-border p-3 md:grid-cols-3">
-                {(classes.data?.data ?? []).map((cls) => (
-                  <label key={cls.id} className="flex items-center gap-2">
-                    <Checkbox
-                      checked={classIds.includes(cls.id)}
-                      onCheckedChange={() => {
-                        toggle(classIds, cls.id, setClassIds);
-                      }}
-                    />
-                    {cls.name}
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("startsAt")}</span>
-              <Input
-                type="datetime-local"
-                value={startsAt}
-                onChange={(e) => {
-                  setStartsAt(e.target.value);
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("sectionContent")}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4 pt-0">
+              <label className="flex flex-col gap-1 text-[13px]">
+                <span className="font-medium">{t("title")}</span>
+                <Input
+                  value={title}
+                  maxLength={180}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                  }}
+                  required
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-[13px]">
+                <span className="font-medium">{t("body")}</span>
+                <Textarea
+                  value={body}
+                  rows={8}
+                  onChange={(e) => {
+                    setBody(e.target.value);
+                  }}
+                  required
+                />
+                <span className="text-fg-muted">{t("bodyHint")}</span>
+              </label>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("sectionAudience")}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2 pt-0 text-[13px]">
+              <Select
+                options={audienceOptions}
+                value={audienceType}
+                onValueChange={(value) => {
+                  setAudienceType(value as AudienceType);
                 }}
+                className="w-full md:w-64"
               />
-              <span className="text-fg-muted">{t("startsAtHint")}</span>
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("endsAt")}</span>
-              <Input
-                type="datetime-local"
-                value={endsAt}
-                onChange={(e) => {
-                  setEndsAt(e.target.value);
-                }}
-              />
-            </label>
-          </div>
-          <label className="flex items-center gap-3 text-[13px]">
-            <Switch checked={pinned} onCheckedChange={setPinned} />
-            <span>{t("pinned")}</span>
-          </label>
+              {audienceType === "roles" && (
+                <div className="flex flex-wrap gap-4">
+                  {ROLE_SLUGS.map((slug) => (
+                    <label key={slug} className="flex items-center gap-2">
+                      <Checkbox
+                        checked={roleSlugs.includes(slug)}
+                        onCheckedChange={() => {
+                          toggle(roleSlugs, slug, setRoleSlugs);
+                        }}
+                      />
+                      {tRoles(slug)}
+                    </label>
+                  ))}
+                </div>
+              )}
+              {audienceType === "classes" && (
+                <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto rounded-xs border border-border p-3 md:grid-cols-3">
+                  {(classes.data?.data ?? []).map((cls) => (
+                    <label key={cls.id} className="flex items-center gap-2">
+                      <Checkbox
+                        checked={classIds.includes(cls.id)}
+                        onCheckedChange={() => {
+                          toggle(classIds, cls.id, setClassIds);
+                        }}
+                      />
+                      {cls.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("sectionSchedule")}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4 pt-0">
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="flex flex-col gap-1 text-[13px]">
+                  <span className="font-medium">{t("startsAt")}</span>
+                  <Input
+                    type="datetime-local"
+                    value={startsAt}
+                    onChange={(e) => {
+                      setStartsAt(e.target.value);
+                    }}
+                  />
+                  <span className="text-fg-muted">{t("startsAtHint")}</span>
+                </label>
+                <label className="flex flex-col gap-1 text-[13px]">
+                  <span className="font-medium">{t("endsAt")}</span>
+                  <Input
+                    type="datetime-local"
+                    value={endsAt}
+                    onChange={(e) => {
+                      setEndsAt(e.target.value);
+                    }}
+                  />
+                </label>
+              </div>
+              <label className="flex items-center gap-3 text-[13px]">
+                <Switch checked={pinned} onCheckedChange={setPinned} />
+                <span>{t("pinned")}</span>
+              </label>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="preview" className="flex flex-col gap-3 pt-4">
@@ -311,7 +335,17 @@ export function AnnouncementForm({
         </TabsContent>
       </Tabs>
 
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      {/*
+        A sticky save bar for a form that lives inside a Dialog, not a
+        full page: packages/ui's StickySaveBar pins to the viewport and
+        the shell's sidebar offset, which only makes sense for a full-page
+        editor (the attendance session editor). Here "sticky" instead
+        means pinned to the bottom of the dialog's own scroll area --
+        `sticky bottom-0`, offsetting DialogContent's own padding so the
+        bar reaches the dialog's edges -- so Cancel/Save stay in reach
+        while a long compose form scrolls past them.
+      */}
+      <div className="sticky -mx-4 -mb-4 bottom-0 z-10 flex justify-end gap-2 border-t border-border bg-surface px-4 py-4 md:-mx-6 md:-mb-6 md:px-6">
         <Button type="button" variant="secondary" onClick={onCancel} disabled={pending}>
           {t("cancel")}
         </Button>

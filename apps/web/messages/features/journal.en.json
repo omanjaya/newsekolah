@@ -13,7 +13,11 @@
   "searchPlaceholder": "Search topic or activities",
   "filters": {
     "reset": "Reset filters",
-    "removeFilter": "Remove {label} filter"
+    "removeFilter": "Remove {label} filter",
+    "dateRange": "Date",
+    "from": "From",
+    "to": "To",
+    "invalidRange": "The start date must be before the end date."
   },
   "exportXlsx": "Download Excel/PDF",
   "exportReportTitle": "Teaching Journal",
@@ -58,9 +62,14 @@
     "unfilled": "Not filled in",
     "fillAction": "Fill in journal",
     "editAction": "View journal",
+    "writePrimary": "Write journal",
     "loadError": "Schedule failed to load.",
     "todayLabel": "Today",
     "yesterdayLabel": "Yesterday"
+  },
+  "tiles": {
+    "filledWeek": "Journals this week",
+    "missingToday": "Today's sessions without a journal"
   },
   "loadError": "Journal failed to load."
 }

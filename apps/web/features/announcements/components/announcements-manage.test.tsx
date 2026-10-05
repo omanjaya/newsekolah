@@ -40,7 +40,7 @@ describe("AnnouncementsManage filters", () => {
 
   it("passes the chosen status to the announcements query and writes it to the URL", async () => {
     const user = userEvent.setup();
-    render(<AnnouncementsManage />);
+    render(<AnnouncementsManage creating={false} onCreatingChange={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "columns.status" }));
     await user.click(await screen.findByRole("button", { name: "status.published" }));
@@ -51,7 +51,7 @@ describe("AnnouncementsManage filters", () => {
 
   it("reads an initial status=draft URL param back into the filter bar", () => {
     window.history.replaceState(null, "", "/announcements/manage?status=draft");
-    render(<AnnouncementsManage />);
+    render(<AnnouncementsManage creating={false} onCreatingChange={vi.fn()} />);
 
     expect(mocks.useAnnouncementsQuery).toHaveBeenLastCalledWith("draft", "");
     expect(
@@ -62,7 +62,7 @@ describe("AnnouncementsManage filters", () => {
   it("clears an active filter from its chip's remove control", async () => {
     window.history.replaceState(null, "", "/announcements/manage?status=archived");
     const user = userEvent.setup();
-    render(<AnnouncementsManage />);
+    render(<AnnouncementsManage creating={false} onCreatingChange={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
     expect(mocks.useAnnouncementsQuery).toHaveBeenLastCalledWith("", "");
