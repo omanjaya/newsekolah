@@ -198,8 +198,14 @@
   },
   "desk": {
     "eyebrow": "Perpustakaan",
-    "title": "Peminjaman & Pengembalian",
+    "title": "Meja sirkulasi",
     "scanSubmit": "Catat",
+    "tiles": {
+      "loansToday": "Pinjam hari ini",
+      "returnsToday": "Kembali hari ini",
+      "overdue": "Terlambat",
+      "visitsToday": "Kunjungan hari ini"
+    },
     "undoLastScan": "Batalkan pindai terakhir",
     "lookup": {
       "label": "Cari anggota atau eksemplar",

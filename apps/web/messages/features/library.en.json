@@ -198,8 +198,14 @@
   },
   "desk": {
     "eyebrow": "Library",
-    "title": "Loans & Returns",
+    "title": "Loan desk",
     "scanSubmit": "Record",
+    "tiles": {
+      "loansToday": "Borrowed today",
+      "returnsToday": "Returned today",
+      "overdue": "Overdue",
+      "visitsToday": "Visits today"
+    },
     "undoLastScan": "Undo last scan",
     "lookup": {
       "label": "Search a member or copy",
