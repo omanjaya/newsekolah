@@ -13,7 +13,11 @@
   "searchPlaceholder": "Cari topik atau kegiatan",
   "filters": {
     "reset": "Reset filter",
-    "removeFilter": "Hapus filter {label}"
+    "removeFilter": "Hapus filter {label}",
+    "dateRange": "Tanggal",
+    "from": "Dari",
+    "to": "Sampai",
+    "invalidRange": "Tanggal mulai harus sebelum tanggal akhir."
   },
   "exportXlsx": "Unduh Excel/PDF",
   "exportReportTitle": "Jurnal Mengajar",
@@ -58,9 +62,14 @@
     "unfilled": "Belum diisi",
     "fillAction": "Isi jurnal",
     "editAction": "Lihat jurnal",
+    "writePrimary": "Tulis jurnal",
     "loadError": "Jadwal gagal dimuat.",
     "todayLabel": "Hari ini",
     "yesterdayLabel": "Kemarin"
+  },
+  "tiles": {
+    "filledWeek": "Jurnal minggu ini",
+    "missingToday": "Sesi tanpa jurnal hari ini"
   },
   "loadError": "Jurnal gagal dimuat."
 }

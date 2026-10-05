@@ -18,14 +18,30 @@ export type JournalExportFormat = "xlsx" | "docx";
  * `view_journals_all`) every journal for that class -- mirrors
  * apps/mobile's `useJournals` so both clients invalidate the same cache
  * entry after a write. `search` is a case-insensitive substring match on
- * topic or activities, already supported by `GET /v1/journals` but unused
- * by the web list until the filter bar rollout wired it up.
+ * topic or activities, and `dateFrom`/`dateTo` ("YYYY-MM-DD", inclusive)
+ * narrow by `lesson_date` -- both already supported by `GET /v1/journals`
+ * (openapi/modules/scheduling.yaml) but unused by the web list until the
+ * filter bar rollout wired them up.
  */
-export function useJournalsQuery(classId?: string, pageIndex = 0, pageSize = 50, search?: string) {
+export function useJournalsQuery(
+  classId?: string,
+  pageIndex = 0,
+  pageSize = 50,
+  search?: string,
+  dateFrom?: string,
+  dateTo?: string,
+) {
   const client = useApiClient();
   const year = useActiveYear();
   return useQuery({
-    queryKey: [...queryKeys.journals(year.id, classId), pageIndex, pageSize, search],
+    queryKey: [
+      ...queryKeys.journals(year.id, classId),
+      pageIndex,
+      pageSize,
+      search,
+      dateFrom,
+      dateTo,
+    ],
     queryFn: () =>
       client.GET("/v1/journals", {
         params: {
@@ -35,6 +51,8 @@ export function useJournalsQuery(classId?: string, pageIndex = 0, pageSize = 50,
             offset: pageIndex * pageSize,
             ...(classId ? { class_id: classId } : {}),
             ...(search ? { search } : {}),
+            ...(dateFrom ? { date_from: dateFrom } : {}),
+            ...(dateTo ? { date_to: dateTo } : {}),
           },
         },
       }),
@@ -89,10 +107,14 @@ export async function downloadJournalExport(
   yearId: string,
   classId: string | undefined,
   format: JournalExportFormat,
+  dateFrom?: string,
+  dateTo?: string,
 ): Promise<void> {
   const token = getAccessToken();
   const params = new URLSearchParams({ academic_year_id: yearId, format });
   if (classId) params.set("class_id", classId);
+  if (dateFrom) params.set("date_from", dateFrom);
+  if (dateTo) params.set("date_to", dateTo);
   const response = await fetch(`${API_URL}/v1/journals/export?${params.toString()}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
@@ -135,6 +157,8 @@ export async function downloadJournalExportReport(
   yearId: string,
   classId: string | undefined,
   options: ReportExportOptions,
+  dateFrom?: string,
+  dateTo?: string,
 ): Promise<void> {
   const token = getAccessToken();
   const params = new URLSearchParams({
@@ -144,6 +168,8 @@ export async function downloadJournalExportReport(
     letterhead: options.showLetterhead ? "true" : "false",
   });
   if (classId) params.set("class_id", classId);
+  if (dateFrom) params.set("date_from", dateFrom);
+  if (dateTo) params.set("date_to", dateTo);
   if (options.columns.length > 0) {
     params.set("columns", options.columns.map(encodeColumnChoice).join(","));
   }
