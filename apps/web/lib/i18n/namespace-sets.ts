@@ -87,6 +87,7 @@ const APP_FEATURE_NAMESPACES = [
   "app.discipline",
   "app.documents",
   "app.grading",
+  "app.inbox",
   "app.integrations",
   "app.journal",
   "app.mentoring",

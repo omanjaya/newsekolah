@@ -37,6 +37,8 @@ import documentsEn from "./documents.en.json";
 import documentsId from "./documents.id.json";
 import gradingEn from "./grading.en.json";
 import gradingId from "./grading.id.json";
+import inboxEn from "./inbox.en.json";
+import inboxId from "./inbox.id.json";
 import integrationsEn from "./integrations.en.json";
 import integrationsId from "./integrations.id.json";
 import journalEn from "./journal.en.json";
@@ -140,3 +142,4 @@ registerFeatureMessages({
 registerFeatureMessages({ namespace: "visitors", id: visitorsId, en: visitorsEn });
 registerFeatureMessages({ namespace: "mentoring", id: mentoringId, en: mentoringEn });
 registerFeatureMessages({ namespace: "supervision", id: supervisionId, en: supervisionEn });
+registerFeatureMessages({ namespace: "inbox", id: inboxId, en: inboxEn });
