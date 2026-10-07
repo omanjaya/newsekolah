@@ -1,0 +1,31 @@
+{
+  "navLabel": "Pindai",
+  "eyebrow": "Pindai",
+  "title": "Pindai kode QR",
+  "intro": "Arahkan kamera ke kode QR apa pun: masuk kelas, keterlambatan, izin keluar, gerbang, atau kunjungan perpustakaan. Tindakan yang sesuai dijalankan otomatis.",
+  "scanLabel": "Kode QR",
+  "placeholder": "Tempel kode lengkap dari QR",
+  "submit": "Kirim kode",
+  "cameraLabel": "Pindai dengan kamera",
+  "successTitle": "Berhasil",
+  "errorTitle": "Pindai gagal",
+  "historyTitle": "Pindaian sebelumnya",
+  "results": {
+    "classroom_entry": "Kehadiran Anda tercatat di kelas {teacher}.",
+    "exit_stage": "Tahap izin keluar {student} dikonfirmasi.",
+    "gate_exit": "{student} ({className}) diizinkan keluar.",
+    "late_arrival_open": "Keterlambatan dibuka dan menunggu proses berikutnya.",
+    "late_arrival_stage": "Tahap keterlambatan dikonfirmasi.",
+    "library_visit": "Kunjungan perpustakaan tercatat."
+  },
+  "failures": {
+    "expired": "Kode sudah kedaluwarsa atau sudah dipakai. Minta kode QR yang baru.",
+    "lateArrivalBusy": "Keterlambatan Anda sedang diproses dan tidak menunggu pindaian."
+  },
+  "unknown": {
+    "empty": "Kode kosong.",
+    "bare": "Kode tidak dikenali. Pindai QR langsung, atau tempel kode lengkap yang diawali \"sion:\".",
+    "unsupported": "Jenis kode QR ini tidak didukung.",
+    "missing_instance": "Kode QR tidak lengkap. Minta kode QR yang baru."
+  }
+}

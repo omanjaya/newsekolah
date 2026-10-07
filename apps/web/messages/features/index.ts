@@ -59,6 +59,8 @@ import reportExportEn from "./reportExport.en.json";
 import reportExportId from "./reportExport.id.json";
 import reportsEn from "./reports.en.json";
 import reportsId from "./reports.id.json";
+import scanEn from "./scan.en.json";
+import scanId from "./scan.id.json";
 import securityEn from "./security.en.json";
 import securityId from "./security.id.json";
 import serviceWorkspaceEn from "./service-workspace.en.json";
@@ -139,4 +141,5 @@ registerFeatureMessages({
 });
 registerFeatureMessages({ namespace: "visitors", id: visitorsId, en: visitorsEn });
 registerFeatureMessages({ namespace: "mentoring", id: mentoringId, en: mentoringEn });
+registerFeatureMessages({ namespace: "scan", id: scanId, en: scanEn });
 registerFeatureMessages({ namespace: "supervision", id: supervisionId, en: supervisionEn });
