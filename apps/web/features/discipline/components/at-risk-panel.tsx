@@ -23,27 +23,13 @@ import { useRememberedViewState } from "../../../lib/view-state/view-state-provi
 import { useClassesQuery } from "../../reference/api";
 import {
   type SPCandidate,
-  type SPLevel,
   useDisciplinePolicyQuery,
   useIssueWarningLetterMutation,
   useSPCandidatesQuery,
 } from "../api";
+import { dueLevels } from "../lib/sp-due-levels";
 
 const PAGE_SIZE = 25;
-
-/**
- * Levels the student has reached but not yet been issued, ascending. The
- * API refuses issuing out of order, so only `dueLevels[0]` is ever offered.
- */
-function dueLevels(candidate: SPCandidate, levels: SPLevel[]): SPLevel[] {
-  return levels
-    .filter(
-      (level) =>
-        candidate.total_points >= level.min_points &&
-        !candidate.issued_levels.includes(level.level),
-    )
-    .sort((a, b) => a.level - b.level);
-}
 
 export function AtRiskPanel(): ReactElement {
   const t = useTranslations("app.discipline.warningLetters.atRisk");

@@ -113,11 +113,12 @@ export function useDeleteViolationTypeMutation() {
 
 // SP ladder policy.
 
-export function useDisciplinePolicyQuery() {
+export function useDisciplinePolicyQuery(enabled = true) {
   const client = useApiClient();
   return useQuery({
     queryKey: keys.policy(),
     queryFn: () => client.GET("/v1/discipline/policy"),
+    enabled,
   });
 }
 
