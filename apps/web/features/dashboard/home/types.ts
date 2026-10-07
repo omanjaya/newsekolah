@@ -6,7 +6,14 @@ import type { ReactNode } from "react";
 export type Me = components["schemas"]["Me"];
 
 export type PersonaKey =
-  "teacher" | "homeroom" | "student" | "leadership" | "librarian" | "picket" | "counselor";
+  | "teacher"
+  | "checkIn"
+  | "homeroom"
+  | "student"
+  | "leadership"
+  | "librarian"
+  | "picket"
+  | "counselor";
 
 export interface HeroCandidate {
   key: string;

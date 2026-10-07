@@ -47,6 +47,13 @@
       "viewAll": "View all",
       "empty": "No at-risk students right now.",
       "unknownStudent": "Unknown student"
+    },
+    "presence": {
+      "title": "Today's attendance",
+      "summary": "{submitted} of {total} sessions have attendance",
+      "pending": "{pending} sessions not yet filled",
+      "empty": "No attendance sessions today.",
+      "open": "Open monitor"
     }
   },
   "librarian": {

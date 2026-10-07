@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const leaveReviewQueueQuery = vi.hoisted(() => vi.fn());
 const spCandidatesQuery = vi.hoisted(() => vi.fn());
+const atRiskQuery = vi.hoisted(() => vi.fn());
 
 vi.mock("../../../permits/api", () => ({
   useLeaveReviewQueueQuery: leaveReviewQueueQuery,
@@ -10,6 +11,15 @@ vi.mock("../../../permits/api", () => ({
 
 vi.mock("../../../discipline/api", () => ({
   useSPCandidatesQuery: spCandidatesQuery,
+}));
+
+vi.mock("../../../analytics/api", () => ({ useAtRiskStudentsQuery: atRiskQuery }));
+
+vi.mock("../../../reference/api", () => ({
+  useDirectoryQuery: () => ({ data: { data: [{ id: "s1", name: "Siswa A" }] } }),
+  useClassesQuery: () => ({ data: { data: [{ id: "c1", name: "X-A" }] } }),
+  useLookup: (items: { id: string }[] | undefined) =>
+    new Map((items ?? []).map((item) => [item.id, item])),
 }));
 
 vi.mock("next-intl", () => ({
@@ -38,6 +48,8 @@ describe("useCounselorBlock", () => {
   beforeEach(() => {
     leaveReviewQueueQuery.mockReset();
     spCandidatesQuery.mockReset();
+    atRiskQuery.mockReset();
+    atRiskQuery.mockReturnValue(refetchable({ data: { data: [] } }));
   });
 
   it("returns EMPTY_BLOCK and disables both queries when inactive", () => {
@@ -158,5 +170,44 @@ describe("useCounselorBlock", () => {
     expect(result.current.tiles.find((t) => t.key === "counselor.leave")).toBeUndefined();
     render(<>{result.current.left.map((slot) => slot.node)}</>);
     expect(screen.getByRole("button")).toBeInTheDocument();
+  });
+
+  it("adds an at-risk card and queries only with view_early_warning", () => {
+    const meWithEarlyWarning = { permissions: ["view_early_warning"] } as unknown as Me;
+    leaveReviewQueueQuery.mockReturnValue(refetchable({}));
+    spCandidatesQuery.mockReturnValue(refetchable({}));
+    atRiskQuery.mockReturnValue(
+      refetchable({
+        data: {
+          data: [
+            { student_user_id: "s1", class_id: "c1", score: 80, level: "high" },
+            { student_user_id: "s2", class_id: "c1", score: 90, level: "high" },
+            { student_user_id: "s3", class_id: "c1", score: 70, level: "medium" },
+            { student_user_id: "s4", class_id: "c1", score: 60, level: "medium" },
+          ],
+        },
+      }),
+    );
+
+    const { result } = renderHook(() => useCounselorBlock(meWithEarlyWarning, true));
+
+    expect(atRiskQuery).toHaveBeenCalledWith(true);
+    expect(result.current.right.map((slot) => slot.key)).toEqual(["counselor.atRisk"]);
+    render(<>{result.current.right.map((slot) => slot.node)}</>);
+    expect(screen.getByText('count:{"count":4}')).toBeInTheDocument();
+    expect(screen.getByText("Siswa A")).toBeInTheDocument();
+    // Only the top three by score are listed (s2, s1, s3); s2 and s3 are unknown to the directory.
+    expect(screen.getAllByText("unknownStudent")).toHaveLength(2);
+    expect(screen.getByRole("link", { name: "viewAll" })).toHaveAttribute("href", "/analytics");
+  });
+
+  it("shows no at-risk card without view_early_warning", () => {
+    leaveReviewQueueQuery.mockReturnValue(refetchable({}));
+    spCandidatesQuery.mockReturnValue(refetchable({}));
+
+    const { result } = renderHook(() => useCounselorBlock(counselorWithBothPermissions, true));
+
+    expect(atRiskQuery).toHaveBeenCalledWith(false);
+    expect(result.current.right).toEqual([]);
   });
 });

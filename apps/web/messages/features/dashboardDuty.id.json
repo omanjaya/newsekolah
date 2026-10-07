@@ -24,6 +24,21 @@
     "spSectionTitle": "Kandidat SP",
     "spEmpty": "Tidak ada kandidat surat peringatan.",
     "seeAll": "Lihat semua",
-    "review": "Tinjau"
+    "review": "Tinjau",
+    "atRisk": {
+      "title": "Siswa berisiko",
+      "count": "{count} siswa berisiko",
+      "empty": "Tidak ada siswa berisiko saat ini.",
+      "unknownStudent": "Siswa tidak dikenal",
+      "viewAll": "Lihat analitik"
+    }
+  },
+  "checkIn": {
+    "title": "Absen Masuk / Pulang",
+    "openPage": "Buka halaman absensi",
+    "notYet": "Belum ada catatan hari ini",
+    "done": "Presensi hari ini sudah lengkap.",
+    "checkIn": "Absen Masuk",
+    "checkOut": "Absen Pulang"
   }
 }

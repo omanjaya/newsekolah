@@ -28,6 +28,7 @@ import {
 } from "../types";
 
 import { LoginActivityChart } from "./login-activity-chart";
+import { PresenceCard } from "./presence-card";
 
 type AdminDashboard = components["schemas"]["AdminDashboard"];
 type StudentRisk = components["schemas"]["StudentRisk"];
@@ -58,6 +59,7 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   // them): the query only runs, and the card only renders, for a caller who
   // actually has it.
   const canViewAtRisk = me.permissions.includes("view_early_warning");
+  const canViewMonitor = me.permissions.includes("view_monitor_presence");
   const atRisk = useAtRiskStudentsQuery(active && canViewAtRisk);
   const students = useDirectoryQuery("student", active);
   const studentMap = useLookup(students.data?.data);
@@ -141,6 +143,22 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
         />
       ),
     },
+    ...(canViewMonitor
+      ? [
+          {
+            key: "school.presence",
+            node: (
+              <PresenceCard
+                key="school.presence"
+                isLoading={dashboard.isLoading}
+                isError={dashboard.isError}
+                refetch={dashboard.refetch}
+                attendance={attendanceToday}
+              />
+            ),
+          },
+        ]
+      : []),
   ];
 
   const right: BlockSlot[] = [
