@@ -71,13 +71,28 @@ Satu halaman untuk semua orang yang mengurus siswa. Header berisi identitas, kel
 
 Data Sekolah dibuka serius sekali di awal tahun ajaran, lalu sesekali saja. Grupnya ditaruh paling bawah dan tertutup secara bawaan. Guru tidak melihat grup ini sama sekali. Wizard Tahun Ajaran Baru menjadi pintu utama awal tahun, dan beranda admin menampilkan daftar data yang belum lengkap beserta tautan perbaikannya.
 
-## Status
+## Status (7 Oktober 2026)
 
-| Bagian                                                          | Status     |
-| --------------------------------------------------------------- | ---------- |
-| Grup Piket & Gerbang, Absensi Saya ke menu avatar               | Dikerjakan |
-| Grup satu menu dilebur ke tautan atas                           | Dikerjakan |
-| Scan, Perlu Tindakan, Profil Siswa, kedua hub Pengaturan        | Dikerjakan |
-| Lonceng dengan Pengumuman, kartu beranda, Wali Kelas, SP        | Dikerjakan |
-| Laporan satu pintu, jurnal di layar presensi                    | Belum      |
-| Tab bawah mobile mengikuti peran (orang tua, piket, wali kelas) | Belum      |
+| Bagian                                                                                       | Status                                        |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Grup Piket & Gerbang; Absensi Saya ke menu avatar; grup satu menu dilebur                    | Selesai                                       |
+| Scan universal (`/scan`), dari tujuan QR `sion:<kind>:...`, tanpa perubahan backend          | Selesai                                       |
+| Perlu Tindakan (`/inbox`) dengan badge jumlah antrean di sidebar                             | Selesai                                       |
+| Profil Siswa (`/students/[id]`), tab digerbang izin                                          | Selesai                                       |
+| Pengaturan Sekolah (`/settings`) dan Pengaturan Perpustakaan (`/library/settings`)           | Selesai                                       |
+| Lonceng dengan tab Pengumuman; menu Pengumuman hanya untuk pembuat pengumuman                | Selesai                                       |
+| Kartu beranda: absen masuk/pulang, siswa berisiko (BK), kehadiran hari ini (pimpinan)        | Selesai                                       |
+| Kandidat dan riwayat SP sebagai tab di Tata Tertib; Wali Kelas sebagai hub bertab            | Selesai                                       |
+| Tab bawah mobile: siswa Scan, BK Perlu Tindakan, guru piket Piket, wali kelas Perlu Tindakan | Selesai                                       |
+| Laporan satu pintu, jurnal di layar presensi                                                 | Belum                                         |
+| Orang tua tanpa sidebar                                                                      | Belum: web belum punya jenis profil orang tua |
+
+## Celah yang ditemukan
+
+- **Tab Nilai di Wali Kelas belum ada.** Tidak ada endpoint nilai satu kelas lintas mapel; buku nilai butuh kelas dan mapel sekaligus.
+- **Tab Izin di Profil Siswa hanya menampilkan izin yang menunggu pembaca.** Belum ada endpoint riwayat izin per siswa (`GET /v1/students/{id}/leave-requests` atau filter `student_id`).
+- **Tab Nilai di Profil Siswa** memakai snapshot pendampingan (nilai terbit bulan ini, izin `view_mentoring`).
+- **Scan**: kamera menutup setelah satu kali baca (scanner USB tetap beruntun), scan terlambat belum bisa membawa alasan, dan input manual harus kode lengkap `sion:...`.
+- **Pengaturan Perpustakaan** menampilkan header ganda karena tiap tab merender halaman lamanya utuh.
+- **Hitungan kandidat SP** di Perlu Tindakan hanya mencakup 200 kandidat pertama.
+- Tautan nama siswa di layar lain masih menuju halaman detail lama; arahkan bertahap ke `studentProfileHref`.

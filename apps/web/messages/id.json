@@ -9,6 +9,7 @@
       "users": "Pengguna sekolah"
     },
     "shell": {
+      "navBadge": "{count} menunggu",
       "appearance": "Tampilan",
       "commandPalette": {
         "trigger": "Cari halaman atau aksi",

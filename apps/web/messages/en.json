@@ -9,6 +9,7 @@
       "users": "School users"
     },
     "shell": {
+      "navBadge": "{count} waiting",
       "appearance": "Appearance",
       "commandPalette": {
         "trigger": "Search pages or actions",

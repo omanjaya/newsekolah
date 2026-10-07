@@ -167,6 +167,8 @@ export const APP_NAMESPACES: readonly string[] = [
   ...LIBRARY_NAV_LABEL_KEYS,
   ...STUDENT_PROFILE_LIBRARY_NAMESPACES,
   "app.settingsHub",
+  // The library settings sidebar label, read outside /library/* too.
+  "app.librarySettings.title",
 ];
 
 /**

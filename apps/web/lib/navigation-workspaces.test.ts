@@ -33,7 +33,7 @@ describe("consolidated workspaces", () => {
       "app.workspace.myAttendance",
     );
     expect(items.find((item) => item.key === "grading")?.href).toBe("/my-grades");
-    expect(mobileNavigation(items, "student").map((item) => item.key)).toContain("classroom-entry");
+    expect(mobileNavigation(items, "student").map((item) => item.key)).toContain("scan");
   });
 
   it("adds the homeroom workspace only for an actual homeroom assignment", () => {
@@ -57,9 +57,13 @@ describe("consolidated workspaces", () => {
 
   it("keeps library settings reachable for a custom role with no circulation or membership grant", () => {
     const items = menu(["manage_library_settings"]);
-    const entry = items.find((item) => item.key === "library-members");
-    expect(entry?.href).toBe("/library/loan-rules");
-    expect(entry?.aliases).toEqual(["library-loan-rules", "library-member-types"]);
+    const entry = items.find((item) => item.key === "library-settings");
+    expect(entry?.href).toBe("/library/settings");
+    expect(entry?.aliases).toEqual([
+      "library-settings",
+      "library-loan-rules",
+      "library-member-types",
+    ]);
     expect(items.some((item) => item.key === "library-desk")).toBe(false);
   });
 
@@ -95,7 +99,7 @@ describe("consolidated workspaces", () => {
     );
     expect(activeNavHref("/library/copies", items)).toBe("/library/catalogue");
     expect(activeNavHref("/library/reports", items)).toBe("/reports");
-    expect(activeNavHref("/settings/sso", items)).toBe("/settings/branding");
+    expect(activeNavHref("/settings/sso", items)).toBe("/settings");
     expect(activeNavHref("/discipline/warning-letters", items)).toBe("/discipline/violations");
     expect(activeNavHref("/library/catalogue/title-id", items)).toBe("/library/catalogue");
     expect(activeNavHref("/discipline/students/student-id", items)).toBe("/discipline/violations");
@@ -107,7 +111,7 @@ describe("consolidated workspaces", () => {
   it("keeps stable unique menu entries and can reach footer settings with only audit access", () => {
     const items = menu(["view_audit_logs"]);
     expect(new Set(items.map((item) => item.key)).size).toBe(items.length);
-    expect(items.find((item) => item.key === "settings")?.href).toBe("/settings/audit-logs");
+    expect(items.find((item) => item.key === "settings")?.href).toBe("/settings");
     expect(items.find((item) => item.key === "settings")?.sidebarPlacement).toBe("footer");
   });
 

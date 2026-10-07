@@ -84,8 +84,13 @@ const WORKSPACES: WorkspaceDefinition[] = [
   },
   {
     key: "library-members",
-    members: ["library-members", "library-loan-rules", "library-member-types"],
+    members: ["library-members"],
     label: "members",
+  },
+  {
+    key: "library-settings",
+    members: ["library-settings", "library-loan-rules", "library-member-types"],
+    label: "librarySettings",
   },
   { key: "library-visits", members: ["library-visits", "library-visit-kiosk"], label: "visits" },
   { key: "library-stocktake", members: ["library-stocktake"], label: "stocktake" },
@@ -100,6 +105,7 @@ const WORKSPACES: WorkspaceDefinition[] = [
   {
     key: "settings",
     members: [
+      "settings-hub",
       "settings-branding",
       "settings-document-templates",
       "settings-report-header",
@@ -134,6 +140,10 @@ export interface NavigationContext {
 
 function relevant(item: NavItem, context: NavigationContext): boolean {
   if (item.routePermission && context.can && !context.can(item.routePermission)) return false;
+  // Readers find announcements in the header bell; only an author needs the
+  // page as a destination of its own.
+  if (item.key === "announcements" && context.can && !context.can("create_announcements"))
+    return false;
   if (item.key === "homeroom")
     return context.duties?.some((duty) => duty.slug === "homeroom") ?? false;
   const personal = context.profileKind === "student";
