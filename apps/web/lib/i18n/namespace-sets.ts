@@ -78,6 +78,7 @@ const APP_FEATURE_NAMESPACES = [
   "app.attendanceEditor",
   "app.attendanceReports",
   "app.audit",
+  "app.bell",
   "app.billing",
   "app.calendar",
   "app.dashboardDuty",

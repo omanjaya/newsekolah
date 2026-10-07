@@ -19,6 +19,8 @@ import attendanceReportsEn from "./attendanceReports.en.json";
 import attendanceReportsId from "./attendanceReports.id.json";
 import auditEn from "./audit.en.json";
 import auditId from "./audit.id.json";
+import bellEn from "./bell.en.json";
+import bellId from "./bell.id.json";
 import billingEn from "./billing.en.json";
 import billingId from "./billing.id.json";
 import calendarEn from "./calendar.en.json";
@@ -140,3 +142,4 @@ registerFeatureMessages({
 registerFeatureMessages({ namespace: "visitors", id: visitorsId, en: visitorsEn });
 registerFeatureMessages({ namespace: "mentoring", id: mentoringId, en: mentoringEn });
 registerFeatureMessages({ namespace: "supervision", id: supervisionId, en: supervisionEn });
+registerFeatureMessages({ namespace: "bell", id: bellId, en: bellEn });
