@@ -5,7 +5,9 @@
     "tabs": {
       "ledger": "Catatan poin",
       "catalog": "Katalog pelanggaran",
-      "policy": "Kebijakan SP"
+      "policy": "Kebijakan SP",
+      "atRisk": "Kandidat SP",
+      "letters": "Surat Peringatan"
     },
     "filters": {
       "class": "Kelas",
