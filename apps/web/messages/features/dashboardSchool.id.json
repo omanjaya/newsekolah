@@ -47,6 +47,13 @@
       "viewAll": "Lihat semua",
       "empty": "Tidak ada siswa berisiko saat ini.",
       "unknownStudent": "Siswa tidak dikenal"
+    },
+    "presence": {
+      "title": "Kehadiran hari ini",
+      "summary": "{submitted} dari {total} sesi sudah dipresensi",
+      "pending": "{pending} sesi belum diisi",
+      "empty": "Belum ada sesi presensi hari ini.",
+      "open": "Buka monitor"
     }
   },
   "librarian": {

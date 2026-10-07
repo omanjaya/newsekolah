@@ -1,5 +1,6 @@
 "use client";
 
+import type { components } from "@newsekolah/api-client";
 import { Card, CardHeader, CardTitle, Skeleton } from "@newsekolah/ui";
 import { FileClock, ShieldAlert } from "lucide-react";
 import Link from "next/link";
@@ -7,18 +8,31 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
+import { useAtRiskStudentsQuery } from "../../../analytics/api";
+import { RiskLevelBadge } from "../../../analytics/components/risk-level-badge";
 import {
   type SPCandidate,
   type SPCandidateFilters,
   useSPCandidatesQuery,
 } from "../../../discipline/api";
 import { type LeaveRequestSummary, useLeaveReviewQueueQuery } from "../../../permits/api";
+import {
+  type ClassRef,
+  type DirectoryUser,
+  useClassesQuery,
+  useDirectoryQuery,
+  useLookup,
+} from "../../../reference/api";
 import { EMPTY_BLOCK, HERO_PRIORITY } from "../types";
 import type { Me, PersonaBlock } from "../types";
 
+type StudentRisk = components["schemas"]["StudentRisk"];
+
 const LEAVE_REQUESTS_HREF = "/leave-requests";
 const WARNING_LETTERS_HREF = "/discipline/warning-letters";
+const ANALYTICS_HREF = "/analytics";
 const QUEUE_PREVIEW_SIZE = 5;
+const AT_RISK_PREVIEW_SIZE = 3;
 
 const SP_CANDIDATE_FILTERS: SPCandidateFilters = {
   classId: "",
@@ -35,6 +49,12 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
   const canIssueWarningLetters = me.permissions.includes("issue_warning_letters");
   const leave = useLeaveReviewQueueQuery(active && canReviewLeave);
   const sp = useSPCandidatesQuery(SP_CANDIDATE_FILTERS, active && canIssueWarningLetters);
+  const canViewAtRisk = me.permissions.includes("view_early_warning");
+  const atRisk = useAtRiskStudentsQuery(active && canViewAtRisk);
+  const students = useDirectoryQuery("student", active && canViewAtRisk);
+  const classes = useClassesQuery(active && canViewAtRisk);
+  const studentMap = useLookup(students.data?.data);
+  const classMap = useLookup(classes.data?.data);
 
   if (!active) return EMPTY_BLOCK;
 
@@ -97,7 +117,93 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
     });
   }
 
+  if (canViewAtRisk) {
+    const atRiskRows = atRisk.data?.data ?? [];
+    block.right.push({
+      key: "counselor.atRisk",
+      node: (
+        <AtRiskCard
+          key="counselor.atRisk"
+          isLoading={atRisk.isLoading}
+          isError={atRisk.isError}
+          refetch={atRisk.refetch}
+          total={atRiskRows.length}
+          rows={[...atRiskRows].sort((a, b) => b.score - a.score).slice(0, AT_RISK_PREVIEW_SIZE)}
+          studentMap={studentMap}
+          classMap={classMap}
+        />
+      ),
+    });
+  }
+
   return block;
+}
+
+function AtRiskCard({
+  isLoading,
+  isError,
+  refetch,
+  total,
+  rows,
+  studentMap,
+  classMap,
+}: {
+  isLoading: boolean;
+  isError: boolean;
+  refetch: () => unknown;
+  total: number;
+  rows: StudentRisk[];
+  studentMap: Map<string, DirectoryUser>;
+  classMap: Map<string, ClassRef>;
+}): ReactElement {
+  const t = useTranslations("app.dashboardDuty.counselor.atRisk");
+  const levelLabel = useTranslations("app.analytics.level");
+  return (
+    <Card className="h-full">
+      <CardHeader className="flex-row items-center justify-between gap-3">
+        <CardTitle>{t("title")}</CardTitle>
+        <Link
+          href={ANALYTICS_HREF}
+          className="shrink-0 text-[13px] text-accent underline underline-offset-2"
+        >
+          {t("viewAll")}
+        </Link>
+      </CardHeader>
+      <div className="flex flex-col gap-3 px-5 pb-5">
+        {isError ? (
+          <QueryError retry={refetch} />
+        ) : isLoading ? (
+          <Skeleton className="h-24 w-full" aria-busy="true" />
+        ) : rows.length === 0 ? (
+          <p className="text-[13px] text-fg-muted">{t("empty")}</p>
+        ) : (
+          <>
+            <p className="text-[13px] font-medium text-fg">{t("count", { count: total })}</p>
+            <ul className="flex flex-col gap-2">
+              {rows.map((row) => (
+                <li key={row.student_user_id}>
+                  <Link
+                    href={`${ANALYTICS_HREF}/${row.student_user_id}`}
+                    className="flex items-center justify-between gap-3 text-[13px] text-fg hover:text-accent"
+                  >
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate">
+                        {studentMap.get(row.student_user_id)?.name ?? t("unknownStudent")}
+                      </span>
+                      <span className="truncate text-fg-muted">
+                        {classMap.get(row.class_id)?.name ?? "-"}
+                      </span>
+                    </span>
+                    <RiskLevelBadge level={row.level} label={levelLabel(row.level)} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
+    </Card>
+  );
 }
 
 function CounselorQueueCard({

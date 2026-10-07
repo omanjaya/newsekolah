@@ -183,4 +183,26 @@ describe("useLeadershipBlock", () => {
     expect(atRiskQuery).toHaveBeenCalledWith(false);
     expect(result.current.right.some((slot) => slot.key === "school.atRisk")).toBe(false);
   });
+
+  it("adds the presence card only with view_monitor_presence", () => {
+    dashboardQuery.mockReturnValue({
+      data: { ...baseDashboard, attendance_today: { submitted: 3, total: 5 } },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    const without = renderHook(() => useLeadershipBlock(me, true));
+    const withMonitor = renderHook(() =>
+      useLeadershipBlock({ ...me, permissions: ["view_monitor_presence"] }, true),
+    );
+
+    expect(without.result.current.left.map((slot) => slot.key)).toEqual(["school.queue"]);
+    expect(withMonitor.result.current.left.map((slot) => slot.key)).toEqual([
+      "school.queue",
+      "school.presence",
+    ]);
+    render(<>{withMonitor.result.current.left[1]?.node}</>);
+    expect(screen.getByText("60%")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "open" })).toHaveAttribute("href", "/monitor");
+  });
 });

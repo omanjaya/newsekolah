@@ -32,7 +32,7 @@ describe("resolvePersonas", () => {
         duties: [{ slug: "homeroom", scope_kind: "class", scope_id: "c1", scope_label: "X-A" }],
       }),
     );
-    expect([...p].sort()).toEqual(["homeroom", "teacher"]);
+    expect([...p].sort()).toEqual(["checkIn", "homeroom", "teacher"]);
   });
   it("does not treat a picket staff member as a teacher", () => {
     const p = resolvePersonas(
@@ -42,7 +42,7 @@ describe("resolvePersonas", () => {
         duties: [{ slug: "picket", scope_kind: "school" }],
       }),
     );
-    expect([...p]).toEqual(["picket"]);
+    expect([...p].sort()).toEqual(["checkIn", "picket"]);
   });
   it("recognises a student", () => {
     expect([...resolvePersonas(me({ profile_kind: "student" }))]).toEqual(["student"]);
@@ -102,6 +102,18 @@ describe("resolvePersonas", () => {
         permissions: ["manage_attendance", "issue_scan_tokens"],
       }),
     );
-    expect([...p]).toEqual(["teacher"]);
+    expect([...p].sort()).toEqual(["checkIn", "teacher"]);
+  });
+  it("gives check-in to teachers and staff only, never to students or parents", () => {
+    expect(resolvePersonas(me({ profile_kind: "teacher" })).has("checkIn")).toBe(true);
+    expect(resolvePersonas(me({ profile_kind: "staff" })).has("checkIn")).toBe(true);
+    expect(resolvePersonas(me({ profile_kind: "student" })).has("checkIn")).toBe(false);
+    expect(resolvePersonas(me({ profile_kind: "parent" })).has("checkIn")).toBe(false);
+  });
+  it("does not make an admin without a teacher or staff profile a check-in user", () => {
+    const p = resolvePersonas(
+      me({ roles: [{ id: "r", slug: "admin", name: "Admin", is_primary: true }] }),
+    );
+    expect(p.has("checkIn")).toBe(false);
   });
 });
