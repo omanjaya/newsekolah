@@ -1,0 +1,8 @@
+{
+  "unreadTotal": "{count, plural, one {# unread item} other {# unread items}}",
+  "tabsLabel": "Notifications and announcements",
+  "tabNotifications": "Notifications",
+  "tabAnnouncements": "Announcements",
+  "announcementsEmpty": "No announcements yet",
+  "announcementsSeeAll": "See all"
+}
