@@ -48,6 +48,20 @@ export function useIssueLibraryKioskTokenMutation() {
   });
 }
 
+/** The visitor's own device submits the kiosk token it just scanned; logs a visit for the signed-in user. */
+export function useScanLibraryKioskVisitMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { token: string }) => client.POST("/v1/library/visits/kiosk-scan", { body }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["library", "visits"] });
+    },
+
+    meta: { errorToast: false },
+  });
+}
+
 export function useLibraryReadInPlaceQuery(copyId: string) {
   const client = useApiClient();
   return useQuery({

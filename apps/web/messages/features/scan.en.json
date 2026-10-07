@@ -1,0 +1,31 @@
+{
+  "navLabel": "Scan",
+  "eyebrow": "Scan",
+  "title": "Scan QR code",
+  "intro": "Point the camera at any QR code: classroom entry, late arrival, exit permit, gate, or library visit. The matching action runs automatically.",
+  "scanLabel": "QR code",
+  "placeholder": "Paste the full code from the QR",
+  "submit": "Submit code",
+  "cameraLabel": "Scan with camera",
+  "successTitle": "Done",
+  "errorTitle": "Scan failed",
+  "historyTitle": "Earlier scans",
+  "results": {
+    "classroom_entry": "Your attendance is recorded in {teacher}'s class.",
+    "exit_stage": "Exit permit stage confirmed for {student}.",
+    "gate_exit": "{student} ({className}) may leave.",
+    "late_arrival_open": "Late arrival opened and waiting for the next step.",
+    "late_arrival_stage": "Late arrival stage confirmed.",
+    "library_visit": "Library visit recorded."
+  },
+  "failures": {
+    "expired": "The code has expired or was already used. Ask for a new QR code.",
+    "lateArrivalBusy": "Your late arrival is already being processed and is not waiting for a scan."
+  },
+  "unknown": {
+    "empty": "The code is empty.",
+    "bare": "Code not recognised. Scan the QR directly, or paste the full code starting with \"sion:\".",
+    "unsupported": "This kind of QR code is not supported.",
+    "missing_instance": "The QR code is incomplete. Ask for a new QR code."
+  }
+}
