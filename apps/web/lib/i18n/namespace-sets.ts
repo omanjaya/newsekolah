@@ -150,6 +150,7 @@ export const APP_NAMESPACES: readonly string[] = [
   ...APP_FEATURE_NAMESPACES,
   ...APP_BASE_NAMESPACES,
   ...LIBRARY_NAV_LABEL_KEYS,
+  "app.settingsHub",
 ];
 
 /**
@@ -167,4 +168,5 @@ export const LIBRARY_NAMESPACES: readonly string[] = [
   ...ROOT_APP_NAMESPACES,
   "app.library",
   "app.reportExport",
+  "app.librarySettings",
 ];
