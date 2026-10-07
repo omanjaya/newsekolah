@@ -73,6 +73,8 @@ import ssoEn from "./sso.en.json";
 import ssoId from "./sso.id.json";
 import staffAttendanceEn from "./staffAttendance.en.json";
 import staffAttendanceId from "./staffAttendance.id.json";
+import studentProfileEn from "./studentProfile.en.json";
+import studentProfileId from "./studentProfile.id.json";
 import supervisionEn from "./supervision.en.json";
 import supervisionId from "./supervision.id.json";
 import visitorsEn from "./visitors.en.json";
@@ -149,3 +151,8 @@ registerFeatureMessages({ namespace: "scan", id: scanId, en: scanEn });
 registerFeatureMessages({ namespace: "supervision", id: supervisionId, en: supervisionEn });
 registerFeatureMessages({ namespace: "inbox", id: inboxId, en: inboxEn });
 registerFeatureMessages({ namespace: "bell", id: bellId, en: bellEn });
+registerFeatureMessages({
+  namespace: "studentProfile",
+  id: studentProfileId,
+  en: studentProfileEn,
+});
