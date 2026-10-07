@@ -5,7 +5,9 @@
     "tabs": {
       "ledger": "Point ledger",
       "catalog": "Violation catalog",
-      "policy": "Warning-letter policy"
+      "policy": "Warning-letter policy",
+      "atRisk": "Warning-letter candidates",
+      "letters": "Warning letters"
     },
     "filters": {
       "class": "Class",

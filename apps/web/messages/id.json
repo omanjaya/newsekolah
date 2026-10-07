@@ -827,7 +827,18 @@
       "noHomeroomTitle": "Anda belum menjadi wali kelas",
       "noHomeroomBody": "Halaman ini menampilkan rekap harian kelas yang Anda bina.",
       "emptyTitle": "Belum ada siswa",
-      "emptyBody": "Siswa yang terdaftar di kelas ini akan tampil di sini."
+      "emptyBody": "Siswa yang terdaftar di kelas ini akan tampil di sini.",
+      "tabs": {
+        "overview": "Ringkasan",
+        "attendance": "Presensi kelas",
+        "permits": "Izin",
+        "discipline": "Kedisiplinan",
+        "parents": "Orang tua"
+      },
+      "exitPermitsTitle": "Izin keluar menunggu",
+      "exitPermitsEmpty": "Tidak ada izin keluar yang menunggu.",
+      "unknownStudent": "Siswa",
+      "pointsBadge": "{points} poin"
     },
     "substitutions": {
       "eyebrow": "Akademik",
