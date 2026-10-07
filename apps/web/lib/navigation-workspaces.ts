@@ -44,8 +44,8 @@ const WORKSPACES: WorkspaceDefinition[] = [
     members: ["mentoring-my-groups", "mentoring-groups"],
     label: "mentoring",
   },
-  { key: "duty", members: ["duty", "monitor"], label: "duty" },
-  { key: "staff-attendance", members: ["staff-attendance", "check-in"], label: "staffAttendance" },
+  { key: "duty", members: ["duty", "monitor"], label: "duty", group: NAV_GROUP.duty },
+  { key: "staff-attendance", members: ["staff-attendance"], label: "staffAttendance" },
   {
     key: "supervision-cycles",
     members: ["supervision-cycles", "supervision-my-report"],
@@ -94,6 +94,7 @@ const WORKSPACES: WorkspaceDefinition[] = [
     key: "visitors-board",
     members: ["visitors-board", "visitors-expected", "visitors-incidents"],
     label: "visitors",
+    group: NAV_GROUP.duty,
   },
   { key: "billing", members: ["billing"], label: "billing" },
   {
@@ -166,8 +167,6 @@ function labelFor(
     return "app.workspace.myDiscipline";
   if (definition.key === "counseling" && selected.key === "analytics")
     return "app.workspace.monitoring";
-  if (definition.key === "staff-attendance" && selected.key === "check-in")
-    return "app.workspace.myAttendanceStaff";
   return definition.label ? `app.workspace.${definition.label}` : selected.labelKey;
 }
 

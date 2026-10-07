@@ -3,6 +3,7 @@
     "navigation": {
       "students": "Student Affairs",
       "staff": "Staff",
+      "duty": "Duty & Gate",
       "administration": "Administration",
       "masterData": "School Data",
       "users": "School users"

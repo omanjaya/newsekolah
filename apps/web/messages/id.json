@@ -3,6 +3,7 @@
     "navigation": {
       "students": "Kesiswaan",
       "staff": "Kepegawaian",
+      "duty": "Piket & Gerbang",
       "administration": "Administrasi",
       "masterData": "Data Sekolah",
       "users": "Pengguna sekolah"

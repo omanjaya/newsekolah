@@ -185,6 +185,9 @@ export const navigation: NavItem[] = [
     icon: LogIn,
     profileKinds: ["teacher", "staff"],
     group: GROUP.staff,
+    // Used twice a day, so it lives on the dashboard card and the account
+    // menu rather than as a sidebar entry.
+    accountMenu: true,
   },
   {
     key: "journal",
