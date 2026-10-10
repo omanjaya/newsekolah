@@ -1,12 +1,6 @@
-import { useDisciplinePolicyQuery, useSPCandidatesQuery } from "../discipline/api";
-import { dueLevels } from "../discipline/lib/sp-due-levels";
-import {
-  useExitPermitReviewQueueQuery,
-  useLateArrivalQueueQuery,
-  useLeaveReviewQueueQuery,
-} from "../permits/api";
-
+import { useInboxCountsQuery } from "./api";
 import { useInboxAccess } from "./lib/access";
+import { useInboxCountsLive } from "./realtime";
 
 /** One fixed page so every reader shares a single cached candidates request. */
 export const INBOX_SP_FILTERS = { classId: "", level: "", search: "", limit: 200, offset: 0 };
@@ -21,45 +15,47 @@ export interface ActionInboxSummary {
   isError: boolean;
 }
 
-/**
- * Per-queue pending counts for what the reader can act on. Each query is the
- * one the queue components already run (same key), so React Query dedupes
- * and a disabled queue costs no request.
- */
-export function useActionInboxSummary(): ActionInboxSummary {
+function useInboxSummary(keepFresh: boolean): ActionInboxSummary {
   const access = useInboxAccess();
-  const leave = useLeaveReviewQueueQuery(access.leave);
-  const exit = useExitPermitReviewQueueQuery(access.exit);
-  const late = useLateArrivalQueueQuery(access.late);
-  const policy = useDisciplinePolicyQuery(access.warningLetters);
-  const candidates = useSPCandidatesQuery(INBOX_SP_FILTERS, access.warningLetters);
+  useInboxCountsLive(access, keepFresh);
 
-  const levels = policy.data?.levels ?? [];
+  const enabled = access.leave || access.exit || access.late || access.warningLetters;
+  const query = useInboxCountsQuery(enabled, keepFresh);
+  const data = query.data;
+
+  // A queue the reader has no screen for stays 0 even if the server
+  // counted something for it (exit and late are open to any caller).
   const counts = {
-    leave: access.leave ? (leave.data?.data.length ?? 0) : 0,
-    exit: access.exit ? (exit.data?.data.length ?? 0) : 0,
-    late: access.late ? (late.data?.data.length ?? 0) : 0,
-    warningLetters: access.warningLetters
-      ? (candidates.data?.data ?? []).filter((c) => dueLevels(c, levels).length > 0).length
-      : 0,
+    leave: access.leave ? (data?.leave ?? 0) : 0,
+    exit: access.exit ? (data?.exit ?? 0) : 0,
+    late: access.late ? (data?.late ?? 0) : 0,
+    warningLetters: access.warningLetters ? (data?.warning_letters ?? 0) : 0,
   };
-  const active = [
-    access.leave ? leave : null,
-    access.exit ? exit : null,
-    access.late ? late : null,
-    access.warningLetters ? policy : null,
-    access.warningLetters ? candidates : null,
-  ].filter((query) => query !== null);
 
   return {
     ...counts,
     total: counts.leave + counts.exit + counts.late + counts.warningLetters,
-    isLoading: active.some((query) => query.isLoading),
-    isError: active.some((query) => query.isError),
+    isLoading: enabled && query.isLoading,
+    isError: enabled && query.isError,
   };
 }
 
-/** Total items waiting on the reader across every inbox queue; 0 while loading. */
+/**
+ * Per-queue pending counts for what the reader can act on, from a single
+ * counts request (the server applies each queue's own scoping). Every
+ * caller shares one cached query, and a reader with no queue at all makes
+ * no request. This reader only displays the cache; useActionInboxCount,
+ * mounted once in the app shell, is what polls and listens for realtime.
+ */
+export function useActionInboxSummary(): ActionInboxSummary {
+  return useInboxSummary(false);
+}
+
+/**
+ * Total items waiting on the reader across every inbox queue; 0 while
+ * loading. The app shell mounts this on every page, so it alone keeps the
+ * shared counts fresh (120 s poll while visible, plus realtime invalidation).
+ */
 export function useActionInboxCount(): number {
-  return useActionInboxSummary().total;
+  return useInboxSummary(true).total;
 }
