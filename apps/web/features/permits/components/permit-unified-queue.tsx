@@ -182,7 +182,9 @@ export function PermitUnifiedQueue(): ReactElement {
     );
   }
 
-  const bulk = useBulkLeaveApproval();
+  const bulk = useBulkLeaveApproval(
+    visible.filter((row) => row.type === "leave").map((row) => row.id),
+  );
   const selectableLeave = canLeave && visible.filter((row) => row.type === "leave").length > 1;
   const cells = bentoCells(
     visible.map((row) => ({

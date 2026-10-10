@@ -18,13 +18,18 @@ export interface BulkLeaveApproval {
 /**
  * Checkbox selection over leave requests and "approve selected": each id is
  * approved in turn, and a partial failure reports how many went through.
+ * Only requests still on screen count as selected, so a filter that hides a
+ * ticked request also takes it out of "approve selected" -- the reader never
+ * approves something they can no longer see.
  */
-export function useBulkLeaveApproval(): BulkLeaveApproval {
+export function useBulkLeaveApproval(visibleIds: readonly string[]): BulkLeaveApproval {
   const t = useTranslations("app.permits.leave");
   const toast = useToast();
   const review = useReviewLeaveRequestMutation();
-  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set());
   const [pending, setPending] = useState(false);
+  const visible = new Set(visibleIds);
+  const selected: ReadonlySet<string> = new Set([...ticked].filter((id) => visible.has(id)));
 
   async function approveSelected() {
     setPending(true);
@@ -37,7 +42,7 @@ export function useBulkLeaveApproval(): BulkLeaveApproval {
       }
     }
     setPending(false);
-    setSelected(new Set());
+    setTicked(new Set());
     if (failures === 0) {
       toast.success(t("bulkApproved", { count: selected.size }));
     } else {
@@ -49,7 +54,7 @@ export function useBulkLeaveApproval(): BulkLeaveApproval {
     selected,
     pending,
     toggle: (id) => {
-      setSelected((prev) => {
+      setTicked((prev) => {
         const next = new Set(prev);
         if (next.has(id)) next.delete(id);
         else next.add(id);
@@ -57,7 +62,7 @@ export function useBulkLeaveApproval(): BulkLeaveApproval {
       });
     },
     clear: () => {
-      setSelected(new Set());
+      setTicked(new Set());
     },
     approveSelected,
   };

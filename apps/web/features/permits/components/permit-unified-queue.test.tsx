@@ -230,6 +230,16 @@ describe("permit queue filters", () => {
     expect(mocks.reviewMutateAsync).toHaveBeenCalledWith({ id: "a", approve: true });
   });
 
+  it("drops ticked requests a filter hides from approve selected", async () => {
+    render(<PermitUnifiedQueue />);
+    for (const box of screen.getAllByRole("checkbox")) await userEvent.click(box);
+    expect(screen.getByRole("button", { name: "bulkApprove" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "late" }));
+    expect(screen.queryByRole("button", { name: "bulkApprove" })).not.toBeInTheDocument();
+    expect(mocks.reviewMutateAsync).not.toHaveBeenCalled();
+  });
+
   it("offers no selection for a single leave request", () => {
     mocks.leave.mockReturnValue({ ...emptyResult, data: { data: [leaveItem("a")] } });
     render(<PermitUnifiedQueue />);
