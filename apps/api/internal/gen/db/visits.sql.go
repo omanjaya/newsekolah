@@ -464,7 +464,7 @@ func (q *Queries) ListVisits(ctx context.Context, arg ListVisitsParams) ([]Visit
 }
 
 const listVisitsForRange = `-- name: ListVisitsForRange :many
-select id, tenant_id, member_user_id, visitor_name, kind, purpose, group_size, source, visited_at, created_by, created_at from library_visits where tenant_id = $1 and visited_at >= $2 and visited_at < $3 order by visited_at desc
+select id, tenant_id, member_user_id, visitor_name, kind, purpose, group_size, source, visited_at, created_by, created_at from library_visits where tenant_id = $1 and visited_at >= $2 and visited_at < $3 order by visited_at desc limit 5000
 `
 
 type ListVisitsForRangeParams struct {
@@ -473,6 +473,9 @@ type ListVisitsForRangeParams struct {
 	VisitedAt_2 pgtype.Timestamptz `json:"visited_at_2"`
 }
 
+// Hard cap: the range comes straight from the client, so a year-wide range
+// would otherwise return every visit the school ever logged. 5000 rows is
+// several times a busy school's single day.
 func (q *Queries) ListVisitsForRange(ctx context.Context, arg ListVisitsForRangeParams) ([]LibraryVisit, error) {
 	rows, err := q.db.Query(ctx, listVisitsForRange, arg.TenantID, arg.VisitedAt, arg.VisitedAt_2)
 	if err != nil {

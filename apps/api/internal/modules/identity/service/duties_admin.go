@@ -81,7 +81,17 @@ type UserOption struct {
 
 // ListStaffOptions lists active teacher/staff users for a duty assignment
 // form's assignee dropdown.
+const (
+	defaultStaffOptionsLimit = 20
+	maxStaffOptionsLimit     = 50
+)
+
 func (s *Service) ListStaffOptions(ctx context.Context, tenantID uuid.UUID, search string, limit int32) ([]UserOption, error) {
+	// Defence in depth: the OpenAPI schema caps limit at 50, but a service
+	// must not trust that the request validator is in enforce mode.
+	if limit <= 0 || limit > maxStaffOptionsLimit {
+		limit = defaultStaffOptionsLimit
+	}
 	var out []UserOption
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error

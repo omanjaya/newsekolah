@@ -9,6 +9,16 @@ returning *;
 -- name: ListEntriesBySession :many
 select * from attendance_entries where tenant_id = $1 and session_id = $2;
 
+-- name: ListEntryReportRowsBySessions :many
+-- Batch read behind the daily report: every entry of every given session
+-- with the student's display name, in one round trip instead of one entries
+-- query per session plus one name lookup per student.
+select e.session_id, e.student_user_id, e.status_code, e.notes, coalesce(u.name, '')::text as student_name
+from attendance_entries e
+left join users u on u.tenant_id = e.tenant_id and u.id = e.student_user_id
+where e.tenant_id = $1 and e.session_id = any(sqlc.arg(session_ids)::uuid[])
+order by e.session_id, u.name, e.student_user_id;
+
 -- name: GetEntryBySessionStudent :one
 select * from attendance_entries where tenant_id = $1 and session_id = $2 and student_user_id = $3;
 
