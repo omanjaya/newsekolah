@@ -6,6 +6,7 @@
   "scanLabel": "QR code",
   "placeholder": "Paste the full code from the QR",
   "submit": "Submit code",
+  "cameraDone": "Done",
   "cameraLabel": "Scan with camera",
   "successTitle": "Done",
   "errorTitle": "Scan failed",

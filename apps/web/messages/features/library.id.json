@@ -562,7 +562,7 @@
       "replace_book": "Ganti buku"
     },
     "status": {
-      "unpaid": "Belum lunas",
+      "unpaid": "Belum dibayar",
       "paid": "Lunas",
       "waived": "Dibebaskan"
     },

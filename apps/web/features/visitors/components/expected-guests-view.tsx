@@ -2,17 +2,18 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
-  Badge,
   Button,
   DataTable,
   Dialog,
   DialogContent,
+  domainIcons,
   EmptyState,
   Input,
   PageHeader,
-  domainIcons,
+  SemanticStatusBadge,
   useToast,
   type DataTableFilterDef,
+  type SemanticStatus,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
@@ -31,6 +32,13 @@ import { type ExpectedGuest, useCancelExpectedGuestMutation, useExpectedGuestsQu
 
 import { CheckInForm } from "./check-in-form";
 import { ExpectedGuestForm } from "./expected-guest-form";
+
+const EXPECTED_STATUS: Record<string, SemanticStatus> = {
+  pending: "pending",
+  arrived: "completed",
+  expired: "expired",
+  cancelled: "cancelled",
+};
 
 const ONLY_PENDING_VALUES = ["", "true"] as const;
 
@@ -91,9 +99,10 @@ export function ExpectedGuestsView(): ReactElement {
         header: t("columns.status"),
         enableSorting: false,
         cell: ({ row }) => (
-          <Badge variant={row.original.status === "pending" ? "accent" : "neutral"}>
-            {t(`status.${row.original.status}`)}
-          </Badge>
+          <SemanticStatusBadge
+            status={EXPECTED_STATUS[row.original.status] ?? "pending"}
+            label={t(`status.${row.original.status}`)}
+          />
         ),
       },
       {

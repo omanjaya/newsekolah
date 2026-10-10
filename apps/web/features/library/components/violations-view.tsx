@@ -3,13 +3,13 @@
 import { formatCurrency, formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
-  Badge,
   Button,
   DataTable,
+  domainIcons,
   EmptyState,
   PageHeader,
   RowActionsMenu,
-  domainIcons,
+  SemanticStatusBadge,
   useToast,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
@@ -150,9 +150,10 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         header: t("columns.status"),
         enableSorting: false,
         cell: ({ row }) => (
-          <Badge variant={row.original.status === "unpaid" ? "neutral" : "accent"}>
-            {t(`status.${row.original.status}`)}
-          </Badge>
+          <SemanticStatusBadge
+            status={row.original.status}
+            label={t(`status.${row.original.status}`)}
+          />
         ),
       },
       {

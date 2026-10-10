@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { BarcodeScannerField } from "./barcode-scanner-field.js";
 
@@ -36,5 +36,84 @@ describe("BarcodeScannerField", () => {
     expect(onScan).toHaveBeenCalledWith(
       expect.objectContaining({ code: payload, source: "manual" }),
     );
+  });
+});
+
+describe("BarcodeScannerField continuous camera", () => {
+  let codes: string[] = [];
+
+  function installCamera() {
+    const stop = vi.fn();
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [{ stop }] }) },
+    });
+    class FakeDetector {
+      detect() {
+        const next = codes.shift();
+        return Promise.resolve(next ? [{ rawValue: next }] : []);
+      }
+    }
+    Object.defineProperty(window, "BarcodeDetector", { configurable: true, value: FakeDetector });
+    HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+    return stop;
+  }
+
+  afterEach(() => {
+    Reflect.deleteProperty(window, "BarcodeDetector");
+    Reflect.deleteProperty(navigator, "mediaDevices");
+    Reflect.deleteProperty(navigator, "vibrate");
+    codes = [];
+  });
+
+  it("keeps the camera open, fires each distinct code once, and closes on the done button", async () => {
+    const stop = installCamera();
+    const vibrate = vi.fn();
+    Object.defineProperty(navigator, "vibrate", { configurable: true, value: vibrate });
+    codes = ["A", "A", "B", "A"];
+    const onScan = vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    const user = userEvent.setup();
+    render(<BarcodeScannerField label="Kode" onScan={onScan} continuous cameraLabel="Kamera" />);
+
+    await user.click(screen.getByRole("button", { name: "Kamera" }));
+    await waitFor(() => {
+      expect(onScan).toHaveBeenCalledTimes(2);
+    });
+    // Repeats of "A" inside the 2s window are dropped; "B" is distinct; the
+    // trailing "A" is not the latest code any more so it fires again.
+    await waitFor(() => {
+      expect(onScan).toHaveBeenCalledTimes(3);
+    });
+    expect(onScan.mock.calls.map(([event]) => (event as { code: string }).code)).toEqual([
+      "A",
+      "B",
+      "A",
+    ]);
+    expect(onScan.mock.calls[0]?.[0]).toMatchObject({ source: "camera" });
+    expect(vibrate).toHaveBeenCalled();
+
+    // Camera still open after several reads.
+    expect(screen.getByRole("button", { name: "Selesai" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Selesai" }));
+    expect(screen.queryByRole("button", { name: "Selesai" })).not.toBeInTheDocument();
+    expect(stop).toHaveBeenCalled();
+  });
+
+  it("closes after the first code when not continuous", async () => {
+    installCamera();
+    codes = ["A", "B"];
+    const onScan = vi.fn();
+    const user = userEvent.setup();
+    render(<BarcodeScannerField label="Kode" onScan={onScan} cameraLabel="Kamera" />);
+
+    await user.click(screen.getByRole("button", { name: "Kamera" }));
+    await waitFor(() => {
+      expect(onScan).toHaveBeenCalledTimes(1);
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    expect(onScan).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: "Tutup kamera" })).not.toBeInTheDocument();
   });
 });

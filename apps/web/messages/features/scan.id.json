@@ -6,6 +6,7 @@
   "scanLabel": "Kode QR",
   "placeholder": "Tempel kode lengkap dari QR",
   "submit": "Kirim kode",
+  "cameraDone": "Selesai",
   "cameraLabel": "Pindai dengan kamera",
   "successTitle": "Berhasil",
   "errorTitle": "Pindai gagal",

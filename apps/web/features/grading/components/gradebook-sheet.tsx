@@ -3,20 +3,20 @@
 import { ApiError } from "@newsekolah/api-client";
 import {
   Alert,
-  Badge,
   Button,
   Card,
   CardContent,
   ConfirmDialog,
+  domainIcons,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   EmptyState,
   SearchInput,
+  SemanticStatusBadge,
   Skeleton,
   Switch,
-  domainIcons,
   useToast,
 } from "@newsekolah/ui";
 import { Download, MoreHorizontal, Plus } from "lucide-react";
@@ -202,9 +202,10 @@ export function GradebookSheet({
                 : "flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5"
             }
           >
-            <Badge variant={sheet.is_published ? "accent" : "neutral"}>
-              {sheet.is_published ? t("publishedBadge") : t("draftBadge")}
-            </Badge>
+            <SemanticStatusBadge
+              status={sheet.is_published ? "published" : "draft"}
+              label={sheet.is_published ? t("publishedBadge") : t("draftBadge")}
+            />
             {canManage && (
               <label className="flex items-center gap-2 text-[13px]">
                 <span className="text-fg-muted">{t("publishToggleLabel")}</span>

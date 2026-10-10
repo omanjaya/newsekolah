@@ -128,11 +128,11 @@
       "unpaid": "Belum dibayar",
       "partial": "Dibayar sebagian",
       "paid": "Lunas",
-      "overdue": "Jatuh tempo"
+      "overdue": "Terlambat"
     },
     "totalOutstanding": "Total tunggakan",
     "billCount": "Jumlah tagihan",
-    "overdueCount": "Jatuh tempo",
+    "overdueCount": "Terlambat",
     "shareReceipt": "Bagikan kwitansi",
     "method": {
       "cash": "Tunai",
@@ -191,7 +191,7 @@
       "unpaid": "Belum dibayar",
       "partial": "Dibayar sebagian",
       "paid": "Lunas",
-      "overdue": "Jatuh tempo"
+      "overdue": "Terlambat"
     },
     "detailTitle": "Detail tagihan",
     "originalAmount": "Jumlah awal",
