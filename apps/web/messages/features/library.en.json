@@ -362,6 +362,8 @@
     }
   },
   "members": {
+    "pagePrev": "Previous",
+    "pageNext": "Next",
     "navLabel": "Library members",
     "eyebrow": "Library",
     "title": "Members",

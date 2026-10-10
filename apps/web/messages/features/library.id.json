@@ -362,6 +362,8 @@
     }
   },
   "members": {
+    "pagePrev": "Sebelumnya",
+    "pageNext": "Berikutnya",
     "navLabel": "Anggota perpustakaan",
     "eyebrow": "Perpustakaan",
     "title": "Anggota",
