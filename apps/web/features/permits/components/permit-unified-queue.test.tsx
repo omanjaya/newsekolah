@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   directory: vi.fn(),
   can: vi.fn(),
   reviewMutate: vi.fn(),
+  reviewMutateAsync: vi.fn(),
 }));
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -34,7 +35,11 @@ vi.mock("../api", () => ({
   useLeaveReviewQueueQuery: mocks.leave,
   useExitPermitReviewQueueQuery: mocks.exit,
   useLateArrivalQueueQuery: mocks.late,
-  useReviewLeaveRequestMutation: () => ({ mutate: mocks.reviewMutate, variables: undefined }),
+  useReviewLeaveRequestMutation: () => ({
+    mutate: mocks.reviewMutate,
+    mutateAsync: mocks.reviewMutateAsync,
+    variables: undefined,
+  }),
 }));
 vi.mock("./exit-permit-panels", () => ({ ApprovePanel: () => null, GatePanel: () => null }));
 vi.mock("./late-arrivals-view", () => ({ LateArrivalReviewForm: () => null }));
@@ -194,6 +199,24 @@ describe("permit queue filters", () => {
     await userEvent.click(screen.getByRole("combobox", { name: "classFilter" }));
     await userEvent.click(await screen.findByRole("option", { name: "10 B" }));
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
+  });
+
+  it("approves the selected leave requests in bulk", async () => {
+    mocks.reviewMutateAsync.mockResolvedValue(undefined);
+    render(<PermitUnifiedQueue />);
+    const boxes = screen.getAllByRole("checkbox");
+    // Two leave cards are selectable; the late card is not.
+    expect(boxes).toHaveLength(2);
+    for (const box of boxes) await userEvent.click(box);
+    await userEvent.click(screen.getByRole("button", { name: "bulkApprove" }));
+    expect(mocks.reviewMutateAsync).toHaveBeenCalledTimes(2);
+    expect(mocks.reviewMutateAsync).toHaveBeenCalledWith({ id: "a", approve: true });
+  });
+
+  it("offers no selection for a single leave request", () => {
+    mocks.leave.mockReturnValue({ ...emptyResult, data: { data: [leaveItem("a")] } });
+    render(<PermitUnifiedQueue />);
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   });
 
   it("shows no type chips when the reader has a single queue", () => {

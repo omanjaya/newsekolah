@@ -33,6 +33,7 @@ import {
 } from "../api";
 import { mergePermitQueues, type PermitQueueRow } from "../lib/permit-queue";
 
+import { BulkApproveBar, useBulkLeaveApproval } from "./bulk-leave-approval";
 import { ApprovePanel, GatePanel } from "./exit-permit-panels";
 import { LateArrivalReviewForm } from "./late-arrivals-view";
 import { LeaveRequestDetail } from "./leave-request-detail";
@@ -181,6 +182,8 @@ export function PermitUnifiedQueue(): ReactElement {
     );
   }
 
+  const bulk = useBulkLeaveApproval();
+  const selectableLeave = canLeave && visible.filter((row) => row.type === "leave").length > 1;
   const cells = bentoCells(
     visible.map((row) => ({
       key: `${row.type}-${row.id}`,
@@ -191,8 +194,13 @@ export function PermitUnifiedQueue(): ReactElement {
           locale={locale}
           timeZone={me?.tenant.timezone}
           canReviewLeave={canLeave}
-          approving={pendingId === row.id && review.variables?.approve === true}
-          rejecting={pendingId === row.id && review.variables?.approve === false}
+          selectable={selectableLeave && row.type === "leave"}
+          selected={bulk.selected.has(row.id)}
+          onToggleSelected={() => {
+            bulk.toggle(row.id);
+          }}
+          approving={(pendingId === row.id && review.variables?.approve === true) || bulk.pending}
+          rejecting={(pendingId === row.id && review.variables?.approve === false) || bulk.pending}
           onApprove={() => {
             approveLeave(row.id);
           }}
@@ -285,6 +293,7 @@ export function PermitUnifiedQueue(): ReactElement {
           {t(rows.length === 0 ? "queueEmpty" : "queueNoMatch")}
         </p>
       )}
+      {!loading && errors.length === 0 && visible.length > 0 && <BulkApproveBar bulk={bulk} />}
       {!loading && errors.length === 0 && visible.length > 0 && (
         <ul className="grid gap-4 lg:grid-cols-2">
           {cells.map((cell) => (
