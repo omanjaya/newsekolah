@@ -36,13 +36,14 @@ const WORKSPACES: WorkspaceDefinition[] = [
   { key: "counseling", members: ["counseling", "analytics"], label: "counseling" },
   {
     key: "activities-clubs",
-    members: ["activities-clubs", "activities-events", "activities-achievements"],
-    label: "activities",
-  },
-  {
-    key: "mentoring-groups",
-    members: ["mentoring-my-groups", "mentoring-groups"],
-    label: "mentoring",
+    members: [
+      "activities-clubs",
+      "activities-events",
+      "activities-achievements",
+      "mentoring-my-groups",
+      "mentoring-groups",
+    ],
+    label: "studentActivities",
   },
   { key: "duty", members: ["duty", "monitor"], label: "duty", group: NAV_GROUP.duty },
   { key: "staff-attendance", members: ["staff-attendance"], label: "staffAttendance" },
@@ -63,8 +64,7 @@ const WORKSPACES: WorkspaceDefinition[] = [
     label: "users",
     group: NAV_GROUP.masterData,
   },
-  { key: "school-learning", members: ["school-learning"], label: "subjects" },
-  { key: "school-assignments", members: ["school-assignments"], label: "assignments" },
+  { key: "school-learning", members: ["school-learning", "school-assignments"], label: "learning" },
   {
     key: "academic-years",
     members: ["academic-years", "academic-new-year-setup", "school-promotion"],
