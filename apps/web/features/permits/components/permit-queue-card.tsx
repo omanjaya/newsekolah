@@ -2,7 +2,15 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
-import { Button, Card, Popover, PopoverContent, PopoverTrigger, Textarea } from "@newsekolah/ui";
+import {
+  Button,
+  Card,
+  Checkbox,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Textarea,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -17,7 +25,7 @@ import { WorkflowStatusBadge } from "./workflow-stepper";
  * One card on the unified queue's bento grid (docs/07-ui-ux.md): student,
  * type + opened time, description, and the workflow status badge. A leave
  * request is always returned by the review-queue endpoint already at the
- * caller's own pending stage (leave-review-queue.tsx's own comment), so it
+ * caller's own pending stage (review-queue endpoint comment), so it
  * gets the same one-click Setujui/Tolak as that dedicated queue. Exit
  * permits and late arrivals only ever offer a next step that needs more
  * input (a scan token, a review form), so their card keeps "Tindak
@@ -30,6 +38,9 @@ export function PermitQueueCard({
   locale,
   timeZone,
   canReviewLeave,
+  selectable,
+  selected,
+  onToggleSelected,
   approving,
   rejecting,
   onApprove,
@@ -41,6 +52,9 @@ export function PermitQueueCard({
   locale: Locale;
   timeZone?: string;
   canReviewLeave: boolean;
+  selectable: boolean;
+  selected: boolean;
+  onToggleSelected: () => void;
   approving: boolean;
   rejecting: boolean;
   onApprove: () => void;
@@ -56,8 +70,17 @@ export function PermitQueueCard({
 
   return (
     <Card className="flex h-full flex-col gap-3 p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
+      <div className="flex items-start gap-2">
+        {selectable && (
+          <Checkbox
+            checked={selected}
+            disabled={busy}
+            onCheckedChange={onToggleSelected}
+            aria-label={tLeave("selectRow", { student: name })}
+            className="mt-1 shrink-0"
+          />
+        )}
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="truncate text-[14px] font-medium text-fg">
             <StudentLink studentId={row.studentId}>{formatDisplayName(name)}</StudentLink>
             {row.className && (
