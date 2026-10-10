@@ -100,3 +100,49 @@ func TestCountDueSPCandidatesMatchesCandidateList(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }
+
+// TestSPCandidateTotalIgnoresIssuedLetterCount guards against joining the
+// letters before summing: each issued letter used to repeat every violation
+// row, so a student with SP 1 and SP 2 issued showed double their points and
+// could surface as due for a level they never reached.
+func TestSPCandidateTotalIgnoresIssuedLetterCount(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	fx := seedDisciplineFixture(t, pg.AdminPool)
+	mod := newTestDisciplineModule(t, pg.AppPool)
+	q := db.New(pg.AdminPool)
+
+	var classID uuid.UUID
+	require.NoError(t, pg.AdminPool.QueryRow(ctx, `select id from classes where tenant_id = $1`, fx.tenantID).Scan(&classID))
+	student, err := q.CreateUser(ctx, db.CreateUserParams{
+		TenantID: fx.tenantID, Username: "twice-warned-" + uuid.NewString(), PasswordHash: "x",
+		Name: "twice-warned", Status: "active", Locale: "id",
+	})
+	require.NoError(t, err)
+	_, err = q.AcademicCreateEnrollment(ctx, db.AcademicCreateEnrollmentParams{
+		TenantID: fx.tenantID, AcademicYearID: fx.yearID, StudentUserID: student.ID, ClassID: classID,
+		JoinedOn: database.Date(time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)),
+	})
+	require.NoError(t, err)
+	big, err := mod.Service.CreateViolationType(ctx, domain.ViolationType{TenantID: fx.tenantID, Code: "BIG", Name: "Besar", Points: 30})
+	require.NoError(t, err)
+	for range 2 {
+		_, err := mod.Service.RecordViolation(ctx, fx.tenantID, service.RecordInput{
+			StudentUserID: student.ID, ViolationTypeID: big.ID,
+			OccurredOn: time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC), ReporterUserID: fx.counselorID,
+		})
+		require.NoError(t, err)
+	}
+	for _, level := range []int{1, 2} {
+		_, err := pg.AdminPool.Exec(ctx, `insert into warning_letters
+			(tenant_id, academic_year_id, student_user_id, level, level_label, threshold_points, total_points, letter_number)
+			values ($1, $2, $3, $4, 'SP', 0, 0, $5)`, fx.tenantID, fx.yearID, student.ID, level, uuid.NewString())
+		require.NoError(t, err)
+	}
+
+	candidates, err := mod.Service.ListSPCandidates(ctx, fx.tenantID, uuid.NullUUID{}, 0, "", 200, 0)
+	require.NoError(t, err)
+	require.Len(t, candidates, 1)
+	require.Equal(t, 60, candidates[0].TotalPoints)
+	require.ElementsMatch(t, []int{1, 2}, candidates[0].IssuedLevels)
+}
