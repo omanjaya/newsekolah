@@ -123,7 +123,7 @@
     "pay": "Record payment",
     "receipt": "Receipt",
     "void": "Void",
-    "voidedLabel": "Voided",
+    "voidedLabel": "Cancelled",
     "status": {
       "unpaid": "Unpaid",
       "partial": "Partially paid",

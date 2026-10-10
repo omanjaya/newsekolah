@@ -83,6 +83,13 @@ export {
 export { Alert, type AlertProps } from "./components/alert.js";
 export { Badge, type BadgeProps } from "./components/badge.js";
 export { StatusBadge, type StatusBadgeProps, type StatusName } from "./components/status-badge.js";
+export {
+  SEMANTIC_STATUS_TOKEN,
+  SemanticStatusBadge,
+  semanticStatusToken,
+  type SemanticStatus,
+  type SemanticStatusBadgeProps,
+} from "./components/semantic-status.js";
 export { Avatar, type AvatarProps } from "./components/avatar.js";
 export { Skeleton } from "./components/skeleton.js";
 export { Stat, StatGrid, type StatProps, type StatGridProps } from "./components/stat.js";

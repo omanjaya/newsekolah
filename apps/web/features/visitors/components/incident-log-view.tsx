@@ -8,9 +8,10 @@ import {
   DataTable,
   Dialog,
   DialogContent,
+  domainIcons,
   EmptyState,
   PageHeader,
-  domainIcons,
+  SemanticStatusBadge,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -132,9 +133,10 @@ export function IncidentLogView(): ReactElement {
         header: t("columns.status"),
         enableSorting: false,
         cell: ({ row }) => (
-          <Badge variant={row.original.is_closed ? "neutral" : "accent"}>
-            {t(row.original.is_closed ? "status.closed" : "status.open")}
-          </Badge>
+          <SemanticStatusBadge
+            status={row.original.is_closed ? "closed" : "open"}
+            label={t(row.original.is_closed ? "status.closed" : "status.open")}
+          />
         ),
       },
       {

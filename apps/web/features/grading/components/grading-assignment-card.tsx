@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Button, Card, Progress, Skeleton } from "@newsekolah/ui";
+import { Button, Card, Progress, SemanticStatusBadge, Skeleton } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -53,9 +53,10 @@ export function GradingAssignmentCard({
           {className} <span className="text-fg-muted">&middot;</span> {subjectName}
         </p>
         {!isLoading && sheet && (
-          <Badge variant={sheet.is_published ? "accent" : "neutral"}>
-            {sheet.is_published ? t("sheet.publishedBadge") : t("sheet.draftBadge")}
-          </Badge>
+          <SemanticStatusBadge
+            status={sheet.is_published ? "published" : "draft"}
+            label={sheet.is_published ? t("sheet.publishedBadge") : t("sheet.draftBadge")}
+          />
         )}
       </div>
 

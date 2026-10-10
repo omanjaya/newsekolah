@@ -4,15 +4,15 @@ import { ApiError } from "@newsekolah/api-client";
 import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
-  Badge,
   Button,
   DataTable,
   Dialog,
   DialogContent,
+  domainIcons,
   EmptyState,
   Input,
   PageHeader,
-  domainIcons,
+  SemanticStatusBadge,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -54,9 +54,10 @@ export function StocktakeView(): ReactElement {
         header: t("columns.status"),
         enableSorting: false,
         cell: ({ row }) => (
-          <Badge variant={row.original.status === "open" ? "accent" : "neutral"}>
-            {t(`status.${row.original.status}`)}
-          </Badge>
+          <SemanticStatusBadge
+            status={row.original.status === "open" ? "in_progress" : "completed"}
+            label={t(`status.${row.original.status}`)}
+          />
         ),
       },
       {

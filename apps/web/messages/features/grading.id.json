@@ -15,7 +15,7 @@
     "components": "Komponen",
     "filled": "Nilai terisi",
     "published": "Status",
-    "publishedValue": "Diterbitkan",
+    "publishedValue": "Terbit",
     "draftValue": "Draf"
   },
   "pageTiles": {
@@ -60,7 +60,7 @@
     "exportScopeGradeLevel": "Angkatan",
     "exportScopeClassPlaceholder": "Pilih kelas",
     "exportScopeGradeLevelPlaceholder": "Pilih angkatan",
-    "publishedBadge": "Diterbitkan",
+    "publishedBadge": "Terbit",
     "draftBadge": "Draf"
   },
   "table": {

@@ -1,4 +1,4 @@
-import type { StatusName } from "@newsekolah/ui";
+import { semanticStatusToken, type StatusName } from "@newsekolah/ui";
 
 import type { BillStatus } from "../api";
 
@@ -11,12 +11,6 @@ import type { BillStatus } from "../api";
  */
 export type BillDisplayStatus = "paid" | "partial" | "overdue" | "unpaid";
 
-const DISPLAY_TOKEN: Record<"paid" | "partial" | "overdue", StatusName> = {
-  paid: "present",
-  partial: "late",
-  overdue: "absent",
-};
-
 export function billDisplayStatus(
   bill: { status: BillStatus; due_date: string },
   todayIso: string,
@@ -27,13 +21,11 @@ export function billDisplayStatus(
 }
 
 /**
- * Reuses the attendance status colour tokens (`packages/ui-tokens`) for the
- * three states that need the reader's attention -- green for paid, orange
- * for partial, red for overdue -- since those tokens are already the
- * app-wide vocabulary for "state that matters at a glance"
- * (`docs/07-ui-ux.md`). A plain not-yet-due "unpaid" bill is not an alarm
- * state, so it has no token and renders as a neutral `Badge` instead.
+ * The colour token for a display status, from the shared semantic mapping
+ * (`SEMANTIC_STATUS_TOKEN` in packages/ui): green for paid, orange for
+ * partial, red for overdue. A plain not-yet-due "unpaid" bill is not an
+ * alarm state, so it has no token and renders as a neutral badge.
  */
 export function billStatusToken(display: BillDisplayStatus): StatusName | undefined {
-  return display === "unpaid" ? undefined : DISPLAY_TOKEN[display];
+  return semanticStatusToken(display) ?? undefined;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, useToast } from "@newsekolah/ui";
+import { Button, SemanticStatusBadge, useToast, type SemanticStatus } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -15,6 +15,14 @@ import {
 } from "../me-api";
 
 import { MyLibraryTitlePicker } from "./my-library-title-picker";
+
+const RESERVATION_STATUS: Record<string, SemanticStatus> = {
+  waiting: "pending",
+  ready: "approved",
+  fulfilled: "completed",
+  cancelled: "cancelled",
+  expired: "expired",
+};
 
 const CANCELLABLE = new Set(["waiting", "ready"]);
 
@@ -54,11 +62,15 @@ export function MyLibraryReservations({
                 <span className="font-medium text-fg">
                   {reservation.title_name ?? tMe("titleUnavailable")}
                 </span>
-                <span className="text-[12px] text-fg-muted">
-                  {reservation.status === "waiting" && reservation.position
-                    ? t("queuePosition", { position: reservation.position })
-                    : t(`status.${reservation.status}`)}
-                </span>
+                <SemanticStatusBadge
+                  className="w-fit"
+                  status={RESERVATION_STATUS[reservation.status] ?? "pending"}
+                  label={
+                    reservation.status === "waiting" && reservation.position
+                      ? t("queuePosition", { position: reservation.position })
+                      : t(`status.${reservation.status}`)
+                  }
+                />
               </div>
               {CANCELLABLE.has(reservation.status) && (
                 <Button

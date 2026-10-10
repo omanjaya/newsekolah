@@ -6,13 +6,13 @@ import { formatDate } from "@newsekolah/i18n";
 import {
   Alert,
   Avatar,
-  Badge,
   Button,
   DataTable,
   Dialog,
   DialogContent,
-  EmptyState,
   domainIcons,
+  EmptyState,
+  SemanticStatusBadge,
   useToast,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
@@ -156,9 +156,10 @@ export function ViolationsLedgerView(): ReactElement {
         header: t("columns.status"),
         enableSorting: false,
         cell: ({ row }) => (
-          <Badge variant={row.original.is_voided ? "neutral" : "accent"}>
-            {t(row.original.is_voided ? "status.voided" : "status.active")}
-          </Badge>
+          <SemanticStatusBadge
+            status={row.original.is_voided ? "cancelled" : "active"}
+            label={t(row.original.is_voided ? "status.voided" : "status.active")}
+          />
         ),
       },
       {

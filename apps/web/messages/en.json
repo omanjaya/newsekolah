@@ -864,7 +864,7 @@
       "status": {
         "pending": "Pending",
         "accepted": "Accepted",
-        "rejected": "Declined",
+        "rejected": "Rejected",
         "cancelled": "Cancelled"
       },
       "form": {

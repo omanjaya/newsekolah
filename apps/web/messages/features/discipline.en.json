@@ -33,7 +33,7 @@
     },
     "status": {
       "active": "Active",
-      "voided": "Voided"
+      "voided": "Cancelled"
     },
     "emptyTitle": "No violation records yet",
     "emptyBody": "This year's violation records will appear here.",
