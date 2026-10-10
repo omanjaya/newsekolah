@@ -1,6 +1,6 @@
 "use client";
 
-import { type components } from "@newsekolah/api-client";
+import { queryKeys, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
@@ -57,7 +57,10 @@ const keys = {
 
 function useInvalidateDiscipline() {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: ["discipline"] });
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.inboxCounts() });
+    return queryClient.invalidateQueries({ queryKey: ["discipline"] });
+  };
 }
 
 // Violation catalog.

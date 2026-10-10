@@ -6,87 +6,99 @@ import { useActionInboxCount, useActionInboxSummary } from "./use-action-inbox-c
 const mocks = vi.hoisted(() => ({
   permissions: new Set<string>(),
   profileKind: "teacher",
-  leave: vi.fn(),
-  exit: vi.fn(),
-  late: vi.fn(),
-  policy: vi.fn(),
-  candidates: vi.fn(),
+  counts: vi.fn(),
+  live: vi.fn(),
 }));
 
 vi.mock("../../lib/session/session-provider", () => ({
   useCan: (code: string) => mocks.permissions.has(code),
   useSession: () => ({ me: { profile_kind: mocks.profileKind } }),
 }));
-vi.mock("../permits/api", () => ({
-  useLeaveReviewQueueQuery: mocks.leave,
-  useExitPermitReviewQueueQuery: mocks.exit,
-  useLateArrivalQueueQuery: mocks.late,
-}));
-vi.mock("../discipline/api", () => ({
-  useDisciplinePolicyQuery: mocks.policy,
-  useSPCandidatesQuery: mocks.candidates,
-}));
+vi.mock("./api", () => ({ useInboxCountsQuery: mocks.counts }));
+vi.mock("./realtime", () => ({ useInboxCountsLive: mocks.live }));
 
-function result(items: unknown[]) {
-  return { data: { data: items }, isLoading: false, isError: false };
+function counts(data: Partial<Record<string, number>>) {
+  return {
+    data: { leave: 0, exit: 0, late: 0, warning_letters: 0, total: 0, ...data },
+    isLoading: false,
+    isError: false,
+  };
 }
-
-const levels = [
-  { level: 1, label: "SP1", min_points: 10 },
-  { level: 2, label: "SP2", min_points: 20 },
-];
 
 beforeEach(() => {
   mocks.permissions = new Set();
   mocks.profileKind = "student";
-  mocks.leave.mockReset().mockReturnValue(result([{}, {}]));
-  mocks.exit.mockReset().mockReturnValue(result([{}]));
-  mocks.late.mockReset().mockReturnValue(result([{}, {}, {}]));
-  mocks.policy.mockReset().mockReturnValue({ data: { levels }, isLoading: false, isError: false });
-  mocks.candidates.mockReset().mockReturnValue(
-    result([
-      { student_user_id: "a", total_points: 12, issued_levels: [] },
-      { student_user_id: "b", total_points: 12, issued_levels: [1] },
-    ]),
-  );
+  mocks.counts
+    .mockReset()
+    .mockReturnValue(counts({ leave: 2, exit: 1, late: 3, warning_letters: 4 }));
+  mocks.live.mockReset();
 });
 
 describe("useActionInboxCount", () => {
-  it("is zero and keeps every query disabled without any permission", () => {
-    const { result: hook } = renderHook(() => useActionInboxCount());
-    expect(hook.current).toBe(0);
-    expect(mocks.leave).toHaveBeenCalledWith(false);
-    expect(mocks.exit).toHaveBeenCalledWith(false);
-    expect(mocks.late).toHaveBeenCalledWith(false);
-    expect(mocks.policy).toHaveBeenCalledWith(false);
-    expect(mocks.candidates).toHaveBeenCalledWith(expect.anything(), false);
+  it("is zero and makes no request without any permission", () => {
+    const { result } = renderHook(() => useActionInboxCount());
+    expect(result.current).toBe(0);
+    expect(mocks.counts).toHaveBeenCalledWith(false, true);
   });
 
-  it("counts only the queues the reader can act on", () => {
+  it("reads every number from the one counts query", () => {
     mocks.permissions = new Set(["review_leave_requests", "scan_exit_permits"]);
-    const { result: hook } = renderHook(() => useActionInboxSummary());
-    expect(hook.current).toMatchObject({ leave: 2, exit: 1, late: 0, warningLetters: 0, total: 3 });
+    mocks.profileKind = "teacher";
+    const { result } = renderHook(() => useActionInboxSummary());
+    expect(mocks.counts).toHaveBeenCalledTimes(1);
+    expect(result.current).toMatchObject({
+      leave: 2,
+      exit: 1,
+      late: 3,
+      warningLetters: 0,
+      total: 6,
+    });
+  });
+
+  it("keeps a queue the reader has no screen for at zero", () => {
+    mocks.permissions = new Set(["review_leave_requests"]);
+    const { result } = renderHook(() => useActionInboxSummary());
+    expect(result.current).toMatchObject({
+      leave: 2,
+      exit: 0,
+      late: 0,
+      warningLetters: 0,
+      total: 2,
+    });
   });
 
   it("counts late arrivals for teachers and staff", () => {
     mocks.profileKind = "staff";
-    const { result: hook } = renderHook(() => useActionInboxCount());
-    expect(hook.current).toBe(3);
+    const { result } = renderHook(() => useActionInboxCount());
+    expect(result.current).toBe(3);
   });
 
-  it("counts only warning-letter candidates with a level still due", () => {
+  it("counts warning letters for issuers", () => {
     mocks.permissions = new Set(["issue_warning_letters"]);
-    const { result: hook } = renderHook(() => useActionInboxSummary());
-    expect(hook.current.warningLetters).toBe(1);
-    expect(hook.current.total).toBe(1);
+    const { result } = renderHook(() => useActionInboxSummary());
+    expect(result.current.warningLetters).toBe(4);
+    expect(result.current.total).toBe(4);
   });
 
-  it("reports loading and error from the enabled queries only", () => {
+  it("reports loading and error only while the query is enabled", () => {
+    mocks.counts.mockReturnValue({ data: undefined, isLoading: true, isError: true });
+    const idle = renderHook(() => useActionInboxSummary());
+    expect(idle.result.current).toMatchObject({ isLoading: false, isError: false, total: 0 });
+
     mocks.permissions = new Set(["review_leave_requests"]);
-    mocks.leave.mockReturnValue({ data: undefined, isLoading: true, isError: false });
-    mocks.exit.mockReturnValue({ data: undefined, isLoading: false, isError: true });
-    const { result: hook } = renderHook(() => useActionInboxSummary());
-    expect(hook.current.isLoading).toBe(true);
-    expect(hook.current.isError).toBe(false);
+    const active = renderHook(() => useActionInboxSummary());
+    expect(active.result.current).toMatchObject({ isLoading: true, isError: true, total: 0 });
+  });
+
+  it("polls and listens for realtime only from the app shell hook", () => {
+    mocks.permissions = new Set(["review_leave_requests"]);
+
+    renderHook(() => useActionInboxSummary());
+    expect(mocks.counts).toHaveBeenLastCalledWith(true, false);
+    expect(mocks.live).toHaveBeenLastCalledWith(expect.anything(), false);
+
+    renderHook(() => useActionInboxCount());
+    expect(mocks.counts).toHaveBeenLastCalledWith(true, true);
+    expect(mocks.live).toHaveBeenLastCalledWith(expect.anything(), true);
   });
 });

@@ -51,3 +51,33 @@ having coalesce(sum(vr.points_snapshot), 0) >= sqlc.arg(min_points)::int
   and (sqlc.narg(max_points)::int is null or coalesce(sum(vr.points_snapshot), 0) <= sqlc.narg(max_points)::int)
 order by total desc
 limit $3 offset $4;
+
+-- name: CountDueSPCandidates :one
+-- Students ListSPCandidates would list that also have a level due: the
+-- active total has reached a level's min_points and that level has not been
+-- issued yet (the inbox badge; web dueLevels). level_numbers/level_mins are
+-- the policy ladder as parallel arrays, since only Go holds the policy. The
+-- inner select is ListSPCandidates' with no class/search/level filter; keep
+-- the joins and grouping identical so the badge matches the list.
+select count(*)::int as total
+from (
+  select coalesce(sum(vr.points_snapshot), 0)::int as total,
+    coalesce(array_agg(distinct wl.level) filter (where wl.level is not null), '{}')::int[] as issued_levels
+  from violation_records vr
+  join users u on u.id = vr.student_user_id
+  left join student_profiles sp on sp.user_id = vr.student_user_id
+  left join enrollments e on e.tenant_id = vr.tenant_id and e.academic_year_id = vr.academic_year_id
+    and e.student_user_id = vr.student_user_id and e.status = 'active'
+  left join classes c on c.id = e.class_id
+  left join warning_letters wl on wl.tenant_id = vr.tenant_id and wl.academic_year_id = vr.academic_year_id
+    and wl.student_user_id = vr.student_user_id
+  where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.voided_at is null
+  group by vr.student_user_id, u.name, sp.nis, c.name
+  having coalesce(sum(vr.points_snapshot), 0) >= sqlc.arg(first_level_min)::int
+) candidates
+where exists (
+  select 1
+  from generate_series(1, cardinality(sqlc.arg(level_numbers)::int[])) as i
+  where candidates.total >= (sqlc.arg(level_mins)::int[])[i]
+    and not ((sqlc.arg(level_numbers)::int[])[i] = any(candidates.issued_levels))
+);

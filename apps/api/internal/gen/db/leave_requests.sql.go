@@ -12,6 +12,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countLeaveRequestsForReview = `-- name: CountLeaveRequestsForReview :one
+select count(*)::int as total
+from leave_requests lr
+join workflow_instances wi on wi.id = lr.instance_id
+join workflow_definitions wd on wd.id = wi.definition_id
+where lr.tenant_id = $1 and wi.status = 'in_progress'
+  and exists (
+    select 1
+    from duty_assignments da
+    join duty_types dt on dt.id = da.duty_type_id
+    where da.tenant_id = lr.tenant_id
+      and da.academic_year_id = wi.academic_year_id
+      and da.user_id = $2
+      and da.is_active
+      and dt.is_active
+      and dt.deleted_at is null
+      and da.starts_on <= $3::date
+      and (da.ends_on is null or da.ends_on >= $3::date)
+      and (
+        (dt.slug = 'homeroom' and da.scope_class_id = wi.class_id
+          and (wd.stages -> wi.current_stage_index ->> 'approver_rule') = 'homeroom_of_student')
+        or (dt.scope_kind = 'school' and dt.slug in ('counselor', 'leadership')
+          and (wd.stages -> wi.current_stage_index ->> 'approver_rule') = 'duty:' || dt.slug)
+      )
+  )
+`
+
+type CountLeaveRequestsForReviewParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	UserID   uuid.UUID   `json:"user_id"`
+	Today    pgtype.Date `json:"today"`
+}
+
+// Size of ListLeaveRequestsForReview's queue (no class filter). Keep the
+// where clause identical to that query.
+func (q *Queries) CountLeaveRequestsForReview(ctx context.Context, arg CountLeaveRequestsForReviewParams) (int32, error) {
+	row := q.db.QueryRow(ctx, countLeaveRequestsForReview, arg.TenantID, arg.UserID, arg.Today)
+	var total int32
+	err := row.Scan(&total)
+	return total, err
+}
+
 const createLeaveDocument = `-- name: CreateLeaveDocument :one
 insert into leave_documents (tenant_id, leave_request_id, kind, asset_id, created_by)
 values ($1, $2, $3, $4, $5)

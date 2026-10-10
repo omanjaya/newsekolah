@@ -134,6 +134,10 @@ func (f *fakeRecordRepo) ListLetters(context.Context, uuid.UUID, uuid.UUID, uuid
 	f.unimplemented()
 	return nil, nil
 }
+func (f *fakeRecordRepo) CountDueSPCandidates(context.Context, uuid.UUID, uuid.UUID, []domain.SPLevel) (int, error) {
+	return 0, nil
+}
+
 func (f *fakeRecordRepo) ListSPCandidates(context.Context, uuid.UUID, uuid.UUID, CandidateFilter) ([]SPCandidate, error) {
 	f.unimplemented()
 	return nil, nil

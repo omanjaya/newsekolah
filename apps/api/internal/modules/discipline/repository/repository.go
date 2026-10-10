@@ -356,6 +356,25 @@ func (r *Repository) ListSPCandidates(ctx context.Context, tenantID, yearID uuid
 	return out, nil
 }
 
+// CountDueSPCandidates counts candidates with a policy level due. Like
+// ListSPCandidates, the first level's threshold is levels[0]; levels must
+// not be empty.
+func (r *Repository) CountDueSPCandidates(ctx context.Context, tenantID, yearID uuid.UUID, levels []domain.SPLevel) (int, error) {
+	numbers := make([]int32, len(levels))
+	mins := make([]int32, len(levels))
+	for i, lvl := range levels {
+		numbers[i] = int32(lvl.Level)  //nolint:gosec // policy levels are small
+		mins[i] = int32(lvl.MinPoints) //nolint:gosec // point thresholds are small
+	}
+	n, err := r.queries(ctx).CountDueSPCandidates(ctx, db.CountDueSPCandidatesParams{
+		TenantID: tenantID, AcademicYearID: yearID, FirstLevelMin: mins[0], LevelNumbers: numbers, LevelMins: mins,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("count due SP candidates: %w", err)
+	}
+	return int(n), nil
+}
+
 // Counselings.
 
 func (r *Repository) CreateCounseling(ctx context.Context, c domain.Counseling, content, followUp, careerGoals, problemDescription []byte, keyID string) (domain.Counseling, error) {

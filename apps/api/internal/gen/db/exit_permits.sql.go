@@ -12,6 +12,70 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countExitPermitsForApproval = `-- name: CountExitPermitsForApproval :one
+select count(*)::int as total
+from exit_permits ep
+join workflow_instances wi on wi.id = ep.instance_id
+join workflow_definitions wd on wd.id = wi.definition_id
+where ep.tenant_id = $1
+  and wi.status in ('in_progress', 'approved')
+  and (
+    (
+      wi.status = 'approved'
+      and (
+        exists (
+          select 1 from user_roles ur
+          join role_permissions rp on rp.role_id = ur.role_id
+          where ur.tenant_id = $1 and ur.user_id = $2 and rp.permission_code = 'scan_exit_permits'
+        )
+        or exists (
+          select 1
+          from duty_assignments da
+          join duty_types dt on dt.id = da.duty_type_id
+          join duty_permissions dp on dp.duty_type_id = dt.id
+          where da.tenant_id = $1
+            and da.academic_year_id = wi.academic_year_id
+            and da.user_id = $2
+            and dp.permission_code = 'scan_exit_permits'
+            and da.is_active and dt.is_active and dt.deleted_at is null
+            and da.starts_on <= $3::date and (da.ends_on is null or da.ends_on >= $3::date)
+        )
+      )
+    )
+    or (
+      wi.status = 'in_progress'
+      and exists (
+        select 1
+        from duty_assignments da
+        join duty_types dt on dt.id = da.duty_type_id
+        where da.tenant_id = $1
+          and da.academic_year_id = wi.academic_year_id
+          and da.user_id = $2
+          and da.is_active and dt.is_active and dt.deleted_at is null
+          and da.starts_on <= $3::date and (da.ends_on is null or da.ends_on >= $3::date)
+          and dt.scope_kind = 'school'
+          and dt.slug in ('counselor', 'leadership')
+          and (wd.stages -> wi.current_stage_index ->> 'approver_rule') = 'duty:' || dt.slug
+      )
+    )
+  )
+`
+
+type CountExitPermitsForApprovalParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	UserID   uuid.UUID   `json:"user_id"`
+	Today    pgtype.Date `json:"today"`
+}
+
+// Size of ListExitPermitsForApproval's queue for the same caller. Keep the
+// where clause identical to that query: the inbox badge must match the list.
+func (q *Queries) CountExitPermitsForApproval(ctx context.Context, arg CountExitPermitsForApprovalParams) (int32, error) {
+	row := q.db.QueryRow(ctx, countExitPermitsForApproval, arg.TenantID, arg.UserID, arg.Today)
+	var total int32
+	err := row.Scan(&total)
+	return total, err
+}
+
 const createExitPermit = `-- name: CreateExitPermit :one
 insert into exit_permits (
   instance_id, tenant_id, destination, start_period_id, end_period_id, student_name_snapshot, class_name_snapshot

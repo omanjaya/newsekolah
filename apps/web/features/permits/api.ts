@@ -57,6 +57,7 @@ function useInvalidatePermits() {
   const queryClient = useQueryClient();
   return () => {
     void queryClient.invalidateQueries({ queryKey: ["permits"] });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.inboxCounts() });
     void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount() });
   };
 }

@@ -710,6 +710,29 @@ func (s *Service) FirstCrossedDates(ctx context.Context, tenantID uuid.UUID, cla
 	return out, err
 }
 
+// CountDueSPCandidates is how many students ListSPCandidates would list that
+// still have a level due (reached by total points, not yet issued): the
+// action inbox badge, computed in SQL instead of paging candidates out.
+func (s *Service) CountDueSPCandidates(ctx context.Context, tenantID uuid.UUID) (int, error) {
+	var n int
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		yearID, err := s.activeYear(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		policy, err := s.loadPolicy(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		if len(policy.Levels) == 0 {
+			return nil
+		}
+		n, err = s.repo.CountDueSPCandidates(ctx, tenantID, yearID, policy.Levels)
+		return err
+	})
+	return n, err
+}
+
 // ListSPCandidates is the counselor's issuing screen: every student whose
 // active total has reached at least the first SP level, searchable by
 // name/NIS/class, optionally narrowed to one level. level 0 means "any

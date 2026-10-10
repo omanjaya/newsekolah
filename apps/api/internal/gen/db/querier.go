@@ -260,18 +260,34 @@ type Querier interface {
 	CountCopiesByStatus(ctx context.Context, arg CountCopiesByStatusParams) (int32, error)
 	CountCopiesTotal(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	CountDailySummaryStatusesForAttendance(ctx context.Context, arg CountDailySummaryStatusesForAttendanceParams) ([]CountDailySummaryStatusesForAttendanceRow, error)
+	// Students ListSPCandidates would list that also have a level due: the
+	// active total has reached a level's min_points and that level has not been
+	// issued yet (the inbox badge; web dueLevels). level_numbers/level_mins are
+	// the policy ladder as parallel arrays, since only Go holds the policy. The
+	// inner select is ListSPCandidates' with no class/search/level filter; keep
+	// the joins and grouping identical so the badge matches the list.
+	CountDueSPCandidates(ctx context.Context, arg CountDueSPCandidatesParams) (int32, error)
 	// Every roster student's per-status entry count across the whole
 	// academic year (every class and subject, not just this one), the
 	// roster's "N Sakit, N Izin, ..." recap: one aggregate query for the
 	// whole class rather than one round trip per student.
 	CountEntryStatusesForStudentsInYear(ctx context.Context, arg CountEntryStatusesForStudentsInYearParams) ([]CountEntryStatusesForStudentsInYearRow, error)
+	// Size of ListExitPermitsForApproval's queue for the same caller. Keep the
+	// where clause identical to that query: the inbox badge must match the list.
+	CountExitPermitsForApproval(ctx context.Context, arg CountExitPermitsForApprovalParams) (int32, error)
 	// Backs the admin dashboard's pending queues (leave requests, exit
 	// permits, late arrivals all share this table -- see the kind check
 	// constraint).
 	CountInProgressWorkflowInstances(ctx context.Context, arg CountInProgressWorkflowInstancesParams) (int64, error)
 	CountIncidentsBySeverityInRange(ctx context.Context, arg CountIncidentsBySeverityInRangeParams) ([]CountIncidentsBySeverityInRangeRow, error)
 	CountJournalsFiltered(ctx context.Context, arg CountJournalsFilteredParams) (int64, error)
+	// Size of ListLateArrivalsForReview's queue for the same caller. Keep the
+	// where clause identical to that query.
+	CountLateArrivalsForReview(ctx context.Context, arg CountLateArrivalsForReviewParams) (int32, error)
 	CountLateReturnsBetween(ctx context.Context, arg CountLateReturnsBetweenParams) (int32, error)
+	// Size of ListLeaveRequestsForReview's queue (no class filter). Keep the
+	// where clause identical to that query.
+	CountLeaveRequestsForReview(ctx context.Context, arg CountLeaveRequestsForReviewParams) (int32, error)
 	CountLoansBetween(ctx context.Context, arg CountLoansBetweenParams) (int32, error)
 	CountLocationUsage(ctx context.Context, arg CountLocationUsageParams) (int32, error)
 	CountMaterialTypeUsage(ctx context.Context, arg CountMaterialTypeUsageParams) (int32, error)

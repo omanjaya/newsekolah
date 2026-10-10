@@ -345,6 +345,18 @@ func (s *Service) ListExitPermitsForApproval(ctx context.Context, tenantID, call
 	return out, err
 }
 
+// CountExitPermitsForApproval is ListExitPermitsForApproval's queue size for
+// the same caller, for the action inbox badge.
+func (s *Service) CountExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID) (int, error) {
+	var n int
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		n, err = s.repo.CountExitPermitsForApproval(ctx, tenantID, callerUserID, s.tenantNow(ctx, tenantID))
+		return err
+	})
+	return n, err
+}
+
 // ExitPermitYearlyReportRows is the counselor's yearly report (missing
 // feature, docs/analysis/backend-inventory.md 1.15): every exit permit
 // opened this academic year, regardless of status, via the reports
