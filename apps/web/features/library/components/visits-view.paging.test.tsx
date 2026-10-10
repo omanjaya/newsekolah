@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -20,7 +20,6 @@ vi.mock("../../../lib/session/session-provider", () => ({
 }));
 vi.mock("../../../lib/simulation/clock", () => ({
   useSimulation: () => undefined,
-  // 2026-09-15T09:00 in Asia/Jakarta (UTC+7).
   businessNow: () => new Date("2026-09-15T02:00:00Z"),
 }));
 vi.mock("../../reference/api", () => ({
@@ -35,33 +34,60 @@ vi.mock("../visits-api", () => ({
 
 import { VisitsView } from "./visits-view";
 
-describe("VisitsView filters", () => {
+function visits(count: number) {
+  return Array.from({ length: count }, (_, index) => ({
+    id: `visit-${index}`,
+    visitor_name: `Visitor ${index}`,
+    kind: "individual",
+    group_size: 1,
+    source: "manual",
+    visited_at: "2026-09-15T02:00:00Z",
+  }));
+}
+
+describe("VisitsView paging", () => {
   beforeEach(() => {
     mocks.useLibraryVisitsQuery.mockReset();
-    mocks.useLibraryVisitsQuery.mockReturnValue({ data: { data: [] }, isLoading: false });
+    mocks.useLibraryVisitsQuery.mockReturnValue({ data: { data: visits(50) }, isLoading: false });
     window.history.replaceState(null, "", "/library/visits");
   });
 
-  it("sets a date range from the two native date inputs and writes both bounds to the URL", async () => {
+  it("requests the second page at offset 50 and keeps it in the URL", async () => {
     const user = userEvent.setup();
     render(<VisitsView />);
-
-    await user.click(screen.getByRole("button", { name: /^dateRange/ }));
-    fireEvent.change(screen.getByLabelText("fromLabel"), { target: { value: "2026-08-01" } });
-    fireEvent.change(screen.getByLabelText("toLabel"), { target: { value: "2026-08-15" } });
 
     expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
-      "2026-08-01T00:00:00Z",
-      "2026-08-15T23:59:59Z",
+      expect.any(String),
+      expect.any(String),
       { limit: 50, offset: 0 },
     );
-    expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-08-01");
-    expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-08-15");
+    await user.click(screen.getByRole("button", { name: "next" }));
+
+    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.any(String),
+      { limit: 50, offset: 50 },
+    );
+    expect(new URLSearchParams(window.location.search).get("page")).toBe("2");
   });
 
-  it("applies a preset and closes the popover", async () => {
+  it("disables next on a short page", () => {
+    mocks.useLibraryVisitsQuery.mockReturnValue({ data: { data: visits(3) }, isLoading: false });
+    render(<VisitsView />);
+
+    expect(screen.getByRole("button", { name: "next" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "previous" })).toBeDisabled();
+  });
+
+  it("returns to the first page when the date range changes", async () => {
+    window.history.replaceState(null, "", "/library/visits?page=3");
     const user = userEvent.setup();
     render(<VisitsView />);
+    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.any(String),
+      { limit: 50, offset: 100 },
+    );
 
     await user.click(screen.getByRole("button", { name: /^dateRange/ }));
     await user.click(await screen.findByRole("button", { name: "today" }));
@@ -71,5 +97,6 @@ describe("VisitsView filters", () => {
       "2026-09-15T23:59:59Z",
       { limit: 50, offset: 0 },
     );
+    expect(new URLSearchParams(window.location.search).get("page")).toBe("1");
   });
 });

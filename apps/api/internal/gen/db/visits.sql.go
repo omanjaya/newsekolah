@@ -464,20 +464,27 @@ func (q *Queries) ListVisits(ctx context.Context, arg ListVisitsParams) ([]Visit
 }
 
 const listVisitsForRange = `-- name: ListVisitsForRange :many
-select id, tenant_id, member_user_id, visitor_name, kind, purpose, group_size, source, visited_at, created_by, created_at from library_visits where tenant_id = $1 and visited_at >= $2 and visited_at < $3 order by visited_at desc limit 5000
+select id, tenant_id, member_user_id, visitor_name, kind, purpose, group_size, source, visited_at, created_by, created_at from library_visits where tenant_id = $1 and visited_at >= $2 and visited_at < $3 order by visited_at desc, id desc limit $4 offset $5
 `
 
 type ListVisitsForRangeParams struct {
 	TenantID    uuid.UUID          `json:"tenant_id"`
 	VisitedAt   pgtype.Timestamptz `json:"visited_at"`
 	VisitedAt_2 pgtype.Timestamptz `json:"visited_at_2"`
+	Limit       int32              `json:"limit"`
+	Offset      int32              `json:"offset"`
 }
 
-// Hard cap: the range comes straight from the client, so a year-wide range
-// would otherwise return every visit the school ever logged. 5000 rows is
-// several times a busy school's single day.
+// Paged: the range comes straight from the client, so a year-wide range
+// is walked a page at a time instead of returned whole.
 func (q *Queries) ListVisitsForRange(ctx context.Context, arg ListVisitsForRangeParams) ([]LibraryVisit, error) {
-	rows, err := q.db.Query(ctx, listVisitsForRange, arg.TenantID, arg.VisitedAt, arg.VisitedAt_2)
+	rows, err := q.db.Query(ctx, listVisitsForRange,
+		arg.TenantID,
+		arg.VisitedAt,
+		arg.VisitedAt_2,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}

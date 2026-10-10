@@ -18,8 +18,10 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useCan } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
@@ -31,6 +33,9 @@ import {
 
 import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { VisitRecordDialog } from "./visit-record-dialog";
+
+/** Rows per page; the visits API pages by offset and reports no total. */
+const VISITS_PAGE_SIZE = 50;
 
 function todayIso(): string {
   return businessNow().toISOString().slice(0, 10);
@@ -51,7 +56,11 @@ export function VisitsView(): ReactElement {
   const presets = useDateRangePresets();
   const [recording, setRecording] = useState(false);
 
-  const { data, isLoading } = useLibraryVisitsQuery(`${from}T00:00:00Z`, `${to}T23:59:59Z`);
+  const paging = useOffsetPage(VISITS_PAGE_SIZE);
+  const { data, isLoading } = useLibraryVisitsQuery(`${from}T00:00:00Z`, `${to}T23:59:59Z`, {
+    limit: paging.limit,
+    offset: paging.offset,
+  });
   const summary = useLibraryVisitSummaryQuery();
   const directory = useDirectoryQuery();
   const directoryMap = useLookup(directory.data?.data);
@@ -68,6 +77,7 @@ export function VisitsView(): ReactElement {
       onChangeRange: ({ from: nextFrom, to: nextTo }) => {
         setFrom(nextFrom);
         setTo(nextTo);
+        paging.resetPage();
       },
       presets,
     },
@@ -176,12 +186,12 @@ export function VisitsView(): ReactElement {
 
       <DataTable
         stateKey="features/library/components/visits-view:1"
-        mode="local"
+        mode="cursor"
         searchable={false}
         data={items}
         columns={columns}
         rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 200 }}
+        pagination={{ pageIndex: 0, pageSize: VISITS_PAGE_SIZE }}
         onPaginationChange={() => undefined}
         sorting={[]}
         onSortingChange={() => undefined}
@@ -203,6 +213,12 @@ export function VisitsView(): ReactElement {
             description={t("emptyBody")}
           />
         }
+      />
+      <CursorPagination
+        hasPrevious={paging.hasPrevious}
+        hasNext={paging.hasNextFor(items.length)}
+        onPrevious={paging.goPrevious}
+        onNext={paging.goNext}
       />
 
       <VisitRecordDialog

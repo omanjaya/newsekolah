@@ -1305,9 +1305,8 @@ type Querier interface {
 	ListViolations(ctx context.Context, arg ListViolationsParams) ([]LibraryViolation, error)
 	ListViolationsForMember(ctx context.Context, arg ListViolationsForMemberParams) ([]LibraryViolation, error)
 	ListVisits(ctx context.Context, arg ListVisitsParams) ([]VisitorVisit, error)
-	// Hard cap: the range comes straight from the client, so a year-wide range
-	// would otherwise return every visit the school ever logged. 5000 rows is
-	// several times a busy school's single day.
+	// Paged: the range comes straight from the client, so a year-wide range
+	// is walked a page at a time instead of returned whole.
 	ListVisitsForRange(ctx context.Context, arg ListVisitsForRangeParams) ([]LibraryVisit, error)
 	ListWarningLetters(ctx context.Context, arg ListWarningLettersParams) ([]WarningLetter, error)
 	ListWarningLettersForStudent(ctx context.Context, arg ListWarningLettersForStudentParams) ([]WarningLetter, error)

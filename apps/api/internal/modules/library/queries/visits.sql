@@ -7,10 +7,9 @@ returning *;
 select * from library_visits where tenant_id = $1 and member_user_id = $2 order by visited_at desc limit 1;
 
 -- name: ListVisitsForRange :many
--- Hard cap: the range comes straight from the client, so a year-wide range
--- would otherwise return every visit the school ever logged. 5000 rows is
--- several times a busy school's single day.
-select * from library_visits where tenant_id = $1 and visited_at >= $2 and visited_at < $3 order by visited_at desc limit 5000;
+-- Paged: the range comes straight from the client, so a year-wide range
+-- is walked a page at a time instead of returned whole.
+select * from library_visits where tenant_id = $1 and visited_at >= $2 and visited_at < $3 order by visited_at desc, id desc limit $4 offset $5;
 
 -- name: TodayVisitSummary :one
 select

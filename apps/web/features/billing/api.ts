@@ -200,7 +200,7 @@ export interface BillPage {
   offset: number;
 }
 
-export function useBillsQuery(filters: BillFilters, page: BillPage = { limit: 200, offset: 0 }) {
+export function useBillsQuery(filters: BillFilters, page: BillPage) {
   const client = useApiClient();
   return useQuery({
     queryKey: keys.bills(filters, page),

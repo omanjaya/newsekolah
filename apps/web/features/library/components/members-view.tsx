@@ -28,12 +28,13 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
-import { UsersCursorPagination } from "../../school/components/users-cursor-pagination";
 import { StudentLink } from "../../students/components/student-link";
 import { printMemberCard } from "../api";
 import {
@@ -79,22 +80,13 @@ export function MembersView(): ReactElement {
 
   // The list API has no total count, so paging is prev/next by offset and
   // "next" is available while the last page came back full.
-  const [page, setPage] = useState(0);
-  const [pageContext, setPageContext] = useState({ status, memberTypeId, search });
-  if (
-    pageContext.status !== status ||
-    pageContext.memberTypeId !== memberTypeId ||
-    pageContext.search !== search
-  ) {
-    setPageContext({ status, memberTypeId, search });
-    setPage(0);
-  }
+  const paging = useOffsetPage(MEMBERS_PAGE_SIZE);
   const { data, isLoading } = useLibraryMembersQuery({
     status,
     memberTypeId,
     search,
-    limit: MEMBERS_PAGE_SIZE,
-    offset: page * MEMBERS_PAGE_SIZE,
+    limit: paging.limit,
+    offset: paging.offset,
   });
   const memberTypes = useLibraryMemberTypesQuery();
   const directory = useDirectoryQuery();
@@ -116,6 +108,7 @@ export function MembersView(): ReactElement {
       value: status,
       onChange: (value) => {
         setStatus(value as (typeof STATUS_VALUES)[number]);
+        paging.resetPage();
       },
       options: STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) })),
     },
@@ -123,7 +116,7 @@ export function MembersView(): ReactElement {
       id: "type",
       label: t("filters.type"),
       value: memberTypeId,
-      onChange: setMemberTypeId,
+      onChange: paging.resetting(setMemberTypeId),
       options: typeOptions,
     },
   ];
@@ -300,7 +293,7 @@ export function MembersView(): ReactElement {
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter={search}
-          onGlobalFilterChange={setSearch}
+          onGlobalFilterChange={paging.resetting(setSearch)}
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
           filtersLabels={{
@@ -321,17 +314,13 @@ export function MembersView(): ReactElement {
           }
         />
       </div>
-      <UsersCursorPagination
-        hasPrevious={page > 0}
-        hasNext={items.length >= MEMBERS_PAGE_SIZE}
+      <CursorPagination
+        hasPrevious={paging.hasPrevious}
+        hasNext={paging.hasNextFor(items.length)}
         previousLabel={t("pagePrev")}
         nextLabel={t("pageNext")}
-        onPrevious={() => {
-          setPage((p) => Math.max(0, p - 1));
-        }}
-        onNext={() => {
-          setPage((p) => p + 1);
-        }}
+        onPrevious={paging.goPrevious}
+        onNext={paging.goNext}
       />
 
       <Dialog

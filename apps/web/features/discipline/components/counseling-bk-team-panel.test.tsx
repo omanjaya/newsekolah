@@ -38,7 +38,10 @@ describe("CounselingBKTeamPanel filters", () => {
     await user.click(screen.getByRole("button", { name: "bkTeam.topicFilter" }));
     await user.click(await screen.findByRole("button", { name: "form.topicOptions.career" }));
 
-    expect(mocks.useBKTeamCounselingsQuery).toHaveBeenLastCalledWith("career");
+    expect(mocks.useBKTeamCounselingsQuery).toHaveBeenLastCalledWith("career", {
+      limit: 50,
+      offset: 0,
+    });
     expect(new URLSearchParams(window.location.search).get("topic")).toBe("career");
   });
 
@@ -46,7 +49,10 @@ describe("CounselingBKTeamPanel filters", () => {
     window.history.replaceState(null, "", "/discipline/counseling?topic=social");
     render(<CounselingBKTeamPanel onOpen={vi.fn()} />);
 
-    expect(mocks.useBKTeamCounselingsQuery).toHaveBeenLastCalledWith("social");
+    expect(mocks.useBKTeamCounselingsQuery).toHaveBeenLastCalledWith("social", {
+      limit: 50,
+      offset: 0,
+    });
     expect(
       screen.getByRole("button", { name: "bkTeam.topicFilter: form.topicOptions.social" }),
     ).toBeInTheDocument();
@@ -58,7 +64,7 @@ describe("CounselingBKTeamPanel filters", () => {
     render(<CounselingBKTeamPanel onOpen={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "bkTeam.removeFilter" }));
-    expect(mocks.useBKTeamCounselingsQuery).toHaveBeenLastCalledWith("");
+    expect(mocks.useBKTeamCounselingsQuery).toHaveBeenLastCalledWith("", { limit: 50, offset: 0 });
     expect(new URLSearchParams(window.location.search).get("topic")).toBe("");
   });
 });
