@@ -11,6 +11,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { StudentLink } from "../../students/components/student-link";
 import { useRenewLoanMutation, useReturnLoanMutation } from "../api";
 import {
   type LibraryOverdueLoanDetail,
@@ -46,7 +47,15 @@ export function DeskOverdueTable(): ReactElement {
         accessorFn: (item) => `${item.member_name} ${item.member_no}`,
         cell: ({ row }) => (
           <div className="flex min-w-0 flex-col">
-            <span>{row.original.member_name || t("unknownMember")}</span>
+            <span>
+              <StudentLink
+                studentId={row.original.loan.member_user_id}
+                tab="library"
+                isStudent={row.original.class_name !== ""}
+              >
+                {row.original.member_name || t("unknownMember")}
+              </StudentLink>
+            </span>
             {row.original.member_no && (
               <span className="text-[12px] text-fg-muted">{row.original.member_no}</span>
             )}

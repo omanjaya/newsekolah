@@ -14,6 +14,8 @@ import {
   useSPCandidatesQuery,
 } from "../../discipline/api";
 import { dueLevels } from "../../discipline/lib/sp-due-levels";
+import { StudentLink } from "../../students/components/student-link";
+import { studentProfileHref } from "../../students/href";
 import { INBOX_SP_FILTERS } from "../use-action-inbox-count";
 
 /** Students whose points reached a warning-letter level not yet issued, with the same one-click issue as the at-risk tab. */
@@ -56,7 +58,9 @@ export function WarningLetterCandidatesSection(): ReactElement {
               <div className="flex items-start justify-between gap-2">
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <span className="truncate text-[14px] font-medium text-fg">
-                    {candidate.student_name}
+                    <StudentLink studentId={candidate.student_user_id} tab="discipline">
+                      {candidate.student_name}
+                    </StudentLink>
                   </span>
                   <span className="text-[13px] text-fg-muted">
                     {candidate.nis} · {candidate.class_name}
@@ -75,7 +79,7 @@ export function WarningLetterCandidatesSection(): ReactElement {
               </div>
               <div className="mt-auto flex flex-wrap items-center justify-end gap-1.5">
                 <Button size="sm" variant="secondary" asChild>
-                  <Link href={`/discipline/students/${candidate.student_user_id}`}>
+                  <Link href={studentProfileHref(candidate.student_user_id, "discipline")}>
                     {t("open")}
                   </Link>
                 </Button>

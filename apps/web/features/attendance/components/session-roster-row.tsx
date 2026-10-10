@@ -8,6 +8,7 @@ import { memo, useState } from "react";
 
 import { formatDisplayName } from "../../../lib/text/format-name";
 import type { ViolationType } from "../../discipline/api";
+import { StudentLink } from "../../students/components/student-link";
 import type { RosterItem, SessionDetail } from "../api";
 
 import { AttendanceStatusRadioGroup } from "./attendance-status-radio-group";
@@ -86,7 +87,11 @@ export const SessionRosterRow = memo(function SessionRosterRow({
           <Avatar name={item.name} size="sm" />
           <div className="flex min-w-0 flex-col">
             <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[14px] text-fg">
-              <span className="truncate">{formatDisplayName(item.name)}</span>
+              <span className="truncate">
+                <StudentLink studentId={item.student_user_id}>
+                  {formatDisplayName(item.name)}
+                </StudentLink>
+              </span>
               {item.nis && <span className="text-[12px] text-fg-muted">{item.nis}</span>}
               <StudentYearRecap statuses={statuses} yearCounts={item.year_counts} />
               {changed && (

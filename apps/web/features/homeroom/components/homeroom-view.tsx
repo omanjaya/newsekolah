@@ -30,6 +30,7 @@ import { useRememberedViewState } from "../../../lib/view-state/view-state-provi
 import { todayInZone, useHomeroomAttendanceQuery } from "../../attendance/api";
 import { statusToken } from "../../attendance/lib/status-tokens";
 import { useLeaveReviewQueueQuery } from "../../permits/api";
+import { StudentLink } from "../../students/components/student-link";
 
 import { HomeroomDashboard } from "./homeroom-dashboard";
 import { HomeroomDisciplineTab } from "./homeroom-discipline-tab";
@@ -128,7 +129,11 @@ export function HomeroomView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) => (
           <div className="flex flex-col">
-            <span className="text-fg">{formatDisplayName(row.original.name)}</span>
+            <span className="text-fg">
+              <StudentLink studentId={row.original.student_user_id}>
+                {formatDisplayName(row.original.name)}
+              </StudentLink>
+            </span>
             {row.original.nis && (
               <span className="text-[12px] text-fg-muted">{row.original.nis}</span>
             )}

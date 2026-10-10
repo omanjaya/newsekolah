@@ -8,6 +8,7 @@ import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useClassesQuery } from "../../reference/api";
+import { StudentLink } from "../../students/components/student-link";
 import type { LibraryTitle } from "../api";
 import {
   type LibraryClassLoanPreview,
@@ -134,7 +135,11 @@ export function ClassLoanBorrowPanel(): ReactElement {
                   key={pair.student_user_id}
                   className="flex items-center justify-between rounded-xs border border-border px-3 py-2 text-[13px]"
                 >
-                  <span className="text-fg">{pair.student_name}</span>
+                  <span className="text-fg">
+                    <StudentLink studentId={pair.student_user_id} tab="library">
+                      {pair.student_name}
+                    </StudentLink>
+                  </span>
                   <span className="text-fg-muted">{pair.barcode}</span>
                 </li>
               ))}

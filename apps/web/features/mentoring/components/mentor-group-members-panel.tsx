@@ -23,6 +23,7 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { StudentLink } from "../../students/components/student-link";
 import {
   type MentorGroupMember,
   useAssignMentorGroupMemberMutation,
@@ -65,7 +66,13 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
         enableSorting: false,
         cell: ({ row }) => {
           const name = studentMap.get(row.original.student_user_id)?.name;
-          return name ? formatDisplayName(name) : t("unknownStudent");
+          return name ? (
+            <StudentLink studentId={row.original.student_user_id}>
+              {formatDisplayName(name)}
+            </StudentLink>
+          ) : (
+            t("unknownStudent")
+          );
         },
       },
       {

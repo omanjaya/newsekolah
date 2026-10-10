@@ -11,6 +11,8 @@ import type { ReactElement } from "react";
 
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { statusToken } from "../../attendance/lib/status-tokens";
+import { StudentLink } from "../../students/components/student-link";
+import { studentProfileHref } from "../../students/href";
 import { telHref, whatsAppHref } from "../lib/guardian-contact";
 
 type Entry = components["schemas"]["AttendanceHomeroomEntry"];
@@ -62,7 +64,9 @@ export function HomeroomDashboard({
                 >
                   <div className="flex min-w-0 flex-col">
                     <span className="truncate text-[13px] text-fg">
-                      {formatDisplayName(row.name)}
+                      <StudentLink studentId={row.student_user_id}>
+                        {formatDisplayName(row.name)}
+                      </StudentLink>
                     </span>
                     {row.nis && <span className="text-[12px] text-fg-muted">{row.nis}</span>}
                   </div>
@@ -146,7 +150,7 @@ export function HomeroomDashboard({
             {disciplineRows.map((row) => (
               <li key={row.student_user_id}>
                 <Link
-                  href={`/discipline/students/${row.student_user_id}`}
+                  href={studentProfileHref(row.student_user_id, "discipline")}
                   className="flex items-center justify-between gap-2 py-2 hover:text-accent"
                 >
                   <span className="truncate text-[13px] text-fg">

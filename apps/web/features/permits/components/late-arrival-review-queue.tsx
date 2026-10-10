@@ -26,6 +26,7 @@ import { useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { StudentLink } from "../../students/components/student-link";
 import {
   type LateArrivalSummary,
   useLateArrivalQuery,
@@ -79,7 +80,9 @@ export function ReviewQueue({
             <div className="flex items-start justify-between gap-2">
               <div className="flex min-w-0 flex-col gap-0.5">
                 <span className="truncate text-[14px] font-medium text-fg">
-                  {studentName ? formatDisplayName(studentName) : t("unknownStudent")}
+                  <StudentLink studentId={item.student_user_id}>
+                    {studentName ? formatDisplayName(studentName) : t("unknownStudent")}
+                  </StudentLink>
                 </span>
                 <span className="text-[13px] text-fg-muted">
                   {formatDateTime(item.opened_at, { locale, timeZone: me?.tenant.timezone })} ·{" "}

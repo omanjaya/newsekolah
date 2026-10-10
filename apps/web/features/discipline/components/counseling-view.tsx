@@ -31,6 +31,7 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import { CounselingWorkspaceNav } from "../../student-services/components/service-workspace-nav";
+import { StudentLink } from "../../students/components/student-link";
 import { type Counseling } from "../api";
 import { useDeleteCounselingMutation, useMyCounselingsQuery } from "../api-counseling-extras";
 
@@ -74,7 +75,11 @@ export function CounselingView(): ReactElement {
           return student ? (
             <div className="flex min-w-0 items-center gap-2">
               <Avatar size="sm" name={student.name} />
-              <span className="truncate">{student.name}</span>
+              <span className="truncate">
+                <StudentLink studentId={student.id} tab="counseling">
+                  {student.name}
+                </StudentLink>
+              </span>
             </div>
           ) : (
             t("unknownStudent")

@@ -29,6 +29,8 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
+import { StudentLink } from "../../students/components/student-link";
+import { studentProfileHref } from "../../students/href";
 import {
   type SPLevel,
   type ViolationRecord,
@@ -122,7 +124,11 @@ export function ViolationsLedgerView(): ReactElement {
           return (
             <div className="flex min-w-0 items-center gap-2">
               <Avatar size="sm" name={name} />
-              <span className="truncate">{name}</span>
+              <span className="truncate">
+                <StudentLink studentId={row.original.student_user_id} tab="discipline">
+                  {name}
+                </StudentLink>
+              </span>
             </div>
           );
         },
@@ -317,7 +323,7 @@ export function ViolationsLedgerView(): ReactElement {
           isLoading={isLoading}
           getRowId={(item) => item.id}
           onRowActivate={(item) => {
-            router.push(`/discipline/students/${item.student_user_id}`);
+            router.push(studentProfileHref(item.student_user_id, "discipline"));
           }}
           fillHeight
           emptyState={

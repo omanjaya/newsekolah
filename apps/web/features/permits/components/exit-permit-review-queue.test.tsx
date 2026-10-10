@@ -18,7 +18,7 @@ vi.mock("@newsekolah/i18n", () => ({
 }));
 
 vi.mock("../../../lib/session/session-provider", () => ({
-  useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+  useSession: () => ({ me: { permissions: [], tenant: { timezone: "Asia/Jakarta" } } }),
   useCan: () => true,
 }));
 

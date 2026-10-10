@@ -16,6 +16,7 @@ import { useMemo } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { StudentLink } from "../../students/components/student-link";
 import { type Counseling, type CounselingTopic } from "../api";
 import { useBKTeamCounselingsQuery } from "../api-counseling-extras";
 
@@ -66,7 +67,11 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
           return student ? (
             <div className="flex min-w-0 items-center gap-2">
               <Avatar size="sm" name={student.name} />
-              <span className="truncate">{student.name}</span>
+              <span className="truncate">
+                <StudentLink studentId={student.id} tab="counseling">
+                  {student.name}
+                </StudentLink>
+              </span>
             </div>
           ) : (
             t("unknownStudent")

@@ -33,6 +33,7 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { StudentLink } from "../../students/components/student-link";
 import { printMemberCard } from "../api";
 import {
   type LibraryMember,
@@ -119,7 +120,15 @@ export function MembersView(): ReactElement {
             <div className="flex min-w-0 items-center gap-2">
               <Avatar size="sm" name={name} />
               <div className="flex min-w-0 flex-col">
-                <span className="truncate text-fg">{name}</span>
+                <span className="truncate text-fg">
+                  <StudentLink
+                    studentId={row.original.user_id}
+                    tab="library"
+                    isStudent={directoryMap.get(row.original.user_id)?.profile_kind === "student"}
+                  >
+                    {name}
+                  </StudentLink>
+                </span>
                 <span className="truncate text-[12px] text-fg-muted">{row.original.member_no}</span>
               </div>
             </div>

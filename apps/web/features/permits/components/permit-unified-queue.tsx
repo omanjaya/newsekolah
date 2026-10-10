@@ -30,6 +30,7 @@ import { bentoCells, tileColumns } from "../../../lib/layout/bento";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { StudentLink } from "../../students/components/student-link";
 import {
   useExitPermitReviewQueueQuery,
   useLateArrivalQueueQuery,
@@ -333,7 +334,7 @@ function PermitQueueCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="truncate text-[14px] font-medium text-fg">
-            {formatDisplayName(name)}
+            <StudentLink studentId={row.studentId}>{formatDisplayName(name)}</StudentLink>
             {row.className && (
               <span className="ml-1.5 text-[13px] font-normal text-fg-muted">
                 ({row.className})
