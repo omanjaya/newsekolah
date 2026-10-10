@@ -34,7 +34,7 @@ import {
 import { ActivityParticipants } from "./activity-participants";
 
 export function ActivitiesCalendarView(): ReactElement {
-  const workspace = useTranslations("app.serviceWorkspace");
+  const workspace = useTranslations("app.workspace");
   const t = useTranslations("app.activities.events");
   const canManage = useCan("manage_activity_events");
   const { data, isLoading } = useActivityEventsQuery();
@@ -111,7 +111,7 @@ export function ActivitiesCalendarView(): ReactElement {
     // reference pattern.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <ActivitiesWorkspaceNav />
-      <PageHeader eyebrow={t("eyebrow")} title={workspace("activities")} />
+      <PageHeader eyebrow={t("eyebrow")} title={workspace("studentActivities")} />
 
       {canManage && (
         <div className="flex justify-end">

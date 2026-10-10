@@ -61,7 +61,7 @@ const LEVELS: AchievementLevel[] = [
 ];
 
 export function AchievementsView(): ReactElement {
-  const workspace = useTranslations("app.serviceWorkspace");
+  const workspace = useTranslations("app.workspace");
   const t = useTranslations("app.activities.achievements");
   const canManage = useCan("manage_achievements");
   const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
@@ -143,7 +143,7 @@ export function AchievementsView(): ReactElement {
     // reference pattern.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <ActivitiesWorkspaceNav />
-      <PageHeader eyebrow={t("eyebrow")} title={workspace("activities")} />
+      <PageHeader eyebrow={t("eyebrow")} title={workspace("studentActivities")} />
 
       {canManage && (
         <div className="flex justify-end">
