@@ -8,7 +8,13 @@ const client = vi.hoisted(() => ({ GET: get }));
 
 vi.mock("../../lib/api/client", () => ({ useApiClient: () => client }));
 
-import { DIRECTORY_NAMES_CHUNK_SIZE, useDirectoryName, useDirectoryNames } from "./directory-names";
+import {
+  DIRECTORY_NAMES_CHUNK_SIZE,
+  useDirectoryName,
+  useDirectoryNames,
+  useDirectorySearch,
+  useResolveDirectoryNames,
+} from "./directory-names";
 
 function person(id: string) {
   return { id, name: `Name ${id}`, username: id };
@@ -123,5 +129,67 @@ describe("useDirectoryName", () => {
 
     const none = renderHook(() => useDirectoryName(""), { wrapper: wrapper() });
     expect(none.result.current).toBeUndefined();
+  });
+});
+
+describe("useDirectorySearch", () => {
+  it("searches one kind on the server and primes the name cache with every hit", async () => {
+    get.mockReset();
+    get.mockResolvedValue({ data: [person("a"), person("b")] });
+    const w = wrapper();
+    const search = renderHook(
+      () => useDirectorySearch({ profileKind: "student", query: "na", limit: 30 }),
+      { wrapper: w },
+    );
+    await waitFor(() => {
+      expect(search.result.current.data).toHaveLength(2);
+    });
+    expect(get).toHaveBeenCalledWith("/v1/directory/users", {
+      params: { query: { profile_kind: "student", q: "na", limit: 30 } },
+    });
+
+    // Both hits are now known by id, so showing them by name costs no request.
+    const names = renderHook(() => useDirectoryNames(["a", "b"]), { wrapper: w });
+    await waitFor(() => {
+      expect(names.result.current.size).toBe(2);
+    });
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+
+  it("merges several kinds into one name-ordered list", async () => {
+    get.mockReset();
+    get.mockImplementation(
+      (_path: string, init: { params: { query: { profile_kind?: string } } }) =>
+        Promise.resolve({
+          data:
+            init.params.query.profile_kind === "teacher"
+              ? [{ id: "t", name: "Zed", username: "t" }]
+              : [{ id: "s", name: "Ann", username: "s" }],
+        }),
+    );
+    const { result } = renderHook(
+      () => useDirectorySearch({ profileKind: ["teacher", "staff"], query: "" }),
+      { wrapper: wrapper() },
+    );
+    await waitFor(() => {
+      expect(result.current.data).toHaveLength(2);
+    });
+    expect(result.current.data?.map((user) => user.name)).toEqual(["Ann", "Zed"]);
+    expect(get).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("useResolveDirectoryNames", () => {
+  it("fetches people on demand through the same batch and cache", async () => {
+    get.mockReset();
+    get.mockImplementation((_path: string, init: { params: { query: { ids: string[] } } }) =>
+      Promise.resolve({ data: init.params.query.ids.map(person) }),
+    );
+    const { result } = renderHook(() => useResolveDirectoryNames(), { wrapper: wrapper() });
+
+    const first = await result.current(["a", "b", null]);
+    expect([...first.keys()].sort()).toEqual(["a", "b"]);
+    await result.current(["a"]);
+    expect(get).toHaveBeenCalledTimes(1);
   });
 });

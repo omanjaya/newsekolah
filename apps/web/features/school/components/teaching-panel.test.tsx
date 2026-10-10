@@ -96,4 +96,19 @@ describe("TeachingPanel", () => {
 
     expect(screen.queryByRole("button", { name: "deactivateTeaching" })).not.toBeInTheDocument();
   });
+
+  it("names the teachers of the listed assignments from the batched lookup", () => {
+    render(<TeachingPanel classId="class-1" canManage />);
+
+    expect(screen.getAllByText("Budi").length).toBeGreaterThan(0);
+  });
+
+  it("assigns the teacher found by search, not one from a preloaded roster", () => {
+    render(<TeachingPanel classId="class-1" canManage />);
+
+    expect(screen.getByRole("combobox", { name: "pickTeacher" })).toHaveAttribute(
+      "data-kind",
+      "teacher",
+    );
+  });
 });

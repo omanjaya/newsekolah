@@ -423,9 +423,7 @@
     "registerForm": {
       "role": "Peran",
       "user": "Pengguna",
-      "loadingUsers": "Memuat daftar pengguna...",
       "userPlaceholder": "Pilih pengguna",
-      "noUsers": "Semua pengguna pada peran ini sudah terdaftar atau belum ada datanya.",
       "memberType": "Jenis anggota",
       "memberTypePlaceholder": "Pilih jenis anggota",
       "memberNo": "Nomor anggota (opsional)",
@@ -569,7 +567,6 @@
     "form": {
       "title": "Catat pelanggaran",
       "member": "Anggota",
-      "loadingMembers": "Memuat daftar anggota...",
       "memberPlaceholder": "Pilih anggota",
       "kind": "Jenis",
       "penalty": "Sanksi",
@@ -760,7 +757,6 @@
       "title": "Catat kunjungan",
       "kind": "Jenis",
       "member": "Anggota",
-      "loadingMembers": "Memuat daftar anggota...",
       "memberPlaceholder": "Pilih anggota",
       "visitorName": "Nama pengunjung",
       "groupName": "Nama rombongan",
