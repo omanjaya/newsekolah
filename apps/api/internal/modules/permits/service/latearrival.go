@@ -308,6 +308,21 @@ func (s *Service) CurrentLateArrival(ctx context.Context, tenantID, studentUserI
 	return detail, found, err
 }
 
+// CountLateArrivalsForReview is ListLateArrivalsForReview's queue size for
+// the same caller, for the action inbox badge.
+func (s *Service) CountLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) (int, error) {
+	var n int
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		n, err = s.repo.CountLateArrivalsForReview(ctx, tenantID, callerUserID)
+		return err
+	})
+	if err != nil {
+		return 0, fmt.Errorf("count late arrivals: %w", err)
+	}
+	return n, nil
+}
+
 func (s *Service) ListLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]LateArrivalReviewItem, error) {
 	var out []LateArrivalReviewItem
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {

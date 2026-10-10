@@ -27,6 +27,7 @@ import (
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/inbox"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/integrations"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring"
@@ -228,6 +229,12 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Clock:    clock.Real{},
 	})
 
+	// The action-inbox badge sums each queue's own count; it owns no data.
+	inboxModule := inbox.Register(inbox.Dependencies{
+		Perms: identityModule.Service, Leave: permitsModule.Service, Exit: permitsModule.Service,
+		Late: permitsModule.Service, WarningLetters: wiring.InboxWarningLetters{Svc: disciplineModule.Service},
+	})
+
 	// Built before the jobs block below so its periodic due-schedule scan
 	// can be registered alongside every other module's.
 	reportsModule := reports.Register(reports.Dependencies{
@@ -406,6 +413,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		StaffAttendanceHandler: staffAttendanceModule.Handler,
 		VisitorsHandler:        visitorsModule.Handler,
 		BillingHandler:         billingModule.Handler,
+		InboxHandler:           inboxModule.Handler,
 		healthHandler:          &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 

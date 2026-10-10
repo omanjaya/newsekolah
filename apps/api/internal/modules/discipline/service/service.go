@@ -54,6 +54,7 @@ type Repository interface {
 	ListLettersForStudent(ctx context.Context, tenantID, yearID, studentID uuid.UUID) ([]domain.WarningLetter, error)
 	ListLetters(ctx context.Context, tenantID, yearID uuid.UUID, classID uuid.NullUUID, search string, limit, offset int) ([]domain.WarningLetter, error)
 	ListSPCandidates(ctx context.Context, tenantID, yearID uuid.UUID, f CandidateFilter) ([]SPCandidate, error)
+	CountDueSPCandidates(ctx context.Context, tenantID, yearID uuid.UUID, levels []domain.SPLevel) (int, error)
 
 	CreateCounseling(ctx context.Context, c domain.Counseling, content, followUp, careerGoals, problemDescription []byte, keyID string) (domain.Counseling, error)
 	UpdateCounseling(ctx context.Context, c domain.Counseling, content, followUp, careerGoals, problemDescription []byte, keyID string) (domain.Counseling, error)

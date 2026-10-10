@@ -3651,6 +3651,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/inbox/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pending-item counts for the caller's action inbox: leave requests, exit permits, late arrivals and warning letters. Each number applies the same authorization and scoping as its queue endpoint, so a queue the caller cannot see counts as 0. */
+        get: operations["getInboxCounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/integrations/event-types": {
         parameters: {
             query?: never;
@@ -9934,6 +9951,13 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             last_used_at?: string;
+        };
+        InboxCounts: {
+            leave: number;
+            exit: number;
+            late: number;
+            warning_letters: number;
+            total: number;
         };
         EventTypeList: {
             data: string[];
@@ -19707,6 +19731,27 @@ export interface operations {
                 content?: never;
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getInboxCounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Counts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxCounts"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
         };
     };

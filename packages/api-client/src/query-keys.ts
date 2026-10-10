@@ -64,6 +64,9 @@ export const queryKeys = {
   attendanceMonthlyReport: (studentId: string, month: string) =>
     ["attendance", "monthly-report", studentId, month] as const,
 
+  /** Action inbox badge: one counts read shared by the shell, banner and inbox page. */
+  inboxCounts: () => ["inbox", "counts"] as const,
+
   monitorSnapshot: () => ["monitor", "snapshot"] as const,
   monitorPresence: () => ["monitor", "presence"] as const,
 

@@ -672,3 +672,36 @@ func nonNilStrings(s []string) []string {
 	}
 	return s
 }
+
+// CountLateArrivalsForReview is the size of ListLateArrivalsForReview's queue.
+func (r *Repository) CountLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) (int, error) {
+	n, err := r.queries(ctx).CountLateArrivalsForReview(ctx, db.CountLateArrivalsForReviewParams{
+		TenantID: tenantID, DutyTeacherUserID: pdatabase.NullUUID(uuid.NullUUID{UUID: callerUserID, Valid: true}),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("count late arrivals for review: %w", err)
+	}
+	return int(n), nil
+}
+
+// CountLeaveRequestsForReview is the size of ListLeaveRequestsForReview's queue without a class filter.
+func (r *Repository) CountLeaveRequestsForReview(ctx context.Context, tenantID, reviewerUserID uuid.UUID, today time.Time) (int, error) {
+	n, err := r.queries(ctx).CountLeaveRequestsForReview(ctx, db.CountLeaveRequestsForReviewParams{
+		TenantID: tenantID, UserID: reviewerUserID, Today: pdatabase.Date(today),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("count leave requests for review: %w", err)
+	}
+	return int(n), nil
+}
+
+// CountExitPermitsForApproval is the size of ListExitPermitsForApproval's queue.
+func (r *Repository) CountExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, today time.Time) (int, error) {
+	n, err := r.queries(ctx).CountExitPermitsForApproval(ctx, db.CountExitPermitsForApprovalParams{
+		TenantID: tenantID, UserID: callerUserID, Today: pdatabase.Date(today),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("count exit permits for approval: %w", err)
+	}
+	return int(n), nil
+}

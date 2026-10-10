@@ -53,6 +53,7 @@ type Repository interface {
 	UpdateLateArrivalReview(ctx context.Context, tenantID, instanceID uuid.UUID, reason string, action domain.RequiredAction, homeroomReported bool) (domain.LateArrival, error)
 	MarkLateArrivalCompleted(ctx context.Context, tenantID, instanceID uuid.UUID, completedAt time.Time) (domain.LateArrival, error)
 	ListLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]LateArrivalReviewItem, error)
+	CountLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) (int, error)
 
 	// Leave requests.
 	CreateLeaveRequest(ctx context.Context, r domain.LeaveRequest) (domain.LeaveRequest, error)
@@ -63,6 +64,7 @@ type Repository interface {
 	GetLeaveDocument(ctx context.Context, tenantID, leaveRequestID uuid.UUID, kind domain.DocumentKind) (LeaveDocumentInfo, bool, error)
 	ListLeaveRequestsBySubject(ctx context.Context, tenantID, subjectUserID uuid.UUID, limit, offset int) ([]LeaveRequestItem, error)
 	ListLeaveRequestsForReview(ctx context.Context, tenantID, reviewerUserID uuid.UUID, classID uuid.NullUUID, today time.Time) ([]LeaveRequestItem, error)
+	CountLeaveRequestsForReview(ctx context.Context, tenantID, reviewerUserID uuid.UUID, today time.Time) (int, error)
 
 	// Scan tokens.
 	CreateScanToken(ctx context.Context, t domain.ScanToken) (domain.ScanToken, error)
@@ -122,6 +124,7 @@ type Repository interface {
 	// queue: in-progress permits at a duty-scoped approval stage, plus
 	// every approved permit visible to scan_exit_permits holders.
 	ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, today time.Time) ([]ExitPermitReviewItem, error)
+	CountExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, today time.Time) (int, error)
 	// ListExitPermitsForYear backs the counselor's yearly exit-permit
 	// report: every permit opened within academicYearID's own calendar
 	// bounds, regardless of status.

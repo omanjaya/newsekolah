@@ -62,6 +62,8 @@ tags:
     description: API keys and outgoing webhooks for machine access to the API
   - name: analytics
     description: Early-warning risk signals per student
+  - name: inbox
+    description: Pending-item counts for the action inbox
   - name: activities
     description: Extracurricular clubs and membership, meeting attendance, school activities, and student achievements
   - name: mentoring
@@ -8315,6 +8317,24 @@ paths:
           description: Changed
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/inbox/counts:
+    get:
+      tags:
+        - inbox
+      operationId: getInboxCounts
+      x-permission: authenticated
+      summary: "Pending-item counts for the caller's action inbox: leave requests, exit permits, late arrivals and warning
+        letters. Each number applies the same authorization and scoping as its queue endpoint, so a queue the caller
+        cannot see counts as 0."
+      responses:
+        "200":
+          description: Counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InboxCounts"
         "401":
           $ref: "#/components/responses/Unauthorized"
   /v1/integrations/event-types:
@@ -23078,6 +23098,30 @@ components:
         last_used_at:
           type: string
           format: date-time
+    InboxCounts:
+      type: object
+      required:
+        - leave
+        - exit
+        - late
+        - warning_letters
+        - total
+      properties:
+        leave:
+          type: integer
+          minimum: 0
+        exit:
+          type: integer
+          minimum: 0
+        late:
+          type: integer
+          minimum: 0
+        warning_letters:
+          type: integer
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
     EventTypeList:
       type: object
       required:
