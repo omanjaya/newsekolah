@@ -7,6 +7,7 @@
   "actingAs": "meniru {name}",
   "filters": {
     "actor": "Pelaku",
+    "clearActor": "Hapus pelaku",
     "actorAll": "Semua pengguna",
     "entityType": "Jenis entitas",
     "from": "Dari tanggal",

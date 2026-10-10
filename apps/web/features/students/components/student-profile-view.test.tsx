@@ -15,9 +15,12 @@ vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { permissions: mocks.permissions } }),
 }));
 vi.mock("../../reference/api", () => ({
-  useDirectoryQuery: () => ({ data: { data: [] } }),
   useLookup: () => new Map(),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([]);
+});
 vi.mock("../../school/api", () => ({ useUserQuery: () => ({ data: undefined }) }));
 vi.mock("../../mentoring/api", () => ({
   useMentorStudentSnapshotQuery: () => ({ data: undefined }),

@@ -1,13 +1,16 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, useToast } from "@newsekolah/ui";
+import { Button, Input, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useTeachersQuery } from "../../reference/api";
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
 import {
   type MentorGroup,
   useCreateMentorGroupMutation,
@@ -24,14 +27,13 @@ export function MentorGroupForm({
   const t = useTranslations("app.mentoring.groups.form");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const teachers = useTeachersQuery();
+  const mentorLabels = useDirectoryPickerLabels(t("mentorPlaceholder"));
   const create = useCreateMentorGroupMutation();
   const update = useUpdateMentorGroupMutation();
 
   const [mentorUserId, setMentorUserId] = useState(initial?.mentor_user_id ?? "");
   const [name, setName] = useState(initial?.name ?? "");
 
-  const teacherOptions = (teachers.data?.data ?? []).map((u) => ({ value: u.id, label: u.name }));
   const pending = create.isPending || update.isPending;
 
   return (
@@ -59,11 +61,11 @@ export function MentorGroupForm({
     >
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("mentor")}</span>
-        <Select
-          options={teacherOptions}
+        <DirectoryPicker
+          profileKind="teacher"
           value={mentorUserId}
           onValueChange={setMentorUserId}
-          placeholder={t("mentorPlaceholder")}
+          labels={mentorLabels}
         />
       </label>
       <label className="flex flex-col gap-1 text-[13px]">

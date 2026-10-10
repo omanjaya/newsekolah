@@ -9,11 +9,16 @@ import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
-import { useDirectoryQuery, useSubjectsQuery } from "../../reference/api";
+import { useSubjectsQuery } from "../../reference/api";
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
 import { type GradeRangeEntry, useGradeRangesQuery, useReplaceGradeRangesMutation } from "../api";
 
 const SELF_TEACHER = "self";
 const SCHOOL_WIDE = "school";
+const SPECIFIC_TEACHER = "teacher";
 
 /**
  * Report-score increase ranges for one subject-teacher scope, saved as one
@@ -29,28 +34,26 @@ export function GradeRangesEditor({
   const t = useTranslations("app.grading.settings");
   const { me } = useSession();
   const subjects = useSubjectsQuery();
-  const teachers = useDirectoryQuery("teacher", canManageSettings);
   const allRanges = useGradeRangesQuery();
 
   const [subjectId, setSubjectId] = useState("");
   const [teacherScope, setTeacherScope] = useState(canManageSettings ? SCHOOL_WIDE : SELF_TEACHER);
+  const [pickedTeacherId, setPickedTeacherId] = useState("");
+  const teacherLabels = useDirectoryPickerLabels(t("rangeTeacherPlaceholder"));
 
   const teacherUserId =
     teacherScope === SELF_TEACHER
       ? me?.id
       : teacherScope === SCHOOL_WIDE
         ? undefined
-        : teacherScope;
+        : pickedTeacherId;
 
   const subjectOptions = (subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }));
   const teacherOptions = [
     ...(canManageSettings
       ? [
           { value: SCHOOL_WIDE, label: t("rangeSchoolWide") },
-          ...(teachers.data?.data ?? []).map((teacher) => ({
-            value: teacher.id,
-            label: teacher.name,
-          })),
+          { value: SPECIFIC_TEACHER, label: t("rangeSpecificTeacher") },
         ]
       : []),
     { value: SELF_TEACHER, label: t("rangeYourOwn") },
@@ -89,10 +92,24 @@ export function GradeRangesEditor({
         ) : (
           <p className="pb-2 text-[13px] text-fg-muted">{t("rangeYourOwnHint")}</p>
         )}
+        {canManageSettings && teacherScope === SPECIFIC_TEACHER && (
+          <label className="flex flex-col gap-1 text-[13px]">
+            <span className="font-medium">{t("rangeTeacher")}</span>
+            <DirectoryPicker
+              profileKind="teacher"
+              value={pickedTeacherId}
+              onValueChange={setPickedTeacherId}
+              labels={teacherLabels}
+              className="w-56"
+            />
+          </label>
+        )}
       </div>
 
       {!subjectId ? (
         <p className="text-[13px] text-fg-muted">{t("rangePickSubjectFirst")}</p>
+      ) : teacherScope === SPECIFIC_TEACHER && !pickedTeacherId ? (
+        <p className="text-[13px] text-fg-muted">{t("rangePickTeacherFirst")}</p>
       ) : allRanges.isLoading ? (
         <Skeleton className="h-24 w-full" aria-busy="true" />
       ) : (

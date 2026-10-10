@@ -22,8 +22,15 @@ vi.mock("../../reference/api", () => ({
   useLookup: (items: { id: string }[] | undefined) =>
     new Map((items ?? []).map((item) => [item.id, item])),
   useSubjectsQuery: () => ({ data: { data: [{ id: "subject-1", name: "Matematika" }] } }),
-  useTeachersQuery: () => ({ data: { data: [{ id: "teacher-1", name: "Budi" }] } }),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([{ id: "teacher-1", name: "Budi" }]);
+});
+vi.mock("../../reference/components/directory-picker", async () => {
+  const { directoryPickerStubModule } = await import("../../../test/directory-picker-stub");
+  return directoryPickerStubModule;
+});
 vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
   return { ...actual, useToast: () => ({ success: mocks.toastSuccess, error: mocks.toastError }) };

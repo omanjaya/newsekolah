@@ -10,17 +10,22 @@ import {
   Skeleton,
   Textarea,
   domainIcons,
+  useDebouncedCallback,
   useToast,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useDirectoryQuery, usePeriodsQuery } from "../../reference/api";
+import { usePeriodsQuery } from "../../reference/api";
+import { useDirectoryNames, useDirectorySearch } from "../../reference/directory-names";
 import { useRecordExitPermitByStaffMutation, useRecordLateArrivalByStaffMutation } from "../api";
 
 type Kind = "exit" | "late";
+
+const STUDENT_RESULTS = 30;
+const SEARCH_DEBOUNCE_MS = 300;
 
 /**
  * The duty teacher's ad-hoc desk/gate record: for a student who is not
@@ -35,7 +40,6 @@ export function DutyManualRecordPanel(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const students = useDirectoryQuery("student");
   const periods = usePeriodsQuery();
   const recordExit = useRecordExitPermitByStaffMutation();
   const recordLate = useRecordLateArrivalByStaffMutation();
@@ -43,6 +47,8 @@ export function DutyManualRecordPanel(): ReactElement {
 
   const [kind, setKind] = useState<Kind>("exit");
   const [studentSearch, setStudentSearch] = useState("");
+  const [studentQuery, setStudentQuery] = useState("");
+  const debounceStudentQuery = useDebouncedCallback(setStudentQuery, SEARCH_DEBOUNCE_MS);
   const [studentId, setStudentId] = useState("");
   const [destination, setDestination] = useState("");
   const [startPeriodId, setStartPeriodId] = useState("");
@@ -51,13 +57,15 @@ export function DutyManualRecordPanel(): ReactElement {
   const [homeroomReported, setHomeroomReported] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const allStudents = useMemo(() => students.data?.data ?? [], [students.data]);
-  const studentMap = useMemo(() => new Map(allStudents.map((s) => [s.id, s])), [allStudents]);
-  const visibleStudents = useMemo(() => {
-    const query = studentSearch.trim().toLowerCase();
-    if (!query) return allStudents.slice(0, 30);
-    return allStudents.filter((s) => s.name.toLowerCase().includes(query)).slice(0, 30);
-  }, [allStudents, studentSearch]);
+  // Search on the server; the picked student's name comes from the cache the
+  // search results are written to.
+  const found = useDirectorySearch({
+    profileKind: "student",
+    query: studentQuery,
+    limit: STUDENT_RESULTS,
+  });
+  const visibleStudents = found.data ?? [];
+  const studentMap = useDirectoryNames([studentId]);
   const selectedStudent = studentId ? studentMap.get(studentId) : undefined;
 
   const periodOptions = (periods.data?.data ?? []).map((p) => ({ value: p.id, label: p.name }));
@@ -65,6 +73,7 @@ export function DutyManualRecordPanel(): ReactElement {
   function resetAfterSuccess() {
     setStudentId("");
     setStudentSearch("");
+    setStudentQuery("");
     setDestination("");
     setStartPeriodId("");
     setEndPeriodId("");
@@ -184,12 +193,13 @@ export function DutyManualRecordPanel(): ReactElement {
               value={studentSearch}
               onChange={(e) => {
                 setStudentSearch(e.target.value);
+                debounceStudentQuery(e.target.value.trim());
               }}
               placeholder={t("studentSearchPlaceholder")}
               aria-label={t("studentSearchPlaceholder")}
             />
             <div className="flex max-h-48 flex-col gap-0.5 overflow-y-auto rounded-sm border border-border p-1">
-              {students.isLoading ? (
+              {found.isFetching && found.data === undefined ? (
                 <Skeleton className="h-16 w-full" />
               ) : visibleStudents.length === 0 ? (
                 <p className="px-2 py-2 text-fg-muted">{t("noStudents")}</p>

@@ -15,9 +15,9 @@ import { useSession } from "../../../lib/session/session-provider";
 import {
   useClassEnrollmentsQuery,
   useClassesQuery,
-  useDirectoryQuery,
   useGradeLevelsQuery,
 } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { downloadMonthlyAttendanceReport, todayInZone, type ReportScope } from "../api";
 
 import { MONTHLY_RECAP_EXPORT_COLUMNS, classOptions } from "./attendance-report-options";
@@ -47,17 +47,21 @@ export function MonthlyReportTab(): ReactElement {
   const classes = useClassesQuery();
   const gradeLevels = useGradeLevelsQuery();
   const enrollments = useClassEnrollmentsQuery(classId, classId !== "");
-  const students = useDirectoryQuery("student");
-  const studentMap = useMemo(
-    () => new Map((students.data?.data ?? []).map((s) => [s.id, s.name])),
-    [students.data],
+  const rosterRows = useMemo(() => enrollments.data?.data ?? [], [enrollments.data]);
+  const studentMap = useDirectoryNames(
+    rosterRows.filter((e) => !e.student_name).map((e) => e.student_user_id),
   );
   const studentOptions = useMemo(() => {
-    const ids = new Set((enrollments.data?.data ?? []).map((e) => e.student_user_id));
-    return [...ids]
-      .map((id) => ({ value: id, label: studentMap.get(id) ?? id }))
+    const names = new Map(
+      rosterRows.map((e) => [
+        e.student_user_id,
+        e.student_name ?? studentMap.get(e.student_user_id)?.name,
+      ]),
+    );
+    return [...names]
+      .map(([id, name]) => ({ value: id, label: name ?? id }))
       .sort((a, b) => a.label.localeCompare(b.label));
-  }, [enrollments.data, studentMap]);
+  }, [rosterRows, studentMap]);
 
   async function handleExport(options: ReportExportOptions) {
     await downloadMonthlyAttendanceReport(month, downloadScope, options);

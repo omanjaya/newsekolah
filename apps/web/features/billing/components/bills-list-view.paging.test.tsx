@@ -19,9 +19,12 @@ vi.mock("../../reference/api", () => ({
     data: { data: [{ id: "class-7a", name: "7A" }] },
     isLoading: false,
   }),
-  useDirectoryQuery: () => ({ data: { data: [] }, isLoading: false }),
   useLookup: () => new Map(),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([]);
+});
 vi.mock("../api", () => ({ useBillsQuery: mocks.useBillsQuery }));
 vi.mock("./bill-detail-sheet", () => ({ BillDetailSheet: () => null }));
 

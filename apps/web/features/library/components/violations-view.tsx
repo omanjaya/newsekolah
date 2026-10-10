@@ -24,7 +24,7 @@ import { CursorPagination } from "../../../components/cursor-pagination";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type LibraryViolation,
   type LibraryViolationKind,
@@ -69,8 +69,6 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
   );
   const memberViolations = useMemberViolationsQuery(memberUserId ?? "");
   const { data, isLoading } = memberUserId ? memberViolations : allViolations;
-  const directory = useDirectoryQuery();
-  const directoryMap = useLookup(directory.data?.data);
 
   const rawItems = data?.data ?? [];
   // The all-violations query already filters server-side; the member-scoped
@@ -82,6 +80,10 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         (item) => (!status || item.status === status) && (!kind || item.kind === kind),
       )
     : rawItems;
+  const directoryMap = useDirectoryNames([
+    memberUserId,
+    ...items.map((item) => item.member_user_id),
+  ]);
   const isFiltered = status !== "" || kind !== "";
 
   const filters: DataTableFilterDef[] = [

@@ -16,9 +16,12 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => false }));
 vi.mock("../../reference/api", () => ({
-  useDirectoryQuery: () => ({ data: { data: [] }, isLoading: false }),
   useLookup: () => new Map(),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([]);
+});
 vi.mock("../violations-api", () => ({
   useLibraryViolationsQuery: mocks.useLibraryViolationsQuery,
   useMemberViolationsQuery: () => ({ data: { data: [] }, isLoading: false }),

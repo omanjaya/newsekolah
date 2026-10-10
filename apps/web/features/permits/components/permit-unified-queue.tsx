@@ -24,7 +24,7 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { bentoCells, tileColumns } from "../../../lib/layout/bento";
 import { useCan, useSession } from "../../../lib/session/session-provider";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   useExitPermitReviewQueueQuery,
   useLateArrivalQueueQuery,
@@ -55,8 +55,6 @@ export function PermitUnifiedQueue(): ReactElement {
   const leave = useLeaveReviewQueueQuery(canLeave);
   const exit = useExitPermitReviewQueueQuery(canApprove || canGate);
   const late = useLateArrivalQueueQuery(canLate);
-  const directory = useDirectoryQuery("student", canLate);
-  const names = useLookup(directory.data?.data);
   const review = useReviewLeaveRequestMutation();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<PermitQueueRow | null>(null);
@@ -112,6 +110,11 @@ export function PermitUnifiedQueue(): ReactElement {
     exit: canApprove || canGate ? exit.data?.data : undefined,
     late: canLate ? late.data?.data : undefined,
   });
+  // Rows from the late-arrival queue carry no name; look those up.
+  const names = useDirectoryNames(
+    rows.filter((row) => row.studentName.length === 0).map((row) => row.studentId),
+    canLate,
+  );
   const nameFor = (row: PermitQueueRow) =>
     row.studentName.length > 0
       ? row.studentName

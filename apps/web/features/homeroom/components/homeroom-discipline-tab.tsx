@@ -10,7 +10,7 @@ import type { ReactElement } from "react";
 import { CursorPagination } from "../../../components/cursor-pagination";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useViolationsQuery } from "../../discipline/api";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { studentProfileHref } from "../../students/href";
 
 /** Rows per page; the violations API pages by offset and reports no total. */
@@ -20,14 +20,13 @@ const PAGE_SIZE = 50;
 export function HomeroomDisciplineTab({ classId }: { classId: string }): ReactElement {
   const t = useTranslations("app.homeroom");
   const locale = useLocale() as Locale;
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
   const paging = useOffsetPage(PAGE_SIZE, "discipline_page");
   const { data, isLoading } = useViolationsQuery(
     { classId, from: "", to: "", includeVoided: false },
     { limit: paging.limit, offset: paging.offset },
   );
   const items = data?.data ?? [];
+  const studentMap = useDirectoryNames(items.map((item) => item.student_user_id));
 
   if (isLoading) return <Skeleton className="h-24 w-full" aria-busy="true" />;
   if (items.length === 0 && !paging.hasPrevious) {

@@ -8,7 +8,6 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
-  Select,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
@@ -22,7 +21,11 @@ import { useMemo, useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { StudentLink } from "../../students/components/student-link";
 import {
   type MentorGroupMember,
@@ -41,8 +44,6 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
 
   const { data, isLoading } = useMentorGroupMembersQuery(groupId);
   const limit = useGroupSizeLimitQuery();
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
   const assign = useAssignMentorGroupMemberMutation(groupId);
   const remove = useRemoveMentorGroupMemberMutation(groupId);
 
@@ -50,13 +51,11 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
   const [candidateId, setCandidateId] = useState("");
   const [pendingRemove, setPendingRemove] = useState<MentorGroupMember | null>(null);
 
-  const members = data?.data ?? [];
+  const members = useMemo(() => data?.data ?? [], [data]);
+  const studentMap = useDirectoryNames(members.map((m) => m.student_user_id));
+  const candidateLabels = useDirectoryPickerLabels(t("addPlaceholder"));
   const memberIds = new Set(members.map((m) => m.student_user_id));
   const atCapacity = limit.data !== undefined && members.length >= limit.data.limit;
-
-  const candidateOptions = (students.data?.data ?? [])
-    .filter((s) => !memberIds.has(s.id))
-    .map((s) => ({ value: s.id, label: formatDisplayName(s.name) }));
 
   const columns = useMemo<ColumnDef<MentorGroupMember>[]>(
     () => [
@@ -187,11 +186,12 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
       >
         <DialogContent title={t("addTitle")} className="max-w-md">
           <div className="flex flex-col gap-4">
-            <Select
-              options={candidateOptions}
+            <DirectoryPicker
+              profileKind="student"
               value={candidateId}
               onValueChange={setCandidateId}
-              placeholder={t("addPlaceholder")}
+              labels={candidateLabels}
+              className="w-full"
             />
             <div className="flex justify-end gap-2 border-t border-border pt-4">
               <Button
@@ -204,7 +204,7 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
               </Button>
               <Button
                 loading={assign.isPending}
-                disabled={!candidateId}
+                disabled={!candidateId || memberIds.has(candidateId)}
                 onClick={() => {
                   assign.mutate(candidateId, {
                     onSuccess: () => {

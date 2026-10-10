@@ -24,7 +24,7 @@ import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useCan } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type LibraryVisit,
   useLibraryVisitSummaryQuery,
@@ -62,10 +62,9 @@ export function VisitsView(): ReactElement {
     offset: paging.offset,
   });
   const summary = useLibraryVisitSummaryQuery();
-  const directory = useDirectoryQuery();
-  const directoryMap = useLookup(directory.data?.data);
 
   const items = data?.data ?? [];
+  const directoryMap = useDirectoryNames(items.map((item) => item.member_user_id));
 
   const filters: DataTableFilterDef[] = [
     {

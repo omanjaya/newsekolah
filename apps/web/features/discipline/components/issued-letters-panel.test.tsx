@@ -28,9 +28,12 @@ vi.mock("../../reference/api", () => ({
     },
     isLoading: false,
   }),
-  useDirectoryQuery: () => ({ data: { data: [] }, isLoading: false }),
   useLookup: () => new Map(),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([]);
+});
 vi.mock("../api", () => ({
   useWarningLettersQuery: mocks.useWarningLettersQuery,
   useWarningLetterDocumentUrlMutation: () => ({ mutate: vi.fn(), isPending: false }),

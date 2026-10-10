@@ -29,7 +29,8 @@ import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../attendance/api";
-import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
+import { useClassesQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { type DutyAssignment } from "../api";
 import {
   useCreateDutyAssignmentMutation,
@@ -51,13 +52,7 @@ export function DutiesView(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const types = useDutyTypesQuery();
   const assignments = useDutyAssignmentsQuery();
-  // Duty holders can be teachers or non-teaching staff; a single unscoped
-  // directory query missed most staff, so names fell back to raw ids.
-  const teachers = useDirectoryQuery("teacher");
-  const staff = useDirectoryQuery("staff");
   const classes = useClassesQuery();
-  const teacherMap = useLookup(teachers.data?.data);
-  const staffMap = useLookup(staff.data?.data);
   const classMap = useLookup(classes.data?.data);
   const end = useEndDutyAssignmentMutation();
   const update = useUpdateDutyAssignmentMutation();
@@ -68,6 +63,8 @@ export function DutiesView(): ReactElement {
   const allRows = assignments.data?.data ?? [];
   const activeRows = allRows.filter((a) => a.is_active);
   const rows = showEnded ? allRows : activeRows;
+  // Duty holders can be teachers or non-teaching staff; look up whoever is listed.
+  const holderMap = useDirectoryNames(rows.map((a) => a.user_id));
 
   function fail(error: unknown) {
     toast.error(
@@ -111,7 +108,7 @@ export function DutiesView(): ReactElement {
         ) : (
           <ul className="divide-y divide-border rounded-sm border border-border bg-surface">
             {rows.map((a) => {
-              const name = teacherMap.get(a.user_id)?.name ?? staffMap.get(a.user_id)?.name ?? "-";
+              const name = holderMap.get(a.user_id)?.name ?? "-";
               return (
                 <li
                   key={a.id}

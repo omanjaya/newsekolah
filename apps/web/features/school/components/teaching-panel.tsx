@@ -20,7 +20,12 @@ import { useMemo, useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useLookup, useSubjectsQuery, useTeachersQuery } from "../../reference/api";
+import { useLookup, useSubjectsQuery } from "../../reference/api";
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   useCreateTeachingAssignmentMutation,
   useDeleteTeachingAssignmentMutation,
@@ -46,9 +51,7 @@ export function TeachingPanel({
   const year = useActiveYear();
   const assignments = useTeachingAssignmentsQuery(classId);
   const subjects = useSubjectsQuery();
-  const teachers = useTeachersQuery();
   const subjectMap = useLookup(subjects.data?.data);
-  const teacherMap = useLookup(teachers.data?.data);
   const create = useCreateTeachingAssignmentMutation();
   const remove = useDeleteTeachingAssignmentMutation();
   const setActive = useUpdateTeachingAssignmentMutation();
@@ -63,6 +66,10 @@ export function TeachingPanel({
     () => (assignments.data?.data ?? []).filter((a) => !a.is_active),
     [assignments.data],
   );
+  const teacherMap = useDirectoryNames(
+    (assignments.data?.data ?? []).map((a) => a.teacher_user_id),
+  );
+  const teacherLabels = useDirectoryPickerLabels(t("pickTeacher"));
   const fail = (error: unknown) => {
     toast.error(
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
@@ -231,11 +238,11 @@ export function TeachingPanel({
             placeholder={t("pickSubject")}
             className="md:w-56"
           />
-          <Select
-            options={(teachers.data?.data ?? []).map((u) => ({ value: u.id, label: u.name }))}
+          <DirectoryPicker
+            profileKind="teacher"
             value={teacherId}
             onValueChange={setTeacherId}
-            placeholder={t("pickTeacher")}
+            labels={teacherLabels}
             className="md:w-64"
           />
           <Button

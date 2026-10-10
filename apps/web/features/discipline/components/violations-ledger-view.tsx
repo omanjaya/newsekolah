@@ -31,7 +31,8 @@ import { useQuickAction } from "../../../lib/hooks/use-quick-action";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
-import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
+import { useClassesQuery } from "../../reference/api";
+import { useDirectoryNamePeek, useDirectoryNames } from "../../reference/directory-names";
 import { StudentLink } from "../../students/components/student-link";
 import { studentProfileHref } from "../../students/href";
 import {
@@ -85,8 +86,6 @@ export function ViolationsLedgerView(): ReactElement {
   const [saveSummaries, setSaveSummaries] = useState<SaveSummary[]>([]);
 
   const classes = useClassesQuery();
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
   const [search, setSearch] = useUrlState<string>("ledger_q", () => true, "");
   const paging = useOffsetPage(PAGE_SIZE, "ledger_page");
   const { data, isLoading } = useViolationsQuery(
@@ -96,6 +95,8 @@ export function ViolationsLedgerView(): ReactElement {
   const issueLetter = useIssueWarningLetterMutation();
 
   const items = data?.data ?? [];
+  const studentMap = useDirectoryNames(items.map((item) => item.student_user_id));
+  const peekName = useDirectoryNamePeek();
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
 
   const filters: DataTableFilterDef[] = [
@@ -379,7 +380,7 @@ export function ViolationsLedgerView(): ReactElement {
                 if (results && results.length > 0) {
                   setSaveSummaries(
                     results.map((result) => {
-                      const student = studentMap.get(result.record.student_user_id);
+                      const student = peekName(result.record.student_user_id);
                       return {
                         studentId: result.record.student_user_id,
                         studentName: student?.name ?? t("unknownStudent"),

@@ -1,12 +1,12 @@
 "use client";
 
 import { queryKeys } from "@newsekolah/api-client";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { useApiClient } from "../../lib/api/client";
 
-import type { DirectoryUser } from "./api";
+import type { DirectoryUser, ProfileKind } from "./api";
 
 /** A name stays valid this long; people are renamed rarely within a session. */
 const DIRECTORY_NAME_STALE_MS = 5 * 60 * 1000;
@@ -88,27 +88,49 @@ function loaderFor(client: ApiClient): DirectoryNameLoader {
   return loader;
 }
 
-function combineNames(results: { data: DirectoryUser | null | undefined }[]): {
+interface NamesResult {
   names: Map<string, DirectoryUser>;
-} {
+  isLoading: boolean;
+  isError: boolean;
+  isSuccess: boolean;
+  refetch: () => void;
+}
+
+function combineNames(
+  results: {
+    data: DirectoryUser | null | undefined;
+    isLoading: boolean;
+    isError: boolean;
+    isSuccess: boolean;
+    refetch: () => unknown;
+  }[],
+): NamesResult {
   const names = new Map<string, DirectoryUser>();
   for (const result of results) {
     if (result.data) names.set(result.data.id, result.data);
   }
-  return { names };
+  return {
+    names,
+    isLoading: results.some((result) => result.isLoading),
+    isError: results.some((result) => result.isError),
+    isSuccess: results.every((result) => result.isSuccess),
+    refetch: () => {
+      for (const result of results) void result.refetch();
+    },
+  };
 }
 
 /**
  * Resolves the people whose ids are on screen to names, without loading the
  * directory. Ids are deduplicated, requested together in chunks, and cached
  * one by one in React Query, so another screen asking for some of the same
- * people reuses them and only fetches the rest. Returns id to person; an id
- * is absent while loading and when the school has no such person.
+ * people reuses them and only fetches the rest. `names` maps id to person;
+ * an id is absent while loading and when the school has no such person.
  */
-export function useDirectoryNames(
+export function useDirectoryLookup(
   ids: readonly (string | null | undefined)[],
   enabled = true,
-): Map<string, DirectoryUser> {
+): NamesResult {
   const client = useApiClient();
   // Callers build `ids` fresh every render; key the query list by content.
   const idsKey = [
@@ -118,7 +140,7 @@ export function useDirectoryNames(
     .join(",");
   const unique = useMemo(() => (idsKey === "" ? [] : idsKey.split(",")), [idsKey]);
 
-  const { names } = useQueries({
+  return useQueries({
     queries: unique.map((id) => ({
       queryKey: queryKeys.directoryName(id),
       queryFn: () => loaderFor(client).load(id),
@@ -127,11 +149,110 @@ export function useDirectoryNames(
     })),
     combine: combineNames,
   });
-  return names;
+}
+
+/** Same as `useDirectoryLookup`, for screens that only need the id to person map. */
+export function useDirectoryNames(
+  ids: readonly (string | null | undefined)[],
+  enabled = true,
+): Map<string, DirectoryUser> {
+  return useDirectoryLookup(ids, enabled).names;
 }
 
 /** One person by id; `undefined` while loading or when unknown. */
 export function useDirectoryName(id: string | null | undefined): DirectoryUser | undefined {
   const ids = useMemo(() => [id], [id]);
   return useDirectoryNames(ids).get(id ?? "");
+}
+
+/** Results per search; the server ranks, so a short page is enough. */
+export const DIRECTORY_SEARCH_LIMIT = 50;
+
+/**
+ * Server-side person search (name, username, NIS/NIP), capped to one short
+ * page per kind. Every hit also lands in the per-id name cache, so a screen
+ * that shows the picked people by name needs no second request. Pass a list
+ * of kinds to search several (for example teachers and staff); without a
+ * kind everyone in the school is searched.
+ */
+export function useDirectorySearch(options: {
+  profileKind?: ProfileKind | readonly ProfileKind[] | undefined;
+  query: string;
+  limit?: number;
+  enabled?: boolean;
+}): { data: DirectoryUser[] | undefined; isFetching: boolean } {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  const { profileKind, query, limit = DIRECTORY_SEARCH_LIMIT, enabled = true } = options;
+  const kinds: readonly (ProfileKind | undefined)[] =
+    profileKind === undefined
+      ? [undefined]
+      : typeof profileKind === "string"
+        ? [profileKind]
+        : profileKind;
+
+  return useQueries({
+    queries: kinds.map((kind) => ({
+      queryKey: ["directory", "search", kind ?? "all", query, limit] as const,
+      queryFn: async () => {
+        const response = await client.GET("/v1/directory/users", {
+          params: { query: { ...(kind ? { profile_kind: kind } : {}), q: query, limit } },
+        });
+        for (const user of response.data) {
+          queryClient.setQueryData(queryKeys.directoryName(user.id), user);
+        }
+        return response.data;
+      },
+      enabled,
+      staleTime: 30_000,
+    })),
+    combine: combineSearch,
+  });
+}
+
+function combineSearch(results: { data: DirectoryUser[] | undefined; isFetching: boolean }[]): {
+  data: DirectoryUser[] | undefined;
+  isFetching: boolean;
+} {
+  const isFetching = results.some((result) => result.isFetching);
+  if (results.every((result) => result.data === undefined)) return { data: undefined, isFetching };
+  const merged = results.flatMap((result) => result.data ?? []);
+  if (results.length > 1) merged.sort((a, b) => a.name.localeCompare(b.name));
+  return { data: merged, isFetching };
+}
+
+/**
+ * Reads a person from the name cache without fetching, for event handlers
+ * that run right after a picker or a search has put the person there.
+ */
+export function useDirectoryNamePeek(): (id: string) => DirectoryUser | undefined {
+  const queryClient = useQueryClient();
+  return (id) =>
+    queryClient.getQueryData<DirectoryUser | null>(queryKeys.directoryName(id)) ?? undefined;
+}
+
+/**
+ * Resolves people on demand, for code that needs a name after an event (an
+ * error that names someone not on screen). Uses and fills the same cache.
+ */
+export function useResolveDirectoryNames(): (
+  ids: readonly (string | null | undefined)[],
+) => Promise<Map<string, DirectoryUser>> {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return async (ids) => {
+    const unique = [...new Set(ids.filter((id): id is string => !!id))];
+    const people = await Promise.all(
+      unique.map((id) =>
+        queryClient.query({
+          queryKey: queryKeys.directoryName(id),
+          queryFn: () => loaderFor(client).load(id),
+          staleTime: DIRECTORY_NAME_STALE_MS,
+        }),
+      ),
+    );
+    return new Map(
+      people.flatMap((person): [string, DirectoryUser][] => (person ? [[person.id, person]] : [])),
+    );
+  };
 }

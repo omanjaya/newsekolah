@@ -16,9 +16,12 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("../../discipline/api", () => ({ useViolationsQuery: mocks.useViolationsQuery }));
 vi.mock("../../reference/api", () => ({
-  useDirectoryQuery: () => ({ data: { data: [] }, isLoading: false }),
   useLookup: () => new Map(),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([]);
+});
 
 import { HomeroomDisciplineTab } from "./homeroom-discipline-tab";
 

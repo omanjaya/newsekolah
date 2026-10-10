@@ -17,14 +17,14 @@ vi.mock("next/navigation", () => ({
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { id: "me", tenant: { timezone: "Asia/Jakarta" } } }),
 }));
-vi.mock("../../reference/api", () => ({
-  useDirectoryQuery: () => ({
-    data: { data: [{ id: "user-1", name: "Budi" }] },
-    isLoading: false,
-  }),
-  useLookup: (items: { id: string; name: string }[] | undefined) =>
-    new Map((items ?? []).map((item) => [item.id, item])),
-}));
+vi.mock("../../reference/components/directory-picker", async () => {
+  const { directoryPickerStubModule } = await import("../../../test/directory-picker-stub");
+  return directoryPickerStubModule;
+});
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([{ id: "user-1", name: "Budi" }]);
+});
 vi.mock("../api", () => ({
   useAuditLogsQuery: mocks.useAuditLogsQuery,
 }));
@@ -38,17 +38,20 @@ describe("AuditLogsView filters", () => {
     window.history.replaceState(null, "", "/audit");
   });
 
-  it("passes the chosen actor to the audit logs query and writes it to the URL", async () => {
+  it("passes the chosen actor to the audit logs query, writes it to the URL and clears it", async () => {
     const user = userEvent.setup();
     render(<AuditLogsView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.actor" }));
-    await user.click(await screen.findByRole("button", { name: "Budi" }));
+    await user.click(screen.getByRole("combobox", { name: "filters.actorAll" }));
 
     expect(mocks.useAuditLogsQuery).toHaveBeenLastCalledWith(
-      expect.objectContaining({ actorUserId: "user-1" }),
+      expect.objectContaining({ actorUserId: "picked-1" }),
     );
-    expect(new URLSearchParams(window.location.search).get("actor")).toBe("user-1");
+    expect(new URLSearchParams(window.location.search).get("actor")).toBe("picked-1");
+
+    await user.click(screen.getByRole("button", { name: "filters.clearActor" }));
+
+    expect(new URLSearchParams(window.location.search).get("actor")).toBeFalsy();
   });
 
   it("passes the chosen entity type to the audit logs query and writes it to the URL", async () => {

@@ -1,7 +1,16 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Avatar, Badge, Button, Checkbox, Input, Textarea, useToast } from "@newsekolah/ui";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Checkbox,
+  Input,
+  Textarea,
+  useDebouncedCallback,
+  useToast,
+} from "@newsekolah/ui";
 import { TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -9,7 +18,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { businessNow } from "../../../lib/simulation/clock";
-import { useDirectoryQuery } from "../../reference/api";
+import { useDirectoryNames, useDirectorySearch } from "../../reference/directory-names";
 import {
   type ViolationRecordResult,
   useRecordViolationMutation,
@@ -20,6 +29,8 @@ import { computePointsPreview } from "../lib/points-preview";
 
 const MAX_TYPES = 50;
 const MAX_STUDENTS = 50;
+const STUDENT_RESULTS = 30;
+const SEARCH_DEBOUNCE_MS = 300;
 
 function today(): string {
   return businessNow().toISOString().slice(0, 10);
@@ -41,11 +52,12 @@ export function ViolationRecordForm({
   const t = useTranslations("app.discipline.violations.form");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const students = useDirectoryQuery("student");
   const types = useViolationTypesQuery();
   const record = useRecordViolationMutation();
 
   const [studentSearch, setStudentSearch] = useState("");
+  const [studentQuery, setStudentQuery] = useState("");
+  const debounceStudentQuery = useDebouncedCallback(setStudentQuery, SEARCH_DEBOUNCE_MS);
   const [studentIds, setStudentIds] = useState<string[]>([]);
   const [typeSearch, setTypeSearch] = useState("");
   const [typeIds, setTypeIds] = useState<string[]>([]);
@@ -55,13 +67,15 @@ export function ViolationRecordForm({
 
   const preview = usePointsPreviewQuery(studentIds);
 
-  const allStudents = useMemo(() => students.data?.data ?? [], [students.data]);
-  const studentMap = useMemo(() => new Map(allStudents.map((s) => [s.id, s])), [allStudents]);
-  const visibleStudents = useMemo(() => {
-    const query = studentSearch.trim().toLowerCase();
-    if (!query) return allStudents.slice(0, 30);
-    return allStudents.filter((s) => s.name.toLowerCase().includes(query)).slice(0, 30);
-  }, [allStudents, studentSearch]);
+  // Search on the server; the picked students' names come from the same
+  // cache the search results are written to.
+  const found = useDirectorySearch({
+    profileKind: "student",
+    query: studentQuery,
+    limit: STUDENT_RESULTS,
+  });
+  const visibleStudents = found.data ?? [];
+  const studentMap = useDirectoryNames(studentIds);
 
   const activeTypes = useMemo(
     () => (types.data?.data ?? []).filter((type) => type.is_active),
@@ -169,6 +183,7 @@ export function ViolationRecordForm({
           value={studentSearch}
           onChange={(e) => {
             setStudentSearch(e.target.value);
+            debounceStudentQuery(e.target.value.trim());
           }}
           placeholder={t("studentSearchPlaceholder")}
           aria-label={t("studentSearchPlaceholder")}

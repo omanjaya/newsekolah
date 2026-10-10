@@ -11,7 +11,7 @@ import type { ReactElement } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { useCounselingQuery, useCounselingReportMutation } from "../api-counseling-extras";
 
 import { CounselingAttachments } from "./counseling-attachments";
@@ -32,11 +32,10 @@ export function CounselingDetailDialog({
   const { me } = useSession();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
   const detail = useCounselingQuery(counselingId ?? "", counselingId !== null);
   const report = useCounselingReportMutation();
   const note = detail.data;
+  const studentMap = useDirectoryNames([note?.student_user_id]);
   const isOwner = note !== undefined && note.counselor_user_id === me?.id;
 
   function printReport() {

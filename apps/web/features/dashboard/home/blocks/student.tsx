@@ -15,12 +15,8 @@ import { useMyGradesQuery } from "../../../grading/api";
 import { useMyLibraryProfileQuery } from "../../../library/me-api";
 import { useMyLeaveRequestsQuery } from "../../../permits/api";
 import { WorkflowStatusBadge } from "../../../permits/components/workflow-stepper";
-import {
-  useAllPeriodsQuery,
-  useLookup,
-  useSubjectsQuery,
-  useTeachersQuery,
-} from "../../../reference/api";
+import { useAllPeriodsQuery, useLookup, useSubjectsQuery } from "../../../reference/api";
+import { useDirectoryLookup } from "../../../reference/directory-names";
 import { useSchedulesQuery } from "../../../schedule/api";
 import {
   attendanceRate,
@@ -62,14 +58,12 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
   });
   const periods = useAllPeriodsQuery(active);
   const subjects = useSubjectsQuery(active);
-  const teachers = useTeachersQuery(active);
   const calendar = useMyCalendarQuery(active ? today.slice(0, 7) : "");
   const leaveRequests = useMyLeaveRequestsQuery(active);
   const grades = useMyGradesQuery(undefined, active);
   const library = useMyLibraryProfileQuery(active);
 
   const subjectMap = useLookup(subjects.data?.data);
-  const teacherMap = useLookup(teachers.data?.data);
 
   const periodsBySequence = useMemo(() => {
     const map = new Map<number, { starts_at: string; ends_at: string }>();
@@ -103,6 +97,12 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
     );
   }, [schedules.data, periodsBySequence, dayOfWeek]);
 
+  const teachers = useDirectoryLookup(
+    lessons.map((lesson) => lesson.teacherUserId),
+    active,
+  );
+  const teacherMap = teachers.names;
+
   if (!active) return EMPTY_BLOCK;
 
   const scheduleReady =
@@ -115,7 +115,7 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
     void schedules.refetch();
     void periods.refetch();
     void subjects.refetch();
-    void teachers.refetch();
+    teachers.refetch();
   };
 
   const currentOrNext = scheduleReady ? pickCurrentOrNext(lessons, nowMinutes) : undefined;

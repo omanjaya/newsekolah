@@ -25,7 +25,8 @@ import { useMemo, useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { printMemberCard, useMemberLoanHistoryQuery, useMemberReservationsQuery } from "../api";
 import {
   printLibraryClearanceLetter,
@@ -66,8 +67,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const member = useLibraryMemberQuery(userId);
   const memberTypes = useLibraryMemberTypesQuery();
   const memberTypeMap = useLookup(memberTypes.data?.data);
-  const directory = useDirectoryQuery();
-  const directoryMap = useLookup(directory.data?.data);
+  const directoryMap = useDirectoryNames([userId]);
   const loans = useMemberLoanHistoryQuery(userId);
   const reservations = useMemberReservationsQuery(userId);
   const violations = useMemberViolationsQuery(userId);

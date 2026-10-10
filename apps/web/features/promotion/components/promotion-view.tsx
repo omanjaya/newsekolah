@@ -25,7 +25,8 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { businessNow } from "../../../lib/simulation/clock";
 import { useAcademicYearsQuery } from "../../academic/api";
 import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type PromotionAction,
   type PromotionOverride,
@@ -75,8 +76,7 @@ export function PromotionView(): ReactElement {
   // Batch directory lookup instead of one GET /v1/users/{id} per row: a
   // school-wide plan can list ~900 students, so a per-row fetch would fire
   // ~900 requests and ~1800 Selects worth of re-render on every override.
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
+  const studentMap = useDirectoryNames((plan ?? []).map((item) => item.student_user_id));
 
   const preview = usePreviewPromotionMutation();
   const commit = useCommitPromotionMutation();
