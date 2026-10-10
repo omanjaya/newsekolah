@@ -5,6 +5,8 @@
 package platform
 
 import (
+	"log/slog"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 
@@ -37,20 +39,33 @@ type Dependencies struct {
 	// that encrypts a field uses (cmd/api/wire.go builds it once from
 	// config.EncryptionSecret()).
 	Sealer *crypto.Sealer
+	// Retention sets how long audit logs, login attempts and webhook
+	// deliveries are kept (zero fields disable a rule); built from config
+	// by cmd/api and cmd/worker.
+	Retention service.RetentionPolicy
+	// Logger receives the maintenance jobs' output; nil uses slog.Default.
+	Logger *slog.Logger
 }
 
 type Module struct {
 	Service *service.Service
-	Handler *transporthttp.PlatformHandler
+	// Maintenance runs the partition and retention jobs (RegisterJobs).
+	Maintenance *service.Maintenance
+	Handler     *transporthttp.PlatformHandler
 }
 
 func Register(deps Dependencies) *Module {
 	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Admin, deps.Jobs, deps.Storage, deps.Clock, deps.Mode, deps.Bucket, deps.Sealer)
-	return &Module{Service: svc, Handler: transporthttp.New(svc)}
+	maintenance := service.NewMaintenance(deps.Pool, repository.New(deps.Pool), deps.Clock, deps.Retention, deps.Logger)
+	return &Module{Service: svc, Maintenance: maintenance, Handler: transporthttp.New(svc)}
 }
 
-// RegisterJobs adds the module's export worker (jobs.go). There is no
-// periodic schedule: every run is enqueued explicitly by RequestExport.
-func (m *Module) RegisterJobs(workers *river.Workers) {
+// RegisterJobs adds the module's workers (jobs.go) and returns the periodic
+// schedule for the partition and retention maintenance jobs. Export runs
+// have no schedule: each is enqueued explicitly by RequestExport.
+func (m *Module) RegisterJobs(workers *river.Workers) []*river.PeriodicJob {
 	river.AddWorker(workers, &exportWorker{svc: m.Service})
+	river.AddWorker(workers, &ensurePartitionsWorker{maintenance: m.Maintenance})
+	river.AddWorker(workers, &runRetentionWorker{maintenance: m.Maintenance})
+	return maintenancePeriodicJobs()
 }

@@ -1,0 +1,1 @@
+drop index if exists ix_integration_webhook_deliveries_tenant_created;

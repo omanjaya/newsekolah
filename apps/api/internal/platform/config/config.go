@@ -116,6 +116,14 @@ type Config struct {
 	// avoid double-registering the same job kinds.
 	WorkerInline bool
 
+	// Data retention (platform.run_retention job). A value of 0 disables
+	// that rule. Audit logs are an accountability record, so the minimum
+	// when enabled is 12 months; docs/08-security.md states no retention
+	// period, docs/06-database-schema.md fixes login attempts at 90 days.
+	AuditLogRetentionMonths      int
+	LoginAttemptRetentionDays    int
+	WebhookDeliveryRetentionDays int
+
 	OTelExporterEndpoint string
 
 	SeedPassword string
@@ -284,6 +292,10 @@ func Load() (Config, error) {
 		errs = append(errs, "WORKER_INLINE (must be true or false)")
 	}
 
+	c.AuditLogRetentionMonths = retentionSetting(lookup, "AUDIT_LOG_RETENTION_MONTHS", 24, 12, &errs)
+	c.LoginAttemptRetentionDays = retentionSetting(lookup, "LOGIN_ATTEMPT_RETENTION_DAYS", 90, 7, &errs)
+	c.WebhookDeliveryRetentionDays = retentionSetting(lookup, "WEBHOOK_DELIVERY_RETENTION_DAYS", 30, 1, &errs)
+
 	if len(errs) > 0 {
 		return Config{}, fmt.Errorf("config: missing or invalid: %s", strings.Join(errs, ", "))
 	}
@@ -301,6 +313,22 @@ func lookup(name string) string {
 		}
 	}
 	return os.Getenv(name)
+}
+
+// retentionSetting parses a retention period: unset yields def, 0 disables
+// the rule, and any other value must be at least min (a floor that stops a
+// typo from purging a record far sooner than intended).
+func retentionSetting(lookup func(string) string, name string, def, min int, errs *[]string) int {
+	raw := lookup(name)
+	if raw == "" {
+		return def
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 0 || (n != 0 && n < min) {
+		*errs = append(*errs, fmt.Sprintf("%s (must be 0 to disable, or an integer of at least %d)", name, min))
+		return def
+	}
+	return n
 }
 
 func orDefault(v, def string) string {

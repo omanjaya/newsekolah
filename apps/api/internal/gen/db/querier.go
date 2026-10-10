@@ -1411,6 +1411,18 @@ type Querier interface {
 	PlatformActiveAcademicYearLabel(ctx context.Context, tenantID uuid.UUID) (string, error)
 	PlatformCountTenantUsers(ctx context.Context, tenantID uuid.UUID) (int64, error)
 	PlatformCreateExport(ctx context.Context, tenantID uuid.UUID) (TenantExport, error)
+	// cross-module write: login_attempts is owned by identity. Deletes at most
+	// sqlc.arg(batch_size) rows so a large backlog never holds one long
+	// transaction; the caller loops until fewer rows than the batch are deleted.
+	PlatformDeleteLoginAttemptsBefore(ctx context.Context, arg PlatformDeleteLoginAttemptsBeforeParams) (int64, error)
+	// cross-module write: integration_webhook_deliveries is owned by
+	// integrations. Pending deliveries are never deleted: they are still owed an
+	// attempt, however old.
+	PlatformDeleteWebhookDeliveriesBefore(ctx context.Context, arg PlatformDeleteWebhookDeliveriesBeforeParams) (int64, error)
+	PlatformDropExpiredPartitions(ctx context.Context, arg PlatformDropExpiredPartitionsParams) ([]string, error)
+	// Schema-level DDL helper (migrations/0123). Not tenant-scoped, runs outside
+	// any tenant transaction.
+	PlatformEnsureMonthlyPartition(ctx context.Context, arg PlatformEnsureMonthlyPartitionParams) (string, error)
 	PlatformExportAcademicYears(ctx context.Context, tenantID uuid.UUID) ([]PlatformExportAcademicYearsRow, error)
 	PlatformExportClasses(ctx context.Context, tenantID uuid.UUID) ([]PlatformExportClassesRow, error)
 	PlatformExportUsers(ctx context.Context, tenantID uuid.UUID) ([]PlatformExportUsersRow, error)
@@ -1418,6 +1430,9 @@ type Querier interface {
 	PlatformGetOperatorAlertSettings(ctx context.Context) (OperatorAlertSetting, error)
 	PlatformLastActivityAt(ctx context.Context, tenantID pgtype.UUID) (pgtype.Timestamptz, error)
 	PlatformListFeatureFlags(ctx context.Context, tenantID uuid.UUID) ([]PlatformListFeatureFlagsRow, error)
+	// Every tenant that can still hold data: retention applies to suspended and
+	// offboarding schools too, only deleted ones are gone.
+	PlatformListRetentionTenantIDs(ctx context.Context) ([]uuid.UUID, error)
 	PlatformListTenants(ctx context.Context) ([]Tenant, error)
 	PlatformUpdateExportStatus(ctx context.Context, arg PlatformUpdateExportStatusParams) (TenantExport, error)
 	PlatformUpdateOperatorAlertSettings(ctx context.Context, arg PlatformUpdateOperatorAlertSettingsParams) (OperatorAlertSetting, error)

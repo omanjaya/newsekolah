@@ -285,6 +285,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	platformDeps := platform.Dependencies{
 		Pool: pool, Admin: wiring.PlatformIdentity{Identity: identityModule.Service, Pool: pool}, Jobs: jobInserter,
 		Clock: clock.Real{}, Mode: cfg.TenancyMode, Bucket: cfg.S3Bucket, Sealer: sealer,
+		Retention: wiring.RetentionPolicy(cfg), Logger: logger,
 	}
 	if sharedStorage != nil {
 		platformDeps.Storage = wiring.PlatformStorage{Client: sharedStorage}
@@ -349,7 +350,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		periodic = append(periodic, announcementsModule.RegisterJobs(workers)...)
 		periodic = append(periodic, reportsModule.RegisterJobs(workers, wiring.ReportsEmailSender{Email: senders.Email}, logger)...)
 		periodic = append(periodic, libraryModule.RegisterJobs(workers, logger)...)
-		platformModule.RegisterJobs(workers)
+		periodic = append(periodic, platformModule.RegisterJobs(workers)...)
 		integrationsModule.RegisterJobs(workers, clock.Real{})
 		// analyticsModule needs attendance/discipline/grading already
 		// built, which cmd/worker does not construct today -- its
