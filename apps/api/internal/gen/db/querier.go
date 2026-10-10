@@ -1044,6 +1044,10 @@ type Querier interface {
 	ListCurrentPeriodScheduleCardsForAttendance(ctx context.Context, arg ListCurrentPeriodScheduleCardsForAttendanceParams) ([]ListCurrentPeriodScheduleCardsForAttendanceRow, error)
 	// DDC classes: platform-wide, read-only.
 	ListDDCClasses(ctx context.Context) ([]LibraryDdcClass, error)
+	// Id-to-name lookup for the directory endpoint: primary-key probes on users
+	// plus one-to-one joins on the profile primary keys, no status filter so
+	// records that point at a since-deactivated person still show a name.
+	ListDirectoryByIDs(ctx context.Context, arg ListDirectoryByIDsParams) ([]ListDirectoryByIDsRow, error)
 	ListDiscountsForFeeType(ctx context.Context, arg ListDiscountsForFeeTypeParams) ([]FeeDiscount, error)
 	ListDiscountsForStudent(ctx context.Context, arg ListDiscountsForStudentParams) ([]FeeDiscount, error)
 	ListDocumentTemplates(ctx context.Context, tenantID uuid.UUID) ([]DocumentTemplate, error)
