@@ -58,7 +58,7 @@ describe("ViolationsLedgerView filters", () => {
 
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ classId: "class-7b" }),
-      { limit: 50, offset: 0 },
+      { limit: 50, offset: 0, search: "" },
     );
     expect(new URLSearchParams(window.location.search).get("class_id")).toBe("class-7b");
   });
@@ -73,7 +73,7 @@ describe("ViolationsLedgerView filters", () => {
 
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ includeVoided: true }),
-      { limit: 50, offset: 0 },
+      { limit: 50, offset: 0, search: "" },
     );
     expect(new URLSearchParams(window.location.search).get("include_voided")).toBe("true");
   });
@@ -84,7 +84,7 @@ describe("ViolationsLedgerView filters", () => {
 
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ classId: "class-7a" }),
-      { limit: 50, offset: 0 },
+      { limit: 50, offset: 0, search: "" },
     );
     expect(screen.getByRole("button", { name: "filters.class: 7A" })).toBeInTheDocument();
   });
@@ -97,7 +97,7 @@ describe("ViolationsLedgerView filters", () => {
     await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ includeVoided: false }),
-      { limit: 50, offset: 0 },
+      { limit: 50, offset: 0, search: "" },
     );
     expect(new URLSearchParams(window.location.search).get("include_voided")).toBe("");
   });
@@ -114,7 +114,7 @@ describe("ViolationsLedgerView filters", () => {
 
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ from: "2026-09-01", to: "2026-09-15" }),
-      { limit: 50, offset: 0 },
+      { limit: 50, offset: 0, search: "" },
     );
     expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-09-01");
     expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-09-15");

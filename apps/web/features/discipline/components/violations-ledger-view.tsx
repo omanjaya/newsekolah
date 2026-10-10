@@ -77,10 +77,11 @@ export function ViolationsLedgerView(): ReactElement {
   const classes = useClassesQuery();
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
+  const [search, setSearch] = useUrlState<string>("ledger_q", () => true, "");
   const paging = useOffsetPage(PAGE_SIZE, "ledger_page");
   const { data, isLoading } = useViolationsQuery(
     { classId, from, to, includeVoided },
-    { limit: paging.limit, offset: paging.offset },
+    { limit: paging.limit, offset: paging.offset, search },
   );
   const issueLetter = useIssueWarningLetterMutation();
 
@@ -316,7 +317,9 @@ export function ViolationsLedgerView(): ReactElement {
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
-          globalFilter=""
+          globalFilter={search}
+          onGlobalFilterChange={paging.resetting(setSearch)}
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
           filtersLabels={{
             reset: t("filters.reset"),

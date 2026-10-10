@@ -1,5 +1,6 @@
 {
   "violations": {
+    "searchPlaceholder": "Search by name or NIS",
     "eyebrow": "Discipline",
     "title": "Violations",
     "tabs": {
@@ -146,6 +147,7 @@
     "saved": "Warning-letter policy saved"
   },
   "warningLetters": {
+    "searchPlaceholder": "Search by name or NIS",
     "eyebrow": "Discipline",
     "title": "Warning letters",
     "tabs": {
@@ -211,6 +213,7 @@
     }
   },
   "counseling": {
+    "searchPlaceholder": "Search by name or NIS",
     "eyebrow": "Discipline",
     "title": "Counseling",
     "add": "Log counseling",

@@ -1,5 +1,6 @@
 {
   "violations": {
+    "searchPlaceholder": "Cari nama atau NIS",
     "eyebrow": "Kesiswaan",
     "title": "Pelanggaran",
     "tabs": {
@@ -146,6 +147,7 @@
     "saved": "Kebijakan SP tersimpan"
   },
   "warningLetters": {
+    "searchPlaceholder": "Cari nama atau NIS",
     "eyebrow": "Kesiswaan",
     "title": "Surat peringatan",
     "tabs": {
@@ -211,6 +213,7 @@
     }
   },
   "counseling": {
+    "searchPlaceholder": "Cari nama atau NIS",
     "eyebrow": "Kesiswaan",
     "title": "Konseling",
     "add": "Catat konseling",

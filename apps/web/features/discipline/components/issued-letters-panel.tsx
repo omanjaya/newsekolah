@@ -45,10 +45,12 @@ export function IssuedLettersPanel(): ReactElement {
   const classes = useClassesQuery();
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
+  const [search, setSearch] = useUrlState<string>("letters_q", () => true, "");
   const paging = useOffsetPage(PAGE_SIZE, "letters_page");
   const { data, isLoading } = useWarningLettersQuery(classId || undefined, {
     limit: paging.limit,
     offset: paging.offset,
+    search,
   });
   const documentUrl = useWarningLetterDocumentUrlMutation();
 
@@ -141,7 +143,9 @@ export function IssuedLettersPanel(): ReactElement {
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
-          globalFilter=""
+          globalFilter={search}
+          onGlobalFilterChange={paging.resetting(setSearch)}
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
           filtersLabels={{
             reset: t("filters.reset"),

@@ -55,6 +55,7 @@ describe("IssuedLettersPanel filters", () => {
     expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith("class-7b", {
       limit: 50,
       offset: 0,
+      search: "",
     });
     expect(new URLSearchParams(window.location.search).get("class_id")).toBe("class-7b");
   });
@@ -66,6 +67,7 @@ describe("IssuedLettersPanel filters", () => {
     expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith("class-7a", {
       limit: 50,
       offset: 0,
+      search: "",
     });
     expect(screen.getByRole("button", { name: "filters.class: 7A" })).toBeInTheDocument();
   });
@@ -79,6 +81,7 @@ describe("IssuedLettersPanel filters", () => {
     expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith(undefined, {
       limit: 50,
       offset: 0,
+      search: "",
     });
     expect(new URLSearchParams(window.location.search).get("class_id")).toBe("");
   });
