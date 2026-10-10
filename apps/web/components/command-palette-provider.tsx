@@ -1,18 +1,22 @@
 "use client";
 
-import type { CommandPaletteGroup } from "@newsekolah/ui";
+import { domainIcons, type CommandPaletteGroup } from "@newsekolah/ui";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 
+import { studentProfileHref } from "../features/students/href";
+import { usePaletteStudentGroup } from "../features/students/lib/use-palette-student-group";
 import { groupNavigation } from "../lib/group-navigation";
 import { navigation, filterNavigation } from "../lib/navigation";
 import { confirmUnsavedChangesBeforeNavigation } from "../lib/navigation/use-unsaved-changes-protection";
 import { canOpenPath } from "../lib/navigation-permissions";
 import { consolidateNavigation } from "../lib/navigation-workspaces";
+import { quickActionHref } from "../lib/quick-actions";
 import { useSession } from "../lib/session/session-provider";
+import { useQuickActions } from "../lib/use-quick-actions";
 
 interface CommandPaletteContextValue {
   open: () => void;
@@ -41,7 +45,9 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
   const router = useRouter();
   const { me } = useSession();
   const t = useTranslations("app.shell.commandPalette");
+  const tQuick = useTranslations("app.quickActions");
   const tNav = useTranslations();
+  const quickActions = useQuickActions();
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -57,7 +63,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
     };
   }, []);
 
-  const groups: CommandPaletteGroup[] = useMemo(() => {
+  const pageGroups: CommandPaletteGroup[] = useMemo(() => {
     const can = (permission: string) => me?.permissions.includes(permission) ?? false;
     const authorizedItems = filterNavigation(
       navigation,
@@ -100,6 +106,64 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
     }));
   }, [me?.permissions, me?.profile_kind, me?.roles, me?.duties, router, tNav]);
 
+  const quickActionGroup: CommandPaletteGroup | null = useMemo(() => {
+    if (quickActions.length === 0) return null;
+    return {
+      heading: tQuick("group"),
+      items: quickActions.map((action) => ({
+        id: `quick-${action.id}`,
+        label: tQuick(`actions.${action.labelKey}`),
+        icon: <action.icon aria-hidden="true" />,
+        onSelect: () => {
+          if (!confirmUnsavedChangesBeforeNavigation()) return;
+          setIsOpen(false);
+          router.push(quickActionHref(action));
+        },
+      })),
+    };
+  }, [quickActions, router, tQuick]);
+
+  // Same right as the student-profile registry entry: no student request is
+  // made for a reader who could not open the page it leads to.
+  const canOpenStudentProfile = useMemo(
+    () =>
+      canOpenPath(
+        studentProfileHref("search"),
+        (permission) => me?.permissions.includes(permission) ?? false,
+        me?.profile_kind,
+        (me?.roles ?? []).map((role) => role.slug),
+      ),
+    [me?.permissions, me?.profile_kind, me?.roles],
+  );
+  const studentIcon = useMemo(() => <domainIcons.users aria-hidden="true" />, []);
+  const openStudent = useCallback(
+    (studentId: string) => {
+      if (!confirmUnsavedChangesBeforeNavigation()) return;
+      setIsOpen(false);
+      router.push(studentProfileHref(studentId));
+    },
+    [router],
+  );
+  const students = usePaletteStudentGroup({
+    enabled: hasOpened && isOpen && canOpenStudentProfile,
+    heading: tQuick("students"),
+    icon: studentIcon,
+    onSelect: openStudent,
+  });
+  const resetStudentSearch = students.reset;
+  useEffect(() => {
+    if (!isOpen) resetStudentSearch();
+  }, [isOpen, resetStudentSearch]);
+
+  const groups = useMemo(
+    () => [
+      ...(students.group ? [students.group] : []),
+      ...(quickActionGroup ? [quickActionGroup] : []),
+      ...pageGroups,
+    ],
+    [students.group, quickActionGroup, pageGroups],
+  );
+
   const open = useCallback(() => {
     setHasOpened(true);
     setIsOpen(true);
@@ -117,6 +181,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
           open={isOpen}
           onOpenChange={setIsOpen}
           groups={groups}
+          onSearchChange={students.onSearchChange}
           placeholder={t("placeholder")}
           label={t("trigger")}
           emptyLabel={t("empty")}

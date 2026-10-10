@@ -61,6 +61,8 @@ import platformEn from "./platform.en.json";
 import platformId from "./platform.id.json";
 import promotionEn from "./promotion.en.json";
 import promotionId from "./promotion.id.json";
+import quickActionsEn from "./quickActions.en.json";
+import quickActionsId from "./quickActions.id.json";
 import reportExportEn from "./reportExport.en.json";
 import reportExportId from "./reportExport.id.json";
 import reportsEn from "./reports.en.json";
@@ -152,6 +154,7 @@ registerFeatureMessages({
 registerFeatureMessages({ namespace: "visitors", id: visitorsId, en: visitorsEn });
 registerFeatureMessages({ namespace: "mentoring", id: mentoringId, en: mentoringEn });
 registerFeatureMessages({ namespace: "scan", id: scanId, en: scanEn });
+registerFeatureMessages({ namespace: "quickActions", id: quickActionsId, en: quickActionsEn });
 registerFeatureMessages({ namespace: "supervision", id: supervisionId, en: supervisionEn });
 registerFeatureMessages({ namespace: "inbox", id: inboxId, en: inboxEn });
 registerFeatureMessages({ namespace: "bell", id: bellId, en: bellEn });
