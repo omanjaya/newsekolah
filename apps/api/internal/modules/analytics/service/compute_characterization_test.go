@@ -23,9 +23,10 @@ import (
 type charStudent struct {
 	name string
 	// absentDays are the day-of-month numbers (of every month) on which the
-	// attendance module reports "absent" for a weekday; otherwise a weekday
-	// is "H" and a weekend day is "NONE", the way attendance's calendar
-	// reports them.
+	// attendance module reports alfa for a weekday; otherwise a weekday is
+	// present and a weekend day has no school, the way attendance's calendar
+	// reports them. The fake keeps answering for dates after charNow, so a
+	// window that wrongly reached into the future would show up.
 	absentDays map[int]bool
 	// attendanceFails makes the attendance read fail for the student.
 	attendanceFails bool
@@ -74,14 +75,14 @@ func charByID(students []charStudent) map[uuid.UUID]charStudent {
 
 // charDay is the status the attendance module's calendar reports for the
 // student on date.
-func charDay(s charStudent, date time.Time) string {
+func charDay(s charStudent, date time.Time) DayOutcome {
 	if date.Weekday() == time.Saturday || date.Weekday() == time.Sunday {
-		return "NONE"
+		return DayNoSchool
 	}
 	if s.absentDays[date.Day()] {
-		return "absent"
+		return DayAbsent
 	}
-	return "H"
+	return DayNotAbsent
 }
 
 // charCase is one golden entry: the policy it ran under and the student.
@@ -145,7 +146,7 @@ func (a charAttendance) DayStatuses(_ context.Context, _ uuid.UUID, studentIDs [
 			continue
 		}
 		for _, d := range dates {
-			out = append(out, StudentDayStatus{StudentUserID: id, Date: d, StatusCode: charDay(s, d)})
+			out = append(out, StudentDayStatus{StudentUserID: id, Date: d, Outcome: charDay(s, d)})
 		}
 	}
 	return out, nil

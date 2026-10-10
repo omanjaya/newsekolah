@@ -33,3 +33,9 @@ select exists (
   where da.tenant_id = $1 and da.academic_year_id = $2 and da.user_id = $3 and dt.slug = $4
     and da.is_active and dt.is_active and dt.deleted_at is null
 );
+
+-- name: AnalyticsGetTenantTimezone :one
+-- cross-module read: the tenant IANA timezone decides which calendar date
+-- "today" is for the attendance window, mirroring attendance's
+-- GetTenantTimezoneForAttendance.
+select timezone from tenants where id = $1;

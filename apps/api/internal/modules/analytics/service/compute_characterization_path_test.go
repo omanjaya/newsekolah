@@ -24,5 +24,5 @@ func charSignals(t *testing.T, students []charStudent, policy domain.Policy, now
 	for i, s := range students {
 		ids[i] = charIDFor(s.name)
 	}
-	return svc.buildSignals(context.Background(), uuid.Nil, ids, policy, now)
+	return svc.buildSignals(context.Background(), uuid.Nil, ids, policy, localToday(now, time.UTC))
 }

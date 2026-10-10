@@ -33,10 +33,11 @@ type AcademicYearReader interface {
 // so one nightly run costs a handful of queries per batch instead of
 // several per student.
 type AttendanceReader interface {
-	// DayStatuses returns, for every given student and date, the daily
-	// status attendance's own student calendar shows for that day: a
-	// recorded status code, or one of attendance's pseudo-codes (for
-	// example "NONE" for a day with no scheduled session).
+	// DayStatuses returns, for every given student and date, how that day
+	// went for the student according to attendance's own daily status
+	// (the one its student calendar shows), reduced to the DayOutcome the
+	// early-warning rule needs. The adapter owns the mapping from
+	// attendance's status codes, so this module never repeats one.
 	DayStatuses(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID, dates []time.Time) ([]StudentDayStatus, error)
 	// TodaySubmittedCount backs the admin dashboard's attendance-progress
 	// figure: how many classes with a session running right now have
@@ -44,12 +45,34 @@ type AttendanceReader interface {
 	TodaySubmittedCount(ctx context.Context, tenantID uuid.UUID) (submitted, total int, err error)
 }
 
-// StudentDayStatus is one student's attendance status on one calendar day,
-// as attendance's own daily summary computes it.
+// DayOutcome is what one calendar day contributes to the attendance signal.
+// The zero value is DayNoSchool, so a day an adapter says nothing about
+// never counts for or against a student.
+type DayOutcome int
+
+const (
+	// DayNoSchool: the student had no scheduled session (weekend, holiday,
+	// not enrolled yet). Not a school day, so it is not in the window.
+	DayNoSchool DayOutcome = iota
+	// DayUnrecorded: sessions were scheduled but attendance is not
+	// recorded yet (unsubmitted) or cannot be summarized. The outcome is
+	// unknown, so the day is neither considered nor absent and does not
+	// use up a place in the window.
+	DayUnrecorded
+	// DayNotAbsent: attendance was recorded and the student was present, or
+	// absent with a reason (sick, permission, dispensation). A considered
+	// day that is not counted as an absence.
+	DayNotAbsent
+	// DayAbsent: attendance was recorded as an unexcused absence (alfa).
+	DayAbsent
+)
+
+// StudentDayStatus is one student's outcome on one calendar day, as
+// attendance's own daily summary computes it.
 type StudentDayStatus struct {
 	StudentUserID uuid.UUID
 	Date          time.Time
-	StatusCode    string
+	Outcome       DayOutcome
 }
 
 // DisciplineReader is a wiring adapter over the discipline module's own
@@ -144,6 +167,9 @@ type StoredResult struct {
 // not one of the three signals this module composes through adapters).
 type Repository interface {
 	ListActiveTenants(ctx context.Context) ([]uuid.UUID, error)
+	// GetTenantTimezone returns the tenant's IANA timezone name, which
+	// decides the calendar date "today" is for the attendance window.
+	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
 	ListActiveStudents(ctx context.Context, tenantID, academicYearID uuid.UUID) ([]StudentRef, error)
 	GetHomeroomClassID(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID) (uuid.NullUUID, error)
 	HasActiveDuty(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, slug string) (bool, error)

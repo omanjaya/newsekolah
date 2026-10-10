@@ -181,6 +181,10 @@ type Querier interface {
 	AnalyticsGetHomeroomClassID(ctx context.Context, arg AnalyticsGetHomeroomClassIDParams) (pgtype.UUID, error)
 	AnalyticsGetLatestPolicy(ctx context.Context, tenantID uuid.UUID) (AnalyticsGetLatestPolicyRow, error)
 	AnalyticsGetStudentRisk(ctx context.Context, arg AnalyticsGetStudentRiskParams) (AnalyticsStudentRisk, error)
+	// cross-module read: the tenant IANA timezone decides which calendar date
+	// "today" is for the attendance window, mirroring attendance's
+	// GetTenantTimezoneForAttendance.
+	AnalyticsGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
 	// cross-module read: same slugs ("counselor", "leadership") discipline's
 	// counseling visibility already uses.
 	AnalyticsHasActiveDuty(ctx context.Context, arg AnalyticsHasActiveDutyParams) (bool, error)
