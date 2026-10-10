@@ -596,6 +596,22 @@ func (s *Service) StudentSummary(ctx context.Context, tenantID, studentID uuid.U
 	return out, err
 }
 
+// RiskTotalsForStudents is StudentSummary's counts (active violations,
+// active points, warning letters) for many students in one query, for the
+// nightly early-warning recompute. Every given student gets a row.
+func (s *Service) RiskTotalsForStudents(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID) ([]RiskTotals, error) {
+	var out []RiskTotals
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		yearID, err := s.activeYear(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		out, err = s.repo.ListRiskTotals(ctx, tenantID, yearID, studentIDs)
+		return err
+	})
+	return out, err
+}
+
 func (s *Service) PointTotals(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID, limit int) ([]PointTotal, error) {
 	if limit <= 0 || limit > 500 {
 		limit = 100

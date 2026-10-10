@@ -55,6 +55,7 @@ type Repository interface {
 	SetManualReportScore(ctx context.Context, tenantID, yearID, termID, classID, subjectID, studentID uuid.UUID, manual *float64, computedAt time.Time) (ReportScore, error)
 	ListReportScores(ctx context.Context, tenantID, termID, classID, subjectID uuid.UUID) ([]ReportScore, error)
 	ListReportScoresForStudent(ctx context.Context, tenantID, termID, studentID uuid.UUID) ([]ReportScore, error)
+	ListPublishedReportScores(ctx context.Context, tenantID, yearID, termID uuid.UUID, studentIDs []uuid.UUID) ([]PublishedReportScore, error)
 
 	ListGradeRanges(ctx context.Context, tenantID, yearID uuid.UUID) ([]domain.GradeRange, error)
 	CreateGradeRange(ctx context.Context, tenantID, yearID uuid.UUID, r domain.GradeRange) (domain.GradeRange, error)
@@ -131,6 +132,14 @@ type Publication struct {
 	SubjectID   uuid.UUID
 	IsPublished bool
 	PublishedAt *time.Time
+}
+
+// PublishedReportScore is one student's final report score in one subject,
+// for a subject whose grades the student may already see.
+type PublishedReportScore struct {
+	StudentUserID uuid.UUID
+	SubjectID     uuid.UUID
+	FinalScore    float64
 }
 
 type ReportScore struct {

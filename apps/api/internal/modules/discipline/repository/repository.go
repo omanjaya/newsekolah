@@ -209,6 +209,21 @@ func (r *Repository) SumActivePoints(ctx context.Context, tenantID, yearID, stud
 	return int(total), nil
 }
 
+func (r *Repository) ListRiskTotals(ctx context.Context, tenantID, yearID uuid.UUID, studentIDs []uuid.UUID) ([]service.RiskTotals, error) {
+	rows, err := r.queries(ctx).ListStudentRiskTotals(ctx, db.ListStudentRiskTotalsParams{TenantID: tenantID, AcademicYearID: yearID, StudentIds: studentIDs})
+	if err != nil {
+		return nil, fmt.Errorf("list risk totals: %w", err)
+	}
+	out := make([]service.RiskTotals, len(rows))
+	for i, row := range rows {
+		out[i] = service.RiskTotals{
+			StudentUserID: row.StudentUserID, ActiveViolations: int(row.ActiveViolations),
+			Points: int(row.TotalPoints), WarningLetters: int(row.WarningLetters),
+		}
+	}
+	return out, nil
+}
+
 func (r *Repository) ListPointTotals(ctx context.Context, tenantID, yearID uuid.UUID, classID uuid.NullUUID, limit int) ([]service.PointTotal, error) {
 	rows, err := r.queries(ctx).ListStudentPointTotals(ctx, db.ListStudentPointTotalsParams{
 		TenantID: tenantID, AcademicYearID: yearID, Limit: int32(limit), ClassID: pdatabase.NullUUID(classID), //nolint:gosec // clamped

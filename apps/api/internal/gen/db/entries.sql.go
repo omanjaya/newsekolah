@@ -241,6 +241,50 @@ func (q *Queries) ListEntryStatusesForStudentDate(ctx context.Context, arg ListE
 	return items, nil
 }
 
+const listEntryStatusesForStudentsDates = `-- name: ListEntryStatusesForStudentsDates :many
+select e.student_user_id, s.date, array_agg(e.status_code)::text[] as status_codes
+from attendance_entries e
+join attendance_sessions s on s.id = e.session_id
+where e.tenant_id = $1 and e.student_user_id = any($2::uuid[])
+  and s.date = any($3::date[]) and s.submitted_at is not null
+group by e.student_user_id, s.date
+`
+
+type ListEntryStatusesForStudentsDatesParams struct {
+	TenantID   uuid.UUID     `json:"tenant_id"`
+	StudentIds []uuid.UUID   `json:"student_ids"`
+	Dates      []pgtype.Date `json:"dates"`
+}
+
+type ListEntryStatusesForStudentsDatesRow struct {
+	StudentUserID uuid.UUID   `json:"student_user_id"`
+	Date          pgtype.Date `json:"date"`
+	StatusCodes   []string    `json:"status_codes"`
+}
+
+// Batch form of ListEntryStatusesForStudentDate: every status code recorded
+// for each (student, date) across that date's submitted sessions, the raw
+// input to attendance/domain.ComputeDailyStatus.
+func (q *Queries) ListEntryStatusesForStudentsDates(ctx context.Context, arg ListEntryStatusesForStudentsDatesParams) ([]ListEntryStatusesForStudentsDatesRow, error) {
+	rows, err := q.db.Query(ctx, listEntryStatusesForStudentsDates, arg.TenantID, arg.StudentIds, arg.Dates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListEntryStatusesForStudentsDatesRow{}
+	for rows.Next() {
+		var i ListEntryStatusesForStudentsDatesRow
+		if err := rows.Scan(&i.StudentUserID, &i.Date, &i.StatusCodes); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertAttendanceEntry = `-- name: UpsertAttendanceEntry :one
 insert into attendance_entries (tenant_id, session_id, student_user_id, status_code, source, notes, recorded_by)
 values ($1, $2, $3, $4, $5, $6, $7)

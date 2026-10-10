@@ -272,6 +272,51 @@ func (q *Queries) IssueLeaveRequest(ctx context.Context, arg IssueLeaveRequestPa
 	return i, err
 }
 
+const listIssuedLeaveCoveringDates = `-- name: ListIssuedLeaveCoveringDates :many
+select distinct on (wi.subject_user_id, d.day) wi.subject_user_id, d.day::date as day, lr.category
+from unnest($2::date[]) as d(day)
+join leave_requests lr on lr.tenant_id = $1 and lr.issued_at is not null
+  and lr.starts_on <= d.day and lr.ends_on >= d.day
+join workflow_instances wi on wi.id = lr.instance_id and wi.tenant_id = lr.tenant_id
+where wi.subject_user_id = any($3::uuid[])
+order by wi.subject_user_id, d.day, lr.issued_at desc
+`
+
+type ListIssuedLeaveCoveringDatesParams struct {
+	TenantID   uuid.UUID     `json:"tenant_id"`
+	Dates      []pgtype.Date `json:"dates"`
+	StudentIds []uuid.UUID   `json:"student_ids"`
+}
+
+type ListIssuedLeaveCoveringDatesRow struct {
+	SubjectUserID uuid.UUID   `json:"subject_user_id"`
+	Day           pgtype.Date `json:"day"`
+	Category      string      `json:"category"`
+}
+
+// Batch form of GetIssuedLeaveCoveringDate for attendance's tenant-level
+// jobs: for each (student, date) among the given ones, the category of the
+// latest issued letter covering the date. A pair no letter covers is absent.
+func (q *Queries) ListIssuedLeaveCoveringDates(ctx context.Context, arg ListIssuedLeaveCoveringDatesParams) ([]ListIssuedLeaveCoveringDatesRow, error) {
+	rows, err := q.db.Query(ctx, listIssuedLeaveCoveringDates, arg.TenantID, arg.Dates, arg.StudentIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListIssuedLeaveCoveringDatesRow{}
+	for rows.Next() {
+		var i ListIssuedLeaveCoveringDatesRow
+		if err := rows.Scan(&i.SubjectUserID, &i.Day, &i.Category); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLeaveDocuments = `-- name: ListLeaveDocuments :many
 select id, tenant_id, leave_request_id, kind, asset_id, created_by, created_at from leave_documents where tenant_id = $1 and leave_request_id = $2
 `

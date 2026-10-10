@@ -41,6 +41,7 @@ type Repository interface {
 	ListRecordsForStudent(ctx context.Context, tenantID, yearID, studentID uuid.UUID) ([]domain.ViolationRecord, error)
 	ListRecords(ctx context.Context, tenantID, yearID uuid.UUID, f RecordFilter) ([]domain.ViolationRecord, error)
 	SumActivePoints(ctx context.Context, tenantID, yearID, studentID uuid.UUID) (int, error)
+	ListRiskTotals(ctx context.Context, tenantID, yearID uuid.UUID, studentIDs []uuid.UUID) ([]RiskTotals, error)
 	ListPointTotals(ctx context.Context, tenantID, yearID uuid.UUID, classID uuid.NullUUID, limit int) ([]PointTotal, error)
 	ListActivePoints(ctx context.Context, tenantID, yearID uuid.UUID, classID uuid.NullUUID) ([]StudentPointRecord, error)
 	ListPointsPreview(ctx context.Context, tenantID, yearID uuid.UUID, studentIDs []uuid.UUID) ([]PointsPreviewEntry, error)
@@ -124,6 +125,15 @@ type RecordFilter struct {
 	IncludeVoided bool
 	Search        string // already normalised by SearchTerm
 	Limit, Offset int
+}
+
+// RiskTotals is one student's discipline standing this academic year: the
+// inputs of the early-warning risk score.
+type RiskTotals struct {
+	StudentUserID    uuid.UUID
+	ActiveViolations int
+	Points           int
+	WarningLetters   int
 }
 
 type PointTotal struct {

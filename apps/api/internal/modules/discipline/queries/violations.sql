@@ -134,3 +134,27 @@ select * from violation_attachments where tenant_id = $1 and violation_record_id
 
 -- name: GetViolationAttachment :one
 select * from violation_attachments where tenant_id = $1 and id = $2;
+
+-- name: ListStudentRiskTotals :many
+-- Batch form of the per-student discipline card the early-warning recompute
+-- reads (SumActivePoints, the active records and the warning letters): one
+-- row per given student with this year's active violation count, active
+-- points and issued warning letters, zero when there are none.
+select ids.student_user_id::uuid as student_user_id,
+  coalesce(v.active_violations, 0)::int as active_violations,
+  coalesce(v.total_points, 0)::int as total_points,
+  coalesce(l.letters, 0)::int as warning_letters
+from unnest(sqlc.arg(student_ids)::uuid[]) as ids(student_user_id)
+left join (
+  select vr.student_user_id, count(*) as active_violations, sum(vr.points_snapshot) as total_points
+  from violation_records vr
+  where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.student_user_id = any(sqlc.arg(student_ids)::uuid[])
+    and vr.voided_at is null
+  group by vr.student_user_id
+) v on v.student_user_id = ids.student_user_id
+left join (
+  select wl.student_user_id, count(*) as letters
+  from warning_letters wl
+  where wl.tenant_id = $1 and wl.academic_year_id = $2 and wl.student_user_id = any(sqlc.arg(student_ids)::uuid[])
+  group by wl.student_user_id
+) l on l.student_user_id = ids.student_user_id;

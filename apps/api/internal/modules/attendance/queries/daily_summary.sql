@@ -23,3 +23,12 @@ order by date;
 select ds.* from attendance_daily_summary ds
 join enrollments en on en.student_user_id = ds.student_user_id and en.academic_year_id = ds.academic_year_id
 where ds.tenant_id = $1 and ds.academic_year_id = $2 and en.class_id = $3 and ds.date = $4 and en.status = 'active';
+
+-- name: ListAttendanceDailySummaryForStudentsDates :many
+-- Batch form of ListAttendanceDailySummaryForStudentMonth for tenant-level
+-- jobs: the materialized daily status of many students on a set of dates.
+select student_user_id, date, status_code
+from attendance_daily_summary
+where tenant_id = $1 and academic_year_id = $2
+  and student_user_id = any(sqlc.arg(student_ids)::uuid[])
+  and date = any(sqlc.arg(dates)::date[]);

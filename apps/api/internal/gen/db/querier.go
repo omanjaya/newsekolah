@@ -196,6 +196,11 @@ type Querier interface {
 	// sqlc.narg('class_id') left null lists every class (counselor/leadership scope).
 	AnalyticsListStudentRisk(ctx context.Context, arg AnalyticsListStudentRiskParams) ([]AnalyticsStudentRisk, error)
 	AnalyticsUpsertStudentRisk(ctx context.Context, arg AnalyticsUpsertStudentRiskParams) error
+	// Bulk form of AnalyticsUpsertStudentRisk: one row per element of
+	// student_user_ids, the other arrays being parallel to it, all sharing the
+	// tenant, academic year, policy version and computed_at. class_ids is text so a student with no class can be sent as
+	// an empty string; signals and reasons are JSON text.
+	AnalyticsUpsertStudentRiskBatch(ctx context.Context, arg AnalyticsUpsertStudentRiskBatchParams) error
 	ArchiveUser(ctx context.Context, arg ArchiveUserParams) error
 	AssignUserRole(ctx context.Context, arg AssignUserRoleParams) error
 	AverageVisitMinutesInRange(ctx context.Context, arg AverageVisitMinutesInRangeParams) (float64, error)
@@ -296,12 +301,20 @@ type Querier interface {
 	CountOverdueNow(ctx context.Context, arg CountOverdueNowParams) (int32, error)
 	CountPartnerUsage(ctx context.Context, arg CountPartnerUsageParams) (int32, error)
 	CountReturnsBetween(ctx context.Context, arg CountReturnsBetweenParams) (int32, error)
+	// Batch form of CountSchedulesForClassDay for the analytics recompute: the
+	// expected-session count of every (class, weekday) pair among the given
+	// classes in one query. A pair with no schedule is absent (count 0).
+	CountSchedulesByClassDay(ctx context.Context, arg CountSchedulesByClassDayParams) ([]CountSchedulesByClassDayRow, error)
 	// Read by the attendance module to compute a day's expected session count
 	// for a class (attendance/domain.ComputeDailyStatus's Expected input).
 	CountSchedulesForClassDay(ctx context.Context, arg CountSchedulesForClassDayParams) (int64, error)
 	CountStillOnCampusInRange(ctx context.Context, arg CountStillOnCampusInRangeParams) (int32, error)
 	CountStocktakeScans(ctx context.Context, arg CountStocktakeScansParams) (int32, error)
 	CountSubmittedSessionsByClassDate(ctx context.Context, arg CountSubmittedSessionsByClassDateParams) (int64, error)
+	// Batch form of CountSubmittedSessionsByClassDate: how many of each
+	// (class, date)'s sessions have been submitted. A pair with no session at
+	// all is absent from the result (count 0).
+	CountSubmittedSessionsByClassesDates(ctx context.Context, arg CountSubmittedSessionsByClassesDatesParams) ([]CountSubmittedSessionsByClassesDatesRow, error)
 	CountTitleCopies(ctx context.Context, arg CountTitleCopiesParams) (int32, error)
 	// Library dashboard: counts, recent activity, and a 30-day series. Member
 	// and visit counts come from CountMembersTotal/CountActiveMembersTotal
@@ -963,6 +976,9 @@ type Querier interface {
 	// logic (SPPolicy.FirstCrossedDates) drives both the API summary and the
 	// exported report.
 	ListActivePointsByYear(ctx context.Context, arg ListActivePointsByYearParams) ([]ListActivePointsByYearRow, error)
+	// Every weekday flagged as a school day this academic year; the batch form
+	// of scheduling's IsSchoolDayRef (a weekday with no row is not a school day).
+	ListActiveSchoolDaysForAttendance(ctx context.Context, arg ListActiveSchoolDaysForAttendanceParams) ([]int16, error)
 	ListActiveSessionsForUser(ctx context.Context, arg ListActiveSessionsForUserParams) ([]Session, error)
 	// cross-module read: classes/enrollments tables are owned by the academic
 	// module. Not yet migrated in this branch; type-checked here against
@@ -1006,6 +1022,9 @@ type Querier interface {
 	ListAnnouncementsForAdmin(ctx context.Context, arg ListAnnouncementsForAdminParams) ([]Announcement, error)
 	ListAttendanceDailySummaryForClassDate(ctx context.Context, arg ListAttendanceDailySummaryForClassDateParams) ([]AttendanceDailySummary, error)
 	ListAttendanceDailySummaryForStudentMonth(ctx context.Context, arg ListAttendanceDailySummaryForStudentMonthParams) ([]AttendanceDailySummary, error)
+	// Batch form of ListAttendanceDailySummaryForStudentMonth for tenant-level
+	// jobs: the materialized daily status of many students on a set of dates.
+	ListAttendanceDailySummaryForStudentsDates(ctx context.Context, arg ListAttendanceDailySummaryForStudentsDatesParams) ([]ListAttendanceDailySummaryForStudentsDatesRow, error)
 	ListAttendanceForClub(ctx context.Context, arg ListAttendanceForClubParams) ([]ExtracurricularAttendance, error)
 	ListAttendanceForMeeting(ctx context.Context, arg ListAttendanceForMeetingParams) ([]ExtracurricularAttendance, error)
 	ListAttendanceSessionsByClassDate(ctx context.Context, arg ListAttendanceSessionsByClassDateParams) ([]AttendanceSession, error)
@@ -1077,6 +1096,10 @@ type Querier interface {
 	// Schedule.IsDueAt) since the day-of-month clamp for short months is not
 	// expressible as a plain column comparison.
 	ListEnabledReportSchedulesForHour(ctx context.Context, arg ListEnabledReportSchedulesForHourParams) ([]ReportSchedule, error)
+	// Batch form of GetEnrolledClassForAttendance: the class each given student
+	// is actively enrolled in this academic year (at most one per student,
+	// ux_active_enrollment).
+	ListEnrolledClassesForAttendance(ctx context.Context, arg ListEnrolledClassesForAttendanceParams) ([]ListEnrolledClassesForAttendanceRow, error)
 	ListEntriesBySession(ctx context.Context, arg ListEntriesBySessionParams) ([]AttendanceEntry, error)
 	// Batch read behind the daily report: every entry of every given session
 	// with the student's display name, in one round trip instead of one entries
@@ -1085,6 +1108,10 @@ type Querier interface {
 	// Every status code recorded for one student across the given date's
 	// submitted sessions -- the raw input to attendance/domain.ComputeDailyStatus.
 	ListEntryStatusesForStudentDate(ctx context.Context, arg ListEntryStatusesForStudentDateParams) ([]string, error)
+	// Batch form of ListEntryStatusesForStudentDate: every status code recorded
+	// for each (student, date) across that date's submitted sessions, the raw
+	// input to attendance/domain.ComputeDailyStatus.
+	ListEntryStatusesForStudentsDates(ctx context.Context, arg ListEntryStatusesForStudentsDatesParams) ([]ListEntryStatusesForStudentsDatesRow, error)
 	// Missing feature (docs/analysis/backend-inventory.md 1.15): a queue for
 	// the counselor/leadership approval stages (the duty_teacher/class_teacher
 	// stages are QR-scan only, same as the old app -- no listing needed there)
@@ -1103,6 +1130,10 @@ type Querier interface {
 	// service hides subjects whose publication is still off.
 	ListGradesForStudent(ctx context.Context, arg ListGradesForStudentParams) ([]ListGradesForStudentRow, error)
 	ListIncidents(ctx context.Context, arg ListIncidentsParams) ([]VisitorIncident, error)
+	// Batch form of GetIssuedLeaveCoveringDate for attendance's tenant-level
+	// jobs: for each (student, date) among the given ones, the category of the
+	// latest issued letter covering the date. A pair no letter covers is absent.
+	ListIssuedLeaveCoveringDates(ctx context.Context, arg ListIssuedLeaveCoveringDatesParams) ([]ListIssuedLeaveCoveringDatesRow, error)
 	ListItemEvents(ctx context.Context, arg ListItemEventsParams) ([]LibraryItemEvent, error)
 	ListItemEventsForCopy(ctx context.Context, arg ListItemEventsForCopyParams) ([]LibraryItemEvent, error)
 	ListJournalsByClass(ctx context.Context, arg ListJournalsByClassParams) ([]ClassJournal, error)
@@ -1206,6 +1237,12 @@ type Querier interface {
 	// pattern (attendance/queries/entries.sql). A student absent from the
 	// result has zero points and no issued levels.
 	ListPointsPreviewForStudents(ctx context.Context, arg ListPointsPreviewForStudentsParams) ([]ListPointsPreviewForStudentsRow, error)
+	// Batch form of what a student's own grades view sums for one term: the
+	// final report score of every subject the student has at least one grade in
+	// and whose grades their active-enrollment class may already see
+	// (published), for many students at once. Ordered by student then subject,
+	// the order the single-student view accumulates in.
+	ListPublishedReportScoresForStudents(ctx context.Context, arg ListPublishedReportScoresForStudentsParams) ([]ListPublishedReportScoresForStudentsRow, error)
 	ListPublishedSubjectsForClass(ctx context.Context, arg ListPublishedSubjectsForClassParams) ([]uuid.UUID, error)
 	ListPushDevicesForUser(ctx context.Context, arg ListPushDevicesForUserParams) ([]PushDevice, error)
 	ListPushDevicesForUsers(ctx context.Context, arg ListPushDevicesForUsersParams) ([]PushDevice, error)
@@ -1269,6 +1306,11 @@ type Querier interface {
 	ListStudentNISNs(ctx context.Context, tenantID uuid.UUID) ([]ListStudentNISNsRow, error)
 	// Points per student in a class this year, for the homeroom and counselor overview.
 	ListStudentPointTotals(ctx context.Context, arg ListStudentPointTotalsParams) ([]ListStudentPointTotalsRow, error)
+	// Batch form of the per-student discipline card the early-warning recompute
+	// reads (SumActivePoints, the active records and the warning letters): one
+	// row per given student with this year's active violation count, active
+	// points and issued warning letters, zero when there are none.
+	ListStudentRiskTotals(ctx context.Context, arg ListStudentRiskTotalsParams) ([]ListStudentRiskTotalsRow, error)
 	// The manage_schedules-only "all" scope (docs/analysis/backend-inventory.md
 	// section 1.13): every substitution request tenant-wide, optionally
 	// narrowed to one status.

@@ -47,3 +47,12 @@ order by start_seq;
 -- for a class (attendance/domain.ComputeDailyStatus's Expected input).
 select count(*)::bigint from schedules
 where tenant_id = $1 and academic_year_id = $2 and class_id = $3 and day_of_week = $4;
+
+-- name: CountSchedulesByClassDay :many
+-- Batch form of CountSchedulesForClassDay for the analytics recompute: the
+-- expected-session count of every (class, weekday) pair among the given
+-- classes in one query. A pair with no schedule is absent (count 0).
+select class_id, day_of_week, count(*)::bigint as total
+from schedules
+where tenant_id = $1 and academic_year_id = $2 and class_id = any(sqlc.arg(class_ids)::uuid[])
+group by class_id, day_of_week;
