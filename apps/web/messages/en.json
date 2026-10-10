@@ -3,11 +3,13 @@
     "navigation": {
       "students": "Student Affairs",
       "staff": "Staff",
+      "duty": "Duty & Gate",
       "administration": "Administration",
       "masterData": "School Data",
       "users": "School users"
     },
     "shell": {
+      "navBadge": "{count} waiting",
       "appearance": "Appearance",
       "commandPalette": {
         "trigger": "Search pages or actions",
@@ -826,7 +828,18 @@
       "noHomeroomTitle": "You are not a homeroom teacher yet",
       "noHomeroomBody": "This page shows the daily summary of the class you supervise.",
       "emptyTitle": "No students yet",
-      "emptyBody": "Students enrolled in this class will show up here."
+      "emptyBody": "Students enrolled in this class will show up here.",
+      "tabs": {
+        "overview": "Overview",
+        "attendance": "Class attendance",
+        "permits": "Permits",
+        "discipline": "Discipline",
+        "parents": "Parents"
+      },
+      "exitPermitsTitle": "Exit permits awaiting approval",
+      "exitPermitsEmpty": "No exit permits are waiting.",
+      "unknownStudent": "Student",
+      "pointsBadge": "{points} points"
     },
     "substitutions": {
       "eyebrow": "Academic",

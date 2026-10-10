@@ -107,6 +107,18 @@ export function NavLink({
         >
           {label}
         </span>
+        {item.badgeCount ? (
+          <span
+            className={cn(
+              "ml-auto inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-semibold text-accent-fg tabular-nums",
+              // The rail hides labels, so the count shrinks to a dot on the icon.
+              rail && "absolute top-1 right-1 size-2 min-w-0 p-0 text-[0px]",
+            )}
+            aria-label={t("app.shell.navBadge", { count: item.badgeCount })}
+          >
+            {item.badgeCount > 99 ? "99+" : item.badgeCount}
+          </span>
+        ) : null}
       </Link>
     </RailLabel>
   );

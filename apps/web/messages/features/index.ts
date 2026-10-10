@@ -19,6 +19,8 @@ import attendanceReportsEn from "./attendanceReports.en.json";
 import attendanceReportsId from "./attendanceReports.id.json";
 import auditEn from "./audit.en.json";
 import auditId from "./audit.id.json";
+import bellEn from "./bell.en.json";
+import bellId from "./bell.id.json";
 import billingEn from "./billing.en.json";
 import billingId from "./billing.id.json";
 import calendarEn from "./calendar.en.json";
@@ -45,6 +47,8 @@ import journalEn from "./journal.en.json";
 import journalId from "./journal.id.json";
 import libraryEn from "./library.en.json";
 import libraryId from "./library.id.json";
+import librarySettingsEn from "./librarySettings.en.json";
+import librarySettingsId from "./librarySettings.id.json";
 import mentoringEn from "./mentoring.en.json";
 import mentoringId from "./mentoring.id.json";
 import messagingEn from "./messaging.en.json";
@@ -61,14 +65,20 @@ import reportExportEn from "./reportExport.en.json";
 import reportExportId from "./reportExport.id.json";
 import reportsEn from "./reports.en.json";
 import reportsId from "./reports.id.json";
+import scanEn from "./scan.en.json";
+import scanId from "./scan.id.json";
 import securityEn from "./security.en.json";
 import securityId from "./security.id.json";
 import serviceWorkspaceEn from "./service-workspace.en.json";
 import serviceWorkspaceId from "./service-workspace.id.json";
+import settingsHubEn from "./settingsHub.en.json";
+import settingsHubId from "./settingsHub.id.json";
 import ssoEn from "./sso.en.json";
 import ssoId from "./sso.id.json";
 import staffAttendanceEn from "./staffAttendance.en.json";
 import staffAttendanceId from "./staffAttendance.id.json";
+import studentProfileEn from "./studentProfile.en.json";
+import studentProfileId from "./studentProfile.id.json";
 import supervisionEn from "./supervision.en.json";
 import supervisionId from "./supervision.id.json";
 import visitorsEn from "./visitors.en.json";
@@ -141,5 +151,18 @@ registerFeatureMessages({
 });
 registerFeatureMessages({ namespace: "visitors", id: visitorsId, en: visitorsEn });
 registerFeatureMessages({ namespace: "mentoring", id: mentoringId, en: mentoringEn });
+registerFeatureMessages({ namespace: "scan", id: scanId, en: scanEn });
 registerFeatureMessages({ namespace: "supervision", id: supervisionId, en: supervisionEn });
 registerFeatureMessages({ namespace: "inbox", id: inboxId, en: inboxEn });
+registerFeatureMessages({ namespace: "bell", id: bellId, en: bellEn });
+registerFeatureMessages({
+  namespace: "studentProfile",
+  id: studentProfileId,
+  en: studentProfileEn,
+});
+registerFeatureMessages({ namespace: "settingsHub", id: settingsHubId, en: settingsHubEn });
+registerFeatureMessages({
+  namespace: "librarySettings",
+  id: librarySettingsId,
+  en: librarySettingsEn,
+});

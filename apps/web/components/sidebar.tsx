@@ -7,9 +7,9 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useRef, useState } from "react";
 
+import { splitSidebarGroups } from "../lib/group-navigation";
 import type { NavItem } from "../lib/navigation";
 import { activeNavHref } from "../lib/navigation/active-href";
-import { navGroupOrder } from "../lib/navigation-groups";
 
 import { GroupFlyout, NavLink, RailLabel } from "./sidebar-nav";
 import { TenantBrand } from "./tenant-brand";
@@ -111,19 +111,8 @@ export function Sidebar({
   const mainItems = items.filter(
     (item) => !item.sidebarPlacement || item.sidebarPlacement === "main",
   );
-  const ungrouped = mainItems.filter((item) => !item.group);
+  const { ungrouped, groups: orderedGroups } = splitSidebarGroups(mainItems);
   const footerItems = items.filter((item) => item.sidebarPlacement === "footer");
-  const groups = new Map<string, NavItem[]>();
-  for (const item of mainItems) {
-    if (!item.group) continue;
-    const list = groups.get(item.group) ?? [];
-    list.push(item);
-    groups.set(item.group, list);
-  }
-
-  const orderedGroups = [...groups.entries()].sort(
-    ([a], [b]) => navGroupOrder.indexOf(a) - navGroupOrder.indexOf(b),
-  );
 
   // Open the active group by default, preserving the reader's saved choice.
   // Only the best match is active, across every group: on /library/copies

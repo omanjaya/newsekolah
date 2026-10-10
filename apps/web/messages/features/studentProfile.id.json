@@ -1,0 +1,43 @@
+{
+  "eyebrow": "Siswa",
+  "unknownStudent": "Siswa",
+  "nis": "NIS {nis}",
+  "className": "Kelas {name}",
+  "tabsLabel": "Bagian profil siswa",
+  "tabs": {
+    "overview": "Ringkasan",
+    "attendance": "Presensi",
+    "grades": "Nilai",
+    "permits": "Izin",
+    "discipline": "Kedisiplinan",
+    "counseling": "Konseling",
+    "library": "Perpustakaan",
+    "guardians": "Orang Tua"
+  },
+  "noAccessTitle": "Tidak ada data yang bisa Anda lihat",
+  "noAccessBody": "Akun Anda belum memiliki akses ke data siswa di halaman ini. Hubungi admin sekolah bila ini keliru.",
+  "attendance": {
+    "month": "Bulan"
+  },
+  "permits": {
+    "title": "Izin menunggu tinjauan",
+    "note": "Hanya izin yang masih menunggu tinjauan Anda. Riwayat lengkap ada di halaman izin.",
+    "emptyTitle": "Tidak ada izin menunggu",
+    "emptyBody": "Siswa ini tidak punya izin yang menunggu tinjauan Anda.",
+    "openQueue": "Buka antrean izin",
+    "detailTitle": "Detail izin"
+  },
+  "library": {
+    "openMember": "Buka keanggotaan perpustakaan"
+  },
+  "guardians": {
+    "title": "Data orang tua dan wali",
+    "fatherName": "Nama ayah",
+    "motherName": "Nama ibu",
+    "guardianName": "Nama wali",
+    "guardianPhone": "Telepon wali",
+    "parentOccupation": "Pekerjaan orang tua",
+    "notRecorded": "Belum dicatat",
+    "loadError": "Data orang tua belum bisa dimuat."
+  }
+}

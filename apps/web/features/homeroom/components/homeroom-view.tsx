@@ -9,6 +9,10 @@ import {
   Stat,
   StatGrid,
   StatusBadge,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
   cn,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
@@ -20,7 +24,7 @@ import { useMemo, useState } from "react";
 
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
-import { useSession } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { todayInZone, useHomeroomAttendanceQuery } from "../../attendance/api";
@@ -28,6 +32,9 @@ import { statusToken } from "../../attendance/lib/status-tokens";
 import { useLeaveReviewQueueQuery } from "../../permits/api";
 
 import { HomeroomDashboard } from "./homeroom-dashboard";
+import { HomeroomDisciplineTab } from "./homeroom-discipline-tab";
+import { HomeroomParentsTab } from "./homeroom-parents-tab";
+import { HomeroomPermitsTab } from "./homeroom-permits-tab";
 
 type Entry = components["schemas"]["AttendanceHomeroomEntry"];
 
@@ -47,6 +54,12 @@ export function HomeroomView(): ReactElement {
   const t = useTranslations("app.homeroom");
   const { me } = useSession();
   const homeroom = me?.duties?.find((d) => d.slug === "homeroom");
+  const canViewDiscipline = useCan("view_discipline");
+  const [tab, setTab] = useUrlState<string>(
+    "tab",
+    ["overview", "attendance", "permits", ...(canViewDiscipline ? ["discipline"] : []), "parents"],
+    "overview",
+  );
   const [date, setDate] = useDateFilter("date", todayInZone(me?.tenant.timezone));
   const [search, setSearch] = useRememberedViewState("homeroom-search", "");
   const [statusCode, setStatusCode] = useUrlState<(typeof STATUS_VALUES)[number]>(
@@ -227,60 +240,89 @@ export function HomeroomView(): ReactElement {
         }
       />
 
-      <StatGrid className="rounded-sm border border-border bg-surface p-4">
-        <Stat label={t("statTotal")} value={total} />
-        <Stat
-          label={t("statAbsent")}
-          value={<span className={absent > 0 ? "text-status-absent" : undefined}>{absent}</span>}
-        />
-        <Stat
-          label={t("statIncomplete")}
-          value={
-            <span className={incomplete > 0 ? "text-status-late" : undefined}>{incomplete}</span>
-          }
-        />
-        <Stat label={t("statPendingLeave")} value={pendingLeave.length} />
-      </StatGrid>
+      <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-4">
+        <TabsList>
+          <TabsTrigger value="overview">{t("tabs.overview")}</TabsTrigger>
+          <TabsTrigger value="attendance">{t("tabs.attendance")}</TabsTrigger>
+          <TabsTrigger value="permits">{t("tabs.permits")}</TabsTrigger>
+          {canViewDiscipline && (
+            <TabsTrigger value="discipline">{t("tabs.discipline")}</TabsTrigger>
+          )}
+          <TabsTrigger value="parents">{t("tabs.parents")}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="flex flex-col gap-6">
+          <StatGrid className="rounded-sm border border-border bg-surface p-4">
+            <Stat label={t("statTotal")} value={total} />
+            <Stat
+              label={t("statAbsent")}
+              value={
+                <span className={absent > 0 ? "text-status-absent" : undefined}>{absent}</span>
+              }
+            />
+            <Stat
+              label={t("statIncomplete")}
+              value={
+                <span className={incomplete > 0 ? "text-status-late" : undefined}>
+                  {incomplete}
+                </span>
+              }
+            />
+            <Stat label={t("statPendingLeave")} value={pendingLeave.length} />
+          </StatGrid>
 
-      <HomeroomDashboard
-        attentionRows={attentionRows}
-        disciplineRows={disciplineRows}
-        pendingLeave={pendingLeave}
-        dashboardLoading={dashboard.isLoading}
-        leaveLoading={leaveQueue.isLoading}
-        timeZone={me?.tenant.timezone}
-      />
-
-      <DataTable
-        stateKey="features/homeroom/components/homeroom-view:1"
-        data={rows}
-        columns={columns}
-        rowCount={data?.total ?? 0}
-        pagination={pagination}
-        onPaginationChange={setPagination}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter={search}
-        onGlobalFilterChange={(value) => {
-          setSearch(value);
-          setPagination((p) => ({ ...p, pageIndex: 0 }));
-        }}
-        filters={filters}
-        filtersLabels={{
-          reset: t("filters.reset"),
-          removeFilter: (label) => t("filters.removeFilter", { label }),
-        }}
-        isLoading={isLoading}
-        getRowId={(r) => r.student_user_id}
-        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
-        emptyState={
-          <EmptyState
-            icon={<UsersRound aria-hidden="true" />}
-            title={isFiltered ? t("noMatchTitle") : t("emptyTitle")}
-            description={isFiltered ? t("noMatchBody") : t("emptyBody")}
+          <HomeroomDashboard
+            attentionRows={attentionRows}
+            disciplineRows={disciplineRows}
+            pendingLeave={pendingLeave}
+            dashboardLoading={dashboard.isLoading}
+            leaveLoading={leaveQueue.isLoading}
+            timeZone={me?.tenant.timezone}
           />
-        }
-      />
+        </TabsContent>
+        <TabsContent value="attendance">
+          <DataTable
+            stateKey="features/homeroom/components/homeroom-view:1"
+            data={rows}
+            columns={columns}
+            rowCount={data?.total ?? 0}
+            pagination={pagination}
+            onPaginationChange={setPagination}
+            sorting={[]}
+            onSortingChange={() => undefined}
+            globalFilter={search}
+            onGlobalFilterChange={(value) => {
+              setSearch(value);
+              setPagination((p) => ({ ...p, pageIndex: 0 }));
+            }}
+            filters={filters}
+            filtersLabels={{
+              reset: t("filters.reset"),
+              removeFilter: (label) => t("filters.removeFilter", { label }),
+            }}
+            isLoading={isLoading}
+            getRowId={(r) => r.student_user_id}
+            toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
+            emptyState={
+              <EmptyState
+                icon={<UsersRound aria-hidden="true" />}
+                title={isFiltered ? t("noMatchTitle") : t("emptyTitle")}
+                description={isFiltered ? t("noMatchBody") : t("emptyBody")}
+              />
+            }
+          />
+        </TabsContent>
+        <TabsContent value="permits">
+          <HomeroomPermitsTab classId={homeroom.scope_id ?? ""} timeZone={me?.tenant.timezone} />
+        </TabsContent>
+        {canViewDiscipline && (
+          <TabsContent value="discipline">
+            <HomeroomDisciplineTab classId={homeroom.scope_id ?? ""} />
+          </TabsContent>
+        )}
+        <TabsContent value="parents">
+          <HomeroomParentsTab rows={dashboard.data?.data ?? []} isLoading={dashboard.isLoading} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

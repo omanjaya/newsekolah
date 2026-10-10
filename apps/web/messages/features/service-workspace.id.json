@@ -46,5 +46,9 @@
   "allClasses": "Semua kelas",
   "reviewBanner": "{count} menunggu persetujuan Anda",
   "openInbox": "Buka Perlu Tindakan",
-  "requestKind": "Jenis izin yang diajukan"
+  "requestKind": "Jenis izin yang diajukan",
+  "clubsTab": "Ekskul",
+  "eventsTab": "Acara",
+  "achievementsTab": "Prestasi",
+  "mentoringTab": "Pendampingan"
 }

@@ -306,6 +306,7 @@
       "classLabel": "Kelas",
       "classPlaceholder": "Pilih kelas",
       "loadingClasses": "Memuat kelas...",
+      "classesUnavailable": "Daftar kelas tidak tersedia untuk akun Anda",
       "titleLabel": "Judul",
       "preview": "Tinjau pasangan",
       "previewEmptyTitle": "Tidak ada pasangan yang bisa dibuat",
@@ -361,6 +362,8 @@
     }
   },
   "members": {
+    "pagePrev": "Sebelumnya",
+    "pageNext": "Berikutnya",
     "navLabel": "Anggota perpustakaan",
     "eyebrow": "Perpustakaan",
     "title": "Anggota",

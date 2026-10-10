@@ -20,6 +20,7 @@ Platform sistem informasi sekolah multi-tenant, dibangun ulang dari SION (Go + N
 | 14  | [API publik](14-public-api.md)                         | Kunci API dan webhook untuk integrasi pihak ketiga                                                   |
 | 14  | [Rilis store](14-store-release.md)                     | Persiapan rilis aplikasi mobile ke App Store dan Play Store                                          |
 | 15  | [Paritas dengan SION](15-paritas-sion.md)              | Posisi pekerjaan menyamakan logika dengan SION: yang selesai, keputusan, dan sisa pekerjaan          |
+| 17  | [Penyederhanaan menu](17-penyederhanaan-menu.md)       | Struktur sidebar per pekerjaan, fitur yang digabung, profil siswa, status pengerjaan                 |
 
 Mulai dari dokumen 15 untuk tahu posisi pekerjaan terkini.
 

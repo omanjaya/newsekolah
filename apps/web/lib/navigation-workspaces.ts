@@ -44,8 +44,8 @@ const WORKSPACES: WorkspaceDefinition[] = [
     members: ["mentoring-my-groups", "mentoring-groups"],
     label: "mentoring",
   },
-  { key: "duty", members: ["duty", "monitor"], label: "duty" },
-  { key: "staff-attendance", members: ["staff-attendance", "check-in"], label: "staffAttendance" },
+  { key: "duty", members: ["duty", "monitor"], label: "duty", group: NAV_GROUP.duty },
+  { key: "staff-attendance", members: ["staff-attendance"], label: "staffAttendance" },
   {
     key: "supervision-cycles",
     members: ["supervision-cycles", "supervision-my-report"],
@@ -74,31 +74,49 @@ const WORKSPACES: WorkspaceDefinition[] = [
   { key: "school-structure", members: ["school-structure"], label: "structure" },
   {
     key: "library-catalogue",
-    members: ["library-catalogue", "library-copies", "library-import", "library-master-data"],
+    members: [
+      "library-catalogue",
+      "library-copies",
+      "library-import",
+      "library-master-data",
+      "library-stocktake",
+    ],
     label: "catalogue",
   },
   {
     key: "library-desk",
-    members: ["library-desk", "library-class-loans", "library-violations", "library-kiosk"],
+    members: [
+      "library-desk",
+      "library-class-loans",
+      "library-violations",
+      "library-kiosk",
+      "library-visits",
+      "library-visit-kiosk",
+    ],
     label: "circulation",
   },
   {
     key: "library-members",
-    members: ["library-members", "library-loan-rules", "library-member-types"],
+    members: ["library-members"],
     label: "members",
   },
-  { key: "library-visits", members: ["library-visits", "library-visit-kiosk"], label: "visits" },
-  { key: "library-stocktake", members: ["library-stocktake"], label: "stocktake" },
+  {
+    key: "library-settings",
+    members: ["library-settings", "library-loan-rules", "library-member-types"],
+    label: "librarySettings",
+  },
   { key: "library-me", members: ["library-me"], label: "loans" },
   {
     key: "visitors-board",
     members: ["visitors-board", "visitors-expected", "visitors-incidents"],
     label: "visitors",
+    group: NAV_GROUP.duty,
   },
   { key: "billing", members: ["billing"], label: "billing" },
   {
     key: "settings",
     members: [
+      "settings-hub",
       "settings-branding",
       "settings-document-templates",
       "settings-report-header",
@@ -133,6 +151,10 @@ export interface NavigationContext {
 
 function relevant(item: NavItem, context: NavigationContext): boolean {
   if (item.routePermission && context.can && !context.can(item.routePermission)) return false;
+  // Readers find announcements in the header bell; only an author needs the
+  // page as a destination of its own.
+  if (item.key === "announcements" && context.can && !context.can("create_announcements"))
+    return false;
   if (item.key === "homeroom")
     return context.duties?.some((duty) => duty.slug === "homeroom") ?? false;
   const personal = context.profileKind === "student";
@@ -166,8 +188,6 @@ function labelFor(
     return "app.workspace.myDiscipline";
   if (definition.key === "counseling" && selected.key === "analytics")
     return "app.workspace.monitoring";
-  if (definition.key === "staff-attendance" && selected.key === "check-in")
-    return "app.workspace.myAttendanceStaff";
   return definition.label ? `app.workspace.${definition.label}` : selected.labelKey;
 }
 

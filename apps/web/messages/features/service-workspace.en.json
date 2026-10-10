@@ -46,5 +46,9 @@
   "allClasses": "All classes",
   "reviewBanner": "{count} waiting for your approval",
   "openInbox": "Open Action Needed",
-  "requestKind": "Type of request"
+  "requestKind": "Type of request",
+  "clubsTab": "Clubs",
+  "eventsTab": "Events",
+  "achievementsTab": "Achievements",
+  "mentoringTab": "Mentoring"
 }

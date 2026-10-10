@@ -90,6 +90,29 @@ describe("MembersView filters", () => {
     expect(screen.getByRole("button", { name: "filters.type: Siswa" })).toBeInTheDocument();
   });
 
+  it("pages members by offset instead of capping the list at one page", async () => {
+    const full = Array.from({ length: 50 }, (_, i) => ({
+      user_id: `user-${i}`,
+      member_no: `M${i}`,
+      member_type_id: "type-student",
+      status: "active",
+    }));
+    mocks.useLibraryMembersQuery.mockReturnValue({ data: { data: full }, isLoading: false });
+    const user = userEvent.setup();
+    render(<MembersView />);
+
+    expect(mocks.useLibraryMembersQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ limit: 50, offset: 0 }),
+    );
+    expect(screen.getByRole("button", { name: "pagePrev" })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "pageNext" }));
+    expect(mocks.useLibraryMembersQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ limit: 50, offset: 50 }),
+    );
+    expect(screen.getByRole("button", { name: "pagePrev" })).toBeEnabled();
+  });
+
   it("clears a filter from its chip's remove control", async () => {
     window.history.replaceState(null, "", "/library/members?status=active");
     const user = userEvent.setup();

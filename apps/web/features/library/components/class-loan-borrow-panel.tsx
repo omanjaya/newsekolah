@@ -7,6 +7,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useCan } from "../../../lib/session/session-provider";
 import { useClassesQuery } from "../../reference/api";
 import type { LibraryTitle } from "../api";
 import {
@@ -23,7 +24,10 @@ export function ClassLoanBorrowPanel(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const classes = useClassesQuery();
+  // The class list needs view_academic_data, which the librarian role lacks:
+  // skip the request (it would 403) and say why the picker is empty.
+  const canViewClasses = useCan("view_academic_data");
+  const classes = useClassesQuery(canViewClasses);
   const [classId, setClassId] = useState("");
   const [title, setTitle] = useState<LibraryTitle | null>(null);
   const [preview, setPreview] = useState<LibraryClassLoanPreview | null>(null);
@@ -89,8 +93,14 @@ export function ClassLoanBorrowPanel(): ReactElement {
               setClassId(value);
               setPreview(null);
             }}
-            placeholder={classes.isLoading ? t("loadingClasses") : t("classPlaceholder")}
-            disabled={classes.isLoading}
+            placeholder={
+              !canViewClasses
+                ? t("classesUnavailable")
+                : classes.isLoading
+                  ? t("loadingClasses")
+                  : t("classPlaceholder")
+            }
+            disabled={!canViewClasses || classes.isLoading}
             className="w-56"
           />
         </label>

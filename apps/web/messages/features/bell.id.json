@@ -1,0 +1,8 @@
+{
+  "unreadTotal": "{count, plural, one {# item belum dibaca} other {# item belum dibaca}}",
+  "tabsLabel": "Notifikasi dan pengumuman",
+  "tabNotifications": "Notifikasi",
+  "tabAnnouncements": "Pengumuman",
+  "announcementsEmpty": "Belum ada pengumuman",
+  "announcementsSeeAll": "Lihat semua"
+}
