@@ -13,6 +13,7 @@ import { QueryError } from "../../../components/query-error";
 import { bentoCells, tileColumns } from "../../../lib/layout/bento";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
+import { StudentLink } from "../../students/components/student-link";
 import type { useExitPermitReviewQueueQuery } from "../api";
 import { buildExitPermitQueueTiles } from "../lib/exit-permit-queue-tiles";
 
@@ -67,7 +68,9 @@ export function ExitPermitReviewQueue({
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-col gap-0.5">
               <span className="truncate text-[14px] font-medium text-fg">
-                {item.student_name ? formatDisplayName(item.student_name) : t("unknownStudent")}
+                <StudentLink studentId={item.student_user_id}>
+                  {item.student_name ? formatDisplayName(item.student_name) : t("unknownStudent")}
+                </StudentLink>
                 {item.class_name && (
                   <span className="ml-1.5 text-[13px] font-normal text-fg-muted">
                     ({item.class_name})

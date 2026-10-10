@@ -15,6 +15,8 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
 import { CounselingWorkspaceNav } from "../../student-services/components/service-workspace-nav";
+import { StudentLink } from "../../students/components/student-link";
+import { studentProfileHref } from "../../students/href";
 import { type StudentRisk, useAtRiskStudentsQuery } from "../api";
 
 import { PolicyDialog } from "./policy-dialog";
@@ -60,7 +62,9 @@ export function AtRiskStudentsView(): ReactElement {
           return student ? (
             <div className="flex min-w-0 items-center gap-2">
               <Avatar size="sm" name={student.name} />
-              <span className="truncate">{student.name}</span>
+              <span className="truncate">
+                <StudentLink studentId={student.id}>{student.name}</StudentLink>
+              </span>
             </div>
           ) : (
             t("unknownStudent")
@@ -168,7 +172,7 @@ export function AtRiskStudentsView(): ReactElement {
           globalFilter=""
           getRowId={(item) => item.student_user_id}
           onRowActivate={(item) => {
-            router.push(`/analytics/${item.student_user_id}`);
+            router.push(studentProfileHref(item.student_user_id));
           }}
           fillHeight
           emptyState={

@@ -17,6 +17,7 @@ import {
   useDirectoryQuery,
   useLookup,
 } from "../../../reference/api";
+import { studentProfileHref } from "../../../students/href";
 import { useAdminDashboardQuery } from "../../api";
 import {
   EMPTY_BLOCK,
@@ -362,7 +363,7 @@ function AtRiskCard({
             {rows.map((row) => (
               <li key={row.student_user_id}>
                 <Link
-                  href={`/analytics/${row.student_user_id}`}
+                  href={studentProfileHref(row.student_user_id)}
                   className="flex items-center justify-between gap-3 text-[13px] text-fg hover:text-accent"
                 >
                   <span className="flex min-w-0 flex-col">

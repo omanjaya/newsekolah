@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { formatDisplayName } from "../../../lib/text/format-name";
+import { StudentLink } from "../../students/components/student-link";
 import { telHref, whatsAppHref } from "../lib/guardian-contact";
 
 type Entry = components["schemas"]["AttendanceHomeroomEntry"];
@@ -34,7 +35,11 @@ export function HomeroomParentsTab({
       {rows.map((row) => (
         <li key={row.student_user_id} className="flex items-center justify-between gap-2 py-3">
           <div className="flex min-w-0 flex-col">
-            <span className="truncate text-[13px] text-fg">{formatDisplayName(row.name)}</span>
+            <span className="truncate text-[13px] text-fg">
+              <StudentLink studentId={row.student_user_id}>
+                {formatDisplayName(row.name)}
+              </StudentLink>
+            </span>
             <span className="truncate text-[12px] text-fg-muted">
               {row.guardian_name || row.guardian_phone
                 ? [row.guardian_name, row.guardian_phone].filter(Boolean).join(" · ")

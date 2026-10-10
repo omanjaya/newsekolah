@@ -14,7 +14,10 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/library/members",
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
-vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => true }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useCan: () => true,
+  useSession: () => ({ me: { permissions: [], profile_kind: "staff" } }),
+}));
 vi.mock("../../../lib/view-state/view-state-provider", () => ({
   useRememberedViewState: () => ["", vi.fn()],
 }));

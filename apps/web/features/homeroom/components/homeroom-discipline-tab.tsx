@@ -9,6 +9,7 @@ import type { ReactElement } from "react";
 
 import { useViolationsQuery } from "../../discipline/api";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { studentProfileHref } from "../../students/href";
 
 /** Violation records of one homeroom class, as the API orders them. */
 export function HomeroomDisciplineTab({ classId }: { classId: string }): ReactElement {
@@ -39,7 +40,7 @@ export function HomeroomDisciplineTab({ classId }: { classId: string }): ReactEl
       {items.map((item) => (
         <li key={item.id}>
           <Link
-            href={`/discipline/students/${item.student_user_id}`}
+            href={studentProfileHref(item.student_user_id, "discipline")}
             className="flex items-center justify-between gap-2 py-3 hover:text-accent"
           >
             <div className="flex min-w-0 flex-col">

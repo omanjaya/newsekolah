@@ -21,7 +21,13 @@ vi.mock("@newsekolah/i18n", () => ({
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: mocks.can,
-  useSession: () => ({ me: { profile_kind: "teacher", tenant: { timezone: "Asia/Makassar" } } }),
+  useSession: () => ({
+    me: {
+      permissions: ["view_discipline"],
+      profile_kind: "teacher",
+      tenant: { timezone: "Asia/Makassar" },
+    },
+  }),
 }));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
@@ -129,6 +135,17 @@ describe("permit queue bento layout", () => {
     expect(rows[0]?.className).not.toContain("lg:col-span-2");
     expect(rows[1]?.className).not.toContain("lg:col-span-2");
     expect(rows[2]?.className).toContain("lg:col-span-2");
+  });
+
+  it("links the student name to the profile for a reader who can open it", () => {
+    mocks.can.mockImplementation((permission: string) => permission === "review_leave_requests");
+    mocks.leave.mockReturnValue({ ...emptyResult, data: { data: [leaveItem("a")] } });
+
+    render(<PermitUnifiedQueue />);
+
+    expect(screen.getByRole("link", { name: /Siswa a/ }).getAttribute("href")).toMatch(
+      /^\/students\//,
+    );
   });
 
   it("shows Setujui and Tolak on a leave card for a reviewer and calls the review mutation", async () => {

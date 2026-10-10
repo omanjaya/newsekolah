@@ -9,6 +9,10 @@ import { DeskOverdueTable } from "./desk-overdue-table";
 
 type LibraryOverdueLoanDetail = DeskApiModule.LibraryOverdueLoanDetail;
 
+vi.mock("../../../lib/session/session-provider", () => ({
+  useSession: () => ({ me: { permissions: [], profile_kind: "staff" } }),
+}));
+
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
   useTranslations: () => (key: string) => key,
