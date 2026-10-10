@@ -16,11 +16,14 @@ vi.mock("../../../discipline/api", () => ({
 vi.mock("../../../analytics/api", () => ({ useAtRiskStudentsQuery: atRiskQuery }));
 
 vi.mock("../../../reference/api", () => ({
-  useDirectoryQuery: () => ({ data: { data: [{ id: "s1", name: "Siswa A" }] } }),
   useClassesQuery: () => ({ data: { data: [{ id: "c1", name: "X-A" }] } }),
   useLookup: (items: { id: string }[] | undefined) =>
     new Map((items ?? []).map((item) => [item.id, item])),
 }));
+vi.mock("../../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../../test/directory-names-stub");
+  return directoryNamesStub([{ id: "s1", name: "Siswa A" }]);
+});
 
 vi.mock("next-intl", () => ({
   useTranslations: () =>

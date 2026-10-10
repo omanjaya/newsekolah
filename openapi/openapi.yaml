@@ -7570,6 +7570,18 @@ paths:
             minimum: 1
             maximum: 5000
             default: 200
+        - name: ids
+          in: query
+          description: Comma-separated user ids to resolve to names (id-to-name lookups). When present, the result is exactly
+            those users in this school regardless of status; q, profile_kind and limit are ignored.
+          style: form
+          explode: false
+          schema:
+            type: array
+            maxItems: 200
+            items:
+              type: string
+              format: uuid
       responses:
         "200":
           description: Directory entries
@@ -22347,6 +22359,9 @@ components:
           type: string
         profile_kind:
           $ref: "#/components/schemas/ProfileKind"
+        nis:
+          type: string
+          description: Student number; only set for students on an ids lookup, and only for callers holding view_users
     UserStatus:
       type: string
       enum:

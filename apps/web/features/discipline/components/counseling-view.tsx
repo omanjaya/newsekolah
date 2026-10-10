@@ -31,7 +31,7 @@ import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { CounselingWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { StudentLink } from "../../students/components/student-link";
 import { type Counseling } from "../api";
@@ -61,8 +61,6 @@ export function CounselingView(): ReactElement {
     offset: paging.offset,
     search,
   });
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
   const remove = useDeleteCounselingMutation();
 
   const [editing, setEditing] = useState<Counseling | "new" | null>(() =>
@@ -73,6 +71,7 @@ export function CounselingView(): ReactElement {
   const [tab, setTab] = useUrlState<string>("tab", ["mine", "bkTeam"], "mine");
 
   const items = data?.data ?? [];
+  const studentMap = useDirectoryNames(items.map((item) => item.student_user_id));
 
   const columns = useMemo<ColumnDef<Counseling>[]>(
     () => [

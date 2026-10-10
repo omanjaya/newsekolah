@@ -23,7 +23,8 @@ import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
-import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
+import { useClassesQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { StudentLink } from "../../students/components/student-link";
 import { studentProfileHref } from "../../students/href";
 import {
@@ -45,8 +46,6 @@ export function IssuedLettersPanel(): ReactElement {
 
   const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
   const classes = useClassesQuery();
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
   const [search, setSearch] = useUrlState<string>("letters_q", () => true, "");
   const paging = useOffsetPage(PAGE_SIZE, "letters_page");
   const { data, isLoading } = useWarningLettersQuery(classId || undefined, {
@@ -57,6 +56,7 @@ export function IssuedLettersPanel(): ReactElement {
   const documentUrl = useWarningLetterDocumentUrlMutation();
 
   const items = data?.data ?? [];
+  const studentMap = useDirectoryNames(items.map((item) => item.student_user_id));
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
 
   const filters: DataTableFilterDef[] = [

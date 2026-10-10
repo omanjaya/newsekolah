@@ -26,7 +26,7 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { VisitorsWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { type ExpectedGuest, useCancelExpectedGuestMutation, useExpectedGuestsQuery } from "../api";
 
@@ -63,13 +63,11 @@ export function ExpectedGuestsView(): ReactElement {
   const [creating, setCreating] = useState(false);
   const [checkingIn, setCheckingIn] = useState<ExpectedGuest | null>(null);
 
-  const staff = useDirectoryQuery("staff");
-  const teachers = useDirectoryQuery("teacher");
-  const hostMap = useLookup([...(staff.data?.data ?? []), ...(teachers.data?.data ?? [])]);
   const { data, isLoading } = useExpectedGuestsQuery(date, onlyPending !== "true");
   const cancel = useCancelExpectedGuestMutation();
 
   const items = data?.data ?? [];
+  const hostMap = useDirectoryNames(items.map((item) => item.host_user_id));
 
   const filters: DataTableFilterDef[] = [
     {

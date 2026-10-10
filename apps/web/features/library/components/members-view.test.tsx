@@ -22,9 +22,12 @@ vi.mock("../../../lib/view-state/view-state-provider", () => ({
   useRememberedViewState: () => ["", vi.fn()],
 }));
 vi.mock("../../reference/api", () => ({
-  useDirectoryQuery: () => ({ data: { data: [] } }),
   useLookup: () => new Map(),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([]);
+});
 vi.mock("../api", () => ({ printMemberCard: vi.fn() }));
 vi.mock("../members-api", () => ({
   useLibraryMembersQuery: mocks.useLibraryMembersQuery,

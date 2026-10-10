@@ -7,7 +7,10 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useDirectoryQuery } from "../../reference/api";
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
 import {
   type Discount,
   type DiscountKind,
@@ -29,7 +32,7 @@ export function DiscountForm({
   const tDiscounts = useTranslations("app.billing.discounts");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const students = useDirectoryQuery("student");
+  const studentLabels = useDirectoryPickerLabels(t("studentPlaceholder"));
   const create = useCreateDiscountMutation();
   const update = useUpdateDiscountMutation();
   const [isActive, setIsActive] = useState(initial?.is_active ?? true);
@@ -44,10 +47,6 @@ export function DiscountForm({
   );
   const [reason, setReason] = useState(initial?.reason ?? "");
 
-  const studentOptions = (students.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }));
-  if (initial && !studentOptions.some((student) => student.value === initial.student_user_id)) {
-    studentOptions.push({ value: initial.student_user_id, label: tDiscounts("unknownStudent") });
-  }
   const kindOptions = [
     { value: "percentage", label: t("kind.percentage") },
     { value: "fixed", label: t("kind.fixed") },
@@ -86,12 +85,12 @@ export function DiscountForm({
     >
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("student")}</span>
-        <Select
-          options={studentOptions}
+        <DirectoryPicker
+          profileKind="student"
           disabled={initial !== undefined}
           value={studentId}
           onValueChange={setStudentId}
-          placeholder={t("studentPlaceholder")}
+          labels={studentLabels}
         />
       </label>
       <label className="flex flex-col gap-1 text-[13px]">

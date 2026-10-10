@@ -17,7 +17,7 @@ import { useMemo } from "react";
 import { CursorPagination } from "../../../components/cursor-pagination";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { StudentLink } from "../../students/components/student-link";
 import { type Counseling, type CounselingTopic } from "../api";
 import { useBKTeamCounselingsQuery } from "../api-counseling-extras";
@@ -45,10 +45,9 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
     offset: paging.offset,
     search,
   });
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
 
   const items = data?.data ?? [];
+  const studentMap = useDirectoryNames(items.map((item) => item.student_user_id));
 
   const filters: DataTableFilterDef[] = [
     {

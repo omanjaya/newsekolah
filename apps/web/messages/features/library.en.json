@@ -423,9 +423,7 @@
     "registerForm": {
       "role": "Role",
       "user": "User",
-      "loadingUsers": "Loading users...",
       "userPlaceholder": "Choose a user",
-      "noUsers": "Every user in this role is already a member, or none exist yet.",
       "memberType": "Member type",
       "memberTypePlaceholder": "Choose a member type",
       "memberNo": "Member number (optional)",
@@ -569,7 +567,6 @@
     "form": {
       "title": "Record violation",
       "member": "Member",
-      "loadingMembers": "Loading members...",
       "memberPlaceholder": "Choose a member",
       "kind": "Type",
       "penalty": "Penalty",
@@ -760,7 +757,6 @@
       "title": "Record visit",
       "kind": "Type",
       "member": "Member",
-      "loadingMembers": "Loading members...",
       "memberPlaceholder": "Choose a member",
       "visitorName": "Visitor name",
       "groupName": "Group name",

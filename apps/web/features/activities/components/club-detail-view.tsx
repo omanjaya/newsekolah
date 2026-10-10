@@ -20,14 +20,14 @@ import {
 import { CalendarClock, Users } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
 import { formatDisplayName } from "../../../lib/text/format-name";
-import { useDirectoryQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   useClubMembersQuery,
@@ -82,22 +82,17 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
   const [includeLeft, setIncludeLeft] = useState(false);
   const [search, setSearch] = useState("");
   const { data } = useClubMembersQuery(clubId, includeLeft);
-  const directory = useDirectoryQuery("student");
   const join = useJoinClubMutation(clubId);
   const leave = useLeaveClubMutation();
 
   const [studentId, setStudentId] = useState("");
   const [joinedOn, setJoinedOn] = useState(() => businessNow().toISOString().slice(0, 10));
 
-  const nameById = useMemo(
-    () => new Map((directory.data?.data ?? []).map((u) => [u.id, u.name])),
-    [directory.data],
-  );
-
   const members = data?.data ?? [];
+  const nameById = useDirectoryNames(members.map((m) => m.student_user_id));
   const visible = members.filter((m) => {
     if (!search) return true;
-    const name = nameById.get(m.student_user_id) ?? "";
+    const name = nameById.get(m.student_user_id)?.name ?? "";
     return name.toLowerCase().includes(search.toLowerCase());
   });
 
@@ -178,7 +173,7 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
           </li>
         )}
         {visible.map((m) => {
-          const name = nameById.get(m.student_user_id) ?? t("unknownStudent");
+          const name = nameById.get(m.student_user_id)?.name ?? t("unknownStudent");
           return (
             <li key={m.id} className="flex items-center justify-between gap-2 p-3 text-[13px]">
               <div className="flex min-w-0 items-center gap-3">

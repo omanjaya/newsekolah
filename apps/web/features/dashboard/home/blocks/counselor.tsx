@@ -20,9 +20,9 @@ import {
   type ClassRef,
   type DirectoryUser,
   useClassesQuery,
-  useDirectoryQuery,
   useLookup,
 } from "../../../reference/api";
+import { useDirectoryNames } from "../../../reference/directory-names";
 import { EMPTY_BLOCK, HERO_PRIORITY } from "../types";
 import type { Me, PersonaBlock } from "../types";
 
@@ -51,9 +51,14 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
   const sp = useSPCandidatesQuery(SP_CANDIDATE_FILTERS, active && canIssueWarningLetters);
   const canViewAtRisk = me.permissions.includes("view_early_warning");
   const atRisk = useAtRiskStudentsQuery(active && canViewAtRisk);
-  const students = useDirectoryQuery("student", active && canViewAtRisk);
   const classes = useClassesQuery(active && canViewAtRisk);
-  const studentMap = useLookup(students.data?.data);
+  const studentMap = useDirectoryNames(
+    [...(atRisk.data?.data ?? [])]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, AT_RISK_PREVIEW_SIZE)
+      .map((row) => row.student_user_id),
+    active && canViewAtRisk,
+  );
   const classMap = useLookup(classes.data?.data);
 
   if (!active) return EMPTY_BLOCK;

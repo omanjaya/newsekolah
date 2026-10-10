@@ -28,6 +28,7 @@ var (
 	ErrPrimaryRoleNotSystem = errors.New("the primary role must be a system role")
 	ErrAdditionalRoleSystem = errors.New("additional roles must be custom roles, not system roles")
 	ErrInvalidProfileKind   = errors.New("invalid profile kind")
+	ErrTooManyDirectoryIDs  = errors.New("too many ids in one directory lookup")
 
 	// Roles and permissions
 	ErrRoleNotFound          = errors.New("role not found")

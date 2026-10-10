@@ -21,7 +21,7 @@ import { useMemo, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useCan } from "../../../lib/session/session-provider";
-import { useLookup, useTeachersQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type ScheduledObservation,
   useScheduledObservationsQuery,
@@ -40,12 +40,11 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
 
   const cycle = useSupervisionCycleQuery(cycleId);
   const scheduled = useScheduledObservationsQuery(cycleId);
-  const teachers = useTeachersQuery();
-  const teacherMap = useLookup(teachers.data?.data);
 
   const [scheduling, setScheduling] = useState(false);
 
   const items = scheduled.data?.data ?? [];
+  const teacherMap = useDirectoryNames(items.map((item) => item.teacher_user_id));
 
   const columns = useMemo<ColumnDef<ScheduledObservation>[]>(
     () => [

@@ -8,7 +8,7 @@ import type { ReactElement } from "react";
 import { useMemo } from "react";
 
 import { QueryError } from "../../../components/query-error";
-import { useLookup, useTeachersQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { useScheduledObservationsQuery, useSupervisionCycleQuery } from "../api";
 
 import { SupervisionWorkspaceNav } from "./supervision-workspace-nav";
@@ -31,8 +31,9 @@ export function SupervisionCycleReportView({ cycleId }: { cycleId: string }): Re
 
   const cycle = useSupervisionCycleQuery(cycleId);
   const scheduled = useScheduledObservationsQuery(cycleId);
-  const teachers = useTeachersQuery();
-  const teacherMap = useLookup(teachers.data?.data);
+  const teacherMap = useDirectoryNames(
+    (scheduled.data?.data ?? []).map((item) => item.teacher_user_id),
+  );
 
   const rows = useMemo<TeacherRow[]>(() => {
     const counts = new Map<string, number>();

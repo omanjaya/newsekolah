@@ -7,6 +7,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 )
 
 const directoryPageSize = 100
@@ -23,6 +24,10 @@ const maxDirectoryLimit = 5000
 func (h *Handler) ListDirectoryUsers(ctx context.Context, request api.ListDirectoryUsersRequestObject) (api.ListDirectoryUsersResponseObject, error) {
 	tenantID := tenantIDFromContext(ctx)
 	p := request.Params
+
+	if p.Ids != nil {
+		return h.lookupDirectoryByIDs(ctx, tenantID, *p.Ids)
+	}
 
 	limit := 200
 	if p.Limit != nil {
@@ -54,6 +59,33 @@ func (h *Handler) ListDirectoryUsers(ctx context.Context, request api.ListDirect
 			break
 		}
 		filter.Cursor = result.NextCursor
+	}
+	return api.ListDirectoryUsers200JSONResponse{Data: data}, nil
+}
+
+// lookupDirectoryByIDs answers the id-to-name form of the directory listing:
+// exactly the requested people of this school, in one indexed query.
+// Every signed-in user may call it, students included, so the student
+// number (personal data under UU PDP) is only returned to readers who may
+// already see user records; for everyone else it fails closed.
+func (h *Handler) lookupDirectoryByIDs(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (api.ListDirectoryUsersResponseObject, error) {
+	entries, err := h.service.LookupDirectory(ctx, tenantID, ids)
+	if err != nil {
+		return nil, mapAdminError(err)
+	}
+	perms, permErr := h.service.EffectivePermissions(ctx, tenantID, userIDFromContext(ctx))
+	showNIS := permErr == nil && perms.Has(authz.PermViewUsers)
+	data := make([]api.DirectoryUser, 0, len(entries))
+	for _, e := range entries {
+		entry := api.DirectoryUser{Id: e.ID, Name: e.Name, Username: e.Username}
+		if e.ProfileKind != "" {
+			kind := api.ProfileKind(e.ProfileKind)
+			entry.ProfileKind = &kind
+		}
+		if showNIS {
+			entry.Nis = strPtr(e.NIS)
+		}
+		data = append(data, entry)
 	}
 	return api.ListDirectoryUsers200JSONResponse{Data: data}, nil
 }

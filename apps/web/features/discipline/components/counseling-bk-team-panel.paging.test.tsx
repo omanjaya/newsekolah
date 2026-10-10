@@ -15,9 +15,12 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 vi.mock("../../reference/api", () => ({
-  useDirectoryQuery: () => ({ data: { data: [] }, isLoading: false }),
   useLookup: () => new Map(),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([]);
+});
 vi.mock("../api-counseling-extras", () => ({
   useBKTeamCounselingsQuery: mocks.useBKTeamCounselingsQuery,
 }));

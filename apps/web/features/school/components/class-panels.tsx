@@ -24,7 +24,8 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useMoveStudentMutation, useRemoveStudentMutation } from "../../academic/api-school-extras";
 import { todayInZone } from "../../attendance/api";
-import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
+import { useClassesQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type Enrollment,
   useBulkAssignMutation,
@@ -48,8 +49,6 @@ export function EnrollmentPanel({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const enrollments = useEnrollmentsQuery(classId);
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
   const [adding, setAdding] = useState(false);
   const [search, setSearch] = useState("");
   const [rosterSearch, setRosterSearch] = useState("");
@@ -57,6 +56,9 @@ export function EnrollmentPanel({
   const assign = useBulkAssignMutation(classId);
   const [picked, setPicked] = useState<string[]>([]);
   const rows = (enrollments.data?.data ?? []).filter((e) => e.status === "active");
+  const studentMap = useDirectoryNames(
+    rows.filter((e) => !e.student_name).map((e) => e.student_user_id),
+  );
   const classes = useClassesQuery();
   const moveTargets = (classes.data?.data ?? []).filter((c) => c.id !== classId);
   const moveStudent = useMoveStudentMutation(classId);

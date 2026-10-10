@@ -19,9 +19,12 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 vi.mock("../../reference/api", () => ({
-  useTeachersQuery: () => ({ data: { data: [] }, isLoading: false }),
   useLookup: () => new Map(),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([]);
+});
 vi.mock("../api", () => ({
   useMentorGroupsQuery: mocks.useMentorGroupsQuery,
   useMyMentorGroupsQuery: mocks.useMyMentorGroupsQuery,

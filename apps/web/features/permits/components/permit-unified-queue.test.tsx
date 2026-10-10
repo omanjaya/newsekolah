@@ -33,10 +33,7 @@ vi.mock("../../../lib/session/session-provider", () => ({
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
-vi.mock("../../reference/api", () => ({
-  useDirectoryQuery: mocks.directory,
-  useLookup: () => new Map(),
-}));
+vi.mock("../../reference/directory-names", () => ({ useDirectoryNames: mocks.directory }));
 vi.mock("../api", () => ({
   useLeaveReviewQueueQuery: mocks.leave,
   useExitPermitReviewQueueQuery: mocks.exit,
@@ -92,13 +89,13 @@ beforeEach(() => {
   mocks.leave.mockReturnValue(emptyResult);
   mocks.exit.mockReturnValue(emptyResult);
   mocks.late.mockReturnValue(emptyResult);
-  mocks.directory.mockReturnValue(emptyResult);
+  mocks.directory.mockReturnValue(new Map());
 });
 
 describe("permit queue data boundaries", () => {
   it("fetches only the late queue for a teacher and hides cached data from other sources", () => {
     mocks.late.mockReturnValue(emptyResult);
-    mocks.directory.mockReturnValue(emptyResult);
+    mocks.directory.mockReturnValue(new Map());
     const staleResult = {
       ...emptyResult,
       data: {
@@ -119,7 +116,7 @@ describe("permit queue data boundaries", () => {
     expect(mocks.late).toHaveBeenCalledWith(true);
     expect(mocks.leave).toHaveBeenCalledWith(false);
     expect(mocks.exit).toHaveBeenCalledWith(false);
-    expect(mocks.directory).toHaveBeenCalledWith("student", true);
+    expect(mocks.directory).toHaveBeenCalledWith([], true);
     expect(screen.queryByText("Private Student")).not.toBeInTheDocument();
     expect(screen.getByText("queueEmpty")).toBeInTheDocument();
   });

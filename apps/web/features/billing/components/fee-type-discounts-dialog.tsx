@@ -17,7 +17,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type Discount,
   type FeeType,
@@ -39,12 +39,11 @@ export function FeeTypeDiscountsDialog({
   const apiErrorMessage = useApiErrorMessage();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Discount | null>(null);
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
   const { data, isLoading } = useFeeTypeDiscountsQuery(feeType?.id ?? "", feeType !== null);
   const remove = useDeleteDiscountMutation();
 
   const discounts = data?.data ?? [];
+  const studentMap = useDirectoryNames(discounts.map((item) => item.student_user_id));
 
   function describe(kind: string, percentageBp?: number, amountMinor?: number): string {
     if (kind === "waiver") return t("kind.waiver");

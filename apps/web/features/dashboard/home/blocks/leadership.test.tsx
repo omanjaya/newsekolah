@@ -3,13 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const dashboardQuery = vi.hoisted(() => vi.fn());
 const atRiskQuery = vi.hoisted(() => vi.fn());
-const directoryQuery = vi.hoisted(() => vi.fn());
+const namesQuery = vi.hoisted(() => vi.fn());
 const classesQuery = vi.hoisted(() => vi.fn());
 
 vi.mock("../../api", () => ({ useAdminDashboardQuery: dashboardQuery }));
 vi.mock("../../../analytics/api", () => ({ useAtRiskStudentsQuery: atRiskQuery }));
+vi.mock("../../../reference/directory-names", () => ({ useDirectoryNames: namesQuery }));
 vi.mock("../../../reference/api", () => ({
-  useDirectoryQuery: directoryQuery,
   useClassesQuery: classesQuery,
   useLookup: (items: { id: string }[] | undefined) =>
     new Map((items ?? []).map((item) => [item.id, item])),
@@ -41,9 +41,9 @@ const baseDashboard = {
 beforeEach(() => {
   dashboardQuery.mockReset();
   atRiskQuery.mockReset();
-  directoryQuery.mockReset();
+  namesQuery.mockReset();
   classesQuery.mockReset();
-  directoryQuery.mockReturnValue({ data: { data: [] } });
+  namesQuery.mockReturnValue(new Map());
   classesQuery.mockReturnValue({ data: { data: [] } });
   atRiskQuery.mockReturnValue({
     data: { data: [] },
@@ -66,7 +66,7 @@ describe("useLeadershipBlock", () => {
     expect(result.current).toEqual({ tiles: [], left: [], right: [] });
     expect(dashboardQuery).toHaveBeenCalledWith(false);
     expect(atRiskQuery).toHaveBeenCalledWith(false);
-    expect(directoryQuery).toHaveBeenCalledWith("student", false);
+    expect(namesQuery).toHaveBeenCalledWith([], false);
     expect(classesQuery).toHaveBeenCalledWith(false);
   });
 
@@ -147,9 +147,7 @@ describe("useLeadershipBlock", () => {
 
   it("lists the top at-risk students by score in the right column when permitted", () => {
     const meWithPermission: Me = { ...me, permissions: ["view_early_warning"] };
-    directoryQuery.mockReturnValue({
-      data: { data: [{ id: "s1", name: "Siswa Satu" }] },
-    });
+    namesQuery.mockReturnValue(new Map([["s1", { id: "s1", name: "Siswa Satu" }]]));
     classesQuery.mockReturnValue({ data: { data: [{ id: "c1", name: "X-A" }] } });
     atRiskQuery.mockReturnValue({
       data: {

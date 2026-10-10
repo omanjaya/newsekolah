@@ -34,7 +34,8 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { StudentLink } from "../../students/components/student-link";
 import { printMemberCard } from "../api";
 import {
@@ -89,11 +90,10 @@ export function MembersView(): ReactElement {
     offset: paging.offset,
   });
   const memberTypes = useLibraryMemberTypesQuery();
-  const directory = useDirectoryQuery();
-  const directoryMap = useLookup(directory.data?.data);
   const memberTypeMap = useLookup(memberTypes.data?.data);
 
   const items = data?.data ?? [];
+  const directoryMap = useDirectoryNames(items.map((item) => item.user_id));
   const isFiltered = status !== "" || memberTypeId !== "" || search !== "";
 
   const typeOptions = (memberTypes.data?.data ?? []).map((mt) => ({

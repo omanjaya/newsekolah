@@ -7,7 +7,10 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useDirectoryQuery } from "../../reference/api";
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
 import { type LibraryVisitKind, useRecordLibraryVisitMutation } from "../visits-api";
 
 const KINDS: LibraryVisitKind[] = ["member", "non_member", "group"];
@@ -26,8 +29,8 @@ export function VisitRecordDialog({
   // one level up rather than being duplicated inside the form namespace.
   const tKind = useTranslations("app.library.visits.kinds");
   const apiErrorMessage = useApiErrorMessage();
-  const directory = useDirectoryQuery();
   const record = useRecordLibraryVisitMutation();
+  const memberLabels = useDirectoryPickerLabels(t("memberPlaceholder"));
 
   const [kind, setKind] = useState<LibraryVisitKind>("member");
   const [memberUserId, setMemberUserId] = useState("");
@@ -35,11 +38,6 @@ export function VisitRecordDialog({
   const [purpose, setPurpose] = useState("");
   const [groupSize, setGroupSize] = useState("1");
   const [error, setError] = useState("");
-
-  const memberOptions = (directory.data?.data ?? []).map((u) => ({
-    value: u.id,
-    label: `${u.name} (${u.username})`,
-  }));
 
   function reset() {
     setKind("member");
@@ -104,12 +102,11 @@ export function VisitRecordDialog({
           {kind === "member" ? (
             <label className="flex flex-col gap-1 text-[13px]">
               <span className="font-medium">{t("member")}</span>
-              <Select
-                options={memberOptions}
+              <DirectoryPicker
                 value={memberUserId}
                 onValueChange={setMemberUserId}
-                placeholder={directory.isLoading ? t("loadingMembers") : t("memberPlaceholder")}
-                disabled={directory.isLoading}
+                labels={memberLabels}
+                showUsername
               />
             </label>
           ) : (

@@ -39,6 +39,7 @@ type UsersAdminRepository interface {
 	EmailExists(ctx context.Context, tenantID uuid.UUID, email string) (bool, error)
 
 	ListUsersAdmin(ctx context.Context, tenantID uuid.UUID, f ListUsersFilter) ([]UserAdminRow, error)
+	ListDirectoryByIDs(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]DirectoryEntry, error)
 	GetUserAdminByID(ctx context.Context, tenantID, userID uuid.UUID) (UserAdminRow, error)
 	GetStudentProfile(ctx context.Context, tenantID, userID uuid.UUID) (UserProfileFields, bool, error)
 	GetTeacherProfile(ctx context.Context, tenantID, userID uuid.UUID) (UserProfileFields, bool, error)
@@ -112,6 +113,41 @@ func (s *Service) ListUsers(ctx context.Context, tenantID uuid.UUID, f ListUsers
 		return nil
 	})
 	return result, err
+}
+
+// MaxDirectoryIDs caps one id-to-name lookup; the OpenAPI schema says the
+// same, and the service enforces it so no caller can turn it into a scan.
+const MaxDirectoryIDs = 200
+
+// DirectoryEntry is the name-only view of a user used by lookups: no
+// contact data. NIS is set for students only.
+type DirectoryEntry struct {
+	ID          uuid.UUID
+	Name        string
+	Username    string
+	ProfileKind domain.ProfileKind
+	NIS         string
+}
+
+// LookupDirectory resolves ids to names for the tenant, whatever the
+// user's status; unknown ids are simply absent from the result.
+func (s *Service) LookupDirectory(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]DirectoryEntry, error) {
+	if len(ids) > MaxDirectoryIDs {
+		return nil, domain.ErrTooManyDirectoryIDs
+	}
+	if len(ids) == 0 {
+		return []DirectoryEntry{}, nil
+	}
+	var entries []DirectoryEntry
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		entries, err = s.repo.ListDirectoryByIDs(ctx, tenantID, ids)
+		if err != nil {
+			return fmt.Errorf("lookup directory: %w", err)
+		}
+		return nil
+	})
+	return entries, err
 }
 
 // GetUser returns one user's full admin detail, including the profile

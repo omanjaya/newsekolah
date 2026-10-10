@@ -20,7 +20,7 @@ import { useCan, useSession } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { StudentDisciplineReportButton } from "../../discipline/components/student-discipline-view";
 import { useMentorStudentSnapshotQuery } from "../../mentoring/api";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { useUserQuery } from "../../school/api";
 import { visibleStudentProfileTabs, type StudentProfileTab } from "../lib/profile-tabs";
 
@@ -68,8 +68,7 @@ export function StudentProfileView({ studentId }: { studentId: string }): ReactE
   );
   const [tab, setTab] = useUrlState<string>("tab", tabs, tabs[0] ?? "overview");
 
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
+  const studentMap = useDirectoryNames([studentId]);
   const user = useUserQuery(canViewUsers ? studentId : "");
   const snapshot = useMentorStudentSnapshotQuery(studentId, canSnapshot);
 

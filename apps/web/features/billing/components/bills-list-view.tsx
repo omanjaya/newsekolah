@@ -11,7 +11,8 @@ import { CursorPagination } from "../../../components/cursor-pagination";
 import { QueryError } from "../../../components/query-error";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
-import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
+import { useClassesQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { type Bill, type BillStatus, useBillsQuery } from "../api";
 
 import { BillDetailSheet } from "./bill-detail-sheet";
@@ -30,8 +31,6 @@ const PAGE_SIZE = 50;
 export function BillsListView(): ReactElement {
   const t = useTranslations("app.billing.bills");
   const locale = useLocale() as Locale;
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
   const classes = useClassesQuery();
 
   const [period, setPeriod] = useState("");
@@ -49,6 +48,7 @@ export function BillsListView(): ReactElement {
     { limit: paging.limit, offset: paging.offset },
   );
   const rows = data?.data ?? [];
+  const studentMap = useDirectoryNames(rows.map((item) => item.student_user_id));
   const hasNext = paging.hasNextFor(rows.length);
 
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));

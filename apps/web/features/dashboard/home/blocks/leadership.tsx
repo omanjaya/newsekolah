@@ -14,9 +14,9 @@ import {
   type ClassRef,
   type DirectoryUser,
   useClassesQuery,
-  useDirectoryQuery,
   useLookup,
 } from "../../../reference/api";
+import { useDirectoryNames } from "../../../reference/directory-names";
 import { studentProfileHref } from "../../../students/href";
 import { useAdminDashboardQuery } from "../../api";
 import {
@@ -62,8 +62,12 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   const canViewAtRisk = me.permissions.includes("view_early_warning");
   const canViewMonitor = me.permissions.includes("view_monitor_presence");
   const atRisk = useAtRiskStudentsQuery(active && canViewAtRisk);
-  const students = useDirectoryQuery("student", active);
-  const studentMap = useLookup(students.data?.data);
+  // Only the top rows are shown, so only their names are looked up.
+  const topAtRisk = [...(atRisk.data?.data ?? [])].sort((a, b) => b.score - a.score).slice(0, 5);
+  const studentMap = useDirectoryNames(
+    topAtRisk.map((row) => row.student_user_id),
+    active,
+  );
   const classes = useClassesQuery(active);
   const classMap = useLookup(classes.data?.data);
 
@@ -129,7 +133,7 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
     });
   }
 
-  const atRiskRows = [...(atRisk.data?.data ?? [])].sort((a, b) => b.score - a.score).slice(0, 5);
+  const atRiskRows = topAtRisk;
 
   const left: BlockSlot[] = [
     {

@@ -3,13 +3,16 @@
 import { ApiError } from "@newsekolah/api-client";
 import { formatDateTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { Button, Dialog, DialogContent, Input, Select, Skeleton, useToast } from "@newsekolah/ui";
+import { Button, Dialog, DialogContent, Input, Skeleton, useToast } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useDirectoryQuery } from "../../reference/api";
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
 import { useLibraryReadInPlaceQuery, useStartLibraryReadInPlaceMutation } from "../visits-api";
 
 /** Per-copy log of "read at a library table" sessions, plus starting a new one. */
@@ -24,17 +27,12 @@ export function ReadInPlaceDialog({
   const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const directory = useDirectoryQuery();
   const log = useLibraryReadInPlaceQuery(copyId ?? "");
   const start = useStartLibraryReadInPlaceMutation(copyId ?? "");
+  const memberLabels = useDirectoryPickerLabels(t("memberPlaceholder"));
 
   const [memberUserId, setMemberUserId] = useState("");
   const [visitorName, setVisitorName] = useState("");
-
-  const memberOptions = (directory.data?.data ?? []).map((u) => ({
-    value: u.id,
-    label: `${u.name} (${u.username})`,
-  }));
 
   function reset() {
     setMemberUserId("");
@@ -78,12 +76,11 @@ export function ReadInPlaceDialog({
           >
             <label className="flex flex-1 flex-col gap-1 text-[13px]">
               <span className="font-medium">{t("member")}</span>
-              <Select
-                options={memberOptions}
+              <DirectoryPicker
                 value={memberUserId}
                 onValueChange={setMemberUserId}
-                placeholder={t("memberPlaceholder")}
-                disabled={directory.isLoading}
+                labels={memberLabels}
+                showUsername
               />
             </label>
             <label className="flex flex-1 flex-col gap-1 text-[13px]">

@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { DisciplineWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { useStudentDisciplineReportMutation } from "../api";
 
@@ -51,8 +51,7 @@ export function StudentDisciplineReportButton({ studentId }: { studentId: string
 /** The staff-facing detail behind one student's discipline record. */
 export function StudentDisciplineView({ studentId }: { studentId: string }): ReactElement {
   const t = useTranslations("app.discipline.studentDetail");
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
+  const studentMap = useDirectoryNames([studentId]);
   const studentName = studentMap.get(studentId)?.name ?? t("unknownStudent");
 
   return (

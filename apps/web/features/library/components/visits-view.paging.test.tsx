@@ -23,9 +23,12 @@ vi.mock("../../../lib/simulation/clock", () => ({
   businessNow: () => new Date("2026-09-15T02:00:00Z"),
 }));
 vi.mock("../../reference/api", () => ({
-  useDirectoryQuery: () => ({ data: { data: [] }, isLoading: false }),
   useLookup: () => new Map(),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([]);
+});
 vi.mock("../visits-api", () => ({
   useLibraryVisitsQuery: mocks.useLibraryVisitsQuery,
   useLibraryVisitSummaryQuery: () => ({ data: undefined, isLoading: false }),

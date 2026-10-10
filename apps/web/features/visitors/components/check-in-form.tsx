@@ -4,15 +4,22 @@ import { ApiError } from "@newsekolah/api-client";
 import { Button, Checkbox, Input, Select, Textarea, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useDirectoryQuery } from "../../reference/api";
+import type { ProfileKind } from "../../reference/api";
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
 import { type CheckInInput, type Visit, useCheckInVisitMutation } from "../api";
 
 type IdType = CheckInInput["id_type"];
 
 const ID_TYPES: IdType[] = ["ktp", "sim", "kartu_pelajar", "kartu_pegawai", "other"];
+
+/** Hosts are teachers or staff; students are never visited. */
+const HOST_KINDS: ProfileKind[] = ["teacher", "staff"];
 
 export function CheckInForm({
   expectedGuestId,
@@ -32,8 +39,7 @@ export function CheckInForm({
   const t = useTranslations("app.visitors.checkIn");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const teachers = useDirectoryQuery("teacher");
-  const staff = useDirectoryQuery("staff");
+  const hostLabels = useDirectoryPickerLabels(t("hostPlaceholder"));
   const checkIn = useCheckInVisitMutation();
 
   const [fullName, setFullName] = useState(defaultFullName ?? "");
@@ -42,15 +48,6 @@ export function CheckInForm({
   const [purpose, setPurpose] = useState(defaultPurpose ?? "");
   const [idChecked, setIdChecked] = useState(false);
   const [idType, setIdType] = useState<IdType>("");
-
-  const hostOptions = useMemo(
-    () =>
-      [...(teachers.data?.data ?? []), ...(staff.data?.data ?? [])].map((u) => ({
-        value: u.id,
-        label: u.name,
-      })),
-    [teachers.data, staff.data],
-  );
 
   const idTypeOptions = ID_TYPES.map((value) => ({
     value,
@@ -117,11 +114,11 @@ export function CheckInForm({
       </label>
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("host")}</span>
-        <Select
-          options={hostOptions}
+        <DirectoryPicker
+          profileKind={HOST_KINDS}
           value={hostUserId}
           onValueChange={setHostUserId}
-          placeholder={t("hostPlaceholder")}
+          labels={hostLabels}
         />
       </label>
       <label className="flex flex-col gap-1 text-[13px]">

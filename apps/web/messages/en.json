@@ -555,6 +555,11 @@
           "thisMonth": "This month",
           "lastMonth": "Last month"
         }
+      },
+      "directoryPicker": {
+        "searchPlaceholder": "Search by name or ID number",
+        "empty": "No match",
+        "loading": "Loading..."
       }
     },
     "schedule": {

@@ -22,7 +22,7 @@ import { useMemo, useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type MentorGroupMember,
   type MentorMeetingNote,
@@ -53,8 +53,7 @@ export function MentorMeetingNotesPanel({
   const canManage = useCan("manage_mentoring");
 
   const { data, isLoading } = useMentorMeetingNotesQuery(groupId);
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
+  const studentMap = useDirectoryNames(members.map((member) => member.student_user_id));
   const studentNames = useMemo(
     () => new Map([...studentMap.entries()].map(([id, s]) => [id, formatDisplayName(s.name)])),
     [studentMap],

@@ -555,6 +555,11 @@
           "thisMonth": "Bulan ini",
           "lastMonth": "Bulan lalu"
         }
+      },
+      "directoryPicker": {
+        "searchPlaceholder": "Cari nama atau nomor induk",
+        "empty": "Tidak ada yang cocok",
+        "loading": "Memuat..."
       }
     },
     "schedule": {

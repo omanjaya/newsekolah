@@ -8,7 +8,7 @@ import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
-import { useLookup, useTeachersQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { useMentorGroupMembersQuery, useMentorGroupQuery } from "../api";
 
 import { MentorGroupMembersPanel } from "./mentor-group-members-panel";
@@ -25,8 +25,7 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
 
   const group = useMentorGroupQuery(groupId);
   const members = useMentorGroupMembersQuery(groupId);
-  const teachers = useTeachersQuery();
-  const teacherMap = useLookup(teachers.data?.data);
+  const teacherMap = useDirectoryNames([group.data?.mentor_user_id]);
 
   if (group.isError && !group.data)
     return <QueryError retry={() => group.refetch()} className="m-4" />;

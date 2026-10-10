@@ -22,7 +22,7 @@ import { useMemo, useState } from "react";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useDeleteClassMutation } from "../../academic/api-school-extras";
-import { useLookup, useTeachersQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { type ClassRow, useEnrollmentsQuery, useTeachingAssignmentsQuery } from "../api";
 
 import { ClassForm } from "./class-form";
@@ -46,8 +46,7 @@ export function ClassDetail({
 }): ReactElement {
   const t = useTranslations("app.school.classes");
   const year = useActiveYear();
-  const teachers = useTeachersQuery();
-  const teacherMap = useLookup(teachers.data?.data);
+  const teacherMap = useDirectoryNames([cls.homeroom_teacher_id]);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const remove = useDeleteClassMutation();

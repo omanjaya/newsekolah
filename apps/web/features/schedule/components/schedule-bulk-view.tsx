@@ -15,11 +15,11 @@ import {
   useLookup,
   usePeriodsQuery,
   useSubjectsQuery,
-  useTeachersQuery,
+  useTeacherRosterQuery,
 } from "../../reference/api";
 import { useBulkImportSchedulesMutation } from "../api";
-import { conflictMessage } from "../conflict-message";
 import { parseBulkImportCsv, type BulkImportRow } from "../csv-import";
+import { useNamedConflict } from "../use-named-conflict";
 
 import { ClearSchedulesSection } from "./clear-schedules-section";
 
@@ -35,16 +35,17 @@ export function ScheduleBulkView(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [csvText, setCsvText] = useState("");
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
-  const teachers = useTeachersQuery();
+  // Name matching needs the teacher roster, but only once a sheet is loaded.
+  const teachers = useTeacherRosterQuery(csvText.trim() !== "");
   const periods = usePeriodsQuery();
   const bulkImport = useBulkImportSchedulesMutation();
   const classMap = useLookup(classes.data?.data);
   const subjectMap = useLookup(subjects.data?.data);
-  const teacherMap = useLookup(teachers.data?.data);
+  const namedConflict = useNamedConflict();
 
-  const [csvText, setCsvText] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   // Kept separate from the toast: a bulk import is atomic (see
   // ClearSchedulesSection's note and useBulkImportSchedulesMutation), so a
@@ -91,15 +92,18 @@ export function ScheduleBulkView(): ReactElement {
         if (fileInputRef.current) fileInputRef.current.value = "";
       },
       onError: (error) => {
-        const named = conflictMessage(
+        void namedConflict(
           error,
-          { classMap, subjectMap, teacherMap, periods: periods.data?.data ?? [] },
+          { classMap, subjectMap, teacherMap: new Map(), periods: periods.data?.data ?? [] },
           tSchedule,
-        );
-        setImportError(
-          named ??
-            (error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN")),
-        );
+        ).then((named) => {
+          setImportError(
+            named ??
+              (error instanceof ApiError
+                ? apiErrorMessage(error.code)
+                : apiErrorMessage("UNKNOWN")),
+          );
+        });
       },
     });
   }

@@ -33,7 +33,7 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
-import { useLookup, useTeachersQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   type MentorGroup,
@@ -63,8 +63,6 @@ export function MentorGroupsView({
   const allGroups = useMentorGroupsQuery(scope === "all");
   const myGroups = useMyMentorGroupsQuery(scope === "mine");
   const { data, isLoading, isError, refetch } = scope === "mine" ? myGroups : allGroups;
-  const teachers = useTeachersQuery();
-  const teacherMap = useLookup(teachers.data?.data);
   const remove = useDeleteMentorGroupMutation();
 
   const [tab, setTab] = useUrlState<string>(
@@ -76,6 +74,7 @@ export function MentorGroupsView({
   const [pendingDelete, setPendingDelete] = useState<MentorGroup | null>(null);
 
   const items = data?.data ?? [];
+  const teacherMap = useDirectoryNames(items.map((item) => item.mentor_user_id));
 
   const columns = useMemo<ColumnDef<MentorGroup>[]>(() => {
     const base: ColumnDef<MentorGroup>[] = [

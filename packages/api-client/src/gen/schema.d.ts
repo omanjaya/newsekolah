@@ -9623,6 +9623,8 @@ export interface components {
             name: string;
             username: string;
             profile_kind?: components["schemas"]["ProfileKind"];
+            /** @description Student number; only set for students on an ids lookup, and only for callers holding view_users */
+            nis?: string;
         };
         /** @enum {string} */
         UserStatus: "active" | "inactive" | "invited";
@@ -19001,6 +19003,8 @@ export interface operations {
                 profile_kind?: components["schemas"]["ProfileKind"];
                 q?: string;
                 limit?: number;
+                /** @description Comma-separated user ids to resolve to names (id-to-name lookups). When present, the result is exactly those users in this school regardless of status; q, profile_kind and limit are ignored. */
+                ids?: string[];
             };
             header?: never;
             path?: never;
