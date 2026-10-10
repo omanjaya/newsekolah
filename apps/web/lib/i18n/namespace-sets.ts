@@ -101,6 +101,7 @@ const APP_FEATURE_NAMESPACES = [
   "app.reports",
   "app.sso",
   "app.studentProfile",
+  "app.quickActions",
   "app.staffAttendance",
   "app.scan",
   "app.supervision",

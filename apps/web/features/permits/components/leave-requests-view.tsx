@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useQuickAction } from "../../../lib/hooks/use-quick-action";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { useLeaveReviewQueueQuery } from "../api";
@@ -36,6 +37,13 @@ export function LeaveRequestsView({ embedded = false }: { embedded?: boolean } =
   // Issuers still get the tab, explaining where their requests arrive.
   const showQueueTab = canReviewStage || canIssueLetter;
   const [creating, setCreating] = useState(false);
+  useQuickAction(
+    "submit-leave",
+    () => {
+      setCreating(true);
+    },
+    canSubmit,
+  );
   // Same cached query ReviewQueue reads (live topics are ref-counted), so the
   // tab can carry the queue's count without a second request.
   const reviewQueue = useLeaveReviewQueueQuery(canReviewStage);
