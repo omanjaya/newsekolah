@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	analyticsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/analytics/service"
+	attendancedomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
@@ -40,9 +41,28 @@ func (a AnalyticsAttendance) DayStatuses(ctx context.Context, tenantID uuid.UUID
 	}
 	out := make([]analyticsservice.StudentDayStatus, len(rows))
 	for i, r := range rows {
-		out[i] = analyticsservice.StudentDayStatus{StudentUserID: r.StudentUserID, Date: r.Date, StatusCode: r.StatusCode}
+		out[i] = analyticsservice.StudentDayStatus{StudentUserID: r.StudentUserID, Date: r.Date, Outcome: analyticsDayOutcome(r.StatusCode)}
 	}
 	return out, nil
+}
+
+// analyticsDayOutcome reduces attendance's daily status code to what the
+// early-warning attendance signal needs. Only alfa (unexcused absence) is an
+// absence; present, sick, permission and dispensation days are recorded days
+// that are not absences. The pseudo-codes that describe missing data are
+// not outcomes at all: no scheduled session means no school day, and an
+// unsubmitted, empty or unknown day has no outcome yet.
+func analyticsDayOutcome(statusCode string) analyticsservice.DayOutcome {
+	switch statusCode {
+	case attendancedomain.StatusNone:
+		return analyticsservice.DayNoSchool
+	case "", attendancedomain.StatusIncomplete, attendancedomain.StatusMixed:
+		return analyticsservice.DayUnrecorded
+	case attendancedomain.StatusCodeAlpha:
+		return analyticsservice.DayAbsent
+	default:
+		return analyticsservice.DayNotAbsent
+	}
 }
 
 func (a AnalyticsAttendance) TodaySubmittedCount(ctx context.Context, tenantID uuid.UUID) (submitted, total int, err error) {

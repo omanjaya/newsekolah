@@ -40,6 +40,14 @@ func (r *Repository) ListActiveTenants(ctx context.Context) ([]uuid.UUID, error)
 	return ids, nil
 }
 
+func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error) {
+	tz, err := r.queries(ctx).AnalyticsGetTenantTimezone(ctx, tenantID)
+	if err != nil {
+		return "", fmt.Errorf("get tenant timezone: %w", err)
+	}
+	return tz, nil
+}
+
 func (r *Repository) ListActiveStudents(ctx context.Context, tenantID, academicYearID uuid.UUID) ([]service.StudentRef, error) {
 	rows, err := r.queries(ctx).AnalyticsListActiveStudents(ctx, db.AnalyticsListActiveStudentsParams{
 		TenantID: tenantID, AcademicYearID: academicYearID,

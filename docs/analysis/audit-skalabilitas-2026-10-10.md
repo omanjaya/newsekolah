@@ -127,6 +127,16 @@ Keterbatasan: peminjaman 13 ribu dan pelanggaran 2.8 ribu masih kecil sehingga s
 - Batas atas: `ListVisitsForRange` `LIMIT 5000`; clamp service untuk opsi staf dan guru; clamp direktori.
 - `platform/database`: default pool dan opsi `WithStatementTimeout`; tes unit `pool_test.go`.
 
+## Catatan perubahan perilaku: sinyal absensi peringatan dini
+
+Saat batch dibuat ditemukan bahwa sinyal absensi tidak bermakna di produksi: ia membandingkan status harian dengan `"absent"` padahal modul absensi mengeluarkan kode satu huruf (alfa adalah `"A"`), sehingga `AbsentDays` selalu 0; jendelanya adalah 20 hari kalender pertama bulan berjalan termasuk hari yang belum terjadi, dengan hari tanpa jadwal (`NONE`) dan belum lengkap (`INCOMPLETE`) ikut sebagai hari yang dipertimbangkan; dan jendela lebih dari sebulan mundur satu bulan dari tanggal 31 sehingga bulan yang sama terbaca dua kali. Aturan sekarang (`analytics/service/attendance_window.go`):
+
+- Jendela: `window_days` hari sekolah terakhir tiap siswa sampai dan termasuk hari ini menurut zona waktu tenant (`tenants.timezone`, UTC bila kosong atau tidak dikenal); hari mendatang tidak pernah dibaca. Tanggal dihitung dari tanggal, bukan aritmetika bulan.
+- Hari sekolah: hari dengan sesi terjadwal untuk siswa itu (status harian absensi bukan `NONE`). Libur, akhir pekan, dan hari sebelum terdaftar tidak masuk.
+- Hari belum lengkap (`INCOMPLETE`, `MIXED`): dilewati dan tidak memakai tempat di jendela, agar sesi yang belum disubmit tidak mengencerkan rasio.
+- Absen: hanya alfa (`attendance/domain.StatusCodeAlpha`, dipetakan di `wiring/analytics.go`, analytics tidak menyalin literal). Sakit, izin, dan dispensasi (S, I, D) adalah hari yang dipertimbangkan tetapi bukan absen: sinyal ini menandai bolos tanpa keterangan.
+- Dampak: skor yang tersimpan berubah pada recompute berikutnya; siswa dengan banyak alfa kini muncul. Ambang bawaan (watch 15%, at risk 25% dari hari terekam, bobot 40) tetap dipakai: dengan hanya alfa yang dihitung, 3 dari 20 hari sudah memicu watch dan 5 dari 20 at risk, yang memang pantas ditindak. Perlu dicatat bahwa bobot absensi 40 lebih kecil dari `at_risk_score` 70, sehingga absensi saja menghasilkan level watch; level at risk memerlukan sinyal kedua.
+
 ## Rekomendasi berurutan
 
 1. (Tinggi) Partisi bulanan otomatis dan retensi untuk `audit_logs` dan `login_attempts`, meniru `EnsurePartition` dan `retention.go` di modul notifikasi. Tanpa ini semua tenant berbagi satu partisi default yang terus membesar dan tidak bisa di-drop murah.

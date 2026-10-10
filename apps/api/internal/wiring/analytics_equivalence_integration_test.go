@@ -17,6 +17,7 @@ import (
 	analyticsrepository "github.com/omanjaya/newsekolah/apps/api/internal/modules/analytics/repository"
 	analyticsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/analytics/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance"
+	attendancedomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
@@ -37,9 +38,11 @@ import (
 // The early-warning recompute used to read every signal one student at a
 // time through the attendance, discipline and grading modules; it now reads
 // them for 500 students at a time. These tests prove the two give the same
-// answers on a seeded school: the original per-student reads are kept below
-// as a reference ("legacy"), run against the same database, and compared
-// with the batch reads and with what Recompute stores.
+// answers on a seeded school: the per-student reads are kept below as a
+// reference ("legacy"), run against the same database, and compared with
+// the batch reads and with what Recompute stores. The attendance reference
+// applies the current rule (latest school days up to today, alfa only); the
+// pre-batch month-by-month window it replaced is gone on purpose.
 
 type analyticsStack struct {
 	attendance *attendanceservice.Service
@@ -118,31 +121,39 @@ func (l *legacySignals) monthlySummary(ctx context.Context, tenantID, studentID 
 	return out, nil
 }
 
-// attendanceWindow is the original month-by-month rolling window.
-func (l *legacySignals) attendanceWindow(ctx context.Context, tenantID, studentID uuid.UUID, windowDays int, now time.Time) (considered, absent int, ok bool) {
-	const maxMonthsBack = 3
+// attendanceWindow is the reference for the attendance rule, implemented
+// independently of the batch path: per student, from the monthly calendar
+// the student sees, the latest windowDays school days up to today. A school
+// day is any day whose calendar status is not "NONE"; days with no outcome
+// yet ("INCOMPLETE", "MIXED") are skipped; only alfa counts as an absence.
+func (l *legacySignals) attendanceWindow(ctx context.Context, tenantID, studentID uuid.UUID, windowDays int, today time.Time) (considered, absent int, ok bool) {
 	var days []legacyDay
-	cursor := now
-	for i := 0; i < maxMonthsBack && len(days) < windowDays; i++ {
+	firstOfMonth := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.UTC)
+	for cursor := firstOfMonth; cursor.After(today.AddDate(0, 0, -windowDays*3-31)); cursor = cursor.AddDate(0, -1, 0) {
 		monthDays, err := l.monthlySummary(ctx, tenantID, studentID, cursor.Format("2006-01"))
 		if err != nil {
 			break
 		}
 		days = append(days, monthDays...)
-		cursor = cursor.AddDate(0, -1, 0)
-	}
-	if len(days) == 0 {
-		return 0, 0, false
 	}
 	sort.Slice(days, func(i, j int) bool { return days[i].date.After(days[j].date) })
-	limit := min(windowDays, len(days))
-	for _, d := range days[:limit] {
-		if d.code == "" {
+	seen := map[string]bool{}
+	for _, d := range days {
+		key := d.date.Format("2006-01-02")
+		if considered == windowDays {
+			break
+		}
+		if d.date.After(today) || seen[key] {
 			continue
 		}
-		considered++
-		if d.code == "absent" {
+		seen[key] = true
+		switch d.code {
+		case attendancedomain.StatusNone, attendancedomain.StatusIncomplete, attendancedomain.StatusMixed, "":
+		case attendancedomain.StatusCodeAlpha:
+			considered++
 			absent++
+		default:
+			considered++
 		}
 	}
 	return considered, absent, considered > 0
@@ -204,7 +215,7 @@ func (l *legacySignals) reportTrend(ctx context.Context, tenantID, studentID uui
 
 func (l *legacySignals) build(ctx context.Context, tenantID, studentID uuid.UUID, policy analyticsdomain.Policy, now time.Time) analyticsdomain.Signals {
 	var signals analyticsdomain.Signals
-	if considered, absent, ok := l.attendanceWindow(ctx, tenantID, studentID, policy.WindowDays, now); ok {
+	if considered, absent, ok := l.attendanceWindow(ctx, tenantID, studentID, policy.WindowDays, now.Truncate(24*time.Hour)); ok {
 		signals.HasAttendance = true
 		signals.ConsideredDays = considered
 		signals.AbsentDays = absent
@@ -335,7 +346,7 @@ func TestAnalyticsRecomputeMatchesPerStudentReads(t *testing.T) {
 		legacyByStudent[r.StudentUserID] = r
 	}
 	levels := map[analyticsdomain.Level]int{}
-	withAttendance, withDiscipline, withTrend := 0, 0, 0
+	withAttendance, withAbsences, withDiscipline, withTrend := 0, 0, 0, 0
 	for _, got := range batchRows {
 		want, ok := legacyByStudent[got.StudentUserID]
 		require.True(t, ok)
@@ -349,6 +360,10 @@ func TestAnalyticsRecomputeMatchesPerStudentReads(t *testing.T) {
 		levels[got.Level]++
 		if got.Signals.HasAttendance {
 			withAttendance++
+			require.LessOrEqual(t, got.Signals.ConsideredDays, analyticsdomain.DefaultPolicy().WindowDays)
+		}
+		if got.Signals.AbsentDays > 0 {
+			withAbsences++
 		}
 		if got.Signals.DisciplinePoints > 0 {
 			withDiscipline++
@@ -359,6 +374,7 @@ func TestAnalyticsRecomputeMatchesPerStudentReads(t *testing.T) {
 	}
 	t.Logf("levels=%v attendance=%d discipline=%d gradeTrend=%d", levels, withAttendance, withDiscipline, withTrend)
 	require.Greater(t, withAttendance, 0)
+	require.Greater(t, withAbsences, 0, "alfa days must reach the stored attendance signal")
 	require.Greater(t, withDiscipline, 0)
 	require.Greater(t, withTrend, 0)
 	require.Greater(t, levels[analyticsdomain.LevelWatch]+levels[analyticsdomain.LevelAtRisk], 0, "the fixture must produce students at risk")

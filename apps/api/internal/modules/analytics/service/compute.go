@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,10 +16,6 @@ import (
 // transaction: each batch reads its signals with a handful of aggregate
 // queries, writes its results with one statement and commits.
 const recomputeBatchSize = 500
-
-// absentStatusCode is the attendance status code the attendance signal
-// counts as an absence.
-const absentStatusCode = "absent"
 
 // RecomputeAllTenants runs Recompute for every active tenant, one tenant
 // at a time, for the periodic River job (transport/jobs) to call. A tenant
@@ -47,6 +42,9 @@ type recomputeScope struct {
 	yearID   uuid.UUID
 	policy   domain.Policy
 	students []StudentRef
+	// today is the current calendar date in the tenant's timezone (as a
+	// UTC-midnight date), the last day the attendance window may include.
+	today time.Time
 }
 
 // Recompute scores every actively enrolled student in tenantID's active
@@ -76,7 +74,11 @@ func (s *Service) Recompute(ctx context.Context, tenantID uuid.UUID) (int, error
 		if err != nil {
 			return fmt.Errorf("list active students: %w", err)
 		}
-		scope = recomputeScope{yearID: yearID, policy: policy, students: students}
+		today, err := s.tenantToday(ctx, tenantID, now)
+		if err != nil {
+			return err
+		}
+		scope = recomputeScope{yearID: yearID, policy: policy, students: students, today: today}
 		return nil
 	})
 	if err != nil {
@@ -104,7 +106,7 @@ func (s *Service) scoreBatch(ctx context.Context, tenantID uuid.UUID, scope reco
 	for i, student := range batch {
 		ids[i] = student.StudentUserID
 	}
-	signals := s.buildSignals(ctx, tenantID, ids, scope.policy, now)
+	signals := s.buildSignals(ctx, tenantID, ids, scope.policy, scope.today)
 
 	results := make([]StoredResult, len(batch))
 	for i, student := range batch {
@@ -129,16 +131,16 @@ func (s *Service) scoreBatch(ctx context.Context, tenantID uuid.UUID, scope reco
 // whole school must not stop because, for example, grading data is still
 // mid-migration, and domain.Score already treats an unavailable signal as
 // contributing nothing, per its own doc comment.
-func (s *Service) buildSignals(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID, policy domain.Policy, now time.Time) map[uuid.UUID]domain.Signals {
+func (s *Service) buildSignals(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID, policy domain.Policy, today time.Time) map[uuid.UUID]domain.Signals {
 	signals := make(map[uuid.UUID]domain.Signals, len(studentIDs))
 	for _, id := range studentIDs {
 		signals[id] = domain.Signals{}
 	}
 
 	if s.attendance != nil {
-		dates := attendanceWindowDates(policy.WindowDays, now)
+		dates := attendanceLookbackDates(policy.WindowDays, today)
 		if rows, err := s.attendance.DayStatuses(ctx, tenantID, studentIDs, dates); err == nil {
-			applyAttendance(signals, rows, dates)
+			applyAttendance(signals, rows, dates, policy.WindowDays)
 		}
 	}
 
@@ -169,67 +171,4 @@ func (s *Service) buildSignals(ctx context.Context, tenantID uuid.UUID, studentI
 	}
 
 	return signals
-}
-
-// applyAttendance counts, per student, the absences among the window's
-// days that have a recorded status. dates may list a date more than once
-// (see attendanceWindowDates); each listing counts, as it did when the
-// window was assembled month by month.
-func applyAttendance(signals map[uuid.UUID]domain.Signals, rows []StudentDayStatus, dates []time.Time) {
-	byStudent := make(map[uuid.UUID]map[string]string, len(signals))
-	for _, row := range rows {
-		days, ok := byStudent[row.StudentUserID]
-		if !ok {
-			days = map[string]string{}
-			byStudent[row.StudentUserID] = days
-		}
-		days[row.Date.Format("2006-01-02")] = row.StatusCode
-	}
-	for id, current := range signals {
-		days := byStudent[id]
-		considered, absent := 0, 0
-		for _, d := range dates {
-			code := days[d.Format("2006-01-02")]
-			if code == "" {
-				continue // no status for that day (not a school day, or not yet submitted)
-			}
-			considered++
-			if code == absentStatusCode {
-				absent++
-			}
-		}
-		if considered > 0 {
-			current.HasAttendance = true
-			current.ConsideredDays = considered
-			current.AbsentDays = absent
-			signals[id] = current
-		}
-	}
-}
-
-// attendanceWindowDates lists the calendar dates the attendance signal
-// looks at: it walks back one month at a time from now until it has
-// collected at least windowDays calendar days, or has looked back far
-// enough that continuing would not be a meaningful "recent" window, then
-// keeps the windowDays latest. The same dates apply to every student, so
-// they are decided once and the statuses asked for in one batch rather
-// than month by month per student.
-func attendanceWindowDates(windowDays int, now time.Time) []time.Time {
-	const maxMonthsBack = 3 // three months comfortably covers windowDays days for any realistic policy
-
-	var days []time.Time
-	cursor := now
-	for i := 0; i < maxMonthsBack && len(days) < windowDays; i++ {
-		first, err := time.Parse("2006-01", cursor.Format("2006-01"))
-		if err != nil {
-			break
-		}
-		for d := first; d.Before(first.AddDate(0, 1, 0)); d = d.AddDate(0, 0, 1) {
-			days = append(days, d)
-		}
-		cursor = cursor.AddDate(0, -1, 0)
-	}
-
-	sort.Slice(days, func(i, j int) bool { return days[i].After(days[j]) })
-	return days[:min(windowDays, len(days))]
 }
