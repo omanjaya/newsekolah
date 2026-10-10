@@ -19,7 +19,7 @@ import { MemberTypesView } from "./member-types-view";
 
 /**
  * One page for the library configuration screens that used to be separate
- * menu entries. Each tab renders the existing view unchanged; the old routes
+ * menu entries. Each tab renders the existing view in `embedded` mode (no second header or nav); the old routes
  * keep working. The tab lives in `?section=` because master data already
  * owns `?tab=` for its own sub-tabs.
  */
@@ -69,17 +69,17 @@ export function LibrarySettingsView(): ReactElement {
         </TabsList>
         {visible.includes("loanRules") && (
           <TabsContent value="loanRules">
-            <LoanRulesView />
+            <LoanRulesView embedded />
           </TabsContent>
         )}
         {visible.includes("memberTypes") && (
           <TabsContent value="memberTypes">
-            <MemberTypesView />
+            <MemberTypesView embedded />
           </TabsContent>
         )}
         {visible.includes("masterData") && (
           <TabsContent value="masterData">
-            <MasterDataView />
+            <MasterDataView embedded />
           </TabsContent>
         )}
       </Tabs>
