@@ -173,7 +173,7 @@ func (h *DisciplineHandler) UpdateWarningLetterTemplatePolicy(ctx context.Contex
 
 func (h *DisciplineHandler) ListViolations(ctx context.Context, request api.ListViolationsRequestObject) (api.ListViolationsResponseObject, error) {
 	p := request.Params
-	f := service.RecordFilter{ClassID: nullUUID(p.ClassId), IncludeVoided: p.IncludeVoided != nil && *p.IncludeVoided, Limit: intOr(p.Limit, 50), Offset: intOr(p.Offset, 0)}
+	f := service.RecordFilter{ClassID: nullUUID(p.ClassId), IncludeVoided: p.IncludeVoided != nil && *p.IncludeVoided, Search: strOr(p.Search), Limit: intOr(p.Limit, 50), Offset: intOr(p.Offset, 0)}
 	if p.From != nil {
 		f.From = &p.From.Time
 	}
@@ -359,7 +359,7 @@ func (h *DisciplineHandler) ListSPCandidates(ctx context.Context, request api.Li
 // Letters.
 
 func (h *DisciplineHandler) ListWarningLetters(ctx context.Context, request api.ListWarningLettersRequestObject) (api.ListWarningLettersResponseObject, error) {
-	letters, err := h.service.ListWarningLetters(ctx, tenantID(ctx), nullUUID(request.Params.ClassId), intOr(request.Params.Limit, 50), intOr(request.Params.Offset, 0))
+	letters, err := h.service.ListWarningLetters(ctx, tenantID(ctx), nullUUID(request.Params.ClassId), strOr(request.Params.Search), intOr(request.Params.Limit, 50), intOr(request.Params.Offset, 0))
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -409,7 +409,7 @@ func counselingInput(b *api.CounselingWrite) service.CounselingInput {
 }
 
 func (h *DisciplineHandler) ListMyCounselings(ctx context.Context, request api.ListMyCounselingsRequestObject) (api.ListMyCounselingsResponseObject, error) {
-	notes, err := h.service.ListMyCounselings(ctx, tenantID(ctx), userID(ctx), intOr(request.Params.Limit, 50), intOr(request.Params.Offset, 0))
+	notes, err := h.service.ListMyCounselings(ctx, tenantID(ctx), userID(ctx), strOr(request.Params.Search), intOr(request.Params.Limit, 50), intOr(request.Params.Offset, 0))
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -421,7 +421,7 @@ func (h *DisciplineHandler) ListBKTeamCounselings(ctx context.Context, request a
 	if request.Params.Topic != nil {
 		topic = domain.CounselingTopic(*request.Params.Topic)
 	}
-	notes, err := h.service.ListBKTeamCounselings(ctx, tenantID(ctx), userID(ctx), topic, intOr(request.Params.Limit, 50), intOr(request.Params.Offset, 0))
+	notes, err := h.service.ListBKTeamCounselings(ctx, tenantID(ctx), userID(ctx), topic, strOr(request.Params.Search), intOr(request.Params.Limit, 50), intOr(request.Params.Offset, 0))
 	if err != nil {
 		return nil, mapError(err)
 	}

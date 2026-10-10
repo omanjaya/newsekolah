@@ -548,6 +548,7 @@ func (s *Service) ListRecords(ctx context.Context, tenantID uuid.UUID, f RecordF
 	if f.Limit <= 0 || f.Limit > 200 {
 		f.Limit = 50
 	}
+	f.Search = SearchTerm(f.Search)
 	var out []domain.ViolationRecord
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeYear(ctx, tenantID)

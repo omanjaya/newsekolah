@@ -485,6 +485,10 @@ where vr.tenant_id = $1 and vr.academic_year_id = $2
   and ($6::date is null or vr.occurred_on >= $6::date)
   and ($7::date is null or vr.occurred_on <= $7::date)
   and ($8::bool or vr.voided_at is null)
+  and ($9::text is null or exists (
+    select 1 from users su left join student_profiles sp on sp.user_id = su.id
+    where su.id = vr.student_user_id
+      and (su.name ilike '%' || $9 || '%' or sp.nis ilike '%' || $9 || '%')))
 order by vr.occurred_on desc, vr.created_at desc
 limit $3 offset $4
 `
@@ -498,6 +502,7 @@ type ListViolationRecordsParams struct {
 	FromDate       pgtype.Date `json:"from_date"`
 	ToDate         pgtype.Date `json:"to_date"`
 	IncludeVoided  bool        `json:"include_voided"`
+	Search         pgtype.Text `json:"search"`
 }
 
 type ListViolationRecordsRow struct {
@@ -522,7 +527,8 @@ type ListViolationRecordsRow struct {
 	TypeCategory        string             `json:"type_category"`
 }
 
-// The admin list: optional class (via active enrollment) and date range filters.
+// The admin list: optional class (via active enrollment), date range and
+// student name/NIS search (trigram indexes on users.name, student_profiles.nis).
 func (q *Queries) ListViolationRecords(ctx context.Context, arg ListViolationRecordsParams) ([]ListViolationRecordsRow, error) {
 	rows, err := q.db.Query(ctx, listViolationRecords,
 		arg.TenantID,
@@ -533,6 +539,7 @@ func (q *Queries) ListViolationRecords(ctx context.Context, arg ListViolationRec
 		arg.FromDate,
 		arg.ToDate,
 		arg.IncludeVoided,
+		arg.Search,
 	)
 	if err != nil {
 		return nil, err

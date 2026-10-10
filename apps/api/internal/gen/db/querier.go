@@ -1025,9 +1025,12 @@ type Querier interface {
 	ListCopiesForTitle(ctx context.Context, arg ListCopiesForTitleParams) ([]LibraryCopy, error)
 	ListCorrectionsByEntry(ctx context.Context, arg ListCorrectionsByEntryParams) ([]AttendanceCorrection, error)
 	ListCounselingAttachments(ctx context.Context, arg ListCounselingAttachmentsParams) ([]CounselingAttachment, error)
+	// The counselor's own notes, optionally by student name/NIS (never note
+	// content: it is encrypted at rest).
 	ListCounselingsByCounselor(ctx context.Context, arg ListCounselingsByCounselorParams) ([]Counseling, error)
 	// Cross-student view for any counselor (duty "counselor"): every note the
-	// author chose to share with the whole BK team, optionally by topic.
+	// author chose to share with the whole BK team, optionally by topic and
+	// student name/NIS (never note content: it is encrypted at rest).
 	ListCounselingsByVisibility(ctx context.Context, arg ListCounselingsByVisibilityParams) ([]Counseling, error)
 	ListCounselingsForStudent(ctx context.Context, arg ListCounselingsForStudentParams) ([]Counseling, error)
 	// Every schedule occurrence whose period is currently running (start
@@ -1294,7 +1297,8 @@ type Querier interface {
 	// digest hour is the current tenant-local hour.
 	ListUsersDueForDigest(ctx context.Context, arg ListUsersDueForDigestParams) ([]NotificationSetting, error)
 	ListViolationAttachments(ctx context.Context, arg ListViolationAttachmentsParams) ([]ViolationAttachment, error)
-	// The admin list: optional class (via active enrollment) and date range filters.
+	// The admin list: optional class (via active enrollment), date range and
+	// student name/NIS search (trigram indexes on users.name, student_profiles.nis).
 	ListViolationRecords(ctx context.Context, arg ListViolationRecordsParams) ([]ListViolationRecordsRow, error)
 	ListViolationRecordsForStudent(ctx context.Context, arg ListViolationRecordsForStudentParams) ([]ListViolationRecordsForStudentRow, error)
 	ListViolationTypes(ctx context.Context, arg ListViolationTypesParams) ([]ViolationType, error)

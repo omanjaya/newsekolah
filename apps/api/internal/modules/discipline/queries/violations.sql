@@ -57,7 +57,8 @@ where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.student_user_id = $3
 order by vr.occurred_on desc, vr.created_at desc;
 
 -- name: ListViolationRecords :many
--- The admin list: optional class (via active enrollment) and date range filters.
+-- The admin list: optional class (via active enrollment), date range and
+-- student name/NIS search (trigram indexes on users.name, student_profiles.nis).
 select vr.*, vt.code as type_code, vt.name as type_name, vt.category as type_category
 from violation_records vr
 join violation_types vt on vt.id = vr.violation_type_id
@@ -68,6 +69,10 @@ where vr.tenant_id = $1 and vr.academic_year_id = $2
   and (sqlc.narg(from_date)::date is null or vr.occurred_on >= sqlc.narg(from_date)::date)
   and (sqlc.narg(to_date)::date is null or vr.occurred_on <= sqlc.narg(to_date)::date)
   and (sqlc.arg(include_voided)::bool or vr.voided_at is null)
+  and (sqlc.narg(search)::text is null or exists (
+    select 1 from users su left join student_profiles sp on sp.user_id = su.id
+    where su.id = vr.student_user_id
+      and (su.name ilike '%' || sqlc.narg(search) || '%' or sp.nis ilike '%' || sqlc.narg(search) || '%')))
 order by vr.occurred_on desc, vr.created_at desc
 limit $3 offset $4;
 

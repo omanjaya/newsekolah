@@ -18,6 +18,10 @@ where wl.tenant_id = $1 and wl.academic_year_id = $2
   and (sqlc.narg(class_id)::uuid is null or exists (
     select 1 from enrollments e where e.tenant_id = wl.tenant_id and e.academic_year_id = wl.academic_year_id
       and e.student_user_id = wl.student_user_id and e.class_id = sqlc.narg(class_id)::uuid and e.status = 'active'))
+  and (sqlc.narg(search)::text is null or exists (
+    select 1 from users su left join student_profiles sp on sp.user_id = su.id
+    where su.id = wl.student_user_id
+      and (su.name ilike '%' || sqlc.narg(search) || '%' or sp.nis ilike '%' || sqlc.narg(search) || '%')))
 order by wl.issued_at desc
 limit $3 offset $4;
 
