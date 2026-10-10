@@ -18,6 +18,7 @@ func clearEnv(t *testing.T) {
 		"S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY", "S3_PUBLIC_ENDPOINT", "S3_REGION", "SMTP_URL",
 		"WHATSAPP_PROVIDER", "WHATSAPP_TOKEN", "WHATSAPP_PHONE_ID",
 		"OTEL_EXPORTER_OTLP_ENDPOINT", "SEED_PASSWORD", "OPENAPI_VALIDATION",
+		"AUDIT_LOG_RETENTION_MONTHS", "LOGIN_ATTEMPT_RETENTION_DAYS", "WEBHOOK_DELIVERY_RETENTION_DAYS",
 	}
 	for _, v := range vars {
 		t.Setenv(v, "")
@@ -232,5 +233,58 @@ func TestLoad_RejectsInvalidS3PublicEndpoint(t *testing.T) {
 
 	if _, err := Load(); err == nil {
 		t.Fatal("expected Load to reject an S3_PUBLIC_ENDPOINT without a scheme")
+	}
+}
+
+func TestLoad_RetentionDefaults(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/test")
+	t.Setenv("JWT_SIGNING_KEY", "base64key")
+	t.Setenv("DOCUMENT_SIGNING_KEY", "a-test-document-signing-key-32-chars-long")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.AuditLogRetentionMonths != 24 || cfg.LoginAttemptRetentionDays != 90 || cfg.WebhookDeliveryRetentionDays != 30 {
+		t.Errorf("unexpected retention defaults: %d months, %d days, %d days",
+			cfg.AuditLogRetentionMonths, cfg.LoginAttemptRetentionDays, cfg.WebhookDeliveryRetentionDays)
+	}
+}
+
+func TestLoad_RetentionOverridesAndLimits(t *testing.T) {
+	cases := []struct {
+		name, value string
+		wantErr     bool
+		want        int
+	}{
+		{"explicit value", "36", false, 36},
+		{"zero disables", "0", false, 0},
+		{"below floor", "6", true, 0},
+		{"negative", "-1", true, 0},
+		{"not a number", "two years", true, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			clearEnv(t)
+			t.Setenv("DATABASE_URL", "postgres://localhost/test")
+			t.Setenv("JWT_SIGNING_KEY", "base64key")
+			t.Setenv("DOCUMENT_SIGNING_KEY", "a-test-document-signing-key-32-chars-long")
+			t.Setenv("AUDIT_LOG_RETENTION_MONTHS", tc.value)
+
+			cfg, err := Load()
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("expected Load to reject the value")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Load: %v", err)
+			}
+			if cfg.AuditLogRetentionMonths != tc.want {
+				t.Errorf("AuditLogRetentionMonths = %d, want %d", cfg.AuditLogRetentionMonths, tc.want)
+			}
+		})
 	}
 }

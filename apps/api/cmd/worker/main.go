@@ -162,7 +162,8 @@ func run(logger *slog.Logger) error {
 	// doc comment, leaves Admin nil: this process never calls
 	// CreateTenant, only the export worker cmd/api's RequestExport
 	// enqueues.
-	platformDeps := platform.Dependencies{Pool: pool, Clock: clock.Real{}, Mode: cfg.TenancyMode, Bucket: cfg.S3Bucket, Sealer: sealer}
+	platformDeps := platform.Dependencies{Pool: pool, Clock: clock.Real{}, Mode: cfg.TenancyMode, Bucket: cfg.S3Bucket, Sealer: sealer,
+		Retention: wiring.RetentionPolicy(cfg), Logger: logger}
 	if sharedStorage != nil {
 		platformDeps.Storage = wiring.PlatformStorage{Client: sharedStorage}
 	}
@@ -245,7 +246,7 @@ func run(logger *slog.Logger) error {
 	periodic = append(periodic, announcementsModule.RegisterJobs(workers)...)
 	periodic = append(periodic, reportsModule.RegisterJobs(workers, wiring.ReportsEmailSender{Email: senders.Email}, logger)...)
 	periodic = append(periodic, libraryModule.RegisterJobs(workers, logger)...)
-	platformModule.RegisterJobs(workers)
+	periodic = append(periodic, platformModule.RegisterJobs(workers)...)
 
 	client, err := jobs.NewClient(pool, workers, logger, periodic...)
 	if err != nil {
