@@ -36,7 +36,7 @@ import { MembershipPolicyForm } from "./membership-policy-form";
 const WEEKDAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
 export function ClubsView(): ReactElement {
-  const workspace = useTranslations("app.serviceWorkspace");
+  const workspace = useTranslations("app.workspace");
   const t = useTranslations("app.activities.clubs");
   const canManage = useCan("manage_extracurriculars");
   const canManagePolicy = useCan("manage_settings");
@@ -158,7 +158,7 @@ export function ClubsView(): ReactElement {
     // reference pattern.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <ActivitiesWorkspaceNav />
-      <PageHeader eyebrow={t("eyebrow")} title={workspace("activities")} />
+      <PageHeader eyebrow={t("eyebrow")} title={workspace("studentActivities")} />
 
       <div className="flex flex-wrap items-center justify-end gap-2">
         {(canManage || canManagePolicy) && (

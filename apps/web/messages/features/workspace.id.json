@@ -64,5 +64,7 @@
     "schedule": "Jadwal",
     "leave-requests": "Izin"
   },
-  "children": "Anak Saya"
+  "children": "Anak Saya",
+  "learning": "Pembelajaran",
+  "studentActivities": "Kegiatan Siswa"
 }
