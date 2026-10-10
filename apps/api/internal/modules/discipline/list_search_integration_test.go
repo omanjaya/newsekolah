@@ -62,7 +62,11 @@ func TestListSearchFiltersByStudentNameAndNIS(t *testing.T) {
 			StudentUserID: student, ViolationTypeID: vt.ID, OccurredOn: time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC), ReporterUserID: fx.counselorID,
 		})
 		require.NoError(t, err)
-		_, err = mod.Service.IssueWarningLetter(ctx, fx.tenantID, student, fx.counselorID, 1)
+		// Seeded directly: the service numbers letters through the document
+		// pipeline, which collides across students when none is wired in.
+		_, err = pg.AdminPool.Exec(ctx, `insert into warning_letters
+			(tenant_id, academic_year_id, student_user_id, level, level_label, threshold_points, total_points, letter_number)
+			values ($1, $2, $3, 1, 'SP 1', 30, 30, $4)`, fx.tenantID, fx.yearID, student, uuid.NewString())
 		require.NoError(t, err)
 		_, err = mod.Service.CreateCounseling(ctx, fx.tenantID, fx.counselorID, service.CounselingInput{
 			StudentUserID: student, SessionAt: time.Now(), Kind: domain.CounselingIndividual, Topic: domain.TopicPersonal,

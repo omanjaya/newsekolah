@@ -69,11 +69,11 @@ func TestMigration0120_UpDownUp_PreservesAndRebuildsLocalDate(t *testing.T) {
 	t.Cleanup(func() { _, _ = m.Close() })
 
 	// Down: local_date must be gone, and the unique index restored to
-	// opened_date with the same status filter 0081 left it at. Two steps,
-	// not one: dbtest.Start already applied every migration up to the
-	// latest (0121_operator_alert_settings, unrelated to workflow_instances),
-	// so reversing 0120 itself means stepping past that one first.
-	require.NoError(t, m.Steps(-2))
+	// opened_date with the same status filter 0081 left it at. dbtest.Start
+	// already applied every migration, so migrate to the version just below
+	// 0120 by number rather than by a step count that every later migration
+	// would silently invalidate.
+	require.NoError(t, m.Migrate(119))
 
 	require.False(t, hasColumn(t, ctx, pg.AdminPool, "workflow_instances", "local_date"),
 		"local_date must be dropped by the down migration")
@@ -88,8 +88,8 @@ func TestMigration0120_UpDownUp_PreservesAndRebuildsLocalDate(t *testing.T) {
 	require.Equal(t, string(domain.StatusInProgress), status)
 
 	// Up again: local_date must return, backfilled from opened_at and
-	// the tenant's own timezone. Symmetric with the two-step reversal above.
-	require.NoError(t, m.Steps(2))
+	// the tenant's own timezone.
+	require.NoError(t, m.Up())
 
 	require.True(t, hasColumn(t, ctx, pg.AdminPool, "workflow_instances", "local_date"),
 		"local_date must be restored by reapplying the up migration")
