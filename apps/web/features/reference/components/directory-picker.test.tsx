@@ -78,4 +78,25 @@ describe("DirectoryPicker", () => {
     await user.click(await screen.findByText("Siswa ani"));
     expect(onValueChange).toHaveBeenCalledWith("u1", "Siswa ani");
   });
+
+  it("resolves the label of a preset value by id and searches everyone without a kind", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    get.mockImplementation((_path: string, init: { params: { query: { ids?: string[] } } }) =>
+      Promise.resolve({
+        data: init.params.query.ids
+          ? [{ id: "u9", name: "Sari Dewi", username: "u9" }]
+          : [{ id: "u1", name: "Lain", username: "u1" }],
+      }),
+    );
+    render(
+      <QueryClientProvider client={client}>
+        <DirectoryPicker value="u9" onValueChange={vi.fn()} labels={labels} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole("button", { name: "Sari Dewi" })).toBeInTheDocument();
+    expect(get).toHaveBeenCalledWith("/v1/directory/users", {
+      params: { query: { q: "", limit: DIRECTORY_PICKER_LIMIT } },
+    });
+  });
 });
