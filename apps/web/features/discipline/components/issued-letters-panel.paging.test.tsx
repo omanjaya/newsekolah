@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -62,12 +62,14 @@ describe("IssuedLettersPanel paging", () => {
     expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith(undefined, {
       limit: 50,
       offset: 0,
+      search: "",
     });
     await user.click(screen.getByRole("button", { name: "next" }));
 
     expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith(undefined, {
       limit: 50,
       offset: 50,
+      search: "",
     });
     expect(new URLSearchParams(window.location.search).get("letters_page")).toBe("2");
   });
@@ -83,7 +85,27 @@ describe("IssuedLettersPanel paging", () => {
     expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith("class-7a", {
       limit: 50,
       offset: 0,
+      search: "",
     });
     expect(new URLSearchParams(window.location.search).get("letters_page")).toBe("1");
+  });
+
+  it("sends the debounced search and returns to the first page", async () => {
+    window.history.replaceState(null, "", "/discipline/warning-letters?letters_page=3");
+    const user = userEvent.setup();
+    render(<IssuedLettersPanel />);
+
+    await user.type(screen.getByRole("searchbox", { name: "searchPlaceholder" }), "bud");
+
+    await waitFor(() => {
+      expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith(undefined, {
+        limit: 50,
+        offset: 0,
+        search: "bud",
+      });
+    });
+    const params = new URLSearchParams(window.location.search);
+    expect(params.get("letters_q")).toBe("bud");
+    expect(params.get("letters_page")).toBe("1");
   });
 });

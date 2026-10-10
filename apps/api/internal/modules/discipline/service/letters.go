@@ -179,7 +179,7 @@ func violationLines(records []domain.ViolationRecord) []map[string]any {
 	return out
 }
 
-func (s *Service) ListWarningLetters(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID, limit, offset int) ([]domain.WarningLetter, error) {
+func (s *Service) ListWarningLetters(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID, search string, limit, offset int) ([]domain.WarningLetter, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
@@ -189,7 +189,7 @@ func (s *Service) ListWarningLetters(ctx context.Context, tenantID uuid.UUID, cl
 		if err != nil {
 			return err
 		}
-		out, err = s.repo.ListLetters(ctx, tenantID, yearID, classID, limit, max(offset, 0))
+		out, err = s.repo.ListLetters(ctx, tenantID, yearID, classID, SearchTerm(search), limit, max(offset, 0))
 		return err
 	})
 	return out, err

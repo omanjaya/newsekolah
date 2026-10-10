@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
 
-import type { CounselingTopic, CounselingWrite, ListPage } from "./api";
+import { searchParam, type CounselingTopic, type CounselingWrite, type ListPage } from "./api";
 
 // Counseling notes and their attachments: see api.ts's own top-of-file
 // comment (kept out of that file, which is at max-lines).
@@ -32,7 +32,13 @@ export function useMyCounselingsQuery(page: ListPage) {
     queryKey: keys.myCounselings(page),
     queryFn: () =>
       client.GET("/v1/discipline/counselings", {
-        params: { query: { limit: page.limit, offset: page.offset } },
+        params: {
+          query: {
+            search: searchParam(page),
+            limit: page.limit,
+            offset: page.offset,
+          },
+        },
       }),
   });
 }
@@ -107,7 +113,12 @@ export function useBKTeamCounselingsQuery(topic: CounselingTopic | "", page: Lis
     queryFn: () =>
       client.GET("/v1/discipline/counselings/bk-team", {
         params: {
-          query: { topic: topic || undefined, limit: page.limit, offset: page.offset },
+          query: {
+            topic: topic || undefined,
+            search: searchParam(page),
+            limit: page.limit,
+            offset: page.offset,
+          },
         },
       }),
   });

@@ -52,15 +52,15 @@ type Repository interface {
 	CreateLetter(ctx context.Context, l domain.WarningLetter) (domain.WarningLetter, error)
 	GetLetter(ctx context.Context, tenantID, id uuid.UUID) (domain.WarningLetter, bool, error)
 	ListLettersForStudent(ctx context.Context, tenantID, yearID, studentID uuid.UUID) ([]domain.WarningLetter, error)
-	ListLetters(ctx context.Context, tenantID, yearID uuid.UUID, classID uuid.NullUUID, limit, offset int) ([]domain.WarningLetter, error)
+	ListLetters(ctx context.Context, tenantID, yearID uuid.UUID, classID uuid.NullUUID, search string, limit, offset int) ([]domain.WarningLetter, error)
 	ListSPCandidates(ctx context.Context, tenantID, yearID uuid.UUID, f CandidateFilter) ([]SPCandidate, error)
 
 	CreateCounseling(ctx context.Context, c domain.Counseling, content, followUp, careerGoals, problemDescription []byte, keyID string) (domain.Counseling, error)
 	UpdateCounseling(ctx context.Context, c domain.Counseling, content, followUp, careerGoals, problemDescription []byte, keyID string) (domain.Counseling, error)
 	GetCounseling(ctx context.Context, tenantID, id uuid.UUID) (EncryptedCounseling, bool, error)
 	ListCounselingsForStudent(ctx context.Context, tenantID, yearID, studentID uuid.UUID) ([]EncryptedCounseling, error)
-	ListCounselingsByCounselor(ctx context.Context, tenantID, yearID, counselorID uuid.UUID, limit, offset int) ([]EncryptedCounseling, error)
-	ListCounselingsByVisibility(ctx context.Context, tenantID, yearID uuid.UUID, topic string, limit, offset int) ([]EncryptedCounseling, error)
+	ListCounselingsByCounselor(ctx context.Context, tenantID, yearID, counselorID uuid.UUID, search string, limit, offset int) ([]EncryptedCounseling, error)
+	ListCounselingsByVisibility(ctx context.Context, tenantID, yearID uuid.UUID, topic, search string, limit, offset int) ([]EncryptedCounseling, error)
 	DeleteCounseling(ctx context.Context, tenantID, id uuid.UUID) error
 
 	CreateCounselingAttachment(ctx context.Context, tenantID, counselingID, assetID uuid.UUID) (domain.CounselingAttachment, error)
@@ -121,6 +121,7 @@ type RecordFilter struct {
 	ClassID       uuid.NullUUID
 	From, To      *time.Time
 	IncludeVoided bool
+	Search        string // already normalised by SearchTerm
 	Limit, Offset int
 }
 

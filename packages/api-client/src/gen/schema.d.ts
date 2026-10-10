@@ -16394,6 +16394,8 @@ export interface operations {
                 from?: string;
                 to?: string;
                 include_voided?: boolean;
+                /** @description Student name or NIS; ignored under 2 characters */
+                search?: string;
                 limit?: number;
                 offset?: number;
             };
@@ -16783,6 +16785,8 @@ export interface operations {
         parameters: {
             query?: {
                 class_id?: string;
+                /** @description Student name or NIS; ignored under 2 characters */
+                search?: string;
                 limit?: number;
                 offset?: number;
             };
@@ -16892,6 +16896,8 @@ export interface operations {
     listMyCounselings: {
         parameters: {
             query?: {
+                /** @description Student name or NIS; ignored under 2 characters */
+                search?: string;
                 limit?: number;
                 offset?: number;
             };
@@ -17051,6 +17057,8 @@ export interface operations {
         parameters: {
             query?: {
                 topic?: components["schemas"]["CounselingTopic"];
+                /** @description Student name or NIS; ignored under 2 characters */
+                search?: string;
                 limit?: number;
                 offset?: number;
             };

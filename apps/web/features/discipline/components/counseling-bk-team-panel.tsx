@@ -38,10 +38,12 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
   const locale = useLocale() as Locale;
   const [topic, setTopic] = useUrlState<(typeof TOPIC_VALUES)[number]>("topic", TOPIC_VALUES, "");
 
+  const [search, setSearch] = useUrlState<string>("team_q", () => true, "");
   const paging = useOffsetPage(PAGE_SIZE, "team_page");
   const { data, isLoading } = useBKTeamCounselingsQuery(topic, {
     limit: paging.limit,
     offset: paging.offset,
+    search,
   });
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
@@ -116,7 +118,9 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
-          globalFilter=""
+          globalFilter={search}
+          onGlobalFilterChange={paging.resetting(setSearch)}
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
           filtersLabels={{
             reset: t("bkTeam.reset"),

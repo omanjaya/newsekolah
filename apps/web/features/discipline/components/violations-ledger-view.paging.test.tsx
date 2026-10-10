@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -60,12 +60,14 @@ describe("ViolationsLedgerView paging", () => {
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(expect.anything(), {
       limit: 50,
       offset: 0,
+      search: "",
     });
     await user.click(screen.getByRole("button", { name: "next" }));
 
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(expect.anything(), {
       limit: 50,
       offset: 50,
+      search: "",
     });
     expect(new URLSearchParams(window.location.search).get("ledger_page")).toBe("2");
   });
@@ -80,8 +82,27 @@ describe("ViolationsLedgerView paging", () => {
 
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ classId: "class-7a" }),
-      { limit: 50, offset: 0 },
+      { limit: 50, offset: 0, search: "" },
     );
     expect(new URLSearchParams(window.location.search).get("ledger_page")).toBe("1");
+  });
+
+  it("sends the debounced search and returns to the first page", async () => {
+    window.history.replaceState(null, "", "/discipline/violations?ledger_page=3");
+    const user = userEvent.setup();
+    render(<ViolationsLedgerView />);
+
+    await user.type(screen.getByRole("searchbox", { name: "searchPlaceholder" }), "bud");
+
+    await waitFor(() => {
+      expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(expect.anything(), {
+        limit: 50,
+        offset: 0,
+        search: "bud",
+      });
+    });
+    const params = new URLSearchParams(window.location.search);
+    expect(params.get("ledger_q")).toBe("bud");
+    expect(params.get("ledger_page")).toBe("1");
   });
 });

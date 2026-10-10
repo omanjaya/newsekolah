@@ -4408,6 +4408,12 @@ paths:
           schema:
             type: boolean
             default: false
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Student name or NIS; ignored under 2 characters
         - name: limit
           in: query
           schema:
@@ -4934,6 +4940,12 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Student name or NIS; ignored under 2 characters
         - name: limit
           in: query
           schema:
@@ -5065,6 +5077,12 @@ paths:
       x-permission: manage_counseling
       summary: Counseling notes written by the current counselor
       parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Student name or NIS; ignored under 2 characters
         - name: limit
           in: query
           schema:
@@ -5248,6 +5266,12 @@ paths:
           in: query
           schema:
             $ref: "#/components/schemas/CounselingTopic"
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Student name or NIS; ignored under 2 characters
         - name: limit
           in: query
           schema:

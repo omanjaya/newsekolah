@@ -130,7 +130,7 @@ func (f *fakeRecordRepo) GetLetter(context.Context, uuid.UUID, uuid.UUID) (domai
 	f.unimplemented()
 	return domain.WarningLetter{}, false, nil
 }
-func (f *fakeRecordRepo) ListLetters(context.Context, uuid.UUID, uuid.UUID, uuid.NullUUID, int, int) ([]domain.WarningLetter, error) {
+func (f *fakeRecordRepo) ListLetters(context.Context, uuid.UUID, uuid.UUID, uuid.NullUUID, string, int, int) ([]domain.WarningLetter, error) {
 	f.unimplemented()
 	return nil, nil
 }
@@ -154,11 +154,11 @@ func (f *fakeRecordRepo) ListCounselingsForStudent(context.Context, uuid.UUID, u
 	f.unimplemented()
 	return nil, nil
 }
-func (f *fakeRecordRepo) ListCounselingsByCounselor(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, int, int) ([]EncryptedCounseling, error) {
+func (f *fakeRecordRepo) ListCounselingsByCounselor(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, int, int) ([]EncryptedCounseling, error) {
 	f.unimplemented()
 	return nil, nil
 }
-func (f *fakeRecordRepo) ListCounselingsByVisibility(context.Context, uuid.UUID, uuid.UUID, string, int, int) ([]EncryptedCounseling, error) {
+func (f *fakeRecordRepo) ListCounselingsByVisibility(context.Context, uuid.UUID, uuid.UUID, string, string, int, int) ([]EncryptedCounseling, error) {
 	f.unimplemented()
 	return nil, nil
 }

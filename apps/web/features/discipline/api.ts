@@ -169,6 +169,14 @@ export interface ViolationFilters {
 export interface ListPage {
   limit: number;
   offset: number;
+  /** Student name or NIS; the API ignores terms under 2 characters. */
+  search?: string;
+}
+
+/** The `search` query value for a page: trimmed, and omitted when empty. */
+export function searchParam(page: ListPage): string | undefined {
+  const term = page.search?.trim() ?? "";
+  return term === "" ? undefined : term;
 }
 
 export function useViolationsQuery(filters: ViolationFilters, page: ListPage) {
@@ -183,6 +191,7 @@ export function useViolationsQuery(filters: ViolationFilters, page: ListPage) {
             from: filters.from || undefined,
             to: filters.to || undefined,
             include_voided: filters.includeVoided,
+            search: searchParam(page),
             limit: page.limit,
             offset: page.offset,
           },
@@ -306,7 +315,14 @@ export function useWarningLettersQuery(classId: string | undefined, page: ListPa
     queryKey: keys.warningLetters(classId ?? "", page),
     queryFn: () =>
       client.GET("/v1/discipline/warning-letters", {
-        params: { query: { class_id: classId, limit: page.limit, offset: page.offset } },
+        params: {
+          query: {
+            class_id: classId,
+            search: searchParam(page),
+            limit: page.limit,
+            offset: page.offset,
+          },
+        },
       }),
   });
 }

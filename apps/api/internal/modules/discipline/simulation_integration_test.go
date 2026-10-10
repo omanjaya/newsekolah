@@ -94,14 +94,14 @@ func TestSimulatedFutureDutyHonoredWithinSimulatedWindow(t *testing.T) {
 	// Without a simulation header, the real wall-clock date is still
 	// before starts_on, so the duty is not yet active and the counselor
 	// gate refuses.
-	_, err = mod.Service.ListBKTeamCounselings(ctx, fx.tenantID, fx.counselorID, "", 10, 0)
+	_, err = mod.Service.ListBKTeamCounselings(ctx, fx.tenantID, fx.counselorID, "", "", 10, 0)
 	require.ErrorIs(t, err, domain.ErrCounselingForbidden,
 		"the duty starts in the future, so without simulation it must not be active yet")
 
 	// A simulated date inside the (open-ended) window starting at
 	// futureStart must honor the duty.
 	simCtx := clock.WithTime(ctx, futureStart.AddDate(0, 0, 2))
-	_, err = mod.Service.ListBKTeamCounselings(simCtx, fx.tenantID, fx.counselorID, "", 10, 0)
+	_, err = mod.Service.ListBKTeamCounselings(simCtx, fx.tenantID, fx.counselorID, "", "", 10, 0)
 	require.NoError(t, err, "a simulated date inside the duty's window must be honored")
 }
 
@@ -136,7 +136,7 @@ func TestSimulatedDutyUsesTenantLocalDate(t *testing.T) {
 
 	// 2026-10-05T23:30:00Z is 2026-10-06T07:30:00+08:00 in Asia/Makassar.
 	simCtx := clock.WithTime(ctx, time.Date(2026, 10, 5, 23, 30, 0, 0, time.UTC))
-	_, err = mod.Service.ListBKTeamCounselings(simCtx, fx.tenantID, fx.counselorID, "", 10, 0)
+	_, err = mod.Service.ListBKTeamCounselings(simCtx, fx.tenantID, fx.counselorID, "", "", 10, 0)
 	require.NoError(t, err,
 		"2026-10-05T23:30:00Z is already 2026-10-06 in the tenant's Asia/Makassar timezone, so the duty starting that day must be active")
 }

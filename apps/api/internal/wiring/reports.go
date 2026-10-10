@@ -508,7 +508,7 @@ func (d DisciplineReports) warningSections(ctx context.Context, tenantID uuid.UU
 }
 
 func (d DisciplineReports) warningSection(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID, name string) (reportdoc.Section, error) {
-	letters, err := d.Svc.ListWarningLetters(ctx, tenantID, classID, 200, 0)
+	letters, err := d.Svc.ListWarningLetters(ctx, tenantID, classID, "", 200, 0)
 	if err != nil {
 		return reportdoc.Section{}, err
 	}

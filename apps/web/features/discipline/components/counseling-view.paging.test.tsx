@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -53,10 +53,37 @@ describe("CounselingView paging", () => {
     const user = userEvent.setup();
     render(<CounselingView />);
 
-    expect(mocks.useMyCounselingsQuery).toHaveBeenLastCalledWith({ limit: 50, offset: 0 });
+    expect(mocks.useMyCounselingsQuery).toHaveBeenLastCalledWith({
+      limit: 50,
+      offset: 0,
+      search: "",
+    });
     await user.click(screen.getByRole("button", { name: "next" }));
 
-    expect(mocks.useMyCounselingsQuery).toHaveBeenLastCalledWith({ limit: 50, offset: 50 });
+    expect(mocks.useMyCounselingsQuery).toHaveBeenLastCalledWith({
+      limit: 50,
+      offset: 50,
+      search: "",
+    });
     expect(new URLSearchParams(window.location.search).get("mine_page")).toBe("2");
+  });
+
+  it("sends the debounced search and returns to the first page", async () => {
+    window.history.replaceState(null, "", "/discipline/counseling?mine_page=3");
+    const user = userEvent.setup();
+    render(<CounselingView />);
+
+    await user.type(screen.getByRole("searchbox", { name: "searchPlaceholder" }), "bud");
+
+    await waitFor(() => {
+      expect(mocks.useMyCounselingsQuery).toHaveBeenLastCalledWith({
+        limit: 50,
+        offset: 0,
+        search: "bud",
+      });
+    });
+    const params = new URLSearchParams(window.location.search);
+    expect(params.get("mine_q")).toBe("bud");
+    expect(params.get("mine_page")).toBe("1");
   });
 });

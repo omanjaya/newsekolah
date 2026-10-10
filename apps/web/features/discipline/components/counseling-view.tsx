@@ -54,10 +54,12 @@ export function CounselingView(): ReactElement {
   const searchParams = useSearchParams();
   const initialStudentId = searchParams.get("studentId") ?? undefined;
 
+  const [search, setSearch] = useUrlState<string>("mine_q", () => true, "");
   const paging = useOffsetPage(PAGE_SIZE, "mine_page");
   const { data, isLoading } = useMyCounselingsQuery({
     limit: paging.limit,
     offset: paging.offset,
+    search,
   });
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
@@ -152,7 +154,9 @@ export function CounselingView(): ReactElement {
               onPaginationChange={() => undefined}
               sorting={[]}
               onSortingChange={() => undefined}
-              globalFilter=""
+              globalFilter={search}
+              onGlobalFilterChange={paging.resetting(setSearch)}
+              toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
               isLoading={isLoading}
               getRowId={(item) => item.id}
               onRowActivate={(item) => {

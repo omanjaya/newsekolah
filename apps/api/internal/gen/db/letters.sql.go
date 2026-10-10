@@ -186,6 +186,10 @@ where wl.tenant_id = $1 and wl.academic_year_id = $2
   and ($5::uuid is null or exists (
     select 1 from enrollments e where e.tenant_id = wl.tenant_id and e.academic_year_id = wl.academic_year_id
       and e.student_user_id = wl.student_user_id and e.class_id = $5::uuid and e.status = 'active'))
+  and ($6::text is null or exists (
+    select 1 from users su left join student_profiles sp on sp.user_id = su.id
+    where su.id = wl.student_user_id
+      and (su.name ilike '%' || $6 || '%' or sp.nis ilike '%' || $6 || '%')))
 order by wl.issued_at desc
 limit $3 offset $4
 `
@@ -196,6 +200,7 @@ type ListWarningLettersParams struct {
 	Limit          int32       `json:"limit"`
 	Offset         int32       `json:"offset"`
 	ClassID        pgtype.UUID `json:"class_id"`
+	Search         pgtype.Text `json:"search"`
 }
 
 func (q *Queries) ListWarningLetters(ctx context.Context, arg ListWarningLettersParams) ([]WarningLetter, error) {
@@ -205,6 +210,7 @@ func (q *Queries) ListWarningLetters(ctx context.Context, arg ListWarningLetters
 		arg.Limit,
 		arg.Offset,
 		arg.ClassID,
+		arg.Search,
 	)
 	if err != nil {
 		return nil, err
