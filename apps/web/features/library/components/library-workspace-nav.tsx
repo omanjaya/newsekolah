@@ -31,30 +31,41 @@ export function LibraryWorkspaceNav({ area }: { area: LibraryArea }): ReactEleme
   const items: LibraryLink[] = [];
   const actions: LibraryLink[] = [];
 
-  if (area === "catalogue") {
+  // Stocktake belongs to the catalogue workspace and visits to circulation; the
+  // pages keep their own area so the report shortcut still matches.
+  const workspace = area === "stocktake" ? "catalogue" : area === "visits" ? "circulation" : area;
+
+  if (workspace === "catalogue") {
     items.push(
       { href: "/library/catalogue", label: t("titles"), allowed: canView },
       { href: "/library/copies", label: t("copies"), allowed: canView },
-    );
-    actions.push(
       { href: "/library/import", label: t("importBooks"), allowed: canCatalogue },
-      { href: "/library/master-data", label: t("catalogueSettings"), allowed: canView },
+      { href: "/library/stocktake", label: t("stocktake"), allowed: canCatalogue },
     );
+    actions.push({
+      href: "/library/master-data",
+      label: t("catalogueSettings"),
+      allowed: canView,
+    });
   }
-  if (area === "circulation") {
+  if (workspace === "circulation") {
     items.push(
       { href: "/library/desk", label: t("individual"), allowed: canCirculate },
       { href: "/library/class-loans", label: t("class"), allowed: canCirculate },
       { href: "/library/violations", label: t("sanctions"), allowed: canCirculate },
+      { href: "/library/visits", label: t("visits"), allowed: canCirculate },
     );
-    actions.push({
-      href: "/library/kiosk",
-      label: t("openKiosk"),
-      allowed: canCirculate,
-      external: true,
-    });
+    actions.push(
+      { href: "/library/kiosk", label: t("openKiosk"), allowed: canCirculate, external: true },
+      {
+        href: "/library/visit-kiosk",
+        label: t("openVisitKiosk"),
+        allowed: canCirculate,
+        external: true,
+      },
+    );
   }
-  if (area === "members" || area === "circulation") {
+  if (workspace === "members" || workspace === "circulation") {
     actions.push({ href: "/library/member-types", label: t("loanSettings"), allowed: canSettings });
   }
   if (area === "settings") {
@@ -66,14 +77,6 @@ export function LibraryWorkspaceNav({ area }: { area: LibraryArea }): ReactEleme
       { href: "/library/members", label: t("members"), allowed: canMembers },
       { href: "/library/desk", label: t("circulation"), allowed: canCirculate },
     );
-  }
-  if (area === "visits") {
-    actions.push({
-      href: "/library/visit-kiosk",
-      label: t("openVisitKiosk"),
-      allowed: canCirculate,
-      external: true,
-    });
   }
   if (area !== "settings") {
     const reportTab =
@@ -93,7 +96,7 @@ export function LibraryWorkspaceNav({ area }: { area: LibraryArea }): ReactEleme
 
   return (
     <WorkspaceNav
-      label={t(area)}
+      label={t(workspace)}
       items={items
         .filter((item) => item.allowed)
         .map(({ href, label }) => ({
