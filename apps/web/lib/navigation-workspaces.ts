@@ -36,13 +36,14 @@ const WORKSPACES: WorkspaceDefinition[] = [
   { key: "counseling", members: ["counseling", "analytics"], label: "counseling" },
   {
     key: "activities-clubs",
-    members: ["activities-clubs", "activities-events", "activities-achievements"],
-    label: "activities",
-  },
-  {
-    key: "mentoring-groups",
-    members: ["mentoring-my-groups", "mentoring-groups"],
-    label: "mentoring",
+    members: [
+      "activities-clubs",
+      "activities-events",
+      "activities-achievements",
+      "mentoring-my-groups",
+      "mentoring-groups",
+    ],
+    label: "studentActivities",
   },
   { key: "duty", members: ["duty", "monitor"], label: "duty", group: NAV_GROUP.duty },
   { key: "staff-attendance", members: ["staff-attendance"], label: "staffAttendance" },
@@ -63,8 +64,7 @@ const WORKSPACES: WorkspaceDefinition[] = [
     label: "users",
     group: NAV_GROUP.masterData,
   },
-  { key: "school-learning", members: ["school-learning"], label: "subjects" },
-  { key: "school-assignments", members: ["school-assignments"], label: "assignments" },
+  { key: "school-learning", members: ["school-learning", "school-assignments"], label: "learning" },
   {
     key: "academic-years",
     members: ["academic-years", "academic-new-year-setup", "school-promotion"],
@@ -74,12 +74,25 @@ const WORKSPACES: WorkspaceDefinition[] = [
   { key: "school-structure", members: ["school-structure"], label: "structure" },
   {
     key: "library-catalogue",
-    members: ["library-catalogue", "library-copies", "library-import", "library-master-data"],
+    members: [
+      "library-catalogue",
+      "library-copies",
+      "library-import",
+      "library-master-data",
+      "library-stocktake",
+    ],
     label: "catalogue",
   },
   {
     key: "library-desk",
-    members: ["library-desk", "library-class-loans", "library-violations", "library-kiosk"],
+    members: [
+      "library-desk",
+      "library-class-loans",
+      "library-violations",
+      "library-kiosk",
+      "library-visits",
+      "library-visit-kiosk",
+    ],
     label: "circulation",
   },
   {
@@ -92,8 +105,6 @@ const WORKSPACES: WorkspaceDefinition[] = [
     members: ["library-settings", "library-loan-rules", "library-member-types"],
     label: "librarySettings",
   },
-  { key: "library-visits", members: ["library-visits", "library-visit-kiosk"], label: "visits" },
-  { key: "library-stocktake", members: ["library-stocktake"], label: "stocktake" },
   { key: "library-me", members: ["library-me"], label: "loans" },
   {
     key: "visitors-board",

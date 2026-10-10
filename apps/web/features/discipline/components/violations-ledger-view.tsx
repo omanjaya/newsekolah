@@ -25,6 +25,7 @@ import { useMemo, useState } from "react";
 
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
+import { useQuickAction } from "../../../lib/hooks/use-quick-action";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
@@ -68,6 +69,13 @@ export function ViolationsLedgerView(): ReactElement {
   );
   const includeVoided = includeVoidedParam === "true";
   const [recording, setRecording] = useState(false);
+  useQuickAction(
+    "record-violation",
+    () => {
+      setRecording(true);
+    },
+    canRecord,
+  );
   const [voiding, setVoiding] = useState<ViolationRecord | null>(null);
   const [saveSummaries, setSaveSummaries] = useState<SaveSummary[]>([]);
 

@@ -1,0 +1,15 @@
+{
+  "group": "Quick actions",
+  "students": "Students",
+  "trigger": "Quick actions",
+  "title": "Quick actions",
+  "actions": {
+    "recordViolation": "Record a violation",
+    "submitLeave": "Request leave",
+    "showDutyQr": "Show duty QR",
+    "addVisitor": "Add a visitor",
+    "lendBook": "Lend a book",
+    "checkIn": "Clock in or out",
+    "scanQr": "Scan QR"
+  }
+}

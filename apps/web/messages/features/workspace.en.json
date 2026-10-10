@@ -65,5 +65,7 @@
     "schedule": "Schedule",
     "leave-requests": "Leave"
   },
-  "children": "My Children"
+  "children": "My Children",
+  "learning": "Learning",
+  "studentActivities": "Student Activities"
 }

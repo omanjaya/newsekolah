@@ -9,6 +9,7 @@ import { useCan } from "../../../lib/session/session-provider";
 import { DutiesView } from "../../school/components/duties-view";
 import { DutyTypesPanel } from "../../school/components/duty-types-panel";
 
+import { LearningWorkspaceNav } from "./learning-workspace-nav";
 import { TeachingAssignmentsView } from "./teaching-assignments-view";
 
 function DutyTypesView(): ReactElement {
@@ -22,19 +23,26 @@ const sections = [
   { value: "types", label: "types", View: DutyTypesView },
 ] as const;
 
+/** The workspace strip owns the top-level choice; only sibling sections stay as inner tabs. */
+const sectionGroups: readonly (readonly string[])[] = [["teaching"], ["duties", "types"]];
+
 export function AssignmentsView(): ReactElement {
   const t = useTranslations("app.academic.assignments");
   const tNav = useTranslations("app.navigation");
+  const tWorkspace = useTranslations("app.workspace");
   const router = useRouter();
   const searchParams = useSearchParams();
   const requested = searchParams.get("tab");
   const active = sections.find((section) => section.value === requested)?.value ?? "teaching";
 
+  const siblings = sectionGroups.find((group) => group.includes(active)) ?? [active];
+
   return (
     // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
     // itself never scrolls; the active tab's panel scrolls internally.
     <div className="flex min-w-0 flex-col gap-4 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <PageHeader eyebrow={tNav("masterData")} title={t("title")} />
+      <LearningWorkspaceNav />
+      <PageHeader eyebrow={tNav("masterData")} title={tWorkspace("learning")} />
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
       <Tabs
         value={active}
@@ -43,13 +51,17 @@ export function AssignmentsView(): ReactElement {
         }}
         className="flex flex-col md:min-h-0 md:flex-1"
       >
-        <TabsList aria-label={t("title")} className="flex-wrap">
-          {sections.map(({ value, label }) => (
-            <TabsTrigger key={value} value={value}>
-              {t(label)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        {siblings.length > 1 && (
+          <TabsList aria-label={t("title")} className="flex-wrap">
+            {sections
+              .filter(({ value }) => siblings.includes(value))
+              .map(({ value, label }) => (
+                <TabsTrigger key={value} value={value}>
+                  {t(label)}
+                </TabsTrigger>
+              ))}
+          </TabsList>
+        )}
         {sections.map(({ value, View }) => (
           <TabsContent key={value} value={value} className="md:min-h-0 md:flex-1">
             <View />

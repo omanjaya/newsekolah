@@ -306,6 +306,7 @@
       "classLabel": "Class",
       "classPlaceholder": "Pick a class",
       "loadingClasses": "Loading classes...",
+      "classesUnavailable": "The class list is not available to your account",
       "titleLabel": "Title",
       "preview": "Preview pairing",
       "previewEmptyTitle": "No pairs could be made",
@@ -361,6 +362,8 @@
     }
   },
   "members": {
+    "pagePrev": "Previous",
+    "pageNext": "Next",
     "navLabel": "Library members",
     "eyebrow": "Library",
     "title": "Members",

@@ -11,6 +11,7 @@ import type { NavItem, NavProfileKind } from "../lib/navigation";
 import { activeNavHref } from "../lib/navigation/active-href";
 
 import { MobileMenu } from "./mobile-menu";
+import { MobileQuickActions } from "./mobile-quick-actions";
 
 /**
  * Frequent destinations surround a browsable menu. Global search remains
@@ -69,6 +70,7 @@ export function MobileTabBar({
       {left.map(renderItem)}
       <MobileMenu items={items} scope={scope} />
       {right.map(renderItem)}
+      <MobileQuickActions />
     </nav>
   );
 }

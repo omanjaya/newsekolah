@@ -40,5 +40,9 @@
   "expectedToday": "Scheduled Today",
   "visitStatus": "Visit status",
   "allToday": "All Today",
-  "queueNoMatch": "No requests match your search."
+  "queueNoMatch": "No requests match your search.",
+  "clubsTab": "Clubs",
+  "eventsTab": "Events",
+  "achievementsTab": "Achievements",
+  "mentoringTab": "Mentoring"
 }

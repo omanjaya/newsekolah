@@ -282,6 +282,11 @@
     "journalSaved": "Journal saved",
     "journalMissing": "Journal not filled",
     "journalHelp": "Attendance and the journal are saved together for this lesson.",
-    "yearScope": "Academic year: {year}"
+    "yearScope": "Academic year: {year}",
+    "learningNav": "Learning",
+    "subjectsTab": "Subjects",
+    "periodsTab": "Lesson Periods",
+    "teachingTab": "Teaching Assignments",
+    "dutiesTab": "Additional Duties"
   }
 }
