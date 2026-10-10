@@ -31,6 +31,7 @@ export {
   type BarcodeScannerFieldProps,
   type BarcodeScanEvent,
   type BarcodeScanSource,
+  type ScanHandlerResult,
 } from "./components/barcode-scanner-field.js";
 export {
   useBarcodeScanner,
