@@ -1,6 +1,5 @@
 {
   "permits": "Leave & Late Arrivals",
-  "allQueue": "My queue",
   "leave": "Planned Leave",
   "exit": "Exit Permits",
   "late": "Late Arrivals",
@@ -40,5 +39,12 @@
   "expectedToday": "Scheduled Today",
   "visitStatus": "Visit status",
   "allToday": "All Today",
-  "queueNoMatch": "No requests match your search."
+  "queueNoMatch": "No requests match your search.",
+  "filterAll": "All",
+  "typeFilter": "Type filter",
+  "classFilter": "Class filter",
+  "allClasses": "All classes",
+  "reviewBanner": "{count} waiting for your approval",
+  "openInbox": "Open Action Needed",
+  "requestKind": "Type of request"
 }

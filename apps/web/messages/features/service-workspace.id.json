@@ -1,6 +1,5 @@
 {
   "permits": "Izin & Keterlambatan",
-  "allQueue": "Antrean saya",
   "leave": "Izin Tidak Masuk",
   "exit": "Izin Keluar",
   "late": "Keterlambatan",
@@ -40,5 +39,12 @@
   "expectedToday": "Tamu Terjadwal Hari Ini",
   "visitStatus": "Status kunjungan",
   "allToday": "Semua Hari Ini",
-  "queueNoMatch": "Tidak ada permintaan yang cocok dengan pencarian."
+  "queueNoMatch": "Tidak ada permintaan yang cocok dengan pencarian.",
+  "filterAll": "Semua",
+  "typeFilter": "Filter jenis",
+  "classFilter": "Filter kelas",
+  "allClasses": "Semua kelas",
+  "reviewBanner": "{count} menunggu persetujuan Anda",
+  "openInbox": "Buka Perlu Tindakan",
+  "requestKind": "Jenis izin yang diajukan"
 }

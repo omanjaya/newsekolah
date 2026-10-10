@@ -10,10 +10,6 @@ import {
   Input,
   PageHeader,
   Skeleton,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   Textarea,
   useToast,
 } from "@newsekolah/ui";
@@ -21,101 +17,30 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
-import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
   decodeScanPayload,
   type LateArrivalSummary,
   useCurrentLateArrivalQuery,
-  useLateArrivalQueueQuery,
   useLateArrivalQuery,
   useOpenLateArrivalMutation,
   useReviewLateArrivalMutation,
   useScanLateArrivalStageMutation,
 } from "../api";
 
-import { ReviewQueue } from "./late-arrival-review-queue";
 import { WorkflowStepper } from "./workflow-stepper";
 
+/**
+ * A student's own late-arrival check-in. The duty teacher's review queue
+ * lives in the Perlu Tindakan inbox, so this view has no queue tab.
+ */
 export function LateArrivalsView({ embedded = false }: { embedded?: boolean } = {}): ReactElement {
   const t = useTranslations("app.permits.late");
-  const tReview = useTranslations("app.permits.review");
-  const { me } = useSession();
-  // Reviewing a late arrival is scoped server-side to the duty teacher who
-  // opened it (or a manage_attendance administrator, per
-  // requireLateArrivalReviewer): any teacher can finish one they opened,
-  // not only a picket/duty-scheduled teacher, so the queue tab is offered
-  // to every teacher and staff account rather than gated by a permission
-  // that only some of them hold.
-  const canReview = me?.profile_kind === "teacher" || me?.profile_kind === "staff";
-  const isStudent = useCan("submit_leave_requests");
-  const showTabs = canReview && isStudent;
-  const [tab, setTab] = useUrlState<string>(
-    "tab",
-    canReview ? ["queue", "mine"] : ["mine"],
-    canReview ? "queue" : "mine",
-  );
-
-  // Fetched once here, at the view level, rather than inside ReviewQueue:
-  // the "Antrean piket" tab label needs the count too, and a second call
-  // to the same query hook would double the realtime subscription it
-  // opens (features/permits/api.ts's own comment on why that wiring lives
-  // in the query hook).
-  const queue = useLateArrivalQueueQuery(canReview);
-  const queueCount = queue.data?.data.length ?? 0;
-
-  const tabs = showTabs
-    ? [
-        {
-          value: "queue",
-          label: tReview("tabWithCount", { label: t("tabQueue"), count: queueCount }),
-        },
-        { value: "mine", label: t("tabMine") },
-      ]
-    : [];
 
   return (
     <div className={embedded ? "flex flex-col gap-6" : "flex flex-col gap-6 p-4 md:p-6"}>
-      {showTabs ? (
-        <Tabs value={tab} onValueChange={setTab}>
-          {!embedded && (
-            <PageHeader
-              eyebrow={t("eyebrow")}
-              title={t("title")}
-              actions={
-                <TabsList>
-                  {tabs.map((item) => (
-                    <TabsTrigger key={item.value} value={item.value}>
-                      {item.label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              }
-            />
-          )}
-          {embedded && (
-            <TabsList>
-              {tabs.map((item) => (
-                <TabsTrigger key={item.value} value={item.value}>
-                  {item.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          )}
-          <TabsContent value="queue" className="pt-4">
-            <ReviewQueue queue={queue} />
-          </TabsContent>
-          <TabsContent value="mine" className="pt-4">
-            <MyLateArrival />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <>
-          {!embedded && <PageHeader eyebrow={t("eyebrow")} title={t("title")} />}
-          {canReview ? <ReviewQueue queue={queue} /> : <MyLateArrival />}
-        </>
-      )}
+      {!embedded && <PageHeader eyebrow={t("eyebrow")} title={t("title")} />}
+      <MyLateArrival />
     </div>
   );
 }
