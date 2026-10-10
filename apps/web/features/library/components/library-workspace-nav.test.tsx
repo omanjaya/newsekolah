@@ -68,6 +68,40 @@ describe("library workspace access", () => {
     );
   });
 
+  it("shows stocktake and import as catalogue tabs only to catalogue managers", () => {
+    session.permissions = ["view_library", "manage_library_catalog"];
+    session.pathname = "/library/stocktake";
+    render(<LibraryWorkspaceNav area="stocktake" />);
+    expect(screen.getByRole("link", { name: "stocktake" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "titles" })).toHaveAttribute(
+      "href",
+      "/library/catalogue",
+    );
+    expect(screen.getByRole("link", { name: "importBooks" })).toHaveAttribute(
+      "href",
+      "/library/import",
+    );
+  });
+
+  it("hides stocktake and import from catalogue readers", () => {
+    session.permissions = ["view_library"];
+    render(<LibraryWorkspaceNav area="catalogue" />);
+    expect(screen.queryByRole("link", { name: "stocktake" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "importBooks" })).not.toBeInTheDocument();
+  });
+
+  it("shows visits as a circulation tab and keeps the visits report shortcut", () => {
+    session.permissions = ["manage_library_circulation", "view_library_reports"];
+    session.pathname = "/library/visits";
+    render(<LibraryWorkspaceNav area="visits" />);
+    expect(screen.getByRole("link", { name: "visits" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "individual" })).toHaveAttribute(
+      "href",
+      "/library/desk",
+    );
+    expect(screen.getByRole("link", { name: "sanctions" })).toBeInTheDocument();
+  });
+
   it("does not expose library operations to a personal borrower", () => {
     session.permissions = ["view_own_library_loans"];
     render(<LibraryWorkspaceNav area="catalogue" />);

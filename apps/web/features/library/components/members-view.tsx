@@ -33,6 +33,7 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { UsersCursorPagination } from "../../school/components/users-cursor-pagination";
 import { printMemberCard } from "../api";
 import {
   type LibraryMember,
@@ -49,6 +50,8 @@ import { MemberRegisterForm } from "./member-register-form";
 
 const STATUSES: LibraryMemberStatus[] = ["pending", "active", "inactive", "suspended", "cleared"];
 const STATUS_VALUES = ["", ...STATUSES] as const;
+/** Rows per page; the members API pages by offset and reports no total. */
+const MEMBERS_PAGE_SIZE = 50;
 
 export function MembersView(): ReactElement {
   const t = useTranslations("app.library.members");
@@ -73,7 +76,25 @@ export function MembersView(): ReactElement {
   const { selection, onSelectionChange, orderedIds, clear } = useOrderedSelection();
   const apiErrorMessage = useApiErrorMessage();
 
-  const { data, isLoading } = useLibraryMembersQuery({ status, memberTypeId, search, limit: 200 });
+  // The list API has no total count, so paging is prev/next by offset and
+  // "next" is available while the last page came back full.
+  const [page, setPage] = useState(0);
+  const [pageContext, setPageContext] = useState({ status, memberTypeId, search });
+  if (
+    pageContext.status !== status ||
+    pageContext.memberTypeId !== memberTypeId ||
+    pageContext.search !== search
+  ) {
+    setPageContext({ status, memberTypeId, search });
+    setPage(0);
+  }
+  const { data, isLoading } = useLibraryMembersQuery({
+    status,
+    memberTypeId,
+    search,
+    limit: MEMBERS_PAGE_SIZE,
+    offset: page * MEMBERS_PAGE_SIZE,
+  });
   const memberTypes = useLibraryMemberTypesQuery();
   const directory = useDirectoryQuery();
   const directoryMap = useLookup(directory.data?.data);
@@ -262,9 +283,10 @@ export function MembersView(): ReactElement {
         <DataTable
           stateKey="features/library/components/members-view:1"
           data={items}
+          mode="cursor"
           columns={columns}
           rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 200 }}
+          pagination={{ pageIndex: 0, pageSize: MEMBERS_PAGE_SIZE }}
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
@@ -290,6 +312,18 @@ export function MembersView(): ReactElement {
           }
         />
       </div>
+      <UsersCursorPagination
+        hasPrevious={page > 0}
+        hasNext={items.length >= MEMBERS_PAGE_SIZE}
+        previousLabel={t("pagePrev")}
+        nextLabel={t("pageNext")}
+        onPrevious={() => {
+          setPage((p) => Math.max(0, p - 1));
+        }}
+        onNext={() => {
+          setPage((p) => p + 1);
+        }}
+      />
 
       <Dialog
         open={registering}

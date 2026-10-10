@@ -74,12 +74,25 @@ const WORKSPACES: WorkspaceDefinition[] = [
   { key: "school-structure", members: ["school-structure"], label: "structure" },
   {
     key: "library-catalogue",
-    members: ["library-catalogue", "library-copies", "library-import", "library-master-data"],
+    members: [
+      "library-catalogue",
+      "library-copies",
+      "library-import",
+      "library-master-data",
+      "library-stocktake",
+    ],
     label: "catalogue",
   },
   {
     key: "library-desk",
-    members: ["library-desk", "library-class-loans", "library-violations", "library-kiosk"],
+    members: [
+      "library-desk",
+      "library-class-loans",
+      "library-violations",
+      "library-kiosk",
+      "library-visits",
+      "library-visit-kiosk",
+    ],
     label: "circulation",
   },
   {
@@ -92,8 +105,6 @@ const WORKSPACES: WorkspaceDefinition[] = [
     members: ["library-settings", "library-loan-rules", "library-member-types"],
     label: "librarySettings",
   },
-  { key: "library-visits", members: ["library-visits", "library-visit-kiosk"], label: "visits" },
-  { key: "library-stocktake", members: ["library-stocktake"], label: "stocktake" },
   { key: "library-me", members: ["library-me"], label: "loans" },
   {
     key: "visitors-board",

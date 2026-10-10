@@ -40,5 +40,9 @@
   "expectedToday": "Tamu Terjadwal Hari Ini",
   "visitStatus": "Status kunjungan",
   "allToday": "Semua Hari Ini",
-  "queueNoMatch": "Tidak ada permintaan yang cocok dengan pencarian."
+  "queueNoMatch": "Tidak ada permintaan yang cocok dengan pencarian.",
+  "clubsTab": "Ekskul",
+  "eventsTab": "Acara",
+  "achievementsTab": "Prestasi",
+  "mentoringTab": "Pendampingan"
 }
