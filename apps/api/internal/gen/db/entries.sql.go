@@ -156,6 +156,56 @@ func (q *Queries) ListEntriesBySession(ctx context.Context, arg ListEntriesBySes
 	return items, nil
 }
 
+const listEntryReportRowsBySessions = `-- name: ListEntryReportRowsBySessions :many
+select e.session_id, e.student_user_id, e.status_code, e.notes, coalesce(u.name, '')::text as student_name
+from attendance_entries e
+left join users u on u.tenant_id = e.tenant_id and u.id = e.student_user_id
+where e.tenant_id = $1 and e.session_id = any($2::uuid[])
+order by e.session_id, u.name, e.student_user_id
+`
+
+type ListEntryReportRowsBySessionsParams struct {
+	TenantID   uuid.UUID   `json:"tenant_id"`
+	SessionIds []uuid.UUID `json:"session_ids"`
+}
+
+type ListEntryReportRowsBySessionsRow struct {
+	SessionID     uuid.UUID   `json:"session_id"`
+	StudentUserID uuid.UUID   `json:"student_user_id"`
+	StatusCode    string      `json:"status_code"`
+	Notes         pgtype.Text `json:"notes"`
+	StudentName   string      `json:"student_name"`
+}
+
+// Batch read behind the daily report: every entry of every given session
+// with the student's display name, in one round trip instead of one entries
+// query per session plus one name lookup per student.
+func (q *Queries) ListEntryReportRowsBySessions(ctx context.Context, arg ListEntryReportRowsBySessionsParams) ([]ListEntryReportRowsBySessionsRow, error) {
+	rows, err := q.db.Query(ctx, listEntryReportRowsBySessions, arg.TenantID, arg.SessionIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListEntryReportRowsBySessionsRow{}
+	for rows.Next() {
+		var i ListEntryReportRowsBySessionsRow
+		if err := rows.Scan(
+			&i.SessionID,
+			&i.StudentUserID,
+			&i.StatusCode,
+			&i.Notes,
+			&i.StudentName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listEntryStatusesForStudentDate = `-- name: ListEntryStatusesForStudentDate :many
 select e.status_code
 from attendance_entries e

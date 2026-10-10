@@ -124,6 +124,10 @@ type Repository interface {
 
 	UpsertEntry(ctx context.Context, e domain.Entry) (domain.Entry, error)
 	ListEntriesBySession(ctx context.Context, tenantID, sessionID uuid.UUID) ([]domain.Entry, error)
+	// ListEntryReportRowsBySessions batches every session's entries with the
+	// student names for the daily report (one query, not one per session
+	// and student), keyed by session id.
+	ListEntryReportRowsBySessions(ctx context.Context, tenantID uuid.UUID, sessionIDs []uuid.UUID) (map[uuid.UUID][]DailyReportSessionEntry, error)
 	GetEntryBySessionStudent(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID) (entry domain.Entry, found bool, err error)
 	ListEntryStatusesForStudentDate(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) ([]string, error)
 	GetPreviousEntryForStudent(ctx context.Context, tenantID, studentUserID, classID, subjectID uuid.UUID, before time.Time) (status string, found bool, err error)

@@ -1059,6 +1059,10 @@ type Querier interface {
 	// expressible as a plain column comparison.
 	ListEnabledReportSchedulesForHour(ctx context.Context, arg ListEnabledReportSchedulesForHourParams) ([]ReportSchedule, error)
 	ListEntriesBySession(ctx context.Context, arg ListEntriesBySessionParams) ([]AttendanceEntry, error)
+	// Batch read behind the daily report: every entry of every given session
+	// with the student's display name, in one round trip instead of one entries
+	// query per session plus one name lookup per student.
+	ListEntryReportRowsBySessions(ctx context.Context, arg ListEntryReportRowsBySessionsParams) ([]ListEntryReportRowsBySessionsRow, error)
 	// Every status code recorded for one student across the given date's
 	// submitted sessions -- the raw input to attendance/domain.ComputeDailyStatus.
 	ListEntryStatusesForStudentDate(ctx context.Context, arg ListEntryStatusesForStudentDateParams) ([]string, error)
@@ -1301,6 +1305,9 @@ type Querier interface {
 	ListViolations(ctx context.Context, arg ListViolationsParams) ([]LibraryViolation, error)
 	ListViolationsForMember(ctx context.Context, arg ListViolationsForMemberParams) ([]LibraryViolation, error)
 	ListVisits(ctx context.Context, arg ListVisitsParams) ([]VisitorVisit, error)
+	// Hard cap: the range comes straight from the client, so a year-wide range
+	// would otherwise return every visit the school ever logged. 5000 rows is
+	// several times a busy school's single day.
 	ListVisitsForRange(ctx context.Context, arg ListVisitsForRangeParams) ([]LibraryVisit, error)
 	ListWarningLetters(ctx context.Context, arg ListWarningLettersParams) ([]WarningLetter, error)
 	ListWarningLettersForStudent(ctx context.Context, arg ListWarningLettersForStudentParams) ([]WarningLetter, error)

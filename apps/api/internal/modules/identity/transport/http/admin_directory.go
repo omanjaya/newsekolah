@@ -11,6 +11,11 @@ import (
 
 const directoryPageSize = 100
 
+// maxDirectoryLimit mirrors the OpenAPI schema's maximum for the directory
+// listing, enforced here too so a non-enforcing request validator cannot
+// turn one request into an unbounded paging loop.
+const maxDirectoryLimit = 5000
+
 // ListDirectoryUsers is the permission-light name lookup every signed-in
 // user may call: schedule grids, substitute pickers and audience selectors
 // need names for ids without exposing the admin user record. It pages
@@ -21,7 +26,7 @@ func (h *Handler) ListDirectoryUsers(ctx context.Context, request api.ListDirect
 
 	limit := 200
 	if p.Limit != nil {
-		limit = *p.Limit
+		limit = min(max(*p.Limit, 1), maxDirectoryLimit)
 	}
 	filter := service.ListUsersFilter{Search: strOf(p.Q), Status: "active", Limit: directoryPageSize}
 	if p.ProfileKind != nil {

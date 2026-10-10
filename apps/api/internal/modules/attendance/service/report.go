@@ -74,23 +74,25 @@ func (s *Service) buildDailyReportSessions(ctx context.Context, tenantID, classI
 }
 
 // toDailyReportSessions attaches every session's per-student entries
-// (name + status + notes) to its SessionDetailRow.
+// (name + status + notes) to its SessionDetailRow. All sessions' entries and
+// student names are read in a single batched query: a grade-level report
+// spans dozens of sessions and hundreds of students, so the previous
+// one-query-per-session plus one-per-student shape cost hundreds of round
+// trips per request.
 func (s *Service) toDailyReportSessions(ctx context.Context, tenantID uuid.UUID, rows []SessionDetailRow) ([]DailyReportSession, error) {
 	out := make([]DailyReportSession, 0, len(rows))
-	nameByStudent := make(map[uuid.UUID]string)
+	sessionIDs := make([]uuid.UUID, len(rows))
+	for i, row := range rows {
+		sessionIDs[i] = row.SessionID
+	}
+	entriesBySession, err := s.repo.ListEntryReportRowsBySessions(ctx, tenantID, sessionIDs)
+	if err != nil {
+		return nil, err
+	}
 	for _, row := range rows {
-		entries, err := s.repo.ListEntriesBySession(ctx, tenantID, row.SessionID)
-		if err != nil {
-			return nil, err
-		}
-		if len(entries) > 0 {
-			if err := s.fillStudentNames(ctx, tenantID, entries, nameByStudent); err != nil {
-				return nil, err
-			}
-		}
-		sessionEntries := make([]DailyReportSessionEntry, len(entries))
-		for i, e := range entries {
-			sessionEntries[i] = DailyReportSessionEntry{StudentUserID: e.StudentUserID, Name: nameByStudent[e.StudentUserID], StatusCode: e.StatusCode, Notes: e.Notes}
+		sessionEntries := entriesBySession[row.SessionID]
+		if sessionEntries == nil {
+			sessionEntries = []DailyReportSessionEntry{}
 		}
 		out = append(out, DailyReportSession{
 			SessionID: row.SessionID, ClassID: row.ClassID, ClassName: row.ClassName, SubjectID: row.SubjectID, SubjectName: row.SubjectName,
@@ -99,26 +101,6 @@ func (s *Service) toDailyReportSessions(ctx context.Context, tenantID uuid.UUID,
 		})
 	}
 	return out, nil
-}
-
-// fillStudentNames resolves any student in entries not already cached in
-// names, via the identity user reads attendance already has through
-// ListActiveEnrollments -- looked up by directly resolving the student's
-// own record rather than the whole class roster, since a session's
-// entries may span a roster the caller has not otherwise loaded.
-func (s *Service) fillStudentNames(ctx context.Context, tenantID uuid.UUID, entries []domain.Entry, names map[uuid.UUID]string) error {
-	for _, e := range entries {
-		if _, ok := names[e.StudentUserID]; ok {
-			continue
-		}
-		name, err := s.repo.GetUserName(ctx, tenantID, e.StudentUserID)
-		if err != nil {
-			names[e.StudentUserID] = ""
-			continue
-		}
-		names[e.StudentUserID] = name
-	}
-	return nil
 }
 
 // periodLabel joins a session's start and end period names into one
