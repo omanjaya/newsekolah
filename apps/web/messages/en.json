@@ -544,6 +544,10 @@
       },
       "today": "Today",
       "yesterday": "Yesterday",
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next"
+      },
       "dateRange": {
         "presets": {
           "today": "Today",

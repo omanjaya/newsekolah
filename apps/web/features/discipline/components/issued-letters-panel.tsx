@@ -18,6 +18,8 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
@@ -27,6 +29,9 @@ import {
   useWarningLetterDocumentUrlMutation,
   useWarningLettersQuery,
 } from "../api";
+
+/** Rows per page; the warning letters API pages by offset and reports no total. */
+const PAGE_SIZE = 50;
 
 export function IssuedLettersPanel(): ReactElement {
   const t = useTranslations("app.discipline.warningLetters");
@@ -40,7 +45,11 @@ export function IssuedLettersPanel(): ReactElement {
   const classes = useClassesQuery();
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
-  const { data, isLoading } = useWarningLettersQuery(classId || undefined);
+  const paging = useOffsetPage(PAGE_SIZE, "letters_page");
+  const { data, isLoading } = useWarningLettersQuery(classId || undefined, {
+    limit: paging.limit,
+    offset: paging.offset,
+  });
   const documentUrl = useWarningLetterDocumentUrlMutation();
 
   const items = data?.data ?? [];
@@ -51,7 +60,7 @@ export function IssuedLettersPanel(): ReactElement {
       id: "class",
       label: t("filters.class"),
       value: classId,
-      onChange: setClassId,
+      onChange: paging.resetting(setClassId),
       options: classOptions,
     },
   ];
@@ -124,11 +133,11 @@ export function IssuedLettersPanel(): ReactElement {
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/discipline/components/issued-letters-panel:1"
-          mode="local"
+          mode="cursor"
           data={items}
           columns={columns}
           rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
+          pagination={{ pageIndex: 0, pageSize: PAGE_SIZE }}
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
@@ -153,6 +162,12 @@ export function IssuedLettersPanel(): ReactElement {
           }
         />
       </div>
+      <CursorPagination
+        hasPrevious={paging.hasPrevious}
+        hasNext={paging.hasNextFor(items.length)}
+        onPrevious={paging.goPrevious}
+        onNext={paging.goNext}
+      />
     </div>
   );
 }

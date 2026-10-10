@@ -38,8 +38,8 @@ func (r *Repository) GetLastVisitForMember(ctx context.Context, tenantID, member
 	return toVisit(row), true, nil
 }
 
-func (r *Repository) ListVisitsForRange(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]domain.Visit, error) {
-	rows, err := r.queries(ctx).ListVisitsForRange(ctx, db.ListVisitsForRangeParams{TenantID: tenantID, VisitedAt: pdatabase.Timestamptz(from), VisitedAt_2: pdatabase.Timestamptz(to)})
+func (r *Repository) ListVisitsForRange(ctx context.Context, tenantID uuid.UUID, from, to time.Time, limit, offset int) ([]domain.Visit, error) {
+	rows, err := r.queries(ctx).ListVisitsForRange(ctx, db.ListVisitsForRangeParams{TenantID: tenantID, VisitedAt: pdatabase.Timestamptz(from), VisitedAt_2: pdatabase.Timestamptz(to), Limit: int32(limit), Offset: int32(offset)}) //nolint:gosec // clamped
 	if err != nil {
 		return nil, fmt.Errorf("list visits for range: %w", err)
 	}

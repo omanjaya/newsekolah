@@ -37,12 +37,15 @@ const keys = {
     ["discipline", "violation-types", includeInactive] as const,
   policy: () => ["discipline", "policy"] as const,
   warningLetterTemplate: () => ["discipline", "warning-letter-template"] as const,
-  violations: (params: { classId: string; from: string; to: string; includeVoided: boolean }) =>
-    ["discipline", "violations", params] as const,
+  violations: (
+    params: { classId: string; from: string; to: string; includeVoided: boolean },
+    page: ListPage,
+  ) => ["discipline", "violations", params, page] as const,
   studentDiscipline: (studentId: string) => ["discipline", "student", studentId] as const,
   myDiscipline: () => ["discipline", "me"] as const,
   pointTotals: (classId: string) => ["discipline", "point-totals", classId] as const,
-  warningLetters: (classId: string) => ["discipline", "warning-letters", classId] as const,
+  warningLetters: (classId: string, page: ListPage) =>
+    ["discipline", "warning-letters", classId, page] as const,
   spCandidates: (params: {
     classId: string;
     level: string;
@@ -163,10 +166,15 @@ export interface ViolationFilters {
   includeVoided: boolean;
 }
 
-export function useViolationsQuery(filters: ViolationFilters) {
+export interface ListPage {
+  limit: number;
+  offset: number;
+}
+
+export function useViolationsQuery(filters: ViolationFilters, page: ListPage) {
   const client = useApiClient();
   return useQuery({
-    queryKey: keys.violations(filters),
+    queryKey: keys.violations(filters, page),
     queryFn: () =>
       client.GET("/v1/discipline/violations", {
         params: {
@@ -175,7 +183,8 @@ export function useViolationsQuery(filters: ViolationFilters) {
             from: filters.from || undefined,
             to: filters.to || undefined,
             include_voided: filters.includeVoided,
-            limit: 200,
+            limit: page.limit,
+            offset: page.offset,
           },
         },
       }),
@@ -291,13 +300,13 @@ export function useSPCandidatesQuery(filters: SPCandidateFilters, enabled = true
   });
 }
 
-export function useWarningLettersQuery(classId?: string) {
+export function useWarningLettersQuery(classId: string | undefined, page: ListPage) {
   const client = useApiClient();
   return useQuery({
-    queryKey: keys.warningLetters(classId ?? ""),
+    queryKey: keys.warningLetters(classId ?? "", page),
     queryFn: () =>
       client.GET("/v1/discipline/warning-letters", {
-        params: { query: { class_id: classId, limit: 100 } },
+        params: { query: { class_id: classId, limit: page.limit, offset: page.offset } },
       }),
   });
 }

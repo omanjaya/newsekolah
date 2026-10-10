@@ -26,6 +26,8 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
@@ -38,6 +40,9 @@ import { CounselingBKTeamPanel } from "./counseling-bk-team-panel";
 import { CounselingDetailDialog } from "./counseling-detail-dialog";
 import { CounselingForm } from "./counseling-form";
 
+/** Rows per page; the counseling API pages by offset and reports no total. */
+const PAGE_SIZE = 50;
+
 export function CounselingView(): ReactElement {
   const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.discipline.counseling");
@@ -48,7 +53,11 @@ export function CounselingView(): ReactElement {
   const searchParams = useSearchParams();
   const initialStudentId = searchParams.get("studentId") ?? undefined;
 
-  const { data, isLoading } = useMyCounselingsQuery();
+  const paging = useOffsetPage(PAGE_SIZE, "mine_page");
+  const { data, isLoading } = useMyCounselingsQuery({
+    limit: paging.limit,
+    offset: paging.offset,
+  });
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
   const remove = useDeleteCounselingMutation();
@@ -130,11 +139,11 @@ export function CounselingView(): ReactElement {
           <div className="flex flex-col md:h-full md:min-h-0">
             <DataTable
               stateKey="features/discipline/components/counseling-view:1"
-              mode="local"
+              mode="cursor"
               data={items}
               columns={columns}
               rowCount={items.length}
-              pagination={{ pageIndex: 0, pageSize: 50 }}
+              pagination={{ pageIndex: 0, pageSize: PAGE_SIZE }}
               onPaginationChange={() => undefined}
               sorting={[]}
               onSortingChange={() => undefined}
@@ -152,6 +161,12 @@ export function CounselingView(): ReactElement {
                   description={t("emptyBody")}
                 />
               }
+            />
+            <CursorPagination
+              hasPrevious={paging.hasPrevious}
+              hasNext={paging.hasNextFor(items.length)}
+              onPrevious={paging.goPrevious}
+              onNext={paging.goNext}
             />
           </div>
         </TabsContent>

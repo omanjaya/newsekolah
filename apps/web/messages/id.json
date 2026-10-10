@@ -544,6 +544,10 @@
       },
       "today": "Hari ini",
       "yesterday": "Kemarin",
+      "pagination": {
+        "previous": "Sebelumnya",
+        "next": "Berikutnya"
+      },
       "dateRange": {
         "presets": {
           "today": "Hari ini",

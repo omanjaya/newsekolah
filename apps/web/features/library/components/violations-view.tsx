@@ -20,6 +20,8 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
@@ -39,6 +41,8 @@ const STATUSES: LibraryViolationStatus[] = ["unpaid", "paid", "waived"];
 const KINDS: LibraryViolationKind[] = ["late", "lost", "damaged", "other"];
 const STATUS_VALUES = ["", ...STATUSES] as const;
 const KIND_VALUES = ["", ...KINDS] as const;
+/** Rows per page; the violations API pages by offset and reports no total. */
+const VIOLATIONS_PAGE_SIZE = 50;
 
 export function ViolationsView({ memberUserId }: { memberUserId?: string }): ReactElement {
   const t = useTranslations("app.library.violations");
@@ -58,7 +62,11 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
     status: "paid" | "waived";
   } | null>(null);
 
-  const allViolations = useLibraryViolationsQuery({ status, kind }, !memberUserId);
+  const paging = useOffsetPage(VIOLATIONS_PAGE_SIZE);
+  const allViolations = useLibraryViolationsQuery(
+    { status, kind, limit: paging.limit, offset: paging.offset },
+    !memberUserId,
+  );
   const memberViolations = useMemberViolationsQuery(memberUserId ?? "");
   const { data, isLoading } = memberUserId ? memberViolations : allViolations;
   const directory = useDirectoryQuery();
@@ -83,6 +91,7 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
       value: status,
       onChange: (value) => {
         setStatus(value as (typeof STATUS_VALUES)[number]);
+        paging.resetPage();
       },
       options: STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) })),
     },
@@ -92,6 +101,7 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
       value: kind,
       onChange: (value) => {
         setKind(value as (typeof KIND_VALUES)[number]);
+        paging.resetPage();
       },
       options: KINDS.map((k) => ({ value: k, label: t(`kinds.${k}`) })),
     },
@@ -210,12 +220,12 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
 
       <DataTable
         stateKey="features/library/components/violations-view:1"
-        mode="local"
+        mode="cursor"
         searchable={false}
         data={items}
         columns={columns}
         rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 200 }}
+        pagination={{ pageIndex: 0, pageSize: VIOLATIONS_PAGE_SIZE }}
         onPaginationChange={() => undefined}
         sorting={[]}
         onSortingChange={() => undefined}
@@ -235,6 +245,14 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
           />
         }
       />
+      {!memberUserId && (
+        <CursorPagination
+          hasPrevious={paging.hasPrevious}
+          hasNext={paging.hasNextFor(items.length)}
+          onPrevious={paging.goPrevious}
+          onNext={paging.goNext}
+        />
+      )}
 
       <ViolationRecordDialog
         key={memberUserId ?? "all"}

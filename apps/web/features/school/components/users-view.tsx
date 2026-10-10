@@ -26,6 +26,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
@@ -43,7 +44,6 @@ import {
 import { useImpersonateUserMutation } from "../duties-api";
 
 import { UserForm } from "./user-form";
-import { UsersCursorPagination } from "./users-cursor-pagination";
 import { UsersTableEmptyState } from "./users-table-empty-state";
 
 const KINDS: ProfileKind[] = ["teacher", "staff", "student"];
@@ -340,7 +340,7 @@ export function UsersView(): ReactElement {
           }
         />
       </div>
-      <UsersCursorPagination
+      <CursorPagination
         hasPrevious={cursors.length > 1}
         hasNext={Boolean(data?.next_cursor)}
         previousLabel={t("pagePrev")}

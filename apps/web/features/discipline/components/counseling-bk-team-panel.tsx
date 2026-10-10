@@ -14,11 +14,15 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import { type Counseling, type CounselingTopic } from "../api";
 import { useBKTeamCounselingsQuery } from "../api-counseling-extras";
 
+/** Rows per page; the counseling API pages by offset and reports no total. */
+const PAGE_SIZE = 50;
 const TOPICS: CounselingTopic[] = ["career", "problem", "personal", "learning", "social", "other"];
 const TOPIC_VALUES = ["", ...TOPICS] as const;
 
@@ -33,7 +37,11 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
   const locale = useLocale() as Locale;
   const [topic, setTopic] = useUrlState<(typeof TOPIC_VALUES)[number]>("topic", TOPIC_VALUES, "");
 
-  const { data, isLoading } = useBKTeamCounselingsQuery(topic);
+  const paging = useOffsetPage(PAGE_SIZE, "team_page");
+  const { data, isLoading } = useBKTeamCounselingsQuery(topic, {
+    limit: paging.limit,
+    offset: paging.offset,
+  });
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
 
@@ -46,6 +54,7 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
       value: topic,
       onChange: (value) => {
         setTopic(value as (typeof TOPIC_VALUES)[number]);
+        paging.resetPage();
       },
       options: TOPICS.map((topicOption) => ({
         value: topicOption,
@@ -94,11 +103,11 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/discipline/components/counseling-bk-team-panel:1"
-          mode="local"
+          mode="cursor"
           data={items}
           columns={columns}
           rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
+          pagination={{ pageIndex: 0, pageSize: PAGE_SIZE }}
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
@@ -123,6 +132,12 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
           }
         />
       </div>
+      <CursorPagination
+        hasPrevious={paging.hasPrevious}
+        hasNext={paging.hasNextFor(items.length)}
+        onPrevious={paging.goPrevious}
+        onNext={paging.goNext}
+      />
     </div>
   );
 }

@@ -4,18 +4,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
 
-import type { CounselingTopic, CounselingWrite } from "./api";
+import type { CounselingTopic, CounselingWrite, ListPage } from "./api";
 
 // Counseling notes and their attachments: see api.ts's own top-of-file
 // comment (kept out of that file, which is at max-lines).
 
 const keys = {
-  myCounselings: () => ["discipline", "counselings", "mine"] as const,
+  myCounselings: (page: ListPage) => ["discipline", "counselings", "mine", page] as const,
   studentCounselings: (studentId: string) =>
     ["discipline", "counselings", "student", studentId] as const,
   counseling: (id: string) => ["discipline", "counselings", "detail", id] as const,
   counselingAttachments: (id: string) => ["discipline", "counselings", "attachments", id] as const,
-  bkTeamCounselings: (topic: string) => ["discipline", "counselings", "bk-team", topic] as const,
+  bkTeamCounselings: (topic: string, page: ListPage) =>
+    ["discipline", "counselings", "bk-team", topic, page] as const,
 };
 
 function useInvalidateDiscipline() {
@@ -25,11 +26,14 @@ function useInvalidateDiscipline() {
 
 // Counseling notes (counselor's own).
 
-export function useMyCounselingsQuery() {
+export function useMyCounselingsQuery(page: ListPage) {
   const client = useApiClient();
   return useQuery({
-    queryKey: keys.myCounselings(),
-    queryFn: () => client.GET("/v1/discipline/counselings", { params: { query: { limit: 100 } } }),
+    queryKey: keys.myCounselings(page),
+    queryFn: () =>
+      client.GET("/v1/discipline/counselings", {
+        params: { query: { limit: page.limit, offset: page.offset } },
+      }),
   });
 }
 
@@ -96,13 +100,15 @@ export function useDeleteCounselingMutation() {
 }
 
 /** Notes any author shared with the whole BK team, optionally filtered by topic. */
-export function useBKTeamCounselingsQuery(topic: CounselingTopic | "") {
+export function useBKTeamCounselingsQuery(topic: CounselingTopic | "", page: ListPage) {
   const client = useApiClient();
   return useQuery({
-    queryKey: keys.bkTeamCounselings(topic),
+    queryKey: keys.bkTeamCounselings(topic, page),
     queryFn: () =>
       client.GET("/v1/discipline/counselings/bk-team", {
-        params: { query: { topic: topic || undefined, limit: 100 } },
+        params: {
+          query: { topic: topic || undefined, limit: page.limit, offset: page.offset },
+        },
       }),
   });
 }

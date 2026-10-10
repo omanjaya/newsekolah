@@ -464,17 +464,25 @@ func (q *Queries) ListVisits(ctx context.Context, arg ListVisitsParams) ([]Visit
 }
 
 const listVisitsForRange = `-- name: ListVisitsForRange :many
-select id, tenant_id, member_user_id, visitor_name, kind, purpose, group_size, source, visited_at, created_by, created_at from library_visits where tenant_id = $1 and visited_at >= $2 and visited_at < $3 order by visited_at desc
+select id, tenant_id, member_user_id, visitor_name, kind, purpose, group_size, source, visited_at, created_by, created_at from library_visits where tenant_id = $1 and visited_at >= $2 and visited_at < $3 order by visited_at desc, id desc limit $4 offset $5
 `
 
 type ListVisitsForRangeParams struct {
 	TenantID    uuid.UUID          `json:"tenant_id"`
 	VisitedAt   pgtype.Timestamptz `json:"visited_at"`
 	VisitedAt_2 pgtype.Timestamptz `json:"visited_at_2"`
+	Limit       int32              `json:"limit"`
+	Offset      int32              `json:"offset"`
 }
 
 func (q *Queries) ListVisitsForRange(ctx context.Context, arg ListVisitsForRangeParams) ([]LibraryVisit, error) {
-	rows, err := q.db.Query(ctx, listVisitsForRange, arg.TenantID, arg.VisitedAt, arg.VisitedAt_2)
+	rows, err := q.db.Query(ctx, listVisitsForRange,
+		arg.TenantID,
+		arg.VisitedAt,
+		arg.VisitedAt_2,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}

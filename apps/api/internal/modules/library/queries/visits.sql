@@ -7,7 +7,7 @@ returning *;
 select * from library_visits where tenant_id = $1 and member_user_id = $2 order by visited_at desc limit 1;
 
 -- name: ListVisitsForRange :many
-select * from library_visits where tenant_id = $1 and visited_at >= $2 and visited_at < $3 order by visited_at desc;
+select * from library_visits where tenant_id = $1 and visited_at >= $2 and visited_at < $3 order by visited_at desc, id desc limit $4 offset $5;
 
 -- name: TodayVisitSummary :one
 select

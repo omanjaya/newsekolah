@@ -23,8 +23,10 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
@@ -38,6 +40,9 @@ import {
 
 import { ViolationRecordForm } from "./violation-record-form";
 import { ViolationVoidDialog } from "./violation-void-dialog";
+
+/** Rows per page; the violations API pages by offset and reports no total. */
+const PAGE_SIZE = 50;
 
 /** Shown after a batch of records lands, with the student's new total and any due levels. */
 interface SaveSummary {
@@ -72,7 +77,11 @@ export function ViolationsLedgerView(): ReactElement {
   const classes = useClassesQuery();
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
-  const { data, isLoading } = useViolationsQuery({ classId, from, to, includeVoided });
+  const paging = useOffsetPage(PAGE_SIZE, "ledger_page");
+  const { data, isLoading } = useViolationsQuery(
+    { classId, from, to, includeVoided },
+    { limit: paging.limit, offset: paging.offset },
+  );
   const issueLetter = useIssueWarningLetterMutation();
 
   const items = data?.data ?? [];
@@ -83,7 +92,7 @@ export function ViolationsLedgerView(): ReactElement {
       id: "class",
       label: t("filters.class"),
       value: classId,
-      onChange: setClassId,
+      onChange: paging.resetting(setClassId),
       options: classOptions,
     },
     {
@@ -92,6 +101,7 @@ export function ViolationsLedgerView(): ReactElement {
       value: includeVoidedParam,
       onChange: (value) => {
         setIncludeVoidedParam(value as "" | "true");
+        paging.resetPage();
       },
       type: "boolean",
       activeValue: "true",
@@ -105,6 +115,7 @@ export function ViolationsLedgerView(): ReactElement {
       onChangeRange: ({ from: nextFrom, to: nextTo }) => {
         setFrom(nextFrom);
         setTo(nextTo);
+        paging.resetPage();
       },
       presets,
     },
@@ -297,11 +308,11 @@ export function ViolationsLedgerView(): ReactElement {
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/discipline/components/violations-ledger-view:1"
-          mode="local"
+          mode="cursor"
           data={items}
           columns={columns}
           rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
+          pagination={{ pageIndex: 0, pageSize: PAGE_SIZE }}
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
@@ -329,6 +340,12 @@ export function ViolationsLedgerView(): ReactElement {
           }
         />
       </div>
+      <CursorPagination
+        hasPrevious={paging.hasPrevious}
+        hasNext={paging.hasNextFor(items.length)}
+        onPrevious={paging.goPrevious}
+        onNext={paging.goNext}
+      />
 
       <Dialog
         open={recording}
