@@ -2,19 +2,14 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
-import { formatDateTime } from "@newsekolah/i18n";
 import {
   Button,
-  Card,
   Dialog,
   DialogContent,
   Input,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+  Select,
   Skeleton,
   StatTile,
-  Textarea,
   cn,
   domainIcons,
   useToast,
@@ -25,10 +20,10 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { bentoCells, tileColumns } from "../../../lib/layout/bento";
 import { useCan, useSession } from "../../../lib/session/session-provider";
-import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import {
   useExitPermitReviewQueueQuery,
@@ -41,7 +36,7 @@ import { mergePermitQueues, type PermitQueueRow } from "../lib/permit-queue";
 import { ApprovePanel, GatePanel } from "./exit-permit-panels";
 import { LateArrivalReviewForm } from "./late-arrivals-view";
 import { LeaveRequestDetail } from "./leave-request-detail";
-import { WorkflowStatusBadge } from "./workflow-stepper";
+import { PermitQueueCard } from "./permit-queue-card";
 
 /** Server-scoped queues only: personal history remains in each service's workflow. */
 export function PermitUnifiedQueue(): ReactElement {
@@ -120,9 +115,22 @@ export function PermitUnifiedQueue(): ReactElement {
     row.studentName.length > 0
       ? row.studentName
       : (names.get(row.studentId)?.name ?? t("unknownStudent"));
+  const kinds = ["all", ...sources.map((source) => source.type)];
+  const [kind, setKind] = useUrlState<string>("type", kinds, "all");
+  const classNames = [
+    ...new Set(rows.flatMap((row) => (row.className ? [row.className] : []))),
+  ].sort((a, b) => a.localeCompare(b));
+  const [classFilter, setClassFilter] = useUrlState<string>(
+    "class",
+    (value) => value === "all" || classNames.includes(value),
+    "all",
+  );
   const query = search.trim().toLocaleLowerCase();
-  const visible = rows.filter((row) =>
-    `${nameFor(row)} ${row.description} ${t(row.type)}`.toLocaleLowerCase().includes(query),
+  const visible = rows.filter(
+    (row) =>
+      (kind === "all" || row.type === kind) &&
+      (classFilter === "all" || row.className === classFilter) &&
+      `${nameFor(row)} ${row.description} ${t(row.type)}`.toLocaleLowerCase().includes(query),
   );
   const loading = sources.some((source) => source.query.isLoading);
   const errors = sources.filter((source) => source.query.isError);
@@ -224,14 +232,47 @@ export function PermitUnifiedQueue(): ReactElement {
         </div>
       )}
 
-      <Input
-        aria-label={t("search")}
-        placeholder={t("search")}
-        value={search}
-        onChange={(event) => {
-          setSearch(event.target.value);
-        }}
-      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Input
+          aria-label={t("search")}
+          placeholder={t("search")}
+          value={search}
+          className="sm:max-w-sm"
+          onChange={(event) => {
+            setSearch(event.target.value);
+          }}
+        />
+        {classNames.length > 1 && (
+          <Select
+            aria-label={t("classFilter")}
+            value={classFilter}
+            onValueChange={setClassFilter}
+            className="sm:w-48"
+            options={[
+              { value: "all", label: t("allClasses") },
+              ...classNames.map((name) => ({ value: name, label: name })),
+            ]}
+          />
+        )}
+      </div>
+      {sources.length > 1 && (
+        <div role="group" aria-label={t("typeFilter")} className="flex flex-wrap gap-2">
+          {[{ type: "all", label: t("filterAll") }, ...sources].map((source) => (
+            <Button
+              key={source.type}
+              type="button"
+              size="sm"
+              variant={kind === source.type ? "primary" : "secondary"}
+              aria-pressed={kind === source.type}
+              onClick={() => {
+                setKind(source.type);
+              }}
+            >
+              {source.label}
+            </Button>
+          ))}
+        </div>
+      )}
       {errors.map((source, index) => (
         <section key={`${source.label}-${index}`} aria-label={source.label}>
           <h2 className="text-sm font-medium">{source.label}</h2>
@@ -284,127 +325,5 @@ export function PermitUnifiedQueue(): ReactElement {
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-/**
- * One card on the unified queue's bento grid (docs/07-ui-ux.md): student,
- * type + opened time, description, and the workflow status badge. A leave
- * request is always returned by the review-queue endpoint already at the
- * caller's own pending stage (leave-review-queue.tsx's own comment), so it
- * gets the same one-click Setujui/Tolak as that dedicated queue. Exit
- * permits and late arrivals only ever offer a next step that needs more
- * input (a scan token, a review form), so their card keeps "Tindak
- * lanjuti" as the only action, opening the same detail dialog every row
- * already had.
- */
-function PermitQueueCard({
-  row,
-  name,
-  locale,
-  timeZone,
-  canReviewLeave,
-  approving,
-  rejecting,
-  onApprove,
-  onReject,
-  onOpenDetail,
-}: {
-  row: PermitQueueRow;
-  name: string;
-  locale: Locale;
-  timeZone?: string;
-  canReviewLeave: boolean;
-  approving: boolean;
-  rejecting: boolean;
-  onApprove: () => void;
-  onReject: (reason: string) => void;
-  onOpenDetail: () => void;
-}): ReactElement {
-  const t = useTranslations("app.serviceWorkspace");
-  const tLeave = useTranslations("app.permits.leave");
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [reason, setReason] = useState("");
-  const showLeaveActions = row.type === "leave" && canReviewLeave;
-  const busy = approving || rejecting;
-
-  return (
-    <Card className="flex h-full flex-col gap-3 p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="truncate text-[14px] font-medium text-fg">
-            {formatDisplayName(name)}
-            {row.className && (
-              <span className="ml-1.5 text-[13px] font-normal text-fg-muted">
-                ({row.className})
-              </span>
-            )}
-          </span>
-          <span className="text-[13px] text-fg-muted">
-            {t(row.type)} · {formatDateTime(row.openedAt, { locale, timeZone })}
-          </span>
-          {row.description && <span className="text-[13px] text-fg">{row.description}</span>}
-        </div>
-        <WorkflowStatusBadge status={row.status} />
-      </div>
-      <div className="mt-auto flex flex-wrap items-center justify-end gap-1.5">
-        {showLeaveActions && (
-          <>
-            <Button size="sm" disabled={busy} onClick={onApprove}>
-              {tLeave("approve")}
-            </Button>
-            <Popover open={rejectOpen} onOpenChange={setRejectOpen}>
-              <PopoverTrigger asChild>
-                <Button size="sm" variant="secondary" disabled={busy}>
-                  {tLeave("reject")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-72">
-                <div className="flex flex-col gap-2">
-                  <label className="flex flex-col gap-1 text-[13px]">
-                    <span className="font-medium">{tLeave("reviewNote")}</span>
-                    <Textarea
-                      rows={2}
-                      value={reason}
-                      onChange={(e) => {
-                        setReason(e.target.value);
-                      }}
-                      maxLength={500}
-                    />
-                  </label>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => {
-                        setRejectOpen(false);
-                      }}
-                    >
-                      {tLeave("cancel")}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      loading={rejecting}
-                      onClick={() => {
-                        onReject(reason.trim());
-                        setRejectOpen(false);
-                        setReason("");
-                      }}
-                    >
-                      {tLeave("reject")}
-                    </Button>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </>
-        )}
-        <Button size="sm" variant="secondary" onClick={onOpenDetail}>
-          {t("open")}
-        </Button>
-      </div>
-    </Card>
   );
 }

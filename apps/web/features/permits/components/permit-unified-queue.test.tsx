@@ -157,3 +157,48 @@ describe("permit queue bento layout", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });
+
+describe("permit queue filters", () => {
+  beforeEach(() => {
+    window.history.replaceState(null, "", "/inbox");
+    mocks.can.mockImplementation((permission: string) => permission === "review_leave_requests");
+    mocks.leave.mockReturnValue({
+      ...emptyResult,
+      data: { data: [leaveItem("a"), { ...leaveItem("b"), class_name: "10 B" }] },
+    });
+    mocks.late.mockReturnValue({ ...emptyResult, data: { data: [lateItem("c")] } });
+  });
+
+  it("narrows the queue by type with the chips and keeps it in the URL", async () => {
+    render(<PermitUnifiedQueue />);
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+
+    await userEvent.click(screen.getByRole("button", { name: "late" }));
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "late" })).toHaveAttribute("aria-pressed", "true");
+    expect(window.location.search).toBe("?type=late");
+  });
+
+  it("opens on the type selected by the link", () => {
+    window.history.replaceState(null, "", "/inbox?type=leave");
+    render(<PermitUnifiedQueue />);
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+  });
+
+  it("narrows the queue by class", async () => {
+    // Radix Select reads pointer-capture and scroll APIs jsdom does not implement.
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.releasePointerCapture = () => undefined;
+    Element.prototype.scrollIntoView = () => undefined;
+    render(<PermitUnifiedQueue />);
+    await userEvent.click(screen.getByRole("combobox", { name: "classFilter" }));
+    await userEvent.click(await screen.findByRole("option", { name: "10 B" }));
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+  });
+
+  it("shows no type chips when the reader has a single queue", () => {
+    mocks.can.mockReturnValue(false);
+    render(<PermitUnifiedQueue />);
+    expect(screen.queryByRole("group", { name: "typeFilter" })).not.toBeInTheDocument();
+  });
+});
