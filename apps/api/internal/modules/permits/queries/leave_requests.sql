@@ -84,3 +84,15 @@ where lr.tenant_id = $1 and wi.subject_user_id = $2 and lr.issued_at is not null
   and lr.starts_on <= $3 and lr.ends_on >= $3
 order by lr.issued_at desc
 limit 1;
+
+-- name: ListIssuedLeaveCoveringDates :many
+-- Batch form of GetIssuedLeaveCoveringDate for attendance's tenant-level
+-- jobs: for each (student, date) among the given ones, the category of the
+-- latest issued letter covering the date. A pair no letter covers is absent.
+select distinct on (wi.subject_user_id, d.day) wi.subject_user_id, d.day::date as day, lr.category
+from unnest(sqlc.arg(dates)::date[]) as d(day)
+join leave_requests lr on lr.tenant_id = $1 and lr.issued_at is not null
+  and lr.starts_on <= d.day and lr.ends_on >= d.day
+join workflow_instances wi on wi.id = lr.instance_id and wi.tenant_id = lr.tenant_id
+where wi.subject_user_id = any(sqlc.arg(student_ids)::uuid[])
+order by wi.subject_user_id, d.day, lr.issued_at desc;

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"sort"
 	"testing"
 	"time"
@@ -132,21 +131,22 @@ func TestRecomputeCharacterization(t *testing.T) {
 	}
 }
 
-// charReaders implement the per-student reader ports over the fixture.
+// charAttendance, charDiscipline and charGrading implement the batch reader
+// ports over the fixture. A student whose owning module fails to answer for
+// them is simply left out of the answer, which is how the original
+// per-student reads degraded that student's signal.
 type charAttendance struct{ byID map[uuid.UUID]charStudent }
 
-func (a charAttendance) MonthlySummary(_ context.Context, _, studentID uuid.UUID, month string) ([]DayStatus, error) {
-	s := a.byID[studentID]
-	if s.attendanceFails {
-		return nil, errors.New("attendance unavailable")
-	}
-	first, err := time.Parse("2006-01", month)
-	if err != nil {
-		return nil, err
-	}
-	var out []DayStatus
-	for d := first; d.Before(first.AddDate(0, 1, 0)); d = d.AddDate(0, 0, 1) {
-		out = append(out, DayStatus{Date: d, StatusCode: charDay(s, d)})
+func (a charAttendance) DayStatuses(_ context.Context, _ uuid.UUID, studentIDs []uuid.UUID, dates []time.Time) ([]StudentDayStatus, error) {
+	var out []StudentDayStatus
+	for _, id := range studentIDs {
+		s := a.byID[id]
+		if s.attendanceFails {
+			continue
+		}
+		for _, d := range dates {
+			out = append(out, StudentDayStatus{StudentUserID: id, Date: d, StatusCode: charDay(s, d)})
+		}
 	}
 	return out, nil
 }
@@ -157,20 +157,24 @@ func (charAttendance) TodaySubmittedCount(context.Context, uuid.UUID) (int, int,
 
 type charDiscipline struct{ byID map[uuid.UUID]charStudent }
 
-func (d charDiscipline) StudentSummary(_ context.Context, _, studentID uuid.UUID) (DisciplineSummary, error) {
-	s := d.byID[studentID]
-	if s.disciplineFails {
-		return DisciplineSummary{}, errors.New("discipline unavailable")
+func (d charDiscipline) StudentSummaries(_ context.Context, _ uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]DisciplineSummary, error) {
+	out := map[uuid.UUID]DisciplineSummary{}
+	for _, id := range studentIDs {
+		if s := d.byID[id]; !s.disciplineFails {
+			out[id] = DisciplineSummary{ActiveViolationCount: s.violations, TotalPoints: s.points, WarningLetterCount: s.letters}
+		}
 	}
-	return DisciplineSummary{ActiveViolationCount: s.violations, TotalPoints: s.points, WarningLetterCount: s.letters}, nil
+	return out, nil
 }
 
 type charGrading struct{ byID map[uuid.UUID]charStudent }
 
-func (g charGrading) ReportTrend(_ context.Context, _, studentID uuid.UUID) (GradeTrend, error) {
-	s := g.byID[studentID]
-	if s.gradingFails {
-		return GradeTrend{}, errors.New("grading unavailable")
+func (g charGrading) ReportTrends(_ context.Context, _ uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]GradeTrend, error) {
+	out := map[uuid.UUID]GradeTrend{}
+	for _, id := range studentIDs {
+		if s := g.byID[id]; !s.gradingFails {
+			out[id] = GradeTrend{Available: s.trendAvailable, PreviousAverage: s.previous, CurrentAverage: s.latest}
+		}
 	}
-	return GradeTrend{Available: s.trendAvailable, PreviousAverage: s.previous, CurrentAverage: s.latest}, nil
+	return out, nil
 }

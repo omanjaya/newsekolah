@@ -203,6 +203,24 @@ func (r *Repository) GetIssuedLeaveCoveringDate(ctx context.Context, tenantID, s
 	return toLeaveRequest(row), true, nil
 }
 
+func (r *Repository) ListIssuedLeaveCoveringDates(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID, dates []time.Time) ([]service.LeaveCoverage, error) {
+	pgDates := make([]pgtype.Date, len(dates))
+	for i, d := range dates {
+		pgDates[i] = pdatabase.Date(d)
+	}
+	rows, err := r.queries(ctx).ListIssuedLeaveCoveringDates(ctx, db.ListIssuedLeaveCoveringDatesParams{
+		TenantID: tenantID, Dates: pgDates, StudentIds: studentIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list issued leave covering dates: %w", err)
+	}
+	out := make([]service.LeaveCoverage, len(rows))
+	for i, row := range rows {
+		out[i] = service.LeaveCoverage{StudentUserID: row.SubjectUserID, Date: pdatabase.DateOrZero(row.Day), Category: domain.Category(row.Category)}
+	}
+	return out, nil
+}
+
 func (r *Repository) IssueLeaveRequest(ctx context.Context, tenantID, instanceID uuid.UUID, letterNumber string, issuedAt time.Time, issuedBy uuid.UUID) (domain.LeaveRequest, error) {
 	row, err := r.queries(ctx).IssueLeaveRequest(ctx, db.IssueLeaveRequestParams{
 		TenantID: tenantID, InstanceID: instanceID, LetterNumber: pdatabase.Text(letterNumber),

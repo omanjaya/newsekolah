@@ -262,3 +262,30 @@ func (s *Service) LeaveOverride(ctx context.Context, tenantID, studentUserID uui
 	})
 	return statusCode, ok, err
 }
+
+// LeaveOverrideRow is one student's forced attendance status on one date.
+type LeaveOverrideRow struct {
+	StudentUserID uuid.UUID
+	Date          time.Time
+	StatusCode    string
+}
+
+// LeaveOverridesForDates is LeaveOverride for many students and dates in
+// one query: the status an issued leave letter forces for each (student,
+// date) pair some letter covers (attendance.BatchOverrider). Pairs no
+// letter covers are omitted.
+func (s *Service) LeaveOverridesForDates(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID, dates []time.Time) ([]LeaveOverrideRow, error) {
+	var out []LeaveOverrideRow
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		rows, err := s.repo.ListIssuedLeaveCoveringDates(ctx, tenantID, studentIDs, dates)
+		if err != nil {
+			return err
+		}
+		out = make([]LeaveOverrideRow, len(rows))
+		for i, row := range rows {
+			out[i] = LeaveOverrideRow{StudentUserID: row.StudentUserID, Date: row.Date, StatusCode: attendanceStatusFor(row.Category)}
+		}
+		return nil
+	})
+	return out, err
+}

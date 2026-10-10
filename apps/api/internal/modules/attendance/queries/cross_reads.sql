@@ -192,3 +192,18 @@ where ats.tenant_id = $1 and ats.date = $2
   and (ats.teacher_user_id = $3 or ats.substitute_user_id = $3)
   and ats.submitted_at is not null
 order by sp.sequence;
+
+-- name: ListEnrolledClassesForAttendance :many
+-- Batch form of GetEnrolledClassForAttendance: the class each given student
+-- is actively enrolled in this academic year (at most one per student,
+-- ux_active_enrollment).
+select student_user_id, class_id
+from enrollments
+where tenant_id = $1 and academic_year_id = $2 and student_user_id = any(sqlc.arg(student_ids)::uuid[])
+  and status = 'active';
+
+-- name: ListActiveSchoolDaysForAttendance :many
+-- Every weekday flagged as a school day this academic year; the batch form
+-- of scheduling's IsSchoolDayRef (a weekday with no row is not a school day).
+select day_of_week from school_days
+where tenant_id = $1 and academic_year_id = $2 and is_active;

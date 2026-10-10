@@ -239,6 +239,66 @@ func (q *Queries) ListGradeRanges(ctx context.Context, arg ListGradeRangesParams
 	return items, nil
 }
 
+const listPublishedReportScoresForStudents = `-- name: ListPublishedReportScoresForStudents :many
+select rs.student_user_id, rs.subject_id, rs.final_score
+from report_scores rs
+join enrollments e on e.tenant_id = rs.tenant_id and e.academic_year_id = $3
+  and e.student_user_id = rs.student_user_id and e.status = 'active'
+join grade_publications gp on gp.tenant_id = rs.tenant_id and gp.term_id = rs.term_id
+  and gp.class_id = e.class_id and gp.subject_id = rs.subject_id and gp.is_published
+where rs.tenant_id = $1 and rs.term_id = $2 and rs.student_user_id = any($4::uuid[])
+  and exists (
+    select 1 from grades g
+    join assessment_components c on c.id = g.component_id
+    where g.tenant_id = rs.tenant_id and g.student_user_id = rs.student_user_id
+      and c.term_id = rs.term_id and c.subject_id = rs.subject_id
+  )
+order by rs.student_user_id, rs.subject_id
+`
+
+type ListPublishedReportScoresForStudentsParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	TermID         uuid.UUID   `json:"term_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	StudentIds     []uuid.UUID `json:"student_ids"`
+}
+
+type ListPublishedReportScoresForStudentsRow struct {
+	StudentUserID uuid.UUID      `json:"student_user_id"`
+	SubjectID     uuid.UUID      `json:"subject_id"`
+	FinalScore    pgtype.Numeric `json:"final_score"`
+}
+
+// Batch form of what a student's own grades view sums for one term: the
+// final report score of every subject the student has at least one grade in
+// and whose grades their active-enrollment class may already see
+// (published), for many students at once. Ordered by student then subject,
+// the order the single-student view accumulates in.
+func (q *Queries) ListPublishedReportScoresForStudents(ctx context.Context, arg ListPublishedReportScoresForStudentsParams) ([]ListPublishedReportScoresForStudentsRow, error) {
+	rows, err := q.db.Query(ctx, listPublishedReportScoresForStudents,
+		arg.TenantID,
+		arg.TermID,
+		arg.AcademicYearID,
+		arg.StudentIds,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPublishedReportScoresForStudentsRow{}
+	for rows.Next() {
+		var i ListPublishedReportScoresForStudentsRow
+		if err := rows.Scan(&i.StudentUserID, &i.SubjectID, &i.FinalScore); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listReportScores = `-- name: ListReportScores :many
 select id, tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, final_score, computed_at, automatic_score from report_scores
 where tenant_id = $1 and term_id = $2 and class_id = $3 and subject_id = $4

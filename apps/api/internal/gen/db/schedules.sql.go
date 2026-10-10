@@ -73,6 +73,48 @@ func (q *Queries) CompleteReportScheduleRun(ctx context.Context, arg CompleteRep
 	return err
 }
 
+const countSchedulesByClassDay = `-- name: CountSchedulesByClassDay :many
+select class_id, day_of_week, count(*)::bigint as total
+from schedules
+where tenant_id = $1 and academic_year_id = $2 and class_id = any($3::uuid[])
+group by class_id, day_of_week
+`
+
+type CountSchedulesByClassDayParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	ClassIds       []uuid.UUID `json:"class_ids"`
+}
+
+type CountSchedulesByClassDayRow struct {
+	ClassID   uuid.UUID `json:"class_id"`
+	DayOfWeek int16     `json:"day_of_week"`
+	Total     int64     `json:"total"`
+}
+
+// Batch form of CountSchedulesForClassDay for the analytics recompute: the
+// expected-session count of every (class, weekday) pair among the given
+// classes in one query. A pair with no schedule is absent (count 0).
+func (q *Queries) CountSchedulesByClassDay(ctx context.Context, arg CountSchedulesByClassDayParams) ([]CountSchedulesByClassDayRow, error) {
+	rows, err := q.db.Query(ctx, countSchedulesByClassDay, arg.TenantID, arg.AcademicYearID, arg.ClassIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CountSchedulesByClassDayRow{}
+	for rows.Next() {
+		var i CountSchedulesByClassDayRow
+		if err := rows.Scan(&i.ClassID, &i.DayOfWeek, &i.Total); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const countSchedulesForClassDay = `-- name: CountSchedulesForClassDay :one
 select count(*)::bigint from schedules
 where tenant_id = $1 and academic_year_id = $2 and class_id = $3 and day_of_week = $4

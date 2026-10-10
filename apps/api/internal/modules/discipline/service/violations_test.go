@@ -227,6 +227,11 @@ func (f *fakeRecordRepo) GetViolationAttachment(context.Context, uuid.UUID, uuid
 	return domain.ViolationAttachment{}, false, nil
 }
 
+func (f *fakeRecordRepo) ListRiskTotals(context.Context, uuid.UUID, uuid.UUID, []uuid.UUID) ([]RiskTotals, error) {
+	f.unimplemented()
+	return nil, nil
+}
+
 var _ Repository = (*fakeRecordRepo)(nil)
 
 func testPolicy() domain.SPPolicy { return domain.DefaultSPPolicy() }

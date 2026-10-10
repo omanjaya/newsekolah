@@ -52,6 +52,12 @@ func (NoOpOverrider) Override(context.Context, uuid.UUID, uuid.UUID, time.Time) 
 	return "", "", false, nil
 }
 
+// OverridesForDates is NoOpOverrider's service.BatchOverrider form: it
+// forces nothing for any student or date.
+func (NoOpOverrider) OverridesForDates(context.Context, uuid.UUID, []uuid.UUID, []time.Time) ([]service.DateOverride, error) {
+	return nil, nil
+}
+
 // ViolationRecorder lets SaveEntries record a session's per-student
 // discipline violations (the "violation_ids" field of a save-entries
 // payload) through the not-yet-merged discipline module, mirroring

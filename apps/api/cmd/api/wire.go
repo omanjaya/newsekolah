@@ -175,7 +175,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Pool: pool, Bus: eventBus, Years: schoolModule.Service,
 		Schedules: schedulingModule.ScheduleReader, Access: schedulingModule.AccessChecker, Journals: schedulingModule.JournalService,
 		Perms: identityModule.Service, Hub: hub,
-		Blocker: permitsBlocker{svc: permitsModule.Service}, Overrider: permitsOverrider{svc: permitsModule.Service},
+		Blocker: permitsBlocker{svc: permitsModule.Service}, Overrider: wiring.PermitsOverrider{Svc: permitsModule.Service},
 		Violations: lateViolations, Discipline: lateDiscipline, Presence: presence,
 		Letterheads: wiring.ReportHeaderReports{Svc: schoolModule.Service},
 	})

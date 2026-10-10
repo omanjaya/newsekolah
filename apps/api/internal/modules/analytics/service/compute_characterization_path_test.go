@@ -20,10 +20,9 @@ func charSignals(t *testing.T, students []charStudent, policy domain.Policy, now
 		attendance: charAttendance{byID}, discipline: charDiscipline{byID}, grading: charGrading{byID},
 		clock: clock.Frozen{At: now},
 	}
-	out := make(map[uuid.UUID]domain.Signals, len(students))
-	for _, s := range students {
-		id := charIDFor(s.name)
-		out[id] = svc.buildSignals(context.Background(), uuid.Nil, id, policy, now)
+	ids := make([]uuid.UUID, len(students))
+	for i, s := range students {
+		ids[i] = charIDFor(s.name)
 	}
-	return out
+	return svc.buildSignals(context.Background(), uuid.Nil, ids, policy, now)
 }

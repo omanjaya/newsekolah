@@ -439,6 +439,69 @@ func (q *Queries) ListStudentPointTotals(ctx context.Context, arg ListStudentPoi
 	return items, nil
 }
 
+const listStudentRiskTotals = `-- name: ListStudentRiskTotals :many
+select ids.student_user_id::uuid as student_user_id,
+  coalesce(v.active_violations, 0)::int as active_violations,
+  coalesce(v.total_points, 0)::int as total_points,
+  coalesce(l.letters, 0)::int as warning_letters
+from unnest($3::uuid[]) as ids(student_user_id)
+left join (
+  select vr.student_user_id, count(*) as active_violations, sum(vr.points_snapshot) as total_points
+  from violation_records vr
+  where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.student_user_id = any($3::uuid[])
+    and vr.voided_at is null
+  group by vr.student_user_id
+) v on v.student_user_id = ids.student_user_id
+left join (
+  select wl.student_user_id, count(*) as letters
+  from warning_letters wl
+  where wl.tenant_id = $1 and wl.academic_year_id = $2 and wl.student_user_id = any($3::uuid[])
+  group by wl.student_user_id
+) l on l.student_user_id = ids.student_user_id
+`
+
+type ListStudentRiskTotalsParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	StudentIds     []uuid.UUID `json:"student_ids"`
+}
+
+type ListStudentRiskTotalsRow struct {
+	StudentUserID    uuid.UUID `json:"student_user_id"`
+	ActiveViolations int32     `json:"active_violations"`
+	TotalPoints      int32     `json:"total_points"`
+	WarningLetters   int32     `json:"warning_letters"`
+}
+
+// Batch form of the per-student discipline card the early-warning recompute
+// reads (SumActivePoints, the active records and the warning letters): one
+// row per given student with this year's active violation count, active
+// points and issued warning letters, zero when there are none.
+func (q *Queries) ListStudentRiskTotals(ctx context.Context, arg ListStudentRiskTotalsParams) ([]ListStudentRiskTotalsRow, error) {
+	rows, err := q.db.Query(ctx, listStudentRiskTotals, arg.TenantID, arg.AcademicYearID, arg.StudentIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListStudentRiskTotalsRow{}
+	for rows.Next() {
+		var i ListStudentRiskTotalsRow
+		if err := rows.Scan(
+			&i.StudentUserID,
+			&i.ActiveViolations,
+			&i.TotalPoints,
+			&i.WarningLetters,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listViolationAttachments = `-- name: ListViolationAttachments :many
 select id, tenant_id, violation_record_id, asset_id, created_at from violation_attachments where tenant_id = $1 and violation_record_id = $2 order by created_at
 `

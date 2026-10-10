@@ -53,6 +53,29 @@ type DailySummaryRow struct {
 	PartialAbsence    bool
 }
 
+// StudentDateStatus is one student's materialized daily status on a date.
+type StudentDateStatus struct {
+	StudentUserID uuid.UUID
+	Date          time.Time
+	StatusCode    string
+}
+
+// StudentDateEntries is every status code one student was recorded with on
+// a date, across that date's submitted sessions.
+type StudentDateEntries struct {
+	StudentUserID uuid.UUID
+	Date          time.Time
+	StatusCodes   []string
+}
+
+// ClassDateSubmitted is how many of a class's sessions on a date have been
+// submitted.
+type ClassDateSubmitted struct {
+	ClassID   uuid.UUID
+	Date      time.Time
+	Submitted int
+}
+
 // SessionDetailRow is one session's subject/teacher/period names, the raw
 // input to a DailyReportSession row (its per-student Entries are read
 // separately, via ListEntriesBySession).
@@ -154,6 +177,15 @@ type Repository interface {
 	// -- cross-module read; replace with academic/identity reader interface after merge --
 	ListActiveEnrollments(ctx context.Context, tenantID, academicYearID, classID uuid.UUID) ([]StudentRef, error)
 	GetEnrolledClass(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (classID uuid.UUID, ok bool, err error)
+
+	// Batch reads behind DayStatusesForStudents: each answers for many
+	// students and dates in one query what the single-student calls above
+	// and below answer one at a time.
+	ListDailySummaryForStudentsDates(ctx context.Context, tenantID, academicYearID uuid.UUID, studentIDs []uuid.UUID, dates []time.Time) ([]StudentDateStatus, error)
+	ListEntryStatusesForStudentsDates(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID, dates []time.Time) ([]StudentDateEntries, error)
+	CountSubmittedSessionsByClassesDates(ctx context.Context, tenantID uuid.UUID, classIDs []uuid.UUID, dates []time.Time) ([]ClassDateSubmitted, error)
+	ListEnrolledClasses(ctx context.Context, tenantID, academicYearID uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]uuid.UUID, error)
+	ListSchoolDayWeekdays(ctx context.Context, tenantID, academicYearID uuid.UUID) ([]int16, error)
 	// asOf is the business date the "wali kelas" (homeroom) check runs
 	// against -- the attendance record's own date wherever one already
 	// governs the call, otherwise the caller's simulated/real "today" (see
