@@ -316,16 +316,16 @@ func lookup(name string) string {
 }
 
 // retentionSetting parses a retention period: unset yields def, 0 disables
-// the rule, and any other value must be at least min (a floor that stops a
-// typo from purging a record far sooner than intended).
-func retentionSetting(lookup func(string) string, name string, def, min int, errs *[]string) int {
+// the rule, and any other value must be at least floor (which stops a typo
+// from purging a record far sooner than intended).
+func retentionSetting(lookup func(string) string, name string, def, floor int, errs *[]string) int {
 	raw := lookup(name)
 	if raw == "" {
 		return def
 	}
 	n, err := strconv.Atoi(raw)
-	if err != nil || n < 0 || (n != 0 && n < min) {
-		*errs = append(*errs, fmt.Sprintf("%s (must be 0 to disable, or an integer of at least %d)", name, min))
+	if err != nil || n < 0 || (n != 0 && n < floor) {
+		*errs = append(*errs, fmt.Sprintf("%s (must be 0 to disable, or an integer of at least %d)", name, floor))
 		return def
 	}
 	return n
