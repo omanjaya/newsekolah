@@ -30,7 +30,7 @@ test("leave request: submit -> homeroom queue live -> approve -> student status 
     // renders -- an event published before that subscribe call lands is
     // simply missed (there is no replay), so the student must not submit
     // until this has had a chance to settle.
-    await homeroom.page.goto("/leave-requests");
+    await homeroom.page.goto("/inbox");
     // Waits for the query to settle (not specifically an empty queue -- a
     // previous failed run can leave an unrelated item behind) by waiting
     // out the loading skeleton, matching apps/web/e2e/smoke/fixtures.ts's
@@ -74,7 +74,7 @@ test("leave request: submit -> homeroom queue live -> approve -> student status 
     await assertNoNavigation(homeroom.page, async () => {
       await expect(queueRow).toBeVisible({ timeout: 20_000 });
     });
-    // The unified permits queue (/leave-requests) shows a leave request
+    // The Perlu Tindakan inbox (/inbox) shows a leave request
     // already at the homeroom stage as a bento card with Setujui/Tolak
     // right on it, so approving does not need the detail dialog.
     await queueRow.getByRole("button", { name: "Setujui" }).click();

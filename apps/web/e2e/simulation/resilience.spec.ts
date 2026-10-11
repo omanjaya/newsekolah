@@ -30,7 +30,7 @@ test("resilience: homeroom offline -> student submits -> resync on reconnect", a
     // queue's settled empty state (not just the heading) before anyone
     // acts: the realtime topic subscribe only fires once `me.duties`
     // resolves, a moment after the page renders.
-    await homeroom.page.goto("/leave-requests");
+    await homeroom.page.goto("/inbox");
     // Waits for the query to settle, not specifically an empty queue --
     // see leave-request.spec.ts's identical comment.
     await expect(homeroom.page.locator(".animate-pulse")).toHaveCount(0, { timeout: 20_000 });
@@ -74,7 +74,7 @@ test("resilience: homeroom offline -> student submits -> resync on reconnect", a
       await expect(queueRow).toBeVisible({ timeout: 20_000 });
     });
 
-    // The unified permits queue (/leave-requests) shows a leave request
+    // The Perlu Tindakan inbox (/inbox) shows a leave request
     // already at the homeroom stage as a bento card with Setujui/Tolak
     // right on it, so approving does not need the detail dialog.
     await queueRow.getByRole("button", { name: "Setujui" }).click();
