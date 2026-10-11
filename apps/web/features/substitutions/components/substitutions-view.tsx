@@ -31,8 +31,8 @@ import {
   useClassesQuery,
   useLookup,
   useSubjectsQuery,
-  useTeachersQuery,
 } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type Direction,
   type Substitution,
@@ -62,8 +62,6 @@ export function SubstitutionsView(): ReactElement {
   const { data, isLoading } = useSubstitutionsQuery(direction);
   const respond = useRespondSubstitutionMutation();
   const cancel = useCancelSubstitutionMutation();
-  const teachers = useTeachersQuery();
-  const teacherMap = useLookup(teachers.data?.data);
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
   const periods = useAllPeriodsQuery();
@@ -80,6 +78,11 @@ export function SubstitutionsView(): ReactElement {
   }
 
   const items = data?.data ?? [];
+  const teacherMap = useDirectoryNames(
+    items.map((item) =>
+      direction === "incoming" ? item.requester_user_id : item.substitute_user_id,
+    ),
+  );
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">

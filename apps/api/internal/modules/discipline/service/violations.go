@@ -548,6 +548,7 @@ func (s *Service) ListRecords(ctx context.Context, tenantID uuid.UUID, f RecordF
 	if f.Limit <= 0 || f.Limit > 200 {
 		f.Limit = 50
 	}
+	f.Search = SearchTerm(f.Search)
 	var out []domain.ViolationRecord
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeYear(ctx, tenantID)
@@ -591,6 +592,22 @@ func (s *Service) StudentSummary(ctx context.Context, tenantID, studentID uuid.U
 		}
 		out.DueLevels = out.Policy.DueLevels(out.TotalPoints, out.Letters)
 		return nil
+	})
+	return out, err
+}
+
+// RiskTotalsForStudents is StudentSummary's counts (active violations,
+// active points, warning letters) for many students in one query, for the
+// nightly early-warning recompute. Every given student gets a row.
+func (s *Service) RiskTotalsForStudents(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID) ([]RiskTotals, error) {
+	var out []RiskTotals
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		yearID, err := s.activeYear(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		out, err = s.repo.ListRiskTotals(ctx, tenantID, yearID, studentIDs)
+		return err
 	})
 	return out, err
 }
@@ -707,6 +724,29 @@ func (s *Service) FirstCrossedDates(ctx context.Context, tenantID uuid.UUID, cla
 		return nil
 	})
 	return out, err
+}
+
+// CountDueSPCandidates is how many students ListSPCandidates would list that
+// still have a level due (reached by total points, not yet issued): the
+// action inbox badge, computed in SQL instead of paging candidates out.
+func (s *Service) CountDueSPCandidates(ctx context.Context, tenantID uuid.UUID) (int, error) {
+	var n int
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		yearID, err := s.activeYear(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		policy, err := s.loadPolicy(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		if len(policy.Levels) == 0 {
+			return nil
+		}
+		n, err = s.repo.CountDueSPCandidates(ctx, tenantID, yearID, policy.Levels)
+		return err
+	})
+	return n, err
 }
 
 // ListSPCandidates is the counselor's issuing screen: every student whose

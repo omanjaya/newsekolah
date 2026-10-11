@@ -12,11 +12,18 @@ export type LibraryVisitSummary = components["schemas"]["LibraryVisitSummary"];
 export type LibraryKioskToken = components["schemas"]["LibraryKioskToken"];
 export type LibraryReadInPlace = components["schemas"]["LibraryReadInPlace"];
 
-export function useLibraryVisitsQuery(from: string, to: string) {
+export function useLibraryVisitsQuery(
+  from: string,
+  to: string,
+  page: { limit: number; offset: number },
+) {
   const client = useApiClient();
   return useQuery({
-    queryKey: ["library", "visits", from, to],
-    queryFn: () => client.GET("/v1/library/visits", { params: { query: { from, to } } }),
+    queryKey: ["library", "visits", from, to, page.limit, page.offset],
+    queryFn: () =>
+      client.GET("/v1/library/visits", {
+        params: { query: { from, to, limit: page.limit, offset: page.offset } },
+      }),
     enabled: Boolean(from && to),
   });
 }
@@ -45,6 +52,20 @@ export function useIssueLibraryKioskTokenMutation() {
   const client = useApiClient();
   return useMutation({
     mutationFn: () => client.POST("/v1/library/visits/kiosk-token"),
+  });
+}
+
+/** The visitor's own device submits the kiosk token it just scanned; logs a visit for the signed-in user. */
+export function useScanLibraryKioskVisitMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { token: string }) => client.POST("/v1/library/visits/kiosk-scan", { body }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["library", "visits"] });
+    },
+
+    meta: { errorToast: false },
   });
 }
 

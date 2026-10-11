@@ -28,11 +28,15 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
+import { StudentLink } from "../../students/components/student-link";
 import { printMemberCard } from "../api";
 import {
   type LibraryMember,
@@ -49,6 +53,8 @@ import { MemberRegisterForm } from "./member-register-form";
 
 const STATUSES: LibraryMemberStatus[] = ["pending", "active", "inactive", "suspended", "cleared"];
 const STATUS_VALUES = ["", ...STATUSES] as const;
+/** Rows per page; the members API pages by offset and reports no total. */
+const MEMBERS_PAGE_SIZE = 50;
 
 export function MembersView(): ReactElement {
   const t = useTranslations("app.library.members");
@@ -73,13 +79,21 @@ export function MembersView(): ReactElement {
   const { selection, onSelectionChange, orderedIds, clear } = useOrderedSelection();
   const apiErrorMessage = useApiErrorMessage();
 
-  const { data, isLoading } = useLibraryMembersQuery({ status, memberTypeId, search, limit: 200 });
+  // The list API has no total count, so paging is prev/next by offset and
+  // "next" is available while the last page came back full.
+  const paging = useOffsetPage(MEMBERS_PAGE_SIZE);
+  const { data, isLoading } = useLibraryMembersQuery({
+    status,
+    memberTypeId,
+    search,
+    limit: paging.limit,
+    offset: paging.offset,
+  });
   const memberTypes = useLibraryMemberTypesQuery();
-  const directory = useDirectoryQuery();
-  const directoryMap = useLookup(directory.data?.data);
   const memberTypeMap = useLookup(memberTypes.data?.data);
 
   const items = data?.data ?? [];
+  const directoryMap = useDirectoryNames(items.map((item) => item.user_id));
   const isFiltered = status !== "" || memberTypeId !== "" || search !== "";
 
   const typeOptions = (memberTypes.data?.data ?? []).map((mt) => ({
@@ -94,6 +108,7 @@ export function MembersView(): ReactElement {
       value: status,
       onChange: (value) => {
         setStatus(value as (typeof STATUS_VALUES)[number]);
+        paging.resetPage();
       },
       options: STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) })),
     },
@@ -101,7 +116,7 @@ export function MembersView(): ReactElement {
       id: "type",
       label: t("filters.type"),
       value: memberTypeId,
-      onChange: setMemberTypeId,
+      onChange: paging.resetting(setMemberTypeId),
       options: typeOptions,
     },
   ];
@@ -119,7 +134,15 @@ export function MembersView(): ReactElement {
             <div className="flex min-w-0 items-center gap-2">
               <Avatar size="sm" name={name} />
               <div className="flex min-w-0 flex-col">
-                <span className="truncate text-fg">{name}</span>
+                <span className="truncate text-fg">
+                  <StudentLink
+                    studentId={row.original.user_id}
+                    tab="library"
+                    isStudent={directoryMap.get(row.original.user_id)?.profile_kind === "student"}
+                  >
+                    {name}
+                  </StudentLink>
+                </span>
                 <span className="truncate text-[12px] text-fg-muted">{row.original.member_no}</span>
               </div>
             </div>
@@ -262,14 +285,15 @@ export function MembersView(): ReactElement {
         <DataTable
           stateKey="features/library/components/members-view:1"
           data={items}
+          mode="cursor"
           columns={columns}
           rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 200 }}
+          pagination={{ pageIndex: 0, pageSize: MEMBERS_PAGE_SIZE }}
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter={search}
-          onGlobalFilterChange={setSearch}
+          onGlobalFilterChange={paging.resetting(setSearch)}
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
           filtersLabels={{
@@ -290,6 +314,14 @@ export function MembersView(): ReactElement {
           }
         />
       </div>
+      <CursorPagination
+        hasPrevious={paging.hasPrevious}
+        hasNext={paging.hasNextFor(items.length)}
+        previousLabel={t("pagePrev")}
+        nextLabel={t("pageNext")}
+        onPrevious={paging.goPrevious}
+        onNext={paging.goNext}
+      />
 
       <Dialog
         open={registering}

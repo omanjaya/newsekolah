@@ -27,6 +27,7 @@ import (
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/inbox"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/integrations"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring"
@@ -175,7 +176,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Pool: pool, Bus: eventBus, Years: schoolModule.Service,
 		Schedules: schedulingModule.ScheduleReader, Access: schedulingModule.AccessChecker, Journals: schedulingModule.JournalService,
 		Perms: identityModule.Service, Hub: hub,
-		Blocker: permitsBlocker{svc: permitsModule.Service}, Overrider: permitsOverrider{svc: permitsModule.Service},
+		Blocker: permitsBlocker{svc: permitsModule.Service}, Overrider: wiring.PermitsOverrider{Svc: permitsModule.Service},
 		Violations: lateViolations, Discipline: lateDiscipline, Presence: presence,
 		Letterheads: wiring.ReportHeaderReports{Svc: schoolModule.Service},
 	})
@@ -226,6 +227,12 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Permits:  wiring.AnalyticsPermits{Svc: permitsModule.Service},
 		Presence: wiring.AnalyticsPresence{Presence: presence, Clock: clock.Real{}},
 		Clock:    clock.Real{},
+	})
+
+	// The action-inbox badge sums each queue's own count; it owns no data.
+	inboxModule := inbox.Register(inbox.Dependencies{
+		Perms: identityModule.Service, Leave: permitsModule.Service, Exit: permitsModule.Service,
+		Late: permitsModule.Service, WarningLetters: wiring.InboxWarningLetters{Svc: disciplineModule.Service},
 	})
 
 	// Built before the jobs block below so its periodic due-schedule scan
@@ -285,6 +292,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	platformDeps := platform.Dependencies{
 		Pool: pool, Admin: wiring.PlatformIdentity{Identity: identityModule.Service, Pool: pool}, Jobs: jobInserter,
 		Clock: clock.Real{}, Mode: cfg.TenancyMode, Bucket: cfg.S3Bucket, Sealer: sealer,
+		Retention: wiring.RetentionPolicy(cfg), Logger: logger,
 	}
 	if sharedStorage != nil {
 		platformDeps.Storage = wiring.PlatformStorage{Client: sharedStorage}
@@ -349,7 +357,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		periodic = append(periodic, announcementsModule.RegisterJobs(workers)...)
 		periodic = append(periodic, reportsModule.RegisterJobs(workers, wiring.ReportsEmailSender{Email: senders.Email}, logger)...)
 		periodic = append(periodic, libraryModule.RegisterJobs(workers, logger)...)
-		platformModule.RegisterJobs(workers)
+		periodic = append(periodic, platformModule.RegisterJobs(workers)...)
 		integrationsModule.RegisterJobs(workers, clock.Real{})
 		// analyticsModule needs attendance/discipline/grading already
 		// built, which cmd/worker does not construct today -- its
@@ -406,6 +414,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		StaffAttendanceHandler: staffAttendanceModule.Handler,
 		VisitorsHandler:        visitorsModule.Handler,
 		BillingHandler:         billingModule.Handler,
+		InboxHandler:           inboxModule.Handler,
 		healthHandler:          &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 

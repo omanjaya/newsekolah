@@ -2,17 +2,18 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
-  Badge,
   Button,
   DataTable,
   Dialog,
   DialogContent,
+  domainIcons,
   EmptyState,
   Input,
   PageHeader,
-  domainIcons,
+  SemanticStatusBadge,
   useToast,
   type DataTableFilterDef,
+  type SemanticStatus,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
@@ -25,12 +26,19 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { VisitorsWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { type ExpectedGuest, useCancelExpectedGuestMutation, useExpectedGuestsQuery } from "../api";
 
 import { CheckInForm } from "./check-in-form";
 import { ExpectedGuestForm } from "./expected-guest-form";
+
+const EXPECTED_STATUS: Record<string, SemanticStatus> = {
+  pending: "pending",
+  arrived: "completed",
+  expired: "expired",
+  cancelled: "cancelled",
+};
 
 const ONLY_PENDING_VALUES = ["", "true"] as const;
 
@@ -55,13 +63,11 @@ export function ExpectedGuestsView(): ReactElement {
   const [creating, setCreating] = useState(false);
   const [checkingIn, setCheckingIn] = useState<ExpectedGuest | null>(null);
 
-  const staff = useDirectoryQuery("staff");
-  const teachers = useDirectoryQuery("teacher");
-  const hostMap = useLookup([...(staff.data?.data ?? []), ...(teachers.data?.data ?? [])]);
   const { data, isLoading } = useExpectedGuestsQuery(date, onlyPending !== "true");
   const cancel = useCancelExpectedGuestMutation();
 
   const items = data?.data ?? [];
+  const hostMap = useDirectoryNames(items.map((item) => item.host_user_id));
 
   const filters: DataTableFilterDef[] = [
     {
@@ -91,9 +97,10 @@ export function ExpectedGuestsView(): ReactElement {
         header: t("columns.status"),
         enableSorting: false,
         cell: ({ row }) => (
-          <Badge variant={row.original.status === "pending" ? "accent" : "neutral"}>
-            {t(`status.${row.original.status}`)}
-          </Badge>
+          <SemanticStatusBadge
+            status={EXPECTED_STATUS[row.original.status] ?? "pending"}
+            label={t(`status.${row.original.status}`)}
+          />
         ),
       },
       {

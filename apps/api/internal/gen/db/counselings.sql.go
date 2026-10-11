@@ -207,20 +207,27 @@ func (q *Queries) ListCounselingAttachments(ctx context.Context, arg ListCounsel
 }
 
 const listCounselingsByCounselor = `-- name: ListCounselingsByCounselor :many
-select id, tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, title, content_encrypted, content_key_id, follow_up_plan_encrypted, visibility, created_at, updated_at, topic, career_goals_encrypted, problem_description_encrypted from counselings
-where tenant_id = $1 and academic_year_id = $2 and counselor_user_id = $3
-order by session_at desc
+select c.id, c.tenant_id, c.academic_year_id, c.student_user_id, c.counselor_user_id, c.session_at, c.kind, c.title, c.content_encrypted, c.content_key_id, c.follow_up_plan_encrypted, c.visibility, c.created_at, c.updated_at, c.topic, c.career_goals_encrypted, c.problem_description_encrypted from counselings c
+where c.tenant_id = $1 and c.academic_year_id = $2 and c.counselor_user_id = $3
+  and ($6::text is null or exists (
+    select 1 from users su left join student_profiles sp on sp.user_id = su.id
+    where su.id = c.student_user_id
+      and (su.name ilike '%' || $6 || '%' or sp.nis ilike '%' || $6 || '%')))
+order by c.session_at desc
 limit $4 offset $5
 `
 
 type ListCounselingsByCounselorParams struct {
-	TenantID        uuid.UUID `json:"tenant_id"`
-	AcademicYearID  uuid.UUID `json:"academic_year_id"`
-	CounselorUserID uuid.UUID `json:"counselor_user_id"`
-	Limit           int32     `json:"limit"`
-	Offset          int32     `json:"offset"`
+	TenantID        uuid.UUID   `json:"tenant_id"`
+	AcademicYearID  uuid.UUID   `json:"academic_year_id"`
+	CounselorUserID uuid.UUID   `json:"counselor_user_id"`
+	Limit           int32       `json:"limit"`
+	Offset          int32       `json:"offset"`
+	Search          pgtype.Text `json:"search"`
 }
 
+// The counselor's own notes, optionally by student name/NIS (never note
+// content: it is encrypted at rest).
 func (q *Queries) ListCounselingsByCounselor(ctx context.Context, arg ListCounselingsByCounselorParams) ([]Counseling, error) {
 	rows, err := q.db.Query(ctx, listCounselingsByCounselor,
 		arg.TenantID,
@@ -228,6 +235,7 @@ func (q *Queries) ListCounselingsByCounselor(ctx context.Context, arg ListCounse
 		arg.CounselorUserID,
 		arg.Limit,
 		arg.Offset,
+		arg.Search,
 	)
 	if err != nil {
 		return nil, err
@@ -266,10 +274,14 @@ func (q *Queries) ListCounselingsByCounselor(ctx context.Context, arg ListCounse
 }
 
 const listCounselingsByVisibility = `-- name: ListCounselingsByVisibility :many
-select id, tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, title, content_encrypted, content_key_id, follow_up_plan_encrypted, visibility, created_at, updated_at, topic, career_goals_encrypted, problem_description_encrypted from counselings
-where tenant_id = $1 and academic_year_id = $2 and visibility = 'bk_team'
-  and ($5::text is null or topic = $5)
-order by session_at desc
+select c.id, c.tenant_id, c.academic_year_id, c.student_user_id, c.counselor_user_id, c.session_at, c.kind, c.title, c.content_encrypted, c.content_key_id, c.follow_up_plan_encrypted, c.visibility, c.created_at, c.updated_at, c.topic, c.career_goals_encrypted, c.problem_description_encrypted from counselings c
+where c.tenant_id = $1 and c.academic_year_id = $2 and c.visibility = 'bk_team'
+  and ($5::text is null or c.topic = $5)
+  and ($6::text is null or exists (
+    select 1 from users su left join student_profiles sp on sp.user_id = su.id
+    where su.id = c.student_user_id
+      and (su.name ilike '%' || $6 || '%' or sp.nis ilike '%' || $6 || '%')))
+order by c.session_at desc
 limit $3 offset $4
 `
 
@@ -279,10 +291,12 @@ type ListCounselingsByVisibilityParams struct {
 	Limit          int32       `json:"limit"`
 	Offset         int32       `json:"offset"`
 	Topic          pgtype.Text `json:"topic"`
+	Search         pgtype.Text `json:"search"`
 }
 
 // Cross-student view for any counselor (duty "counselor"): every note the
-// author chose to share with the whole BK team, optionally by topic.
+// author chose to share with the whole BK team, optionally by topic and
+// student name/NIS (never note content: it is encrypted at rest).
 func (q *Queries) ListCounselingsByVisibility(ctx context.Context, arg ListCounselingsByVisibilityParams) ([]Counseling, error) {
 	rows, err := q.db.Query(ctx, listCounselingsByVisibility,
 		arg.TenantID,
@@ -290,6 +304,7 @@ func (q *Queries) ListCounselingsByVisibility(ctx context.Context, arg ListCouns
 		arg.Limit,
 		arg.Offset,
 		arg.Topic,
+		arg.Search,
 	)
 	if err != nil {
 		return nil, err

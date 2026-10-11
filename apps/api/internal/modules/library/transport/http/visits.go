@@ -30,7 +30,7 @@ func toAPIVisit(v domain.Visit) api.LibraryVisit {
 }
 
 func (h *LibraryHandler) ListLibraryVisits(ctx context.Context, request api.ListLibraryVisitsRequestObject) (api.ListLibraryVisitsResponseObject, error) {
-	visits, err := h.service.ListVisits(ctx, tenantID(ctx), request.Params.From, request.Params.To)
+	visits, err := h.service.ListVisits(ctx, tenantID(ctx), request.Params.From, request.Params.To, intOr(request.Params.Limit, 50), intOr(request.Params.Offset, 0))
 	if err != nil {
 		return nil, mapError(err)
 	}

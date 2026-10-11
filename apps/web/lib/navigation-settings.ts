@@ -23,6 +23,24 @@ import { NAV_GROUP } from "./navigation-groups";
  */
 export const settingsNavItems: NavItem[] = [
   {
+    key: "settings-hub",
+    labelKey: "app.settingsHub.title",
+    href: "/settings",
+    icon: Settings,
+    // The hub lists only the cards the reader can open, so any one settings
+    // permission is enough to land on it.
+    anyPermission: [
+      "manage_settings",
+      "view_roles",
+      "view_audit_logs",
+      "manage_notification_settings",
+      "manage_whatsapp",
+      "view_integrations",
+      "manage_workflows",
+    ],
+    group: NAV_GROUP.settings,
+  },
+  {
     key: "settings-roles",
     labelKey: "nav.settings.items.rolesAndAccess",
     href: "/settings/roles",

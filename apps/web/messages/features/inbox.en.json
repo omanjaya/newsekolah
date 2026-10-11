@@ -1,0 +1,17 @@
+{
+  "eyebrow": "Inbox",
+  "title": "Needs Action",
+  "permits": "Permits and late arrivals",
+  "emptyTitle": "Nothing needs your action",
+  "emptyBody": "All of your requests and tasks are done.",
+  "noAccessTitle": "No queues for your role",
+  "noAccessBody": "Your account has no approval duties to show here.",
+  "warningLetters": {
+    "title": "Warning letter candidates",
+    "empty": "No students are due a warning letter.",
+    "points": "{count} points",
+    "open": "Open student",
+    "issue": "Issue {level}",
+    "issued": "{level} issued."
+  }
+}

@@ -7,20 +7,18 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useClassesQuery, useLookup, usePeriodsQuery, useSubjectsQuery } from "../../reference/api";
 import {
-  useClassesQuery,
-  useLookup,
-  usePeriodsQuery,
-  useSubjectsQuery,
-  useTeachersQuery,
-} from "../../reference/api";
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
 import {
   type ScheduleBlock,
   useCreateScheduleMutation,
   useReplaceScheduleBlockMutation,
   useScheduleQuery,
 } from "../api";
-import { conflictMessage } from "../conflict-message";
+import { useNamedConflict } from "../use-named-conflict";
 
 export function ScheduleForm({
   yearId,
@@ -52,13 +50,13 @@ export function ScheduleForm({
   const apiErrorMessage = useApiErrorMessage();
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
-  const teachers = useTeachersQuery();
+  const teacherLabels = useDirectoryPickerLabels(t("pick"));
   const periods = usePeriodsQuery();
   const create = useCreateScheduleMutation();
   const replace = useReplaceScheduleBlockMutation();
   const classMap = useLookup(classes.data?.data);
   const subjectMap = useLookup(subjects.data?.data);
-  const teacherMap = useLookup(teachers.data?.data);
+  const namedConflict = useNamedConflict();
   // ScheduleBlock (the merged-block row the grid renders) never carries
   // `notes`, so editing a block from that shape alone would silently drop
   // any existing note on save; fetch the full Schedule once to prefill it.
@@ -130,9 +128,9 @@ export function ScheduleForm({
       }
       onDone();
     } catch (err) {
-      const named = conflictMessage(
+      const named = await namedConflict(
         err,
-        { classMap, subjectMap, teacherMap, periods: periods.data?.data ?? [] },
+        { classMap, subjectMap, teacherMap: new Map(), periods: periods.data?.data ?? [] },
         tSchedule,
       );
       setError(
@@ -181,11 +179,11 @@ export function ScheduleForm({
       )}
       {field(
         t("teacher"),
-        <Select
-          options={(teachers.data?.data ?? []).map((u) => ({ value: u.id, label: u.name }))}
+        <DirectoryPicker
+          profileKind="teacher"
           value={teacherId}
           onValueChange={setTeacherId}
-          placeholder={t("pick")}
+          labels={teacherLabels}
         />,
       )}
       <div className="grid gap-4 md:grid-cols-3">

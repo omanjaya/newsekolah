@@ -14,9 +14,10 @@ import {
   type ClassRef,
   type DirectoryUser,
   useClassesQuery,
-  useDirectoryQuery,
   useLookup,
 } from "../../../reference/api";
+import { useDirectoryNames } from "../../../reference/directory-names";
+import { studentProfileHref } from "../../../students/href";
 import { useAdminDashboardQuery } from "../../api";
 import {
   EMPTY_BLOCK,
@@ -28,6 +29,7 @@ import {
 } from "../types";
 
 import { LoginActivityChart } from "./login-activity-chart";
+import { PresenceCard } from "./presence-card";
 
 type AdminDashboard = components["schemas"]["AdminDashboard"];
 type StudentRisk = components["schemas"]["StudentRisk"];
@@ -58,9 +60,14 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   // them): the query only runs, and the card only renders, for a caller who
   // actually has it.
   const canViewAtRisk = me.permissions.includes("view_early_warning");
+  const canViewMonitor = me.permissions.includes("view_monitor_presence");
   const atRisk = useAtRiskStudentsQuery(active && canViewAtRisk);
-  const students = useDirectoryQuery("student", active);
-  const studentMap = useLookup(students.data?.data);
+  // Only the top rows are shown, so only their names are looked up.
+  const topAtRisk = [...(atRisk.data?.data ?? [])].sort((a, b) => b.score - a.score).slice(0, 5);
+  const studentMap = useDirectoryNames(
+    topAtRisk.map((row) => row.student_user_id),
+    active,
+  );
   const classes = useClassesQuery(active);
   const classMap = useLookup(classes.data?.data);
 
@@ -126,7 +133,7 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
     });
   }
 
-  const atRiskRows = [...(atRisk.data?.data ?? [])].sort((a, b) => b.score - a.score).slice(0, 5);
+  const atRiskRows = topAtRisk;
 
   const left: BlockSlot[] = [
     {
@@ -141,6 +148,22 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
         />
       ),
     },
+    ...(canViewMonitor
+      ? [
+          {
+            key: "school.presence",
+            node: (
+              <PresenceCard
+                key="school.presence"
+                isLoading={dashboard.isLoading}
+                isError={dashboard.isError}
+                refetch={dashboard.refetch}
+                attendance={attendanceToday}
+              />
+            ),
+          },
+        ]
+      : []),
   ];
 
   const right: BlockSlot[] = [
@@ -344,7 +367,7 @@ function AtRiskCard({
             {rows.map((row) => (
               <li key={row.student_user_id}>
                 <Link
-                  href={`/analytics/${row.student_user_id}`}
+                  href={studentProfileHref(row.student_user_id)}
                   className="flex items-center justify-between gap-3 text-[13px] text-fg hover:text-accent"
                 >
                   <span className="flex min-w-0 flex-col">

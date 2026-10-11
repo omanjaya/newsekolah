@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { StudentLink } from "../../students/components/student-link";
 import type { LibraryMemberStatus } from "../members-api";
 
 import { LibraryLookupField } from "./library-lookup-field";
@@ -68,7 +69,11 @@ export function DeskMemberPanel({
         <Avatar name={member.name} size="sm" />
         <div className="flex min-w-0 flex-col">
           <span className="flex flex-wrap items-center gap-2 text-[14px] font-medium text-fg">
-            <span className="truncate">{member.name}</span>
+            <span className="truncate">
+              <StudentLink studentId={member.userId} tab="library" isStudent={Boolean(member.nis)}>
+                {member.name}
+              </StudentLink>
+            </span>
             {memberStatus && (
               <Badge variant={needsAttention ? "neutral" : "accent"}>
                 {needsAttention && <UserX className="size-3" aria-hidden="true" />}

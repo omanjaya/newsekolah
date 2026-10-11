@@ -1,11 +1,14 @@
 {
   "violations": {
+    "searchPlaceholder": "Cari nama atau NIS",
     "eyebrow": "Kesiswaan",
     "title": "Pelanggaran",
     "tabs": {
       "ledger": "Catatan poin",
       "catalog": "Katalog pelanggaran",
-      "policy": "Kebijakan SP"
+      "policy": "Kebijakan SP",
+      "atRisk": "Kandidat SP",
+      "letters": "Surat Peringatan"
     },
     "filters": {
       "class": "Kelas",
@@ -144,6 +147,7 @@
     "saved": "Kebijakan SP tersimpan"
   },
   "warningLetters": {
+    "searchPlaceholder": "Cari nama atau NIS",
     "eyebrow": "Kesiswaan",
     "title": "Surat peringatan",
     "tabs": {
@@ -209,6 +213,7 @@
     }
   },
   "counseling": {
+    "searchPlaceholder": "Cari nama atau NIS",
     "eyebrow": "Kesiswaan",
     "title": "Konseling",
     "add": "Catat konseling",

@@ -57,7 +57,8 @@ where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.student_user_id = $3
 order by vr.occurred_on desc, vr.created_at desc;
 
 -- name: ListViolationRecords :many
--- The admin list: optional class (via active enrollment) and date range filters.
+-- The admin list: optional class (via active enrollment), date range and
+-- student name/NIS search (trigram indexes on users.name, student_profiles.nis).
 select vr.*, vt.code as type_code, vt.name as type_name, vt.category as type_category
 from violation_records vr
 join violation_types vt on vt.id = vr.violation_type_id
@@ -68,6 +69,10 @@ where vr.tenant_id = $1 and vr.academic_year_id = $2
   and (sqlc.narg(from_date)::date is null or vr.occurred_on >= sqlc.narg(from_date)::date)
   and (sqlc.narg(to_date)::date is null or vr.occurred_on <= sqlc.narg(to_date)::date)
   and (sqlc.arg(include_voided)::bool or vr.voided_at is null)
+  and (sqlc.narg(search)::text is null or exists (
+    select 1 from users su left join student_profiles sp on sp.user_id = su.id
+    where su.id = vr.student_user_id
+      and (su.name ilike '%' || sqlc.narg(search) || '%' or sp.nis ilike '%' || sqlc.narg(search) || '%')))
 order by vr.occurred_on desc, vr.created_at desc
 limit $3 offset $4;
 
@@ -112,10 +117,9 @@ limit $3;
 -- result has zero points and no issued levels.
 select vr.student_user_id,
   coalesce(sum(vr.points_snapshot), 0)::int as total_points,
-  coalesce(array_agg(distinct wl.level) filter (where wl.level is not null), '{}')::int[] as issued_levels
+  coalesce((select array_agg(distinct wl.level order by wl.level) from warning_letters wl
+    where wl.tenant_id = $1 and wl.academic_year_id = $2 and wl.student_user_id = vr.student_user_id), '{}')::int[] as issued_levels
 from violation_records vr
-left join warning_letters wl on wl.tenant_id = vr.tenant_id and wl.academic_year_id = vr.academic_year_id
-  and wl.student_user_id = vr.student_user_id
 where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.voided_at is null
   and vr.student_user_id = any(sqlc.arg(student_ids)::uuid[])
 group by vr.student_user_id;
@@ -130,3 +134,27 @@ select * from violation_attachments where tenant_id = $1 and violation_record_id
 
 -- name: GetViolationAttachment :one
 select * from violation_attachments where tenant_id = $1 and id = $2;
+
+-- name: ListStudentRiskTotals :many
+-- Batch form of the per-student discipline card the early-warning recompute
+-- reads (SumActivePoints, the active records and the warning letters): one
+-- row per given student with this year's active violation count, active
+-- points and issued warning letters, zero when there are none.
+select ids.student_user_id::uuid as student_user_id,
+  coalesce(v.active_violations, 0)::int as active_violations,
+  coalesce(v.total_points, 0)::int as total_points,
+  coalesce(l.letters, 0)::int as warning_letters
+from unnest(sqlc.arg(student_ids)::uuid[]) as ids(student_user_id)
+left join (
+  select vr.student_user_id, count(*) as active_violations, sum(vr.points_snapshot) as total_points
+  from violation_records vr
+  where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.student_user_id = any(sqlc.arg(student_ids)::uuid[])
+    and vr.voided_at is null
+  group by vr.student_user_id
+) v on v.student_user_id = ids.student_user_id
+left join (
+  select wl.student_user_id, count(*) as letters
+  from warning_letters wl
+  where wl.tenant_id = $1 and wl.academic_year_id = $2 and wl.student_user_id = any(sqlc.arg(student_ids)::uuid[])
+  group by wl.student_user_id
+) l on l.student_user_id = ids.student_user_id;

@@ -9,6 +9,7 @@ export function resolvePersonas(me: Me): Set<PersonaKey> {
   const hasDuty = (slug: string) => (me.duties ?? []).some((duty) => duty.slug === slug);
   const hasRole = (slug: string) => me.roles.some((role) => role.slug === slug);
   if (me.profile_kind === "teacher" && can("manage_attendance")) personas.add("teacher");
+  if (me.profile_kind === "teacher" || me.profile_kind === "staff") personas.add("checkIn");
   if (hasDuty("homeroom")) personas.add("homeroom");
   if (me.profile_kind === "student") personas.add("student");
   if (me.roles.some((role) => LEADERSHIP_ROLES.has(role.slug))) personas.add("leadership");

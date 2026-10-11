@@ -84,11 +84,11 @@ func (s *Service) TodayVisitSummary(ctx context.Context, tenantID uuid.UUID) (Vi
 	return summary, err
 }
 
-func (s *Service) ListVisits(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]domain.Visit, error) {
+func (s *Service) ListVisits(ctx context.Context, tenantID uuid.UUID, from, to time.Time, limit, offset int) ([]domain.Visit, error) {
 	var visits []domain.Visit
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		visits, err = s.repo.ListVisitsForRange(ctx, tenantID, from, to)
+		visits, err = s.repo.ListVisitsForRange(ctx, tenantID, from, to, clampLimit(limit), max(offset, 0))
 		return err
 	})
 	return visits, err

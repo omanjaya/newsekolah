@@ -26,17 +26,23 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { CounselingWorkspaceNav } from "../../student-services/components/service-workspace-nav";
+import { StudentLink } from "../../students/components/student-link";
 import { type Counseling } from "../api";
 import { useDeleteCounselingMutation, useMyCounselingsQuery } from "../api-counseling-extras";
 
 import { CounselingBKTeamPanel } from "./counseling-bk-team-panel";
 import { CounselingDetailDialog } from "./counseling-detail-dialog";
 import { CounselingForm } from "./counseling-form";
+
+/** Rows per page; the counseling API pages by offset and reports no total. */
+const PAGE_SIZE = 50;
 
 export function CounselingView(): ReactElement {
   const workspace = useTranslations("app.serviceWorkspace");
@@ -48,9 +54,13 @@ export function CounselingView(): ReactElement {
   const searchParams = useSearchParams();
   const initialStudentId = searchParams.get("studentId") ?? undefined;
 
-  const { data, isLoading } = useMyCounselingsQuery();
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
+  const [search, setSearch] = useUrlState<string>("mine_q", () => true, "");
+  const paging = useOffsetPage(PAGE_SIZE, "mine_page");
+  const { data, isLoading } = useMyCounselingsQuery({
+    limit: paging.limit,
+    offset: paging.offset,
+    search,
+  });
   const remove = useDeleteCounselingMutation();
 
   const [editing, setEditing] = useState<Counseling | "new" | null>(() =>
@@ -61,6 +71,7 @@ export function CounselingView(): ReactElement {
   const [tab, setTab] = useUrlState<string>("tab", ["mine", "bkTeam"], "mine");
 
   const items = data?.data ?? [];
+  const studentMap = useDirectoryNames(items.map((item) => item.student_user_id));
 
   const columns = useMemo<ColumnDef<Counseling>[]>(
     () => [
@@ -74,7 +85,11 @@ export function CounselingView(): ReactElement {
           return student ? (
             <div className="flex min-w-0 items-center gap-2">
               <Avatar size="sm" name={student.name} />
-              <span className="truncate">{student.name}</span>
+              <span className="truncate">
+                <StudentLink studentId={student.id} tab="counseling">
+                  {student.name}
+                </StudentLink>
+              </span>
             </div>
           ) : (
             t("unknownStudent")
@@ -130,15 +145,17 @@ export function CounselingView(): ReactElement {
           <div className="flex flex-col md:h-full md:min-h-0">
             <DataTable
               stateKey="features/discipline/components/counseling-view:1"
-              mode="local"
+              mode="cursor"
               data={items}
               columns={columns}
               rowCount={items.length}
-              pagination={{ pageIndex: 0, pageSize: 50 }}
+              pagination={{ pageIndex: 0, pageSize: PAGE_SIZE }}
               onPaginationChange={() => undefined}
               sorting={[]}
               onSortingChange={() => undefined}
-              globalFilter=""
+              globalFilter={search}
+              onGlobalFilterChange={paging.resetting(setSearch)}
+              toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
               isLoading={isLoading}
               getRowId={(item) => item.id}
               onRowActivate={(item) => {
@@ -152,6 +169,12 @@ export function CounselingView(): ReactElement {
                   description={t("emptyBody")}
                 />
               }
+            />
+            <CursorPagination
+              hasPrevious={paging.hasPrevious}
+              hasNext={paging.hasNextFor(items.length)}
+              onPrevious={paging.goPrevious}
+              onNext={paging.goNext}
             />
           </div>
         </TabsContent>

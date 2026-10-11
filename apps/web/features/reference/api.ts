@@ -18,6 +18,9 @@ export type PeriodRef = components["schemas"]["Period"];
  */
 const REFERENCE_STALE_MS = 5 * 60 * 1000;
 
+/** A school has far fewer teachers than this; it only has to be above the headcount. */
+const TEACHER_ROSTER_LIMIT = 1000;
+
 export function useClassesQuery(enabled = true) {
   const client = useApiClient();
   const year = useActiveYear();
@@ -109,25 +112,23 @@ export function useAllPeriodsQuery(enabled = true) {
 export type DirectoryUser = components["schemas"]["DirectoryUser"];
 export type ProfileKind = components["schemas"]["ProfileKind"];
 
-/** Names for id lookups; readable by every signed-in user (no contact data). */
-export function useDirectoryQuery(profileKind?: ProfileKind, enabled = true) {
+/**
+ * Every teacher of the school, for the one screen that must match typed names
+ * to people (the schedule CSV import). Teachers only, so the list stays small
+ * whatever the student body; everything else resolves ids with
+ * `useDirectoryNames` or searches with `DirectoryPicker`.
+ */
+export function useTeacherRosterQuery(enabled = true) {
   const client = useApiClient();
   return useQuery({
-    queryKey: queryKeys.directory(profileKind ?? "all"),
+    queryKey: queryKeys.directory("teacher"),
     queryFn: () =>
       client.GET("/v1/directory/users", {
-        // The ceiling, not a page size: lookup maps (violation ledger,
-        // duty holders) must resolve every id they meet, and a school's
-        // student body does not fit in the old cap of 500.
-        params: { query: { ...(profileKind ? { profile_kind: profileKind } : {}), limit: 5000 } },
+        params: { query: { profile_kind: "teacher", limit: TEACHER_ROSTER_LIMIT } },
       }),
     enabled,
     staleTime: REFERENCE_STALE_MS,
   });
-}
-
-export function useTeachersQuery(enabled = true) {
-  return useDirectoryQuery("teacher", enabled);
 }
 
 export function useSchoolDaysQuery(enabled = true) {

@@ -58,6 +58,21 @@ func (r *Repository) ListUsersAdmin(ctx context.Context, tenantID uuid.UUID, f s
 	return out, nil
 }
 
+func (r *Repository) ListDirectoryByIDs(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]service.DirectoryEntry, error) {
+	rows, err := r.queries(ctx).ListDirectoryByIDs(ctx, db.ListDirectoryByIDsParams{TenantID: tenantID, Ids: ids})
+	if err != nil {
+		return nil, fmt.Errorf("list directory by ids: %w", err)
+	}
+	out := make([]service.DirectoryEntry, len(rows))
+	for i, row := range rows {
+		out[i] = service.DirectoryEntry{
+			ID: row.ID, Name: row.Name, Username: row.Username,
+			ProfileKind: domain.ProfileKind(pdatabase.TextOrEmpty(row.ProfileKind)), NIS: pdatabase.TextOrEmpty(row.Nis),
+		}
+	}
+	return out, nil
+}
+
 func (r *Repository) GetUserAdminByID(ctx context.Context, tenantID, userID uuid.UUID) (service.UserAdminRow, error) {
 	row, err := r.queries(ctx).GetUserAdminByID(ctx, db.GetUserAdminByIDParams{TenantID: tenantID, ID: userID})
 	if err != nil {

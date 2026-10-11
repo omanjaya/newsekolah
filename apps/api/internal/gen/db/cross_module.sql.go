@@ -37,6 +37,20 @@ func (q *Queries) AnalyticsGetHomeroomClassID(ctx context.Context, arg Analytics
 	return scope_class_id, err
 }
 
+const analyticsGetTenantTimezone = `-- name: AnalyticsGetTenantTimezone :one
+select timezone from tenants where id = $1
+`
+
+// cross-module read: the tenant IANA timezone decides which calendar date
+// "today" is for the attendance window, mirroring attendance's
+// GetTenantTimezoneForAttendance.
+func (q *Queries) AnalyticsGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, analyticsGetTenantTimezone, id)
+	var timezone string
+	err := row.Scan(&timezone)
+	return timezone, err
+}
+
 const analyticsHasActiveDuty = `-- name: AnalyticsHasActiveDuty :one
 select exists (
   select 1 from duty_assignments da

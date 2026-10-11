@@ -1,0 +1,30 @@
+paths:
+  /v1/inbox/counts:
+    get:
+      tags: [inbox]
+      operationId: getInboxCounts
+      x-permission: authenticated
+      summary: >-
+        Pending-item counts for the caller's action inbox: leave requests,
+        exit permits, late arrivals and warning letters. Each number applies
+        the same authorization and scoping as its queue endpoint, so a queue
+        the caller cannot see counts as 0.
+      responses:
+        "200":
+          description: Counts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InboxCounts" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+components:
+  schemas:
+    InboxCounts:
+      type: object
+      required: [leave, exit, late, warning_letters, total]
+      properties:
+        leave: { type: integer, minimum: 0 }
+        exit: { type: integer, minimum: 0 }
+        late: { type: integer, minimum: 0 }
+        warning_letters: { type: integer, minimum: 0 }
+        total: { type: integer, minimum: 0 }

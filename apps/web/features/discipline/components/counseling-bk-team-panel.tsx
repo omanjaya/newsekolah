@@ -14,11 +14,16 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
+import { StudentLink } from "../../students/components/student-link";
 import { type Counseling, type CounselingTopic } from "../api";
 import { useBKTeamCounselingsQuery } from "../api-counseling-extras";
 
+/** Rows per page; the counseling API pages by offset and reports no total. */
+const PAGE_SIZE = 50;
 const TOPICS: CounselingTopic[] = ["career", "problem", "personal", "learning", "social", "other"];
 const TOPIC_VALUES = ["", ...TOPICS] as const;
 
@@ -33,11 +38,16 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
   const locale = useLocale() as Locale;
   const [topic, setTopic] = useUrlState<(typeof TOPIC_VALUES)[number]>("topic", TOPIC_VALUES, "");
 
-  const { data, isLoading } = useBKTeamCounselingsQuery(topic);
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
+  const [search, setSearch] = useUrlState<string>("team_q", () => true, "");
+  const paging = useOffsetPage(PAGE_SIZE, "team_page");
+  const { data, isLoading } = useBKTeamCounselingsQuery(topic, {
+    limit: paging.limit,
+    offset: paging.offset,
+    search,
+  });
 
   const items = data?.data ?? [];
+  const studentMap = useDirectoryNames(items.map((item) => item.student_user_id));
 
   const filters: DataTableFilterDef[] = [
     {
@@ -46,6 +56,7 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
       value: topic,
       onChange: (value) => {
         setTopic(value as (typeof TOPIC_VALUES)[number]);
+        paging.resetPage();
       },
       options: TOPICS.map((topicOption) => ({
         value: topicOption,
@@ -66,7 +77,11 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
           return student ? (
             <div className="flex min-w-0 items-center gap-2">
               <Avatar size="sm" name={student.name} />
-              <span className="truncate">{student.name}</span>
+              <span className="truncate">
+                <StudentLink studentId={student.id} tab="counseling">
+                  {student.name}
+                </StudentLink>
+              </span>
             </div>
           ) : (
             t("unknownStudent")
@@ -94,15 +109,17 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/discipline/components/counseling-bk-team-panel:1"
-          mode="local"
+          mode="cursor"
           data={items}
           columns={columns}
           rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
+          pagination={{ pageIndex: 0, pageSize: PAGE_SIZE }}
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
-          globalFilter=""
+          globalFilter={search}
+          onGlobalFilterChange={paging.resetting(setSearch)}
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
           filtersLabels={{
             reset: t("bkTeam.reset"),
@@ -123,6 +140,12 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
           }
         />
       </div>
+      <CursorPagination
+        hasPrevious={paging.hasPrevious}
+        hasNext={paging.hasNextFor(items.length)}
+        onPrevious={paging.goPrevious}
+        onNext={paging.goNext}
+      />
     </div>
   );
 }

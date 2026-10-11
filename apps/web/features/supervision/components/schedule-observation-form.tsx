@@ -9,12 +9,11 @@ import { useState } from "react";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { todayInZone } from "../../../lib/tenant-date";
+import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import {
-  useClassesQuery,
-  useLookup,
-  useSubjectsQuery,
-  useTeachersQuery,
-} from "../../reference/api";
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
 import { useSchedulesQuery } from "../../schedule/api";
 import { useScheduleObservationMutation } from "../api";
 
@@ -36,7 +35,7 @@ export function ScheduleObservationForm({
   const apiErrorMessage = useApiErrorMessage();
   const year = useActiveYear();
 
-  const teachers = useTeachersQuery();
+  const teacherLabels = useDirectoryPickerLabels(t("teacherPlaceholder"));
   const [teacherId, setTeacherId] = useState("");
   const blocks = useSchedulesQuery({ academicYearId: year.id, teacherUserId: teacherId });
   const classes = useClassesQuery();
@@ -48,7 +47,6 @@ export function ScheduleObservationForm({
   const [lessonDate, setLessonDate] = useState(today());
   const schedule = useScheduleObservationMutation(cycleId);
 
-  const teacherOptions = (teachers.data?.data ?? []).map((u) => ({ value: u.id, label: u.name }));
   const blockOptions = (blocks.data?.data ?? []).map((block) => ({
     value: block.schedule_ids[0] ?? "",
     label: [
@@ -88,14 +86,14 @@ export function ScheduleObservationForm({
     >
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("teacher")}</span>
-        <Select
-          options={teacherOptions}
+        <DirectoryPicker
+          profileKind="teacher"
           value={teacherId}
-          onValueChange={(v) => {
-            setTeacherId(v);
+          onValueChange={(id) => {
+            setTeacherId(id);
             setScheduleId("");
           }}
-          placeholder={t("teacherPlaceholder")}
+          labels={teacherLabels}
         />
       </label>
       <label className="flex flex-col gap-1 text-[13px]">

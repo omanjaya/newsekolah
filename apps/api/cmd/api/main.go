@@ -52,7 +52,9 @@ func run(logger *slog.Logger) error {
 	}
 	defer func() { _ = tracer.Shutdown(context.Background()) }()
 
-	pool, err := database.NewPool(ctx, cfg.DatabaseURL)
+	// 60s is a backstop above the 30s HTTP timeout: a statement still running
+	// after its request gave up is a runaway query, not useful work.
+	pool, err := database.NewPool(ctx, cfg.DatabaseURL, database.WithStatementTimeout(60*time.Second))
 	if err != nil {
 		return err
 	}

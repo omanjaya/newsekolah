@@ -19,8 +19,8 @@ import { useCan, useSession } from "../../lib/session/session-provider";
  * calls at each call site.
  */
 
-const LATE_ARRIVAL_EVENTS = ["late_arrival.opened", "late_arrival.updated"] as const;
-const EXIT_PERMIT_QUEUE_EVENTS = [
+export const LATE_ARRIVAL_EVENTS = ["late_arrival.opened", "late_arrival.updated"] as const;
+export const EXIT_PERMIT_QUEUE_EVENTS = [
   "exit_permit.stage_changed",
   "exit_permit.issued",
   "exit_permit.gate_ready",
@@ -31,7 +31,10 @@ const EXIT_PERMIT_SELF_EVENTS = [
   "exit_permit.issued",
   "exit_permit.exited",
 ] as const;
-const LEAVE_REQUEST_QUEUE_EVENTS = ["leave_request.submitted", "leave_request.reviewed"] as const;
+export const LEAVE_REQUEST_QUEUE_EVENTS = [
+  "leave_request.submitted",
+  "leave_request.reviewed",
+] as const;
 const LEAVE_REQUEST_SELF_EVENTS = ["leave_request.reviewed", "leave_request.issued"] as const;
 
 /**

@@ -19,7 +19,7 @@ import { useState } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type Payment,
   useBillQuery,
@@ -62,8 +62,7 @@ export function BillDetailSheet({
   const canVoid = useCan("void_payments");
 
   const { data: bill, isLoading, isError, refetch } = useBillQuery(billId);
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
+  const studentMap = useDirectoryNames([bill?.student_user_id]);
   const history = useStudentBillHistoryQuery(bill?.student_user_id ?? "", !!bill);
   const receiptUrl = usePaymentReceiptUrlMutation();
 

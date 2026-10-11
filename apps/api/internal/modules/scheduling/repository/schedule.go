@@ -8,6 +8,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/service"
 	pdatabase "github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
@@ -101,6 +102,20 @@ func (r *Repository) CountSchedulesForClassDay(ctx context.Context, tenantID, ac
 	return r.queries(ctx).CountSchedulesForClassDay(ctx, db.CountSchedulesForClassDayParams{
 		TenantID: tenantID, AcademicYearID: academicYearID, ClassID: classID, DayOfWeek: dayOfWeek,
 	})
+}
+
+func (r *Repository) CountSchedulesByClassDay(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID) ([]service.ClassDayCount, error) {
+	rows, err := r.queries(ctx).CountSchedulesByClassDay(ctx, db.CountSchedulesByClassDayParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, ClassIds: classIDs,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.ClassDayCount, len(rows))
+	for i, row := range rows {
+		out[i] = service.ClassDayCount{ClassID: row.ClassID, DayOfWeek: row.DayOfWeek, Count: row.Total}
+	}
+	return out, nil
 }
 
 func toSchedules(rows []db.Schedule) []domain.Schedule {

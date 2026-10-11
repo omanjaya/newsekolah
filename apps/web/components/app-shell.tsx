@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
+import { useActionInboxCount } from "../features/inbox/use-action-inbox-count";
 import { useNotificationsSocket } from "../features/notifications/realtime";
 import { navigation, filterNavigation } from "../lib/navigation";
 import { canOpenPath } from "../lib/navigation-permissions";
@@ -51,7 +52,8 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
   const roleSlugs = (me?.roles ?? []).map((role) => role.slug);
   const can = (permission: string) => me?.permissions.includes(permission) ?? false;
   const authorizedItems = filterNavigation(navigation, can, me?.profile_kind, roleSlugs);
-  const items = consolidateNavigation(authorizedItems, {
+  const inboxCount = useActionInboxCount();
+  const consolidated = consolidateNavigation(authorizedItems, {
     profileKind: me?.profile_kind,
     duties: me?.duties,
     canManageSchool: me?.permissions.some((code) =>
@@ -59,6 +61,9 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
     ),
     can,
   });
+  const items = consolidated.map((item) =>
+    item.key === "inbox" ? { ...item, badgeCount: inboxCount } : item,
+  );
 
   // A page the reader cannot use would otherwise render its own empty
   // state, because the API refuses each query separately and the screen

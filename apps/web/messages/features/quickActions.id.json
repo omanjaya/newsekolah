@@ -1,0 +1,15 @@
+{
+  "group": "Aksi cepat",
+  "students": "Siswa",
+  "trigger": "Aksi cepat",
+  "title": "Aksi cepat",
+  "actions": {
+    "recordViolation": "Catat pelanggaran",
+    "submitLeave": "Ajukan izin",
+    "showDutyQr": "Tampilkan QR piket",
+    "addVisitor": "Tambah tamu",
+    "lendBook": "Pinjamkan buku",
+    "checkIn": "Absen masuk atau pulang",
+    "scanQr": "Pindai QR"
+  }
+}

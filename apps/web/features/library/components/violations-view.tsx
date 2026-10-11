@@ -3,13 +3,13 @@
 import { formatCurrency, formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
-  Badge,
   Button,
   DataTable,
+  domainIcons,
   EmptyState,
   PageHeader,
   RowActionsMenu,
-  domainIcons,
+  SemanticStatusBadge,
   useToast,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
@@ -20,9 +20,11 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type LibraryViolation,
   type LibraryViolationKind,
@@ -39,6 +41,8 @@ const STATUSES: LibraryViolationStatus[] = ["unpaid", "paid", "waived"];
 const KINDS: LibraryViolationKind[] = ["late", "lost", "damaged", "other"];
 const STATUS_VALUES = ["", ...STATUSES] as const;
 const KIND_VALUES = ["", ...KINDS] as const;
+/** Rows per page; the violations API pages by offset and reports no total. */
+const VIOLATIONS_PAGE_SIZE = 50;
 
 export function ViolationsView({ memberUserId }: { memberUserId?: string }): ReactElement {
   const t = useTranslations("app.library.violations");
@@ -58,11 +62,13 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
     status: "paid" | "waived";
   } | null>(null);
 
-  const allViolations = useLibraryViolationsQuery({ status, kind }, !memberUserId);
+  const paging = useOffsetPage(VIOLATIONS_PAGE_SIZE);
+  const allViolations = useLibraryViolationsQuery(
+    { status, kind, limit: paging.limit, offset: paging.offset },
+    !memberUserId,
+  );
   const memberViolations = useMemberViolationsQuery(memberUserId ?? "");
   const { data, isLoading } = memberUserId ? memberViolations : allViolations;
-  const directory = useDirectoryQuery();
-  const directoryMap = useLookup(directory.data?.data);
 
   const rawItems = data?.data ?? [];
   // The all-violations query already filters server-side; the member-scoped
@@ -74,6 +80,10 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         (item) => (!status || item.status === status) && (!kind || item.kind === kind),
       )
     : rawItems;
+  const directoryMap = useDirectoryNames([
+    memberUserId,
+    ...items.map((item) => item.member_user_id),
+  ]);
   const isFiltered = status !== "" || kind !== "";
 
   const filters: DataTableFilterDef[] = [
@@ -83,6 +93,7 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
       value: status,
       onChange: (value) => {
         setStatus(value as (typeof STATUS_VALUES)[number]);
+        paging.resetPage();
       },
       options: STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) })),
     },
@@ -92,6 +103,7 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
       value: kind,
       onChange: (value) => {
         setKind(value as (typeof KIND_VALUES)[number]);
+        paging.resetPage();
       },
       options: KINDS.map((k) => ({ value: k, label: t(`kinds.${k}`) })),
     },
@@ -150,9 +162,10 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         header: t("columns.status"),
         enableSorting: false,
         cell: ({ row }) => (
-          <Badge variant={row.original.status === "unpaid" ? "neutral" : "accent"}>
-            {t(`status.${row.original.status}`)}
-          </Badge>
+          <SemanticStatusBadge
+            status={row.original.status}
+            label={t(`status.${row.original.status}`)}
+          />
         ),
       },
       {
@@ -210,12 +223,12 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
 
       <DataTable
         stateKey="features/library/components/violations-view:1"
-        mode="local"
+        mode="cursor"
         searchable={false}
         data={items}
         columns={columns}
         rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 200 }}
+        pagination={{ pageIndex: 0, pageSize: VIOLATIONS_PAGE_SIZE }}
         onPaginationChange={() => undefined}
         sorting={[]}
         onSortingChange={() => undefined}
@@ -235,6 +248,14 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
           />
         }
       />
+      {!memberUserId && (
+        <CursorPagination
+          hasPrevious={paging.hasPrevious}
+          hasNext={paging.hasNextFor(items.length)}
+          onPrevious={paging.goPrevious}
+          onNext={paging.goNext}
+        />
+      )}
 
       <ViolationRecordDialog
         key={memberUserId ?? "all"}

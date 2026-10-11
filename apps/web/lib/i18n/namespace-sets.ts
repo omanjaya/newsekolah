@@ -78,6 +78,7 @@ const APP_FEATURE_NAMESPACES = [
   "app.attendanceEditor",
   "app.attendanceReports",
   "app.audit",
+  "app.bell",
   "app.billing",
   "app.calendar",
   "app.dashboardDuty",
@@ -87,6 +88,7 @@ const APP_FEATURE_NAMESPACES = [
   "app.discipline",
   "app.documents",
   "app.grading",
+  "app.inbox",
   "app.integrations",
   "app.journal",
   "app.mentoring",
@@ -98,7 +100,10 @@ const APP_FEATURE_NAMESPACES = [
   "app.reportExport",
   "app.reports",
   "app.sso",
+  "app.studentProfile",
+  "app.quickActions",
   "app.staffAttendance",
+  "app.scan",
   "app.supervision",
   "app.visitors",
   "app.workflows",
@@ -139,6 +144,17 @@ const LIBRARY_NAV_LABEL_KEYS = libraryNavItems
   .filter((labelKey) => labelKey.startsWith("app.library."));
 
 /**
+ * The student profile's library tab (`/students/[studentId]`) reuses the
+ * member-detail loan row, which reads these three slices of the `library`
+ * catalog; the rest of that catalog stays scoped to `/library/*`.
+ */
+const STUDENT_PROFILE_LIBRARY_NAMESPACES = [
+  "app.library.memberDetail",
+  "app.library.memberHistory",
+  "app.library.dueBadge",
+] as const;
+
+/**
  * `(app)/layout.tsx`'s provider: everything the root carries (so shared
  * components like `QueryError` still resolve inside `(app)`, since nesting
  * replaces rather than merges — see the file doc comment) plus every
@@ -150,6 +166,10 @@ export const APP_NAMESPACES: readonly string[] = [
   ...APP_FEATURE_NAMESPACES,
   ...APP_BASE_NAMESPACES,
   ...LIBRARY_NAV_LABEL_KEYS,
+  ...STUDENT_PROFILE_LIBRARY_NAMESPACES,
+  "app.settingsHub",
+  // The library settings sidebar label, read outside /library/* too.
+  "app.librarySettings.title",
 ];
 
 /**
@@ -167,4 +187,5 @@ export const LIBRARY_NAMESPACES: readonly string[] = [
   ...ROOT_APP_NAMESPACES,
   "app.library",
   "app.reportExport",
+  "app.librarySettings",
 ];

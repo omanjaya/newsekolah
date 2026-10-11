@@ -21,6 +21,10 @@ vi.mock("../desk-api", () => ({
   useLibraryLookupQuery: () => ({ data: undefined, isFetching: false }),
 }));
 
+vi.mock("../../../lib/session/session-provider", () => ({
+  useSession: () => ({ me: { permissions: [], profile_kind: "staff" } }),
+}));
+
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
 }));

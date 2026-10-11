@@ -2,7 +2,7 @@
 
 import { Camera, ScanLine } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 import { createDuplicateScanGuard } from "../hooks/duplicate-scan-guard.js";
 import { useBarcodeScanner } from "../hooks/use-barcode-scanner.js";
@@ -14,10 +14,21 @@ import { Input } from "./input.js";
 
 export type { BarcodeScanEvent, BarcodeScanSource } from "../hooks/use-barcode-scanner.js";
 
+/**
+ * What `onScan` may return. In `continuous` camera mode `false` flashes the
+ * camera overlay as a failure; anything else (including nothing) is a
+ * success. Outside continuous mode the value is ignored.
+ */
+// eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- existing handlers return void
+export type ScanHandlerResult = boolean | void;
+
+const CAMERA_DUPLICATE_WINDOW_MS = 2000;
+const CAMERA_FEEDBACK_MS = 700;
+
 export interface BarcodeScannerFieldProps {
   label: string;
   /** Fires once per accepted scan, whether from the hardware scanner, the camera, or manual entry. */
-  onScan: (event: BarcodeScanEvent) => void;
+  onScan: (event: BarcodeScanEvent) => ScanHandlerResult | Promise<ScanHandlerResult>;
   placeholder?: string;
   submitLabel?: string;
   cameraLabel?: string;
@@ -39,6 +50,17 @@ export interface BarcodeScannerFieldProps {
    * existing desk layouts are unchanged.
    */
   stretch?: boolean;
+  /**
+   * Keep the camera open after a read: every distinct code fires `onScan`
+   * once (the same code is ignored for 2 seconds), the overlay flashes
+   * green or red from the handler's result, and a "done" button closes it.
+   * Off by default: the camera closes after the first code.
+   */
+  continuous?: boolean;
+  /** Label of the button that closes the continuous camera. */
+  doneLabel?: string;
+  /** Shown under the video while the camera is open, e.g. the latest scan result. */
+  cameraFooter?: ReactNode;
 }
 
 const SIZE_INPUT_CLASS: Record<NonNullable<BarcodeScannerFieldProps["size"]>, string> = {
@@ -97,16 +119,21 @@ export function BarcodeScannerField({
   duplicateWindowMs = 1500,
   size = "default",
   stretch = false,
+  continuous = false,
+  doneLabel = "Selesai",
+  cameraFooter,
 }: BarcodeScannerFieldProps): ReactElement {
   const inputId = useId();
   const [value, setValue] = useState("");
   const [cameraOpen, setCameraOpen] = useState(false);
-  const manualGuard = useRef(createDuplicateScanGuard(duplicateWindowMs));
+  const manualGuard = useRef(
+    createDuplicateScanGuard(continuous ? CAMERA_DUPLICATE_WINDOW_MS : duplicateWindowMs),
+  );
 
   useBarcodeScanner({
     onScan: (event) => {
       setValue("");
-      onScan(event);
+      void onScan(event);
     },
     enabled: !disabled,
     minLength,
@@ -119,7 +146,7 @@ export function BarcodeScannerField({
     if (!code) return;
     if (!manualGuard.current.accept(code, Date.now())) return;
     setValue("");
-    onScan({ code, source: "manual", at: Date.now() });
+    void onScan({ code, source: "manual", at: Date.now() });
   };
 
   return (
@@ -176,11 +203,13 @@ export function BarcodeScannerField({
       )}
       {cameraOpen && (
         <CameraScanner
-          onDetect={(code) => {
-            setCameraOpen(false);
-            if (manualGuard.current.accept(code, Date.now())) {
-              onScan({ code, source: "camera", at: Date.now() });
-            }
+          continuous={continuous}
+          doneLabel={doneLabel}
+          footer={cameraFooter}
+          onDetect={async (code) => {
+            if (!continuous) setCameraOpen(false);
+            if (!manualGuard.current.accept(code, Date.now())) return "skipped";
+            return (await onScan({ code, source: "camera", at: Date.now() })) !== false;
           }}
           onClose={() => {
             setCameraOpen(false);
@@ -217,13 +246,23 @@ interface BarcodeDetectorLike {
 }
 
 interface CameraScannerProps {
-  onDetect: (code: string) => void;
+  onDetect: (code: string) => Promise<boolean | "skipped">;
   onClose: () => void;
+  continuous: boolean;
+  doneLabel: string;
+  footer: ReactNode;
+}
+
+function vibrate(pattern: number | number[]): void {
+  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+    navigator.vibrate(pattern);
+  }
 }
 
 /**
  * A minimal camera overlay for schools without a dedicated hardware
- * scanner. It closes itself as soon as one code is read, or when the
+ * scanner. It closes itself as soon as one code is read (unless
+ * `continuous`, which stays open until dismissed), or when the
  * reader dismisses it; the video stream is always stopped on unmount so a
  * background tab never keeps the camera light on.
  *
@@ -235,8 +274,44 @@ interface CameraScannerProps {
  * `exceljs` in `apps/web/features/library/import-lib.ts`, so pages that
  * never open the camera never pay for the decoder.
  */
-function CameraScanner({ onDetect, onClose }: CameraScannerProps): ReactElement {
+function CameraScanner({
+  onDetect,
+  onClose,
+  continuous,
+  doneLabel,
+  footer,
+}: CameraScannerProps): ReactElement {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [flash, setFlash] = useState<"success" | "failure" | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // The effect below subscribes once (re-subscribing would restart the
+  // camera), so it reads the latest callback through a ref.
+  const onDetectRef = useRef(onDetect);
+  useEffect(() => {
+    onDetectRef.current = onDetect;
+  });
+  // Detections are handled one at a time so a slow handler is never
+  // overlapped by the next code in the same frame.
+  const queue = useRef<Promise<void>>(Promise.resolve());
+
+  const handleDetect = (code: string) => {
+    queue.current = queue.current.then(async () => {
+      let result: boolean | "skipped";
+      try {
+        result = await onDetectRef.current(code);
+      } catch {
+        result = false;
+      }
+      if (!continuous || result === "skipped") return;
+      const ok = result;
+      vibrate(ok ? 80 : [80, 60, 80]);
+      setFlash(ok ? "success" : "failure");
+      clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => {
+        setFlash(null);
+      }, CAMERA_FEEDBACK_MS);
+    });
+  };
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -256,9 +331,11 @@ function CameraScanner({ onDetect, onClose }: CameraScannerProps): ReactElement 
           .then((results) => {
             const [first] = results;
             if (first && !stopped) {
-              stopped = true;
-              onDetect(first.rawValue);
-              return;
+              handleDetect(first.rawValue);
+              if (!continuous) {
+                stopped = true;
+                return;
+              }
             }
             frame = requestAnimationFrame(tick);
           })
@@ -279,8 +356,8 @@ function CameraScanner({ onDetect, onClose }: CameraScannerProps): ReactElement 
       // keeps calling back until controls.stop() -- no rAF loop of our own.
       fallbackControls = await reader.decodeFromStream(mediaStream, videoRef.current, (result) => {
         if (result && !stopped) {
-          stopped = true;
-          onDetect(result.getText());
+          if (!continuous) stopped = true;
+          handleDetect(result.getText());
         }
       });
     };
@@ -312,30 +389,42 @@ function CameraScanner({ onDetect, onClose }: CameraScannerProps): ReactElement 
 
     return () => {
       stopped = true;
+      clearTimeout(flashTimer.current);
       cancelAnimationFrame(frame);
       fallbackControls?.stop();
       stream?.getTracks().forEach((track) => {
         track.stop();
       });
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onDetect/onClose are call-site closures, re-subscribing on every render would restart the camera
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleDetect reads refs and onClose is a call-site closure, re-subscribing on every render would restart the camera
   }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/80 p-6">
       <video
         ref={videoRef}
-        className="max-h-[70vh] w-full max-w-md rounded-sm bg-black"
+        data-flash={flash ?? undefined}
+        className={cn(
+          "max-h-[70vh] w-full max-w-md rounded-sm bg-black outline-4 outline-offset-0 transition-[outline-color] duration-150",
+          flash === "success" && "outline-success",
+          flash === "failure" && "outline-danger",
+          flash === null && "outline-transparent",
+        )}
         muted
         playsInline
       />
+      {footer && (
+        <div aria-live="polite" className="w-full max-w-md">
+          {footer}
+        </div>
+      )}
       <Button
         type="button"
         variant="secondary"
         icon={<Camera aria-hidden="true" />}
         onClick={onClose}
       >
-        Tutup kamera
+        {continuous ? doneLabel : "Tutup kamera"}
       </Button>
     </div>
   );

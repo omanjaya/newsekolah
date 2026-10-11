@@ -5,6 +5,7 @@ import {
   Database,
   GraduationCap,
   Settings,
+  ShieldCheck,
   Users,
   UsersRound,
 } from "lucide-react";
@@ -14,6 +15,7 @@ export const NAV_GROUP = {
   masterData: "app.navigation.masterData",
   academic: "nav.academic.label",
   students: "app.navigation.students",
+  duty: "app.navigation.duty",
   staff: "app.navigation.staff",
   library: "nav.library.label",
   administration: "app.navigation.administration",
@@ -24,6 +26,7 @@ export const NAV_GROUP = {
 export const navGroupOrder: string[] = [
   NAV_GROUP.academic,
   NAV_GROUP.students,
+  NAV_GROUP.duty,
   NAV_GROUP.staff,
   NAV_GROUP.library,
   NAV_GROUP.administration,
@@ -35,6 +38,7 @@ export const navGroupOrder: string[] = [
 export const navGroupIcons: Record<string, LucideIcon> = {
   [NAV_GROUP.academic]: GraduationCap,
   [NAV_GROUP.students]: UsersRound,
+  [NAV_GROUP.duty]: ShieldCheck,
   [NAV_GROUP.staff]: Users,
   [NAV_GROUP.library]: BookOpen,
   [NAV_GROUP.administration]: Building2,

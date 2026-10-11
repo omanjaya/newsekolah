@@ -58,3 +58,15 @@ export function conflictMessage(
     subject: lookups.subjectMap.get(subjectId)?.name ?? t("unknownSubject"),
   });
 }
+
+/**
+ * The teacher a clash names (the one holding the slot), so a caller can look
+ * that person up before building the sentence; null for any other error.
+ */
+export function conflictTeacherId(error: unknown): string | null {
+  if (!(error instanceof ApiError)) return null;
+  if (error.code !== "SCHEDULE_CONFLICT_CLASS" && error.code !== "SCHEDULE_CONFLICT_TEACHER") {
+    return null;
+  }
+  return error.details?.find((d) => d.field === "teacher_user_id")?.code ?? null;
+}

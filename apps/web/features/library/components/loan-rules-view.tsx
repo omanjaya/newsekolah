@@ -39,8 +39,11 @@ import { useLibraryMemberTypesQuery } from "../members-api";
 import { LibraryPolicyDialog } from "./library-policy-dialog";
 import { LibraryWorkspaceNav } from "./library-workspace-nav";
 
-/** Dated loan rules per member type: shorten or extend limits, or close lending, for a period. */
-export function LoanRulesView(): ReactElement {
+/**
+ * Dated loan rules per member type: shorten or extend limits, or close lending, for a period.
+ * `embedded` drops the page header and workspace nav for use inside the settings hub.
+ */
+export function LoanRulesView({ embedded = false }: { embedded?: boolean }): ReactElement {
   const t = useTranslations("app.library.loanRules");
   const locale = useLocale() as Locale;
   const toast = useToast();
@@ -122,29 +125,31 @@ export function LoanRulesView(): ReactElement {
     [t, locale, memberTypeMap, canManage],
   );
 
+  const actionButtons = canManage && (
+    <div className="flex flex-wrap gap-2">
+      <LibraryPolicyDialog />
+      <Button
+        size="sm"
+        icon={<Plus />}
+        onClick={() => {
+          setCreating(true);
+        }}
+      >
+        {t("add")}
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          canManage && (
-            <div className="flex flex-wrap gap-2">
-              <LibraryPolicyDialog />
-              <Button
-                size="sm"
-                icon={<Plus />}
-                onClick={() => {
-                  setCreating(true);
-                }}
-              >
-                {t("add")}
-              </Button>
-            </div>
-          )
-        }
-      />
-      <LibraryWorkspaceNav area="settings" />
+    <div className={embedded ? "flex flex-col gap-6" : "flex flex-col gap-6 p-4 md:p-6"}>
+      {embedded ? (
+        actionButtons && <div className="flex justify-end">{actionButtons}</div>
+      ) : (
+        <>
+          <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={actionButtons} />
+          <LibraryWorkspaceNav area="settings" />
+        </>
+      )}
 
       <DataTable
         stateKey="features/library/components/loan-rules-view:1"

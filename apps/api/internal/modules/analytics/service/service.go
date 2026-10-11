@@ -28,28 +28,60 @@ type AcademicYearReader interface {
 }
 
 // AttendanceReader is a wiring adapter over the attendance module's own
-// service, never its tables. MonthlySummary mirrors the shape family's
-// AttendanceReader already uses (docs/03-layered-architecture.md section
-// "Komunikasi antar modul").
+// service, never its tables. The recompute job asks for many students at
+// once (docs/03-layered-architecture.md section "Komunikasi antar modul"),
+// so one nightly run costs a handful of queries per batch instead of
+// several per student.
 type AttendanceReader interface {
-	MonthlySummary(ctx context.Context, tenantID, studentID uuid.UUID, month string) ([]DayStatus, error)
+	// DayStatuses returns, for every given student and date, how that day
+	// went for the student according to attendance's own daily status
+	// (the one its student calendar shows), reduced to the DayOutcome the
+	// early-warning rule needs. The adapter owns the mapping from
+	// attendance's status codes, so this module never repeats one.
+	DayStatuses(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID, dates []time.Time) ([]StudentDayStatus, error)
 	// TodaySubmittedCount backs the admin dashboard's attendance-progress
 	// figure: how many classes with a session running right now have
 	// submitted attendance, out of how many such classes exist.
 	TodaySubmittedCount(ctx context.Context, tenantID uuid.UUID) (submitted, total int, err error)
 }
 
-// DayStatus is one calendar day's materialized attendance status for a
-// student, as attendance's own daily summary computes it.
-type DayStatus struct {
-	Date       time.Time
-	StatusCode string
+// DayOutcome is what one calendar day contributes to the attendance signal.
+// The zero value is DayNoSchool, so a day an adapter says nothing about
+// never counts for or against a student.
+type DayOutcome int
+
+const (
+	// DayNoSchool: the student had no scheduled session (weekend, holiday,
+	// not enrolled yet). Not a school day, so it is not in the window.
+	DayNoSchool DayOutcome = iota
+	// DayUnrecorded: sessions were scheduled but attendance is not
+	// recorded yet (unsubmitted) or cannot be summarized. The outcome is
+	// unknown, so the day is neither considered nor absent and does not
+	// use up a place in the window.
+	DayUnrecorded
+	// DayNotAbsent: attendance was recorded and the student was present, or
+	// absent with a reason (sick, permission, dispensation). A considered
+	// day that is not counted as an absence.
+	DayNotAbsent
+	// DayAbsent: attendance was recorded as an unexcused absence (alfa).
+	DayAbsent
+)
+
+// StudentDayStatus is one student's outcome on one calendar day, as
+// attendance's own daily summary computes it.
+type StudentDayStatus struct {
+	StudentUserID uuid.UUID
+	Date          time.Time
+	Outcome       DayOutcome
 }
 
 // DisciplineReader is a wiring adapter over the discipline module's own
 // service.
 type DisciplineReader interface {
-	StudentSummary(ctx context.Context, tenantID, studentID uuid.UUID) (DisciplineSummary, error)
+	// StudentSummaries returns this academic year's discipline standing of
+	// every given student; a student with no records maps to the zero
+	// summary.
+	StudentSummaries(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]DisciplineSummary, error)
 }
 
 type DisciplineSummary struct {
@@ -60,7 +92,10 @@ type DisciplineSummary struct {
 
 // GradingReader is a wiring adapter over the grading module's own service.
 type GradingReader interface {
-	ReportTrend(ctx context.Context, tenantID, studentID uuid.UUID) (GradeTrend, error)
+	// ReportTrends returns the report-score trend of every given student;
+	// a student with no trend maps to the zero GradeTrend (Available
+	// false).
+	ReportTrends(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]GradeTrend, error)
 }
 
 // GradeTrend is the student's published report-score average for the
@@ -132,6 +167,9 @@ type StoredResult struct {
 // not one of the three signals this module composes through adapters).
 type Repository interface {
 	ListActiveTenants(ctx context.Context) ([]uuid.UUID, error)
+	// GetTenantTimezone returns the tenant's IANA timezone name, which
+	// decides the calendar date "today" is for the attendance window.
+	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
 	ListActiveStudents(ctx context.Context, tenantID, academicYearID uuid.UUID) ([]StudentRef, error)
 	GetHomeroomClassID(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID) (uuid.NullUUID, error)
 	HasActiveDuty(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, slug string) (bool, error)
@@ -140,6 +178,9 @@ type Repository interface {
 	CreatePolicy(ctx context.Context, tenantID uuid.UUID, version int, config []byte, effectiveFrom time.Time, createdBy uuid.NullUUID) error
 
 	UpsertResult(ctx context.Context, tenantID uuid.UUID, r StoredResult) error
+	// UpsertResults stores many results in one statement; every result
+	// must carry the same academic year, policy version and computed_at.
+	UpsertResults(ctx context.Context, tenantID uuid.UUID, rs []StoredResult) error
 	ListResults(ctx context.Context, tenantID, academicYearID uuid.UUID, classID uuid.NullUUID) ([]StoredResult, error)
 	GetResult(ctx context.Context, tenantID, academicYearID, studentID uuid.UUID) (StoredResult, bool, error)
 }

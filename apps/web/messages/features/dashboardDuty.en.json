@@ -24,6 +24,21 @@
     "spSectionTitle": "Warning letter candidates",
     "spEmpty": "No warning letter candidates.",
     "seeAll": "See all",
-    "review": "Review"
+    "review": "Review",
+    "atRisk": {
+      "title": "At-risk students",
+      "count": "{count} at-risk students",
+      "empty": "No at-risk students right now.",
+      "unknownStudent": "Unknown student",
+      "viewAll": "View analytics"
+    }
+  },
+  "checkIn": {
+    "title": "Check In / Out",
+    "openPage": "Open check-in page",
+    "notYet": "Nothing recorded today",
+    "done": "Today's attendance is complete.",
+    "checkIn": "Check In",
+    "checkOut": "Check Out"
   }
 }

@@ -10,7 +10,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
-import { useLookup, useTeachersQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { useScheduledObservationsQuery, useSupervisionCycleQuery } from "../api";
 import { useLessonContext } from "../lib/use-lesson-context";
 
@@ -39,8 +39,9 @@ export function CompleteObservationView({
 
   const cycle = useSupervisionCycleQuery(cycleId);
   const scheduledList = useScheduledObservationsQuery(cycleId);
-  const teachers = useTeachersQuery();
-  const teacherMap = useLookup(teachers.data?.data);
+  const teacherMap = useDirectoryNames(
+    (scheduledList.data?.data ?? []).map((item) => item.teacher_user_id),
+  );
 
   const scheduled = scheduledList.data?.data.find((s) => s.id === scheduledId);
   const lesson = useLessonContext(scheduled?.teacher_user_id ?? "", scheduled?.schedule_id ?? "");

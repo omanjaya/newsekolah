@@ -203,6 +203,24 @@ func (r *Repository) GetIssuedLeaveCoveringDate(ctx context.Context, tenantID, s
 	return toLeaveRequest(row), true, nil
 }
 
+func (r *Repository) ListIssuedLeaveCoveringDates(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID, dates []time.Time) ([]service.LeaveCoverage, error) {
+	pgDates := make([]pgtype.Date, len(dates))
+	for i, d := range dates {
+		pgDates[i] = pdatabase.Date(d)
+	}
+	rows, err := r.queries(ctx).ListIssuedLeaveCoveringDates(ctx, db.ListIssuedLeaveCoveringDatesParams{
+		TenantID: tenantID, Dates: pgDates, StudentIds: studentIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list issued leave covering dates: %w", err)
+	}
+	out := make([]service.LeaveCoverage, len(rows))
+	for i, row := range rows {
+		out[i] = service.LeaveCoverage{StudentUserID: row.SubjectUserID, Date: pdatabase.DateOrZero(row.Day), Category: domain.Category(row.Category)}
+	}
+	return out, nil
+}
+
 func (r *Repository) IssueLeaveRequest(ctx context.Context, tenantID, instanceID uuid.UUID, letterNumber string, issuedAt time.Time, issuedBy uuid.UUID) (domain.LeaveRequest, error) {
 	row, err := r.queries(ctx).IssueLeaveRequest(ctx, db.IssueLeaveRequestParams{
 		TenantID: tenantID, InstanceID: instanceID, LetterNumber: pdatabase.Text(letterNumber),
@@ -671,4 +689,37 @@ func nonNilStrings(s []string) []string {
 		return []string{}
 	}
 	return s
+}
+
+// CountLateArrivalsForReview is the size of ListLateArrivalsForReview's queue.
+func (r *Repository) CountLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) (int, error) {
+	n, err := r.queries(ctx).CountLateArrivalsForReview(ctx, db.CountLateArrivalsForReviewParams{
+		TenantID: tenantID, DutyTeacherUserID: pdatabase.NullUUID(uuid.NullUUID{UUID: callerUserID, Valid: true}),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("count late arrivals for review: %w", err)
+	}
+	return int(n), nil
+}
+
+// CountLeaveRequestsForReview is the size of ListLeaveRequestsForReview's queue without a class filter.
+func (r *Repository) CountLeaveRequestsForReview(ctx context.Context, tenantID, reviewerUserID uuid.UUID, today time.Time) (int, error) {
+	n, err := r.queries(ctx).CountLeaveRequestsForReview(ctx, db.CountLeaveRequestsForReviewParams{
+		TenantID: tenantID, UserID: reviewerUserID, Today: pdatabase.Date(today),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("count leave requests for review: %w", err)
+	}
+	return int(n), nil
+}
+
+// CountExitPermitsForApproval is the size of ListExitPermitsForApproval's queue.
+func (r *Repository) CountExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, today time.Time) (int, error) {
+	n, err := r.queries(ctx).CountExitPermitsForApproval(ctx, db.CountExitPermitsForApprovalParams{
+		TenantID: tenantID, UserID: callerUserID, Today: pdatabase.Date(today),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("count exit permits for approval: %w", err)
+	}
+	return int(n), nil
 }

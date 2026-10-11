@@ -566,6 +566,18 @@ func (s *Service) ListLeaveRequestsForReview(ctx context.Context, tenantID, revi
 	return out, err
 }
 
+// CountLeaveRequestsForReview is ListLeaveRequestsForReview's queue size for
+// the same reviewer (no class filter), for the action inbox badge.
+func (s *Service) CountLeaveRequestsForReview(ctx context.Context, tenantID, reviewerUserID uuid.UUID) (int, error) {
+	var n int
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		n, err = s.repo.CountLeaveRequestsForReview(ctx, tenantID, reviewerUserID, s.tenantNow(ctx, tenantID))
+		return err
+	})
+	return n, err
+}
+
 // DocumentDownloadURL returns a short-lived signed URL for the evidence or
 // letter of a leave request.
 func (s *Service) DocumentDownloadURL(ctx context.Context, tenantID, instanceID uuid.UUID, kind domain.DocumentKind) (string, error) {

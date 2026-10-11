@@ -25,7 +25,8 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
-import { useClassesQuery, useDirectoryQuery } from "../../reference/api";
+import { useClassesQuery } from "../../reference/api";
+import { useDirectoryName } from "../../reference/directory-names";
 import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   type Achievement,
@@ -41,8 +42,7 @@ import { StudentPicker } from "./student-picker";
 
 function AchievementStudentCell({ id }: { id: string }): ReactElement {
   const t = useTranslations("app.activities.students");
-  const directory = useDirectoryQuery("student");
-  const name = directory.data?.data.find((student) => student.id === id)?.name ?? t("unknown");
+  const name = useDirectoryName(id)?.name ?? t("unknown");
   return (
     <div className="flex min-w-0 items-center gap-2">
       <Avatar size="sm" name={name} />
@@ -61,7 +61,7 @@ const LEVELS: AchievementLevel[] = [
 ];
 
 export function AchievementsView(): ReactElement {
-  const workspace = useTranslations("app.serviceWorkspace");
+  const workspace = useTranslations("app.workspace");
   const t = useTranslations("app.activities.achievements");
   const canManage = useCan("manage_achievements");
   const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
@@ -143,7 +143,7 @@ export function AchievementsView(): ReactElement {
     // reference pattern.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <ActivitiesWorkspaceNav />
-      <PageHeader eyebrow={t("eyebrow")} title={workspace("activities")} />
+      <PageHeader eyebrow={t("eyebrow")} title={workspace("studentActivities")} />
 
       {canManage && (
         <div className="flex justify-end">

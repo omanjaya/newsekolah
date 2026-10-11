@@ -23,6 +23,7 @@ import { businessNow, useSimulation } from "../../../lib/simulation/clock";
 import { AnnouncementFeed } from "../../announcements/components/announcement-feed";
 import { useUnreadCountQuery } from "../../notifications/api";
 import { useDashboardData } from "../api";
+import { useCheckInBlock } from "../home/blocks/check-in";
 import { useCounselorBlock } from "../home/blocks/counselor";
 import { useHomeroomBlock } from "../home/blocks/homeroom";
 import { useLeadershipBlock } from "../home/blocks/leadership";
@@ -59,9 +60,10 @@ export function DashboardView(): ReactElement {
   const active = (key: PersonaKey) => personas.has(key);
   const blockMe = me ?? LOADING_ME;
 
-  // Fixed order per the plan: teacher, homeroom, student, leadership,
+  // Fixed order per the plan: teacher, check-in, homeroom, student, leadership,
   // picket, counselor, librarian. Left/right slots render in this order.
   const teacher = useTeacherBlock(blockMe, active("teacher"));
+  const checkIn = useCheckInBlock(blockMe, active("checkIn"));
   const homeroom = useHomeroomBlock(blockMe, active("homeroom"));
   const student = useStudentBlock(blockMe, active("student"));
   const leadership = useLeadershipBlock(blockMe, active("leadership"));
@@ -114,6 +116,7 @@ export function DashboardView(): ReactElement {
 
   const { hero, tiles, left, right } = collectBlocks([
     teacher,
+    checkIn,
     homeroom,
     student,
     leadership,

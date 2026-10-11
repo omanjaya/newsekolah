@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   directory: vi.fn(),
   can: vi.fn(),
   reviewMutate: vi.fn(),
+  reviewMutateAsync: vi.fn(),
 }));
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -21,20 +22,27 @@ vi.mock("@newsekolah/i18n", () => ({
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: mocks.can,
-  useSession: () => ({ me: { profile_kind: "teacher", tenant: { timezone: "Asia/Makassar" } } }),
+  useSession: () => ({
+    me: {
+      permissions: ["view_discipline"],
+      profile_kind: "teacher",
+      tenant: { timezone: "Asia/Makassar" },
+    },
+  }),
 }));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
-vi.mock("../../reference/api", () => ({
-  useDirectoryQuery: mocks.directory,
-  useLookup: () => new Map(),
-}));
+vi.mock("../../reference/directory-names", () => ({ useDirectoryNames: mocks.directory }));
 vi.mock("../api", () => ({
   useLeaveReviewQueueQuery: mocks.leave,
   useExitPermitReviewQueueQuery: mocks.exit,
   useLateArrivalQueueQuery: mocks.late,
-  useReviewLeaveRequestMutation: () => ({ mutate: mocks.reviewMutate, variables: undefined }),
+  useReviewLeaveRequestMutation: () => ({
+    mutate: mocks.reviewMutate,
+    mutateAsync: mocks.reviewMutateAsync,
+    variables: undefined,
+  }),
 }));
 vi.mock("./exit-permit-panels", () => ({ ApprovePanel: () => null, GatePanel: () => null }));
 vi.mock("./late-arrivals-view", () => ({ LateArrivalReviewForm: () => null }));
@@ -81,13 +89,13 @@ beforeEach(() => {
   mocks.leave.mockReturnValue(emptyResult);
   mocks.exit.mockReturnValue(emptyResult);
   mocks.late.mockReturnValue(emptyResult);
-  mocks.directory.mockReturnValue(emptyResult);
+  mocks.directory.mockReturnValue(new Map());
 });
 
 describe("permit queue data boundaries", () => {
   it("fetches only the late queue for a teacher and hides cached data from other sources", () => {
     mocks.late.mockReturnValue(emptyResult);
-    mocks.directory.mockReturnValue(emptyResult);
+    mocks.directory.mockReturnValue(new Map());
     const staleResult = {
       ...emptyResult,
       data: {
@@ -108,7 +116,7 @@ describe("permit queue data boundaries", () => {
     expect(mocks.late).toHaveBeenCalledWith(true);
     expect(mocks.leave).toHaveBeenCalledWith(false);
     expect(mocks.exit).toHaveBeenCalledWith(false);
-    expect(mocks.directory).toHaveBeenCalledWith("student", true);
+    expect(mocks.directory).toHaveBeenCalledWith([], true);
     expect(screen.queryByText("Private Student")).not.toBeInTheDocument();
     expect(screen.getByText("queueEmpty")).toBeInTheDocument();
   });
@@ -129,6 +137,17 @@ describe("permit queue bento layout", () => {
     expect(rows[0]?.className).not.toContain("lg:col-span-2");
     expect(rows[1]?.className).not.toContain("lg:col-span-2");
     expect(rows[2]?.className).toContain("lg:col-span-2");
+  });
+
+  it("links the student name to the profile for a reader who can open it", () => {
+    mocks.can.mockImplementation((permission: string) => permission === "review_leave_requests");
+    mocks.leave.mockReturnValue({ ...emptyResult, data: { data: [leaveItem("a")] } });
+
+    render(<PermitUnifiedQueue />);
+
+    expect(screen.getByRole("link", { name: /Siswa a/ }).getAttribute("href")).toMatch(
+      /^\/students\//,
+    );
   });
 
   it("shows Setujui and Tolak on a leave card for a reviewer and calls the review mutation", async () => {
@@ -155,5 +174,78 @@ describe("permit queue bento layout", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "open" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+});
+
+describe("permit queue filters", () => {
+  beforeEach(() => {
+    window.history.replaceState(null, "", "/inbox");
+    mocks.can.mockImplementation((permission: string) => permission === "review_leave_requests");
+    mocks.leave.mockReturnValue({
+      ...emptyResult,
+      data: { data: [leaveItem("a"), { ...leaveItem("b"), class_name: "10 B" }] },
+    });
+    mocks.late.mockReturnValue({ ...emptyResult, data: { data: [lateItem("c")] } });
+  });
+
+  it("narrows the queue by type with the chips and keeps it in the URL", async () => {
+    render(<PermitUnifiedQueue />);
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+
+    await userEvent.click(screen.getByRole("button", { name: "late" }));
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "late" })).toHaveAttribute("aria-pressed", "true");
+    expect(window.location.search).toBe("?type=late");
+  });
+
+  it("opens on the type selected by the link", () => {
+    window.history.replaceState(null, "", "/inbox?type=leave");
+    render(<PermitUnifiedQueue />);
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+  });
+
+  it("narrows the queue by class", async () => {
+    // Radix Select reads pointer-capture and scroll APIs jsdom does not implement.
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.releasePointerCapture = () => undefined;
+    Element.prototype.scrollIntoView = () => undefined;
+    render(<PermitUnifiedQueue />);
+    await userEvent.click(screen.getByRole("combobox", { name: "classFilter" }));
+    await userEvent.click(await screen.findByRole("option", { name: "10 B" }));
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+  });
+
+  it("approves the selected leave requests in bulk", async () => {
+    mocks.reviewMutateAsync.mockResolvedValue(undefined);
+    render(<PermitUnifiedQueue />);
+    const boxes = screen.getAllByRole("checkbox");
+    // Two leave cards are selectable; the late card is not.
+    expect(boxes).toHaveLength(2);
+    for (const box of boxes) await userEvent.click(box);
+    await userEvent.click(screen.getByRole("button", { name: "bulkApprove" }));
+    expect(mocks.reviewMutateAsync).toHaveBeenCalledTimes(2);
+    expect(mocks.reviewMutateAsync).toHaveBeenCalledWith({ id: "a", approve: true });
+  });
+
+  it("drops ticked requests a filter hides from approve selected", async () => {
+    render(<PermitUnifiedQueue />);
+    for (const box of screen.getAllByRole("checkbox")) await userEvent.click(box);
+    expect(screen.getByRole("button", { name: "bulkApprove" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "late" }));
+    expect(screen.queryByRole("button", { name: "bulkApprove" })).not.toBeInTheDocument();
+    expect(mocks.reviewMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("offers no selection for a single leave request", () => {
+    mocks.leave.mockReturnValue({ ...emptyResult, data: { data: [leaveItem("a")] } });
+    render(<PermitUnifiedQueue />);
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+  });
+
+  it("shows no type chips when the reader has a single queue", () => {
+    mocks.can.mockReturnValue(false);
+    render(<PermitUnifiedQueue />);
+    expect(screen.queryByRole("group", { name: "typeFilter" })).not.toBeInTheDocument();
   });
 });

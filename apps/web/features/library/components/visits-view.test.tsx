@@ -24,9 +24,12 @@ vi.mock("../../../lib/simulation/clock", () => ({
   businessNow: () => new Date("2026-09-15T02:00:00Z"),
 }));
 vi.mock("../../reference/api", () => ({
-  useDirectoryQuery: () => ({ data: { data: [] }, isLoading: false }),
   useLookup: () => new Map(),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([]);
+});
 vi.mock("../visits-api", () => ({
   useLibraryVisitsQuery: mocks.useLibraryVisitsQuery,
   useLibraryVisitSummaryQuery: () => ({ data: undefined, isLoading: false }),
@@ -53,6 +56,7 @@ describe("VisitsView filters", () => {
     expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
       "2026-08-01T00:00:00Z",
       "2026-08-15T23:59:59Z",
+      { limit: 50, offset: 0 },
     );
     expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-08-01");
     expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-08-15");
@@ -68,6 +72,7 @@ describe("VisitsView filters", () => {
     expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
       "2026-09-15T00:00:00Z",
       "2026-09-15T23:59:59Z",
+      { limit: 50, offset: 0 },
     );
   });
 });

@@ -130,3 +130,54 @@ func (q *Queries) AnalyticsUpsertStudentRisk(ctx context.Context, arg AnalyticsU
 	)
 	return err
 }
+
+const analyticsUpsertStudentRiskBatch = `-- name: AnalyticsUpsertStudentRiskBatch :exec
+insert into analytics_student_risk (
+  tenant_id, academic_year_id, student_user_id, class_id, level, score, signals, reasons, policy_version, computed_at
+)
+select $1, $2, t.student_user_id, nullif(($5::text[])[t.ord], '')::uuid,
+  ($6::text[])[t.ord], ($7::int[])[t.ord],
+  ($8::text[])[t.ord]::jsonb, ($9::text[])[t.ord]::jsonb, $3, $4
+from unnest($10::uuid[]) with ordinality as t(student_user_id, ord)
+on conflict (tenant_id, academic_year_id, student_user_id) do update set
+  class_id = excluded.class_id,
+  level = excluded.level,
+  score = excluded.score,
+  signals = excluded.signals,
+  reasons = excluded.reasons,
+  policy_version = excluded.policy_version,
+  computed_at = excluded.computed_at
+`
+
+type AnalyticsUpsertStudentRiskBatchParams struct {
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	AcademicYearID uuid.UUID          `json:"academic_year_id"`
+	PolicyVersion  int32              `json:"policy_version"`
+	ComputedAt     pgtype.Timestamptz `json:"computed_at"`
+	ClassIds       []string           `json:"class_ids"`
+	Levels         []string           `json:"levels"`
+	Scores         []int32            `json:"scores"`
+	Signals        []string           `json:"signals"`
+	Reasons        []string           `json:"reasons"`
+	StudentUserIds []uuid.UUID        `json:"student_user_ids"`
+}
+
+// Bulk form of AnalyticsUpsertStudentRisk: one row per element of
+// student_user_ids, the other arrays being parallel to it, all sharing the
+// tenant, academic year, policy version and computed_at. class_ids is text so a student with no class can be sent as
+// an empty string; signals and reasons are JSON text.
+func (q *Queries) AnalyticsUpsertStudentRiskBatch(ctx context.Context, arg AnalyticsUpsertStudentRiskBatchParams) error {
+	_, err := q.db.Exec(ctx, analyticsUpsertStudentRiskBatch,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.PolicyVersion,
+		arg.ComputedAt,
+		arg.ClassIds,
+		arg.Levels,
+		arg.Scores,
+		arg.Signals,
+		arg.Reasons,
+		arg.StudentUserIds,
+	)
+	return err
+}

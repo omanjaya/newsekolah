@@ -33,7 +33,7 @@ import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { MemberTypeForm } from "./member-type-form";
 
 /** Manage member types: loan limits, renewal, fine rule, suspension, and validity per type. */
-export function MemberTypesView(): ReactElement {
+export function MemberTypesView({ embedded = false }: { embedded?: boolean }): ReactElement {
   const t = useTranslations("app.library.memberTypes");
   const tRole = useTranslations("app.library.members.roles");
   const locale = useLocale() as Locale;
@@ -125,30 +125,39 @@ export function MemberTypesView(): ReactElement {
     [t, tRole, canManage, locale],
   );
 
+  const addButton = canManage && (
+    <Button
+      size="sm"
+      icon={<Plus />}
+      onClick={() => {
+        setCreating(true);
+      }}
+    >
+      {t("addType")}
+    </Button>
+  );
+
   return (
     // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the table scrolls its rows internally.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          canManage && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                setCreating(true);
-              }}
-            >
-              {t("addType")}
-            </Button>
-          )
-        }
-      />
-      <LibraryWorkspaceNav area="settings" />
+    // itself never scrolls; the table scrolls its rows internally. Embedded in
+    // the settings hub the hub owns the page, so the table grows naturally.
+    <div
+      className={
+        embedded
+          ? "flex flex-col gap-6"
+          : "flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6"
+      }
+    >
+      {embedded ? (
+        addButton && <div className="flex justify-end">{addButton}</div>
+      ) : (
+        <>
+          <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={addButton} />
+          <LibraryWorkspaceNav area="settings" />
+        </>
+      )}
 
-      <div className="flex flex-col md:min-h-0 md:flex-1">
+      <div className={embedded ? "flex flex-col" : "flex flex-col md:min-h-0 md:flex-1"}>
         <DataTable
           stateKey="features/library/components/member-types-view:1"
           mode="local"
@@ -162,7 +171,7 @@ export function MemberTypesView(): ReactElement {
           globalFilter=""
           isLoading={isLoading}
           getRowId={(item) => item.id}
-          fillHeight
+          fillHeight={!embedded}
           emptyState={
             <EmptyState
               icon={<domainIcons.users aria-hidden="true" />}

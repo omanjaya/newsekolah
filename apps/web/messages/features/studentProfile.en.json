@@ -1,0 +1,43 @@
+{
+  "eyebrow": "Student",
+  "unknownStudent": "Student",
+  "nis": "Student ID {nis}",
+  "className": "Class {name}",
+  "tabsLabel": "Student profile sections",
+  "tabs": {
+    "overview": "Overview",
+    "attendance": "Attendance",
+    "grades": "Grades",
+    "permits": "Permits",
+    "discipline": "Discipline",
+    "counseling": "Counseling",
+    "library": "Library",
+    "guardians": "Parents"
+  },
+  "noAccessTitle": "There is no student data you can view",
+  "noAccessBody": "Your account has no access to student data on this page. Contact the school admin if this is a mistake.",
+  "attendance": {
+    "month": "Month"
+  },
+  "permits": {
+    "title": "Permits awaiting review",
+    "note": "Only permits still waiting for your review. The full history is on the permits page.",
+    "emptyTitle": "No permits waiting",
+    "emptyBody": "This student has no permits waiting for your review.",
+    "openQueue": "Open the permit queue",
+    "detailTitle": "Permit detail"
+  },
+  "library": {
+    "openMember": "Open library membership"
+  },
+  "guardians": {
+    "title": "Parent and guardian details",
+    "fatherName": "Father's name",
+    "motherName": "Mother's name",
+    "guardianName": "Guardian's name",
+    "guardianPhone": "Guardian's phone",
+    "parentOccupation": "Parents' occupation",
+    "notRecorded": "Not recorded",
+    "loadError": "Parent details could not be loaded."
+  }
+}

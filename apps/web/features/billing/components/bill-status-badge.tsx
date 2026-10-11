@@ -1,12 +1,12 @@
 "use client";
 
-import { Badge, StatusBadge } from "@newsekolah/ui";
+import { SemanticStatusBadge } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { todayInZone } from "../../../lib/tenant-date";
 import type { Bill } from "../api";
-import { billDisplayStatus, billStatusToken } from "../lib/bill-status";
+import { billDisplayStatus } from "../lib/bill-status";
 
 /**
  * One badge for every "is this bill paid" surface (bills list, bill
@@ -23,8 +23,5 @@ export function BillStatusBadge({
 }): ReactElement {
   const t = useTranslations(namespace);
   const display = billDisplayStatus(bill, todayInZone());
-  const token = billStatusToken(display);
-  const label = t(`status.${display}`);
-  if (!token) return <Badge variant="neutral">{label}</Badge>;
-  return <StatusBadge status={token} label={label} />;
+  return <SemanticStatusBadge status={display} label={t(`status.${display}`)} />;
 }

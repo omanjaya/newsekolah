@@ -8,7 +8,8 @@ import type { ReactElement } from "react";
 import { useMemo } from "react";
 
 import { QueryError } from "../../../components/query-error";
-import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
+import { useClassesQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { type ArrearsClassLine, type ArrearsStudentLine, useArrearsReportQuery } from "../api";
 
 /**
@@ -20,13 +21,12 @@ export function ArrearsReportView(): ReactElement {
   const t = useTranslations("app.billing.arrears");
   const locale = useLocale() as Locale;
   const { data, isLoading, isError, refetch } = useArrearsReportQuery();
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
   const classes = useClassesQuery();
   const classMap = useLookup(classes.data?.data);
 
   const byStudent = data?.by_student ?? [];
   const byClass = data?.by_class ?? [];
+  const studentMap = useDirectoryNames(byStudent.map((item) => item.student_user_id));
 
   const studentColumns = useMemo<ColumnDef<ArrearsStudentLine>[]>(
     () => [

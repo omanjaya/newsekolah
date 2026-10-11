@@ -15,9 +15,12 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 vi.mock("../../reference/api", () => ({
-  useDirectoryQuery: () => ({ data: { data: [] }, isLoading: false }),
   useLookup: () => new Map(),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([]);
+});
 vi.mock("../api-counseling-extras", () => ({
   useBKTeamCounselingsQuery: mocks.useBKTeamCounselingsQuery,
 }));
@@ -38,7 +41,11 @@ describe("CounselingBKTeamPanel filters", () => {
     await user.click(screen.getByRole("button", { name: "bkTeam.topicFilter" }));
     await user.click(await screen.findByRole("button", { name: "form.topicOptions.career" }));
 
-    expect(mocks.useBKTeamCounselingsQuery).toHaveBeenLastCalledWith("career");
+    expect(mocks.useBKTeamCounselingsQuery).toHaveBeenLastCalledWith("career", {
+      limit: 50,
+      offset: 0,
+      search: "",
+    });
     expect(new URLSearchParams(window.location.search).get("topic")).toBe("career");
   });
 
@@ -46,7 +53,11 @@ describe("CounselingBKTeamPanel filters", () => {
     window.history.replaceState(null, "", "/discipline/counseling?topic=social");
     render(<CounselingBKTeamPanel onOpen={vi.fn()} />);
 
-    expect(mocks.useBKTeamCounselingsQuery).toHaveBeenLastCalledWith("social");
+    expect(mocks.useBKTeamCounselingsQuery).toHaveBeenLastCalledWith("social", {
+      limit: 50,
+      offset: 0,
+      search: "",
+    });
     expect(
       screen.getByRole("button", { name: "bkTeam.topicFilter: form.topicOptions.social" }),
     ).toBeInTheDocument();
@@ -58,7 +69,11 @@ describe("CounselingBKTeamPanel filters", () => {
     render(<CounselingBKTeamPanel onOpen={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "bkTeam.removeFilter" }));
-    expect(mocks.useBKTeamCounselingsQuery).toHaveBeenLastCalledWith("");
+    expect(mocks.useBKTeamCounselingsQuery).toHaveBeenLastCalledWith("", {
+      limit: 50,
+      offset: 0,
+      search: "",
+    });
     expect(new URLSearchParams(window.location.search).get("topic")).toBe("");
   });
 });

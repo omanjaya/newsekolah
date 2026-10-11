@@ -101,6 +101,26 @@ func (a *ScheduleReaderAdapter) CountSchedulesForClassDay(ctx context.Context, t
 	return out, err
 }
 
+// ClassDayCount is how many schedules one class has on one weekday: the
+// expected-session count attendance's daily status needs.
+type ClassDayCount struct {
+	ClassID   uuid.UUID
+	DayOfWeek int16
+	Count     int64
+}
+
+// CountSchedulesByClassDay is CountSchedulesForClassDay for many classes
+// and every weekday at once. Pairs with no schedule are omitted.
+func (a *ScheduleReaderAdapter) CountSchedulesByClassDay(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID) ([]ClassDayCount, error) {
+	var out []ClassDayCount
+	err := a.svc.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = a.svc.repo.CountSchedulesByClassDay(ctx, tenantID, academicYearID, classIDs)
+		return err
+	})
+	return out, err
+}
+
 func toRef(sched domain.Schedule) ScheduleRef {
 	return ScheduleRef{
 		ID: sched.ID, AcademicYearID: sched.AcademicYearID, ClassID: sched.ClassID, SubjectID: sched.SubjectID,

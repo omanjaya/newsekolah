@@ -1,0 +1,12 @@
+{
+  "eyebrow": "Library",
+  "title": "Library Settings",
+  "tabsLabel": "Library settings sections",
+  "tabs": {
+    "loanRules": "Loan Rules",
+    "memberTypes": "Member Types",
+    "masterData": "Library Data"
+  },
+  "noAccessTitle": "No settings available",
+  "noAccessDescription": "Your account has no access to library settings yet."
+}

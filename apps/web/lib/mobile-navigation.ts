@@ -12,17 +12,26 @@ export function mobileNavigation(items: NavItem[], profile?: NavProfileKind): Na
   const isCounselor = items.some((item) =>
     item.aliases ? item.aliases.includes("counseling") : item.key === "counseling",
   );
+  // The duty desk and the homeroom hub only reach the registry for a reader
+  // holding that duty (issue_scan_tokens, and navigation-workspaces.ts's
+  // homeroom check), so their presence is the same kind of proxy.
+  const has = (key: string) => items.some((item) => item.key === key);
   const priorities =
     profile === "teacher"
       ? isCounselor
-        ? ["leave-requests", "counseling"]
-        : ["attendance", "schedule"]
+        ? ["inbox", "counseling"]
+        : has("duty")
+          ? ["duty", "attendance"]
+          : has("homeroom")
+            ? ["attendance", "inbox"]
+            : ["attendance", "schedule"]
       : profile === "student"
         ? // Scanning into class happens every single lesson, several
           // times a day; an exit permit is occasional. The daily tab bar
           // has room for two, so classroom entry earns the slot exit
           // permits held before (exit permits stays reachable from Menu).
-          ["schedule", "classroom-entry"]
+          // /scan reads every QR kind, classroom entry included.
+          ["schedule", "scan"]
         : // Admin, office/TU staff, and gate duty (satpam) all seed with
           // `profile_kind: "staff"` (or no profile row at all for a
           // bootstrap admin), with no further persona signal threaded
@@ -39,10 +48,12 @@ export function mobileNavigation(items: NavItem[], profile?: NavProfileKind): Na
           [
             "school-users",
             "schedule",
-            "exit-permits",
             "visitors-board",
             "duty",
             "library-desk",
+            // Gate duty scans exit permits from /scan, which also covers
+            // every other QR kind; it ranks after the role-specific desks.
+            "scan",
             "school-classes",
             "attendance",
           ];

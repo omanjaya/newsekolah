@@ -22,6 +22,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { useQuickAction } from "../../../lib/hooks/use-quick-action";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
@@ -102,6 +103,13 @@ export function GateBoardView(): ReactElement {
   const canManage = useCan("manage_visitors");
   const [status, setStatus] = useUrlState<string>("status", ["all", "onSite", "expected"], "all");
   const [checkingIn, setCheckingIn] = useState(false);
+  useQuickAction(
+    "add-visitor",
+    () => {
+      setCheckingIn(true);
+    },
+    canManage,
+  );
   const [search, setSearch] = useState("");
 
   const entries = board.data?.data ?? [];

@@ -35,6 +35,7 @@ var adminErrorMap = map[error]error{
 	domain.ErrLeavePermissionDirect:       httpx.ErrLeavePermissionDirect,
 	domain.ErrInvalidSessionDays:          httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "session_days", Code: "OUT_OF_RANGE"}),
 	domain.ErrInvalidProfileKind:          httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "profile_kind", Code: "INVALID"}),
+	domain.ErrTooManyDirectoryIDs:         httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "ids", Code: "TOO_MANY"}),
 	domain.ErrInvalidRoleSlug:             httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "slug", Code: "INVALID"}),
 	domain.ErrRoleSystemImmutable:         httpx.ErrRoleSystemImmutable,
 	domain.ErrRoleInUse:                   httpx.ErrRoleInUse,

@@ -1,0 +1,258 @@
+"use client";
+
+import { queryKeys } from "@newsekolah/api-client";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+
+import { useApiClient } from "../../lib/api/client";
+
+import type { DirectoryUser, ProfileKind } from "./api";
+
+/** A name stays valid this long; people are renamed rarely within a session. */
+const DIRECTORY_NAME_STALE_MS = 5 * 60 * 1000;
+
+/**
+ * Ids per request. The API accepts 200, but ids travel in the query string:
+ * 100 uuids stay near 4 KB, well below the 8 KB request-line limit common
+ * proxies enforce, so a full chunk never fails on URL length.
+ */
+export const DIRECTORY_NAMES_CHUNK_SIZE = 100;
+
+/** Wait this long so ids requested by several components share one request. */
+const BATCH_WINDOW_MS = 10;
+
+type ApiClient = ReturnType<typeof useApiClient>;
+
+interface Waiter {
+  resolve: (user: DirectoryUser | null) => void;
+  reject: (error: unknown) => void;
+}
+
+/** Collects single-id loads for a moment, then fetches them in chunks. */
+class DirectoryNameLoader {
+  private readonly pending = new Map<string, Waiter[]>();
+  private timer: ReturnType<typeof setTimeout> | undefined;
+
+  constructor(private readonly client: ApiClient) {}
+
+  load(id: string): Promise<DirectoryUser | null> {
+    return new Promise((resolve, reject) => {
+      const waiters = this.pending.get(id);
+      if (waiters) waiters.push({ resolve, reject });
+      else this.pending.set(id, [{ resolve, reject }]);
+      this.timer ??= setTimeout(() => {
+        this.flush();
+      }, BATCH_WINDOW_MS);
+    });
+  }
+
+  private flush(): void {
+    this.timer = undefined;
+    const batch = [...this.pending.entries()];
+    this.pending.clear();
+    for (let start = 0; start < batch.length; start += DIRECTORY_NAMES_CHUNK_SIZE) {
+      void this.fetchChunk(batch.slice(start, start + DIRECTORY_NAMES_CHUNK_SIZE));
+    }
+  }
+
+  private async fetchChunk(chunk: [string, Waiter[]][]): Promise<void> {
+    try {
+      const response = await this.client.GET("/v1/directory/users", {
+        params: { query: { ids: chunk.map(([id]) => id) } },
+        // The API reads ids as one comma-separated parameter.
+        querySerializer: { array: { style: "form", explode: false } },
+      });
+      const byId = new Map(response.data.map((user) => [user.id, user]));
+      for (const [id, waiters] of chunk) {
+        // An id the school does not know is cached as null: that is the
+        // only case where a screen should show "unknown".
+        for (const waiter of waiters) waiter.resolve(byId.get(id) ?? null);
+      }
+    } catch (error) {
+      for (const [, waiters] of chunk) {
+        for (const waiter of waiters) waiter.reject(error);
+      }
+    }
+  }
+}
+
+// One loader per API client, so every component on the page shares a batch.
+const loaders = new WeakMap<object, DirectoryNameLoader>();
+
+function loaderFor(client: ApiClient): DirectoryNameLoader {
+  let loader = loaders.get(client);
+  if (!loader) {
+    loader = new DirectoryNameLoader(client);
+    loaders.set(client, loader);
+  }
+  return loader;
+}
+
+interface NamesResult {
+  names: Map<string, DirectoryUser>;
+  isLoading: boolean;
+  isError: boolean;
+  isSuccess: boolean;
+  refetch: () => void;
+}
+
+function combineNames(
+  results: {
+    data: DirectoryUser | null | undefined;
+    isLoading: boolean;
+    isError: boolean;
+    isSuccess: boolean;
+    refetch: () => unknown;
+  }[],
+): NamesResult {
+  const names = new Map<string, DirectoryUser>();
+  for (const result of results) {
+    if (result.data) names.set(result.data.id, result.data);
+  }
+  return {
+    names,
+    isLoading: results.some((result) => result.isLoading),
+    isError: results.some((result) => result.isError),
+    isSuccess: results.every((result) => result.isSuccess),
+    refetch: () => {
+      for (const result of results) void result.refetch();
+    },
+  };
+}
+
+/**
+ * Resolves the people whose ids are on screen to names, without loading the
+ * directory. Ids are deduplicated, requested together in chunks, and cached
+ * one by one in React Query, so another screen asking for some of the same
+ * people reuses them and only fetches the rest. `names` maps id to person;
+ * an id is absent while loading and when the school has no such person.
+ */
+export function useDirectoryLookup(
+  ids: readonly (string | null | undefined)[],
+  enabled = true,
+): NamesResult {
+  const client = useApiClient();
+  // Callers build `ids` fresh every render; key the query list by content.
+  const idsKey = [
+    ...new Set(ids.filter((id): id is string => id !== undefined && id !== null && id !== "")),
+  ]
+    .sort()
+    .join(",");
+  const unique = useMemo(() => (idsKey === "" ? [] : idsKey.split(",")), [idsKey]);
+
+  return useQueries({
+    queries: unique.map((id) => ({
+      queryKey: queryKeys.directoryName(id),
+      queryFn: () => loaderFor(client).load(id),
+      enabled,
+      staleTime: DIRECTORY_NAME_STALE_MS,
+    })),
+    combine: combineNames,
+  });
+}
+
+/** Same as `useDirectoryLookup`, for screens that only need the id to person map. */
+export function useDirectoryNames(
+  ids: readonly (string | null | undefined)[],
+  enabled = true,
+): Map<string, DirectoryUser> {
+  return useDirectoryLookup(ids, enabled).names;
+}
+
+/** One person by id; `undefined` while loading or when unknown. */
+export function useDirectoryName(id: string | null | undefined): DirectoryUser | undefined {
+  const ids = useMemo(() => [id], [id]);
+  return useDirectoryNames(ids).get(id ?? "");
+}
+
+/** Results per search; the server ranks, so a short page is enough. */
+export const DIRECTORY_SEARCH_LIMIT = 50;
+
+/**
+ * Server-side person search (name, username, NIS/NIP), capped to one short
+ * page per kind. Every hit also lands in the per-id name cache, so a screen
+ * that shows the picked people by name needs no second request. Pass a list
+ * of kinds to search several (for example teachers and staff); without a
+ * kind everyone in the school is searched.
+ */
+export function useDirectorySearch(options: {
+  profileKind?: ProfileKind | readonly ProfileKind[] | undefined;
+  query: string;
+  limit?: number;
+  enabled?: boolean;
+}): { data: DirectoryUser[] | undefined; isFetching: boolean } {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  const { profileKind, query, limit = DIRECTORY_SEARCH_LIMIT, enabled = true } = options;
+  const kinds: readonly (ProfileKind | undefined)[] =
+    profileKind === undefined
+      ? [undefined]
+      : typeof profileKind === "string"
+        ? [profileKind]
+        : profileKind;
+
+  return useQueries({
+    queries: kinds.map((kind) => ({
+      queryKey: ["directory", "search", kind ?? "all", query, limit] as const,
+      queryFn: async () => {
+        const response = await client.GET("/v1/directory/users", {
+          params: { query: { ...(kind ? { profile_kind: kind } : {}), q: query, limit } },
+        });
+        for (const user of response.data) {
+          queryClient.setQueryData(queryKeys.directoryName(user.id), user);
+        }
+        return response.data;
+      },
+      enabled,
+      staleTime: 30_000,
+    })),
+    combine: combineSearch,
+  });
+}
+
+function combineSearch(results: { data: DirectoryUser[] | undefined; isFetching: boolean }[]): {
+  data: DirectoryUser[] | undefined;
+  isFetching: boolean;
+} {
+  const isFetching = results.some((result) => result.isFetching);
+  if (results.every((result) => result.data === undefined)) return { data: undefined, isFetching };
+  const merged = results.flatMap((result) => result.data ?? []);
+  if (results.length > 1) merged.sort((a, b) => a.name.localeCompare(b.name));
+  return { data: merged, isFetching };
+}
+
+/**
+ * Reads a person from the name cache without fetching, for event handlers
+ * that run right after a picker or a search has put the person there.
+ */
+export function useDirectoryNamePeek(): (id: string) => DirectoryUser | undefined {
+  const queryClient = useQueryClient();
+  return (id) =>
+    queryClient.getQueryData<DirectoryUser | null>(queryKeys.directoryName(id)) ?? undefined;
+}
+
+/**
+ * Resolves people on demand, for code that needs a name after an event (an
+ * error that names someone not on screen). Uses and fills the same cache.
+ */
+export function useResolveDirectoryNames(): (
+  ids: readonly (string | null | undefined)[],
+) => Promise<Map<string, DirectoryUser>> {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return async (ids) => {
+    const unique = [...new Set(ids.filter((id): id is string => !!id))];
+    const people = await Promise.all(
+      unique.map((id) =>
+        queryClient.query({
+          queryKey: queryKeys.directoryName(id),
+          queryFn: () => loaderFor(client).load(id),
+          staleTime: DIRECTORY_NAME_STALE_MS,
+        }),
+      ),
+    );
+    return new Map(
+      people.flatMap((person): [string, DirectoryUser][] => (person ? [[person.id, person]] : [])),
+    );
+  };
+}

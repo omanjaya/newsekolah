@@ -8,6 +8,7 @@ import {
   Fingerprint,
   GraduationCap,
   Home,
+  Inbox,
   LogIn,
   MonitorSmartphone,
   NotebookPen,
@@ -110,6 +111,8 @@ export interface NavItem {
   group?: string;
   sidebarPlacement?: "main" | "footer" | "hidden";
   accountMenu?: boolean;
+  /** Pending items shown as a badge on the sidebar row; set by the shell, never by the registry. */
+  badgeCount?: number;
 }
 
 /**
@@ -120,6 +123,45 @@ export interface NavItem {
  */
 export const navigation: NavItem[] = [
   { key: "dashboard", labelKey: "nav.home", href: "/dashboard", icon: Home, showInTabBar: true },
+  {
+    key: "inbox",
+    labelKey: "app.inbox.title",
+    href: "/inbox",
+    icon: Inbox,
+    // Every queue on the page gates itself; late arrivals have no permission
+    // code at all (any teacher or staff account reviews them), so the entry
+    // is offered to everyone but students.
+    excludeProfileKinds: ["student"],
+  },
+  {
+    key: "scan",
+    labelKey: "app.scan.navLabel",
+    href: "/scan",
+    icon: ScanLine,
+    // Each QR action is authorized by the server on scan; the page itself
+    // needs nothing beyond a signed-in school account.
+    profileKinds: ["student", "teacher", "staff"],
+  },
+  {
+    key: "student-profile",
+    labelKey: "app.studentProfile.eyebrow",
+    href: "/students",
+    icon: UserRound,
+    sidebarPlacement: "hidden",
+    // Reached from a student's name, never browsed. Any one tab's permission
+    // opens the page; each tab still gates itself.
+    anyPermission: [
+      "view_early_warning",
+      "view_mentoring",
+      "view_reports",
+      "review_leave_requests",
+      "view_discipline",
+      "manage_counseling",
+      "manage_library_members",
+      "view_users",
+    ],
+    excludeProfileKinds: ["student"],
+  },
 
   {
     key: "schedule",
@@ -185,6 +227,9 @@ export const navigation: NavItem[] = [
     icon: LogIn,
     profileKinds: ["teacher", "staff"],
     group: GROUP.staff,
+    // Used twice a day, so it lives on the dashboard card and the account
+    // menu rather than as a sidebar entry.
+    accountMenu: true,
   },
   {
     key: "journal",

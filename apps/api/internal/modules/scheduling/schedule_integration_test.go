@@ -145,15 +145,22 @@ func TestScheduleBlockMutationsPreserveHistory(t *testing.T) {
 	t.Run("journal DOCX export applies tenant RLS and caller scope", func(t *testing.T) {
 		exec(`insert into class_journals (tenant_id,academic_year_id,teacher_user_id,written_by_user_id,class_id,subject_id,lesson_date,topic,activities) values ($1,$2,$3,$3,$4,$5,'2026-09-14','Teacher topic','Discussion'), ($1,$2,$6,$6,$4,$5,'2026-09-15','Other teacher topic','Practice')`, tenant, year, teacher, class, subject, substitute)
 		// A dedicated SELECT-only role proves lookups run inside the tenant tx.
-		exec(`create role journal_reader login password 'test' nosuperuser nobypassrls`)
-		exec(`grant usage on schema public to journal_reader`)
-		exec(`grant select on all tables in schema public to journal_reader`)
+		// Roles are server-wide, so the name is unique per run: a shared test
+		// server (dbtest.ExternalDSNEnv) outlives each test database.
+		reader := "journal_reader_" + strings.ReplaceAll(uuid.NewString()[:8], "-", "")
+		exec(`create role ` + reader + ` login password 'test' nosuperuser nobypassrls`)
+		exec(`grant usage on schema public to ` + reader)
+		exec(`grant select on all tables in schema public to ` + reader)
 		parsed, err := url.Parse(dsn)
 		require.NoError(t, err)
-		parsed.User = url.UserPassword("journal_reader", "test")
+		parsed.User = url.UserPassword(reader, "test")
 		readerPool, err := database.NewPool(ctx, parsed.String())
 		require.NoError(t, err)
-		defer readerPool.Close()
+		t.Cleanup(func() {
+			readerPool.Close()
+			_, _ = pool.Exec(context.Background(), `drop owned by `+reader)
+			_, _ = pool.Exec(context.Background(), `drop role if exists `+reader)
+		})
 		readerSvc := service.New(readerPool, repository.New(readerPool))
 		handler := schedulehttp.New(readerSvc, journalExportPermissions{}, nil)
 		actorCtx := httpx.WithUserID(tenantctx.WithTenant(ctx, tenantctx.Tenant{ID: tenant}), teacher)

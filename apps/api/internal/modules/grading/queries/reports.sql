@@ -124,3 +124,24 @@ left join subjects sub on sub.id = e.subject_id and sub.tenant_id = e.tenant_id
 where e.tenant_id = $1 and e.academic_year_id = $2 and e.student_user_id = $3 and e.visible_to_student
 group by e.subject_id, sub.name, e.teacher_user_id, u.name
 order by sub.name nulls last, u.name;
+
+-- name: ListPublishedReportScoresForStudents :many
+-- Batch form of what a student's own grades view sums for one term: the
+-- final report score of every subject the student has at least one grade in
+-- and whose grades their active-enrollment class may already see
+-- (published), for many students at once. Ordered by student then subject,
+-- the order the single-student view accumulates in.
+select rs.student_user_id, rs.subject_id, rs.final_score
+from report_scores rs
+join enrollments e on e.tenant_id = rs.tenant_id and e.academic_year_id = $3
+  and e.student_user_id = rs.student_user_id and e.status = 'active'
+join grade_publications gp on gp.tenant_id = rs.tenant_id and gp.term_id = rs.term_id
+  and gp.class_id = e.class_id and gp.subject_id = rs.subject_id and gp.is_published
+where rs.tenant_id = $1 and rs.term_id = $2 and rs.student_user_id = any(sqlc.arg(student_ids)::uuid[])
+  and exists (
+    select 1 from grades g
+    join assessment_components c on c.id = g.component_id
+    where g.tenant_id = rs.tenant_id and g.student_user_id = rs.student_user_id
+      and c.term_id = rs.term_id and c.subject_id = rs.subject_id
+  )
+order by rs.student_user_id, rs.subject_id;

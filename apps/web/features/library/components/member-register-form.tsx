@@ -7,7 +7,10 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useDirectoryQuery } from "../../reference/api";
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
 import { useLibraryMemberTypesQuery, useRegisterLibraryMemberMutation } from "../members-api";
 
 const ROLES = ["student", "teacher", "staff"] as const;
@@ -32,11 +35,7 @@ export function MemberRegisterForm({
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
 
-  const directory = useDirectoryQuery(role);
-  const userOptions = (directory.data?.data ?? []).map((u) => ({
-    value: u.id,
-    label: `${u.name} (${u.username})`,
-  }));
+  const userLabels = useDirectoryPickerLabels(t("userPlaceholder"));
   const typeOptions = (memberTypes.data?.data ?? []).map((mt) => ({
     value: mt.id,
     label: mt.name,
@@ -82,16 +81,14 @@ export function MemberRegisterForm({
       </label>
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("user")}</span>
-        <Select
-          options={userOptions}
+        <DirectoryPicker
+          key={role}
+          profileKind={role}
           value={userId}
           onValueChange={setUserId}
-          placeholder={directory.isLoading ? t("loadingUsers") : t("userPlaceholder")}
-          disabled={directory.isLoading || userOptions.length === 0}
+          labels={userLabels}
+          showUsername
         />
-        {!directory.isLoading && userOptions.length === 0 && (
-          <span className="text-fg-muted">{t("noUsers")}</span>
-        )}
       </label>
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("memberType")}</span>

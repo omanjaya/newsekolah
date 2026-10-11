@@ -1,0 +1,45 @@
+{
+  "eyebrow": "Settings",
+  "title": "School Settings",
+  "description": "All school settings in one place.",
+  "searchLabel": "Search settings",
+  "searchPlaceholder": "Search settings...",
+  "emptyTitle": "No matching settings",
+  "emptyDescription": "Try another keyword or clear the search.",
+  "noAccessTitle": "No settings available",
+  "noAccessDescription": "Your account has no access to school settings yet.",
+  "sections": {
+    "identity": {
+      "title": "School Identity",
+      "description": "Appearance, letterhead, and document templates."
+    },
+    "access": {
+      "title": "Access & Security",
+      "description": "Users, roles, sessions, and the audit trail."
+    },
+    "communication": {
+      "title": "Communication",
+      "description": "Notifications, WhatsApp, and integrations."
+    },
+    "workflow": {
+      "title": "Workflows",
+      "description": "Approval flows and initial setup."
+    }
+  },
+  "cards": {
+    "branding": "Logo, colors, and the school display name.",
+    "reportHeader": "The letterhead used on reports and printed documents.",
+    "documentTemplates": "Templates for official school letters and documents.",
+    "users": "Manage school user accounts.",
+    "roles": "Set roles and the access each user holds.",
+    "session": "Sign-in session duration and rules.",
+    "sso": "Single sign-on through the school identity provider.",
+    "security": "Your password, verification, and devices.",
+    "audit": "History of important changes made by users.",
+    "notificationDefaults": "School-wide notification defaults.",
+    "whatsapp": "Connect and configure school WhatsApp messaging.",
+    "integrations": "Connect third-party apps and services.",
+    "workflows": "Configure request and approval flows.",
+    "setup": "Step-by-step guide to the initial school setup."
+  }
+}

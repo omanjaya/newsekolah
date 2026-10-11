@@ -120,3 +120,15 @@ select r.slug from user_roles ur join roles r on r.id = ur.role_id where ur.user
 
 -- name: SetUserAvatarAsset :exec
 update users set avatar_asset_id = $3 where tenant_id = $1 and id = $2;
+
+-- name: ListDirectoryByIDs :many
+-- Id-to-name lookup for the directory endpoint: primary-key probes on users
+-- plus one-to-one joins on the profile primary keys, no status filter so
+-- records that point at a since-deactivated person still show a name.
+select u.id, u.name, u.username, up.kind as profile_kind, sp.nis
+from users u
+left join user_profiles up on up.user_id = u.id
+left join student_profiles sp on sp.user_id = u.id
+where u.tenant_id = sqlc.arg(tenant_id)
+  and u.id = any(sqlc.arg(ids)::uuid[])
+order by u.name, u.id;

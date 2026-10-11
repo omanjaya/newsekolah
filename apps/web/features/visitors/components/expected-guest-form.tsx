@@ -1,14 +1,21 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import { Button, Input, Textarea, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useDirectoryQuery } from "../../reference/api";
+import type { ProfileKind } from "../../reference/api";
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
 import { useCreateExpectedGuestMutation } from "../api";
+
+/** Hosts are teachers or staff; students are never visited. */
+const HOST_KINDS: ProfileKind[] = ["teacher", "staff"];
 
 export function ExpectedGuestForm({
   defaultDate,
@@ -20,8 +27,7 @@ export function ExpectedGuestForm({
   const t = useTranslations("app.visitors.expected.form");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const teachers = useDirectoryQuery("teacher");
-  const staff = useDirectoryQuery("staff");
+  const hostLabels = useDirectoryPickerLabels(t("hostPlaceholder"));
   const create = useCreateExpectedGuestMutation();
 
   const [fullName, setFullName] = useState("");
@@ -30,15 +36,6 @@ export function ExpectedGuestForm({
   const [purpose, setPurpose] = useState("");
   const [expectedDate, setExpectedDate] = useState(defaultDate);
   const [notes, setNotes] = useState("");
-
-  const hostOptions = useMemo(
-    () =>
-      [...(teachers.data?.data ?? []), ...(staff.data?.data ?? [])].map((u) => ({
-        value: u.id,
-        label: u.name,
-      })),
-    [teachers.data, staff.data],
-  );
 
   const canSubmit = fullName.trim() !== "" && hostUserId !== "" && expectedDate !== "";
 
@@ -97,11 +94,11 @@ export function ExpectedGuestForm({
       </label>
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("host")}</span>
-        <Select
-          options={hostOptions}
+        <DirectoryPicker
+          profileKind={HOST_KINDS}
           value={hostUserId}
           onValueChange={setHostUserId}
-          placeholder={t("hostPlaceholder")}
+          labels={hostLabels}
         />
       </label>
       <label className="flex flex-col gap-1 text-[13px]">
