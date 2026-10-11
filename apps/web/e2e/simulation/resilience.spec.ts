@@ -1,4 +1,12 @@
-import { ACTORS, assertNoNavigation, closeAll, expect, loginAs, test } from "./fixtures";
+import {
+  ACTORS,
+  assertNoNavigation,
+  closeAll,
+  expect,
+  loginAs,
+  test,
+  waitForToastsGone,
+} from "./fixtures";
 
 /**
  * Scenario f) Resilience: the homeroom teacher's queue is open and goes
@@ -77,6 +85,7 @@ test("resilience: homeroom offline -> student submits -> resync on reconnect", a
     // The Perlu Tindakan inbox (/inbox) shows a leave request
     // already at the homeroom stage as a bento card with Setujui/Tolak
     // right on it, so approving does not need the detail dialog.
+    await waitForToastsGone(homeroom.page);
     await queueRow.getByRole("button", { name: "Setujui" }).click();
     await expect(queueRow).toBeHidden({ timeout: 20_000 });
 

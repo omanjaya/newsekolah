@@ -121,6 +121,17 @@ export async function assertNoNavigation<T>(page: Page, action: () => Promise<T>
   return result;
 }
 
+/**
+ * Waits for every toast to dismiss itself before clicking under the toast
+ * area. A live notification toast can sit over a queue card's button, and
+ * Playwright's click would hover it -- sonner pauses its timer on hover, so
+ * the toast would never leave. Waiting without touching it lets the normal
+ * timeout run out.
+ */
+export async function waitForToastsGone(page: Page): Promise<void> {
+  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, { timeout: 20_000 });
+}
+
 export const test = base.extend<{ baseUrlChecked: boolean }>({
   baseUrlChecked: [
     async ({ baseURL }, use) => {
