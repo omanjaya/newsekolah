@@ -2,27 +2,37 @@
 
 import { Button } from "@newsekolah/ui";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { WorkspaceNav } from "../../../components/workspace-nav";
 import { useCan } from "../../../lib/session/session-provider";
 
+/** Student Activities workspace: clubs, events, achievements and mentoring share one strip. */
 export function ActivitiesWorkspaceNav(): ReactElement {
   const t = useTranslations("app.serviceWorkspace");
+  const workspace = useTranslations("app.workspace");
+  const pathname = usePathname();
   const canView = useCan("view_activities");
+  const canMentor = useCan("view_mentoring");
+  const inMentoring = pathname === "/mentoring" || pathname.startsWith("/mentoring/");
   return (
     <WorkspaceNav
-      label={t("activities")}
-      items={
-        canView
+      label={workspace("studentActivities")}
+      items={[
+        ...(canView
           ? [
-              { href: "/activities/clubs", label: t("clubs") },
-              { href: "/activities/events", label: t("events") },
-              { href: "/activities/achievements", label: t("achievements") },
+              { href: "/activities/clubs", label: t("clubsTab") },
+              { href: "/activities/events", label: t("eventsTab") },
+              { href: "/activities/achievements", label: t("achievementsTab") },
             ]
-          : []
-      }
+          : []),
+        // Both mentoring URLs stay valid; the sidebar already lands on my-groups first.
+        ...(canMentor
+          ? [{ href: "/mentoring/my-groups", label: t("mentoringTab"), active: inMentoring }]
+          : []),
+      ]}
     />
   );
 }

@@ -21,8 +21,13 @@ package dbtest
 
 import (
 	"context"
+	"net/url"
+	"os"
+	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -67,19 +72,22 @@ func Start(t *testing.T) Postgres {
 	}
 
 	ctx := context.Background()
-	container, err := postgres.Run(ctx, "postgres:16-alpine",
-		postgres.WithDatabase("newsekolah"),
-		postgres.WithUsername("newsekolah"),
-		postgres.WithPassword("newsekolah"),
-		postgres.BasicWaitStrategies(),
-	)
-	if err != nil {
-		t.Skipf("docker not available, skipping integration test: %v", err)
-	}
-	t.Cleanup(func() { _ = container.Terminate(context.Background()) })
+	dsn, ok := externalDSN(t)
+	if !ok {
+		container, err := postgres.Run(ctx, "postgres:16-alpine",
+			postgres.WithDatabase("newsekolah"),
+			postgres.WithUsername("newsekolah"),
+			postgres.WithPassword("newsekolah"),
+			postgres.BasicWaitStrategies(),
+		)
+		if err != nil {
+			t.Skipf("docker not available, skipping integration test: %v", err)
+		}
+		t.Cleanup(func() { _ = container.Terminate(context.Background()) })
 
-	dsn, err := container.ConnectionString(ctx, "sslmode=disable")
-	require.NoError(t, err)
+		dsn, err = container.ConnectionString(ctx, "sslmode=disable")
+		require.NoError(t, err)
+	}
 
 	adminPool, err := database.NewPool(ctx, dsn)
 	require.NoError(t, err)
@@ -92,6 +100,46 @@ func Start(t *testing.T) Postgres {
 	t.Cleanup(appPool.Close)
 
 	return Postgres{DSN: dsn, AdminPool: adminPool, AppPool: appPool}
+}
+
+// ExternalDSNEnv names an optional environment variable holding a superuser
+// DSN (postgres://user:password@host:port/db) of an already running
+// Postgres 16, for machines without Docker. Start then creates a fresh
+// throwaway database on that server per test instead of starting a
+// container, so tests stay isolated from each other.
+const ExternalDSNEnv = "NEWSEKOLAH_TEST_PG_DSN"
+
+// externalDSN creates a fresh database on the server named by
+// ExternalDSNEnv and returns its DSN; ok is false when the variable is
+// unset.
+func externalDSN(t *testing.T) (dsn string, ok bool) {
+	t.Helper()
+	base := os.Getenv(ExternalDSNEnv)
+	if base == "" {
+		return "", false
+	}
+	ctx := context.Background()
+	parsed, err := url.Parse(base)
+	require.NoError(t, err)
+
+	admin, err := pgx.Connect(ctx, base)
+	require.NoError(t, err)
+	defer func() { _ = admin.Close(ctx) }()
+
+	name := "t_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	_, err = admin.Exec(ctx, "create database "+name)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		conn, err := pgx.Connect(context.Background(), base)
+		if err != nil {
+			return
+		}
+		defer func() { _ = conn.Close(context.Background()) }()
+		_, _ = conn.Exec(context.Background(), "drop database if exists "+name+" with (force)")
+	})
+
+	parsed.Path = "/" + name
+	return parsed.String(), true
 }
 
 // RestrictedConnString swaps the user:password in a Postgres DSN while

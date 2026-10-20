@@ -1,0 +1,17 @@
+{
+  "eyebrow": "Kotak masuk",
+  "title": "Perlu Tindakan",
+  "permits": "Izin dan keterlambatan",
+  "emptyTitle": "Tidak ada yang perlu ditindaklanjuti",
+  "emptyBody": "Semua pengajuan dan tugas Anda sudah selesai.",
+  "noAccessTitle": "Tidak ada antrean untuk peran Anda",
+  "noAccessBody": "Akun Anda belum memiliki tugas persetujuan yang tampil di sini.",
+  "warningLetters": {
+    "title": "Calon surat peringatan",
+    "empty": "Belum ada siswa yang perlu diterbitkan surat peringatan.",
+    "points": "{count} poin",
+    "open": "Buka siswa",
+    "issue": "Terbitkan {level}",
+    "issued": "{level} berhasil diterbitkan."
+  }
+}

@@ -21,29 +21,17 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { useClassesQuery } from "../../reference/api";
+import { StudentLink } from "../../students/components/student-link";
+import { studentProfileHref } from "../../students/href";
 import {
   type SPCandidate,
-  type SPLevel,
   useDisciplinePolicyQuery,
   useIssueWarningLetterMutation,
   useSPCandidatesQuery,
 } from "../api";
+import { dueLevels } from "../lib/sp-due-levels";
 
 const PAGE_SIZE = 25;
-
-/**
- * Levels the student has reached but not yet been issued, ascending. The
- * API refuses issuing out of order, so only `dueLevels[0]` is ever offered.
- */
-function dueLevels(candidate: SPCandidate, levels: SPLevel[]): SPLevel[] {
-  return levels
-    .filter(
-      (level) =>
-        candidate.total_points >= level.min_points &&
-        !candidate.issued_levels.includes(level.level),
-    )
-    .sort((a, b) => a.level - b.level);
-}
 
 export function AtRiskPanel(): ReactElement {
   const t = useTranslations("app.discipline.warningLetters.atRisk");
@@ -115,7 +103,11 @@ export function AtRiskPanel(): ReactElement {
         enableSorting: false,
         cell: ({ row }) => (
           <div className="flex flex-col">
-            <span className="text-fg">{row.original.student_name}</span>
+            <span className="text-fg">
+              <StudentLink studentId={row.original.student_user_id} tab="discipline">
+                {row.original.student_name}
+              </StudentLink>
+            </span>
             <span className="text-[12px] text-fg-muted">
               {row.original.nis} · {row.original.class_name}
             </span>
@@ -233,7 +225,7 @@ export function AtRiskPanel(): ReactElement {
           isLoading={candidates.isLoading}
           getRowId={(item) => item.student_user_id}
           onRowActivate={(item) => {
-            router.push(`/discipline/students/${item.student_user_id}`);
+            router.push(studentProfileHref(item.student_user_id, "discipline"));
           }}
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           fillHeight

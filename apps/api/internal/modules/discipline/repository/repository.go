@@ -178,7 +178,7 @@ func (r *Repository) ListRecordsForStudent(ctx context.Context, tenantID, yearID
 func (r *Repository) ListRecords(ctx context.Context, tenantID, yearID uuid.UUID, f service.RecordFilter) ([]domain.ViolationRecord, error) {
 	params := db.ListViolationRecordsParams{
 		TenantID: tenantID, AcademicYearID: yearID, Limit: int32(f.Limit), Offset: int32(f.Offset), //nolint:gosec // clamped by the service
-		ClassID: pdatabase.NullUUID(f.ClassID), IncludeVoided: f.IncludeVoided,
+		ClassID: pdatabase.NullUUID(f.ClassID), IncludeVoided: f.IncludeVoided, Search: pdatabase.Text(f.Search),
 	}
 	if f.From != nil {
 		params.FromDate = pdatabase.Date(*f.From)
@@ -207,6 +207,21 @@ func (r *Repository) SumActivePoints(ctx context.Context, tenantID, yearID, stud
 		return 0, fmt.Errorf("sum points: %w", err)
 	}
 	return int(total), nil
+}
+
+func (r *Repository) ListRiskTotals(ctx context.Context, tenantID, yearID uuid.UUID, studentIDs []uuid.UUID) ([]service.RiskTotals, error) {
+	rows, err := r.queries(ctx).ListStudentRiskTotals(ctx, db.ListStudentRiskTotalsParams{TenantID: tenantID, AcademicYearID: yearID, StudentIds: studentIDs})
+	if err != nil {
+		return nil, fmt.Errorf("list risk totals: %w", err)
+	}
+	out := make([]service.RiskTotals, len(rows))
+	for i, row := range rows {
+		out[i] = service.RiskTotals{
+			StudentUserID: row.StudentUserID, ActiveViolations: int(row.ActiveViolations),
+			Points: int(row.TotalPoints), WarningLetters: int(row.WarningLetters),
+		}
+	}
+	return out, nil
 }
 
 func (r *Repository) ListPointTotals(ctx context.Context, tenantID, yearID uuid.UUID, classID uuid.NullUUID, limit int) ([]service.PointTotal, error) {
@@ -320,9 +335,9 @@ func (r *Repository) ListLettersForStudent(ctx context.Context, tenantID, yearID
 	return toLetters(rows), nil
 }
 
-func (r *Repository) ListLetters(ctx context.Context, tenantID, yearID uuid.UUID, classID uuid.NullUUID, limit, offset int) ([]domain.WarningLetter, error) {
+func (r *Repository) ListLetters(ctx context.Context, tenantID, yearID uuid.UUID, classID uuid.NullUUID, search string, limit, offset int) ([]domain.WarningLetter, error) {
 	rows, err := r.queries(ctx).ListWarningLetters(ctx, db.ListWarningLettersParams{
-		TenantID: tenantID, AcademicYearID: yearID, Limit: int32(limit), Offset: int32(offset), ClassID: pdatabase.NullUUID(classID), //nolint:gosec // clamped
+		TenantID: tenantID, AcademicYearID: yearID, Limit: int32(limit), Offset: int32(offset), ClassID: pdatabase.NullUUID(classID), Search: pdatabase.Text(search), //nolint:gosec // clamped
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list letters: %w", err)
@@ -354,6 +369,25 @@ func (r *Repository) ListSPCandidates(ctx context.Context, tenantID, yearID uuid
 		}
 	}
 	return out, nil
+}
+
+// CountDueSPCandidates counts candidates with a policy level due. Like
+// ListSPCandidates, the first level's threshold is levels[0]; levels must
+// not be empty.
+func (r *Repository) CountDueSPCandidates(ctx context.Context, tenantID, yearID uuid.UUID, levels []domain.SPLevel) (int, error) {
+	numbers := make([]int32, len(levels))
+	mins := make([]int32, len(levels))
+	for i, lvl := range levels {
+		numbers[i] = int32(lvl.Level)  //nolint:gosec // policy levels are small
+		mins[i] = int32(lvl.MinPoints) //nolint:gosec // point thresholds are small
+	}
+	n, err := r.queries(ctx).CountDueSPCandidates(ctx, db.CountDueSPCandidatesParams{
+		TenantID: tenantID, AcademicYearID: yearID, FirstLevelMin: mins[0], LevelNumbers: numbers, LevelMins: mins,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("count due SP candidates: %w", err)
+	}
+	return int(n), nil
 }
 
 // Counselings.
@@ -405,9 +439,9 @@ func (r *Repository) ListCounselingsForStudent(ctx context.Context, tenantID, ye
 	return toCounselings(rows), nil
 }
 
-func (r *Repository) ListCounselingsByCounselor(ctx context.Context, tenantID, yearID, counselorID uuid.UUID, limit, offset int) ([]service.EncryptedCounseling, error) {
+func (r *Repository) ListCounselingsByCounselor(ctx context.Context, tenantID, yearID, counselorID uuid.UUID, search string, limit, offset int) ([]service.EncryptedCounseling, error) {
 	rows, err := r.queries(ctx).ListCounselingsByCounselor(ctx, db.ListCounselingsByCounselorParams{
-		TenantID: tenantID, AcademicYearID: yearID, CounselorUserID: counselorID, Limit: int32(limit), Offset: int32(offset), //nolint:gosec // clamped
+		TenantID: tenantID, AcademicYearID: yearID, CounselorUserID: counselorID, Search: pdatabase.Text(search), Limit: int32(limit), Offset: int32(offset), //nolint:gosec // clamped
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list counselings: %w", err)
@@ -415,9 +449,9 @@ func (r *Repository) ListCounselingsByCounselor(ctx context.Context, tenantID, y
 	return toCounselings(rows), nil
 }
 
-func (r *Repository) ListCounselingsByVisibility(ctx context.Context, tenantID, yearID uuid.UUID, topic string, limit, offset int) ([]service.EncryptedCounseling, error) {
+func (r *Repository) ListCounselingsByVisibility(ctx context.Context, tenantID, yearID uuid.UUID, topic, search string, limit, offset int) ([]service.EncryptedCounseling, error) {
 	rows, err := r.queries(ctx).ListCounselingsByVisibility(ctx, db.ListCounselingsByVisibilityParams{
-		TenantID: tenantID, AcademicYearID: yearID, Limit: int32(limit), Offset: int32(offset), Topic: pdatabase.Text(topic), //nolint:gosec // clamped
+		TenantID: tenantID, AcademicYearID: yearID, Limit: int32(limit), Offset: int32(offset), Topic: pdatabase.Text(topic), Search: pdatabase.Text(search), //nolint:gosec // clamped
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list bk team counselings: %w", err)

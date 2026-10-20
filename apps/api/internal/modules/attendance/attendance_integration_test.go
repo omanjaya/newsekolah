@@ -328,6 +328,45 @@ func TestRosterYearCounts(t *testing.T) {
 	require.Empty(t, byStudent[w.student2ID].YearCounts, "a student with no entries this year has no recap")
 }
 
+// TestOwnDailyReportBatchesEntriesAndNames covers the daily report's batched
+// read (ListEntryReportRowsBySessions): every submitted session of the day
+// must carry its entries with the student's display name, a session without
+// entries must carry an empty (non-nil) slice, and another tenant's report
+// must never see them.
+func TestOwnDailyReportBatchesEntriesAndNames(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	svc := buildService(pg.AppPool)
+	w := seedWorld(t, ctx, pg.AdminPool, "daily-report-batch")
+	other := seedWorld(t, ctx, pg.AdminPool, "daily-report-batch-other")
+
+	actor := service.Actor{UserID: w.teacherID}
+	opened, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleTodayID, w.today, domain.SaveModeNormal)
+	require.NoError(t, err)
+	_, err = svc.SaveEntries(ctx, w.tenantID, actor, opened.Session.ID, service.SaveEntriesInput{
+		Entries: []service.SaveEntryInput{
+			{StudentUserID: w.student1ID, StatusCode: "H"},
+			{StudentUserID: w.student2ID, StatusCode: "S"},
+		},
+	})
+	require.NoError(t, err)
+
+	report, err := svc.GetOwnDailyReport(ctx, w.tenantID, w.teacherID, w.today)
+	require.NoError(t, err)
+	require.Len(t, report, 1)
+	require.Len(t, report[0].Entries, 2)
+	statusByStudent := map[uuid.UUID]string{}
+	for _, e := range report[0].Entries {
+		require.NotEmpty(t, e.Name, "the batched query must resolve the student's display name")
+		statusByStudent[e.StudentUserID] = e.StatusCode
+	}
+	require.Equal(t, map[uuid.UUID]string{w.student1ID: "H", w.student2ID: "S"}, statusByStudent)
+
+	otherReport, err := svc.GetOwnDailyReport(ctx, other.tenantID, w.teacherID, w.today)
+	require.NoError(t, err)
+	require.Empty(t, otherReport, "another tenant must not see this tenant's sessions or entries")
+}
+
 func TestSaveEntriesPolicyAndWindow(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()

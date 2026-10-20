@@ -1,21 +1,12 @@
 "use client";
 
-import { Badge, Stepper, cn, type StepperStepState } from "@newsekolah/ui";
+import { SemanticStatusBadge, Stepper, cn, type StepperStepState } from "@newsekolah/ui";
 import { Check, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import type { WorkflowInstance } from "../api";
 import { buildMineStageTrack, type LeaveMineStageKey } from "../lib/leave-mine-stage-track";
-
-const STATUS_VARIANT: Record<WorkflowInstance["status"], "neutral" | "accent"> = {
-  in_progress: "accent",
-  approved: "accent",
-  completed: "accent",
-  rejected: "neutral",
-  cancelled: "neutral",
-  expired: "neutral",
-};
 
 /** Stage progress plus a status badge; used by every workflow detail. */
 export function WorkflowStepper({ instance }: { instance: WorkflowInstance }): ReactElement {
@@ -49,7 +40,7 @@ export function WorkflowStepper({ instance }: { instance: WorkflowInstance }): R
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <Badge variant={STATUS_VARIANT[instance.status]}>{t(`status.${instance.status}`)}</Badge>
+        <SemanticStatusBadge status={instance.status} label={t(`status.${instance.status}`)} />
         {instance.current_stage && instance.status === "in_progress" && (
           <span className="text-[13px] text-fg-muted">
             {t("waitingFor", { stage: instance.current_stage.label })}
@@ -67,7 +58,7 @@ export function WorkflowStatusBadge({
   status: WorkflowInstance["status"];
 }): ReactElement {
   const t = useTranslations("app.permits.workflow");
-  return <Badge variant={STATUS_VARIANT[status]}>{t(`status.${status}`)}</Badge>;
+  return <SemanticStatusBadge status={status} label={t(`status.${status}`)} />;
 }
 
 const MINI_CIRCLE_CLASS: Record<StepperStepState, string> = {

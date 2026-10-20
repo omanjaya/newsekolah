@@ -42,6 +42,86 @@ func (s *Service) PreviousTerm(ctx context.Context, tenantID, currentTermID uuid
 	return term, found, err
 }
 
+// ReportTrend is a student's average published report score in the active
+// term and in the term before it. Available is false unless both terms
+// have at least one published report score to average.
+type ReportTrend struct {
+	Available       bool
+	PreviousAverage float64
+	CurrentAverage  float64
+}
+
+// ReportTrendsForStudents computes, for many students at once, the trend
+// MyGrades would give each of them for the active term and the term before
+// it: the mean of the report scores of the subjects they have grades in and
+// whose grades are published to their class. A student with nothing to
+// average in the active term, with no previous term, or with nothing to
+// average in it gets Available false. The result has an entry for every
+// given student.
+func (s *Service) ReportTrendsForStudents(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]ReportTrend, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
+	out := make(map[uuid.UUID]ReportTrend, len(studentIDs))
+	for _, id := range studentIDs {
+		out[id] = ReportTrend{}
+	}
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		yearID, err := s.activeYear(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		current, err := s.resolveTerm(ctx, tenantID, yearID, uuid.NullUUID{})
+		if err != nil {
+			return err
+		}
+		currentAvg, err := s.averageReportScores(ctx, tenantID, yearID, current.ID, studentIDs)
+		if err != nil {
+			return err
+		}
+		if len(currentAvg) == 0 {
+			return nil
+		}
+		previousTerm, found, err := s.PreviousTerm(ctx, tenantID, current.ID)
+		if err != nil || !found {
+			return err
+		}
+		previousAvg, err := s.averageReportScores(ctx, tenantID, yearID, previousTerm.ID, studentIDs)
+		if err != nil {
+			return err
+		}
+		for id, cur := range currentAvg {
+			if prev, ok := previousAvg[id]; ok {
+				out[id] = ReportTrend{Available: true, PreviousAverage: prev, CurrentAverage: cur}
+			}
+		}
+		return nil
+	})
+	return out, err
+}
+
+// averageReportScores is each student's mean published report score in the
+// term; a student with no published score is absent. Scores are summed in
+// subject order, the order a student's own grades view accumulates in, so
+// the floating-point result is identical to it.
+func (s *Service) averageReportScores(ctx context.Context, tenantID, yearID, termID uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]float64, error) {
+	rows, err := s.repo.ListPublishedReportScores(ctx, tenantID, yearID, termID, studentIDs)
+	if err != nil {
+		return nil, err
+	}
+	sums := map[uuid.UUID]float64{}
+	counts := map[uuid.UUID]int{}
+	for _, row := range rows {
+		sums[row.StudentUserID] += row.FinalScore
+		counts[row.StudentUserID]++
+	}
+	out := make(map[uuid.UUID]float64, len(sums))
+	for id, sum := range sums {
+		out[id] = sum / float64(counts[id])
+	}
+	return out, nil
+}
+
 // recomputeReportScores refreshes every student's automatic report score
 // for one class-subject from the current component grades, applying the
 // school's grade ranges. A manual override, if one is already set, keeps

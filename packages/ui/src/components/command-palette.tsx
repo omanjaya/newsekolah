@@ -26,6 +26,8 @@ export interface CommandPaletteProps {
   placeholder?: string;
   emptyLabel?: string;
   label?: string;
+  /** Called with the raw input text on every keystroke, for callers that fetch extra results. */
+  onSearchChange?: (search: string) => void;
 }
 
 /**
@@ -40,6 +42,7 @@ export function CommandPalette({
   placeholder = "Cari halaman, siswa, guru, atau aksi",
   emptyLabel = "Tidak ada hasil yang cocok",
   label = "Pencarian global",
+  onSearchChange,
 }: CommandPaletteProps) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -63,6 +66,7 @@ export function CommandPalette({
               <Search className="size-4 text-fg-muted" aria-hidden="true" />
               <CommandPrimitive.Input
                 placeholder={placeholder}
+                onValueChange={onSearchChange}
                 className={cn(
                   "h-11 w-full bg-transparent text-[14px] text-fg outline-none",
                   "placeholder:text-fg-muted",

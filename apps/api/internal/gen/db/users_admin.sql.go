@@ -197,6 +197,58 @@ func (q *Queries) GetUserAdminByID(ctx context.Context, arg GetUserAdminByIDPara
 	return i, err
 }
 
+const listDirectoryByIDs = `-- name: ListDirectoryByIDs :many
+select u.id, u.name, u.username, up.kind as profile_kind, sp.nis
+from users u
+left join user_profiles up on up.user_id = u.id
+left join student_profiles sp on sp.user_id = u.id
+where u.tenant_id = $1
+  and u.id = any($2::uuid[])
+order by u.name, u.id
+`
+
+type ListDirectoryByIDsParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	Ids      []uuid.UUID `json:"ids"`
+}
+
+type ListDirectoryByIDsRow struct {
+	ID          uuid.UUID   `json:"id"`
+	Name        string      `json:"name"`
+	Username    string      `json:"username"`
+	ProfileKind pgtype.Text `json:"profile_kind"`
+	Nis         pgtype.Text `json:"nis"`
+}
+
+// Id-to-name lookup for the directory endpoint: primary-key probes on users
+// plus one-to-one joins on the profile primary keys, no status filter so
+// records that point at a since-deactivated person still show a name.
+func (q *Queries) ListDirectoryByIDs(ctx context.Context, arg ListDirectoryByIDsParams) ([]ListDirectoryByIDsRow, error) {
+	rows, err := q.db.Query(ctx, listDirectoryByIDs, arg.TenantID, arg.Ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDirectoryByIDsRow{}
+	for rows.Next() {
+		var i ListDirectoryByIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Username,
+			&i.ProfileKind,
+			&i.Nis,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUserRoleSlugs = `-- name: ListUserRoleSlugs :many
 select r.slug from user_roles ur join roles r on r.id = ur.role_id where ur.user_id = $1
 `

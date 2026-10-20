@@ -4,12 +4,13 @@ import { ApiError } from "@newsekolah/api-client";
 import { Avatar, Button, ConfirmDialog, EmptyState, Select, useToast } from "@newsekolah/ui";
 import { Users } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useMemo, useState, type ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useGradeLevelsQuery } from "../../academic/api-master-data";
-import { useClassesQuery, useDirectoryQuery } from "../../reference/api";
+import { useClassesQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   useActivityEventQuery,
   useAddActivityParticipantMutation,
@@ -25,7 +26,6 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
   const event = useActivityEventQuery(activityId);
   const classes = useClassesQuery();
   const grades = useGradeLevelsQuery();
-  const students = useDirectoryQuery("student");
   const add = useAddActivityParticipantMutation(activityId);
   const remove = useRemoveActivityParticipantMutation();
   const [scope, setScope] = useState("student");
@@ -34,9 +34,8 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
   const fail = (error: unknown) => {
     toast.error(error instanceof ApiError ? errorMessage(error.code) : errorMessage("UNKNOWN"));
   };
-  const studentNameById = useMemo(
-    () => new Map((students.data?.data ?? []).map((s) => [s.id, s.name])),
-    [students.data],
+  const studentNameById = useDirectoryNames(
+    (event.data?.participants ?? []).map((participant) => participant.student_user_id),
   );
   return (
     <div className="flex flex-col gap-4">
@@ -106,7 +105,7 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
             {(event.data?.participants ?? []).map((participant) => {
               const name =
                 participant.scope === "student"
-                  ? (studentNameById.get(participant.student_user_id ?? "") ?? t("unknown"))
+                  ? (studentNameById.get(participant.student_user_id ?? "")?.name ?? t("unknown"))
                   : ((participant.scope === "class"
                       ? classes.data?.data.find((item) => item.id === participant.class_id)?.name
                       : grades.data?.data.find((item) => item.id === participant.grade_level_id)

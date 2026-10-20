@@ -7,7 +7,10 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useTeachersQuery } from "../../reference/api";
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
 import {
   type ClassRow,
   useCreateClassMutation,
@@ -28,7 +31,7 @@ export function ClassForm({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const grades = useGradeLevelsQuery();
-  const teachers = useTeachersQuery();
+  const homeroomLabels = useDirectoryPickerLabels(t("pick"));
   const create = useCreateClassMutation();
   const update = useUpdateClassMutation();
   const [name, setName] = useState(initial?.name ?? "");
@@ -95,11 +98,11 @@ export function ClassForm({
       </label>
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("homeroom")}</span>
-        <Select
-          options={(teachers.data?.data ?? []).map((u) => ({ value: u.id, label: u.name }))}
+        <DirectoryPicker
+          profileKind="teacher"
           value={homeroomId}
           onValueChange={setHomeroomId}
-          placeholder={t("pick")}
+          labels={homeroomLabels}
         />
       </label>
       <label className="flex flex-col gap-1 text-[13px]">

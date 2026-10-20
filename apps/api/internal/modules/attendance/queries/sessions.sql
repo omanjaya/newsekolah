@@ -52,3 +52,12 @@ select * from attendance_sessions
 where tenant_id = $1 and schedule_id = $2 and date < $3
 order by date desc
 limit 1;
+
+-- name: CountSubmittedSessionsByClassesDates :many
+-- Batch form of CountSubmittedSessionsByClassDate: how many of each
+-- (class, date)'s sessions have been submitted. A pair with no session at
+-- all is absent from the result (count 0).
+select class_id, date, (count(*) filter (where submitted_at is not null))::bigint as submitted
+from attendance_sessions
+where tenant_id = $1 and class_id = any(sqlc.arg(class_ids)::uuid[]) and date = any(sqlc.arg(dates)::date[])
+group by class_id, date;

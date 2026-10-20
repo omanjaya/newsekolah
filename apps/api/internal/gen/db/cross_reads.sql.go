@@ -351,6 +351,38 @@ func (q *Queries) ListActiveEnrollmentsForLibraryClass(ctx context.Context, arg 
 	return items, nil
 }
 
+const listActiveSchoolDaysForAttendance = `-- name: ListActiveSchoolDaysForAttendance :many
+select day_of_week from school_days
+where tenant_id = $1 and academic_year_id = $2 and is_active
+`
+
+type ListActiveSchoolDaysForAttendanceParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+}
+
+// Every weekday flagged as a school day this academic year; the batch form
+// of scheduling's IsSchoolDayRef (a weekday with no row is not a school day).
+func (q *Queries) ListActiveSchoolDaysForAttendance(ctx context.Context, arg ListActiveSchoolDaysForAttendanceParams) ([]int16, error) {
+	rows, err := q.db.Query(ctx, listActiveSchoolDaysForAttendance, arg.TenantID, arg.AcademicYearID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int16{}
+	for rows.Next() {
+		var day_of_week int16
+		if err := rows.Scan(&day_of_week); err != nil {
+			return nil, err
+		}
+		items = append(items, day_of_week)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listActiveTenantsForLibrary = `-- name: ListActiveTenantsForLibrary :many
 
 select id, timezone from tenants where status in ('trial', 'active')
@@ -576,6 +608,47 @@ func (q *Queries) ListCurrentPeriodScheduleCardsForAttendance(ctx context.Contex
 			&i.PeriodStartsAt,
 			&i.PeriodEndsAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEnrolledClassesForAttendance = `-- name: ListEnrolledClassesForAttendance :many
+select student_user_id, class_id
+from enrollments
+where tenant_id = $1 and academic_year_id = $2 and student_user_id = any($3::uuid[])
+  and status = 'active'
+`
+
+type ListEnrolledClassesForAttendanceParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	StudentIds     []uuid.UUID `json:"student_ids"`
+}
+
+type ListEnrolledClassesForAttendanceRow struct {
+	StudentUserID uuid.UUID `json:"student_user_id"`
+	ClassID       uuid.UUID `json:"class_id"`
+}
+
+// Batch form of GetEnrolledClassForAttendance: the class each given student
+// is actively enrolled in this academic year (at most one per student,
+// ux_active_enrollment).
+func (q *Queries) ListEnrolledClassesForAttendance(ctx context.Context, arg ListEnrolledClassesForAttendanceParams) ([]ListEnrolledClassesForAttendanceRow, error) {
+	rows, err := q.db.Query(ctx, listEnrolledClassesForAttendance, arg.TenantID, arg.AcademicYearID, arg.StudentIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListEnrolledClassesForAttendanceRow{}
+	for rows.Next() {
+		var i ListEnrolledClassesForAttendanceRow
+		if err := rows.Scan(&i.StudentUserID, &i.ClassID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

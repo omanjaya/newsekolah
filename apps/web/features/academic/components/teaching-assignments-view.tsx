@@ -19,13 +19,12 @@ import { useState } from "react";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { type SubjectRef, useLookup, useSubjectsQuery } from "../../reference/api";
 import {
-  type DirectoryUser,
-  type SubjectRef,
-  useLookup,
-  useSubjectsQuery,
-  useTeachersQuery,
-} from "../../reference/api";
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { useAcademicYearsQuery } from "../api";
 import {
   type ClassRow,
@@ -196,9 +195,9 @@ export function TeachingAssignmentsView(): ReactElement {
   const [yearId, setYearId] = useState("");
   const effectiveYearId = yearId || activeYear.id;
 
-  const teachers = useTeachersQuery();
-  const teacherMap = useLookup<DirectoryUser>(teachers.data?.data);
   const [teacherId, setTeacherId] = useState("");
+  const teacherMap = useDirectoryNames([teacherId]);
+  const teacherLabels = useDirectoryPickerLabels(t("pickTeacher"));
 
   const subjects = useSubjectsQuery();
   const subjectMap = useLookup(subjects.data?.data);
@@ -225,11 +224,11 @@ export function TeachingAssignmentsView(): ReactElement {
         </label>
         <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
           <span className="font-medium">{t("teacher")}</span>
-          <Select
-            options={(teachers.data?.data ?? []).map((u) => ({ value: u.id, label: u.name }))}
+          <DirectoryPicker
+            profileKind="teacher"
             value={teacherId}
             onValueChange={setTeacherId}
-            placeholder={t("pickTeacher")}
+            labels={teacherLabels}
             className="w-full md:w-64"
           />
         </label>

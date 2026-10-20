@@ -28,9 +28,12 @@ vi.mock("../../reference/api", () => ({
     },
     isLoading: false,
   }),
-  useDirectoryQuery: () => ({ data: { data: [] }, isLoading: false }),
   useLookup: () => new Map(),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([]);
+});
 vi.mock("../api", () => ({
   useWarningLettersQuery: mocks.useWarningLettersQuery,
   useWarningLetterDocumentUrlMutation: () => ({ mutate: vi.fn(), isPending: false }),
@@ -52,7 +55,11 @@ describe("IssuedLettersPanel filters", () => {
     await user.click(screen.getByRole("button", { name: "filters.class" }));
     await user.click(await screen.findByRole("button", { name: "7B" }));
 
-    expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith("class-7b");
+    expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith("class-7b", {
+      limit: 50,
+      offset: 0,
+      search: "",
+    });
     expect(new URLSearchParams(window.location.search).get("class_id")).toBe("class-7b");
   });
 
@@ -60,7 +67,11 @@ describe("IssuedLettersPanel filters", () => {
     window.history.replaceState(null, "", "/discipline/warning-letters?class_id=class-7a");
     render(<IssuedLettersPanel />);
 
-    expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith("class-7a");
+    expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith("class-7a", {
+      limit: 50,
+      offset: 0,
+      search: "",
+    });
     expect(screen.getByRole("button", { name: "filters.class: 7A" })).toBeInTheDocument();
   });
 
@@ -70,7 +81,11 @@ describe("IssuedLettersPanel filters", () => {
     render(<IssuedLettersPanel />);
 
     await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
-    expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith(undefined);
+    expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith(undefined, {
+      limit: 50,
+      offset: 0,
+      search: "",
+    });
     expect(new URLSearchParams(window.location.search).get("class_id")).toBe("");
   });
 });

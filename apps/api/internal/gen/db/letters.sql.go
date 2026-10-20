@@ -12,6 +12,57 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countDueSPCandidates = `-- name: CountDueSPCandidates :one
+select count(*)::int as total
+from (
+  select coalesce(sum(vr.points_snapshot), 0)::int as total,
+    coalesce((select array_agg(distinct wl.level order by wl.level) from warning_letters wl
+    where wl.tenant_id = $1 and wl.academic_year_id = $2 and wl.student_user_id = vr.student_user_id), '{}')::int[] as issued_levels
+  from violation_records vr
+  join users u on u.id = vr.student_user_id
+  left join student_profiles sp on sp.user_id = vr.student_user_id
+  left join enrollments e on e.tenant_id = vr.tenant_id and e.academic_year_id = vr.academic_year_id
+    and e.student_user_id = vr.student_user_id and e.status = 'active'
+  left join classes c on c.id = e.class_id
+  where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.voided_at is null
+  group by vr.student_user_id, u.name, sp.nis, c.name
+  having coalesce(sum(vr.points_snapshot), 0) >= $3::int
+) candidates
+where exists (
+  select 1
+  from generate_series(1, cardinality($4::int[])) as i
+  where candidates.total >= ($5::int[])[i]
+    and not (($4::int[])[i] = any(candidates.issued_levels))
+)
+`
+
+type CountDueSPCandidatesParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	FirstLevelMin  int32     `json:"first_level_min"`
+	LevelNumbers   []int32   `json:"level_numbers"`
+	LevelMins      []int32   `json:"level_mins"`
+}
+
+// Students ListSPCandidates would list that also have a level due: the
+// active total has reached a level's min_points and that level has not been
+// issued yet (the inbox badge; web dueLevels). level_numbers/level_mins are
+// the policy ladder as parallel arrays, since only Go holds the policy. The
+// inner select is ListSPCandidates' with no class/search/level filter; keep
+// the joins and grouping identical so the badge matches the list.
+func (q *Queries) CountDueSPCandidates(ctx context.Context, arg CountDueSPCandidatesParams) (int32, error) {
+	row := q.db.QueryRow(ctx, countDueSPCandidates,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.FirstLevelMin,
+		arg.LevelNumbers,
+		arg.LevelMins,
+	)
+	var total int32
+	err := row.Scan(&total)
+	return total, err
+}
+
 const createWarningLetter = `-- name: CreateWarningLetter :one
 insert into warning_letters (tenant_id, academic_year_id, student_user_id, level, level_label, threshold_points, total_points,
   letter_number, issued_by, snapshot, document_asset_id)
@@ -99,15 +150,14 @@ func (q *Queries) GetWarningLetter(ctx context.Context, arg GetWarningLetterPara
 const listSPCandidates = `-- name: ListSPCandidates :many
 select vr.student_user_id, u.name as student_name, coalesce(sp.nis, '') as nis, coalesce(c.name, '') as class_name,
   coalesce(sum(vr.points_snapshot), 0)::int as total,
-  coalesce(array_agg(distinct wl.level) filter (where wl.level is not null), '{}')::int[] as issued_levels
+  coalesce((select array_agg(distinct wl.level order by wl.level) from warning_letters wl
+    where wl.tenant_id = $1 and wl.academic_year_id = $2 and wl.student_user_id = vr.student_user_id), '{}')::int[] as issued_levels
 from violation_records vr
 join users u on u.id = vr.student_user_id
 left join student_profiles sp on sp.user_id = vr.student_user_id
 left join enrollments e on e.tenant_id = vr.tenant_id and e.academic_year_id = vr.academic_year_id
   and e.student_user_id = vr.student_user_id and e.status = 'active'
 left join classes c on c.id = e.class_id
-left join warning_letters wl on wl.tenant_id = vr.tenant_id and wl.academic_year_id = vr.academic_year_id
-  and wl.student_user_id = vr.student_user_id
 where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.voided_at is null
   and ($5::uuid is null or e.class_id = $5::uuid)
   and ($6::text is null or u.name ilike '%' || $6 || '%'
@@ -186,6 +236,10 @@ where wl.tenant_id = $1 and wl.academic_year_id = $2
   and ($5::uuid is null or exists (
     select 1 from enrollments e where e.tenant_id = wl.tenant_id and e.academic_year_id = wl.academic_year_id
       and e.student_user_id = wl.student_user_id and e.class_id = $5::uuid and e.status = 'active'))
+  and ($6::text is null or exists (
+    select 1 from users su left join student_profiles sp on sp.user_id = su.id
+    where su.id = wl.student_user_id
+      and (su.name ilike '%' || $6 || '%' or sp.nis ilike '%' || $6 || '%')))
 order by wl.issued_at desc
 limit $3 offset $4
 `
@@ -196,6 +250,7 @@ type ListWarningLettersParams struct {
 	Limit          int32       `json:"limit"`
 	Offset         int32       `json:"offset"`
 	ClassID        pgtype.UUID `json:"class_id"`
+	Search         pgtype.Text `json:"search"`
 }
 
 func (q *Queries) ListWarningLetters(ctx context.Context, arg ListWarningLettersParams) ([]WarningLetter, error) {
@@ -205,6 +260,7 @@ func (q *Queries) ListWarningLetters(ctx context.Context, arg ListWarningLetters
 		arg.Limit,
 		arg.Offset,
 		arg.ClassID,
+		arg.Search,
 	)
 	if err != nil {
 		return nil, err

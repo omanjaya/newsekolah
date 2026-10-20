@@ -282,6 +282,11 @@
     "journalSaved": "Jurnal tersimpan",
     "journalMissing": "Jurnal belum diisi",
     "journalHelp": "Absensi dan jurnal disimpan bersama untuk pertemuan ini.",
-    "yearScope": "Tahun ajaran: {year}"
+    "yearScope": "Tahun ajaran: {year}",
+    "learningNav": "Pembelajaran",
+    "subjectsTab": "Mata Pelajaran",
+    "periodsTab": "Jam Pelajaran",
+    "teachingTab": "Pembagian Mengajar",
+    "dutiesTab": "Tugas Tambahan"
   }
 }

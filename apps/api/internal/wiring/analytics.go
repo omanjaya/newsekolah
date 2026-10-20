@@ -3,10 +3,12 @@ package wiring
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
 	analyticsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/analytics/service"
+	attendancedomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
@@ -32,16 +34,35 @@ func (p AnalyticsPermits) PendingCount(ctx context.Context, tenantID uuid.UUID, 
 
 type AnalyticsAttendance struct{ Svc *attendanceservice.Service }
 
-func (a AnalyticsAttendance) MonthlySummary(ctx context.Context, tenantID, studentID uuid.UUID, month string) ([]analyticsservice.DayStatus, error) {
-	days, _, err := a.Svc.GetMonthlySummary(ctx, tenantID, studentID, month)
+func (a AnalyticsAttendance) DayStatuses(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID, dates []time.Time) ([]analyticsservice.StudentDayStatus, error) {
+	rows, err := a.Svc.DayStatusesForStudents(ctx, tenantID, studentIDs, dates)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]analyticsservice.DayStatus, len(days))
-	for i, d := range days {
-		out[i] = analyticsservice.DayStatus{Date: d.Date, StatusCode: d.StatusCode}
+	out := make([]analyticsservice.StudentDayStatus, len(rows))
+	for i, r := range rows {
+		out[i] = analyticsservice.StudentDayStatus{StudentUserID: r.StudentUserID, Date: r.Date, Outcome: analyticsDayOutcome(r.StatusCode)}
 	}
 	return out, nil
+}
+
+// analyticsDayOutcome reduces attendance's daily status code to what the
+// early-warning attendance signal needs. Only alfa (unexcused absence) is an
+// absence; present, sick, permission and dispensation days are recorded days
+// that are not absences. The pseudo-codes that describe missing data are
+// not outcomes at all: no scheduled session means no school day, and an
+// unsubmitted, empty or unknown day has no outcome yet.
+func analyticsDayOutcome(statusCode string) analyticsservice.DayOutcome {
+	switch statusCode {
+	case attendancedomain.StatusNone:
+		return analyticsservice.DayNoSchool
+	case "", attendancedomain.StatusIncomplete, attendancedomain.StatusMixed:
+		return analyticsservice.DayUnrecorded
+	case attendancedomain.StatusCodeAlpha:
+		return analyticsservice.DayAbsent
+	default:
+		return analyticsservice.DayNotAbsent
+	}
 }
 
 func (a AnalyticsAttendance) TodaySubmittedCount(ctx context.Context, tenantID uuid.UUID) (submitted, total int, err error) {
@@ -50,68 +71,37 @@ func (a AnalyticsAttendance) TodaySubmittedCount(ctx context.Context, tenantID u
 
 type AnalyticsDiscipline struct{ Svc *disciplineservice.Service }
 
-func (d AnalyticsDiscipline) StudentSummary(ctx context.Context, tenantID, studentID uuid.UUID) (analyticsservice.DisciplineSummary, error) {
-	summary, err := d.Svc.StudentSummary(ctx, tenantID, studentID)
+func (d AnalyticsDiscipline) StudentSummaries(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]analyticsservice.DisciplineSummary, error) {
+	rows, err := d.Svc.RiskTotalsForStudents(ctx, tenantID, studentIDs)
 	if err != nil {
-		return analyticsservice.DisciplineSummary{}, err
+		return nil, err
 	}
-	active := 0
-	for _, r := range summary.Records {
-		if !r.IsVoided() {
-			active++
+	out := make(map[uuid.UUID]analyticsservice.DisciplineSummary, len(rows))
+	for _, r := range rows {
+		out[r.StudentUserID] = analyticsservice.DisciplineSummary{
+			ActiveViolationCount: r.ActiveViolations, TotalPoints: r.Points, WarningLetterCount: r.WarningLetters,
 		}
 	}
-	return analyticsservice.DisciplineSummary{
-		ActiveViolationCount: active, TotalPoints: summary.TotalPoints, WarningLetterCount: len(summary.Letters),
-	}, nil
+	return out, nil
 }
 
 type AnalyticsGrading struct{ Svc *gradingservice.Service }
 
-// ReportTrend compares the student's current-term published report-score
-// average against the term immediately before it. Available is false
-// when either term has no published report score to average (e.g. the
-// student's first term, or a term whose grades are not yet published):
-// analytics must not invent a trend when the data does not support one.
-func (g AnalyticsGrading) ReportTrend(ctx context.Context, tenantID, studentID uuid.UUID) (analyticsservice.GradeTrend, error) {
-	current, err := g.Svc.MyGrades(ctx, tenantID, studentID, uuid.NullUUID{})
+// ReportTrends compares each student's current-term published report-score
+// average against the term immediately before it. Available is false when
+// either term has no published report score to average (e.g. the student's
+// first term, or a term whose grades are not yet published): analytics must
+// not invent a trend when the data does not support one.
+func (g AnalyticsGrading) ReportTrends(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]analyticsservice.GradeTrend, error) {
+	trends, err := g.Svc.ReportTrendsForStudents(ctx, tenantID, studentIDs)
 	if err != nil {
-		return analyticsservice.GradeTrend{}, err
+		return nil, err
 	}
-	currentAvg, ok := averageReportScore(current.Subjects)
-	if !ok {
-		return analyticsservice.GradeTrend{}, nil
+	out := make(map[uuid.UUID]analyticsservice.GradeTrend, len(trends))
+	for id, t := range trends {
+		out[id] = analyticsservice.GradeTrend{Available: t.Available, PreviousAverage: t.PreviousAverage, CurrentAverage: t.CurrentAverage}
 	}
-
-	previousTerm, found, err := g.Svc.PreviousTerm(ctx, tenantID, current.Term.ID)
-	if err != nil || !found {
-		return analyticsservice.GradeTrend{}, err
-	}
-	previous, err := g.Svc.MyGrades(ctx, tenantID, studentID, uuid.NullUUID{UUID: previousTerm.ID, Valid: true})
-	if err != nil {
-		return analyticsservice.GradeTrend{}, err
-	}
-	previousAvg, ok := averageReportScore(previous.Subjects)
-	if !ok {
-		return analyticsservice.GradeTrend{}, nil
-	}
-
-	return analyticsservice.GradeTrend{Available: true, PreviousAverage: previousAvg, CurrentAverage: currentAvg}, nil
-}
-
-func averageReportScore(subjects []gradingservice.MySubjectGrade) (float64, bool) {
-	sum, count := 0.0, 0
-	for _, s := range subjects {
-		if s.ReportScore == nil {
-			continue
-		}
-		sum += *s.ReportScore
-		count++
-	}
-	if count == 0 {
-		return 0, false
-	}
-	return sum / float64(count), true
+	return out, nil
 }
 
 // AnalyticsPresence adapts platform/realtime's Presence tracker to

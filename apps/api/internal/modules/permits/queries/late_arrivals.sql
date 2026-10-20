@@ -48,3 +48,19 @@ where la.tenant_id = $1 and wi.status = 'in_progress'
     )
   )
 order by wi.opened_at;
+
+-- name: CountLateArrivalsForReview :one
+-- Size of ListLateArrivalsForReview's queue for the same caller. Keep the
+-- where clause identical to that query.
+select count(*)::int as total
+from late_arrivals la
+join workflow_instances wi on wi.id = la.instance_id
+where la.tenant_id = $1 and wi.status = 'in_progress'
+  and (
+    la.duty_teacher_user_id = $2
+    or exists (
+      select 1 from user_roles ur
+      join role_permissions rp on rp.role_id = ur.role_id
+      where ur.tenant_id = $1 and ur.user_id = $2 and rp.permission_code = 'manage_attendance'
+    )
+  );

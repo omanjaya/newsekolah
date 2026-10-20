@@ -74,6 +74,7 @@ type Repository interface {
 	ListSchedulesByTeacher(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID) ([]domain.Schedule, error)
 	ListSchedulesByDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) ([]domain.Schedule, error)
 	CountSchedulesForClassDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek int16) (int64, error)
+	CountSchedulesByClassDay(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID) ([]ClassDayCount, error)
 
 	CreateSubstitution(ctx context.Context, s domain.Substitution) (domain.Substitution, error)
 	GetSubstitutionByID(ctx context.Context, tenantID, id uuid.UUID) (domain.Substitution, error)

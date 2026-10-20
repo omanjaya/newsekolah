@@ -18,15 +18,23 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
-import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
+import { useClassesQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
+import { StudentLink } from "../../students/components/student-link";
+import { studentProfileHref } from "../../students/href";
 import {
   type WarningLetter,
   useWarningLetterDocumentUrlMutation,
   useWarningLettersQuery,
 } from "../api";
+
+/** Rows per page; the warning letters API pages by offset and reports no total. */
+const PAGE_SIZE = 50;
 
 export function IssuedLettersPanel(): ReactElement {
   const t = useTranslations("app.discipline.warningLetters");
@@ -38,12 +46,17 @@ export function IssuedLettersPanel(): ReactElement {
 
   const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
   const classes = useClassesQuery();
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
-  const { data, isLoading } = useWarningLettersQuery(classId || undefined);
+  const [search, setSearch] = useUrlState<string>("letters_q", () => true, "");
+  const paging = useOffsetPage(PAGE_SIZE, "letters_page");
+  const { data, isLoading } = useWarningLettersQuery(classId || undefined, {
+    limit: paging.limit,
+    offset: paging.offset,
+    search,
+  });
   const documentUrl = useWarningLetterDocumentUrlMutation();
 
   const items = data?.data ?? [];
+  const studentMap = useDirectoryNames(items.map((item) => item.student_user_id));
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
 
   const filters: DataTableFilterDef[] = [
@@ -51,7 +64,7 @@ export function IssuedLettersPanel(): ReactElement {
       id: "class",
       label: t("filters.class"),
       value: classId,
-      onChange: setClassId,
+      onChange: paging.resetting(setClassId),
       options: classOptions,
     },
   ];
@@ -81,7 +94,11 @@ export function IssuedLettersPanel(): ReactElement {
           return (
             <div className="flex min-w-0 items-center gap-2">
               <Avatar size="sm" name={name} />
-              <span className="truncate">{name}</span>
+              <span className="truncate">
+                <StudentLink studentId={row.original.student_user_id} tab="discipline">
+                  {name}
+                </StudentLink>
+              </span>
             </div>
           );
         },
@@ -124,15 +141,17 @@ export function IssuedLettersPanel(): ReactElement {
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/discipline/components/issued-letters-panel:1"
-          mode="local"
+          mode="cursor"
           data={items}
           columns={columns}
           rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
+          pagination={{ pageIndex: 0, pageSize: PAGE_SIZE }}
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
-          globalFilter=""
+          globalFilter={search}
+          onGlobalFilterChange={paging.resetting(setSearch)}
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
           filtersLabels={{
             reset: t("filters.reset"),
@@ -141,7 +160,7 @@ export function IssuedLettersPanel(): ReactElement {
           isLoading={isLoading}
           getRowId={(item) => item.id}
           onRowActivate={(item) => {
-            router.push(`/discipline/students/${item.student_user_id}`);
+            router.push(studentProfileHref(item.student_user_id, "discipline"));
           }}
           fillHeight
           emptyState={
@@ -153,6 +172,12 @@ export function IssuedLettersPanel(): ReactElement {
           }
         />
       </div>
+      <CursorPagination
+        hasPrevious={paging.hasPrevious}
+        hasNext={paging.hasNextFor(items.length)}
+        onPrevious={paging.goPrevious}
+        onNext={paging.goNext}
+      />
     </div>
   );
 }

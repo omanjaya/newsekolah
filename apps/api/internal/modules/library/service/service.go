@@ -317,7 +317,7 @@ type Repository interface {
 
 	CreateVisit(ctx context.Context, v domain.Visit) (domain.Visit, error)
 	GetLastVisitForMember(ctx context.Context, tenantID, memberID uuid.UUID) (domain.Visit, bool, error)
-	ListVisitsForRange(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]domain.Visit, error)
+	ListVisitsForRange(ctx context.Context, tenantID uuid.UUID, from, to time.Time, limit, offset int) ([]domain.Visit, error)
 	TodayVisitSummary(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (VisitSummary, error)
 	CreateReadInPlace(ctx context.Context, p domain.ReadInPlace) (domain.ReadInPlace, error)
 	ListReadInPlaceForCopy(ctx context.Context, tenantID, copyID uuid.UUID) ([]domain.ReadInPlace, error)

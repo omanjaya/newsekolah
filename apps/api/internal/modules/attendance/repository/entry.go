@@ -10,6 +10,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	pdatabase "github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
@@ -30,6 +31,25 @@ func (r *Repository) ListEntriesBySession(ctx context.Context, tenantID, session
 		return nil, err
 	}
 	return toEntries(rows), nil
+}
+
+// ListEntryReportRowsBySessions returns every entry of the given sessions
+// with the student's display name, grouped by session id, in one query.
+func (r *Repository) ListEntryReportRowsBySessions(ctx context.Context, tenantID uuid.UUID, sessionIDs []uuid.UUID) (map[uuid.UUID][]service.DailyReportSessionEntry, error) {
+	out := make(map[uuid.UUID][]service.DailyReportSessionEntry, len(sessionIDs))
+	if len(sessionIDs) == 0 {
+		return out, nil
+	}
+	rows, err := r.queries(ctx).ListEntryReportRowsBySessions(ctx, db.ListEntryReportRowsBySessionsParams{TenantID: tenantID, SessionIds: sessionIDs})
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		out[row.SessionID] = append(out[row.SessionID], service.DailyReportSessionEntry{
+			StudentUserID: row.StudentUserID, Name: row.StudentName, StatusCode: row.StatusCode, Notes: pdatabase.TextOrEmpty(row.Notes),
+		})
+	}
+	return out, nil
 }
 
 func (r *Repository) GetEntryBySessionStudent(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID) (domain.Entry, bool, error) {

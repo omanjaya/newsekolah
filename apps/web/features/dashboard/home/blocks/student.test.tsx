@@ -25,10 +25,10 @@ vi.mock("../../../schedule/api", () => ({
   useSchedulesQuery: mocks.schedules,
 }));
 
+vi.mock("../../../reference/directory-names", () => ({ useDirectoryLookup: mocks.teachers }));
 vi.mock("../../../reference/api", () => ({
   useAllPeriodsQuery: mocks.periods,
   useSubjectsQuery: mocks.subjects,
-  useTeachersQuery: mocks.teachers,
   useLookup: (items?: { id: string }[]) => new Map((items ?? []).map((item) => [item.id, item])),
 }));
 
@@ -112,7 +112,7 @@ function resetMocks() {
   mocks.schedules.mockReset().mockReturnValue(idleQuery);
   mocks.periods.mockReset().mockReturnValue(idleQuery);
   mocks.subjects.mockReset().mockReturnValue(idleQuery);
-  mocks.teachers.mockReset().mockReturnValue(idleQuery);
+  mocks.teachers.mockReset().mockReturnValue({ ...idleQuery, names: new Map() });
   mocks.calendar.mockReset().mockReturnValue(idleQuery);
   mocks.leaveRequests.mockReset().mockReturnValue(idleQuery);
   mocks.grades.mockReset().mockReturnValue(idleQuery);
@@ -139,7 +139,7 @@ describe("useStudentBlock", () => {
     );
     expect(mocks.periods).toHaveBeenCalledWith(false);
     expect(mocks.subjects).toHaveBeenCalledWith(false);
-    expect(mocks.teachers).toHaveBeenCalledWith(false);
+    expect(mocks.teachers).toHaveBeenCalledWith([], false);
     expect(mocks.calendar).toHaveBeenCalledWith("");
     expect(mocks.leaveRequests).toHaveBeenCalledWith(false);
     expect(mocks.grades).toHaveBeenCalledWith(undefined, false);
@@ -236,12 +236,10 @@ describe("useStudentBlock", () => {
     mocks.teachers.mockReturnValue({
       ...idleQuery,
       isSuccess: true,
-      data: {
-        data: [
-          { id: "t1", name: "Bu Sari", username: "sari" },
-          { id: "t2", name: "Pak Budi", username: "budi" },
-        ],
-      },
+      names: new Map([
+        ["t1", { id: "t1", name: "Bu Sari", username: "sari" }],
+        ["t2", { id: "t2", name: "Pak Budi", username: "budi" }],
+      ]),
     });
 
     const { result } = renderHook(() => useStudentBlock(me(), true));
@@ -348,12 +346,10 @@ describe("useStudentBlock", () => {
     mocks.teachers.mockReturnValue({
       ...idleQuery,
       isSuccess: true,
-      data: {
-        data: [
-          { id: "t1", name: "Bu Sari", username: "sari" },
-          { id: "t2", name: "Pak Budi", username: "budi" },
-        ],
-      },
+      names: new Map([
+        ["t1", { id: "t1", name: "Bu Sari", username: "sari" }],
+        ["t2", { id: "t2", name: "Pak Budi", username: "budi" }],
+      ]),
     });
 
     const { result } = renderHook(() => useStudentBlock(me(), true));
@@ -451,12 +447,10 @@ describe("useStudentBlock", () => {
     mocks.teachers.mockReturnValue({
       ...idleQuery,
       isSuccess: true,
-      data: {
-        data: [
-          { id: "t1", name: "Bu Sari", username: "sari" },
-          { id: "t2", name: "Pak Budi", username: "budi" },
-        ],
-      },
+      names: new Map([
+        ["t1", { id: "t1", name: "Bu Sari", username: "sari" }],
+        ["t2", { id: "t2", name: "Pak Budi", username: "budi" }],
+      ]),
     });
 
     const { result } = renderHook(() => useStudentBlock(me(), true));

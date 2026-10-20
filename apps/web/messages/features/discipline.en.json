@@ -1,11 +1,14 @@
 {
   "violations": {
+    "searchPlaceholder": "Search by name or NIS",
     "eyebrow": "Discipline",
     "title": "Violations",
     "tabs": {
       "ledger": "Point ledger",
       "catalog": "Violation catalog",
-      "policy": "Warning-letter policy"
+      "policy": "Warning-letter policy",
+      "atRisk": "Warning-letter candidates",
+      "letters": "Warning letters"
     },
     "filters": {
       "class": "Class",
@@ -31,7 +34,7 @@
     },
     "status": {
       "active": "Active",
-      "voided": "Voided"
+      "voided": "Cancelled"
     },
     "emptyTitle": "No violation records yet",
     "emptyBody": "This year's violation records will appear here.",
@@ -144,6 +147,7 @@
     "saved": "Warning-letter policy saved"
   },
   "warningLetters": {
+    "searchPlaceholder": "Search by name or NIS",
     "eyebrow": "Discipline",
     "title": "Warning letters",
     "tabs": {
@@ -209,6 +213,7 @@
     }
   },
   "counseling": {
+    "searchPlaceholder": "Search by name or NIS",
     "eyebrow": "Discipline",
     "title": "Counseling",
     "add": "Log counseling",

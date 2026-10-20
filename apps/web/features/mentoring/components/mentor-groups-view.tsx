@@ -33,7 +33,8 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
-import { useLookup, useTeachersQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
+import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   type MentorGroup,
   useDeleteMentorGroupMutation,
@@ -50,6 +51,7 @@ export function MentorGroupsView({
   initialScope?: "mine" | "all";
 }): ReactElement {
   const workspace = useTranslations("app.serviceWorkspace");
+  const shell = useTranslations("app.workspace");
   const mine = useTranslations("app.mentoring.myGroups");
   const [scope, setScope] = useUrlState<string>("scope", ["mine", "all"], initialScope);
   const t = useTranslations("app.mentoring.groups");
@@ -61,8 +63,6 @@ export function MentorGroupsView({
   const allGroups = useMentorGroupsQuery(scope === "all");
   const myGroups = useMyMentorGroupsQuery(scope === "mine");
   const { data, isLoading, isError, refetch } = scope === "mine" ? myGroups : allGroups;
-  const teachers = useTeachersQuery();
-  const teacherMap = useLookup(teachers.data?.data);
   const remove = useDeleteMentorGroupMutation();
 
   const [tab, setTab] = useUrlState<string>(
@@ -74,6 +74,7 @@ export function MentorGroupsView({
   const [pendingDelete, setPendingDelete] = useState<MentorGroup | null>(null);
 
   const items = data?.data ?? [];
+  const teacherMap = useDirectoryNames(items.map((item) => item.mentor_user_id));
 
   const columns = useMemo<ColumnDef<MentorGroup>[]>(() => {
     const base: ColumnDef<MentorGroup>[] = [
@@ -135,9 +136,10 @@ export function MentorGroupsView({
     // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
     // itself never scrolls; the active tab's panel scrolls internally.
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
+      <ActivitiesWorkspaceNav />
       <PageHeader
         eyebrow={t("eyebrow")}
-        title={workspace("mentoring")}
+        title={shell("studentActivities")}
         actions={
           canManage &&
           tab === "groups" && (

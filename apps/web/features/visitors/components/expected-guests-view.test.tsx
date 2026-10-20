@@ -14,9 +14,12 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => mocks.canManage }));
 vi.mock("../../reference/api", () => ({
-  useDirectoryQuery: () => ({ data: { data: [] }, isLoading: false }),
   useLookup: () => new Map(),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([]);
+});
 vi.mock("../api", () => ({
   useExpectedGuestsQuery: mocks.useExpectedGuestsQuery,
   useCancelExpectedGuestMutation: () => ({ mutate: vi.fn(), isPending: false }),

@@ -3651,6 +3651,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/inbox/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pending-item counts for the caller's action inbox: leave requests, exit permits, late arrivals and warning letters. Each number applies the same authorization and scoping as its queue endpoint, so a queue the caller cannot see counts as 0. */
+        get: operations["getInboxCounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/integrations/event-types": {
         parameters: {
             query?: never;
@@ -9606,6 +9623,8 @@ export interface components {
             name: string;
             username: string;
             profile_kind?: components["schemas"]["ProfileKind"];
+            /** @description Student number; only set for students on an ids lookup, and only for callers holding view_users */
+            nis?: string;
         };
         /** @enum {string} */
         UserStatus: "active" | "inactive" | "invited";
@@ -9934,6 +9953,13 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             last_used_at?: string;
+        };
+        InboxCounts: {
+            leave: number;
+            exit: number;
+            late: number;
+            warning_letters: number;
+            total: number;
         };
         EventTypeList: {
             data: string[];
@@ -16394,6 +16420,8 @@ export interface operations {
                 from?: string;
                 to?: string;
                 include_voided?: boolean;
+                /** @description Student name or NIS; ignored under 2 characters */
+                search?: string;
                 limit?: number;
                 offset?: number;
             };
@@ -16783,6 +16811,8 @@ export interface operations {
         parameters: {
             query?: {
                 class_id?: string;
+                /** @description Student name or NIS; ignored under 2 characters */
+                search?: string;
                 limit?: number;
                 offset?: number;
             };
@@ -16892,6 +16922,8 @@ export interface operations {
     listMyCounselings: {
         parameters: {
             query?: {
+                /** @description Student name or NIS; ignored under 2 characters */
+                search?: string;
                 limit?: number;
                 offset?: number;
             };
@@ -17051,6 +17083,8 @@ export interface operations {
         parameters: {
             query?: {
                 topic?: components["schemas"]["CounselingTopic"];
+                /** @description Student name or NIS; ignored under 2 characters */
+                search?: string;
                 limit?: number;
                 offset?: number;
             };
@@ -18969,6 +19003,8 @@ export interface operations {
                 profile_kind?: components["schemas"]["ProfileKind"];
                 q?: string;
                 limit?: number;
+                /** @description Comma-separated user ids to resolve to names (id-to-name lookups). When present, the result is exactly those users in this school regardless of status; q, profile_kind and limit are ignored. */
+                ids?: string[];
             };
             header?: never;
             path?: never;
@@ -19699,6 +19735,27 @@ export interface operations {
                 content?: never;
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getInboxCounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Counts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxCounts"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
         };
     };
@@ -21694,6 +21751,8 @@ export interface operations {
             query: {
                 from: string;
                 to: string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;

@@ -7,6 +7,7 @@
   "actingAs": "impersonating {name}",
   "filters": {
     "actor": "Actor",
+    "clearActor": "Clear actor",
     "actorAll": "All users",
     "entityType": "Entity type",
     "from": "From date",

@@ -42,7 +42,17 @@ func (s *Service) StudentActiveClassID(ctx context.Context, tenantID, academicYe
 // selfUserID to narrow to one teacher (the caller's own id, when they
 // don't hold manage_schedules/manage_master_data); an invalid one lists
 // everyone.
+const (
+	defaultOptionsLimit = 20
+	maxOptionsLimit     = 50
+)
+
 func (s *Service) ListTeacherOptions(ctx context.Context, tenantID, academicYearID uuid.UUID, search string, selfUserID uuid.NullUUID, limit int32) ([]UserRef, error) {
+	// Defence in depth: the OpenAPI schema caps limit at 50, but a service
+	// must not trust that the request validator is in enforce mode.
+	if limit <= 0 || limit > maxOptionsLimit {
+		limit = defaultOptionsLimit
+	}
 	var out []UserRef
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error

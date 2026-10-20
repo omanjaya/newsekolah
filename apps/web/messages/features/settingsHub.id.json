@@ -1,0 +1,45 @@
+{
+  "eyebrow": "Pengaturan",
+  "title": "Pengaturan Sekolah",
+  "description": "Semua pengaturan sekolah dalam satu tempat.",
+  "searchLabel": "Cari pengaturan",
+  "searchPlaceholder": "Cari pengaturan...",
+  "emptyTitle": "Tidak ada pengaturan yang cocok",
+  "emptyDescription": "Coba kata kunci lain atau hapus pencarian.",
+  "noAccessTitle": "Tidak ada pengaturan yang bisa dibuka",
+  "noAccessDescription": "Akun Anda belum memiliki akses ke pengaturan sekolah.",
+  "sections": {
+    "identity": {
+      "title": "Identitas Sekolah",
+      "description": "Tampilan, kop surat, dan templat dokumen."
+    },
+    "access": {
+      "title": "Akses & Keamanan",
+      "description": "Pengguna, peran, sesi, dan jejak audit."
+    },
+    "communication": {
+      "title": "Komunikasi",
+      "description": "Notifikasi, WhatsApp, dan integrasi."
+    },
+    "workflow": {
+      "title": "Alur Kerja",
+      "description": "Alur persetujuan dan penyiapan awal."
+    }
+  },
+  "cards": {
+    "branding": "Logo, warna, dan nama tampilan sekolah.",
+    "reportHeader": "Kop surat yang dipakai pada laporan dan dokumen cetak.",
+    "documentTemplates": "Templat surat dan dokumen resmi sekolah.",
+    "users": "Kelola akun pengguna sekolah.",
+    "roles": "Atur peran dan hak akses setiap pengguna.",
+    "session": "Durasi dan aturan sesi masuk pengguna.",
+    "sso": "Masuk tunggal lewat penyedia identitas sekolah.",
+    "security": "Kata sandi, verifikasi, dan perangkat Anda.",
+    "audit": "Riwayat perubahan penting yang dilakukan pengguna.",
+    "notificationDefaults": "Bawaan notifikasi untuk seluruh sekolah.",
+    "whatsapp": "Sambungkan dan atur pesan WhatsApp sekolah.",
+    "integrations": "Hubungkan aplikasi dan layanan pihak ketiga.",
+    "workflows": "Atur alur pengajuan dan persetujuan.",
+    "setup": "Panduan langkah penyiapan awal sekolah."
+  }
+}

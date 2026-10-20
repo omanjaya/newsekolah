@@ -95,7 +95,7 @@ func (a attendanceSyncAdapter) ForceStatus(ctx context.Context, tenantID, studen
 	return a.force(ctx, tenantID, studentUserID, from, to, statusCode, source, reason)
 }
 
-// permitsBlocker and permitsOverrider expose permits decisions to attendance.
+// permitsBlocker exposes permits decisions to attendance (the overrider is wiring.PermitsOverrider).
 type permitsBlocker struct{ svc *permitsservice.Service }
 
 func (b permitsBlocker) IsBlocked(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (bool, string, error) {
@@ -104,16 +104,6 @@ func (b permitsBlocker) IsBlocked(ctx context.Context, tenantID, studentUserID u
 		return false, "", err
 	}
 	return true, "late_arrival_in_progress", nil
-}
-
-type permitsOverrider struct{ svc *permitsservice.Service }
-
-func (o permitsOverrider) Override(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (string, attendancedomain.EntrySource, bool, error) {
-	status, ok, err := o.svc.LeaveOverride(ctx, tenantID, studentUserID, date)
-	if err != nil || !ok {
-		return "", "", false, err
-	}
-	return status, attendancedomain.SourceLeave, true, nil
 }
 
 // disciplineViolationsAdapter exposes discipline's per-session violation

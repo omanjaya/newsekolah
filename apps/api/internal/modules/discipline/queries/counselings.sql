@@ -19,18 +19,29 @@ where tenant_id = $1 and academic_year_id = $2 and student_user_id = $3
 order by session_at desc;
 
 -- name: ListCounselingsByCounselor :many
-select * from counselings
-where tenant_id = $1 and academic_year_id = $2 and counselor_user_id = $3
-order by session_at desc
+-- The counselor's own notes, optionally by student name/NIS (never note
+-- content: it is encrypted at rest).
+select c.* from counselings c
+where c.tenant_id = $1 and c.academic_year_id = $2 and c.counselor_user_id = $3
+  and (sqlc.narg(search)::text is null or exists (
+    select 1 from users su left join student_profiles sp on sp.user_id = su.id
+    where su.id = c.student_user_id
+      and (su.name ilike '%' || sqlc.narg(search) || '%' or sp.nis ilike '%' || sqlc.narg(search) || '%')))
+order by c.session_at desc
 limit $4 offset $5;
 
 -- name: ListCounselingsByVisibility :many
 -- Cross-student view for any counselor (duty "counselor"): every note the
--- author chose to share with the whole BK team, optionally by topic.
-select * from counselings
-where tenant_id = $1 and academic_year_id = $2 and visibility = 'bk_team'
-  and (sqlc.narg(topic)::text is null or topic = sqlc.narg(topic))
-order by session_at desc
+-- author chose to share with the whole BK team, optionally by topic and
+-- student name/NIS (never note content: it is encrypted at rest).
+select c.* from counselings c
+where c.tenant_id = $1 and c.academic_year_id = $2 and c.visibility = 'bk_team'
+  and (sqlc.narg(topic)::text is null or c.topic = sqlc.narg(topic))
+  and (sqlc.narg(search)::text is null or exists (
+    select 1 from users su left join student_profiles sp on sp.user_id = su.id
+    where su.id = c.student_user_id
+      and (su.name ilike '%' || sqlc.narg(search) || '%' or sp.nis ilike '%' || sqlc.narg(search) || '%')))
+order by c.session_at desc
 limit $3 offset $4;
 
 -- name: DeleteCounseling :exec

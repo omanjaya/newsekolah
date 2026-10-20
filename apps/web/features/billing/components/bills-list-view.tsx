@@ -1,22 +1,18 @@
 "use client";
 
 import { type Locale, formatCurrency, formatDate } from "@newsekolah/i18n";
-import {
-  Button,
-  DataTable,
-  EmptyState,
-  Input,
-  domainIcons,
-  type DataTableFilterDef,
-} from "@newsekolah/ui";
+import { DataTable, EmptyState, Input, domainIcons, type DataTableFilterDef } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
 import { QueryError } from "../../../components/query-error";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
-import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
+import { useClassesQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { type Bill, type BillStatus, useBillsQuery } from "../api";
 
 import { BillDetailSheet } from "./bill-detail-sheet";
@@ -35,8 +31,6 @@ const PAGE_SIZE = 50;
 export function BillsListView(): ReactElement {
   const t = useTranslations("app.billing.bills");
   const locale = useLocale() as Locale;
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
   const classes = useClassesQuery();
 
   const [period, setPeriod] = useState("");
@@ -46,15 +40,16 @@ export function BillsListView(): ReactElement {
     "",
   );
   const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
-  const [page, setPage] = useState(0);
+  const paging = useOffsetPage(PAGE_SIZE);
   const [selectedBillId, setSelectedBillId] = useState<string | null>(null);
 
   const { data, isLoading, isError, refetch } = useBillsQuery(
     { period, status, classId },
-    { limit: PAGE_SIZE, offset: page * PAGE_SIZE },
+    { limit: paging.limit, offset: paging.offset },
   );
   const rows = data?.data ?? [];
-  const hasNext = rows.length === PAGE_SIZE;
+  const studentMap = useDirectoryNames(rows.map((item) => item.student_user_id));
+  const hasNext = paging.hasNextFor(rows.length);
 
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
 
@@ -65,7 +60,7 @@ export function BillsListView(): ReactElement {
       value: status,
       onChange: (value) => {
         setStatus(value as (typeof STATUS_FILTER_VALUES)[number]);
-        setPage(0);
+        paging.resetPage();
       },
       options: STATUS_VALUES.map((value) => ({ value, label: t(`status.${value}`) })),
     },
@@ -75,7 +70,7 @@ export function BillsListView(): ReactElement {
       value: classId,
       onChange: (value) => {
         setClassId(value);
-        setPage(0);
+        paging.resetPage();
       },
       options: classOptions,
     },
@@ -145,7 +140,7 @@ export function BillsListView(): ReactElement {
           value={period}
           onChange={(e) => {
             setPeriod(e.target.value);
-            setPage(0);
+            paging.resetPage();
           }}
           className="w-full sm:w-44"
           aria-label={t("columns.period")}
@@ -183,29 +178,15 @@ export function BillsListView(): ReactElement {
           />
         </div>
       )}
-      {(page > 0 || hasNext) && (
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page === 0}
-            onClick={() => {
-              setPage((p) => Math.max(0, p - 1));
-            }}
-          >
-            {t("pagePrev")}
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={!hasNext}
-            onClick={() => {
-              setPage((p) => p + 1);
-            }}
-          >
-            {t("pageNext")}
-          </Button>
-        </div>
+      {(paging.hasPrevious || hasNext) && (
+        <CursorPagination
+          hasPrevious={paging.hasPrevious}
+          hasNext={hasNext}
+          previousLabel={t("pagePrev")}
+          nextLabel={t("pageNext")}
+          onPrevious={paging.goPrevious}
+          onNext={paging.goNext}
+        />
       )}
       <BillDetailSheet
         billId={selectedBillId}

@@ -33,6 +33,9 @@ type AccessChecker interface {
 // cycle back through module.go, which must import service to wire it.
 type ScheduleRef = service.ScheduleRef
 
+// ClassDayCount is a type alias for the same reason ScheduleRef is.
+type ClassDayCount = service.ClassDayCount
+
 // ScheduleReader lets the attendance module read schedule data it needs
 // (today's schedules for a teacher, a schedule by ID) without importing
 // scheduling's repository directly, per the same "interface yang diekspor
@@ -46,6 +49,9 @@ type ScheduleReader interface {
 	// accepted substitutions alongside their own schedules.
 	ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, tenantID, substituteUserID uuid.UUID, date time.Time) ([]ScheduleRef, error)
 	CountSchedulesForClassDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek int16) (int64, error)
+	// CountSchedulesByClassDay is CountSchedulesForClassDay for many
+	// classes and every weekday in one query, for tenant-level batch jobs.
+	CountSchedulesByClassDay(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID) ([]ClassDayCount, error)
 }
 
 // JournalInput and JournalRef are type aliases to their service package

@@ -145,6 +145,54 @@ func (q *Queries) ListAttendanceDailySummaryForStudentMonth(ctx context.Context,
 	return items, nil
 }
 
+const listAttendanceDailySummaryForStudentsDates = `-- name: ListAttendanceDailySummaryForStudentsDates :many
+select student_user_id, date, status_code
+from attendance_daily_summary
+where tenant_id = $1 and academic_year_id = $2
+  and student_user_id = any($3::uuid[])
+  and date = any($4::date[])
+`
+
+type ListAttendanceDailySummaryForStudentsDatesParams struct {
+	TenantID       uuid.UUID     `json:"tenant_id"`
+	AcademicYearID uuid.UUID     `json:"academic_year_id"`
+	StudentIds     []uuid.UUID   `json:"student_ids"`
+	Dates          []pgtype.Date `json:"dates"`
+}
+
+type ListAttendanceDailySummaryForStudentsDatesRow struct {
+	StudentUserID uuid.UUID   `json:"student_user_id"`
+	Date          pgtype.Date `json:"date"`
+	StatusCode    string      `json:"status_code"`
+}
+
+// Batch form of ListAttendanceDailySummaryForStudentMonth for tenant-level
+// jobs: the materialized daily status of many students on a set of dates.
+func (q *Queries) ListAttendanceDailySummaryForStudentsDates(ctx context.Context, arg ListAttendanceDailySummaryForStudentsDatesParams) ([]ListAttendanceDailySummaryForStudentsDatesRow, error) {
+	rows, err := q.db.Query(ctx, listAttendanceDailySummaryForStudentsDates,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.StudentIds,
+		arg.Dates,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAttendanceDailySummaryForStudentsDatesRow{}
+	for rows.Next() {
+		var i ListAttendanceDailySummaryForStudentsDatesRow
+		if err := rows.Scan(&i.StudentUserID, &i.Date, &i.StatusCode); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertAttendanceDailySummary = `-- name: UpsertAttendanceDailySummary :exec
 insert into attendance_daily_summary (
   tenant_id, academic_year_id, student_user_id, date, status_code, expected_sessions, submitted_sessions,

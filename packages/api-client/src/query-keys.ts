@@ -37,6 +37,7 @@ export const queryKeys = {
 
   users: (params: Record<string, string | boolean | undefined>) => ["users", params] as const,
   directory: (profileKind: string) => ["directory", profileKind] as const,
+  directoryName: (id: string) => ["directory", "name", id] as const,
   schoolDays: (yearId: string) => ["academic", "school-days", yearId] as const,
   user: (id: string) => ["users", "detail", id] as const,
   roles: () => ["roles"] as const,
@@ -63,6 +64,9 @@ export const queryKeys = {
     ["attendance", "report", classId, date] as const,
   attendanceMonthlyReport: (studentId: string, month: string) =>
     ["attendance", "monthly-report", studentId, month] as const,
+
+  /** Action inbox badge: one counts read shared by the shell, banner and inbox page. */
+  inboxCounts: () => ["inbox", "counts"] as const,
 
   monitorSnapshot: () => ["monitor", "snapshot"] as const,
   monitorPresence: () => ["monitor", "presence"] as const,

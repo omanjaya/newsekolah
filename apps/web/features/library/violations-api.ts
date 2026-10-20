@@ -12,7 +12,8 @@ export type LibraryViolationStatus = components["schemas"]["LibraryViolationStat
 export type LibraryPenalty = components["schemas"]["LibraryPenalty"];
 
 const keys = {
-  list: (status?: string, kind?: string) => ["library", "violations", { status, kind }] as const,
+  list: (status?: string, kind?: string, limit?: number, offset?: number) =>
+    ["library", "violations", { status, kind, limit, offset }] as const,
   member: (userId: string) => ["library", "violations", "member", userId] as const,
 };
 
@@ -30,6 +31,8 @@ export function useLibraryViolationsQuery(
   params: {
     status?: LibraryViolationStatus | "";
     kind?: LibraryViolationKind | "";
+    limit: number;
+    offset: number;
   },
   enabled = true,
 ) {
@@ -37,11 +40,11 @@ export function useLibraryViolationsQuery(
   const status = params.status === "" ? undefined : params.status;
   const kind = params.kind === "" ? undefined : params.kind;
   return useQuery({
-    queryKey: keys.list(status, kind),
+    queryKey: keys.list(status, kind, params.limit, params.offset),
     enabled,
     queryFn: () =>
       client.GET("/v1/library/violations", {
-        params: { query: { status, kind, limit: 200 } },
+        params: { query: { status, kind, limit: params.limit, offset: params.offset } },
       }),
   });
 }

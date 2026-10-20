@@ -6,13 +6,13 @@ import { formatDate } from "@newsekolah/i18n";
 import {
   Alert,
   Avatar,
-  Badge,
   Button,
   DataTable,
   Dialog,
   DialogContent,
-  EmptyState,
   domainIcons,
+  EmptyState,
+  SemanticStatusBadge,
   useToast,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
@@ -23,12 +23,18 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
+import { useQuickAction } from "../../../lib/hooks/use-quick-action";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
-import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
+import { useClassesQuery } from "../../reference/api";
+import { useDirectoryNamePeek, useDirectoryNames } from "../../reference/directory-names";
+import { StudentLink } from "../../students/components/student-link";
+import { studentProfileHref } from "../../students/href";
 import {
   type SPLevel,
   type ViolationRecord,
@@ -38,6 +44,9 @@ import {
 
 import { ViolationRecordForm } from "./violation-record-form";
 import { ViolationVoidDialog } from "./violation-void-dialog";
+
+/** Rows per page; the violations API pages by offset and reports no total. */
+const PAGE_SIZE = 50;
 
 /** Shown after a batch of records lands, with the student's new total and any due levels. */
 interface SaveSummary {
@@ -66,16 +75,28 @@ export function ViolationsLedgerView(): ReactElement {
   );
   const includeVoided = includeVoidedParam === "true";
   const [recording, setRecording] = useState(false);
+  useQuickAction(
+    "record-violation",
+    () => {
+      setRecording(true);
+    },
+    canRecord,
+  );
   const [voiding, setVoiding] = useState<ViolationRecord | null>(null);
   const [saveSummaries, setSaveSummaries] = useState<SaveSummary[]>([]);
 
   const classes = useClassesQuery();
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
-  const { data, isLoading } = useViolationsQuery({ classId, from, to, includeVoided });
+  const [search, setSearch] = useUrlState<string>("ledger_q", () => true, "");
+  const paging = useOffsetPage(PAGE_SIZE, "ledger_page");
+  const { data, isLoading } = useViolationsQuery(
+    { classId, from, to, includeVoided },
+    { limit: paging.limit, offset: paging.offset, search },
+  );
   const issueLetter = useIssueWarningLetterMutation();
 
   const items = data?.data ?? [];
+  const studentMap = useDirectoryNames(items.map((item) => item.student_user_id));
+  const peekName = useDirectoryNamePeek();
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
 
   const filters: DataTableFilterDef[] = [
@@ -83,7 +104,7 @@ export function ViolationsLedgerView(): ReactElement {
       id: "class",
       label: t("filters.class"),
       value: classId,
-      onChange: setClassId,
+      onChange: paging.resetting(setClassId),
       options: classOptions,
     },
     {
@@ -92,6 +113,7 @@ export function ViolationsLedgerView(): ReactElement {
       value: includeVoidedParam,
       onChange: (value) => {
         setIncludeVoidedParam(value as "" | "true");
+        paging.resetPage();
       },
       type: "boolean",
       activeValue: "true",
@@ -105,6 +127,7 @@ export function ViolationsLedgerView(): ReactElement {
       onChangeRange: ({ from: nextFrom, to: nextTo }) => {
         setFrom(nextFrom);
         setTo(nextTo);
+        paging.resetPage();
       },
       presets,
     },
@@ -122,7 +145,11 @@ export function ViolationsLedgerView(): ReactElement {
           return (
             <div className="flex min-w-0 items-center gap-2">
               <Avatar size="sm" name={name} />
-              <span className="truncate">{name}</span>
+              <span className="truncate">
+                <StudentLink studentId={row.original.student_user_id} tab="discipline">
+                  {name}
+                </StudentLink>
+              </span>
             </div>
           );
         },
@@ -156,9 +183,10 @@ export function ViolationsLedgerView(): ReactElement {
         header: t("columns.status"),
         enableSorting: false,
         cell: ({ row }) => (
-          <Badge variant={row.original.is_voided ? "neutral" : "accent"}>
-            {t(row.original.is_voided ? "status.voided" : "status.active")}
-          </Badge>
+          <SemanticStatusBadge
+            status={row.original.is_voided ? "cancelled" : "active"}
+            label={t(row.original.is_voided ? "status.voided" : "status.active")}
+          />
         ),
       },
       {
@@ -297,15 +325,17 @@ export function ViolationsLedgerView(): ReactElement {
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/discipline/components/violations-ledger-view:1"
-          mode="local"
+          mode="cursor"
           data={items}
           columns={columns}
           rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
+          pagination={{ pageIndex: 0, pageSize: PAGE_SIZE }}
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
-          globalFilter=""
+          globalFilter={search}
+          onGlobalFilterChange={paging.resetting(setSearch)}
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
           filtersLabels={{
             reset: t("filters.reset"),
@@ -317,7 +347,7 @@ export function ViolationsLedgerView(): ReactElement {
           isLoading={isLoading}
           getRowId={(item) => item.id}
           onRowActivate={(item) => {
-            router.push(`/discipline/students/${item.student_user_id}`);
+            router.push(studentProfileHref(item.student_user_id, "discipline"));
           }}
           fillHeight
           emptyState={
@@ -329,6 +359,12 @@ export function ViolationsLedgerView(): ReactElement {
           }
         />
       </div>
+      <CursorPagination
+        hasPrevious={paging.hasPrevious}
+        hasNext={paging.hasNextFor(items.length)}
+        onPrevious={paging.goPrevious}
+        onNext={paging.goNext}
+      />
 
       <Dialog
         open={recording}
@@ -344,7 +380,7 @@ export function ViolationsLedgerView(): ReactElement {
                 if (results && results.length > 0) {
                   setSaveSummaries(
                     results.map((result) => {
-                      const student = studentMap.get(result.record.student_user_id);
+                      const student = peekName(result.record.student_user_id);
                       return {
                         studentId: result.record.student_user_id,
                         studentName: student?.name ?? t("unknownStudent"),

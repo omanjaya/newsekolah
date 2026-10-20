@@ -8,6 +8,9 @@ package database
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -18,11 +21,62 @@ type ctxKey int
 
 const txKey ctxKey = iota
 
-// NewPool opens a pgx connection pool against dsn.
-func NewPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+// Pool sizing defaults. pgxpool's own default is max(4, NumCPU) connections,
+// which on a small API container starves under a few dozen concurrent
+// requests (every request holds one connection for its whole tenant
+// transaction). A DSN that sets pool_max_conns, pool_min_conns,
+// pool_max_conn_lifetime or pool_max_conn_idle_time wins over these.
+const (
+	defaultMaxConns        = 20
+	defaultMaxConnLifetime = 30 * time.Minute
+	defaultMaxConnIdleTime = 5 * time.Minute
+)
+
+// Option customises NewPool.
+type Option func(*pgxpool.Config)
+
+// WithStatementTimeout makes every statement on the pool fail after d
+// instead of running forever, so one runaway query cannot hold a connection
+// (and its locks) after the HTTP request that issued it has timed out. A
+// statement_timeout already present in the DSN wins. Meant for the API
+// process only; migrations and one-off tools legitimately run long
+// statements.
+func WithStatementTimeout(d time.Duration) Option {
+	return func(cfg *pgxpool.Config) {
+		if _, ok := cfg.ConnConfig.RuntimeParams["statement_timeout"]; ok {
+			return
+		}
+		cfg.ConnConfig.RuntimeParams["statement_timeout"] = strconv.FormatInt(d.Milliseconds(), 10)
+	}
+}
+
+// poolConfig parses dsn and fills in the pool defaults above for every knob
+// the DSN did not set itself.
+func poolConfig(dsn string, opts ...Option) (*pgxpool.Config, error) {
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("parse database url: %w", err)
+	}
+	if !strings.Contains(dsn, "pool_max_conns") {
+		cfg.MaxConns = defaultMaxConns
+	}
+	if !strings.Contains(dsn, "pool_max_conn_lifetime") {
+		cfg.MaxConnLifetime = defaultMaxConnLifetime
+	}
+	if !strings.Contains(dsn, "pool_max_conn_idle_time") {
+		cfg.MaxConnIdleTime = defaultMaxConnIdleTime
+	}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+	return cfg, nil
+}
+
+// NewPool opens a pgx connection pool against dsn.
+func NewPool(ctx context.Context, dsn string, opts ...Option) (*pgxpool.Pool, error) {
+	cfg, err := poolConfig(dsn, opts...)
+	if err != nil {
+		return nil, err
 	}
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {

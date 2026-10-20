@@ -21,6 +21,7 @@
   "catalogue": "Catalogue",
   "circulation": "Circulation",
   "members": "Members",
+  "librarySettings": "Library Settings",
   "visits": "Visits",
   "stocktake": "Stocktake",
   "loans": "My Loans",
@@ -64,5 +65,7 @@
     "schedule": "Schedule",
     "leave-requests": "Leave"
   },
-  "children": "My Children"
+  "children": "My Children",
+  "learning": "Learning",
+  "studentActivities": "Student Activities"
 }

@@ -8,11 +8,13 @@ import {
   Button,
   Dialog,
   DialogContent,
+  domainIcons,
   EmptyState,
   PageHeader,
+  SemanticStatusBadge,
   Skeleton,
-  domainIcons,
   useToast,
+  type SemanticStatus,
 } from "@newsekolah/ui";
 import { ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
@@ -23,7 +25,8 @@ import { useMemo, useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { printMemberCard, useMemberLoanHistoryQuery, useMemberReservationsQuery } from "../api";
 import {
   printLibraryClearanceLetter,
@@ -40,6 +43,11 @@ import { MarkLostDialog } from "./mark-lost-dialog";
 import { MemberLoanRow, loanRowSortKey } from "./member-loan-row";
 import { MemberProfileForm } from "./member-profile-form";
 import { MemberStatusMenu } from "./member-status-menu";
+
+const LOAN_HISTORY_STATUS: Record<string, SemanticStatus> = {
+  returned: "completed",
+  lost: "overdue",
+};
 
 function todayIso(): string {
   return businessNow().toLocaleDateString("en-CA");
@@ -59,8 +67,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const member = useLibraryMemberQuery(userId);
   const memberTypes = useLibraryMemberTypesQuery();
   const memberTypeMap = useLookup(memberTypes.data?.data);
-  const directory = useDirectoryQuery();
-  const directoryMap = useLookup(directory.data?.data);
+  const directoryMap = useDirectoryNames([userId]);
   const loans = useMemberLoanHistoryQuery(userId);
   const reservations = useMemberReservationsQuery(userId);
   const violations = useMemberViolationsQuery(userId);
@@ -294,9 +301,10 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
                   <span className="text-fg-muted">
                     {loan.returned_at ? formatDate(loan.returned_at, { locale }) : "-"}
                   </span>
-                  <Badge variant={loan.status === "lost" ? "neutral" : "accent"}>
-                    {tHistory(`status.${loan.status}`)}
-                  </Badge>
+                  <SemanticStatusBadge
+                    status={LOAN_HISTORY_STATUS[loan.status] ?? "completed"}
+                    label={tHistory(`status.${loan.status}`)}
+                  />
                 </div>
               </li>
             ))}

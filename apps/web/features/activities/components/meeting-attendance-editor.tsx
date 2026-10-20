@@ -8,7 +8,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useDirectoryQuery } from "../../reference/api";
+import { useDirectoryLookup } from "../../reference/directory-names";
 import {
   type AttendanceStatus,
   useClubMembersQuery,
@@ -45,7 +45,9 @@ export function MeetingAttendanceEditor({
   const t = useTranslations("app.activities.clubDetail.meetings.roster");
   const roster = useMeetingRosterQuery(meetingId);
   const members = useClubMembersQuery(clubId, false);
-  const directory = useDirectoryQuery("student");
+  const directory = useDirectoryLookup(
+    (members.data?.data ?? []).map((member) => member.student_user_id),
+  );
 
   if (roster.isLoading || members.isLoading || directory.isLoading) {
     return <p className="mt-2 p-3 text-[13px] text-fg-muted">{t("loading")}</p>;
@@ -59,7 +61,6 @@ export function MeetingAttendanceEditor({
   }
 
   const activeMembers = (members.data?.data ?? []).filter((m) => m.status === "active");
-  const nameById = new Map((directory.data?.data ?? []).map((u) => [u.id, u.name]));
   const entryById = new Map(
     (roster.data?.entries ?? []).map((entry) => [entry.student_user_id, entry.status_code]),
   );
@@ -72,7 +73,7 @@ export function MeetingAttendanceEditor({
 
   const students: RosterStudent[] = activeMembers.map((member) => ({
     id: member.student_user_id,
-    name: nameById.get(member.student_user_id) ?? t("unknownStudent"),
+    name: directory.names.get(member.student_user_id)?.name ?? t("unknownStudent"),
     // Every active member defaults to present; only a member with an
     // already-recorded entry shows a different status.
     initialStatus: entryById.get(member.student_user_id) ?? "H",

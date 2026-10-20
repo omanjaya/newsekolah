@@ -40,6 +40,14 @@ func (r *Repository) ListActiveTenants(ctx context.Context) ([]uuid.UUID, error)
 	return ids, nil
 }
 
+func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error) {
+	tz, err := r.queries(ctx).AnalyticsGetTenantTimezone(ctx, tenantID)
+	if err != nil {
+		return "", fmt.Errorf("get tenant timezone: %w", err)
+	}
+	return tz, nil
+}
+
 func (r *Repository) ListActiveStudents(ctx context.Context, tenantID, academicYearID uuid.UUID) ([]service.StudentRef, error) {
 	rows, err := r.queries(ctx).AnalyticsListActiveStudents(ctx, db.AnalyticsListActiveStudentsParams{
 		TenantID: tenantID, AcademicYearID: academicYearID,
@@ -114,6 +122,41 @@ func (r *Repository) UpsertResult(ctx context.Context, tenantID uuid.UUID, res s
 		ComputedAt: pdatabase.Timestamptz(res.ComputedAt),
 	}); err != nil {
 		return fmt.Errorf("upsert student risk: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) UpsertResults(ctx context.Context, tenantID uuid.UUID, results []service.StoredResult) error {
+	if len(results) == 0 {
+		return nil
+	}
+	first := results[0]
+	params := db.AnalyticsUpsertStudentRiskBatchParams{
+		TenantID: tenantID, AcademicYearID: first.AcademicYearID, PolicyVersion: int32(first.PolicyVersion), //nolint:gosec // policy versions stay small
+		ComputedAt:     pdatabase.Timestamptz(first.ComputedAt),
+		StudentUserIds: make([]uuid.UUID, len(results)), ClassIds: make([]string, len(results)), Levels: make([]string, len(results)),
+		Scores: make([]int32, len(results)), Signals: make([]string, len(results)), Reasons: make([]string, len(results)),
+	}
+	for i, res := range results {
+		signals, err := json.Marshal(res.Signals)
+		if err != nil {
+			return fmt.Errorf("marshal signals: %w", err)
+		}
+		reasons, err := json.Marshal(res.Reasons)
+		if err != nil {
+			return fmt.Errorf("marshal reasons: %w", err)
+		}
+		params.StudentUserIds[i] = res.StudentUserID
+		if res.ClassID.Valid {
+			params.ClassIds[i] = res.ClassID.UUID.String()
+		}
+		params.Levels[i] = string(res.Level)
+		params.Scores[i] = int32(res.Score) //nolint:gosec // bounded by policy weights
+		params.Signals[i] = string(signals)
+		params.Reasons[i] = string(reasons)
+	}
+	if err := r.queries(ctx).AnalyticsUpsertStudentRiskBatch(ctx, params); err != nil {
+		return fmt.Errorf("upsert student risk batch: %w", err)
 	}
 	return nil
 }

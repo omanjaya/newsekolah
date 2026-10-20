@@ -11,7 +11,10 @@ import { useEffect, useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
-import { useDirectoryQuery } from "../../reference/api";
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
 import {
   type Counseling,
   type CounselingKind,
@@ -50,7 +53,7 @@ export function CounselingForm({
   const apiErrorMessage = useApiErrorMessage();
   const locale = useLocale() as Locale;
   const { me } = useSession();
-  const students = useDirectoryQuery("student");
+  const studentLabels = useDirectoryPickerLabels(t("studentPlaceholder"));
   const create = useCreateCounselingMutation();
   const update = useUpdateCounselingMutation();
 
@@ -115,7 +118,6 @@ export function CounselingForm({
     setDraftOffer(null);
   }
 
-  const studentOptions = (students.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }));
   const pending = create.isPending || update.isPending;
 
   return (
@@ -173,11 +175,11 @@ export function CounselingForm({
       )}
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("student")}</span>
-        <Select
-          options={studentOptions}
+        <DirectoryPicker
+          profileKind="student"
           value={studentId}
           onValueChange={setStudentId}
-          placeholder={t("studentPlaceholder")}
+          labels={studentLabels}
           disabled={initial !== undefined}
         />
       </label>

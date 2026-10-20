@@ -10,9 +10,10 @@ vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
-vi.mock("../../reference/api", () => ({
-  useDirectoryQuery: () => ({ data: { data: [{ id: "student-1", name: "Sari" }] } }),
-}));
+vi.mock("../../reference/components/directory-picker", async () => {
+  const { directoryPickerStubModule } = await import("../../../test/directory-picker-stub");
+  return directoryPickerStubModule;
+});
 vi.mock("../api", () => ({
   useCreateDiscountMutation: () => ({ mutate: mocks.create, isPending: false }),
   useUpdateDiscountMutation: () => ({ mutate: mocks.update, isPending: false }),
@@ -56,7 +57,10 @@ it("edits percentage basis points without moving the discount or activating an i
     />,
   );
   expect(screen.getByRole("spinbutton", { name: "percentage" })).toHaveValue(12.5);
-  expect(screen.getByRole("combobox", { name: "student" })).toBeDisabled();
+  const picker = screen.getByRole("combobox", { name: "studentPlaceholder" });
+  expect(picker).toBeDisabled();
+  expect(picker).toHaveAttribute("data-kind", "student");
+  expect(picker).toHaveAttribute("data-value", "student-1");
   fireEvent.change(screen.getByRole("spinbutton", { name: "percentage" }), {
     target: { value: "17.25" },
   });
@@ -72,4 +76,19 @@ it("edits percentage basis points without moving the discount or activating an i
     expect.any(Object),
   );
   expect(mocks.create).not.toHaveBeenCalled();
+});
+
+it("creates a discount for the student picked from the directory", async () => {
+  const user = userEvent.setup();
+  render(<DiscountForm feeTypeId="fee-1" onDone={vi.fn()} />);
+  await user.click(screen.getByRole("combobox", { name: "studentPlaceholder" }));
+  fireEvent.change(screen.getByRole("spinbutton", { name: "percentage" }), {
+    target: { value: "10" },
+  });
+  fireEvent.change(screen.getByRole("textbox", { name: "reason" }), { target: { value: "Aid" } });
+  await user.click(screen.getByRole("button", { name: "submit" }));
+  expect(mocks.create).toHaveBeenCalledWith(
+    expect.objectContaining({ student_user_id: "picked-1", percentage_bp: 1000 }),
+    expect.any(Object),
+  );
 });

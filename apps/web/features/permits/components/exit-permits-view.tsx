@@ -22,15 +22,10 @@ import { useState } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
-import {
-  type WorkflowInstance,
-  useExitPermitReviewQueueQuery,
-  useMyExitPermitsQuery,
-} from "../api";
+import { type WorkflowInstance, useMyExitPermitsQuery } from "../api";
 
 import { CreateForm, ExitPermitDetail } from "./exit-permit-detail";
 import { ApprovePanel, GatePanel } from "./exit-permit-panels";
-import { ExitPermitReviewQueue } from "./exit-permit-review-queue";
 import { WorkflowStatusBadge } from "./workflow-stepper";
 
 /**
@@ -40,30 +35,13 @@ import { WorkflowStatusBadge } from "./workflow-stepper";
  */
 export function ExitPermitsView({ embedded = false }: { embedded?: boolean } = {}): ReactElement {
   const t = useTranslations("app.permits.exit");
-  const tReview = useTranslations("app.permits.review");
   const canSubmit = useCan("submit_leave_requests");
   const canApprove = useCan("issue_scan_tokens");
   const canGate = useCan("scan_exit_permits");
-  const [prefillId, setPrefillId] = useState<string | undefined>(undefined);
 
-  // Fetched once here, at the view level, rather than inside
-  // ExitPermitReviewQueue: the "Antrean" tab label needs the count too, and
-  // a second call to the same query hook would double the realtime
-  // subscription it opens (features/permits/api.ts's own comment on why
-  // that wiring lives in the query hook).
-  const queueEnabled = canApprove || canGate;
-  const reviewQueue = useExitPermitReviewQueueQuery(queueEnabled);
-  const queueCount = reviewQueue.data?.data.length ?? 0;
-
+  // The shared review queue lives in the Perlu Tindakan inbox; this view keeps
+  // the submitter's own history plus the approve (scan) and gate lookups.
   const tabs = [
-    ...(queueEnabled
-      ? [
-          {
-            value: "queue",
-            label: tReview("tabWithCount", { label: t("tabQueue"), count: queueCount }),
-          },
-        ]
-      : []),
     ...(canSubmit ? [{ value: "mine", label: t("tabMine") }] : []),
     ...(canApprove ? [{ value: "approve", label: t("tabApprove") }] : []),
     ...(canGate ? [{ value: "gate", label: t("tabGate") }] : []),
@@ -115,19 +93,6 @@ export function ExitPermitsView({ embedded = false }: { embedded?: boolean } = {
             ))}
           </TabsList>
         )}
-        {queueEnabled && (
-          <TabsContent value="queue" className="pt-4">
-            <ExitPermitReviewQueue
-              queue={reviewQueue}
-              canApprove={canApprove}
-              canGate={canGate}
-              onProcess={(instanceId) => {
-                setPrefillId(instanceId);
-                setTab("approve");
-              }}
-            />
-          </TabsContent>
-        )}
         {canSubmit && (
           <TabsContent value="mine" className="pt-4">
             <MyExitPermits />
@@ -135,7 +100,7 @@ export function ExitPermitsView({ embedded = false }: { embedded?: boolean } = {
         )}
         {canApprove && (
           <TabsContent value="approve" className="pt-4">
-            <ApprovePanel key={prefillId ?? "manual"} prefillId={prefillId} />
+            <ApprovePanel />
           </TabsContent>
         )}
         {canGate && (

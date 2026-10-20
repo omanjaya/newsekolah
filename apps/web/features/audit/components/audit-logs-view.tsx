@@ -21,7 +21,11 @@ import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useSession } from "../../../lib/session/session-provider";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { type AuditLogEntry, useAuditLogsQuery } from "../api";
 
 import { AuditLogDetailDialog } from "./audit-log-detail-dialog";
@@ -48,8 +52,7 @@ export function AuditLogsView(): ReactElement {
   const cursor = cursors[cursors.length - 1] ?? "";
   const [selected, setSelected] = useState<AuditLogEntry | null>(null);
 
-  const directory = useDirectoryQuery();
-  const actorMap = useLookup(directory.data?.data);
+  const actorLabels = useDirectoryPickerLabels(t("filters.actorAll"));
   const labels = useAuditLabels();
 
   const { data, isLoading } = useAuditLogsQuery({
@@ -60,21 +63,20 @@ export function AuditLogsView(): ReactElement {
     cursor: cursor || undefined,
   });
 
+  // Actors, acting-as users and user targets on this page; one cached lookup each.
+  const actorMap = useDirectoryNames(
+    (data?.data ?? []).flatMap((entry) => [
+      entry.actor_user_id,
+      entry.acting_as_user_id,
+      entry.entity_type === "user" ? entry.entity_id : undefined,
+    ]),
+  );
+
   function resetPaging() {
     setCursors([""]);
   }
 
   const filters: DataTableFilterDef[] = [
-    {
-      id: "actor",
-      label: t("filters.actor"),
-      value: actorUserId,
-      onChange: (value) => {
-        setActorUserId(value);
-        resetPaging();
-      },
-      options: (directory.data?.data ?? []).map((user) => ({ value: user.id, label: user.name })),
-    },
     {
       id: "entityType",
       label: t("filters.entityType"),
@@ -162,8 +164,8 @@ export function AuditLogsView(): ReactElement {
         cell: ({ row }) => row.original.ip ?? "-",
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- actorName closes over actorMap, included via directory.data
-    [t, locale, timeZone, directory.data],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- actorName closes over actorMap
+    [t, locale, timeZone, actorMap],
   );
 
   const items = data?.data ?? [];
@@ -182,6 +184,33 @@ export function AuditLogsView(): ReactElement {
           </Button>
         </div>
       )}
+
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="flex flex-col gap-1 text-[13px]">
+          <span className="font-medium">{t("filters.actor")}</span>
+          <DirectoryPicker
+            value={actorUserId}
+            onValueChange={(id) => {
+              setActorUserId(id);
+              resetPaging();
+            }}
+            labels={actorLabels}
+            className="w-64"
+          />
+        </label>
+        {actorUserId !== "" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setActorUserId("");
+              resetPaging();
+            }}
+          >
+            {t("filters.clearActor")}
+          </Button>
+        )}
+      </div>
 
       <DataTable
         stateKey="features/audit/components/audit-logs-view:1"

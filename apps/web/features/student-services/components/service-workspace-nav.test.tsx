@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  ActivitiesWorkspaceNav,
   CounselingWorkspaceNav,
   DutyWorkspaceActions,
   VisitorsWorkspaceNav,
@@ -45,6 +46,35 @@ describe("student service workspace boundaries", () => {
       "/visitors/incidents",
     );
     expect(screen.queryAllByRole("link")).toHaveLength(1);
+  });
+
+  it("gates each student activities tab by its own permission", () => {
+    session.permissions = ["view_mentoring"];
+    const { rerender } = render(<ActivitiesWorkspaceNav />);
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/mentoring/my-groups",
+    ]);
+    session.permissions = ["view_activities"];
+    rerender(<ActivitiesWorkspaceNav />);
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/activities/clubs",
+      "/activities/events",
+      "/activities/achievements",
+    ]);
+    session.permissions = ["view_activities", "view_mentoring"];
+    rerender(<ActivitiesWorkspaceNav />);
+    expect(screen.getAllByRole("link")).toHaveLength(4);
+  });
+
+  it("keeps the mentoring tab active on both mentoring URLs", () => {
+    session.permissions = ["view_activities", "view_mentoring"];
+    session.pathname = "/mentoring/groups/abc";
+    render(<ActivitiesWorkspaceNav />);
+    expect(screen.getByRole("link", { name: "mentoringTab" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "clubsTab" })).not.toHaveAttribute("aria-current");
   });
 
   it("only offers the presence monitor with its own permission", () => {

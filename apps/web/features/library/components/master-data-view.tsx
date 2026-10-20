@@ -26,7 +26,7 @@ type Tab =
  * Cataloguing master data: material types, acquisition sources, partners,
  * collection categories, shelf locations, and the DDC class list.
  */
-export function MasterDataView(): ReactElement {
+export function MasterDataView({ embedded = false }: { embedded?: boolean }): ReactElement {
   const t = useTranslations("app.library.masterData");
   const [tab, setTab] = useUrlState<Tab>(
     "tab",
@@ -44,16 +44,26 @@ export function MasterDataView(): ReactElement {
   return (
     // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
     // itself never scrolls; the active tab's panel scrolls internally.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <LibraryWorkspaceNav area="catalogue" />
+    <div
+      className={
+        embedded
+          ? "flex flex-col gap-6"
+          : "flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6"
+      }
+    >
+      {!embedded && (
+        <>
+          <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+          <LibraryWorkspaceNav area="catalogue" />
+        </>
+      )}
 
       <Tabs
         value={tab}
         onValueChange={(value) => {
           setTab(value as Tab);
         }}
-        className="flex flex-col md:min-h-0 md:flex-1"
+        className={embedded ? "flex flex-col" : "flex flex-col md:min-h-0 md:flex-1"}
       >
         {/* Six tabs do not fit a phone: scroll the strip instead of the page. */}
         <TabsList className="overflow-x-auto [&>button]:shrink-0 [&>button]:whitespace-nowrap">

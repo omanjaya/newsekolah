@@ -31,15 +31,15 @@ import {
   usePeriodsQuery,
   useSchoolDaysQuery,
   useSubjectsQuery,
-  useTeachersQuery,
 } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type ScheduleBlock,
   useCreateScheduleMutation,
   useDeleteScheduleBlockMutation,
   useSchedulesQuery,
 } from "../api";
-import { conflictMessage } from "../conflict-message";
+import { useNamedConflict } from "../use-named-conflict";
 
 import { CopyBanner } from "./copy-banner";
 import { ScheduleCurrentPeriodPill } from "./schedule-current-period-pill";
@@ -108,7 +108,6 @@ export function ScheduleView(): ReactElement {
 
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
-  const teachers = useTeachersQuery();
   const periods = usePeriodsQuery();
   const schoolDays = useSchoolDaysQuery();
   // Ties the "period in session now" strip above the grid to the grid
@@ -116,7 +115,6 @@ export function ScheduleView(): ReactElement {
   const periodNow = usePeriodTodayQuery(year.id);
   const classMap = useLookup(classes.data?.data);
   const subjectMap = useLookup(subjects.data?.data);
-  const teacherMap = useLookup(teachers.data?.data);
   const remove = useDeleteScheduleBlockMutation();
   const create = useCreateScheduleMutation();
 
@@ -134,6 +132,10 @@ export function ScheduleView(): ReactElement {
     teacherUserId: mode === "day" ? undefined : effectiveTeacherId || undefined,
     dayOfWeek: mode === "day" ? dayFilter : undefined,
   });
+  const teacherMap = useDirectoryNames(
+    (schedules.data?.data ?? []).map((block) => block.teacher_user_id),
+  );
+  const namedConflict = useNamedConflict();
 
   const activeDays = useMemo(() => {
     const active = new Set(
@@ -204,7 +206,7 @@ export function ScheduleView(): ReactElement {
       });
       toast.success(t("pasted"));
     } catch (err) {
-      toast.error(scheduleError(err));
+      toast.error(await scheduleError(err));
     }
   }
 
@@ -212,8 +214,8 @@ export function ScheduleView(): ReactElement {
    * A clash names what it clashed with when the server said which, and
    * falls back to the plain message for that code when it did not.
    */
-  function scheduleError(err: unknown): string {
-    const named = conflictMessage(
+  async function scheduleError(err: unknown): Promise<string> {
+    const named = await namedConflict(
       err,
       { classMap, subjectMap, teacherMap, periods: lessonPeriods },
       t,
@@ -235,7 +237,6 @@ export function ScheduleView(): ReactElement {
     mobileDayOverride ?? (activeDays.includes(today) ? today : (activeDays[0] ?? 1));
   const loading = periods.isLoading || schedules.isLoading || classes.isLoading;
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
-  const teacherOptions = (teachers.data?.data ?? []).map((u) => ({ value: u.id, label: u.name }));
 
   function handleDayAdd(cls: string, startSeq: number) {
     setClassId(cls);
@@ -283,7 +284,6 @@ export function ScheduleView(): ReactElement {
         classId={effectiveClassId}
         className={classMap.get(effectiveClassId)?.name ?? ""}
         onClassChange={setClassId}
-        teacherOptions={teacherOptions}
         teacherId={effectiveTeacherId}
         onTeacherChange={setTeacherId}
         yearLabel={year.label}

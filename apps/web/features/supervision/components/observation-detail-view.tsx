@@ -13,7 +13,7 @@ import { useState } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
-import { useLookup, useTeachersQuery } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   useObservationQuery,
   useRespondToObservationMutation,
@@ -40,8 +40,7 @@ export function ObservationDetailView({ observationId }: { observationId: string
 
   const observation = useObservationQuery(observationId);
   const cycle = useSupervisionCycleQuery(observation.data?.cycle_id ?? "", !!observation.data);
-  const teachers = useTeachersQuery();
-  const teacherMap = useLookup(teachers.data?.data);
+  const teacherMap = useDirectoryNames([observation.data?.teacher_user_id]);
   // Resolved best-effort, for the "subject/class if available" line: the
   // scheduled observation this record came from carries the `schedule_id`
   // needed to look up class/subject, but `Observation` itself does not.

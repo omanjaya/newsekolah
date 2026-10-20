@@ -7,7 +7,10 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useDirectoryQuery } from "../../reference/api";
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
 import {
   type LibraryPenalty,
   type LibraryViolationKind,
@@ -32,8 +35,8 @@ export function ViolationRecordDialog({
   const t = useTranslations("app.library.violations.form");
   const tViolations = useTranslations("app.library.violations");
   const apiErrorMessage = useApiErrorMessage();
-  const directory = useDirectoryQuery();
   const create = useCreateLibraryViolationMutation();
+  const memberLabels = useDirectoryPickerLabels(t("memberPlaceholder"));
 
   const [memberUserId, setMemberUserId] = useState(initialMemberUserId);
   const [kind, setKind] = useState<LibraryViolationKind>("damaged");
@@ -42,11 +45,6 @@ export function ViolationRecordDialog({
   const [suspendDays, setSuspendDays] = useState("0");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
-
-  const memberOptions = (directory.data?.data ?? []).map((u) => ({
-    value: u.id,
-    label: `${u.name} (${u.username})`,
-  }));
 
   function reset() {
     setMemberUserId(initialMemberUserId);
@@ -100,12 +98,11 @@ export function ViolationRecordDialog({
         >
           <label className="flex flex-col gap-1 text-[13px]">
             <span className="font-medium">{t("member")}</span>
-            <Select
-              options={memberOptions}
+            <DirectoryPicker
               value={memberUserId}
               onValueChange={setMemberUserId}
-              placeholder={directory.isLoading ? t("loadingMembers") : t("memberPlaceholder")}
-              disabled={directory.isLoading}
+              labels={memberLabels}
+              showUsername
             />
           </label>
           <label className="flex flex-col gap-1 text-[13px]">

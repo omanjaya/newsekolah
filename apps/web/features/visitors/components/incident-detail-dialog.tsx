@@ -3,7 +3,7 @@
 import { ApiError } from "@newsekolah/api-client";
 import { formatDateTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { Badge, Button, Dialog, DialogContent, useToast } from "@newsekolah/ui";
+import { Button, Dialog, DialogContent, SemanticStatusBadge, useToast } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -38,9 +38,10 @@ export function IncidentDetailDialog({
         {incident && !editing && (
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-2">
-              <Badge variant={incident.is_closed ? "neutral" : "accent"}>
-                {t(incident.is_closed ? "status.closed" : "status.open")}
-              </Badge>
+              <SemanticStatusBadge
+                status={incident.is_closed ? "closed" : "open"}
+                label={t(incident.is_closed ? "status.closed" : "status.open")}
+              />
               <span className="text-[13px] text-fg-muted">
                 {formatDateTime(incident.occurred_at, { locale })}
               </span>

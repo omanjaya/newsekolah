@@ -62,6 +62,8 @@ tags:
     description: API keys and outgoing webhooks for machine access to the API
   - name: analytics
     description: Early-warning risk signals per student
+  - name: inbox
+    description: Pending-item counts for the action inbox
   - name: activities
     description: Extracurricular clubs and membership, meeting attendance, school activities, and student achievements
   - name: mentoring
@@ -4408,6 +4410,12 @@ paths:
           schema:
             type: boolean
             default: false
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Student name or NIS; ignored under 2 characters
         - name: limit
           in: query
           schema:
@@ -4934,6 +4942,12 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Student name or NIS; ignored under 2 characters
         - name: limit
           in: query
           schema:
@@ -5065,6 +5079,12 @@ paths:
       x-permission: manage_counseling
       summary: Counseling notes written by the current counselor
       parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Student name or NIS; ignored under 2 characters
         - name: limit
           in: query
           schema:
@@ -5248,6 +5268,12 @@ paths:
           in: query
           schema:
             $ref: "#/components/schemas/CounselingTopic"
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Student name or NIS; ignored under 2 characters
         - name: limit
           in: query
           schema:
@@ -7544,6 +7570,18 @@ paths:
             minimum: 1
             maximum: 5000
             default: 200
+        - name: ids
+          in: query
+          description: Comma-separated user ids to resolve to names (id-to-name lookups). When present, the result is exactly
+            those users in this school regardless of status; q, profile_kind and limit are ignored.
+          style: form
+          explode: false
+          schema:
+            type: array
+            maxItems: 200
+            items:
+              type: string
+              format: uuid
       responses:
         "200":
           description: Directory entries
@@ -8291,6 +8329,24 @@ paths:
           description: Changed
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/inbox/counts:
+    get:
+      tags:
+        - inbox
+      operationId: getInboxCounts
+      x-permission: authenticated
+      summary: "Pending-item counts for the caller's action inbox: leave requests, exit permits, late arrivals and warning
+        letters. Each number applies the same authorization and scoping as its queue endpoint, so a queue the caller
+        cannot see counts as 0."
+      responses:
+        "200":
+          description: Counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InboxCounts"
         "401":
           $ref: "#/components/responses/Unauthorized"
   /v1/integrations/event-types:
@@ -10483,6 +10539,19 @@ paths:
           schema:
             type: string
             format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
       responses:
         "200":
           description: Visits
@@ -22290,6 +22359,9 @@ components:
           type: string
         profile_kind:
           $ref: "#/components/schemas/ProfileKind"
+        nis:
+          type: string
+          description: Student number; only set for students on an ids lookup, and only for callers holding view_users
     UserStatus:
       type: string
       enum:
@@ -23041,6 +23113,30 @@ components:
         last_used_at:
           type: string
           format: date-time
+    InboxCounts:
+      type: object
+      required:
+        - leave
+        - exit
+        - late
+        - warning_letters
+        - total
+      properties:
+        leave:
+          type: integer
+          minimum: 0
+        exit:
+          type: integer
+          minimum: 0
+        late:
+          type: integer
+          minimum: 0
+        warning_letters:
+          type: integer
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
     EventTypeList:
       type: object
       required:

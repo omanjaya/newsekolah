@@ -130,10 +130,14 @@ func (f *fakeRecordRepo) GetLetter(context.Context, uuid.UUID, uuid.UUID) (domai
 	f.unimplemented()
 	return domain.WarningLetter{}, false, nil
 }
-func (f *fakeRecordRepo) ListLetters(context.Context, uuid.UUID, uuid.UUID, uuid.NullUUID, int, int) ([]domain.WarningLetter, error) {
+func (f *fakeRecordRepo) ListLetters(context.Context, uuid.UUID, uuid.UUID, uuid.NullUUID, string, int, int) ([]domain.WarningLetter, error) {
 	f.unimplemented()
 	return nil, nil
 }
+func (f *fakeRecordRepo) CountDueSPCandidates(context.Context, uuid.UUID, uuid.UUID, []domain.SPLevel) (int, error) {
+	return 0, nil
+}
+
 func (f *fakeRecordRepo) ListSPCandidates(context.Context, uuid.UUID, uuid.UUID, CandidateFilter) ([]SPCandidate, error) {
 	f.unimplemented()
 	return nil, nil
@@ -154,11 +158,11 @@ func (f *fakeRecordRepo) ListCounselingsForStudent(context.Context, uuid.UUID, u
 	f.unimplemented()
 	return nil, nil
 }
-func (f *fakeRecordRepo) ListCounselingsByCounselor(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, int, int) ([]EncryptedCounseling, error) {
+func (f *fakeRecordRepo) ListCounselingsByCounselor(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, int, int) ([]EncryptedCounseling, error) {
 	f.unimplemented()
 	return nil, nil
 }
-func (f *fakeRecordRepo) ListCounselingsByVisibility(context.Context, uuid.UUID, uuid.UUID, string, int, int) ([]EncryptedCounseling, error) {
+func (f *fakeRecordRepo) ListCounselingsByVisibility(context.Context, uuid.UUID, uuid.UUID, string, string, int, int) ([]EncryptedCounseling, error) {
 	f.unimplemented()
 	return nil, nil
 }
@@ -225,6 +229,11 @@ func (f *fakeRecordRepo) ListViolationAttachments(context.Context, uuid.UUID, uu
 func (f *fakeRecordRepo) GetViolationAttachment(context.Context, uuid.UUID, uuid.UUID) (domain.ViolationAttachment, bool, error) {
 	f.unimplemented()
 	return domain.ViolationAttachment{}, false, nil
+}
+
+func (f *fakeRecordRepo) ListRiskTotals(context.Context, uuid.UUID, uuid.UUID, []uuid.UUID) ([]RiskTotals, error) {
+	f.unimplemented()
+	return nil, nil
 }
 
 var _ Repository = (*fakeRecordRepo)(nil)

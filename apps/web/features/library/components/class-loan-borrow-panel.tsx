@@ -7,7 +7,9 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useCan } from "../../../lib/session/session-provider";
 import { useClassesQuery } from "../../reference/api";
+import { StudentLink } from "../../students/components/student-link";
 import type { LibraryTitle } from "../api";
 import {
   type LibraryClassLoanPreview,
@@ -23,7 +25,10 @@ export function ClassLoanBorrowPanel(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const classes = useClassesQuery();
+  // The class list needs view_academic_data, which the librarian role lacks:
+  // skip the request (it would 403) and say why the picker is empty.
+  const canViewClasses = useCan("view_academic_data");
+  const classes = useClassesQuery(canViewClasses);
   const [classId, setClassId] = useState("");
   const [title, setTitle] = useState<LibraryTitle | null>(null);
   const [preview, setPreview] = useState<LibraryClassLoanPreview | null>(null);
@@ -89,8 +94,14 @@ export function ClassLoanBorrowPanel(): ReactElement {
               setClassId(value);
               setPreview(null);
             }}
-            placeholder={classes.isLoading ? t("loadingClasses") : t("classPlaceholder")}
-            disabled={classes.isLoading}
+            placeholder={
+              !canViewClasses
+                ? t("classesUnavailable")
+                : classes.isLoading
+                  ? t("loadingClasses")
+                  : t("classPlaceholder")
+            }
+            disabled={!canViewClasses || classes.isLoading}
             className="w-56"
           />
         </label>
@@ -134,7 +145,11 @@ export function ClassLoanBorrowPanel(): ReactElement {
                   key={pair.student_user_id}
                   className="flex items-center justify-between rounded-xs border border-border px-3 py-2 text-[13px]"
                 >
-                  <span className="text-fg">{pair.student_name}</span>
+                  <span className="text-fg">
+                    <StudentLink studentId={pair.student_user_id} tab="library">
+                      {pair.student_name}
+                    </StudentLink>
+                  </span>
                   <span className="text-fg-muted">{pair.barcode}</span>
                 </li>
               ))}

@@ -10,7 +10,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GO_VERSION: "1.26"
+  # Pinned to the patch release so govulncheck sees the fixed standard
+  # library; "1.26" resolved to a cached 1.26.8 with known vulnerabilities.
+  GO_VERSION: "1.26.9"
   NODE_VERSION: "24"
 
 jobs:

@@ -53,16 +53,19 @@ type Repository interface {
 	UpdateLateArrivalReview(ctx context.Context, tenantID, instanceID uuid.UUID, reason string, action domain.RequiredAction, homeroomReported bool) (domain.LateArrival, error)
 	MarkLateArrivalCompleted(ctx context.Context, tenantID, instanceID uuid.UUID, completedAt time.Time) (domain.LateArrival, error)
 	ListLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]LateArrivalReviewItem, error)
+	CountLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) (int, error)
 
 	// Leave requests.
 	CreateLeaveRequest(ctx context.Context, r domain.LeaveRequest) (domain.LeaveRequest, error)
 	GetLeaveRequest(ctx context.Context, tenantID, instanceID uuid.UUID) (domain.LeaveRequest, bool, error)
 	GetIssuedLeaveCoveringDate(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (domain.LeaveRequest, bool, error)
+	ListIssuedLeaveCoveringDates(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID, dates []time.Time) ([]LeaveCoverage, error)
 	IssueLeaveRequest(ctx context.Context, tenantID, instanceID uuid.UUID, letterNumber string, issuedAt time.Time, issuedBy uuid.UUID) (domain.LeaveRequest, error)
 	UpsertLeaveDocument(ctx context.Context, tenantID, leaveRequestID uuid.UUID, kind domain.DocumentKind, assetID, createdBy uuid.UUID) (LeaveDocumentInfo, error)
 	GetLeaveDocument(ctx context.Context, tenantID, leaveRequestID uuid.UUID, kind domain.DocumentKind) (LeaveDocumentInfo, bool, error)
 	ListLeaveRequestsBySubject(ctx context.Context, tenantID, subjectUserID uuid.UUID, limit, offset int) ([]LeaveRequestItem, error)
 	ListLeaveRequestsForReview(ctx context.Context, tenantID, reviewerUserID uuid.UUID, classID uuid.NullUUID, today time.Time) ([]LeaveRequestItem, error)
+	CountLeaveRequestsForReview(ctx context.Context, tenantID, reviewerUserID uuid.UUID, today time.Time) (int, error)
 
 	// Scan tokens.
 	CreateScanToken(ctx context.Context, t domain.ScanToken) (domain.ScanToken, error)
@@ -122,6 +125,7 @@ type Repository interface {
 	// queue: in-progress permits at a duty-scoped approval stage, plus
 	// every approved permit visible to scan_exit_permits holders.
 	ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, today time.Time) ([]ExitPermitReviewItem, error)
+	CountExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, today time.Time) (int, error)
 	// ListExitPermitsForYear backs the counselor's yearly exit-permit
 	// report: every permit opened within academicYearID's own calendar
 	// bounds, regardless of status.
@@ -138,4 +142,12 @@ type Repository interface {
 	// issued_documents.asset_id and re-signed later.
 	CreateAsset(ctx context.Context, tenantID uuid.UUID, bucket, objectKey, mime string, sizeBytes int64, sha256Hex, kind, visibility string, createdBy uuid.UUID) (uuid.UUID, error)
 	GetAssetObjectKey(ctx context.Context, tenantID, assetID uuid.UUID) (string, error)
+}
+
+// LeaveCoverage is the category of the latest issued leave letter that
+// covers one student on one date.
+type LeaveCoverage struct {
+	StudentUserID uuid.UUID
+	Date          time.Time
+	Category      domain.Category
 }

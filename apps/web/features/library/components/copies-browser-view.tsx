@@ -15,6 +15,8 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
@@ -45,6 +47,9 @@ const STATUSES: LibraryCopyStatus[] = [
   "unknown",
 ];
 
+/** Rows per page; the copies API pages by offset and reports no total. */
+const COPIES_PAGE_SIZE = 50;
+
 /** Browses every copy in the catalogue, for selecting a batch to label (see title-copies-view for one title's own list). */
 export function CopiesBrowserView(): ReactElement {
   const t = useTranslations("app.library.copiesBrowser");
@@ -59,12 +64,14 @@ export function CopiesBrowserView(): ReactElement {
   const [locationId, setLocationId] = useUrlState<string>("location_id", () => true, "");
   const { selection, onSelectionChange, orderedIds, clear } = useOrderedSelection();
 
+  const paging = useOffsetPage(COPIES_PAGE_SIZE);
   const { data, isLoading } = useLibraryCopiesFilteredQuery({
     search,
     status,
     categoryId,
     locationId,
-    limit: 200,
+    limit: paging.limit,
+    offset: paging.offset,
   });
   const categories = useCollectionCategoriesQuery();
   const locations = useLibraryLocationsQuery();
@@ -81,6 +88,7 @@ export function CopiesBrowserView(): ReactElement {
       value: status,
       onChange: (value) => {
         setStatus(value as LibraryCopyStatus | "");
+        paging.resetPage();
       },
       options: STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) })),
     },
@@ -88,14 +96,14 @@ export function CopiesBrowserView(): ReactElement {
       id: "category",
       label: t("filters.category"),
       value: categoryId,
-      onChange: setCategoryId,
+      onChange: paging.resetting(setCategoryId),
       options: (categories.data?.data ?? []).map((c) => ({ value: c.id, label: c.name })),
     },
     {
       id: "location",
       label: t("filters.location"),
       value: locationId,
-      onChange: setLocationId,
+      onChange: paging.resetting(setLocationId),
       options: (locations.data?.data ?? []).map((l) => ({ value: l.id, label: l.name })),
     },
   ];
@@ -162,14 +170,15 @@ export function CopiesBrowserView(): ReactElement {
       <DataTable
         stateKey="features/library/components/copies-browser-view:1"
         data={items}
+        mode="cursor"
         columns={columns}
         rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 200 }}
+        pagination={{ pageIndex: 0, pageSize: COPIES_PAGE_SIZE }}
         onPaginationChange={() => undefined}
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter={search}
-        onGlobalFilterChange={setSearch}
+        onGlobalFilterChange={paging.resetting(setSearch)}
         toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         filters={filters}
         filtersLabels={{
@@ -187,6 +196,12 @@ export function CopiesBrowserView(): ReactElement {
             description={isFiltered ? t("noMatchBody") : t("emptyBody")}
           />
         }
+      />
+      <CursorPagination
+        hasPrevious={paging.hasPrevious}
+        hasNext={paging.hasNextFor(items.length)}
+        onPrevious={paging.goPrevious}
+        onNext={paging.goNext}
       />
     </div>
   );

@@ -269,7 +269,7 @@ func (s *Service) ListCounselingsForStudent(ctx context.Context, tenantID, stude
 	return out, err
 }
 
-func (s *Service) ListMyCounselings(ctx context.Context, tenantID, counselorUserID uuid.UUID, limit, offset int) ([]domain.Counseling, error) {
+func (s *Service) ListMyCounselings(ctx context.Context, tenantID, counselorUserID uuid.UUID, search string, limit, offset int) ([]domain.Counseling, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
@@ -279,7 +279,7 @@ func (s *Service) ListMyCounselings(ctx context.Context, tenantID, counselorUser
 		if err != nil {
 			return err
 		}
-		rows, err := s.repo.ListCounselingsByCounselor(ctx, tenantID, yearID, counselorUserID, limit, max(offset, 0))
+		rows, err := s.repo.ListCounselingsByCounselor(ctx, tenantID, yearID, counselorUserID, SearchTerm(search), limit, max(offset, 0))
 		if err != nil {
 			return err
 		}
@@ -299,7 +299,7 @@ func (s *Service) ListMyCounselings(ctx context.Context, tenantID, counselorUser
 // ListBKTeamCounselings is the cross-student view for any counselor
 // holding duty "counselor": every note its author shared with the whole
 // BK team (visibility bk_team), optionally narrowed to one topic.
-func (s *Service) ListBKTeamCounselings(ctx context.Context, tenantID, readerUserID uuid.UUID, topic domain.CounselingTopic, limit, offset int) ([]domain.Counseling, error) {
+func (s *Service) ListBKTeamCounselings(ctx context.Context, tenantID, readerUserID uuid.UUID, topic domain.CounselingTopic, search string, limit, offset int) ([]domain.Counseling, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
@@ -316,7 +316,7 @@ func (s *Service) ListBKTeamCounselings(ctx context.Context, tenantID, readerUse
 		if !isCounselor {
 			return domain.ErrCounselingForbidden
 		}
-		rows, err := s.repo.ListCounselingsByVisibility(ctx, tenantID, yearID, string(topic), limit, max(offset, 0))
+		rows, err := s.repo.ListCounselingsByVisibility(ctx, tenantID, yearID, string(topic), SearchTerm(search), limit, max(offset, 0))
 		if err != nil {
 			return err
 		}

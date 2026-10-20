@@ -51,6 +51,48 @@ func (q *Queries) CountSubmittedSessionsByClassDate(ctx context.Context, arg Cou
 	return column_1, err
 }
 
+const countSubmittedSessionsByClassesDates = `-- name: CountSubmittedSessionsByClassesDates :many
+select class_id, date, (count(*) filter (where submitted_at is not null))::bigint as submitted
+from attendance_sessions
+where tenant_id = $1 and class_id = any($2::uuid[]) and date = any($3::date[])
+group by class_id, date
+`
+
+type CountSubmittedSessionsByClassesDatesParams struct {
+	TenantID uuid.UUID     `json:"tenant_id"`
+	ClassIds []uuid.UUID   `json:"class_ids"`
+	Dates    []pgtype.Date `json:"dates"`
+}
+
+type CountSubmittedSessionsByClassesDatesRow struct {
+	ClassID   uuid.UUID   `json:"class_id"`
+	Date      pgtype.Date `json:"date"`
+	Submitted int64       `json:"submitted"`
+}
+
+// Batch form of CountSubmittedSessionsByClassDate: how many of each
+// (class, date)'s sessions have been submitted. A pair with no session at
+// all is absent from the result (count 0).
+func (q *Queries) CountSubmittedSessionsByClassesDates(ctx context.Context, arg CountSubmittedSessionsByClassesDatesParams) ([]CountSubmittedSessionsByClassesDatesRow, error) {
+	rows, err := q.db.Query(ctx, countSubmittedSessionsByClassesDates, arg.TenantID, arg.ClassIds, arg.Dates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CountSubmittedSessionsByClassesDatesRow{}
+	for rows.Next() {
+		var i CountSubmittedSessionsByClassesDatesRow
+		if err := rows.Scan(&i.ClassID, &i.Date, &i.Submitted); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const createSession = `-- name: CreateSession :one
 insert into sessions (tenant_id, user_id, kind, refresh_token_hash, family_id, client, device_id, device_name, user_agent, ip, expires_at)
 values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)

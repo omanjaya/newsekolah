@@ -234,6 +234,20 @@ func (r *Repository) ListReportScoresForStudent(ctx context.Context, tenantID, t
 	return toReportScores(rows), nil
 }
 
+func (r *Repository) ListPublishedReportScores(ctx context.Context, tenantID, yearID, termID uuid.UUID, studentIDs []uuid.UUID) ([]service.PublishedReportScore, error) {
+	rows, err := r.queries(ctx).ListPublishedReportScoresForStudents(ctx, db.ListPublishedReportScoresForStudentsParams{
+		TenantID: tenantID, TermID: termID, AcademicYearID: yearID, StudentIds: studentIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list published report scores: %w", err)
+	}
+	out := make([]service.PublishedReportScore, len(rows))
+	for i, row := range rows {
+		out[i] = service.PublishedReportScore{StudentUserID: row.StudentUserID, SubjectID: row.SubjectID, FinalScore: pdatabase.FloatOrZero(row.FinalScore)}
+	}
+	return out, nil
+}
+
 // Grade ranges.
 
 func (r *Repository) ListGradeRanges(ctx context.Context, tenantID, yearID uuid.UUID) ([]domain.GradeRange, error) {

@@ -5,13 +5,15 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect } from "react";
 
+import { encodeScanPayload } from "../../permits/api";
 import { useIssueLibraryKioskTokenMutation } from "../visits-api";
 
 /**
  * Full-screen kiosk (docs/07-ui-ux.md "Kiosk/monitor"): no navigation, a
  * rotating check-in token the visitor's own device scans and submits to
  * `POST /v1/library/visits/kiosk-scan`. The kiosk never scans anything
- * itself; it only displays.
+ * itself; it only displays. The QR uses the shared "sion:" payload so the
+ * universal scanner (`/scan`) can tell it is a library check-in.
  */
 export function VisitKioskView(): ReactElement {
   const t = useTranslations("app.library.visitKiosk");
@@ -33,7 +35,7 @@ export function VisitKioskView(): ReactElement {
       <p className="max-w-md text-[14px] text-fg-muted">{t("instructions")}</p>
       {issue.data ? (
         <QrPanel
-          payload={issue.data.token}
+          payload={encodeScanPayload("library_visit", "", issue.data.token)}
           code={issue.data.token}
           expiresAt={issue.data.expires_at}
           onRenew={renew}

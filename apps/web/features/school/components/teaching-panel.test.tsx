@@ -22,8 +22,15 @@ vi.mock("../../reference/api", () => ({
   useLookup: (items: { id: string }[] | undefined) =>
     new Map((items ?? []).map((item) => [item.id, item])),
   useSubjectsQuery: () => ({ data: { data: [{ id: "subject-1", name: "Matematika" }] } }),
-  useTeachersQuery: () => ({ data: { data: [{ id: "teacher-1", name: "Budi" }] } }),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([{ id: "teacher-1", name: "Budi" }]);
+});
+vi.mock("../../reference/components/directory-picker", async () => {
+  const { directoryPickerStubModule } = await import("../../../test/directory-picker-stub");
+  return directoryPickerStubModule;
+});
 vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
   return { ...actual, useToast: () => ({ success: mocks.toastSuccess, error: mocks.toastError }) };
@@ -88,5 +95,20 @@ describe("TeachingPanel", () => {
     render(<TeachingPanel classId="class-1" canManage={false} />);
 
     expect(screen.queryByRole("button", { name: "deactivateTeaching" })).not.toBeInTheDocument();
+  });
+
+  it("names the teachers of the listed assignments from the batched lookup", () => {
+    render(<TeachingPanel classId="class-1" canManage />);
+
+    expect(screen.getAllByText("Budi").length).toBeGreaterThan(0);
+  });
+
+  it("assigns the teacher found by search, not one from a preloaded roster", () => {
+    render(<TeachingPanel classId="class-1" canManage />);
+
+    expect(screen.getByRole("combobox", { name: "pickTeacher" })).toHaveAttribute(
+      "data-kind",
+      "teacher",
+    );
   });
 });

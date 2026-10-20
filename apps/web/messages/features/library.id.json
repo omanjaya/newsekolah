@@ -306,6 +306,7 @@
       "classLabel": "Kelas",
       "classPlaceholder": "Pilih kelas",
       "loadingClasses": "Memuat kelas...",
+      "classesUnavailable": "Daftar kelas tidak tersedia untuk akun Anda",
       "titleLabel": "Judul",
       "preview": "Tinjau pasangan",
       "previewEmptyTitle": "Tidak ada pasangan yang bisa dibuat",
@@ -361,6 +362,8 @@
     }
   },
   "members": {
+    "pagePrev": "Sebelumnya",
+    "pageNext": "Berikutnya",
     "navLabel": "Anggota perpustakaan",
     "eyebrow": "Perpustakaan",
     "title": "Anggota",
@@ -420,9 +423,7 @@
     "registerForm": {
       "role": "Peran",
       "user": "Pengguna",
-      "loadingUsers": "Memuat daftar pengguna...",
       "userPlaceholder": "Pilih pengguna",
-      "noUsers": "Semua pengguna pada peran ini sudah terdaftar atau belum ada datanya.",
       "memberType": "Jenis anggota",
       "memberTypePlaceholder": "Pilih jenis anggota",
       "memberNo": "Nomor anggota (opsional)",
@@ -559,14 +560,13 @@
       "replace_book": "Ganti buku"
     },
     "status": {
-      "unpaid": "Belum lunas",
+      "unpaid": "Belum dibayar",
       "paid": "Lunas",
       "waived": "Dibebaskan"
     },
     "form": {
       "title": "Catat pelanggaran",
       "member": "Anggota",
-      "loadingMembers": "Memuat daftar anggota...",
       "memberPlaceholder": "Pilih anggota",
       "kind": "Jenis",
       "penalty": "Sanksi",
@@ -757,7 +757,6 @@
       "title": "Catat kunjungan",
       "kind": "Jenis",
       "member": "Anggota",
-      "loadingMembers": "Memuat daftar anggota...",
       "memberPlaceholder": "Pilih anggota",
       "visitorName": "Nama pengunjung",
       "groupName": "Nama rombongan",

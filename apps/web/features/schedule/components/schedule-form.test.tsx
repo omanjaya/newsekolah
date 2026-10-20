@@ -16,7 +16,6 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
 vi.mock("../../reference/api", () => ({
   useClassesQuery: () => ({ data: { data: [{ id: "class-1", name: "X-1" }] } }),
   useSubjectsQuery: () => ({ data: { data: [{ id: "subject-1", name: "Matematika" }] } }),
-  useTeachersQuery: () => ({ data: { data: [{ id: "teacher-1", name: "Budi" }] } }),
   usePeriodsQuery: () => ({
     data: {
       data: [
@@ -28,6 +27,14 @@ vi.mock("../../reference/api", () => ({
   useLookup: (items: { id: string }[] | undefined) =>
     new Map((items ?? []).map((item) => [item.id, item])),
 }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([{ id: "teacher-1", name: "Budi" }]);
+});
+vi.mock("../../reference/components/directory-picker", async () => {
+  const { directoryPickerStubModule } = await import("../../../test/directory-picker-stub");
+  return directoryPickerStubModule;
+});
 
 let scheduleDetail: { notes?: string } | undefined;
 let detailIsLoading: boolean;

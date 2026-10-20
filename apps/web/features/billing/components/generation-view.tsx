@@ -18,7 +18,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type BillCandidate,
   type GenerationSummary,
@@ -32,8 +32,6 @@ export function GenerationView(): ReactElement {
   const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
 
   const [period, setPeriod] = useState(currentPeriod());
   const [preview, setPreview] = useState<GenerationSummary | null>(null);
@@ -44,6 +42,7 @@ export function GenerationView(): ReactElement {
   const runMutation = useRunGenerationMutation();
 
   const rows = preview?.created ?? [];
+  const studentMap = useDirectoryNames(rows.map((item) => item.student_user_id));
   const total = rows.reduce((sum, c) => sum + c.amount_minor, 0);
 
   const columns: ColumnDef<BillCandidate>[] = [

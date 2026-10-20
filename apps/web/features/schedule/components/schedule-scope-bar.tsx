@@ -4,6 +4,11 @@ import { Badge, Select, Tabs, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
+
 export type ScheduleMode = "class" | "teacher" | "day";
 
 interface Option {
@@ -31,7 +36,6 @@ export function ScheduleScopeBar({
   classId,
   className,
   onClassChange,
-  teacherOptions,
   teacherId,
   onTeacherChange,
   yearLabel,
@@ -49,13 +53,13 @@ export function ScheduleScopeBar({
   /** Name of the selected class, shown instead of a picker for a student. */
   className: string;
   onClassChange: (id: string) => void;
-  teacherOptions: Option[];
   teacherId: string;
   onTeacherChange: (id: string) => void;
   yearLabel: string;
 }): ReactElement {
   const t = useTranslations("app.schedule");
   const tDays = useTranslations("app.common.weekdays");
+  const teacherLabels = useDirectoryPickerLabels(t("pickTeacher"));
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -97,12 +101,11 @@ export function ScheduleScopeBar({
           className="w-56 rounded-full"
         />
       ) : canViewAll ? (
-        <Select
-          options={teacherOptions}
+        <DirectoryPicker
+          profileKind="teacher"
           value={teacherId}
           onValueChange={onTeacherChange}
-          placeholder={t("pickTeacher")}
-          aria-label={t("pickTeacher")}
+          labels={teacherLabels}
           className="w-64 rounded-full"
         />
       ) : null}

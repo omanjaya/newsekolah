@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const dashboardData = vi.hoisted(() => vi.fn());
 const unreadCount = vi.hoisted(() => vi.fn());
 const teacherBlock = vi.hoisted(() => vi.fn());
+const checkInBlock = vi.hoisted(() => vi.fn());
 const homeroomBlock = vi.hoisted(() => vi.fn());
 const studentBlock = vi.hoisted(() => vi.fn());
 const leadershipBlock = vi.hoisted(() => vi.fn());
@@ -18,6 +19,7 @@ vi.mock("../../announcements/components/announcement-feed", () => ({
   AnnouncementFeed: () => <div data-testid="announcement-feed" />,
 }));
 vi.mock("../home/blocks/teacher", () => ({ useTeacherBlock: teacherBlock }));
+vi.mock("../home/blocks/check-in", () => ({ useCheckInBlock: checkInBlock }));
 vi.mock("../home/blocks/homeroom", () => ({ useHomeroomBlock: homeroomBlock }));
 vi.mock("../home/blocks/student", () => ({ useStudentBlock: studentBlock }));
 vi.mock("../home/blocks/leadership", () => ({ useLeadershipBlock: leadershipBlock }));
@@ -73,6 +75,7 @@ describe("DashboardView", () => {
       .mockReset()
       .mockReturnValue({ data: { count: 2 }, isLoading: false, isError: false });
     teacherBlock.mockReset().mockReturnValue(emptyBlock());
+    checkInBlock.mockReset().mockReturnValue(emptyBlock());
     homeroomBlock.mockReset().mockReturnValue(emptyBlock());
     studentBlock.mockReset().mockReturnValue(emptyBlock());
     leadershipBlock.mockReset().mockReturnValue(emptyBlock());
