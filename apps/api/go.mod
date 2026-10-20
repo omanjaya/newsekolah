@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	github.com/SherClockHolmes/webpush-go v1.4.0
-	github.com/boombuler/barcode v1.0.1
+	github.com/boombuler/barcode v1.1.0
 	github.com/getkin/kin-openapi v0.144.0
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/go-pdf/fpdf v0.9.0
