@@ -20,6 +20,7 @@ apps/api/tmp/
 /apps/api/migrate
 /apps/api/seed
 /apps/api/bootstrap
+/apps/api/modules
 apps/mobile/.expo/
 apps/mobile/ios/
 apps/mobile/android/

@@ -104,6 +104,24 @@ is how a small school deploys. To exercise the split deployment instead:
 docker compose -f infra/docker/docker-compose.dev.yml --profile worker up
 ```
 
+## Switching modules on or off
+
+`cmd/modules` lists, enables, or disables a school's feature modules
+directly in the database, so it works with `TENANCY_MODE=single`, where
+the platform console is off. With the stack running:
+
+```bash
+docker compose -f infra/docker/docker-compose.dev.yml run --rm --no-deps seed go run ./cmd/modules list
+docker compose -f infra/docker/docker-compose.dev.yml run --rm --no-deps seed go run ./cmd/modules disable library grading
+docker compose -f infra/docker/docker-compose.dev.yml run --rm --no-deps seed go run ./cmd/modules enable library
+```
+
+This borrows the one-shot `seed` service for its Go toolchain and
+environment only; `--no-deps` keeps it from re-running `migrate`. Add
+`--tenant <slug>` when the database holds more than one tenant. The
+running API caches flags for up to 15 seconds, so a change can take that
+long to show.
+
 ## Notes
 
 - Dev secrets are hard-coded in the compose file and are worthless outside

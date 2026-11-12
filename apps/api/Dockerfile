@@ -19,6 +19,7 @@ RUN go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/worke
 RUN go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/seed ./cmd/seed
 RUN go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/bootstrap ./cmd/bootstrap
 RUN go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/keygen ./cmd/keygen
+RUN go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/modules ./cmd/modules
 
 FROM gcr.io/distroless/static-debian12:nonroot AS api
 COPY --from=build /out/api /app/api
@@ -51,6 +52,11 @@ COPY --from=build /out/keygen /app/keygen
 USER nonroot:nonroot
 ENTRYPOINT ["/app/keygen"]
 
+FROM gcr.io/distroless/static-debian12:nonroot AS modules
+COPY --from=build /out/modules /app/modules
+USER nonroot:nonroot
+ENTRYPOINT ["/app/modules"]
+
 # Combined runtime image used by the compose stack (migrate/api/worker share one
 # image and select a binary via `command`). All binaries live at the root so
 # `command: ["/api"]`, `["/migrate", "up"]`, `["/worker"]` and the
@@ -63,5 +69,6 @@ COPY --from=build /out/worker /worker
 COPY --from=build /out/seed /seed
 COPY --from=build /out/bootstrap /bootstrap
 COPY --from=build /out/keygen /keygen
+COPY --from=build /out/modules /modules
 USER nonroot:nonroot
 EXPOSE 8080
