@@ -126,6 +126,7 @@ func (h *Handler) toAPIMe(ctx context.Context, tenantID uuid.UUID, me service.Me
 		Roles:              roles,
 		Permissions:        me.Permissions,
 		MustChangePassword: me.MustChangePassword,
+		DisabledModules:    h.service.DisabledModules(ctx, tenantID),
 	}
 	if me.Email != "" {
 		email := me.Email

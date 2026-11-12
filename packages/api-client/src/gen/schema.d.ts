@@ -9909,6 +9909,13 @@ export interface components {
                 name: string;
             };
             tenant: components["schemas"]["TenantBranding"];
+            /**
+             * @description Feature modules the vendor switched off for this school (flag names such as library or
+             *     staff_attendance). Always present, empty when everything is on. Operations of a listed module
+             *     answer 403 MODULE_DISABLED. Kept on Me rather than on tenant because TenantBranding is also the
+             *     public, unauthenticated branding shape.
+             */
+            disabled_modules: string[];
             must_change_password: boolean;
             /** @description Present only during an impersonation session. */
             impersonated_by?: {

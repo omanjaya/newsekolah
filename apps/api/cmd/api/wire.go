@@ -106,6 +106,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// pushDevices is filled in once the notifications module exists below
 	// (identity is built first); see its type's comment.
 	pushDevices := &lateBoundPushDevices{}
+	disabledModules := &lateBoundDisabledModules{}
 	identityModule := identity.Register(identity.Dependencies{
 		Pool:    pool,
 		Years:   schoolModule.Service,
@@ -128,6 +129,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		IsProduction: cfg.IsProduction(),
 		AppOrigins:   cfg.AppOrigins,
 		PushDevices:  pushDevices,
+		Modules:      disabledModules,
 		ResetLimiter: resetLimiter,
 		Email:        senders.Email,
 		MfaSealer:    sealer,
@@ -397,7 +399,8 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	if err != nil {
 		return nil, nil, err
 	}
-	moduleFlags := wiring.NewCachedFlags(platformModule.Service, clock.Real{}, moduleFlagCacheTTL)
+	moduleFlags := wiring.NewCachedFlags(platformModule.Service, clock.Real{}, moduleFlagCacheTTL, gatedModules)
+	disabledModules.flags = moduleFlags
 	platformModule.Service.OnFlagChanged(moduleFlags.Invalidate)
 	validateRequest, err := openapivalidate.NewMiddleware(doc, resolveOpenAPIValidationMode(cfg.OpenAPIValidation), logger)
 	if err != nil {

@@ -23,6 +23,7 @@ import (
 	schoolservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/school/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
+	"github.com/omanjaya/newsekolah/apps/api/internal/wiring"
 )
 
 // Cross-module adapters live here, in the wiring layer, so no module imports
@@ -186,4 +187,16 @@ func (l *lateBoundPushDevices) RemoveAllPushDevicesForUser(ctx context.Context, 
 		return nil
 	}
 	return l.svc.RemoveAllPushDevicesForUser(ctx, tenantID, userID)
+}
+
+// lateBoundDisabledModules lets the identity module (built first) read a
+// tenant's disabled modules from the flag cache, which needs the platform
+// module built after it. Until bound, nothing is reported as disabled.
+type lateBoundDisabledModules struct{ flags *wiring.CachedFlags }
+
+func (l *lateBoundDisabledModules) DisabledModules(ctx context.Context, tenantID uuid.UUID) ([]string, error) {
+	if l.flags == nil {
+		return nil, nil
+	}
+	return l.flags.DisabledModules(ctx, tenantID)
 }

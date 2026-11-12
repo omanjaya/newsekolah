@@ -723,7 +723,10 @@ paths:
 
   /v1/documents/verify/{code}:
     get:
-      tags: [permits]
+      # Tagged documents, not permits: verifying an already issued document must
+      # keep working when the permits module is switched off, so the central
+      # module gate must not match it.
+      tags: [documents]
       operationId: verifyDocument
       x-public: true
       security: []

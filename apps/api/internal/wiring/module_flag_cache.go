@@ -2,6 +2,7 @@ package wiring
 
 import (
 	"context"
+	"sort"
 	"sync"
 	"time"
 
@@ -32,6 +33,8 @@ type CachedFlags struct {
 	store FlagStore
 	clock clock.Clock
 	ttl   time.Duration
+	// gated is the toggleable module list DisabledModules is restricted to.
+	gated []string
 
 	mu      sync.Mutex
 	entries map[uuid.UUID]flagCacheEntry
@@ -41,8 +44,8 @@ type CachedFlags struct {
 	epoch uint64
 }
 
-func NewCachedFlags(store FlagStore, clk clock.Clock, ttl time.Duration) *CachedFlags {
-	return &CachedFlags{store: store, clock: clk, ttl: ttl, entries: map[uuid.UUID]flagCacheEntry{}}
+func NewCachedFlags(store FlagStore, clk clock.Clock, ttl time.Duration, gated []string) *CachedFlags {
+	return &CachedFlags{store: store, clock: clk, ttl: ttl, gated: gated, entries: map[uuid.UUID]flagCacheEntry{}}
 }
 
 // IsModuleEnabled reports whether module is on for the tenant. feature_flags
@@ -88,4 +91,23 @@ func (c *CachedFlags) flagsFor(ctx context.Context, tenantID uuid.UUID) (map[str
 		c.entries[tenantID] = flagCacheEntry{flags: flags, expires: now.Add(c.ttl)}
 	}
 	return flags, nil
+}
+
+// DisabledModules lists the tenant's switched-off modules, restricted to
+// gated (the known toggleable module names) and sorted, so unknown rows in
+// feature_flags never leak to clients. It satisfies the identity module's
+// disabled-modules reader.
+func (c *CachedFlags) DisabledModules(ctx context.Context, tenantID uuid.UUID) ([]string, error) {
+	flags, err := c.flagsFor(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	disabled := make([]string, 0, len(c.gated))
+	for _, module := range c.gated {
+		if enabled, ok := flags[module]; ok && !enabled {
+			disabled = append(disabled, module)
+		}
+	}
+	sort.Strings(disabled)
+	return disabled, nil
 }
