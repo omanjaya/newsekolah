@@ -40,6 +40,10 @@ type Dependencies struct {
 	// caller asked for it.
 	Academic   service.AcademicReader
 	Letterhead reportdoc.LetterheadSource
+	// Flags lets the scheduled-export job skip a tenant with reports
+	// turned off, and a schedule whose report kind reads a module that is
+	// turned off; nil runs every schedule.
+	Flags service.FlagReader
 }
 
 type Module struct {
@@ -57,7 +61,7 @@ func Register(deps Dependencies) *Module {
 	svc.SetReportDocDependencies(deps.Academic, deps.Letterhead)
 
 	scheduleRepo := repository.NewSchedule(deps.Pool)
-	scheduleSvc := service.NewScheduleService(deps.Pool, scheduleRepo, svc, deps.Perms, deps.Emails, deps.Storage, clk)
+	scheduleSvc := service.NewScheduleService(deps.Pool, scheduleRepo, svc, deps.Perms, deps.Emails, deps.Storage, clk, deps.Flags)
 
 	return &Module{
 		Service:         svc,

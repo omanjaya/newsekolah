@@ -195,12 +195,22 @@ func (s *Service) Archive(ctx context.Context, tenantID, id uuid.UUID) (domain.A
 // starts_at has passed is published in its own tenant transaction, so one
 // tenant's empty audience never blocks another's. Tenants are visited one
 // by one because the table is only readable inside a tenant transaction.
+// A tenant with announcements turned off is skipped: its scheduled
+// announcements stay scheduled and nobody is notified.
 func (s *Service) PublishDue(ctx context.Context) (published int, errs []error) {
 	tenantIDs, err := s.repo.ListActiveTenantIDs(ctx)
 	if err != nil {
 		return 0, []error{err}
 	}
 	for _, tenantID := range tenantIDs {
+		on, err := s.enabled(ctx, tenantID)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if !on {
+			continue
+		}
 		var due []domain.Announcement
 		if err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 			var err error

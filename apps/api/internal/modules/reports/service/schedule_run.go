@@ -18,6 +18,11 @@ import (
 // returns the ones ready for an email send. A schedule already claimed
 // for this due slot (by an earlier wake-up, or a retry of this one) is
 // silently skipped rather than rendered twice.
+//
+// Feature flags: a tenant with reports turned off is skipped entirely, and
+// a schedule whose report kind reads a module that is turned off (say a
+// discipline report while discipline is off) is skipped. A skipped
+// schedule is not claimed, so it leaves no run row and sends no email.
 func (s *ScheduleService) RunDueSchedules(ctx context.Context) ([]PendingNotification, error) {
 	tenants, err := s.repo.ListActiveTenants(ctx)
 	if err != nil {
@@ -32,34 +37,58 @@ func (s *ScheduleService) RunDueSchedules(ctx context.Context) ([]PendingNotific
 	now := s.clock.Now()
 
 	for _, t := range tenants {
-		loc := s.locationFor(t)
-		local := now.In(loc)
-
-		var due []domain.Schedule
-		err := s.withTx(ctx, t.ID, func(ctx context.Context) error {
-			var err error
-			due, err = s.repo.ListEnabledSchedulesForTenantHour(ctx, t.ID, local.Hour())
-			return err
-		})
-		if err != nil {
-			errs = append(errs, fmt.Errorf("tenant %s: list due schedules: %w", t.ID, err))
-			continue
-		}
-		for _, sched := range due {
-			if !sched.IsDueAt(local) {
-				continue
-			}
-			result, ok, err := s.runOne(ctx, t.ID, sched, local, i18n.FromTenantLocale(t.Locale))
-			if err != nil {
-				errs = append(errs, fmt.Errorf("tenant %s schedule %s: %w", t.ID, sched.ID, err))
-				continue
-			}
-			if ok {
-				pending = append(pending, result)
-			}
-		}
+		results, tenantErrs := s.runTenant(ctx, t, now)
+		pending = append(pending, results...)
+		errs = append(errs, tenantErrs...)
 	}
 	return pending, errors.Join(errs...)
+}
+
+// runTenant runs one tenant's schedules due at its local hour.
+func (s *ScheduleService) runTenant(ctx context.Context, t TenantRef, now time.Time) ([]PendingNotification, []error) {
+	on, err := s.moduleOn(ctx, t.ID, ModuleKey)
+	if err != nil {
+		return nil, []error{fmt.Errorf("tenant %s: read reports flag: %w", t.ID, err)}
+	}
+	if !on {
+		return nil, nil
+	}
+
+	local := now.In(s.locationFor(t))
+	var due []domain.Schedule
+	err = s.withTx(ctx, t.ID, func(ctx context.Context) error {
+		var err error
+		due, err = s.repo.ListEnabledSchedulesForTenantHour(ctx, t.ID, local.Hour())
+		return err
+	})
+	if err != nil {
+		return nil, []error{fmt.Errorf("tenant %s: list due schedules: %w", t.ID, err)}
+	}
+
+	var pending []PendingNotification
+	var errs []error
+	for _, sched := range due {
+		if !sched.IsDueAt(local) {
+			continue
+		}
+		sourceOn, err := s.moduleOn(ctx, t.ID, SourceModule(Kind(sched.ReportKind)))
+		if err != nil {
+			errs = append(errs, fmt.Errorf("tenant %s schedule %s: read source module flag: %w", t.ID, sched.ID, err))
+			continue
+		}
+		if !sourceOn {
+			continue
+		}
+		result, ok, err := s.runOne(ctx, t.ID, sched, local, i18n.FromTenantLocale(t.Locale))
+		if err != nil {
+			errs = append(errs, fmt.Errorf("tenant %s schedule %s: %w", t.ID, sched.ID, err))
+			continue
+		}
+		if ok {
+			pending = append(pending, result)
+		}
+	}
+	return pending, errs
 }
 
 func (s *ScheduleService) locationFor(t TenantRef) *time.Location {

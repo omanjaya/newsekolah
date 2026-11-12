@@ -137,6 +137,14 @@ type Storage interface {
 	PutObject(ctx context.Context, objectKey string, content []byte, contentType string) error
 }
 
+// FlagReader answers whether the permits module is turned on for a tenant
+// (the platform console's feature flag, adapted in internal/wiring so this
+// module never imports the platform module). HTTP operations are refused
+// centrally; this is only consulted by the module's background jobs.
+type FlagReader interface {
+	IsModuleEnabled(ctx context.Context, tenantID uuid.UUID) (bool, error)
+}
+
 // Config carries the tunables docs/02-system-design.md section 4.3
 // ("Aturan yang dapat diatur") and docs/08-security.md put in
 // configuration rather than code, plus the document-signing secret.
@@ -187,6 +195,24 @@ type Service struct {
 	renderer   documents.Renderer
 	clock      clock.Clock
 	cfg        Config
+	// flags is nil when no flag wiring is configured (tests, tools): the
+	// module then counts as enabled, matching feature_flags' opt-out rule.
+	flags FlagReader
+}
+
+// SetFlags attaches the feature-flag reader the background jobs consult.
+// Call it during wiring, before any job runs.
+func (s *Service) SetFlags(flags FlagReader) {
+	s.flags = flags
+}
+
+// enabled reports whether permits is on for tenantID; a nil reader means
+// no flag wiring, which leaves the module on.
+func (s *Service) enabled(ctx context.Context, tenantID uuid.UUID) (bool, error) {
+	if s.flags == nil {
+		return true, nil
+	}
+	return s.flags.IsModuleEnabled(ctx, tenantID)
 }
 
 func New(

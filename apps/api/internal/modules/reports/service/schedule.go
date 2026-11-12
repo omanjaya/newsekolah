@@ -116,6 +116,9 @@ type ScheduleService struct {
 	emails  RecipientChecker
 	storage ScheduleStorage
 	clock   clock.Clock
+	// flags is nil when no flag wiring is configured: every module then
+	// counts as on, matching feature_flags' opt-out rule.
+	flags FlagReader
 }
 
 func NewScheduleService(
@@ -126,8 +129,9 @@ func NewScheduleService(
 	emails RecipientChecker,
 	storage ScheduleStorage,
 	clk clock.Clock,
+	flags FlagReader,
 ) *ScheduleService {
-	return &ScheduleService{pool: pool, repo: repo, reports: reports, perms: perms, emails: emails, storage: storage, clock: clk}
+	return &ScheduleService{pool: pool, repo: repo, reports: reports, perms: perms, emails: emails, storage: storage, clock: clk, flags: flags}
 }
 
 func (s *ScheduleService) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {

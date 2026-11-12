@@ -35,6 +35,10 @@ type Dependencies struct {
 	Clock      clock.Clock
 	Config     service.Config
 	Logger     *slog.Logger
+
+	// Flags reads the permits feature flag for the background jobs; nil
+	// leaves the module on for every tenant.
+	Flags service.FlagReader
 }
 
 type Module struct {
@@ -120,6 +124,9 @@ func Register(deps Dependencies) *Module {
 	}
 	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, schedule, sync, discipline, publisher, realtimePublisher, deps.Storage,
 		documents.NewHTMLPDFRenderer(), clk, deps.Config)
+	if deps.Flags != nil {
+		svc.SetFlags(deps.Flags)
+	}
 	return &Module{Service: svc, Handler: transporthttp.New(svc, clk)}
 }
 

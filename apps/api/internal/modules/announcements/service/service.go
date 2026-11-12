@@ -60,11 +60,35 @@ func (NoopNotifier) AnnouncementPublished(context.Context, uuid.UUID, []uuid.UUI
 	return nil
 }
 
+// FlagReader answers whether the announcements module is turned on for a
+// tenant (the platform console's feature flag, adapted in internal/wiring).
+// HTTP operations are refused centrally; only the scheduled-publish job
+// consults it.
+type FlagReader interface {
+	IsModuleEnabled(ctx context.Context, tenantID uuid.UUID) (bool, error)
+}
+
 type Service struct {
 	pool     *pgxpool.Pool
 	repo     Repository
 	notifier Notifier
 	clock    clock.Clock
+	// flags is nil when no flag wiring is configured: the module then
+	// counts as enabled, matching feature_flags' opt-out rule.
+	flags FlagReader
+}
+
+// SetFlags attaches the feature-flag reader PublishDue consults. Call it
+// during wiring, before the job runs.
+func (s *Service) SetFlags(flags FlagReader) {
+	s.flags = flags
+}
+
+func (s *Service) enabled(ctx context.Context, tenantID uuid.UUID) (bool, error) {
+	if s.flags == nil {
+		return true, nil
+	}
+	return s.flags.IsModuleEnabled(ctx, tenantID)
 }
 
 func New(pool *pgxpool.Pool, repo Repository, notifier Notifier, clk clock.Clock) *Service {

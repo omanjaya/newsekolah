@@ -165,11 +165,16 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// its own RecordLateArrivalViolation adapter is late-bound the same
 	// way sync is, breaking the two-way construction cycle.
 	disc := &lateBoundDiscipline{}
+	// Background jobs and cross-module adapters below read feature flags
+	// through this; it is bound to the platform module's cached flags once
+	// that exists (after the module gate's cache is built).
+	backgroundFlags := &wiring.LateBoundFlags{}
 	permitsModule := permits.Register(permits.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Bus: eventBus, Hub: hub, Storage: sharedStorage,
 		Schedule:   permitsScheduleLookup{schedules: schedulingModule.ScheduleReader, periods: academicModule.Service, years: schoolModule.Service},
 		Sync:       sync,
 		Discipline: disc,
+		Flags:      wiring.ModuleFlag{Flags: backgroundFlags, Module: platformdomain.ModulePermits},
 		Clock:      clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
 	})
 	lateViolations := &lateBoundViolations{}
@@ -208,8 +213,8 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Names:   wiring.IdentityNames{Svc: identityModule.Service},
 		Storage: sharedStorage, Config: disciplineservice.DefaultConfig(cfg.S3Bucket),
 	})
-	disc.inner = wiring.LateArrivalDiscipline{Discipline: disciplineModule.Service, Clock: clock.Real{}}
-	lateViolations.inner = disciplineViolationsAdapter{svc: disciplineModule.Service}
+	disc.inner = wiring.LateArrivalDiscipline{Discipline: disciplineModule.Service, Clock: clock.Real{}, Flags: backgroundFlags}
+	lateViolations.inner = wiring.DisciplineSessionViolations{Recorder: disciplineViolationsAdapter{svc: disciplineModule.Service}, Flags: backgroundFlags}
 	lateDiscipline.inner = disciplineModule.Service
 
 	// analytics composes its risk signals through adapters over
@@ -232,9 +237,10 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	})
 
 	// The action-inbox badge sums each queue's own count; it owns no data.
+	inboxPermits := wiring.InboxPermits{Queues: permitsModule.Service, Flags: backgroundFlags}
 	inboxModule := inbox.Register(inbox.Dependencies{
-		Perms: identityModule.Service, Leave: permitsModule.Service, Exit: permitsModule.Service,
-		Late: permitsModule.Service, WarningLetters: wiring.InboxWarningLetters{Svc: disciplineModule.Service},
+		Perms: identityModule.Service, Leave: inboxPermits, Exit: inboxPermits,
+		Late: inboxPermits, WarningLetters: wiring.InboxWarningLetters{Svc: disciplineModule.Service, Flags: backgroundFlags},
 	})
 
 	// Built before the jobs block below so its periodic due-schedule scan
@@ -264,6 +270,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		// attendance.daily.
 		Academic:   wiring.AcademicReports{Academic: academicModule.Service, School: schoolModule.Service},
 		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service},
+		Flags:      backgroundFlags,
 	})
 
 	// Background jobs: every module registers its workers on one River
@@ -281,6 +288,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	pushDevices.svc = notificationsModule.Service
 	announcementsModule := announcements.Register(announcements.Dependencies{
 		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,
+		Flags: wiring.ModuleFlag{Flags: backgroundFlags, Module: platformdomain.ModuleAnnouncements},
 	})
 	integrationsModule := integrations.Register(integrations.Dependencies{
 		Pool: pool, Bus: eventBus, Perms: identityModule.Service, Sealer: sealer, Jobs: jobInserter, Clock: clock.Real{}, Logger: logger,
@@ -399,6 +407,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	}
 	moduleFlags := wiring.NewCachedFlags(platformModule.Service, clock.Real{}, moduleFlagCacheTTL)
 	platformModule.Service.OnFlagChanged(moduleFlags.Invalidate)
+	backgroundFlags.Bind(moduleFlags)
 	validateRequest, err := openapivalidate.NewMiddleware(doc, resolveOpenAPIValidationMode(cfg.OpenAPIValidation), logger)
 	if err != nil {
 		return nil, nil, err

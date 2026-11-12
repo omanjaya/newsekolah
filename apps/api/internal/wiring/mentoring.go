@@ -2,11 +2,13 @@ package wiring
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
+	gradingdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/domain"
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	mentoringdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring/domain"
 )
@@ -41,8 +43,14 @@ func (d MentoringDiscipline) StudentPoints(ctx context.Context, tenantID, studen
 
 type MentoringGrading struct{ Svc *gradingservice.Service }
 
+// PublishedSubjects is empty, not an error, while the tenant has grading
+// turned off: grading refuses every read then, and the mentor's student
+// snapshot must still show attendance and discipline instead of failing.
 func (g MentoringGrading) PublishedSubjects(ctx context.Context, tenantID, studentID uuid.UUID) ([]mentoringdomain.PublishedGrade, error) {
 	grades, err := g.Svc.MyGrades(ctx, tenantID, studentID, uuid.NullUUID{})
+	if errors.Is(err, gradingdomain.ErrModuleDisabled) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
