@@ -100,4 +100,16 @@ describe("usePicketBlock", () => {
     render(<>{result.current.left.map((slot) => slot.node)}</>);
     expect(screen.getByRole("button")).toBeInTheDocument();
   });
+
+  it("returns EMPTY_BLOCK and fires neither queue while permits is off", () => {
+    lateArrivalQueueQuery.mockReturnValue(refetchable({}));
+    exitPermitReviewQueueQuery.mockReturnValue(refetchable({}));
+    const permitsOff = { permissions: [], disabled_modules: ["permits"] } as unknown as Me;
+
+    const { result } = renderHook(() => usePicketBlock(permitsOff, true));
+
+    expect(result.current).toBe(EMPTY_BLOCK);
+    expect(lateArrivalQueueQuery).toHaveBeenCalledWith(false);
+    expect(exitPermitReviewQueueQuery).toHaveBeenCalledWith(false);
+  });
 });

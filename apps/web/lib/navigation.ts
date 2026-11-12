@@ -20,7 +20,9 @@ import {
   UsersRound,
 } from "lucide-react";
 
+import type { FeatureModule } from "./modules/feature-modules";
 import { academicNavItems } from "./navigation-academic";
+import type { NavAccess } from "./navigation-access";
 import { NAV_GROUP as GROUP } from "./navigation-groups";
 import { libraryNavItems } from "./navigation-library";
 import { moduleNavItems } from "./navigation-modules";
@@ -45,6 +47,15 @@ export interface NavItem {
   icon: LucideIcon;
   /** Permission code required to see this item; omitted means "any signed-in user". */
   permission?: string;
+  /**
+   * The toggleable feature module this page belongs to, when the school can
+   * have it switched off. Decided by the API endpoints the page calls, not
+   * by its URL: a page that mixes always-on data with an optional module
+   * stays unmarked and hides only the optional part itself. The item
+   * disappears from every menu, and the route is refused, while the module
+   * is off.
+   */
+  module?: FeatureModule;
   /** Legacy destinations owned by a consolidated menu entry. */
   activePaths?: string[];
   aliases?: string[];
@@ -110,6 +121,8 @@ export interface NavItem {
    */
   group?: string;
   sidebarPlacement?: "main" | "footer" | "hidden";
+  /** Guards a route (module, permission) without being a destination: never listed in a menu or the command palette. */
+  routeOnly?: boolean;
   accountMenu?: boolean;
   /** Pending items shown as a badge on the sidebar row; set by the shell, never by the registry. */
   badgeCount?: number;
@@ -216,6 +229,7 @@ export const navigation: NavItem[] = [
     key: "staff-attendance",
     labelKey: "app.staffAttendance.navLabel",
     href: "/staff-attendance",
+    module: "staff_attendance",
     icon: Fingerprint,
     permission: "view_staff_attendance",
     group: GROUP.staff,
@@ -224,6 +238,7 @@ export const navigation: NavItem[] = [
     key: "check-in",
     labelKey: "app.staffAttendance.self.navLabel",
     href: "/check-in",
+    module: "staff_attendance",
     icon: LogIn,
     profileKinds: ["teacher", "staff"],
     group: GROUP.staff,
@@ -263,6 +278,7 @@ export const navigation: NavItem[] = [
     key: "grading",
     labelKey: "nav.academic.items.grading",
     href: "/grading",
+    module: "grading",
     icon: domainIcons.grades,
     // manage_grades (edit) or view_grades (read-only, e.g. the principal
     // oversight role) -- features/grading/components/grading-view.tsx
@@ -275,6 +291,7 @@ export const navigation: NavItem[] = [
     key: "my-grades",
     labelKey: "nav.compact.grades",
     href: "/my-grades",
+    module: "grading",
     icon: domainIcons.grades,
     permission: "view_own_grades",
     group: GROUP.academic,
@@ -283,6 +300,7 @@ export const navigation: NavItem[] = [
     key: "violations",
     labelKey: "nav.discipline.items.violations",
     href: "/discipline/violations",
+    module: "discipline",
     icon: domainIcons.violation,
     permission: "view_discipline",
     group: GROUP.students,
@@ -291,6 +309,7 @@ export const navigation: NavItem[] = [
     key: "my-discipline",
     labelKey: "nav.discipline.items.myDiscipline",
     href: "/my-discipline",
+    module: "discipline",
     icon: domainIcons.violation,
     profileKinds: ["student"],
     group: GROUP.students,
@@ -299,6 +318,7 @@ export const navigation: NavItem[] = [
     key: "warning-letters",
     labelKey: "nav.discipline.items.warningLetters",
     href: "/discipline/warning-letters",
+    module: "discipline",
     icon: domainIcons.violation,
     permission: "view_discipline",
     group: GROUP.students,
@@ -307,8 +327,22 @@ export const navigation: NavItem[] = [
     key: "counseling",
     labelKey: "nav.discipline.items.counseling",
     href: "/discipline/counseling",
+    module: "discipline",
     icon: domainIcons.violation,
     permission: "manage_counseling",
+    group: GROUP.students,
+  },
+  {
+    key: "student-discipline",
+    labelKey: "nav.discipline.items.violations",
+    href: "/discipline/students",
+    module: "discipline",
+    icon: domainIcons.violation,
+    // Reached from a student's name, never browsed. It only carries the
+    // module, so the detail route is refused while discipline is off; the
+    // page keeps its own permission checks.
+    sidebarPlacement: "hidden",
+    routeOnly: true,
     group: GROUP.students,
   },
   {
@@ -324,6 +358,7 @@ export const navigation: NavItem[] = [
     labelKey: "nav.permits.items.plannedLeave",
     tabLabelKey: "nav.compact.permits",
     href: "/leave-requests",
+    module: "permits",
     icon: ClipboardList,
     // features/permits/components/leave-requests-view.tsx renders whichever
     // of these three action permissions the reader holds -- a student
@@ -339,6 +374,7 @@ export const navigation: NavItem[] = [
     key: "exit-permits",
     labelKey: "nav.permits.items.exitPermit",
     href: "/exit-permits",
+    module: "permits",
     icon: domainIcons.exitPermit,
     // Mirrors features/permits/components/exit-permits-view.tsx's own
     // three gates: a student submitter, a teacher/staff approver
@@ -353,6 +389,7 @@ export const navigation: NavItem[] = [
     key: "late-arrivals",
     labelKey: "nav.permits.items.late",
     href: "/late-arrivals",
+    module: "permits",
     icon: domainIcons.late,
     // features/permits/components/late-arrivals-view.tsx deliberately
     // offers the review queue to every teacher/staff account rather than
@@ -369,6 +406,7 @@ export const navigation: NavItem[] = [
     key: "duty",
     labelKey: "app.duty.navLabel",
     href: "/duty",
+    module: "permits",
     icon: domainIcons.qr,
     permission: "issue_scan_tokens",
     group: GROUP.students,
@@ -377,6 +415,7 @@ export const navigation: NavItem[] = [
     key: "classroom-entry",
     labelKey: "app.permits.classroomEntry.navLabel",
     href: "/classroom-entry",
+    module: "permits",
     icon: ScanLine,
     profileKinds: ["student"],
     group: GROUP.students,
@@ -386,6 +425,7 @@ export const navigation: NavItem[] = [
     key: "announcements",
     labelKey: "nav.communication.items.announcements",
     href: "/announcements",
+    module: "announcements",
     icon: domainIcons.announcement,
   },
   {
@@ -458,13 +498,15 @@ export const navigation: NavItem[] = [
   ...settingsNavItems,
 ];
 
-export function filterNavigation(
-  items: NavItem[],
-  can: (permission: string) => boolean,
-  profileKind?: NavProfileKind,
-  roleSlugs: string[] = [],
-): NavItem[] {
+/**
+ * The items a reader may see. `access.disabledModules` is required: an item
+ * that belongs to a module the school has switched off is dropped for
+ * everyone, whatever their permissions.
+ */
+export function filterNavigation(items: NavItem[], access: NavAccess): NavItem[] {
+  const { can, profileKind, roleSlugs, disabledModules } = access;
   return items.filter((item) => {
+    if (item.module && disabledModules.includes(item.module)) return false;
     if (item.permission && !can(item.permission)) return false;
     if (item.anyPermission && !item.anyPermission.some((code) => can(code))) return false;
     if (item.profileKinds && (!profileKind || !item.profileKinds.includes(profileKind))) {

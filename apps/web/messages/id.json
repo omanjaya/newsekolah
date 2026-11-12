@@ -346,6 +346,11 @@
       "body": "Akun ini tidak memiliki izin untuk membuka halaman ini. Hubungi admin sekolah bila akses ini seharusnya tersedia.",
       "backHome": "Kembali ke beranda"
     },
+    "moduleUnavailable": {
+      "title": "Modul tidak tersedia",
+      "body": "Fitur ini tidak diaktifkan untuk sekolah Anda. Hubungi admin sekolah bila fitur ini seharusnya tersedia.",
+      "backHome": "Kembali ke beranda"
+    },
     "notFound": {
       "title": "Halaman tidak ditemukan",
       "body": "Alamat yang dituju tidak ada atau sudah dipindahkan.",

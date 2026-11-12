@@ -6,7 +6,9 @@ import { useTranslations } from "next-intl";
 import type { ComponentType, ReactElement } from "react";
 
 import { ForbiddenPage } from "../../../components/forbidden-page";
+import { ModuleUnavailablePage } from "../../../components/module-unavailable-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { isModuleEnabled, type FeatureModule } from "../../../lib/modules/feature-modules";
 import { useSession } from "../../../lib/session/session-provider";
 
 interface SectionViewProps {
@@ -29,19 +31,29 @@ const SECTIONS: {
   key: string;
   label: string;
   permission: string;
+  /** The feature module whose data the section reads; the section goes away with it. */
+  module: FeatureModule;
   View: ComponentType<SectionViewProps>;
 }[] = [
-  { key: "school", label: "schoolReports", permission: "view_reports", View: SchoolReports },
+  {
+    key: "school",
+    label: "schoolReports",
+    permission: "view_reports",
+    module: "reports",
+    View: SchoolReports,
+  },
   {
     key: "library",
     label: "libraryReports",
     permission: "view_library_reports",
+    module: "library",
     View: LibraryReports,
   },
   {
     key: "visitors",
     label: "visitorReports",
     permission: "view_visitor_reports",
+    module: "visitors",
     View: VisitorReports,
   },
 ];
@@ -50,14 +62,21 @@ const SECTIONS: {
 export function ReportsWorkspaceView(): ReactElement {
   const { me } = useSession();
   const t = useTranslations("app.workspace");
-  const sections = SECTIONS.filter((section) => me?.permissions.includes(section.permission));
+  const sections = SECTIONS.filter(
+    (section) =>
+      me?.permissions.includes(section.permission) && isModuleEnabled(me, section.module),
+  );
   const [section, setSection] = useUrlState(
     "section",
     sections.map((entry) => entry.key),
     sections[0]?.key ?? "school",
   );
   const selected = sections.find((entry) => entry.key === section) ?? sections[0];
-  if (!selected) return <ForbiddenPage />;
+  if (!selected) {
+    // Nothing left to show: either no grant, or every granted domain is off.
+    const grantedButOff = SECTIONS.some((section) => me?.permissions.includes(section.permission));
+    return grantedButOff ? <ModuleUnavailablePage /> : <ForbiddenPage />;
+  }
   const View = selected.View;
   return (
     <>

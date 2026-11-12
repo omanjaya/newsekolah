@@ -7,7 +7,8 @@ import type { ReactElement, ReactNode } from "react";
 import { useActionInboxCount } from "../features/inbox/use-action-inbox-count";
 import { useNotificationsSocket } from "../features/notifications/realtime";
 import { navigation, filterNavigation } from "../lib/navigation";
-import { canOpenPath } from "../lib/navigation-permissions";
+import { navAccessFromMe } from "../lib/navigation-access";
+import { pathAccess } from "../lib/navigation-permissions";
 import { consolidateNavigation } from "../lib/navigation-workspaces";
 import { ConnectionStatusIndicator } from "../lib/realtime/connection-status-indicator";
 import { LiveSocketProvider } from "../lib/realtime/live-socket-provider";
@@ -18,6 +19,7 @@ import { ForbiddenPage } from "./forbidden-page";
 import { Header } from "./header";
 import { ImpersonationBanner } from "./impersonation-banner";
 import { MobileTabBar } from "./mobile-tab-bar";
+import { ModuleUnavailablePage } from "./module-unavailable-page";
 import { OfflineIndicator } from "./offline-indicator";
 import { Sidebar } from "./sidebar";
 import { SimulationControls } from "./simulation-controls";
@@ -49,9 +51,9 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
   const t = useTranslations("app.shell");
   const pathname = usePathname();
   useNotificationsSocket();
-  const roleSlugs = (me?.roles ?? []).map((role) => role.slug);
-  const can = (permission: string) => me?.permissions.includes(permission) ?? false;
-  const authorizedItems = filterNavigation(navigation, can, me?.profile_kind, roleSlugs);
+  const access = navAccessFromMe(me);
+  const { can } = access;
+  const authorizedItems = filterNavigation(navigation, access);
   const inboxCount = useActionInboxCount();
   const consolidated = consolidateNavigation(authorizedItems, {
     profileKind: me?.profile_kind,
@@ -71,12 +73,7 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
   // navigation registry, where every page already declares it. This sits
   // inside the shell rather than around it, so a refusal still leaves the
   // reader somewhere to go.
-  const allowed = canOpenPath(
-    pathname,
-    (permission) => me?.permissions.includes(permission) ?? false,
-    me?.profile_kind,
-    roleSlugs,
-  );
+  const routeAccess = pathAccess(pathname, access);
 
   return (
     <CommandPaletteProvider>
@@ -113,7 +110,13 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
             id="main-content"
             className="flex-1 pb-[calc(var(--shell-mobile-tab-offset)+1rem)] md:pb-0"
           >
-            {allowed ? children : <ForbiddenPage />}
+            {routeAccess === "ok" ? (
+              children
+            ) : routeAccess === "module-disabled" ? (
+              <ModuleUnavailablePage />
+            ) : (
+              <ForbiddenPage />
+            )}
           </main>
         </div>
       </div>

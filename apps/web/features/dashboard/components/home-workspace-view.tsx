@@ -6,6 +6,9 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { isModuleEnabled } from "../../../lib/modules/feature-modules";
+import { navAccessFromMe } from "../../../lib/navigation-access";
+import { canOpenPath } from "../../../lib/navigation-permissions";
 import { useSession } from "../../../lib/session/session-provider";
 
 import { DashboardView } from "./dashboard-view";
@@ -21,12 +24,16 @@ export function HomeWorkspaceView(): ReactElement {
   const { me } = useSession();
   const t = useTranslations("app.workspace");
   const can = (permission: string) => me?.permissions.includes(permission) ?? false;
+  const access = navAccessFromMe(me);
   const libraryHome =
+    isModuleEnabled(me, "library") &&
     can("view_library") &&
     can("manage_library_circulation") &&
     !can("manage_master_data") &&
     !can("manage_attendance");
-  const actions = [
+  // Shortcuts into a module the school switched off are dropped, the same
+  // registry check the menu uses.
+  const allActions = [
     ...(me?.profile_kind === "student" ? [{ href: "/classroom-entry", label: "scanClass" }] : []),
     ...(["teacher", "staff"].includes(me?.profile_kind ?? "")
       ? [{ href: "/check-in", label: "checkIn" }]
@@ -37,6 +44,7 @@ export function HomeWorkspaceView(): ReactElement {
       ? [{ href: "/library", label: "libraryOverview" }]
       : []),
   ];
+  const actions = allActions.filter((action) => canOpenPath(action.href, access));
   return (
     <>
       {actions.length > 0 && (

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
+import { isModuleEnabled } from "../../../../lib/modules/feature-modules";
 import { todayInZone, useHomeroomAttendanceQuery } from "../../../attendance/api";
 import { useLeaveReviewQueueQuery, type LeaveRequestSummary } from "../../../permits/api";
 import { EMPTY_BLOCK, HERO_PRIORITY, type Me, type PersonaBlock } from "../types";
@@ -31,7 +32,8 @@ export function useHomeroomBlock(me: Me, active: boolean): PersonaBlock {
     { date: todayInZone(me.tenant.timezone), limit: DASHBOARD_LIMIT, offset: 0 },
     active,
   );
-  const leaveQueue = useLeaveReviewQueueQuery(active);
+  const permitsOn = isModuleEnabled(me, "permits");
+  const leaveQueue = useLeaveReviewQueueQuery(active && permitsOn);
 
   if (!active) return EMPTY_BLOCK;
 
@@ -80,6 +82,7 @@ export function useHomeroomBlock(me: Me, active: boolean): PersonaBlock {
       node: (
         <HomeroomClassCard
           className={className}
+          showLeave={permitsOn}
           pending={pending}
           pendingLoading={leaveQueue.isLoading}
           pendingError={leaveQueue.isError}
@@ -99,6 +102,7 @@ export function useHomeroomBlock(me: Me, active: boolean): PersonaBlock {
 
 function HomeroomClassCard({
   className,
+  showLeave,
   pending,
   pendingLoading,
   pendingError,
@@ -110,6 +114,8 @@ function HomeroomClassCard({
   t,
 }: {
   className: string;
+  /** False when the school switched permits off: the leave section and its link go away. */
+  showLeave: boolean;
   pending: LeaveRequestSummary[];
   pendingLoading: boolean;
   pendingError: boolean;
@@ -133,39 +139,48 @@ function HomeroomClassCard({
         <CardTitle>
           {className ? t("card.title", { className }) : t("card.titleFallback")}
         </CardTitle>
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/leave-requests">{t("card.action")}</Link>
-        </Button>
+        {showLeave && (
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/leave-requests">{t("card.action")}</Link>
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="flex flex-col gap-4 pt-0">
-        <div>
-          {pendingLoading ? (
-            <Skeleton className="h-16 w-full" aria-busy="true" />
-          ) : pendingError ? (
-            <QueryError retry={onRetryPending} />
-          ) : pending.length === 0 ? (
-            <p className="text-[13px] text-fg-muted">{t("card.empty")}</p>
-          ) : (
-            <ul className="flex flex-col divide-y divide-border">
-              {pending.slice(0, 5).map((item) => (
-                <li key={item.instance_id} className="flex items-center justify-between gap-3 py-2">
-                  <span className="min-w-0">
-                    <span className="block truncate text-[14px] text-fg">{item.student_name}</span>
-                    <span className="block truncate text-[12px] text-fg-muted">
-                      {categoryT(`categories.${item.category}`)}
-                    </span>
-                  </span>
-                  <Link
-                    href="/leave-requests"
-                    className="shrink-0 text-[13px] text-accent underline underline-offset-2"
+        {showLeave && (
+          <div>
+            {pendingLoading ? (
+              <Skeleton className="h-16 w-full" aria-busy="true" />
+            ) : pendingError ? (
+              <QueryError retry={onRetryPending} />
+            ) : pending.length === 0 ? (
+              <p className="text-[13px] text-fg-muted">{t("card.empty")}</p>
+            ) : (
+              <ul className="flex flex-col divide-y divide-border">
+                {pending.slice(0, 5).map((item) => (
+                  <li
+                    key={item.instance_id}
+                    className="flex items-center justify-between gap-3 py-2"
                   >
-                    {t("card.review")}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[14px] text-fg">
+                        {item.student_name}
+                      </span>
+                      <span className="block truncate text-[12px] text-fg-muted">
+                        {categoryT(`categories.${item.category}`)}
+                      </span>
+                    </span>
+                    <Link
+                      href="/leave-requests"
+                      className="shrink-0 text-[13px] text-accent underline underline-offset-2"
+                    >
+                      {t("card.review")}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
         <div>
           {countsLoading ? (
             <Skeleton className="h-8 w-full" aria-busy="true" />

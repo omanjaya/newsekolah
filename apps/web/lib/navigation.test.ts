@@ -1,7 +1,8 @@
 import { Home } from "lucide-react";
 import { describe, expect, it } from "vitest";
 
-import { filterNavigation, navigation, type NavItem } from "./navigation";
+import { navigation, type NavItem } from "./navigation";
+import { filterNavigationFixture } from "./navigation-access.fixture";
 
 const items: NavItem[] = [
   { key: "public", labelKey: "nav.home", href: "/dashboard", icon: Home },
@@ -16,18 +17,18 @@ const items: NavItem[] = [
 
 describe("filterNavigation", () => {
   it("keeps items without a permission requirement", () => {
-    const result = filterNavigation(items, () => false);
+    const result = filterNavigationFixture(items, () => false);
     expect(result.map((item) => item.key)).toEqual(["public"]);
   });
 
   it("keeps a guarded item once the permission check passes", () => {
-    const result = filterNavigation(items, (permission) => permission === "library.manage");
+    const result = filterNavigationFixture(items, (permission) => permission === "library.manage");
     expect(result.map((item) => item.key)).toEqual(["public", "guarded"]);
   });
 
   it("never mutates the input array", () => {
     const before = [...items];
-    filterNavigation(items, () => true);
+    filterNavigationFixture(items, () => true);
     expect(items).toEqual(before);
   });
 
@@ -41,9 +42,9 @@ describe("filterNavigation", () => {
         profileKinds: ["student"],
       },
     ];
-    expect(filterNavigation(scoped, () => true).map((i) => i.key)).toEqual([]);
-    expect(filterNavigation(scoped, () => true, "teacher").map((i) => i.key)).toEqual([]);
-    expect(filterNavigation(scoped, () => true, "student").map((i) => i.key)).toEqual([
+    expect(filterNavigationFixture(scoped, () => true).map((i) => i.key)).toEqual([]);
+    expect(filterNavigationFixture(scoped, () => true, "teacher").map((i) => i.key)).toEqual([]);
+    expect(filterNavigationFixture(scoped, () => true, "student").map((i) => i.key)).toEqual([
       "student-only",
     ]);
   });
@@ -59,9 +60,9 @@ describe("filterNavigation", () => {
         profileKinds: ["student"],
       },
     ];
-    expect(filterNavigation(scoped, () => false, "student")).toEqual([]);
-    expect(filterNavigation(scoped, () => true, "teacher")).toEqual([]);
-    expect(filterNavigation(scoped, () => true, "student").map((i) => i.key)).toEqual([
+    expect(filterNavigationFixture(scoped, () => false, "student")).toEqual([]);
+    expect(filterNavigationFixture(scoped, () => true, "teacher")).toEqual([]);
+    expect(filterNavigationFixture(scoped, () => true, "student").map((i) => i.key)).toEqual([
       "student-with-permission",
     ]);
   });
@@ -76,9 +77,9 @@ describe("filterNavigation", () => {
         anyPermission: ["submit_leave_requests", "review_leave_requests"],
       },
     ];
-    expect(filterNavigation(scoped, () => false)).toEqual([]);
+    expect(filterNavigationFixture(scoped, () => false)).toEqual([]);
     expect(
-      filterNavigation(scoped, (permission) => permission === "review_leave_requests").map(
+      filterNavigationFixture(scoped, (permission) => permission === "review_leave_requests").map(
         (i) => i.key,
       ),
     ).toEqual(["either-permission"]);
@@ -95,13 +96,13 @@ describe("filterNavigation", () => {
         excludeProfileKinds: ["student"],
       },
     ];
-    expect(filterNavigation(scoped, () => true, "student")).toEqual([]);
-    expect(filterNavigation(scoped, () => true, "teacher").map((i) => i.key)).toEqual([
+    expect(filterNavigationFixture(scoped, () => true, "student")).toEqual([]);
+    expect(filterNavigationFixture(scoped, () => true, "teacher").map((i) => i.key)).toEqual([
       "staff-master-data",
     ]);
     // A reader with no profile row at all (the bootstrap super admin) is
     // never excluded: the permission check alone decides for them.
-    expect(filterNavigation(scoped, () => true, undefined).map((i) => i.key)).toEqual([
+    expect(filterNavigationFixture(scoped, () => true, undefined).map((i) => i.key)).toEqual([
       "staff-master-data",
     ]);
   });
@@ -118,14 +119,14 @@ describe("filterNavigation", () => {
         excludeRoles: ["librarian"],
       },
     ];
-    expect(filterNavigation(scoped, () => true, "staff", ["librarian"])).toEqual([]);
-    expect(filterNavigation(scoped, () => true, "staff", ["staff"]).map((i) => i.key)).toEqual([
-      "teaching-only",
-    ]);
+    expect(filterNavigationFixture(scoped, () => true, "staff", ["librarian"])).toEqual([]);
+    expect(
+      filterNavigationFixture(scoped, () => true, "staff", ["staff"]).map((i) => i.key),
+    ).toEqual(["teaching-only"]);
     // No roles array at all (a caller that has not been updated yet)
     // defaults to excluding nobody, matching every other optional filter
     // here degrading to "not checked" rather than "hide everything".
-    expect(filterNavigation(scoped, () => true, "staff").map((i) => i.key)).toEqual([
+    expect(filterNavigationFixture(scoped, () => true, "staff").map((i) => i.key)).toEqual([
       "teaching-only",
     ]);
   });
@@ -163,7 +164,9 @@ describe("navigation registry: per-role audiences", () => {
       "manage_library_settings",
       "view_library_reports",
     );
-    const keys = filterNavigation(navigation, can, "staff", ["librarian"]).map((item) => item.key);
+    const keys = filterNavigationFixture(navigation, can, "staff", ["librarian"]).map(
+      (item) => item.key,
+    );
     expect(keys).not.toContain("leave-requests");
     expect(keys).not.toContain("exit-permits");
     // view_academic_data now also unlocks the read-only class/year rosters
@@ -196,7 +199,7 @@ describe("navigation registry: per-role audiences", () => {
       "view_attendance",
       "view_own_library_loans",
     );
-    const keys = filterNavigation(navigation, can, "student").map((item) => item.key);
+    const keys = filterNavigationFixture(navigation, can, "student").map((item) => item.key);
     expect(keys).toContain("leave-requests");
     expect(keys).toContain("exit-permits");
     expect(keys).toContain("late-arrivals");
@@ -226,7 +229,7 @@ describe("navigation registry: per-role audiences", () => {
       "record_violations",
       "view_early_warning",
     );
-    const keys = filterNavigation(navigation, can, "teacher").map((item) => item.key);
+    const keys = filterNavigationFixture(navigation, can, "teacher").map((item) => item.key);
     expect(keys).not.toContain("leave-requests");
     expect(keys).toContain("exit-permits");
     expect(keys).toContain("late-arrivals");
@@ -237,7 +240,7 @@ describe("navigation registry: per-role audiences", () => {
   it("gives a homeroom-duty teacher (wali kelas) the leave review queue", () => {
     // Base teacher role plus authz.DutyTypeDefaults()'s "homeroom" duty.
     const can = has("view_academic_data", "view_attendance", "review_leave_requests");
-    const keys = filterNavigation(navigation, can, "teacher").map((item) => item.key);
+    const keys = filterNavigationFixture(navigation, can, "teacher").map((item) => item.key);
     expect(keys).toContain("leave-requests");
   });
 
@@ -272,7 +275,7 @@ describe("navigation registry: per-role audiences", () => {
       "view_visitor_reports",
       "view_grades",
     );
-    const keys = filterNavigation(navigation, can, "teacher").map((item) => item.key);
+    const keys = filterNavigationFixture(navigation, can, "teacher").map((item) => item.key);
 
     // Sees the gradebook screen read-only (view_grades, no manage_grades):
     // features/grading/components/grading-view.tsx hides every

@@ -346,6 +346,11 @@
       "body": "This account does not have permission to open this page. Contact the school admin if this access should be available.",
       "backHome": "Back to home"
     },
+    "moduleUnavailable": {
+      "title": "Module not available",
+      "body": "This feature is not enabled for your school. Contact the school admin if it should be available.",
+      "backHome": "Back to home"
+    },
     "notFound": {
       "title": "Page not found",
       "body": "The address you requested does not exist or has moved.",

@@ -82,15 +82,37 @@ func TestModuleGateRefusesEveryDisabledModule(t *testing.T) {
 		return rec.Code, errorCode(t, rec.Body.Bytes())
 	}
 
+	disabledModules := func() []string {
+		t.Helper()
+		rec := doJSON(t, server, http.MethodGet, "/v1/me", nil, auth)
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		var me struct {
+			DisabledModules []string `json:"disabled_modules"`
+		}
+		require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &me))
+		require.NotNil(t, me.DisabledModules, "disabled_modules must always be present")
+		return me.DisabledModules
+	}
+	require.Empty(t, disabledModules(), "nothing is disabled by default")
+	require.Equal(t, []any{}, login["user"].(map[string]any)["disabled_modules"], "login carries the list too")
+
 	// Baseline: every module is on (no rows), so no probe is gated.
 	for _, probe := range moduleGateProbes {
 		_, code := get(probe.path, auth)
 		require.NotEqual(t, "MODULE_DISABLED", code, "%s should be enabled by default", probe.module)
 	}
 
+	setFlag("library", false)
+	setFlag("billing", false)
+	require.Equal(t, []string{"billing", "library"}, disabledModules())
+	setFlag("library", true)
+	setFlag("billing", true)
+	require.Empty(t, disabledModules())
+
 	for _, probe := range moduleGateProbes {
 		setFlag(probe.module, false)
 	}
+	require.Len(t, disabledModules(), len(moduleGateProbes))
 	for _, probe := range moduleGateProbes {
 		status, code := get(probe.path, auth)
 		require.Equal(t, http.StatusForbidden, status, "%s %s", probe.module, probe.path)
@@ -101,6 +123,12 @@ func TestModuleGateRefusesEveryDisabledModule(t *testing.T) {
 	status, code := get("/v1/opac/highlights", nil)
 	require.Equal(t, http.StatusForbidden, status)
 	require.Equal(t, "MODULE_DISABLED", code)
+
+	// Verifying an already issued document stays reachable with permits off:
+	// it is deliberately not tagged with a gated module.
+	status, code = get("/v1/documents/verify/NOSUCHCODE", nil)
+	require.NotEqual(t, "MODULE_DISABLED", code)
+	require.NotEqual(t, http.StatusForbidden, status)
 
 	// Operations outside the 12 modules are untouched while all are off.
 	status, code = get("/v1/academic/years", auth)

@@ -4,17 +4,25 @@ import { queryKeys, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
+import { useModuleEnabled } from "../../lib/modules/use-module-enabled";
 
 export type Announcement = components["schemas"]["Announcement"];
 export type AnnouncementCreate = components["schemas"]["AnnouncementCreate"];
 export type AnnouncementStatus = components["schemas"]["AnnouncementStatus"];
 export type MyAnnouncement = components["schemas"]["MyAnnouncement"];
 
+/**
+ * The header bell and the dashboard read this on every screen, so it stays
+ * idle while the school has announcements switched off instead of firing a
+ * request the module gate would refuse.
+ */
 export function useMyAnnouncementsQuery() {
   const client = useApiClient();
+  const enabled = useModuleEnabled("announcements");
   return useQuery({
     queryKey: queryKeys.myAnnouncements(),
     queryFn: () => client.GET("/v1/me/announcements"),
+    enabled,
   });
 }
 

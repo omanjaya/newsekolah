@@ -1,4 +1,5 @@
-import { navigation, type NavItem, type NavProfileKind } from "./navigation";
+import { navigation, type NavItem } from "./navigation";
+import type { NavAccess } from "./navigation-access";
 
 /**
  * The single permission a path needs, taken from the registry rather than
@@ -15,6 +16,9 @@ export function permissionForPath(pathname: string): string | undefined {
   return best?.routePermission ?? best?.permission;
 }
 
+/** Why a reader cannot open a path, or `ok` when they can. */
+export type PathAccess = "ok" | "forbidden" | "module-disabled";
+
 /**
  * Whether a reader may open `pathname`: the permission(s) above, plus the
  * profile kinds the registry scopes the page to or excludes it from (a
@@ -22,28 +26,33 @@ export function permissionForPath(pathname: string): string | undefined {
  * view_academic_data does not make a master-data roster theirs, even
  * though the list endpoint accepts any session). Checked before the page
  * mounts, so a refused page fires no requests.
+ *
+ * A reader who would be allowed in, but whose school has switched the
+ * page's module off, gets `module-disabled` so the shell can say so
+ * instead of showing the generic no-permission state.
  */
-export function canOpenPath(
-  pathname: string,
-  can: (permission: string) => boolean,
-  profileKind: NavProfileKind | undefined,
-  roleSlugs: string[] = [],
-): boolean {
+export function pathAccess(pathname: string, access: NavAccess): PathAccess {
   const best = navItemForPath(pathname);
-  if (!best) return true;
+  if (!best) return "ok";
+  const { can, profileKind, roleSlugs } = access;
   const required = best.routePermission ?? best.permission;
-  if (required && !can(required)) return false;
-  if (best.anyPermission && !best.anyPermission.some((code) => can(code))) return false;
+  if (required && !can(required)) return "forbidden";
+  if (best.anyPermission && !best.anyPermission.some((code) => can(code))) return "forbidden";
   if (best.profileKinds && (!profileKind || !best.profileKinds.includes(profileKind))) {
-    return false;
+    return "forbidden";
   }
   if (best.excludeProfileKinds && profileKind && best.excludeProfileKinds.includes(profileKind)) {
-    return false;
+    return "forbidden";
   }
   if (best.excludeRoles?.some((slug) => roleSlugs.includes(slug))) {
-    return false;
+    return "forbidden";
   }
-  return true;
+  if (best.module && access.disabledModules.includes(best.module)) return "module-disabled";
+  return "ok";
+}
+
+export function canOpenPath(pathname: string, access: NavAccess): boolean {
+  return pathAccess(pathname, access) === "ok";
 }
 
 function navItemForPath(pathname: string): NavItem | undefined {

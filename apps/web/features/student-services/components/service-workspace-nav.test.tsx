@@ -8,15 +8,21 @@ import {
   VisitorsWorkspaceNav,
 } from "./service-workspace-nav";
 
-const session = vi.hoisted(() => ({ permissions: [] as string[], pathname: "/analytics" }));
+const session = vi.hoisted(() => ({
+  permissions: [] as string[],
+  disabled_modules: [] as string[],
+  pathname: "/analytics",
+}));
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 vi.mock("next/navigation", () => ({ usePathname: () => session.pathname }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (permission: string) => session.permissions.includes(permission),
+  useSession: () => ({ me: { disabled_modules: session.disabled_modules } }),
 }));
 
 beforeEach(() => {
   session.permissions = [];
+  session.disabled_modules = [];
   session.pathname = "/analytics";
 });
 
@@ -84,5 +90,29 @@ describe("student service workspace boundaries", () => {
     session.permissions.push("view_monitor_presence");
     rerender(<DutyWorkspaceActions />);
     expect(screen.getByRole("link", { name: "monitor" })).toHaveAttribute("target", "_blank");
+  });
+
+  it("drops the tabs of a module the school switched off", () => {
+    session.permissions = ["view_activities", "view_mentoring"];
+    session.disabled_modules = ["mentoring"];
+    render(<ActivitiesWorkspaceNav />);
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/activities/clubs",
+      "/activities/events",
+      "/activities/achievements",
+    ]);
+  });
+
+  it("offers no visitor tab while visitors is off", () => {
+    session.permissions = ["view_visitors", "view_visitor_incidents", "view_visitor_reports"];
+    session.disabled_modules = ["visitors"];
+    render(<VisitorsWorkspaceNav />);
+    expect(screen.queryAllByRole("link")).toHaveLength(0);
+  });
+
+  it("hides the permits shortcut of the duty actions while permits is off", () => {
+    session.disabled_modules = ["permits"];
+    render(<DutyWorkspaceActions />);
+    expect(screen.queryByRole("link", { name: "permits" })).not.toBeInTheDocument();
   });
 });

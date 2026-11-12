@@ -14,7 +14,10 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
-vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => mocks.canManage }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useCan: () => mocks.canManage,
+  useSession: () => ({ me: undefined }),
+}));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));

@@ -199,6 +199,9 @@ type Extras struct {
 	// logout/revoke-all. nil (e.g. a deployment without the notifications
 	// module wired, or a unit test) just skips the deletion.
 	PushDevices PushDeviceRevoker
+	// Modules reports which feature modules are disabled for the tenant so
+	// Me can tell the web app. nil means nothing is disabled.
+	Modules DisabledModulesReader
 }
 
 // SessionInvalidator evicts a session from the authn middleware's

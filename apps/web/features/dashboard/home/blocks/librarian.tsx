@@ -8,6 +8,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
+import { isModuleEnabled } from "../../../../lib/modules/feature-modules";
 import type { LibraryLoan } from "../../../library/api";
 import { LibraryTitleName } from "../../../library/components/library-title-name";
 import { useLibraryDashboardQuery } from "../../../library/dashboard-api";
@@ -29,11 +30,12 @@ const CIRCULATION_DESK_HREF = "/library/desk";
  * the new optional `enabled` flag this persona needs to skip the request
  * when the librarian block is inactive.
  */
-export function useLibrarianBlock(_me: Me, active: boolean): PersonaBlock {
+export function useLibrarianBlock(me: Me, active: boolean): PersonaBlock {
   const t = useTranslations("app.dashboardSchool.librarian");
-  const { data, isLoading, isError, refetch } = useLibraryDashboardQuery(active);
+  const libraryOn = isModuleEnabled(me, "library");
+  const { data, isLoading, isError, refetch } = useLibraryDashboardQuery(active && libraryOn);
 
-  if (!active) return EMPTY_BLOCK;
+  if (!active || !libraryOn) return EMPTY_BLOCK;
 
   const ready = !isLoading && !isError && Boolean(data);
 

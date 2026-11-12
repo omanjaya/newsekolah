@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { WorkspaceNav } from "../../../components/workspace-nav";
+import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useCan } from "../../../lib/session/session-provider";
 
 /** Student Activities workspace: clubs, events, achievements and mentoring share one strip. */
@@ -14,8 +15,10 @@ export function ActivitiesWorkspaceNav(): ReactElement {
   const t = useTranslations("app.serviceWorkspace");
   const workspace = useTranslations("app.workspace");
   const pathname = usePathname();
-  const canView = useCan("view_activities");
-  const canMentor = useCan("view_mentoring");
+  const activitiesOn = useModuleEnabled("activities");
+  const mentoringOn = useModuleEnabled("mentoring");
+  const canView = useCan("view_activities") && activitiesOn;
+  const canMentor = useCan("view_mentoring") && mentoringOn;
   const inMentoring = pathname === "/mentoring" || pathname.startsWith("/mentoring/");
   return (
     <WorkspaceNav
@@ -39,9 +42,10 @@ export function ActivitiesWorkspaceNav(): ReactElement {
 
 export function VisitorsWorkspaceNav(): ReactElement {
   const t = useTranslations("app.serviceWorkspace");
-  const canView = useCan("view_visitors");
-  const canIncidents = useCan("view_visitor_incidents");
-  const canReports = useCan("view_visitor_reports");
+  const visitorsOn = useModuleEnabled("visitors");
+  const canView = useCan("view_visitors") && visitorsOn;
+  const canIncidents = useCan("view_visitor_incidents") && visitorsOn;
+  const canReports = useCan("view_visitor_reports") && visitorsOn;
   return (
     <WorkspaceNav
       label={t("visitors")}
@@ -61,7 +65,8 @@ export function VisitorsWorkspaceNav(): ReactElement {
 
 export function DisciplineWorkspaceNav(): ReactElement {
   const t = useTranslations("app.serviceWorkspace");
-  const canView = useCan("view_discipline");
+  const disciplineOn = useModuleEnabled("discipline");
+  const canView = useCan("view_discipline") && disciplineOn;
   return (
     <WorkspaceNav
       label={t("discipline")}
@@ -79,7 +84,8 @@ export function DisciplineWorkspaceNav(): ReactElement {
 
 export function CounselingWorkspaceNav(): ReactElement {
   const t = useTranslations("app.serviceWorkspace");
-  const canCounsel = useCan("manage_counseling");
+  const disciplineOn = useModuleEnabled("discipline");
+  const canCounsel = useCan("manage_counseling") && disciplineOn;
   const canMonitor = useCan("view_early_warning");
   return (
     <WorkspaceNav
@@ -95,11 +101,14 @@ export function CounselingWorkspaceNav(): ReactElement {
 export function DutyWorkspaceActions(): ReactElement {
   const t = useTranslations("app.serviceWorkspace");
   const canMonitor = useCan("view_monitor_presence");
+  const permitsOn = useModuleEnabled("permits");
   return (
     <div className="flex flex-wrap gap-2">
-      <Button asChild variant="secondary" size="sm">
-        <Link href="/leave-requests">{t("permits")}</Link>
-      </Button>
+      {permitsOn && (
+        <Button asChild variant="secondary" size="sm">
+          <Link href="/leave-requests">{t("permits")}</Link>
+        </Button>
+      )}
       {canMonitor && (
         <Button asChild variant="secondary" size="sm">
           <Link href="/monitor" target="_blank" rel="noopener noreferrer">

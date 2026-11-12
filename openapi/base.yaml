@@ -47,6 +47,8 @@ tags:
     description: Audit log
   - name: permits
     description: Scan tokens, exit permits, late arrivals, leave requests, documents
+  - name: documents
+    description: Public verification of issued documents; never gated by a feature module
   - name: discipline
     description: Violations, warning letters, counseling
   - name: grading

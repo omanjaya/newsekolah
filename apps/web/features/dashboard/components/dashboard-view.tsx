@@ -19,6 +19,7 @@ import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { bentoCells, tileColumns } from "../../../lib/layout/bento";
+import { isModuleEnabled } from "../../../lib/modules/feature-modules";
 import { businessNow, useSimulation } from "../../../lib/simulation/clock";
 import { AnnouncementFeed } from "../../announcements/components/announcement-feed";
 import { useUnreadCountQuery } from "../../notifications/api";
@@ -130,22 +131,26 @@ export function DashboardView(): ReactElement {
   const cards = bentoCells([
     ...left,
     ...right,
-    {
-      key: "announcements",
-      node: (
-        <Card className="h-full">
-          <CardHeader className="flex-row items-center justify-between gap-3">
-            <CardTitle>{t("announcementsTitle")}</CardTitle>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/announcements">{t("openAnnouncements")}</Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <AnnouncementFeed limit={3} compact />
-          </CardContent>
-        </Card>
-      ),
-    },
+    ...(isModuleEnabled(me, "announcements")
+      ? [
+          {
+            key: "announcements",
+            node: (
+              <Card className="h-full">
+                <CardHeader className="flex-row items-center justify-between gap-3">
+                  <CardTitle>{t("announcementsTitle")}</CardTitle>
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href="/announcements">{t("openAnnouncements")}</Link>
+                  </Button>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <AnnouncementFeed limit={3} compact />
+                </CardContent>
+              </Card>
+            ),
+          },
+        ]
+      : []),
   ]);
 
   return (

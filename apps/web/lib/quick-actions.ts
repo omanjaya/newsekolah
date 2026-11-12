@@ -2,7 +2,7 @@ import { domainIcons } from "@newsekolah/ui";
 import { BookOpen, ClipboardList, LogIn, UserPlus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import type { NavProfileKind } from "./navigation";
+import type { NavAccess } from "./navigation-access";
 import { canOpenPath } from "./navigation-permissions";
 
 /**
@@ -107,16 +107,12 @@ export function quickActionHref(action: QuickAction): string {
  * The quick actions a reader may perform: the action's own permission and
  * the target screen's route access (permission, profile kind, role
  * exclusions) must both pass, so the list can never offer a screen that
- * would refuse the reader.
+ * would refuse the reader (including a school that switched the screen's
+ * module off).
  */
-export function availableQuickActions(
-  can: (permission: string) => boolean,
-  profileKind: NavProfileKind | undefined,
-  roleSlugs: string[] = [],
-): QuickAction[] {
+export function availableQuickActions(access: NavAccess): QuickAction[] {
   return quickActions.filter(
     (action) =>
-      (!action.permission || can(action.permission)) &&
-      canOpenPath(action.path, can, profileKind, roleSlugs),
+      (!action.permission || access.can(action.permission)) && canOpenPath(action.path, access),
   );
 }

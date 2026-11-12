@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { mobileNavigation } from "./mobile-navigation";
-import { filterNavigation, navigation } from "./navigation";
+import { navigation } from "./navigation";
+import { filterNavigationFixture } from "./navigation-access.fixture";
 import { consolidateNavigation } from "./navigation-workspaces";
 
 describe("mobile daily destinations", () => {
   it("only selects existing authorized staff routes", () => {
-    const permitted = filterNavigation(
+    const permitted = filterNavigationFixture(
       navigation,
       (permission) => permission === "manage_library_circulation",
       "staff",
@@ -17,7 +18,7 @@ describe("mobile daily destinations", () => {
     );
   });
   it("gives an admin account (view_users, view_schedules) its office shortcuts, not the gate-duty pair", () => {
-    const permitted = filterNavigation(
+    const permitted = filterNavigationFixture(
       navigation,
       (permission) => ["view_users", "view_schedules", "issue_scan_tokens"].includes(permission),
       "staff",
@@ -29,7 +30,7 @@ describe("mobile daily destinations", () => {
     expect(keys).not.toContain("duty");
   });
   it("gives gate-duty staff without view_users the visitor board and the scanner", () => {
-    const permitted = filterNavigation(
+    const permitted = filterNavigationFixture(
       navigation,
       (permission) => ["scan_exit_permits", "view_visitors"].includes(permission),
       "staff",
@@ -40,7 +41,7 @@ describe("mobile daily destinations", () => {
     expect(keys).not.toContain("school-users");
   });
   it("gives a student their schedule and the scanner, not the occasional exit permit", () => {
-    const permitted = filterNavigation(
+    const permitted = filterNavigationFixture(
       navigation,
       (permission) => permission === "view_schedules",
       "student",
@@ -56,7 +57,7 @@ describe("mobile daily destinations", () => {
     // plus their counselor duty's issue_leave_letters and manage_counseling
     // (apps/api's authz.DutyTypeDefaults), but usually holds no teaching
     // assignment, so attendance/schedule stay empty for them all day.
-    const permitted = filterNavigation(
+    const permitted = filterNavigationFixture(
       navigation,
       (permission) =>
         [
@@ -74,7 +75,7 @@ describe("mobile daily destinations", () => {
     expect(keys).not.toContain("schedule");
   });
   it("gives a duty teacher (guru piket) the duty desk ahead of the teaching schedule", () => {
-    const permitted = filterNavigation(
+    const permitted = filterNavigationFixture(
       navigation,
       (permission) =>
         ["manage_attendance", "view_schedules", "view_attendance", "issue_scan_tokens"].includes(
@@ -88,7 +89,7 @@ describe("mobile daily destinations", () => {
   it("gives a homeroom teacher attendance and the action inbox", () => {
     const can = (permission: string) =>
       ["manage_attendance", "view_schedules", "view_attendance"].includes(permission);
-    const items = consolidateNavigation(filterNavigation(navigation, can, "teacher"), {
+    const items = consolidateNavigation(filterNavigationFixture(navigation, can, "teacher"), {
       profileKind: "teacher",
       duties: [{ slug: "homeroom" }],
       can,
@@ -99,7 +100,7 @@ describe("mobile daily destinations", () => {
   it("keeps a plain teacher on attendance and schedule", () => {
     const can = (permission: string) =>
       ["manage_attendance", "view_schedules", "view_attendance"].includes(permission);
-    const items = consolidateNavigation(filterNavigation(navigation, can, "teacher"), {
+    const items = consolidateNavigation(filterNavigationFixture(navigation, can, "teacher"), {
       profileKind: "teacher",
       can,
     });

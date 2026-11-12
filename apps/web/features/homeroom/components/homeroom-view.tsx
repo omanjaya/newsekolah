@@ -24,6 +24,7 @@ import { useMemo, useState } from "react";
 
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
@@ -55,10 +56,18 @@ export function HomeroomView(): ReactElement {
   const t = useTranslations("app.homeroom");
   const { me } = useSession();
   const homeroom = me?.duties?.find((d) => d.slug === "homeroom");
-  const canViewDiscipline = useCan("view_discipline");
+  const permitsOn = useModuleEnabled("permits");
+  const disciplineOn = useModuleEnabled("discipline");
+  const canViewDiscipline = useCan("view_discipline") && disciplineOn;
   const [tab, setTab] = useUrlState<string>(
     "tab",
-    ["overview", "attendance", "permits", ...(canViewDiscipline ? ["discipline"] : []), "parents"],
+    [
+      "overview",
+      "attendance",
+      ...(permitsOn ? ["permits"] : []),
+      ...(canViewDiscipline ? ["discipline"] : []),
+      "parents",
+    ],
     "overview",
   );
   const [date, setDate] = useDateFilter("date", todayInZone(me?.tenant.timezone));
@@ -90,7 +99,7 @@ export function HomeroomView(): ReactElement {
     { date, limit: DASHBOARD_LIMIT, offset: 0 },
     Boolean(homeroom),
   );
-  const leaveQueue = useLeaveReviewQueueQuery(Boolean(homeroom));
+  const leaveQueue = useLeaveReviewQueueQuery(Boolean(homeroom) && permitsOn);
 
   const rows = data?.data ?? [];
   const isFiltered = search !== "" || statusCode !== "";
@@ -249,7 +258,7 @@ export function HomeroomView(): ReactElement {
         <TabsList>
           <TabsTrigger value="overview">{t("tabs.overview")}</TabsTrigger>
           <TabsTrigger value="attendance">{t("tabs.attendance")}</TabsTrigger>
-          <TabsTrigger value="permits">{t("tabs.permits")}</TabsTrigger>
+          {permitsOn && <TabsTrigger value="permits">{t("tabs.permits")}</TabsTrigger>}
           {canViewDiscipline && (
             <TabsTrigger value="discipline">{t("tabs.discipline")}</TabsTrigger>
           )}
@@ -272,7 +281,7 @@ export function HomeroomView(): ReactElement {
                 </span>
               }
             />
-            <Stat label={t("statPendingLeave")} value={pendingLeave.length} />
+            {permitsOn && <Stat label={t("statPendingLeave")} value={pendingLeave.length} />}
           </StatGrid>
 
           <HomeroomDashboard
@@ -281,6 +290,8 @@ export function HomeroomView(): ReactElement {
             pendingLeave={pendingLeave}
             dashboardLoading={dashboard.isLoading}
             leaveLoading={leaveQueue.isLoading}
+            showLeave={permitsOn}
+            showDiscipline={disciplineOn}
             timeZone={me?.tenant.timezone}
           />
         </TabsContent>
@@ -316,9 +327,11 @@ export function HomeroomView(): ReactElement {
             }
           />
         </TabsContent>
-        <TabsContent value="permits">
-          <HomeroomPermitsTab classId={homeroom.scope_id ?? ""} timeZone={me?.tenant.timezone} />
-        </TabsContent>
+        {permitsOn && (
+          <TabsContent value="permits">
+            <HomeroomPermitsTab classId={homeroom.scope_id ?? ""} timeZone={me?.tenant.timezone} />
+          </TabsContent>
+        )}
         {canViewDiscipline && (
           <TabsContent value="discipline">
             <HomeroomDisciplineTab classId={homeroom.scope_id ?? ""} />

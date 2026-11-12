@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import type { ReactElement, ReactNode } from "react";
 
+import { navAccessFromMe } from "../../../lib/navigation-access";
 import { canOpenPath } from "../../../lib/navigation-permissions";
 import { useSession } from "../../../lib/session/session-provider";
 import { studentProfileHref } from "../href";
@@ -40,7 +41,7 @@ export function StudentLink({
   const href = studentId && isStudent ? studentProfileHref(studentId, tab) : undefined;
   const canOpen = useMemo(() => {
     if (!me || !href) return false;
-    return canOpenPath(href, (permission) => me.permissions.includes(permission), me.profile_kind);
+    return canOpenPath(href, navAccessFromMe(me));
   }, [me, href]);
 
   if (!href || !canOpen) return <>{children}</>;

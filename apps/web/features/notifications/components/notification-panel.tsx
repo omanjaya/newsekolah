@@ -9,8 +9,10 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { navAccessFromMe } from "../../../lib/navigation-access";
 import { useSession } from "../../../lib/session/session-provider";
 import { useMarkAllReadMutation, useMarkReadMutation, useNotificationsQuery } from "../api";
+import { openableHref } from "../lib/openable-href";
 
 type Notification = components["schemas"]["Notification"];
 
@@ -102,6 +104,8 @@ function PanelRow({
   onOpen: () => void;
   onNavigate: () => void;
 }): ReactElement {
+  const { me } = useSession();
+  const href = openableHref(item.href, navAccessFromMe(me));
   const unread = !item.read_at;
   const content = (
     <div className="flex items-start gap-2 px-3 py-2">
@@ -123,9 +127,9 @@ function PanelRow({
 
   return (
     <li className={cn(unread && "bg-accent/5")}>
-      {item.href ? (
+      {href ? (
         <Link
-          href={item.href}
+          href={href}
           onClick={() => {
             onOpen();
             onNavigate();

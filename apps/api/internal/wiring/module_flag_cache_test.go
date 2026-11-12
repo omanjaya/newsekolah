@@ -65,7 +65,7 @@ func newCache(t *testing.T) (*CachedFlags, *countingStore, *movableClock) {
 	t.Helper()
 	store := &countingStore{flags: map[string]bool{}}
 	clk := &movableClock{at: time.Date(2026, 1, 1, 8, 0, 0, 0, time.UTC)}
-	return NewCachedFlags(store, clk, 15*time.Second), store, clk
+	return NewCachedFlags(store, clk, 15*time.Second, []string{"library", "billing", "visitors"}), store, clk
 }
 
 func TestCachedFlagsDefaultsToEnabledAndCachesWithinTTL(t *testing.T) {
@@ -138,6 +138,27 @@ func TestCachedFlagsDoesNotCacheErrors(t *testing.T) {
 	enabled, err := cache.IsModuleEnabled(ctx, tenantID, "library")
 	require.NoError(t, err)
 	require.True(t, enabled)
+}
+
+func TestCachedFlagsDisabledModulesIsSortedAndRestrictedToGated(t *testing.T) {
+	cache, store, _ := newCache(t)
+	ctx := context.Background()
+	tenantID := uuid.New()
+
+	none, err := cache.DisabledModules(ctx, tenantID)
+	require.NoError(t, err)
+	require.NotNil(t, none)
+	require.Empty(t, none)
+
+	store.set("visitors", false)
+	store.set("billing", false)
+	store.set("library", true)
+	store.set("not_a_module", false)
+	cache.Invalidate(tenantID)
+
+	disabled, err := cache.DisabledModules(ctx, tenantID)
+	require.NoError(t, err)
+	require.Equal(t, []string{"billing", "visitors"}, disabled)
 }
 
 func TestCachedFlagsConcurrentUse(t *testing.T) {

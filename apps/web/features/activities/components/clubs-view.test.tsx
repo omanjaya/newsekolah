@@ -12,7 +12,10 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/activities/clubs",
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
-vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => mocks.canManage }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useCan: () => mocks.canManage,
+  useSession: () => ({ me: undefined }),
+}));
 vi.mock("../api", () => ({
   useExtracurricularsQuery: mocks.useExtracurricularsQuery,
   useDeleteExtracurricularMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
