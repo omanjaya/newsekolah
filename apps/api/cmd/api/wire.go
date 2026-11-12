@@ -36,6 +36,7 @@ import (
 	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform"
+	platformdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
@@ -50,6 +51,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/jobs"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/modulegate"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/openapivalidate"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
@@ -387,6 +389,16 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	if err != nil {
 		return nil, nil, err
 	}
+	gatedModules := make([]string, len(platformdomain.AllModules))
+	for i, m := range platformdomain.AllModules {
+		gatedModules[i] = string(m)
+	}
+	moduleOps, err := modulegate.LoadOperationModules(doc, gatedModules)
+	if err != nil {
+		return nil, nil, err
+	}
+	moduleFlags := wiring.NewCachedFlags(platformModule.Service, clock.Real{}, moduleFlagCacheTTL)
+	platformModule.Service.OnFlagChanged(moduleFlags.Invalidate)
 	validateRequest, err := openapivalidate.NewMiddleware(doc, resolveOpenAPIValidationMode(cfg.OpenAPIValidation), logger)
 	if err != nil {
 		return nil, nil, err
@@ -422,11 +434,12 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		server,
 		// The last middleware in the slice is the outermost. The IP rate
 		// limit runs first so an over-budget anonymous caller is rejected
-		// before any other work; authz runs next; idempotency is innermost
-		// so an unauthorized retry never claims or consumes an
-		// Idempotency-Key.
+		// before any other work; authz runs next, then the module gate;
+		// idempotency is innermost so an unauthorized or module-disabled
+		// retry never claims or consumes an Idempotency-Key.
 		[]api.StrictMiddlewareFunc{
 			idempotencyStrictMiddleware(store),
+			moduleGateStrictMiddleware(moduleOps, moduleFlags),
 			authzStrictMiddleware(ops, identityModule.Service),
 			publicIPRateLimitStrictMiddleware(store),
 		},

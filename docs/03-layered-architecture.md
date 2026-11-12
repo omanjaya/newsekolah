@@ -136,7 +136,7 @@ Hook TanStack Query dan zod schema hidup di `packages/`; web dan mobile hanya be
 
 ## 5. Modul yang bisa dimatikan
 
-Setiap modul mendaftarkan diri lewat `Register(deps)` dan memeriksa `school.feature_flags`. Bila `library.enabled = false` untuk suatu sekolah: route mengembalikan `404 MODULE_DISABLED`, menu tidak muncul, worker tidak dijadwalkan. Flag disimpan per tenant dan diubah dari konsol admin sekolah.
+Setiap modul mendaftarkan diri lewat `Register(deps)` dan memeriksa `school.feature_flags`. Bila `library.enabled = false` untuk suatu sekolah: setiap operasi modul itu (dikenali dari tag OpenAPI, ditegakkan satu gerbang pusat di `cmd/api/module_gate_middleware.go`) mengembalikan `403 MODULE_DISABLED`, menu tidak muncul, worker tidak dijadwalkan. Flag disimpan per tenant dan diubah dari konsol admin sekolah.
 
 ## 6. Hal yang sengaja dipertahankan dari desain lama
 

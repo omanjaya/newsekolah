@@ -76,6 +76,34 @@ func (s *Service) IsModuleEnabled(ctx context.Context, tenantID uuid.UUID, modul
 	return enabled, err
 }
 
+// StoredFlags returns the explicit feature_flags rows of a tenant as
+// module -> enabled. A module absent from the map has no row and therefore
+// runs (opt-out). It lets a caller cache a tenant's whole flag set with one
+// read instead of one transaction per IsModuleEnabled call.
+func (s *Service) StoredFlags(ctx context.Context, tenantID uuid.UUID) (map[string]bool, error) {
+	var stored []domain.ModuleFlag
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		stored, err = s.repo.ListFeatureFlags(ctx, tenantID)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	flags := make(map[string]bool, len(stored))
+	for _, f := range stored {
+		flags[f.Module] = f.Enabled
+	}
+	return flags, nil
+}
+
+// OnFlagChanged registers a callback run after SetFlag commits, so an
+// in-process flag cache can drop the tenant's entry at once. Call it during
+// wiring, before the service handles requests.
+func (s *Service) OnFlagChanged(fn func(tenantID uuid.UUID)) {
+	s.onFlagChanged = fn
+}
+
 // SetFlag enables or disables one module for a tenant.
 func (s *Service) SetFlag(ctx context.Context, tenantID uuid.UUID, module string, enabled bool) (domain.ModuleFlag, error) {
 	if err := s.guard(); err != nil {
@@ -97,5 +125,8 @@ func (s *Service) SetFlag(ctx context.Context, tenantID uuid.UUID, module string
 		flag, err = s.repo.SetFeatureFlag(ctx, tenantID, m, enabled)
 		return err
 	})
+	if err == nil && s.onFlagChanged != nil {
+		s.onFlagChanged(tenantID)
+	}
 	return flag, err
 }
