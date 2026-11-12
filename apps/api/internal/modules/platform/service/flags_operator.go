@@ -21,18 +21,11 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 )
 
 // ErrTenantRequired means several tenants exist and the operator named
 // none, so ResolveTenantForOperator will not guess.
 var ErrTenantRequired = errors.New("several tenants exist; name one")
-
-// Audit vocabulary for an operator flag change.
-const (
-	operatorFlagAuditAction = "feature_flag.update"
-	operatorFlagAuditEntity = "feature_flag"
-)
 
 // OperatorTenantError explains why ResolveTenantForOperator could not pick
 // a tenant, carrying every slug it could have picked so the caller can show
@@ -78,13 +71,6 @@ type OperatorFlagChange struct {
 	Before  bool
 	After   bool
 	Changed bool
-}
-
-// operatorFlagSnapshot is the audit_logs before/after payload of one
-// operator flag change.
-type operatorFlagSnapshot struct {
-	Module  string `json:"module"`
-	Enabled bool   `json:"enabled"`
 }
 
 // ValidateModuleNames checks every name against domain.AllModules and
@@ -219,9 +205,7 @@ func (s *Service) applyOperatorFlag(ctx context.Context, tenantID uuid.UUID, m d
 	if _, err := s.repo.SetFeatureFlag(ctx, tenantID, m, after); err != nil {
 		return err
 	}
-	return audit.Record(ctx, tenantID, operatorFlagAuditAction, operatorFlagAuditEntity, tenantID,
-		operatorFlagSnapshot{Module: string(m), Enabled: before},
-		operatorFlagSnapshot{Module: string(m), Enabled: after})
+	return recordFlagChange(ctx, tenantID, m, before, after)
 }
 
 func (s *Service) requireOperatorTenant(ctx context.Context, tenantID uuid.UUID) error {
