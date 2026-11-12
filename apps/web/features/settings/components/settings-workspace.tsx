@@ -8,6 +8,7 @@ import type { ReactElement, ReactNode } from "react";
 
 import { WorkspaceNav } from "../../../components/workspace-nav";
 import { confirmUnsavedChangesBeforeNavigation } from "../../../lib/navigation/use-unsaved-changes-protection";
+import { navAccessFromMe } from "../../../lib/navigation-access";
 import { canOpenPath } from "../../../lib/navigation-permissions";
 import { useSession } from "../../../lib/session/session-provider";
 
@@ -45,8 +46,8 @@ export function SettingsWorkspace({ children }: { children: ReactNode }): ReactE
   const pathname = usePathname();
   const router = useRouter();
   const { me } = useSession();
-  const canOpen = (href: string) =>
-    canOpenPath(href, (p) => me?.permissions.includes(p) ?? false, me?.profile_kind);
+  const access = navAccessFromMe(me);
+  const canOpen = (href: string) => canOpenPath(href, access);
   const sections = SECTIONS.map((section) => ({
     ...section,
     pages: section.pages.filter((page) => canOpen(page.href)),

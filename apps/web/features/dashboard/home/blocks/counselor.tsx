@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
+import { isModuleEnabled } from "../../../../lib/modules/feature-modules";
 import { useAtRiskStudentsQuery } from "../../../analytics/api";
 import { RiskLevelBadge } from "../../../analytics/components/risk-level-badge";
 import {
@@ -45,8 +46,12 @@ const SP_CANDIDATE_FILTERS: SPCandidateFilters = {
 /** The counselor's home block: leave requests at the counseling stage, and warning-letter (SP) candidates. */
 export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
   const t = useTranslations("app.dashboardDuty");
-  const canReviewLeave = me.permissions.includes("review_leave_requests");
-  const canIssueWarningLetters = me.permissions.includes("issue_warning_letters");
+  // Leave requests belong to permits and warning letters to discipline; a
+  // school that switched either off gets neither the query nor the section.
+  const canReviewLeave =
+    me.permissions.includes("review_leave_requests") && isModuleEnabled(me, "permits");
+  const canIssueWarningLetters =
+    me.permissions.includes("issue_warning_letters") && isModuleEnabled(me, "discipline");
   const leave = useLeaveReviewQueueQuery(active && canReviewLeave);
   const sp = useSPCandidatesQuery(SP_CANDIDATE_FILTERS, active && canIssueWarningLetters);
   const canViewAtRisk = me.permissions.includes("view_early_warning");

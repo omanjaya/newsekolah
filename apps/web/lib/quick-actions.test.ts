@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { navAccessFixture } from "./navigation-access.fixture";
 import { availableQuickActions, quickActionHref, quickActions } from "./quick-actions";
 
 const ids = (actions: { id: string }[]) => actions.map((action) => action.id);
@@ -10,21 +11,30 @@ function granting(...codes: string[]) {
 
 describe("availableQuickActions", () => {
   it("offers only the ungated actions to a reader with no permissions", () => {
-    expect(ids(availableQuickActions(granting(), "teacher"))).toEqual(["check-in", "scan-qr"]);
+    expect(ids(availableQuickActions(navAccessFixture(granting(), "teacher")))).toEqual([
+      "check-in",
+      "scan-qr",
+    ]);
   });
 
   it("offers a student the leave and scan actions, not staff-only ones", () => {
-    const actions = availableQuickActions(granting("submit_leave_requests"), "student");
+    const actions = availableQuickActions(
+      navAccessFixture(granting("submit_leave_requests"), "student"),
+    );
     expect(ids(actions)).toEqual(["submit-leave", "scan-qr"]);
   });
 
   it("requires both the action permission and access to the target screen", () => {
     // record_violations alone cannot open the ledger page (view_discipline).
-    expect(ids(availableQuickActions(granting("record_violations"), "teacher"))).not.toContain(
-      "record-violation",
-    );
     expect(
-      ids(availableQuickActions(granting("record_violations", "view_discipline"), "teacher")),
+      ids(availableQuickActions(navAccessFixture(granting("record_violations"), "teacher"))),
+    ).not.toContain("record-violation");
+    expect(
+      ids(
+        availableQuickActions(
+          navAccessFixture(granting("record_violations", "view_discipline"), "teacher"),
+        ),
+      ),
     ).toContain("record-violation");
   });
 
@@ -35,14 +45,18 @@ describe("availableQuickActions", () => {
       ["lend-book", ["manage_library_circulation"], "/library/desk"],
     ];
     for (const [id, codes] of cases) {
-      expect(ids(availableQuickActions(granting(...codes), "staff"))).toContain(id);
-      expect(ids(availableQuickActions(granting(), "staff"))).not.toContain(id);
+      expect(ids(availableQuickActions(navAccessFixture(granting(...codes), "staff")))).toContain(
+        id,
+      );
+      expect(ids(availableQuickActions(navAccessFixture(granting(), "staff")))).not.toContain(id);
     }
   });
 
   it("hides the check-in action from students and keeps it for staff", () => {
-    expect(ids(availableQuickActions(granting(), "student"))).not.toContain("check-in");
-    expect(ids(availableQuickActions(granting(), "staff"))).toContain("check-in");
+    expect(ids(availableQuickActions(navAccessFixture(granting(), "student")))).not.toContain(
+      "check-in",
+    );
+    expect(ids(availableQuickActions(navAccessFixture(granting(), "staff")))).toContain("check-in");
   });
 
   it("returns every action for a reader holding every permission", () => {
@@ -56,7 +70,9 @@ describe("availableQuickActions", () => {
       "manage_library_circulation",
       "view_library",
     );
-    expect(ids(availableQuickActions(all, "teacher"))).toEqual(ids([...quickActions]));
+    expect(ids(availableQuickActions(navAccessFixture(all, "teacher")))).toEqual(
+      ids([...quickActions]),
+    );
   });
 });
 

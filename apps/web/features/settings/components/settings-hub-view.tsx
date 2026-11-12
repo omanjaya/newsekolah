@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import type { ReactElement } from "react";
 
+import { navAccessFromMe } from "../../../lib/navigation-access";
 import { useSession } from "../../../lib/session/session-provider";
 import { buildSettingsHubSections } from "../settings-hub";
 
@@ -15,19 +16,14 @@ export function SettingsHubView(): ReactElement {
   const { me } = useSession();
   const [query, setQuery] = useState("");
 
-  const permissions = me?.permissions;
-  const profileKind = me?.profile_kind;
-  const roles = me?.roles;
   const { all, filtered } = useMemo(() => {
     const translate = (key: string): string => t(key);
-    const can = (permission: string) => permissions?.includes(permission) ?? false;
-    const roleSlugs = (roles ?? []).map((role) => role.slug);
-    const base = { can, profileKind, roleSlugs, translate };
+    const base = { access: navAccessFromMe(me), translate };
     return {
       all: buildSettingsHubSections(base),
       filtered: buildSettingsHubSections({ ...base, query }),
     };
-  }, [permissions, profileKind, roles, query, t]);
+  }, [me, query, t]);
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">

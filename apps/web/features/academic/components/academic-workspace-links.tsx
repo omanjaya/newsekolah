@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { WorkspaceNav } from "../../../components/workspace-nav";
+import { navAccessFromMe } from "../../../lib/navigation-access";
 import { canOpenPath } from "../../../lib/navigation-permissions";
 import { useSession } from "../../../lib/session/session-provider";
 import { useSubstitutionsQuery } from "../../substitutions/api";
@@ -42,8 +43,8 @@ export function AcademicWorkspaceLinks({
   const { me } = useSession();
   const pathname = usePathname();
   const search = useSearchParams();
-  const canOpen = (href: string) =>
-    canOpenPath(href, (p) => me?.permissions.includes(p) ?? false, me?.profile_kind);
+  const access = navAccessFromMe(me);
+  const canOpen = (href: string) => canOpenPath(href, access);
   const context = new URLSearchParams();
   for (const key of area === "years" ? ["fromYear", "toYear"] : ["date"]) {
     const value = search.get(key);

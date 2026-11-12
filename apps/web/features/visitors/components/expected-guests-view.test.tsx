@@ -12,7 +12,10 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/visitors/expected",
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
-vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => mocks.canManage }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useCan: () => mocks.canManage,
+  useSession: () => ({ me: undefined }),
+}));
 vi.mock("../../reference/api", () => ({
   useLookup: () => new Map(),
 }));

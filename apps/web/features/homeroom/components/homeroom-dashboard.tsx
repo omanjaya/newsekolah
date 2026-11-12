@@ -31,6 +31,8 @@ export function HomeroomDashboard({
   pendingLeave,
   dashboardLoading,
   leaveLoading,
+  showLeave,
+  showDiscipline,
   timeZone,
 }: {
   attentionRows: Entry[];
@@ -38,6 +40,10 @@ export function HomeroomDashboard({
   pendingLeave: LeaveRequestSummary[];
   dashboardLoading: boolean;
   leaveLoading: boolean;
+  /** False when the school switched permits off: the pending-leave card goes away. */
+  showLeave: boolean;
+  /** False when the school switched discipline off: the discipline card goes away. */
+  showDiscipline: boolean;
   timeZone?: string;
 }): ReactElement {
   const t = useTranslations("app.homeroom");
@@ -104,70 +110,74 @@ export function HomeroomDashboard({
         )}
       </DashboardCard>
 
-      <DashboardCard
-        icon={<UsersRound className="size-4" aria-hidden="true" />}
-        title={t("pendingLeaveTitle")}
-      >
-        {leaveLoading ? (
-          <Skeleton className="h-16 w-full" aria-busy="true" />
-        ) : pendingLeave.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("pendingLeaveEmpty")}</p>
-        ) : (
-          <ul className="flex flex-col divide-y divide-border">
-            {pendingLeave.map((item) => (
-              <li key={item.instance_id}>
-                <Link
-                  href={`/leave-requests/${item.instance_id}`}
-                  className="flex items-center justify-between gap-2 py-2 hover:text-accent"
-                >
-                  <div className="flex min-w-0 flex-col">
-                    <span className="truncate text-[13px] text-fg">
-                      {formatDisplayName(item.student_name)}
-                    </span>
-                    <span className="text-[12px] text-fg-muted">
-                      {formatDate(item.starts_on, { locale, timeZone })} -{" "}
-                      {formatDate(item.ends_on, { locale, timeZone })}
-                    </span>
-                  </div>
-                  <Badge variant="accent">{t("pendingLeaveReview")}</Badge>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </DashboardCard>
+      {showLeave && (
+        <DashboardCard
+          icon={<UsersRound className="size-4" aria-hidden="true" />}
+          title={t("pendingLeaveTitle")}
+        >
+          {leaveLoading ? (
+            <Skeleton className="h-16 w-full" aria-busy="true" />
+          ) : pendingLeave.length === 0 ? (
+            <p className="text-[13px] text-fg-muted">{t("pendingLeaveEmpty")}</p>
+          ) : (
+            <ul className="flex flex-col divide-y divide-border">
+              {pendingLeave.map((item) => (
+                <li key={item.instance_id}>
+                  <Link
+                    href={`/leave-requests/${item.instance_id}`}
+                    className="flex items-center justify-between gap-2 py-2 hover:text-accent"
+                  >
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate text-[13px] text-fg">
+                        {formatDisplayName(item.student_name)}
+                      </span>
+                      <span className="text-[12px] text-fg-muted">
+                        {formatDate(item.starts_on, { locale, timeZone })} -{" "}
+                        {formatDate(item.ends_on, { locale, timeZone })}
+                      </span>
+                    </div>
+                    <Badge variant="accent">{t("pendingLeaveReview")}</Badge>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DashboardCard>
+      )}
 
-      <DashboardCard
-        icon={<ShieldAlert className="size-4" aria-hidden="true" />}
-        title={t("disciplineTitle")}
-      >
-        {dashboardLoading ? (
-          <Skeleton className="h-16 w-full" aria-busy="true" />
-        ) : disciplineRows.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("disciplineEmpty")}</p>
-        ) : (
-          <ul className="flex flex-col divide-y divide-border">
-            {disciplineRows.map((row) => (
-              <li key={row.student_user_id}>
-                <Link
-                  href={studentProfileHref(row.student_user_id, "discipline")}
-                  className="flex items-center justify-between gap-2 py-2 hover:text-accent"
-                >
-                  <span className="truncate text-[13px] text-fg">
-                    {formatDisplayName(row.name)}
-                  </span>
-                  <span className="shrink-0 text-[12px] text-fg-muted">
-                    {t("violationSummary", {
-                      count: row.violation_count ?? 0,
-                      points: row.violation_points ?? 0,
-                    })}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </DashboardCard>
+      {showDiscipline && (
+        <DashboardCard
+          icon={<ShieldAlert className="size-4" aria-hidden="true" />}
+          title={t("disciplineTitle")}
+        >
+          {dashboardLoading ? (
+            <Skeleton className="h-16 w-full" aria-busy="true" />
+          ) : disciplineRows.length === 0 ? (
+            <p className="text-[13px] text-fg-muted">{t("disciplineEmpty")}</p>
+          ) : (
+            <ul className="flex flex-col divide-y divide-border">
+              {disciplineRows.map((row) => (
+                <li key={row.student_user_id}>
+                  <Link
+                    href={studentProfileHref(row.student_user_id, "discipline")}
+                    className="flex items-center justify-between gap-2 py-2 hover:text-accent"
+                  >
+                    <span className="truncate text-[13px] text-fg">
+                      {formatDisplayName(row.name)}
+                    </span>
+                    <span className="shrink-0 text-[12px] text-fg-muted">
+                      {t("violationSummary", {
+                        count: row.violation_count ?? 0,
+                        points: row.violation_points ?? 0,
+                      })}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DashboardCard>
+      )}
     </div>
   );
 }

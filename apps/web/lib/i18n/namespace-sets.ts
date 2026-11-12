@@ -121,6 +121,7 @@ const APP_BASE_NAMESPACES = [
   "app.duty",
   "app.forbidden",
   "app.homeroom",
+  "app.moduleUnavailable",
   "app.navigation",
   "app.notifications",
   "app.permits",

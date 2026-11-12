@@ -100,4 +100,14 @@ describe("useCheckInBlock", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.getByText("done")).toBeInTheDocument();
   });
+
+  it("returns EMPTY_BLOCK and keeps the history query idle while staff attendance is off", () => {
+    historyQuery.mockReturnValue(history(undefined));
+    const off = { ...me, disabled_modules: ["staff_attendance"] };
+
+    const { result } = renderHook(() => useCheckInBlock(off, true));
+
+    expect(result.current).toBe(EMPTY_BLOCK);
+    expect(historyQuery).toHaveBeenCalledWith("", "");
+  });
 });

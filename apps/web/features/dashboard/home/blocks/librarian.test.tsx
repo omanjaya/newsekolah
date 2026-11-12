@@ -147,4 +147,13 @@ describe("useLibrarianBlock", () => {
 
     expect(screen.getByText("Judul Buku")).toBeInTheDocument();
   });
+
+  it("returns EMPTY_BLOCK and keeps the dashboard query idle while the library is off", () => {
+    const libraryOff = { ...me, disabled_modules: ["library"] };
+
+    const { result } = renderHook(() => useLibrarianBlock(libraryOff, true));
+
+    expect(result.current).toEqual({ tiles: [], left: [], right: [] });
+    expect(libraryDashboardQuery).toHaveBeenCalledWith(false);
+  });
 });

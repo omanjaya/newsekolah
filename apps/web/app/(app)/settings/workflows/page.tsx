@@ -5,7 +5,7 @@ import { WorkflowDefinitionsView } from "../../../../features/workflows/componen
 
 export default function WorkflowsPage(): ReactElement {
   return (
-    <RouteGuard requiredPermission="manage_workflows">
+    <RouteGuard requiredPermission="manage_workflows" module="permits">
       <WorkflowDefinitionsView />
     </RouteGuard>
   );

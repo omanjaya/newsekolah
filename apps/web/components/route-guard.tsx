@@ -5,14 +5,18 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import type { ReactElement, ReactNode } from "react";
 
+import { isModuleEnabled, type FeatureModule } from "../lib/modules/feature-modules";
 import { useSession } from "../lib/session/session-provider";
 
 import { ForbiddenPage } from "./forbidden-page";
+import { ModuleUnavailablePage } from "./module-unavailable-page";
 
 export interface RouteGuardProps {
   children: ReactNode;
   /** Permission code required for this page; omitted means "any signed-in user". */
   requiredPermission?: string;
+  /** Feature module the page belongs to; while the school has it off, the page is replaced by the unavailable state. */
+  module?: FeatureModule;
 }
 
 /**
@@ -22,7 +26,11 @@ export interface RouteGuardProps {
  * password-change redirect here so every page under `(app)` gets it for
  * free instead of each page checking `must_change_password` itself.
  */
-export function RouteGuard({ children, requiredPermission }: RouteGuardProps): ReactElement {
+export function RouteGuard({
+  children,
+  requiredPermission,
+  module,
+}: RouteGuardProps): ReactElement {
   const { status, me, isReady } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -49,6 +57,10 @@ export function RouteGuard({ children, requiredPermission }: RouteGuardProps): R
 
   if (requiredPermission && !me?.permissions.includes(requiredPermission)) {
     return <ForbiddenPage />;
+  }
+
+  if (module && !isModuleEnabled(me, module)) {
+    return <ModuleUnavailablePage />;
   }
 
   return <>{children}</>;

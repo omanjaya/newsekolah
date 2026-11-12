@@ -22,6 +22,7 @@ import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { groupByDay } from "../../../lib/group-by-day";
+import { navAccessFromMe } from "../../../lib/navigation-access";
 import { useSession } from "../../../lib/session/session-provider";
 import { useDayLabel } from "../../../lib/use-day-label";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
@@ -32,6 +33,7 @@ import {
   useMarkReadMutation,
   useNotificationsQuery,
 } from "../api";
+import { openableHref } from "../lib/openable-href";
 
 type Notification = components["schemas"]["Notification"];
 
@@ -175,6 +177,8 @@ function NotificationRow({
   onOpen: () => void;
 }): ReactElement {
   const t = useTranslations("app.notifications");
+  const { me } = useSession();
+  const href = openableHref(item.href, navAccessFromMe(me));
   const unread = !item.read_at;
   const content = (
     <div className="flex items-start gap-3 px-4 py-3">
@@ -197,8 +201,8 @@ function NotificationRow({
 
   return (
     <li className={cn(unread && "bg-accent/5")}>
-      {item.href ? (
-        <Link href={item.href} onClick={onOpen} className="block hover:bg-bg">
+      {href ? (
+        <Link href={href} onClick={onOpen} className="block hover:bg-bg">
           {content}
         </Link>
       ) : (

@@ -16,6 +16,7 @@ import type { ReactElement, ReactNode } from "react";
 import { useMemo } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { StudentDisciplineReportButton } from "../../discipline/components/student-discipline-view";
@@ -55,16 +56,23 @@ const TAB_PANELS: Record<StudentProfileTab, (props: { studentId: string }) => Re
 export function StudentProfileView({ studentId }: { studentId: string }): ReactElement {
   const t = useTranslations("app.studentProfile");
   const canViewUsers = useCan("view_users");
-  const canSnapshot = useCan("view_mentoring");
-  const canDiscipline = useCan("view_discipline");
-  const canCounsel = useCan("manage_counseling");
+  const mentoringOn = useModuleEnabled("mentoring");
+  const disciplineOn = useModuleEnabled("discipline");
+  const canSnapshot = useCan("view_mentoring") && mentoringOn;
+  const canDiscipline = useCan("view_discipline") && disciplineOn;
+  const canCounsel = useCan("manage_counseling") && disciplineOn;
   const workspace = useTranslations("app.serviceWorkspace");
 
   const { me } = useSession();
   const granted = me?.permissions;
+  const disabledModules = me?.disabled_modules;
   const tabs = useMemo(
-    () => visibleStudentProfileTabs((permission) => granted?.includes(permission) ?? false),
-    [granted],
+    () =>
+      visibleStudentProfileTabs(
+        (permission) => granted?.includes(permission) ?? false,
+        disabledModules ?? [],
+      ),
+    [granted, disabledModules],
   );
   const [tab, setTab] = useUrlState<string>("tab", tabs, tabs[0] ?? "overview");
 

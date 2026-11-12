@@ -4,6 +4,7 @@ import { queryKeys, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
+import { useModuleEnabled } from "../../lib/modules/use-module-enabled";
 
 export type ViolationType = components["schemas"]["ViolationType"];
 export type ViolationTypeWrite = components["schemas"]["ViolationTypeWrite"];
@@ -65,9 +66,15 @@ function useInvalidateDiscipline() {
 
 // Violation catalog.
 
+/**
+ * Also read by the attendance session editor, an always-on screen, so it
+ * stays idle while the school has discipline switched off.
+ */
 export function useViolationTypesQuery(includeInactive = false) {
   const client = useApiClient();
+  const enabled = useModuleEnabled("discipline");
   return useQuery({
+    enabled,
     queryKey: keys.violationTypes(includeInactive),
     queryFn: () =>
       client.GET("/v1/discipline/violation-types", {

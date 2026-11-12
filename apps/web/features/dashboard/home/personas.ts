@@ -1,3 +1,5 @@
+import { isModuleEnabled } from "../../../lib/modules/feature-modules";
+
 import type { Me, PersonaKey } from "./types";
 
 const LEADERSHIP_ROLES = new Set(["admin", "super_admin", "principal"]);
@@ -9,7 +11,13 @@ export function resolvePersonas(me: Me): Set<PersonaKey> {
   const hasDuty = (slug: string) => (me.duties ?? []).some((duty) => duty.slug === slug);
   const hasRole = (slug: string) => me.roles.some((role) => role.slug === slug);
   if (me.profile_kind === "teacher" && can("manage_attendance")) personas.add("teacher");
-  if (me.profile_kind === "teacher" || me.profile_kind === "staff") personas.add("checkIn");
+  // The check-in card, the librarian block and the picket block are each
+  // nothing but their module's data, so they go away with it.
+  if (
+    (me.profile_kind === "teacher" || me.profile_kind === "staff") &&
+    isModuleEnabled(me, "staff_attendance")
+  )
+    personas.add("checkIn");
   if (hasDuty("homeroom")) personas.add("homeroom");
   if (me.profile_kind === "student") personas.add("student");
   if (me.roles.some((role) => LEADERSHIP_ROLES.has(role.slug))) personas.add("leadership");
@@ -19,8 +27,9 @@ export function resolvePersonas(me: Me): Set<PersonaKey> {
   // and a teacher granted issue_scan_tokens without the picket duty must not
   // get the picket block either. Librarian and picket are read off the
   // caller's role/duty assignment instead.
-  if (hasRole("librarian") || hasDuty("librarian")) personas.add("librarian");
-  if (hasDuty("picket")) personas.add("picket");
+  if ((hasRole("librarian") || hasDuty("librarian")) && isModuleEnabled(me, "library"))
+    personas.add("librarian");
+  if (hasDuty("picket") && isModuleEnabled(me, "permits")) personas.add("picket");
   if (hasDuty("counselor")) personas.add("counselor");
   return personas;
 }

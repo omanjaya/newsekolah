@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { WorkspaceNav } from "../../../components/workspace-nav";
+import { navAccessFromMe } from "../../../lib/navigation-access";
 import { canOpenPath } from "../../../lib/navigation-permissions";
 import { useSession } from "../../../lib/session/session-provider";
 
@@ -27,20 +28,21 @@ export function LearningWorkspaceNav(): ReactElement {
   const { me } = useSession();
   const pathname = usePathname();
   const requested = useSearchParams().get("tab");
-  const items = DESTINATIONS.filter(({ path }) =>
-    canOpenPath(path, (p) => me?.permissions.includes(p) ?? false, me?.profile_kind),
-  ).map(({ path, tab, tabs, label }) => {
-    const first = path === "/school/learning" ? "subjects" : "teaching";
-    const known = DESTINATIONS.filter((d) => d.path === path).flatMap(
-      (d) => d.tabs as readonly string[],
-    );
-    const effective = requested && known.includes(requested) ? requested : first;
-    const current = (tabs as readonly string[]).includes(effective);
-    return {
-      href: tab === first ? path : `${path}?tab=${tab}`,
-      label: t(label),
-      active: pathname === path && current,
-    };
-  });
+  const access = navAccessFromMe(me);
+  const items = DESTINATIONS.filter(({ path }) => canOpenPath(path, access)).map(
+    ({ path, tab, tabs, label }) => {
+      const first = path === "/school/learning" ? "subjects" : "teaching";
+      const known = DESTINATIONS.filter((d) => d.path === path).flatMap(
+        (d) => d.tabs as readonly string[],
+      );
+      const effective = requested && known.includes(requested) ? requested : first;
+      const current = (tabs as readonly string[]).includes(effective);
+      return {
+        href: tab === first ? path : `${path}?tab=${tab}`,
+        label: t(label),
+        active: pathname === path && current,
+      };
+    },
+  );
   return <WorkspaceNav label={t("learningNav")} items={items} />;
 }
