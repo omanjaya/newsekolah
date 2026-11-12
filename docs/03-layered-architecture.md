@@ -138,6 +138,8 @@ Hook TanStack Query dan zod schema hidup di `packages/`; web dan mobile hanya be
 
 Setiap modul mendaftarkan diri lewat `Register(deps)` dan memeriksa `school.feature_flags`. Bila `library.enabled = false` untuk suatu sekolah: setiap operasi modul itu (dikenali dari tag OpenAPI, ditegakkan satu gerbang pusat di `cmd/api/module_gate_middleware.go`) mengembalikan `403 MODULE_DISABLED`, menu tidak muncul, worker tidak dijadwalkan. Flag disimpan per tenant dan diubah dari konsol admin sekolah.
 
+Pekerjaan di luar request HTTP mengikuti aturan yang sama: job periodik melewati tenant yang modulnya mati (pembaca flag nil-safe disuntik dari `internal/wiring`), dan modul yang selalu aktif yang memanggil modul yang mati menurun dengan tenang (dilewati, daftar kosong, hitungan 0) tanpa menggagalkan operasinya sendiri. Modul yang mati tidak membuat data baru dan tidak mengirim notifikasi, tetapi data lamanya tidak dihapus. Setiap perubahan flag tercatat di `audit_logs` (`feature_flag.update`).
+
 ## 6. Hal yang sengaja dipertahankan dari desain lama
 
 - Scope tahun ajaran aktif pada semua data operasional (`academic_year_id`), dengan error `ACADEMIC_YEAR_REQUIRED` bila belum ada.
