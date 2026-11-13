@@ -86,6 +86,8 @@ function RadioDot(): ReactElement {
         "transition-colors group-hover:border-fg-muted group-active:bg-state-pressed",
         "group-data-[state=checked]:border-accent group-data-[state=checked]:bg-accent",
         "group-disabled:border-border group-disabled:bg-surface-sunken",
+        // A disabled checked radio keeps its fill (the value still shows) at half strength, as Checkbox does.
+        "group-disabled:group-data-[state=checked]:opacity-50",
       )}
     >
       <RadioGroupPrimitive.Indicator className="size-1.5 rounded-full bg-accent-fg" />
@@ -163,7 +165,7 @@ export const RadioGroupItem = forwardRef<HTMLButtonElement, RadioGroupItemProps>
     }
 
     return (
-      <div className={cn("flex gap-3 py-2.5 md:pointer-fine:py-1.5", className)}>
+      <div className={cn("group/radio flex gap-3 py-2.5 md:pointer-fine:py-1.5", className)}>
         {/* The dot stays 16px; wherever the pointer is coarse the button
             around it is a 44px target whose negative margin hands the space
             back, as Checkbox does. */}
@@ -184,11 +186,13 @@ export const RadioGroupItem = forwardRef<HTMLButtonElement, RadioGroupItemProps>
           </RadioGroupPrimitive.Item>
         </span>
         <span className="flex min-w-0 flex-col gap-0.5">
+          {/* Dimmed from the row, so a disabled group (Radix disables each
+              item's button) reads as disabled as well as a disabled item. */}
           <label
             htmlFor={id}
             className={cn(
-              "text-body",
-              props.disabled ? "cursor-not-allowed text-fg-muted" : "cursor-pointer text-fg",
+              "cursor-pointer text-body text-fg",
+              "group-has-disabled/radio:cursor-not-allowed group-has-disabled/radio:text-fg-muted",
             )}
           >
             {label}
