@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, type PropsWithChildren, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  type ComponentPropsWithRef,
+  type PropsWithChildren,
+  type ReactNode,
+} from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -21,7 +27,7 @@ export function EmptyStateInlineScope({ children }: PropsWithChildren) {
   return <FramedSurfaceContext.Provider value>{children}</FramedSurfaceContext.Provider>;
 }
 
-export interface EmptyStateProps {
+export interface EmptyStateProps extends Omit<ComponentPropsWithRef<"div">, "title" | "children"> {
   icon?: ReactNode;
   title: string;
   description?: string;
@@ -40,7 +46,6 @@ export interface EmptyStateProps {
   tone?: Tone;
   /** Heading level of the title, for when the empty state stands in for a titled section. */
   titleAs?: "h2" | "h3" | "h4" | "p";
-  className?: string;
 }
 
 const FRAME_CLASS: Record<EmptyStateVariant, string> = {
@@ -63,6 +68,7 @@ export function EmptyState({
   tone = "neutral",
   titleAs: Title = "p",
   className,
+  ...props
 }: EmptyStateProps) {
   const card = useCardContext();
   const inFrame = useContext(FramedSurfaceContext) || card !== null;
@@ -71,7 +77,7 @@ export function EmptyState({
   const hasActions = Boolean(action) || Boolean(secondaryAction);
 
   return (
-    <div className={cn("flex flex-col", FRAME_CLASS[look], className)}>
+    <div className={cn("flex flex-col", FRAME_CLASS[look], className)} {...props}>
       {icon && (
         <IconCircle tone={tone} size={compact ? "sm" : look === "framed" ? "lg" : "md"}>
           {icon}

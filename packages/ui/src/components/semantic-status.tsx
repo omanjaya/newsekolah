@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef, ReactElement } from "react";
+import type { ComponentPropsWithRef, ReactElement } from "react";
 
 import { Badge, type BadgeSize } from "./badge.js";
 import type { StatusName } from "./status-badge.js";
@@ -97,10 +97,7 @@ export function semanticStatusToken(status: SemanticStatus): StatusName | null {
   return SEMANTIC_STATUS_TOKEN[status];
 }
 
-export interface SemanticStatusBadgeProps extends Omit<
-  ComponentPropsWithoutRef<"span">,
-  "children"
-> {
+export interface SemanticStatusBadgeProps extends Omit<ComponentPropsWithRef<"span">, "children"> {
   status: SemanticStatus;
   /** The localized word for this state; always shown next to the colour. */
   label: string;

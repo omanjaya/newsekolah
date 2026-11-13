@@ -8,7 +8,7 @@ import {
   WifiOff,
   type LucideIcon,
 } from "lucide-react";
-import type { ReactElement, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactElement, ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -28,7 +28,7 @@ const KIND: Record<StatePageKind, { icon: LucideIcon; tone: Tone }> = {
   offline: { icon: WifiOff, tone: "neutral" },
 };
 
-export interface StatePageProps {
+export interface StatePageProps extends Omit<ComponentPropsWithRef<"div">, "title" | "children"> {
   /** Picks the icon and its tone. */
   kind: StatePageKind;
   title: string;
@@ -43,7 +43,6 @@ export interface StatePageProps {
   icon?: ReactNode;
   /** Fills the viewport (a route without the app shell) instead of the shell's content area. */
   fullScreen?: boolean;
-  className?: string;
 }
 
 /**
@@ -62,6 +61,7 @@ export function StatePage({
   icon,
   fullScreen = false,
   className,
+  ...props
 }: StatePageProps): ReactElement {
   const labels = useUiLabels();
   const { icon: KindIcon, tone } = KIND[kind];
@@ -74,6 +74,7 @@ export function StatePage({
         fullScreen ? "min-h-dvh" : "min-h-[60dvh]",
         className,
       )}
+      {...props}
     >
       <div className="flex w-full max-w-md flex-col items-center gap-5 text-center">
         <IconCircle tone={tone} size="xl">

@@ -1,10 +1,10 @@
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
 import { CountBadge } from "./count-badge.js";
 
-export interface SectionHeaderProps extends Omit<ComponentPropsWithoutRef<"div">, "title"> {
+export interface SectionHeaderProps extends Omit<ComponentPropsWithRef<"div">, "title"> {
   title: ReactNode;
   description?: ReactNode;
   /** A tally next to the title ("Perlu tindakan 3"); zero renders nothing. */

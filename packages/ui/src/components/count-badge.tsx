@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -12,7 +12,7 @@ const TONE_CLASS: Record<CountBadgeTone, string> = {
   danger: "bg-danger text-bg",
 };
 
-export interface CountBadgeProps extends Omit<ComponentPropsWithoutRef<"span">, "children"> {
+export interface CountBadgeProps extends Omit<ComponentPropsWithRef<"span">, "children"> {
   count: number;
   /** Above this the badge reads "99+". */
   max?: number;
