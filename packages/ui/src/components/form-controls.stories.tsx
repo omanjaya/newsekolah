@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import type { DateRange } from "./calendar.js";
 import { DatePicker } from "./date-picker.js";
 import { DateRangePicker } from "./date-range-picker.js";
+import { Field } from "./field.js";
 import { Input } from "./input.js";
 import { MonthPicker } from "./month-picker.js";
 import { NumberInput } from "./number-input.js";
@@ -24,12 +25,9 @@ const phoneFrame: Decorator = (Story) => (
 
 function Row({ id, label, children }: { id: string; label: string; children: ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-fg">
-        {label}
-      </label>
+    <Field id={id} label={label}>
       {children}
-    </div>
+    </Field>
   );
 }
 
