@@ -34,22 +34,6 @@ export interface DataTableToolbarLabels {
   clearSearch: string;
 }
 
-/**
- * Legacy: the defaults now come from `UiLabels` (`tableSearchPlaceholder`,
- * `tableColumns`...), so a locale provider translates them; this constant
- * only keeps the old export working.
- */
-export const DEFAULT_TOOLBAR_LABELS: DataTableToolbarLabels = {
-  searchPlaceholder: "Cari",
-  columns: "Kolom tampil",
-  density: "Kepadatan",
-  densityNormal: "Normal",
-  densityCompact: "Padat",
-  noSearchResultsTitle: "Tidak ada hasil",
-  noSearchResultsDescription: "Coba kata kunci lain atau hapus pencarian.",
-  clearSearch: "Hapus pencarian",
-};
-
 /** The toolbar's labels: the caller's overrides on top of the provider's `UiLabels`. */
 export function toolbarLabelsFrom(
   uiLabels: UiLabels,
@@ -145,11 +129,14 @@ function ColumnItems<TData>({
 
 /**
  * Search, filter pills, the table's own actions and its view options.
- * On a phone: the search box takes the first row beside the actions and
- * one overflow menu; the pills scroll sideways on a row of their own, so
- * the first card is never pushed below the fold by wrapped pills. From
- * `md` up it is one row (pills wrap if they must), density and columns as
- * separate icons at the end.
+ * From `md` up it is one row in that order (pills wrap if they must),
+ * density and columns as separate icons at the end. On a phone the
+ * table's own actions take the first row, each an equal share of it; the
+ * search box takes the next beside one overflow menu; the pills scroll
+ * sideways on a row of their own, so the first card is never pushed below
+ * the fold by wrapped pills. The DOM keeps the desktop order, which is
+ * where keyboards and Tab are, and the phone rows are arranged with
+ * `order`.
  */
 export function DataTableToolbar<TData>({
   table,
@@ -225,7 +212,8 @@ export function DataTableToolbar<TData>({
         />
       )}
       {/* On a phone the table's own actions take the first row, each an equal
-          share of it, so the search below keeps the whole width. */}
+          share of it, so the search row below holds only the box and the
+          overflow menu. */}
       {actions !== undefined && (
         <div className="order-0 flex basis-full items-center gap-2 [&>*]:flex-1 md:order-3 md:ml-auto md:basis-auto md:[&>*]:flex-none">
           {actions}

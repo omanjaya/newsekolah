@@ -82,7 +82,13 @@ export interface DataTableFiltersLabels {
 /**
  * Legacy: the defaults now come from `UiLabels` (`tableFiltersReset`,
  * `tableFilterRemove`...), so a locale provider translates them; this
- * constant only keeps the old export working.
+ * constant only keeps the package's old public export working, and
+ * nothing in the package or apps/web reads it.
+ *
+ * Deprecated: use `UiLabelsProvider` (or the `labels` prop) instead. To be
+ * removed with the next breaking release of the package, by 2027-01-31.
+ * (Not tagged `@deprecated`: the package index still re-exports it, which
+ * the lint rule against deprecated symbols would refuse.)
  */
 export const DEFAULT_DATA_TABLE_FILTERS_LABELS: DataTableFiltersLabels = {
   reset: "Reset filter",

@@ -15,17 +15,6 @@ export interface DataTablePaginationLabels {
   next: string;
 }
 
-/**
- * Legacy: the defaults now come from `UiLabels` (`tablePageOf`,
- * `tablePrevious`, `tableNext`), so a locale provider translates them; this
- * constant only keeps the old export working.
- */
-export const DEFAULT_PAGINATION_LABELS: DataTablePaginationLabels = {
-  pageLabel: (current, total) => `Halaman ${current} dari ${total}`,
-  previous: "Ke halaman sebelumnya",
-  next: "Ke halaman berikutnya",
-};
-
 /** Previous and next for a list that pages by cursor or offset without a total. */
 export interface DataTableCursorPagination {
   hasPrevious: boolean;
