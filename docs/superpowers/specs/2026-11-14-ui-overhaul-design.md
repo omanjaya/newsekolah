@@ -41,6 +41,10 @@ Sumber tunggal tetap `packages/ui-tokens/tokens.json`, dibangkitkan ke CSS varia
 | Tata letak | lebar kontainer `narrow` 720, `default` 1200, `wide` 1440; breakpoint bernama      | Dipakai `PageShell`                                                           |
 | Gerak      | lihat bagian 4                                                                     |                                                                               |
 
+Breakpoint bernama adalah breakpoint bawaan Tailwind (`sm` 640, `md` 768, `lg` 1024, `xl` 1280); tidak dijadikan token karena media query tidak bisa membaca CSS variable, dan langkah HP peran `display` memakai `sm` yang sama.
+
+Koreksi dari tinjauan gelombang 1: permukaan gelap diurutkan menurut tumpukan (`surface-sunken` `#121110` di bawah latar, `surface-overlay` `#282621` untuk dialog, `surface-raised` `#2E2C27` untuk popover, menu, dan select yang terbuka di atas dialog); `border-strong` gelap menjadi `#7B776E` agar tetap 3:1 di raised; `line` dan `border` gelap ditulis sebagai lapisan tembus pandang berbasis `fg` yang di `surface` melukis nilai yang disetujui hampir persis, supaya garis tidak hilang di permukaan raised dan overlay.
+
 Aksen mode gelap mengikuti token (`#2FD6A0`); turunan aksen tenant di `apps/web/lib/tenant/accent.ts` disesuaikan supaya aksen bawaan tidak kusam (temuan shell).
 
 Urutan z-index diubah menjadi `sticky` < `overlay` < `modal` < `dropdown` < `popover` < `toast` < `tooltip`, supaya menu dan popover yang dibuka dari dalam dialog atau dekat bilah lengket tidak tertutup.
@@ -53,14 +57,16 @@ Ukuran font literal `text-[Npx]` dilarang di `apps/web` dan `packages/ui`. Yang 
 | ---------- | --------------------- | ----- | ----------------- | ----------------------------------------------- |
 | `display`  | 28 / 32, -0.02em      | 700   | Manrope           | Judul halaman, sapaan beranda, judul kartu hero |
 | `title-lg` | 22 / 28, -0.01em      | 700   | Manrope           | Angka besar                                     |
-| `title`    | 18 / 24               | 700   | Manrope           | Judul dialog, judul kartu utama                 |
-| `heading`  | 16 / 22               | 700   | Manrope           | Judul bagian, judul kartu                       |
-| `body`     | 14 / 20               | 400   | Plus Jakarta Sans | Teks isi, sel tabel                             |
-| `body-sm`  | 13 / 18               | 400   | Plus Jakarta Sans | Teks sekunder, deskripsi, eyebrow halaman       |
+| `title`    | 18 / 24, -0.01em      | 700   | Manrope           | Judul dialog, judul kartu utama                 |
+| `heading`  | 16 / 22, -0.01em      | 700   | Manrope           | Judul bagian, judul kartu                       |
+| `body`     | 14 / 20               | 400   | Plus Jakarta Sans | Teks isi, nilai di kartu tabel HP               |
+| `body-sm`  | 13 / 18               | 400   | Plus Jakarta Sans | Teks sekunder, deskripsi, sel tabel desktop     |
 | `label`    | 13 / 18               | 600   | Plus Jakarta Sans | Label field, tombol, tab                        |
 | `caption`  | 12 / 16               | 500   | Plus Jakarta Sans | Keterangan, kepala kolom tabel, badge           |
 
 Di HP, `display` turun ke 24 / 28. Bila artboard acuan menunjukkan nilai lain untuk komponen tertentu, artboard yang diikuti dan tabel ini diperbarui.
+
+Koreksi dari tinjauan gelombang 1: `title` dan `heading` mendapat tracking -0.01em (judul kartu Manrope tebal 16 px tanpa tracking 2,5% lebih lebar dari sebelumnya dan memecah "Absen Masuk / Pulang" di HP); `heading` tidak lagi dibagi seimbang saat terbungkus. Sel tabel desktop memakai `body-sm` demi kepadatan alat admin, sedangkan nilai di kartu tabel HP memakai `body`.
 
 Koreksi dari artboard (gelombang 1): tinggi baris `display` 32 (bukan 34) dan 28 di HP (bukan 30), mengikuti `line-height: 1.1` judul artboard; judul kartu hero di artboard 26 px dengan -0.02em, lebih dekat ke `display` daripada `title-lg` 22, sehingga `title-lg` khusus untuk angka besar (artboard: 22 px, -0.01em, sama persis); eyebrow halaman di artboard 13 px reguler, jadi memakai `body-sm`, bukan `caption`. Tetap seperti tabel walau artboard sedikit berbeda: judul bagian artboard 17 px (`heading` tetap 16 agar tidak menyatu dengan `title` 18), dan sapaan artboard 28 px di HP (langkah turun ke 24 tetap dipakai karena judul halaman nyata jauh lebih panjang, misalnya "Selamat datang, Admin Contoh" sudah dua baris pada 28 px di layar 390 px).
 
@@ -79,6 +85,7 @@ Tujuannya memberi kesan halus dan responsif, bukan menarik perhatian. Semua gera
 | `ease-standard`    | `cubic-bezier(0.2, 0.8, 0.2, 1)` | Perpindahan dan perubahan keadaan                  |
 | `ease-enter`       | `cubic-bezier(0.16, 1, 0.3, 1)`  | Elemen masuk                                       |
 | `ease-exit`        | `cubic-bezier(0.4, 0, 1, 1)`     | Elemen keluar                                      |
+| `ease-sheet`       | `cubic-bezier(0.32, 0.72, 0, 1)` | Geser sejauh tinggi elemen (lembar, bilah simpan)  |
 | `motion-rise`      | 8 px                             | Jarak naik saat masuk                              |
 
 **Kosakata yang diizinkan** (di luar daftar ini tidak ada animasi):
@@ -86,7 +93,7 @@ Tujuannya memberi kesan halus dan responsif, bukan menarik perhatian. Semua gera
 1. **Keadaan.** Warna, latar, batas, dan bayangan berubah dalam 120 ms pada semua elemen interaktif.
 2. **Tekan.** `Button`, kartu yang bisa diklik, dan item tab bawah mengecil ke 0,98 dalam 80 ms. Tautan teks dan baris tabel tidak.
 3. **Masuk konten.** Isi halaman memudar dan naik 8 px dalam 200 ms sekali per navigasi, pada pembungkus `PageShell`, bukan per anak. Ubin dan kartu beranda masuk berurutan dengan jeda 40 ms, paling banyak 6 langkah, hanya pada muat pertama.
-4. **Lapisan.** Dialog: pudar dan skala 0,97 ke 1 dalam 200 ms, keluar 120 ms. Lembar bawah: geser dari bawah 320 ms, keluar 200 ms. Popover, menu, tooltip: pudar dan geser 4 px dari arah jangkarnya dalam 120 sampai 160 ms. Scrim memudar 200 ms.
+4. **Lapisan.** Dialog: pudar dan skala 0,97 ke 1 dalam 200 ms, keluar 120 ms. Lembar bawah: geser dari bawah 320 ms, keluar 200 ms. Popover, menu, tooltip: pudar dan geser 4 px dari arah jangkarnya dalam 120 sampai 160 ms. Scrim memudar masuk 200 ms dan keluar bersama lapisannya (dialog 120 ms, lembar 200 ms); lapisan yang sedang menutup tidak lagi menangkap klik.
 5. **Indikator.** Pil aktif `Tabs` dan `SegmentedControl` bergeser ke item baru dalam 200 ms. Penanda aktif sidebar, ibu jari `Switch`, lebar `Progress` dan meter (320 ms) ikut beranimasi.
 6. **Umpan balik.** Toast masuk dengan geser dan pudar 200 ms, keluar 120 ms. `StickySaveBar` naik 200 ms saat ada perubahan. Skeleton berkilau pelan (1,5 detik, linear) lalu berganti ke isi dengan pudar 120 ms. Angka pada ubin statistik beranda menghitung naik sekali dalam 320 ms.
 7. **Tata letak.** Lebar sidebar saat diciutkan atau dilebarkan (200 ms) dan buka-tutup grup navigasi (200 ms, lewat `grid-template-rows`).
