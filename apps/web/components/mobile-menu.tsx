@@ -20,13 +20,14 @@ export function MobileMenu({ items, scope }: { items: NavItem[]; scope?: string 
   const t = useTranslations();
   const preferences = useNavigationPreferences(scope, items, pathname);
   const activeHref = activeNavHref(pathname, items);
+  // The page being viewed is already highlighted in its own group; listing it
+  // again under "recent" shows the same destination as active twice.
+  const recent = preferences.recent.filter((item) => item.href !== activeHref);
   const groups = [
     ...(preferences.favorites.length
       ? [{ labelKey: "app.shell.mobileMenu.favorites", items: preferences.favorites }]
       : []),
-    ...(preferences.recent.length
-      ? [{ labelKey: "app.shell.mobileMenu.recent", items: preferences.recent }]
-      : []),
+    ...(recent.length ? [{ labelKey: "app.shell.mobileMenu.recent", items: recent }] : []),
     ...groupNavigation(items.filter((item) => item.sidebarPlacement !== "hidden")),
   ];
   return (
