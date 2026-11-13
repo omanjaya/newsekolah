@@ -17,7 +17,11 @@
     "policy": "Atur kebijakan",
     "summary": {
       "chartLabel": "Dari {total} siswa: {none} aman, {watch} siaga, {at_risk} berisiko."
-    }
+    },
+    "searchPlaceholder": "Cari nama siswa atau kelas",
+    "notAssignedTitle": "Belum ada kelas yang Anda pantau",
+    "notAssignedBody": "Daftar ini tersedia untuk wali kelas, guru BK, atau pimpinan sekolah yang memiliki penugasan aktif.",
+    "backHome": "Kembali ke beranda"
   },
   "level": {
     "none": "Aman",

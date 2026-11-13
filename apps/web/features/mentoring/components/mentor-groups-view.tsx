@@ -83,6 +83,8 @@ export function MentorGroupsView({
         id: "mentor",
         header: t("columns.mentor"),
         enableSorting: false,
+        // Gives the local search box the teacher's name to match against.
+        accessorFn: (item) => teacherMap.get(item.mentor_user_id)?.name ?? "",
         cell: ({ row }) => {
           const name = teacherMap.get(row.original.mentor_user_id)?.name;
           return name ? formatDisplayName(name) : t("unknownMentor");
@@ -165,8 +167,7 @@ export function MentorGroupsView({
           </TabsList>
         )}
         <TabsContent value="groups" className="pt-4 md:min-h-0 md:flex-1">
-          <div className="flex flex-col gap-3 md:h-full md:min-h-0">
-            {/*
+          {/*
               `scope` picks between two different endpoints (the caller's own
               groups vs. every group), not an optional list filter -- there is
               no "unset" state, so it stays its own required control rather
@@ -175,51 +176,57 @@ export function MentorGroupsView({
               directly above the table, next to the search box its toolbar
               renders (see docs/analysis/table-filters-audit-2026-09-30.md).
             */}
-            <Tabs value={scope} onValueChange={setScope} aria-label={workspace("groupScope")}>
-              <TabsList>
-                <TabsTrigger value="mine">{workspace("mine")}</TabsTrigger>
-                <TabsTrigger value="all">{workspace("allGroups")}</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <DataTable
-              stateKey="features/mentoring/components/mentor-groups-view:1"
-              mode="local"
-              data={items}
-              columns={columns}
-              rowCount={items.length}
-              pagination={{ pageIndex: 0, pageSize: 50 }}
-              onPaginationChange={() => undefined}
-              sorting={[]}
-              onSortingChange={() => undefined}
-              globalFilter=""
-              isLoading={isLoading}
-              getRowId={(item) => item.id}
-              onRowActivate={(item) => {
-                router.push(`/mentoring/groups/${item.id}`);
-              }}
-              fillHeight
-              emptyState={
-                <EmptyState
-                  icon={<domainIcons.mentoring aria-hidden="true" />}
-                  title={scope === "mine" ? mine("emptyTitle") : t("emptyTitle")}
-                  description={scope === "mine" ? mine("emptyBody") : t("emptyBody")}
-                  action={
-                    canManage && (
-                      <Button
-                        size="sm"
-                        icon={<Plus />}
-                        onClick={() => {
-                          setEditing("new");
-                        }}
-                      >
-                        {t("add")}
-                      </Button>
-                    )
-                  }
-                />
-              }
-            />
-          </div>
+          <Tabs
+            value={scope}
+            onValueChange={setScope}
+            className="flex flex-col gap-3 md:h-full md:min-h-0"
+          >
+            <TabsList aria-label={workspace("groupScope")}>
+              <TabsTrigger value="mine">{workspace("mine")}</TabsTrigger>
+              <TabsTrigger value="all">{workspace("allGroups")}</TabsTrigger>
+            </TabsList>
+            {/* The table is the panel of whichever scope trigger is active. */}
+            <TabsContent value={scope} className="flex flex-col pt-0 md:min-h-0 md:flex-1">
+              <DataTable
+                stateKey="features/mentoring/components/mentor-groups-view:1"
+                mode="local"
+                data={items}
+                columns={columns}
+                rowCount={items.length}
+                pagination={{ pageIndex: 0, pageSize: 50 }}
+                onPaginationChange={() => undefined}
+                sorting={[]}
+                onSortingChange={() => undefined}
+                globalFilter=""
+                isLoading={isLoading}
+                getRowId={(item) => item.id}
+                onRowActivate={(item) => {
+                  router.push(`/mentoring/groups/${item.id}`);
+                }}
+                fillHeight
+                emptyState={
+                  <EmptyState
+                    icon={<domainIcons.mentoring aria-hidden="true" />}
+                    title={scope === "mine" ? mine("emptyTitle") : t("emptyTitle")}
+                    description={scope === "mine" ? mine("emptyBody") : t("emptyBody")}
+                    action={
+                      canManage && (
+                        <Button
+                          size="sm"
+                          icon={<Plus />}
+                          onClick={() => {
+                            setEditing("new");
+                          }}
+                        >
+                          {t("add")}
+                        </Button>
+                      )
+                    }
+                  />
+                }
+              />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
         {canManage && (
           <TabsContent value="limit" className="pt-4 md:min-h-0 md:flex-1 md:overflow-y-auto">

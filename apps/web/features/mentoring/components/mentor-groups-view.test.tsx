@@ -83,4 +83,12 @@ describe("MentorGroupsView scope", () => {
     expect(mocks.useMentorGroupsQuery).toHaveBeenLastCalledWith(true);
     expect(screen.getByRole("tab", { name: "allGroups" })).toHaveAttribute("aria-selected", "true");
   });
+
+  it("gives the active scope tab a panel to control (no dangling aria-controls)", () => {
+    render(<MentorGroupsView />);
+
+    const controls = screen.getByRole("tab", { name: "mine" }).getAttribute("aria-controls");
+    expect(controls).toBeTruthy();
+    expect(document.getElementById(controls ?? "")).toHaveAttribute("role", "tabpanel");
+  });
 });

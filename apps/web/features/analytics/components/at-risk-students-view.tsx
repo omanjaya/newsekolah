@@ -6,6 +6,7 @@ import { formatDateTime } from "@newsekolah/i18n";
 import { Alert, Avatar, Button, DataTable, EmptyState, PageHeader, Skeleton } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ShieldAlert } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -57,6 +58,9 @@ export function AtRiskStudentsView(): ReactElement {
         id: "student",
         header: t("columns.student"),
         enableSorting: false,
+        // A column with a cell but no accessor is skipped by the local search
+        // box, so give it the text a person would type.
+        accessorFn: (item) => studentMap.get(item.student_user_id)?.name ?? "",
         cell: ({ row }) => {
           const student = studentMap.get(row.original.student_user_id);
           return student ? (
@@ -75,12 +79,14 @@ export function AtRiskStudentsView(): ReactElement {
         id: "class",
         header: t("columns.class"),
         enableSorting: false,
+        accessorFn: (item) => classMap.get(item.class_id)?.name ?? "",
         cell: ({ row }) => classMap.get(row.original.class_id)?.name ?? "-",
       },
       {
         id: "level",
         header: t("columns.level"),
         enableSorting: false,
+        accessorFn: (item) => levelLabel(item.level),
         cell: ({ row }) => (
           <RiskLevelBadge level={row.original.level} label={levelLabel(row.original.level)} />
         ),
@@ -109,7 +115,7 @@ export function AtRiskStudentsView(): ReactElement {
     const message =
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN");
     return (
-      <div className="p-4 md:p-6">
+      <div className="flex flex-col gap-6 p-4 md:p-6">
         <CounselingWorkspaceNav />
         <PageHeader
           eyebrow={t("eyebrow")}
@@ -128,7 +134,20 @@ export function AtRiskStudentsView(): ReactElement {
           }
         />
         {canManage && policyOpen && <PolicyDialog open={policyOpen} onOpenChange={setPolicyOpen} />}
-        <Alert variant="warning" title={message} className="mt-4" />
+        {error instanceof ApiError && error.status === 403 ? (
+          <EmptyState
+            icon={<ShieldAlert aria-hidden="true" />}
+            title={t("notAssignedTitle")}
+            description={t("notAssignedBody")}
+            action={
+              <Button asChild variant="secondary">
+                <Link href="/dashboard">{t("backHome")}</Link>
+              </Button>
+            }
+          />
+        ) : (
+          <Alert variant="warning" title={message} />
+        )}
       </div>
     );
   }
@@ -175,6 +194,7 @@ export function AtRiskStudentsView(): ReactElement {
             router.push(studentProfileHref(item.student_user_id));
           }}
           fillHeight
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           emptyState={
             <EmptyState
               icon={<ShieldAlert aria-hidden="true" />}
