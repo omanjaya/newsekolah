@@ -1,4 +1,4 @@
-import type { Decorator, Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
 import {
   BookOpen,
   CalendarCheck,
@@ -10,14 +10,10 @@ import {
   Users,
 } from "lucide-react";
 
+import { phoneViewport } from "../stories/phone-viewport.js";
+
 import { Card, CardHeader, CardTitle } from "./card.js";
 import { Stat, StatGrid } from "./stat.js";
-
-const phoneFrame: Decorator = (Story) => (
-  <div className="mx-auto w-[390px] max-w-full">
-    <Story />
-  </div>
-);
 
 const meta: Meta<typeof Stat> = {
   title: "Components/Stat",
@@ -31,12 +27,12 @@ type Story = StoryObj<typeof Stat>;
 function Tiles() {
   return (
     <StatGrid variant="tiles" className="sm:grid-cols-4">
-      <Stat icon={<CalendarCheck />} category="green" value="96%" label="Kehadiran" href="#a" />
-      <Stat icon={<FileText />} category="amber" value={1} label="Izin menunggu" href="#b" />
-      <Stat icon={<Star />} category="purple" value={3} label="Nilai baru" href="#c" />
+      <Stat icon={<CalendarCheck />} tone="green" value="96%" label="Kehadiran" href="#a" />
+      <Stat icon={<FileText />} tone="amber" value={1} label="Izin menunggu" href="#b" />
+      <Stat icon={<Star />} tone="purple" value={3} label="Nilai baru" href="#c" />
       <Stat
         icon={<BookOpen />}
-        category="blue"
+        tone="blue"
         value="2 buku"
         label="Kembali Sabtu"
         hint="Perpanjang di meja sirkulasi"
@@ -48,13 +44,13 @@ function Tiles() {
 /** Seven figures in one low row: the work-screen summary that keeps the table on the first screen. */
 function Strip() {
   return (
-    <StatGrid variant="strip">
-      <Stat icon={<Users />} category="blue" value={36} label="Siswa" />
-      <Stat icon={<ClipboardCheck />} category="green" value={28} label="Sudah dinilai" />
-      <Stat icon={<ClockAlert />} category="amber" value={8} label="Belum dinilai" />
-      <Stat icon={<Star />} category="purple" value="82,4" label="Rata-rata" />
-      <Stat icon={<UserCheck />} category="green" value={30} label="Tuntas KKM" />
-      <Stat icon={<ClockAlert />} category="red" value={6} label="Di bawah KKM" href="#remedial" />
+    <StatGrid variant="strip" aria-label="Ringkasan nilai X-A">
+      <Stat icon={<Users />} tone="blue" value={36} label="Siswa" />
+      <Stat icon={<ClipboardCheck />} tone="green" value={28} label="Sudah dinilai" />
+      <Stat icon={<ClockAlert />} tone="amber" value={8} label="Belum dinilai" />
+      <Stat icon={<Star />} tone="purple" value="82,4" label="Rata-rata" />
+      <Stat icon={<UserCheck />} tone="green" value={30} label="Tuntas KKM" />
+      <Stat icon={<ClockAlert />} tone="red" value={6} label="Di bawah KKM" href="#remedial" />
       <Stat value="91" label="Tertinggi" />
     </StatGrid>
   );
@@ -92,12 +88,12 @@ function Loading() {
     <div className="flex flex-col gap-4">
       <StatGrid variant="tiles">
         <Stat icon={<CalendarCheck />} value={0} label="Kehadiran" loading />
-        <Stat icon={<FileText />} category="amber" value={0} label="Izin menunggu" loading />
+        <Stat icon={<FileText />} tone="amber" value={0} label="Izin menunggu" loading />
       </StatGrid>
-      <StatGrid variant="strip">
-        <Stat icon={<Users />} category="blue" value={0} label="Siswa" loading />
+      <StatGrid variant="strip" aria-label="Ringkasan nilai">
+        <Stat icon={<Users />} tone="blue" value={0} label="Siswa" loading />
         <Stat icon={<ClipboardCheck />} value={0} label="Sudah dinilai" loading />
-        <Stat icon={<ClockAlert />} category="amber" value={0} label="Belum dinilai" loading />
+        <Stat icon={<ClockAlert />} tone="amber" value={0} label="Belum dinilai" loading />
       </StatGrid>
     </div>
   );
@@ -118,14 +114,14 @@ export const Default: Story = { render: () => <Gallery /> };
 export const Dark: Story = { globals: { theme: "dark" }, render: () => <Gallery /> };
 export const Phone: Story = {
   parameters: { layout: "fullscreen" },
-  decorators: [phoneFrame],
+  decorators: [phoneViewport],
   render: () => (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="flex flex-col gap-6">
       <StatGrid variant="tiles">
-        <Stat icon={<CalendarCheck />} category="green" value="96%" label="Kehadiran" href="#a" />
-        <Stat icon={<FileText />} category="amber" value={1} label="Izin menunggu" href="#b" />
-        <Stat icon={<Star />} category="purple" value={3} label="Nilai baru" href="#c" />
-        <Stat icon={<BookOpen />} category="blue" value="2 buku" label="Kembali Sabtu" href="#d" />
+        <Stat icon={<CalendarCheck />} tone="green" value="96%" label="Kehadiran" href="#a" />
+        <Stat icon={<FileText />} tone="amber" value={1} label="Izin menunggu" href="#b" />
+        <Stat icon={<Star />} tone="purple" value={3} label="Nilai baru" href="#c" />
+        <Stat icon={<BookOpen />} tone="blue" value="2 buku" label="Kembali Sabtu" href="#d" />
       </StatGrid>
       <Strip />
       <Plain />
