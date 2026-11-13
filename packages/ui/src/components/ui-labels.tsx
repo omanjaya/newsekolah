@@ -1,6 +1,8 @@
 import { createContext, useContext, type PropsWithChildren } from "react";
 
-export interface UiLabels {
+import { DEFAULT_FORMS_DATA_UI_LABELS, type FormsDataUiLabels } from "./ui-labels-forms-data.js";
+
+export interface UiLabels extends FormsDataUiLabels {
   dialogClose: string;
   sheetClose: string;
   tableSelectedRows: (count: number) => string;
@@ -40,6 +42,7 @@ export interface UiLabels {
 }
 
 const DEFAULT_UI_LABELS: UiLabels = {
+  ...DEFAULT_FORMS_DATA_UI_LABELS,
   dialogClose: "Tutup dialog",
   sheetClose: "Tutup",
   tableSelectedRows: (count) => `${count} baris dipilih`,
