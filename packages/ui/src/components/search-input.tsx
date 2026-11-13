@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, X } from "lucide-react";
-import { forwardRef, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -14,6 +14,10 @@ export type SearchInputProps = Omit<InputProps, "type" | "leading"> & {
   onClear?: () => void;
 };
 
+/** Hides the browser's own clear button, so there are never two. */
+const NATIVE_SEARCH_CHROME =
+  "[&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none";
+
 /** Sets an input's value the way typing does, so React's `onChange` fires for controlled fields too. */
 function clearNativeInput(input: HTMLInputElement): void {
   // The prototype's setter, not `input.value = ""`: React tracks the
@@ -25,11 +29,12 @@ function clearNativeInput(input: HTMLInputElement): void {
 /**
  * The search box: a leading glass, `type="search"` semantics, and one
  * clear button (the browser's own is hidden, so there are never two).
- * Escape empties a filled box first and only then reaches a surrounding
- * dialog. `className` sizes the box (`max-w-sm`), as before.
+ * Escape in a filled box empties it, before a surrounding dialog, sheet or
+ * popover sees the key; in an empty box Escape goes on to close them.
+ * `className` sizes the box (`max-w-sm`), as before.
  */
 export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(function SearchInput(
-  { className, onChange, onKeyDown, onClear, trailing, ...props },
+  { className, inputClassName, onChange, onClear, trailing, ...props },
   ref,
 ) {
   const labels = useUiLabels();
@@ -39,6 +44,10 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
     () => props.defaultValue !== undefined && String(props.defaultValue) !== "",
   );
   const filled = controlled ? String(props.value) !== "" : uncontrolledFilled;
+  const onClearRef = useRef(onClear);
+  useEffect(() => {
+    onClearRef.current = onClear;
+  });
 
   const setRefs = (element: HTMLInputElement | null) => {
     innerRef.current = element;
@@ -54,12 +63,32 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
     onClear?.();
   };
 
+  // Radix closes its Dialog, Sheet and Popover on an Escape it hears on
+  // `document` in the capture phase, before this input's own handlers run.
+  // A capture listener on `window` hears it first, and stops it only while
+  // this box has focus and something to clear.
+  useEffect(() => {
+    const onEscape = (event: KeyboardEvent) => {
+      const input = innerRef.current;
+      if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
+      if (!input || event.target !== input || input.value === "" || input.readOnly) return;
+      event.preventDefault();
+      event.stopPropagation();
+      clearNativeInput(input);
+      onClearRef.current?.();
+    };
+    window.addEventListener("keydown", onEscape, { capture: true });
+    return () => {
+      window.removeEventListener("keydown", onEscape, { capture: true });
+    };
+  }, []);
+
   return (
     <Input
       ref={setRefs}
       type="search"
       className={className}
-      inputClassName="[&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
+      inputClassName={cn(NATIVE_SEARCH_CHROME, inputClassName)}
       leading={<Search aria-hidden="true" />}
       trailing={
         filled && !props.disabled && !props.readOnly ? (
@@ -74,21 +103,12 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
             </span>
           </button>
         ) : (
-          trailing
+          (trailing ?? null)
         )
       }
       onChange={(event) => {
         if (!controlled) setUncontrolledFilled(event.target.value !== "");
         onChange?.(event);
-      }}
-      onKeyDown={(event) => {
-        onKeyDown?.(event);
-        if (event.defaultPrevented) return;
-        if (event.key === "Escape" && event.currentTarget.value !== "") {
-          event.preventDefault();
-          event.stopPropagation();
-          clear();
-        }
       }}
       {...props}
     />
