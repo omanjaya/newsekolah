@@ -29,8 +29,12 @@ export interface BreadcrumbProps {
 export function Breadcrumb({ items, label, className }: BreadcrumbProps): ReactElement | null {
   const labels = useUiLabels();
   if (items.length === 0) return null;
+  // The current page is a last item without a link; a trail may also end
+  // on a link (a lone "back to the list" crumb), which then stays a link.
+  const lastIndex = items.length - 1;
+  const currentIndex = items[lastIndex]?.href === undefined ? lastIndex : -1;
   const parentIndex = items.findLastIndex(
-    (item, index) => index < items.length - 1 && item.href !== undefined,
+    (item, index) => index !== currentIndex && item.href !== undefined,
   );
   // Without a step back there is nothing to shorten to; show the trail as is.
   const collapses = parentIndex >= 0;
@@ -40,7 +44,7 @@ export function Breadcrumb({ items, label, className }: BreadcrumbProps): ReactE
       <ol className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-body-sm text-fg-muted">
         {items.map((item, index) => {
           const isParent = index === parentIndex;
-          const isCurrent = index === items.length - 1;
+          const isCurrent = index === currentIndex;
           return (
             <li
               key={`${item.label}-${String(index)}`}
@@ -56,7 +60,7 @@ export function Breadcrumb({ items, label, className }: BreadcrumbProps): ReactE
                 />
               )}
               {isParent && <ChevronLeft className="size-4 shrink-0 sm:hidden" aria-hidden="true" />}
-              {item.href !== undefined && !isCurrent ? (
+              {item.href !== undefined ? (
                 <UiLink
                   href={item.href}
                   className="truncate rounded-xs transition-colors hover:text-fg hover:underline pointer-coarse:py-3"

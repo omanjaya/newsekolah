@@ -66,6 +66,13 @@ describe("PageHeader", () => {
     await expectNoAxeViolations(container);
   });
 
+  it("keeps a lone back crumb a link", () => {
+    render(
+      <PageHeader title="Pertemuan 2" breadcrumb={[{ label: "Presensi", href: "/attendance" }]} />,
+    );
+    expect(screen.getByRole("link", { name: "Presensi" })).toHaveAttribute("href", "/attendance");
+  });
+
   it("collapses secondary actions into a named menu, and keeps destructive ones there", async () => {
     const onExport = vi.fn();
     const onArchive = vi.fn();

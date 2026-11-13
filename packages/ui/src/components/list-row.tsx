@@ -110,8 +110,10 @@ export function ListRow({
         interactive &&
           !disabled &&
           "cursor-pointer hover:bg-state-hover has-[[data-list-row-target]:active]:bg-state-pressed",
+        // The focus ring sits inside the row, rounded to the control radius
+        // so a first or last row's ring is not cut by the list's corners.
         interactive &&
-          "has-[[data-list-row-target]:focus-visible]:outline-2 has-[[data-list-row-target]:focus-visible]:-outline-offset-2 has-[[data-list-row-target]:focus-visible]:outline-focus-ring",
+          "has-[[data-list-row-target]:focus-visible]:rounded-md has-[[data-list-row-target]:focus-visible]:outline-2 has-[[data-list-row-target]:focus-visible]:-outline-offset-2 has-[[data-list-row-target]:focus-visible]:outline-focus-ring",
         disabled && "opacity-50",
         className,
       )}

@@ -194,7 +194,9 @@ export function Stat({
           "relative cursor-pointer has-[[data-stat-target]:focus-visible]:outline-2 has-[[data-stat-target]:focus-visible]:outline-offset-2 has-[[data-stat-target]:focus-visible]:outline-focus-ring",
         // A tile is a clickable card (lift and press); a strip cell or a
         // plain figure behaves like a table row (a state layer, no press).
-        interactive && look === "tile" && "motion-press hover:shadow-2",
+        interactive &&
+          look === "tile" &&
+          "motion-press hover:border-border-strong/40 hover:shadow-2",
         interactive &&
           look === "compact" &&
           "transition-colors hover:bg-state-hover has-[[data-stat-target]:focus-visible]:-outline-offset-2",
