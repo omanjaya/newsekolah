@@ -18,7 +18,11 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       className={cn(
         "fixed inset-0 z-overlay bg-scrim",
+        // The scrim leaves with the dialog (120ms) and, from the moment it
+        // starts to fade, lets clicks through to the page. Radix sets
+        // `pointer-events: auto` inline, hence the important.
         "data-[state=open]:animate-overlay-in data-[state=closed]:animate-overlay-out",
+        "data-[state=closed]:pointer-events-none!",
         className,
       )}
       {...props}
@@ -61,6 +65,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
           "flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden",
           "rounded-lg border border-border bg-surface-overlay shadow-3",
           "data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out",
+          "data-[state=closed]:pointer-events-none!",
           className,
         )}
         {...props}

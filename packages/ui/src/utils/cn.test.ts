@@ -1,6 +1,14 @@
+import {
+  container,
+  elevation,
+  motion,
+  shadow,
+  typeRoles,
+  zIndex,
+} from "@newsekolah/ui-tokens/dist/tokens.ts";
 import { describe, expect, it } from "vitest";
 
-import { cn } from "./cn.js";
+import { CONTAINERS, DURATIONS, EASINGS, SHADOWS, TYPE_ROLES, Z_LAYERS, cn } from "./cn.js";
 
 describe("cn", () => {
   describe("typography roles", () => {
@@ -51,13 +59,30 @@ describe("cn", () => {
   });
 
   it("merges keyframe utilities", () => {
-    expect(cn("animate-pulse", "animate-shimmer")).toBe("animate-shimmer");
+    expect(cn("animate-pulse", "animate-live")).toBe("animate-live");
+    expect(cn("animate-overlay-out", "animate-sheet-overlay-out")).toBe(
+      "animate-sheet-overlay-out",
+    );
     expect(cn("animate-dialog-in", "animate-none")).toBe("animate-none");
   });
 
   it("merges container widths and the xl radius", () => {
     expect(cn("max-w-md", "max-w-narrow")).toBe("max-w-narrow");
     expect(cn("rounded-lg", "rounded-xl")).toBe("rounded-xl");
+  });
+
+  // The names are typed out here and in packages/config/tailwind/preset.css;
+  // tokens.json is the source, so a token added there must reach cn() too.
+  it("knows every named scale the tokens define", () => {
+    const sorted = (values: Iterable<string>) => [...values].sort();
+    expect(sorted(TYPE_ROLES)).toEqual(sorted(Object.keys(typeRoles)));
+    expect(sorted(DURATIONS)).toEqual(sorted(Object.keys(motion.duration)));
+    expect(sorted(EASINGS)).toEqual(sorted(Object.keys(motion.easing)));
+    expect(sorted(Z_LAYERS)).toEqual(sorted(Object.keys(zIndex)));
+    expect(sorted(CONTAINERS)).toEqual(sorted(Object.keys(container)));
+    expect(sorted(SHADOWS)).toEqual(
+      sorted([...Object.keys(elevation.light), ...Object.keys(shadow)]),
+    );
   });
 
   it("keeps the new surface and state colors as ordinary colors", () => {

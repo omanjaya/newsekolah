@@ -65,7 +65,8 @@ export function DataTableCards<TData>({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    // Mounted when loading ends, so the cards fade in once over the skeleton's place.
+    <div className="flex animate-fade-in flex-col gap-2">
       {selectionEnabled && onToggleAllRowsSelected && (
         <div className="flex min-h-11 items-center gap-2 text-label text-fg">
           <Checkbox
@@ -120,7 +121,7 @@ export function DataTableCards<TData>({
                     on a phone, so give it a thumb-sized height here rather
                     than leaving it as tall as its text.
                   */}
-                    <dd className="min-w-0 text-right text-body-sm text-fg [&_a]:relative [&_a]:z-10 [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_button]:relative [&_button]:z-10 [&_button]:inline-flex [&_button]:min-h-11 [&_button]:items-center">
+                    <dd className="min-w-0 text-right text-body text-fg [&_a]:relative [&_a]:z-10 [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_button]:relative [&_button]:z-10 [&_button]:inline-flex [&_button]:min-h-11 [&_button]:items-center">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </dd>
                   </div>

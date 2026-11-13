@@ -51,6 +51,7 @@ export function CommandPalette({
           className={cn(
             "fixed inset-0 z-overlay bg-scrim",
             "data-[state=open]:animate-overlay-in data-[state=closed]:animate-overlay-out",
+            "data-[state=closed]:pointer-events-none!",
           )}
         />
         <DialogPrimitive.Content
@@ -58,6 +59,7 @@ export function CommandPalette({
             "fixed left-1/2 top-4 z-modal max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 overflow-y-auto md:top-24 md:max-h-[calc(100dvh-7rem)]",
             "rounded-lg border border-border bg-surface-overlay shadow-3",
             "data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out",
+            "data-[state=closed]:pointer-events-none!",
           )}
         >
           <DialogPrimitive.Title className="sr-only">{label}</DialogPrimitive.Title>

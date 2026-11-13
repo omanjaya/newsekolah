@@ -101,45 +101,53 @@
   }
 }
 
-/*
- * Skeleton shimmer: the highlight's position is a registered custom
- * property, so one animation on a container (a skeleton table row) drives
- * every `.skeleton` inside it through inheritance, instead of one running
- * animation per cell.
- */
-@property --skeleton-shine-x {
-  syntax: "<percentage>";
-  inherits: true;
-  initial-value: 150%;
-}
+/* The skeleton's highlight sweeps across with `transform`, which the compositor runs off the main thread. */
 @keyframes shimmer {
   from {
-    --skeleton-shine-x: 150%;
+    transform: translateX(-100%);
   }
   to {
-    --skeleton-shine-x: -50%;
+    transform: translateX(100%);
   }
 }
 
-/* 1. Content enter: fade and rise once, staggered by `--stagger` (0-5, 40ms apart). */
+/*
+ * 1. Content enter: fade and rise once, staggered by `--stagger` (0-5, 40ms
+ * apart). The fill mode is `backwards`, not `both`: a finished animation
+ * that keeps filling its `transform` would leave the element a containing
+ * block for `position: fixed` descendants forever. While the 200ms run
+ * lasts it still is one, so a fixed bar (StickySaveBar, a camera overlay)
+ * must not live inside an entering element: animate the page content, not
+ * the wrapper that also holds sticky bars.
+ */
 @utility animate-enter {
-  animation: enter var(--duration-base) var(--ease-enter) both;
+  animation: enter var(--duration-base) var(--ease-enter) backwards;
   animation-delay: calc(
     min(var(--stagger, 0), var(--motion-stagger-max)) * var(--motion-stagger-step)
   );
 }
+/* Also `backwards`: a filling opacity animation would keep a stacking context after it ends. */
 @utility animate-fade-in {
-  animation: fade-in var(--duration-fast) var(--ease-standard) both;
+  animation: fade-in var(--duration-fast) var(--ease-standard) backwards;
 }
 @utility animate-fade-out {
   animation: fade-out var(--duration-fast) var(--ease-exit) both;
 }
 
-/* 2. Layers. Radix mounts and unmounts these, so they key off data-state. */
+/*
+ * 2. Layers. Radix mounts and unmounts these, so they key off data-state.
+ * A closing layer also gets `pointer-events: none` (on the component), so
+ * the page under a fading scrim takes clicks from the first frame. The
+ * dialog's scrim leaves at the dialog's own 120ms; a sheet's scrim at the
+ * sheet's 200ms.
+ */
 @utility animate-overlay-in {
   animation: fade-in var(--duration-base) var(--ease-standard);
 }
 @utility animate-overlay-out {
+  animation: fade-out var(--duration-fast) var(--ease-exit);
+}
+@utility animate-sheet-overlay-out {
   animation: fade-out var(--duration-base) var(--ease-exit);
 }
 @utility animate-dialog-in {
@@ -148,15 +156,20 @@
 @utility animate-dialog-out {
   animation: dialog-out var(--duration-fast) var(--ease-exit);
 }
+/*
+ * Slides that travel their own height use `ease-sheet`: `ease-enter` suits
+ * a 4-8px shift but would cover half of a full-height sheet in two frames
+ * and then creep.
+ */
 @utility animate-sheet-in {
-  animation: slide-up-in var(--duration-slow) var(--ease-enter);
+  animation: slide-up-in var(--duration-slow) var(--ease-sheet);
 }
 @utility animate-sheet-out {
   animation: slide-down-out var(--duration-base) var(--ease-exit);
 }
 /* A bar that appears at the bottom edge (StickySaveBar): the sheet's slide, at the faster pace. */
 @utility animate-rise-in {
-  animation: slide-up-in var(--duration-base) var(--ease-enter);
+  animation: slide-up-in var(--duration-base) var(--ease-sheet);
 }
 
 /*
@@ -195,21 +208,30 @@
   }
 }
 
-/* 3. Feedback loops: the skeleton's slow shimmer and the 2s "in progress" dot. */
+/*
+ * 3. Feedback loops: the skeleton's slow shimmer and the 2s "in progress"
+ * dot. `skeleton` is the whole placeholder: the fill, plus a highlight on
+ * `::after` that slides across with `transform` (compositor only, no
+ * repaint per frame). The element clips the highlight to its own radius,
+ * and is positioned for it, so do not combine it with `absolute`/`fixed`.
+ */
 @utility skeleton {
+  position: relative;
+  overflow: hidden;
   background-color: var(--color-skeleton);
-  background-image: linear-gradient(
-    90deg,
-    transparent 30%,
-    var(--color-skeleton-shine) 50%,
-    transparent 70%
-  );
-  background-size: 200% 100%;
-  background-repeat: no-repeat;
-  background-position: var(--skeleton-shine-x) 0;
-}
-@utility animate-shimmer {
-  animation: shimmer var(--motion-loop-shimmer) linear infinite;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(
+      90deg,
+      transparent 20%,
+      var(--color-skeleton-shine) 50%,
+      transparent 80%
+    );
+    transform: translateX(-100%);
+    animation: shimmer var(--motion-loop-shimmer) linear infinite;
+  }
 }
 @utility animate-live {
   animation: live var(--motion-loop-pulse) ease-in-out infinite;
@@ -235,17 +257,20 @@
 
 /*
  * 5. Indicators: an element that moves or resizes to follow a state (a tab
- * pill positioned from measured `--indicator-*` values, a progress fill,
- * a switch thumb). `motion-indicator` is the 200ms pace, `motion-meter`
- * the slower 320ms one for progress and meters.
+ * pill, a progress fill, a switch thumb). They travel and grow through
+ * transform only (`translate`, `scale`), never width or position, so a
+ * tab pill is placed with a translate and sized with a scale; an
+ * indicator's fill may change color on the way.
+ * `motion-indicator` is the 200ms pace, `motion-meter` the slower 320ms one
+ * for progress and meters.
  */
 @utility motion-indicator {
-  transition-property: transform, translate, scale, width, height, left, top, opacity;
+  transition-property: transform, translate, scale, opacity, background-color;
   transition-duration: var(--duration-base);
   transition-timing-function: var(--ease-standard);
 }
 @utility motion-meter {
-  transition-property: transform, translate, scale, width;
+  transition-property: transform, translate, scale;
   transition-duration: var(--duration-slow);
   transition-timing-function: var(--ease-standard);
 }
@@ -257,7 +282,7 @@
  * `motion-collapse` applies.
  */
 @utility motion-layout {
-  transition-property: width, grid-template-rows, padding, margin;
+  transition-property: width, grid-template-rows;
   transition-duration: var(--duration-base);
   transition-timing-function: var(--ease-standard);
 }
@@ -274,6 +299,31 @@
   }
 }
 
+/*
+ * State layer for a control with its own opaque fill (a secondary Button,
+ * an outlined pill). `hover:bg-state-hover` would replace that fill with a
+ * translucent one, so the control turns see-through over a dark backdrop
+ * and nearly vanishes on the page in dark mode. This paints the hover and
+ * press layers on top of the fill instead, as an inset shadow, which
+ * transitions like any other shadow. Transparent controls (ghost buttons,
+ * rows, menu items) keep using `hover:bg-state-hover`. It owns
+ * `box-shadow`, so it is not for an element that also has an elevation
+ * shadow.
+ */
+@utility state-layer {
+  /* Reset at rest, so a nested control never inherits its parent's hover. */
+  --state-layer-color: transparent;
+  box-shadow: inset 0 0 0 100vmax var(--state-layer-color);
+  @media (hover: hover) {
+    &:hover {
+      --state-layer-color: var(--color-state-hover);
+    }
+  }
+  &:active {
+    --state-layer-color: var(--color-state-pressed);
+  }
+}
+
 /* A horizontally scrolling strip (TabsList on a phone) without a visible scrollbar. */
 @utility scrollbar-none {
   scrollbar-width: none;
@@ -284,14 +334,26 @@
 
 /*
  * Toasts (sonner): slide and fade in over 200ms, out over 120ms, instead of
- * sonner's own 400ms. Only durations and curves change, so sonner's swipe
- * (`transition: none`) and stacking rules keep working as they are.
+ * sonner's own 400-500ms. Only durations and curves change, so sonner's
+ * swipe (`transition: none`) and stacking rules keep working as they are.
+ * sonner injects its stylesheet after the app's, so every selector here is
+ * at least one step more specific than the sonner rule it retimes: the
+ * toast, its content, a removed toast (including the removed back toast of
+ * a collapsed stack, which sonner moves at 500ms with a five-part selector),
+ * and the toaster itself.
  */
-[data-sonner-toaster] [data-sonner-toast] {
+:root [data-sonner-toaster] {
+  transition-duration: var(--duration-base);
+  transition-timing-function: var(--ease-standard);
+}
+[data-sonner-toaster] [data-sonner-toast],
+[data-sonner-toaster] [data-sonner-toast] > * {
   transition-duration: var(--duration-base);
   transition-timing-function: var(--ease-enter);
 }
-[data-sonner-toaster] [data-sonner-toast][data-removed="true"] {
+[data-sonner-toaster] [data-sonner-toast][data-removed="true"],
+[data-sonner-toaster]
+  [data-sonner-toast][data-removed="true"][data-front="false"][data-swipe-out="false"][data-expanded="false"] {
   transition-duration: var(--duration-fast);
   transition-timing-function: var(--ease-exit);
 }
@@ -320,7 +382,11 @@
       opacity, box-shadow !important;
   }
 
-  .animate-shimmer,
+  .skeleton::after {
+    animation: none !important;
+    opacity: 0;
+  }
+
   .animate-live,
   .animate-pulse,
   .animate-ping,

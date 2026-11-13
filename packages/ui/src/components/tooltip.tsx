@@ -19,6 +19,7 @@ export const TooltipContent = forwardRef<
         className={cn(
           "z-tooltip rounded-sm bg-fg px-2 py-1 text-caption text-bg shadow-2",
           "data-[state=delayed-open]:animate-popover-in data-[state=instant-open]:animate-popover-in data-[state=closed]:animate-popover-out",
+          "data-[state=closed]:pointer-events-none!",
           className,
         )}
         {...props}

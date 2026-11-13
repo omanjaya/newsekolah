@@ -19,6 +19,7 @@ export const PopoverContent = forwardRef<
         className={cn(
           "z-popover w-72 rounded-md border border-border bg-surface-raised p-4 shadow-2",
           "data-[state=open]:animate-popover-in data-[state=closed]:animate-popover-out",
+          "data-[state=closed]:pointer-events-none!",
           className,
         )}
         {...props}

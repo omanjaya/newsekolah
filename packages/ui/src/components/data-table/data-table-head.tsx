@@ -33,9 +33,9 @@ export function DataTableHead<TData>({
   density,
 }: DataTableHeadProps<TData>): ReactElement {
   return (
-    <thead className={cn(fillHeight && "sticky top-0 z-10 shadow-[0_1px_0_0_var(--color-line)]")}>
+    <thead className={cn(fillHeight && "sticky top-0 z-10")}>
       {table.getHeaderGroups().map((headerGroup) => (
-        <tr key={headerGroup.id} className="border-b border-line bg-bg">
+        <tr key={headerGroup.id} className="bg-bg">
           {headerGroup.headers.map((header) => (
             <th
               key={header.id}
@@ -44,6 +44,11 @@ export function DataTableHead<TData>({
               }
               className={cn(
                 HEADER_CELL_PADDING[density],
+                // The separator under the header is drawn once, inside each
+                // cell: with collapsed borders a row's border-b does not
+                // stick with a sticky header, and drawing both a border and
+                // a shadow left a 2px rule.
+                "shadow-[inset_0_-1px_0_var(--color-line)]",
                 "text-left text-caption font-semibold text-fg-muted",
               )}
               style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}

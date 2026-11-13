@@ -374,24 +374,18 @@ export function DataTable<TData>({
         )}
       >
         <table className="w-full border-collapse text-body-sm tabular-nums">
-          {/*
-            With collapsed borders a sticky header's border-b does not stick,
-            so the separator rides along as a shadow on the header itself.
-          */}
           <DataTableHead table={table} fillHeight={fillHeight} density={density} />
+          {/* Rows fade in (120ms) as they replace the skeleton. */}
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- rows use roving focus for j/k/Enter activation. */}
-          <tbody onKeyDown={handleKeyDown}>
+          <tbody onKeyDown={handleKeyDown} className={cn(!isLoading && "animate-fade-in")}>
             {isLoading ? (
-              // The shimmer animates once per row (not per cell): the row
-              // drives an inherited custom property every placeholder reads,
-              // so a wide table runs one animation per skeleton row instead
-              // of one per cell. See docs/16-audit-performa-web.md "Temuan
-              // menengah" and `skeleton` in styles.css.
+              // Each placeholder's highlight slides with `transform`, which
+              // the compositor runs without a style recalculation or repaint
+              // per frame, so a wide table's dozens of cells cost the main
+              // thread nothing (docs/16-audit-performa-web.md "Temuan
+              // menengah"; `skeleton` in styles.css).
               Array.from({ length: skeletonRowCount }).map((_, index) => (
-                <tr
-                  key={index}
-                  className={cn("animate-shimmer border-b border-line", ROW_HEIGHT[density])}
-                >
+                <tr key={index} className={cn("border-b border-line", ROW_HEIGHT[density])}>
                   {columns.map((_column, columnIndex) => (
                     <td key={columnIndex} className={cn(CELL_PADDING[density], "align-middle")}>
                       <div

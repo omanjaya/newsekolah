@@ -31,7 +31,10 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
       <DialogPrimitive.Overlay
         className={cn(
           "fixed inset-0 z-overlay bg-scrim",
-          "data-[state=open]:animate-overlay-in data-[state=closed]:animate-overlay-out",
+          // The scrim leaves with the sheet (200ms) and lets clicks through
+          // from the moment it starts to fade.
+          "data-[state=open]:animate-overlay-in data-[state=closed]:animate-sheet-overlay-out",
+          "data-[state=closed]:pointer-events-none!",
         )}
       />
       <DialogPrimitive.Content
@@ -40,6 +43,7 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
           "fixed inset-x-0 bottom-0 z-modal flex max-h-[85dvh] flex-col overflow-hidden",
           "rounded-t-xl border-t border-border bg-surface-raised shadow-3",
           "data-[state=open]:animate-sheet-in data-[state=closed]:animate-sheet-out",
+          "data-[state=closed]:pointer-events-none!",
           className,
         )}
         {...props}
