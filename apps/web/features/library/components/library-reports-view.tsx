@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@newsekolah/i18n";
+import { formatCurrency, formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
   Button,
@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
   Tabs,
+  TabsContent,
   TabsList,
   TabsTrigger,
   domainIcons,
@@ -32,6 +33,7 @@ import {
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { startOfIsoMonth, thisMonthInZone, todayInZone } from "../../../lib/tenant-date";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   downloadMonthlyLibraryReportPdf,
   useLoansReportQuery,
@@ -139,6 +141,7 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
 
       <Tabs
+        className="flex flex-col gap-6"
         value={tab}
         onValueChange={(value) => {
           setTab(value as ReportTab);
@@ -153,64 +156,66 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
           <TabsTrigger value="members">{t("tabs.members")}</TabsTrigger>
           <TabsTrigger value="accessionRegister">{t("tabs.accessionRegister")}</TabsTrigger>
         </TabsList>
+
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          {!TABS_WITHOUT_DATE_RANGE.includes(tab) ? (
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="flex flex-col gap-1 text-[13px]">
+                <span className="font-medium text-fg">{t("fromLabel")}</span>
+                <Input
+                  type="date"
+                  value={from}
+                  onChange={(e) => {
+                    setFrom(e.target.value);
+                  }}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-[13px]">
+                <span className="font-medium text-fg">{t("toLabel")}</span>
+                <Input
+                  type="date"
+                  value={to}
+                  onChange={(e) => {
+                    setTo(e.target.value);
+                  }}
+                />
+              </label>
+            </div>
+          ) : (
+            <span />
+          )}
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={<Download />}
+            onClick={() => {
+              setDialogOpen(true);
+            }}
+          >
+            {t("exportXlsx")}
+          </Button>
+        </div>
+
+        <ReportExportDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          reportKey={`library.reports.${tab}`}
+          defaultTitle={t(`export.${tab}.defaultTitle`)}
+          availableColumns={exportColumns}
+          columnsCustomizable={tab !== "summary"}
+          onExport={handleExport}
+        />
+
+        <TabsContent value={tab} className="pt-0">
+          {tab === "loans" && <LoansReportTable from={from} to={to} />}
+          {tab === "overdueMembers" && <OverdueMembersReportTable />}
+          {tab === "mostBorrowed" && <MostBorrowedReportTable from={from} to={to} />}
+          {tab === "summary" && <ReportSummaryTable from={from} to={to} />}
+          {tab === "visits" && <ReportVisitsTable from={from} to={to} />}
+          {tab === "members" && <ReportMembersTable />}
+          {tab === "accessionRegister" && <ReportAccessionRegisterTable from={from} to={to} />}
+        </TabsContent>
       </Tabs>
-
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        {!TABS_WITHOUT_DATE_RANGE.includes(tab) ? (
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium text-fg">{t("fromLabel")}</span>
-              <Input
-                type="date"
-                value={from}
-                onChange={(e) => {
-                  setFrom(e.target.value);
-                }}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium text-fg">{t("toLabel")}</span>
-              <Input
-                type="date"
-                value={to}
-                onChange={(e) => {
-                  setTo(e.target.value);
-                }}
-              />
-            </label>
-          </div>
-        ) : (
-          <span />
-        )}
-        <Button
-          size="sm"
-          variant="secondary"
-          icon={<Download />}
-          onClick={() => {
-            setDialogOpen(true);
-          }}
-        >
-          {t("exportXlsx")}
-        </Button>
-      </div>
-
-      <ReportExportDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        reportKey={`library.reports.${tab}`}
-        defaultTitle={t(`export.${tab}.defaultTitle`)}
-        availableColumns={exportColumns}
-        columnsCustomizable={tab !== "summary"}
-        onExport={handleExport}
-      />
-
-      {tab === "loans" && <LoansReportTable from={from} to={to} />}
-      {tab === "overdueMembers" && <OverdueMembersReportTable />}
-      {tab === "mostBorrowed" && <MostBorrowedReportTable from={from} to={to} />}
-      {tab === "summary" && <ReportSummaryTable from={from} to={to} />}
-      {tab === "visits" && <ReportVisitsTable from={from} to={to} />}
-      {tab === "members" && <ReportMembersTable />}
-      {tab === "accessionRegister" && <ReportAccessionRegisterTable from={from} to={to} />}
 
       <div className="flex flex-wrap items-end gap-3 border-t border-border pt-6">
         <label className="flex flex-col gap-1 text-[13px]">
@@ -307,10 +312,16 @@ function LoansReportTable({ from, to }: { from: string; to: string }): ReactElem
 
 function OverdueMembersReportTable(): ReactElement {
   const t = useTranslations("app.library.reports.overdueMembers");
+  const locale = useLocale() as Locale;
   const { data, isLoading } = useOverdueMembersReportQuery();
   const members = data?.data ?? [];
+  const names = useDirectoryNames(members.map((member) => member.member_user_id));
+  const nameOf = (userId: string) => names.get(userId)?.name ?? userId;
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (members.length === 0) {
+    return <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />;
+  }
 
   return (
     <>
@@ -318,9 +329,12 @@ function OverdueMembersReportTable(): ReactElement {
         {members.map((member) => (
           <li key={member.member_user_id}>
             <ReportCard>
-              <ReportCardTitle>{member.member_user_id}</ReportCardTitle>
+              <ReportCardTitle>{nameOf(member.member_user_id)}</ReportCardTitle>
               <ReportField label={t("columns.loanCount")} value={member.loan_count} />
-              <ReportField label={t("columns.fine")} value={member.total_fine} />
+              <ReportField
+                label={t("columns.fine")}
+                value={formatCurrency(member.total_fine, "IDR", { locale })}
+              />
             </ReportCard>
           </li>
         ))}
@@ -337,9 +351,11 @@ function OverdueMembersReportTable(): ReactElement {
           <TableBody>
             {members.map((member) => (
               <TableRow key={member.member_user_id}>
-                <TableCell>{member.member_user_id}</TableCell>
+                <TableCell>{nameOf(member.member_user_id)}</TableCell>
                 <TableCell className="text-fg-muted">{member.loan_count}</TableCell>
-                <TableCell className="text-fg-muted">{member.total_fine}</TableCell>
+                <TableCell className="text-fg-muted">
+                  {formatCurrency(member.total_fine, "IDR", { locale })}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -355,6 +371,9 @@ function MostBorrowedReportTable({ from, to }: { from: string; to: string }): Re
   const titles = data?.data ?? [];
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (titles.length === 0) {
+    return <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />;
+  }
 
   return (
     <>

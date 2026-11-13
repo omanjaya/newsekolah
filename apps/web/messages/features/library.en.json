@@ -1088,6 +1088,7 @@
     },
     "overdueMembers": {
       "title": "Overdue members",
+      "emptyTitle": "No overdue members",
       "columns": {
         "member": "Member",
         "loanCount": "Loan count",
@@ -1096,6 +1097,7 @@
     },
     "mostBorrowed": {
       "title": "Most-borrowed titles",
+      "emptyTitle": "No loans in this range yet",
       "columns": {
         "title": "Title",
         "loanCount": "Loans"

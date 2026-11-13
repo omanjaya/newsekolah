@@ -1,0 +1,77 @@
+import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  overdue: vi.fn(),
+}));
+
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key,
+  useLocale: () => "id",
+}));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/library/reports",
+  useSearchParams: () => new URLSearchParams(window.location.search),
+}));
+vi.mock("../../../lib/simulation/clock", () => ({
+  useSimulation: () => undefined,
+  businessNow: () => new Date("2026-09-15T02:00:00Z"),
+}));
+vi.mock("../use-tenant-timezone", () => ({ useTenantTimeZone: () => "Asia/Jakarta" }));
+vi.mock("../../../components/report-export-dialog", () => ({ ReportExportDialog: () => null }));
+vi.mock("../../reference/directory-names", async () => {
+  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
+  return directoryNamesStub([{ id: "user-1", name: "Siti Aminah" }]);
+});
+vi.mock("../api", () => ({
+  downloadMonthlyLibraryReportPdf: vi.fn(),
+  useLoansReportQuery: () => ({ data: { data: [] }, isLoading: false }),
+  useMostBorrowedReportQuery: () => ({ data: { data: [] }, isLoading: false }),
+  useOverdueMembersReportQuery: mocks.overdue,
+}));
+vi.mock("../reports-api", () => ({
+  downloadLibraryAccessionRegisterReportXlsx: vi.fn(),
+  downloadLibraryMembersReportXlsx: vi.fn(),
+  downloadLibrarySummaryReportXlsx: vi.fn(),
+  downloadLibraryVisitsReportXlsx: vi.fn(),
+  downloadLoansReportXlsx: vi.fn(),
+  downloadMostBorrowedReportXlsx: vi.fn(),
+  downloadOverdueMembersReportXlsx: vi.fn(),
+}));
+
+import { LibraryReportsView } from "./library-reports-view";
+
+describe("LibraryReportsView overdue members tab", () => {
+  beforeEach(() => {
+    mocks.overdue.mockReset();
+    window.history.replaceState(null, "", "/library/reports?tab=overdueMembers");
+  });
+
+  it("shows the member's name and a formatted fine, never the user id", () => {
+    mocks.overdue.mockReturnValue({
+      data: { data: [{ member_user_id: "user-1", loan_count: 2, total_fine: 5000 }] },
+      isLoading: false,
+    });
+    render(<LibraryReportsView />);
+
+    expect(screen.getAllByText("Siti Aminah").length).toBeGreaterThan(0);
+    expect(screen.queryByText("user-1")).not.toBeInTheDocument();
+    expect(screen.getAllByText(/Rp/).length).toBeGreaterThan(0);
+  });
+
+  it("shows an empty state when nobody is overdue", () => {
+    mocks.overdue.mockReturnValue({ data: { data: [] }, isLoading: false });
+    render(<LibraryReportsView />);
+
+    expect(screen.getByText("emptyTitle")).toBeInTheDocument();
+  });
+
+  it("points each tab at a panel that exists", () => {
+    mocks.overdue.mockReturnValue({ data: { data: [] }, isLoading: false });
+    render(<LibraryReportsView />);
+
+    const selected = screen.getByRole("tab", { selected: true });
+    const panelId = selected.getAttribute("aria-controls") ?? "";
+    expect(document.getElementById(panelId)).not.toBeNull();
+  });
+});

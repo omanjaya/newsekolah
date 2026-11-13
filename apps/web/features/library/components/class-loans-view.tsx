@@ -1,6 +1,6 @@
 "use client";
 
-import { PageHeader, Tabs, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -26,6 +26,7 @@ export function ClassLoansView(): ReactElement {
       <LibraryWorkspaceNav area="circulation" />
 
       <Tabs
+        className="flex flex-col gap-6"
         value={tab}
         onValueChange={(value) => {
           setTab(value as Tab);
@@ -35,9 +36,13 @@ export function ClassLoansView(): ReactElement {
           <TabsTrigger value="borrow">{t("tabs.borrow")}</TabsTrigger>
           <TabsTrigger value="returns">{t("tabs.returns")}</TabsTrigger>
         </TabsList>
+        <TabsContent value="borrow" className="pt-0">
+          <ClassLoanBorrowPanel />
+        </TabsContent>
+        <TabsContent value="returns" className="pt-0">
+          <ClassLoanReturnPanel />
+        </TabsContent>
       </Tabs>
-
-      {tab === "borrow" ? <ClassLoanBorrowPanel /> : <ClassLoanReturnPanel />}
     </div>
   );
 }
