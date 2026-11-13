@@ -5,6 +5,7 @@ import {
   TableBody,
   TableCaption,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -43,8 +44,27 @@ export const Normal: Story = {
           </TableRow>
         ))}
       </TableBody>
+      <TableFooter>
+        <TableRow>
+          <TableCell colSpan={2}>Jumlah</TableCell>
+          <TableCell className="text-right tabular-nums">25</TableCell>
+        </TableRow>
+      </TableFooter>
     </Table>
   ),
+};
+
+export const Dark: Story = { ...Normal, globals: { theme: "dark" } };
+export const Phone: Story = {
+  ...Normal,
+  parameters: { layout: "fullscreen" },
+  decorators: [
+    (Story) => (
+      <div className="mx-auto w-[390px] max-w-full p-4">
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export const Compact: Story = {

@@ -35,8 +35,35 @@ describe("Checkbox", () => {
     expect(screen.getByRole("checkbox").firstElementChild).toHaveClass("border-border-strong");
   });
 
+  it("takes a visible label that toggles it and a description that describes it", async () => {
+    const onCheckedChange = vi.fn();
+    render(
+      <Checkbox
+        label="Kirim ke orang tua"
+        description="Lewat WhatsApp."
+        onCheckedChange={onCheckedChange}
+      />,
+    );
+    const checkbox = screen.getByRole("checkbox", { name: "Kirim ke orang tua" });
+    expect(checkbox).toHaveAccessibleDescription("Lewat WhatsApp.");
+    await userEvent.click(screen.getByText("Kirim ke orang tua"));
+    expect(onCheckedChange).toHaveBeenCalledWith(true);
+  });
+
+  it("marks an invalid box for assistive tech and in its border", () => {
+    render(<Checkbox label="Setuju" invalid />);
+    const checkbox = screen.getByRole("checkbox", { name: "Setuju" });
+    expect(checkbox).toHaveAttribute("aria-invalid", "true");
+    expect(checkbox.firstElementChild).toHaveClass("group-aria-invalid:border-danger");
+  });
+
   it("has no accessibility violations", async () => {
-    const { container } = render(<Checkbox aria-label="Pilih baris" defaultChecked />);
+    const { container } = render(
+      <div>
+        <Checkbox aria-label="Pilih baris" defaultChecked />
+        <Checkbox label="Tampilkan arsip" description="Termasuk yang lama." disabled />
+      </div>,
+    );
     await expectNoAxeViolations(container);
   });
 });

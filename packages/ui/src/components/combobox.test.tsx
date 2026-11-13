@@ -3,8 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import { expectNoAxeViolations } from "../test/axe.js";
+
 import { Combobox } from "./combobox.js";
 import { Select } from "./select.js";
+import { UiLabelsProvider } from "./ui-labels.js";
 
 const OPTIONS = [
   { value: "siti", label: "Siti Aminah", description: "siti" },
@@ -62,7 +65,7 @@ describe("Combobox", () => {
     for (const shared of [
       "rounded-md",
       "h-11",
-      "md:h-9",
+      "md:pointer-fine:h-9",
       "border",
       "border-(--field-border)",
       "aria-invalid:[--field-border:var(--color-danger)]",
@@ -81,7 +84,8 @@ describe("Combobox", () => {
     const content = list.closest("[data-state]");
     expect(content).toHaveClass("flex", "flex-col");
     expect(list).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
-    expect(screen.getByRole("combobox")).toHaveClass("shrink-0");
+    // The search row (glass, input, spinner) keeps its height.
+    expect(screen.getByRole("combobox").parentElement).toHaveClass("shrink-0");
   });
 
   it("caps the open list to the trigger's width and the room left on screen", async () => {
@@ -92,5 +96,43 @@ describe("Combobox", () => {
       "w-(--radix-popover-trigger-width)",
       "max-h-(--radix-popover-content-available-height)",
     );
+  });
+
+  function Bare(props: { loading?: boolean }) {
+    return (
+      <Combobox
+        aria-label="Guru"
+        options={[]}
+        value=""
+        onValueChange={vi.fn()}
+        search=""
+        onSearchChange={vi.fn()}
+        loading={props.loading}
+      />
+    );
+  }
+
+  it("says it is loading while a search with no results yet is in flight", async () => {
+    render(<Bare loading />);
+    await userEvent.click(screen.getByRole("button", { name: "Guru" }));
+    expect(screen.getByRole("listbox")).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByText("Memuat pilihan")).toBeInTheDocument();
+  });
+
+  it("falls back to the UiLabels empty and placeholder text", async () => {
+    render(
+      <UiLabelsProvider labels={{ comboboxEmpty: "Nothing matches", comboboxPlaceholder: "Pick" }}>
+        <Bare />
+      </UiLabelsProvider>,
+    );
+    const trigger = screen.getByRole("button", { name: "Guru" });
+    expect(trigger).toHaveTextContent("Pick");
+    await userEvent.click(trigger);
+    expect(screen.getByText("Nothing matches")).toBeInTheDocument();
+  });
+
+  it("has no accessibility violations", async () => {
+    const { container } = render(<Harness onValueChange={vi.fn()} />);
+    await expectNoAxeViolations(container);
   });
 });

@@ -100,6 +100,114 @@
         "selectedRows": "{count} rows selected",
         "selectAllRows": "Select all rows",
         "selectRow": "Select row"
+      },
+      "controls": {
+        "field": {
+          "optional": "(optional)",
+          "formErrorTitle": "Please check the following"
+        },
+        "password": {
+          "show": "Show password",
+          "hide": "Hide password",
+          "capsLock": "Caps Lock is on"
+        },
+        "search": {
+          "clear": "Clear search"
+        },
+        "select": {
+          "placeholder": "Select"
+        },
+        "combobox": {
+          "placeholder": "Select",
+          "searchPlaceholder": "Search",
+          "loading": "Loading options",
+          "empty": "No matching options"
+        },
+        "table": {
+          "searchPlaceholder": "Search",
+          "columns": "Visible columns",
+          "density": "Density",
+          "densityNormal": "Normal",
+          "densityCompact": "Compact",
+          "moreOptions": "Table options",
+          "clearSelection": "Clear selection",
+          "noResultsTitle": "No results",
+          "noResultsDescription": "Try another keyword or clear the search.",
+          "clearSearch": "Clear search",
+          "errorTitle": "Couldn't load the data",
+          "errorDescription": "Check your internet connection, then try again.",
+          "retry": "Try again",
+          "errorCode": "Error code: {code}",
+          "pageOf": "Page {current, number} of {total, number}",
+          "range": "{from, number}–{to, number} of {total, number}",
+          "rangeOpen": "Rows {from, number}–{to, number}",
+          "rowCount": "{count, plural, one {# row} other {# rows}}",
+          "pageSize": "Rows per page",
+          "previous": "Go to previous page",
+          "next": "Go to next page",
+          "filtersReset": "Reset filters",
+          "filterRemove": "Remove filter {label}",
+          "filterDateFrom": "From",
+          "filterDateTo": "To",
+          "filterDateInvalid": "The start date must be on or before the end date"
+        },
+        "scanner": {
+          "manualLabel": "Code",
+          "manualPlaceholder": "Type or paste the code",
+          "submit": "Submit",
+          "fieldSubmit": "Record",
+          "camera": "Scan with camera",
+          "cameraStart": "Turn on camera",
+          "cameraStop": "Turn off camera",
+          "cameraClose": "Close camera",
+          "cameraDone": "Done",
+          "cameraStarting": "Turning on the camera",
+          "cameraHint": "Fit the code inside the frame",
+          "cameraIdleHint": "The camera is only on while you scan.",
+          "cameraDeniedTitle": "Camera access was denied",
+          "cameraDeniedDescription": "Allow the camera in your browser settings, then try again. You can also enter the code by hand.",
+          "cameraUnavailableTitle": "No camera available",
+          "cameraUnavailableDescription": "This device has no camera that can be used. Enter the code by hand.",
+          "cameraErrorTitle": "The camera couldn't start",
+          "cameraErrorDescription": "Close other apps using the camera, then try again.",
+          "retry": "Try again",
+          "manualEntry": "Enter code manually",
+          "manualHide": "Hide manual entry",
+          "ready": "Scanner ready"
+        },
+        "qr": {
+          "code": "QR code",
+          "expired": "Code expired",
+          "expiresIn": "Valid for {seconds, plural, one {# more second} other {# more seconds}}",
+          "renew": "New code",
+          "manualCode": "Can't scan? Use this code"
+        },
+        "calendar": {
+          "previousMonth": "Previous month",
+          "nextMonth": "Next month",
+          "previousYear": "Previous year",
+          "nextYear": "Next year",
+          "chooseMonth": "{caption}, choose month and year",
+          "chooseYear": "{year}, choose year",
+          "previousYears": "Previous years",
+          "nextYears": "Next years"
+        },
+        "picker": {
+          "datePlaceholder": "Pick a date",
+          "dateClear": "Clear date",
+          "rangePlaceholder": "Pick a date range",
+          "rangeClear": "Clear date range",
+          "rangePickStart": "Pick the start date",
+          "rangePickEnd": "Pick the end date",
+          "rangePresets": "Quick ranges",
+          "monthPlaceholder": "Pick a month",
+          "monthClear": "Clear month",
+          "timePlaceholder": "Pick a time",
+          "timeShowOptions": "Show time options",
+          "timeOptions": "Time options",
+          "numberIncrement": "Increase",
+          "numberDecrement": "Decrease"
+        }
       }
     },
     "login": {

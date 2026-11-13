@@ -2,7 +2,11 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
+import { expectNoAxeViolations } from "../test/axe.js";
+
+import { Field } from "./field.js";
 import { Select } from "./select.js";
+import { UiLabelsProvider } from "./ui-labels.js";
 
 describe("Select", () => {
   it("forwards trigger identity and accessible descriptions, then selects an option", async () => {
@@ -37,5 +41,40 @@ describe("Select", () => {
   it("uses an explicit aria-label when no visible label is available", () => {
     render(<Select aria-label="Pilih ruang" options={[{ value: "lab", label: "Lab" }]} />);
     expect(screen.getByRole("combobox", { name: "Pilih ruang" })).toBeInTheDocument();
+  });
+
+  it("reads its placeholder from UiLabels and shows an option's description in the list", async () => {
+    render(
+      <UiLabelsProvider labels={{ selectPlaceholder: "Select" }}>
+        <Select
+          aria-label="Kelas"
+          options={[{ value: "x-a", label: "X-A", description: "Wali: Bu Rina" }]}
+        />
+      </UiLabelsProvider>,
+    );
+    const trigger = screen.getByRole("combobox", { name: "Kelas" });
+    expect(trigger).toHaveTextContent("Select");
+    await userEvent.click(trigger);
+    expect(screen.getByText("Wali: Bu Rina")).toBeInTheDocument();
+  });
+
+  it("is labelled, described and marked invalid by a surrounding Field", () => {
+    render(
+      <Field label="Kelas" error="Pilih salah satu">
+        <Select options={[{ value: "x-a", label: "X-A" }]} />
+      </Field>,
+    );
+    const trigger = screen.getByRole("combobox", { name: "Kelas" });
+    expect(trigger).toHaveAttribute("aria-invalid", "true");
+    expect(trigger).toHaveAccessibleDescription("Pilih salah satu");
+  });
+
+  it("has no accessibility violations", async () => {
+    const { container } = render(
+      <Field label="Kelas" hint="Kelas aktif.">
+        <Select options={[{ value: "x-a", label: "X-A" }]} />
+      </Field>,
+    );
+    await expectNoAxeViolations(container);
   });
 });

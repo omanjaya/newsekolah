@@ -69,7 +69,7 @@ interface DayGridProps {
  * 320px the cells give up a few pixels of width instead of the popover
  * running off the screen. 40px square once there is a cursor.
  */
-const COMPACT_CELL = "h-11 w-[min(2.75rem,calc((100vw_-_3.75rem)/7))] md:size-10";
+const COMPACT_CELL = "h-11 w-[min(2.75rem,calc((100vw_-_3.75rem)/7))] md:pointer-fine:size-10";
 
 const LONG_DAY: Intl.DateTimeFormatOptions = {
   weekday: "long",
@@ -259,7 +259,7 @@ export function CalendarDayGrid(props: DayGridProps): ReactElement {
               key={name}
               scope="col"
               abbr={longNames[index]}
-              className="h-8 p-0 text-center text-xs font-medium text-fg-muted"
+              className="h-8 p-0 text-center text-caption text-fg-muted"
             >
               {name}
             </th>
@@ -316,18 +316,18 @@ function DayContent({
   const pill = (
     <span
       className={cn(
-        "relative flex shrink-0 items-center justify-center rounded-full text-sm tabular-nums",
-        "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
+        "relative flex shrink-0 items-center justify-center rounded-full text-body tabular-nums",
+        "transition-colors",
         // As wide as the cell up to 40px (36 with a cursor) and square, so
         // the pill stays round in a narrowed cell. A percentage width adds
         // nothing to the column's minimum, which a fixed 40px would.
         fluid
           ? "size-8"
-          : "aspect-square w-full max-w-10 group-focus-visible:outline-2 group-focus-visible:outline-offset-1 group-focus-visible:outline-accent md:max-w-9",
+          : "aspect-square w-full max-w-10 group-focus-visible:outline-2 group-focus-visible:outline-offset-1 group-focus-visible:outline-focus-ring md:pointer-fine:max-w-9",
         info.outside ? "text-fg-muted opacity-60" : "text-fg",
         inBand && !info.outside && "text-accent-soft-fg",
         info.today && !filled && "font-semibold text-accent",
-        !fluid && !info.disabled && !filled && "group-hover:bg-bg",
+        !fluid && !info.disabled && !filled && "group-hover:bg-state-hover",
         pending && "bg-surface ring-1 ring-accent ring-inset",
         filled && "bg-accent font-semibold text-accent-fg group-hover:bg-accent-strong",
         info.disabled && "text-fg-muted opacity-40",
@@ -359,9 +359,9 @@ function DayContent({
     <span
       className={cn(
         "relative flex size-full flex-col items-center gap-1 rounded-md pt-1.5",
-        "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
-        "group-focus-visible:outline-2 group-focus-visible:-outline-offset-2 group-focus-visible:outline-accent",
-        !info.disabled && !inBand && "group-hover:bg-bg",
+        "transition-colors",
+        "group-focus-visible:outline-2 group-focus-visible:-outline-offset-2 group-focus-visible:outline-focus-ring",
+        !info.disabled && !inBand && "group-hover:bg-state-hover",
       )}
     >
       {pill}

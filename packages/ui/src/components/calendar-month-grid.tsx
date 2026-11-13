@@ -82,12 +82,12 @@ function gridKeyDelta(event: KeyboardEvent, column: number): number | null {
 
 function cellClassName(selected: boolean, current: boolean, disabled: boolean): string {
   return cn(
-    "flex h-11 items-center justify-center rounded-full text-sm tabular-nums md:h-10",
-    "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
-    "group-focus-visible:outline-2 group-focus-visible:outline-offset-1 group-focus-visible:outline-accent",
+    "flex h-11 items-center justify-center rounded-full text-body tabular-nums md:pointer-fine:h-10",
+    "transition-colors",
+    "group-focus-visible:outline-2 group-focus-visible:outline-offset-1 group-focus-visible:outline-focus-ring",
     selected
       ? "bg-accent font-semibold text-accent-fg group-hover:bg-accent-strong"
-      : "text-fg group-hover:bg-bg",
+      : "text-fg group-hover:bg-state-hover",
     current && !selected && "font-semibold text-accent",
     disabled && "text-fg-muted opacity-40 group-hover:bg-transparent",
   );
@@ -225,11 +225,7 @@ export function CalendarMonthGrid({
               setFocusedYear(clampYear(focusedYear - YEARS_PER_PAGE));
             }}
           />
-          <span
-            id={headingId}
-            aria-live="polite"
-            className="font-heading text-base font-semibold text-fg tabular-nums"
-          >
+          <span id={headingId} aria-live="polite" className="text-heading text-fg tabular-nums">
             {`${String(pageStart)}–${String(pageEnd)}`}
           </span>
           <IconButton
@@ -314,9 +310,9 @@ export function CalendarMonthGrid({
           type="button"
           aria-label={labels.calendarChooseYear(String(year))}
           className={cn(
-            "inline-flex h-11 items-center gap-1 rounded-full px-3 md:h-8",
-            "font-heading text-base font-semibold text-fg tabular-nums",
-            "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-bg",
+            "inline-flex h-11 items-center gap-1 rounded-full px-3 md:pointer-fine:h-8",
+            "text-heading text-fg tabular-nums",
+            "transition-colors hover:bg-state-hover",
           )}
           onClick={showYears}
         >

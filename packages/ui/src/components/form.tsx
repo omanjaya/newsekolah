@@ -1,3 +1,5 @@
+"use client";
+
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { Slot } from "@radix-ui/react-slot";
 import {
@@ -19,6 +21,9 @@ import {
 } from "react-hook-form";
 
 import { cn } from "../utils/cn.js";
+
+import { FormFieldStateContext } from "./field-context.js";
+import { FieldError } from "./field.js";
 
 /**
  * Translates a validation message. `@newsekolah/schemas` issues carry i18n
@@ -77,14 +82,33 @@ interface FormItemContextValue {
 }
 const FormItemContext = createContext<FormItemContextValue | null>(null);
 
-/** Binds one form field's name to the RHF `Controller`. */
+/**
+ * Binds one form field's name to the RHF `Controller`. It also publishes
+ * the field's translated error, so a `Field` in `render` shows it without
+ * being told: `render={({ field }) => <Field label="Nama"><Input {...field} /></Field>}`.
+ * The older `FormItem`/`FormLabel`/`FormControl`/`FormMessage` set keeps
+ * working as before.
+ */
 export function FormField<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
->(props: ControllerProps<TFieldValues, TName>) {
+>({ render, ...props }: ControllerProps<TFieldValues, TName>) {
+  const translate = useContext(TranslatorContext);
   return (
     <FormFieldContext.Provider value={{ name: props.name }}>
-      <Controller {...props} />
+      <Controller
+        {...props}
+        render={(renderProps) => {
+          const message = renderProps.fieldState.error?.message;
+          return (
+            <FormFieldStateContext.Provider
+              value={{ error: message ? translate(message) : undefined }}
+            >
+              {render(renderProps)}
+            </FormFieldStateContext.Provider>
+          );
+        }}
+      />
     </FormFieldContext.Provider>
   );
 }
@@ -113,7 +137,7 @@ export function FormItem({ className, ...props }: ComponentPropsWithoutRef<"div"
   const id = useId();
   return (
     <FormItemContext.Provider value={{ id }}>
-      <div className={cn("flex flex-col gap-1.5", className)} {...props} />
+      <div className={cn("flex flex-col gap-2", className)} {...props} />
     </FormItemContext.Provider>
   );
 }
@@ -122,10 +146,12 @@ export function FormLabel({
   className,
   ...props
 }: ComponentPropsWithoutRef<typeof LabelPrimitive.Root>) {
-  const { error, formItemId } = useFormField();
+  const { formItemId } = useFormField();
+  // The label stays neutral on an error, as `Field`'s does: the danger
+  // border and the message under the control already carry it.
   return (
     <LabelPrimitive.Root
-      className={cn("text-label text-fg", error && "text-danger", className)}
+      className={cn("text-label text-fg", className)}
       htmlFor={formItemId}
       {...props}
     />
@@ -151,20 +177,16 @@ export function FormDescription({ className, ...props }: ComponentPropsWithoutRe
   );
 }
 
-export function FormMessage({ className, children, ...props }: ComponentPropsWithoutRef<"p">) {
+export function FormMessage({ className, children, ...props }: ComponentPropsWithoutRef<"div">) {
   const { error, formMessageId } = useFormField();
   const translate = useContext(TranslatorContext);
   const rawMessage = error?.message;
   const body = rawMessage ? translate(rawMessage) : children;
   if (!body) return null;
+  // `FormItem`'s 8px gap less 4: messages hug their control, as in `Field`.
   return (
-    <p
-      id={formMessageId}
-      role="alert"
-      className={cn("text-body-sm font-medium text-danger", className)}
-      {...props}
-    >
-      {body}
-    </p>
+    <div id={formMessageId} role="alert" className={cn("-mt-1", className)} {...props}>
+      <FieldError>{body}</FieldError>
+    </div>
   );
 }

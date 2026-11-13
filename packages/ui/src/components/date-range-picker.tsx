@@ -168,7 +168,7 @@ export const DateRangePicker = forwardRef<HTMLButtonElement, DateRangePickerProp
               />
             )}
             <div className="flex flex-col gap-1">
-              <p aria-live="polite" className="px-3 text-xs text-fg-muted">
+              <p aria-live="polite" className="px-3 text-caption text-fg-muted">
                 {draft.from && !draft.to
                   ? labels.dateRangePickerPickEnd
                   : labels.dateRangePickerPickStart}
@@ -222,12 +222,12 @@ function PresetList({
             type="button"
             aria-pressed={active}
             className={cn(
-              "inline-flex h-11 items-center rounded-full border border-border px-3 text-sm text-fg",
-              "md:h-9 md:w-full md:rounded-md md:border-transparent md:px-2.5 md:text-left",
-              "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
+              "inline-flex h-11 items-center rounded-full border border-border px-3 text-label text-fg",
+              "md:w-full md:rounded-md md:border-transparent md:px-2.5 md:text-left md:pointer-fine:h-9",
+              "transition-colors",
               active
                 ? "border-accent-soft bg-accent-soft font-medium text-accent-soft-fg"
-                : "hover:bg-bg",
+                : "hover:bg-state-hover",
             )}
             onClick={() => {
               onPick(preset);

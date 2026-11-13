@@ -74,18 +74,18 @@ export interface RadioGroupItemProps extends Omit<
 
 /**
  * Filled accent circle with a light dot when checked, the same language as
- * `Checkbox`. The empty ring uses a muted foreground, not `border`: a 16px
- * circle drawn in the field border colour all but vanishes on white, and a
- * control boundary needs 3:1. It moves to `border-strong` once that exists.
+ * `Checkbox`: the empty ring is `border-strong` (3:1 on every surface) and
+ * darkens on hover, the same steps a field border takes.
  */
 function RadioDot(): ReactElement {
   return (
     <span
       aria-hidden="true"
       className={cn(
-        "flex size-4 shrink-0 items-center justify-center rounded-full border border-fg-muted/70 bg-surface",
-        "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
+        "flex size-4 shrink-0 items-center justify-center rounded-full border border-border-strong bg-surface",
+        "transition-colors group-hover:border-fg-muted group-active:bg-state-pressed",
         "group-data-[state=checked]:border-accent group-data-[state=checked]:bg-accent",
+        "group-disabled:border-border group-disabled:bg-surface-sunken",
       )}
     >
       <RadioGroupPrimitive.Indicator className="size-1.5 rounded-full bg-accent-fg" />
@@ -123,8 +123,9 @@ export const RadioGroupItem = forwardRef<HTMLButtonElement, RadioGroupItemProps>
             // A title alone centres on the icon; with a description the
             // title sits level with the top of the icon instead.
             description === undefined ? "items-center" : "items-start",
-            "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
-            "data-[state=unchecked]:hover:bg-bg",
+            // Hover and press paint over the card's own surface.
+            "transition-[color,background-color,border-color,box-shadow] data-[state=unchecked]:state-layer",
+            "data-[state=unchecked]:hover:border-border-strong",
             "data-[state=checked]:border-accent data-[state=checked]:bg-accent-soft",
             "disabled:cursor-not-allowed disabled:opacity-50",
             className,
@@ -136,8 +137,8 @@ export const RadioGroupItem = forwardRef<HTMLButtonElement, RadioGroupItemProps>
             <span
               aria-hidden="true"
               className={cn(
-                "flex size-9 shrink-0 items-center justify-center rounded-full bg-bg text-fg-muted [&>svg]:size-5",
-                "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
+                "flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-sunken text-fg-muted [&>svg]:size-5",
+                "transition-colors",
                 "group-data-[state=checked]:bg-surface group-data-[state=checked]:text-accent",
               )}
             >
@@ -145,11 +146,11 @@ export const RadioGroupItem = forwardRef<HTMLButtonElement, RadioGroupItemProps>
             </span>
           )}
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span id={labelId} className="text-base font-semibold text-fg">
+            <span id={labelId} className="text-body font-semibold text-fg">
               {label}
             </span>
             {description !== undefined && (
-              <span id={descriptionId} className="text-sm text-fg-muted">
+              <span id={descriptionId} className="text-body-sm text-fg-muted">
                 {description}
               </span>
             )}
@@ -162,9 +163,10 @@ export const RadioGroupItem = forwardRef<HTMLButtonElement, RadioGroupItemProps>
     }
 
     return (
-      <div className={cn("flex gap-3 py-2.5 has-disabled:opacity-50 md:py-1.5", className)}>
-        {/* The dot stays 16px; on a phone the button around it is a 44px
-            target whose negative margin hands the space back, as Checkbox does. */}
+      <div className={cn("flex gap-3 py-2.5 md:pointer-fine:py-1.5", className)}>
+        {/* The dot stays 16px; wherever the pointer is coarse the button
+            around it is a 44px target whose negative margin hands the space
+            back, as Checkbox does. */}
         <span className="flex h-5 shrink-0 items-center">
           <RadioGroupPrimitive.Item
             ref={ref}
@@ -172,8 +174,8 @@ export const RadioGroupItem = forwardRef<HTMLButtonElement, RadioGroupItemProps>
             aria-describedby={descriptionId}
             className={cn(
               "group relative -m-3.5 inline-flex size-11 shrink-0 items-center justify-center",
-              "focus-visible:outline-none md:m-0 md:size-4 disabled:cursor-not-allowed",
-              "[&:focus-visible>span]:outline-2 [&:focus-visible>span]:outline-offset-2 [&:focus-visible>span]:outline-accent",
+              "focus-visible:outline-none md:pointer-fine:m-0 md:pointer-fine:size-4 disabled:cursor-not-allowed",
+              "[&:focus-visible>span]:outline-2 [&:focus-visible>span]:outline-offset-2 [&:focus-visible>span]:outline-focus-ring",
             )}
             onClick={focusOnClick}
             {...props}
@@ -182,11 +184,17 @@ export const RadioGroupItem = forwardRef<HTMLButtonElement, RadioGroupItemProps>
           </RadioGroupPrimitive.Item>
         </span>
         <span className="flex min-w-0 flex-col gap-0.5">
-          <label htmlFor={id} className="cursor-pointer text-base text-fg">
+          <label
+            htmlFor={id}
+            className={cn(
+              "text-body",
+              props.disabled ? "cursor-not-allowed text-fg-muted" : "cursor-pointer text-fg",
+            )}
+          >
             {label}
           </label>
           {description !== undefined && (
-            <span id={descriptionId} className="text-sm text-fg-muted">
+            <span id={descriptionId} className="text-body-sm text-fg-muted">
               {description}
             </span>
           )}

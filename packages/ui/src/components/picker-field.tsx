@@ -19,6 +19,7 @@ import {
   FIELD_ICON_BUTTON,
   FIELD_ICON_FACE,
 } from "./field-box.js";
+import { useFieldControl } from "./field-context.js";
 import { PopoverTrigger } from "./popover.js";
 
 /**
@@ -104,7 +105,7 @@ export const PickerField = forwardRef<HTMLButtonElement, PickerFieldProps>(funct
     text,
     placeholder,
     invalid,
-    disabled,
+    disabled: disabledProp,
     required,
     onClear,
     clearLabel,
@@ -112,12 +113,23 @@ export const PickerField = forwardRef<HTMLButtonElement, PickerFieldProps>(funct
     onBlur,
     hiddenInputs,
     className,
+    id,
     "aria-invalid": ariaInvalid,
+    "aria-describedby": ariaDescribedBy,
     ...aria
   },
   ref,
 ): ReactElement {
-  const showInvalid = isInvalid(invalid, ariaInvalid);
+  const field = useFieldControl({
+    id,
+    disabled: disabledProp,
+    invalid,
+    "aria-invalid": ariaInvalid,
+    required,
+    "aria-describedby": ariaDescribedBy,
+  });
+  const showInvalid = field.invalid;
+  const disabled = field.attributes.disabled;
 
   function onKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -135,16 +147,18 @@ export const PickerField = forwardRef<HTMLButtonElement, PickerFieldProps>(funct
           ref={ref}
           type="button"
           role="combobox"
+          id={field.attributes.id}
           aria-expanded={open}
           aria-controls={contentId}
           disabled={disabled}
-          aria-required={required ?? undefined}
+          aria-required={field.attributes["aria-required"]}
           aria-invalid={showInvalid || undefined}
+          aria-describedby={field.attributes["aria-describedby"]}
           className={cn(
             FIELD_BOX,
             FIELD_BOX_BUTTON,
             showInvalid && FIELD_BOX_INVALID,
-            onClear && "pr-11 md:pr-9",
+            onClear && "pr-11 md:pointer-fine:pr-9",
           )}
           onKeyDown={onKeyDown}
           onBlur={onBlur}
@@ -167,7 +181,7 @@ export const PickerField = forwardRef<HTMLButtonElement, PickerFieldProps>(funct
           // absolutely placed button off centre.
           className={cn(
             FIELD_ICON_BUTTON,
-            "absolute right-0 top-1/2 my-0 -translate-y-1/2 md:right-2",
+            "absolute top-1/2 right-0 my-0 -translate-y-1/2 md:pointer-fine:my-0 md:pointer-fine:right-2",
           )}
           onClick={(event) => {
             // This button unmounts with the value; hand focus back to the
