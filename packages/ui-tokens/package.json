@@ -9,6 +9,7 @@
   "exports": {
     "./tokens.json": "./tokens.json",
     "./dist/tokens.css": "./dist/tokens.css",
+    "./dist/type-roles.css": "./dist/type-roles.css",
     "./dist/tokens.ts": "./dist/tokens.ts"
   },
   "files": [
