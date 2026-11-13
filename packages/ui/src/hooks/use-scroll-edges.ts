@@ -2,6 +2,8 @@
 
 import { useEffect, type RefObject } from "react";
 
+import { createResizeTracker } from "./resize-tracker.js";
+
 /** A pixel of slack, so a fractional scroll position still counts as "at the edge". */
 const EDGE_SLACK = 1;
 
@@ -45,23 +47,33 @@ export function useScrollEdges(
       marked.toggleAttribute("data-overflow-end", offset + visible < total - EDGE_SLACK);
     };
 
+    // The scroller and its children: a child growing (a collapsible
+    // opening, a textarea growing with its text) changes the scroll size
+    // without resizing the box. jsdom has no ResizeObserver; the scroll
+    // listener and the first measurement still work there.
+    const sizes = createResizeTracker(update);
+    const trackChildren = () => {
+      sizes.track([scroller, ...Array.from(scroller.children)]);
+    };
+
     update();
+    trackChildren();
     scroller.addEventListener("scroll", update, { passive: true });
-    // jsdom has no ResizeObserver; the scroll listener and the first
-    // measurement still work there.
-    const resizeObserver =
-      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
-    resizeObserver?.observe(scroller);
-    for (const child of Array.from(scroller.children)) resizeObserver?.observe(child);
-    // Content that mounts later (a lazy form section, a tab added after a
-    // permission check) changes the scroll size without resizing the box.
+    // Content that mounts later (a form replacing its skeleton, a tab added
+    // after a permission check) changes the scroll size too, and is then
+    // watched for size changes of its own.
     const mutationObserver =
-      typeof MutationObserver === "undefined" ? null : new MutationObserver(update);
+      typeof MutationObserver === "undefined"
+        ? null
+        : new MutationObserver(() => {
+            trackChildren();
+            update();
+          });
     mutationObserver?.observe(scroller, { childList: true, subtree: true });
 
     return () => {
       scroller.removeEventListener("scroll", update);
-      resizeObserver?.disconnect();
+      sizes.disconnect();
       mutationObserver?.disconnect();
       marked.removeAttribute("data-overflow-start");
       marked.removeAttribute("data-overflow-end");

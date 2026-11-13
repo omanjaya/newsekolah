@@ -2,6 +2,8 @@
 
 import { useEffect, type RefObject } from "react";
 
+import { createResizeTracker } from "./resize-tracker.js";
+
 interface Box {
   x: number;
   y: number;
@@ -72,6 +74,11 @@ export function useActiveIndicator(
     if (!container || !indicator) return;
 
     let previous: { element: HTMLElement; box: Box } | null = null;
+    let disposed = false;
+    // Declared before `place`, which keeps it pointed at the active item.
+    const sizes = createResizeTracker(() => {
+      place();
+    });
 
     const settle = () => {
       // Reading layout flushes the start position before the transition is
@@ -81,7 +88,13 @@ export function useActiveIndicator(
     };
 
     const place = () => {
+      if (disposed) return;
       const active = container.querySelector<HTMLElement>(activeSelector);
+      // The strip's box often stays put while an item's width changes (an
+      // underline or full-width strip, one capped at the container): watch
+      // the active item, and the strip's own children, whose widths move it.
+      const children = Array.from(container.children).filter((child) => child !== indicator);
+      sizes.track([container, ...children, ...(active ? [active] : [])]);
       const box = active ? boxOf(active) : null;
       if (!active || !box || box.w === 0) {
         container.removeAttribute("data-indicator");
@@ -118,12 +131,15 @@ export function useActiveIndicator(
       attributes: true,
       attributeFilter: ["data-state", "aria-current", "aria-selected", "hidden", "class"],
     });
-    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(place);
-    resizeObserver?.observe(container);
+    // A web font arriving late changes every label's width at once, often
+    // without any element the observers watch changing size first.
+    // (jsdom has no FontFaceSet.)
+    if ("fonts" in document) void document.fonts.ready.then(place);
 
     return () => {
+      disposed = true;
       mutationObserver?.disconnect();
-      resizeObserver?.disconnect();
+      sizes.disconnect();
       container.removeAttribute("data-indicator");
     };
   }, [containerRef, indicatorRef, activeSelector]);
