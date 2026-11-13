@@ -1,34 +1,55 @@
+"use client";
+
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
-import { forwardRef, type ComponentPropsWithoutRef } from "react";
+import { createContext, forwardRef, useContext, type ComponentPropsWithoutRef } from "react";
 
 import { cn } from "../utils/cn.js";
 
-// A fixed, deterministic palette (not a rainbow of every hue) so two people
-// with the same initials are still distinguishable at a glance without
-// introducing colors outside the token set's own category hues
-// (docs/07-ui-ux.md, "Hijau Segar"). Each entry is a category's AA-checked
-// `*-soft`/`*-soft-fg` pair, the same tint-plus-text combination Badge uses.
-const INITIAL_PALETTE = [
-  "bg-category-blue-soft text-category-blue-soft-fg",
-  "bg-category-green-soft text-category-green-soft-fg",
-  "bg-category-purple-soft text-category-purple-soft-fg",
-  "bg-category-amber-soft text-category-amber-soft-fg",
-  "bg-category-red-soft text-category-red-soft-fg",
-] as const;
+import { CATEGORY_TONES, TONE_CLASSES, type CategoryTone } from "./tone.js";
 
-function paletteClassFor(seed: string): string {
+export type AvatarPixelSize = 24 | 32 | 40 | 44 | 48 | 64;
+/** A pixel size, or the two names the first version had (`sm` 24, `md` 32). */
+export type AvatarSize = AvatarPixelSize | "sm" | "md";
+export type AvatarTone = CategoryTone | "accent";
+
+// Initials are 700 on the soft category tint with its AA-checked text
+// colour, about a third of the circle tall. The artboard's 44px header
+// avatar is 15/700; the body role at 14 is the nearest step.
+const SIZE_CLASS: Record<AvatarPixelSize, string> = {
+  24: "size-6 text-caption font-bold",
+  32: "size-8 text-label font-bold",
+  40: "size-10 text-body font-bold",
+  44: "size-11 text-body font-bold",
+  48: "size-12 text-heading font-sans",
+  64: "size-16 text-title-lg font-sans",
+};
+
+export function avatarPixelSize(size: AvatarSize): AvatarPixelSize {
+  if (size === "sm") return 24;
+  if (size === "md") return 32;
+  return size;
+}
+
+/** Lets AvatarGroup size its avatars once instead of on every child. */
+export const AvatarSizeContext = createContext<AvatarSize | null>(null);
+
+// A fixed, deterministic pick from the category hues, so two people with
+// the same initials are still told apart at a glance without leaving the
+// token palette.
+function toneFor(seed: string): CategoryTone {
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) {
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   }
-  return INITIAL_PALETTE[hash % INITIAL_PALETTE.length] ?? INITIAL_PALETTE[0];
+  return CATEGORY_TONES[hash % CATEGORY_TONES.length] ?? "green";
 }
 
-function initialsFrom(name: string): string {
+/** Two initials, or one for the 24px avatar, where a second letter no longer fits the circle. */
+function initialsFrom(name: string, pixels: AvatarPixelSize): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
   const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
+  const last = parts.length > 1 && pixels > 24 ? (parts[parts.length - 1]?.[0] ?? "") : "";
   return (first + last).toUpperCase();
 }
 
@@ -36,20 +57,31 @@ export interface AvatarProps extends ComponentPropsWithoutRef<typeof AvatarPrimi
   /** Full name, used for the fallback initials and the image `alt`. */
   name: string;
   src?: string;
-  size?: "sm" | "md";
+  /** 24 to 64px; defaults to 32 (or the size of the surrounding AvatarGroup). */
+  size?: AvatarSize;
+  /** Pins the tint (`accent` for the signed-in user); otherwise picked from the name. */
+  tone?: AvatarTone;
+  /**
+   * Hides the avatar from assistive technology when the name is already
+   * written next to it, so it is not read twice. Otherwise the avatar is an
+   * image named after the person, whether it shows a photo or initials.
+   */
+  decorative?: boolean;
 }
 
 export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
-  { name, src, size = "md", className, ...props },
+  { name, src, size, tone, decorative = false, className, ...props },
   ref,
 ) {
-  const dimension = size === "sm" ? "size-6 text-caption" : "size-8 text-body-sm";
+  const groupSize = useContext(AvatarSizeContext);
+  const pixels = avatarPixelSize(size ?? groupSize ?? 32);
   return (
     <AvatarPrimitive.Root
       ref={ref}
+      {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": name })}
       className={cn(
-        "inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full",
-        dimension,
+        "inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full bg-surface-sunken",
+        SIZE_CLASS[pixels],
         className,
       )}
       {...props}
@@ -57,12 +89,14 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
       <AvatarPrimitive.Image src={src} alt={name} className="size-full object-cover" />
       <AvatarPrimitive.Fallback
         className={cn(
-          "flex size-full items-center justify-center font-medium",
-          paletteClassFor(name),
+          "flex size-full items-center justify-center",
+          TONE_CLASSES[tone ?? toneFor(name)].soft,
         )}
-        delayMs={src ? 300 : 0}
+        // Initials without a photo show on the first render (no empty
+        // circle, no flash after hydration); a photo gets 300ms to load first.
+        delayMs={src ? 300 : undefined}
       >
-        {initialsFrom(name)}
+        {initialsFrom(name, pixels)}
       </AvatarPrimitive.Fallback>
     </AvatarPrimitive.Root>
   );
