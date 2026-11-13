@@ -6,6 +6,37 @@ export interface UiLabels {
   tableSelectedRows: (count: number) => string;
   tableSelectAllRows: string;
   tableSelectRow: string;
+
+  /**
+   * BCP 47 locale the date, time and number controls format with ("id-ID",
+   * "en-US"): month and weekday names, "14 November 2026", "08.30", "85,5".
+   * A `locale` prop on one control still wins.
+   */
+  locale: string;
+  calendarPreviousMonth: string;
+  calendarNextMonth: string;
+  calendarPreviousYear: string;
+  calendarNextYear: string;
+  /** Accessible name of the month caption that opens the month and year view. */
+  calendarChooseMonth: (caption: string) => string;
+  /** Accessible name of the year in the month view, which opens a page of twelve years. */
+  calendarChooseYear: (year: string) => string;
+  calendarPreviousYears: string;
+  calendarNextYears: string;
+  datePickerPlaceholder: string;
+  datePickerClear: string;
+  dateRangePickerPlaceholder: string;
+  dateRangePickerClear: string;
+  dateRangePickerPickStart: string;
+  dateRangePickerPickEnd: string;
+  dateRangePickerPresets: string;
+  monthPickerPlaceholder: string;
+  monthPickerClear: string;
+  timePickerPlaceholder: string;
+  timePickerShowOptions: string;
+  timePickerOptions: string;
+  numberInputIncrement: string;
+  numberInputDecrement: string;
 }
 
 const DEFAULT_UI_LABELS: UiLabels = {
@@ -14,6 +45,30 @@ const DEFAULT_UI_LABELS: UiLabels = {
   tableSelectedRows: (count) => `${count} baris dipilih`,
   tableSelectAllRows: "Pilih semua baris",
   tableSelectRow: "Pilih baris",
+
+  locale: "id-ID",
+  calendarPreviousMonth: "Bulan sebelumnya",
+  calendarNextMonth: "Bulan berikutnya",
+  calendarPreviousYear: "Tahun sebelumnya",
+  calendarNextYear: "Tahun berikutnya",
+  calendarChooseMonth: (caption) => `${caption}, pilih bulan dan tahun`,
+  calendarChooseYear: (year) => `${year}, pilih tahun`,
+  calendarPreviousYears: "Rentang tahun sebelumnya",
+  calendarNextYears: "Rentang tahun berikutnya",
+  datePickerPlaceholder: "Pilih tanggal",
+  datePickerClear: "Hapus tanggal",
+  dateRangePickerPlaceholder: "Pilih rentang tanggal",
+  dateRangePickerClear: "Hapus rentang tanggal",
+  dateRangePickerPickStart: "Pilih tanggal mulai",
+  dateRangePickerPickEnd: "Pilih tanggal akhir",
+  dateRangePickerPresets: "Rentang cepat",
+  monthPickerPlaceholder: "Pilih bulan",
+  monthPickerClear: "Hapus bulan",
+  timePickerPlaceholder: "Pilih jam",
+  timePickerShowOptions: "Tampilkan pilihan jam",
+  timePickerOptions: "Pilihan jam",
+  numberInputIncrement: "Tambah",
+  numberInputDecrement: "Kurangi",
 };
 
 const UiLabelsContext = createContext<UiLabels>(DEFAULT_UI_LABELS);

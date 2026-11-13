@@ -32,5 +32,14 @@ Import `@newsekolah/ui/styles.css` once at the app root, after
   `DataTable`/`ConfirmDialog` label props).
 - Icons come only from `lucide-react`; domain-to-icon mapping lives in
   `src/icons.ts` so a concept never renders two different glyphs.
+- Change handlers follow one rule. A control that stands in for a native
+  input (`DatePicker`, `DateRangePicker`, `MonthPicker`, `TimePicker`,
+  `NumberInput`, `Calendar`) calls `onChange(value)` with the value itself,
+  never an event, so a react-hook-form `{...field}` spreads onto it as is.
+  A choice control on a Radix root (`Select`, `Combobox`, `RadioGroup`,
+  `SegmentedControl`) calls `onValueChange(value)`, as Radix does; wire it
+  with `onValueChange={field.onChange}`. The pickers, `NumberInput`,
+  `RadioGroup` and `SegmentedControl` take `id`, `aria-describedby` and a
+  ref, so `FormControl` can wrap them.
 - `DataTable` is server-side only: the caller owns `pagination`, `sorting`,
   and `globalFilter` state and refetches on change.
