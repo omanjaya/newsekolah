@@ -34,7 +34,7 @@ export function MembershipPolicyForm({ onDone }: { onDone: () => void }): ReactE
         });
       }}
     >
-      <p className="text-sm text-muted-foreground">{t("description")}</p>
+      <p className="text-sm text-fg-muted">{t("description")}</p>
       {policy.isError && <p role="alert">{t("loadError")}</p>}
       <label className="flex flex-col gap-1 text-sm">
         {t("limit")}

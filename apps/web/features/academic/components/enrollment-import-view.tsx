@@ -19,7 +19,7 @@ const ERROR_ACTION_TEXT: Record<ImportRowResult["action"], string> = {
   assign: "",
   move: "",
   unchanged: "",
-  skipped: "text-status-permitted",
+  skipped: "text-warning",
   error: "text-status-absent",
 };
 

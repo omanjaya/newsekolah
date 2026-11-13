@@ -122,7 +122,7 @@ export function ClubForm({
         <label className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium">{t("meetingDay")}</span>
           <select
-            className="h-9 rounded-md border border-border bg-background px-2 text-[13px]"
+            className="h-9 rounded-md border border-border-strong bg-surface px-2 text-[13px]"
             value={meetingDay}
             onChange={(e) => {
               setMeetingDay(e.target.value);

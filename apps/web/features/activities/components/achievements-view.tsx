@@ -305,7 +305,7 @@ function AchievementForm({
         <label className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium">{t("level")}</span>
           <select
-            className="h-9 rounded-md border border-border bg-background px-2 text-[13px]"
+            className="h-9 rounded-md border border-border-strong bg-surface px-2 text-[13px]"
             value={level}
             onChange={(e) => {
               setLevel(e.target.value as AchievementLevel);

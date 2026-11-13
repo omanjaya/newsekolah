@@ -56,7 +56,7 @@ export function ClubDetailView({ clubId }: { clubId: string }): ReactElement {
     <div className="flex flex-col gap-6 p-4 pb-24 md:p-6 md:pb-24">
       <ActivitiesWorkspaceNav />
       <PageHeader eyebrow={t("eyebrow")} title={club?.name ?? "..."} />
-      {club?.description && <p className="text-[13px] text-muted-foreground">{club.description}</p>}
+      {club?.description && <p className="text-[13px] text-fg-muted">{club.description}</p>}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="members">{t("tabs.members")}</TabsTrigger>
@@ -180,7 +180,7 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
                 <Avatar name={name} size="sm" />
                 <div className="flex min-w-0 flex-col">
                   <span className="truncate font-medium">{formatDisplayName(name)}</span>
-                  <span className="text-muted-foreground">
+                  <span className="text-fg-muted">
                     {m.joined_on}
                     {m.left_on ? ` - ${m.left_on}` : ""}
                   </span>
@@ -284,7 +284,7 @@ function MeetingsPanel({ clubId }: { clubId: string }): ReactElement {
               <button
                 type="button"
                 aria-expanded={selectedMeeting === m.id}
-                className="flex min-h-11 w-full items-center rounded-md border border-border p-3 text-left text-[13px] hover:bg-muted"
+                className="flex min-h-11 w-full items-center rounded-md border border-border p-3 text-left text-[13px] hover:bg-state-hover"
                 onClick={() => {
                   setSelectedMeeting(m.id === selectedMeeting ? null : m.id);
                 }}
