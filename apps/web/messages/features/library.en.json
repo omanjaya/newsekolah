@@ -288,7 +288,15 @@
       "emptyBody": "Every active loan is still within its due date.",
       "unknownMember": "Member identity unavailable",
       "unknownTitle": "Title unavailable",
-      "loadError": "Overdue loans could not be loaded. Try again."
+      "loadError": "Overdue loans could not be loaded. Try again.",
+      "confirmReturn": {
+        "title": "Record this return?",
+        "body": "{title} from {member} will be recorded as returned."
+      },
+      "confirmReminders": {
+        "title": "Send reminders?",
+        "body": "Due-date reminders go to every overdue member ({count} loans)."
+      }
     }
   },
   "classLoans": {

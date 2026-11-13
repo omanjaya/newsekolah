@@ -1,5 +1,5 @@
 import type * as UiModule from "@newsekolah/ui";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -26,9 +26,11 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 
+const mutations = vi.hoisted(() => ({ returnLoan: vi.fn(), sendReminders: vi.fn() }));
+
 vi.mock("../api", () => ({
   useRenewLoanMutation: () => ({ mutate: vi.fn(), isPending: false }),
-  useReturnLoanMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useReturnLoanMutation: () => ({ mutate: mutations.returnLoan, isPending: false }),
 }));
 
 vi.mock("../desk-api", async () => {
@@ -36,7 +38,10 @@ vi.mock("../desk-api", async () => {
   return {
     ...actual,
     useOverdueLoansDetailedQuery: vi.fn(),
-    useSendLibraryDueRemindersMutation: () => ({ mutate: vi.fn(), isPending: false }),
+    useSendLibraryDueRemindersMutation: () => ({
+      mutate: mutations.sendReminders,
+      isPending: false,
+    }),
   };
 });
 
@@ -156,5 +161,44 @@ describe("DeskOverdueTable", () => {
     expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "retry" }));
     expect(refetch).toHaveBeenCalledOnce();
+  });
+
+  it("asks for confirmation before recording a return", async () => {
+    mutations.returnLoan.mockReset();
+    mockedQuery.mockReturnValue({
+      data: { data: [loan("loan-1", "Matematika", "BC-001")] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    const user = userEvent.setup();
+    render(<DeskOverdueTable />);
+    const [returnButton] = screen.getAllByRole("button", { name: "return" });
+    await user.click(returnButton);
+
+    expect(mutations.returnLoan).not.toHaveBeenCalled();
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "return" }));
+    expect(mutations.returnLoan).toHaveBeenCalledOnce();
+  });
+
+  it("asks for confirmation before sending reminders to every overdue member", async () => {
+    mutations.sendReminders.mockReset();
+    mockedQuery.mockReturnValue({
+      data: { data: [loan("loan-1", "Matematika", "BC-001")] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    const user = userEvent.setup();
+    render(<DeskOverdueTable />);
+    await user.click(screen.getByRole("button", { name: "sendReminders" }));
+
+    expect(mutations.sendReminders).not.toHaveBeenCalled();
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "sendReminders" }));
+    expect(mutations.sendReminders).toHaveBeenCalledOnce();
   });
 });

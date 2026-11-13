@@ -288,7 +288,15 @@
       "emptyBody": "Semua peminjaman aktif masih dalam batas waktu.",
       "unknownMember": "Identitas anggota belum tersedia",
       "unknownTitle": "Judul belum tersedia",
-      "loadError": "Daftar keterlambatan belum bisa dimuat. Coba lagi."
+      "loadError": "Daftar keterlambatan belum bisa dimuat. Coba lagi.",
+      "confirmReturn": {
+        "title": "Catat pengembalian?",
+        "body": "{title} dari {member} akan dicatat sudah dikembalikan."
+      },
+      "confirmReminders": {
+        "title": "Kirim pengingat?",
+        "body": "Pengingat jatuh tempo dikirim ke anggota yang terlambat ({count} pinjaman)."
+      }
     }
   },
   "classLoans": {
