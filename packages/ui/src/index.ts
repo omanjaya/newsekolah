@@ -188,7 +188,7 @@ export {
   type RowActionsMenuItem,
   type RowActionsMenuProps,
 } from "./components/row-actions-menu.js";
-export { Progress, type ProgressProps } from "./components/progress.js";
+export { Progress, type ProgressProps, type ProgressTone } from "./components/progress.js";
 export { Kbd } from "./components/kbd.js";
 export { StickySaveBar, type StickySaveBarProps } from "./components/sticky-save-bar.js";
 export {
