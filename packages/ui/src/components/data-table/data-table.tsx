@@ -426,7 +426,11 @@ export function DataTable<TData>({
                   className={cn(
                     "border-b border-line last:border-b-0",
                     ROW_HEIGHT[density],
-                    "transition-colors hover:bg-state-hover data-[focused=true]:bg-state-hover",
+                    // The roving-focus row is only tinted while it actually
+                    // has keyboard focus; `data-focused` alone marks the
+                    // first row of every table, focused or not.
+                    "transition-colors hover:bg-state-hover",
+                    "focus-visible:bg-state-hover focus-visible:-outline-offset-2",
                     "data-[state=selected]:bg-state-selected",
                   )}
                 >
