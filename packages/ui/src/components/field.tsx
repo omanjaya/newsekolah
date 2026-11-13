@@ -6,6 +6,7 @@ import {
   useContext,
   useId,
   useMemo,
+  useRef,
   useState,
   type ReactElement,
   type ReactNode,
@@ -64,6 +65,11 @@ export interface FieldProps {
   /**
    * The control. A shared control (Input, Select, DatePicker...) wires
    * itself; a render prop hands the ids and ARIA state to anything else.
+   * One control per Field: the first shared control inside owns it, and a
+   * later one (an end time beside a start time, an Input in a popover
+   * opened from the field) keeps its own id and state. For a group (two
+   * pickers, radios) use the render prop and name the group with
+   * `aria-labelledby={labelId}`.
    */
   children: ReactNode | ((control: FieldRenderProps) => ReactNode);
 }
@@ -71,6 +77,54 @@ export interface FieldProps {
 /** A message slot renders only for content: `false`, `null` and "" (a cleared error) leave it out. */
 function isShown(node: ReactNode): boolean {
   return node !== undefined && node !== null && node !== false && node !== "";
+}
+
+interface FieldOwner {
+  /** The first control to register, which owns the label, or null before any has. */
+  token: object | null;
+  /** The owner's own `id`, when it brings one. */
+  ownId: string | undefined;
+  register: (token: object) => () => void;
+  reportId: (token: object, id: string | undefined) => void;
+}
+
+/**
+ * Tracks the controls that mount inside a Field in the order they register
+ * (children's layout effects run in tree order), so the first one owns the
+ * field and keeps owning it until it unmounts.
+ */
+function useFieldOwner(): FieldOwner {
+  const order = useRef<object[]>([]);
+  const ids = useRef(new Map<object, string | undefined>());
+  const [owner, setOwner] = useState<{ token: object; ownId: string | undefined } | null>(null);
+
+  const sync = useCallback(() => {
+    const first = order.current[0];
+    const next = first === undefined ? null : { token: first, ownId: ids.current.get(first) };
+    setOwner((current) =>
+      current?.token === next?.token && current?.ownId === next?.ownId ? current : next,
+    );
+  }, []);
+  const register = useCallback(
+    (token: object) => {
+      order.current = [...order.current, token];
+      sync();
+      return () => {
+        order.current = order.current.filter((entry) => entry !== token);
+        ids.current.delete(token);
+        sync();
+      };
+    },
+    [sync],
+  );
+  const reportId = useCallback(
+    (token: object, id: string | undefined) => {
+      ids.current.set(token, id);
+      sync();
+    },
+    [sync],
+  );
+  return { token: owner?.token ?? null, ownId: owner?.ownId, register, reportId };
 }
 
 /**
@@ -100,8 +154,8 @@ export function Field({
   const labels = useUiLabels();
   const formField = useContext(FormFieldStateContext);
   const baseId = useId();
-  const [registeredId, setRegisteredId] = useState<string | undefined>(undefined);
-  const controlId = idProp ?? registeredId ?? `${baseId}-control`;
+  const owner = useFieldOwner();
+  const controlId = idProp ?? owner.ownId ?? `${baseId}-control`;
   const hintId = `${baseId}-hint`;
   const errorId = `${baseId}-error`;
   const labelId = `${baseId}-label`;
@@ -112,10 +166,8 @@ export function Field({
   const describedBy =
     [hasHint && hintId, hasError && errorId].filter(Boolean).join(" ") || undefined;
 
-  const registerControlId = useCallback((id: string | undefined) => {
-    setRegisteredId(id);
-  }, []);
-
+  const ownedByRenderProp = typeof children === "function";
+  const { token: ownerToken, register, reportId } = owner;
   const context = useMemo<FieldContextValue>(
     () => ({
       controlId,
@@ -123,9 +175,22 @@ export function Field({
       invalid: hasError,
       required,
       disabled,
-      registerControlId,
+      owner: ownerToken,
+      ownedByRenderProp,
+      register,
+      reportId,
     }),
-    [controlId, describedBy, hasError, required, disabled, registerControlId],
+    [
+      controlId,
+      describedBy,
+      hasError,
+      required,
+      disabled,
+      ownerToken,
+      ownedByRenderProp,
+      register,
+      reportId,
+    ],
   );
 
   const horizontal = orientation === "horizontal";
