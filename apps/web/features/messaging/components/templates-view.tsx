@@ -157,7 +157,7 @@ export function TemplatesView(): ReactElement {
                     startEdit(template);
                   }}
                 >
-                  {t("form.save")}
+                  {t("form.edit")}
                 </Button>
                 <Button
                   variant="ghost"
@@ -179,6 +179,9 @@ export function TemplatesView(): ReactElement {
           if (!open) setDeleteTarget(null);
         }}
         title={t("confirmDelete")}
+        description={t("confirmDeleteBody", { name: deleteTarget?.name ?? "" })}
+        confirmLabel={t("form.delete")}
+        destructive
         onConfirm={handleDelete}
       />
     </div>

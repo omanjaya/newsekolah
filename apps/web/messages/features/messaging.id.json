@@ -47,6 +47,7 @@
       "bodyHint": "Contoh: Halo, nama_ortu, tagihan jumlah jatuh tempo tanggal (masing-masing dibungkus kurung kurawal ganda).",
       "placeholdersLabel": "Variabel terdeteksi",
       "save": "Simpan template",
+      "edit": "Ubah",
       "cancel": "Batal",
       "delete": "Hapus"
     },
@@ -59,7 +60,8 @@
     "created": "Template dibuat",
     "updated": "Template diperbarui",
     "deleted": "Template dihapus",
-    "confirmDelete": "Hapus template ini?"
+    "confirmDelete": "Hapus template ini?",
+    "confirmDeleteBody": "Template {name} akan dihapus dan tidak bisa dipakai lagi untuk pengiriman WhatsApp."
   },
   "deliveries": {
     "title": "Log pengiriman",
