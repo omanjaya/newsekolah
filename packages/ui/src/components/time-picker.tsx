@@ -36,14 +36,14 @@ import { Popover, PopoverAnchor, PopoverContent } from "./popover.js";
 import { useUiLabels } from "./ui-labels.js";
 
 export interface TimePickerProps {
-  /** 24-hour "HH:mm", or ""/null for none. */
+  /** 24-hour "HH:mm", or ""/null for none. An API's "HH:mm:ss" is read too; the seconds are dropped. */
   value?: string | null;
   defaultValue?: string;
   /** Called with "HH:mm", or "" when the field is emptied. */
   onChange?: (value: string) => void;
   /** Spacing of the suggested times; any minute can still be typed. Default 15. */
   minuteStep?: number;
-  /** Earliest time, "HH:mm": the list starts here and typed times are clamped to it. */
+  /** Earliest time, "HH:mm" (or "HH:mm:ss"): the list starts here and typed times are clamped to it. */
   min?: string;
   /** Latest time, "HH:mm". */
   max?: string;
@@ -135,7 +135,12 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
   );
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
+  // The option the list is scrolled to, and whether the arrow keys or the
+  // pointer have moved onto it since the last keystroke. Only then is it
+  // highlighted and taken by Enter: a typed 07.40 must not turn into the
+  // next suggestion, 07.45, just because the list scrolled there.
   const [active, setActive] = useState(-1);
+  const [navigated, setNavigated] = useState(false);
   const [scrollMode, setScrollMode] = useState<"center" | "nearest">("center");
 
   useEffect(() => {
@@ -152,9 +157,10 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
 
   const shown = draft ?? (minutes === null ? "" : formatTime(minutes, locale));
 
-  function openList(index: number) {
+  function openList(index: number, byNavigation = false) {
     setScrollMode("center");
     setActive(index);
+    setNavigated(byNavigation);
     setOpen(true);
   }
 
@@ -175,16 +181,19 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
     // Unreadable text falls back to the last valid value instead of
     // wiping it: the field shows what the form will actually submit.
     if (typed === null) return;
-    const next = toTime(clampMinutes(typed, minMinutes, maxMinutes));
-    if (next !== rawValue) setValue(next);
+    const next = clampMinutes(typed, minMinutes, maxMinutes);
+    if (next !== minutes) setValue(toTime(next));
   }
 
   function step(delta: number) {
     setScrollMode("nearest");
     if (!open) {
-      openList(active >= 0 ? active : Math.max(nearestIndex(options, minutes), 0));
+      openList(active >= 0 ? active : Math.max(nearestIndex(options, minutes), 0), true);
       return;
     }
+    setNavigated(true);
+    // The first arrow press lands on the suggestion the list scrolled to.
+    if (!navigated && active >= 0) return;
     setActive((index) => Math.min(Math.max(index + delta, 0), options.length - 1));
   }
 
@@ -193,13 +202,19 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
       event.preventDefault();
       step(event.key === "ArrowDown" ? 1 : -1);
     } else if (event.key === "Enter") {
-      const option = open ? options[active] : undefined;
+      const option = open && navigated ? options[active] : undefined;
       if (option !== undefined) {
         event.preventDefault();
         choose(option);
-      } else {
-        commitDraft();
+        return;
       }
+      // With the list open, Enter only accepts the typed time; the next
+      // Enter submits the form, as it would from a plain field.
+      if (open) {
+        event.preventDefault();
+        setOpen(false);
+      }
+      commitDraft();
     } else if (event.key === "Escape" && open) {
       event.preventDefault();
       setOpen(false);
@@ -207,7 +222,8 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
   }
 
   const showInvalid = isInvalid(invalid, ariaInvalid);
-  const activeOption = open && active >= 0 ? `${listId}-${active}` : undefined;
+  const highlighted = open && navigated ? active : -1;
+  const activeOption = highlighted >= 0 ? `${listId}-${highlighted}` : undefined;
 
   return (
     <Popover
@@ -249,6 +265,7 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
               const text = event.target.value;
               setDraft(text);
               setScrollMode("center");
+              setNavigated(false);
               const index = nearestIndex(options, parseTypedTime(text));
               if (index >= 0) openList(index);
             }}
@@ -281,7 +298,9 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
           >
             <ChevronDown aria-hidden="true" />
           </button>
-          {name && <input type="hidden" name={name} value={minutes === null ? "" : rawValue} />}
+          {name && (
+            <input type="hidden" name={name} value={minutes === null ? "" : toTime(minutes)} />
+          )}
         </div>
       </PopoverAnchor>
       <PopoverContent
@@ -312,9 +331,10 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
         }}
         onMouseMove={(event) => {
           const index = optionIndexOf(event.target);
-          if (index !== null && index !== active) {
+          if (index !== null && (index !== active || !navigated)) {
             setScrollMode("nearest");
             setActive(index);
+            setNavigated(true);
           }
         }}
         onClick={(event) => {
@@ -333,7 +353,7 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
             className={cn(
               // Same row as Select's options: pill-free, check on the right.
               "relative flex h-11 cursor-pointer items-center rounded-xs px-3 pr-8 text-base tabular-nums text-fg md:h-9",
-              index === active && "bg-bg",
+              index === highlighted && "bg-bg",
             )}
           >
             {formatTime(option, locale)}

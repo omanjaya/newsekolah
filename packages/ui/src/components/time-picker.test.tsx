@@ -89,6 +89,43 @@ describe("TimePicker", () => {
     expect(input).toHaveFocus();
   });
 
+  it("commits a typed time off the step grid on Enter, not the next suggestion", async () => {
+    const onChange = vi.fn();
+    render(<LabelledTimePicker onChange={onChange} />);
+    const input = screen.getByRole("combobox", { name: "Jam mulai" });
+
+    await userEvent.type(input, "0740");
+    // The list follows the typing but nothing is highlighted for Enter to take.
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+    expect(input).not.toHaveAttribute("aria-activedescendant");
+    await userEvent.keyboard("{Enter}");
+
+    expect(onChange).toHaveBeenLastCalledWith("07:40");
+    expect(input).toHaveValue("07.40");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
+
+  it("lands the first arrow press after typing on the suggestion the list scrolled to", async () => {
+    const onChange = vi.fn();
+    render(<LabelledTimePicker onChange={onChange} />);
+    const input = screen.getByRole("combobox", { name: "Jam mulai" });
+
+    await userEvent.type(input, "0740");
+    await userEvent.keyboard("{ArrowDown}");
+    expect(input).toHaveAttribute(
+      "aria-activedescendant",
+      screen.getByRole("option", { name: "07.45" }).id,
+    );
+    await userEvent.keyboard("{Enter}");
+    expect(onChange).toHaveBeenLastCalledWith("07:45");
+  });
+
+  it("reads an API time with seconds and posts it without them", () => {
+    render(<LabelledTimePicker value="07:45:00" name="start" />);
+    expect(screen.getByRole("combobox", { name: "Jam mulai" })).toHaveValue("07.45");
+    expect(document.querySelector<HTMLInputElement>('input[name="start"]')?.value).toBe("07:45");
+  });
+
   it("clamps a typed time to the bounds", async () => {
     const onChange = vi.fn();
     render(<LabelledTimePicker min="07:00" max="15:00" onChange={onChange} />);

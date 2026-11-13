@@ -3,8 +3,11 @@ import { describe, expect, it } from "vitest";
 import { formatTime, parseTime, parseTypedTime, timeSteps } from "./time-of-day.js";
 
 describe("time-of-day", () => {
-  it("accepts only 24-hour HH:mm as a stored value", () => {
+  it("accepts only 24-hour HH:mm as a stored value, with optional seconds dropped", () => {
     expect(parseTime("07:30")).toBe(7 * 60 + 30);
+    expect(parseTime("07:45:00")).toBe(7 * 60 + 45);
+    expect(parseTime("07:45:59.5")).toBe(7 * 60 + 45);
+    expect(parseTime("07:45:60")).toBeNull();
     expect(parseTime("7:30")).toBeNull();
     expect(parseTime("24:00")).toBeNull();
     expect(parseTime("")).toBeNull();

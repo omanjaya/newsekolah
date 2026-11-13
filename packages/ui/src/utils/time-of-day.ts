@@ -5,9 +5,11 @@
  */
 
 const MINUTES_PER_DAY = 24 * 60;
-const STORED_TIME = /^([01]\d|2[0-3]):([0-5]\d)$/;
+// Seconds (and a fraction) are read and dropped: the API returns period
+// times as "07:45:00", and a caller should not have to slice them.
+const STORED_TIME = /^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d(?:\.\d+)?)?$/;
 
-/** Minutes since midnight for a stored "HH:mm" value, or null. */
+/** Minutes since midnight for a stored "HH:mm" (or "HH:mm:ss") value, or null. */
 export function parseTime(value: string | null | undefined): number | null {
   const match = value ? STORED_TIME.exec(value) : null;
   if (!match) return null;
