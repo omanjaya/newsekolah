@@ -6,49 +6,43 @@ import { cn } from "../utils/cn.js";
 
 export type SwitchProps = RadixSwitchProps;
 
+/**
+ * A pill track with a round thumb, one family with the pill tabs and
+ * badges. Off: a sunken track inside a `border-strong` ring (3:1 against
+ * any surface) and a smaller muted thumb, so an off switch never reads as
+ * an empty cell. On: the accent fill and a full-size thumb on the accent's
+ * label color. The thumb slides and grows with transform only (200ms; it
+ * jumps under reduced motion). 36x20 under a mouse, 44x24 on a touch
+ * screen, where the hit area also reaches 44px tall.
+ */
 export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch(
   { className, ...props },
   ref,
 ) {
   return (
-    // Same approach as the checkbox: the track keeps its 36x20 size, while
-    // on a phone the button around it is a 44px-tall touch target whose
-    // negative margin gives the extra space back to the layout.
     <SwitchPrimitive.Root
       ref={ref}
       className={cn(
-        "group relative inline-flex shrink-0 items-center justify-center",
-        "h-11 w-13 -mx-2 -my-3 md:m-0 md:h-5 md:w-9",
-        "disabled:cursor-not-allowed focus-visible:outline-none",
+        "group relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full",
+        "pointer-coarse:h-6 pointer-coarse:w-11 pointer-coarse:after:absolute pointer-coarse:after:inset-x-0 pointer-coarse:after:-inset-y-2.5",
+        "border border-border-strong bg-surface-sunken transition-colors hover:border-fg-muted",
+        "data-[state=checked]:border-accent data-[state=checked]:bg-accent data-[state=checked]:hover:border-accent-strong data-[state=checked]:hover:bg-accent-strong",
+        "disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
       {...props}
     >
-      {/*
-        The track's shape is reworked with the other primitives (spec
-        section 5); this keeps it and only moves the unchecked border to
-        border-strong, so an off switch is as visible as a field. The thumb
-        takes its color from the state: muted on the sunken off track (a
-        surface-colored thumb vanished there, so the switch read as an
-        empty field) and the accent's label color on the accent.
-      */}
-      <span
-        aria-hidden="true"
+      <SwitchPrimitive.Thumb
         className={cn(
-          "flex h-5 w-9 shrink-0 items-center rounded-sm border border-border-strong bg-surface-sunken",
-          "transition-colors group-hover:border-fg-muted",
-          "group-data-[state=checked]:border-accent group-data-[state=checked]:bg-accent",
-          "group-disabled:opacity-50",
-          "group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus-ring",
+          "pointer-events-none block size-4 rounded-full bg-fg-muted motion-indicator pointer-coarse:size-5",
+          // 2px in from the left edge off, 2px in from the right edge on.
+          "translate-x-px scale-75 data-[state=checked]:translate-x-[17px] data-[state=checked]:scale-100 data-[state=checked]:bg-accent-fg",
+          "pointer-coarse:data-[state=checked]:translate-x-[21px]",
+          "data-[state=checked]:shadow-1",
+          // Pressing gives under the finger: the thumb gives a little.
+          "group-active:data-[state=unchecked]:scale-[0.85] group-active:data-[state=checked]:scale-90",
         )}
-      >
-        <SwitchPrimitive.Thumb
-          className={cn(
-            "motion-indicator block size-3.5 translate-x-0.5 rounded-xs bg-fg-muted",
-            "data-[state=checked]:translate-x-[18px] data-[state=checked]:bg-accent-fg",
-          )}
-        />
-      </span>
+      />
     </SwitchPrimitive.Root>
   );
 });
