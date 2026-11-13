@@ -117,18 +117,26 @@ export function SsoView(): ReactElement {
             <div className="flex items-center gap-2">
               <h2 className="text-[16px] font-medium text-fg">{t("statusTitle")}</h2>
               <Badge variant={data.configured && data.enabled ? "accent" : "neutral"}>
-                {data.configured && data.enabled ? t("statusOn") : t("statusOff")}
+                {!data.configured
+                  ? t("statusUnset")
+                  : data.enabled
+                    ? t("statusOn")
+                    : t("statusOff")}
               </Badge>
             </div>
             <p className="text-[13px] text-fg-muted">{t("statusBody")}</p>
           </div>
-          <Switch
-            checked={active.enabled}
-            onCheckedChange={(enabled) => {
-              setForm({ ...active, enabled });
-            }}
-            aria-label={t("enabledToggleLabel")}
-          />
+          {/* Before the first configuration there is nothing to switch: saving
+              the credentials turns sign-in on, so no switch contradicts the badge. */}
+          {data.configured && (
+            <Switch
+              checked={active.enabled}
+              onCheckedChange={(enabled) => {
+                setForm({ ...active, enabled });
+              }}
+              aria-label={t("enabledToggleLabel")}
+            />
+          )}
         </div>
 
         {!data.configured && <Alert variant="info" title={t("neverConfigured")} />}
