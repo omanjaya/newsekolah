@@ -81,10 +81,16 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
       ...workspaces,
       ...authorizedItems.filter((item) => !hrefs.has(item.href)),
     ].filter((item) => !item.routeOnly && canOpenPath(item.href, access));
+    // The shared palette matches on `${label} ${heading} ${id}`. The registry
+    // keys are English slugs (`quick-record-violation`), so using them as ids
+    // made unrelated pages match any short query as a subsequence. A numeric
+    // id keeps every value unique without adding searchable letters; the
+    // searchable text is the translated label plus its translated keywords.
+    let nextId = 0;
     return groupNavigation(items).map((group) => ({
       heading: tNav(group.labelKey),
       items: group.items.map((item) => ({
-        id: item.key,
+        id: String(nextId++),
         label: tNav(item.labelKey),
         keywords: item.searchTerms?.map((key) => tNav(key)),
         icon: <item.icon aria-hidden="true" />,
@@ -101,8 +107,8 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
     if (quickActions.length === 0) return null;
     return {
       heading: tQuick("group"),
-      items: quickActions.map((action) => ({
-        id: `quick-${action.id}`,
+      items: quickActions.map((action, index) => ({
+        id: `-${index + 1}`,
         label: tQuick(`actions.${action.labelKey}`),
         icon: <action.icon aria-hidden="true" />,
         onSelect: () => {

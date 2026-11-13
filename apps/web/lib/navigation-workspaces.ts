@@ -111,6 +111,9 @@ const WORKSPACES: WorkspaceDefinition[] = [
     members: ["visitors-board", "visitors-expected", "visitors-incidents"],
     label: "visitors",
     group: NAV_GROUP.duty,
+    // The recap is a tab of the visitors workspace nav and also a member of
+    // the reports hub; while on the route the visitors entry stays active.
+    detailPaths: ["/visitors/recap"],
   },
   { key: "billing", members: ["billing"], label: "billing" },
   {
@@ -191,6 +194,40 @@ function labelFor(
   return definition.label ? `app.workspace.${definition.label}` : selected.labelKey;
 }
 
+/** docs/17: the top of the menu is daily work, in this order, before everything else. */
+const LEADING_KEYS = ["dashboard", "inbox", "scan", "reports"];
+
+function leadWithDailyDestinations(entries: NavItem[]): NavItem[] {
+  const rank = (item: NavItem) => {
+    const index = LEADING_KEYS.indexOf(item.key);
+    return index === -1 ? LEADING_KEYS.length : index;
+  };
+  // Array.prototype.sort is stable, so the remaining order is untouched.
+  return [...entries].sort((a, b) => rank(a) - rank(b));
+}
+
+/**
+ * A workspace's `detailPaths` are routes it owns even when another workspace
+ * also lists them as a member. The other workspace stops claiming them so
+ * the menu highlights one entry for the route.
+ */
+function releaseClaimedDetailPaths(output: NavItem[], available: NavItem[]): void {
+  const hrefByKey = new Map(available.map((item) => [item.key, item.href]));
+  for (const definition of WORKSPACES) {
+    const owner = output.find((item) => item.key === definition.key);
+    if (!owner || !definition.detailPaths) continue;
+    for (const other of output) {
+      if (other === owner) continue;
+      const memberHrefs = new Set(
+        (other.aliases ?? []).map((key) => hrefByKey.get(key)).filter(Boolean),
+      );
+      other.activePaths = other.activePaths?.filter(
+        (path) => !(definition.detailPaths ?? []).includes(path) || !memberHrefs.has(path),
+      );
+    }
+  }
+}
+
 /** Merge only the already authorized destinations; custom permission sets get safe fallbacks. */
 export function consolidateNavigation(
   items: NavItem[],
@@ -229,6 +266,7 @@ export function consolidateNavigation(
       },
     ];
   });
+  releaseClaimedDetailPaths(output, available);
   // These remain direct mobile/account actions, not entries in the browsable menu.
   const assigned = new Set(WORKSPACES.flatMap((definition) => definition.members));
   const additional = available.filter(
@@ -239,8 +277,7 @@ export function consolidateNavigation(
       item.sidebarPlacement !== "hidden",
   );
   return [
-    ...output,
-    ...additional,
+    ...leadWithDailyDestinations([...output, ...additional]),
     ...items
       .filter((item) => item.accountMenu === true || item.key === "classroom-entry")
       .map((item) => ({ ...item, sidebarPlacement: "hidden" as const })),
