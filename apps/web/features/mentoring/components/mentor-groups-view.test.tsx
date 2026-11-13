@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   useMentorGroupsQuery: vi.fn(),
   useMyMentorGroupsQuery: vi.fn(),
   canManage: false,
+  names: new Map<string, { id: string; name: string }>(),
 }));
 
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
@@ -24,10 +25,9 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
 vi.mock("../../reference/api", () => ({
   useLookup: () => new Map(),
 }));
-vi.mock("../../reference/directory-names", async () => {
-  const { directoryNamesStub } = await import("../../../test/directory-names-stub");
-  return directoryNamesStub([]);
-});
+vi.mock("../../reference/directory-names", () => ({
+  useDirectoryNames: () => mocks.names,
+}));
 vi.mock("../api", () => ({
   useMentorGroupsQuery: mocks.useMentorGroupsQuery,
   useMyMentorGroupsQuery: mocks.useMyMentorGroupsQuery,
@@ -41,6 +41,7 @@ import { MentorGroupsView } from "./mentor-groups-view";
 describe("MentorGroupsView scope", () => {
   beforeEach(() => {
     mocks.canManage = false;
+    mocks.names = new Map();
     mocks.useMentorGroupsQuery.mockReset();
     mocks.useMyMentorGroupsQuery.mockReset();
     mocks.useMentorGroupsQuery.mockReturnValue({
@@ -90,5 +91,29 @@ describe("MentorGroupsView scope", () => {
     const controls = screen.getByRole("tab", { name: "mine" }).getAttribute("aria-controls");
     expect(controls).toBeTruthy();
     expect(document.getElementById(controls ?? "")).toHaveAttribute("role", "tabpanel");
+  });
+
+  it("finds a group by mentor name, even when the name resolves after the search", async () => {
+    const user = userEvent.setup();
+    const group = { id: "g1", name: "Kelompok Satu", mentor_user_id: "t1" };
+    mocks.useMyMentorGroupsQuery.mockReturnValue({
+      data: { data: [group] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    const view = render(<MentorGroupsView />);
+
+    await user.type(screen.getByRole("searchbox"), "wijaya");
+    await waitFor(() => {
+      expect(screen.queryByText("Kelompok Satu")).not.toBeInTheDocument();
+    });
+
+    mocks.names = new Map([["t1", { id: "t1", name: "Sari Wijaya" }]]);
+    view.rerender(<MentorGroupsView />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Kelompok Satu").length).toBeGreaterThan(0);
+    });
   });
 });

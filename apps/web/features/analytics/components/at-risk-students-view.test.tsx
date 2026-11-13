@@ -25,12 +25,13 @@ vi.mock("../../reference/api", () => ({
   useLookup: (items: { id: string; name: string }[] = []) =>
     new Map(items.map((item) => [item.id, item])),
 }));
+const loadedNames = new Map([
+  ["s1", { id: "s1", name: "Budi Santoso" }],
+  ["s2", { id: "s2", name: "Citra Lestari" }],
+]);
+let names = loadedNames;
 vi.mock("../../reference/directory-names", () => ({
-  useDirectoryNames: () =>
-    new Map([
-      ["s1", { id: "s1", name: "Budi Santoso" }],
-      ["s2", { id: "s2", name: "Citra Lestari" }],
-    ]),
+  useDirectoryNames: () => names,
 }));
 vi.mock("../../student-services/components/service-workspace-nav", () => ({
   CounselingWorkspaceNav: () => null,
@@ -51,6 +52,7 @@ const row = (id: string, score: number) => ({
 });
 
 beforeEach(() => {
+  names = loadedNames;
   query = { data: { data: [row("s1", 10), row("s2", 5)] }, isLoading: false, error: null };
 });
 
@@ -76,5 +78,23 @@ describe("AtRiskStudentsView", () => {
     render(<AtRiskStudentsView />);
     expect(screen.getByText("notAssignedTitle")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "backHome" })).toHaveAttribute("href", "/dashboard");
+  });
+
+  it("still finds a student whose name resolves after the search was typed", async () => {
+    names = new Map();
+    const view = render(<AtRiskStudentsView />);
+    fireEvent.change(screen.getByPlaceholderText("searchPlaceholder"), {
+      target: { value: "citra" },
+    });
+    await waitFor(() => {
+      expect(screen.queryAllByText("unknownStudent")).toHaveLength(0);
+    });
+
+    names = loadedNames;
+    view.rerender(<AtRiskStudentsView />);
+    await waitFor(() => {
+      expect(screen.getAllByText("Citra Lestari").length).toBeGreaterThan(0);
+    });
+    expect(screen.queryAllByText("Budi Santoso")).toHaveLength(0);
   });
 });

@@ -54,7 +54,9 @@ export function PermitsWorkspaceView({
   const redirectTarget =
     isReady && canReview
       ? (legacyQueueTarget(new URLSearchParams(searchParams.toString()), initialType) ??
-        (options.length === 0 ? reviewerInboxTarget(initialType) : null))
+        (options.length === 0 || !options.some((option) => option.value === initialType)
+          ? reviewerInboxTarget(initialType)
+          : null))
       : null;
   useEffect(() => {
     if (redirectTarget) router.replace(redirectTarget);

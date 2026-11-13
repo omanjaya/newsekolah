@@ -45,6 +45,8 @@ import {
 import { GroupSizeLimitPanel } from "./group-size-limit-panel";
 import { MentorGroupForm } from "./mentor-group-form";
 
+type MentorGroupRow = MentorGroup & { mentor_name: string };
+
 export function MentorGroupsView({
   initialScope = "mine",
 }: {
@@ -73,20 +75,30 @@ export function MentorGroupsView({
   const [editing, setEditing] = useState<MentorGroup | "new" | null>(null);
   const [pendingDelete, setPendingDelete] = useState<MentorGroup | null>(null);
 
-  const items = data?.data ?? [];
+  const items = useMemo(() => data?.data ?? [], [data]);
   const teacherMap = useDirectoryNames(items.map((item) => item.mentor_user_id));
 
-  const columns = useMemo<ColumnDef<MentorGroup>[]>(() => {
-    const base: ColumnDef<MentorGroup>[] = [
+  // The searchable name lives in the row data, not in an accessor closing over
+  // the lookup: the table caches accessor values per row, so a name that
+  // resolves after the rows would otherwise stay unsearchable.
+  const tableRows = useMemo<MentorGroupRow[]>(
+    () =>
+      items.map((item) => ({
+        ...item,
+        mentor_name: teacherMap.get(item.mentor_user_id)?.name ?? "",
+      })),
+    [items, teacherMap],
+  );
+
+  const columns = useMemo<ColumnDef<MentorGroupRow>[]>(() => {
+    const base: ColumnDef<MentorGroupRow>[] = [
       { accessorKey: "name", header: t("columns.name"), enableSorting: false },
       {
-        id: "mentor",
+        accessorKey: "mentor_name",
         header: t("columns.mentor"),
         enableSorting: false,
-        // Gives the local search box the teacher's name to match against.
-        accessorFn: (item) => teacherMap.get(item.mentor_user_id)?.name ?? "",
         cell: ({ row }) => {
-          const name = teacherMap.get(row.original.mentor_user_id)?.name;
+          const name = row.original.mentor_name;
           return name ? formatDisplayName(name) : t("unknownMentor");
         },
       },
@@ -132,7 +144,7 @@ export function MentorGroupsView({
         },
       },
     ];
-  }, [t, teacherMap, canManage]);
+  }, [t, canManage]);
 
   return (
     // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
@@ -190,9 +202,9 @@ export function MentorGroupsView({
               <DataTable
                 stateKey="features/mentoring/components/mentor-groups-view:1"
                 mode="local"
-                data={items}
+                data={tableRows}
                 columns={columns}
-                rowCount={items.length}
+                rowCount={tableRows.length}
                 pagination={{ pageIndex: 0, pageSize: 50 }}
                 onPaginationChange={() => undefined}
                 sorting={[]}

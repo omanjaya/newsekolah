@@ -70,4 +70,25 @@ describe("PermitsWorkspaceView", () => {
     render(<PermitsWorkspaceView initialType="leave" />);
     expect(mocks.replace).toHaveBeenCalledWith("/inbox?type=leave");
   });
+
+  it.each(["leave", "exit", "late"])(
+    "sends a staff reviewer holding every permit permission from the %s route to the inbox when it is not a type they can open",
+    (pageType) => {
+      mocks.profileKind = "staff";
+      mocks.permissions = new Set([
+        "submit_leave_requests",
+        "review_leave_requests",
+        "issue_leave_letters",
+        "issue_scan_tokens",
+        "scan_exit_permits",
+      ]);
+      render(<PermitsWorkspaceView initialType={pageType} />);
+      if (pageType === "late") {
+        expect(mocks.replace).toHaveBeenCalledWith("/inbox?type=late");
+      } else {
+        expect(mocks.replace).not.toHaveBeenCalled();
+        expect(screen.getByTestId(pageType)).toBeInTheDocument();
+      }
+    },
+  );
 });

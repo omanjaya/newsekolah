@@ -31,6 +31,12 @@ import { RiskLevelSummary } from "./risk-level-summary";
  * class -- decided server-side (analytics service.resolveScope), not by
  * anything this screen chooses.
  */
+type RiskRow = StudentRisk & {
+  student_name: string;
+  class_name: string;
+  level_label: string;
+};
+
 export function AtRiskStudentsView(): ReactElement {
   const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.analytics.list");
@@ -52,15 +58,26 @@ export function AtRiskStudentsView(): ReactElement {
   }, [data]);
   const studentMap = useDirectoryNames(rows.map((item) => item.student_user_id));
 
-  const columns = useMemo<ColumnDef<StudentRisk>[]>(
+  // Searchable text lives in the row data, not in accessors closing over the
+  // lookups: the table caches accessor values per row, so a name that
+  // resolves after the rows would otherwise stay unsearchable.
+  const tableRows = useMemo<RiskRow[]>(
+    () =>
+      rows.map((item) => ({
+        ...item,
+        student_name: studentMap.get(item.student_user_id)?.name ?? "",
+        class_name: classMap.get(item.class_id)?.name ?? "",
+        level_label: levelLabel(item.level),
+      })),
+    [rows, studentMap, classMap, levelLabel],
+  );
+
+  const columns = useMemo<ColumnDef<RiskRow>[]>(
     () => [
       {
-        id: "student",
+        accessorKey: "student_name",
         header: t("columns.student"),
         enableSorting: false,
-        // A column with a cell but no accessor is skipped by the local search
-        // box, so give it the text a person would type.
-        accessorFn: (item) => studentMap.get(item.student_user_id)?.name ?? "",
         cell: ({ row }) => {
           const student = studentMap.get(row.original.student_user_id);
           return student ? (
@@ -76,19 +93,17 @@ export function AtRiskStudentsView(): ReactElement {
         },
       },
       {
-        id: "class",
+        accessorKey: "class_name",
         header: t("columns.class"),
         enableSorting: false,
-        accessorFn: (item) => classMap.get(item.class_id)?.name ?? "",
-        cell: ({ row }) => classMap.get(row.original.class_id)?.name ?? "-",
+        cell: ({ row }) => row.original.class_name || "-",
       },
       {
-        id: "level",
+        accessorKey: "level_label",
         header: t("columns.level"),
         enableSorting: false,
-        accessorFn: (item) => levelLabel(item.level),
         cell: ({ row }) => (
-          <RiskLevelBadge level={row.original.level} label={levelLabel(row.original.level)} />
+          <RiskLevelBadge level={row.original.level} label={row.original.level_label} />
         ),
       },
       { accessorKey: "score", header: t("columns.score"), enableSorting: false },
@@ -99,7 +114,7 @@ export function AtRiskStudentsView(): ReactElement {
         cell: ({ row }) => formatDateTime(row.original.computed_at, { locale }),
       },
     ],
-    [t, locale, studentMap, classMap, levelLabel],
+    [t, locale, studentMap],
   );
 
   if (isLoading) {
@@ -181,7 +196,7 @@ export function AtRiskStudentsView(): ReactElement {
         <DataTable
           stateKey="features/analytics/components/at-risk-students-view:1"
           mode="local"
-          data={rows}
+          data={tableRows}
           columns={columns}
           rowCount={rows.length}
           pagination={{ pageIndex: 0, pageSize: 50 }}
