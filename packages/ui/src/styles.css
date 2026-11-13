@@ -464,10 +464,20 @@
  * A body that ends in a sticky footer drops its own bottom padding: a
  * sticky element stops at the scroll container's padding edge, so the
  * padding would show as a strip of scrolling content under the footer.
+ *
+ * It also reserves the footer's height (its 16px top padding, a 44px
+ * touch-size button, its bottom padding, the home indicator) plus 8px for
+ * the focus ring as scroll padding. Browsers ignore sticky elements when
+ * they scroll a focused field into view, so without it tabbing down a long
+ * form could leave the focused field under the opaque footer (WCAG 2.4.11).
  */
 @utility dialog-body {
   &:has(> :is(form, div) > .border-t.justify-end:last-child, [data-dialog-footer]) {
     padding-bottom: 0;
+    scroll-padding-bottom: calc(
+      var(--space-4) + 2.75rem + var(--dialog-footer-pb) + var(--dialog-safe-bottom) +
+        var(--space-2)
+    );
   }
   & > :is(form, div) > .border-t.justify-end:last-child {
     position: sticky;
