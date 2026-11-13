@@ -16,9 +16,10 @@ describe("cn", () => {
     });
 
     it("drops the size, leading, weight, tracking and family a role sets", () => {
-      expect(
-        cn("text-[13px] font-medium leading-tight tracking-tight font-heading", "text-body"),
-      ).toBe("text-body");
+      // The literal size is the point of this case: a role must replace it.
+      // eslint-disable-next-line no-restricted-syntax -- fixture string, not a class in use
+      const handWritten = "text-[13px] font-medium leading-tight tracking-tight font-heading";
+      expect(cn(handWritten, "text-body")).toBe("text-body");
     });
 
     it("keeps an override that comes after the role", () => {

@@ -3,11 +3,12 @@
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import reactHooks from "eslint-plugin-react-hooks";
 
-import { base, emojiNoRestrictedSyntax } from "./base.js";
+import { base, baseNoRestrictedSyntax } from "./base.js";
 import { EMOJI_SOURCE } from "./emoji-pattern.js";
 
-const jsxEmojiRestrictions = [
-  ...emojiNoRestrictedSyntax,
+/** The base list plus JSX text, for .jsx/.tsx files; see baseNoRestrictedSyntax. */
+export const reactNoRestrictedSyntax = [
+  ...baseNoRestrictedSyntax,
   {
     selector: `JSXText[value=/${EMOJI_SOURCE}/u]`,
     message: "Emoji is not allowed in JSX text. Use a Lucide icon instead.",
@@ -23,7 +24,7 @@ export const react = [
   {
     files: ["**/*.{jsx,tsx}"],
     rules: {
-      "no-restricted-syntax": ["error", ...jsxEmojiRestrictions],
+      "no-restricted-syntax": ["error", ...reactNoRestrictedSyntax],
       "react-hooks/exhaustive-deps": "error",
       "jsx-a11y/no-autofocus": "warn",
     },
