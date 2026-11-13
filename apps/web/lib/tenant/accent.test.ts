@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { contrastRatio, darkVariantOf, foregroundFor, lightVariantOf, parseHex } from "./accent";
+import {
+  PLATFORM_ACCENTS,
+  contrastRatio,
+  darkVariantOf,
+  foregroundFor,
+  lightVariantOf,
+  parseHex,
+  resolveTenantAccents,
+} from "./accent";
 
 const DARK_SURFACE = { r: 0x21, g: 0x1f, b: 0x1b };
 
@@ -70,5 +78,34 @@ describe("darkVariantOf", () => {
 
   it("accepts shorthand hex", () => {
     expect(ratioOnDark(darkVariantOf("#123"))).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe("resolveTenantAccents", () => {
+  it("uses the token pair, not a derivation, when a tenant has no colour", () => {
+    expect(resolveTenantAccents(undefined)).toEqual(PLATFORM_ACCENTS);
+    expect(resolveTenantAccents(null)).toEqual(PLATFORM_ACCENTS);
+    expect(resolveTenantAccents("not-a-colour")).toEqual(PLATFORM_ACCENTS);
+  });
+
+  it("uses the token pair for the platform's own accent, in any notation", () => {
+    for (const hex of ["#0F7A5F", "#0f7a5f", " 0F7A5F "]) {
+      const accents = resolveTenantAccents(hex);
+      expect(accents.dark).toBe("#2FD6A0");
+      expect(accents.darkFg).toBe("#06261D");
+      expect(accents.light).toBe("#0F7A5F");
+      expect(accents.lightFg).toBe("#FFFFFF");
+    }
+  });
+
+  it("still derives contrast-safe variants for a custom brand colour", () => {
+    const accents = resolveTenantAccents("#7B1113");
+    expect(accents.dark).toBe(darkVariantOf("#7B1113"));
+    expect(accents.light).toBe(lightVariantOf("#7B1113"));
+    expect(ratioOnDark(accents.dark)).toBeGreaterThanOrEqual(4.5);
+    const dark = parseHex(accents.dark);
+    const darkFg = parseHex(accents.darkFg);
+    if (!dark || !darkFg) throw new Error("Invalid derived pair");
+    expect(contrastRatio(dark, darkFg)).toBeGreaterThanOrEqual(4.5);
   });
 });

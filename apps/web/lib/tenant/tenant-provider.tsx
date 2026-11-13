@@ -7,7 +7,7 @@ import type { ReactElement, ReactNode } from "react";
 
 import { useApiClient } from "../api/client";
 
-import { darkVariantOf, foregroundFor, lightVariantOf, parseHex } from "./accent";
+import { resolveTenantAccents } from "./accent";
 
 export type TenantBranding = components["schemas"]["TenantBranding"];
 
@@ -29,8 +29,10 @@ const TenantContext = createContext<TenantContextValue | null>(null);
  * login screen is already branded.
  *
  * Theme-specific accents keep links readable against their surfaces; their
- * paired foregrounds keep filled buttons readable against the accent. The
- * runtime values feed globals.css so switching themes stays CSS-driven.
+ * paired foregrounds keep filled buttons readable against the accent. A
+ * school without its own colour gets the platform's token pair unchanged
+ * (see resolveTenantAccents). The runtime values feed globals.css so
+ * switching themes stays CSS-driven.
  */
 export function TenantProvider({ children }: { children: ReactNode }): ReactElement {
   const client = useApiClient();
@@ -38,15 +40,12 @@ export function TenantProvider({ children }: { children: ReactNode }): ReactElem
   const branding = data;
 
   useEffect(() => {
-    const supplied = branding?.accent_color ?? "#0F7A5F";
-    const accent = parseHex(supplied) ? supplied : "#0F7A5F";
-    const light = lightVariantOf(accent);
-    const dark = darkVariantOf(accent);
+    const accents = resolveTenantAccents(branding?.accent_color);
     const root = document.documentElement;
-    root.style.setProperty("--tenant-accent", light);
-    root.style.setProperty("--tenant-accent-dark", dark);
-    root.style.setProperty("--tenant-accent-fg", foregroundFor(light));
-    root.style.setProperty("--tenant-accent-dark-fg", foregroundFor(dark));
+    root.style.setProperty("--tenant-accent", accents.light);
+    root.style.setProperty("--tenant-accent-dark", accents.dark);
+    root.style.setProperty("--tenant-accent-fg", accents.lightFg);
+    root.style.setProperty("--tenant-accent-dark-fg", accents.darkFg);
     return () => {
       for (const name of [
         "--tenant-accent",

@@ -3,7 +3,12 @@
  * unchanged on the dark surface it usually fails: the default `#0F7A5F`
  * measures 3.11:1 against `#211F1B`, under the 4.5:1 text threshold. This
  * derives the dark-theme sibling the school never supplied.
+ *
+ * The platform's own accent is not derived: a tenant without branding, or
+ * one whose colour is the platform default, gets the designed token pair
+ * (`#2FD6A0` in dark mode), not the muted derivation (`#409680`).
  */
+import { colors } from "@newsekolah/ui-tokens/dist/tokens.ts";
 
 /** The Hijau Segar dark surface (docs/07-ui-ux.md); the colour every derived accent is judged against. */
 const DARK_SURFACE = { r: 0x21, g: 0x1f, b: 0x1b };
@@ -17,8 +22,9 @@ const TARGET_CONTRAST = 4.5;
 
 /**
  * A fully saturated accent reads as neon once it is lightened this far, so
- * saturation is capped on the way. The token set's own pair does the same:
- * `#0F7A5F` (79% saturation) is answered by `#409680` (32%).
+ * saturation is capped on the way for a tenant's own colour. The platform
+ * accent skips this derivation entirely (resolveTenantAccents): its dark
+ * sibling `#2FD6A0` is designed, not lightened.
  */
 const MAX_DARK_SATURATION = 0.4;
 
@@ -155,4 +161,40 @@ export function darkVariantOf(hex: string): string {
     if (contrastRatio(candidate, DARK_SURFACE) >= TARGET_CONTRAST) return toHex(candidate);
   }
   return toHex(roundChannels(hslToRgb(h, saturation, 0.9)));
+}
+
+/** One accent per theme, each with the label colour a filled button writes on it. */
+export interface TenantAccents {
+  light: string;
+  lightFg: string;
+  dark: string;
+  darkFg: string;
+}
+
+/** The Hijau Segar accent pair, straight from the design tokens. */
+export const PLATFORM_ACCENTS: TenantAccents = {
+  light: colors.light.accent,
+  lightFg: colors.light.accentFg,
+  dark: colors.dark.accent,
+  darkFg: colors.dark.accentFg,
+};
+
+/**
+ * The accents to paint for a tenant's branding colour: the token pair when
+ * there is no usable colour or it is the platform's own, otherwise the
+ * contrast-safe light and dark variants derived from it.
+ */
+export function resolveTenantAccents(supplied: string | null | undefined): TenantAccents {
+  const rgb = supplied ? parseHex(supplied) : null;
+  const platform = parseHex(PLATFORM_ACCENTS.light);
+  const isPlatformDefault =
+    rgb !== null &&
+    platform !== null &&
+    rgb.r === platform.r &&
+    rgb.g === platform.g &&
+    rgb.b === platform.b;
+  if (!supplied || !rgb || isPlatformDefault) return PLATFORM_ACCENTS;
+  const light = lightVariantOf(supplied);
+  const dark = darkVariantOf(supplied);
+  return { light, lightFg: foregroundFor(light), dark, darkFg: foregroundFor(dark) };
 }
