@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { phoneViewport } from "../stories/phone-viewport.js";
+
 import { Button } from "./button.js";
 import { StatePage } from "./state-page.js";
 import { TextLink } from "./text-link.js";
@@ -76,11 +78,5 @@ export const Offline: Story = {
 export const Dark: Story = { ...Error, globals: { theme: "dark" } };
 export const Phone: Story = {
   ...NotFound,
-  decorators: [
-    (StoryComponent) => (
-      <div className="mx-auto w-[390px] max-w-full">
-        <StoryComponent />
-      </div>
-    ),
-  ],
+  decorators: [phoneViewport],
 };

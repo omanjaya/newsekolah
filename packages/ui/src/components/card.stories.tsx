@@ -1,5 +1,7 @@
-import type { Decorator, Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
 import { BookOpen, CalendarCheck, ChevronRight, Megaphone } from "lucide-react";
+
+import { phoneViewport } from "../stories/phone-viewport.js";
 
 import { Badge } from "./badge.js";
 import { Button } from "./button.js";
@@ -8,12 +10,6 @@ import { IconCircle } from "./icon-circle.js";
 import { ListRow } from "./list-row.js";
 import { List } from "./list.js";
 import { TextLink } from "./text-link.js";
-
-const phoneFrame: Decorator = (Story) => (
-  <div className="mx-auto w-[390px] max-w-full">
-    <Story />
-  </div>
-);
 
 const meta: Meta<typeof Card> = {
   title: "Components/Card",
@@ -189,9 +185,9 @@ export const Default: Story = { render: () => <Gallery /> };
 export const Dark: Story = { globals: { theme: "dark" }, render: () => <Gallery /> };
 export const Phone: Story = {
   parameters: { layout: "fullscreen" },
-  decorators: [phoneFrame],
+  decorators: [phoneViewport],
   render: () => (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <WithList />
       <Sectioned />
       <Interactive />
