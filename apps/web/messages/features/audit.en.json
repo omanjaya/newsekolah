@@ -48,6 +48,14 @@
     "resetLinkBody": "A school admin can only generate a set-password link, never see your password. That link is single-use and expires after 30 minutes."
   },
   "actions": {
+    "counseling": {
+      "create": "Recorded counseling",
+      "update": "Updated a counseling record",
+      "read": "Viewed a counseling record"
+    },
+    "document": {
+      "issue": "Issued a document"
+    },
     "duty_assignment": {
       "create": "Added a duty assignment",
       "update": "Updated a duty assignment",
@@ -59,9 +67,19 @@
       "delete": "Removed a duty type",
       "replace_permissions": "Changed duty type permissions"
     },
+    "feature_flag": {
+      "update": "Changed a school module"
+    },
+    "grading": {
+      "report_publish": "Published report cards",
+      "score_save": "Saved scores"
+    },
     "impersonation": {
       "start": "Started impersonating a user",
       "stop": "Stopped impersonating a user"
+    },
+    "operator_alerts": {
+      "update": "Changed operator alerts"
     },
     "passkey": {
       "register": "Registered a passkey",
@@ -70,6 +88,10 @@
     "password_reset": {
       "request": "Requested a password reset",
       "confirm": "Completed a password reset"
+    },
+    "payment": {
+      "record": "Recorded a payment",
+      "void": "Voided a payment"
     },
     "role": {
       "create": "Created a role",
@@ -90,7 +112,11 @@
       "avatar_update": "Changed a profile photo",
       "update_own_profile": "Updated own profile",
       "import_create": "Created a user by import",
-      "import_commit": "Committed a user import"
+      "import_commit": "Committed a user import",
+      "import_update": "Updated users by import"
+    },
+    "violation": {
+      "void": "Voided a violation"
     },
     "read": "Viewed a record"
   },
@@ -102,6 +128,17 @@
     "webauthn_credential": "Passkey",
     "sso_google_config": "Google sign-in",
     "tenant": "School",
-    "visitor_incident": "Campus incident"
+    "visitor_incident": "Campus incident",
+    "counseling": "Counseling",
+    "report_publication": "Report publication",
+    "assessment_component": "Assessment component",
+    "payment": "Payment",
+    "violation_record": "Violation",
+    "feature_flag": "School module",
+    "operator_alert_settings": "Operator alerts",
+    "leave_request": "Leave request",
+    "document": "Document",
+    "visitor_visit": "Visitor visit",
+    "warning_letter": "Warning letter"
   }
 }

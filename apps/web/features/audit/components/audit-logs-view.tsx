@@ -17,6 +17,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
@@ -55,7 +56,7 @@ export function AuditLogsView(): ReactElement {
   const actorLabels = useDirectoryPickerLabels(t("filters.actorAll"));
   const labels = useAuditLabels();
 
-  const { data, isLoading } = useAuditLogsQuery({
+  const { data, isLoading, isError, refetch } = useAuditLogsQuery({
     actorUserId: actorUserId || undefined,
     entityType: entityType || undefined,
     from: from || undefined,
@@ -212,36 +213,40 @@ export function AuditLogsView(): ReactElement {
         )}
       </div>
 
-      <DataTable
-        stateKey="features/audit/components/audit-logs-view:1"
-        mode="cursor"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        filters={filters}
-        filtersLabels={{
-          reset: t("filters.reset"),
-          removeFilter: (label) => t("filters.removeFilter", { label }),
-          dateRangeFrom: t("filters.from"),
-          dateRangeTo: t("filters.to"),
-          dateRangeInvalid: t("filters.invalidRange"),
-        }}
-        isLoading={isLoading}
-        getRowId={(entry) => entry.id}
-        onRowActivate={setSelected}
-        emptyState={
-          <EmptyState
-            icon={<History aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      {isError && !data ? (
+        <QueryError retry={() => refetch()} />
+      ) : (
+        <DataTable
+          stateKey="features/audit/components/audit-logs-view:1"
+          mode="cursor"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.reset"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
+            dateRangeFrom: t("filters.from"),
+            dateRangeTo: t("filters.to"),
+            dateRangeInvalid: t("filters.invalidRange"),
+          }}
+          isLoading={isLoading}
+          getRowId={(entry) => entry.id}
+          onRowActivate={setSelected}
+          emptyState={
+            <EmptyState
+              icon={<History aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      )}
 
       <div className="flex justify-end gap-2">
         <Button

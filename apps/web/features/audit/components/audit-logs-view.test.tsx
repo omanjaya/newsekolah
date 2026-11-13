@@ -107,4 +107,16 @@ describe("AuditLogsView filters", () => {
       expect.objectContaining({ from: undefined, to: undefined }),
     );
   });
+
+  it("shows a retry control instead of an empty log when the request fails", () => {
+    mocks.useAuditLogsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch: vi.fn(),
+    });
+    render(<AuditLogsView />);
+    expect(screen.getByRole("button", { name: "actions.retry" })).toBeInTheDocument();
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+  });
 });
