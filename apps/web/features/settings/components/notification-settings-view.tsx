@@ -43,6 +43,9 @@ export function NotificationSettingsView(): ReactElement {
   const settings = useNotificationSettingsQuery();
   const updateSettings = useUpdateNotificationSettingsMutation();
 
+  // A failed read must not render every switch as off, as if that were the saved state.
+  const prefsFailed = prefs.isError && !prefs.data;
+
   function toggle(kind: NotificationKind, channel: NotificationChannel, enabled: boolean) {
     setPreference.mutate(
       { kind, channel, enabled },
@@ -74,7 +77,9 @@ export function NotificationSettingsView(): ReactElement {
       <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
         <h2 className="text-[16px] font-medium text-fg">{t("channelsTitle")}</h2>
         <p className="text-[13px] text-fg-muted">{t("channelsBody")}</p>
-        {prefs.isLoading ? (
+        {prefsFailed ? (
+          <QueryError retry={() => prefs.refetch()} />
+        ) : prefs.isLoading ? (
           <Skeleton className="h-64 w-full" />
         ) : (
           <div className="hidden overflow-x-auto rounded-lg border border-border bg-surface md:block">
@@ -122,7 +127,7 @@ export function NotificationSettingsView(): ReactElement {
             </table>
           </div>
         )}
-        {!prefs.isLoading && (
+        {!prefs.isLoading && !prefsFailed && (
           // A four-column matrix on a phone shows one column and hides the
           // rest behind a sideways scroll nothing announces. Stacked per
           // kind, every channel for that kind is on screen at once.

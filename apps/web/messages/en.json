@@ -257,6 +257,7 @@
           "email": "Email",
           "whatsapp": "WhatsApp"
         },
+        "loadFailed": "Could not load the setting for this kind.",
         "saved": "Defaults saved"
       },
       "session": {

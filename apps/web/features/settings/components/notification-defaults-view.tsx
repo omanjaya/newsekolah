@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { PageHeader, Skeleton, Switch, useToast } from "@newsekolah/ui";
+import { Button, PageHeader, Skeleton, Switch, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -74,7 +74,8 @@ function useNotificationDefaultRow(kind: NotificationKind) {
   const t = useTranslations("app.settings.notificationDefaults");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const { data, isLoading } = useTenantNotificationDefaultQuery(kind);
+  const { data, isLoading, isError, refetch } = useTenantNotificationDefaultQuery(kind);
+  const failed = isError && !data;
   const setDefault = useSetTenantNotificationDefaultMutation();
 
   function toggle(channel: NotificationChannel, enabled: boolean) {
@@ -93,7 +94,7 @@ function useNotificationDefaultRow(kind: NotificationKind) {
     );
   }
 
-  return { t, data, isLoading, toggle };
+  return { t, data, isLoading, failed, retry: () => void refetch(), toggle };
 }
 
 function NotificationDefaultRow({
@@ -103,29 +104,35 @@ function NotificationDefaultRow({
   kind: NotificationKind;
   label: string;
 }): ReactElement {
-  const { t, data, isLoading, toggle } = useNotificationDefaultRow(kind);
+  const { t, data, isLoading, failed, retry, toggle } = useNotificationDefaultRow(kind);
 
   return (
     <tr className="border-b border-line last:border-b-0 hover:bg-bg">
       <th scope="row" className="px-4 py-3 text-left font-normal text-fg">
         {label}
       </th>
-      {NOTIFICATION_CHANNELS.map((channel) => (
-        <td key={channel} className="px-4 py-3 text-center">
-          {isLoading ? (
-            <Skeleton className="mx-auto h-5 w-9" />
-          ) : (
-            <Switch
-              checked={data?.[channel] ?? false}
-              disabled={channel === "inapp"}
-              aria-label={`${label}: ${t(`channels.${channel}`)}`}
-              onCheckedChange={(checked) => {
-                toggle(channel, checked);
-              }}
-            />
-          )}
+      {failed ? (
+        <td colSpan={NOTIFICATION_CHANNELS.length} className="px-4 py-3 text-center">
+          <RetryRow label={t("loadFailed")} onRetry={retry} />
         </td>
-      ))}
+      ) : (
+        NOTIFICATION_CHANNELS.map((channel) => (
+          <td key={channel} className="px-4 py-3 text-center">
+            {isLoading ? (
+              <Skeleton className="mx-auto h-5 w-9" />
+            ) : (
+              <Switch
+                checked={data?.[channel] ?? false}
+                disabled={channel === "inapp"}
+                aria-label={`${label}: ${t(`channels.${channel}`)}`}
+                onCheckedChange={(checked) => {
+                  toggle(channel, checked);
+                }}
+              />
+            )}
+          </td>
+        ))
+      )}
     </tr>
   );
 }
@@ -137,12 +144,13 @@ function NotificationDefaultCard({
   kind: NotificationKind;
   label: string;
 }): ReactElement {
-  const { t, data, isLoading, toggle } = useNotificationDefaultRow(kind);
+  const { t, data, isLoading, failed, retry, toggle } = useNotificationDefaultRow(kind);
 
   return (
     <li className="flex flex-col gap-2 rounded-sm border border-border p-3">
       <span className="text-[13px] font-medium text-fg">{label}</span>
-      <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+      {failed && <RetryRow label={t("loadFailed")} onRetry={retry} />}
+      <div className="grid grid-cols-2 gap-x-6 gap-y-4" hidden={failed}>
         {NOTIFICATION_CHANNELS.map((channel) => (
           <div key={channel} className="flex items-center justify-between gap-3">
             <span className="text-[13px] text-fg-muted">{t(`channels.${channel}`)}</span>
@@ -162,5 +170,18 @@ function NotificationDefaultCard({
         ))}
       </div>
     </li>
+  );
+}
+
+/** A row whose default failed to load says so, instead of showing every switch as off. */
+function RetryRow({ label, onRetry }: { label: string; onRetry: () => void }): ReactElement {
+  const t = useTranslations("common");
+  return (
+    <span className="inline-flex items-center gap-2 text-[13px] text-fg-muted">
+      {label}
+      <Button variant="secondary" size="sm" onClick={onRetry}>
+        {t("actions.retry")}
+      </Button>
+    </span>
   );
 }
