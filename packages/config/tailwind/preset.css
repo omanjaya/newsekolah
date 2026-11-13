@@ -141,6 +141,7 @@
   --ease-standard: var(--ease-standard);
   --ease-enter: var(--ease-enter);
   --ease-exit: var(--ease-exit);
+  --ease-sheet: var(--ease-sheet);
   /* A bare `transition` / `transition-colors` is a 120ms state change on the standard curve. */
   --default-transition-duration: var(--duration-fast);
   --default-transition-timing-function: var(--ease-standard);

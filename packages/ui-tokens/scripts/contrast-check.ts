@@ -1,8 +1,11 @@
 // Asserts the token palette meets WCAG 2.x AA before it ships: 4.5:1 for
 // text/background pairs, 3:1 for status/category colors used as non-text
 // indicators and for control borders and focus rings against every surface
-// they sit on. Translucent tokens (state layers) are composited over each
-// surface first, since that is the color actually painted. Run via
+// they sit on. Translucent tokens (state layers, dark dividers) are
+// composited over each surface first, since that is the color actually
+// painted. Two floors below WCAG's scope keep decoration perceptible: a
+// divider stays visible on every surface it is drawn on, and a hover layer
+// visibly changes the surface it is laid over. Run via
 // `pnpm test` (see package.json) and standalone via `pnpm contrast-check`.
 // See docs/07-ui-ux.md ("Hijau Segar") for the source palette;
 // wcag-contrast.ts implements the contrast formula.
@@ -24,6 +27,11 @@ interface Check {
   background: string;
   minimum: number;
 }
+
+/** A hairline that separates rows or sections: visible, never loud. */
+const DIVIDER_VISIBLE = 1.15;
+/** The smallest change a state layer may make to the surface under it. */
+const STATE_STEP_VISIBLE = 1.08;
 
 const STATUS_ORDER: StatusName[] = ["present", "sick", "excused", "dispensation", "absent", "late"];
 const CATEGORY_ORDER: CategoryName[] = ["green", "amber", "purple", "blue", "red"];
@@ -147,6 +155,60 @@ function stateLayerChecks(themeName: string, theme: ThemeColors): Check[] {
   );
 }
 
+/**
+ * Dividers (`line`) and rings (`border`) on the surfaces lists, menus and
+ * dialogs are drawn on. In dark mode both are translucent, so the painted
+ * color is the layer composited over that surface.
+ */
+function dividerChecks(themeName: string, theme: ThemeColors): Check[] {
+  const under: [string, string][] = [
+    ["surface", theme.surface],
+    ["surface-raised", theme.surfaceRaised],
+    ["surface-overlay", theme.surfaceOverlay],
+  ];
+  const hairlines: [string, string][] = [
+    ["line", theme.line],
+    ["border", theme.border],
+  ];
+  return hairlines.flatMap(([name, color]) =>
+    under.map(([surfaceName, surface]) => ({
+      label: `${themeName}: ${name} on ${surfaceName} (divider, visible)`,
+      foreground: composite(color, surface),
+      background: surface,
+      minimum: DIVIDER_VISIBLE,
+    })),
+  );
+}
+
+/**
+ * A hover or press must show on the control that has it. Controls with
+ * their own opaque fill (a secondary Button) lay the layer over that fill
+ * (`layer-hover` in packages/ui/src/styles.css) instead of replacing it,
+ * so the step is measured over each surface and the label check above
+ * covers the composed fill.
+ */
+function stateStepChecks(themeName: string, theme: ThemeColors): Check[] {
+  const under: [string, string][] = [
+    ["bg", theme.bg],
+    ["surface", theme.surface],
+    ["surface-raised", theme.surfaceRaised],
+    ["surface-overlay", theme.surfaceOverlay],
+  ];
+  return (
+    [
+      ["state-hover", theme.stateHover],
+      ["state-pressed", theme.statePressed],
+    ] as [string, string][]
+  ).flatMap(([layerName, layer]) =>
+    under.map(([surfaceName, surface]) => ({
+      label: `${themeName}: ${layerName} over ${surfaceName} against ${surfaceName} (visible step)`,
+      foreground: composite(layer, surface),
+      background: surface,
+      minimum: STATE_STEP_VISIBLE,
+    })),
+  );
+}
+
 function categoryChecks(themeName: string, theme: ThemeColors): Check[] {
   return CATEGORY_ORDER.flatMap((name) => {
     const category = theme.category[name];
@@ -231,6 +293,8 @@ function buildChecks(): Check[] {
     ...baseChecks(themeName, theme),
     ...surfaceChecks(themeName, theme),
     ...stateLayerChecks(themeName, theme),
+    ...dividerChecks(themeName, theme),
+    ...stateStepChecks(themeName, theme),
     ...categoryChecks(themeName, theme),
     ...semanticChecks(themeName, theme),
     ...statusChecks(themeName, theme),
@@ -256,4 +320,4 @@ if (failures > 0) {
 }
 
 // eslint-disable-next-line no-console
-console.log(`contrast-check: all ${checks.length} pairs meet WCAG AA`);
+console.log(`contrast-check: all ${checks.length} pairs meet WCAG AA and the visibility floors`);

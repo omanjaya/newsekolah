@@ -96,12 +96,13 @@ export const TypeRoles: Story = {
   ),
 };
 
+// Lowest to highest: in dark mode each one is lighter than the one before.
 const SURFACES = [
+  ["surface-sunken", "bg-surface-sunken", "Sel isian, trek tab"],
   ["bg", "bg-bg", "Latar halaman"],
   ["surface", "bg-surface", "Kartu, tabel"],
-  ["surface-raised", "bg-surface-raised", "Popover, menu, lembar bawah"],
   ["surface-overlay", "bg-surface-overlay", "Dialog"],
-  ["surface-sunken", "bg-surface-sunken", "Sel isian, trek tab"],
+  ["surface-raised", "bg-surface-raised", "Popover, menu, lembar bawah (di atas dialog)"],
 ] as const;
 
 const ELEVATION = [

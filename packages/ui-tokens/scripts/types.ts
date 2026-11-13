@@ -22,21 +22,31 @@ export type SemanticName = "success" | "warning" | "danger" | "info";
 export interface ThemeColors {
   bg: string;
   surface: string;
-  /** Popovers, menus and sheets: one step above `surface` (lighter in dark mode). */
+  /**
+   * Popovers, menus, selects and sheets. They stack above dialogs (z-popover
+   * over z-modal), so in dark mode this is the lightest surface.
+   */
   surfaceRaised: string;
-  /** Recessed fills inside a surface: input cells, tab tracks. */
+  /** Recessed fills inside a surface: input cells, tab tracks. Darker than `bg` in dark mode. */
   surfaceSunken: string;
-  /** Dialogs: the highest opaque surface. */
+  /** Dialogs: above `surface`, below the popovers and menus opened from them. */
   surfaceOverlay: string;
   /** Backdrop behind dialogs and sheets. Translucent (rgba). */
   scrim: string;
   fg: string;
   fgMuted: string;
-  /** Card/control ring (subtle, ~1px), distinct from `line`. */
+  /**
+   * Card/control ring (subtle, ~1px), distinct from `line`. Translucent in
+   * dark mode, like `line`, so it keeps the same step on every surface.
+   */
   border: string;
   /** Form control border: >= 3:1 against every opaque surface (WCAG 1.4.11). */
   borderStrong: string;
-  /** Divider hairline (table rows, tab underline track, list separators). */
+  /**
+   * Divider hairline (table rows, tab underline track, list separators).
+   * Translucent (fg-based rgba) in dark mode: an opaque dark line tuned for
+   * `surface` vanishes on the lighter raised and overlay surfaces.
+   */
   line: string;
   accent: string;
   accentFg: string;
@@ -102,7 +112,8 @@ export interface TokensSource {
   motion: {
     /** ms */
     duration: Record<"instant" | "fast" | "base" | "slow", number>;
-    easing: Record<"standard" | "enter" | "exit", string>;
+    /** `sheet` is for long travel (a full-height sheet), where `enter` front-loads too much. */
+    easing: Record<"standard" | "enter" | "exit" | "sheet", string>;
     /** px */
     distance: Record<"rise" | "shift", number>;
     scale: Record<"dialog" | "press", number>;
