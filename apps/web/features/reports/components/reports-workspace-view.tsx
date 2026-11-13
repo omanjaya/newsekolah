@@ -1,6 +1,6 @@
 "use client";
 
-import { Tabs, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import type { ComponentType, ReactElement } from "react";
@@ -72,22 +72,23 @@ export function ReportsWorkspaceView(): ReactElement {
     );
   }
   const { View } = SECTION_VIEWS[selected.key];
+  const view = <View tabKey={selected.key === "school" ? "tab" : `${selected.key}Tab`} />;
+  if (sections.length <= 1) return view;
   return (
-    <>
-      {sections.length > 1 && (
-        <div className="px-4 pt-4 md:px-6">
-          <Tabs value={selected.key} onValueChange={setSection}>
-            <TabsList aria-label={t("reports")} className="flex-wrap">
-              {sections.map((entry) => (
-                <TabsTrigger key={entry.key} value={entry.key}>
-                  {t(SECTION_VIEWS[entry.key].label)}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-      )}
-      <View tabKey={selected.key === "school" ? "tab" : `${selected.key}Tab`} />
-    </>
+    <Tabs value={selected.key} onValueChange={setSection}>
+      <div className="px-4 pt-4 md:px-6">
+        <TabsList aria-label={t("reports")} className="flex-wrap">
+          {sections.map((entry) => (
+            <TabsTrigger key={entry.key} value={entry.key}>
+              {t(SECTION_VIEWS[entry.key].label)}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </div>
+      {/* The section view is the panel of whichever section tab is active. */}
+      <TabsContent value={selected.key} className="pt-0">
+        {view}
+      </TabsContent>
+    </Tabs>
   );
 }

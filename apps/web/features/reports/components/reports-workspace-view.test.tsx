@@ -66,6 +66,18 @@ describe("reports workspace permission isolation", () => {
     expect(screen.getByText("Forbidden")).toBeInTheDocument();
     expect(screen.queryByTestId("school-report")).not.toBeInTheDocument();
   });
+  it("puts the selected section inside the tab panel its tab controls", async () => {
+    session.permissions = ["view_reports", "view_library_reports"];
+    render(
+      <Suspense>
+        <ReportsWorkspaceView />
+      </Suspense>,
+    );
+    const report = await screen.findByTestId("school-report");
+    const controls = screen.getByRole("tab", { selected: true }).getAttribute("aria-controls");
+    expect(controls).toBeTruthy();
+    expect(document.getElementById(controls ?? "")).toContainElement(report);
+  });
   it("uses independent tab keys and preserves each domain's bookmarked selection", async () => {
     session.permissions = ["view_reports", "view_library_reports", "view_visitor_reports"];
     window.history.replaceState(

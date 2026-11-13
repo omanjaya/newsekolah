@@ -11,6 +11,7 @@ import {
   Select,
   Skeleton,
   Tabs,
+  TabsContent,
   TabsList,
   TabsTrigger,
   cn,
@@ -63,7 +64,13 @@ export function NotificationsView(): ReactElement {
   const dayLabel = useDayLabel();
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    <Tabs
+      value={filter}
+      onValueChange={(value) => {
+        setFilter(value as "all" | "unread");
+      }}
+      className="flex flex-col gap-6 p-4 md:p-6"
+    >
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -82,17 +89,10 @@ export function NotificationsView(): ReactElement {
         }
       />
 
-      <Tabs
-        value={filter}
-        onValueChange={(value) => {
-          setFilter(value as "all" | "unread");
-        }}
-      >
-        <TabsList>
-          <TabsTrigger value="all">{t("filterAll")}</TabsTrigger>
-          <TabsTrigger value="unread">{t("filterUnread")}</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <TabsList className="self-start">
+        <TabsTrigger value="all">{t("filterAll")}</TabsTrigger>
+        <TabsTrigger value="unread">{t("filterUnread")}</TabsTrigger>
+      </TabsList>
 
       <div className="flex flex-wrap items-center gap-2">
         <Input
@@ -118,51 +118,54 @@ export function NotificationsView(): ReactElement {
         />
       </div>
 
-      {isLoading ? (
-        <div className="flex flex-col gap-2" aria-busy="true">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-        </div>
-      ) : isError ? (
-        <QueryError retry={refetch} />
-      ) : items.length === 0 ? (
-        <EmptyState
-          icon={<Bell aria-hidden="true" />}
-          title={
-            isFiltering
-              ? t("emptyFilteredTitle")
-              : filter === "unread"
-                ? t("emptyUnreadTitle")
-                : t("emptyTitle")
-          }
-          description={isFiltering ? t("emptyFilteredBody") : t("emptyBody")}
-        />
-      ) : (
-        <div className="flex flex-col gap-4">
-          {dayGroups.map((group) => (
-            <section key={group.dateKey} className="flex flex-col gap-2">
-              <h2 className="px-1 text-[12px] font-medium text-fg-muted">
-                {dayLabel(group.dateKey)}
-              </h2>
-              <ul className="flex flex-col divide-y divide-border rounded-sm border border-border bg-surface">
-                {group.items.map((item) => (
-                  <NotificationRow
-                    key={item.id}
-                    item={item}
-                    locale={locale}
-                    timeZone={me?.tenant.timezone}
-                    onOpen={() => {
-                      if (!item.read_at) markRead.mutate(item.id);
-                    }}
-                  />
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
-      )}
-    </div>
+      {/* The list is the panel of whichever filter tab is active. */}
+      <TabsContent value={filter} className="pt-0">
+        {isLoading ? (
+          <div className="flex flex-col gap-2" aria-busy="true">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        ) : isError ? (
+          <QueryError retry={refetch} />
+        ) : items.length === 0 ? (
+          <EmptyState
+            icon={<Bell aria-hidden="true" />}
+            title={
+              isFiltering
+                ? t("emptyFilteredTitle")
+                : filter === "unread"
+                  ? t("emptyUnreadTitle")
+                  : t("emptyTitle")
+            }
+            description={isFiltering ? t("emptyFilteredBody") : t("emptyBody")}
+          />
+        ) : (
+          <div className="flex flex-col gap-4">
+            {dayGroups.map((group) => (
+              <section key={group.dateKey} className="flex flex-col gap-2">
+                <h2 className="px-1 text-[12px] font-medium text-fg-muted">
+                  {dayLabel(group.dateKey)}
+                </h2>
+                <ul className="flex flex-col divide-y divide-border rounded-sm border border-border bg-surface">
+                  {group.items.map((item) => (
+                    <NotificationRow
+                      key={item.id}
+                      item={item}
+                      locale={locale}
+                      timeZone={me?.tenant.timezone}
+                      onOpen={() => {
+                        if (!item.read_at) markRead.mutate(item.id);
+                      }}
+                    />
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )}
+      </TabsContent>
+    </Tabs>
   );
 }
 
