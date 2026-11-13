@@ -341,3 +341,5 @@ export {
 } from "./hooks/use-camera-scanner.js";
 export { QrPanelSkeleton } from "./components/qr-panel.js";
 export { TableFooter } from "./components/table.js";
+// Forms and data review fixes (wave 2).
+export type { BarcodeScannerHandle } from "./hooks/use-barcode-scanner.js";
