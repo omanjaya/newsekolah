@@ -3,6 +3,8 @@ import { BarChart3, CheckCircle2, Sparkles, type LucideIcon } from "lucide-react
 
 import type { MySubjectGrade } from "../api";
 
+import { formatScore } from "./format-score";
+
 /**
  * A subject's own KKTP, for the subject-level tuntas badge: the first
  * component that carries one (components are already in entry order --
@@ -65,6 +67,7 @@ export interface MyGradesTile {
 export function buildMyGradesTiles(
   subjects: MySubjectGrade[],
   defaultKktp: number,
+  locale?: string,
 ): MyGradesTile[] {
   const average = myGradesOverallAverage(subjects);
   return [
@@ -72,7 +75,7 @@ export function buildMyGradesTiles(
       key: "average",
       icon: BarChart3,
       tone: "blue",
-      value: average === undefined ? "-" : average.toFixed(1),
+      value: average === undefined ? "-" : formatScore(average, locale),
       labelKey: "statAverage",
     },
     {

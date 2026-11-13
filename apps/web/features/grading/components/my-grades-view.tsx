@@ -14,13 +14,14 @@ import {
   domainIcons,
 } from "@newsekolah/ui";
 import { Minus, Star, TrendingDown, TrendingUp } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { bentoCells, tileColumns } from "../../../lib/layout/bento";
 import { useLookup, useSubjectsQuery } from "../../reference/api";
 import { type MySubjectGrade, useMyGradesQuery, useMyStarsQuery, useTermsQuery } from "../api";
+import { formatScore } from "../lib/format-score";
 import { buildMyGradesTiles, isSubjectTuntas } from "../lib/my-grades-tiles";
 
 // Radix Select treats an empty value as "nothing chosen" and shows the
@@ -37,6 +38,7 @@ const ALL_TERMS = "all";
  */
 export function MyGradesView(): ReactElement {
   const t = useTranslations("app.grading.myGrades");
+  const locale = useLocale();
   const tGrading = useTranslations("app.grading");
   const tApp = useTranslations("app");
   const [termId, setTermId] = useState("");
@@ -83,7 +85,7 @@ export function MyGradesView(): ReactElement {
     );
   }
 
-  const tiles = buildMyGradesTiles(data.subjects, data.scale.default_kktp);
+  const tiles = buildMyGradesTiles(data.subjects, data.scale.default_kktp, locale);
   const tileGrid = tileColumns(tiles.length);
   const cells = bentoCells(
     data.subjects.map((subject) => ({
@@ -226,6 +228,7 @@ function SubjectCard({
 }): ReactElement {
   const t = useTranslations("app.grading.myGrades");
   const tKind = useTranslations("app.grading.kind");
+  const locale = useLocale();
   const trend = subjectTrend(subject.components);
   const TrendIcon = trend ? TREND_ICON[trend] : null;
   const tuntas = isSubjectTuntas(subject, defaultKktp);
@@ -255,7 +258,7 @@ function SubjectCard({
           )}
           {subject.report_score !== undefined && (
             <span className="text-[20px] font-medium text-fg [font-variant-numeric:tabular-nums]">
-              {subject.report_score.toFixed(1)}
+              {formatScore(subject.report_score, locale)}
             </span>
           )}
         </div>
@@ -279,7 +282,7 @@ function SubjectCard({
                   <Badge variant="neutral">{t("belowKktp")}</Badge>
                 )}
                 <span className="font-medium text-fg [font-variant-numeric:tabular-nums]">
-                  {component.score.toFixed(1)}
+                  {formatScore(component.score, locale)}
                 </span>
               </span>
             </li>
@@ -289,7 +292,7 @@ function SubjectCard({
 
       {subject.average !== undefined && (
         <p className="mt-auto border-t border-border pt-2 text-[13px] text-fg-muted">
-          {t("average", { score: subject.average.toFixed(1) })}
+          {t("average", { score: formatScore(subject.average, locale) })}
         </p>
       )}
     </Card>

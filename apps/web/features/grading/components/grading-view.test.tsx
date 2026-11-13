@@ -1,7 +1,11 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key,
+  useLocale: () => "id",
+}));
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
 vi.mock("../../../lib/hooks/use-active-year", () => ({ useActiveYear: () => ({ id: "year-1" }) }));
 vi.mock("../../academic/api-offerings", () => ({
@@ -34,8 +38,23 @@ vi.mock("./tp-mapping-editor", () => ({
   TPMappingEditor: () => <div data-testid="tp-mapping-editor" />,
 }));
 vi.mock("./gradebook-sheet", () => ({
-  GradebookSheet: ({ canManage }: { canManage: boolean }) => (
-    <div data-testid="gradebook-sheet" data-can-manage={String(canManage)} />
+  GradebookSheet: ({
+    canManage,
+    onPendingChangesChange,
+  }: {
+    canManage: boolean;
+    onPendingChangesChange: (count: number) => void;
+  }) => (
+    <div data-testid="gradebook-sheet" data-can-manage={String(canManage)}>
+      <button
+        type="button"
+        onClick={() => {
+          onPendingChangesChange(3);
+        }}
+      >
+        make-dirty
+      </button>
+    </div>
   ),
 }));
 vi.mock("./grading-assignment-card", () => ({
@@ -146,5 +165,33 @@ describe("GradingView read-only rendering for view_grades", () => {
     // GradingView's own rendering degrades safely (read-only) rather than
     // crashing if it were ever reached.
     expect(screen.getByTestId("gradebook-sheet")).toHaveAttribute("data-can-manage", "false");
+  });
+});
+
+describe("GradingView unsaved changes", () => {
+  it("asks through the shared confirm dialog, not window.confirm, before leaving a dirty sheet", async () => {
+    grantManageGrades();
+    const nativeConfirm = vi.spyOn(window, "confirm");
+    const user = userEvent.setup();
+    render(<GradingView />);
+
+    await user.click(screen.getByRole("button", { name: "make-dirty" }));
+    await user.click(screen.getByRole("tab", { name: "tabErapor" }));
+
+    expect(nativeConfirm).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "table.discardChangesTitle" })).toBeInTheDocument();
+    expect(screen.queryByTestId("erapor-export")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "table.discardChangesConfirm" }));
+    expect(screen.getByTestId("erapor-export")).toBeInTheDocument();
+  });
+
+  it("switches tabs straight away when nothing is unsaved", async () => {
+    grantManageGrades();
+    const user = userEvent.setup();
+    render(<GradingView />);
+
+    await user.click(screen.getByRole("tab", { name: "tabErapor" }));
+    expect(screen.getByTestId("erapor-export")).toBeInTheDocument();
   });
 });

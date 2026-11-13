@@ -20,6 +20,13 @@ describe("buildGradingEntryTiles", () => {
   });
 });
 
+describe("buildGradingEntryTiles with no components", () => {
+  it("does not claim the sheet is fully filled", () => {
+    const tiles = buildGradingEntryTiles(2, 0, 100, false, "Diterbitkan", "Draf");
+    expect(tiles[2]?.value).toBe("-");
+  });
+});
+
 describe("buildGradebookPageTiles", () => {
   it("shows a dash for an average that has not been computed yet", () => {
     const tiles = buildGradebookPageTiles(undefined, 0, 32);
@@ -28,7 +35,7 @@ describe("buildGradebookPageTiles", () => {
 
   it("formats a computed average to one decimal", () => {
     const tiles = buildGradebookPageTiles(84.567, 60, 5);
-    expect(tiles[0]?.value).toBe("84.6");
+    expect(tiles[0]?.value).toBe("84,6");
     expect(tiles[1]?.value).toBe("60%");
     expect(tiles[2]?.value).toBe("5");
   });

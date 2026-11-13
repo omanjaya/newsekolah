@@ -2,12 +2,13 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import { Button, Dialog, DialogContent, Input, useToast } from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSetManualReportScoreMutation } from "../api";
+import { formatScore } from "../lib/format-score";
 
 export interface ManualScoreDialogProps {
   onOpenChange: (open: boolean) => void;
@@ -37,6 +38,7 @@ export function ManualScoreDialog({
   currentManualScore,
 }: ManualScoreDialogProps): ReactElement {
   const t = useTranslations("app.grading.manualScoreDialog");
+  const locale = useLocale();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const setManual = useSetManualReportScoreMutation();
@@ -75,7 +77,7 @@ export function ManualScoreDialog({
         >
           {computedAverage !== undefined && (
             <p className="text-[13px] text-fg-muted">
-              {t("computedAverage", { score: computedAverage.toFixed(1) })}
+              {t("computedAverage", { score: formatScore(computedAverage, locale) })}
             </p>
           )}
           <label className="flex flex-col gap-1 text-[13px]">
