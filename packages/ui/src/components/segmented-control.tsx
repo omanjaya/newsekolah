@@ -1,7 +1,14 @@
 "use client";
 
 import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
-import { useEffect, useRef, type CSSProperties, type ReactElement, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  type CSSProperties,
+  type ReactElement,
+  type ReactNode,
+  type Ref,
+} from "react";
 
 import { useControllableState } from "../hooks/use-controllable-state.js";
 import { cn } from "../utils/cn.js";
@@ -28,8 +35,13 @@ export interface SegmentedControlProps<T extends string = string> {
   disabled?: boolean;
   /** Posts the value with a native form. */
   name?: string;
+  /** On the radiogroup, as `FormControl` sets it along with `aria-describedby`. */
+  id?: string;
   "aria-label"?: string;
   "aria-labelledby"?: string;
+  "aria-describedby"?: string;
+  /** The radiogroup element. */
+  ref?: Ref<HTMLDivElement>;
   className?: string;
 }
 
@@ -66,8 +78,11 @@ export function SegmentedControl<T extends string = string>({
   fullWidth,
   disabled,
   name,
+  id,
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledBy,
+  "aria-describedby": ariaDescribedBy,
+  ref,
   className,
 }: SegmentedControlProps<T>): ReactElement {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -100,6 +115,9 @@ export function SegmentedControl<T extends string = string>({
       )}
     >
       <RadioGroupPrimitive.Root
+        ref={ref}
+        id={id}
+        aria-describedby={ariaDescribedBy}
         value={value ?? ""}
         onValueChange={(next) => {
           const option = options.find((candidate) => candidate.value === next);

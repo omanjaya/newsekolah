@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
@@ -65,6 +66,27 @@ describe("SegmentedControl", () => {
       .getByRole("form", { name: "Filter" })
       .querySelector<HTMLInputElement>('input[name="status"]:checked');
     expect(posted?.value).toBe("pending");
+  });
+
+  it("takes the ref, id and description FormControl hands a field", () => {
+    const ref = createRef<HTMLDivElement>();
+    render(
+      <>
+        <p id="status-hint">Pilih status yang ditampilkan</p>
+        <SegmentedControl
+          ref={ref}
+          id="status"
+          aria-label="Status izin"
+          aria-describedby="status-hint"
+          options={options}
+          defaultValue="all"
+        />
+      </>,
+    );
+    const group = screen.getByRole("radiogroup", { name: "Status izin" });
+    expect(ref.current).toBe(group);
+    expect(group).toHaveAttribute("id", "status");
+    expect(group).toHaveAccessibleDescription("Pilih status yang ditampilkan");
   });
 
   it("has no accessibility violations", async () => {

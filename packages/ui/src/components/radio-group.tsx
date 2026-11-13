@@ -64,6 +64,12 @@ export interface RadioGroupItemProps extends Omit<
   description?: ReactNode;
   /** Card variant only: an icon in a soft circle before the text. */
   icon?: ReactNode;
+  /**
+   * Lands on the item's outer box in both variants: the row holding the
+   * radio and its label in the list, the card itself (which is the radio)
+   * in the card variant. Use it for layout, not to restyle the dot.
+   */
+  className?: string;
 }
 
 /**
