@@ -3,7 +3,7 @@
 import { Skeleton } from "@newsekolah/ui";
 import { BookOpen, CalendarCheck, GraduationCap } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { ComponentType, ReactElement, ReactNode } from "react";
+import type { CSSProperties, ComponentType, ReactElement, ReactNode } from "react";
 
 import { TenantBrand } from "../../components/tenant-brand";
 import { isPublicModuleEnabled } from "../../lib/modules/feature-modules";
@@ -36,10 +36,18 @@ export default function AuthLayout({ children }: { children: ReactNode }): React
     <div className="min-h-dvh bg-bg lg:grid lg:grid-cols-[5fr_4fr]">
       <aside
         className="relative hidden overflow-hidden px-12 py-14 text-accent-fg lg:flex lg:flex-col lg:justify-between xl:px-16"
-        style={{
-          backgroundImage:
-            "linear-gradient(150deg, color-mix(in oklab, var(--color-accent), white 8%) 0%, var(--color-accent) 42%, color-mix(in oklab, var(--color-accent), black 48%) 100%)",
-        }}
+        style={
+          {
+            // The hero is a brand surface, not themed UI: it keeps the
+            // deep light-theme accent and its label colour in both themes,
+            // instead of turning into a bright panel with dark text when
+            // the dark accent (#2FD6A0) takes over.
+            "--color-accent": "var(--tenant-accent)",
+            "--color-accent-fg": "var(--tenant-accent-fg)",
+            backgroundImage:
+              "linear-gradient(150deg, color-mix(in oklab, var(--color-accent), white 8%) 0%, var(--color-accent) 42%, color-mix(in oklab, var(--color-accent), black 48%) 100%)",
+          } as CSSProperties
+        }
       >
         {/* Drifting light orbs for depth. */}
         <div
@@ -117,7 +125,7 @@ export default function AuthLayout({ children }: { children: ReactNode }): React
           <div className="mb-8 flex justify-center lg:hidden">
             <TenantBrand />
           </div>
-          <div className="rounded-lg border border-border bg-surface p-8 shadow-[0_24px_70px_-32px_rgba(0,0,0,0.35)] sm:p-10">
+          <div className="rounded-lg border border-border bg-surface p-8 shadow-3 sm:p-10">
             {children}
           </div>
         </div>
