@@ -136,6 +136,48 @@ describe("Button", () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
+  it("gives a touch screen a 44px minimum at every box size, whatever the window width", () => {
+    render(
+      <>
+        <Button size="sm">Kecil</Button>
+        <Button>Sedang</Button>
+      </>,
+    );
+    expect(screen.getByRole("button", { name: "Kecil" })).toHaveClass(
+      "h-8",
+      "pointer-coarse:min-h-11",
+    );
+    expect(screen.getByRole("button", { name: "Sedang" })).toHaveClass(
+      "h-10",
+      "pointer-coarse:min-h-11",
+    );
+    expect(screen.getByRole("button", { name: "Kecil" }).className).not.toMatch(/\bmd:h-/);
+  });
+
+  it("lets a caller's taller height win over the size", () => {
+    render(<Button className="h-16">Pindai</Button>);
+    const button = screen.getByRole("button", { name: "Pindai" });
+    expect(button).toHaveClass("h-16");
+    expect(button).not.toHaveClass("h-10");
+  });
+
+  it("has a large size for the one main action on a phone screen", () => {
+    render(<Button size="lg">Pindai dengan kamera</Button>);
+    expect(screen.getByRole("button", { name: "Pindai dengan kamera" })).toHaveClass("h-12");
+  });
+
+  it("draws the link variant as text that does not press", () => {
+    render(<Button variant="link">Lihat semua</Button>);
+    const link = screen.getByRole("button", { name: "Lihat semua" });
+    expect(link).toHaveClass("text-accent", "h-auto", "px-0");
+    expect(link).not.toHaveClass("motion-press");
+  });
+
+  it("tightens the leading padding next to an icon", () => {
+    render(<Button icon={<svg />}>Tambah</Button>);
+    expect(screen.getByRole("button", { name: "Tambah" })).toHaveClass("pl-3.5");
+  });
+
   it("has no accessibility violations", async () => {
     const { container } = render(<Button>Simpan presensi</Button>);
     await expectNoAxeViolations(container);

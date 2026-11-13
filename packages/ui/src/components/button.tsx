@@ -12,24 +12,28 @@ import { cn } from "../utils/cn.js";
 
 // Radius 14 (controls, docs/07-ui-ux.md's "Hijau Segar" scale; not the 999
 // pill radius, which stays for pills/avatars) so buttons read as the same
-// soft clickable-surface language as inputs, cards, and dialogs. Border, not
-// shadow, since shadow is reserved for floating elements only.
-// `motion-press` carries the color transition and the 0.98 press scale.
+// soft clickable-surface language as inputs, cards, and dialogs.
 // The label never wraps: the height is fixed, so a second line would spill
 // out of the box. A row of actions that does not fit wraps or scrolls.
+// Icons, from the `icon` prop or placed as a direct child, are 16px next to
+// the 13px label (20px on `lg`), always 8px from it.
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-label motion-press " +
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-label select-none " +
+    "[&>svg]:size-4 [&>svg]:shrink-0 " +
     "disabled:pointer-events-none disabled:opacity-50 " +
     "aria-disabled:pointer-events-none aria-disabled:opacity-50",
   {
     variants: {
       variant: {
-        primary: "bg-accent text-accent-fg hover:bg-accent-strong active:bg-accent-strong",
+        // `motion-press` carries the color transition and the 0.98 press
+        // scale; the link variant does without it (text links never press).
+        primary:
+          "rounded-md motion-press bg-accent text-accent-fg hover:bg-accent-strong active:bg-accent-strong",
         // `state-layer` paints hover and press over the opaque surface
         // instead of replacing it, so the button stays solid on any
         // backdrop (a dark camera overlay, the dark page background).
-        secondary: "border border-border bg-surface text-fg state-layer",
-        ghost: "text-fg hover:bg-state-hover active:bg-state-pressed",
+        secondary: "rounded-md motion-press border border-border bg-surface text-fg state-layer",
+        ghost: "rounded-md motion-press text-fg hover:bg-state-hover active:bg-state-pressed",
         // `danger`'s fg is calibrated to sit on `bg`/`surface`, not to be a
         // solid fill with white text (it fails contrast in dark mode, where
         // the fg is deliberately light). `bg` itself, though, is exactly
@@ -37,19 +41,33 @@ const buttonVariants = cva(
         // themes: near-white on the dark-red light-theme fill, near-black
         // on the light-red dark-theme fill (checked by the token contrast
         // check as "bg on danger").
-        danger: "bg-danger text-bg hover:opacity-90 active:opacity-90",
+        danger: "rounded-md motion-press bg-danger text-bg hover:opacity-90 active:opacity-90",
+        // An inline action that reads as a link ("Lihat semua"): accent
+        // text, underline on hover, no box. On a touch screen its hit area
+        // grows to 44px around the text without moving the layout.
+        link:
+          "relative rounded-xs text-accent underline-offset-4 transition-colors hover:underline active:text-accent-strong " +
+          "pointer-coarse:after:absolute pointer-coarse:after:-inset-x-2 pointer-coarse:after:-inset-y-3",
       },
       size: {
-        // Both sizes clear 44px on a touch screen and shrink once there is
-        // a cursor. A compact button is a density choice for a dense
-        // desktop table, not a reason to make a thumb miss on a phone.
-        sm: "h-11 px-3 md:h-8",
-        md: "h-11 px-4 md:h-10",
+        // Touch screens get at least 44px whatever the window width (a
+        // tablet or a touch laptop is as imprecise as a phone). It is a
+        // minimum, so a caller's own taller height still wins.
+        sm: "h-8 px-3 pointer-coarse:min-h-11",
+        md: "h-10 px-4 pointer-coarse:min-h-11",
+        lg: "h-12 px-5 text-body font-semibold [&>svg]:size-5",
       },
     },
+    // A link is as tall as its text and sits on the text's baseline.
+    compoundVariants: [
+      { variant: "link", size: ["sm", "md", "lg"], class: "h-auto px-0 pointer-coarse:min-h-0" },
+    ],
     defaultVariants: { variant: "primary", size: "md" },
   },
 );
+
+/** The leading edge sits 2px closer to an icon than to text, which reads as even padding. */
+const ICON_PADDING = { sm: "pl-2.5", md: "pl-3.5", lg: "pl-4" } as const;
 
 export interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
@@ -79,10 +97,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   const Comp = asChild ? Slot : "button";
   const inactive = Boolean(disabled) || Boolean(loading);
   const inactiveLink = asChild && inactive;
+  const leading = Boolean(loading) || Boolean(icon);
+  const iconSize = size === "lg" ? "size-5 [&>svg]:size-5" : "size-4 [&>svg]:size-4";
   return (
     <Comp
       ref={ref}
-      className={cn(buttonVariants({ variant, size }), className)}
+      className={cn(
+        buttonVariants({ variant, size }),
+        leading && variant !== "link" && ICON_PADDING[size ?? "md"],
+        className,
+      )}
       // A child element (a link) has no `disabled`; it says so through ARIA
       // instead, the matching classes stop the pointer, and below it leaves
       // the tab order and ignores activation from the keyboard.
@@ -94,10 +118,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       {...(inactiveLink ? { tabIndex: -1, onClick: preventActivation } : { onClick })}
     >
       {loading ? (
-        <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+        <Loader2 className={cn(iconSize, "shrink-0 animate-spin")} aria-hidden="true" />
       ) : (
         icon && (
-          <span className="size-5 [&>svg]:size-5" aria-hidden="true">
+          <span className={cn("flex shrink-0", iconSize)} aria-hidden="true">
             {icon}
           </span>
         )
