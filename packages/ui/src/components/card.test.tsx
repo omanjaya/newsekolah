@@ -72,6 +72,21 @@ describe("Card", () => {
     await expectNoAxeViolations(container);
   });
 
+  it("refuses an interactive card that is not rendered onto a link or button", () => {
+    render(
+      <>
+        {/* @ts-expect-error: a clickable div is out of reach of the keyboard. */}
+        <Card interactive onClick={() => undefined}>
+          Presensi
+        </Card>
+        <Card interactive asChild>
+          <button type="button">Jurnal</button>
+        </Card>
+      </>,
+    );
+    expect(screen.getByRole("button", { name: "Jurnal" })).toHaveClass("cursor-pointer");
+  });
+
   it("tints the text of an accent-soft card", () => {
     render(
       <Card tone="accent-soft" padding="md" data-testid="card">

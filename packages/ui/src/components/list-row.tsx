@@ -1,14 +1,14 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
-import { useId, type ComponentPropsWithoutRef, type ReactNode } from "react";
+import { useId, type ComponentPropsWithRef, type ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
 import { useListContext } from "./list.js";
 import { UiLink } from "./ui-link.js";
 
-export interface ListRowProps extends Omit<ComponentPropsWithoutRef<"li">, "title" | "onClick"> {
+export interface ListRowProps extends Omit<ComponentPropsWithRef<"li">, "title" | "onClick"> {
   /** An Avatar, an IconCircle, or a short fixed-width value such as a time. */
   leading?: ReactNode;
   title: ReactNode;
@@ -18,9 +18,9 @@ export interface ListRowProps extends Omit<ComponentPropsWithoutRef<"li">, "titl
   trailing?: ReactNode;
   /** A separate control (a menu, a button); it stays its own target above the row's. */
   action?: ReactNode;
-  /** Makes the whole row a link; the title is the link text. */
+  /** Makes the whole row a link; the title is the link text. With `onClick` too, both run. */
   href?: string;
-  /** Makes the whole row a button. */
+  /** Makes the whole row a button, or runs before a link's navigation when `href` is set. */
   onClick?: () => void;
   /** The trailing chevron; on by default for a row that opens something and has no `action`. */
   chevron?: boolean;
@@ -50,6 +50,7 @@ function RowTarget({
     return (
       <UiLink
         href={href}
+        onClick={onClick}
         data-list-row-target=""
         aria-current={current}
         aria-describedby={describedBy}

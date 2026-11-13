@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
 
-import { Card } from "./card.js";
+import { Card, CardContent, CardHeader, CardTitle } from "./card.js";
 import { DataList, DataListItem } from "./data-list.js";
 import { UiLabelsProvider } from "./ui-labels.js";
 
@@ -60,5 +60,32 @@ describe("DataList", () => {
       </Card>,
     );
     expect(container.querySelector("dl")).toHaveAttribute("data-card-flush");
+    expect(container.querySelector("dl")).toHaveAttribute("data-slot", "data-list");
+  });
+
+  // The natural composition: CardContent already insets its content, so a
+  // data list in it keeps the bare zero inset instead of adding the card's.
+  it("keeps the same classes inside CardContent as on its own", () => {
+    const { container, rerender } = render(
+      <DataList>
+        <DataListItem label="NIS">1</DataListItem>
+      </DataList>,
+    );
+    const bare = container.querySelector("dl")?.className;
+    rerender(
+      <Card padding="md">
+        <CardHeader>
+          <CardTitle>Data siswa</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DataList>
+            <DataListItem label="NIS">1</DataListItem>
+          </DataList>
+        </CardContent>
+      </Card>,
+    );
+    const nested = container.querySelector("dl");
+    expect(nested?.className).toBe(bare);
+    expect(nested?.parentElement).not.toHaveAttribute("data-slot", "card");
   });
 });

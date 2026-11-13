@@ -2,7 +2,13 @@
 
 import { Slot } from "@radix-ui/react-slot";
 import { cva } from "class-variance-authority";
-import { forwardRef, useMemo, type ComponentPropsWithoutRef, type ReactNode } from "react";
+import {
+  forwardRef,
+  useMemo,
+  type ComponentPropsWithRef,
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+} from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -62,7 +68,7 @@ const cardVariants = cva("rounded-lg border", {
   defaultVariants: { tone: "default", padding: "none", interactive: false },
 });
 
-export interface CardProps extends ComponentPropsWithoutRef<"div"> {
+interface CardBaseProps extends ComponentPropsWithoutRef<"div"> {
   /**
    * The card's own inset: `sm` 16, `md` 20, `lg` 24, stacking children
    * with a 12/16/20 gap. `none` (default) leaves the inset to the sections,
@@ -71,11 +77,26 @@ export interface CardProps extends ComponentPropsWithoutRef<"div"> {
   padding?: CardPadding;
   /** `sunken` for a well inside another surface, `accent-soft` for a "now" card, `raised` for a floating one. */
   tone?: CardTone;
-  /** Hover elevation, press feedback and a pointer; pair with `asChild` and an `a`, `Link` or `button`. */
-  interactive?: boolean;
-  /** Renders the card's styles onto its single child element (a link or a button). */
-  asChild?: boolean;
 }
+
+/**
+ * An `interactive` card must render onto its own `a`, `Link` or `button`
+ * through `asChild`: a clickable `div` would show a pointer and a press but
+ * stay out of reach of the keyboard, so the types refuse it.
+ */
+export type CardProps = CardBaseProps &
+  (
+    | {
+        interactive?: false;
+        /** Renders the card's styles onto its single child element. */
+        asChild?: boolean;
+      }
+    | {
+        /** Hover elevation, press feedback and a pointer, for a card that is one link or button. */
+        interactive: true;
+        asChild: true;
+      }
+  );
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
   { className, padding = "none", tone = "default", interactive = false, asChild, ...props },
@@ -88,6 +109,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
       <Comp
         ref={ref}
         data-slot="card"
+        // Read by styles.css: a List or inline DataList that is a direct
+        // child bleeds into this padding to span the card edge to edge.
+        data-card-padding={padding}
         className={cn(cardVariants({ tone, padding, interactive }), className)}
         {...props}
       />
@@ -101,7 +125,7 @@ function useInsetCard(): boolean {
   return card !== null && card.padding !== "none";
 }
 
-export interface CardHeaderProps extends ComponentPropsWithoutRef<"div"> {
+export interface CardHeaderProps extends ComponentPropsWithRef<"div"> {
   /** A link or small button on the right, centred on the title's first line. */
   action?: ReactNode;
 }
@@ -127,7 +151,7 @@ export function CardHeader({ className, action, children, ...props }: CardHeader
   );
 }
 
-export interface CardTitleProps extends ComponentPropsWithoutRef<"h3"> {
+export interface CardTitleProps extends ComponentPropsWithRef<"h3"> {
   /** Heading level; `h3` by default, under the page's h1 and a section's h2. */
   as?: "h2" | "h3" | "h4" | "p";
 }
@@ -144,14 +168,14 @@ export function CardTitle({ className, as: Heading = "h3", children, ...props }:
   );
 }
 
-export function CardDescription({ className, ...props }: ComponentPropsWithoutRef<"p">) {
+export function CardDescription({ className, ...props }: ComponentPropsWithRef<"p">) {
   const card = useCardContext();
   const muted = card?.tone === "accent-soft" ? "text-accent-soft-fg/80" : "text-fg-muted";
   return <p className={cn("text-body-sm", muted, className)} {...props} />;
 }
 
 /** Follows `CardHeader`; in an unpadded card it carries the 20px inset without the top half. */
-export function CardContent({ className, ...props }: ComponentPropsWithoutRef<"div">) {
+export function CardContent({ className, ...props }: ComponentPropsWithRef<"div">) {
   const inset = useInsetCard();
   return <div className={cn(inset ? "" : "p-5 pt-0", className)} {...props} />;
 }
@@ -163,7 +187,7 @@ const FOOTER_INSET: Record<CardPadding, string> = {
   lg: "pt-5",
 };
 
-export function CardFooter({ className, ...props }: ComponentPropsWithoutRef<"div">) {
+export function CardFooter({ className, ...props }: ComponentPropsWithRef<"div">) {
   const card = useCardContext();
   return (
     <div

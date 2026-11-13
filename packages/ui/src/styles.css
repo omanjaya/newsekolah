@@ -491,3 +491,78 @@
     }
   }
 }
+
+/* ========================================================================
+ * Wave 2, stream 1: surfaces and content.
+ * Owned by Card, List and DataList.
+ * ===================================================================== */
+
+/*
+ * Rows of a List and of an inline DataList are inset by `--list-inset`:
+ * 16px on a bare list (the artboard's row padding), none on a bare data
+ * list, whose labels line up with the text around it. Each list sets its
+ * own value, so a list nested in another never inherits the outer inset.
+ *
+ * A list that is a direct child of a Card (`data-card-flush`) spans the
+ * card edge to edge instead and insets its rows by the card's own inset,
+ * so their text lines up with the card header. In a padded card it also
+ * bleeds into the padding at a card edge it touches, and pulls closer to
+ * a sibling, since its rows bring their own 12px of vertical padding. The
+ * relation is structural on purpose: a list inside CardContent, a section
+ * of the card or a dialog opened from it stays a plain list.
+ *
+ * Component layer, so a caller's utility (`mx-0`) still overrides it.
+ */
+@layer components {
+  [data-slot="list"] {
+    --list-inset: var(--space-4);
+  }
+  [data-slot="data-list"] {
+    --list-inset: 0px;
+  }
+
+  [data-slot="card"][data-card-padding="none"] > [data-card-flush] {
+    --list-inset: var(--space-5);
+  }
+  [data-slot="card"][data-card-padding="sm"] {
+    --card-flush-pad: var(--space-4);
+    --card-flush-pull: var(--space-2);
+  }
+  [data-slot="card"][data-card-padding="md"] {
+    --card-flush-pad: var(--space-5);
+    --card-flush-pull: var(--space-3);
+  }
+  [data-slot="card"][data-card-padding="lg"] {
+    --card-flush-pad: var(--space-6);
+    --card-flush-pull: var(--space-3);
+  }
+  [data-slot="card"]:is(
+      [data-card-padding="sm"],
+      [data-card-padding="md"],
+      [data-card-padding="lg"]
+    )
+    > [data-card-flush] {
+    --list-inset: var(--card-flush-pad);
+    margin: calc(var(--card-flush-pull) * -1) calc(var(--card-flush-pad) * -1);
+    &:first-child {
+      margin-top: calc(var(--card-flush-pad) * -1);
+    }
+    &:last-child {
+      margin-bottom: calc(var(--card-flush-pad) * -1);
+    }
+  }
+
+  /* A row's hover layer follows the card's corners where the list touches them (the card radius less its 1px ring). */
+  [data-slot="card"] > [data-slot="list"][data-card-flush] {
+    &:first-child {
+      overflow: hidden;
+      border-top-left-radius: calc(var(--radius-lg) - 1px);
+      border-top-right-radius: calc(var(--radius-lg) - 1px);
+    }
+    &:last-child {
+      overflow: hidden;
+      border-bottom-left-radius: calc(var(--radius-lg) - 1px);
+      border-bottom-right-radius: calc(var(--radius-lg) - 1px);
+    }
+  }
+}

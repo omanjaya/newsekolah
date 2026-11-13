@@ -19,25 +19,13 @@ const CardContext = createContext<CardContextValue | null>(null);
 
 export const CardContextProvider = CardContext.Provider;
 
-/** The nearest Card around a component, or `null` outside one. */
+/**
+ * The nearest Card around a component, or `null` outside one. Context
+ * reaches any depth and crosses portals, so it suits a card section's own
+ * look (CardTitle's colour, CardContent's inset); a layout that depends on
+ * being a direct child of the card, such as a List spanning it edge to
+ * edge, keys off the DOM instead (`data-card-flush`, see styles.css).
+ */
 export function useCardContext(): CardContextValue | null {
   return useContext(CardContext);
 }
-
-/*
- * For content that spans a card edge to edge (List, an inline DataList):
- * the card's own inset as `--list-inset`, so the rows' text lines up with
- * the card header. In a padded card the content also bleeds into the
- * padding at a card edge it touches, and pulls closer to a sibling, since
- * its rows bring their own 12px of vertical padding.
- */
-export const CARD_FLUSH_CLASS: Record<CardPadding, string> = {
-  none: "[--list-inset:20px]",
-  sm: "-mx-4 [--list-inset:16px] first:-mt-4 last:-mb-4 not-first:-mt-2 not-last:-mb-2",
-  md: "-mx-5 [--list-inset:20px] first:-mt-5 last:-mb-5 not-first:-mt-3 not-last:-mb-3",
-  lg: "-mx-6 [--list-inset:24px] first:-mt-6 last:-mb-6 not-first:-mt-3 not-last:-mb-3",
-};
-
-/** A row's hover layer follows the card's corners where the content touches them (radius 20 less the 1px ring). */
-export const CARD_EDGE_CLIP_CLASS =
-  "first:overflow-hidden first:rounded-t-[19px] last:overflow-hidden last:rounded-b-[19px]";
