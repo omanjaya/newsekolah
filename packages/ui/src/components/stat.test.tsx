@@ -1,0 +1,130 @@
+import { act, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { CalendarCheck } from "lucide-react";
+import { describe, expect, it, vi } from "vitest";
+
+import { expectNoAxeViolations } from "../test/axe.js";
+
+import { Stat, StatGrid } from "./stat.js";
+import { UiLabelsProvider } from "./ui-labels.js";
+
+describe("Stat in a StatGrid", () => {
+  it("is one div holding exactly a dt and its dds, the only grouping a dl allows", async () => {
+    const { container } = render(
+      <StatGrid variant="tiles">
+        <Stat icon={<CalendarCheck />} value="96%" label="Kehadiran" hint="bulan ini" />
+        <Stat value={3} label="Nilai baru" />
+      </StatGrid>,
+    );
+    const list = container.querySelector("dl");
+    expect(list).not.toBeNull();
+    for (const group of Array.from(list?.children ?? [])) {
+      expect(group.tagName).toBe("DIV");
+      const tags = Array.from(group.children).map((child) => child.tagName);
+      expect(tags[0]).toBe("DT");
+      expect(tags.slice(1).every((tag) => tag === "DD")).toBe(true);
+    }
+    expect(screen.getAllByRole("term").map((term) => term.textContent)).toEqual([
+      "Kehadiran",
+      "Nilai baru",
+    ]);
+    await expectNoAxeViolations(container);
+  });
+
+  it("takes the tile look from a tiles grid and the compact look from a strip", () => {
+    const { container, rerender } = render(
+      <StatGrid variant="tiles">
+        <Stat value={1} label="Izin" />
+      </StatGrid>,
+    );
+    expect(container.querySelector("dl > div")).toHaveClass("rounded-lg", "min-h-26", "p-4");
+    rerender(
+      <StatGrid variant="strip">
+        <Stat value={1} label="Izin" />
+      </StatGrid>,
+    );
+    expect(container.querySelector("dl")).toHaveClass("divide-x");
+    expect(container.querySelector("dl > div")).toHaveClass("min-w-36");
+  });
+});
+
+describe("Stat", () => {
+  it("is plain text outside a StatGrid", async () => {
+    const { container } = render(<Stat value="42 menit" label="Rata-rata" />);
+    expect(container.querySelector("dt, dd")).toBeNull();
+    expect(screen.getByText("42 menit")).toHaveClass("text-title-lg");
+    await expectNoAxeViolations(container);
+  });
+
+  it("makes the whole stat a link named by its label and described by its value", async () => {
+    const { container } = render(
+      <StatGrid variant="tiles">
+        <Stat value="96%" label="Kehadiran" hint="bulan ini" href="/attendance" />
+      </StatGrid>,
+    );
+    const link = screen.getByRole("link", { name: "Kehadiran" });
+    expect(link).toHaveAttribute("href", "/attendance");
+    expect(link).toHaveAccessibleDescription(/96%.*bulan ini/);
+    expect(container.querySelector("dl > div")).toHaveClass("motion-press", "hover:shadow-2");
+    await expectNoAxeViolations(container);
+  });
+
+  it("runs onClick from a stretched button", async () => {
+    const onClick = vi.fn();
+    render(<Stat value={6} label="Di bawah KKM" onClick={onClick} />);
+    await userEvent.click(screen.getByRole("button", { name: "Di bawah KKM" }));
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it("counts a number up once, tabular while it moves, formatted with the UiLabels locale", () => {
+    vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame", "performance"] });
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    try {
+      render(
+        <UiLabelsProvider labels={{ locale: "id-ID" }}>
+          <Stat value={1284} label="Total" countUp />
+        </UiLabelsProvider>,
+      );
+      expect(screen.getByText("0")).toHaveClass("tabular-nums");
+      act(() => {
+        vi.advanceTimersByTime(600);
+      });
+      const settled = screen.getByText("1.284");
+      expect(settled).not.toHaveClass("tabular-nums");
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("uses a custom format and a delta with a spoken direction", () => {
+    render(
+      <UiLabelsProvider labels={{ statDeltaUp: "Up" }}>
+        <Stat
+          value={0.82}
+          formatValue={(n) => `${String(Math.round(n * 100))}%`}
+          label="Tuntas"
+          delta={{ value: "+4%", direction: "up" }}
+        />
+      </UiLabelsProvider>,
+    );
+    expect(screen.getByText("82%")).toBeInTheDocument();
+    const delta = screen.getByText("+4%", { exact: false });
+    expect(delta).toHaveClass("text-success");
+    expect(within(delta).getByText("Up", { exact: false })).toHaveClass("sr-only");
+  });
+
+  it("holds the value's place with a skeleton while loading", () => {
+    const { container } = render(<Stat value={0} label="Kehadiran" loading />);
+    expect(container.querySelector('[data-slot="skeleton"]')).toBeInTheDocument();
+    expect(screen.queryByText("0")).not.toBeInTheDocument();
+  });
+});
