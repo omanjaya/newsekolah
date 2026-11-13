@@ -428,6 +428,10 @@
         "published": "Terbit",
         "archived": "Diarsipkan"
       },
+      "missedSchedule": {
+        "label": "Jadwal terlewat",
+        "hint": "Waktu tayangnya sudah lewat sebelum terbit, misalnya karena fitur pengumuman sedang dinonaktifkan. Ubah waktunya lalu jadwalkan ulang, terbitkan sekarang, atau hapus."
+      },
       "reach": "{read} dari {total}",
       "audienceClassCount": "{count, plural, one {# kelas} other {# kelas}}",
       "audienceUserCount": "{count, plural, one {# pengguna} other {# pengguna}}",

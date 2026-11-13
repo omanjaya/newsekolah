@@ -69,3 +69,40 @@ describe("AnnouncementsManage filters", () => {
     expect(new URLSearchParams(window.location.search).get("status")).toBe("");
   });
 });
+
+describe("AnnouncementsManage missed schedules", () => {
+  function row(id: string, title: string, status: string, startsAt?: string) {
+    return {
+      id,
+      title,
+      status,
+      starts_at: startsAt,
+      audience: { type: "all" },
+      created_at: "2026-11-01T00:00:00Z",
+      recipient_count: 0,
+    };
+  }
+
+  it("marks a draft whose start passed, and only that one", () => {
+    mocks.useAnnouncementsQuery.mockReturnValue({
+      data: {
+        data: [
+          row("a1", "Rapat orang tua", "draft", "2000-01-01T00:00:00Z"),
+          row("a2", "Libur semester", "draft", "2999-01-01T00:00:00Z"),
+          row("a3", "Upacara", "scheduled", "2999-01-01T00:00:00Z"),
+        ],
+        page: { next_cursor: "" },
+      },
+      isLoading: false,
+    });
+    render(<AnnouncementsManage creating={false} onCreatingChange={vi.fn()} />);
+
+    // The table also renders a card list for narrow screens; check the table rows.
+    const missedRows = screen
+      .getAllByText("missedSchedule.label")
+      .map((badge) => badge.closest("tr"))
+      .filter((tr): tr is HTMLTableRowElement => tr !== null);
+    expect(missedRows).toHaveLength(1);
+    expect(missedRows[0]).toHaveTextContent("Rapat orang tua");
+  });
+});

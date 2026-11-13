@@ -428,6 +428,10 @@
         "published": "Published",
         "archived": "Archived"
       },
+      "missedSchedule": {
+        "label": "Missed schedule",
+        "hint": "Its start time passed before it was published, for example while announcements were switched off. Change the time and schedule it again, publish it now, or delete it."
+      },
       "reach": "{read} of {total}",
       "audienceClassCount": "{count, plural, one {# class} other {# classes}}",
       "audienceUserCount": "{count, plural, one {# user} other {# users}}",
