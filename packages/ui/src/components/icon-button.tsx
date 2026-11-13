@@ -114,6 +114,17 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
   const Comp = asChild ? Slot : "button";
   const inactive = Boolean(disabled) || Boolean(loading);
 
+  // Typed from the button's own props, not inferred from `Comp`: an asChild
+  // Slot types its events on HTMLElement, which would widen the event here.
+  const handlePointerEnter: ButtonHTMLAttributes<HTMLButtonElement>["onPointerEnter"] = (event) => {
+    tooltipState.release();
+    props.onPointerEnter?.(event);
+  };
+  const handleBlur: ButtonHTMLAttributes<HTMLButtonElement>["onBlur"] = (event) => {
+    tooltipState.release();
+    props.onBlur?.(event);
+  };
+
   const button = (
     <Comp
       ref={ref}
@@ -126,14 +137,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       // it as well would make a screen reader say the name twice.
       aria-describedby={props["aria-describedby"]}
       {...props}
-      onPointerEnter={(event) => {
-        tooltipState.release();
-        props.onPointerEnter?.(event);
-      }}
-      onBlur={(event) => {
-        tooltipState.release();
-        props.onBlur?.(event);
-      }}
+      onPointerEnter={handlePointerEnter}
+      onBlur={handleBlur}
     >
       {loading ? <Loader2 className="animate-spin" aria-hidden="true" /> : icon}
       <Slottable>{children}</Slottable>

@@ -75,6 +75,13 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   // template), so the height follows every render's value too.
   useLayoutEffect(fit, [fit, props.value]);
 
+  // Typed from the textarea's own props so the caller's handler receives
+  // exactly the event type it declared.
+  const handleInput: TextareaHTMLAttributes<HTMLTextAreaElement>["onInput"] = (event) => {
+    fit();
+    onInput?.(event);
+  };
+
   return (
     <textarea
       ref={setRefs}
@@ -87,10 +94,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         "placeholder:text-fg-muted",
         className,
       )}
-      onInput={(event) => {
-        fit();
-        onInput?.(event);
-      }}
+      onInput={handleInput}
       {...attributes}
       {...props}
     />
