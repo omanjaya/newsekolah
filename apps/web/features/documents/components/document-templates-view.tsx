@@ -23,6 +23,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import {
@@ -40,7 +41,7 @@ export function DocumentTemplatesView(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_settings");
 
-  const { data, isLoading } = useDocumentTemplatesQuery();
+  const { data, isLoading, isError, refetch } = useDocumentTemplatesQuery();
   const setDefault = useSetDefaultDocumentTemplateMutation();
   const [editing, setEditing] = useState<DocumentTemplate | "new" | null>(null);
 
@@ -81,6 +82,8 @@ export function DocumentTemplatesView(): ReactElement {
 
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
+      ) : isError && !data ? (
+        <QueryError retry={() => refetch()} />
       ) : templates.length === 0 ? (
         <EmptyState
           icon={<domainIcons.document aria-hidden="true" />}
@@ -122,7 +125,7 @@ export function DocumentTemplatesView(): ReactElement {
                       <Button
                         size="sm"
                         variant="ghost"
-                        loading={setDefault.isPending}
+                        loading={setDefault.isPending && setDefault.variables === template.id}
                         onClick={() => {
                           handleSetDefault(template.id);
                         }}

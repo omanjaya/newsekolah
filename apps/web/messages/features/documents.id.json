@@ -20,9 +20,9 @@
       "clearance_letter": "Surat keterangan bebas pustaka",
       "report": "Laporan"
     },
-    "default": "Default",
-    "setDefault": "Jadikan default",
-    "defaultUpdated": "Template dijadikan default",
+    "default": "Bawaan",
+    "setDefault": "Jadikan bawaan",
+    "defaultUpdated": "Template dijadikan bawaan",
     "emptyTitle": "Belum ada template",
     "emptyBody": "Template yang dibuat akan muncul di sini, dikelompokkan per jenis dokumen.",
     "edit": "Ubah",
