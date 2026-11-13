@@ -89,4 +89,12 @@ describe("MyLibraryLoanRow", () => {
 
     expect(screen.queryByText("Budi Santoso")).not.toBeInTheDocument();
   });
+
+  it("states on screen why renewing is blocked once the loan is overdue", () => {
+    render(
+      <MyLibraryLoanRow loan={loan({ due_on: "2026-09-01" })} today="2026-09-15" locale="id" />,
+    );
+
+    expect(screen.getByText("renewBlockedOverdue")).toBeInTheDocument();
+  });
 });

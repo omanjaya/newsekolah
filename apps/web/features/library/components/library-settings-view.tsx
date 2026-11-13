@@ -59,7 +59,7 @@ export function LibrarySettingsView(): ReactElement {
       >
         <TabsList
           aria-label={t("tabsLabel")}
-          className="overflow-x-auto [&>button]:shrink-0 [&>button]:whitespace-nowrap"
+          className="max-w-full overflow-x-auto [&>button]:shrink-0 [&>button]:whitespace-nowrap"
         >
           {visible.map((key) => (
             <TabsTrigger key={key} value={key}>

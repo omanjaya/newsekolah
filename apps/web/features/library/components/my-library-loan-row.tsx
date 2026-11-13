@@ -74,6 +74,7 @@ export function MyLibraryLoanRow({
       >
         {t("renewAction")}
       </Button>
+      {!canRenew && <p className="text-[12px] text-fg-muted">{t("renewBlockedOverdue")}</p>}
     </Card>
   );
 }

@@ -66,7 +66,7 @@ export function MasterDataView({ embedded = false }: { embedded?: boolean }): Re
         className={embedded ? "flex flex-col" : "flex flex-col md:min-h-0 md:flex-1"}
       >
         {/* Six tabs do not fit a phone: scroll the strip instead of the page. */}
-        <TabsList className="overflow-x-auto [&>button]:shrink-0 [&>button]:whitespace-nowrap">
+        <TabsList className="max-w-full overflow-x-auto [&>button]:shrink-0 [&>button]:whitespace-nowrap">
           <TabsTrigger value="materialTypes">{t("tabs.materialTypes")}</TabsTrigger>
           <TabsTrigger value="acquisitionSources">{t("tabs.acquisitionSources")}</TabsTrigger>
           <TabsTrigger value="partners">{t("tabs.partners")}</TabsTrigger>

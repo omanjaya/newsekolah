@@ -174,7 +174,8 @@ describe("DeskOverdueTable", () => {
 
     const user = userEvent.setup();
     render(<DeskOverdueTable />);
-    const [returnButton] = screen.getAllByRole("button", { name: "return" });
+    const returnButton = screen.getAllByRole("button", { name: "return" }).at(0);
+    if (!returnButton) throw new Error("return button missing");
     await user.click(returnButton);
 
     expect(mutations.returnLoan).not.toHaveBeenCalled();
