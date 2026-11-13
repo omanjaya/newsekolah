@@ -1,42 +1,134 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { BookOpen, CalendarCheck, GraduationCap, Users } from "lucide-react";
+import type { Decorator, Meta, StoryObj } from "@storybook/react";
+import {
+  BookOpen,
+  CalendarCheck,
+  ClipboardCheck,
+  ClockAlert,
+  FileText,
+  Star,
+  UserCheck,
+  Users,
+} from "lucide-react";
 
+import { Card, CardHeader, CardTitle } from "./card.js";
 import { Stat, StatGrid } from "./stat.js";
 
-const meta: Meta<typeof StatGrid> = {
+const phoneFrame: Decorator = (Story) => (
+  <div className="mx-auto w-[390px] max-w-full">
+    <Story />
+  </div>
+);
+
+const meta: Meta<typeof Stat> = {
   title: "Components/Stat",
-  component: StatGrid,
+  component: Stat,
+  parameters: { layout: "padded" },
 };
 export default meta;
-type Story = StoryObj<typeof StatGrid>;
+type Story = StoryObj<typeof Stat>;
 
-export const Default: Story = {
-  render: () => (
-    <StatGrid>
-      <Stat label="Siswa" value="1.248" />
-      <Stat label="Guru" value="87" />
-      <Stat label="Pegawai" value="24" />
-      <Stat label="Orang tua" value="1.102" />
+/** The artboard's four home tiles, as links. */
+function Tiles() {
+  return (
+    <StatGrid variant="tiles" className="sm:grid-cols-4">
+      <Stat icon={<CalendarCheck />} category="green" value="96%" label="Kehadiran" href="#a" />
+      <Stat icon={<FileText />} category="amber" value={1} label="Izin menunggu" href="#b" />
+      <Stat icon={<Star />} category="purple" value={3} label="Nilai baru" href="#c" />
+      <Stat
+        icon={<BookOpen />}
+        category="blue"
+        value="2 buku"
+        label="Kembali Sabtu"
+        hint="Perpanjang di meja sirkulasi"
+      />
     </StatGrid>
-  ),
-};
+  );
+}
 
-export const WithHints: Story = {
-  render: () => (
-    <StatGrid className="sm:grid-cols-2">
-      <Stat label="Peminjaman aktif" value="163" hint="12 jatuh tempo pekan ini" />
-      <Stat label="Denda belum dibayar" value="Rp 420.000" hint="dari 9 anggota" />
+/** Seven figures in one low row: the work-screen summary that keeps the table on the first screen. */
+function Strip() {
+  return (
+    <StatGrid variant="strip">
+      <Stat icon={<Users />} category="blue" value={36} label="Siswa" />
+      <Stat icon={<ClipboardCheck />} category="green" value={28} label="Sudah dinilai" />
+      <Stat icon={<ClockAlert />} category="amber" value={8} label="Belum dinilai" />
+      <Stat icon={<Star />} category="purple" value="82,4" label="Rata-rata" />
+      <Stat icon={<UserCheck />} category="green" value={30} label="Tuntas KKM" />
+      <Stat icon={<ClockAlert />} category="red" value={6} label="Di bawah KKM" href="#remedial" />
+      <Stat value="91" label="Tertinggi" />
     </StatGrid>
-  ),
-};
+  );
+}
 
-export const WithIcon: Story = {
+/** Plain stats in a card, with a change figure and a count-up. */
+function Plain() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Rekap kunjungan</CardTitle>
+      </CardHeader>
+      <div className="px-5 pb-5">
+        <StatGrid className="sm:grid-cols-3">
+          <Stat
+            label="Total kunjungan"
+            value={1284}
+            countUp
+            delta={{ value: "+12% dari bulan lalu", direction: "up" }}
+          />
+          <Stat
+            label="Masih di sekolah"
+            value={7}
+            delta={{ value: "2 lebih sedikit", direction: "down", tone: "success" }}
+          />
+          <Stat label="Rata-rata lama" value="42 menit" hint="Senin sampai Jumat" />
+        </StatGrid>
+      </div>
+    </Card>
+  );
+}
+
+function Loading() {
+  return (
+    <div className="flex flex-col gap-4">
+      <StatGrid variant="tiles">
+        <Stat icon={<CalendarCheck />} value={0} label="Kehadiran" loading />
+        <Stat icon={<FileText />} category="amber" value={0} label="Izin menunggu" loading />
+      </StatGrid>
+      <StatGrid variant="strip">
+        <Stat icon={<Users />} category="blue" value={0} label="Siswa" loading />
+        <Stat icon={<ClipboardCheck />} value={0} label="Sudah dinilai" loading />
+        <Stat icon={<ClockAlert />} category="amber" value={0} label="Belum dinilai" loading />
+      </StatGrid>
+    </div>
+  );
+}
+
+function Gallery() {
+  return (
+    <div className="flex max-w-default flex-col gap-8">
+      <Tiles />
+      <Strip />
+      <Plain />
+      <Loading />
+    </div>
+  );
+}
+
+export const Default: Story = { render: () => <Gallery /> };
+export const Dark: Story = { globals: { theme: "dark" }, render: () => <Gallery /> };
+export const Phone: Story = {
+  parameters: { layout: "fullscreen" },
+  decorators: [phoneFrame],
   render: () => (
-    <StatGrid>
-      <Stat label="Kehadiran" value="96%" icon={<CalendarCheck />} category="green" />
-      <Stat label="Izin menunggu" value="1" icon={<Users />} category="amber" />
-      <Stat label="Nilai baru" value="3" icon={<GraduationCap />} category="purple" />
-      <Stat label="Kembali Sabtu" value="2 buku" icon={<BookOpen />} category="blue" />
-    </StatGrid>
+    <div className="flex flex-col gap-6 p-4">
+      <StatGrid variant="tiles">
+        <Stat icon={<CalendarCheck />} category="green" value="96%" label="Kehadiran" href="#a" />
+        <Stat icon={<FileText />} category="amber" value={1} label="Izin menunggu" href="#b" />
+        <Stat icon={<Star />} category="purple" value={3} label="Nilai baru" href="#c" />
+        <Stat icon={<BookOpen />} category="blue" value="2 buku" label="Kembali Sabtu" href="#d" />
+      </StatGrid>
+      <Strip />
+      <Plain />
+    </div>
   ),
 };

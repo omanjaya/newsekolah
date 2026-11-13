@@ -1,51 +1,180 @@
-import { ChevronRight } from "lucide-react";
-import type { ReactNode } from "react";
+"use client";
+
+import { Ellipsis } from "lucide-react";
+import { isValidElement, type ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
-export interface PageHeaderBreadcrumbItem {
+import { Breadcrumb, type BreadcrumbItem } from "./breadcrumb.js";
+import { Button } from "./button.js";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./dropdown-menu.js";
+import { IconButton } from "./icon-button.js";
+import { useUiLabels } from "./ui-labels.js";
+import { UiLink } from "./ui-link.js";
+
+export type PageHeaderBreadcrumbItem = BreadcrumbItem;
+
+/** A secondary page action: a button beside the primary one from 640px up, an item of the overflow menu below. */
+export interface PageHeaderAction {
   label: string;
+  icon?: ReactNode;
+  onSelect?: () => void;
   href?: string;
+  disabled?: boolean;
+  /** Danger-coloured, for a destructive action. */
+  destructive?: boolean;
 }
 
 export interface PageHeaderProps {
-  eyebrow?: string;
-  title: string;
+  /** The section the page belongs to, above the title ("Data Sekolah"). */
+  eyebrow?: ReactNode;
+  title: ReactNode;
+  /** One sentence under the title, at most a line and a half wide. */
+  description?: ReactNode;
+  /** The trail to this page: items, or a ready Breadcrumb. */
+  breadcrumb?: PageHeaderBreadcrumbItem[] | ReactNode;
+  /** Free-form controls beside the title (filters, a select); they wrap under it on a phone. */
   actions?: ReactNode;
-  breadcrumb?: PageHeaderBreadcrumbItem[];
+  /** The page's one main action, always visible, rightmost. */
+  primaryAction?: ReactNode;
+  /** Further actions: buttons from 640px up, one overflow menu on a phone. */
+  secondaryActions?: PageHeaderAction[];
+  /** A rule under the header; off by default, as in the artboard (sections are set apart by space). */
+  divider?: boolean;
   className?: string;
 }
 
-/** Page title in Manrope 700, with a muted eyebrow above it (docs/07-ui-ux.md, "Hijau Segar"). */
-export function PageHeader({ eyebrow, title, actions, breadcrumb, className }: PageHeaderProps) {
+function SecondaryButtons({ actions }: { actions: PageHeaderAction[] }) {
   return (
-    <div className={cn("flex flex-col gap-2 border-b border-line pb-4", className)}>
-      {breadcrumb && breadcrumb.length > 0 && (
-        <nav
-          aria-label="Navigasi halaman"
-          className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-body-sm text-fg-muted"
-        >
-          {breadcrumb.map((item, index) => (
-            <span key={`${item.label}-${index}`} className="flex items-center gap-1">
-              {index > 0 && <ChevronRight className="size-3.5" aria-hidden="true" />}
-              {item.href ? (
-                <a href={item.href} className="transition-colors hover:text-fg hover:underline">
-                  {item.label}
-                </a>
-              ) : (
-                <span aria-current="page">{item.label}</span>
-              )}
-            </span>
-          ))}
-        </nav>
+    <div className="hidden sm:contents">
+      {actions.map((action) =>
+        action.href && !action.disabled ? (
+          <Button key={action.label} asChild variant="secondary" icon={action.icon}>
+            <UiLink href={action.href}>{action.label}</UiLink>
+          </Button>
+        ) : (
+          <Button
+            key={action.label}
+            variant="secondary"
+            icon={action.icon}
+            disabled={action.disabled}
+            onClick={action.onSelect}
+          >
+            {action.label}
+          </Button>
+        ),
       )}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          {eyebrow && <p className="text-body-sm text-fg-muted">{eyebrow}</p>}
-          <h1 className="text-display text-fg">{title}</h1>
+    </div>
+  );
+}
+
+function OverflowMenu({ actions, className }: { actions: PageHeaderAction[]; className: string }) {
+  const labels = useUiLabels();
+  return (
+    <div className={className}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <IconButton
+            variant="outline"
+            icon={<Ellipsis />}
+            aria-label={labels.pageHeaderMoreActions}
+            className="rounded-full bg-surface"
+          />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-48">
+          {actions.map((action) => (
+            <DropdownMenuItem
+              key={action.label}
+              disabled={action.disabled}
+              onSelect={action.onSelect}
+              asChild={Boolean(action.href) && !action.disabled}
+              className={cn("min-h-11 [&>svg]:size-4", action.destructive && "text-danger")}
+            >
+              {action.href && !action.disabled ? (
+                <UiLink href={action.href}>
+                  {action.icon}
+                  {action.label}
+                </UiLink>
+              ) : (
+                <>
+                  {action.icon}
+                  {action.label}
+                </>
+              )}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
+/**
+ * The top of every page (docs/07-ui-ux.md, "Hijau Segar"): breadcrumb,
+ * muted eyebrow, the title on the display role, an optional description,
+ * and the page's actions centred on the title line. On a phone the
+ * actions move under the title and secondary ones collapse into a menu.
+ */
+export function PageHeader({
+  eyebrow,
+  title,
+  description,
+  breadcrumb,
+  actions,
+  primaryAction,
+  secondaryActions = [],
+  divider = false,
+  className,
+}: PageHeaderProps) {
+  const crumbs = Array.isArray(breadcrumb) ? (
+    <Breadcrumb items={breadcrumb} />
+  ) : isValidElement(breadcrumb) ? (
+    breadcrumb
+  ) : null;
+  const hasActions = Boolean(actions) || Boolean(primaryAction) || secondaryActions.length > 0;
+  // A destructive action never sits out as a button: it waits in the menu
+  // at every width, where it takes a deliberate second tap.
+  const buttons = secondaryActions.filter((action) => !action.destructive);
+  const destructive = secondaryActions.filter((action) => action.destructive);
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-2",
+        divider ? "border-b border-line pb-4" : "pb-2",
+        className,
+      )}
+    >
+      {crumbs}
+      <div className="flex flex-col gap-1">
+        {eyebrow && <p className="text-body-sm text-fg-muted">{eyebrow}</p>}
+        {/* One column on a phone (title, description, then actions); from
+            640px the actions share the title's row and the description
+            runs under both. */}
+        <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-x-6">
+          <h1 className="min-w-0 text-display text-fg">{title}</h1>
+          {hasActions && (
+            <div className="order-last flex flex-wrap items-center gap-2 max-sm:mt-1 sm:order-none sm:justify-end">
+              {actions}
+              {buttons.length > 0 && <SecondaryButtons actions={buttons} />}
+              {primaryAction}
+              {secondaryActions.length > 0 && (
+                <OverflowMenu actions={secondaryActions} className="sm:hidden" />
+              )}
+              {destructive.length > 0 && (
+                <OverflowMenu actions={destructive} className="hidden sm:block" />
+              )}
+            </div>
+          )}
+          {description && (
+            <div className="max-w-prose text-body text-fg-muted sm:col-span-2">{description}</div>
+          )}
         </div>
-        {/* Wraps on a phone so two long action labels never push the page sideways. */}
-        {actions && <div className="flex flex-wrap items-center gap-2 md:shrink-0">{actions}</div>}
       </div>
     </div>
   );

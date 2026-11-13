@@ -1,20 +1,63 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Decorator, Meta, StoryObj } from "@storybook/react";
 
 import { Alert } from "./alert.js";
+import { Button } from "./button.js";
+
+const phoneFrame: Decorator = (Story) => (
+  <div className="mx-auto w-[390px] max-w-full p-4">
+    <Story />
+  </div>
+);
 
 const meta: Meta<typeof Alert> = {
   title: "Components/Alert",
   component: Alert,
+  parameters: { layout: "padded" },
 };
 export default meta;
 type Story = StoryObj<typeof Alert>;
 
-export const Info: Story = {
-  args: {
-    title: "Tahun ajaran 2026/2027 belum diaktifkan",
-    children: "Beberapa laporan akan kosong sampai tahun ajaran diaktifkan.",
-  },
-};
-export const Warning: Story = {
-  args: { variant: "warning", title: "Sesi presensi akan ditutup dalam 5 menit" },
+function Gallery() {
+  return (
+    <div className="flex max-w-3xl flex-col gap-3">
+      <Alert title="Tahun ajaran 2026/2027 belum diaktifkan">
+        Beberapa laporan akan kosong sampai tahun ajaran diaktifkan.
+      </Alert>
+      <Alert variant="success" title="Dokumen asli diterbitkan sekolah">
+        Surat keterangan ini diterbitkan SMA Contoh pada 12 November 2026.
+      </Alert>
+      <Alert
+        variant="warning"
+        title="Sesi presensi ditutup dalam 5 menit"
+        action={
+          <Button size="sm" variant="secondary">
+            Kirim sekarang
+          </Button>
+        }
+      />
+      <Alert
+        variant="danger"
+        title="Data gagal dimuat"
+        action={
+          <Button size="sm" variant="secondary">
+            Coba lagi
+          </Button>
+        }
+        onDismiss={() => undefined}
+      >
+        Periksa koneksi lalu coba lagi. Kode galat: NETWORK_TIMEOUT.
+      </Alert>
+      <Alert variant="info" onDismiss={() => undefined}>
+        Hanya deskripsi, tanpa judul: dipakai untuk catatan singkat di atas formulir.
+      </Alert>
+    </div>
+  );
+}
+
+export const Default: Story = { render: () => <Gallery /> };
+export const Dark: Story = { globals: { theme: "dark" }, render: () => <Gallery /> };
+export const Phone: Story = {
+  parameters: { layout: "fullscreen" },
+  decorators: [phoneFrame],
+  render: () => <Gallery />,
 };

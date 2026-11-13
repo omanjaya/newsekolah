@@ -3,40 +3,56 @@ import type { ComponentPropsWithoutRef } from "react";
 
 import { cn } from "../utils/cn.js";
 
+import { Badge, type BadgeAppearance, type BadgeSize } from "./badge.js";
+
 export type { StatusName };
 
-const STATUS_CLASS: Record<StatusName, string> = {
-  present: "text-status-present",
-  sick: "text-status-sick",
-  excused: "text-status-excused",
-  dispensation: "text-status-dispensation",
-  absent: "text-status-absent",
-  late: "text-status-late",
+// The attendance palette appears only as the dot: `late` and `sick` are
+// two different oranges, too close to tell apart as tinted fills, and the
+// label carries the meaning anyway.
+const STATUS_DOT_CLASS: Record<StatusName, string> = {
+  present: "bg-status-present",
+  sick: "bg-status-sick",
+  excused: "bg-status-excused",
+  dispensation: "bg-status-dispensation",
+  absent: "bg-status-absent",
+  late: "bg-status-late",
 };
 
 export interface StatusBadgeProps extends Omit<ComponentPropsWithoutRef<"span">, "children"> {
   status: StatusName;
   /** Overrides the default Indonesian label (e.g. for @newsekolah/i18n's "en" catalog). */
   label?: string;
+  size?: BadgeSize;
+  /** `soft` (default) or `outline`; a solid fill is not offered for attendance. */
+  appearance?: Exclude<BadgeAppearance, "solid">;
 }
 
 /**
- * Maps a status code to its token color. Always renders a text label next
- * to the dot, never color alone, per DESIGN.md ("selalu disertai label teks
- * atau ikon") for accessible status feedback.
+ * An attendance status as a pill with a dot in its token colour. Always a
+ * text label next to the colour, never colour alone (docs/07-ui-ux.md
+ * section 6), and the same pill shape as every other status in the product.
  */
-export function StatusBadge({ status, label, className, ...props }: StatusBadgeProps) {
+export function StatusBadge({
+  status,
+  label,
+  size,
+  appearance = "soft",
+  className,
+  ...props
+}: StatusBadgeProps) {
   return (
-    <span
-      className={cn("inline-flex items-center gap-1.5 text-body-sm font-medium", className)}
+    <Badge
+      tone="neutral"
+      appearance={appearance}
+      size={size}
+      dot
+      dotClassName={STATUS_DOT_CLASS[status]}
+      data-status={status}
+      className={cn("text-fg", className)}
       {...props}
     >
-      <span
-        className={cn("size-2 shrink-0 rounded-xs", STATUS_CLASS[status])}
-        style={{ backgroundColor: "currentColor" }}
-        aria-hidden="true"
-      />
-      <span className={STATUS_CLASS[status]}>{label ?? statusNames[status]}</span>
-    </span>
+      {label ?? statusNames[status]}
+    </Badge>
   );
 }
