@@ -191,6 +191,27 @@ describe("DataTable rows and cards", () => {
     expect(within(header).getByText("Aksi")).toHaveClass("sr-only");
   });
 
+  it('treats a data column named "action" as data, not as the row actions', () => {
+    const auditColumns: ColumnDef<Row>[] = [
+      { accessorKey: "name", header: "Entitas" },
+      { id: "action", accessorKey: "role", header: "Aksi" },
+    ];
+    render(<DataTable mode="local" data={ROWS.slice(0, 1)} columns={auditColumns} />);
+    const header = screen.getByRole("columnheader", { name: "Aksi" });
+    expect(header).not.toHaveClass("w-px");
+    expect(header).toHaveClass("text-left");
+    expect(within(header).getByText("Aksi")).not.toHaveClass("sr-only");
+    const cell = within(screen.getByRole("table")).getByRole("cell", { name: "Siswa" });
+    expect(cell).not.toHaveClass("w-px");
+    const [card] = cards();
+    if (!card) throw new Error("Missing card");
+    expect(
+      within(card)
+        .getAllByRole("term")
+        .map((term) => term.textContent),
+    ).toEqual(["Aksi"]);
+  });
+
   it("puts the table's own actions in the toolbar", () => {
     render(
       <DataTable

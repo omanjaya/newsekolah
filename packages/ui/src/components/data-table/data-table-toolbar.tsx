@@ -16,7 +16,7 @@ import { IconButton } from "../icon-button.js";
 import { SearchInput } from "../search-input.js";
 import { useUiLabels, type UiLabels } from "../ui-labels.js";
 
-import { isActionsColumn, SELECT_COLUMN_ID } from "./column-meta.js";
+import { isListedInColumnMenu } from "./column-meta.js";
 import {
   DataTableFilters,
   type DataTableFilterDef,
@@ -111,8 +111,7 @@ function hideableColumns<TData>(
     .filter(
       (column) =>
         column.getCanHide() &&
-        column.id !== SELECT_COLUMN_ID &&
-        !isActionsColumn(column) &&
+        isListedInColumnMenu(column) &&
         columnLabels[column.id] !== undefined,
     );
 }
