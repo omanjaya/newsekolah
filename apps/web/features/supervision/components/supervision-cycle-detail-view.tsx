@@ -63,7 +63,7 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
       },
       {
         id: "actions",
-        header: "",
+        header: t("columns.actions"),
         enableSorting: false,
         cell: ({ row }) =>
           canManage && cycle.data ? (

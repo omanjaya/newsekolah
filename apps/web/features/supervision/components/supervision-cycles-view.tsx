@@ -56,7 +56,7 @@ export function SupervisionCyclesView(): ReactElement {
       ...base,
       {
         id: "actions",
-        header: "",
+        header: t("columns.actions"),
         enableSorting: false,
         cell: ({ row }) => (
           <IconButton

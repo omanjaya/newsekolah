@@ -8,6 +8,8 @@
     "scaleMin": "Scale minimum",
     "scaleMax": "Scale maximum",
     "criteria": "Criteria",
+    "criterionKeyLabel": "Criterion {index} key",
+    "criterionNameLabel": "Criterion {index} name",
     "criterionKeyPlaceholder": "Key",
     "criterionNamePlaceholder": "Criterion name",
     "removeCriterion": "Remove criterion",
@@ -19,6 +21,7 @@
     "add": "Create cycle",
     "edit": "Edit",
     "columns": {
+      "actions": "Actions",
       "name": "Cycle name",
       "criteria": "Criteria",
       "scale": "Scale"
@@ -37,6 +40,7 @@
   },
   "cycleDetail": {
     "columns": {
+      "actions": "Actions",
       "lessonDate": "Lesson date",
       "teacher": "Teacher"
     },

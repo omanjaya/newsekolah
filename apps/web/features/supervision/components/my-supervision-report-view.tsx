@@ -1,8 +1,10 @@
 "use client";
 
 import { EmptyState, PageHeader, Select, Skeleton, domainIcons } from "@newsekolah/ui";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+import { useEffect } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
@@ -16,7 +18,14 @@ import { TeacherSupervisionReportView } from "./teacher-supervision-report-view"
 export function MySupervisionReportView(): ReactElement {
   const t = useTranslations("app.supervision.myReport");
   const { me } = useSession();
+  const router = useRouter();
   const cycles = useSupervisionCyclesQuery();
+  // The personal report only exists for teaching staff; the workspace nav does not
+  // offer it to anyone else, so an admin who lands here by URL goes to the cycles.
+  const notATeacher = me !== undefined && me.profile_kind !== "teacher";
+  useEffect(() => {
+    if (notATeacher) router.replace("/supervision/cycles");
+  }, [notATeacher, router]);
 
   const [selectedCycleId, setSelectedCycleId] = useUrlState(
     "cycle",
@@ -25,6 +34,8 @@ export function MySupervisionReportView(): ReactElement {
   );
   const cycleId = selectedCycleId || (cycles.data?.data[0]?.id ?? "");
   const cycleOptions = (cycles.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
+
+  if (notATeacher) return <Skeleton className="m-6 h-48" aria-busy="true" />;
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
