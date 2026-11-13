@@ -41,8 +41,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       >
         <SwitchPrimitive.Thumb
           className={cn(
-            "block size-3.5 translate-x-0.5 rounded-xs bg-surface transition-transform",
-            "duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
+            "motion-indicator block size-3.5 translate-x-0.5 rounded-xs bg-surface",
             "data-[state=checked]:translate-x-[18px]",
           )}
         />

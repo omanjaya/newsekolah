@@ -30,8 +30,8 @@ export const DropdownMenuContent = forwardRef<
         ref={ref}
         sideOffset={sideOffset}
         className={cn(
-          "z-(--z-dropdown) min-w-40 rounded-md border border-border bg-surface p-1",
-          "shadow-(--shadow-float) data-[state=open]:animate-overlay-in",
+          "z-dropdown min-w-40 rounded-md border border-border bg-surface-raised p-1 shadow-2",
+          "data-[state=open]:animate-popover-in data-[state=closed]:animate-popover-out",
           className,
         )}
         {...props}

@@ -43,7 +43,9 @@ test("leave request: submit -> homeroom queue live -> approve -> student status 
     // previous failed run can leave an unrelated item behind) by waiting
     // out the loading skeleton, matching apps/web/e2e/smoke/fixtures.ts's
     // waitForSkeletonsGone.
-    await expect(homeroom.page.locator(".animate-pulse")).toHaveCount(0, { timeout: 20_000 });
+    await expect(homeroom.page.locator('[data-slot="skeleton"], .animate-pulse')).toHaveCount(0, {
+      timeout: 20_000,
+    });
     // A small margin past the query settling, for the WS topic subscribe
     // message (fired once `me.duties` resolves) to actually reach the
     // server -- see the comment above.

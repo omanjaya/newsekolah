@@ -49,32 +49,32 @@ export function CommandPalette({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay
           className={cn(
-            "fixed inset-0 z-(--z-overlay) bg-black/40",
+            "fixed inset-0 z-overlay bg-scrim",
             "data-[state=open]:animate-overlay-in data-[state=closed]:animate-overlay-out",
           )}
         />
         <DialogPrimitive.Content
           className={cn(
-            "fixed left-1/2 top-4 z-(--z-modal) max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 overflow-y-auto md:top-24 md:max-h-[calc(100dvh-7rem)]",
-            "rounded-md border border-border bg-surface shadow-(--shadow-float)",
+            "fixed left-1/2 top-4 z-modal max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 overflow-y-auto md:top-24 md:max-h-[calc(100dvh-7rem)]",
+            "rounded-lg border border-border bg-surface-overlay shadow-3",
             "data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out",
           )}
         >
           <DialogPrimitive.Title className="sr-only">{label}</DialogPrimitive.Title>
-          <CommandPrimitive label={label} className="flex flex-col overflow-hidden rounded-md">
+          <CommandPrimitive label={label} className="flex flex-col overflow-hidden rounded-lg">
             <div className="flex items-center gap-2 border-b border-border px-3">
               <Search className="size-4 text-fg-muted" aria-hidden="true" />
               <CommandPrimitive.Input
                 placeholder={placeholder}
                 onValueChange={onSearchChange}
                 className={cn(
-                  "h-11 w-full bg-transparent text-[14px] text-fg outline-none",
+                  "h-11 w-full bg-transparent text-body text-fg outline-none",
                   "placeholder:text-fg-muted",
                 )}
               />
             </div>
             <CommandPrimitive.List className="max-h-80 overflow-y-auto p-1">
-              <CommandPrimitive.Empty className="py-6 text-center text-[13px] text-fg-muted">
+              <CommandPrimitive.Empty className="py-6 text-center text-body-sm text-fg-muted">
                 {emptyLabel}
               </CommandPrimitive.Empty>
               {groups.map((group) => (
@@ -83,7 +83,7 @@ export function CommandPalette({
                   heading={group.heading}
                   className={cn(
                     "[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5",
-                    "[&_[cmdk-group-heading]]:text-[12px] [&_[cmdk-group-heading]]:font-medium",
+                    "[&_[cmdk-group-heading]]:text-caption",
                     "[&_[cmdk-group-heading]]:text-fg-muted",
                   )}
                 >
@@ -94,8 +94,8 @@ export function CommandPalette({
                       keywords={item.keywords}
                       onSelect={item.onSelect}
                       className={cn(
-                        "flex min-h-11 cursor-pointer items-center gap-2 rounded-xs px-2 py-2 text-[13px] text-fg md:min-h-9",
-                        "data-[selected=true]:bg-bg",
+                        "flex min-h-11 cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-body-sm text-fg md:min-h-9",
+                        "transition-colors data-[selected=true]:bg-state-hover",
                       )}
                     >
                       {item.icon && (
@@ -105,7 +105,7 @@ export function CommandPalette({
                       )}
                       <span className="flex-1">{item.label}</span>
                       {item.shortcut && (
-                        <span className="text-[12px] text-fg-muted">{item.shortcut}</span>
+                        <span className="text-caption text-fg-muted">{item.shortcut}</span>
                       )}
                     </CommandPrimitive.Item>
                   ))}

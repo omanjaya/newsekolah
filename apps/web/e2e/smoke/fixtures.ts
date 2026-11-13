@@ -89,9 +89,15 @@ export async function assertNoHorizontalOverflow(page: Page): Promise<void> {
   ).toBeLessThanOrEqual(innerWidth + 1);
 }
 
-/** Waits out the shared `Skeleton` (`.animate-pulse`) loading placeholder before asserting on real content. */
+/** Loading placeholders: the shared `Skeleton` and older hand-made pulses. */
+export const SKELETON_SELECTOR = '[data-slot="skeleton"], .animate-pulse';
+
+/**
+ * Waits out the shared `Skeleton` (`data-slot="skeleton"`) and any hand-made
+ * `.animate-pulse` loading placeholder before asserting on real content.
+ */
 export async function waitForSkeletonsGone(page: Page): Promise<void> {
-  await expect(page.locator(".animate-pulse")).toHaveCount(0, { timeout: 20_000 });
+  await expect(page.locator(SKELETON_SELECTOR)).toHaveCount(0, { timeout: 20_000 });
 }
 
 async function fillLoginForm(page: Page, username: string): Promise<void> {

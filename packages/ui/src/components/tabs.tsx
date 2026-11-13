@@ -31,9 +31,10 @@ export const TabsTrigger = forwardRef<
         // 44px tall on a phone the same way Button does.
         "flex min-h-11 items-center justify-center rounded-full px-4 text-[13px] font-medium text-fg-muted",
         "md:min-h-0 md:h-8",
-        "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
+        // The active pill's fill and shadow fade in with the text color.
+        "transition-[color,background-color,box-shadow]",
         "hover:text-fg",
-        "data-[state=active]:bg-surface data-[state=active]:text-fg data-[state=active]:shadow-(--shadow-card)",
+        "data-[state=active]:bg-surface data-[state=active]:text-fg data-[state=active]:shadow-1",
         className,
       )}
       {...props}

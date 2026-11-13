@@ -41,7 +41,9 @@ test("resilience: homeroom offline -> student submits -> resync on reconnect", a
     await homeroom.page.goto("/inbox");
     // Waits for the query to settle, not specifically an empty queue --
     // see leave-request.spec.ts's identical comment.
-    await expect(homeroom.page.locator(".animate-pulse")).toHaveCount(0, { timeout: 20_000 });
+    await expect(homeroom.page.locator('[data-slot="skeleton"], .animate-pulse')).toHaveCount(0, {
+      timeout: 20_000,
+    });
     await homeroom.page.waitForTimeout(1_000);
 
     await homeroom.context.setOffline(true);

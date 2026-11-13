@@ -108,7 +108,7 @@ describe("AuthLayout brand consistency across breakpoints", () => {
 
     expect(screen.queryByText("SION")).not.toBeInTheDocument();
     // Two skeleton blocks (mark + name) in the mobile header and two in the desktop hero.
-    expect(container.querySelectorAll(".animate-pulse")).toHaveLength(4);
+    expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(4);
     // The decorative initials watermark ("SI", from the SION fallback) is left
     // out entirely while loading, not shown faint-but-wrong.
     expect(screen.queryByText("SI")).not.toBeInTheDocument();

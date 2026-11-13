@@ -40,7 +40,8 @@ export function StickySaveBar({
   return (
     <div
       className={cn(
-        "fixed inset-x-0 bottom-[var(--shell-mobile-tab-offset)] z-(--z-sticky) border-t border-border bg-surface px-4 py-3 md:bottom-0 md:left-[var(--shell-sidebar-width)]",
+        "fixed inset-x-0 bottom-[var(--shell-mobile-tab-offset)] z-sticky border-t border-border bg-surface px-4 py-3 md:bottom-0 md:left-[var(--shell-sidebar-width)]",
+        "animate-rise-in",
         className,
       )}
     >

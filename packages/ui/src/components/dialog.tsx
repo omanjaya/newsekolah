@@ -17,7 +17,7 @@ function DialogOverlay({
   return (
     <DialogPrimitive.Overlay
       className={cn(
-        "fixed inset-0 z-(--z-overlay) bg-black/40",
+        "fixed inset-0 z-overlay bg-scrim",
         "data-[state=open]:animate-overlay-in data-[state=closed]:animate-overlay-out",
         className,
       )}
@@ -53,13 +53,13 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
           // The width leaves a margin on a phone: a dialog flush against
           // both screen edges reads as a page, not as something on top of
           // one, and leaves nowhere to tap to dismiss it.
-          "fixed left-1/2 top-1/2 z-(--z-modal) w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2",
+          "fixed left-1/2 top-1/2 z-modal w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2",
           // A form long enough to outgrow the screen would otherwise run
           // off the top and bottom with no way to reach either end, since
           // the dialog is centred rather than anchored. Cap it and let its
           // own body scroll.
           "flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden",
-          "rounded-lg border border-border bg-surface shadow-(--shadow-float)",
+          "rounded-lg border border-border bg-surface-overlay shadow-3",
           "data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out",
           className,
         )}
@@ -70,18 +70,16 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
         ) : (
           <div className="flex shrink-0 items-start justify-between gap-4 px-4 py-4 md:px-6">
             <div className="flex flex-col gap-1">
-              <DialogPrimitive.Title className="font-heading text-[16px] font-bold tracking-tight text-fg">
-                {title}
-              </DialogPrimitive.Title>
+              <DialogPrimitive.Title className="text-title text-fg">{title}</DialogPrimitive.Title>
               {description && (
-                <DialogPrimitive.Description className="text-[13px] text-fg-muted">
+                <DialogPrimitive.Description className="text-body-sm text-fg-muted">
                   {description}
                 </DialogPrimitive.Description>
               )}
             </div>
             <DialogPrimitive.Close
               aria-label={resolvedCloseLabel}
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-fg-muted hover:bg-bg"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-state-hover hover:text-fg active:bg-state-pressed"
             >
               <X className="size-4" aria-hidden="true" />
             </DialogPrimitive.Close>

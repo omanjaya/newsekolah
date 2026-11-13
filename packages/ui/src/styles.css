@@ -2,8 +2,9 @@
  * @newsekolah/ui/styles.css
  *
  * Import once at the app root, after Tailwind: it pulls in the token
- * preset and layers base rules DESIGN.md requires everywhere (visible
- * focus rings, reduced-motion, tabular numerals in tables).
+ * preset and layers the base rules every screen needs (visible focus
+ * rings, tabular numerals in tables) plus the motion vocabulary of
+ * docs/superpowers/specs/2026-11-14-ui-overhaul-design.md section 4.
  */
 @import "tailwindcss";
 @import "@newsekolah/config/tailwind/preset.css";
@@ -18,7 +19,7 @@
 
 @layer base {
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
   }
 
@@ -29,18 +30,31 @@
   }
 }
 
-/*
- * Radix content mounts/unmounts rather than staying in the DOM, so these
- * play on `data-state` instead of Tailwind's enter/exit variants (which need
- * an element present in both states). Durations reference the token scale:
- * 200ms for opening/closing a dialog or menu, per DESIGN.md's motion section.
- */
-@keyframes overlay-in {
+/* ------------------------------------------------------------------------
+ * Motion
+ *
+ * Only opacity, transform and color move (plus the two layout cases at the
+ * end). Nothing runs longer than 320ms, nothing bounces, and nothing loops
+ * except the skeleton shimmer, spinners and the live dot. Keyframes animate
+ * `transform`, never the `translate`/`scale` properties Tailwind's own
+ * utilities use, so an entering element keeps its own positioning (a
+ * centred dialog's `-translate-x-1/2` composes with the keyframe's scale).
+ * Distances and scales are token variables, which the reduced-motion block
+ * zeroes: the same keyframes then play as plain fades.
+ * ---------------------------------------------------------------------- */
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-rise));
+  }
+}
+@keyframes fade-in {
   from {
     opacity: 0;
   }
 }
-@keyframes overlay-out {
+@keyframes fade-out {
   to {
     opacity: 0;
   }
@@ -48,52 +62,269 @@
 @keyframes dialog-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.98);
+    transform: scale(var(--motion-scale-dialog));
   }
 }
 @keyframes dialog-out {
   to {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.98);
+    transform: scale(var(--motion-scale-dialog));
   }
 }
-@keyframes sheet-in {
+@keyframes slide-up-in {
   from {
-    transform: translateY(100%);
+    opacity: var(--motion-slide-opacity, 1);
+    transform: translateY(var(--motion-slide-offset, 100%));
   }
 }
-@keyframes sheet-out {
+@keyframes slide-down-out {
   to {
-    transform: translateY(100%);
+    opacity: var(--motion-slide-opacity, 1);
+    transform: translateY(var(--motion-slide-offset, 100%));
+  }
+}
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--motion-popover-x, 0), var(--motion-popover-y, 0));
+  }
+}
+@keyframes popover-out {
+  to {
+    opacity: 0;
+    transform: translate(var(--motion-popover-x, 0), var(--motion-popover-y, 0));
+  }
+}
+@keyframes live {
+  50% {
+    opacity: 0.4;
   }
 }
 
+/*
+ * Skeleton shimmer: the highlight's position is a registered custom
+ * property, so one animation on a container (a skeleton table row) drives
+ * every `.skeleton` inside it through inheritance, instead of one running
+ * animation per cell.
+ */
+@property --skeleton-shine-x {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 150%;
+}
+@keyframes shimmer {
+  from {
+    --skeleton-shine-x: 150%;
+  }
+  to {
+    --skeleton-shine-x: -50%;
+  }
+}
+
+/* 1. Content enter: fade and rise once, staggered by `--stagger` (0-5, 40ms apart). */
+@utility animate-enter {
+  animation: enter var(--duration-base) var(--ease-enter) both;
+  animation-delay: calc(
+    min(var(--stagger, 0), var(--motion-stagger-max)) * var(--motion-stagger-step)
+  );
+}
+@utility animate-fade-in {
+  animation: fade-in var(--duration-fast) var(--ease-standard) both;
+}
+@utility animate-fade-out {
+  animation: fade-out var(--duration-fast) var(--ease-exit) both;
+}
+
+/* 2. Layers. Radix mounts and unmounts these, so they key off data-state. */
 @utility animate-overlay-in {
-  animation: overlay-in var(--duration-base) var(--ease-standard);
+  animation: fade-in var(--duration-base) var(--ease-standard);
 }
 @utility animate-overlay-out {
-  animation: overlay-out var(--duration-base) var(--ease-standard);
+  animation: fade-out var(--duration-base) var(--ease-exit);
 }
 @utility animate-dialog-in {
-  animation: dialog-in var(--duration-base) var(--ease-standard);
+  animation: dialog-in var(--duration-base) var(--ease-enter);
 }
 @utility animate-dialog-out {
-  animation: dialog-out var(--duration-base) var(--ease-standard);
+  animation: dialog-out var(--duration-fast) var(--ease-exit);
 }
 @utility animate-sheet-in {
-  animation: sheet-in var(--duration-base) var(--ease-standard);
+  animation: slide-up-in var(--duration-slow) var(--ease-enter);
 }
 @utility animate-sheet-out {
-  animation: sheet-out var(--duration-base) var(--ease-standard);
+  animation: slide-down-out var(--duration-base) var(--ease-exit);
+}
+/* A bar that appears at the bottom edge (StickySaveBar): the sheet's slide, at the faster pace. */
+@utility animate-rise-in {
+  animation: slide-up-in var(--duration-base) var(--ease-enter);
 }
 
+/*
+ * Popover, menu, select and tooltip: fade and travel 4px away from the
+ * anchor (Radix sets `data-side` on the content). 160ms in, the upper end
+ * of the 120-160ms the spec gives these, and 120ms out.
+ */
+@utility animate-popover-in {
+  animation: popover-in calc(var(--duration-base) * 0.8) var(--ease-enter);
+  &[data-side="top"] {
+    --motion-popover-y: var(--motion-shift);
+  }
+  &[data-side="bottom"] {
+    --motion-popover-y: calc(var(--motion-shift) * -1);
+  }
+  &[data-side="left"] {
+    --motion-popover-x: var(--motion-shift);
+  }
+  &[data-side="right"] {
+    --motion-popover-x: calc(var(--motion-shift) * -1);
+  }
+}
+@utility animate-popover-out {
+  animation: popover-out var(--duration-fast) var(--ease-exit);
+  &[data-side="top"] {
+    --motion-popover-y: var(--motion-shift);
+  }
+  &[data-side="bottom"] {
+    --motion-popover-y: calc(var(--motion-shift) * -1);
+  }
+  &[data-side="left"] {
+    --motion-popover-x: var(--motion-shift);
+  }
+  &[data-side="right"] {
+    --motion-popover-x: calc(var(--motion-shift) * -1);
+  }
+}
+
+/* 3. Feedback loops: the skeleton's slow shimmer and the 2s "in progress" dot. */
+@utility skeleton {
+  background-color: var(--color-skeleton);
+  background-image: linear-gradient(
+    90deg,
+    transparent 30%,
+    var(--color-skeleton-shine) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  background-position: var(--skeleton-shine-x) 0;
+}
+@utility animate-shimmer {
+  animation: shimmer var(--motion-loop-shimmer) linear infinite;
+}
+@utility animate-live {
+  animation: live var(--motion-loop-pulse) ease-in-out infinite;
+}
+
+/*
+ * 4. Press feedback: Button, clickable cards, bottom tab items. Shrinks to
+ * 0.98 in 80ms while held and settles back at the normal 120ms; text links
+ * and table rows do not use it. It carries its own transition list (colors,
+ * shadow, scale), so it replaces `transition-colors` on the element.
+ */
+@utility motion-press {
+  transition-property:
+    color, background-color, border-color, outline-color, text-decoration-color, fill, stroke,
+    opacity, box-shadow, scale;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-standard);
+  &:active:not(:disabled, [aria-disabled="true"]) {
+    scale: var(--motion-scale-press);
+    transition-duration: var(--duration-instant);
+  }
+}
+
+/*
+ * 5. Indicators: an element that moves or resizes to follow a state (a tab
+ * pill positioned from measured `--indicator-*` values, a progress fill,
+ * a switch thumb). `motion-indicator` is the 200ms pace, `motion-meter`
+ * the slower 320ms one for progress and meters.
+ */
+@utility motion-indicator {
+  transition-property: transform, translate, scale, width, height, left, top, opacity;
+  transition-duration: var(--duration-base);
+  transition-timing-function: var(--ease-standard);
+}
+@utility motion-meter {
+  transition-property: transform, translate, scale, width;
+  transition-duration: var(--duration-slow);
+  transition-timing-function: var(--ease-standard);
+}
+
+/*
+ * 6. Layout: the sidebar's width and a navigation group opening through
+ * `grid-template-rows` (0fr to 1fr), both at 200ms. The collapsible's
+ * single child needs `min-height: 0` / `overflow: hidden`, which
+ * `motion-collapse` applies.
+ */
+@utility motion-layout {
+  transition-property: width, grid-template-rows, padding, margin;
+  transition-duration: var(--duration-base);
+  transition-timing-function: var(--ease-standard);
+}
+@utility motion-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--duration-base) var(--ease-standard);
+  & > * {
+    min-height: 0;
+    overflow: hidden;
+  }
+  &[data-state="open"] {
+    grid-template-rows: 1fr;
+  }
+}
+
+/* A horizontally scrolling strip (TabsList on a phone) without a visible scrollbar. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/*
+ * Toasts (sonner): slide and fade in over 200ms, out over 120ms, instead of
+ * sonner's own 400ms. Only durations and curves change, so sonner's swipe
+ * (`transition: none`) and stacking rules keep working as they are.
+ */
+[data-sonner-toaster] [data-sonner-toast] {
+  transition-duration: var(--duration-base);
+  transition-timing-function: var(--ease-enter);
+}
+[data-sonner-toaster] [data-sonner-toast][data-removed="true"] {
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-exit);
+}
+
+/*
+ * Reduced motion: nothing moves, short fades stay. The token layer has
+ * already zeroed rise, shift and scale and capped every duration at 120ms
+ * (packages/ui-tokens), so the keyframes above play as fades; this block
+ * turns the slides into fades too, stops the decorative loops, and strips
+ * transform and layout properties from every transition so state changes
+ * (a switch thumb, a progress fill) jump instead of travelling. Spinners
+ * keep turning: they are the only sign that something is still working.
+ */
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-slide-offset: 0px;
+    --motion-slide-opacity: 0;
+  }
+
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+    transition-property:
+      color, background-color, border-color, outline-color, text-decoration-color, fill, stroke,
+      opacity, box-shadow !important;
+  }
+
+  .animate-shimmer,
+  .animate-live,
+  .animate-pulse,
+  .animate-ping,
+  .animate-bounce {
+    animation: none !important;
   }
 }

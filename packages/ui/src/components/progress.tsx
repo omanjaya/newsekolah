@@ -17,7 +17,7 @@ export function Progress({ value, label, className }: ProgressProps) {
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       {label && (
-        <span className="text-[13px] text-fg-muted" aria-hidden="true">
+        <span className="text-body-sm text-fg-muted" aria-hidden="true">
           {label}
         </span>
       )}
@@ -27,10 +27,10 @@ export function Progress({ value, label, className }: ProgressProps) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={label}
-        className="h-2 w-full overflow-hidden rounded-full bg-border/60"
+        className="h-2 w-full overflow-hidden rounded-full bg-surface-sunken"
       >
         <div
-          className="h-full w-full origin-left rounded-full bg-accent transition-transform duration-200 ease-out"
+          className="motion-meter h-full w-full origin-left rounded-full bg-accent"
           style={{ transform: `scaleX(${clamped / 100})` }}
         />
       </div>

@@ -3,15 +3,17 @@ import type { ComponentPropsWithoutRef } from "react";
 import { cn } from "../utils/cn.js";
 
 /**
- * Shape-of-content placeholder, not a shimmering brand moment: DESIGN.md
- * caps skeleton motion at 1 second before a real loading state should take
- * over. The pulse itself respects `prefers-reduced-motion` via styles.css.
+ * Shape-of-content placeholder with a slow (1.5s, linear) shimmer. It is
+ * the only looping motion besides spinners and the live dot, and it stops
+ * under `prefers-reduced-motion` (styles.css). Fade the real content in
+ * with `animate-fade-in` when it replaces the skeleton.
  */
 export function Skeleton({ className, ...props }: ComponentPropsWithoutRef<"div">) {
   return (
     <div
       role="presentation"
-      className={cn("animate-pulse rounded-xs bg-border/60", className)}
+      data-slot="skeleton"
+      className={cn("skeleton animate-shimmer rounded-xs", className)}
       {...props}
     />
   );

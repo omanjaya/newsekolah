@@ -30,35 +30,36 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay
         className={cn(
-          "fixed inset-0 z-(--z-overlay) bg-black/40",
+          "fixed inset-0 z-overlay bg-scrim",
           "data-[state=open]:animate-overlay-in data-[state=closed]:animate-overlay-out",
         )}
       />
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed inset-x-0 bottom-0 z-(--z-modal) flex max-h-[85dvh] flex-col overflow-hidden",
-          "rounded-t-lg border-t border-border bg-surface shadow-(--shadow-float)",
+          "fixed inset-x-0 bottom-0 z-modal flex max-h-[85dvh] flex-col overflow-hidden",
+          "rounded-t-xl border-t border-border bg-surface-raised shadow-3",
           "data-[state=open]:animate-sheet-in data-[state=closed]:animate-sheet-out",
           className,
         )}
         {...props}
       >
-        <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-border" aria-hidden="true" />
+        <div
+          className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-border-strong/50"
+          aria-hidden="true"
+        />
         <div className="flex shrink-0 items-start justify-between gap-4 px-4 py-4 md:px-6">
           <div className="flex flex-col gap-1">
-            <DialogPrimitive.Title className="font-heading text-[16px] font-bold tracking-tight text-fg">
-              {title}
-            </DialogPrimitive.Title>
+            <DialogPrimitive.Title className="text-title text-fg">{title}</DialogPrimitive.Title>
             {description && (
-              <DialogPrimitive.Description className="text-[13px] text-fg-muted">
+              <DialogPrimitive.Description className="text-body-sm text-fg-muted">
                 {description}
               </DialogPrimitive.Description>
             )}
           </div>
           <DialogPrimitive.Close
             aria-label={resolvedCloseLabel}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-fg-muted hover:bg-bg"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-state-hover hover:text-fg active:bg-state-pressed"
           >
             <X className="size-4" aria-hidden="true" />
           </DialogPrimitive.Close>

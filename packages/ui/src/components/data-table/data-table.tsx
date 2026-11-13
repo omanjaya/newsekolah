@@ -382,20 +382,22 @@ export function DataTable<TData>({
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- rows use roving focus for j/k/Enter activation. */}
           <tbody onKeyDown={handleKeyDown}>
             {isLoading ? (
-              // The pulse animates once per row (not per cell): one running
-              // animation per skeleton row instead of one per cell keeps the
-              // same look with far fewer concurrent animations on wide
-              // tables. See docs/16-audit-performa-web.md "Temuan menengah".
+              // The shimmer animates once per row (not per cell): the row
+              // drives an inherited custom property every placeholder reads,
+              // so a wide table runs one animation per skeleton row instead
+              // of one per cell. See docs/16-audit-performa-web.md "Temuan
+              // menengah" and `skeleton` in styles.css.
               Array.from({ length: skeletonRowCount }).map((_, index) => (
                 <tr
                   key={index}
-                  className={cn("animate-pulse border-b border-line", ROW_HEIGHT[density])}
+                  className={cn("animate-shimmer border-b border-line", ROW_HEIGHT[density])}
                 >
                   {columns.map((_column, columnIndex) => (
                     <td key={columnIndex} className={cn(CELL_PADDING[density], "align-middle")}>
                       <div
                         role="presentation"
-                        className="h-4 w-full max-w-40 rounded-xs bg-border/60"
+                        data-slot="skeleton"
+                        className="skeleton h-4 w-full max-w-40 rounded-xs"
                       />
                     </td>
                   ))}
