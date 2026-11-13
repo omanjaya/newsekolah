@@ -63,6 +63,7 @@ export {
   type DateRangePreset,
 } from "./components/date-range-picker.js";
 export { MonthPicker, type MonthPickerProps } from "./components/month-picker.js";
+export { TimePicker, type TimePickerProps } from "./components/time-picker.js";
 export { Switch, type SwitchProps } from "./components/switch.js";
 export {
   Form,

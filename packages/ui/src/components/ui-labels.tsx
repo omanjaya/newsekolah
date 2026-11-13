@@ -28,6 +28,9 @@ export interface UiLabels {
   dateRangePickerPresets: string;
   monthPickerPlaceholder: string;
   monthPickerClear: string;
+  timePickerPlaceholder: string;
+  timePickerShowOptions: string;
+  timePickerOptions: string;
 }
 
 const DEFAULT_UI_LABELS: UiLabels = {
@@ -52,6 +55,9 @@ const DEFAULT_UI_LABELS: UiLabels = {
   dateRangePickerPresets: "Rentang cepat",
   monthPickerPlaceholder: "Pilih bulan",
   monthPickerClear: "Hapus bulan",
+  timePickerPlaceholder: "Pilih jam",
+  timePickerShowOptions: "Tampilkan pilihan jam",
+  timePickerOptions: "Pilihan jam",
 };
 
 const UiLabelsContext = createContext<UiLabels>(DEFAULT_UI_LABELS);
