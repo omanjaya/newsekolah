@@ -100,6 +100,114 @@
         "selectedRows": "{count} baris dipilih",
         "selectAllRows": "Pilih semua baris",
         "selectRow": "Pilih baris"
+      },
+      "controls": {
+        "field": {
+          "optional": "(opsional)",
+          "formErrorTitle": "Periksa kembali isian berikut"
+        },
+        "password": {
+          "show": "Tampilkan kata sandi",
+          "hide": "Sembunyikan kata sandi",
+          "capsLock": "Caps Lock aktif"
+        },
+        "search": {
+          "clear": "Hapus pencarian"
+        },
+        "select": {
+          "placeholder": "Pilih"
+        },
+        "combobox": {
+          "placeholder": "Pilih",
+          "searchPlaceholder": "Cari",
+          "loading": "Memuat pilihan",
+          "empty": "Tidak ada pilihan yang cocok"
+        },
+        "table": {
+          "searchPlaceholder": "Cari",
+          "columns": "Kolom tampil",
+          "density": "Kepadatan",
+          "densityNormal": "Normal",
+          "densityCompact": "Padat",
+          "moreOptions": "Opsi tabel",
+          "clearSelection": "Batalkan pilihan",
+          "noResultsTitle": "Tidak ada hasil",
+          "noResultsDescription": "Coba kata kunci lain atau hapus pencarian.",
+          "clearSearch": "Hapus pencarian",
+          "errorTitle": "Data gagal dimuat",
+          "errorDescription": "Periksa koneksi internet, lalu coba lagi.",
+          "retry": "Coba lagi",
+          "errorCode": "Kode galat: {code}",
+          "pageOf": "Halaman {current, number} dari {total, number}",
+          "range": "{from, number}–{to, number} dari {total, number}",
+          "rangeOpen": "Baris {from, number}–{to, number}",
+          "rowCount": "{count, number} data",
+          "pageSize": "Baris per halaman",
+          "previous": "Ke halaman sebelumnya",
+          "next": "Ke halaman berikutnya",
+          "filtersReset": "Reset filter",
+          "filterRemove": "Hapus filter {label}",
+          "filterDateFrom": "Dari",
+          "filterDateTo": "Sampai",
+          "filterDateInvalid": "Tanggal mulai harus sebelum atau sama dengan tanggal akhir"
+        },
+        "scanner": {
+          "manualLabel": "Kode",
+          "manualPlaceholder": "Ketik atau tempel kode",
+          "submit": "Kirim",
+          "fieldSubmit": "Catat",
+          "camera": "Pindai dengan kamera",
+          "cameraStart": "Nyalakan kamera",
+          "cameraStop": "Matikan kamera",
+          "cameraClose": "Tutup kamera",
+          "cameraDone": "Selesai",
+          "cameraStarting": "Menyalakan kamera",
+          "cameraHint": "Arahkan kode ke dalam bingkai",
+          "cameraIdleHint": "Kamera hanya menyala selama Anda memindai.",
+          "cameraDeniedTitle": "Akses kamera ditolak",
+          "cameraDeniedDescription": "Izinkan kamera di pengaturan peramban, lalu coba lagi. Kode juga bisa dimasukkan manual.",
+          "cameraUnavailableTitle": "Kamera tidak tersedia",
+          "cameraUnavailableDescription": "Perangkat ini tidak punya kamera yang bisa dipakai. Masukkan kode secara manual.",
+          "cameraErrorTitle": "Kamera tidak bisa dinyalakan",
+          "cameraErrorDescription": "Tutup aplikasi lain yang memakai kamera, lalu coba lagi.",
+          "retry": "Coba lagi",
+          "manualEntry": "Masukkan kode manual",
+          "manualHide": "Tutup input manual",
+          "ready": "Pemindai siap"
+        },
+        "qr": {
+          "code": "Kode QR",
+          "expired": "Kode kedaluwarsa",
+          "expiresIn": "Berlaku {seconds, number} detik lagi",
+          "renew": "Buat kode baru",
+          "manualCode": "Tidak bisa memindai? Pakai kode ini"
+        },
+        "calendar": {
+          "previousMonth": "Bulan sebelumnya",
+          "nextMonth": "Bulan berikutnya",
+          "previousYear": "Tahun sebelumnya",
+          "nextYear": "Tahun berikutnya",
+          "chooseMonth": "{caption}, pilih bulan dan tahun",
+          "chooseYear": "{year}, pilih tahun",
+          "previousYears": "Rentang tahun sebelumnya",
+          "nextYears": "Rentang tahun berikutnya"
+        },
+        "picker": {
+          "datePlaceholder": "Pilih tanggal",
+          "dateClear": "Hapus tanggal",
+          "rangePlaceholder": "Pilih rentang tanggal",
+          "rangeClear": "Hapus rentang tanggal",
+          "rangePickStart": "Pilih tanggal mulai",
+          "rangePickEnd": "Pilih tanggal akhir",
+          "rangePresets": "Rentang cepat",
+          "monthPlaceholder": "Pilih bulan",
+          "monthClear": "Hapus bulan",
+          "timePlaceholder": "Pilih jam",
+          "timeShowOptions": "Tampilkan pilihan jam",
+          "timeOptions": "Pilihan jam",
+          "numberIncrement": "Tambah",
+          "numberDecrement": "Kurangi"
+        }
       }
     },
     "login": {
