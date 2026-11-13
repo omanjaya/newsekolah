@@ -5,6 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
 
+import { matchMemberByCode } from "./lib/member-code-match";
+
 export type LibraryLookupResult = components["schemas"]["LibraryLookupResult"];
 export type LibraryBatchBorrowResult = components["schemas"]["LibraryBatchBorrowResult"];
 export type LibraryOverdueLoanDetail = components["schemas"]["LibraryOverdueLoanDetail"];
@@ -55,8 +57,8 @@ export function useLibraryTitleNameMutation() {
 /**
  * Resolves a scanned or typed code to a member (the desk's continuous scan
  * flow's member-card step): `/v1/library/lookup` is a fuzzy multi-match
- * search, so this takes its first member result -- good enough for a code
- * read off a card, which is expected to match at most one person.
+ * search, so only a member whose number, NIS or username equals the code is
+ * accepted (see `matchMemberByCode`); anything else is none or ambiguous.
  */
 export function useFindMemberByCodeMutation() {
   const client = useApiClient();
@@ -65,7 +67,8 @@ export function useFindMemberByCodeMutation() {
       const result = await client.GET("/v1/library/lookup", {
         params: { query: { q: code.trim() } },
       });
-      return result.data.find((entry) => entry.member)?.member ?? null;
+      const members = result.data.flatMap((entry) => (entry.member ? [entry.member] : []));
+      return matchMemberByCode(members, code);
     },
   });
 }

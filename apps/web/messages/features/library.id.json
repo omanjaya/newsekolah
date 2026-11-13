@@ -214,11 +214,13 @@
     },
     "member": {
       "searchPlaceholder": "Cari nama, NIS, atau nomor anggota",
+      "scanLabel": "Pindai atau ketik kode kartu anggota",
       "scanHint": "Atau pindai kartu anggota untuk mulai.",
       "endSession": "Selesai",
       "hintTitle": "Pilih anggota terlebih dahulu",
       "hintBody": "Cari nama di atas atau pindai kartu anggota untuk mulai meminjamkan, mengembalikan, atau memperpanjang buku.",
       "notFound": "Kartu atau kode \"{code}\" tidak dikenali",
+      "ambiguous": "Kode \"{code}\" cocok dengan lebih dari satu anggota. Pilih dari pencarian.",
       "lookupFailed": "Pencarian anggota gagal, coba lagi"
     },
     "modes": {
@@ -287,7 +289,15 @@
       "emptyBody": "Semua peminjaman aktif masih dalam batas waktu.",
       "unknownMember": "Identitas anggota belum tersedia",
       "unknownTitle": "Judul belum tersedia",
-      "loadError": "Daftar keterlambatan belum bisa dimuat. Coba lagi."
+      "loadError": "Daftar keterlambatan belum bisa dimuat. Coba lagi.",
+      "confirmReturn": {
+        "title": "Catat pengembalian?",
+        "body": "{title} dari {member} akan dicatat sudah dikembalikan."
+      },
+      "confirmReminders": {
+        "title": "Kirim pengingat?",
+        "body": "Pengingat dikirim ke anggota yang pinjamannya segera jatuh tempo. Pinjaman yang sudah terlambat tidak termasuk."
+      }
     }
   },
   "classLoans": {
@@ -773,7 +783,10 @@
     "instructions": "Pindai kode ini dengan aplikasi sekolah untuk mencatat kunjungan.",
     "expired": "Kode sudah kedaluwarsa",
     "expiresIn": "Berlaku {seconds} detik lagi",
-    "renew": "Buat kode baru"
+    "renew": "Buat kode baru",
+    "issueFailedTitle": "Kode tidak bisa dibuat",
+    "issueFailedBody": "Periksa koneksi layar ini lalu coba lagi.",
+    "retry": "Coba lagi"
   },
   "readInPlace": {
     "title": "Baca di tempat",
@@ -1084,6 +1097,8 @@
     },
     "overdueMembers": {
       "title": "Anggota terlambat",
+      "unknownMember": "Anggota tidak dikenali",
+      "emptyTitle": "Tidak ada anggota terlambat",
       "columns": {
         "member": "Anggota",
         "loanCount": "Jumlah pinjaman",
@@ -1092,6 +1107,7 @@
     },
     "mostBorrowed": {
       "title": "Judul paling sering dipinjam",
+      "emptyTitle": "Belum ada peminjaman pada rentang ini",
       "columns": {
         "title": "Judul",
         "loanCount": "Jumlah peminjaman"

@@ -36,7 +36,9 @@ export function DeskModeTabs({
     >
       <TabsList>
         {DESK_MODES.map((m) => (
-          <TabsTrigger key={m} value={m} className="gap-1.5">
+          // The mode switch has no panels of its own (the desk below reacts to it),
+          // so drop the aria-controls Radix points at a panel that does not exist.
+          <TabsTrigger key={m} value={m} className="gap-1.5" aria-controls={undefined}>
             {t(m)}
             {pendingCounts[m] > 0 && (
               <span

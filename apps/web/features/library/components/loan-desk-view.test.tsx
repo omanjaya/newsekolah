@@ -102,12 +102,12 @@ describe("LoanDeskView", () => {
     expect(screen.getByRole("textbox", { name: "modes.scanLabel.borrow" })).toHaveFocus();
   });
 
-  it("does not render the scanner field before a member is selected", () => {
+  it("offers the scanner field before a member is selected so a card scan starts the session", () => {
     deskSession.mockReturnValue(baseSession());
 
     render(<LoanDeskView />);
 
-    expect(screen.queryByRole("textbox", { name: /scanLabel/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "member.scanLabel" })).toHaveFocus();
   });
 
   it("puts the pill mode switch in the page header", () => {
@@ -118,5 +118,28 @@ describe("LoanDeskView", () => {
     expect(screen.getByRole("tab", { name: /borrow/ })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /return/ })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /renew/ })).toBeInTheDocument();
+  });
+
+  it("announces a scan error as an alert", () => {
+    deskSession.mockReturnValue(baseSession({ scanError: "Kode tidak dikenali" }));
+
+    render(<LoanDeskView />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Kode tidak dikenali");
+  });
+
+  it("returns focus to the scanner when a member is picked and when the session ends", () => {
+    deskSession.mockReturnValue(baseSession());
+    const { rerender } = render(<LoanDeskView />);
+
+    (document.activeElement as HTMLElement).blur();
+    deskSession.mockReturnValue(baseSession({ member: { userId: "u1", name: "Siswa Satu" } }));
+    rerender(<LoanDeskView />);
+    expect(screen.getByRole("textbox", { name: "modes.scanLabel.borrow" })).toHaveFocus();
+
+    (document.activeElement as HTMLElement).blur();
+    deskSession.mockReturnValue(baseSession());
+    rerender(<LoanDeskView />);
+    expect(screen.getByRole("textbox", { name: "member.scanLabel" })).toHaveFocus();
   });
 });

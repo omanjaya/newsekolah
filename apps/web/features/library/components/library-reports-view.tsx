@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@newsekolah/i18n";
+import { formatCurrency, formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
   Button,
@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
   Tabs,
+  TabsContent,
   TabsList,
   TabsTrigger,
   domainIcons,
@@ -24,6 +25,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import {
   ReportExportDialog,
   type ReportExportColumn,
@@ -31,7 +33,8 @@ import {
 } from "../../../components/report-export-dialog";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
-import { businessNow } from "../../../lib/simulation/clock";
+import { startOfIsoMonth, thisMonthInZone, todayInZone } from "../../../lib/tenant-date";
+import { useDirectoryLookup } from "../../reference/directory-names";
 import {
   downloadMonthlyLibraryReportPdf,
   useLoansReportQuery,
@@ -47,6 +50,7 @@ import {
   downloadMostBorrowedReportXlsx,
   downloadOverdueMembersReportXlsx,
 } from "../reports-api";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import { ReportAccessionRegisterTable } from "./report-accession-register-table";
 import { ReportMembersTable } from "./report-members-table";
@@ -89,21 +93,10 @@ const REPORT_EXPORT_COLUMN_KEYS: Record<Exclude<ReportTab, "summary">, readonly 
   ],
 };
 
-function todayIso(): string {
-  return businessNow().toISOString().slice(0, 10);
-}
-
-function firstOfMonthIso(): string {
-  const now = businessNow();
-  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-}
-
-function monthIso(): string {
-  return businessNow().toISOString().slice(0, 7);
-}
-
 export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {}): ReactElement {
   const t = useTranslations("app.library.reports");
+  const timeZone = useTenantTimeZone();
+  const today = todayInZone(timeZone);
   const [tab, setTab] = useUrlState<ReportTab>(
     tabKey,
     [
@@ -117,9 +110,9 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
     ],
     "loans",
   );
-  const [from, setFrom] = useDateFilter("from", firstOfMonthIso());
-  const [to, setTo] = useDateFilter("to", todayIso());
-  const [month, setMonth] = useDateFilter("month", monthIso(), true);
+  const [from, setFrom] = useDateFilter("from", startOfIsoMonth(today));
+  const [to, setTo] = useDateFilter("to", today);
+  const [month, setMonth] = useDateFilter("month", thisMonthInZone(timeZone), true);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const exportOptions: Record<ReportTab, (options: ReportExportOptions) => Promise<void>> = {
@@ -149,6 +142,7 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
 
       <Tabs
+        className="flex flex-col gap-6"
         value={tab}
         onValueChange={(value) => {
           setTab(value as ReportTab);
@@ -163,64 +157,66 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
           <TabsTrigger value="members">{t("tabs.members")}</TabsTrigger>
           <TabsTrigger value="accessionRegister">{t("tabs.accessionRegister")}</TabsTrigger>
         </TabsList>
+
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          {!TABS_WITHOUT_DATE_RANGE.includes(tab) ? (
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="flex flex-col gap-1 text-[13px]">
+                <span className="font-medium text-fg">{t("fromLabel")}</span>
+                <Input
+                  type="date"
+                  value={from}
+                  onChange={(e) => {
+                    setFrom(e.target.value);
+                  }}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-[13px]">
+                <span className="font-medium text-fg">{t("toLabel")}</span>
+                <Input
+                  type="date"
+                  value={to}
+                  onChange={(e) => {
+                    setTo(e.target.value);
+                  }}
+                />
+              </label>
+            </div>
+          ) : (
+            <span />
+          )}
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={<Download />}
+            onClick={() => {
+              setDialogOpen(true);
+            }}
+          >
+            {t("exportXlsx")}
+          </Button>
+        </div>
+
+        <ReportExportDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          reportKey={`library.reports.${tab}`}
+          defaultTitle={t(`export.${tab}.defaultTitle`)}
+          availableColumns={exportColumns}
+          columnsCustomizable={tab !== "summary"}
+          onExport={handleExport}
+        />
+
+        <TabsContent value={tab} className="pt-0">
+          {tab === "loans" && <LoansReportTable from={from} to={to} />}
+          {tab === "overdueMembers" && <OverdueMembersReportTable />}
+          {tab === "mostBorrowed" && <MostBorrowedReportTable from={from} to={to} />}
+          {tab === "summary" && <ReportSummaryTable from={from} to={to} />}
+          {tab === "visits" && <ReportVisitsTable from={from} to={to} />}
+          {tab === "members" && <ReportMembersTable />}
+          {tab === "accessionRegister" && <ReportAccessionRegisterTable from={from} to={to} />}
+        </TabsContent>
       </Tabs>
-
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        {!TABS_WITHOUT_DATE_RANGE.includes(tab) ? (
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium text-fg">{t("fromLabel")}</span>
-              <Input
-                type="date"
-                value={from}
-                onChange={(e) => {
-                  setFrom(e.target.value);
-                }}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium text-fg">{t("toLabel")}</span>
-              <Input
-                type="date"
-                value={to}
-                onChange={(e) => {
-                  setTo(e.target.value);
-                }}
-              />
-            </label>
-          </div>
-        ) : (
-          <span />
-        )}
-        <Button
-          size="sm"
-          variant="secondary"
-          icon={<Download />}
-          onClick={() => {
-            setDialogOpen(true);
-          }}
-        >
-          {t("exportXlsx")}
-        </Button>
-      </div>
-
-      <ReportExportDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        reportKey={`library.reports.${tab}`}
-        defaultTitle={t(`export.${tab}.defaultTitle`)}
-        availableColumns={exportColumns}
-        columnsCustomizable={tab !== "summary"}
-        onExport={handleExport}
-      />
-
-      {tab === "loans" && <LoansReportTable from={from} to={to} />}
-      {tab === "overdueMembers" && <OverdueMembersReportTable />}
-      {tab === "mostBorrowed" && <MostBorrowedReportTable from={from} to={to} />}
-      {tab === "summary" && <ReportSummaryTable from={from} to={to} />}
-      {tab === "visits" && <ReportVisitsTable from={from} to={to} />}
-      {tab === "members" && <ReportMembersTable />}
-      {tab === "accessionRegister" && <ReportAccessionRegisterTable from={from} to={to} />}
 
       <div className="flex flex-wrap items-end gap-3 border-t border-border pt-6">
         <label className="flex flex-col gap-1 text-[13px]">
@@ -317,10 +313,21 @@ function LoansReportTable({ from, to }: { from: string; to: string }): ReactElem
 
 function OverdueMembersReportTable(): ReactElement {
   const t = useTranslations("app.library.reports.overdueMembers");
-  const { data, isLoading } = useOverdueMembersReportQuery();
+  const locale = useLocale() as Locale;
+  const { data, isLoading, isError, refetch } = useOverdueMembersReportQuery();
   const members = data?.data ?? [];
+  const { names, isLoading: namesLoading } = useDirectoryLookup(
+    members.map((member) => member.member_user_id),
+  );
+  const nameOf = (userId: string) => names.get(userId)?.name ?? t("unknownMember");
 
-  if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (isLoading || (namesLoading && members.length > 0)) {
+    return <Skeleton className="h-64 w-full" />;
+  }
+  if (isError) return <QueryError retry={() => refetch()} />;
+  if (members.length === 0) {
+    return <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />;
+  }
 
   return (
     <>
@@ -328,9 +335,12 @@ function OverdueMembersReportTable(): ReactElement {
         {members.map((member) => (
           <li key={member.member_user_id}>
             <ReportCard>
-              <ReportCardTitle>{member.member_user_id}</ReportCardTitle>
+              <ReportCardTitle>{nameOf(member.member_user_id)}</ReportCardTitle>
               <ReportField label={t("columns.loanCount")} value={member.loan_count} />
-              <ReportField label={t("columns.fine")} value={member.total_fine} />
+              <ReportField
+                label={t("columns.fine")}
+                value={formatCurrency(member.total_fine, "IDR", { locale })}
+              />
             </ReportCard>
           </li>
         ))}
@@ -347,9 +357,11 @@ function OverdueMembersReportTable(): ReactElement {
           <TableBody>
             {members.map((member) => (
               <TableRow key={member.member_user_id}>
-                <TableCell>{member.member_user_id}</TableCell>
+                <TableCell>{nameOf(member.member_user_id)}</TableCell>
                 <TableCell className="text-fg-muted">{member.loan_count}</TableCell>
-                <TableCell className="text-fg-muted">{member.total_fine}</TableCell>
+                <TableCell className="text-fg-muted">
+                  {formatCurrency(member.total_fine, "IDR", { locale })}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -361,10 +373,14 @@ function OverdueMembersReportTable(): ReactElement {
 
 function MostBorrowedReportTable({ from, to }: { from: string; to: string }): ReactElement {
   const t = useTranslations("app.library.reports.mostBorrowed");
-  const { data, isLoading } = useMostBorrowedReportQuery(from, to);
+  const { data, isLoading, isError, refetch } = useMostBorrowedReportQuery(from, to);
   const titles = data?.data ?? [];
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (isError) return <QueryError retry={() => refetch()} />;
+  if (titles.length === 0) {
+    return <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />;
+  }
 
   return (
     <>

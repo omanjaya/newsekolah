@@ -3,7 +3,15 @@
 import { ApiError } from "@newsekolah/api-client";
 import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { Alert, Button, DataTable, EmptyState, domainIcons, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  Button,
+  ConfirmDialog,
+  DataTable,
+  EmptyState,
+  domainIcons,
+  useToast,
+} from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { BellRing } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -35,6 +43,8 @@ export function DeskOverdueTable(): ReactElement {
   const renew = useRenewLoanMutation();
   const sendReminders = useSendLibraryDueRemindersMutation();
   const [markingLost, setMarkingLost] = useState<string | null>(null);
+  const [confirmingReturn, setConfirmingReturn] = useState<LibraryOverdueLoanDetail | null>(null);
+  const [confirmingReminders, setConfirmingReminders] = useState(false);
 
   const items = data?.data ?? [];
 
@@ -114,21 +124,7 @@ export function DeskOverdueTable(): ReactElement {
                 });
               }}
               onReturn={() => {
-                returnLoan.mutate(
-                  { loanId: loan.id },
-                  {
-                    onSuccess: () => {
-                      toast.success(t("returned"));
-                    },
-                    onError: (error) => {
-                      toast.error(
-                        error instanceof ApiError
-                          ? apiErrorMessage(error.code)
-                          : apiErrorMessage("UNKNOWN"),
-                      );
-                    },
-                  },
-                );
+                setConfirmingReturn(row.original);
               }}
               onMarkLost={() => {
                 setMarkingLost(loan.id);
@@ -152,18 +148,7 @@ export function DeskOverdueTable(): ReactElement {
           loading={sendReminders.isPending}
           disabled={items.length === 0}
           onClick={() => {
-            sendReminders.mutate(undefined, {
-              onSuccess: (result) => {
-                toast.success(t("remindersSent", { count: result.members_notified }));
-              },
-              onError: (error) => {
-                toast.error(
-                  error instanceof ApiError
-                    ? apiErrorMessage(error.code)
-                    : apiErrorMessage("UNKNOWN"),
-                );
-              },
-            });
+            setConfirmingReminders(true);
           }}
         >
           {t("sendReminders")}
@@ -200,6 +185,71 @@ export function DeskOverdueTable(): ReactElement {
           }
         />
       )}
+
+      <ConfirmDialog
+        open={confirmingReturn !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmingReturn(null);
+        }}
+        title={t("confirmReturn.title")}
+        description={
+          confirmingReturn
+            ? t("confirmReturn.body", {
+                title: confirmingReturn.title || t("unknownTitle"),
+                member: confirmingReturn.member_name || t("unknownMember"),
+              })
+            : ""
+        }
+        confirmLabel={t("return")}
+        confirming={returnLoan.isPending}
+        onConfirm={() => {
+          if (!confirmingReturn) return;
+          returnLoan.mutate(
+            { loanId: confirmingReturn.loan.id },
+            {
+              onSuccess: () => {
+                toast.success(t("returned"));
+              },
+              onError: (error) => {
+                toast.error(
+                  error instanceof ApiError
+                    ? apiErrorMessage(error.code)
+                    : apiErrorMessage("UNKNOWN"),
+                );
+              },
+              onSettled: () => {
+                setConfirmingReturn(null);
+              },
+            },
+          );
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmingReminders}
+        onOpenChange={setConfirmingReminders}
+        title={t("confirmReminders.title")}
+        description={t("confirmReminders.body")}
+        confirmLabel={t("sendReminders")}
+        confirming={sendReminders.isPending}
+        onConfirm={() => {
+          sendReminders.mutate(undefined, {
+            onSuccess: (result) => {
+              toast.success(t("remindersSent", { count: result.members_notified }));
+            },
+            onError: (error) => {
+              toast.error(
+                error instanceof ApiError
+                  ? apiErrorMessage(error.code)
+                  : apiErrorMessage("UNKNOWN"),
+              );
+            },
+            onSettled: () => {
+              setConfirmingReminders(false);
+            },
+          });
+        }}
+      />
 
       <MarkLostDialog
         loanId={markingLost}

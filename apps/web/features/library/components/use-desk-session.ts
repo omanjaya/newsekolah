@@ -95,12 +95,17 @@ export function useDeskSession() {
   const addMemberByScan = useCallback(
     async (code: string) => {
       try {
-        const found = await findMember.mutateAsync(code);
-        if (!found) {
+        const match = await findMember.mutateAsync(code);
+        if (match.status !== "found") {
           feedback.playError();
-          setScanError(t("member.notFound", { code }));
+          setScanError(
+            match.status === "ambiguous"
+              ? t("member.ambiguous", { code })
+              : t("member.notFound", { code }),
+          );
           return;
         }
+        const found = match.member;
         feedback.playSuccess();
         selectMember({
           userId: found.user_id,

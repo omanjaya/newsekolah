@@ -9,6 +9,7 @@ import type { ReactElement } from "react";
 
 import { businessNow } from "../../../lib/simulation/clock";
 import type { DeskBasketItem, DeskMode } from "../lib/desk-basket";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import type { DeskSelectedMember } from "./desk-member-panel";
 
@@ -84,6 +85,7 @@ export function DeskReceiptDialog({
   const t = useTranslations("app.library.desk.receipt");
   const tModes = useTranslations("app.library.desk.modes");
   const locale = useLocale() as Locale;
+  const timeZone = useTenantTimeZone();
 
   const settled = MODE_ORDER.map((mode) => ({
     mode,
@@ -112,7 +114,7 @@ export function DeskReceiptDialog({
               onClick={() => {
                 printReceipt(t("title"), [
                   {
-                    label: formatDateTime(businessNow(), { locale }),
+                    label: formatDateTime(businessNow(), { locale, timeZone }),
                     rows: [],
                   },
                   ...settled.map((section) => ({

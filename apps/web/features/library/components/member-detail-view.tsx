@@ -24,7 +24,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
-import { businessNow } from "../../../lib/simulation/clock";
+import { todayInZone } from "../../../lib/tenant-date";
 import { useLookup } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { printMemberCard, useMemberLoanHistoryQuery, useMemberReservationsQuery } from "../api";
@@ -34,6 +34,7 @@ import {
   useLibraryMemberQuery,
   useLibraryMemberTypesQuery,
 } from "../members-api";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 import { useMemberViolationsQuery } from "../violations-api";
 
 import { LibraryTitleName } from "./library-title-name";
@@ -49,10 +50,6 @@ const LOAN_HISTORY_STATUS: Record<string, SemanticStatus> = {
   lost: "overdue",
 };
 
-function todayIso(): string {
-  return businessNow().toLocaleDateString("en-CA");
-}
-
 export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const t = useTranslations("app.library.memberDetail");
   const tHistory = useTranslations("app.library.memberHistory");
@@ -62,7 +59,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_library_members");
   const canCirculate = useCan("manage_library_circulation");
-  const today = todayIso();
+  const today = todayInZone(useTenantTimeZone());
 
   const member = useLibraryMemberQuery(userId);
   const memberTypes = useLibraryMemberTypesQuery();

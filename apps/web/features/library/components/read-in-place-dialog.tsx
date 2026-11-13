@@ -13,6 +13,7 @@ import {
   DirectoryPicker,
   useDirectoryPickerLabels,
 } from "../../reference/components/directory-picker";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 import { useLibraryReadInPlaceQuery, useStartLibraryReadInPlaceMutation } from "../visits-api";
 
 /** Per-copy log of "read at a library table" sessions, plus starting a new one. */
@@ -25,6 +26,7 @@ export function ReadInPlaceDialog({
 }): ReactElement {
   const t = useTranslations("app.library.readInPlace");
   const locale = useLocale() as Locale;
+  const timeZone = useTenantTimeZone();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const log = useLibraryReadInPlaceQuery(copyId ?? "");
@@ -109,7 +111,9 @@ export function ReadInPlaceDialog({
               <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto text-[13px]">
                 {log.data?.data.map((entry) => (
                   <li key={entry.id} className="rounded-sm border border-border bg-surface p-2">
-                    <span className="text-fg">{formatDateTime(entry.started_at, { locale })}</span>
+                    <span className="text-fg">
+                      {formatDateTime(entry.started_at, { locale, timeZone })}
+                    </span>
                     {entry.visitor_name && (
                       <span className="text-fg-muted"> - {entry.visitor_name}</span>
                     )}
