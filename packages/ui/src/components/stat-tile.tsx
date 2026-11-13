@@ -42,11 +42,9 @@ export function StatTile({
         <Icon className="size-5" aria-hidden="true" />
       </span>
       <div className="flex flex-col">
-        <span className="font-heading text-[22px] leading-tight font-bold tabular-nums text-fg">
-          {value}
-        </span>
-        <span className="text-[13px] text-fg">{label}</span>
-        {hint && <span className="text-[12px] text-fg-muted">{hint}</span>}
+        <span className="text-title-lg tabular-nums text-fg">{value}</span>
+        <span className="text-body-sm text-fg">{label}</span>
+        {hint && <span className="text-caption text-fg-muted">{hint}</span>}
       </div>
     </div>
   );

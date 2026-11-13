@@ -10,7 +10,7 @@ function PopoverDemo() {
         <Button variant="secondary">Filter</Button>
       </PopoverTrigger>
       <PopoverContent>
-        <p className="text-[13px] text-fg-muted">Filter tanggal dan status di sini.</p>
+        <p className="text-body-sm text-fg-muted">Filter tanggal dan status di sini.</p>
       </PopoverContent>
     </Popover>
   );

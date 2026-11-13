@@ -125,7 +125,7 @@ export function FormLabel({
   const { error, formItemId } = useFormField();
   return (
     <LabelPrimitive.Root
-      className={cn("text-[13px] font-medium text-fg", error && "text-status-absent", className)}
+      className={cn("text-label text-fg", error && "text-danger", className)}
       htmlFor={formItemId}
       {...props}
     />
@@ -147,7 +147,7 @@ export function FormControl({ ...props }: ComponentPropsWithoutRef<typeof Slot>)
 export function FormDescription({ className, ...props }: ComponentPropsWithoutRef<"p">) {
   const { formDescriptionId } = useFormField();
   return (
-    <p id={formDescriptionId} className={cn("text-[13px] text-fg-muted", className)} {...props} />
+    <p id={formDescriptionId} className={cn("text-body-sm text-fg-muted", className)} {...props} />
   );
 }
 
@@ -161,7 +161,7 @@ export function FormMessage({ className, children, ...props }: ComponentPropsWit
     <p
       id={formMessageId}
       role="alert"
-      className={cn("text-[13px] font-medium text-status-absent", className)}
+      className={cn("text-body-sm font-medium text-danger", className)}
       {...props}
     >
       {body}

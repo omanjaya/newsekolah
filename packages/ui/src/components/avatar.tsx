@@ -43,7 +43,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
   { name, src, size = "md", className, ...props },
   ref,
 ) {
-  const dimension = size === "sm" ? "size-6 text-[12px]" : "size-8 text-[13px]";
+  const dimension = size === "sm" ? "size-6 text-caption" : "size-8 text-body-sm";
   return (
     <AvatarPrimitive.Root
       ref={ref}

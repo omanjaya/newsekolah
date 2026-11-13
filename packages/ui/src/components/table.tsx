@@ -50,7 +50,7 @@ export function Table({ density = "normal", className, containerClassName, ...pr
         )}
       >
         <table
-          className={cn("w-full border-collapse text-[13px] tabular-nums", className)}
+          className={cn("w-full border-collapse text-body-sm tabular-nums", className)}
           {...props}
         />
       </div>
@@ -97,7 +97,7 @@ export function TableHead({ className, ...props }: ComponentPropsWithoutRef<"th"
     <th
       className={cn(
         CELL_PADDING[density],
-        "text-left align-middle text-[12px] font-semibold text-fg-muted",
+        "text-left align-middle text-caption font-semibold text-fg-muted",
         className,
       )}
       {...props}
@@ -111,5 +111,5 @@ export function TableCell({ className, ...props }: ComponentPropsWithoutRef<"td"
 }
 
 export function TableCaption({ className, ...props }: ComponentPropsWithoutRef<"caption">) {
-  return <caption className={cn("mt-3 text-[13px] text-fg-muted", className)} {...props} />;
+  return <caption className={cn("mt-3 text-body-sm text-fg-muted", className)} {...props} />;
 }

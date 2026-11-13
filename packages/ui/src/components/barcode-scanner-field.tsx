@@ -65,17 +65,17 @@ export interface BarcodeScannerFieldProps {
 
 const SIZE_INPUT_CLASS: Record<NonNullable<BarcodeScannerFieldProps["size"]>, string> = {
   default: "",
-  large: "h-16 text-[24px]",
+  large: "h-16 text-title-lg",
 };
 
 const SIZE_LABEL_CLASS: Record<NonNullable<BarcodeScannerFieldProps["size"]>, string> = {
-  default: "text-[13px]",
-  large: "text-[20px]",
+  default: "text-label",
+  large: "text-title",
 };
 
 const SIZE_BUTTON_CLASS: Record<NonNullable<BarcodeScannerFieldProps["size"]>, string> = {
   default: "",
-  large: "h-16 px-8 text-[20px]",
+  large: "h-16 px-8 text-title",
 };
 
 /**
@@ -400,12 +400,16 @@ function CameraScanner({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/80 p-6">
+    // Above every shell bar (the old z-50 sat under the mobile tab bar), on
+    // black in both themes: a camera feed is media, not a themed surface.
+    // eslint-disable-next-line no-restricted-syntax -- camera backdrop is black in both themes
+    <div className="fixed inset-0 z-modal flex flex-col items-center justify-center gap-4 bg-black/80 p-6">
       <video
         ref={videoRef}
         data-flash={flash ?? undefined}
         className={cn(
-          "max-h-[70vh] w-full max-w-md rounded-sm bg-black outline-4 outline-offset-0 transition-[outline-color] duration-150",
+          // eslint-disable-next-line no-restricted-syntax -- letterbox around the camera feed
+          "max-h-[70vh] w-full max-w-md rounded-sm bg-black outline-4 outline-offset-0 transition-[outline-color] duration-fast",
           flash === "success" && "outline-success",
           flash === "failure" && "outline-danger",
           flash === null && "outline-transparent",

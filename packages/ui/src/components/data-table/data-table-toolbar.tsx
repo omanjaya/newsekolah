@@ -89,9 +89,7 @@ export function DataTableToolbar<TData>({
   if (selectedCount > 0 && bulkActions) {
     return (
       <div className="flex items-center justify-between gap-4 rounded-md border border-border bg-bg px-3 py-2">
-        <span className="text-[13px] font-medium text-fg">
-          {uiLabels.tableSelectedRows(selectedCount)}
-        </span>
+        <span className="text-label text-fg">{uiLabels.tableSelectedRows(selectedCount)}</span>
         <div className="flex items-center gap-2">{bulkActions}</div>
       </div>
     );
@@ -123,7 +121,11 @@ export function DataTableToolbar<TData>({
           onClick={() => {
             onDensityChange(density === "compact" ? "normal" : "compact");
           }}
-          className={cn("hidden md:inline-flex", density === "compact" && "bg-bg")}
+          className={cn(
+            "hidden md:inline-flex",
+            // `bg-bg` was the page color, so the "on" state was invisible on the page.
+            density === "compact" && "bg-state-selected text-accent",
+          )}
         />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

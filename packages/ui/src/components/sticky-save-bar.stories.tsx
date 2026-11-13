@@ -11,7 +11,7 @@ type Story = StoryObj<typeof StickySaveBar>;
 
 export const Idle: Story = {
   args: {
-    leadingSlot: <span className="text-[13px] text-fg-muted">Semua tersimpan.</span>,
+    leadingSlot: <span className="text-body-sm text-fg-muted">Semua tersimpan.</span>,
     saveLabel: "Simpan",
     saving: false,
     disabled: true,
@@ -21,7 +21,7 @@ export const Idle: Story = {
 
 export const PendingChanges: Story = {
   args: {
-    leadingSlot: <span className="text-[13px] text-fg-muted">12 perubahan belum tersimpan</span>,
+    leadingSlot: <span className="text-body-sm text-fg-muted">12 perubahan belum tersimpan</span>,
     saveLabel: "Simpan semua",
     saving: false,
     onSave: () => undefined,
@@ -30,9 +30,9 @@ export const PendingChanges: Story = {
 
 export const WithError: Story = {
   args: {
-    leadingSlot: <span className="text-[13px] text-fg-muted">12 perubahan belum tersimpan</span>,
+    leadingSlot: <span className="text-body-sm text-fg-muted">12 perubahan belum tersimpan</span>,
     trailingSlot: (
-      <span role="alert" className="flex items-center gap-2 text-[13px] text-status-absent">
+      <span role="alert" className="flex items-center gap-2 text-body-sm text-danger">
         Gagal menyimpan.
         <button type="button" className="font-medium underline">
           Coba lagi

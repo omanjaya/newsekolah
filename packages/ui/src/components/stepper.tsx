@@ -69,7 +69,7 @@ export function Stepper({
             >
               <span
                 className={cn(
-                  "flex size-6 shrink-0 items-center justify-center rounded-sm border text-[12px] font-medium",
+                  "flex size-6 shrink-0 items-center justify-center rounded-sm border text-caption",
                   CIRCLE_CLASS[state],
                 )}
               >
@@ -94,14 +94,14 @@ export function Stepper({
             <div className={cn("flex flex-col", orientation === "horizontal" && "items-center")}>
               <span
                 className={cn(
-                  "text-[13px] font-medium",
+                  "text-body-sm font-medium",
                   state === "upcoming" ? "text-fg-muted" : "text-fg",
                 )}
               >
                 {step.label}
               </span>
               {step.description && (
-                <span className="text-[12px] text-fg-muted">{step.description}</span>
+                <span className="text-caption text-fg-muted">{step.description}</span>
               )}
             </div>
           </li>

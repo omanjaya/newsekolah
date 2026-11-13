@@ -18,7 +18,7 @@ export const Basic: Story = {
         <CardDescription>Diperbarui 2 jam lalu</CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="text-[13px] text-fg">Ujian tengah semester dimulai minggu depan.</p>
+        <p className="text-body-sm text-fg">Ujian tengah semester dimulai minggu depan.</p>
       </CardContent>
       <CardFooter>
         <Button size="sm" variant="secondary">
@@ -32,7 +32,7 @@ export const Basic: Story = {
 export const Bare: Story = {
   render: () => (
     <Card className="max-w-xs p-5">
-      <p className="text-[13px] text-fg-muted">Kartu tanpa header/footer, padding manual.</p>
+      <p className="text-body-sm text-fg-muted">Kartu tanpa header/footer, padding manual.</p>
     </Card>
   ),
 };

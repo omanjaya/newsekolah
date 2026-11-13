@@ -28,17 +28,15 @@ export function HeroCard({
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[12px] font-bold tracking-wide uppercase">{eyebrow}</span>
+        <span className="text-caption font-bold tracking-wide uppercase">{eyebrow}</span>
         {chip && (
-          <span className="rounded-full bg-accent px-2.5 py-1 text-[12px] font-bold text-accent-fg">
+          <span className="rounded-full bg-accent px-2.5 py-1 text-caption font-bold text-accent-fg">
             {chip}
           </span>
         )}
       </div>
-      <h2 className="font-heading text-[24px] leading-tight font-bold tracking-tight md:text-[26px]">
-        {title}
-      </h2>
-      {meta && <p className="text-[14px]">{meta}</p>}
+      <h2 className="text-display">{title}</h2>
+      {meta && <p className="text-body">{meta}</p>}
       {action && <div className="mt-1">{action}</div>}
     </section>
   );

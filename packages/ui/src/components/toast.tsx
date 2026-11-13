@@ -37,8 +37,8 @@ function ErrorAnnouncer(): ReactElement {
 /**
  * Mount once at the app root. `visibleToasts={3}` matches
  * docs/05-shared-components.md ("tidak menumpuk lebih dari 3"). Icons and
- * per-type colors come from Lucide plus the same `status-*` tokens
- * `Alert`/`Button`'s `danger` variant use, so a toast reads as the same
+ * per-type colors come from Lucide plus the same semantic `success`/`danger`
+ * tokens `Alert`/`Button`'s `danger` variant use, so a toast reads as the same
  * "system" as the rest of the UI rather than sonner's own default palette.
  */
 export function Toaster(props: ToasterProps) {
@@ -56,14 +56,14 @@ export function Toaster(props: ToasterProps) {
         toastOptions={{
           classNames: {
             toast:
-              "rounded-sm border border-border bg-surface text-fg shadow-(--shadow-float) text-[13px]",
+              "rounded-sm border border-border bg-surface-raised text-fg shadow-3 text-body-sm",
             title: "font-medium",
             description: "text-fg-muted",
             actionButton: "rounded-xs bg-accent text-accent-fg",
-            cancelButton: "rounded-xs bg-bg text-fg",
+            cancelButton: "rounded-xs bg-state-hover text-fg",
             closeButton: "border-border bg-surface text-fg-muted",
-            success: "border-status-present/40 [&_[data-icon]]:text-status-present",
-            error: "border-status-absent/40 [&_[data-icon]]:text-status-absent",
+            success: "border-success/40 [&_[data-icon]]:text-success",
+            error: "border-danger/40 [&_[data-icon]]:text-danger",
             info: "[&_[data-icon]]:text-fg-muted",
           },
         }}

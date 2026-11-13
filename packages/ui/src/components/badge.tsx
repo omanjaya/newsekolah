@@ -10,7 +10,7 @@ import { cn } from "../utils/cn.js";
  * keeps a hairline border instead for definition on a white card.
  */
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium",
+  "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-caption",
   {
     variants: {
       variant: {

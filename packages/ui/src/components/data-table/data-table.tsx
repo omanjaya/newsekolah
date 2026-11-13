@@ -363,7 +363,7 @@ export function DataTable<TData>({
       </div>
       <div
         className={cn(
-          "hidden overflow-x-auto rounded-lg border border-border bg-surface shadow-(--shadow-card) md:block",
+          "hidden overflow-x-auto rounded-lg border border-border bg-surface shadow-1 md:block",
           // No `flex-1`: the card sizes to its own rows first, growing no
           // taller than that. Only once that content would exceed the
           // parent's available height does `max-h-full` cap it and the
@@ -373,7 +373,7 @@ export function DataTable<TData>({
           fillHeight && "md:min-h-0 md:max-h-full md:overflow-y-auto",
         )}
       >
-        <table className="w-full border-collapse text-[13px] tabular-nums">
+        <table className="w-full border-collapse text-body-sm tabular-nums">
           {/*
             With collapsed borders a sticky header's border-b does not stick,
             so the separator rides along as a shadow on the header itself.

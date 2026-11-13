@@ -32,7 +32,7 @@ export function DataTablePagination<TData>({
 
   return (
     <div className="flex items-center justify-between gap-4 pt-2">
-      <span className="text-[13px] tabular-nums text-fg-muted">
+      <span className="text-body-sm tabular-nums text-fg-muted">
         {labels.pageLabel(pageIndex + 1, pageCount)}
       </span>
       <div className="flex items-center gap-1">

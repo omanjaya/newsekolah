@@ -23,7 +23,7 @@ function DialogDemo() {
           </>
         }
       >
-        <p className="text-[13px] text-fg-muted">Konten dialog di sini.</p>
+        <p className="text-body-sm text-fg-muted">Konten dialog di sini.</p>
       </DialogContent>
     </Dialog>
   );

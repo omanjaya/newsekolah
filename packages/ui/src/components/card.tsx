@@ -12,7 +12,7 @@ import { cn } from "../utils/cn.js";
 export function Card({ className, ...props }: ComponentPropsWithoutRef<"div">) {
   return (
     <div
-      className={cn("rounded-lg border border-border bg-surface shadow-(--shadow-card)", className)}
+      className={cn("rounded-lg border border-border bg-surface shadow-1", className)}
       {...props}
     />
   );
@@ -24,17 +24,14 @@ export function CardHeader({ className, ...props }: ComponentPropsWithoutRef<"di
 
 export function CardTitle({ className, children, ...props }: ComponentPropsWithoutRef<"h3">) {
   return (
-    <h3
-      className={cn("font-heading text-[16px] font-bold tracking-tight text-fg", className)}
-      {...props}
-    >
+    <h3 className={cn("text-heading text-fg", className)} {...props}>
       {children}
     </h3>
   );
 }
 
 export function CardDescription({ className, ...props }: ComponentPropsWithoutRef<"p">) {
-  return <p className={cn("text-[13px] text-fg-muted", className)} {...props} />;
+  return <p className={cn("text-body-sm text-fg-muted", className)} {...props} />;
 }
 
 /** Follows `CardHeader`; use `p-5` via `className` for a standalone `Card`. */

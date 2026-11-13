@@ -28,7 +28,7 @@ export interface StatusBadgeProps extends Omit<ComponentPropsWithoutRef<"span">,
 export function StatusBadge({ status, label, className, ...props }: StatusBadgeProps) {
   return (
     <span
-      className={cn("inline-flex items-center gap-1.5 text-[13px] font-medium", className)}
+      className={cn("inline-flex items-center gap-1.5 text-body-sm font-medium", className)}
       {...props}
     >
       <span

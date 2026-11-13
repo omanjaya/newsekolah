@@ -67,7 +67,7 @@ export function DataTableCards<TData>({
   return (
     <div className="flex flex-col gap-2">
       {selectionEnabled && onToggleAllRowsSelected && (
-        <div className="flex min-h-11 items-center gap-2 text-[13px] font-medium text-fg">
+        <div className="flex min-h-11 items-center gap-2 text-label text-fg">
           <Checkbox
             checked={allRowsSelected === true ? true : someRowsSelected ? "indeterminate" : false}
             onCheckedChange={() => {
@@ -98,7 +98,7 @@ export function DataTableCards<TData>({
               {(title ?? actions) && (
                 <div className="flex items-start justify-between gap-2">
                   {title && (
-                    <div id={titleId} className="min-w-0 text-[14px] font-medium text-fg">
+                    <div id={titleId} className="min-w-0 text-body font-medium text-fg">
                       {flexRender(title.column.columnDef.cell, title.getContext())}
                     </div>
                   )}
@@ -112,7 +112,7 @@ export function DataTableCards<TData>({
               <dl className="flex flex-col gap-1">
                 {rest.map((cell) => (
                   <div key={cell.id} className="flex items-baseline justify-between gap-3">
-                    <dt className="shrink-0 text-[12px] text-fg-muted">
+                    <dt className="shrink-0 text-caption text-fg-muted">
                       {headers[cell.column.id]}
                     </dt>
                     {/*
@@ -120,7 +120,7 @@ export function DataTableCards<TData>({
                     on a phone, so give it a thumb-sized height here rather
                     than leaving it as tall as its text.
                   */}
-                    <dd className="min-w-0 text-right text-[13px] text-fg [&_a]:relative [&_a]:z-10 [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_button]:relative [&_button]:z-10 [&_button]:inline-flex [&_button]:min-h-11 [&_button]:items-center">
+                    <dd className="min-w-0 text-right text-body-sm text-fg [&_a]:relative [&_a]:z-10 [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_button]:relative [&_button]:z-10 [&_button]:inline-flex [&_button]:min-h-11 [&_button]:items-center">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </dd>
                   </div>

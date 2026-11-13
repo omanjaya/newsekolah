@@ -44,12 +44,10 @@ export function Stat({ label, value, hint, icon, category = "green", className }
         </span>
       )}
       <div className="flex flex-col gap-0.5">
-        <dt className="order-2 text-[13px] text-fg-muted">{label}</dt>
+        <dt className="order-2 text-body-sm text-fg-muted">{label}</dt>
         <dd className="order-1 flex flex-col gap-0.5">
-          <span className="font-heading text-[22px] leading-tight font-bold tracking-tight tabular-nums text-fg">
-            {value}
-          </span>
-          {hint && <span className="text-[12px] text-fg-muted">{hint}</span>}
+          <span className="text-title-lg tabular-nums text-fg">{value}</span>
+          {hint && <span className="text-caption text-fg-muted">{hint}</span>}
         </dd>
       </div>
     </div>
