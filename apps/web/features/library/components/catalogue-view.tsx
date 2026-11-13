@@ -25,6 +25,8 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { CursorPagination } from "../../../components/cursor-pagination";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
@@ -41,6 +43,9 @@ import { TitleForm } from "./title-form";
 
 const AVAILABILITY_VALUES = ["", "available"] as const;
 const SORT_VALUES = ["", "newest"] as const;
+
+/** Rows per page; the titles API pages by offset and reports no total. */
+const TITLES_PAGE_SIZE = 50;
 
 export function CatalogueView(): ReactElement {
   const t = useTranslations("app.library.catalogue");
@@ -62,7 +67,10 @@ export function CatalogueView(): ReactElement {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<LibraryTitle | null>(null);
   const [deleting, setDeleting] = useState<LibraryTitle | null>(null);
+  const paging = useOffsetPage(TITLES_PAGE_SIZE);
   const { data, isLoading } = useLibraryTitlesQuery({
+    limit: paging.limit,
+    offset: paging.offset,
     search,
     materialTypeId,
     ddcClass,
@@ -82,23 +90,19 @@ export function CatalogueView(): ReactElement {
     label: `${ddc.code} — ${ddc.name}`,
   }));
 
-  // The table always shows the catalogue's first page (`pagination` below
-  // is a fixed `{ pageIndex: 0, ... }`, not wired to a real offset
-  // control), so a filter change already lands on page one without an
-  // explicit reset -- there is no further-along page state to clear.
   const filters: DataTableFilterDef[] = [
     {
       id: "materialType",
       label: t("filters.materialType"),
       value: materialTypeId,
-      onChange: setMaterialTypeId,
+      onChange: paging.resetting(setMaterialTypeId),
       options: materialTypeOptions,
     },
     {
       id: "classification",
       label: t("filters.classification"),
       value: ddcClass,
-      onChange: setDdcClass,
+      onChange: paging.resetting(setDdcClass),
       options: ddcOptions,
     },
     {
@@ -107,6 +111,7 @@ export function CatalogueView(): ReactElement {
       value: availability,
       onChange: (value) => {
         setAvailability(value as (typeof AVAILABILITY_VALUES)[number]);
+        paging.resetPage();
       },
       type: "boolean",
       activeValue: "available",
@@ -117,6 +122,7 @@ export function CatalogueView(): ReactElement {
       value: sort,
       onChange: (value) => {
         setSort(value as (typeof SORT_VALUES)[number]);
+        paging.resetPage();
       },
       options: [
         { value: "", label: t("filters.sortTitle") },
@@ -268,14 +274,15 @@ export function CatalogueView(): ReactElement {
         <DataTable
           stateKey="features/library/components/catalogue-view:1"
           data={titles}
+          mode="cursor"
           columns={columns}
           rowCount={titles.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
+          pagination={{ pageIndex: 0, pageSize: TITLES_PAGE_SIZE }}
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter={search}
-          onGlobalFilterChange={setSearch}
+          onGlobalFilterChange={paging.resetting(setSearch)}
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
           filtersLabels={{
@@ -294,6 +301,12 @@ export function CatalogueView(): ReactElement {
           }
         />
       </div>
+      <CursorPagination
+        hasPrevious={paging.hasPrevious}
+        hasNext={paging.hasNextFor(titles.length)}
+        onPrevious={paging.goPrevious}
+        onNext={paging.goNext}
+      />
 
       <Dialog
         open={adding || editing !== null}

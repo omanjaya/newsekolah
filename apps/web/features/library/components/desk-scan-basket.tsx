@@ -59,7 +59,7 @@ export function DeskScanBasket({
           description={t(`emptyBody.${mode}`)}
         />
       ) : (
-        <ul className="flex flex-col gap-1.5">
+        <ul className="flex flex-col gap-1.5" aria-live="polite">
           {items.map((item) => (
             <li
               key={item.barcode}

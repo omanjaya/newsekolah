@@ -1,6 +1,6 @@
 "use client";
 
-import { QrPanel, domainIcons } from "@newsekolah/ui";
+import { Alert, Button, QrPanel, domainIcons } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect } from "react";
@@ -19,13 +19,28 @@ export function VisitKioskView(): ReactElement {
   const t = useTranslations("app.library.visitKiosk");
   const issue = useIssueLibraryKioskTokenMutation();
 
+  const { mutate, data, isError } = issue;
+
   useEffect(() => {
-    issue.mutate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mint once on mount
-  }, []);
+    mutate();
+  }, [mutate]);
+
+  // The kiosk runs unattended: mint the next token as soon as the current one
+  // expires instead of waiting for someone to press "Buat kode baru".
+  const expiresAt = data?.expires_at;
+  useEffect(() => {
+    if (!expiresAt) return;
+    const delay = Math.max(1000, new Date(expiresAt).getTime() - Date.now());
+    const timer = setTimeout(() => {
+      mutate();
+    }, delay);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [expiresAt, mutate]);
 
   function renew() {
-    issue.mutate();
+    mutate();
   }
 
   return (
@@ -44,6 +59,15 @@ export function VisitKioskView(): ReactElement {
           expiresInLabel={(seconds) => t("expiresIn", { seconds })}
           renewLabel={t("renew")}
         />
+      ) : isError ? (
+        <div className="flex max-w-md flex-col items-center gap-3">
+          <Alert variant="warning" title={t("issueFailedTitle")}>
+            {t("issueFailedBody")}
+          </Alert>
+          <Button type="button" variant="secondary" onClick={renew}>
+            {t("retry")}
+          </Button>
+        </div>
       ) : (
         <div
           className="h-80 w-80 animate-pulse rounded-sm border border-border bg-surface"

@@ -214,6 +214,7 @@
     },
     "member": {
       "searchPlaceholder": "Search by name, student ID, or member number",
+      "scanLabel": "Scan or type the member card code",
       "scanHint": "Or scan a member card to start.",
       "endSession": "Done",
       "hintTitle": "Pick a member first",
@@ -773,7 +774,10 @@
     "instructions": "Scan this code with the school app to log a visit.",
     "expired": "Code has expired",
     "expiresIn": "Valid for {seconds} more seconds",
-    "renew": "Get a new code"
+    "renew": "Get a new code",
+    "issueFailedTitle": "The code could not be created",
+    "issueFailedBody": "Check this screen's connection and try again.",
+    "retry": "Try again"
   },
   "readInPlace": {
     "title": "Read in place",

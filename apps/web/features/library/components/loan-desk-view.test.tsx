@@ -102,12 +102,12 @@ describe("LoanDeskView", () => {
     expect(screen.getByRole("textbox", { name: "modes.scanLabel.borrow" })).toHaveFocus();
   });
 
-  it("does not render the scanner field before a member is selected", () => {
+  it("offers the scanner field before a member is selected so a card scan starts the session", () => {
     deskSession.mockReturnValue(baseSession());
 
     render(<LoanDeskView />);
 
-    expect(screen.queryByRole("textbox", { name: /scanLabel/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "member.scanLabel" })).toHaveFocus();
   });
 
   it("puts the pill mode switch in the page header", () => {

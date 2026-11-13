@@ -124,4 +124,32 @@ describe("CatalogueView filters", () => {
     expect(screen.getByRole("menuitem", { name: "catalogueSettings" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "report" })).toBeInTheDocument();
   });
+
+  it("pages the titles query by offset and keeps the page in the URL", async () => {
+    const user = userEvent.setup();
+    mocks.useLibraryTitlesQuery.mockReturnValue({
+      data: {
+        data: Array.from({ length: 50 }, (_, i) => ({
+          id: `t${i}`,
+          title: `Judul ${i}`,
+          author: "A",
+          classification: "",
+          available_copies: 1,
+          total_copies: 1,
+        })),
+      },
+      isLoading: false,
+    });
+    render(<CatalogueView />);
+
+    expect(mocks.useLibraryTitlesQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ limit: 50, offset: 0 }),
+    );
+    await user.click(screen.getByRole("button", { name: "next" }));
+
+    expect(mocks.useLibraryTitlesQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ limit: 50, offset: 50 }),
+    );
+    expect(new URLSearchParams(window.location.search).get("page")).toBe("2");
+  });
 });

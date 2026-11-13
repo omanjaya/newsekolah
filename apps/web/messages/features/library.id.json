@@ -214,6 +214,7 @@
     },
     "member": {
       "searchPlaceholder": "Cari nama, NIS, atau nomor anggota",
+      "scanLabel": "Pindai atau ketik kode kartu anggota",
       "scanHint": "Atau pindai kartu anggota untuk mulai.",
       "endSession": "Selesai",
       "hintTitle": "Pilih anggota terlebih dahulu",
@@ -773,7 +774,10 @@
     "instructions": "Pindai kode ini dengan aplikasi sekolah untuk mencatat kunjungan.",
     "expired": "Kode sudah kedaluwarsa",
     "expiresIn": "Berlaku {seconds} detik lagi",
-    "renew": "Buat kode baru"
+    "renew": "Buat kode baru",
+    "issueFailedTitle": "Kode tidak bisa dibuat",
+    "issueFailedBody": "Periksa koneksi layar ini lalu coba lagi.",
+    "retry": "Coba lagi"
   },
   "readInPlace": {
     "title": "Baca di tempat",

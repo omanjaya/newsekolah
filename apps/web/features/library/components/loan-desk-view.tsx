@@ -67,34 +67,35 @@ export function LoanDeskView(): ReactElement {
             onClear={session.endSession}
           />
 
-          {session.member ? (
-            <>
-              <div className="flex flex-wrap items-end gap-3">
-                <BarcodeScannerField
-                  label={t(`modes.scanLabel.${session.mode}`)}
-                  onScan={session.handleScan}
-                  submitLabel={t("scanSubmit")}
-                  disabled={session.scanning}
-                  autoFocus
-                  stretch
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  icon={<Undo2 />}
-                  disabled={!canUndo}
-                  onClick={() => {
-                    session.undo(session.mode);
-                  }}
-                >
-                  {t("undoLastScan")}
-                </Button>
-              </div>
-              {session.scanError && (
-                <p className="text-[13px] text-status-absent">{session.scanError}</p>
-              )}
-            </>
-          ) : (
+          <div className="flex flex-wrap items-end gap-3">
+            <BarcodeScannerField
+              label={session.member ? t(`modes.scanLabel.${session.mode}`) : t("member.scanLabel")}
+              onScan={session.handleScan}
+              submitLabel={t("scanSubmit")}
+              disabled={session.scanning}
+              autoFocus
+              stretch
+            />
+            {session.member && (
+              <Button
+                type="button"
+                variant="secondary"
+                icon={<Undo2 />}
+                disabled={!canUndo}
+                onClick={() => {
+                  session.undo(session.mode);
+                }}
+              >
+                {t("undoLastScan")}
+              </Button>
+            )}
+          </div>
+          {session.scanError && (
+            <p role="alert" className="text-[13px] text-status-absent">
+              {session.scanError}
+            </p>
+          )}
+          {!session.member && (
             <Alert variant="info" title={t("member.hintTitle")}>
               {t("member.hintBody")}
             </Alert>
