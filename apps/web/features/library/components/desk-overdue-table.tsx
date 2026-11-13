@@ -229,7 +229,7 @@ export function DeskOverdueTable(): ReactElement {
         open={confirmingReminders}
         onOpenChange={setConfirmingReminders}
         title={t("confirmReminders.title")}
-        description={t("confirmReminders.body", { count: items.length })}
+        description={t("confirmReminders.body")}
         confirmLabel={t("sendReminders")}
         confirming={sendReminders.isPending}
         onConfirm={() => {

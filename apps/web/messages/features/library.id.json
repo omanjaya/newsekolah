@@ -220,6 +220,7 @@
       "hintTitle": "Pilih anggota terlebih dahulu",
       "hintBody": "Cari nama di atas atau pindai kartu anggota untuk mulai meminjamkan, mengembalikan, atau memperpanjang buku.",
       "notFound": "Kartu atau kode \"{code}\" tidak dikenali",
+      "ambiguous": "Kode \"{code}\" cocok dengan lebih dari satu anggota. Pilih dari pencarian.",
       "lookupFailed": "Pencarian anggota gagal, coba lagi"
     },
     "modes": {
@@ -295,7 +296,7 @@
       },
       "confirmReminders": {
         "title": "Kirim pengingat?",
-        "body": "Pengingat jatuh tempo dikirim ke anggota yang terlambat ({count} pinjaman)."
+        "body": "Pengingat dikirim ke anggota yang pinjamannya segera jatuh tempo. Pinjaman yang sudah terlambat tidak termasuk."
       }
     }
   },
@@ -1096,6 +1097,7 @@
     },
     "overdueMembers": {
       "title": "Anggota terlambat",
+      "unknownMember": "Anggota tidak dikenali",
       "emptyTitle": "Tidak ada anggota terlambat",
       "columns": {
         "member": "Anggota",

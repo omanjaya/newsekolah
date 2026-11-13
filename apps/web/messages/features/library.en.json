@@ -220,6 +220,7 @@
       "hintTitle": "Pick a member first",
       "hintBody": "Search a name above or scan a member card to start lending, returning, or renewing books.",
       "notFound": "Card or code \"{code}\" was not recognized",
+      "ambiguous": "Code \"{code}\" matches more than one member. Pick from the search.",
       "lookupFailed": "Member lookup failed, try again"
     },
     "modes": {
@@ -295,7 +296,7 @@
       },
       "confirmReminders": {
         "title": "Send reminders?",
-        "body": "Due-date reminders go to every overdue member ({count} loans)."
+        "body": "Reminders go to members whose loans are due soon. Loans that are already overdue are not included."
       }
     }
   },
@@ -1096,6 +1097,7 @@
     },
     "overdueMembers": {
       "title": "Overdue members",
+      "unknownMember": "Unknown member",
       "emptyTitle": "No overdue members",
       "columns": {
         "member": "Member",

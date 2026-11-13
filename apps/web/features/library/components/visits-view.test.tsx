@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useLibraryVisitsQuery: vi.fn(),
+  now: new Date("2026-09-15T02:00:00Z"),
 }));
 
 vi.mock("next-intl", () => ({
@@ -21,7 +22,7 @@ vi.mock("../../../lib/session/session-provider", () => ({
 vi.mock("../../../lib/simulation/clock", () => ({
   useSimulation: () => undefined,
   // 2026-09-15T09:00 in Asia/Jakarta (UTC+7).
-  businessNow: () => new Date("2026-09-15T02:00:00Z"),
+  businessNow: () => mocks.now,
 }));
 vi.mock("../../reference/api", () => ({
   useLookup: () => new Map(),
@@ -40,6 +41,7 @@ import { VisitsView } from "./visits-view";
 
 describe("VisitsView filters", () => {
   beforeEach(() => {
+    mocks.now = new Date("2026-09-15T02:00:00Z");
     mocks.useLibraryVisitsQuery.mockReset();
     mocks.useLibraryVisitsQuery.mockReturnValue({ data: { data: [] }, isLoading: false });
     window.history.replaceState(null, "", "/library/visits");
@@ -82,6 +84,18 @@ describe("VisitsView filters", () => {
     expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
       "2026-09-01T00:00:00Z",
       "2026-09-15T23:59:59Z",
+      { limit: 50, offset: 0 },
+    );
+  });
+
+  it("uses the school's calendar day when it differs from the UTC day", () => {
+    // 2026-09-01T00:30 in Asia/Jakarta, still 31 August in UTC.
+    mocks.now = new Date("2026-08-31T17:30:00Z");
+    render(<VisitsView />);
+
+    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
+      "2026-09-01T00:00:00Z",
+      "2026-09-01T23:59:59Z",
       { limit: 50, offset: 0 },
     );
   });
