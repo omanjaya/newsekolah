@@ -30,35 +30,39 @@ Overhaul dianggap berhasil bila:
 
 Sumber tunggal tetap `packages/ui-tokens/tokens.json`, dibangkitkan ke CSS variable dan dipetakan di `packages/config/tailwind/preset.css`. Nilai warna dasar tidak berubah. Yang ditambah:
 
-| Kelompok   | Token baru                                                                         | Catatan                                                                  |
-| ---------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Permukaan  | `surface-raised`, `surface-sunken`, `surface-overlay`, `scrim`                     | `sunken` untuk sel isian dan trek tab; `raised` untuk popover dan lembar |
-| Batas      | `border-strong`                                                                    | Batas kontrol form, kontras minimal 3:1 terhadap permukaan               |
-| Keadaan    | `state-hover`, `state-pressed`, `state-selected`, `focus-ring`                     | Lapisan keadaan netral, berlaku di terang dan gelap                      |
-| Semantik   | `success`, `warning`, `danger`, `info` masing-masing dengan `-soft` dan `-soft-fg` | Dipakai sebagai kelas, bukan lagi alias yang jarang terpakai             |
-| Elevasi    | `shadow-0` sampai `shadow-3` dengan varian gelap                                   | `card` = 1, `float` = 3 tetap ada sebagai alias                          |
-| Radius     | `xl` 24 px                                                                         | Kartu hero dan lembar bawah                                              |
-| Tata letak | lebar kontainer `narrow` 720, `default` 1200, `wide` 1440; breakpoint bernama      | Dipakai `PageShell`                                                      |
-| Gerak      | lihat bagian 4                                                                     |                                                                          |
+| Kelompok   | Token baru                                                                         | Catatan                                                                       |
+| ---------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Permukaan  | `surface-raised`, `surface-sunken`, `surface-overlay`, `scrim`                     | `sunken` untuk sel isian dan trek tab; `raised` untuk popover dan lembar      |
+| Batas      | `border-strong`                                                                    | Batas kontrol form, kontras minimal 3:1 terhadap permukaan                    |
+| Keadaan    | `state-hover`, `state-pressed`, `state-selected`, `focus-ring`                     | Lapisan tembus pandang, berlaku di terang dan gelap; `selected` bertint aksen |
+| Semantik   | `success`, `warning`, `danger`, `info` masing-masing dengan `-soft` dan `-soft-fg` | Dipakai sebagai kelas, bukan lagi alias yang jarang terpakai                  |
+| Elevasi    | `shadow-0` sampai `shadow-3` dengan varian gelap                                   | `card` = 1, `float` = 3 tetap ada sebagai alias                               |
+| Radius     | `xl` 24 px                                                                         | Kartu hero dan lembar bawah                                                   |
+| Tata letak | lebar kontainer `narrow` 720, `default` 1200, `wide` 1440; breakpoint bernama      | Dipakai `PageShell`                                                           |
+| Gerak      | lihat bagian 4                                                                     |                                                                               |
 
 Aksen mode gelap mengikuti token (`#2FD6A0`); turunan aksen tenant di `apps/web/lib/tenant/accent.ts` disesuaikan supaya aksen bawaan tidak kusam (temuan shell).
+
+Urutan z-index diubah menjadi `sticky` < `overlay` < `modal` < `dropdown` < `popover` < `toast` < `tooltip`, supaya menu dan popover yang dibuka dari dalam dialog atau dekat bilah lengket tidak tertutup.
 
 ### Peran tipografi
 
 Ukuran font literal `text-[Npx]` dilarang di `apps/web` dan `packages/ui`. Yang dipakai adalah utilitas peran yang dibangkitkan dari token:
 
-| Peran      | Ukuran / tinggi baris | Bobot | Font              | Pemakaian                               |
-| ---------- | --------------------- | ----- | ----------------- | --------------------------------------- |
-| `display`  | 28 / 34, -0.02em      | 700   | Manrope           | Judul halaman, sapaan beranda           |
-| `title-lg` | 22 / 28, -0.01em      | 700   | Manrope           | Judul kartu hero, angka besar           |
-| `title`    | 18 / 24               | 700   | Manrope           | Judul dialog, judul kartu utama         |
-| `heading`  | 16 / 22               | 700   | Manrope           | Judul bagian, judul kartu               |
-| `body`     | 14 / 20               | 400   | Plus Jakarta Sans | Teks isi, sel tabel                     |
-| `body-sm`  | 13 / 18               | 400   | Plus Jakarta Sans | Teks sekunder, deskripsi                |
-| `label`    | 13 / 18               | 600   | Plus Jakarta Sans | Label field, tombol, tab                |
-| `caption`  | 12 / 16               | 500   | Plus Jakarta Sans | Keterangan, kepala kolom tabel, eyebrow |
+| Peran      | Ukuran / tinggi baris | Bobot | Font              | Pemakaian                                       |
+| ---------- | --------------------- | ----- | ----------------- | ----------------------------------------------- |
+| `display`  | 28 / 32, -0.02em      | 700   | Manrope           | Judul halaman, sapaan beranda, judul kartu hero |
+| `title-lg` | 22 / 28, -0.01em      | 700   | Manrope           | Angka besar                                     |
+| `title`    | 18 / 24               | 700   | Manrope           | Judul dialog, judul kartu utama                 |
+| `heading`  | 16 / 22               | 700   | Manrope           | Judul bagian, judul kartu                       |
+| `body`     | 14 / 20               | 400   | Plus Jakarta Sans | Teks isi, sel tabel                             |
+| `body-sm`  | 13 / 18               | 400   | Plus Jakarta Sans | Teks sekunder, deskripsi, eyebrow halaman       |
+| `label`    | 13 / 18               | 600   | Plus Jakarta Sans | Label field, tombol, tab                        |
+| `caption`  | 12 / 16               | 500   | Plus Jakarta Sans | Keterangan, kepala kolom tabel, badge           |
 
-Di HP, `display` turun ke 24 / 30. Bila artboard acuan menunjukkan nilai lain untuk komponen tertentu, artboard yang diikuti dan tabel ini diperbarui.
+Di HP, `display` turun ke 24 / 28. Bila artboard acuan menunjukkan nilai lain untuk komponen tertentu, artboard yang diikuti dan tabel ini diperbarui.
+
+Koreksi dari artboard (gelombang 1): tinggi baris `display` 32 (bukan 34) dan 28 di HP (bukan 30), mengikuti `line-height: 1.1` judul artboard; judul kartu hero di artboard 26 px dengan -0.02em, lebih dekat ke `display` daripada `title-lg` 22, sehingga `title-lg` khusus untuk angka besar (artboard: 22 px, -0.01em, sama persis); eyebrow halaman di artboard 13 px reguler, jadi memakai `body-sm`, bukan `caption`. Tetap seperti tabel walau artboard sedikit berbeda: judul bagian artboard 17 px (`heading` tetap 16 agar tidak menyatu dengan `title` 18), dan sapaan artboard 28 px di HP (langkah turun ke 24 tetap dipakai karena judul halaman nyata jauh lebih panjang, misalnya "Selamat datang, Admin Contoh" sudah dua baris pada 28 px di layar 390 px).
 
 ## 4. Sistem gerak
 
