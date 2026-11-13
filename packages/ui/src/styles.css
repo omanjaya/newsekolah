@@ -394,3 +394,100 @@
     animation: none !important;
   }
 }
+
+/* ========================================================================
+ * Wave 2, stream 2: overlays, navigation and feedback.
+ * Owned by Dialog, Sheet, Tabs, NavTabs and SegmentedControl.
+ * ===================================================================== */
+
+/*
+ * A drawer travels its own width from the right edge, at the sheet's pace.
+ * Like the vertical slide it reads `--motion-slide-offset`, which the
+ * reduced-motion block above zeroes, so it plays as a plain fade there.
+ */
+@keyframes slide-left-in {
+  from {
+    opacity: var(--motion-slide-opacity, 1);
+    transform: translateX(var(--motion-slide-offset, 100%));
+  }
+}
+@keyframes slide-right-out {
+  to {
+    opacity: var(--motion-slide-opacity, 1);
+    transform: translateX(var(--motion-slide-offset, 100%));
+  }
+}
+@utility animate-drawer-in {
+  animation: slide-left-in var(--duration-slow) var(--ease-sheet);
+}
+@utility animate-drawer-out {
+  animation: slide-right-out var(--duration-base) var(--ease-exit);
+}
+
+/*
+ * Edge fades for a strip that scrolls sideways (a tab row on a phone).
+ * useScrollEdges sets `data-overflow-start` / `data-overflow-end` while
+ * there is more content past that edge; only then does the strip get a
+ * mask, so a strip that fits pays nothing. The mask is alpha only: the
+ * colour in the gradient is never painted.
+ */
+@utility scroll-fade-x {
+  --scroll-fade-start: 0px;
+  --scroll-fade-end: 0px;
+  &[data-overflow-start] {
+    --scroll-fade-start: var(--space-6);
+  }
+  &[data-overflow-end] {
+    --scroll-fade-end: var(--space-6);
+  }
+  &:is([data-overflow-start], [data-overflow-end]) {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--scroll-fade-start),
+      #000 calc(100% - var(--scroll-fade-end)),
+      transparent
+    );
+  }
+}
+
+/*
+ * The scrolling body of a Dialog or Sheet. Most forms rendered inside one
+ * end with their own action row, `<div className="flex justify-end gap-2
+ * border-t ...">`, as the last child of the form (about 70 call sites).
+ * That row is lifted into the same sticky footer `DialogFooter` draws, so
+ * Save stays in reach while the fields scroll, without editing the forms.
+ * Its divider only shows while there is content under it (the content
+ * element carries `data-overflow-end`, see useScrollEdges). New code uses
+ * `DialogFooter` or the `footer` prop instead of relying on this shape.
+ *
+ * A body that ends in a sticky footer drops its own bottom padding: a
+ * sticky element stops at the scroll container's padding edge, so the
+ * padding would show as a strip of scrolling content under the footer.
+ */
+@utility dialog-body {
+  &:has(> :is(form, div) > .border-t.justify-end:last-child, [data-dialog-footer]) {
+    padding-bottom: 0;
+  }
+  & > :is(form, div) > .border-t.justify-end:last-child {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    /* Also undoes a row's own bleed margins (announcement-form wrote one by hand). */
+    margin-inline: calc(var(--dialog-px) * -1);
+    margin-bottom: 0;
+    padding: var(--space-4) var(--dialog-px)
+      calc(var(--dialog-footer-pb) + var(--dialog-safe-bottom));
+    border-top-color: transparent;
+    background-color: var(--color-surface-overlay);
+    transition: border-color var(--duration-fast) var(--ease-standard);
+  }
+  [data-overflow-end] > & > :is(form, div) > .border-t.justify-end:last-child {
+    border-top-color: var(--color-line);
+  }
+  @media (width < 40rem) {
+    & > :is(form, div) > .border-t.justify-end:last-child > * {
+      flex: 1 1 0%;
+    }
+  }
+}

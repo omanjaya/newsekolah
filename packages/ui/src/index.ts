@@ -68,9 +68,11 @@ export {
   type UseBarcodeScannerOptions,
 } from "./hooks/use-barcode-scanner.js";
 export { createDuplicateScanGuard, type DuplicateScanGuard } from "./hooks/duplicate-scan-guard.js";
+export { useActiveIndicator } from "./hooks/use-active-indicator.js";
 export { useCountUp, type UseCountUpOptions } from "./hooks/use-count-up.js";
 export { useMediaQuery } from "./hooks/use-media-query.js";
 export { useScanFeedback, type ScanFeedback } from "./hooks/use-scan-feedback.js";
+export { useScrollEdges, type UseScrollEdgesOptions } from "./hooks/use-scroll-edges.js";
 export { Textarea, type TextareaProps } from "./components/textarea.js";
 export { Select, type SelectOption, type SelectProps } from "./components/select.js";
 export { Combobox, type ComboboxOption, type ComboboxProps } from "./components/combobox.js";
@@ -122,16 +124,21 @@ export {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogFooter,
   DialogTrigger,
   type DialogContentProps,
+  type DialogSize,
 } from "./components/dialog.js";
 export { ConfirmDialog, type ConfirmDialogProps } from "./components/confirm-dialog.js";
 export {
   Sheet,
   SheetClose,
   SheetContent,
+  SheetFooter,
   SheetTrigger,
   type SheetContentProps,
+  type SheetSide,
+  type SheetSize,
 } from "./components/sheet.js";
 export {
   Toaster,
@@ -139,6 +146,7 @@ export {
   useToast,
   type ToastActionOptions,
   type ToastApi,
+  type ToastOptions,
   type ToasterProps,
 } from "./components/toast.js";
 export { Alert, type AlertProps, type AlertVariant } from "./components/alert.js";
@@ -211,7 +219,22 @@ export {
   type PageHeaderProps,
 } from "./components/page-header.js";
 export { Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from "./components/breadcrumb.js";
-export { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/tabs.js";
+export {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  type TabsListProps,
+  type TabsSize,
+  type TabsTriggerProps,
+  type TabsVariant,
+} from "./components/tabs.js";
+export {
+  NavTabs,
+  type NavTabsItem,
+  type NavTabsLinkProps,
+  type NavTabsProps,
+} from "./components/nav-tabs.js";
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/tooltip.js";
 export {
   DropdownMenu,
@@ -220,16 +243,29 @@ export {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
+  type DropdownMenuItemProps,
 } from "./components/dropdown-menu.js";
-export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "./components/popover.js";
+export {
+  Popover,
+  PopoverAnchor,
+  PopoverClose,
+  PopoverContent,
+  PopoverTrigger,
+} from "./components/popover.js";
 export {
   RowActionsMenu,
   type RowActionsMenuItem,
   type RowActionsMenuProps,
 } from "./components/row-actions-menu.js";
-export { Progress, type ProgressProps } from "./components/progress.js";
+export { Progress, type ProgressProps, type ProgressTone } from "./components/progress.js";
 export { Kbd } from "./components/kbd.js";
 export { StickySaveBar, type StickySaveBarProps } from "./components/sticky-save-bar.js";
 export {

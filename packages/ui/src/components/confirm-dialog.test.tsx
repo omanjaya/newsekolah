@@ -3,8 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import { expectNoAxeViolations } from "../test/axe.js";
+
 import { Button } from "./button.js";
 import { ConfirmDialog } from "./confirm-dialog.js";
+import { UiLabelsProvider } from "./ui-labels.js";
 
 function Harness({ onConfirm }: { onConfirm: () => void }) {
   const [open, setOpen] = useState(false);
@@ -68,5 +71,65 @@ describe("ConfirmDialog", () => {
     await userEvent.click(screen.getByRole("button", { name: "Batal" }));
     expect(onConfirm).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("takes its button labels from UiLabels when the caller gives none", () => {
+    render(
+      <UiLabelsProvider
+        labels={{ confirmDialogConfirm: "Continue", confirmDialogCancel: "Cancel" }}
+      >
+        <ConfirmDialog open onOpenChange={vi.fn()} title="Publish?" onConfirm={vi.fn()} />
+      </UiLabelsProvider>,
+    );
+    expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+  });
+
+  it("draws the danger tone: a danger confirm button and a warning icon", () => {
+    render(
+      <ConfirmDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Hapus?"
+        confirmLabel="Hapus"
+        tone="danger"
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Hapus" })).toHaveClass("bg-danger");
+    expect(screen.getByRole("dialog").querySelector(".bg-danger-soft")).toBeInTheDocument();
+  });
+
+  it("cannot be dismissed while the action is running", async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        onOpenChange={onOpenChange}
+        title="Hapus?"
+        confirmLabel="Hapus"
+        tone="danger"
+        confirming
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Hapus" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Batal" })).toBeDisabled();
+    await userEvent.keyboard("{Escape}");
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it("has no accessibility violations", async () => {
+    render(
+      <ConfirmDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Hapus akun siswa?"
+        description="Nadia Putri akan dihapus permanen."
+        tone="danger"
+        onConfirm={vi.fn()}
+      />,
+    );
+    await expectNoAxeViolations(screen.getByRole("dialog"));
   });
 });

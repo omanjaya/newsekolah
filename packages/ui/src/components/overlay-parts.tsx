@@ -1,0 +1,190 @@
+"use client";
+
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { X } from "lucide-react";
+import { useRef, type ComponentPropsWithoutRef, type ReactElement, type ReactNode } from "react";
+
+import { useScrollEdges } from "../hooks/use-scroll-edges.js";
+import { cn } from "../utils/cn.js";
+
+import { IconButton } from "./icon-button.js";
+
+/*
+ * The parts Dialog and Sheet share, so a dialog on a phone (a bottom
+ * sheet) and a Sheet are the same object: grab handle, header with the
+ * title on the title role, a scrolling body, and a footer that stays in
+ * reach while the body scrolls. Spacing comes from CSS variables the
+ * content element sets (`--dialog-px` side padding, `--dialog-pb` body
+ * bottom padding, `--dialog-footer-pb`, `--dialog-safe-bottom` for the
+ * home indicator), so the in-body footer can bleed to the edges exactly.
+ */
+
+/** The scrim behind a dialog or sheet; it leaves with its layer and stops taking clicks as it fades. */
+export function OverlayScrim({
+  closeAnimation,
+}: {
+  /** The dialog's scrim leaves at 120ms, a sheet's at 200ms. */
+  closeAnimation: "dialog" | "sheet" | "responsive";
+}): ReactElement {
+  return (
+    <DialogPrimitive.Overlay
+      className={cn(
+        "fixed inset-0 z-overlay bg-scrim",
+        "data-[state=open]:animate-overlay-in",
+        closeAnimation === "sheet" && "data-[state=closed]:animate-sheet-overlay-out",
+        closeAnimation === "dialog" && "data-[state=closed]:animate-overlay-out",
+        closeAnimation === "responsive" &&
+          "data-[state=closed]:animate-overlay-out max-sm:data-[state=closed]:animate-sheet-overlay-out",
+        // Radix sets `pointer-events: auto` inline, hence the important.
+        "data-[state=closed]:pointer-events-none!",
+      )}
+    />
+  );
+}
+
+/** The pill at the top of a bottom sheet; it tells the eye the panel came up from the edge. */
+export function GrabHandle({ className }: { className?: string }): ReactElement {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn("mx-auto mt-2 h-1 w-9 shrink-0 rounded-full bg-border-strong/40", className)}
+    />
+  );
+}
+
+export interface OverlayHeaderProps {
+  title: string;
+  description?: string;
+  /** Shown before the title, e.g. a warning in a soft circle. */
+  icon?: ReactNode;
+  closeLabel: string;
+  /** Extra top padding when no grab handle sits above the header. */
+  className?: string;
+}
+
+/**
+ * Title (title role), optional description, and a close button centred on
+ * the title's first line. A divider appears under it once the body has
+ * scrolled, so the header never seems to cut through content.
+ */
+export function OverlayHeader({
+  title,
+  description,
+  icon,
+  closeLabel,
+  className,
+}: OverlayHeaderProps): ReactElement {
+  return (
+    <div
+      className={cn(
+        "flex shrink-0 items-start gap-3 border-b border-transparent px-(--dialog-px) pb-4 transition-colors",
+        "[[data-overflow-start]>&]:border-line",
+        className,
+      )}
+    >
+      {icon}
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <DialogPrimitive.Title className="text-title text-fg">{title}</DialogPrimitive.Title>
+        {description && (
+          <DialogPrimitive.Description className="text-body-sm text-fg-muted">
+            {description}
+          </DialogPrimitive.Description>
+        )}
+      </div>
+      {/* As tall as the title's first line, so the button centres on it. */}
+      <div className="-mr-2 flex h-6 shrink-0 items-center pointer-coarse:-mr-3">
+        <DialogPrimitive.Close asChild>
+          <IconButton
+            icon={<X />}
+            aria-label={closeLabel}
+            size="sm"
+            tooltip={false}
+            className="text-fg-muted hover:text-fg"
+          />
+        </DialogPrimitive.Close>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The scrolling middle. It reports its scroll edges to the content element
+ * (`data-overflow-start` / `-end`), which the header and footer dividers
+ * read. `dialog-body` (styles.css) also lifts a form's trailing action row
+ * into the sticky footer.
+ */
+export function OverlayBody({
+  children,
+  padTop,
+  padBottom,
+}: {
+  children: ReactNode;
+  /** No header above: the body brings its own top padding. */
+  padTop: boolean;
+  /** A footer sits below and brings the safe-area padding instead. */
+  padBottom: "with-safe-area" | "plain";
+}): ReactElement {
+  const ref = useRef<HTMLDivElement>(null);
+  useScrollEdges(ref, { axis: "y", markParent: true });
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "dialog-body min-h-0 flex-1 overflow-y-auto overscroll-contain px-(--dialog-px)",
+        padTop && "pt-(--dialog-px)",
+        // With a footer below, its own top padding is most of the gap.
+        padBottom === "with-safe-area"
+          ? "pb-[calc(var(--dialog-pb)+var(--dialog-safe-bottom))]"
+          : "pb-2",
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+const FOOTER_LAYOUT =
+  "flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-transparent px-(--dialog-px) transition-colors max-sm:*:flex-1";
+
+/** The `footer` prop's row, below the scrolling body. */
+export function OverlayFooter({ children }: { children: ReactNode }): ReactElement {
+  return (
+    <div
+      className={cn(
+        FOOTER_LAYOUT,
+        "pt-4 pb-[calc(var(--dialog-footer-pb)+var(--dialog-safe-bottom))]",
+        "[[data-overflow-end]>&]:border-line",
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * The action row of a dialog or sheet, for forms whose submit button has
+ * to live inside the `<form>`: put it last in the form and it sticks to
+ * the bottom of the dialog while the fields scroll, bleeding to the
+ * dialog's edges, with a divider only while content scrolls under it. On
+ * a phone its buttons share the width. Outside a form, the `footer` prop
+ * of `DialogContent` / `SheetContent` draws the same row.
+ */
+export function DialogFooter({
+  className,
+  ...props
+}: ComponentPropsWithoutRef<"div">): ReactElement {
+  return (
+    <div
+      // The body drops its bottom padding while it holds one (styles.css).
+      data-dialog-footer=""
+      className={cn(
+        FOOTER_LAYOUT,
+        "sticky bottom-0 z-[1] -mx-(--dialog-px) bg-surface-overlay",
+        "pt-4 pb-[calc(var(--dialog-footer-pb)+var(--dialog-safe-bottom))]",
+        "[[data-overflow-end]>.dialog-body_&]:border-line",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
