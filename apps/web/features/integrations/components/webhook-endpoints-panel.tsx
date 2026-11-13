@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   type WebhookEndpoint,
@@ -27,7 +28,7 @@ export function WebhookEndpointsPanel({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const { data, isLoading } = useWebhookEndpointsQuery();
+  const { data, isLoading, isError, refetch } = useWebhookEndpointsQuery();
   const deleteEndpoint = useDeleteWebhookEndpointMutation();
 
   const [dialogTarget, setDialogTarget] = useState<"create" | WebhookEndpoint | null>(null);
@@ -77,7 +78,7 @@ export function WebhookEndpointsPanel({
     },
     {
       id: "actions",
-      header: "",
+      header: t("columns.actions"),
       cell: ({ row }) => (
         <div className="flex gap-2">
           <Button
@@ -130,27 +131,31 @@ export function WebhookEndpointsPanel({
         </Button>
       </div>
 
-      <DataTable
-        stateKey="features/integrations/components/webhook-endpoints-panel:1"
-        mode="local"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 100 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={isLoading}
-        getRowId={(endpoint) => endpoint.id}
-        emptyState={
-          <EmptyState
-            icon={<Webhook aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      {isError && !data ? (
+        <QueryError retry={() => refetch()} />
+      ) : (
+        <DataTable
+          stateKey="features/integrations/components/webhook-endpoints-panel:1"
+          mode="local"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 100 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={isLoading}
+          getRowId={(endpoint) => endpoint.id}
+          emptyState={
+            <EmptyState
+              icon={<Webhook aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      )}
 
       {dialogTarget !== null && (
         <WebhookEndpointDialog

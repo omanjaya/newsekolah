@@ -25,6 +25,7 @@
       "name": "Name",
       "permissions": "Permissions",
       "status": "Status",
+      "actions": "Actions",
       "lastUsed": "Last used"
     },
     "create": {
@@ -45,7 +46,7 @@
     }
   },
   "webhooks": {
-    "description": "A webhook endpoint receives events as an HMAC-signed POST request. See docs/14-public-api.md for the verification scheme.",
+    "description": "A webhook endpoint receives events as an HMAC-signed POST request.",
     "create": "Add endpoint",
     "edit": "Edit",
     "delete": "Delete",
@@ -59,6 +60,7 @@
     "statusDisabled": "Disabled",
     "columns": {
       "url": "URL",
+      "actions": "Actions",
       "eventTypes": "Event types",
       "status": "Status"
     },

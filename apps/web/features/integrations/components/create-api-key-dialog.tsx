@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { type APIKeyCreated, useCreateAPIKeyMutation } from "../api";
+import { usePermissionLabel } from "../lib/use-permission-label";
 
 /**
  * The checkbox list only offers permissions the signed-in admin holds
@@ -34,7 +35,10 @@ export function CreateAPIKeyDialog({
   const [created, setCreated] = useState<APIKeyCreated | null>(null);
   const [copyFailed, setCopyFailed] = useState(false);
 
-  const ownPermissions = me?.permissions ?? [];
+  const permissionLabel = usePermissionLabel();
+  const ownPermissions = [...(me?.permissions ?? [])].sort((a, b) =>
+    permissionLabel(a).localeCompare(permissionLabel(b)),
+  );
 
   function reset() {
     setName("");
@@ -151,7 +155,7 @@ export function CreateAPIKeyDialog({
                         });
                       }}
                     />
-                    {code}
+                    {permissionLabel(code)}
                   </label>
                 ))}
               </div>
