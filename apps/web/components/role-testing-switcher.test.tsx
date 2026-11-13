@@ -24,6 +24,8 @@ vi.mock("../lib/session/session-provider", () => ({
 vi.mock("../lib/navigation/use-unsaved-changes-protection", () => ({
   confirmUnsavedChangesBeforeNavigation: () => allowed(),
 }));
+const hasAccessToken = vi.fn(() => true);
+vi.mock("../lib/api/use-has-access-token", () => ({ useHasAccessToken: () => hasAccessToken() }));
 vi.mock("../features/auth/role-testing-api", () => ({
   useRoleTestingQuery: vi.fn(),
   useRoleTestingSwitchMutation: vi.fn(),
@@ -40,6 +42,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mutateAsync.mockResolvedValue(undefined);
   allowed.mockReturnValue(true);
+  hasAccessToken.mockReturnValue(true);
   mockedSwitch.mockReturnValue({ mutateAsync, isPending: false } as never);
   mockedQuery.mockImplementation(
     (filter) =>
@@ -62,6 +65,17 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("RoleTestingSwitcher", () => {
+  it("does not query role testing before the access token exists", () => {
+    hasAccessToken.mockReturnValue(false);
+    render(<RoleTestingSwitcher />);
+    expect(mockedQuery).toHaveBeenCalledWith({}, false);
+  });
+
+  it("queries role testing once the access token exists", () => {
+    render(<RoleTestingSwitcher />);
+    expect(mockedQuery).toHaveBeenCalledWith({}, true);
+  });
+
   it("does not expose controls when the server says role testing is unavailable", () => {
     mockedQuery.mockReturnValue({
       data: { available: false, active: false, roles: [], users: [] },

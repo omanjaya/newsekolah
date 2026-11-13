@@ -1,6 +1,7 @@
 import "server-only";
 
 import { headers } from "next/headers";
+import { cache } from "react";
 
 import { API_INTERNAL_URL } from "../env";
 
@@ -16,7 +17,7 @@ import type { TenantBranding } from "./tenant-provider";
  * documented defaults (locale "id", product name "SION") instead of
  * breaking the page.
  */
-export async function getTenantBrandingServer(): Promise<TenantBranding | undefined> {
+async function fetchTenantBrandingServer(): Promise<TenantBranding | undefined> {
   if (!API_INTERNAL_URL) return undefined;
   try {
     const incomingHost = (await headers()).get("host");
@@ -31,3 +32,12 @@ export async function getTenantBrandingServer(): Promise<TenantBranding | undefi
     return undefined;
   }
 }
+
+/**
+ * One render pass reads the branding from the root layout, the i18n request
+ * config, `generateMetadata`, the (app) layout and several nested layouts.
+ * `cache()` shares a single upstream call per request; without it each
+ * page load cost the API five or more hits on a rate-limited public
+ * endpoint (429 after a few dozen navigations).
+ */
+export const getTenantBrandingServer = cache(fetchTenantBrandingServer);
