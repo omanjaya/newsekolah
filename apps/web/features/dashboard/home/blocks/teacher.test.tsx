@@ -335,4 +335,30 @@ describe("useTeacherBlock", () => {
 
     expect(screen.getByRole("button")).toBeInTheDocument();
   });
+
+  it("links each teaching row to its own attendance session", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-26T01:50:00Z"));
+    sessionsQuery.mockReturnValue({
+      data: { data: [session({ submitted_at: undefined })] },
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn(),
+    });
+    periodsQuery.mockReturnValue({
+      data: { data: PERIODS },
+      isSuccess: true,
+      isLoading: false,
+      isError: false,
+    });
+    classesQuery.mockReturnValue({ data: { data: [{ id: "c1", name: "X-A" }] } });
+    subjectsQuery.mockReturnValue({ data: { data: [{ id: "sub1", name: "Matematika" }] } });
+
+    const { result } = renderHook(() => useTeacherBlock(me, true));
+    render(<>{result.current.left.map((slot) => slot.node)}</>);
+
+    const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
+    expect(hrefs).toContain("/attendance/s1");
+  });
 });

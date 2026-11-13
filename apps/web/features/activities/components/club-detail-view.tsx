@@ -25,8 +25,8 @@ import { useState } from "react";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import { formatDisplayName } from "../../../lib/text/format-name";
-import { todayInZone } from "../../attendance/api";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {

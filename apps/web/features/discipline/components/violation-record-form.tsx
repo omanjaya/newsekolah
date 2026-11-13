@@ -18,7 +18,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
-import { todayInZone } from "../../attendance/api";
+import { todayInZone } from "../../../lib/tenant-date";
 import { useDirectoryNames, useDirectorySearch } from "../../reference/directory-names";
 import {
   type ViolationRecordResult,
