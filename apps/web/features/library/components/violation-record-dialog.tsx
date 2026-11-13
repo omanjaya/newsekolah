@@ -118,7 +118,7 @@ export function ViolationRecordDialog({
           <label className="flex flex-col gap-1 text-[13px]">
             <span className="font-medium">{t("penalty")}</span>
             <Select
-              options={PENALTIES.map((p) => ({ value: p, label: t(`penalties.${p}`) }))}
+              options={PENALTIES.map((p) => ({ value: p, label: tViolations(`penalties.${p}`) }))}
               value={penalty}
               onValueChange={(v) => {
                 setPenalty(v as LibraryPenalty);
