@@ -58,3 +58,48 @@ export function toDateTimeLocalValue(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
+
+/** The UTC instant at which the wall clock in `timeZone` reads `date` at `time` ("HH:mm:ss"). */
+function instantInZone(date: string, time: string, timeZone: string | undefined): Date {
+  if (!timeZone) {
+    // The browser's own zone: parse the wall-clock string as local time.
+    return new Date(`${date}T${time}`);
+  }
+  const guess = new Date(`${date}T${time}Z`);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(guess);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+  const asIfUtc = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    get("hour"),
+    get("minute"),
+    get("second"),
+  );
+  return new Date(guess.getTime() - (asIfUtc - guess.getTime()));
+}
+
+/**
+ * ISO range covering whole calendar days `from`..`to` ("YYYY-MM-DD") as the
+ * school lives them, for APIs that filter on a timestamp. Plain `T00:00:00Z`
+ * bounds are UTC midnights and drop the first hours of the tenant's first day.
+ */
+export function dayRangeInZone(
+  from: string,
+  to: string,
+  timeZone?: string,
+): { from: string; to: string } {
+  return {
+    from: instantInZone(from, "00:00:00", timeZone).toISOString(),
+    to: instantInZone(to, "23:59:59", timeZone).toISOString(),
+  };
+}

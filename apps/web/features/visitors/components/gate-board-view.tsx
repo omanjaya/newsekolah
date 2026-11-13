@@ -6,6 +6,7 @@ import type { Locale } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
+  ConfirmDialog,
   Dialog,
   DialogContent,
   EmptyState,
@@ -25,7 +26,7 @@ import { QueryError } from "../../../components/query-error";
 import { useQuickAction } from "../../../lib/hooks/use-quick-action";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { VisitorsWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { type BoardEntry, useCheckOutVisitMutation, useVisitorBoardQuery } from "../api";
 
@@ -39,11 +40,13 @@ function BoardCard({ entry }: { entry: BoardEntry }): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const checkOut = useCheckOutVisitMutation();
   const canManage = useCan("manage_visitors");
+  const { me } = useSession();
+  const [confirmingCheckOut, setConfirmingCheckOut] = useState(false);
   const { visit } = entry;
 
   return (
     <li
-      className="flex flex-col gap-3 rounded-lg border border-border bg-bg-raised p-4"
+      className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4"
       data-overdue={entry.overdue || undefined}
     >
       <div className="flex items-start justify-between gap-2">
@@ -59,7 +62,7 @@ function BoardCard({ entry }: { entry: BoardEntry }): ReactElement {
         <dt className="text-fg-muted">{t("purpose")}</dt>
         <dd>{visit.purpose || t("noPurpose")}</dd>
         <dt className="text-fg-muted">{t("arrivedAt")}</dt>
-        <dd>{formatDateTime(visit.arrived_at, { locale })}</dd>
+        <dd>{formatDateTime(visit.arrived_at, { locale, timeZone: me?.tenant.timezone })}</dd>
         <dt className="text-fg-muted">{t("badgeNumber")}</dt>
         <dd>{visit.badge_number || t("noBadge")}</dd>
       </dl>
@@ -69,23 +72,37 @@ function BoardCard({ entry }: { entry: BoardEntry }): ReactElement {
           loading={checkOut.isPending}
           className="min-h-14 text-[16px] font-semibold"
           onClick={() => {
-            checkOut.mutate(visit.id, {
-              onSuccess: () => {
-                toast.success(t("signedOut", { name: visit.full_name }));
-              },
-              onError: (error) => {
-                toast.error(
-                  error instanceof ApiError
-                    ? apiErrorMessage(error.code)
-                    : apiErrorMessage("UNKNOWN"),
-                );
-              },
-            });
+            setConfirmingCheckOut(true);
           }}
         >
           {t("checkOut")}
         </Button>
       )}
+      <ConfirmDialog
+        open={confirmingCheckOut}
+        onOpenChange={setConfirmingCheckOut}
+        title={t("checkOutDialog.title")}
+        description={t("checkOutDialog.body", { name: visit.full_name })}
+        confirmLabel={t("checkOut")}
+        confirming={checkOut.isPending}
+        onConfirm={() => {
+          checkOut.mutate(visit.id, {
+            onSuccess: () => {
+              toast.success(t("signedOut", { name: visit.full_name }));
+            },
+            onError: (error) => {
+              toast.error(
+                error instanceof ApiError
+                  ? apiErrorMessage(error.code)
+                  : apiErrorMessage("UNKNOWN"),
+              );
+            },
+            onSettled: () => {
+              setConfirmingCheckOut(false);
+            },
+          });
+        }}
+      />
     </li>
   );
 }

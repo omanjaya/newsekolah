@@ -102,8 +102,8 @@ describe("IncidentLogView filters", () => {
     fireEvent.change(screen.getByLabelText("filters.to"), { target: { value: "2026-09-15" } });
 
     expect(mocks.useIncidentsQuery).toHaveBeenLastCalledWith(
-      "2026-09-01T00:00:00Z",
-      "2026-09-15T23:59:59Z",
+      "2026-08-31T17:00:00.000Z",
+      "2026-09-15T16:59:59.000Z",
       true,
     );
     expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-09-01");

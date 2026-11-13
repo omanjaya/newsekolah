@@ -15,6 +15,10 @@
     "noBadge": "Belum ada",
     "checkOut": "Catat Keluar",
     "signedOut": "{name} sudah dicatat keluar",
+    "checkOutDialog": {
+      "title": "Catat tamu keluar?",
+      "body": "{name} akan dicatat sudah meninggalkan sekolah dan hilang dari daftar tamu di sekolah."
+    },
     "emptyTitle": "Belum ada tamu",
     "emptyBody": "Tamu yang masuk lewat gerbang akan muncul di sini."
   },
@@ -71,6 +75,11 @@
     },
     "emptyTitle": "Belum ada tamu dijadwalkan",
     "emptyBody": "Tambahkan nama tamu yang diharapkan datang hari ini.",
+    "emptyBodyOther": "Tidak ada tamu yang dijadwalkan pada tanggal ini.",
+    "cancelDialog": {
+      "title": "Batalkan tamu terjadwal?",
+      "body": "Rencana kunjungan {name} dibatalkan dan tamu ini tidak bisa lagi dicatat masuk dari daftar."
+    },
     "form": {
       "fullName": "Nama lengkap",
       "organization": "Instansi/organisasi",
@@ -137,7 +146,11 @@
       "actionTaken": "Tindakan yang diambil",
       "edit": "Ubah",
       "close": "Tutup Insiden",
-      "closed": "Insiden ditutup"
+      "closed": "Insiden ditutup",
+      "closeDialog": {
+        "title": "Tutup insiden ini?",
+        "body": "Insiden yang sudah ditutup tidak bisa diubah lagi."
+      }
     },
     "form": {
       "occurredAt": "Waktu kejadian",

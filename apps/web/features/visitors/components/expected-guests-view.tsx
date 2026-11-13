@@ -3,6 +3,7 @@
 import { ApiError } from "@newsekolah/api-client";
 import {
   Button,
+  ConfirmDialog,
   DataTable,
   Dialog,
   DialogContent,
@@ -21,10 +22,11 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { VisitorsWorkspaceNav } from "../../student-services/components/service-workspace-nav";
@@ -42,10 +44,6 @@ const EXPECTED_STATUS: Record<string, SemanticStatus> = {
 
 const ONLY_PENDING_VALUES = ["", "true"] as const;
 
-function today(): string {
-  return todayInZone();
-}
-
 /** The office's ahead-of-time list, so the guard can find a name instead of typing it. */
 export function ExpectedGuestsView(): ReactElement {
   const workspace = useTranslations("app.serviceWorkspace");
@@ -53,8 +51,10 @@ export function ExpectedGuestsView(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_visitors");
+  const { me } = useSession();
+  const today = todayInZone(me?.tenant.timezone);
 
-  const [date, setDate] = useDateFilter("date", today());
+  const [date, setDate] = useDateFilter("date", today);
   const [onlyPending, setOnlyPending] = useUrlState<(typeof ONLY_PENDING_VALUES)[number]>(
     "only_pending",
     ONLY_PENDING_VALUES,
@@ -62,8 +62,12 @@ export function ExpectedGuestsView(): ReactElement {
   );
   const [creating, setCreating] = useState(false);
   const [checkingIn, setCheckingIn] = useState<ExpectedGuest | null>(null);
+  const [cancelling, setCancelling] = useState<ExpectedGuest | null>(null);
 
-  const { data, isLoading } = useExpectedGuestsQuery(date, onlyPending !== "true");
+  const { data, isLoading, isError, refetch } = useExpectedGuestsQuery(
+    date,
+    onlyPending !== "true",
+  );
   const cancel = useCancelExpectedGuestMutation();
 
   const items = data?.data ?? [];
@@ -103,46 +107,40 @@ export function ExpectedGuestsView(): ReactElement {
           />
         ),
       },
-      {
-        id: "actions",
-        header: t("columns.actions"),
-        enableSorting: false,
-        cell: ({ row }) =>
-          canManage && row.original.status === "pending" ? (
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={() => {
-                  setCheckingIn(row.original);
-                }}
-              >
-                {t("checkIn")}
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  cancel.mutate(row.original.id, {
-                    onSuccess: () => {
-                      toast.success(t("cancelled"));
-                    },
-                    onError: (error) => {
-                      toast.error(
-                        error instanceof ApiError
-                          ? apiErrorMessage(error.code)
-                          : apiErrorMessage("UNKNOWN"),
-                      );
-                    },
-                  });
-                }}
-              >
-                {t("cancel")}
-              </Button>
-            </div>
-          ) : null,
-      },
+      // Read-only roles have no row actions, so they get no empty "Aksi" column.
+      ...(canManage
+        ? [
+            {
+              id: "actions",
+              header: t("columns.actions"),
+              enableSorting: false,
+              cell: ({ row }: { row: { original: ExpectedGuest } }) =>
+                row.original.status === "pending" ? (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setCheckingIn(row.original);
+                      }}
+                    >
+                      {t("checkIn")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setCancelling(row.original);
+                      }}
+                    >
+                      {t("cancel")}
+                    </Button>
+                  </div>
+                ) : null,
+            } satisfies ColumnDef<ExpectedGuest>,
+          ]
+        : []),
     ],
-    [t, canManage, hostMap, cancel, toast, apiErrorMessage],
+    [t, canManage, hostMap],
   );
 
   return (
@@ -179,34 +177,68 @@ export function ExpectedGuestsView(): ReactElement {
       </div>
 
       <div className="flex flex-col md:min-h-0 md:flex-1">
-        <DataTable
-          stateKey="features/visitors/components/expected-guests-view:1"
-          mode="local"
-          data={items}
-          columns={columns}
-          rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
-          filters={filters}
-          filtersLabels={{
-            reset: t("filters.reset"),
-            removeFilter: (label) => t("filters.removeFilter", { label }),
-          }}
-          isLoading={isLoading}
-          getRowId={(item) => item.id}
-          fillHeight
-          emptyState={
-            <EmptyState
-              icon={<domainIcons.visitor aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
-          }
-        />
+        {isError && !data ? (
+          <QueryError retry={() => refetch()} />
+        ) : (
+          <DataTable
+            stateKey="features/visitors/components/expected-guests-view:1"
+            mode="local"
+            data={items}
+            columns={columns}
+            rowCount={items.length}
+            pagination={{ pageIndex: 0, pageSize: 50 }}
+            onPaginationChange={() => undefined}
+            sorting={[]}
+            onSortingChange={() => undefined}
+            globalFilter=""
+            filters={filters}
+            filtersLabels={{
+              reset: t("filters.reset"),
+              removeFilter: (label) => t("filters.removeFilter", { label }),
+            }}
+            isLoading={isLoading}
+            getRowId={(item) => item.id}
+            fillHeight
+            emptyState={
+              <EmptyState
+                icon={<domainIcons.visitor aria-hidden="true" />}
+                title={t("emptyTitle")}
+                description={canManage && date === today ? t("emptyBody") : t("emptyBodyOther")}
+              />
+            }
+          />
+        )}
       </div>
+
+      <ConfirmDialog
+        open={cancelling !== null}
+        onOpenChange={(open) => {
+          if (!open) setCancelling(null);
+        }}
+        title={t("cancelDialog.title")}
+        description={t("cancelDialog.body", { name: cancelling?.full_name ?? "" })}
+        confirmLabel={t("cancel")}
+        destructive
+        confirming={cancel.isPending}
+        onConfirm={() => {
+          if (!cancelling) return;
+          cancel.mutate(cancelling.id, {
+            onSuccess: () => {
+              toast.success(t("cancelled"));
+            },
+            onError: (error) => {
+              toast.error(
+                error instanceof ApiError
+                  ? apiErrorMessage(error.code)
+                  : apiErrorMessage("UNKNOWN"),
+              );
+            },
+            onSettled: () => {
+              setCancelling(null);
+            },
+          });
+        }}
+      />
 
       <Dialog
         open={creating}
