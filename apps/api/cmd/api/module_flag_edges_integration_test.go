@@ -50,6 +50,23 @@ func TestPublicBrandingCarriesDisabledPublicModules(t *testing.T) {
 	require.Empty(t, publicModules())
 }
 
+// TestLibraryKioskTokenWorksWhilePermitsIsOff covers the library visit
+// kiosk: it mints its check-in QR through library's own endpoint, which
+// borrows permits' scan-token storage in-process, so it keeps working with
+// permits switched off and stops only with library.
+func TestLibraryKioskTokenWorksWhilePermitsIsOff(t *testing.T) {
+	pg := dbtest.Start(t)
+	h := newFlagHarness(t, pg, "library-kiosk", []string{authz.PermManageLibraryCirculation})
+
+	h.setFlag("permits", false)
+	status, body, code, _ := h.do(http.MethodPost, "/v1/library/visits/kiosk-token", nil, h.auth)
+	require.Equal(t, http.StatusCreated, status, code)
+	require.NotEmpty(t, body["token"])
+
+	h.setFlag("library", false)
+	h.requireModuleDisabled(http.MethodPost, "/v1/library/visits/kiosk-token", nil, "library")
+}
+
 func createTemplate(h *flagHarness, kind string) (int, map[string]any) {
 	h.t.Helper()
 	status, body, _, _ := h.do(http.MethodPost, "/v1/documents/templates", map[string]any{
@@ -103,10 +120,15 @@ func TestDocumentTemplatesFollowTheirKindsOwner(t *testing.T) {
 	h.requireModuleDisabled(http.MethodPost, "/v1/documents/templates", map[string]any{
 		"kind": "warning_letter", "name": "SP", "body": "<p>x</p>",
 	}, "discipline")
+	// Visitors still issues badges through a template.
+	status, badge := createTemplate(h, "visitor_badge")
+	require.Equal(t, http.StatusCreated, status, badge)
+	require.Equal(t, []string{"visitor_badge"}, templateKinds(t, h))
 
 	h.setFlag("permits", true)
 	h.setFlag("discipline", true)
-	require.ElementsMatch(t, []string{"leave_letter", "warning_letter", "warning_letter"}, templateKinds(t, h), "kept templates come back")
+	require.ElementsMatch(t, []string{"leave_letter", "warning_letter", "warning_letter", "visitor_badge"}, templateKinds(t, h),
+		"kept templates come back")
 	status, _, code, _ = h.do(http.MethodPut, "/v1/documents/templates/"+leaveID, map[string]any{"name": "Baru", "body": "<p>y</p>"}, h.auth)
 	require.Equal(t, http.StatusOK, status, code)
 }

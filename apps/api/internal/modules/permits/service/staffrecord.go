@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"strings"
 
 	"context"
@@ -164,8 +163,14 @@ type RecordLateArrivalByStaffInput struct {
 //
 //nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) RecordLateArrivalByStaff(ctx context.Context, in RecordLateArrivalByStaffInput) (LateArrivalDetail, error) {
+	// Discipline off: the violations are dropped, as in ReviewLateArrival.
+	violationIDs, err := s.reviewedViolations(ctx, in.TenantID, in.ViolationIDs)
+	if err != nil {
+		return LateArrivalDetail{}, err
+	}
+	in.ViolationIDs = violationIDs
 	var detail LateArrivalDetail
-	err := s.withTx(ctx, in.TenantID, func(ctx context.Context) error {
+	err = s.withTx(ctx, in.TenantID, func(ctx context.Context) error {
 		yearID, err := s.activeAcademicYear(ctx, in.TenantID)
 		if err != nil {
 			return err
@@ -233,20 +238,8 @@ func (s *Service) RecordLateArrivalByStaff(ctx context.Context, in RecordLateArr
 			return err
 		}
 
-		if len(in.ViolationIDs) > 0 {
-			note := fmt.Sprintf("Proses masuk terlambat ke-%d", late.OccurrenceNumber)
-			for _, violationTypeID := range in.ViolationIDs {
-				if err := s.discipline.RecordLateArrivalViolation(ctx, in.TenantID, inst.SubjectUserID, violationTypeID, inst.ID, in.RecordedBy, note); err != nil {
-					return err
-				}
-			}
-			ids := make([]string, len(in.ViolationIDs))
-			for i, id := range in.ViolationIDs {
-				ids[i] = id.String()
-			}
-			if inst, err = s.repo.MergeInstancePayload(ctx, in.TenantID, inst.ID, map[string]any{"violation_ids": ids}); err != nil {
-				return err
-			}
+		if inst, err = s.recordReviewedViolations(ctx, in.TenantID, inst, in.RecordedBy, in.ViolationIDs, late.OccurrenceNumber); err != nil {
+			return err
 		}
 
 		if late, err = s.repo.MarkLateArrivalCompleted(ctx, in.TenantID, inst.ID, now); err != nil {

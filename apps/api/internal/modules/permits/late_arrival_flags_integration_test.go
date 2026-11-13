@@ -133,4 +133,16 @@ func TestLateArrivalReviewDropsViolationsWhileDisciplineIsOff(t *testing.T) {
 	var stored []byte
 	require.NoError(t, pg.AdminPool.QueryRow(ctx, `select payload from workflow_instances where id = $1`, offDetail.Instance.ID).Scan(&stored))
 	require.NotContains(t, string(stored), "violation_ids")
+
+	// The duty teacher's manual record at the gate follows the same rule.
+	gate := seedRealtimeWorld(t, ctx, pg.AdminPool, "late-viol-gate-"+uuid.NewString())
+	_, err = platformSvc.SetFlag(ctx, gate.tenantID, string(platformdomain.ModuleDiscipline), false)
+	require.NoError(t, err)
+	recorded, err := svc.RecordLateArrivalByStaff(ctx, service.RecordLateArrivalByStaffInput{
+		TenantID: gate.tenantID, StudentUserID: gate.studentID, Reason: "Ban bocor",
+		ViolationIDs: []uuid.UUID{uuid.New()}, RecordedBy: gate.dutyTeacherID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, []uuid.UUID{onViolation}, rec.recorded)
+	require.NotContains(t, recorded.Instance.Payload, "violation_ids")
 }

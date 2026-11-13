@@ -1105,6 +1105,7 @@ components:
                 item_label,
                 clearance_letter,
                 report,
+                visitor_badge,
               ],
           }
         name: { type: string, minLength: 1, maxLength: 150 }

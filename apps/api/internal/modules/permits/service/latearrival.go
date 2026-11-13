@@ -176,7 +176,7 @@ func (s *Service) ReviewLateArrival(ctx context.Context, in ReviewLateArrivalInp
 		if err != nil {
 			return err
 		}
-		if inst, err = s.recordReviewedViolations(ctx, in, inst, late.OccurrenceNumber); err != nil {
+		if inst, err = s.recordReviewedViolations(ctx, in.TenantID, inst, in.ReviewerUserID, in.ViolationIDs, late.OccurrenceNumber); err != nil {
 			return err
 		}
 		if isLast {
@@ -197,20 +197,24 @@ func (s *Service) ReviewLateArrival(ctx context.Context, in ReviewLateArrivalInp
 
 // recordReviewedViolations records each reviewed violation in discipline
 // and keeps the list on the flow's payload, returning the updated instance
-// (inst unchanged when there is nothing to record).
-func (s *Service) recordReviewedViolations(ctx context.Context, in ReviewLateArrivalInput, inst domain.Instance, occurrence int) (domain.Instance, error) {
-	if len(in.ViolationIDs) == 0 {
+// (inst unchanged when there is nothing to record). Callers pass the list
+// through reviewedViolations first, which empties it while discipline is
+// off.
+func (s *Service) recordReviewedViolations(
+	ctx context.Context, tenantID uuid.UUID, inst domain.Instance, reporterUserID uuid.UUID, violationIDs []uuid.UUID, occurrence int,
+) (domain.Instance, error) {
+	if len(violationIDs) == 0 {
 		return inst, nil
 	}
 	note := fmt.Sprintf("Proses masuk terlambat ke-%d", occurrence)
-	ids := make([]string, len(in.ViolationIDs))
-	for i, violationTypeID := range in.ViolationIDs {
-		if err := s.discipline.RecordLateArrivalViolation(ctx, in.TenantID, inst.SubjectUserID, violationTypeID, in.InstanceID, in.ReviewerUserID, note); err != nil {
+	ids := make([]string, len(violationIDs))
+	for i, violationTypeID := range violationIDs {
+		if err := s.discipline.RecordLateArrivalViolation(ctx, tenantID, inst.SubjectUserID, violationTypeID, inst.ID, reporterUserID, note); err != nil {
 			return domain.Instance{}, err
 		}
 		ids[i] = violationTypeID.String()
 	}
-	return s.repo.MergeInstancePayload(ctx, in.TenantID, in.InstanceID, map[string]any{"violation_ids": ids})
+	return s.repo.MergeInstancePayload(ctx, tenantID, inst.ID, map[string]any{"violation_ids": ids})
 }
 
 // LateArrivalScan advances the flow when the student scans the next

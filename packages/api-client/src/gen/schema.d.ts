@@ -11282,7 +11282,7 @@ export interface components {
         };
         DocumentTemplateWrite: {
             /** @enum {string} */
-            kind: "leave_letter" | "warning_letter" | "class_journal" | "member_card" | "item_label" | "clearance_letter" | "report";
+            kind: "leave_letter" | "warning_letter" | "class_journal" | "member_card" | "item_label" | "clearance_letter" | "report" | "visitor_badge";
             name: string;
             /**
              * @default html
