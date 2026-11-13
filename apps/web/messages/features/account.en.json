@@ -17,7 +17,7 @@
     "submit": "Set new password",
     "success": "Password changed, sign in with your new password",
     "invalidTitle": "This link no longer works",
-    "invalidBody": "The link is invalid, already used, or has expired. Request a new one.",
+    "invalidBody": "The link is invalid, already used, or has expired.",
     "requestNew": "Request a new link"
   }
 }

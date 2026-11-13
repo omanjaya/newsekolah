@@ -26,7 +26,7 @@ vi.mock("../api", () => ({
   useUpdateIncidentMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
-import { IncidentLogView } from "./incident-log-view";
+import { IncidentLogView, SEVERITY_VARIANT } from "./incident-log-view";
 
 describe("IncidentLogView filters", () => {
   beforeEach(() => {
@@ -102,11 +102,22 @@ describe("IncidentLogView filters", () => {
     fireEvent.change(screen.getByLabelText("filters.to"), { target: { value: "2026-09-15" } });
 
     expect(mocks.useIncidentsQuery).toHaveBeenLastCalledWith(
-      "2026-09-01T00:00:00Z",
-      "2026-09-15T23:59:59Z",
+      "2026-08-31T17:00:00.000Z",
+      "2026-09-15T16:59:59.000Z",
       true,
     );
     expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-09-01");
     expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-09-15");
+  });
+});
+
+describe("incident severity badges", () => {
+  it("gives every severity its own signal, with critical as danger", () => {
+    expect(SEVERITY_VARIANT).toEqual({
+      low: "neutral",
+      medium: "info",
+      high: "warning",
+      critical: "danger",
+    });
   });
 });

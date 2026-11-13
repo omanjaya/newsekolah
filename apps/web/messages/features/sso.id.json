@@ -6,6 +6,7 @@
   "statusTitle": "Status",
   "statusOn": "Aktif",
   "statusOff": "Tidak aktif",
+  "statusUnset": "Belum diatur",
   "statusBody": "Saat aktif, tombol \"Masuk dengan Google\" muncul di halaman masuk untuk sekolah ini.",
   "enabledToggleLabel": "Aktifkan masuk dengan Google",
   "neverConfigured": "Belum pernah diatur. Isi client id, client secret, dan domain Google Workspace di bawah untuk mengaktifkan.",

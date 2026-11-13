@@ -107,4 +107,18 @@ describe("AuditLogsView filters", () => {
       expect.objectContaining({ from: undefined, to: undefined }),
     );
   });
+
+  it("shows a retry control instead of an empty log when the request fails", () => {
+    mocks.useAuditLogsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch: vi.fn(),
+    });
+    render(<AuditLogsView />);
+    expect(screen.getAllByRole("button", { name: "actions.retry" }).length).toBeGreaterThan(0);
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+    // The filter bar stays so a failing filter can still be changed or reset.
+    expect(screen.getAllByRole("button", { name: /filters\./ }).length).toBeGreaterThan(0);
+  });
 });

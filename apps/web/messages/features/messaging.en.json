@@ -47,6 +47,7 @@
       "bodyHint": "Example: Hello parent_name, the amount payment is due on due_date (wrap each in double curly braces).",
       "placeholdersLabel": "Detected variables",
       "save": "Save template",
+      "edit": "Edit",
       "cancel": "Cancel",
       "delete": "Delete"
     },
@@ -59,7 +60,8 @@
     "created": "Template created",
     "updated": "Template updated",
     "deleted": "Template deleted",
-    "confirmDelete": "Delete this template?"
+    "confirmDelete": "Delete this template?",
+    "confirmDeleteBody": "The {name} template will be deleted and can no longer be used for WhatsApp messages."
   },
   "deliveries": {
     "title": "Delivery log",

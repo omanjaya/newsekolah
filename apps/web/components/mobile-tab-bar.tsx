@@ -31,7 +31,10 @@ export function MobileTabBar({
   const pathname = usePathname();
   const t = useTranslations();
   const tabItems = mobileNavigation(items, profile);
-  const activeHref = activeNavHref(pathname, tabItems);
+  // The owner of the current route is resolved across the whole menu, then
+  // matched against the tabs: otherwise a page that lives in the menu (for
+  // example /library/desk) is claimed by whichever tab it merely prefixes.
+  const activeHref = activeNavHref(pathname, items);
   const [left, right] = [
     tabItems.slice(0, Math.ceil(tabItems.length / 2)),
     tabItems.slice(Math.ceil(tabItems.length / 2)),

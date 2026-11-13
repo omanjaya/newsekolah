@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  dayRangeInZone,
   endOfPreviousIsoMonth,
   shiftIsoDate,
   startOfIsoMonth,
@@ -48,5 +49,21 @@ describe("endOfPreviousIsoMonth", () => {
 
   it("crosses a year boundary from January", () => {
     expect(endOfPreviousIsoMonth("2026-01-15")).toBe("2025-12-31");
+  });
+});
+
+describe("dayRangeInZone", () => {
+  it("starts the first day at the tenant's midnight, not UTC midnight", () => {
+    // 00:00 in Asia/Jakarta (UTC+7) is 17:00 UTC the previous day.
+    expect(dayRangeInZone("2026-11-13", "2026-11-14", "Asia/Jakarta")).toEqual({
+      from: "2026-11-12T17:00:00.000Z",
+      to: "2026-11-14T16:59:59.000Z",
+    });
+  });
+
+  it("follows the tenant's own offset, e.g. Asia/Makassar (UTC+8)", () => {
+    expect(dayRangeInZone("2026-11-14", "2026-11-14", "Asia/Makassar").from).toBe(
+      "2026-11-13T16:00:00.000Z",
+    );
   });
 });

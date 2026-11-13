@@ -121,19 +121,19 @@
     "emptyBody": "Siswa ini belum memiliki tagihan tahun ajaran ini.",
     "dueDate": "jatuh tempo {date}",
     "pay": "Bayar",
-    "receipt": "Kwitansi",
+    "receipt": "Kuitansi",
     "void": "Batalkan",
     "voidedLabel": "Dibatalkan",
     "status": {
       "unpaid": "Belum dibayar",
       "partial": "Dibayar sebagian",
       "paid": "Lunas",
-      "overdue": "Terlambat"
+      "overdue": "Menunggak"
     },
-    "totalOutstanding": "Total tunggakan",
+    "totalOutstanding": "Sisa tagihan",
     "billCount": "Jumlah tagihan",
-    "overdueCount": "Terlambat",
-    "shareReceipt": "Bagikan kwitansi",
+    "overdueCount": "Menunggak",
+    "shareReceipt": "Bagikan kuitansi",
     "method": {
       "cash": "Tunai",
       "bankTransfer": "Transfer bank",
@@ -191,7 +191,7 @@
       "unpaid": "Belum dibayar",
       "partial": "Dibayar sebagian",
       "paid": "Lunas",
-      "overdue": "Terlambat"
+      "overdue": "Menunggak"
     },
     "detailTitle": "Detail tagihan",
     "originalAmount": "Jumlah awal",

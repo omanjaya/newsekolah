@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import { formatDate, type Locale } from "@newsekolah/i18n";
 import {
   Button,
   DataTable,
@@ -14,7 +15,7 @@ import {
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarRange, Download } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
@@ -26,6 +27,7 @@ import {
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import {
   type AttendanceRecord,
   type Employee,
@@ -67,9 +69,11 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
   const t = useTranslations("app.staffAttendance");
   const apiErrorMessage = useApiErrorMessage();
   const toast = useToast();
+  const locale = useLocale() as Locale;
+  const { me } = useSession();
 
   const [employeeId, setEmployeeId] = useState("");
-  const today = todayInZone();
+  const today = todayInZone(me?.tenant.timezone);
   const [from, setFrom] = useDateFilter("from", today.slice(0, 8) + "01");
   const [to, setTo] = useDateFilter("to", today);
   const presets = useDateRangePresets();
@@ -105,7 +109,14 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
 
   const columns = useMemo<ColumnDef<AttendanceRecord>[]>(
     () => [
-      { accessorKey: "date", header: t("history.date"), enableSorting: false },
+      {
+        accessorKey: "date",
+        header: t("history.date"),
+        enableSorting: false,
+        // "YYYY-MM-DD" is a calendar day, not an instant: read it in UTC so no
+        // browser timezone can move it to the neighbouring day.
+        cell: ({ row }) => formatDate(row.original.date, { locale, timeZone: "UTC" }),
+      },
       {
         accessorKey: "status_code",
         header: t("today.columns.status"),
@@ -119,7 +130,7 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
         enableSorting: false,
       },
     ],
-    [t],
+    [t, locale],
   );
 
   async function handleExport(options: ReportExportOptions) {

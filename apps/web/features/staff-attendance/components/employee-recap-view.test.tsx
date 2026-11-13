@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => "id",
 }));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/staff-attendance",
@@ -110,5 +111,17 @@ describe("EmployeeRecapView filters", () => {
       "2026-09-15",
       "2026-09-15",
     );
+  });
+
+  it("shows history dates as readable calendar days, not raw ISO strings", async () => {
+    mocks.useStaffAttendanceHistoryQuery.mockReturnValue({
+      data: { data: [{ id: "r1", date: "2026-11-13", status_code: "present" }] },
+      isLoading: false,
+    });
+    render(<EmployeeRecapView employees={EMPLOYEES} />);
+    await selectEmployee();
+
+    expect(screen.getAllByText("13 November 2026").length).toBeGreaterThan(0);
+    expect(screen.queryByText("2026-11-13")).not.toBeInTheDocument();
   });
 });

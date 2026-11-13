@@ -4,6 +4,7 @@ import { SemanticStatusBadge } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import type { Bill } from "../api";
 import { billDisplayStatus } from "../lib/bill-status";
@@ -22,6 +23,7 @@ export function BillStatusBadge({
   namespace?: "app.billing.bills" | "app.billing.paymentDesk";
 }): ReactElement {
   const t = useTranslations(namespace);
-  const display = billDisplayStatus(bill, todayInZone());
+  const { me } = useSession();
+  const display = billDisplayStatus(bill, todayInZone(me?.tenant.timezone));
   return <SemanticStatusBadge status={display} label={t(`status.${display}`)} />;
 }

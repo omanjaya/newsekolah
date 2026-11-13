@@ -3,13 +3,20 @@
 import { ApiError } from "@newsekolah/api-client";
 import { formatDateTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { Button, Dialog, DialogContent, SemanticStatusBadge, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  ConfirmDialog,
+  Dialog,
+  DialogContent,
+  SemanticStatusBadge,
+  useToast,
+} from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useCloseIncidentMutation, useIncidentQuery } from "../api";
 
 import { IncidentForm } from "./incident-form";
@@ -27,7 +34,9 @@ export function IncidentDetailDialog({
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_visitor_incidents");
   const close = useCloseIncidentMutation();
+  const { me } = useSession();
   const [editing, setEditing] = useState(false);
+  const [confirmingClose, setConfirmingClose] = useState(false);
 
   const { data: incident, isLoading } = useIncidentQuery(incidentId ?? "", incidentId !== null);
 
@@ -43,7 +52,7 @@ export function IncidentDetailDialog({
                 label={t(incident.is_closed ? "status.closed" : "status.open")}
               />
               <span className="text-[13px] text-fg-muted">
-                {formatDateTime(incident.occurred_at, { locale })}
+                {formatDateTime(incident.occurred_at, { locale, timeZone: me?.tenant.timezone })}
               </span>
             </div>
             <dl className="flex flex-col gap-2 text-[13px]">
@@ -81,18 +90,7 @@ export function IncidentDetailDialog({
                 <Button
                   loading={close.isPending}
                   onClick={() => {
-                    close.mutate(incident.id, {
-                      onSuccess: () => {
-                        toast.success(t("closed"));
-                      },
-                      onError: (error) => {
-                        toast.error(
-                          error instanceof ApiError
-                            ? apiErrorMessage(error.code)
-                            : apiErrorMessage("UNKNOWN"),
-                        );
-                      },
-                    });
+                    setConfirmingClose(true);
                   }}
                 >
                   {t("close")}
@@ -100,6 +98,33 @@ export function IncidentDetailDialog({
               </div>
             )}
           </div>
+        )}
+        {incident && (
+          <ConfirmDialog
+            open={confirmingClose}
+            onOpenChange={setConfirmingClose}
+            title={t("closeDialog.title")}
+            description={t("closeDialog.body")}
+            confirmLabel={t("close")}
+            confirming={close.isPending}
+            onConfirm={() => {
+              close.mutate(incident.id, {
+                onSuccess: () => {
+                  toast.success(t("closed"));
+                },
+                onError: (error) => {
+                  toast.error(
+                    error instanceof ApiError
+                      ? apiErrorMessage(error.code)
+                      : apiErrorMessage("UNKNOWN"),
+                  );
+                },
+                onSettled: () => {
+                  setConfirmingClose(false);
+                },
+              });
+            }}
+          />
         )}
         {incident && editing && (
           <IncidentForm

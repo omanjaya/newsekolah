@@ -84,6 +84,7 @@ export function SupervisionInstrumentFields({
                 onChange={(e) => {
                   updateCriterion(index, { key: e.target.value });
                 }}
+                aria-label={t("criterionKeyLabel", { index: index + 1 })}
                 placeholder={t("criterionKeyPlaceholder")}
                 className="w-32"
               />
@@ -92,6 +93,7 @@ export function SupervisionInstrumentFields({
                 onChange={(e) => {
                   updateCriterion(index, { name: e.target.value });
                 }}
+                aria-label={t("criterionNameLabel", { index: index + 1 })}
                 placeholder={t("criterionNamePlaceholder")}
                 className="flex-1"
               />

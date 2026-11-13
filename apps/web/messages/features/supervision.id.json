@@ -8,6 +8,8 @@
     "scaleMin": "Skala minimum",
     "scaleMax": "Skala maksimum",
     "criteria": "Kriteria",
+    "criterionKeyLabel": "Kode kriteria {index}",
+    "criterionNameLabel": "Nama kriteria {index}",
     "criterionKeyPlaceholder": "Kode",
     "criterionNamePlaceholder": "Nama kriteria",
     "removeCriterion": "Hapus kriteria",
@@ -19,6 +21,7 @@
     "add": "Buat siklus",
     "edit": "Ubah",
     "columns": {
+      "actions": "Aksi",
       "name": "Nama siklus",
       "criteria": "Jumlah kriteria",
       "scale": "Skala"
@@ -37,6 +40,7 @@
   },
   "cycleDetail": {
     "columns": {
+      "actions": "Aksi",
       "lessonDate": "Tanggal pelajaran",
       "teacher": "Guru"
     },

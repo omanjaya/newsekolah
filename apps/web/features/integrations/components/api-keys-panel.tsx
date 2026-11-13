@@ -10,9 +10,11 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { type APIKey, useAPIKeysQuery, useRevokeAPIKeyMutation } from "../api";
+import { usePermissionLabel } from "../lib/use-permission-label";
 
 import { CreateAPIKeyDialog } from "./create-api-key-dialog";
 
@@ -24,7 +26,8 @@ export function APIKeysPanel(): ReactElement {
   const { me } = useSession();
   const timeZone = me?.tenant.timezone;
 
-  const { data, isLoading } = useAPIKeysQuery();
+  const { data, isLoading, isError, refetch } = useAPIKeysQuery();
+  const permissionLabel = usePermissionLabel();
   const revoke = useRevokeAPIKeyMutation();
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -52,7 +55,7 @@ export function APIKeysPanel(): ReactElement {
         <div className="flex flex-wrap gap-1">
           {row.original.permissions.map((code) => (
             <Badge key={code} variant="neutral">
-              {code}
+              {permissionLabel(code)}
             </Badge>
           ))}
         </div>
@@ -82,7 +85,7 @@ export function APIKeysPanel(): ReactElement {
     },
     {
       id: "actions",
-      header: "",
+      header: t("columns.actions"),
       cell: ({ row }) =>
         row.original.revoked_at ? null : (
           <Button
@@ -116,27 +119,31 @@ export function APIKeysPanel(): ReactElement {
         </Button>
       </div>
 
-      <DataTable
-        stateKey="features/integrations/components/api-keys-panel:1"
-        mode="local"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 100 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={isLoading}
-        getRowId={(key) => key.id}
-        emptyState={
-          <EmptyState
-            icon={<KeyRound aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      {isError && !data ? (
+        <QueryError retry={() => refetch()} />
+      ) : (
+        <DataTable
+          stateKey="features/integrations/components/api-keys-panel:1"
+          mode="local"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 100 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={isLoading}
+          getRowId={(key) => key.id}
+          emptyState={
+            <EmptyState
+              icon={<KeyRound aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      )}
 
       <CreateAPIKeyDialog open={createOpen} onOpenChange={setCreateOpen} />
 

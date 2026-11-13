@@ -111,6 +111,8 @@ describe("consolidated workspaces", () => {
     );
     expect(activeNavHref("/library/copies", items)).toBe("/library/catalogue");
     expect(activeNavHref("/library/reports", items)).toBe("/reports");
+    expect(activeNavHref("/library", items)).toBe("/library/catalogue");
+    expect(activeNavHref("/visitors/recap", items)).toBe("/visitors/board");
     expect(activeNavHref("/settings/sso", items)).toBe("/settings");
     expect(activeNavHref("/discipline/warning-letters", items)).toBe("/discipline/violations");
     expect(activeNavHref("/library/catalogue/title-id", items)).toBe("/library/catalogue");
@@ -118,6 +120,14 @@ describe("consolidated workspaces", () => {
     expect(activeNavHref("/supervision/observations/observation-id", items)).toBe(
       "/supervision/cycles",
     );
+  });
+
+  it("leads with the daily destinations in the docs/17 order", () => {
+    const keys = consolidateNavigation(
+      filterNavigationFixture(navigation, () => true, "staff"),
+      { profileKind: "staff" },
+    ).map((item) => item.key);
+    expect(keys.slice(0, 4)).toEqual(["dashboard", "inbox", "scan", "reports"]);
   });
 
   it("keeps stable unique menu entries and can reach footer settings with only audit access", () => {

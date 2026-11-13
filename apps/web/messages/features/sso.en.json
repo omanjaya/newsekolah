@@ -6,6 +6,7 @@
   "statusTitle": "Status",
   "statusOn": "On",
   "statusOff": "Off",
+  "statusUnset": "Not set up",
   "statusBody": "While on, a \"Sign in with Google\" button appears on the login page for this school.",
   "enabledToggleLabel": "Enable sign in with Google",
   "neverConfigured": "Never configured yet. Fill in the client id, client secret, and Google Workspace domain below to enable it.",

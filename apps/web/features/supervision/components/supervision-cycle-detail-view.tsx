@@ -52,7 +52,7 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
         id: "lessonDate",
         header: t("columns.lessonDate"),
         enableSorting: false,
-        cell: ({ row }) => formatDate(row.original.lesson_date, { locale }),
+        cell: ({ row }) => formatDate(row.original.lesson_date, { locale, timeZone: "UTC" }),
       },
       {
         id: "teacher",
@@ -63,7 +63,7 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
       },
       {
         id: "actions",
-        header: "",
+        header: t("columns.actions"),
         enableSorting: false,
         cell: ({ row }) =>
           canManage && cycle.data ? (

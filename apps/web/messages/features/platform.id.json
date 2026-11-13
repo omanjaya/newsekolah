@@ -30,12 +30,16 @@
     "emptyBody": "Sekolah yang dibuat akan muncul di sini.",
     "viewDetail": "Lihat detail",
     "suspend": "Tangguhkan",
+    "suspendDialog": {
+      "title": "Tangguhkan sekolah?",
+      "body": "Sekolah {name} ditangguhkan dan {count} penggunanya tidak bisa masuk sampai Anda mengaktifkannya kembali."
+    },
     "resume": "Aktifkan kembali",
     "suspended": "Sekolah ditangguhkan",
     "resumed": "Sekolah diaktifkan kembali",
     "create": {
       "title": "Tambah sekolah baru",
-      "slug": "Slug",
+      "slug": "Alamat singkat",
       "slugHint": "Huruf kecil, angka, dan tanda hubung, contoh: sman-1-denpasar",
       "name": "Nama sekolah",
       "level": "Jenjang",

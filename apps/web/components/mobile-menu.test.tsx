@@ -30,4 +30,24 @@ describe("mobile menu", () => {
     fireEvent.click(screen.getByRole("link", { name: "Classes" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("does not list the page being viewed a second time under recent", () => {
+    window.localStorage.setItem(
+      "newsekolah:navigation:test-scope",
+      JSON.stringify({ favorites: [], recent: ["classes", "home"] }),
+    );
+    render(
+      <MobileMenu
+        scope="test-scope"
+        items={[
+          { key: "home", labelKey: "Home", href: "/dashboard", icon: Home },
+          { key: "classes", labelKey: "Classes", href: "/school/classes", icon: Users },
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "app.shell.mobileMenu.title" }));
+    expect(screen.getAllByRole("link", { name: "Classes" })).toHaveLength(1);
+    expect(screen.getAllByRole("link", { name: "Home" })).toHaveLength(2);
+    window.localStorage.removeItem("newsekolah:navigation:test-scope");
+  });
 });

@@ -64,7 +64,10 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
   const update = useUpdateReportHeaderMutation();
 
   const [showLogo, setShowLogo] = useState(initial.show_logo);
-  const [lines, setLines] = useState<string[]>(initial.lines.length > 0 ? initial.lines : [""]);
+  // The editor always shows at least one (possibly empty) line; compare
+  // against that same shape so an untouched form is not reported dirty.
+  const initialLines = initial.lines.length > 0 ? initial.lines : [""];
+  const [lines, setLines] = useState<string[]>(initialLines);
   // undefined means "automatic" (reportdoc/school domain's EmphasisAuto):
   // the server picks the line matching the tenant name, else the
   // second-to-last line.
@@ -75,7 +78,7 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
 
   const dirty =
     showLogo !== initial.show_logo ||
-    JSON.stringify(lines) !== JSON.stringify(initial.lines) ||
+    JSON.stringify(lines) !== JSON.stringify(initialLines) ||
     emphasis !== initial.emphasis ||
     place !== initial.place ||
     JSON.stringify(signers) !== JSON.stringify(initial.signers);

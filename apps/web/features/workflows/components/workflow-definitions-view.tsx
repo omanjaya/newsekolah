@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useDutyTypesQuery } from "../../school/duties-api";
 import { WORKFLOW_KINDS, type WorkflowKind, useWorkflowDefinitionsQuery } from "../api";
 
@@ -32,6 +33,7 @@ export function WorkflowDefinitionsView(): ReactElement {
         onValueChange={(value) => {
           setKind(value as WorkflowKind);
         }}
+        className="flex flex-col gap-6"
       >
         <TabsList>
           {WORKFLOW_KINDS.map((value) => (
@@ -41,9 +43,12 @@ export function WorkflowDefinitionsView(): ReactElement {
           ))}
         </TabsList>
 
-        <TabsContent value={kind}>
+        {/* The editor is the tab panel, so each trigger's aria-controls points at it. */}
+        <TabsContent value={kind} className="pt-0">
           {definitions.isLoading ? (
             <Skeleton className="h-64 w-full" />
+          ) : definitions.isError && !definitions.data ? (
+            <QueryError retry={() => definitions.refetch()} />
           ) : (
             // Keyed on kind + version so the editor's local stage list resets to
             // the freshly loaded definition instead of syncing via an effect

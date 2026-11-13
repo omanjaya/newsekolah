@@ -14,6 +14,10 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/billing/bills",
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+  useCan: () => true,
+}));
 vi.mock("../../reference/api", () => ({
   useClassesQuery: () => ({
     data: { data: [{ id: "class-7a", name: "7A" }] },

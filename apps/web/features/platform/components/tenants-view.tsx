@@ -1,9 +1,11 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import { formatDateTime, type Locale } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
+  ConfirmDialog,
   DataTable,
   Dialog,
   DialogContent,
@@ -18,11 +20,12 @@ import {
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Building2, MoreHorizontal, Plus } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import {
   type PlatformTenantCreated,
   type PlatformTenantHealth,
@@ -39,6 +42,9 @@ export function TenantsView(): ReactElement {
   const tCreated = useTranslations("app.platform.tenants.created");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const locale = useLocale() as Locale;
+  const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
 
   const { data, isLoading } = useTenantsQuery();
   const suspend = useSuspendTenantMutation();
@@ -47,6 +53,8 @@ export function TenantsView(): ReactElement {
   const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState<PlatformTenantCreated | null>(null);
   const [detailTenantId, setDetailTenantId] = useState<string | null>(null);
+  // Suspending locks every user of a school out at once, so it is confirmed first.
+  const [suspendTarget, setSuspendTarget] = useState<PlatformTenantHealth | null>(null);
 
   const items = data?.data ?? [];
 
@@ -88,7 +96,7 @@ export function TenantsView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) =>
           row.original.last_activity_at
-            ? new Date(row.original.last_activity_at).toLocaleString()
+            ? formatDateTime(row.original.last_activity_at, { locale, timeZone })
             : t("never"),
       },
       {
@@ -126,12 +134,7 @@ export function TenantsView(): ReactElement {
                 ) : (
                   <DropdownMenuItem
                     onSelect={() => {
-                      suspend.mutate(tenant.id, {
-                        onSuccess: () => {
-                          toast.success(t("suspended"));
-                        },
-                        onError,
-                      });
+                      setSuspendTarget(tenant);
                     }}
                   >
                     {t("suspend")}
@@ -144,7 +147,7 @@ export function TenantsView(): ReactElement {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t],
+    [t, locale, timeZone],
   );
 
   return (
@@ -189,6 +192,33 @@ export function TenantsView(): ReactElement {
             description={t("emptyBody")}
           />
         }
+      />
+
+      <ConfirmDialog
+        open={suspendTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setSuspendTarget(null);
+        }}
+        title={t("suspendDialog.title")}
+        description={t("suspendDialog.body", {
+          name: suspendTarget?.name ?? "",
+          count: suspendTarget?.user_count ?? 0,
+        })}
+        confirmLabel={t("suspend")}
+        destructive
+        confirming={suspend.isPending}
+        onConfirm={() => {
+          if (!suspendTarget) return;
+          suspend.mutate(suspendTarget.id, {
+            onSuccess: () => {
+              toast.success(t("suspended"));
+            },
+            onError,
+            onSettled: () => {
+              setSuspendTarget(null);
+            },
+          });
+        }}
       />
 
       <Dialog

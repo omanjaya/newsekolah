@@ -18,6 +18,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type BillCandidate,
@@ -32,8 +33,9 @@ export function GenerationView(): ReactElement {
   const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const { me } = useSession();
 
-  const [period, setPeriod] = useState(currentPeriod());
+  const [period, setPeriod] = useState(currentPeriod(me?.tenant.timezone));
   const [preview, setPreview] = useState<GenerationSummary | null>(null);
   const [result, setResult] = useState<GenerationSummary | null>(null);
   const [confirming, setConfirming] = useState(false);

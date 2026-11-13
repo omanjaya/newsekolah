@@ -8,6 +8,7 @@ import { useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import {
@@ -16,10 +17,6 @@ import {
 } from "../../reference/components/directory-picker";
 import { useSchedulesQuery } from "../../schedule/api";
 import { useScheduleObservationMutation } from "../api";
-
-function today(): string {
-  return todayInZone();
-}
 
 /** Schedules an observation against one of a teacher's own lesson blocks. */
 export function ScheduleObservationForm({
@@ -44,7 +41,8 @@ export function ScheduleObservationForm({
   const subjectMap = useLookup(subjects.data?.data);
 
   const [scheduleId, setScheduleId] = useState("");
-  const [lessonDate, setLessonDate] = useState(today());
+  const { me } = useSession();
+  const [lessonDate, setLessonDate] = useState(todayInZone(me?.tenant.timezone));
   const schedule = useScheduleObservationMutation(cycleId);
 
   const blockOptions = (blocks.data?.data ?? []).map((block) => ({

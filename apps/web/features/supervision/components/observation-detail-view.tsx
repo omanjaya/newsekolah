@@ -12,7 +12,7 @@ import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useDirectoryNames } from "../../reference/directory-names";
 import {
   useObservationQuery,
@@ -34,6 +34,7 @@ export function ObservationDetailView({ observationId }: { observationId: string
   const t = useTranslations("app.supervision.observationDetail");
   const tRoot = useTranslations("app.supervision");
   const locale = useLocale() as Locale;
+  const { me } = useSession();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canRespond = useCan("respond_to_supervision");
@@ -106,7 +107,7 @@ export function ObservationDetailView({ observationId }: { observationId: string
           title={teacherName}
         />
         <p className="text-[13px] text-fg-muted">
-          {formatDateTime(obs.observed_at, { locale })}
+          {formatDateTime(obs.observed_at, { locale, timeZone: me?.tenant.timezone })}
           {contextLine && <> &middot; {contextLine}</>}
         </p>
       </div>

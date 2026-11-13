@@ -16,6 +16,17 @@ export const AUDIT_ENTITY_TYPES = [
   "sso_google_config",
   "tenant",
   "visitor_incident",
+  "visitor_visit",
+  "payment",
+  "violation_record",
+  "warning_letter",
+  "leave_request",
+  "document",
+  "counseling",
+  "report_publication",
+  "assessment_component",
+  "feature_flag",
+  "operator_alert_settings",
 ] as const;
 
 export interface AuditLabels {
@@ -23,21 +34,26 @@ export interface AuditLabels {
   entityType: (code: string) => string;
 }
 
+/** `feature_flag.update` becomes `feature flag update`: readable when the catalog has no entry yet. */
+export function humanizeAuditCode(code: string): string {
+  return code.replace(/[._]+/g, " ").trim();
+}
+
 /**
  * Human labels for audit action and entity codes. A code the catalog does
- * not know yet (a module added after this list) falls back to the raw code
- * rather than an empty cell.
+ * not know yet (a module added after this list) falls back to a spaced-out
+ * version of the code rather than an empty cell or a dotted identifier.
  */
 export function useAuditLabels(): AuditLabels {
   const t = useTranslations("app.audit");
   return {
     action: (code) => {
       const key = `actions.${code}`;
-      return t.has(key) ? t(key) : code;
+      return t.has(key) ? t(key) : humanizeAuditCode(code);
     },
     entityType: (code) => {
       const key = `entityTypes.${code}`;
-      return t.has(key) ? t(key) : code;
+      return t.has(key) ? t(key) : humanizeAuditCode(code);
     },
   };
 }

@@ -24,30 +24,23 @@ import { QueryError } from "../../../components/query-error";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
-import { useCan } from "../../../lib/session/session-provider";
-import { businessNow } from "../../../lib/simulation/clock";
+import { useCan, useSession } from "../../../lib/session/session-provider";
+import { dayRangeInZone, shiftIsoDate, todayInZone } from "../../../lib/tenant-date";
 import { VisitorsWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { type Incident, useIncidentsQuery } from "../api";
 
 import { IncidentDetailDialog } from "./incident-detail-dialog";
 import { IncidentForm } from "./incident-form";
 
-const SEVERITY_VARIANT: Record<Incident["severity"], "accent" | "neutral"> = {
+export const SEVERITY_VARIANT: Record<
+  Incident["severity"],
+  "neutral" | "info" | "warning" | "danger"
+> = {
   low: "neutral",
-  medium: "neutral",
-  high: "accent",
-  critical: "accent",
+  medium: "info",
+  high: "warning",
+  critical: "danger",
 };
-
-function daysAgoDateIso(days: number): string {
-  const d = businessNow();
-  d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
-}
-
-function todayDateIso(): string {
-  return businessNow().toISOString().slice(0, 10);
-}
 
 /**
  * The security office's incident log, defaulting to the last 30 days but
@@ -62,17 +55,22 @@ export function IncidentLogView(): ReactElement {
   const t = useTranslations("app.visitors.incidents");
   const locale = useLocale() as Locale;
   const canManage = useCan("manage_visitor_incidents");
+  const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
+  // Default window: the last 30 days up to today on the school's own calendar.
+  const today = todayInZone(timeZone);
 
-  const [from, setFrom] = useDateFilter("from", daysAgoDateIso(30));
-  const [to, setTo] = useDateFilter("to", todayDateIso());
+  const [from, setFrom] = useDateFilter("from", shiftIsoDate(today, -30));
+  const [to, setTo] = useDateFilter("to", today);
   const presets = useDateRangePresets();
   const [onlyOpen, setOnlyOpen] = useUrlState<"" | "true">("only_open", ["", "true"], "");
   const [creating, setCreating] = useState(false);
   const [openIncidentId, setOpenIncidentId] = useState<string | null>(null);
 
+  const range = dayRangeInZone(from, to, timeZone);
   const { data, isLoading, isError, refetch } = useIncidentsQuery(
-    `${from}T00:00:00Z`,
-    `${to}T23:59:59Z`,
+    range.from,
+    range.to,
     onlyOpen !== "true",
   );
   const items = data?.data ?? [];
@@ -108,7 +106,7 @@ export function IncidentLogView(): ReactElement {
         accessorKey: "occurred_at",
         header: t("columns.occurredAt"),
         enableSorting: false,
-        cell: ({ row }) => formatDateTime(row.original.occurred_at, { locale }),
+        cell: ({ row }) => formatDateTime(row.original.occurred_at, { locale, timeZone }),
       },
       {
         id: "severity",
@@ -156,7 +154,7 @@ export function IncidentLogView(): ReactElement {
         ),
       },
     ],
-    [t, locale],
+    [t, locale, timeZone],
   );
 
   return (

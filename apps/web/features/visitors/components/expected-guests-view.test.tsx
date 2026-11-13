@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useExpectedGuestsQuery: vi.fn(),
   canManage: true,
+  cancel: vi.fn(),
 }));
 
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
@@ -25,7 +26,7 @@ vi.mock("../../reference/directory-names", async () => {
 });
 vi.mock("../api", () => ({
   useExpectedGuestsQuery: mocks.useExpectedGuestsQuery,
-  useCancelExpectedGuestMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useCancelExpectedGuestMutation: () => ({ mutate: mocks.cancel, isPending: false }),
 }));
 
 import { ExpectedGuestsView } from "./expected-guests-view";
@@ -69,5 +70,52 @@ describe("ExpectedGuestsView filters", () => {
     await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
     expect(mocks.useExpectedGuestsQuery).toHaveBeenLastCalledWith(expect.any(String), true);
     expect(new URLSearchParams(window.location.search).get("only_pending")).toBe("");
+  });
+
+  const pendingGuest = {
+    id: "g1",
+    full_name: "Pak Made",
+    organization: "Dinas",
+    host_user_id: "u1",
+    status: "pending",
+    purpose: "Rapat",
+  };
+
+  it("confirms before cancelling an expected guest and names the guest", async () => {
+    mocks.cancel.mockReset();
+    mocks.useExpectedGuestsQuery.mockReturnValue({
+      data: { data: [pendingGuest] },
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<ExpectedGuestsView />);
+
+    const cancelButton = screen.getAllByRole("button", { name: "cancel" }).find(Boolean);
+    if (!cancelButton) throw new Error("cancel button missing");
+    await user.click(cancelButton);
+    expect(mocks.cancel).not.toHaveBeenCalled();
+    expect(await screen.findByText("cancelDialog.body")).toBeInTheDocument();
+  });
+
+  it("hides the empty actions column from a read-only reader", () => {
+    mocks.canManage = false;
+    mocks.useExpectedGuestsQuery.mockReturnValue({
+      data: { data: [pendingGuest] },
+      isLoading: false,
+    });
+    render(<ExpectedGuestsView />);
+    expect(screen.queryByRole("columnheader", { name: "columns.actions" })).not.toBeInTheDocument();
+  });
+
+  it("shows a retry control instead of the empty state when loading fails", () => {
+    mocks.useExpectedGuestsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch: vi.fn(),
+    });
+    render(<ExpectedGuestsView />);
+    expect(screen.getByRole("button", { name: "actions.retry" })).toBeInTheDocument();
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
   });
 });

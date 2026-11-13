@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { navAccessFromMe } from "../../../lib/navigation-access";
 import { useSession } from "../../../lib/session/session-provider";
 import { useMarkAllReadMutation, useMarkReadMutation, useNotificationsQuery } from "../api";
@@ -29,7 +30,7 @@ export function NotificationPanel({ onNavigate }: { onNavigate: () => void }): R
   const t = useTranslations("app.notifications");
   const locale = useLocale() as Locale;
   const { me } = useSession();
-  const { data, isLoading } = useNotificationsQuery({ unreadOnly: false });
+  const { data, isLoading, isError, refetch } = useNotificationsQuery({ unreadOnly: false });
   const markRead = useMarkReadMutation();
   const markAllRead = useMarkAllReadMutation();
   const items = (data?.data ?? []).slice(0, PANEL_LIMIT);
@@ -58,6 +59,8 @@ export function NotificationPanel({ onNavigate }: { onNavigate: () => void }): R
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-12 w-full" />
         </div>
+      ) : isError && !data ? (
+        <QueryError retry={() => refetch()} className="m-3" />
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center gap-2 px-3 py-8 text-center">
           <Bell className="size-5 text-fg-muted" aria-hidden="true" />

@@ -111,7 +111,7 @@ export function BillDetailSheet({
               <dt className="text-fg-muted">{t("columns.period")}</dt>
               <dd className="text-fg">{bill.period}</dd>
               <dt className="text-fg-muted">{t("columns.dueDate")}</dt>
-              <dd className="text-fg">{formatDate(bill.due_date, { locale })}</dd>
+              <dd className="text-fg">{formatDate(bill.due_date, { locale, timeZone: "UTC" })}</dd>
               <dt className="text-fg-muted">{t("status.label")}</dt>
               <dd>
                 <BillStatusBadge bill={bill} />
@@ -163,7 +163,7 @@ export function BillDetailSheet({
                       >
                         {formatCurrency(payment.amount_minor, bill.currency, { locale })} ·{" "}
                         {tDesk(`method.${METHOD_KEY[payment.method]}`)} ·{" "}
-                        {formatDate(payment.paid_on, { locale })}
+                        {formatDate(payment.paid_on, { locale, timeZone: "UTC" })}
                         {payment.reference ? ` · ${payment.reference}` : ""}
                       </span>
                       <span className="flex items-center gap-2">

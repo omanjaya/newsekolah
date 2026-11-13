@@ -25,6 +25,7 @@
       "name": "Nama",
       "permissions": "Izin",
       "status": "Status",
+      "actions": "Aksi",
       "lastUsed": "Terakhir dipakai"
     },
     "create": {
@@ -45,7 +46,7 @@
     }
   },
   "webhooks": {
-    "description": "Endpoint webhook menerima peristiwa lewat permintaan POST bertanda tangan HMAC. Lihat docs/14-public-api.md untuk skema verifikasi.",
+    "description": "Endpoint webhook menerima peristiwa lewat permintaan POST bertanda tangan HMAC.",
     "create": "Tambah endpoint",
     "edit": "Ubah",
     "delete": "Hapus",
@@ -59,6 +60,7 @@
     "statusDisabled": "Dinonaktifkan",
     "columns": {
       "url": "URL",
+      "actions": "Aksi",
       "eventTypes": "Jenis peristiwa",
       "status": "Status"
     },

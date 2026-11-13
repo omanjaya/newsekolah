@@ -25,6 +25,7 @@ import {
 } from "../../../components/report-export-dialog";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { useSession } from "../../../lib/session/session-provider";
 import { thisMonthInZone, todayInZone } from "../../../lib/tenant-date";
 import { VisitorsWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
@@ -39,14 +40,6 @@ import {
 const RECAP_COLUMN_KEYS = ["label", "value"] as const;
 
 const SEVERITIES = ["low", "medium", "high", "critical"] as const;
-
-function todayIso(): string {
-  return todayInZone();
-}
-
-function thisMonthIso(): string {
-  return thisMonthInZone();
-}
 
 function RecapFigures({ recap }: { recap: VisitorRecap }): ReactElement {
   const t = useTranslations("app.visitors.recap");
@@ -76,7 +69,8 @@ function RecapFigures({ recap }: { recap: VisitorRecap }): ReactElement {
 
 function DailyRecapTab(): ReactElement {
   const t = useTranslations("app.visitors.recap");
-  const [date, setDate] = useDateFilter("date", todayIso());
+  const { me } = useSession();
+  const [date, setDate] = useDateFilter("date", todayInZone(me?.tenant.timezone));
   const { data, isLoading, isError, refetch } = useDailyRecapQuery(date);
   const exportDaily = useExportDailyRecapMutation();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -133,7 +127,8 @@ function DailyRecapTab(): ReactElement {
 
 function MonthlyRecapTab(): ReactElement {
   const t = useTranslations("app.visitors.recap");
-  const [month, setMonth] = useDateFilter("month", thisMonthIso(), true);
+  const { me } = useSession();
+  const [month, setMonth] = useDateFilter("month", thisMonthInZone(me?.tenant.timezone), true);
   const { data, isLoading, isError, refetch } = useMonthlyRecapQuery(month);
   const exportMonthly = useExportMonthlyRecapMutation();
   const [dialogOpen, setDialogOpen] = useState(false);

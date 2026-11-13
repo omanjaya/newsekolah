@@ -15,6 +15,10 @@
     "noBadge": "None yet",
     "checkOut": "Sign Out",
     "signedOut": "{name} has been signed out",
+    "checkOutDialog": {
+      "title": "Sign this visitor out?",
+      "body": "{name} will be recorded as having left and disappears from the on-site list."
+    },
     "emptyTitle": "No visitors yet",
     "emptyBody": "Guests signed in at the gate will appear here."
   },
@@ -71,6 +75,11 @@
     },
     "emptyTitle": "No guests expected",
     "emptyBody": "Add the names of guests expected today.",
+    "emptyBodyOther": "No guests are scheduled for this date.",
+    "cancelDialog": {
+      "title": "Cancel this expected guest?",
+      "body": "The planned visit of {name} is cancelled and this guest can no longer be checked in from the list."
+    },
     "form": {
       "fullName": "Full name",
       "organization": "Organization",
@@ -137,7 +146,11 @@
       "actionTaken": "Action taken",
       "edit": "Edit",
       "close": "Close Incident",
-      "closed": "Incident closed"
+      "closed": "Incident closed",
+      "closeDialog": {
+        "title": "Close this incident?",
+        "body": "A closed incident can no longer be edited."
+      }
     },
     "form": {
       "occurredAt": "Occurred at",

@@ -8,6 +8,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import { type Bill, type PaymentMethod, today, useRecordPaymentMutation } from "../api";
 
 export function PaymentForm({ bill, onDone }: { bill: Bill; onDone: () => void }): ReactElement {
@@ -16,11 +17,13 @@ export function PaymentForm({ bill, onDone }: { bill: Bill; onDone: () => void }
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const record = useRecordPaymentMutation();
+  const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
 
   const outstanding = bill.amount_minor - bill.paid_amount_minor;
   const [amount, setAmount] = useState(String(outstanding));
   const [method, setMethod] = useState<PaymentMethod>("cash");
-  const [paidOn, setPaidOn] = useState(today());
+  const [paidOn, setPaidOn] = useState(today(timeZone));
   const [reference, setReference] = useState("");
 
   const methodOptions = [
@@ -92,7 +95,7 @@ export function PaymentForm({ bill, onDone }: { bill: Bill; onDone: () => void }
           onChange={(e) => {
             setPaidOn(e.target.value);
           }}
-          max={today()}
+          max={today(timeZone)}
           required
         />
       </label>

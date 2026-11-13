@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { setAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
+import { useHasAccessToken } from "../../lib/api/use-has-access-token";
 import { useSession } from "../../lib/session/session-provider";
 import { suspendSimulation, syncSimulationIdentity } from "../../lib/simulation/clock";
 
@@ -17,6 +18,10 @@ export interface RoleTestingFilter {
 export function useRoleTestingQuery(filter: RoleTestingFilter = {}, enabled = true) {
   const client = useApiClient();
   const { me } = useSession();
+  // `/v1/auth/*` requests skip the api client's boot refresh, so on a cold
+  // load a request made before the browser holds an access token is answered
+  // 401. Every caller (header switcher, impersonation banner) waits here.
+  const hasAccessToken = useHasAccessToken();
   return useQuery({
     queryKey: [
       "auth",
@@ -29,7 +34,7 @@ export function useRoleTestingQuery(filter: RoleTestingFilter = {}, enabled = tr
       filter.cursor ?? "",
     ],
     queryFn: () => client.GET("/v1/auth/role-testing", { params: { query: filter } }),
-    enabled: enabled && Boolean(me),
+    enabled: enabled && Boolean(me) && hasAccessToken,
     retry: false,
     staleTime: 15_000,
   });
