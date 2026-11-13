@@ -20,7 +20,7 @@ export interface SectionHeaderProps extends Omit<ComponentPropsWithoutRef<"div">
 /**
  * The title of a section of a page (the artboard's "Hari ini" with "Lihat
  * semua"): Manrope on the heading role, an optional count and description,
- * and one action aligned on the title's baseline. Sections are separated by
+ * and one action on the title's line. Sections are separated by
  * space and this title, not by rules.
  */
 export function SectionHeader({
@@ -35,14 +35,17 @@ export function SectionHeader({
 }: SectionHeaderProps) {
   return (
     <div className={cn("flex flex-col gap-1", className)} {...props}>
-      <div className="flex min-h-6 items-baseline justify-between gap-3">
-        <div className="flex min-w-0 items-baseline gap-2">
+      {/* Centred rather than baseline-aligned: a button with a leading
+          icon has no text baseline of its own, and a centred 18px link
+          lands within a pixel of the title's baseline anyway. */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
           <Heading id={titleId} className="min-w-0 text-heading text-fg">
             {title}
           </Heading>
-          {count !== undefined && <CountBadge count={count} className="self-center" />}
+          {count !== undefined && <CountBadge count={count} />}
         </div>
-        {action && <div className="flex shrink-0 items-baseline gap-2">{action}</div>}
+        {action && <div className="flex shrink-0 items-center gap-2">{action}</div>}
       </div>
       {description && <p className="max-w-prose text-body-sm text-fg-muted">{description}</p>}
     </div>
