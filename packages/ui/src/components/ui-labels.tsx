@@ -19,6 +19,10 @@ export interface UiLabels {
   calendarNextYear: string;
   /** Accessible name of the month caption that opens the month and year view. */
   calendarChooseMonth: (caption: string) => string;
+  /** Accessible name of the year in the month view, which opens a page of twelve years. */
+  calendarChooseYear: (year: string) => string;
+  calendarPreviousYears: string;
+  calendarNextYears: string;
   datePickerPlaceholder: string;
   datePickerClear: string;
   dateRangePickerPlaceholder: string;
@@ -48,6 +52,9 @@ const DEFAULT_UI_LABELS: UiLabels = {
   calendarPreviousYear: "Tahun sebelumnya",
   calendarNextYear: "Tahun berikutnya",
   calendarChooseMonth: (caption) => `${caption}, pilih bulan dan tahun`,
+  calendarChooseYear: (year) => `${year}, pilih tahun`,
+  calendarPreviousYears: "Rentang tahun sebelumnya",
+  calendarNextYears: "Rentang tahun berikutnya",
   datePickerPlaceholder: "Pilih tanggal",
   datePickerClear: "Hapus tanggal",
   dateRangePickerPlaceholder: "Pilih rentang tanggal",

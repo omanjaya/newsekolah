@@ -144,6 +144,31 @@ describe("Calendar", () => {
     expect(screen.getByRole("grid", { name: "Maret 2027" })).toBeInTheDocument();
   });
 
+  it("moves through a page of years with the keyboard, within the bounds", async () => {
+    render(<Calendar value="2026-11-14" today={TODAY} min="2020-03-01" />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "November 2026, pilih bulan dan tahun" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "2026, pilih tahun" }));
+    expect(screen.getByRole("grid", { name: "2016–2027" })).toBeInTheDocument();
+    expect(cell("2026")).toHaveFocus();
+    expect(cell("2026")).toHaveAttribute("aria-selected", "true");
+    expect(cell("2019")).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("button", { name: "Rentang tahun sebelumnya" })).toBeDisabled();
+
+    await userEvent.keyboard("{ArrowUp}{ArrowLeft}");
+    expect(cell("2022")).toHaveFocus();
+    // A page back would leave the bounds, so focus stops at the earliest year.
+    await userEvent.keyboard("{PageUp}");
+    expect(cell("2020")).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+
+    expect(screen.getByRole("grid", { name: "2020" })).toBeInTheDocument();
+    expect(cell("November 2020")).toHaveFocus();
+    expect(cell("Februari 2020")).toHaveAttribute("aria-disabled", "true");
+  });
+
   it("reads timestamp bounds as dates and ignores a month in another shape", () => {
     render(<Calendar today={TODAY} min="2026-11-14T00:00:00Z" month="2026-13" />);
 
