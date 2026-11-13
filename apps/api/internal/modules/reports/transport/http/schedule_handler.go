@@ -14,6 +14,9 @@ import (
 )
 
 func mapScheduleError(err error) error {
+	if mapped := moduleDisabledError(err); mapped != nil {
+		return mapped
+	}
 	switch {
 	case errors.Is(err, domain.ErrScheduleNotFound):
 		return httpx.ErrNotFound

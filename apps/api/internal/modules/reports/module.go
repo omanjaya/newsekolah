@@ -41,8 +41,9 @@ type Dependencies struct {
 	Academic   service.AcademicReader
 	Letterhead reportdoc.LetterheadSource
 	// Flags lets the scheduled-export job skip a tenant with reports
-	// turned off, and a schedule whose report kind reads a module that is
-	// turned off; nil runs every schedule.
+	// turned off, and hides a report kind whose source module is turned
+	// off everywhere a kind is used (catalogue, columns, export,
+	// schedules); nil leaves every module on.
 	Flags service.FlagReader
 }
 
@@ -59,9 +60,10 @@ func Register(deps Dependencies) *Module {
 	}
 	svc := service.New(deps.Attendance, deps.Discipline, deps.Grading, deps.Permits, clk)
 	svc.SetReportDocDependencies(deps.Academic, deps.Letterhead)
+	svc.SetFlags(deps.Flags)
 
 	scheduleRepo := repository.NewSchedule(deps.Pool)
-	scheduleSvc := service.NewScheduleService(deps.Pool, scheduleRepo, svc, deps.Perms, deps.Emails, deps.Storage, clk, deps.Flags)
+	scheduleSvc := service.NewScheduleService(deps.Pool, scheduleRepo, svc, deps.Perms, deps.Emails, deps.Storage, clk)
 
 	return &Module{
 		Service:         svc,

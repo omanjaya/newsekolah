@@ -186,6 +186,9 @@ type Service struct {
 	academic   AcademicReader
 	letterhead reportdoc.LetterheadSource
 	clock      clock.Clock
+	// flags is nil when no flag wiring is configured: every module then
+	// counts as on, matching feature_flags' opt-out rule.
+	flags FlagReader
 }
 
 func New(attendance AttendanceReader, discipline DisciplineReader, grading GradingReader, permits PermitsReader, clk clock.Clock) *Service {
@@ -234,6 +237,9 @@ func (s *Service) RunDocument(ctx context.Context, tenantID uuid.UUID, kind Kind
 	def, ok := Find(kind)
 	if !ok {
 		return nil, "", ErrReportNotFound
+	}
+	if err := s.RequireKindAvailable(ctx, tenantID, kind); err != nil {
+		return nil, "", err
 	}
 	if args.ClassID.Valid && args.GradeLevelID.Valid {
 		return nil, "", ErrScopeConflict
@@ -361,6 +367,9 @@ func (s *Service) Columns(ctx context.Context, tenantID uuid.UUID, kind Kind, ar
 	def, ok := Find(kind)
 	if !ok {
 		return nil, ErrReportNotFound
+	}
+	if err := s.RequireKindAvailable(ctx, tenantID, kind); err != nil {
+		return nil, err
 	}
 	if args.ClassID.Valid && args.GradeLevelID.Valid {
 		return nil, ErrScopeConflict
