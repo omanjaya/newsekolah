@@ -27,7 +27,7 @@ import { useSession } from "../../../lib/session/session-provider";
 import { useDayLabel } from "../../../lib/use-day-label";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import {
-  NOTIFICATION_KINDS,
+  useNotificationKinds,
   type NotificationKind,
   useMarkAllReadMutation,
   useMarkReadMutation,
@@ -42,6 +42,7 @@ export function NotificationsView(): ReactElement {
   const tKinds = useTranslations("app.notifications.kinds");
   const locale = useLocale() as Locale;
   const { me } = useSession();
+  const kinds = useNotificationKinds();
   const [filter, setFilter] = useRememberedViewState<"all" | "unread">(
     "notifications-filter",
     "all",
@@ -106,7 +107,7 @@ export function NotificationsView(): ReactElement {
         <Select
           options={[
             { value: "all", label: t("kindAll") },
-            ...NOTIFICATION_KINDS.map((k) => ({ value: k, label: tKinds(k) })),
+            ...kinds.map((k) => ({ value: k, label: tKinds(k) })),
           ]}
           value={kind || "all"}
           onValueChange={(v) => {

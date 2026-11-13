@@ -53,6 +53,10 @@ describe("visibleStudentProfileTabs", () => {
     ).toEqual(["overview"]);
     expect(visibleStudentProfileTabs(canOnly("view_mentoring"), ["mentoring"])).toEqual([]);
   });
+
+  it("drops the grades tab while grading is off, though mentoring is on", () => {
+    expect(visibleStudentProfileTabs(canOnly("view_mentoring"), ["grading"])).toEqual(["overview"]);
+  });
 });
 
 describe("studentProfileHref", () => {

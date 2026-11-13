@@ -52,9 +52,10 @@ export function SessionRowActionsMenu({
   const t = useTranslations("app.attendance.session");
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"menu" | "violations">("menu");
-  const hasViolations = violationIds.length > 0;
-  // Recording a violation is a discipline action: no entry without the module.
+  // Recording a violation is a discipline action: no entry without the module,
+  // and no highlight for violations kept from before it was switched off.
   const disciplineOn = useModuleEnabled("discipline");
+  const hasViolations = disciplineOn && violationIds.length > 0;
 
   function onOpenChange(next: boolean) {
     setOpen(next);

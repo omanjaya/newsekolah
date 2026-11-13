@@ -241,6 +241,13 @@ describe("pages made of sections from several modules", () => {
     expect(quick(["permits", "library"])).not.toContain("scan-qr");
   });
 
+  it("keeps the action inbox while permits or discipline is on", () => {
+    expect(access("/inbox", all, ["permits"])).toBe("ok");
+    expect(listed("inbox", all, ["discipline"])).toBe(true);
+    expect(access("/inbox", all, ["permits", "discipline"])).toBe("module-disabled");
+    expect(listed("inbox", all, ["permits", "discipline"])).toBe(false);
+  });
+
   it("keeps document templates while any issuing module is on, workflows with permits only", () => {
     expect(access("/settings/document-templates", all, ["permits"])).toBe("ok");
     expect(listed("settings-document-templates", all, ["permits"])).toBe(true);

@@ -26,7 +26,7 @@ import { moduleSectionsAccess, type NavAccess, type NavModuleSection } from "./n
 import { NAV_GROUP as GROUP } from "./navigation-groups";
 import { libraryNavItems } from "./navigation-library";
 import { moduleNavItems } from "./navigation-modules";
-import { SCAN_SECTIONS } from "./navigation-sections";
+import { INBOX_SECTIONS, SCAN_SECTIONS } from "./navigation-sections";
 import { settingsNavItems } from "./navigation-settings";
 
 export { navGroupIcons } from "./navigation-groups";
@@ -152,8 +152,9 @@ export const navigation: NavItem[] = [
     icon: Inbox,
     // Every queue on the page gates itself; late arrivals have no permission
     // code at all (any teacher or staff account reviews them), so the entry
-    // is offered to everyone but students.
+    // is offered to everyone but students, while a queue's module is on.
     excludeProfileKinds: ["student"],
+    moduleSections: INBOX_SECTIONS,
   },
   {
     key: "scan",

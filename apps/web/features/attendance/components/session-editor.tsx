@@ -19,6 +19,7 @@ import type { ReactElement } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useUnsavedChangesProtection } from "../../../lib/navigation/use-unsaved-changes-protection";
 import { useSession } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
@@ -99,6 +100,7 @@ export function SessionEditor({
   const [savedSuccessfully, setSavedSuccessfully] = useState(false);
   const [draftOffer, setDraftOffer] = useState<{ savedAt: string } | null>(null);
   const violationTypes = useViolationTypesQuery();
+  const disciplineOn = useModuleEnabled("discipline");
 
   // Offer to restore an in-progress draft the browser still has from
   // before a reload or a dropped connection, once per mount. This reads
@@ -231,7 +233,8 @@ export function SessionEditor({
             student_user_id: item.student_user_id,
             status_code: statuses[item.student_user_id] ?? defaultCode,
             ...(notes[item.student_user_id] ? { notes: notes[item.student_user_id] } : {}),
-            ...(violations[item.student_user_id]?.length
+            // Discipline off: violations (say from a restored draft) are not sent.
+            ...(disciplineOn && violations[item.student_user_id]?.length
               ? { violation_ids: violations[item.student_user_id] }
               : {}),
           })),

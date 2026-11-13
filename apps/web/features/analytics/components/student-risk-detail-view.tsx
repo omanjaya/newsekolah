@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { CounselingWorkspaceNav } from "../../student-services/components/service-workspace-nav";
@@ -25,7 +26,9 @@ export interface StudentRiskDetailViewProps {
 export function StudentRiskDetailView({ studentId }: StudentRiskDetailViewProps): ReactElement {
   const t = useTranslations("app.analytics.detail");
   const workspace = useTranslations("app.serviceWorkspace");
-  const canCounsel = useCan("manage_counseling");
+  // Counseling is part of discipline: the follow-up goes away with it.
+  const disciplineOn = useModuleEnabled("discipline");
+  const canCounsel = useCan("manage_counseling") && disciplineOn;
   const router = useRouter();
 
   const studentMap = useDirectoryNames([studentId]);

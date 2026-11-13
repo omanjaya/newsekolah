@@ -8,7 +8,7 @@ import type { ReactElement } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   NOTIFICATION_CHANNELS,
-  NOTIFICATION_KINDS,
+  useNotificationKinds,
   type NotificationChannel,
   type NotificationKind,
   useSetTenantNotificationDefaultMutation,
@@ -24,6 +24,7 @@ import {
 export function NotificationDefaultsView(): ReactElement {
   const t = useTranslations("app.settings.notificationDefaults");
   const tKinds = useTranslations("app.notifications.kinds");
+  const kinds = useNotificationKinds();
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -49,7 +50,7 @@ export function NotificationDefaultsView(): ReactElement {
             </tr>
           </thead>
           <tbody>
-            {NOTIFICATION_KINDS.map((kind) => (
+            {kinds.map((kind) => (
               <NotificationDefaultRow key={kind} kind={kind} label={tKinds(kind)} />
             ))}
           </tbody>
@@ -61,7 +62,7 @@ export function NotificationDefaultsView(): ReactElement {
           NotificationSettingsView's own channel matrix). Stacked per kind,
           every channel for that kind is on screen at once. */}
       <ul className="flex flex-col gap-3 md:hidden">
-        {NOTIFICATION_KINDS.map((kind) => (
+        {kinds.map((kind) => (
           <NotificationDefaultCard key={kind} kind={kind} label={tKinds(kind)} />
         ))}
       </ul>

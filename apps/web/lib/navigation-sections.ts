@@ -26,6 +26,16 @@ export const SCAN_SECTIONS: readonly NavModuleSection[] = [
 ];
 
 /**
+ * The action inbox: leave requests, exit permits and late arrivals are
+ * permits queues, warning-letter candidates a discipline queue. Each queue
+ * still checks its own permission on the page.
+ */
+export const INBOX_SECTIONS: readonly NavModuleSection[] = [
+  { module: "permits" },
+  { module: "discipline" },
+];
+
+/**
  * The modules whose issued documents render through a document template:
  * leave letters (permits), warning letters (discipline) and visitor badges
  * (visitors). The template screen stays open while any of them is on.

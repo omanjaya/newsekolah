@@ -4,6 +4,8 @@ import { queryKeys } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
+import { isModuleEnabled, type FeatureModule } from "../../lib/modules/feature-modules";
+import { useSession } from "../../lib/session/session-provider";
 
 /** Every notification kind the API emits; drives the preferences matrix. */
 export const NOTIFICATION_KINDS = [
@@ -21,6 +23,43 @@ export const NOTIFICATION_KINDS = [
   "late_arrival_updated",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+
+/**
+ * The feature module that emits each kind; `undefined` for an always-on
+ * one. A switched-off module sends nothing, so its kinds are left out of
+ * the preference, default and filter lists (the stored preferences are
+ * kept and listed again once it is back on).
+ */
+export const NOTIFICATION_KIND_MODULE: Record<NotificationKind, FeatureModule | undefined> = {
+  announcement_published: "announcements",
+  attendance_submitted: undefined,
+  substitution_requested: undefined,
+  substitution_responded: undefined,
+  leave_request_submitted: "permits",
+  leave_request_reviewed: "permits",
+  leave_request_issued: "permits",
+  exit_permit_stage_changed: "permits",
+  exit_permit_issued: "permits",
+  exit_permit_exited: "permits",
+  late_arrival_opened: "permits",
+  late_arrival_updated: "permits",
+};
+
+/** The kinds of the modules that are on, in list order. */
+export function availableNotificationKinds(
+  isEnabled: (module: FeatureModule) => boolean,
+): NotificationKind[] {
+  return NOTIFICATION_KINDS.filter((kind) => {
+    const module = NOTIFICATION_KIND_MODULE[kind];
+    return !module || isEnabled(module);
+  });
+}
+
+/** `availableNotificationKinds` for the signed-in reader's school. */
+export function useNotificationKinds(): NotificationKind[] {
+  const { me } = useSession();
+  return availableNotificationKinds((module) => isModuleEnabled(me, module));
+}
 
 export const NOTIFICATION_CHANNELS = ["inapp", "push", "email", "whatsapp"] as const;
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
