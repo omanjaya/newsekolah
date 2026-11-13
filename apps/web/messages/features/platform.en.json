@@ -30,6 +30,10 @@
     "emptyBody": "Schools you create will show up here.",
     "viewDetail": "View detail",
     "suspend": "Suspend",
+    "suspendDialog": {
+      "title": "Suspend this school?",
+      "body": "{name} will be suspended and its {count} users cannot sign in until you resume it."
+    },
     "resume": "Resume",
     "suspended": "School suspended",
     "resumed": "School resumed",
