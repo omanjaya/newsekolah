@@ -108,4 +108,26 @@ describe("CopiesBrowserView filters", () => {
     );
     expect(new URLSearchParams(window.location.search).get("category_id")).toBe("");
   });
+
+  it("hides row selection and the label print bar from roles that cannot manage the catalogue", () => {
+    mocks.canManage = false;
+    mocks.useLibraryCopiesFilteredQuery.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: "c1",
+            title_id: "t1",
+            barcode: "B-1",
+            accession_number: "A-1",
+            call_number: "C-1",
+            status: "available",
+          },
+        ],
+      },
+      isLoading: false,
+    });
+    render(<CopiesBrowserView />);
+
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+  });
 });

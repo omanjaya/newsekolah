@@ -110,7 +110,7 @@ export function CopiesBrowserView(): ReactElement {
 
   const columns = useMemo<ColumnDef<LibraryCopy>[]>(
     () => [
-      selectionColumn<LibraryCopy>(),
+      ...(canManage ? [selectionColumn<LibraryCopy>()] : []),
       { accessorKey: "barcode", header: t("columns.barcode"), enableSorting: false },
       {
         accessorKey: "accession_number",
@@ -156,7 +156,7 @@ export function CopiesBrowserView(): ReactElement {
         ),
       },
     ],
-    [t, categoryMap, locationMap],
+    [t, categoryMap, locationMap, canManage],
   );
 
   return (
@@ -164,7 +164,7 @@ export function CopiesBrowserView(): ReactElement {
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <LibraryWorkspaceNav area="catalogue" />
 
-      <CopyLabelPrintBar selectedIds={orderedIds} onClear={clear} />
+      {canManage && <CopyLabelPrintBar selectedIds={orderedIds} onClear={clear} />}
       {canManage && <CopyBulkStatusBar selectedIds={orderedIds} onDone={clear} />}
 
       <DataTable
@@ -186,8 +186,8 @@ export function CopiesBrowserView(): ReactElement {
           removeFilter: (label) => t("filters.removeFilter", { label }),
         }}
         isLoading={isLoading}
-        rowSelection={selection}
-        onRowSelectionChange={onSelectionChange}
+        rowSelection={canManage ? selection : undefined}
+        onRowSelectionChange={canManage ? onSelectionChange : undefined}
         getRowId={(item) => item.id}
         emptyState={
           <EmptyState
