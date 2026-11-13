@@ -74,4 +74,28 @@ describe("LibraryReportsView overdue members tab", () => {
     const panelId = selected.getAttribute("aria-controls") ?? "";
     expect(document.getElementById(panelId)).not.toBeNull();
   });
+
+  it("falls back to a translated label for a member the directory does not know", () => {
+    mocks.overdue.mockReturnValue({
+      data: { data: [{ member_user_id: "ghost-id", loan_count: 1, total_fine: 0 }] },
+      isLoading: false,
+    });
+    render(<LibraryReportsView />);
+
+    expect(screen.getAllByText("unknownMember").length).toBeGreaterThan(0);
+    expect(screen.queryByText("ghost-id")).not.toBeInTheDocument();
+  });
+
+  it("shows an error, not the empty state, when the request failed", () => {
+    mocks.overdue.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch: vi.fn(),
+    });
+    render(<LibraryReportsView />);
+
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "actions.retry" })).toBeInTheDocument();
+  });
 });

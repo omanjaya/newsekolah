@@ -25,6 +25,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import {
   ReportExportDialog,
   type ReportExportColumn,
@@ -33,7 +34,7 @@ import {
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { startOfIsoMonth, thisMonthInZone, todayInZone } from "../../../lib/tenant-date";
-import { useDirectoryNames } from "../../reference/directory-names";
+import { useDirectoryLookup } from "../../reference/directory-names";
 import {
   downloadMonthlyLibraryReportPdf,
   useLoansReportQuery,
@@ -313,12 +314,17 @@ function LoansReportTable({ from, to }: { from: string; to: string }): ReactElem
 function OverdueMembersReportTable(): ReactElement {
   const t = useTranslations("app.library.reports.overdueMembers");
   const locale = useLocale() as Locale;
-  const { data, isLoading } = useOverdueMembersReportQuery();
+  const { data, isLoading, isError, refetch } = useOverdueMembersReportQuery();
   const members = data?.data ?? [];
-  const names = useDirectoryNames(members.map((member) => member.member_user_id));
-  const nameOf = (userId: string) => names.get(userId)?.name ?? userId;
+  const { names, isLoading: namesLoading } = useDirectoryLookup(
+    members.map((member) => member.member_user_id),
+  );
+  const nameOf = (userId: string) => names.get(userId)?.name ?? t("unknownMember");
 
-  if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (isLoading || (namesLoading && members.length > 0)) {
+    return <Skeleton className="h-64 w-full" />;
+  }
+  if (isError) return <QueryError retry={() => refetch()} />;
   if (members.length === 0) {
     return <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />;
   }
@@ -367,10 +373,11 @@ function OverdueMembersReportTable(): ReactElement {
 
 function MostBorrowedReportTable({ from, to }: { from: string; to: string }): ReactElement {
   const t = useTranslations("app.library.reports.mostBorrowed");
-  const { data, isLoading } = useMostBorrowedReportQuery(from, to);
+  const { data, isLoading, isError, refetch } = useMostBorrowedReportQuery(from, to);
   const titles = data?.data ?? [];
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (isError) return <QueryError retry={() => refetch()} />;
   if (titles.length === 0) {
     return <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />;
   }
