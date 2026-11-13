@@ -49,8 +49,9 @@ export function RowActionsMenu({ ariaLabel, items, className }: RowActionsMenuPr
               type="button"
               disabled={item.disabled}
               className={cn(
-                "flex min-h-11 items-center gap-2 rounded-xs px-2 text-left text-[13px] hover:bg-bg disabled:pointer-events-none disabled:opacity-50",
-                item.tone === "danger" ? "text-status-absent" : "text-fg",
+                "flex min-h-11 items-center gap-2 rounded-sm px-2 text-left text-body-sm transition-colors",
+                "hover:bg-state-hover active:bg-state-pressed disabled:pointer-events-none disabled:opacity-50",
+                item.tone === "danger" ? "text-danger" : "text-fg",
               )}
               onClick={() => {
                 setOpen(false);

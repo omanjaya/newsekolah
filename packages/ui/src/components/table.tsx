@@ -81,7 +81,9 @@ export function TableRow({ className, ...props }: ComponentPropsWithoutRef<"tr">
     <tr
       className={cn(
         "border-b border-line",
-        section === "header" ? "bg-bg" : cn(ROW_MIN_HEIGHT[density], "last:border-b-0 hover:bg-bg"),
+        section === "header"
+          ? "bg-bg"
+          : cn(ROW_MIN_HEIGHT[density], "last:border-b-0 transition-colors hover:bg-state-hover"),
         className,
       )}
       {...props}

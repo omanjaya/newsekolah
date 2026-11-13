@@ -12,7 +12,15 @@ export const TabsList = forwardRef<
   return (
     <TabsPrimitive.List
       ref={ref}
-      className={cn("inline-flex w-fit items-center gap-1 rounded-full bg-bg p-1", className)}
+      className={cn(
+        // Never wider than its container: on a phone five or six tabs
+        // scroll sideways inside the track instead of pushing the page
+        // wider. The 4px padding leaves room for the focus ring, which the
+        // scroll container would otherwise clip.
+        "inline-flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full bg-surface-sunken p-1",
+        "scrollbar-none overscroll-x-contain",
+        className,
+      )}
       {...props}
     />
   );
@@ -29,7 +37,7 @@ export const TabsTrigger = forwardRef<
         // Pill-style active tab (docs/07-ui-ux.md, "Hijau Segar"): the
         // whole trigger is the target, not just an underline, so it clears
         // 44px tall on a phone the same way Button does.
-        "flex min-h-11 items-center justify-center rounded-full px-4 text-[13px] font-medium text-fg-muted",
+        "flex min-h-11 shrink-0 items-center justify-center rounded-full px-4 text-label whitespace-nowrap text-fg-muted",
         "md:min-h-0 md:h-8",
         // The active pill's fill and shadow fade in with the text color.
         "transition-[color,background-color,box-shadow]",

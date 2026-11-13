@@ -8,7 +8,7 @@ import { cn } from "../utils/cn.js";
 // stays the same size, only the area around it grows.
 const iconButtonVariants = cva(
   "inline-flex size-11 md:size-8 items-center justify-center rounded-md text-fg transition-colors " +
-    "duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-bg " +
+    "hover:bg-state-hover active:bg-state-pressed " +
     "disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-5",
   {
     variants: {

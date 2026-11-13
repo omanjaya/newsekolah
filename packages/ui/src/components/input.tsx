@@ -17,9 +17,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       className={cn(
         // 44px on a touch screen, 36 once there is a cursor, matching how
         // Button sizes itself. A field is tapped as often as a button is.
-        "h-11 md:h-9 w-full rounded-md border border-border bg-surface px-3 text-[14px] text-fg",
+        //
+        // The border is the only thing that shows where an empty field is,
+        // so it uses `border-strong` (3:1 on every surface); a hover darkens
+        // it one step, focus hands over to the accent and the focus ring.
+        "h-11 md:h-9 w-full rounded-md border border-border-strong bg-surface px-3 text-body text-fg",
         "placeholder:text-fg-muted",
-        "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
+        "transition-colors hover:border-fg-muted",
         "focus-visible:border-accent",
         "disabled:cursor-not-allowed disabled:opacity-50",
         invalid && "border-danger",

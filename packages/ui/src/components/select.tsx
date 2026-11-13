@@ -53,9 +53,9 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
         className={cn(
           // Matches Input and Button: thumb-sized on a phone, compact once
           // there is a cursor.
-          "flex h-11 md:h-9 w-full items-center justify-between gap-2 rounded-md border border-border",
-          "bg-surface px-3 text-[14px] text-fg",
-          "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
+          "flex h-11 md:h-9 w-full items-center justify-between gap-2 rounded-md border border-border-strong",
+          "bg-surface px-3 text-body text-fg",
+          "transition-colors hover:border-fg-muted",
           "focus-visible:border-accent",
           "disabled:cursor-not-allowed disabled:opacity-50",
           "data-[placeholder]:text-fg-muted",
@@ -77,11 +77,15 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
           position="popper"
           sideOffset={4}
           className={cn(
-            "z-(--z-popover) overflow-hidden rounded-md border border-border bg-surface",
-            "shadow-(--shadow-float)",
+            // As wide as the trigger at least, and never taller than the
+            // room Radix measures between the trigger and the screen edge:
+            // a long list (dozens of classes) scrolls inside the viewport.
+            "z-popover min-w-(--radix-select-trigger-width) max-h-(--radix-select-content-available-height)",
+            "overflow-hidden rounded-md border border-border bg-surface-raised shadow-2",
+            "data-[state=open]:animate-popover-in data-[state=closed]:animate-popover-out",
           )}
         >
-          <SelectPrimitive.Viewport className="p-1">
+          <SelectPrimitive.Viewport className="max-h-80 p-1">
             {options.map((option) => (
               <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
                 {option.label}
@@ -109,8 +113,9 @@ function SelectItem({
       disabled={disabled}
       className={cn(
         // An option in the open list is tapped too, so it grows the same way.
-        "relative flex h-11 md:h-9 cursor-pointer items-center rounded-xs px-3 pr-8 text-[14px] text-fg outline-none",
-        "data-[highlighted]:bg-bg data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex h-11 md:h-9 cursor-pointer items-center rounded-sm px-3 pr-8 text-body text-fg outline-none",
+        "transition-colors data-[highlighted]:bg-state-hover",
+        "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       )}
     >
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>

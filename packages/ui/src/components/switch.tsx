@@ -25,18 +25,18 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       {...props}
     >
       {/*
-        Rectangular, not pill-shaped: DESIGN.md reserves radius 999 for
-        avatars only, so the track uses radius-sm (8) and the thumb
-        radius-xs (4).
+        The track's shape is reworked with the other primitives (spec
+        section 5); this keeps it and only moves the unchecked border to
+        border-strong, so an off switch is as visible as a field.
       */}
       <span
         aria-hidden="true"
         className={cn(
-          "flex h-5 w-9 shrink-0 items-center rounded-sm border border-border bg-bg transition-colors",
-          "duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
+          "flex h-5 w-9 shrink-0 items-center rounded-sm border border-border-strong bg-surface-sunken",
+          "transition-colors group-hover:border-fg-muted",
           "group-data-[state=checked]:border-accent group-data-[state=checked]:bg-accent",
           "group-disabled:opacity-50",
-          "group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-accent",
+          "group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus-ring",
         )}
       >
         <SwitchPrimitive.Thumb

@@ -69,19 +69,19 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
         disabled={disabled}
         aria-invalid={invalid ?? undefined}
         className={cn(
-          // Matches Input and Select: thumb-sized on a phone, compact once
-          // there is a cursor.
-          "flex h-11 md:h-9 w-full items-center justify-between gap-2 rounded-xs border border-border",
-          "bg-surface px-3 text-[14px] text-fg",
-          "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
+          // The same field as Select: radius, height (thumb-sized on a
+          // phone, compact once there is a cursor), border and states.
+          "flex h-11 md:h-9 w-full items-center justify-between gap-2 rounded-md border border-border-strong",
+          "bg-surface px-3 text-body text-fg",
+          "transition-colors hover:border-fg-muted",
           "focus-visible:border-accent",
           "disabled:cursor-not-allowed disabled:opacity-50",
-          invalid && "border-status-absent",
+          invalid && "border-danger",
           className,
         )}
         {...aria}
       >
-        <span className={cn("truncate text-left", !selected && "text-fg-muted")}>
+        <span className={cn("min-w-0 flex-1 truncate text-left", !selected && "text-fg-muted")}>
           {selected ? selected.label : placeholder}
         </span>
         <ChevronDown className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
@@ -91,8 +91,13 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
           align="start"
           sideOffset={4}
           className={cn(
-            "z-(--z-popover) w-72 overflow-hidden rounded-md border border-border bg-surface",
-            "shadow-(--shadow-float) data-[state=open]:animate-overlay-in",
+            // Like Select's list: at least as wide as the field (never a
+            // fixed 18rem that a wide form field outgrows) and capped to the
+            // room left on screen.
+            "z-popover w-(--radix-popover-trigger-width) min-w-72 max-w-[calc(100vw-2rem)]",
+            "max-h-(--radix-popover-content-available-height) overflow-hidden",
+            "rounded-md border border-border bg-surface-raised shadow-2",
+            "data-[state=open]:animate-popover-in data-[state=closed]:animate-popover-out",
           )}
         >
           <CommandPrimitive shouldFilter={false} className="flex flex-col">
@@ -101,12 +106,12 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
               onValueChange={onSearchChange}
               placeholder={searchPlaceholder}
               className={cn(
-                "h-11 md:h-9 w-full border-b border-border bg-transparent px-3 text-[14px] text-fg outline-none",
+                "h-11 md:h-9 w-full border-b border-line bg-transparent px-3 text-body text-fg outline-none",
                 "placeholder:text-fg-muted",
               )}
             />
             <CommandPrimitive.List className="max-h-64 overflow-y-auto p-1">
-              <CommandPrimitive.Empty className="px-3 py-6 text-center text-[13px] text-fg-muted">
+              <CommandPrimitive.Empty className="px-3 py-6 text-center text-body-sm text-fg-muted">
                 {loading ? loadingLabel : emptyLabel}
               </CommandPrimitive.Empty>
               {options.map((option) => (
@@ -118,15 +123,16 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
                     setOpen(false);
                   }}
                   className={cn(
-                    "flex h-11 md:h-9 cursor-pointer items-center justify-between gap-2 rounded-xs px-3",
-                    "text-[14px] text-fg outline-none",
-                    "data-[selected=true]:bg-bg",
+                    // Select's option row: same height, radius and highlight.
+                    "flex min-h-11 md:min-h-9 cursor-pointer items-center justify-between gap-2 rounded-sm px-3 py-1",
+                    "text-body text-fg outline-none",
+                    "transition-colors data-[selected=true]:bg-state-hover",
                   )}
                 >
                   <span className="flex flex-col overflow-hidden text-left">
                     <span className="truncate">{option.label}</span>
                     {option.description && (
-                      <span className="truncate text-[12px] text-fg-muted">
+                      <span className="truncate text-caption text-fg-muted">
                         {option.description}
                       </span>
                     )}

@@ -48,8 +48,9 @@ export const DropdownMenuItem = forwardRef<
     <DropdownMenuPrimitive.Item
       ref={ref}
       className={cn(
-        "flex h-9 cursor-pointer items-center gap-2 rounded-xs px-2 text-[13px] text-fg outline-none",
-        "data-[highlighted]:bg-bg data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "flex h-9 cursor-pointer items-center gap-2 rounded-sm px-2 text-body-sm text-fg outline-none",
+        "transition-colors data-[highlighted]:bg-state-hover",
+        "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className,
       )}
       {...props}
@@ -65,8 +66,9 @@ export const DropdownMenuCheckboxItem = forwardRef<
     <DropdownMenuPrimitive.CheckboxItem
       ref={ref}
       className={cn(
-        "flex h-9 cursor-pointer items-center gap-2 rounded-xs px-2 text-[13px] text-fg outline-none",
-        "data-[highlighted]:bg-bg data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "flex h-9 cursor-pointer items-center gap-2 rounded-sm px-2 text-body-sm text-fg outline-none",
+        "transition-colors data-[highlighted]:bg-state-hover",
+        "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className,
       )}
       {...props}
@@ -86,7 +88,7 @@ export const DropdownMenuLabel = forwardRef<
   return (
     <DropdownMenuPrimitive.Label
       ref={ref}
-      className={cn("px-2 py-1.5 text-[12px] font-medium text-fg-muted", className)}
+      className={cn("px-2 py-1.5 text-caption text-fg-muted", className)}
       {...props}
     />
   );

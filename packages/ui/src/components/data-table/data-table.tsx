@@ -426,8 +426,8 @@ export function DataTable<TData>({
                   className={cn(
                     "border-b border-line last:border-b-0",
                     ROW_HEIGHT[density],
-                    "hover:bg-bg data-[focused=true]:bg-bg",
-                    "data-[state=selected]:bg-accent-soft",
+                    "transition-colors hover:bg-state-hover data-[focused=true]:bg-state-hover",
+                    "data-[state=selected]:bg-state-selected",
                   )}
                 >
                   {row.getVisibleCells().map((cell) => (
