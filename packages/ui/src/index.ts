@@ -344,3 +344,7 @@ export { TableFooter } from "./components/table.js";
 
 // Surfaces and content (overhaul wave 2, stream 1, review fixes).
 export { UiLink } from "./components/ui-link.js";
+export {
+  FirstUseEmptyState,
+  type FirstUseEmptyStateProps,
+} from "./components/first-use-empty-state.js";
