@@ -13,17 +13,21 @@ function formatLocale(locale: string): string {
 }
 
 /**
- * Shared controls inherit the application locale, including legacy call
- * sites: every built-in string of packages/ui (dialogs, tables, fields,
- * pickers, the scanner, the QR panel) comes from `app.shell.controls`.
+ * Every built-in string of packages/ui, from next-intl: the generic words
+ * from `common`, the rest from `app.shell.controls`. Typed as the whole
+ * `UiLabels`, not a partial one, so a key added to the package fails the
+ * typecheck here until it is translated, instead of staying Indonesian in
+ * English. Exported for its test.
  */
-export function UiLocaleProvider({ children }: { children: ReactNode }): ReactElement {
+export function useAppUiLabels(): UiLabels {
   const locale = useLocale();
   const actions = useTranslations("common.actions");
+  const states = useTranslations("common.states");
+  const confirm = useTranslations("common.confirmDialog");
   const table = useTranslations("app.shell.table");
   const t = useTranslations("app.shell.controls");
 
-  const labels = useMemo<Partial<UiLabels>>(
+  return useMemo<UiLabels>(
     () => ({
       locale: formatLocale(locale),
       dialogClose: actions("close"),
@@ -33,6 +37,7 @@ export function UiLocaleProvider({ children }: { children: ReactNode }): ReactEl
       tableSelectRow: table("selectRow"),
 
       fieldOptional: t("field.optional"),
+      fieldRequired: t("field.required"),
       formErrorTitle: t("field.formErrorTitle"),
       passwordShow: t("password.show"),
       passwordHide: t("password.hide"),
@@ -51,6 +56,7 @@ export function UiLocaleProvider({ children }: { children: ReactNode }): ReactEl
       tableDensityCompact: t("table.densityCompact"),
       tableMoreOptions: t("table.moreOptions"),
       tableClearSelection: t("table.clearSelection"),
+      tableEmptyTitle: t("table.emptyTitle"),
       tableNoResultsTitle: t("table.noResultsTitle"),
       tableNoResultsDescription: t("table.noResultsDescription"),
       tableClearSearch: t("table.clearSearch"),
@@ -122,9 +128,49 @@ export function UiLocaleProvider({ children }: { children: ReactNode }): ReactEl
       timePickerOptions: t("picker.timeOptions"),
       numberInputIncrement: t("picker.numberIncrement"),
       numberInputDecrement: t("picker.numberDecrement"),
-    }),
-    [actions, locale, t, table],
-  );
 
+      // Surfaces and content.
+      breadcrumbLabel: t("page.breadcrumb"),
+      pageHeaderMoreActions: t("page.moreActions"),
+      avatarGroupMore: (count) => t("avatar.groupMore", { count }),
+      dataListNoValue: t("dataList.noValue"),
+      loading: states("loading"),
+      emptyFilteredTitle: t("empty.filteredTitle"),
+      emptyFilteredDescription: t("empty.filteredDescription"),
+      emptyFilteredReset: t("empty.filteredReset"),
+      statePageCode: (code) => t("statePage.code", { code }),
+      alertDismiss: t("alert.dismiss"),
+      statDeltaUp: t("stat.deltaUp"),
+      statDeltaDown: t("stat.deltaDown"),
+      statDeltaFlat: t("stat.deltaFlat"),
+      linkOpensInNewTab: t("link.opensInNewTab"),
+
+      // Overlays, navigation and feedback.
+      confirmDialogConfirm: confirm("defaultConfirmLabel"),
+      confirmDialogCancel: confirm("defaultCancelLabel"),
+      toastClose: t("toast.close"),
+      toastRegion: t("toast.region"),
+      commandPaletteLabel: t("commandPalette.label"),
+      commandPalettePlaceholder: t("commandPalette.placeholder"),
+      commandPaletteEmpty: t("commandPalette.empty"),
+      commandPaletteHintMove: t("commandPalette.hintMove"),
+      commandPaletteHintOpen: t("commandPalette.hintOpen"),
+      commandPaletteHintClose: t("commandPalette.hintClose"),
+      commandPaletteCancel: t("commandPalette.cancel"),
+      stepperStepComplete: t("stepper.complete"),
+      stepperStepStopped: t("stepper.stopped"),
+    }),
+    [actions, confirm, locale, states, t, table],
+  );
+}
+
+/**
+ * Shared controls inherit the application locale, including legacy call
+ * sites: every built-in string of packages/ui (dialogs, toasts, tables,
+ * fields, pickers, the scanner, the QR panel, the command palette) comes
+ * from next-intl through `useAppUiLabels`.
+ */
+export function UiLocaleProvider({ children }: { children: ReactNode }): ReactElement {
+  const labels = useAppUiLabels();
   return <UiLabelsProvider labels={labels}>{children}</UiLabelsProvider>;
 }

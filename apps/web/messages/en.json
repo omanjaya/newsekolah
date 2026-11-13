@@ -104,7 +104,8 @@
       "controls": {
         "field": {
           "optional": "(optional)",
-          "formErrorTitle": "Please check the following"
+          "formErrorTitle": "Please check the following",
+          "required": "Required"
         },
         "password": {
           "show": "Show password",
@@ -149,7 +150,8 @@
           "filterRemove": "Remove filter {label}",
           "filterDateFrom": "From",
           "filterDateTo": "To",
-          "filterDateInvalid": "The start date must be on or before the end date"
+          "filterDateInvalid": "The start date must be on or before the end date",
+          "emptyTitle": "No data yet"
         },
         "scanner": {
           "manualLabel": "Code",
@@ -207,6 +209,52 @@
           "timeOptions": "Time options",
           "numberIncrement": "Increase",
           "numberDecrement": "Decrease"
+        },
+        "page": {
+          "breadcrumb": "Breadcrumb",
+          "moreActions": "More actions"
+        },
+        "avatar": {
+          "groupMore": "{count, plural, one {# more person} other {# more people}}"
+        },
+        "dataList": {
+          "noValue": "None"
+        },
+        "empty": {
+          "filteredTitle": "Nothing matches",
+          "filteredDescription": "Try another keyword or clear the active filters.",
+          "filteredReset": "Clear filters"
+        },
+        "statePage": {
+          "code": "Code {code}"
+        },
+        "alert": {
+          "dismiss": "Dismiss message"
+        },
+        "stat": {
+          "deltaUp": "Up",
+          "deltaDown": "Down",
+          "deltaFlat": "No change"
+        },
+        "link": {
+          "opensInNewTab": "(opens in a new tab)"
+        },
+        "toast": {
+          "close": "Close notification",
+          "region": "Notifications"
+        },
+        "commandPalette": {
+          "label": "Global search",
+          "placeholder": "Search pages, students, teachers or actions",
+          "empty": "No matching results",
+          "hintMove": "Move",
+          "hintOpen": "Open",
+          "hintClose": "Close",
+          "cancel": "Cancel"
+        },
+        "stepper": {
+          "complete": "complete",
+          "stopped": "stopped"
         }
       }
     },
