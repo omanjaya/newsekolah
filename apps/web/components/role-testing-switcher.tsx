@@ -12,16 +12,12 @@ import {
   useRoleTestingQuery,
   useRoleTestingSwitchMutation,
 } from "../features/auth/role-testing-api";
-import { useHasAccessToken } from "../lib/api/use-has-access-token";
 import { confirmUnsavedChangesBeforeNavigation } from "../lib/navigation/use-unsaved-changes-protection";
 import { useSession } from "../lib/session/session-provider";
 
 export function RoleTestingSwitcher(): ReactElement | null {
   const { me } = useSession();
-  // Wait for the access token: `me` can arrive dehydrated from the server
-  // before the browser has one, and an early request is answered 401.
-  const hasAccessToken = useHasAccessToken();
-  const status = useRoleTestingQuery({}, Boolean(me) && hasAccessToken);
+  const status = useRoleTestingQuery({}, Boolean(me));
   const t = useTranslations("app.shell.roleTesting");
   const router = useRouter();
   const toast = useToast();
