@@ -6,7 +6,7 @@ import { initialsFor } from "../lib/tenant/initials";
 import { TenantBrand } from "./tenant-brand";
 
 interface TenantHookResult {
-  branding: { logo_url?: string } | undefined;
+  branding: { logo_url?: string; accent_color?: string } | undefined;
   displayName: string;
   isLoading: boolean;
 }
@@ -67,6 +67,22 @@ describe("TenantBrand", () => {
     expect(screen.getByText(initialsFor(displayName))).toBeInTheDocument();
     expect(screen.getByText(displayName)).toBeInTheDocument();
     expect(screen.queryByText("SION")).not.toBeInTheDocument();
+  });
+
+  it("writes the initials in the colour chosen for the mark's own fill, not the themed accent label", () => {
+    mockUseTenant.mockReturnValue({
+      branding: { logo_url: undefined, accent_color: "#0F7A5F" },
+      displayName: "SMA Contoh",
+      isLoading: false,
+    });
+
+    render(<TenantBrand mark />);
+
+    // White on the deep green in both themes (5.3:1), where the dark
+    // theme's accent label colour gave 3.05:1.
+    const mark = screen.getByText(initialsFor("SMA Contoh"));
+    expect(mark).toHaveStyle({ backgroundColor: "#0F7A5F", color: "#FFFFFF" });
+    expect(mark).not.toHaveClass("text-accent-fg");
   });
 
   it("omits the name and keeps only the mark for the collapsed sidebar rail", () => {

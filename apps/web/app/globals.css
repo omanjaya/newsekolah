@@ -33,7 +33,9 @@ body {
  * on the dark surface, or the token's own #2FD6A0 for the platform default).
  * These rules choose between them, mirroring the selectors the token package
  * uses for every other themed value. The focus ring follows the accent so a
- * branded school's ring matches its buttons.
+ * branded school's ring matches its buttons, and the selected-row layer is
+ * mixed from it (8% light, 10% dark, the token's own strengths) so a chosen
+ * row is tinted with the school's colour, not the platform green.
  *
  * The doubled `:root:root` is deliberate. The token package sets
  * `--color-accent` from `:root:not([data-theme="light"])`, which outranks
@@ -58,12 +60,14 @@ body {
   --color-accent: var(--tenant-accent);
   --color-accent-fg: var(--tenant-accent-fg);
   --color-focus-ring: var(--tenant-accent);
+  --color-state-selected: color-mix(in srgb, var(--tenant-accent) 8%, transparent);
 }
 
 :root:root[data-theme="dark"] {
   --color-accent: var(--tenant-accent-dark);
   --color-accent-fg: var(--tenant-accent-dark-fg);
   --color-focus-ring: var(--tenant-accent-dark);
+  --color-state-selected: color-mix(in srgb, var(--tenant-accent-dark) 10%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -71,6 +75,7 @@ body {
     --color-accent: var(--tenant-accent-dark);
     --color-accent-fg: var(--tenant-accent-dark-fg);
     --color-focus-ring: var(--tenant-accent-dark);
+    --color-state-selected: color-mix(in srgb, var(--tenant-accent-dark) 10%, transparent);
   }
 }
 

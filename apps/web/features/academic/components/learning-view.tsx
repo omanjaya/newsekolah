@@ -46,7 +46,7 @@ export function LearningView(): ReactElement {
         className="flex flex-col md:min-h-0 md:flex-1"
       >
         {siblings.length > 1 && (
-          <TabsList aria-label={t("title")} className="flex-wrap">
+          <TabsList aria-label={t("title")}>
             {sections
               .filter(({ value }) => siblings.includes(value))
               .map(({ value, label }) => (

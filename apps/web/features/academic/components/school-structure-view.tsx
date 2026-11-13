@@ -33,7 +33,7 @@ export function SchoolStructureView(): ReactElement {
           router.push(`/school/structure?tab=${value}`, { scroll: false });
         }}
       >
-        <TabsList aria-label={t("title")} className="flex-wrap">
+        <TabsList aria-label={t("title")}>
           {sections.map(({ value, label }) => (
             <TabsTrigger key={value} value={value}>
               {t(label)}

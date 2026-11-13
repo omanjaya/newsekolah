@@ -131,10 +131,11 @@ function CheckInCard({
   return (
     <Card className="h-full">
       <CardHeader className="flex-row items-center justify-between gap-3">
-        <CardTitle>{t("title")}</CardTitle>
+        {/* The title takes the room the link leaves (and wraps only past it); the link stays on one line. */}
+        <CardTitle className="min-w-0">{t("title")}</CardTitle>
         <Link
           href={CHECK_IN_HREF}
-          className="shrink-0 text-[13px] text-accent underline underline-offset-2"
+          className="shrink-0 whitespace-nowrap text-body-sm text-accent underline underline-offset-2"
         >
           {t("openPage")}
         </Link>

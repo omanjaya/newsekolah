@@ -154,7 +154,7 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
           setTab(value as ReportTab);
         }}
       >
-        <TabsList className="overflow-x-auto [&>button]:shrink-0 [&>button]:whitespace-nowrap">
+        <TabsList>
           <TabsTrigger value="loans">{t("tabs.loans")}</TabsTrigger>
           <TabsTrigger value="overdueMembers">{t("tabs.overdueMembers")}</TabsTrigger>
           <TabsTrigger value="mostBorrowed">{t("tabs.mostBorrowed")}</TabsTrigger>

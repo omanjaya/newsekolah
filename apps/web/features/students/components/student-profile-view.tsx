@@ -129,7 +129,7 @@ export function StudentProfileView({ studentId }: { studentId: string }): ReactE
       </header>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList aria-label={t("tabsLabel")} className="max-w-full overflow-x-auto">
+        <TabsList aria-label={t("tabsLabel")}>
           {tabs.map((id) => (
             <TabsTrigger key={id} value={id}>
               {t(`tabs.${id}`)}

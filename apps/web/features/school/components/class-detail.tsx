@@ -93,7 +93,8 @@ export function ClassDetail({
             )}
           </div>
         </div>
-        <div className="flex gap-2">
+        {/* Button labels never wrap, so on a phone the actions wrap as a row instead. */}
+        <div className="flex flex-wrap gap-2">
           <ClassRosterExport classId={cls.id} />
           {canManage && (
             <>

@@ -28,7 +28,7 @@ export function BillingView(): ReactElement {
     <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
-        <TabsList className="flex-wrap">
+        <TabsList>
           <TabsTrigger value="desk">{t("tabs.desk")}</TabsTrigger>
           <TabsTrigger value="bills">{t("tabs.bills")}</TabsTrigger>
           <TabsTrigger value="feeTypes">{t("tabs.feeTypes")}</TabsTrigger>

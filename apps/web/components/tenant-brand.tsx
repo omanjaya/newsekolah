@@ -1,6 +1,7 @@
 import { Skeleton } from "@newsekolah/ui";
 import type { ReactElement } from "react";
 
+import { foregroundFor } from "../lib/tenant/accent";
 import { initialsFor } from "../lib/tenant/initials";
 import { useTenant } from "../lib/tenant/tenant-provider";
 
@@ -27,6 +28,7 @@ export function TenantBrand({
 }): ReactElement {
   const { branding, displayName, isLoading } = useTenant();
   const dimension = size === "sm" ? "size-6" : "size-8";
+  const markColor = branding?.accent_color ?? "#0F7A5F";
 
   if (isLoading) {
     return (
@@ -48,10 +50,15 @@ export function TenantBrand({
           className={`${dimension} shrink-0 rounded-sm object-contain`}
         />
       ) : (
+        // A brand mark, not themed UI: the school's own colour in both
+        // themes, as on the manifest icon, with the label colour chosen for
+        // that fill. The themed `accent-fg` belongs to the bright dark
+        // accent in dark mode and is too dim on this deep fill.
         <span
-          className={`${dimension} shrink-0 rounded-sm text-center text-[11px] font-medium leading-none text-accent-fg`}
+          className={`${dimension} shrink-0 rounded-sm text-center text-[11px] font-medium leading-none`}
           style={{
-            backgroundColor: branding?.accent_color ?? "#0F7A5F",
+            backgroundColor: markColor,
+            color: foregroundFor(markColor),
             display: "grid",
             placeItems: "center",
           }}

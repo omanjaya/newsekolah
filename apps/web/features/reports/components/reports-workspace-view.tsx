@@ -77,7 +77,7 @@ export function ReportsWorkspaceView(): ReactElement {
       {sections.length > 1 && (
         <div className="px-4 pt-4 md:px-6">
           <Tabs value={selected.key} onValueChange={setSection}>
-            <TabsList aria-label={t("reports")} className="flex-wrap">
+            <TabsList aria-label={t("reports")}>
               {sections.map((entry) => (
                 <TabsTrigger key={entry.key} value={entry.key}>
                   {t(SECTION_VIEWS[entry.key].label)}
