@@ -70,7 +70,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     "img-src 'self' data: https:",
     "font-src 'self' data:",
     `connect-src ${["'self'", "https://accounts.google.com", apiOrigin, wsOrigin, s3PublicOrigin].filter(Boolean).join(" ")}`,
-    "frame-src https://accounts.google.com",
+    // blob: lets the report-header settings page show its generated PDF
+    // preview in an iframe (a same-origin object URL, never remote content).
+    "frame-src https://accounts.google.com blob:",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
