@@ -33,6 +33,12 @@ export const FIELD_BORDER_CLASSES = [
  * ring hugs the whole field, adornments included. Only the input's own
  * focus lights the box; a button inside it (show password, clear) keeps
  * its own ring.
+ *
+ * Here variant order is not enough: the focus rule's
+ * `:has(:is(input:focus-visible, ...))` outranks the invalid rule's
+ * `:has([aria-invalid=true])` (0,2,1 against 0,2,0), so a focused invalid
+ * box would show the accent border inside a danger ring. The last rule
+ * (0,3,0) puts danger back for exactly that case.
  */
 export const FIELD_SHELL_BORDER_CLASSES = [
   "border border-(--field-border) [--field-border:var(--color-border-strong)] transition-colors",
@@ -43,6 +49,7 @@ export const FIELD_SHELL_BORDER_CLASSES = [
   "has-[input:focus-visible,textarea:focus-visible]:outline-focus-ring",
   "has-[[aria-invalid=true]]:[--field-border:var(--color-danger)]",
   "has-[[aria-invalid=true]:focus-visible]:outline-danger",
+  "has-[[aria-invalid=true]:focus-visible]:[--field-border:var(--color-danger)]",
 ].join(" ");
 
 /**
