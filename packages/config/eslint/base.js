@@ -19,8 +19,6 @@ const emojiRestrictions = [
   },
 ];
 
-export const emojiNoRestrictedSyntax = emojiRestrictions;
-
 /**
  * Every no-restricted-syntax entry a plain TypeScript file gets. A config
  * that sets no-restricted-syntax again replaces this list rather than

@@ -20,11 +20,22 @@ export const PALETTE_COLOR_SOURCE = String.raw`\b${COLOR_UTILITIES}(?:-[a-z]+)?-
 /** `bg-white`, `text-black`, ...: fixed colors that ignore the theme. */
 export const FIXED_COLOR_SOURCE = String.raw`\b${COLOR_UTILITIES}(?:-[a-z]+)?-(?:white|black)\b`;
 
-/** `bg-[#fff]`, `text-[rgb(0,0,0)]`, `shadow-[0_1px_2px_#0002]`: a literal color inside an arbitrary value. */
-export const ARBITRARY_COLOR_SOURCE = String.raw`-\[[^\]]*(?:#[0-9a-fA-F]{3,8}\b|(?<![a-z])(?:rgba?|hsla?|oklch|oklab|lch|lab|hwb)\()`;
+/**
+ * `bg-[#fff]`, `text-[rgb(0,0,0)]`, `shadow-[0_1px_2px_#0002]`, `bg-[white]`,
+ * `shadow-[0_0_0_1px_black]`, `bg-[color-mix(in_oklab,white,black)]`: a
+ * literal color inside an arbitrary value. `white`/`black` only count as
+ * whole words, so `var(--color-black-soft)` or a class like `blackboard`
+ * stays allowed.
+ */
+export const ARBITRARY_COLOR_SOURCE = String.raw`-\[[^\]]*(?:#[0-9a-fA-F]{3,8}\b|(?<![a-z])(?:rgba?|hsla?|oklch|oklab|lch|lab|hwb)\(|(?<![a-z-])(?:white|black)(?![a-z-]))`;
 
-/** `text-[13px]`, `text-[1.5rem]`: a literal font size instead of a typography role. */
-export const ARBITRARY_FONT_SIZE_SOURCE = String.raw`\btext-\[\d+(?:\.\d+)?(?:px|rem|em)?\]`;
+/**
+ * `text-[13px]`, `text-[1.5rem]`, `text-[.8rem]`, `text-[80%]`,
+ * `text-[length:13px]`, `text-[clamp(...)]`, `text-[calc(...)]`: a literal
+ * font size instead of a typography role. `text-[length:var(--x)]` and
+ * `text-[var(--color-fg)]` stay allowed.
+ */
+export const ARBITRARY_FONT_SIZE_SOURCE = String.raw`\btext-\[(?:length:)?(?:\d*\.?\d+(?:px|rem|em|%|pt)?\]|(?:clamp|calc|min|max)\()`;
 
 /**
  * @param {string} source regex source, no forward slashes

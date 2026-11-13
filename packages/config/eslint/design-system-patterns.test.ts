@@ -48,6 +48,9 @@ describe("design-system lint patterns", () => {
     'const a = "text-[rgb(10,20,30)]";',
     'const a = "shadow-[0_24px_70px_-32px_rgba(0,0,0,0.35)]";',
     'const a = "border-[oklch(0.7_0.1_160)]";',
+    'const a = "bg-[white]";',
+    'const a = "shadow-[0_0_0_1px_black]";',
+    'const a = "bg-[color-mix(in_oklab,white,black)]";',
   ])("rejects a literal color inside an arbitrary value: %s", (code) => {
     expect(flagged(code)).toBe(true);
   });
@@ -58,6 +61,8 @@ describe("design-system lint patterns", () => {
     'const a = "bg-accent-soft hover:bg-state-hover shadow-2";',
     'const a = "shadow-[0_1px_0_0_var(--color-line)] max-w-[calc(100vw-2rem)]";',
     'const a = "text-[13px]";',
+    'const a = "bg-[var(--color-black-soft)] [&_.blackboard]:p-2";',
+    'const a = "bg-[color-mix(in_srgb,var(--color-accent)_8%,transparent)]";',
   ])("allows token classes and color-free arbitrary values: %s", (code) => {
     expect(flagged(code)).toBe(false);
   });
@@ -74,6 +79,12 @@ describe("design-system lint patterns", () => {
       'const a = <p className="text-[13px] text-fg" />;',
       'const a = "md:text-[26px]";',
       "const a = `text-[1.5rem] ${b}`;",
+      'const a = "text-[.8rem]";',
+      'const a = "text-[80%]";',
+      'const a = "text-[length:13px]";',
+      'const a = "text-[clamp(1rem,2vw,2rem)]";',
+      'const a = "text-[calc(1rem+2px)]";',
+      'const a = "text-[13px]/5";',
     ])("rejects a literal font size where it is on: %s", (code) => {
       expect(flagged(code, withFontSizes)).toBe(true);
     });
