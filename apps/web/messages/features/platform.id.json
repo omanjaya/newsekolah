@@ -39,7 +39,7 @@
     "resumed": "Sekolah diaktifkan kembali",
     "create": {
       "title": "Tambah sekolah baru",
-      "slug": "Slug",
+      "slug": "Alamat singkat",
       "slugHint": "Huruf kecil, angka, dan tanda hubung, contoh: sman-1-denpasar",
       "name": "Nama sekolah",
       "level": "Jenjang",

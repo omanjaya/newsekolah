@@ -17,9 +17,9 @@
     "activeLabel": "Aktifkan pengiriman WhatsApp",
     "activeHint": "Saat nonaktif, notifikasi WhatsApp jatuh kembali ke pengaturan bawaan server.",
     "meta": {
-      "phoneNumberIdLabel": "Phone number ID",
+      "phoneNumberIdLabel": "ID nomor telepon",
       "phoneNumberIdHint": "Dari WhatsApp Business Manager.",
-      "accessTokenLabel": "Access token",
+      "accessTokenLabel": "Token akses",
       "accessTokenPlaceholderSet": "Tersimpan — kosongkan untuk tetap memakai token ini",
       "accessTokenPlaceholderUnset": "Belum diisi"
     },
@@ -41,7 +41,7 @@
     "empty": "Belum ada template.",
     "form": {
       "nameLabel": "Nama template",
-      "localeLabel": "Locale",
+      "localeLabel": "Bahasa",
       "metaTemplateNameLabel": "Nama template di Meta",
       "bodyLabel": "Isi pesan",
       "bodyHint": "Contoh: Halo, nama_ortu, tagihan jumlah jatuh tempo tanggal (masing-masing dibungkus kurung kurawal ganda).",

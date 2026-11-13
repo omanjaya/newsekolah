@@ -246,10 +246,10 @@
         }
       },
       "notificationDefaults": {
-        "navLabel": "Default notifikasi",
+        "navLabel": "Notifikasi bawaan",
         "eyebrow": "Pengaturan",
-        "title": "Default notifikasi sekolah",
-        "body": "Kanal default untuk setiap jenis notifikasi. Pengguna yang belum mengubah preferensinya sendiri memakai pengaturan ini.",
+        "title": "Notifikasi bawaan sekolah",
+        "body": "Kanal bawaan untuk setiap jenis notifikasi. Pengguna yang belum mengubah preferensinya sendiri memakai pengaturan ini.",
         "kindColumn": "Jenis",
         "channels": {
           "inapp": "Aplikasi",
@@ -261,14 +261,14 @@
         "saved": "Default disimpan"
       },
       "session": {
-        "navLabel": "Sesi & login",
+        "navLabel": "Sesi dan masuk",
         "eyebrow": "Pengaturan",
-        "title": "Sesi & login",
+        "title": "Sesi dan masuk",
         "intro": "Berlaku untuk semua pengguna sekolah ini, mulai sesi berikutnya yang dibuka.",
         "daysLabel": "Lama sesi (hari)",
         "daysHint": "Pengguna diminta masuk kembali setelah sesi ini berakhir. Antara 1 dan 365 hari.",
         "daysRangeError": "Lama sesi harus antara {min} dan {max} hari.",
-        "singleDeviceLabel": "Login satu perangkat",
+        "singleDeviceLabel": "Masuk di satu perangkat",
         "singleDeviceHint": "Batasi setiap pengguna hanya aktif di satu perangkat pada satu waktu.",
         "singleDeviceExplain": "Perubahan ini tidak langsung mengeluarkan pengguna yang sedang masuk di perangkat lain. Begitu salah satu dari mereka masuk lagi di perangkat mana pun, semua sesi lain milik pengguna itu akan diakhiri.",
         "saved": "Pengaturan sesi tersimpan",
@@ -282,8 +282,8 @@
         "nameLabel": "Nama sekolah",
         "nameRequiredError": "Nama sekolah wajib diisi.",
         "shortNameLabel": "Nama singkat",
-        "shortNamePlaceholder": "Muncul di ruang sempit seperti tab bar",
-        "taglineLabel": "Tagline",
+        "shortNamePlaceholder": "Muncul di ruang sempit seperti bilah tab",
+        "taglineLabel": "Slogan",
         "taglinePlaceholder": "Kalimat pendek di bawah nama sekolah",
         "accentColorLabel": "Warna aksen",
         "accentColorHint": "Dipakai untuk tombol utama, tautan, dan fokus di seluruh aplikasi.",

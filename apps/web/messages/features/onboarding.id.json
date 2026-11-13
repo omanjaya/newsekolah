@@ -1,7 +1,7 @@
 {
-  "navLabel": "Onboarding",
+  "navLabel": "Penyiapan sekolah",
   "eyebrow": "Pengaturan sekolah",
-  "title": "Onboarding sekolah",
+  "title": "Penyiapan sekolah",
   "progress": {
     "stepsLabel": "{done} dari {total} langkah wajib selesai",
     "ready": "Sekolah siap dipakai untuk operasional harian.",
