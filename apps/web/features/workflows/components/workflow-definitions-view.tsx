@@ -1,6 +1,6 @@
 "use client";
 
-import { PageHeader, Skeleton, Tabs, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { PageHeader, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -40,21 +40,23 @@ export function WorkflowDefinitionsView(): ReactElement {
             </TabsTrigger>
           ))}
         </TabsList>
-      </Tabs>
 
-      {definitions.isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : (
-        // Keyed on kind + version so the editor's local stage list resets to
-        // the freshly loaded definition instead of syncing via an effect
-        // (see NotificationSettingsView's TimingForm for the same pattern).
-        <StageEditor
-          key={`${kind}:${active?.version ?? "new"}`}
-          kind={kind}
-          active={active}
-          dutySlugs={dutySlugs}
-        />
-      )}
+        <TabsContent value={kind}>
+          {definitions.isLoading ? (
+            <Skeleton className="h-64 w-full" />
+          ) : (
+            // Keyed on kind + version so the editor's local stage list resets to
+            // the freshly loaded definition instead of syncing via an effect
+            // (see NotificationSettingsView's TimingForm for the same pattern).
+            <StageEditor
+              key={`${kind}:${active?.version ?? "new"}`}
+              kind={kind}
+              active={active}
+              dutySlugs={dutySlugs}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

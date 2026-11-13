@@ -57,8 +57,11 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
   const canViewAtRisk = me.permissions.includes("view_early_warning");
   const atRisk = useAtRiskStudentsQuery(active && canViewAtRisk);
   const classes = useClassesQuery(active && canViewAtRisk);
+  // The roster endpoint also returns students whose level is "none" (safe);
+  // only the ones who actually need attention belong on this card.
+  const flagged = (atRisk.data?.data ?? []).filter((row) => row.level !== "none");
   const studentMap = useDirectoryNames(
-    [...(atRisk.data?.data ?? [])]
+    [...flagged]
       .sort((a, b) => b.score - a.score)
       .slice(0, AT_RISK_PREVIEW_SIZE)
       .map((row) => row.student_user_id),
@@ -128,7 +131,7 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
   }
 
   if (canViewAtRisk) {
-    const atRiskRows = atRisk.data?.data ?? [];
+    const atRiskRows = flagged;
     block.right.push({
       key: "counselor.atRisk",
       node: (

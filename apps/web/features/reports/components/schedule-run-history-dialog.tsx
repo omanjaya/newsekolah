@@ -1,10 +1,12 @@
 "use client";
 
+import { formatDateTime, type Locale } from "@newsekolah/i18n";
 import { Badge, Dialog, DialogContent, EmptyState, Skeleton } from "@newsekolah/ui";
 import { History } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { useSession } from "../../../lib/session/session-provider";
 import { useReportScheduleRunsQuery } from "../api";
 
 const STATUS_VARIANT: Record<string, "accent" | "neutral"> = {
@@ -23,6 +25,8 @@ export function ScheduleRunHistoryDialog({
   onClose: () => void;
 }): ReactElement {
   const t = useTranslations("app.reports.schedules.runs");
+  const locale = useLocale() as Locale;
+  const timeZone = useSession().me?.tenant.timezone;
   const runs = useReportScheduleRunsQuery(scheduleId);
   const items = runs.data?.data ?? [];
 
@@ -47,7 +51,9 @@ export function ScheduleRunHistoryDialog({
             {items.map((run) => (
               <li key={run.id} className="flex items-center justify-between gap-3 py-2 text-[13px]">
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-fg">{new Date(run.due_at).toLocaleString()}</span>
+                  <span className="text-fg">
+                    {formatDateTime(run.due_at, { locale, timeZone })}
+                  </span>
                   {run.status === "failed" && run.error_message && (
                     <span className="text-[12px] text-fg-muted">{run.error_message}</span>
                   )}

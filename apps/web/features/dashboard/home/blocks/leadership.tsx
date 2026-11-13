@@ -9,6 +9,8 @@ import type { ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
 import { isModuleEnabled } from "../../../../lib/modules/feature-modules";
+import { navAccessFromMe } from "../../../../lib/navigation-access";
+import { canOpenPath } from "../../../../lib/navigation-permissions";
 import { useAtRiskStudentsQuery } from "../../../analytics/api";
 import { RiskLevelBadge } from "../../../analytics/components/risk-level-badge";
 import {
@@ -66,7 +68,10 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   const permitsOn = isModuleEnabled(me, "permits");
   const atRisk = useAtRiskStudentsQuery(active && canViewAtRisk);
   // Only the top rows are shown, so only their names are looked up.
-  const topAtRisk = [...(atRisk.data?.data ?? [])].sort((a, b) => b.score - a.score).slice(0, 5);
+  const topAtRisk = (atRisk.data?.data ?? [])
+    .filter((row) => row.level !== "none")
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
   const studentMap = useDirectoryNames(
     topAtRisk.map((row) => row.student_user_id),
     active,
@@ -91,7 +96,9 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
             total: attendanceToday.total,
           }),
           meta: t("hero.meta", { pending: attendanceToday.total - attendanceToday.submitted }),
-          action: { label: t("hero.action"), href: MONITOR_HREF },
+          // The monitor needs view_monitor_presence; without it the link would
+          // end on a "no access" page, so the hero simply has no action.
+          ...(canViewMonitor ? { action: { label: t("hero.action"), href: MONITOR_HREF } } : {}),
         }
       : undefined;
 
@@ -105,7 +112,7 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
         value: `${attendanceToday.submitted}/${attendanceToday.total}`,
         icon: ClipboardCheck,
         tone: "green",
-        href: MONITOR_HREF,
+        ...(canViewMonitor ? { href: MONITOR_HREF } : {}),
       });
     }
     if (permitsOn) {
@@ -139,6 +146,12 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   }
 
   const atRiskRows = topAtRisk;
+  // A queue row links only to a screen the reader may open; the principal
+  // holds none of the permit permissions, so those rows stay plain.
+  const access = navAccessFromMe(me);
+  const openableQueues = PENDING_LINKS.filter(({ href }) => canOpenPath(href, access)).map(
+    ({ key }) => key,
+  );
 
   const left: BlockSlot[] = [
     ...(permitsOn
@@ -152,6 +165,7 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
                 isError={dashboard.isError}
                 refetch={dashboard.refetch}
                 data={data}
+                linkedQueues={openableQueues}
               />
             ),
           },
@@ -216,11 +230,13 @@ function SchoolQueueCard({
   isError,
   refetch,
   data,
+  linkedQueues,
 }: {
   isLoading: boolean;
   isError: boolean;
   refetch: () => unknown;
   data: AdminDashboard | undefined;
+  linkedQueues: readonly (typeof PENDING_LINKS)[number]["key"][];
 }): ReactElement {
   const t = useTranslations("app.dashboardSchool.leadership.queue");
   const format = useFormatter();
@@ -265,13 +281,15 @@ function SchoolQueueCard({
                       </Badge>
                     </td>
                     <td className="w-11 px-4 py-3 text-right">
-                      <Link
-                        href={href}
-                        aria-label={`${t("open")}: ${t(`labels.${key}`)}`}
-                        className="inline-flex size-11 items-center justify-center rounded-xs text-fg-muted hover:bg-bg hover:text-fg"
-                      >
-                        <ArrowUpRight className="size-4" aria-hidden="true" />
-                      </Link>
+                      {linkedQueues.includes(key) && (
+                        <Link
+                          href={href}
+                          aria-label={`${t("open")}: ${t(`labels.${key}`)}`}
+                          className="inline-flex size-11 items-center justify-center rounded-xs text-fg-muted hover:bg-bg hover:text-fg"
+                        >
+                          <ArrowUpRight className="size-4" aria-hidden="true" />
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))}

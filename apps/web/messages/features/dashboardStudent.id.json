@@ -8,7 +8,7 @@
   "leaveLabel": "Izin diproses",
   "loansLabel": "Buku dipinjam",
   "loansHint": "Jatuh tempo {date}",
-  "gradesLabel": "Nilai baru",
+  "gradesLabel": "Mapel bernilai",
   "gradesHint": "nilai terbit",
   "scheduleTitle": "Jadwal hari ini",
   "scheduleEmpty": "Tidak ada pelajaran hari ini",

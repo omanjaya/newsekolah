@@ -1,4 +1,4 @@
-import { render, renderHook, screen } from "@testing-library/react";
+import { cleanup, render, renderHook, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const dashboardQuery = vi.hoisted(() => vi.fn());
@@ -78,7 +78,9 @@ describe("useLeadershipBlock", () => {
       refetch: vi.fn(),
     });
 
-    const { result } = renderHook(() => useLeadershipBlock(me, true));
+    const { result } = renderHook(() =>
+      useLeadershipBlock({ ...me, permissions: ["view_monitor_presence"] }, true),
+    );
 
     expect(result.current.hero?.title).toContain('"submitted":3');
     expect(result.current.hero?.title).toContain('"total":5');
@@ -86,6 +88,22 @@ describe("useLeadershipBlock", () => {
       label: "hero.action",
       href: "/monitor",
     });
+  });
+
+  it("offers no monitor link to a reader without view_monitor_presence", () => {
+    dashboardQuery.mockReturnValue({
+      data: { ...baseDashboard, attendance_today: { submitted: 3, total: 5 } },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useLeadershipBlock(me, true));
+
+    expect(result.current.hero?.action).toBeUndefined();
+    expect(
+      result.current.tiles.find((tile) => tile.key === "school.sessions")?.href,
+    ).toBeUndefined();
   });
 
   it("omits the hero when no class is currently in session", () => {
@@ -202,5 +220,49 @@ describe("useLeadershipBlock", () => {
     render(<>{withMonitor.result.current.left[1]?.node}</>);
     expect(screen.getByText("60%")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "open" })).toHaveAttribute("href", "/monitor");
+  });
+
+  it("links a queue row only to a screen the reader may open", () => {
+    const plain = renderHook(() => useLeadershipBlock(me, true));
+    render(<>{plain.result.current.left[0]?.node}</>);
+    const plainHrefs = screen.queryAllByRole("link").map((link) => link.getAttribute("href"));
+    expect(plainHrefs).not.toContain("/leave-requests");
+    expect(plainHrefs).not.toContain("/exit-permits");
+
+    const reviewer = renderHook(() =>
+      useLeadershipBlock({ ...me, permissions: ["review_leave_requests"] }, true),
+    );
+    cleanup();
+    render(<>{reviewer.result.current.left[0]?.node}</>);
+    const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
+    expect(hrefs).toContain("/leave-requests");
+    expect(hrefs).not.toContain("/exit-permits");
+  });
+
+  it("leaves students at level none out of the at-risk card", () => {
+    namesQuery.mockReturnValue(
+      new Map([
+        ["s1", { id: "s1", name: "Siswa Satu" }],
+        ["s2", { id: "s2", name: "Siswa Aman" }],
+      ]),
+    );
+    atRiskQuery.mockReturnValue({
+      data: {
+        data: [
+          { student_user_id: "s1", class_id: "c1", level: "at_risk", score: 80, computed_at: "x" },
+          { student_user_id: "s2", class_id: "c1", level: "none", score: 90, computed_at: "x" },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    const { result } = renderHook(() =>
+      useLeadershipBlock({ ...me, permissions: ["view_early_warning"] }, true),
+    );
+    const slot = result.current.right.find((s) => s.key === "school.atRisk");
+    render(<>{slot?.node}</>);
+    expect(screen.getByText("Siswa Satu")).toBeInTheDocument();
+    expect(screen.queryByText("Siswa Aman")).not.toBeInTheDocument();
   });
 });

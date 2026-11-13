@@ -6,6 +6,7 @@ import { formatDateTime } from "@newsekolah/i18n";
 import { Alert, Avatar, Button, DataTable, EmptyState, PageHeader, Skeleton } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ShieldAlert } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -30,6 +31,12 @@ import { RiskLevelSummary } from "./risk-level-summary";
  * class -- decided server-side (analytics service.resolveScope), not by
  * anything this screen chooses.
  */
+type RiskRow = StudentRisk & {
+  student_name: string;
+  class_name: string;
+  level_label: string;
+};
+
 export function AtRiskStudentsView(): ReactElement {
   const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.analytics.list");
@@ -51,10 +58,24 @@ export function AtRiskStudentsView(): ReactElement {
   }, [data]);
   const studentMap = useDirectoryNames(rows.map((item) => item.student_user_id));
 
-  const columns = useMemo<ColumnDef<StudentRisk>[]>(
+  // Searchable text lives in the row data, not in accessors closing over the
+  // lookups: the table caches accessor values per row, so a name that
+  // resolves after the rows would otherwise stay unsearchable.
+  const tableRows = useMemo<RiskRow[]>(
+    () =>
+      rows.map((item) => ({
+        ...item,
+        student_name: studentMap.get(item.student_user_id)?.name ?? "",
+        class_name: classMap.get(item.class_id)?.name ?? "",
+        level_label: levelLabel(item.level),
+      })),
+    [rows, studentMap, classMap, levelLabel],
+  );
+
+  const columns = useMemo<ColumnDef<RiskRow>[]>(
     () => [
       {
-        id: "student",
+        accessorKey: "student_name",
         header: t("columns.student"),
         enableSorting: false,
         cell: ({ row }) => {
@@ -72,17 +93,17 @@ export function AtRiskStudentsView(): ReactElement {
         },
       },
       {
-        id: "class",
+        accessorKey: "class_name",
         header: t("columns.class"),
         enableSorting: false,
-        cell: ({ row }) => classMap.get(row.original.class_id)?.name ?? "-",
+        cell: ({ row }) => row.original.class_name || "-",
       },
       {
-        id: "level",
+        accessorKey: "level_label",
         header: t("columns.level"),
         enableSorting: false,
         cell: ({ row }) => (
-          <RiskLevelBadge level={row.original.level} label={levelLabel(row.original.level)} />
+          <RiskLevelBadge level={row.original.level} label={row.original.level_label} />
         ),
       },
       { accessorKey: "score", header: t("columns.score"), enableSorting: false },
@@ -93,7 +114,7 @@ export function AtRiskStudentsView(): ReactElement {
         cell: ({ row }) => formatDateTime(row.original.computed_at, { locale }),
       },
     ],
-    [t, locale, studentMap, classMap, levelLabel],
+    [t, locale, studentMap],
   );
 
   if (isLoading) {
@@ -109,7 +130,7 @@ export function AtRiskStudentsView(): ReactElement {
     const message =
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN");
     return (
-      <div className="p-4 md:p-6">
+      <div className="flex flex-col gap-6 p-4 md:p-6">
         <CounselingWorkspaceNav />
         <PageHeader
           eyebrow={t("eyebrow")}
@@ -128,7 +149,20 @@ export function AtRiskStudentsView(): ReactElement {
           }
         />
         {canManage && policyOpen && <PolicyDialog open={policyOpen} onOpenChange={setPolicyOpen} />}
-        <Alert variant="warning" title={message} className="mt-4" />
+        {error instanceof ApiError && error.status === 403 ? (
+          <EmptyState
+            icon={<ShieldAlert aria-hidden="true" />}
+            title={t("notAssignedTitle")}
+            description={t("notAssignedBody")}
+            action={
+              <Button asChild variant="secondary">
+                <Link href="/dashboard">{t("backHome")}</Link>
+              </Button>
+            }
+          />
+        ) : (
+          <Alert variant="warning" title={message} />
+        )}
       </div>
     );
   }
@@ -162,7 +196,7 @@ export function AtRiskStudentsView(): ReactElement {
         <DataTable
           stateKey="features/analytics/components/at-risk-students-view:1"
           mode="local"
-          data={rows}
+          data={tableRows}
           columns={columns}
           rowCount={rows.length}
           pagination={{ pageIndex: 0, pageSize: 50 }}
@@ -175,6 +209,7 @@ export function AtRiskStudentsView(): ReactElement {
             router.push(studentProfileHref(item.student_user_id));
           }}
           fillHeight
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           emptyState={
             <EmptyState
               icon={<ShieldAlert aria-hidden="true" />}

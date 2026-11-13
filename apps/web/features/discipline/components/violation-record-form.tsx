@@ -17,7 +17,8 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { businessNow } from "../../../lib/simulation/clock";
+import { useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import { useDirectoryNames, useDirectorySearch } from "../../reference/directory-names";
 import {
   type ViolationRecordResult,
@@ -31,10 +32,6 @@ const MAX_TYPES = 50;
 const MAX_STUDENTS = 50;
 const STUDENT_RESULTS = 30;
 const SEARCH_DEBOUNCE_MS = 300;
-
-function today(): string {
-  return businessNow().toISOString().slice(0, 10);
-}
 
 /**
  * Records one or several violation types for one or several students in a
@@ -61,7 +58,10 @@ export function ViolationRecordForm({
   const [studentIds, setStudentIds] = useState<string[]>([]);
   const [typeSearch, setTypeSearch] = useState("");
   const [typeIds, setTypeIds] = useState<string[]>([]);
-  const [occurredOn, setOccurredOn] = useState(today());
+  // "Today" is the school's calendar day, not the UTC one.
+  const { me } = useSession();
+  const today = todayInZone(me?.tenant.timezone);
+  const [occurredOn, setOccurredOn] = useState(today);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -318,7 +318,7 @@ export function ViolationRecordForm({
           onChange={(e) => {
             setOccurredOn(e.target.value);
           }}
-          max={today()}
+          max={today}
           required
         />
       </label>

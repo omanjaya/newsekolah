@@ -187,6 +187,7 @@ describe("useCounselorBlock", () => {
             { student_user_id: "s2", class_id: "c1", score: 90, level: "high" },
             { student_user_id: "s3", class_id: "c1", score: 70, level: "medium" },
             { student_user_id: "s4", class_id: "c1", score: 60, level: "medium" },
+            { student_user_id: "s5", class_id: "c1", score: 0, level: "none" },
           ],
         },
       }),

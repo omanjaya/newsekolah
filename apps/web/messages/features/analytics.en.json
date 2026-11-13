@@ -17,7 +17,11 @@
     "policy": "Configure policy",
     "summary": {
       "chartLabel": "Of {total} students: {none} none, {watch} watch, {at_risk} at risk."
-    }
+    },
+    "searchPlaceholder": "Search student name or class",
+    "notAssignedTitle": "No class to monitor yet",
+    "notAssignedBody": "This list is available to homeroom teachers, counselors, or school leadership with an active assignment.",
+    "backHome": "Back to home"
   },
   "level": {
     "none": "None",

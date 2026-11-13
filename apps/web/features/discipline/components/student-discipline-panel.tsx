@@ -20,7 +20,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
   type ViolationRecord,
   useIssueWarningLetterMutation,
@@ -49,6 +49,8 @@ export function StudentDisciplinePanel({
   const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
   const canIssue = useCan("issue_warning_letters");
   const canSeeCounseling = useCan("manage_counseling");
   const canRecordViolations = useCan("record_violations");
@@ -141,7 +143,8 @@ export function StudentDisciplinePanel({
               {data.letters.map((letter) => (
                 <li key={letter.id} className="flex items-center gap-2 text-[13px] text-fg">
                   <FileText className="size-4 text-fg-muted" aria-hidden="true" />
-                  {letter.letter_number} · {letter.level_label} · {letter.issued_at.slice(0, 10)}
+                  {letter.letter_number} · {letter.level_label} ·{" "}
+                  {formatDate(letter.issued_at, { locale, timeZone })}
                 </li>
               ))}
             </ul>
