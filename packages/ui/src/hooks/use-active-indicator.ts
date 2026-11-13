@@ -35,11 +35,21 @@ function writeBox(indicator: HTMLElement, size: Box, at: Box, scale: number) {
   indicator.style.setProperty("--indicator-scale", String(scale));
 }
 
-/** Scrolls a strip just enough to show the item, without moving the page. */
-function reveal(container: HTMLElement, item: HTMLElement) {
+/**
+ * Scrolls a sideways strip just enough to show `item` clear of the edge
+ * fade, without moving the page (no scrollIntoView). Measured from the
+ * rendered boxes, so the item may sit at any depth inside the strip.
+ * Shared by every strip: Tabs and NavTabs through useActiveIndicator,
+ * SegmentedControl directly.
+ */
+export function revealInStrip(container: HTMLElement, item: HTMLElement): void {
   if (container.scrollWidth <= container.clientWidth) return;
-  const left = item.offsetLeft - REVEAL_MARGIN;
-  const right = item.offsetLeft + item.offsetWidth + REVEAL_MARGIN;
+  const start =
+    item.getBoundingClientRect().left -
+    container.getBoundingClientRect().left +
+    container.scrollLeft;
+  const left = start - REVEAL_MARGIN;
+  const right = start + item.offsetWidth + REVEAL_MARGIN;
   if (left < container.scrollLeft) container.scrollLeft = Math.max(left, 0);
   else if (right > container.scrollLeft + container.clientWidth) {
     container.scrollLeft = right - container.clientWidth;
@@ -116,7 +126,7 @@ export function useActiveIndicator(
         container.setAttribute("data-indicator", "ready");
         settle();
       }
-      if (previous?.element !== active) reveal(container, active);
+      if (previous?.element !== active) revealInStrip(container, active);
       previous = { element: active, box };
     };
 
