@@ -7,12 +7,15 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { isModuleEnabled } from "../../../lib/modules/feature-modules";
+import { useSession } from "../../../lib/session/session-provider";
 import {
   type WebhookEndpoint,
   useCreateWebhookEndpointMutation,
   useUpdateWebhookEndpointMutation,
   useWebhookEventTypesQuery,
 } from "../api";
+import { offeredWebhookEvents } from "../lib/webhook-event-modules";
 
 /**
  * One dialog for both registering a new endpoint and editing an existing
@@ -37,6 +40,7 @@ export function WebhookEndpointDialog({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const eventTypes = useWebhookEventTypesQuery();
+  const { me } = useSession();
   const createEndpoint = useCreateWebhookEndpointMutation();
   const updateEndpoint = useUpdateWebhookEndpointMutation();
 
@@ -109,7 +113,9 @@ export function WebhookEndpointDialog({
           <div className="flex flex-col gap-2">
             <span className="text-[13px] font-medium text-fg">{t("eventTypesLabel")}</span>
             <div className="flex max-h-56 flex-col gap-2 overflow-y-auto rounded-sm border border-border p-3">
-              {(eventTypes.data?.data ?? []).map((eventType) => (
+              {offeredWebhookEvents(eventTypes.data?.data ?? [], (module) =>
+                isModuleEnabled(me, module),
+              ).map((eventType) => (
                 <label key={eventType} className="flex items-center gap-2 text-[13px] text-fg">
                   <Checkbox
                     checked={selected.has(eventType)}

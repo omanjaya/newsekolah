@@ -14,6 +14,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import type { ViolationType } from "../../discipline/api";
 
 import { ViolationChecklist } from "./violation-checklist";
@@ -51,7 +52,10 @@ export function SessionRowActionsMenu({
   const t = useTranslations("app.attendance.session");
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"menu" | "violations">("menu");
-  const hasViolations = violationIds.length > 0;
+  // Recording a violation is a discipline action: no entry without the module,
+  // and no highlight for violations kept from before it was switched off.
+  const disciplineOn = useModuleEnabled("discipline");
+  const hasViolations = disciplineOn && violationIds.length > 0;
 
   function onOpenChange(next: boolean) {
     setOpen(next);
@@ -84,19 +88,21 @@ export function SessionRowActionsMenu({
               <StickyNote className="size-4" aria-hidden="true" />
               {noteActive ? t("noteMenuHide") : t("noteMenuAdd")}
             </button>
-            <button
-              type="button"
-              className="flex min-h-11 items-center justify-between gap-2 rounded-xs px-2 text-left text-[13px] text-fg hover:bg-bg"
-              onClick={() => {
-                setView("violations");
-              }}
-            >
-              <span className="flex items-center gap-2">
-                <domainIcons.violation className="size-4" aria-hidden="true" />
-                {t("violations.menuLabel")}
-              </span>
-              {hasViolations && <Badge variant="accent">{violationIds.length}</Badge>}
-            </button>
+            {disciplineOn && (
+              <button
+                type="button"
+                className="flex min-h-11 items-center justify-between gap-2 rounded-xs px-2 text-left text-[13px] text-fg hover:bg-bg"
+                onClick={() => {
+                  setView("violations");
+                }}
+              >
+                <span className="flex items-center gap-2">
+                  <domainIcons.violation className="size-4" aria-hidden="true" />
+                  {t("violations.menuLabel")}
+                </span>
+                {hasViolations && <Badge variant="accent">{violationIds.length}</Badge>}
+              </button>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-2">

@@ -136,7 +136,11 @@ Hook TanStack Query dan zod schema hidup di `packages/`; web dan mobile hanya be
 
 ## 5. Modul yang bisa dimatikan
 
-Setiap modul mendaftarkan diri lewat `Register(deps)` dan memeriksa `school.feature_flags`. Bila `library.enabled = false` untuk suatu sekolah: route mengembalikan `404 MODULE_DISABLED`, menu tidak muncul, worker tidak dijadwalkan. Flag disimpan per tenant dan diubah dari konsol admin sekolah.
+Setiap modul mendaftarkan diri lewat `Register(deps)` dan memeriksa `school.feature_flags`. Bila `library.enabled = false` untuk suatu sekolah: setiap operasi modul itu (dikenali dari tag OpenAPI, ditegakkan satu gerbang pusat di `cmd/api/module_gate_middleware.go`) mengembalikan `403 MODULE_DISABLED`, menu tidak muncul, worker tidak dijadwalkan. Flag disimpan per tenant dan diubah dari konsol admin sekolah.
+
+Pekerjaan di luar request HTTP mengikuti aturan yang sama: job periodik melewati tenant yang modulnya mati (pembaca flag nil-safe disuntik dari `internal/wiring`), dan modul yang selalu aktif yang memanggil modul yang mati menurun dengan tenang (dilewati, daftar kosong, hitungan 0) tanpa menggagalkan operasinya sendiri. Modul yang mati tidak membuat data baru dan tidak mengirim notifikasi, tetapi data lamanya tidak dihapus. Setiap perubahan flag tercatat di `audit_logs` (`feature_flag.update`).
+
+Infrastruktur yang dipakai beberapa modul tidak ikut mati bersama satu modul: templat dokumen (tag `documents`) tetap terbuka selama salah satu pemakainya (permits, discipline, visitors) aktif, dan hanya jenis templat milik modul yang mati yang disembunyikan serta ditolak `MODULE_DISABLED`. Jenis laporan di pusat laporan mengikuti modul sumber datanya (`SourceModule`). Halaman publik tanpa sesi membaca `TenantBranding.disabled_public_modules`, yang sengaja hanya memuat modul berhalaman publik (library untuk OPAC). Di web, halaman yang bagiannya berasal dari beberapa modul (laporan, pindai, kotak aksi, templat dokumen) memakai `moduleSections` di registri navigasi: terbuka selama satu bagian masih bisa dipakai.
 
 ## 6. Hal yang sengaja dipertahankan dari desain lama
 

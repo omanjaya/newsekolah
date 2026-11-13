@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
+import { isModuleEnabled } from "../../../../lib/modules/feature-modules";
 import {
   type ExitPermitSummary,
   type LateArrivalSummary,
@@ -22,12 +23,14 @@ const EXIT_PERMITS_HREF = "/exit-permits";
 const QUEUE_PREVIEW_SIZE = 5;
 
 /** The duty teacher's home block: today's late-arrival gate queue and the exit-permit review queue. */
-export function usePicketBlock(_me: Me, active: boolean): PersonaBlock {
+export function usePicketBlock(me: Me, active: boolean): PersonaBlock {
   const t = useTranslations("app.dashboardDuty");
-  const late = useLateArrivalQueueQuery(active);
-  const exit = useExitPermitReviewQueueQuery(active);
+  // Both queues are permits data: with the module off there is no picket work.
+  const permitsOn = isModuleEnabled(me, "permits");
+  const late = useLateArrivalQueueQuery(active && permitsOn);
+  const exit = useExitPermitReviewQueueQuery(active && permitsOn);
 
-  if (!active) return EMPTY_BLOCK;
+  if (!active || !permitsOn) return EMPTY_BLOCK;
 
   const block: PersonaBlock = { tiles: [], left: [], right: [] };
 

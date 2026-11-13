@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { ComponentType, ReactElement, ReactNode } from "react";
 
 import { TenantBrand } from "../../components/tenant-brand";
+import { isPublicModuleEnabled } from "../../lib/modules/feature-modules";
 import { initialsFor } from "../../lib/tenant/initials";
 import { useTenant } from "../../lib/tenant/tenant-provider";
 
@@ -17,14 +18,18 @@ import { useTenant } from "../../lib/tenant/tenant-provider";
  * card. On narrow screens the hero drops away and the brand sits above the card.
  */
 export default function AuthLayout({ children }: { children: ReactNode }): ReactElement {
-  const { displayName, isLoading } = useTenant();
+  const { branding, displayName, isLoading } = useTenant();
   const t = useTranslations("auth.login");
   const initials = initialsFor(displayName);
 
+  // The public branding only says which modules with anonymous pages are
+  // off (library); the library line goes away with it.
   const features: { icon: ComponentType<{ className?: string }>; label: string }[] = [
     { icon: CalendarCheck, label: t("featureAttendance") },
     { icon: GraduationCap, label: t("featureGrades") },
-    { icon: BookOpen, label: t("featureLibrary") },
+    ...(isPublicModuleEnabled(branding, "library")
+      ? [{ icon: BookOpen, label: t("featureLibrary") }]
+      : []),
   ];
 
   return (

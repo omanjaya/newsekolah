@@ -1,3 +1,5 @@
+import type { FeatureModule } from "../../../lib/modules/feature-modules";
+
 export const STUDENT_PROFILE_TABS = [
   "overview",
   "attendance",
@@ -36,11 +38,42 @@ export const STUDENT_PROFILE_TAB_PERMISSIONS: Record<StudentProfileTab, readonly
   guardians: ["view_users"],
 };
 
+/**
+ * The feature module whose endpoint a tab-unlocking permission reads. A
+ * permission only counts while that module is on, so a school without
+ * mentoring, permits, discipline or library loses exactly those tabs.
+ */
+export const STUDENT_PROFILE_PERMISSION_MODULES: Readonly<Record<string, FeatureModule>> = {
+  view_mentoring: "mentoring",
+  review_leave_requests: "permits",
+  view_discipline: "discipline",
+  manage_counseling: "discipline",
+  manage_library_members: "library",
+};
+
+/**
+ * The module whose data a tab shows when that differs from the module its
+ * permission reads: the grades tab reads published grades through the
+ * mentoring snapshot, so it needs grading on as well.
+ */
+export const STUDENT_PROFILE_TAB_MODULES: Readonly<
+  Partial<Record<StudentProfileTab, FeatureModule>>
+> = {
+  grades: "grading",
+};
+
 /** The tabs a reader may see, in display order. */
 export function visibleStudentProfileTabs(
   can: (permission: string) => boolean,
+  disabledModules: readonly string[],
 ): StudentProfileTab[] {
-  return STUDENT_PROFILE_TABS.filter((tab) =>
-    STUDENT_PROFILE_TAB_PERMISSIONS[tab].some((permission) => can(permission)),
-  );
+  const usable = (permission: string): boolean => {
+    const module = STUDENT_PROFILE_PERMISSION_MODULES[permission];
+    return can(permission) && !(module && disabledModules.includes(module));
+  };
+  return STUDENT_PROFILE_TABS.filter((tab) => {
+    const dataModule = STUDENT_PROFILE_TAB_MODULES[tab];
+    if (dataModule && disabledModules.includes(dataModule)) return false;
+    return STUDENT_PROFILE_TAB_PERMISSIONS[tab].some(usable);
+  });
 }

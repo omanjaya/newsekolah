@@ -31,7 +31,7 @@ import "./mutation-meta.js";
  *   tick, and the user has no time to read a burst of duplicate "session
  *   expired" toasts before the page changes under them anyway.
  */
-export function createMutationCache(): MutationCache {
+export function createMutationCache(onError?: (error: unknown) => void): MutationCache {
   return new MutationCache({
     onSuccess: (_data, _variables, _context, mutation) => {
       const message = mutation.meta?.successMessage;
@@ -40,6 +40,7 @@ export function createMutationCache(): MutationCache {
       }
     },
     onError: (error, _variables, _context, mutation) => {
+      onError?.(error);
       if (mutation.meta?.errorToast === false) return;
       if (isAuthRedirecting()) return;
       toast.error(translate(getCurrentLocale(), apiErrorMessageKey(error)));

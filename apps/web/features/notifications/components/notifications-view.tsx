@@ -22,16 +22,18 @@ import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { groupByDay } from "../../../lib/group-by-day";
+import { navAccessFromMe } from "../../../lib/navigation-access";
 import { useSession } from "../../../lib/session/session-provider";
 import { useDayLabel } from "../../../lib/use-day-label";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import {
-  NOTIFICATION_KINDS,
+  useNotificationKinds,
   type NotificationKind,
   useMarkAllReadMutation,
   useMarkReadMutation,
   useNotificationsQuery,
 } from "../api";
+import { openableHref } from "../lib/openable-href";
 
 type Notification = components["schemas"]["Notification"];
 
@@ -40,6 +42,7 @@ export function NotificationsView(): ReactElement {
   const tKinds = useTranslations("app.notifications.kinds");
   const locale = useLocale() as Locale;
   const { me } = useSession();
+  const kinds = useNotificationKinds();
   const [filter, setFilter] = useRememberedViewState<"all" | "unread">(
     "notifications-filter",
     "all",
@@ -104,7 +107,7 @@ export function NotificationsView(): ReactElement {
         <Select
           options={[
             { value: "all", label: t("kindAll") },
-            ...NOTIFICATION_KINDS.map((k) => ({ value: k, label: tKinds(k) })),
+            ...kinds.map((k) => ({ value: k, label: tKinds(k) })),
           ]}
           value={kind || "all"}
           onValueChange={(v) => {
@@ -175,6 +178,8 @@ function NotificationRow({
   onOpen: () => void;
 }): ReactElement {
   const t = useTranslations("app.notifications");
+  const { me } = useSession();
+  const href = openableHref(item.href, navAccessFromMe(me));
   const unread = !item.read_at;
   const content = (
     <div className="flex items-start gap-3 px-4 py-3">
@@ -197,8 +202,8 @@ function NotificationRow({
 
   return (
     <li className={cn(unread && "bg-accent/5")}>
-      {item.href ? (
-        <Link href={item.href} onClick={onOpen} className="block hover:bg-bg">
+      {href ? (
+        <Link href={href} onClick={onOpen} className="block hover:bg-bg">
           {content}
         </Link>
       ) : (

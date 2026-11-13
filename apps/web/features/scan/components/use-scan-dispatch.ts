@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useRef } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useScanLibraryKioskVisitMutation } from "../../library/visits-api";
 import {
@@ -33,6 +34,7 @@ export interface ScanOutcome {
 export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
   const t = useTranslations("app.scan");
   const apiErrorMessage = useApiErrorMessage();
+  const { me } = useSession();
   const counter = useRef(0);
 
   const classroomEntry = useScanClassroomEntryMutation();
@@ -91,7 +93,7 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
   return useCallback(
     async (raw: string): Promise<ScanOutcome> => {
       const key = String(++counter.current);
-      const route = resolveScanRoute(raw);
+      const route = resolveScanRoute(raw, me?.disabled_modules);
       if (route.action === "unknown") {
         return { key, ok: false, message: t(`unknown.${route.reason}`) };
       }
@@ -114,7 +116,7 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
         return { key, ok: false, message: apiErrorMessage("UNKNOWN") };
       }
     },
-    [t, run, apiErrorMessage],
+    [t, run, apiErrorMessage, me?.disabled_modules],
   );
 }
 

@@ -36,6 +36,7 @@ import (
 	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform"
+	platformdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
@@ -50,6 +51,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/jobs"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/modulegate"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/openapivalidate"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
@@ -104,6 +106,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// pushDevices is filled in once the notifications module exists below
 	// (identity is built first); see its type's comment.
 	pushDevices := &lateBoundPushDevices{}
+	disabledModules := &lateBoundDisabledModules{}
 	identityModule := identity.Register(identity.Dependencies{
 		Pool:    pool,
 		Years:   schoolModule.Service,
@@ -126,6 +129,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		IsProduction: cfg.IsProduction(),
 		AppOrigins:   cfg.AppOrigins,
 		PushDevices:  pushDevices,
+		Modules:      disabledModules,
 		ResetLimiter: resetLimiter,
 		Email:        senders.Email,
 		MfaSealer:    sealer,
@@ -163,12 +167,18 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// its own RecordLateArrivalViolation adapter is late-bound the same
 	// way sync is, breaking the two-way construction cycle.
 	disc := &lateBoundDiscipline{}
+	// Background jobs and cross-module adapters below read feature flags
+	// through this; it is bound to the platform module's cached flags once
+	// that exists (after the module gate's cache is built).
+	backgroundFlags := &wiring.LateBoundFlags{}
 	permitsModule := permits.Register(permits.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Bus: eventBus, Hub: hub, Storage: sharedStorage,
-		Schedule:   permitsScheduleLookup{schedules: schedulingModule.ScheduleReader, periods: academicModule.Service, years: schoolModule.Service},
-		Sync:       sync,
-		Discipline: disc,
-		Clock:      clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
+		Schedule:    permitsScheduleLookup{schedules: schedulingModule.ScheduleReader, periods: academicModule.Service, years: schoolModule.Service},
+		Sync:        sync,
+		Discipline:  disc,
+		Flags:       wiring.ModuleFlag{Flags: backgroundFlags, Module: platformdomain.ModulePermits},
+		ModuleFlags: backgroundFlags,
+		Clock:       clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
 	})
 	lateViolations := &lateBoundViolations{}
 	lateDiscipline := &lateBoundDisciplineReader{}
@@ -176,7 +186,8 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Pool: pool, Bus: eventBus, Years: schoolModule.Service,
 		Schedules: schedulingModule.ScheduleReader, Access: schedulingModule.AccessChecker, Journals: schedulingModule.JournalService,
 		Perms: identityModule.Service, Hub: hub,
-		Blocker: permitsBlocker{svc: permitsModule.Service}, Overrider: wiring.PermitsOverrider{Svc: permitsModule.Service},
+		Blocker:    wiring.PermitsBlocker{Svc: permitsModule.Service, Flags: backgroundFlags},
+		Overrider:  wiring.PermitsOverrider{Svc: permitsModule.Service},
 		Violations: lateViolations, Discipline: lateDiscipline, Presence: presence,
 		Letterheads: wiring.ReportHeaderReports{Svc: schoolModule.Service},
 	})
@@ -206,9 +217,9 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Names:   wiring.IdentityNames{Svc: identityModule.Service},
 		Storage: sharedStorage, Config: disciplineservice.DefaultConfig(cfg.S3Bucket),
 	})
-	disc.inner = wiring.LateArrivalDiscipline{Discipline: disciplineModule.Service, Clock: clock.Real{}}
-	lateViolations.inner = disciplineViolationsAdapter{svc: disciplineModule.Service}
-	lateDiscipline.inner = disciplineModule.Service
+	disc.inner = wiring.LateArrivalDiscipline{Discipline: disciplineModule.Service, Clock: clock.Real{}, Flags: backgroundFlags}
+	lateViolations.inner = wiring.DisciplineSessionViolations{Recorder: disciplineViolationsAdapter{svc: disciplineModule.Service}, Flags: backgroundFlags}
+	lateDiscipline.inner = wiring.AttendanceDiscipline{Svc: disciplineModule.Service, Flags: backgroundFlags}
 
 	// analytics composes its risk signals through adapters over
 	// attendance, discipline and grading's own services (never their
@@ -216,23 +227,27 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	analyticsModule := analytics.Register(analytics.Dependencies{
 		Pool: pool, Years: schoolModule.Service,
 		Attendance: wiring.AnalyticsAttendance{Svc: attendanceModule.Service},
-		Discipline: wiring.AnalyticsDiscipline{Svc: disciplineModule.Service},
-		Grading:    wiring.AnalyticsGrading{Svc: gradingModule.Service},
+		Discipline: wiring.AnalyticsDiscipline{Svc: disciplineModule.Service, Flags: backgroundFlags},
+		Grading:    wiring.AnalyticsGrading{Svc: gradingModule.Service, Flags: backgroundFlags},
 		// Admin dashboard (identity/permits satisfy IdentityReader/
 		// PermitsReader structurally/via a small adapter -- see
 		// wiring/analytics.go). Presence reads the same tracker every
 		// GET /ws/me connection heartbeats, keyed
 		// "<tenantID>:<role>:<userID>" by wsMeHandler.
 		Identity: identityModule.Service,
-		Permits:  wiring.AnalyticsPermits{Svc: permitsModule.Service},
+		Permits:  wiring.AnalyticsPermits{Svc: permitsModule.Service, Flags: backgroundFlags},
+		// Stored early-warning results are read back without the signals
+		// of a module switched off after they were computed.
+		Flags:    backgroundFlags,
 		Presence: wiring.AnalyticsPresence{Presence: presence, Clock: clock.Real{}},
 		Clock:    clock.Real{},
 	})
 
 	// The action-inbox badge sums each queue's own count; it owns no data.
+	inboxPermits := wiring.InboxPermits{Queues: permitsModule.Service, Flags: backgroundFlags}
 	inboxModule := inbox.Register(inbox.Dependencies{
-		Perms: identityModule.Service, Leave: permitsModule.Service, Exit: permitsModule.Service,
-		Late: permitsModule.Service, WarningLetters: wiring.InboxWarningLetters{Svc: disciplineModule.Service},
+		Perms: identityModule.Service, Leave: inboxPermits, Exit: inboxPermits,
+		Late: inboxPermits, WarningLetters: wiring.InboxWarningLetters{Svc: disciplineModule.Service, Flags: backgroundFlags},
 	})
 
 	// Built before the jobs block below so its periodic due-schedule scan
@@ -262,6 +277,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		// attendance.daily.
 		Academic:   wiring.AcademicReports{Academic: academicModule.Service, School: schoolModule.Service},
 		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service},
+		Flags:      backgroundFlags,
 	})
 
 	// Background jobs: every module registers its workers on one River
@@ -279,6 +295,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	pushDevices.svc = notificationsModule.Service
 	announcementsModule := announcements.Register(announcements.Dependencies{
 		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,
+		Flags: wiring.ModuleFlag{Flags: backgroundFlags, Module: platformdomain.ModuleAnnouncements},
 	})
 	integrationsModule := integrations.Register(integrations.Dependencies{
 		Pool: pool, Bus: eventBus, Perms: identityModule.Service, Sealer: sealer, Jobs: jobInserter, Clock: clock.Real{}, Logger: logger,
@@ -306,7 +323,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	mentoringModule := mentoring.Register(mentoring.Dependencies{
 		Pool: pool, Years: schoolModule.Service,
 		Attendance: wiring.MentoringAttendance{Svc: attendanceModule.Service},
-		Discipline: wiring.MentoringDiscipline{Svc: disciplineModule.Service},
+		Discipline: wiring.MentoringDiscipline{Svc: disciplineModule.Service, Flags: backgroundFlags},
 		Grading:    wiring.MentoringGrading{Svc: gradingModule.Service},
 		Flags:      wiring.PlatformFlags{Svc: platformModule.Service},
 		Sealer:     sealer, Clock: clock.Real{},
@@ -387,6 +404,19 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	if err != nil {
 		return nil, nil, err
 	}
+	gatedModules := make([]string, len(platformdomain.AllModules))
+	for i, m := range platformdomain.AllModules {
+		gatedModules[i] = string(m)
+	}
+	moduleOps, err := modulegate.LoadOperationModules(doc, gatedModules)
+	if err != nil {
+		return nil, nil, err
+	}
+	moduleFlags := wiring.NewCachedFlags(platformModule.Service, clock.Real{}, moduleFlagCacheTTL, gatedModules)
+	disabledModules.flags = moduleFlags
+	schoolModule.Service.SetPublicModules(wiring.PublicModules{Flags: moduleFlags})
+	platformModule.Service.OnFlagChanged(moduleFlags.Invalidate)
+	backgroundFlags.Bind(moduleFlags)
 	validateRequest, err := openapivalidate.NewMiddleware(doc, resolveOpenAPIValidationMode(cfg.OpenAPIValidation), logger)
 	if err != nil {
 		return nil, nil, err
@@ -422,11 +452,12 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		server,
 		// The last middleware in the slice is the outermost. The IP rate
 		// limit runs first so an over-budget anonymous caller is rejected
-		// before any other work; authz runs next; idempotency is innermost
-		// so an unauthorized retry never claims or consumes an
-		// Idempotency-Key.
+		// before any other work; authz runs next, then the module gate;
+		// idempotency is innermost so an unauthorized or module-disabled
+		// retry never claims or consumes an Idempotency-Key.
 		[]api.StrictMiddlewareFunc{
 			idempotencyStrictMiddleware(store),
+			moduleGateStrictMiddleware(moduleOps, moduleFlags),
 			authzStrictMiddleware(ops, identityModule.Service),
 			publicIPRateLimitStrictMiddleware(store),
 		},
@@ -670,16 +701,9 @@ func (l *lateBoundViolations) ReplaceSessionViolations(ctx context.Context, tena
 }
 
 // lateBoundDisciplineReader breaks the same attendance <-> discipline
-// construction cycle for the homeroom roster's violation summary. inner is
-// the concrete discipline service rather than attendance.DisciplineReader
-// so ViolationSummaryForClass can be built here, over discipline's
-// existing PointTotals, without the discipline module needing a batch
-// query of its own -- discipline's repository has no
-// ListPointTotalsForStudents(student_user_id = any($n)) query, only the
-// per-class ListStudentPointTotals PointTotals already uses, but a
-// homeroom roster is always exactly one class, so scoping by classID
-// instead of by student ID list gets the same one-query result.
-type lateBoundDisciplineReader struct{ inner *disciplineservice.Service }
+// construction cycle for the homeroom roster's violation summary; inner is
+// wiring.AttendanceDiscipline once discipline is built.
+type lateBoundDisciplineReader struct{ inner attendance.DisciplineReader }
 
 func (l *lateBoundDisciplineReader) ViolationSummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (int, int, error) {
 	if l.inner == nil {
@@ -688,22 +712,9 @@ func (l *lateBoundDisciplineReader) ViolationSummary(ctx context.Context, tenant
 	return l.inner.ViolationSummary(ctx, tenantID, academicYearID, studentUserID)
 }
 
-// homeroomClassPointTotalsLimit is passed to PointTotals in place of a
-// per-student ID list: it must cover every student a homeroom class can
-// hold, which is always far below PointTotals' own cap of 500.
-const homeroomClassPointTotalsLimit = 500
-
 func (l *lateBoundDisciplineReader) ViolationSummaryForClass(ctx context.Context, tenantID, classID uuid.UUID) (map[uuid.UUID]attendance.ViolationSummary, error) {
 	if l.inner == nil {
 		return nil, nil
 	}
-	totals, err := l.inner.PointTotals(ctx, tenantID, uuid.NullUUID{UUID: classID, Valid: true}, homeroomClassPointTotalsLimit)
-	if err != nil {
-		return nil, err
-	}
-	out := make(map[uuid.UUID]attendance.ViolationSummary, len(totals))
-	for _, t := range totals {
-		out[t.StudentUserID] = attendance.ViolationSummary{Count: t.RecordCount, Points: t.Total}
-	}
-	return out, nil
+	return l.inner.ViolationSummaryForClass(ctx, tenantID, classID)
 }

@@ -139,9 +139,18 @@ func (s *Service) requireLateArrivalReviewer(ctx context.Context, tenantID, acto
 // every reviewed violation_id, records a real violation against the
 // student through the discipline module (validating each id is an active
 // violation type as part of that call) -- see DisciplineRecorder.
+//
+// While discipline is switched off the review still goes through, but the
+// selected violation_ids are dropped: nothing is recorded in discipline and
+// nothing is merged into the flow's payload.
 func (s *Service) ReviewLateArrival(ctx context.Context, in ReviewLateArrivalInput) (LateArrivalDetail, error) {
+	violationIDs, err := s.reviewedViolations(ctx, in.TenantID, in.ViolationIDs)
+	if err != nil {
+		return LateArrivalDetail{}, err
+	}
+	in.ViolationIDs = violationIDs
 	var detail LateArrivalDetail
-	err := s.withTx(ctx, in.TenantID, func(ctx context.Context) error {
+	err = s.withTx(ctx, in.TenantID, func(ctx context.Context) error {
 		late, ok, err := s.repo.GetLateArrival(ctx, in.TenantID, in.InstanceID)
 		if err != nil {
 			return err
@@ -167,20 +176,8 @@ func (s *Service) ReviewLateArrival(ctx context.Context, in ReviewLateArrivalInp
 		if err != nil {
 			return err
 		}
-		if len(in.ViolationIDs) > 0 {
-			note := fmt.Sprintf("Proses masuk terlambat ke-%d", late.OccurrenceNumber)
-			for _, violationTypeID := range in.ViolationIDs {
-				if err := s.discipline.RecordLateArrivalViolation(ctx, in.TenantID, inst.SubjectUserID, violationTypeID, in.InstanceID, in.ReviewerUserID, note); err != nil {
-					return err
-				}
-			}
-			ids := make([]string, len(in.ViolationIDs))
-			for i, id := range in.ViolationIDs {
-				ids[i] = id.String()
-			}
-			if inst, err = s.repo.MergeInstancePayload(ctx, in.TenantID, in.InstanceID, map[string]any{"violation_ids": ids}); err != nil {
-				return err
-			}
+		if inst, err = s.recordReviewedViolations(ctx, in.TenantID, inst, in.ReviewerUserID, in.ViolationIDs, late.OccurrenceNumber); err != nil {
+			return err
 		}
 		if isLast {
 			if late, err = s.repo.MarkLateArrivalCompleted(ctx, in.TenantID, in.InstanceID, clock.Now(ctx, s.clock)); err != nil {
@@ -196,6 +193,28 @@ func (s *Service) ReviewLateArrival(ctx context.Context, in ReviewLateArrivalInp
 	s.publish(ctx, LateArrivalUpdated{TenantID: in.TenantID, InstanceID: in.InstanceID, StudentUserID: detail.Instance.SubjectUserID, Status: string(detail.Instance.Status)})
 	s.publishToDutyStage(ctx, in.TenantID, uuid.NullUUID{}, "duty_teacher", "late_arrival.updated", instanceEventPayload{InstanceID: in.InstanceID})
 	return detail, nil
+}
+
+// recordReviewedViolations records each reviewed violation in discipline
+// and keeps the list on the flow's payload, returning the updated instance
+// (inst unchanged when there is nothing to record). Callers pass the list
+// through reviewedViolations first, which empties it while discipline is
+// off.
+func (s *Service) recordReviewedViolations(
+	ctx context.Context, tenantID uuid.UUID, inst domain.Instance, reporterUserID uuid.UUID, violationIDs []uuid.UUID, occurrence int,
+) (domain.Instance, error) {
+	if len(violationIDs) == 0 {
+		return inst, nil
+	}
+	note := fmt.Sprintf("Proses masuk terlambat ke-%d", occurrence)
+	ids := make([]string, len(violationIDs))
+	for i, violationTypeID := range violationIDs {
+		if err := s.discipline.RecordLateArrivalViolation(ctx, tenantID, inst.SubjectUserID, violationTypeID, inst.ID, reporterUserID, note); err != nil {
+			return domain.Instance{}, err
+		}
+		ids[i] = violationTypeID.String()
+	}
+	return s.repo.MergeInstancePayload(ctx, tenantID, inst.ID, map[string]any{"violation_ids": ids})
 }
 
 // LateArrivalScan advances the flow when the student scans the next

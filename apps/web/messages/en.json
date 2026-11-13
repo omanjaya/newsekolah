@@ -346,6 +346,11 @@
       "body": "This account does not have permission to open this page. Contact the school admin if this access should be available.",
       "backHome": "Back to home"
     },
+    "moduleUnavailable": {
+      "title": "Module not available",
+      "body": "This feature is not enabled for your school. Contact the school admin if it should be available.",
+      "backHome": "Back to home"
+    },
     "notFound": {
       "title": "Page not found",
       "body": "The address you requested does not exist or has moved.",
@@ -422,6 +427,10 @@
         "scheduled": "Scheduled",
         "published": "Published",
         "archived": "Archived"
+      },
+      "missedSchedule": {
+        "label": "Missed schedule",
+        "hint": "Its start time passed before it was published, for example while announcements were switched off. Change the time and schedule it again, publish it now, or delete it."
       },
       "reach": "{read} of {total}",
       "audienceClassCount": "{count, plural, one {# class} other {# classes}}",

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { statusToken } from "../../../lib/attendance-status";
+import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useLookup, useSubjectsQuery } from "../../reference/api";
 import type { MentorStudentSnapshot } from "../api";
 
@@ -74,12 +75,18 @@ export function SnapshotAttendanceSection({
   );
 }
 
+/**
+ * Left out while the school has discipline off: the API then reports no
+ * points for anyone, and the section must not read as a clean record.
+ */
 export function SnapshotDisciplineSection({
   snapshot,
 }: {
   snapshot: MentorStudentSnapshot;
-}): ReactElement {
+}): ReactElement | null {
   const t = useTranslations("app.mentoring.studentView");
+  const disciplineOn = useModuleEnabled("discipline");
+  if (!disciplineOn) return null;
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-[16px] font-medium text-fg">{t("discipline.title")}</h2>
@@ -100,15 +107,18 @@ export function SnapshotDisciplineSection({
   );
 }
 
+/** Left out while the school has grading off (the API then has no grades to report). */
 export function SnapshotGradesSection({
   snapshot,
 }: {
   snapshot: MentorStudentSnapshot;
-}): ReactElement {
+}): ReactElement | null {
   const t = useTranslations("app.mentoring.studentView");
   const subjects = useSubjectsQuery();
   const subjectMap = useLookup(subjects.data?.data);
+  const gradingOn = useModuleEnabled("grading");
 
+  if (!gradingOn) return null;
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-[16px] font-medium text-fg">{t("grades.title")}</h2>

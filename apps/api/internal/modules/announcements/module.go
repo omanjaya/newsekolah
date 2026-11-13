@@ -22,6 +22,10 @@ type Dependencies struct {
 	Notifier service.Notifier // nil: publish without inbox fan-out
 	Clock    clock.Clock
 	Logger   *slog.Logger
+
+	// Flags reads the announcements feature flag for the scheduled-publish
+	// job; nil leaves the module on for every tenant.
+	Flags service.FlagReader
 }
 
 type Module struct {
@@ -32,6 +36,9 @@ type Module struct {
 
 func Register(deps Dependencies) *Module {
 	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Notifier, deps.Clock)
+	if deps.Flags != nil {
+		svc.SetFlags(deps.Flags)
+	}
 	logger := deps.Logger
 	if logger == nil {
 		logger = slog.Default()

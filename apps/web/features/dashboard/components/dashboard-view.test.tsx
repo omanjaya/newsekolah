@@ -178,6 +178,35 @@ describe("DashboardView", () => {
     expect(screen.getByTestId("announcement-feed")).toBeInTheDocument();
   });
 
+  it("hides the announcements widget and its link while the module is off", () => {
+    dashboardData.mockReturnValue({
+      data: { ...me, disabled_modules: ["announcements"] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+
+    render(<DashboardView />);
+
+    expect(screen.queryByTestId("announcement-feed")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dashboard-card-announcements")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "openAnnouncements" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent('greeting:{"name":"Budi"}');
+  });
+
+  it("keeps the announcements widget when only another module is off", () => {
+    dashboardData.mockReturnValue({
+      data: { ...me, disabled_modules: ["library"] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+
+    render(<DashboardView />);
+
+    expect(screen.getByTestId("announcement-feed")).toBeInTheDocument();
+  });
+
   it("lays out a single tile (the notifications filler) in one column on lg", () => {
     render(<DashboardView />);
 

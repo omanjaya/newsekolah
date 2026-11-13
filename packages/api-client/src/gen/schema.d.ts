@@ -6512,10 +6512,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Document templates of the tenant */
+        /** Document templates of the tenant, without kinds whose owner module is switched off */
         get: operations["listDocumentTemplates"];
         put?: never;
-        /** Create a document template */
+        /** Create a document template (403 MODULE_DISABLED when its kind's owner module is off) */
         post: operations["createDocumentTemplate"];
         delete?: never;
         options?: never;
@@ -6531,7 +6531,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update a template body */
+        /** Update a template body (403 MODULE_DISABLED when its kind's owner module is off) */
         put: operations["updateDocumentTemplate"];
         post?: never;
         delete?: never;
@@ -6549,7 +6549,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Make this template the default of its kind */
+        /** Make this template the default of its kind (403 MODULE_DISABLED when its kind's owner module is off) */
         post: operations["setDefaultDocumentTemplate"];
         delete?: never;
         options?: never;
@@ -9909,6 +9909,13 @@ export interface components {
                 name: string;
             };
             tenant: components["schemas"]["TenantBranding"];
+            /**
+             * @description Feature modules the vendor switched off for this school (flag names such as library or
+             *     staff_attendance). Always present, empty when everything is on. Operations of a listed module
+             *     answer 403 MODULE_DISABLED. Kept on Me rather than on tenant because TenantBranding is also the
+             *     public, unauthenticated branding shape.
+             */
+            disabled_modules: string[];
             must_change_password: boolean;
             /** @description Present only during an impersonation session. */
             impersonated_by?: {
@@ -11275,7 +11282,7 @@ export interface components {
         };
         DocumentTemplateWrite: {
             /** @enum {string} */
-            kind: "leave_letter" | "warning_letter" | "class_journal" | "member_card" | "item_label" | "clearance_letter" | "report";
+            kind: "leave_letter" | "warning_letter" | "class_journal" | "member_card" | "item_label" | "clearance_letter" | "report" | "visitor_badge";
             name: string;
             /**
              * @default html
@@ -11887,6 +11894,8 @@ export interface components {
              * @enum {string}
              */
             education_level?: "sd" | "smp" | "sma" | "smk" | "other";
+            /** @description The feature modules with pages an anonymous visitor can open (today only library, for the OPAC) that the school has switched off, so public pages can show a "not available" state and drop their links. Always present; empty while every one of them is on. Deliberately restricted to public-facing modules: the full list is only on Me.disabled_modules, and an anonymous caller learns nothing here that the public endpoints would not already answer with 403 MODULE_DISABLED. */
+            disabled_public_modules: "library"[];
         };
         ReportHeaderSigner: {
             role_label: string;

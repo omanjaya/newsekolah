@@ -55,7 +55,27 @@ func tenantLocale(ctx context.Context) string {
 	return i18n.FromTenantLocale(t.Locale)
 }
 
+// moduleDisabledError maps a report kind whose source module is turned off
+// to the same 403 MODULE_DISABLED (details naming the module) the central
+// module gate answers for the module's own operations. grading's own
+// sentinel is mapped too, for a flag change that lands between the
+// reports check and grading's. It returns nil for any other error.
+func moduleDisabledError(err error) *httpx.Error {
+	var disabled *service.SourceModuleDisabledError
+	if errors.As(err, &disabled) {
+		return httpx.ErrModuleDisabled.WithDetails(httpx.ErrorDetail{Field: "module", Code: disabled.Module})
+	}
+	if errors.Is(err, gradingdomain.ErrModuleDisabled) {
+		module := service.SourceModule(service.KindGradingReport)
+		return httpx.ErrModuleDisabled.WithDetails(httpx.ErrorDetail{Field: "module", Code: module})
+	}
+	return nil
+}
+
 func mapError(err error) error {
+	if mapped := moduleDisabledError(err); mapped != nil {
+		return mapped
+	}
 	switch {
 	case errors.Is(err, service.ErrReportNotFound):
 		return httpx.ErrNotFound
@@ -95,10 +115,15 @@ func (h *ReportsHandler) permissions(ctx context.Context) authz.Set {
 
 // ListReports returns only the reports the caller may actually run, so the
 // UI never offers a download that ends in 403.
+// A kind whose source module is turned off is left out too.
 func (h *ReportsHandler) ListReports(ctx context.Context, _ api.ListReportsRequestObject) (api.ListReportsResponseObject, error) {
 	granted := h.permissions(ctx)
-	data := make([]api.ReportDefinition, 0, len(service.Catalog()))
-	for _, def := range service.Catalog() {
+	catalog, err := h.service.AvailableCatalog(ctx, tenantID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.ReportDefinition, 0, len(catalog))
+	for _, def := range catalog {
 		if !granted.Has(def.Permission) {
 			continue
 		}

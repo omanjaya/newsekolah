@@ -34,6 +34,9 @@ type Dependencies struct {
 	// PushDevices deletes a user's push devices on logout/revoke-all. nil
 	// disables that (no notifications module wired).
 	PushDevices service.PushDeviceRevoker
+	// Modules reports a tenant's disabled feature modules for Me. nil means
+	// nothing is disabled.
+	Modules service.DisabledModulesReader
 
 	// ResetLimiter bounds password-reset-request attempts per IP. Email is
 	// where the reset link/OTP goes; a nil-noop sender still lets the flow
@@ -81,6 +84,7 @@ func Register(deps Dependencies) *Module {
 		Ceremony:       deps.Ceremony,
 		SessionCache:   deps.SessionCache,
 		PushDevices:    deps.PushDevices,
+		Modules:        deps.Modules,
 	})
 	handler := transporthttp.New(svc, deps.Branding, deps.SessionCache, deps.IsProduction, deps.AppOrigins)
 	return &Module{Service: svc, Handler: handler}

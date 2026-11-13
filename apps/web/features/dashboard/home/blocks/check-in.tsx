@@ -20,6 +20,7 @@ import { useState } from "react";
 
 import { QueryError } from "../../../../components/query-error";
 import { useApiErrorMessage } from "../../../../lib/i18n/api-error-message";
+import { isModuleEnabled } from "../../../../lib/modules/feature-modules";
 import { todayInZone } from "../../../../lib/tenant-date";
 import {
   type AttendanceRecord,
@@ -47,13 +48,15 @@ export function useCheckInBlock(me: Me, active: boolean): PersonaBlock {
   const today = todayInZone(me.tenant.timezone);
   // The history query is only enabled for a non-empty range, so an empty
   // range keeps it idle while the persona is inactive.
+  const attendanceOn = isModuleEnabled(me, "staff_attendance");
+  const live = active && attendanceOn;
   const history = useStaffAttendanceMyHistoryQuery(
-    active ? today : "",
-    active ? shiftDateISO(today, 1) : "",
+    live ? today : "",
+    live ? shiftDateISO(today, 1) : "",
   );
   const scan = useScanStaffAttendanceMutation();
 
-  if (!active) return EMPTY_BLOCK;
+  if (!live) return EMPTY_BLOCK;
 
   return {
     tiles: [],

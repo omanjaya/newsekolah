@@ -104,6 +104,30 @@ the site down. Watch the `api` logs for that message after an update that touche
 ./internal/gen/api/...` and `pnpm api:gen`). Set `OPENAPI_VALIDATION=enforce` only once the spec is
 known to be in sync, and `=off` to disable the check entirely.
 
+## Switching modules on or off
+
+Each feature module a school can do without (`library`, `discipline`, `grading`, `permits`,
+`announcements`, `reports`, `activities`, `mentoring`, `supervision`, `staff_attendance`,
+`visitors`, `billing`) is switched with the `/modules` binary in the api image. It writes the
+`feature_flags` table directly, so it works with `TENANCY_MODE=single`, where the platform console
+is off. Run it inside the running `api` container, which already has the right database role and
+environment:
+
+```
+docker compose -f infra/docker/docker-compose.prod.yml exec -T api /modules list
+docker compose -f infra/docker/docker-compose.prod.yml exec -T api /modules disable billing visitors
+docker compose -f infra/docker/docker-compose.prod.yml exec -T api /modules enable billing
+```
+
+On the shared VPS, run it from `infra/docker` with the override file too:
+`docker compose -f docker-compose.prod.yml -f compose.vps.yml exec -T api /modules list`.
+
+`--tenant <slug>` is needed only when the database holds more than one tenant. It never prompts,
+and enabling an already enabled module succeeds, so it is safe in a deploy script; exit status 2
+means the command line was wrong (unknown module or tenant) and nothing changed. Each actual change
+is written to the audit log with user agent `cli:modules` and no user. Running api processes cache
+flags for up to 15 seconds, so a change takes up to that long to apply.
+
 ## Backup and restore
 
 Enable the optional backup sidecar (daily `pg_dump` + MinIO mirror to an offsite S3-compatible

@@ -10,7 +10,7 @@ import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   NOTIFICATION_CHANNELS,
-  NOTIFICATION_KINDS,
+  useNotificationKinds,
   type NotificationChannel,
   type NotificationKind,
   type NotificationSettingsInput,
@@ -37,6 +37,7 @@ export function NotificationSettingsView(): ReactElement {
   const tKinds = useTranslations("app.notifications.kinds");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const kinds = useNotificationKinds();
   const prefs = usePreferencesQuery();
   const setPreference = useSetPreferenceMutation();
   const settings = useNotificationSettingsQuery();
@@ -95,7 +96,7 @@ export function NotificationSettingsView(): ReactElement {
                 </tr>
               </thead>
               <tbody>
-                {NOTIFICATION_KINDS.map((kind) => {
+                {kinds.map((kind) => {
                   const row = prefs.data?.[kind] ?? {};
                   return (
                     <tr key={kind} className="border-b border-line last:border-b-0 hover:bg-bg">
@@ -126,7 +127,7 @@ export function NotificationSettingsView(): ReactElement {
           // rest behind a sideways scroll nothing announces. Stacked per
           // kind, every channel for that kind is on screen at once.
           <ul className="flex flex-col gap-3 md:hidden">
-            {NOTIFICATION_KINDS.map((kind) => {
+            {kinds.map((kind) => {
               const row = prefs.data?.[kind] ?? {};
               return (
                 <li key={kind} className="flex flex-col gap-2 rounded-sm border border-border p-3">

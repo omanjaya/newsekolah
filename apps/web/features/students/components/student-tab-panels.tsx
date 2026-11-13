@@ -19,6 +19,7 @@ import { useMemo, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
 import { StudentRiskPanel } from "../../analytics/components/student-risk-panel";
@@ -50,7 +51,8 @@ import { useUserQuery } from "../../school/api";
 
 export function StudentOverviewTab({ studentId }: { studentId: string }): ReactElement {
   const canRisk = useCan("view_early_warning");
-  const canSnapshot = useCan("view_mentoring");
+  const mentoringOn = useModuleEnabled("mentoring");
+  const canSnapshot = useCan("view_mentoring") && mentoringOn;
   return (
     <div className="flex flex-col gap-6">
       {canRisk && <StudentRiskPanel studentId={studentId} />}

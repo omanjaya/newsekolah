@@ -6,12 +6,17 @@ import { useTranslations } from "next-intl";
 import type { ComponentType, ReactElement } from "react";
 
 import { ForbiddenPage } from "../../../components/forbidden-page";
+import { ModuleUnavailablePage } from "../../../components/module-unavailable-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { moduleSectionsAccess, navAccessFromMe } from "../../../lib/navigation-access";
+import { REPORT_SECTIONS } from "../../../lib/navigation-sections";
 import { useSession } from "../../../lib/session/session-provider";
 
 interface SectionViewProps {
   tabKey?: string;
 }
+
+type ReportSectionKey = (typeof REPORT_SECTIONS)[number]["key"];
 
 const SchoolReports: ComponentType<SectionViewProps> = dynamic(() =>
   import("./reports-view").then((module) => module.ReportsView),
@@ -25,40 +30,48 @@ const VisitorReports: ComponentType<SectionViewProps> = dynamic(() =>
   import("../../visitors/components/visitor-recap-view").then((module) => module.VisitorRecapView),
 );
 
-const SECTIONS: {
-  key: string;
-  label: string;
-  permission: string;
-  View: ComponentType<SectionViewProps>;
-}[] = [
-  { key: "school", label: "schoolReports", permission: "view_reports", View: SchoolReports },
-  {
-    key: "library",
-    label: "libraryReports",
-    permission: "view_library_reports",
-    View: LibraryReports,
-  },
-  {
-    key: "visitors",
-    label: "visitorReports",
-    permission: "view_visitor_reports",
-    View: VisitorReports,
-  },
-];
+/**
+ * What each section renders. Which sections exist, and the permission and
+ * module each needs, come from `REPORT_SECTIONS`, the same list the
+ * navigation registry decides the menu entry and the route from: the
+ * school reports call the report centre (reports), the library reports
+ * call library, the visitor recap calls visitors.
+ */
+const SECTION_VIEWS: Record<
+  ReportSectionKey,
+  { label: string; View: ComponentType<SectionViewProps> }
+> = {
+  school: { label: "schoolReports", View: SchoolReports },
+  library: { label: "libraryReports", View: LibraryReports },
+  visitors: { label: "visitorReports", View: VisitorReports },
+};
 
-/** Each report domain mounts only when its own grant is present. */
+/**
+ * Each report domain mounts only when its own grant is present and its
+ * module is on; the page is reachable while at least one is.
+ */
 export function ReportsWorkspaceView(): ReactElement {
   const { me } = useSession();
   const t = useTranslations("app.workspace");
-  const sections = SECTIONS.filter((section) => me?.permissions.includes(section.permission));
-  const [section, setSection] = useUrlState(
+  const access = navAccessFromMe(me);
+  const sections = REPORT_SECTIONS.filter(
+    (section) => moduleSectionsAccess([section], access) === "ok",
+  );
+  const [section, setSection] = useUrlState<string>(
     "section",
     sections.map((entry) => entry.key),
     sections[0]?.key ?? "school",
   );
   const selected = sections.find((entry) => entry.key === section) ?? sections[0];
-  if (!selected) return <ForbiddenPage />;
-  const View = selected.View;
+  if (!selected) {
+    // Nothing left to show: either no grant, or every granted domain is off.
+    return moduleSectionsAccess(REPORT_SECTIONS, access) === "module-disabled" ? (
+      <ModuleUnavailablePage />
+    ) : (
+      <ForbiddenPage />
+    );
+  }
+  const { View } = SECTION_VIEWS[selected.key];
   return (
     <>
       {sections.length > 1 && (
@@ -67,7 +80,7 @@ export function ReportsWorkspaceView(): ReactElement {
             <TabsList aria-label={t("reports")} className="flex-wrap">
               {sections.map((entry) => (
                 <TabsTrigger key={entry.key} value={entry.key}>
-                  {t(entry.label)}
+                  {t(SECTION_VIEWS[entry.key].label)}
                 </TabsTrigger>
               ))}
             </TabsList>

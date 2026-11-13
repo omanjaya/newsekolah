@@ -13,6 +13,7 @@
     "kind": {
       "leave_letter": "Leave letter",
       "warning_letter": "Warning letter",
+      "visitor_badge": "Visitor badge",
       "class_journal": "Class journal",
       "member_card": "Library member card",
       "item_label": "Copy label",

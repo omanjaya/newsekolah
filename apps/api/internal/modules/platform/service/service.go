@@ -113,6 +113,9 @@ type Service struct {
 	// which case a token write refuses with errSealerNotConfigured instead
 	// of silently storing plaintext.
 	alertsSealer *crypto.Sealer
+	// onFlagChanged is told which tenant's flags just changed (see
+	// OnFlagChanged in flags.go).
+	onFlagChanged func(tenantID uuid.UUID)
 }
 
 func New(pool *pgxpool.Pool, repo Repository, admin IdentityProvisioner, jobs JobInserter, storage Storage, clk clock.Clock, mode config.TenancyMode, bucket string, alertsSealer *crypto.Sealer) *Service {

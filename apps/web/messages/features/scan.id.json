@@ -3,6 +3,8 @@
   "eyebrow": "Pindai",
   "title": "Pindai kode QR",
   "intro": "Arahkan kamera ke kode QR apa pun: masuk kelas, keterlambatan, izin keluar, gerbang, atau kunjungan perpustakaan. Tindakan yang sesuai dijalankan otomatis.",
+  "introPermits": "Arahkan kamera ke kode QR masuk kelas, keterlambatan, izin keluar, atau gerbang. Tindakan yang sesuai dijalankan otomatis.",
+  "introLibrary": "Arahkan kamera ke kode QR kunjungan perpustakaan. Kunjungan dicatat otomatis.",
   "scanLabel": "Kode QR",
   "placeholder": "Tempel kode lengkap dari QR",
   "submit": "Kirim kode",
@@ -27,6 +29,7 @@
     "empty": "Kode kosong.",
     "bare": "Kode tidak dikenali. Pindai QR langsung, atau tempel kode lengkap yang diawali \"sion:\".",
     "unsupported": "Jenis kode QR ini tidak didukung.",
-    "missing_instance": "Kode QR tidak lengkap. Minta kode QR yang baru."
+    "missing_instance": "Kode QR tidak lengkap. Minta kode QR yang baru.",
+    "unavailable": "Kode QR ini untuk fitur yang tidak aktif di sekolah Anda."
   }
 }

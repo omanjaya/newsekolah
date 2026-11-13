@@ -6,30 +6,19 @@ import { useTranslations } from "next-intl";
 import { useState, type ReactElement } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { isModuleEnabled } from "../../../lib/modules/feature-modules";
+import { useSession } from "../../../lib/session/session-provider";
 import {
   type EarlyWarningPolicy,
   useEarlyWarningPolicyQuery,
   useUpdateEarlyWarningPolicyMutation,
 } from "../api";
 
-type Field = Exclude<keyof EarlyWarningPolicy, "version">;
-const fields: Field[] = [
-  "window_days",
-  "attendance_watch_rate",
-  "attendance_at_risk_rate",
-  "discipline_watch_points",
-  "discipline_at_risk_points",
-  "warning_letter_watch_count",
-  "warning_letter_at_risk_count",
-  "grade_drop_watch_points",
-  "grade_drop_at_risk_points",
-  "attendance_weight",
-  "discipline_weight",
-  "warning_weight",
-  "grade_weight",
-  "watch_score",
-  "at_risk_score",
-];
+import {
+  POLICY_FIELDS as fields,
+  type PolicyField as Field,
+  visiblePolicyFields,
+} from "./policy-fields";
 
 export function PolicyDialog({
   open,
@@ -84,6 +73,8 @@ function PolicyForm({
   const apiErrorMessage = useApiErrorMessage();
   const toast = useToast();
   const update = useUpdateEarlyWarningPolicyMutation();
+  const { me } = useSession();
+  const shown = visiblePolicyFields((module) => isModuleEnabled(me, module));
   const [draft, setDraft] = useState(
     () =>
       Object.fromEntries(fields.map((key) => [key, String(initial[key])])) as Record<Field, string>,
@@ -123,7 +114,7 @@ function PolicyForm({
       <p className="text-sm text-fg-muted">{t("description")}</p>
       {error && <Alert variant="warning" title={error} />}
       <div className="grid gap-3 sm:grid-cols-2">
-        {fields.map((key) => {
+        {shown.map((key) => {
           const rate = key.endsWith("_rate");
           const decimal = rate || key.startsWith("grade_drop_");
           return (

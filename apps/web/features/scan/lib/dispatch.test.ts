@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { classifyScanFailure, resolveScanRoute } from "./dispatch";
+import { SCAN_ACTION_MODULE, classifyScanFailure, resolveScanRoute, scanOffer } from "./dispatch";
 
 describe("resolveScanRoute", () => {
   it.each([
@@ -56,6 +56,54 @@ describe("resolveScanRoute", () => {
       action: "unknown",
       reason: "missing_instance",
     });
+  });
+});
+
+describe("resolveScanRoute with switched-off modules", () => {
+  it("answers every permits QR as unavailable while permits is off", () => {
+    for (const raw of [
+      "sion:classroom_entry::tok",
+      "sion:late_arrival::tok",
+      "sion:approve:inst-1:tok",
+      "sion:gate:inst-2:tok",
+    ]) {
+      expect(resolveScanRoute(raw, ["permits"])).toEqual({
+        action: "unknown",
+        reason: "unavailable",
+      });
+    }
+    expect(resolveScanRoute("sion:library_visit::tok", ["permits"])).toEqual({
+      action: "library_visit",
+      token: "tok",
+    });
+  });
+
+  it("answers a library visit QR as unavailable while library is off", () => {
+    expect(resolveScanRoute("sion:library_visit::tok", ["library"])).toEqual({
+      action: "unknown",
+      reason: "unavailable",
+    });
+    expect(resolveScanRoute("sion:classroom_entry::tok", ["library"]).action).toBe(
+      "classroom_entry",
+    );
+  });
+
+  it("maps every action to the module its endpoint belongs to", () => {
+    expect(SCAN_ACTION_MODULE).toEqual({
+      classroom_entry: "permits",
+      late_arrival: "permits",
+      exit_stage: "permits",
+      gate_exit: "permits",
+      library_visit: "library",
+    });
+  });
+});
+
+describe("scanOffer", () => {
+  it("describes the actions still offered", () => {
+    expect(scanOffer([])).toBe("all");
+    expect(scanOffer(["permits"])).toBe("library");
+    expect(scanOffer(["library", "billing"])).toBe("permits");
   });
 });
 

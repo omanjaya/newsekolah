@@ -202,6 +202,9 @@ type Service struct {
 	permits    PermitsReader
 	presence   PresenceReader
 	clock      clock.Clock
+	// flags is nil when no flag wiring is configured: both toggleable
+	// signal sources then count as on (see sources.go).
+	flags FlagReader
 }
 
 // DashboardDeps groups the admin dashboard's cross-module readers.

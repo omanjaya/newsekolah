@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useHomeroomAttendanceQuery: vi.fn(),
   permissions: new Set<string>(),
+  disabledModules: [] as string[],
 }));
 
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
@@ -22,6 +23,8 @@ vi.mock("../../../lib/session/session-provider", () => ({
       id: "me-1",
       tenant: { timezone: "Asia/Jakarta" },
       duties: [{ slug: "homeroom", scope_id: "class-1", scope_label: "X-A" }],
+      disabled_modules: mocks.disabledModules,
+      permissions: [],
     },
   }),
 }));
@@ -148,5 +151,34 @@ describe("HomeroomView tabs", () => {
       "aria-selected",
       "true",
     );
+  });
+});
+
+describe("HomeroomView roster with discipline switched off", () => {
+  beforeEach(() => {
+    mocks.permissions = new Set();
+    mocks.disabledModules.length = 0;
+    mocks.useHomeroomAttendanceQuery.mockReset();
+    mocks.useHomeroomAttendanceQuery.mockReturnValue({
+      data: {
+        data: [{ student_user_id: "s-1", name: "Ayu", status_code: "H", violation_count: 0 }],
+        total: 1,
+        status_counts: { H: 1 },
+      },
+      isLoading: false,
+    });
+    window.history.replaceState(null, "", "/homeroom?tab=attendance");
+  });
+
+  it("shows the violations column while discipline is on", () => {
+    render(<HomeroomView />);
+    expect(screen.getAllByText("columns.violations").length).toBeGreaterThan(0);
+  });
+
+  it("leaves the violations column out while discipline is off", () => {
+    mocks.disabledModules.push("discipline");
+    render(<HomeroomView />);
+    expect(screen.queryByText("columns.violations")).not.toBeInTheDocument();
+    expect(screen.queryByText("noViolations")).not.toBeInTheDocument();
   });
 });

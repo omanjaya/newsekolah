@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { mobileNavigation } from "./mobile-navigation";
-import { filterNavigation, navigation, type NavProfileKind } from "./navigation";
+import { navigation, type NavProfileKind } from "./navigation";
 import { activeNavHref } from "./navigation/active-href";
-import { canOpenPath } from "./navigation-permissions";
+import { canOpenPathFixture, filterNavigationFixture } from "./navigation-access.fixture";
 import { consolidateNavigation } from "./navigation-workspaces";
 
 function menu(
@@ -12,7 +12,7 @@ function menu(
   duties: { slug: string }[] = [],
 ) {
   const can = (code: string) => permissions.includes(code);
-  return consolidateNavigation(filterNavigation(navigation, can, profileKind), {
+  return consolidateNavigation(filterNavigationFixture(navigation, can, profileKind), {
     profileKind,
     duties,
     canManageSchool: permissions.includes("manage_master_data"),
@@ -72,29 +72,41 @@ describe("consolidated workspaces", () => {
     expect(items.find((item) => item.key === "counseling")?.href).toBe("/analytics");
     expect(mobileNavigation(items, "teacher").map((item) => item.key)).toContain("attendance");
     expect(
-      canOpenPath("/discipline/counseling", (code) => code === "view_early_warning", "teacher"),
+      canOpenPathFixture(
+        "/discipline/counseling",
+        (code) => code === "view_early_warning",
+        "teacher",
+      ),
     ).toBe(false);
   });
 
   it("does not add a general report permission to a library-only report user", () => {
     const items = menu(["view_library_reports"]);
     expect(items.find((item) => item.key === "reports")?.href).toBe("/reports");
-    expect(canOpenPath("/reports", (code) => code === "view_library_reports", "staff")).toBe(true);
-    expect(canOpenPath("/reports", () => false, "staff")).toBe(false);
+    expect(canOpenPathFixture("/reports", (code) => code === "view_library_reports", "staff")).toBe(
+      true,
+    );
+    expect(canOpenPathFixture("/reports", () => false, "staff")).toBe(false);
   });
 
   it("keeps original restricted routes gated after removing their separate menu entries", () => {
     expect(
-      canOpenPath("/library/loan-rules", (code) => code === "manage_library_members", "staff"),
+      canOpenPathFixture(
+        "/library/loan-rules",
+        (code) => code === "manage_library_members",
+        "staff",
+      ),
     ).toBe(false);
-    expect(canOpenPath("/staff-attendance", () => false, "teacher")).toBe(false);
-    expect(canOpenPath("/check-in", () => true, "student")).toBe(false);
-    expect(canOpenPath("/settings/sso", (code) => code === "view_audit_logs", "staff")).toBe(false);
+    expect(canOpenPathFixture("/staff-attendance", () => false, "teacher")).toBe(false);
+    expect(canOpenPathFixture("/check-in", () => true, "student")).toBe(false);
+    expect(canOpenPathFixture("/settings/sso", (code) => code === "view_audit_logs", "staff")).toBe(
+      false,
+    );
   });
 
   it("highlights a single parent across legacy destinations and nested detail routes", () => {
     const items = consolidateNavigation(
-      filterNavigation(navigation, () => true, "staff"),
+      filterNavigationFixture(navigation, () => true, "staff"),
       { profileKind: "staff" },
     );
     expect(activeNavHref("/library/copies", items)).toBe("/library/catalogue");

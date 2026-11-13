@@ -28,6 +28,10 @@ type Dependencies struct {
 	Permits  service.PermitsReader
 	Presence service.PresenceReader
 	Clock    clock.Clock
+	// Flags reads the discipline and grading feature flags, so stored
+	// results are served without the signals of a module switched off
+	// after they were computed; nil leaves both on.
+	Flags service.FlagReader
 }
 
 type Module struct {
@@ -38,5 +42,6 @@ type Module struct {
 func Register(deps Dependencies) *Module {
 	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, deps.Attendance, deps.Discipline, deps.Grading,
 		service.DashboardDeps{Identity: deps.Identity, Permits: deps.Permits, Presence: deps.Presence}, deps.Clock)
+	svc.SetFlags(deps.Flags)
 	return &Module{Service: svc, Handler: transporthttp.New(svc)}
 }

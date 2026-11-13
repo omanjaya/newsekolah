@@ -29,6 +29,7 @@ import { useMemo, useState } from "react";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession, useCan } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
 import {
   type Announcement,
   type AnnouncementStatus,
@@ -37,6 +38,7 @@ import {
   useDeleteAnnouncementMutation,
 } from "../api";
 import { describeAudience } from "../lib/describe-audience";
+import { isMissedSchedule } from "../lib/missed-schedule";
 
 import { AnnouncementForm } from "./announcement-form";
 
@@ -127,9 +129,16 @@ export function AnnouncementsManage({
         header: t("columns.status"),
         enableSorting: false,
         cell: ({ row }) => (
-          <Badge variant={STATUS_VARIANT[row.original.status]}>
-            {t(`status.${row.original.status}`)}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant={STATUS_VARIANT[row.original.status]}>
+              {t(`status.${row.original.status}`)}
+            </Badge>
+            {isMissedSchedule(row.original, businessNow()) && (
+              <Badge variant="warning" title={t("missedSchedule.hint")}>
+                {t("missedSchedule.label")}
+              </Badge>
+            )}
+          </div>
         ),
       },
       {
@@ -185,11 +194,15 @@ export function AnnouncementsManage({
                     {t("actions.publish")}
                   </DropdownMenuItem>
                 )}
-                {canPublish && a.status === "draft" && a.starts_at && (
-                  <DropdownMenuItem onSelect={() => void run("schedule", a)}>
-                    {t("actions.schedule")}
-                  </DropdownMenuItem>
-                )}
+                {/* A missed start must be moved (edit) before scheduling again. */}
+                {canPublish &&
+                  a.status === "draft" &&
+                  a.starts_at &&
+                  !isMissedSchedule(a, businessNow()) && (
+                    <DropdownMenuItem onSelect={() => void run("schedule", a)}>
+                      {t("actions.schedule")}
+                    </DropdownMenuItem>
+                  )}
                 {canPublish && (a.status === "published" || a.status === "scheduled") && (
                   <DropdownMenuItem onSelect={() => void run("archive", a)}>
                     {t("actions.archive")}

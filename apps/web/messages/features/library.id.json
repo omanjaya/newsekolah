@@ -1214,6 +1214,9 @@
     "success": "Peminjaman ditutup sebagai hilang"
   },
   "opac": {
+    "unavailableTitle": "Katalog tidak tersedia",
+    "unavailableBody": "Katalog perpustakaan tidak diaktifkan di sekolah ini.",
+    "signIn": "Masuk ke aplikasi",
     "title": "Katalog perpustakaan",
     "searchPlaceholder": "Cari judul, penulis, atau ISBN",
     "columns": {

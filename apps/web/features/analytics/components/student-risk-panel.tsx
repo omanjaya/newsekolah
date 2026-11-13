@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useStudentRiskQuery } from "../api";
 
 import { AttendanceRatioBar } from "./attendance-ratio-bar";
@@ -28,6 +29,8 @@ export function StudentRiskPanel({ studentId }: { studentId: string }): ReactEle
   const locale = useLocale() as Locale;
   const apiErrorMessage = useApiErrorMessage();
   const reasonText = useReasonText();
+  const disciplineOn = useModuleEnabled("discipline");
+  const gradingOn = useModuleEnabled("grading");
   const { data, isLoading, error } = useStudentRiskQuery(studentId);
 
   if (isLoading) {
@@ -86,24 +89,34 @@ export function StudentRiskPanel({ studentId }: { studentId: string }): ReactEle
               <p className="text-[13px] text-fg-muted">{t("signals.noData")}</p>
             )}
           </SignalRow>
-          <SignalRow label={t("signals.discipline")}>
-            <p className="text-[20px] font-medium text-fg">
-              {t("signals.disciplineValue", { points: data.signals.discipline_points })}
-            </p>
-          </SignalRow>
-          <SignalRow label={t("signals.warningLetters")}>
-            <p className="text-[20px] font-medium text-fg">{data.signals.warning_letter_count}</p>
-          </SignalRow>
-          <SignalRow label={t("signals.gradeTrend")}>
-            {data.signals.has_grade_trend ? (
-              <GradeTrendBars
-                previous={data.signals.previous_average}
-                current={data.signals.current_average}
-              />
-            ) : (
-              <p className="text-[13px] text-fg-muted">{t("signals.noData")}</p>
-            )}
-          </SignalRow>
+          {/* A switched-off module's signals are left out (the API already
+              scores without them), rather than shown as zeros. */}
+          {disciplineOn && (
+            <>
+              <SignalRow label={t("signals.discipline")}>
+                <p className="text-[20px] font-medium text-fg">
+                  {t("signals.disciplineValue", { points: data.signals.discipline_points })}
+                </p>
+              </SignalRow>
+              <SignalRow label={t("signals.warningLetters")}>
+                <p className="text-[20px] font-medium text-fg">
+                  {data.signals.warning_letter_count}
+                </p>
+              </SignalRow>
+            </>
+          )}
+          {gradingOn && (
+            <SignalRow label={t("signals.gradeTrend")}>
+              {data.signals.has_grade_trend ? (
+                <GradeTrendBars
+                  previous={data.signals.previous_average}
+                  current={data.signals.current_average}
+                />
+              ) : (
+                <p className="text-[13px] text-fg-muted">{t("signals.noData")}</p>
+              )}
+            </SignalRow>
+          )}
         </dl>
       </section>
     </div>

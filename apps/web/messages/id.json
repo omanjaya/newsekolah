@@ -346,6 +346,11 @@
       "body": "Akun ini tidak memiliki izin untuk membuka halaman ini. Hubungi admin sekolah bila akses ini seharusnya tersedia.",
       "backHome": "Kembali ke beranda"
     },
+    "moduleUnavailable": {
+      "title": "Modul tidak tersedia",
+      "body": "Fitur ini tidak diaktifkan untuk sekolah Anda. Hubungi admin sekolah bila fitur ini seharusnya tersedia.",
+      "backHome": "Kembali ke beranda"
+    },
     "notFound": {
       "title": "Halaman tidak ditemukan",
       "body": "Alamat yang dituju tidak ada atau sudah dipindahkan.",
@@ -422,6 +427,10 @@
         "scheduled": "Terjadwal",
         "published": "Terbit",
         "archived": "Diarsipkan"
+      },
+      "missedSchedule": {
+        "label": "Jadwal terlewat",
+        "hint": "Waktu tayangnya sudah lewat sebelum terbit, misalnya karena fitur pengumuman sedang dinonaktifkan. Ubah waktunya lalu jadwalkan ulang, terbitkan sekarang, atau hapus."
       },
       "reach": "{read} dari {total}",
       "audienceClassCount": "{count, plural, one {# kelas} other {# kelas}}",

@@ -3,6 +3,8 @@
   "eyebrow": "Scan",
   "title": "Scan QR code",
   "intro": "Point the camera at any QR code: classroom entry, late arrival, exit permit, gate, or library visit. The matching action runs automatically.",
+  "introPermits": "Point the camera at a classroom entry, late arrival, exit permit, or gate QR code. The matching action runs automatically.",
+  "introLibrary": "Point the camera at a library visit QR code. The visit is recorded automatically.",
   "scanLabel": "QR code",
   "placeholder": "Paste the full code from the QR",
   "submit": "Submit code",
@@ -27,6 +29,7 @@
     "empty": "The code is empty.",
     "bare": "Code not recognised. Scan the QR directly, or paste the full code starting with \"sion:\".",
     "unsupported": "This kind of QR code is not supported.",
-    "missing_instance": "The QR code is incomplete. Ask for a new QR code."
+    "missing_instance": "The QR code is incomplete. Ask for a new QR code.",
+    "unavailable": "This QR code belongs to a feature that is not enabled at your school."
   }
 }

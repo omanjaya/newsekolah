@@ -756,6 +756,7 @@ components:
         - permissions
         - tenant
         - must_change_password
+        - disabled_modules
       properties:
         id:
           type: string
@@ -834,6 +835,15 @@ components:
               type: string
         tenant:
           $ref: "#/components/schemas/TenantBranding"
+        disabled_modules:
+          type: array
+          description: |
+            Feature modules the vendor switched off for this school (flag names such as library or
+            staff_attendance). Always present, empty when everything is on. Operations of a listed module
+            answer 403 MODULE_DISABLED. Kept on Me rather than on tenant because TenantBranding is also the
+            public, unauthenticated branding shape.
+          items:
+            type: string
         must_change_password:
           type: boolean
         impersonated_by:

@@ -152,7 +152,26 @@ func (s *ScheduleService) authorize(ctx context.Context, tenantID, requestedBy u
 	if !granted.Has(def.Permission) {
 		return domain.ErrReportKindNotAllowed
 	}
-	return nil
+	return s.reports.RequireKindAvailable(ctx, tenantID, def.Kind)
+}
+
+// requireScheduleAvailable refuses an operation on an existing schedule
+// whose report kind reads a module that is turned off: such a schedule is
+// left out of the list and stays exactly as it was until the module comes
+// back. A schedule that does not exist passes, so the operation itself
+// reports it the way it always has.
+func (s *ScheduleService) requireScheduleAvailable(ctx context.Context, tenantID, id uuid.UUID) error {
+	var sched domain.Schedule
+	var ok bool
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		sched, ok, err = s.repo.GetSchedule(ctx, tenantID, id)
+		return err
+	})
+	if err != nil || !ok {
+		return err
+	}
+	return s.reports.RequireKindAvailable(ctx, tenantID, Kind(sched.ReportKind))
 }
 
 // checkRecipients confirms every address belongs to a user of tenantID.
@@ -211,6 +230,9 @@ func (s *ScheduleService) UpdateSchedule(ctx context.Context, tenantID, requeste
 	if err := sched.Validate(); err != nil {
 		return domain.Schedule{}, err
 	}
+	if err := s.requireScheduleAvailable(ctx, tenantID, id); err != nil {
+		return domain.Schedule{}, err
+	}
 	if err := s.authorize(ctx, tenantID, requestedBy, in.ReportKind); err != nil {
 		return domain.Schedule{}, err
 	}
@@ -261,6 +283,9 @@ type ScheduleView struct {
 	NextRunAt time.Time
 }
 
+// ListSchedulesWithNextRun lists the tenant's schedules, leaving out those
+// whose report kind reads a module that is turned off (they are kept and
+// listed again once the module is back on).
 func (s *ScheduleService) ListSchedulesWithNextRun(ctx context.Context, tenantID uuid.UUID) ([]ScheduleView, error) {
 	var scheds []domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -273,20 +298,33 @@ func (s *ScheduleService) ListSchedulesWithNextRun(ctx context.Context, tenantID
 	}
 	loc := s.tenantLocation(ctx, tenantID)
 	now := clock.Now(ctx, s.clock)
-	out := make([]ScheduleView, len(scheds))
-	for i, sched := range scheds {
-		out[i] = ScheduleView{Schedule: sched, NextRunAt: sched.NextRunAfter(now, loc)}
+	out := make([]ScheduleView, 0, len(scheds))
+	for _, sched := range scheds {
+		on, err := s.moduleOn(ctx, tenantID, SourceModule(Kind(sched.ReportKind)))
+		if err != nil {
+			return nil, err
+		}
+		if !on {
+			continue
+		}
+		out = append(out, ScheduleView{Schedule: sched, NextRunAt: sched.NextRunAfter(now, loc)})
 	}
 	return out, nil
 }
 
 func (s *ScheduleService) DeleteSchedule(ctx context.Context, tenantID, id uuid.UUID) error {
+	if err := s.requireScheduleAvailable(ctx, tenantID, id); err != nil {
+		return err
+	}
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		return s.repo.DeleteSchedule(ctx, tenantID, id)
 	})
 }
 
 func (s *ScheduleService) SetEnabled(ctx context.Context, tenantID, id uuid.UUID, enabled bool) (domain.Schedule, error) {
+	if err := s.requireScheduleAvailable(ctx, tenantID, id); err != nil {
+		return domain.Schedule{}, err
+	}
 	var out domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
@@ -299,6 +337,9 @@ func (s *ScheduleService) SetEnabled(ctx context.Context, tenantID, id uuid.UUID
 func (s *ScheduleService) ListRuns(ctx context.Context, tenantID, scheduleID uuid.UUID, limit int) ([]domain.Run, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
+	}
+	if err := s.requireScheduleAvailable(ctx, tenantID, scheduleID); err != nil {
+		return nil, err
 	}
 	var runs []domain.Run
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {

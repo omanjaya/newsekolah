@@ -8,6 +8,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
+import { isModuleEnabled } from "../../../../lib/modules/feature-modules";
 import { useAtRiskStudentsQuery } from "../../../analytics/api";
 import { RiskLevelBadge } from "../../../analytics/components/risk-level-badge";
 import {
@@ -61,6 +62,8 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   // actually has it.
   const canViewAtRisk = me.permissions.includes("view_early_warning");
   const canViewMonitor = me.permissions.includes("view_monitor_presence");
+  // The pending queues (leave, exit permits, late arrivals) are permits data.
+  const permitsOn = isModuleEnabled(me, "permits");
   const atRisk = useAtRiskStudentsQuery(active && canViewAtRisk);
   // Only the top rows are shown, so only their names are looked up.
   const topAtRisk = [...(atRisk.data?.data ?? [])].sort((a, b) => b.score - a.score).slice(0, 5);
@@ -105,16 +108,18 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
         href: MONITOR_HREF,
       });
     }
-    tiles.push({
-      key: "school.pending",
-      priority: 75,
-      label: t("tiles.pending"),
-      value: String(
-        data.pending.leave_request + data.pending.exit_permit + data.pending.late_arrival,
-      ),
-      icon: Inbox,
-      tone: "amber",
-    });
+    if (permitsOn) {
+      tiles.push({
+        key: "school.pending",
+        priority: 75,
+        label: t("tiles.pending"),
+        value: String(
+          data.pending.leave_request + data.pending.exit_permit + data.pending.late_arrival,
+        ),
+        icon: Inbox,
+        tone: "amber",
+      });
+    }
     tiles.push({
       key: "school.users",
       priority: 50,
@@ -136,18 +141,22 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   const atRiskRows = topAtRisk;
 
   const left: BlockSlot[] = [
-    {
-      key: "school.queue",
-      node: (
-        <SchoolQueueCard
-          key="school.queue"
-          isLoading={dashboard.isLoading}
-          isError={dashboard.isError}
-          refetch={dashboard.refetch}
-          data={data}
-        />
-      ),
-    },
+    ...(permitsOn
+      ? [
+          {
+            key: "school.queue",
+            node: (
+              <SchoolQueueCard
+                key="school.queue"
+                isLoading={dashboard.isLoading}
+                isError={dashboard.isError}
+                refetch={dashboard.refetch}
+                data={data}
+              />
+            ),
+          },
+        ]
+      : []),
     ...(canViewMonitor
       ? [
           {

@@ -13,7 +13,9 @@ import (
 // never blocks the next day's attendance (docs/02-system-design.md
 // section 6.2 step 4; bug fix vs. the old app, which had no such job).
 // Run periodically (transport/jobs), not just once at midnight, so a
-// tenant crossing midnight in any timezone is caught promptly.
+// tenant crossing midnight in any timezone is caught promptly. A tenant
+// with permits turned off is skipped: its flows stay exactly as they were
+// and are expired by the first run after the module is turned back on.
 func (s *Service) ExpireHangingInstances(ctx context.Context) (int, error) {
 	tenants, err := s.repo.ListActiveTenants(ctx)
 	if err != nil {
@@ -22,6 +24,13 @@ func (s *Service) ExpireHangingInstances(ctx context.Context) (int, error) {
 
 	total := 0
 	for _, t := range tenants {
+		on, err := s.enabled(ctx, t.ID)
+		if err != nil {
+			return total, fmt.Errorf("read permits flag for tenant %s: %w", t.ID, err)
+		}
+		if !on {
+			continue
+		}
 		loc, err := time.LoadLocation(t.Timezone)
 		if err != nil {
 			loc = time.UTC

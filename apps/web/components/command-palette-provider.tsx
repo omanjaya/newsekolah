@@ -12,6 +12,7 @@ import { usePaletteStudentGroup } from "../features/students/lib/use-palette-stu
 import { groupNavigation } from "../lib/group-navigation";
 import { navigation, filterNavigation } from "../lib/navigation";
 import { confirmUnsavedChangesBeforeNavigation } from "../lib/navigation/use-unsaved-changes-protection";
+import { navAccessFromMe } from "../lib/navigation-access";
 import { canOpenPath } from "../lib/navigation-permissions";
 import { consolidateNavigation } from "../lib/navigation-workspaces";
 import { quickActionHref } from "../lib/quick-actions";
@@ -64,13 +65,9 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
   }, []);
 
   const pageGroups: CommandPaletteGroup[] = useMemo(() => {
-    const can = (permission: string) => me?.permissions.includes(permission) ?? false;
-    const authorizedItems = filterNavigation(
-      navigation,
-      can,
-      me?.profile_kind,
-      (me?.roles ?? []).map((role) => role.slug),
-    );
+    const access = navAccessFromMe(me);
+    const { can } = access;
+    const authorizedItems = filterNavigation(navigation, access);
     const workspaces = consolidateNavigation(authorizedItems, {
       profileKind: me?.profile_kind,
       duties: me?.duties,
@@ -83,13 +80,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
     const items = [
       ...workspaces,
       ...authorizedItems.filter((item) => !hrefs.has(item.href)),
-    ].filter((item) =>
-      canOpenPath(
-        item.href,
-        (permission) => me?.permissions.includes(permission) ?? false,
-        me?.profile_kind,
-      ),
-    );
+    ].filter((item) => !item.routeOnly && canOpenPath(item.href, access));
     return groupNavigation(items).map((group) => ({
       heading: tNav(group.labelKey),
       items: group.items.map((item) => ({
@@ -104,7 +95,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
         },
       })),
     }));
-  }, [me?.permissions, me?.profile_kind, me?.roles, me?.duties, router, tNav]);
+  }, [me, router, tNav]);
 
   const quickActionGroup: CommandPaletteGroup | null = useMemo(() => {
     if (quickActions.length === 0) return null;
@@ -126,14 +117,8 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
   // Same right as the student-profile registry entry: no student request is
   // made for a reader who could not open the page it leads to.
   const canOpenStudentProfile = useMemo(
-    () =>
-      canOpenPath(
-        studentProfileHref("search"),
-        (permission) => me?.permissions.includes(permission) ?? false,
-        me?.profile_kind,
-        (me?.roles ?? []).map((role) => role.slug),
-      ),
-    [me?.permissions, me?.profile_kind, me?.roles],
+    () => canOpenPath(studentProfileHref("search"), navAccessFromMe(me)),
+    [me],
   );
   const studentIcon = useMemo(() => <domainIcons.users aria-hidden="true" />, []);
   const openStudent = useCallback(

@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useSession } from "../../../lib/session/session-provider";
 import { useMyAnnouncementsQuery } from "../../announcements/api";
 import { AnnouncementPanel } from "../../announcements/components/announcement-panel";
@@ -39,13 +40,15 @@ export function NotificationBell(): ReactElement {
   const tBell = useTranslations("app.bell");
   const { status } = useSession();
   const authenticated = status === "authenticated";
+  const announcementsOn = useModuleEnabled("announcements");
   const { data } = useUnreadCountQuery(authenticated);
   const { data: announcements } = useMyAnnouncementsQuery();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<BellTab>("notifications");
-  const unreadAnnouncements = authenticated
-    ? (announcements?.data ?? []).filter((a) => !a.is_read).length
-    : 0;
+  const unreadAnnouncements =
+    authenticated && announcementsOn
+      ? (announcements?.data ?? []).filter((a) => !a.is_read).length
+      : 0;
   const unreadNotifications = data?.count ?? 0;
   const count = unreadNotifications + unreadAnnouncements;
   const label = count > 0 ? tBell("unreadTotal", { count }) : t("bellLabel");
@@ -82,10 +85,12 @@ export function NotificationBell(): ReactElement {
               {tBell("tabNotifications")}
               <TabCount count={unreadNotifications} />
             </TabsTrigger>
-            <TabsTrigger value="announcements" className="flex-1 gap-1.5">
-              {tBell("tabAnnouncements")}
-              <TabCount count={unreadAnnouncements} />
-            </TabsTrigger>
+            {announcementsOn && (
+              <TabsTrigger value="announcements" className="flex-1 gap-1.5">
+                {tBell("tabAnnouncements")}
+                <TabCount count={unreadAnnouncements} />
+              </TabsTrigger>
+            )}
           </TabsList>
           <TabsContent value="notifications" className="pt-2">
             <NotificationPanel
@@ -94,13 +99,15 @@ export function NotificationBell(): ReactElement {
               }}
             />
           </TabsContent>
-          <TabsContent value="announcements" className="pt-2">
-            <AnnouncementPanel
-              onNavigate={() => {
-                setOpen(false);
-              }}
-            />
-          </TabsContent>
+          {announcementsOn && (
+            <TabsContent value="announcements" className="pt-2">
+              <AnnouncementPanel
+                onNavigate={() => {
+                  setOpen(false);
+                }}
+              />
+            </TabsContent>
+          )}
         </Tabs>
       </PopoverContent>
     </Popover>

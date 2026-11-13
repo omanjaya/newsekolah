@@ -35,8 +35,10 @@ var (
 	ErrHomeroomTeacherRequired      = errors.New("the student's class has no active homeroom teacher to review this request")
 
 	ErrTemplateNotFound = errors.New("document template not found")
-	ErrDocumentNotFound = errors.New("issued document not found")
-	ErrDocumentRevoked  = errors.New("issued document has been revoked")
+	// ErrTemplateKindDisabled is what a TemplateKindDisabledError matches.
+	ErrTemplateKindDisabled = errors.New("document template kind belongs to a disabled module")
+	ErrDocumentNotFound     = errors.New("issued document not found")
+	ErrDocumentRevoked      = errors.New("issued document has been revoked")
 
 	ErrExitPermitAlreadyToday  = errors.New("student already has an exit permit for today")
 	ErrLateArrivalReviewerOnly = errors.New("only the teacher whose token opened this late arrival, or a manage_attendance administrator, may review it")

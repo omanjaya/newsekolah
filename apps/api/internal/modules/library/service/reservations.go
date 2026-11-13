@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 
@@ -134,8 +135,14 @@ func (s *Service) MemberReservations(ctx context.Context, tenantID, memberID uui
 
 // ExpireReadyReservations is the periodic job's body: every ready hold past
 // its expires_at is expired and its copy handed to the next waiting
-// reservation (or released to available), for one tenant.
+// reservation (or released to available), for one tenant. A tenant with
+// library turned off is left exactly as it is: no hold expires, no copy
+// moves, and no reservation-ready notification goes out until the module
+// is back on.
 func (s *Service) ExpireReadyReservations(ctx context.Context, tenantID uuid.UUID) (int, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return 0, err
+	}
 	n := 0
 	var newlyReady []domain.Reservation
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -173,7 +180,8 @@ func (s *Service) ExpireReadyReservations(ctx context.Context, tenantID uuid.UUI
 }
 
 // ExpireReadyReservationsAllTenants runs ExpireReadyReservations for every
-// active tenant, for the periodic River job.
+// active tenant, for the periodic River job, skipping tenants with library
+// turned off (same rule as SendDueRemindersAllTenants).
 func (s *Service) ExpireReadyReservationsAllTenants(ctx context.Context) (int, error) {
 	tenants, err := s.repo.ListActiveTenants(ctx)
 	if err != nil {
@@ -182,6 +190,9 @@ func (s *Service) ExpireReadyReservationsAllTenants(ctx context.Context) (int, e
 	total := 0
 	for _, t := range tenants {
 		n, err := s.ExpireReadyReservations(ctx, t.ID)
+		if errors.Is(err, domain.ErrModuleDisabled) {
+			continue
+		}
 		if err != nil {
 			return total, err
 		}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { navAccessFixture } from "../../lib/navigation-access.fixture";
 import { visibleLibrarySettingsTabs } from "../library/library-settings-tabs";
 
 import { buildSettingsHubSections } from "./settings-hub";
@@ -11,9 +12,11 @@ const grant =
     codes.includes(permission);
 
 function hrefs(codes: string[], query?: string): string[] {
-  return buildSettingsHubSections({ can: grant(...codes), query, translate }).flatMap((section) =>
-    section.cards.map((card) => card.href),
-  );
+  return buildSettingsHubSections({
+    access: navAccessFixture(grant(...codes)),
+    query,
+    translate,
+  }).flatMap((section) => section.cards.map((card) => card.href));
 }
 
 describe("buildSettingsHubSections", () => {
@@ -46,7 +49,10 @@ describe("buildSettingsHubSections", () => {
   });
 
   it("drops sections that end up empty", () => {
-    const sections = buildSettingsHubSections({ can: grant("manage_whatsapp"), translate });
+    const sections = buildSettingsHubSections({
+      access: navAccessFixture(grant("manage_whatsapp")),
+      translate,
+    });
     expect(sections.map((section) => section.key)).toEqual(["access", "communication"]);
   });
 

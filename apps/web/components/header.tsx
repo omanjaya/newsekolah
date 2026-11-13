@@ -19,6 +19,7 @@ import { useSyncExternalStore } from "react";
 import { useLogoutMutation } from "../features/auth/api";
 import { NotificationBell } from "../features/notifications/components/notification-bell";
 import { filterNavigation, navigation } from "../lib/navigation";
+import { navAccessFromMe } from "../lib/navigation-access";
 import { useSession } from "../lib/session/session-provider";
 
 import { useCommandPalette } from "./command-palette-provider";
@@ -50,12 +51,9 @@ export function Header(): ReactElement {
   const { me } = useSession();
   const t = useTranslations("app.shell");
   const tNav = useTranslations();
-  const accountItems = filterNavigation(
-    navigation,
-    (permission) => me?.permissions.includes(permission) ?? false,
-    me?.profile_kind,
-    (me?.roles ?? []).map((role) => role.slug),
-  ).filter((item) => item.accountMenu);
+  const accountItems = filterNavigation(navigation, navAccessFromMe(me)).filter(
+    (item) => item.accountMenu,
+  );
   const tPalette = useTranslations("app.shell.commandPalette");
   const commandPalette = useCommandPalette();
   const shortcutHint = useShortcutHint();

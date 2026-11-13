@@ -116,4 +116,41 @@ describe("resolvePersonas", () => {
     );
     expect(p.has("checkIn")).toBe(false);
   });
+
+  describe("with modules switched off", () => {
+    it("drops the check-in persona with staff attendance", () => {
+      const teacher = me({ profile_kind: "teacher", disabled_modules: ["staff_attendance"] });
+      expect(resolvePersonas(teacher).has("checkIn")).toBe(false);
+      expect(resolvePersonas(me({ profile_kind: "teacher" })).has("checkIn")).toBe(true);
+    });
+
+    it("drops the librarian persona with the library", () => {
+      const librarian = {
+        roles: [{ id: "r", slug: "librarian", name: "Pustakawan", is_primary: true }],
+      };
+      expect(resolvePersonas(me(librarian)).has("librarian")).toBe(true);
+      expect(
+        resolvePersonas(me({ ...librarian, disabled_modules: ["library"] })).has("librarian"),
+      ).toBe(false);
+    });
+
+    it("drops the picket persona with permits but keeps the check-in card", () => {
+      const picket = me({
+        profile_kind: "staff",
+        duties: [{ slug: "picket", scope_kind: "school" }],
+        disabled_modules: ["permits"],
+      });
+      expect([...resolvePersonas(picket)].sort()).toEqual(["checkIn"]);
+    });
+
+    it("keeps personas that are not made of a single module", () => {
+      const personas = resolvePersonas(
+        me({
+          profile_kind: "student",
+          disabled_modules: ["permits", "grading", "library", "discipline"],
+        }),
+      );
+      expect([...personas]).toEqual(["student"]);
+    });
+  });
 });

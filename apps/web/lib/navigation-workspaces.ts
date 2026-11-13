@@ -211,6 +211,9 @@ export function consolidateNavigation(
     return [
       {
         ...selected,
+        // A workspace spans several destinations, so it belongs to no single
+        // module: its members were already filtered by module.
+        module: undefined,
         key: definition.key,
         labelKey: labelFor(definition, selected, context),
         group: definition.group ?? selected.group,

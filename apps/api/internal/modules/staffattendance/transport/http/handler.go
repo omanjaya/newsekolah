@@ -51,7 +51,6 @@ func tenantLocale(ctx context.Context) string {
 // attendance/transport/http/handler.go's rationale for keeping
 // module-specific codes out of the shared internal/platform/httpx/errors.go.
 var (
-	errModuleDisabled      = httpx.NewError(http.StatusNotFound, "MODULE_DISABLED")
 	errScheduleDayInvalid  = httpx.NewError(http.StatusBadRequest, "STAFF_ATTENDANCE_SCHEDULE_DAY_INVALID")
 	errAlreadyScannedBoth  = httpx.NewError(http.StatusConflict, "STAFF_ATTENDANCE_ALREADY_SCANNED")
 	errCorrectionReasonReq = httpx.NewError(http.StatusBadRequest, "STAFF_ATTENDANCE_CORRECTION_REASON_REQUIRED")
@@ -66,7 +65,7 @@ func mapError(err error) error {
 	case err == nil:
 		return nil
 	case errors.Is(err, domain.ErrModuleDisabled):
-		return errModuleDisabled
+		return httpx.ErrModuleDisabled
 	case errors.Is(err, domain.ErrRecordNotFound):
 		return httpx.ErrNotFound
 	case errors.Is(err, domain.ErrScheduleDayInvalid):

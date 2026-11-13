@@ -33,7 +33,11 @@ func (s *Service) ListAtRiskStudents(ctx context.Context, tenantID, actorUserID 
 		if err != nil {
 			return err
 		}
-		out, err = s.repo.ListResults(ctx, tenantID, yearID, scope)
+		results, err := s.repo.ListResults(ctx, tenantID, yearID, scope)
+		if err != nil {
+			return err
+		}
+		out, err = s.withoutDisabledSources(ctx, tenantID, results)
 		return err
 	})
 	return out, err
@@ -63,7 +67,11 @@ func (s *Service) GetStudentRisk(ctx context.Context, tenantID, actorUserID, stu
 		if scope.Valid && (!result.ClassID.Valid || result.ClassID.UUID != scope.UUID) {
 			return ErrResultNotFound // scoped out, reported the same as not found
 		}
-		out = result
+		sanitized, err := s.withoutDisabledSources(ctx, tenantID, []StoredResult{result})
+		if err != nil {
+			return err
+		}
+		out = sanitized[0]
 		return nil
 	})
 	return out, err

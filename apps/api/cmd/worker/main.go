@@ -42,6 +42,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform"
+	platformdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
@@ -125,9 +126,27 @@ func run(logger *slog.Logger) error {
 	// serves a login request.
 	identityModule := identity.Register(identity.Dependencies{Pool: pool, Clock: clock.Real{}})
 
+	// platformModule is built first because every job below that belongs
+	// to a toggleable module (permits, announcements, reports, library)
+	// skips tenants with that module turned off, read through these flags.
+	// Per platform's own Dependencies doc comment it leaves Admin nil: this
+	// process never calls CreateTenant, only the export worker cmd/api's
+	// RequestExport enqueues. Flags are read straight from the platform
+	// service rather than through cmd/api's cache: this process gets no
+	// change notification from the console, and its jobs run at most once
+	// a minute.
+	platformDeps := platform.Dependencies{Pool: pool, Clock: clock.Real{}, Mode: cfg.TenancyMode, Bucket: cfg.S3Bucket, Sealer: sealer,
+		Retention: wiring.RetentionPolicy(cfg), Logger: logger}
+	if sharedStorage != nil {
+		platformDeps.Storage = wiring.PlatformStorage{Client: sharedStorage}
+	}
+	platformModule := platform.Register(platformDeps)
+	moduleFlags := wiring.PlatformFlags{Svc: platformModule.Service}
+
 	permitsModule := permits.Register(permits.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Clock: clock.Real{}, Hub: hub,
 		Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
+		Flags: wiring.ModuleFlag{Flags: moduleFlags, Module: platformdomain.ModulePermits},
 	})
 	periodic := permitsModule.RegisterJobs(workers, logger)
 
@@ -156,19 +175,6 @@ func run(logger *slog.Logger) error {
 		Pool: pool, Years: schoolModule.Service, Perms: identityModule.Service, Clock: clock.Real{},
 	})
 
-	// platformModule is built before grading/library's own flag checks
-	// below (unlike cmd/api, nothing here depends on grading/library, so
-	// no late-binding is needed) and, per platform's own Dependencies
-	// doc comment, leaves Admin nil: this process never calls
-	// CreateTenant, only the export worker cmd/api's RequestExport
-	// enqueues.
-	platformDeps := platform.Dependencies{Pool: pool, Clock: clock.Real{}, Mode: cfg.TenancyMode, Bucket: cfg.S3Bucket, Sealer: sealer,
-		Retention: wiring.RetentionPolicy(cfg), Logger: logger}
-	if sharedStorage != nil {
-		platformDeps.Storage = wiring.PlatformStorage{Client: sharedStorage}
-	}
-	platformModule := platform.Register(platformDeps)
-
 	reportsModule := reports.Register(reports.Dependencies{
 		Pool:       pool,
 		Attendance: wiring.AttendanceReports{Svc: attendanceModule.Service},
@@ -193,6 +199,7 @@ func run(logger *slog.Logger) error {
 		// same grade-level class resolution and tenant kop laporan.
 		Academic:   wiring.AcademicReports{Academic: academicModule.Service, School: schoolModule.Service},
 		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service},
+		Flags:      moduleFlags,
 	})
 
 	senders := wiring.SendersFromConfig(cfg, logger)
@@ -231,6 +238,7 @@ func run(logger *slog.Logger) error {
 
 	announcementsModule := announcements.Register(announcements.Dependencies{
 		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,
+		Flags: wiring.ModuleFlag{Flags: moduleFlags, Module: platformdomain.ModuleAnnouncements},
 	})
 
 	// Perms is nil: this process only works the delivery job, it never

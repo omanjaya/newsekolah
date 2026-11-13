@@ -70,6 +70,9 @@ var (
 	ErrTenantNotFound = NewError(http.StatusNotFound, "TENANT_NOT_FOUND")
 	ErrRateLimited    = NewError(http.StatusTooManyRequests, "RATE_LIMITED")
 	ErrForbidden      = NewError(http.StatusForbidden, "FORBIDDEN")
+	// ErrModuleDisabled is returned by the central module gate for any
+	// operation of a feature-flagged module the tenant has switched off.
+	ErrModuleDisabled = NewError(http.StatusForbidden, "MODULE_DISABLED")
 	ErrNotFound       = NewError(http.StatusNotFound, "NOT_FOUND")
 	ErrInternal       = NewError(http.StatusInternalServerError, "INTERNAL_ERROR")
 )

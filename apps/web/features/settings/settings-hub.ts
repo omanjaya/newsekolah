@@ -1,11 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 
-import {
-  filterNavigation,
-  navigation,
-  type NavItem,
-  type NavProfileKind,
-} from "../../lib/navigation";
+import { filterNavigation, navigation, type NavItem } from "../../lib/navigation";
+import type { NavAccess } from "../../lib/navigation-access";
 
 export type SettingsHubSectionKey = "identity" | "access" | "communication" | "workflow";
 
@@ -75,9 +71,7 @@ export interface SettingsHubSection {
 }
 
 export interface BuildSettingsHubInput {
-  can: (permission: string) => boolean;
-  profileKind?: NavProfileKind;
-  roleSlugs?: string[];
+  access: NavAccess;
   query?: string;
   /** Resolves a full i18n key (nav label key or `app.settingsHub.cards.*`) to text. */
   translate: (key: string) => string;
@@ -91,9 +85,7 @@ export interface BuildSettingsHubInput {
  * left with no card are dropped.
  */
 export function buildSettingsHubSections({
-  can,
-  profileKind,
-  roleSlugs = [],
+  access,
   query = "",
   translate,
   registry = navigation,
@@ -103,9 +95,7 @@ export function buildSettingsHubSections({
   );
   const allowed = filterNavigation(
     registry.filter((item) => specKeys.has(item.key)),
-    can,
-    profileKind,
-    roleSlugs,
+    access,
   );
   const byKey = new Map(allowed.map((item) => [item.key, item]));
   const needle = query.trim().toLowerCase();

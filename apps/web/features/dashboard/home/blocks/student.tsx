@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useMemo, type ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
+import { isModuleEnabled } from "../../../../lib/modules/feature-modules";
 import { businessNow } from "../../../../lib/simulation/clock";
 import { todayInZone, useMyCalendarQuery } from "../../../attendance/api";
 import { useMyGradesQuery } from "../../../grading/api";
@@ -59,9 +60,14 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
   const periods = useAllPeriodsQuery(active);
   const subjects = useSubjectsQuery(active);
   const calendar = useMyCalendarQuery(active ? today.slice(0, 7) : "");
-  const leaveRequests = useMyLeaveRequestsQuery(active);
-  const grades = useMyGradesQuery(undefined, active);
-  const library = useMyLibraryProfileQuery(active);
+  // Each of these belongs to a module a school can switch off; a disabled
+  // one is neither queried nor shown.
+  const leaveOn = isModuleEnabled(me, "permits");
+  const gradesOn = isModuleEnabled(me, "grading");
+  const libraryOn = isModuleEnabled(me, "library");
+  const leaveRequests = useMyLeaveRequestsQuery(active && leaveOn);
+  const grades = useMyGradesQuery(undefined, active && gradesOn);
+  const library = useMyLibraryProfileQuery(active && libraryOn);
 
   const subjectMap = useLookup(subjects.data?.data);
 
@@ -339,8 +345,8 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
     tiles,
     left: [
       { key: "student.schedule", node: scheduleNode },
-      { key: "student.leave", node: leaveNode },
+      ...(leaveOn ? [{ key: "student.leave", node: leaveNode }] : []),
     ],
-    right: [{ key: "student.library", node: libraryNode }],
+    right: libraryOn ? [{ key: "student.library", node: libraryNode }] : [],
   };
 }

@@ -11,6 +11,7 @@ import (
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
 	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
+	platformdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
@@ -46,14 +47,27 @@ func (d DisciplineDocuments) DocumentURL(ctx context.Context, tenantID, assetID 
 // RecordViolation itself validates the violation type is active, so an
 // unknown or inactive id surfaces here as permitsdomain.ErrViolationInvalid
 // rather than a generic error the transport layer cannot map to 400.
+//
+// When the tenant has discipline turned off the violation is not recorded
+// and the late-arrival review still succeeds: a turned-off module produces
+// no records, and the permits flow must not fail because of it.
 type LateArrivalDiscipline struct {
 	Discipline *disciplineservice.Service
 	Clock      clock.Clock
+	// Flags reads the discipline feature flag; nil leaves discipline on.
+	Flags ModuleFlagReader
 }
 
 func (d LateArrivalDiscipline) RecordLateArrivalViolation(ctx context.Context, tenantID, studentUserID, violationTypeID, workflowInstanceID, reporterUserID uuid.UUID, note string) error {
+	on, err := moduleEnabled(ctx, d.Flags, tenantID, platformdomain.ModuleDiscipline)
+	if err != nil {
+		return err
+	}
+	if !on {
+		return nil
+	}
 	occurredOn := d.Clock.Now()
-	_, err := d.Discipline.RecordViolation(ctx, tenantID, disciplineservice.RecordInput{
+	_, err = d.Discipline.RecordViolation(ctx, tenantID, disciplineservice.RecordInput{
 		StudentUserID: studentUserID, ViolationTypeID: violationTypeID, OccurredOn: occurredOn, Notes: note,
 		WorkflowInstanceID: uuid.NullUUID{UUID: workflowInstanceID, Valid: true}, ReporterUserID: reporterUserID,
 	})

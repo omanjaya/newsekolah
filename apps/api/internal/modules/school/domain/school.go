@@ -22,6 +22,9 @@ type Branding struct {
 	Timezone       string
 	ProductName    string
 	EducationLevel string
+	// DisabledPublicModules lists the switched-off feature modules that
+	// have pages an anonymous visitor can open (the OPAC); never nil.
+	DisabledPublicModules []string
 }
 
 // DefaultAccentColor is used when a tenant has not set branding.accent_color.
