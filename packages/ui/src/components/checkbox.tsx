@@ -1,6 +1,6 @@
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import type { CheckboxProps as RadixCheckboxProps } from "@radix-ui/react-checkbox";
-import { Check } from "lucide-react";
+import { Check, Minus } from "lucide-react";
 import { forwardRef } from "react";
 
 import { cn } from "../utils/cn.js";
@@ -31,15 +31,22 @@ export const Checkbox = forwardRef<HTMLButtonElement, CheckboxProps>(function Ch
       <span
         aria-hidden="true"
         className={cn(
-          "flex size-4 items-center justify-center rounded-xs border border-border bg-surface",
-          "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
+          "flex size-4 items-center justify-center rounded-xs border border-border-strong bg-surface",
+          "transition-colors group-hover:border-fg-muted",
+          // Checked and indeterminate ("some rows selected") both fill with
+          // the accent, so a partial selection never looks unticked.
           "group-data-[state=checked]:border-accent group-data-[state=checked]:bg-accent",
+          "group-data-[state=indeterminate]:border-accent group-data-[state=indeterminate]:bg-accent",
           "group-disabled:opacity-50",
-          "group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-accent",
+          "group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus-ring",
         )}
       >
-        <CheckboxPrimitive.Indicator>
-          <Check className="size-3 text-accent-fg" aria-hidden="true" />
+        <CheckboxPrimitive.Indicator className="flex items-center justify-center text-accent-fg">
+          <Check className="size-3 group-data-[state=indeterminate]:hidden" aria-hidden="true" />
+          <Minus
+            className="hidden size-3 group-data-[state=indeterminate]:block"
+            aria-hidden="true"
+          />
         </CheckboxPrimitive.Indicator>
       </span>
     </CheckboxPrimitive.Root>

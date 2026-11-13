@@ -39,16 +39,19 @@ export function DataTableHead<TData>({
           {headerGroup.headers.map((header) => (
             <th
               key={header.id}
+              aria-sort={
+                header.column.getCanSort() ? ariaSort(header.column.getIsSorted()) : undefined
+              }
               className={cn(
                 HEADER_CELL_PADDING[density],
-                "text-left text-[12px] font-semibold text-fg-muted",
+                "text-left text-caption font-semibold text-fg-muted",
               )}
               style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
             >
               {header.isPlaceholder ? null : header.column.getCanSort() ? (
                 <button
                   type="button"
-                  className="flex items-center gap-1 py-2 hover:text-fg"
+                  className="flex items-center gap-1 py-2 transition-colors hover:text-fg"
                   onClick={header.column.getToggleSortingHandler()}
                 >
                   {flexRender(header.column.columnDef.header, header.getContext())}
@@ -65,6 +68,13 @@ export function DataTableHead<TData>({
       ))}
     </thead>
   );
+}
+
+/** What `aria-sort` should announce for a sortable column's current direction. */
+function ariaSort(direction: false | "asc" | "desc"): "ascending" | "descending" | "none" {
+  if (direction === "asc") return "ascending";
+  if (direction === "desc") return "descending";
+  return "none";
 }
 
 function SortIcon({ direction }: { direction: false | "asc" | "desc" }): ReactElement {

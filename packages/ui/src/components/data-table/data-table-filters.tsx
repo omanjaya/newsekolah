@@ -142,7 +142,7 @@ export function DataTableFilters({
       {hasActiveFilter && (
         <button
           type="button"
-          className="h-8 shrink-0 rounded-full px-2 text-[13px] font-medium text-accent hover:underline"
+          className="h-8 shrink-0 rounded-full px-2 text-label text-accent hover:underline"
           onClick={() => {
             for (const filter of filters) {
               if (isFilterActive(filter)) clearFilter(filter);
@@ -156,8 +156,11 @@ export function DataTableFilters({
   );
 }
 
+// Each half of a pill is rounded itself, rather than clipped by an
+// `overflow-hidden` shell: clipping would also cut off the keyboard focus
+// ring the base styles draw around whichever half has focus.
 const PILL_TRIGGER_CLASS =
-  "flex h-11 md:h-8 items-center gap-1 px-3 text-[13px] font-medium outline-none";
+  "flex h-11 md:h-8 items-center gap-1 rounded-full px-3 text-label transition-colors";
 
 function FilterPillShell({
   active,
@@ -173,7 +176,7 @@ function FilterPillShell({
   return (
     <div
       className={cn(
-        "inline-flex items-center overflow-hidden rounded-full border",
+        "inline-flex items-center rounded-full border",
         active
           ? "border-accent bg-accent-soft text-accent-soft-fg"
           : "border-border bg-surface text-fg",
@@ -184,7 +187,7 @@ function FilterPillShell({
         <button
           type="button"
           aria-label={removeLabel}
-          className="flex h-11 w-11 shrink-0 items-center justify-center md:h-8 md:w-8"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-state-hover md:h-8 md:w-8"
           onClick={onRemove}
         >
           <X className="size-3.5" aria-hidden="true" />
@@ -221,7 +224,7 @@ function DataTableFilterPill({
             aria-pressed={active}
             className={cn(
               PILL_TRIGGER_CLASS,
-              active ? "text-accent-soft-fg" : "text-fg hover:bg-bg",
+              active ? "text-accent-soft-fg hover:bg-state-hover" : "text-fg hover:bg-state-hover",
             )}
             onClick={() => {
               filter.onChange?.(active ? "" : activeValue);
@@ -246,7 +249,9 @@ function DataTableFilterPill({
               type="button"
               className={cn(
                 PILL_TRIGGER_CLASS,
-                active ? "text-accent-soft-fg" : "text-fg hover:bg-bg",
+                active
+                  ? "text-accent-soft-fg hover:bg-state-hover"
+                  : "text-fg hover:bg-state-hover",
               )}
             >
               {triggerLabel}
@@ -258,7 +263,7 @@ function DataTableFilterPill({
                 <button
                   key={option.value}
                   type="button"
-                  className="flex h-11 md:h-9 items-center justify-between rounded-xs px-2 text-left text-[13px] text-fg outline-none hover:bg-bg"
+                  className="flex h-11 md:h-9 items-center justify-between rounded-sm px-2 text-left text-body-sm text-fg transition-colors hover:bg-state-hover focus-visible:bg-state-hover"
                   onClick={() => {
                     filter.onChange?.(option.value);
                     setOpen(false);
@@ -367,7 +372,9 @@ function DateRangeFilterPill({
               type="button"
               className={cn(
                 PILL_TRIGGER_CLASS,
-                active ? "text-accent-soft-fg" : "text-fg hover:bg-bg",
+                active
+                  ? "text-accent-soft-fg hover:bg-state-hover"
+                  : "text-fg hover:bg-state-hover",
               )}
             >
               {triggerLabel}
@@ -384,10 +391,10 @@ function DateRangeFilterPill({
                         key={preset.label}
                         type="button"
                         className={cn(
-                          "flex h-9 items-center gap-1 rounded-full border px-3 text-[13px] font-medium outline-none",
+                          "flex h-9 items-center gap-1 rounded-full border px-3 text-label transition-colors",
                           presetActive
                             ? "border-accent bg-accent-soft text-accent-soft-fg"
-                            : "border-border bg-surface text-fg hover:bg-bg",
+                            : "border-border bg-surface text-fg hover:bg-state-hover",
                         )}
                         onClick={() => {
                           commit(preset.from, preset.to);
@@ -402,8 +409,8 @@ function DateRangeFilterPill({
                 </div>
               )}
               <div className="flex items-end gap-2">
-                <label className="flex min-w-0 flex-1 flex-col gap-1 text-[13px]">
-                  <span className="font-medium text-fg">{fromLabel}</span>
+                <label className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="text-label text-fg">{fromLabel}</span>
                   <Input
                     type="date"
                     className="w-full min-w-0"
@@ -414,8 +421,8 @@ function DateRangeFilterPill({
                     }}
                   />
                 </label>
-                <label className="flex min-w-0 flex-1 flex-col gap-1 text-[13px]">
-                  <span className="font-medium text-fg">{toLabel}</span>
+                <label className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="text-label text-fg">{toLabel}</span>
                   <Input
                     type="date"
                     className="w-full min-w-0"
@@ -428,7 +435,7 @@ function DateRangeFilterPill({
                 </label>
               </div>
               {invalid && (
-                <p role="alert" className="text-[12px] text-danger">
+                <p role="alert" className="text-caption text-danger">
                   {invalidLabel}
                 </p>
               )}

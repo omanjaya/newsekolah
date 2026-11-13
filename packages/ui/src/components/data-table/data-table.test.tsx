@@ -203,6 +203,20 @@ describe("DataTable", () => {
     expect(screen.queryByText("Siti Aminah")).not.toBeInTheDocument();
   });
 
+  it("announces the sort direction on sortable column headers", async () => {
+    render(<Harness data={ROWS} rowCount={ROWS.length} />);
+    const header = screen.getByRole("columnheader", { name: "Nama" });
+    expect(header).toHaveAttribute("aria-sort", "none");
+    // A column that cannot sort says nothing about order.
+    expect(screen.getByRole("columnheader", { name: "Aksi" })).not.toHaveAttribute("aria-sort");
+
+    await userEvent.click(screen.getByRole("button", { name: "Nama" }));
+    expect(header).toHaveAttribute("aria-sort", "ascending");
+
+    await userEvent.click(screen.getByRole("button", { name: "Nama" }));
+    expect(header).toHaveAttribute("aria-sort", "descending");
+  });
+
   it("calls onSortingChange when a sortable header is clicked", async () => {
     const onSortingChange = vi.fn();
     render(<Harness data={ROWS} rowCount={ROWS.length} onSortingChange={onSortingChange} />);

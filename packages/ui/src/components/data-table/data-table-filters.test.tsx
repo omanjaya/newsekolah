@@ -55,6 +55,23 @@ describe("DataTableFilters", () => {
     expect(screen.queryByRole("button", { name: /Hapus filter/ })).not.toBeInTheDocument();
   });
 
+  it("keeps a visible focus ring on a pill reached by keyboard", async () => {
+    const user = userEvent.setup();
+    render(<DataTableFilters filters={[materialTypeFilter({ value: "book" })]} />);
+    await user.tab();
+    const trigger = screen.getByRole("button", { name: "Jenis bahan: Buku" });
+    expect(trigger).toHaveFocus();
+    // The base :focus-visible outline is what shows the ring; nothing on
+    // the pill may switch it off or clip it.
+    expect(trigger).not.toHaveClass("outline-none");
+    expect(trigger.parentElement).not.toHaveClass("overflow-hidden");
+
+    await user.tab();
+    const remove = screen.getByRole("button", { name: "Hapus filter Jenis bahan" });
+    expect(remove).toHaveFocus();
+    expect(remove).not.toHaveClass("outline-none");
+  });
+
   it("opens the popover and applies the chosen option", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
