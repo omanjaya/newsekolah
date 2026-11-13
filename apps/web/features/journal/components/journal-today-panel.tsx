@@ -1,5 +1,6 @@
 "use client";
 
+import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
 import { Alert, Badge, Button, Card, Dialog, DialogContent, Skeleton, cn } from "@newsekolah/ui";
@@ -10,7 +11,7 @@ import { useMemo, useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { bentoCells } from "../../../lib/layout/bento";
-import { useSession } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useSimulation } from "../../../lib/simulation/clock";
 import { todayInZone } from "../../../lib/tenant-date";
 import {
@@ -62,7 +63,15 @@ export function useJournalTodayData(): {
   const { me } = useSession();
   const year = useActiveYear();
 
-  const schedules = useSchedulesQuery({ academicYearId: year.id, teacherUserId: me?.id });
+  // Roles without schedule access (e.g. security staff) can still open the
+  // journal history; they have no lessons to catch up on, so skip the request
+  // instead of turning its 403 into a "failed to load" alert.
+  const canViewSchedules = useCan("view_schedules");
+  const schedules = useSchedulesQuery({
+    academicYearId: year.id,
+    teacherUserId: me?.id,
+    enabled: canViewSchedules,
+  });
   const schoolDays = useSchoolDaysQuery();
   // Page 0 alone is enough: the server already orders by lesson_date desc,
   // and 30 rows comfortably covers a week even for a teacher with several
@@ -109,7 +118,8 @@ export function useJournalTodayData(): {
 
   return {
     loading: schedules.isLoading || schoolDays.isLoading || journals.isLoading,
-    isError: schedules.isError,
+    isError:
+      schedules.isError && !(schedules.error instanceof ApiError && schedules.error.status === 403),
     refetch: () => {
       void schedules.refetch();
     },

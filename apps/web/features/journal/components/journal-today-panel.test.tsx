@@ -1,3 +1,4 @@
+import { ApiError } from "@newsekolah/api-client";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -6,6 +7,15 @@ import { JournalTodayPanel } from "./journal-today-panel";
 
 const schedulesData = vi.hoisted(() => ({ value: [] as unknown[] }));
 const journalsData = vi.hoisted(() => ({ value: [] as unknown[] }));
+const canViewSchedules = vi.hoisted(() => ({ value: true }));
+const scheduleQuery = vi.hoisted(() => {
+  const state: { error: Error | null; isError: boolean; lastFilter: unknown } = {
+    error: null,
+    isError: false,
+    lastFilter: undefined,
+  };
+  return state;
+});
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -13,6 +23,7 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+  useCan: () => canViewSchedules.value,
 }));
 vi.mock("../../../lib/simulation/clock", () => ({
   useSimulation: () => ({ revision: 0 }),
@@ -52,7 +63,16 @@ vi.mock("../../reference/api", () => ({
     new Map((items ?? []).map((item) => [item.id, item])),
 }));
 vi.mock("../../schedule/api", () => ({
-  useSchedulesQuery: () => ({ data: { data: schedulesData.value }, isLoading: false }),
+  useSchedulesQuery: (filter: unknown) => {
+    scheduleQuery.lastFilter = filter;
+    return {
+      data: { data: schedulesData.value },
+      isLoading: false,
+      isError: scheduleQuery.isError,
+      error: scheduleQuery.error,
+      refetch: vi.fn(),
+    };
+  },
 }));
 vi.mock("../api", () => ({
   useJournalsQuery: () => ({ data: { data: journalsData.value }, isLoading: false }),
@@ -67,6 +87,9 @@ vi.mock("./journal-form", () => ({
 const WEDNESDAY = 3;
 
 beforeEach(() => {
+  canViewSchedules.value = true;
+  scheduleQuery.error = null;
+  scheduleQuery.isError = false;
   schedulesData.value = [];
   journalsData.value = [];
 });
@@ -121,4 +144,18 @@ it("gives an unfilled lesson a primary 'write journal' action and a filled one a
 
   await user.click(writeButton);
   expect(await screen.findByTestId("journal-form")).toHaveTextContent("class-1");
+});
+
+it("does not request schedules for a viewer without schedule access", () => {
+  canViewSchedules.value = false;
+  const { container } = render(<JournalTodayPanel />);
+  expect(scheduleQuery.lastFilter).toMatchObject({ enabled: false });
+  expect(container).toBeEmptyDOMElement();
+});
+
+it("treats a 403 from the schedule request as not applicable, not as a load failure", () => {
+  scheduleQuery.isError = true;
+  scheduleQuery.error = new ApiError({ status: 403, code: "FORBIDDEN", message: "forbidden" });
+  const { container } = render(<JournalTodayPanel />);
+  expect(container).toBeEmptyDOMElement();
 });
