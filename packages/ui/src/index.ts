@@ -9,7 +9,36 @@ export {
   CardFooter,
   CardHeader,
   CardTitle,
+  type CardHeaderProps,
+  type CardPadding,
+  type CardProps,
+  type CardTitleProps,
+  type CardTone,
 } from "./components/card.js";
+export { SectionHeader, type SectionHeaderProps } from "./components/section-header.js";
+export { List, type ListProps, type ListVariant } from "./components/list.js";
+export { ListRow, type ListRowProps } from "./components/list-row.js";
+export {
+  DataList,
+  DataListItem,
+  type DataListItemProps,
+  type DataListLayout,
+  type DataListProps,
+} from "./components/data-list.js";
+export {
+  TextLink,
+  type TextLinkProps,
+  type TextLinkTone,
+  type TextLinkVariant,
+} from "./components/text-link.js";
+export {
+  UiLinkProvider,
+  useUiLink,
+  type UiLinkComponent,
+  type UiLinkProps,
+} from "./components/ui-link.js";
+export { IconCircle, type IconCircleProps, type IconCircleSize } from "./components/icon-circle.js";
+export type { CategoryTone, SemanticTone, Tone } from "./components/tone.js";
 export { IconButton, type IconButtonProps } from "./components/icon-button.js";
 export {
   Table,
@@ -112,28 +141,76 @@ export {
   type ToastApi,
   type ToasterProps,
 } from "./components/toast.js";
-export { Alert, type AlertProps } from "./components/alert.js";
-export { Badge, type BadgeProps } from "./components/badge.js";
+export { Alert, type AlertProps, type AlertVariant } from "./components/alert.js";
+export {
+  Badge,
+  badgeClassName,
+  type BadgeAppearance,
+  type BadgeProps,
+  type BadgeSize,
+  type BadgeTone,
+} from "./components/badge.js";
+export { CountBadge, type CountBadgeProps, type CountBadgeTone } from "./components/count-badge.js";
 export { StatusBadge, type StatusBadgeProps, type StatusName } from "./components/status-badge.js";
 export {
   SEMANTIC_STATUS_TOKEN,
+  SEMANTIC_STATUS_TONE,
   SemanticStatusBadge,
   semanticStatusToken,
+  semanticStatusTone,
   type SemanticStatus,
   type SemanticStatusBadgeProps,
 } from "./components/semantic-status.js";
-export { Avatar, type AvatarProps } from "./components/avatar.js";
+export {
+  Avatar,
+  type AvatarPixelSize,
+  type AvatarProps,
+  type AvatarSize,
+  type AvatarTone,
+} from "./components/avatar.js";
+export { AvatarGroup, type AvatarGroupProps } from "./components/avatar-group.js";
 export { Skeleton } from "./components/skeleton.js";
-export { Stat, StatGrid, type StatProps, type StatGridProps } from "./components/stat.js";
-export { HeroCard, type HeroCardProps } from "./components/hero-card.js";
+export {
+  SkeletonCards,
+  SkeletonDetail,
+  SkeletonForm,
+  SkeletonList,
+  type SkeletonCardsProps,
+  type SkeletonDetailProps,
+  type SkeletonFormProps,
+  type SkeletonListProps,
+} from "./components/skeleton-presets.js";
+export {
+  Stat,
+  StatGrid,
+  type StatAppearance,
+  type StatCategory,
+  type StatDelta,
+  type StatGridProps,
+  type StatGridVariant,
+  type StatProps,
+} from "./components/stat.js";
+export { HeroCard, type HeroCardProps, type HeroCardTone } from "./components/hero-card.js";
 export { StatTile, type StatTileProps, type StatTileTone } from "./components/stat-tile.js";
-export { EmptyState, type EmptyStateProps } from "./components/empty-state.js";
+export {
+  EmptyState,
+  EmptyStateInlineScope,
+  type EmptyStateProps,
+  type EmptyStateVariant,
+} from "./components/empty-state.js";
+export {
+  FilteredEmptyState,
+  type FilteredEmptyStateProps,
+} from "./components/filtered-empty-state.js";
+export { StatePage, type StatePageKind, type StatePageProps } from "./components/state-page.js";
 export { SafeHtml, type SafeHtmlProps } from "./components/safe-html.js";
 export {
   PageHeader,
+  type PageHeaderAction,
   type PageHeaderBreadcrumbItem,
   type PageHeaderProps,
 } from "./components/page-header.js";
+export { Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from "./components/breadcrumb.js";
 export { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/tabs.js";
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/tooltip.js";
 export {
