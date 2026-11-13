@@ -19,6 +19,15 @@ export interface UiLabels {
   calendarNextYear: string;
   /** Accessible name of the month caption that opens the month and year view. */
   calendarChooseMonth: (caption: string) => string;
+  datePickerPlaceholder: string;
+  datePickerClear: string;
+  dateRangePickerPlaceholder: string;
+  dateRangePickerClear: string;
+  dateRangePickerPickStart: string;
+  dateRangePickerPickEnd: string;
+  dateRangePickerPresets: string;
+  monthPickerPlaceholder: string;
+  monthPickerClear: string;
 }
 
 const DEFAULT_UI_LABELS: UiLabels = {
@@ -34,6 +43,15 @@ const DEFAULT_UI_LABELS: UiLabels = {
   calendarPreviousYear: "Tahun sebelumnya",
   calendarNextYear: "Tahun berikutnya",
   calendarChooseMonth: (caption) => `${caption}, pilih bulan dan tahun`,
+  datePickerPlaceholder: "Pilih tanggal",
+  datePickerClear: "Hapus tanggal",
+  dateRangePickerPlaceholder: "Pilih rentang tanggal",
+  dateRangePickerClear: "Hapus rentang tanggal",
+  dateRangePickerPickStart: "Pilih tanggal mulai",
+  dateRangePickerPickEnd: "Pilih tanggal akhir",
+  dateRangePickerPresets: "Rentang cepat",
+  monthPickerPlaceholder: "Pilih bulan",
+  monthPickerClear: "Hapus bulan",
 };
 
 const UiLabelsContext = createContext<UiLabels>(DEFAULT_UI_LABELS);

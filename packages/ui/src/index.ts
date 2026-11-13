@@ -56,6 +56,13 @@ export {
   type CalendarSingleProps,
   type DateRange,
 } from "./components/calendar.js";
+export { DatePicker, type DatePickerProps } from "./components/date-picker.js";
+export {
+  DateRangePicker,
+  type DateRangePickerProps,
+  type DateRangePreset,
+} from "./components/date-range-picker.js";
+export { MonthPicker, type MonthPickerProps } from "./components/month-picker.js";
 export { Switch, type SwitchProps } from "./components/switch.js";
 export {
   Form,
