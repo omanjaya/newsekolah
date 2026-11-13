@@ -91,7 +91,9 @@ func TestRoleTestingSwitchRefreshAndReturn(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, first.Auth.SessionID, proof.ChildSessionID)
 	require.Equal(t, f.actorID, proof.ActorID)
-	require.LessOrEqual(t, time.Until(first.Deadline), 30*time.Minute)
+	// Measured against the fixture clock the service used, not the wall
+	// clock: the fixture clock can sit a few milliseconds ahead of it.
+	require.LessOrEqual(t, first.Deadline.Sub(f.clock.Now()), 30*time.Minute)
 
 	refreshed, err := f.svc.RefreshRoleTesting(ctx, f.tenantID, first.Proof, first.Auth.RefreshToken)
 	require.NoError(t, err)
