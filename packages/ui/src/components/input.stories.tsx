@@ -25,6 +25,8 @@ function Gallery() {
       <PasswordInput aria-label="Kata sandi" defaultValue="rahasia123" />
       <SearchInput aria-label="Cari" defaultValue="Nadia" />
       <Input aria-label="Tidak valid" invalid defaultValue="admin" />
+      {/* A boxed field keeps its danger border while focused, as the plain one does. */}
+      <Input aria-label="Nominal tidak valid" leading="Rp" invalid defaultValue="-5.000" />
       <Input aria-label="Nonaktif" disabled defaultValue="Terkunci" />
       <Textarea
         aria-label="Catatan"

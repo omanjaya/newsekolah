@@ -122,6 +122,46 @@ export const RowHeaders: Story = {
   ),
 };
 export const RowHeadersDark: Story = { ...RowHeaders, globals: { theme: "dark" } };
+/** At 390px the grade sheet keeps its columns and scrolls sideways inside its card. */
+export const RowHeadersPhone: Story = {
+  render: () => (
+    <Table density="compact" className="min-w-[32rem]">
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-40">Siswa</TableHead>
+          {gradeComponents.map((component) => (
+            <TableHead key={component.code} className="text-right align-top">
+              <span className="flex flex-col items-end gap-0.5">
+                <span className="text-fg">{component.code}</span>
+                <span className="font-normal">Bobot {component.weight}%</span>
+              </span>
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {students.map((student) => (
+          <TableRow key={student.id}>
+            <TableHead>{student.name}</TableHead>
+            {student.scores.map((score, index) => (
+              <TableCell key={gradeComponents[index]?.code} className="text-right tabular-nums">
+                {score}
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  ),
+  parameters: { layout: "fullscreen" },
+  decorators: [
+    (Story) => (
+      <div className="mx-auto w-[390px] max-w-full p-4">
+        <Story />
+      </div>
+    ),
+  ],
+};
 
 export const Compact: Story = {
   render: () => (
