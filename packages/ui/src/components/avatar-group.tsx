@@ -1,6 +1,6 @@
 "use client";
 
-import { Children, type ComponentPropsWithoutRef, type ReactNode } from "react";
+import { Children, type ComponentPropsWithRef, type ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -23,16 +23,18 @@ const OVERLAP_CLASS: Record<AvatarPixelSize, string> = {
   64: "-space-x-3",
 };
 
+// The weight comes after the type role: a role sets its own weight, and
+// tailwind-merge drops a weight written before it.
 const MORE_SIZE_CLASS: Record<AvatarPixelSize, string> = {
-  24: "size-6 text-caption",
-  32: "size-8 text-caption",
-  40: "size-10 text-label",
-  44: "size-11 text-label",
-  48: "size-12 text-label",
-  64: "size-16 text-body",
+  24: "size-6 text-caption font-semibold",
+  32: "size-8 text-caption font-semibold",
+  40: "size-10 text-label font-semibold",
+  44: "size-11 text-label font-semibold",
+  48: "size-12 text-label font-semibold",
+  64: "size-16 text-body font-semibold",
 };
 
-export interface AvatarGroupProps extends ComponentPropsWithoutRef<"div"> {
+export interface AvatarGroupProps extends ComponentPropsWithRef<"div"> {
   /** Avatar elements; leave their `size` unset so they take the group's. */
   children: ReactNode;
   size?: AvatarSize;
@@ -64,7 +66,7 @@ export function AvatarGroup({ children, size = 32, max, className, ...props }: A
             role="img"
             aria-label={labels.avatarGroupMore(hidden)}
             className={cn(
-              "inline-flex shrink-0 items-center justify-center rounded-full bg-surface-sunken font-semibold text-fg-muted tabular-nums",
+              "inline-flex shrink-0 items-center justify-center rounded-full bg-surface-sunken text-fg-muted tabular-nums",
               MORE_SIZE_CLASS[pixels],
             )}
           >
