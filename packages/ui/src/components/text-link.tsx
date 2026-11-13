@@ -14,9 +14,11 @@ export type TextLinkTone = "accent" | "muted";
 
 const VARIANT_CLASS: Record<TextLinkVariant, string> = {
   // "Lihat semua": the label role, underlined on hover only. On a touch
-  // screen an invisible margin widens the target to 44px.
+  // screen an invisible box 44px tall, centred on the text and 8px wider
+  // on each side, is the target, whatever height the link's own box has
+  // (an inline box is shorter than its line, an inline-flex one is not).
   standalone:
-    "relative text-label hover:underline pointer-coarse:after:absolute pointer-coarse:after:-inset-x-2 pointer-coarse:after:-inset-y-3 pointer-coarse:after:content-['']",
+    "relative text-label hover:underline pointer-coarse:after:absolute pointer-coarse:after:-inset-x-2 pointer-coarse:after:top-1/2 pointer-coarse:after:h-11 pointer-coarse:after:-translate-y-1/2 pointer-coarse:after:content-['']",
   // Inside running text: the surrounding size and weight, always underlined,
   // so the link is not told apart by colour alone.
   inline: "font-semibold underline",

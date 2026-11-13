@@ -24,6 +24,27 @@ describe("TextLink", () => {
     await expectNoAxeViolations(container);
   });
 
+  // An inset hit area grows from the link's own box, which is shorter than
+  // its line for inline text; a fixed 44px box centred on the text is the
+  // same height for an inline and an inline-flex (external) link.
+  it("gives a touch screen a 44px target centred on the text", () => {
+    render(
+      <>
+        <TextLink href="/a">Lihat semua</TextLink>
+        <TextLink href="https://example.org" external>
+          Panduan
+        </TextLink>
+      </>,
+    );
+    for (const name of ["Lihat semua", /Panduan/]) {
+      expect(screen.getByRole("link", { name })).toHaveClass(
+        "pointer-coarse:after:h-11",
+        "pointer-coarse:after:top-1/2",
+        "pointer-coarse:after:-translate-y-1/2",
+      );
+    }
+  });
+
   it("navigates through the provided client link component", () => {
     render(
       <UiLinkProvider component={ClientLink}>
