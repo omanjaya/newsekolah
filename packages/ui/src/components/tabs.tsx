@@ -1,56 +1,145 @@
-import * as TabsPrimitive from "@radix-ui/react-tabs";
-import { forwardRef, type ComponentPropsWithoutRef } from "react";
+"use client";
 
+import * as TabsPrimitive from "@radix-ui/react-tabs";
+import {
+  createContext,
+  forwardRef,
+  useContext,
+  useRef,
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+} from "react";
+
+import { useActiveIndicator } from "../hooks/use-active-indicator.js";
+import { useScrollEdges } from "../hooks/use-scroll-edges.js";
 import { cn } from "../utils/cn.js";
+
+import {
+  StripCount,
+  stripIndicatorClass,
+  stripItemClass,
+  stripScrollerClass,
+  stripTrackClass,
+  type StripSize,
+  type StripVariant,
+} from "./tab-styles.js";
+
+export type TabsVariant = StripVariant;
+export type TabsSize = StripSize;
+
+interface TabsListContextValue {
+  variant: TabsVariant;
+  size: TabsSize;
+  fullWidth: boolean;
+}
+
+const TabsListContext = createContext<TabsListContextValue>({
+  variant: "pill",
+  size: "md",
+  fullWidth: false,
+});
 
 export const Tabs = TabsPrimitive.Root;
 
-export const TabsList = forwardRef<
-  HTMLDivElement,
-  ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(function TabsList({ className, ...props }, ref) {
+export interface TabsListProps extends ComponentPropsWithoutRef<typeof TabsPrimitive.List> {
+  /**
+   * "pill" (default): a sunken track with a raised pill under the active
+   * tab, for switching views inside a section. "underline": a line with an
+   * accent bar, for the top level of a detail page.
+   */
+  variant?: TabsVariant;
+  /** "md" (default) or "sm" for a compact strip in a toolbar or card header. */
+  size?: TabsSize;
+  /** Stretch across the container, the tabs sharing the width equally. */
+  fullWidth?: boolean;
+}
+
+/**
+ * Always one row. A list wider than its container scrolls sideways inside
+ * its own track, with fades at the edges that have more tabs past them,
+ * instead of wrapping or pushing the page wider; the active tab is
+ * scrolled into view. The active indicator slides between tabs (200ms,
+ * transform only, a jump under reduced motion).
+ */
+export const TabsList = forwardRef<HTMLDivElement, TabsListProps>(function TabsList(
+  { className, variant = "pill", size = "md", fullWidth = false, children, ...props },
+  ref,
+) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const indicatorRef = useRef<HTMLSpanElement>(null);
+  useScrollEdges(scrollerRef, { axis: "x" });
+  useActiveIndicator(scrollerRef, indicatorRef, '[role="tab"][data-state="active"]');
+
   return (
-    <TabsPrimitive.List
-      ref={ref}
-      className={cn(
-        // Never wider than its container: on a phone five or six tabs
-        // scroll sideways inside the track instead of pushing the page
-        // wider. The 4px padding leaves room for the focus ring, which the
-        // scroll container would otherwise clip.
-        "inline-flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full bg-surface-sunken p-1",
-        "scrollbar-none overscroll-x-contain",
-        className,
-        // Always one row, after the caller's classes so `flex-wrap` cannot
-        // undo it: a wrapped list inside the rounded track becomes a
-        // two-row capsule. The track scrolls instead.
-        "flex-nowrap",
-      )}
-      {...props}
-    />
+    <TabsListContext.Provider value={{ variant, size, fullWidth }}>
+      <TabsPrimitive.List
+        ref={ref}
+        data-variant={variant}
+        className={cn(
+          stripTrackClass(variant, fullWidth),
+          className,
+          // A caller's `flex-wrap` (a workaround from before the strip
+          // scrolled) must not turn the track into a two-row capsule.
+          "flex-nowrap",
+        )}
+        {...props}
+      >
+        <div ref={scrollerRef} data-strip="" className={stripScrollerClass(variant)}>
+          <span ref={indicatorRef} aria-hidden="true" className={stripIndicatorClass(variant)} />
+          {children}
+        </div>
+      </TabsPrimitive.List>
+    </TabsListContext.Provider>
   );
 });
 
-export const TabsTrigger = forwardRef<
-  HTMLButtonElement,
-  ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
->(function TabsTrigger({ className, ...props }, ref) {
+export interface TabsTriggerProps extends ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> {
+  /** A count after the label, e.g. pending items behind this tab. */
+  count?: number;
+  /** A Lucide icon before the label, sized for you. */
+  icon?: ReactNode;
+}
+
+const ACTIVE_COUNT =
+  "group-data-[state=active]/tab:bg-accent-soft group-data-[state=active]/tab:text-accent-soft-fg";
+
+export const TabsTrigger = forwardRef<HTMLButtonElement, TabsTriggerProps>(function TabsTrigger(
+  { className, count, icon, children, ...props },
+  ref,
+) {
+  const { variant, size, fullWidth } = useContext(TabsListContext);
   return (
     <TabsPrimitive.Trigger
       ref={ref}
       className={cn(
-        // Pill-style active tab (docs/07-ui-ux.md, "Hijau Segar"): the
-        // whole trigger is the target, not just an underline, so it clears
-        // 44px tall on a phone the same way Button does.
-        "flex min-h-11 shrink-0 items-center justify-center rounded-full px-4 text-label whitespace-nowrap text-fg-muted",
-        "md:min-h-0 md:h-8",
-        // The active pill's fill and shadow fade in with the text color.
-        "transition-[color,background-color,box-shadow]",
-        "hover:text-fg",
-        "data-[state=active]:bg-surface data-[state=active]:text-fg data-[state=active]:shadow-1",
+        "group/tab",
+        stripItemClass(variant, size, fullWidth),
+        "data-[state=active]:text-fg",
+        variant === "pill"
+          ? [
+              // Until the sliding indicator is placed (server render, no
+              // JS) the active tab paints its own pill.
+              "[[data-strip]:not([data-indicator=ready])_&]:data-[state=active]:bg-surface-raised [[data-strip]:not([data-indicator=ready])_&]:data-[state=active]:shadow-1",
+              "data-[state=inactive]:hover:bg-state-hover data-[state=inactive]:active:bg-state-pressed",
+            ]
+          : [
+              "[[data-strip]:not([data-indicator=ready])_&]:data-[state=active]:shadow-[inset_0_-2px_0_var(--color-accent)]",
+              "data-[state=inactive]:hover:bg-state-hover data-[state=inactive]:active:bg-state-pressed",
+            ],
         className,
       )}
       {...props}
-    />
+    >
+      {icon !== undefined && (
+        <span className="flex shrink-0" aria-hidden="true">
+          {icon}
+        </span>
+      )}
+      {children}
+      {count !== undefined && (
+        <StripCount count={count} variant={variant} activeClassName={ACTIVE_COUNT} />
+      )}
+    </TabsPrimitive.Trigger>
   );
 });
 
@@ -58,5 +147,11 @@ export const TabsContent = forwardRef<
   HTMLDivElement,
   ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
 >(function TabsContent({ className, ...props }, ref) {
-  return <TabsPrimitive.Content ref={ref} className={cn("pt-4", className)} {...props} />;
+  return (
+    <TabsPrimitive.Content
+      ref={ref}
+      className={cn("pt-4 focus-visible:rounded-sm", className)}
+      {...props}
+    />
+  );
 });

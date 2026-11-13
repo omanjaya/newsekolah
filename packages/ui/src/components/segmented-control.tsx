@@ -11,7 +11,10 @@ import {
 } from "react";
 
 import { useControllableState } from "../hooks/use-controllable-state.js";
+import { useScrollEdges } from "../hooks/use-scroll-edges.js";
 import { cn } from "../utils/cn.js";
+
+import { StripCount, stripItemClass, type StripSize } from "./tab-styles.js";
 
 export interface SegmentedControlOption<T extends string = string> {
   value: T;
@@ -29,7 +32,7 @@ export interface SegmentedControlProps<T extends string = string> {
   defaultValue?: T;
   onValueChange?: (value: T) => void;
   /** "md" (default) for a mode switch, "sm" for a compact filter in a toolbar. */
-  size?: "sm" | "md";
+  size?: StripSize;
   /** Stretch across the container, segments sharing the width equally. */
   fullWidth?: boolean;
   disabled?: boolean;
@@ -45,10 +48,8 @@ export interface SegmentedControlProps<T extends string = string> {
   className?: string;
 }
 
-const ITEM_SIZE = {
-  sm: "h-11 px-3 md:h-7",
-  md: "h-11 px-4 md:h-9",
-} as const;
+const ACTIVE_COUNT =
+  "group-data-[state=checked]/tab:bg-accent-soft group-data-[state=checked]/tab:text-accent-soft-fg";
 
 /** Keeps the checked segment inside a scrolled-away overflow, without moving the page. */
 function revealChecked(scroller: HTMLElement | null) {
@@ -64,10 +65,12 @@ function revealChecked(scroller: HTMLElement | null) {
 
 /**
  * A small set of mutually exclusive modes or filters shown as one pill
- * track ("Semua / Menunggu / Disetujui"). Radio semantics: arrow keys move
- * and select, Tab enters at the selected segment. Segments share one width,
- * so the white indicator slides between them with a transform only. On a
- * phone a track wider than the screen scrolls sideways.
+ * track ("Semua / Menunggu / Disetujui"), the same track, pill and item
+ * sizes as the pill `Tabs`. Radio semantics: arrow keys move and select,
+ * Tab enters at the selected segment, and there is no panel to point at,
+ * which is why a filter uses this and not `Tabs`. Segments share one
+ * width, so the raised pill slides between them by index, transform only.
+ * On a phone a track wider than the screen scrolls sideways with fades.
  */
 export function SegmentedControl<T extends string = string>({
   options,
@@ -95,6 +98,7 @@ export function SegmentedControl<T extends string = string>({
       }),
   );
   const index = options.findIndex((option) => option.value === value);
+  useScrollEdges(scrollerRef, { axis: "x" });
 
   useEffect(() => {
     revealChecked(scrollerRef.current);
@@ -106,85 +110,75 @@ export function SegmentedControl<T extends string = string>({
   } as CSSProperties;
 
   return (
+    // The capsule stays crisp while the segments scroll and fade inside it.
     <div
-      ref={scrollerRef}
       className={cn(
-        "max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-        fullWidth ? "w-full" : "w-fit",
+        "max-w-full overflow-hidden rounded-full bg-surface-sunken",
+        fullWidth ? "flex w-full" : "inline-flex w-fit",
+        disabled && "opacity-50",
         className,
       )}
     >
-      <RadioGroupPrimitive.Root
-        ref={ref}
-        id={id}
-        aria-describedby={ariaDescribedBy}
-        value={value ?? ""}
-        onValueChange={(next) => {
-          const option = options.find((candidate) => candidate.value === next);
-          if (option) setValue(option.value);
-        }}
-        orientation="horizontal"
-        disabled={disabled}
-        name={name}
-        aria-label={ariaLabel}
-        aria-labelledby={ariaLabelledBy}
-        style={trackStyle}
-        className={cn(
-          "relative grid auto-cols-fr grid-flow-col rounded-full border border-border bg-bg p-1",
-          fullWidth ? "w-full min-w-max" : "w-max",
-          disabled && "opacity-50",
-        )}
+      <div
+        ref={scrollerRef}
+        className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain p-1 scrollbar-none scroll-fade-x"
       >
-        <span
-          aria-hidden="true"
+        <RadioGroupPrimitive.Root
+          ref={ref}
+          id={id}
+          aria-describedby={ariaDescribedBy}
+          value={value ?? ""}
+          onValueChange={(next) => {
+            const option = options.find((candidate) => candidate.value === next);
+            if (option) setValue(option.value);
+          }}
+          orientation="horizontal"
+          disabled={disabled}
+          name={name}
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledBy}
+          style={trackStyle}
           className={cn(
-            "pointer-events-none absolute inset-y-1 left-1 rounded-full bg-surface shadow-(--shadow-card)",
-            "w-[calc((100%_-_0.5rem)/var(--segment-count))] translate-x-[calc(var(--segment-index)*100%)]",
-            "transition-transform duration-[var(--duration-base)] ease-[var(--ease-standard)] motion-reduce:transition-none",
-            index === -1 && "opacity-0",
+            "relative grid auto-cols-fr grid-flow-col",
+            fullWidth ? "w-full min-w-max" : "w-max",
           )}
-        />
-        {options.map((option) => (
-          <RadioGroupPrimitive.Item
-            key={option.value}
-            value={option.value}
-            disabled={option.disabled}
+        >
+          <span
+            aria-hidden="true"
             className={cn(
-              "relative flex min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full",
-              "text-sm font-medium text-fg-muted",
-              "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
-              "hover:text-fg data-[state=checked]:text-fg",
-              // The ring hugs the pill instead of spilling over the track's edge.
-              "focus-visible:outline-offset-0",
-              "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-fg-muted",
-              ITEM_SIZE[size],
+              "pointer-events-none absolute inset-y-0 left-0 rounded-full bg-surface-raised shadow-1 motion-indicator",
+              "w-[calc(100%/var(--segment-count))] translate-x-[calc(var(--segment-index)*100%)]",
+              index === -1 && "opacity-0",
             )}
-          >
-            {option.icon !== undefined && (
-              <span aria-hidden="true" className="flex shrink-0 [&>svg]:size-4">
-                {option.icon}
-              </span>
-            )}
-            {option.label}
-            {/* The space keeps "Menunggu 3" apart in the accessible name; flex
-                layout ignores it, the gap does the visual spacing. */}
-            {option.count !== undefined && " "}
-            {option.count !== undefined && (
-              <span
-                className={cn(
-                  "min-w-5 rounded-full px-1.5 text-center text-xs leading-5 tabular-nums",
-                  "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
-                  option.value === value
-                    ? "bg-accent-soft text-accent-soft-fg"
-                    : "bg-surface text-fg-muted",
-                )}
-              >
-                {option.count}
-              </span>
-            )}
-          </RadioGroupPrimitive.Item>
-        ))}
-      </RadioGroupPrimitive.Root>
+          />
+          {options.map((option) => (
+            <RadioGroupPrimitive.Item
+              key={option.value}
+              value={option.value}
+              disabled={option.disabled}
+              className={cn(
+                "group/tab",
+                stripItemClass("pill", size),
+                "min-w-0 data-[state=checked]:text-fg",
+                "data-[state=unchecked]:hover:bg-state-hover data-[state=unchecked]:active:bg-state-pressed",
+                "disabled:cursor-not-allowed",
+                // A disabled group dims once, on the capsule, not again per segment.
+                "[[role=radiogroup][data-disabled]_&]:opacity-100",
+              )}
+            >
+              {option.icon !== undefined && (
+                <span aria-hidden="true" className="flex shrink-0">
+                  {option.icon}
+                </span>
+              )}
+              {option.label}
+              {option.count !== undefined && (
+                <StripCount count={option.count} variant="pill" activeClassName={ACTIVE_COUNT} />
+              )}
+            </RadioGroupPrimitive.Item>
+          ))}
+        </RadioGroupPrimitive.Root>
+      </div>
     </div>
   );
 }

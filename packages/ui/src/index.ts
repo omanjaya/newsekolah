@@ -142,7 +142,22 @@ export {
   type PageHeaderBreadcrumbItem,
   type PageHeaderProps,
 } from "./components/page-header.js";
-export { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/tabs.js";
+export {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  type TabsListProps,
+  type TabsSize,
+  type TabsTriggerProps,
+  type TabsVariant,
+} from "./components/tabs.js";
+export {
+  NavTabs,
+  type NavTabsItem,
+  type NavTabsLinkProps,
+  type NavTabsProps,
+} from "./components/nav-tabs.js";
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/tooltip.js";
 export {
   DropdownMenu,
