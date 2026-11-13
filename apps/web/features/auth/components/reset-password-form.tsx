@@ -35,9 +35,15 @@ import { useConfirmPasswordResetMutation } from "../api";
 export function ResetPasswordForm({
   token,
   onSuccess,
+  onInvalidToken,
 }: {
   token: string;
   onSuccess: () => void;
+  /**
+   * Called when the server rejects the token. A page that passes it owns the
+   * dead-link screen (title included); without it the form shows its own.
+   */
+  onInvalidToken?: () => void;
 }): ReactElement {
   const t = useTranslations("app.account.resetPassword");
   const locale = useLocale() as Locale;
@@ -59,6 +65,7 @@ export function ResetPasswordForm({
       // below (it replaces the whole form with a dead-link state), so there
       // is nothing more to do with it here beyond letting it settle.
       if (error instanceof ApiError && error.code === "PASSWORD_RESET_TOKEN_INVALID") {
+        onInvalidToken?.();
         return;
       }
       const message =

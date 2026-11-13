@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 
 import { ResetPasswordForm } from "../../../features/auth/components/reset-password-form";
 
@@ -20,8 +20,10 @@ function ResetPasswordContent(): ReactElement {
   const searchParams = useSearchParams();
   const toast = useToast();
   const token = searchParams.get("token");
+  // Set when the server rejects the token on submit (expired or already used).
+  const [rejected, setRejected] = useState(false);
 
-  if (!token) {
+  if (!token || rejected) {
     return (
       <div className="flex flex-col gap-4">
         <h1 className="text-center text-[20px] font-medium text-fg">{t("invalidTitle")}</h1>
@@ -38,6 +40,9 @@ function ResetPasswordContent(): ReactElement {
       <h1 className="text-center text-[20px] font-medium text-fg">{t("title")}</h1>
       <ResetPasswordForm
         token={token}
+        onInvalidToken={() => {
+          setRejected(true);
+        }}
         onSuccess={() => {
           toast.success(t("success"));
           router.replace("/login");
