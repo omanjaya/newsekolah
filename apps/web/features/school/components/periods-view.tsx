@@ -267,6 +267,7 @@ function PeriodTable({ templateId }: { templateId: string }): ReactElement {
   const update = useUpdatePeriodMutation();
   const remove = useDeletePeriodMutation();
   const [editing, setEditing] = useState<Period | "new" | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Period | null>(null);
   const rows = [...(periods.data?.data ?? [])].sort((a, b) => a.sequence - b.sequence);
   const fail = (error: unknown) => {
     toast.error(
@@ -323,7 +324,7 @@ function PeriodTable({ templateId }: { templateId: string }): ReactElement {
                       aria-label={t("delete")}
                       className="md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-visible:opacity-100"
                       onClick={() => {
-                        remove.mutate(p.id, { onError: fail });
+                        setPendingDelete(p);
                       }}
                     />
                   </div>
@@ -340,6 +341,31 @@ function PeriodTable({ templateId }: { templateId: string }): ReactElement {
           </tbody>
         </table>
       </div>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title={t("deletePeriodTitle")}
+        description={pendingDelete ? t("deletePeriodBody", { name: pendingDelete.name }) : ""}
+        confirmLabel={t("delete")}
+        cancelLabel={t("cancel")}
+        destructive
+        confirming={remove.isPending}
+        onConfirm={() => {
+          if (!pendingDelete) return;
+          remove.mutate(pendingDelete.id, {
+            onSuccess: () => {
+              setPendingDelete(null);
+              toast.success(t("periodDeleted"));
+            },
+            onError: (error) => {
+              setPendingDelete(null);
+              fail(error);
+            },
+          });
+        }}
+      />
       <Dialog
         open={editing !== null}
         onOpenChange={(o) => {

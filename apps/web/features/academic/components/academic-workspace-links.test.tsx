@@ -30,9 +30,15 @@ it("does not expose journals or reports to students with academic read permissio
   state.profile_kind = "student";
   state.permissions = ["view_attendance", "view_academic_data"];
   render(<AcademicWorkspaceLinks area="attendance" />);
-  expect(screen.getByRole("link", { name: "sessions" })).toHaveAttribute("href", "/attendance");
   expect(screen.queryByRole("link", { name: "journal" })).toBeNull();
   expect(screen.queryByRole("link", { name: "reports" })).toBeNull();
+});
+
+it("renders no strip when only one destination is reachable", () => {
+  state.profile_kind = "student";
+  state.permissions = ["view_attendance", "view_academic_data"];
+  const { container } = render(<AcademicWorkspaceLinks area="attendance" />);
+  expect(container).toBeEmptyDOMElement();
 });
 
 it("keeps teacher history and personal reports reachable with their existing permissions", () => {
@@ -53,7 +59,7 @@ it("never fetches the substitute inbox for a schedule reader", () => {
 });
 
 it("preserves source and destination years between independently authorized steps", () => {
-  state.permissions = ["manage_enrollments"];
+  state.permissions = ["manage_enrollments", "view_academic_data"];
   state.search = "fromYear=old&toYear=new&unrelated=drop";
   render(<AcademicWorkspaceLinks area="years" />);
   expect(screen.getByRole("link", { name: "promotion" })).toHaveAttribute(
@@ -63,9 +69,22 @@ it("preserves source and destination years between independently authorized step
   expect(screen.queryByRole("link", { name: "setup" })).toBeNull();
 });
 
-it("keeps role administration independent of access to user accounts", () => {
+it("withholds the accounts link from a reader who can only administer roles", () => {
   state.permissions = ["view_roles"];
   render(<AcademicWorkspaceLinks area="users" />);
-  expect(screen.getByRole("link", { name: "roles" })).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "accounts" })).toBeNull();
+});
+
+it("renders both role and account links when both are permitted", () => {
+  state.permissions = ["view_roles", "view_users"];
+  render(<AcademicWorkspaceLinks area="users" />);
+  expect(screen.getByRole("link", { name: "roles" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "accounts" })).toBeInTheDocument();
+});
+
+it("renders no strip for a schedule viewer who can open only the calendar", () => {
+  state.permissions = ["view_academic_data"];
+  state.pathname = "/school/calendar";
+  const { container } = render(<AcademicWorkspaceLinks area="schedule" />);
+  expect(container).toBeEmptyDOMElement();
 });

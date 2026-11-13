@@ -71,11 +71,17 @@ export function ScheduleScopeBar({
           }}
         >
           <TabsList>
-            <TabsTrigger value="class">{t("byClass")}</TabsTrigger>
-            <TabsTrigger value="teacher">
+            <TabsTrigger aria-controls={undefined} value="class">
+              {t("byClass")}
+            </TabsTrigger>
+            <TabsTrigger aria-controls={undefined} value="teacher">
               {ownTimetableOnly ? t("mine") : t("byTeacher")}
             </TabsTrigger>
-            {canViewAll && <TabsTrigger value="day">{t("byDay")}</TabsTrigger>}
+            {canViewAll && (
+              <TabsTrigger aria-controls={undefined} value="day">
+                {t("byDay")}
+              </TabsTrigger>
+            )}
           </TabsList>
         </Tabs>
       )}

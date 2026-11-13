@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ConfirmDialog,
   EmptyState,
   PageHeader,
   Select,
@@ -160,9 +161,15 @@ export function GradingView(): ReactElement {
     classes.isLoading || subjects.isLoading || (!canOpenAny && assignments.isLoading);
   const noAssignments = !canOpenAny && !scopeLoading && classList.length === 0;
 
+  // A scope change (class, subject, term, tab) would drop unsaved scores, so
+  // it waits behind a confirmation when there are any.
+  const [pendingScopeChange, setPendingScopeChange] = useState<(() => void) | null>(null);
+
   function changeScope(change: () => void) {
-    if (pendingChanges > 0 && !window.confirm(t("table.discardChanges"))) return;
-    setPendingChanges(0);
+    if (pendingChanges > 0) {
+      setPendingScopeChange(() => change);
+      return;
+    }
     change();
   }
 
@@ -215,44 +222,64 @@ export function GradingView(): ReactElement {
         eyebrow={t("eyebrow")}
         title={t("title")}
         actions={
-          <>
-            <Select
-              options={classOptions}
-              value={effectiveClassId}
-              onValueChange={(value) => {
-                changeScope(() => {
-                  setClassId(value);
-                });
-              }}
-              placeholder={t("pickClass")}
-              aria-label={t("pickClass")}
-              className="w-full rounded-full md:w-48"
-            />
-            <Select
-              options={subjectOptions}
-              value={effectiveSubjectId}
-              onValueChange={(value) => {
-                changeScope(() => {
-                  setSubjectId(value);
-                });
-              }}
-              placeholder={t("pickSubject")}
-              aria-label={t("pickSubject")}
-              className="w-full rounded-full md:w-48"
-            />
-            <Select
-              options={termOptions}
-              value={termId || ALL_TERMS}
-              onValueChange={(value) => {
-                changeScope(() => {
-                  setTermId(value === ALL_TERMS ? "" : value);
-                });
-              }}
-              aria-label={t("pickTerm")}
-              className="w-full rounded-full md:w-40"
-            />
-          </>
+          noAssignments ? undefined : (
+            <>
+              <Select
+                options={classOptions}
+                value={effectiveClassId}
+                onValueChange={(value) => {
+                  changeScope(() => {
+                    setClassId(value);
+                  });
+                }}
+                placeholder={t("pickClass")}
+                aria-label={t("pickClass")}
+                className="w-full rounded-full md:w-48"
+              />
+              <Select
+                options={subjectOptions}
+                value={effectiveSubjectId}
+                onValueChange={(value) => {
+                  changeScope(() => {
+                    setSubjectId(value);
+                  });
+                }}
+                placeholder={t("pickSubject")}
+                aria-label={t("pickSubject")}
+                className="w-full rounded-full md:w-48"
+              />
+              <Select
+                options={termOptions}
+                value={termId || ALL_TERMS}
+                onValueChange={(value) => {
+                  changeScope(() => {
+                    setTermId(value === ALL_TERMS ? "" : value);
+                  });
+                }}
+                aria-label={t("pickTerm")}
+                className="w-full rounded-full md:w-40"
+              />
+            </>
+          )
         }
+      />
+
+      <ConfirmDialog
+        open={pendingScopeChange !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingScopeChange(null);
+        }}
+        title={t("table.discardChangesTitle")}
+        description={t("table.discardChangesBody", { count: pendingChanges })}
+        confirmLabel={t("table.discardChangesConfirm")}
+        cancelLabel={t("table.discardChangesCancel")}
+        destructive
+        onConfirm={() => {
+          const change = pendingScopeChange;
+          setPendingScopeChange(null);
+          setPendingChanges(0);
+          change?.();
+        }}
       />
 
       {(canManageSettings || canManageGrades || canViewGrades) && (
@@ -265,13 +292,25 @@ export function GradingView(): ReactElement {
           }}
         >
           <TabsList>
-            <TabsTrigger value="gradebook">{t("tabGradebook")}</TabsTrigger>
-            {canManageGrades && <TabsTrigger value="tp">{t("tabTpMapping")}</TabsTrigger>}
+            {!noAssignments && (
+              <TabsTrigger aria-controls={undefined} value="gradebook">
+                {t("tabGradebook")}
+              </TabsTrigger>
+            )}
+            {canManageGrades && !noAssignments && (
+              <TabsTrigger aria-controls={undefined} value="tp">
+                {t("tabTpMapping")}
+              </TabsTrigger>
+            )}
             {(canManageGrades || canViewGrades) && (
-              <TabsTrigger value="erapor">{t("tabErapor")}</TabsTrigger>
+              <TabsTrigger aria-controls={undefined} value="erapor">
+                {t("tabErapor")}
+              </TabsTrigger>
             )}
             {(canManageSettings || canManageGrades) && (
-              <TabsTrigger value="settings">{t("tabSettings")}</TabsTrigger>
+              <TabsTrigger aria-controls={undefined} value="settings">
+                {t("tabSettings")}
+              </TabsTrigger>
             )}
           </TabsList>
         </Tabs>

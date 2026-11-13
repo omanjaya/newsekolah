@@ -245,7 +245,7 @@ export function JournalView(): ReactElement {
         onExport={handleReportExport}
       />
 
-      <div className="flex flex-col md:min-h-0 md:flex-1">
+      <div className="flex flex-col md:min-h-80 md:flex-1">
         {list.isError ? (
           <Alert variant="warning" title={t("loadError")}>
             <div className="flex flex-col items-start gap-2">

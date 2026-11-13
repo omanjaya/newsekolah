@@ -1,7 +1,7 @@
 "use client";
 
 import { StatTile, cn } from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { tileColumns } from "../../../lib/layout/bento";
@@ -22,7 +22,8 @@ export function GradebookPageTiles({
   ungradedCount: number;
 }): ReactElement {
   const t = useTranslations("app.grading");
-  const tiles = buildGradebookPageTiles(classAverage, tuntasRate, ungradedCount);
+  const locale = useLocale();
+  const tiles = buildGradebookPageTiles(classAverage, tuntasRate, ungradedCount, locale);
   const grid = tileColumns(tiles.length);
 
   return (

@@ -2,10 +2,11 @@
 
 import { cn } from "@newsekolah/ui";
 import { Star } from "lucide-react";
-import type { useTranslations } from "next-intl";
+import { useLocale, type useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import type { AssessmentComponent, GradebookStudent } from "../api";
+import { formatScore } from "../lib/format-score";
 
 import { GradebookScoreCell } from "./gradebook-score-cell";
 import type { Edits } from "./gradebook-types";
@@ -54,6 +55,7 @@ export function GradebookMobileCards({
   onCommit,
   onRegisterRef,
 }: GradebookMobileCardsProps): ReactElement {
+  const locale = useLocale();
   return (
     <div className="flex flex-col gap-3">
       {students.map((student, rowIndex) => {
@@ -112,7 +114,8 @@ export function GradebookMobileCards({
             </div>
             <div className="mt-1 flex items-center justify-between border-t border-border pt-2 text-[13px]">
               <span className="text-fg-muted [font-variant-numeric:tabular-nums]">
-                {t("averageColumn")} {live?.average !== undefined ? live.average.toFixed(1) : "-"}
+                {t("averageColumn")}{" "}
+                {live?.average !== undefined ? formatScore(live.average, locale) : "-"}
               </span>
               <button
                 type="button"
@@ -126,7 +129,9 @@ export function GradebookMobileCards({
                 )}
               >
                 {t("reportScoreColumn")}{" "}
-                {student.report_score !== undefined ? student.report_score.toFixed(1) : "-"}
+                {student.report_score !== undefined
+                  ? formatScore(student.report_score, locale)
+                  : "-"}
                 {pending && (
                   <span
                     className="ml-1 inline-block size-1.5 rounded-full bg-accent align-middle"

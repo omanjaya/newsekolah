@@ -109,8 +109,12 @@ export function SubstitutionsView(): ReactElement {
         }}
       >
         <TabsList>
-          <TabsTrigger value="incoming">{t("incoming")}</TabsTrigger>
-          <TabsTrigger value="outgoing">{t("outgoing")}</TabsTrigger>
+          <TabsTrigger aria-controls={undefined} value="incoming">
+            {t("incoming")}
+          </TabsTrigger>
+          <TabsTrigger aria-controls={undefined} value="outgoing">
+            {t("outgoing")}
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 

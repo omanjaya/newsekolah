@@ -255,11 +255,13 @@ export function GradebookSheet({
         </div>
       </div>
 
-      <GradebookPageTiles
-        classAverage={gradebookClassAverage(sheet.students)}
-        tuntasRate={gradebookTuntasRate(sheet.students, sheet.scale.default_kktp)}
-        ungradedCount={gradebookUngradedCount(sheet.students)}
-      />
+      {sheet.components.length > 0 && (
+        <GradebookPageTiles
+          classAverage={gradebookClassAverage(sheet.students)}
+          tuntasRate={gradebookTuntasRate(sheet.students, sheet.scale.default_kktp)}
+          ungradedCount={gradebookUngradedCount(sheet.students)}
+        />
+      )}
 
       <ReportExportDialog
         open={exportOpen}
@@ -302,7 +304,7 @@ export function GradebookSheet({
             <EmptyState
               icon={<domainIcons.grades aria-hidden="true" />}
               title={t("emptyTitle")}
-              description={t("emptyBody")}
+              description={canManage ? t("emptyBody") : t("emptyBodyReadOnly")}
               action={
                 canManage && (
                   <Button

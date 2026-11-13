@@ -1,5 +1,5 @@
 import type * as UiModule from "@newsekolah/ui";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -89,6 +89,20 @@ describe("TeachingPanel", () => {
       { id: "assign-2", isActive: true },
       expect.any(Object),
     );
+  });
+
+  it("asks for confirmation before removing an assignment, then removes it", async () => {
+    const user = userEvent.setup();
+    render(<TeachingPanel classId="class-1" canManage />);
+
+    const [firstRemove] = screen.getAllByRole("button", { name: "removeTeaching" });
+    if (!firstRemove) throw new Error("remove button missing");
+    await user.click(firstRemove);
+    expect(mocks.remove).not.toHaveBeenCalled();
+
+    const dialog = screen.getByRole("dialog", { name: "removeTeachingTitle" });
+    await user.click(within(dialog).getByRole("button", { name: "removeTeaching" }));
+    expect(mocks.remove).toHaveBeenCalledWith("assign-1", expect.any(Object));
   });
 
   it("hides deactivate/reactivate actions without manage permission", () => {

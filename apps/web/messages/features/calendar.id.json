@@ -14,6 +14,8 @@
   "deleteConfirmBody": "\"{name}\" akan dihapus dari kalender akademik dan tidak dapat dikembalikan.",
   "emptyTitle": "Belum ada acara di kalender",
   "emptyBody": "Tambahkan hari libur, ujian, atau acara sekolah agar terlihat pada kalender tahun ajaran ini.",
+  "emptyBodyReadOnly": "Belum ada hari libur, ujian, atau acara sekolah yang dijadwalkan pada tahun ajaran ini.",
+  "emptyMonth": "Tidak ada acara bulan ini.",
   "kind": {
     "holiday": "Libur",
     "exam": "Ujian",

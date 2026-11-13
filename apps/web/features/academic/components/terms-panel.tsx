@@ -13,7 +13,7 @@ import {
   useToast,
 } from "@newsekolah/ui";
 import { CircleCheck, Pencil, Plus, Trash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
@@ -27,6 +27,7 @@ import {
   useTermsQuery,
   useUpdateTermMutation,
 } from "../api";
+import { formatCalendarDate } from "../lib/format-calendar-date";
 
 interface TermDraft {
   name: string;
@@ -46,6 +47,7 @@ export function TermsPanel({
   onOpenChange: (open: boolean) => void;
 }): ReactElement {
   const t = useTranslations("app.academic.terms");
+  const format = useFormatter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const yearId = year?.id ?? "";
@@ -138,7 +140,8 @@ export function TermsPanel({
                       {term.is_active && <Badge variant="accent">{t("active")}</Badge>}
                     </span>
                     <span className="text-[12px] text-fg-muted">
-                      {term.starts_on} - {term.ends_on}
+                      {formatCalendarDate(format, term.starts_on)} -{" "}
+                      {formatCalendarDate(format, term.ends_on)}
                     </span>
                   </div>
                   <div className="flex shrink-0 gap-1">
@@ -147,7 +150,12 @@ export function TermsPanel({
                         icon={<CircleCheck />}
                         aria-label={t("activate")}
                         onClick={() => {
-                          activate.mutate(term.id, { onError: fail });
+                          activate.mutate(term.id, {
+                            onSuccess: () => {
+                              toast.success(t("activated"));
+                            },
+                            onError: fail,
+                          });
                         }}
                       />
                     )}

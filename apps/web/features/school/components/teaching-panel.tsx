@@ -5,6 +5,7 @@ import {
   Avatar,
   Badge,
   Button,
+  ConfirmDialog,
   EmptyState,
   IconButton,
   Select,
@@ -33,6 +34,10 @@ import {
   useUpdateTeachingAssignmentMutation,
 } from "../api";
 
+type TeachingRow = NonNullable<
+  ReturnType<typeof useTeachingAssignmentsQuery>["data"]
+>["data"][number];
+
 /**
  * Split out of class-panels.tsx (which also holds EnrollmentPanel) to keep
  * both files under the project's line limit; see api.ts for the same pattern.
@@ -58,6 +63,7 @@ export function TeachingPanel({
   const [subjectId, setSubjectId] = useState("");
   const [teacherId, setTeacherId] = useState("");
   const [showInactive, setShowInactive] = useState(false);
+  const [pendingRemove, setPendingRemove] = useState<TeachingRow | null>(null);
   const rows = useMemo(
     () => (assignments.data?.data ?? []).filter((a) => a.is_active),
     [assignments.data],
@@ -128,7 +134,7 @@ export function TeachingPanel({
                       icon={<Trash2 />}
                       aria-label={t("removeTeaching")}
                       onClick={() => {
-                        remove.mutate(a.id, { onError: fail });
+                        setPendingRemove(a);
                       }}
                     />
                   </div>
@@ -192,7 +198,7 @@ export function TeachingPanel({
                           icon={<Trash2 />}
                           aria-label={t("removeTeaching")}
                           onClick={() => {
-                            remove.mutate(a.id, { onError: fail });
+                            setPendingRemove(a);
                           }}
                         />
                       </div>
@@ -255,6 +261,37 @@ export function TeachingPanel({
           </Button>
         </form>
       )}
+      <ConfirmDialog
+        open={pendingRemove !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingRemove(null);
+        }}
+        title={t("removeTeachingTitle")}
+        description={
+          pendingRemove
+            ? t("removeTeachingBody", {
+                subject: subjectMap.get(pendingRemove.subject_id)?.name ?? "-",
+                teacher: teacherMap.get(pendingRemove.teacher_user_id)?.name ?? "-",
+              })
+            : ""
+        }
+        confirmLabel={t("removeTeaching")}
+        destructive
+        confirming={remove.isPending}
+        onConfirm={() => {
+          if (!pendingRemove) return;
+          remove.mutate(pendingRemove.id, {
+            onSuccess: () => {
+              setPendingRemove(null);
+              toast.success(t("teachingRemoved"));
+            },
+            onError: (error) => {
+              setPendingRemove(null);
+              fail(error);
+            },
+          });
+        }}
+      />
     </div>
   );
 }

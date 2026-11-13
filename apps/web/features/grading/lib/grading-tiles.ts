@@ -10,6 +10,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { formatScore } from "./format-score";
+
 export interface GradingTile {
   key: string;
   icon: LucideIcon;
@@ -34,6 +36,9 @@ export function buildGradingEntryTiles(
   publishedStatusLabel: string,
   draftStatusLabel: string,
 ): GradingTile[] {
+  // With no components there are no slots to fill: showing "100%" next to
+  // "0 components" reads as a contradiction, so the fill tile has no value.
+  const filledValue = componentCount === 0 ? "-" : `${fillPercent}%`;
   return [
     {
       key: "students",
@@ -53,7 +58,7 @@ export function buildGradingEntryTiles(
       key: "filled",
       icon: Percent,
       tone: "amber",
-      value: `${fillPercent}%`,
+      value: filledValue,
       labelKey: "entryTiles.filled",
     },
     {
@@ -76,13 +81,14 @@ export function buildGradebookPageTiles(
   classAverage: number | undefined,
   tuntasRate: number,
   ungradedCount: number,
+  locale?: string,
 ): GradingTile[] {
   return [
     {
       key: "average",
       icon: BarChart3,
       tone: "blue",
-      value: classAverage === undefined ? "-" : classAverage.toFixed(1),
+      value: classAverage === undefined ? "-" : formatScore(classAverage, locale),
       labelKey: "pageTiles.average",
     },
     {

@@ -25,7 +25,6 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { bentoCells } from "../../../lib/layout/bento";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
-import { JournalTodayPanel } from "../../journal/components/journal-today-panel";
 import {
   useClassesQuery,
   useLookup,
@@ -46,23 +45,24 @@ import { classifyPeriodTiming, deriveFillStatus, findNextSessionId } from "../li
 import { AttendanceCalendar } from "./attendance-calendar";
 import { AttendanceDayStats } from "./attendance-day-summary";
 import { AttendanceSessionCard } from "./attendance-session-card";
+import { StaffAttendanceHub } from "./staff-attendance-hub";
 
-/** Teachers see a day of sessions to fill; everyone else sees their own calendar. */
+/** Teachers fill a day of sessions; staff without teaching get a landing; students see their calendar. */
 export function AttendanceView(): ReactElement {
   const canManage = useCan("manage_attendance");
   const { me } = useSession();
-  const canReadAcademic = useCan("view_academic_data");
-  const canJournal =
-    canReadAcademic && (me?.profile_kind === "teacher" || me?.profile_kind === "staff");
 
   if (canManage) {
     return (
       <div className="flex flex-col gap-4 p-4 md:p-6">
         <AcademicWorkspaceLinks area="attendance" />
         <DaySessions />
-        {canJournal && <JournalTodayPanel />}
       </div>
     );
+  }
+
+  if (me?.profile_kind === "staff" || me?.profile_kind === "teacher") {
+    return <StaffAttendanceHub />;
   }
 
   return (
@@ -70,7 +70,6 @@ export function AttendanceView(): ReactElement {
       <AcademicWorkspaceLinks area="attendance" />
       {/* The calendar renders its own page heading and month navigator. */}
       <AttendanceCalendar />
-      {canJournal && <JournalTodayPanel />}
     </div>
   );
 }

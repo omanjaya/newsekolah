@@ -15,6 +15,8 @@ export interface ScheduleFilter {
   teacherUserId?: string;
   /** 1 (Monday) through 7 (Sunday). Set for the whole-school day view. */
   dayOfWeek?: number;
+  /** Set false to skip the request, e.g. for a viewer without schedule access. */
+  enabled?: boolean;
 }
 
 /**
@@ -38,6 +40,7 @@ export function useSchedulesQuery(filter: ScheduleFilter) {
   // A day view asks for every class at once, so a day alone is enough to
   // run the query; the other two views still need their own subject.
   const enabled =
+    filter.enabled !== false &&
     filter.academicYearId !== "" &&
     Boolean(filter.classId ?? filter.teacherUserId ?? filter.dayOfWeek);
   return useQuery({

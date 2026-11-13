@@ -14,6 +14,8 @@
   "deleteConfirmBody": "\"{name}\" will be removed from the academic calendar and cannot be undone.",
   "emptyTitle": "No calendar events yet",
   "emptyBody": "Add holidays, exams, or school events so they show up on this academic year's calendar.",
+  "emptyBodyReadOnly": "No holidays, exams, or school events are scheduled for this academic year yet.",
+  "emptyMonth": "No events this month.",
   "kind": {
     "holiday": "Holiday",
     "exam": "Exam",

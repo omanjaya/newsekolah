@@ -29,6 +29,7 @@ import {
   useCreateAcademicYearMutation,
   useUpdateAcademicYearMutation,
 } from "../api";
+import { formatCalendarDate } from "../lib/format-calendar-date";
 
 import { AcademicWorkspaceLinks } from "./academic-workspace-links";
 import { TermsPanel } from "./terms-panel";
@@ -180,7 +181,7 @@ export function YearsView(): ReactElement {
           )
         }
       />
-      <p className="text-[13px] text-fg-muted">{tWorkspace("yearHelp")}</p>
+      {canManage && <p className="text-[13px] text-fg-muted">{tWorkspace("yearHelp")}</p>}
 
       <DataTable
         stateKey="features/academic/components/years-view:1"
@@ -271,13 +272,4 @@ export function YearsView(): ReactElement {
       />
     </div>
   );
-}
-
-/** A YYYY-MM-DD calendar date as a short id-ID style date, read at local midnight. */
-function formatCalendarDate(format: ReturnType<typeof useFormatter>, value: string): string {
-  return format.dateTime(new Date(`${value}T00:00:00`), {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }

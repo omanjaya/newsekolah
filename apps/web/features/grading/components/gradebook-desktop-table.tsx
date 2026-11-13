@@ -2,10 +2,11 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, cn } from "@newsekolah/ui";
 import { Star } from "lucide-react";
-import type { useTranslations } from "next-intl";
+import { useLocale, type useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import type { AssessmentComponent, GradebookStudent } from "../api";
+import { formatScore } from "../lib/format-score";
 
 import { GradebookColumnMenu } from "./gradebook-column-menu";
 import { GradebookScoreCell } from "./gradebook-score-cell";
@@ -86,6 +87,7 @@ export function GradebookDesktopTable({
   onNavigate,
   onPasteBlock,
 }: GradebookDesktopTableProps): ReactElement {
+  const locale = useLocale();
   return (
     <Table density="compact" className="min-w-[720px] border-collapse">
       <TableHeader>
@@ -179,7 +181,7 @@ export function GradebookDesktopTable({
                 </TableCell>
               ))}
               <TableCell className="border-l border-line text-right text-fg [font-variant-numeric:tabular-nums]">
-                {live?.average !== undefined ? live.average.toFixed(1) : "-"}
+                {live?.average !== undefined ? formatScore(live.average, locale) : "-"}
               </TableCell>
               <TableCell className="border-l border-line text-right [font-variant-numeric:tabular-nums]">
                 <button
@@ -194,7 +196,9 @@ export function GradebookDesktopTable({
                     !canManage && "no-underline",
                   )}
                 >
-                  {student.report_score !== undefined ? student.report_score.toFixed(1) : "-"}
+                  {student.report_score !== undefined
+                    ? formatScore(student.report_score, locale)
+                    : "-"}
                 </button>
                 {pending && (
                   <span

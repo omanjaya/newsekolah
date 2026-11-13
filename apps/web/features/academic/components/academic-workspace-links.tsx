@@ -38,7 +38,7 @@ export function AcademicWorkspaceLinks({
   area,
 }: {
   area: keyof typeof DESTINATIONS;
-}): ReactElement {
+}): ReactElement | null {
   const t = useTranslations("app.academic.workspace");
   const { me } = useSession();
   const pathname = usePathname();
@@ -54,6 +54,12 @@ export function AcademicWorkspaceLinks({
   const items = DESTINATIONS[area]
     .filter(([href]) => canOpen(href))
     .map(([href, key]) => ({ href: `${href}${suffix}`, label: t(key), active: pathname === href }));
+  const showsEntry = me?.profile_kind === "student" && canOpen("/classroom-entry");
+  // A strip with a single destination navigates nowhere, so it is dropped
+  // unless the schedule actions still need a home.
+  const hasActions =
+    area === "schedule" && (canOpen("/substitutions") || canOpen("/attendance") || showsEntry);
+  if (items.length < 2 && !hasActions) return null;
   return (
     <WorkspaceNav
       label={t(area)}
@@ -62,7 +68,7 @@ export function AcademicWorkspaceLinks({
         area === "schedule" ? (
           <>
             {canOpen("/substitutions") && <SubstitutionInboxLink />}
-            {me?.profile_kind === "student" && canOpen("/classroom-entry") && (
+            {showsEntry && (
               <Button asChild size="sm">
                 <Link href="/classroom-entry">{t("scanEntry")}</Link>
               </Button>

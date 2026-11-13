@@ -263,14 +263,26 @@ export function HomeroomView(): ReactElement {
       />
 
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-4">
-        <TabsList>
-          <TabsTrigger value="overview">{t("tabs.overview")}</TabsTrigger>
-          <TabsTrigger value="attendance">{t("tabs.attendance")}</TabsTrigger>
-          {permitsOn && <TabsTrigger value="permits">{t("tabs.permits")}</TabsTrigger>}
-          {canViewDiscipline && (
-            <TabsTrigger value="discipline">{t("tabs.discipline")}</TabsTrigger>
+        <TabsList className="max-w-full justify-start overflow-x-auto">
+          <TabsTrigger className="shrink-0 whitespace-nowrap" value="overview">
+            {t("tabs.overview")}
+          </TabsTrigger>
+          <TabsTrigger className="shrink-0 whitespace-nowrap" value="attendance">
+            {t("tabs.attendance")}
+          </TabsTrigger>
+          {permitsOn && (
+            <TabsTrigger className="shrink-0 whitespace-nowrap" value="permits">
+              {t("tabs.permits")}
+            </TabsTrigger>
           )}
-          <TabsTrigger value="parents">{t("tabs.parents")}</TabsTrigger>
+          {canViewDiscipline && (
+            <TabsTrigger className="shrink-0 whitespace-nowrap" value="discipline">
+              {t("tabs.discipline")}
+            </TabsTrigger>
+          )}
+          <TabsTrigger className="shrink-0 whitespace-nowrap" value="parents">
+            {t("tabs.parents")}
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="flex flex-col gap-6">
           <StatGrid className="rounded-sm border border-border bg-surface p-4">

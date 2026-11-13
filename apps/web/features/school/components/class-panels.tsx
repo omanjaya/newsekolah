@@ -26,6 +26,7 @@ import { useMoveStudentMutation, useRemoveStudentMutation } from "../../academic
 import { todayInZone } from "../../attendance/api";
 import { useClassesQuery } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
+import { StudentLink } from "../../students/components/student-link";
 import {
   type Enrollment,
   useBulkAssignMutation,
@@ -160,7 +161,7 @@ export function EnrollmentPanel({
                 <Avatar size="sm" name={name} />
                 <div className="min-w-0 flex-1">
                   <p className="break-words text-[14px] md:truncate" title={name}>
-                    {name}
+                    <StudentLink studentId={e.student_user_id}>{name}</StudentLink>
                   </p>
                   {e.student_nis && (
                     <p className="tabular-nums text-[12px] text-fg-muted">{e.student_nis}</p>
