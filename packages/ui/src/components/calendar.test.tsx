@@ -1,6 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useState } from "react";
+import { act, useState } from "react";
+import { hydrateRoot, type Root } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
@@ -140,6 +142,44 @@ describe("Calendar", () => {
     await userEvent.click(screen.getByRole("gridcell", { name: "Maret 2027" }));
 
     expect(screen.getByRole("grid", { name: "Maret 2027" })).toBeInTheDocument();
+  });
+
+  it("reads timestamp bounds as dates and ignores a month in another shape", () => {
+    render(<Calendar today={TODAY} min="2026-11-14T00:00:00Z" month="2026-13" />);
+
+    expect(screen.getByRole("grid", { name: "November 2026" })).toBeInTheDocument();
+    expect(cell("Jumat, 13 November 2026")).toHaveAttribute("aria-disabled", "true");
+    expect(cell("Sabtu, 14 November 2026")).toHaveAttribute("tabindex", "0");
+  });
+
+  it("server-renders no month without a value or today, so hydration cannot disagree", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const container = document.createElement("div");
+    document.body.append(container);
+    try {
+      // The server's clock says 31 October; by hydration the device's says 1 November.
+      vi.setSystemTime(new Date(2026, 9, 31, 23, 30));
+      container.innerHTML = renderToString(<Calendar />);
+      expect(container.firstElementChild).toHaveClass("invisible");
+
+      vi.setSystemTime(new Date(2026, 10, 1, 0, 30));
+      const onRecoverableError = vi.fn();
+      let root: Root | undefined;
+      await act(async () => {
+        root = hydrateRoot(container, <Calendar />, { onRecoverableError });
+        await Promise.resolve();
+      });
+
+      expect(onRecoverableError).not.toHaveBeenCalled();
+      expect(within(container).getByRole("grid", { name: "November 2026" })).toBeInTheDocument();
+      expect(container.firstElementChild).not.toHaveClass("invisible");
+      act(() => {
+        root?.unmount();
+      });
+    } finally {
+      container.remove();
+      vi.useRealTimers();
+    }
   });
 
   it("renders caller markers with an accessible description", () => {

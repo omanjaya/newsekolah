@@ -3,7 +3,6 @@
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useId, useState, type ReactElement, type ReactNode } from "react";
 
-import { useControllableState } from "../hooks/use-controllable-state.js";
 import { useLocalToday } from "../hooks/use-local-today.js";
 import { cn } from "../utils/cn.js";
 import {
@@ -13,7 +12,8 @@ import {
   isIsoDate,
   isWithinIsoRange,
   isoMonthOf,
-  localTodayIso,
+  normalizeIsoDate,
+  normalizeIsoMonth,
 } from "../utils/iso-date.js";
 
 import { CalendarDayGrid, type CalendarDayInfo, type CalendarLayout } from "./calendar-day-grid.js";
@@ -30,19 +30,21 @@ export interface DateRange {
 }
 
 interface CalendarCommonProps {
-  /** Month on display, "YYYY-MM". Leave it out to let the calendar track it. */
+  /** Month on display, "YYYY-MM". Leave it out to let the calendar track it; one in another shape is ignored. */
   month?: string;
   defaultMonth?: string;
   onMonthChange?: (month: string) => void;
-  /** Earliest selectable date, "YYYY-MM-DD". */
+  /** Earliest selectable date, "YYYY-MM-DD" (a timestamp counts as its date part). */
   min?: string;
-  /** Latest selectable date, "YYYY-MM-DD". */
+  /** Latest selectable date, "YYYY-MM-DD" (a timestamp counts as its date part). */
   max?: string;
   /** Extra days to refuse (holidays, weekends); they stay focusable, as the grid pattern asks. */
   isDateDisabled?: (date: string) => boolean;
   /**
    * The school's "today", "YYYY-MM-DD", from the business clock in the
-   * tenant's timezone. Falls back to the device's date after hydration.
+   * tenant's timezone. Falls back to the device's date after hydration; a
+   * server-rendered calendar with no value, `today` or month lays itself
+   * out invisibly until then.
    */
   today?: string;
   /** BCP 47 locale for month and weekday names; defaults to `UiLabels.locale` ("id-ID"). */
@@ -58,7 +60,11 @@ interface CalendarCommonProps {
   renderDay?: (day: CalendarDayInfo) => ReactNode;
   /** Appended to the day's accessible name, e.g. "Hadir", so markers are not visual only. */
   getDayDescription?: (date: string) => string | undefined;
-  /** Move focus into the grid on mount (a picker opening). */
+  /**
+   * Move focus into the grid on mount. Pickers do not use it: inside a
+   * popover the grid is focused from `onOpenAutoFocus`, once a surrounding
+   * Dialog's focus trap has stood down.
+   */
   focusOnMount?: boolean;
   className?: string;
 }
@@ -78,6 +84,9 @@ export interface CalendarRangeProps extends CalendarCommonProps {
 }
 
 export type CalendarProps = CalendarSingleProps | CalendarRangeProps;
+
+/** Laid out (invisibly) while no month is known yet, so the space the calendar takes stays put. */
+const PLACEHOLDER_MONTH = "2000-01";
 
 /** The next range after picking `date`: a fresh start, or the end of a started one. */
 export function nextDateRange(range: DateRange, date: string): DateRange {
@@ -103,21 +112,38 @@ function selectionOf(props: CalendarProps): [string, string] {
  * Weeks start on Monday. Value-controlled: pass `value` and `onChange`.
  */
 export function Calendar(props: CalendarProps): ReactElement {
-  const { min, max, isDateDisabled, layout = "compact", showOutsideDays = true } = props;
+  const { isDateDisabled, layout = "compact", showOutsideDays = true } = props;
+  // Bounds and dates in the wrong shape read as unset (a timestamp as its
+  // date) rather than leaving the grid with no day to focus.
+  const min = normalizeIsoDate(props.min);
+  const max = normalizeIsoDate(props.max);
   const labels = useUiLabels();
   const locale = props.locale ?? labels.locale;
   const localToday = useLocalToday();
-  const today = props.today ?? localToday;
+  const today = normalizeIsoDate(props.today) ?? localToday;
   const rangeMode = props.mode === "range";
   const [rangeFrom, rangeTo] = selectionOf(props);
   const captionId = useId();
 
-  const fallbackMonth = isoMonthOf(clampIsoDate(rangeFrom || today || localTodayIso(), min, max));
-  const [month, setMonth] = useControllableState(
-    props.month,
-    props.defaultMonth ?? fallbackMonth,
-    props.onMonthChange,
+  // The month first shown is the selection's, else today's. With neither,
+  // the server cannot know it: the device's date stays unknown until after
+  // hydration (see useLocalToday), so until then a placeholder month is
+  // laid out invisibly instead of one the client would have to replace.
+  const anchor = rangeFrom || today;
+  const anchorMonth = anchor ? isoMonthOf(clampIsoDate(anchor, min, max)) : "";
+  const [ownMonth, setOwnMonth] = useState(
+    () => normalizeIsoMonth(props.defaultMonth) ?? anchorMonth,
   );
+  if (ownMonth === "" && anchorMonth !== "") setOwnMonth(anchorMonth);
+  const controlledMonth = normalizeIsoMonth(props.month);
+  const knownMonth = controlledMonth ?? (ownMonth || anchorMonth);
+  const month = knownMonth || PLACEHOLDER_MONTH;
+
+  function setMonth(next: string) {
+    if (controlledMonth === undefined) setOwnMonth(next);
+    props.onMonthChange?.(next);
+  }
+
   const [view, setView] = useState<"days" | "months">("days");
   const [focusState, setFocusState] = useState<string | null>(null);
   const [previewDate, setPreviewDate] = useState<string | null>(null);
@@ -171,6 +197,7 @@ export function Calendar(props: CalendarProps): ReactElement {
       className={cn(
         "grid grid-cols-1 grid-rows-1",
         layout === "fluid" ? "w-full" : "w-fit",
+        knownMonth === "" && "invisible",
         props.className,
       )}
     >

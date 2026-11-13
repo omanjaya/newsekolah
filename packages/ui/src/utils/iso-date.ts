@@ -50,6 +50,17 @@ export function isIsoDate(value: string | null | undefined): value is string {
   return parseIsoDate(value) !== null;
 }
 
+/**
+ * A date prop read as a calendar date: "YYYY-MM-DD" as it is, a timestamp
+ * as the date it is written with ("2026-11-14T00:00:00Z" is 2026-11-14),
+ * anything else as unset. A bound in the wrong shape then cannot leave a
+ * grid with no day to focus.
+ */
+export function normalizeIsoDate(value: string | null | undefined): string | undefined {
+  const date = value?.slice(0, 10);
+  return isIsoDate(date) ? date : undefined;
+}
+
 export function toIsoDate({ year, month, day }: IsoDateParts): string {
   return `${pad(year, 4)}-${pad(month)}-${pad(day)}`;
 }
@@ -124,6 +135,12 @@ export function parseIsoMonth(value: string | null | undefined): IsoMonthParts |
   const month = Number(match[2]);
   if (month < 1 || month > 12) return null;
   return { year, month };
+}
+
+/** A month prop read as "YYYY-MM" (a full date counts as its month), or unset for anything else. */
+export function normalizeIsoMonth(value: string | null | undefined): string | undefined {
+  const month = value?.slice(0, 7);
+  return parseIsoMonth(month) ? month : undefined;
 }
 
 export function toIsoMonth({ year, month }: IsoMonthParts): string {
