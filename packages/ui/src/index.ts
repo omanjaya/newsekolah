@@ -65,6 +65,18 @@ export {
 export { MonthPicker, type MonthPickerProps } from "./components/month-picker.js";
 export { TimePicker, type TimePickerProps } from "./components/time-picker.js";
 export { NumberInput, type NumberInputProps } from "./components/number-input.js";
+export {
+  RadioGroup,
+  RadioGroupItem,
+  type RadioGroupItemProps,
+  type RadioGroupProps,
+  type RadioGroupVariant,
+} from "./components/radio-group.js";
+export {
+  SegmentedControl,
+  type SegmentedControlOption,
+  type SegmentedControlProps,
+} from "./components/segmented-control.js";
 export { Switch, type SwitchProps } from "./components/switch.js";
 export {
   Form,
