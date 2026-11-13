@@ -26,6 +26,7 @@ import {
   useSetLibraryCopyStatusMutation,
 } from "../api";
 import { useLibraryErrorMessage } from "../use-library-error-message";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 
 const MANUAL_STATUSES: LibraryCopyStatus[] = [
   "available",
@@ -57,6 +58,7 @@ export function CopyDetailSheet({
   const tCondition = useTranslations("app.library.copies.condition");
   const tStatus = useTranslations("app.library.copiesBrowser.status");
   const locale = useLocale() as Locale;
+  const timeZone = useTenantTimeZone();
   const toast = useToast();
   const libraryErrorMessage = useLibraryErrorMessage();
 
@@ -187,7 +189,7 @@ export function CopyDetailSheet({
                             {t(`eventType.${event.event_type}`)}
                           </span>
                           <span className="text-[12px] text-fg-muted">
-                            {formatDateTime(event.created_at, { locale })}
+                            {formatDateTime(event.created_at, { locale, timeZone })}
                           </span>
                         </div>
                         {(Boolean(event.from_status) || Boolean(event.to_status)) && (

@@ -31,7 +31,7 @@ import {
 } from "../../../components/report-export-dialog";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
-import { businessNow } from "../../../lib/simulation/clock";
+import { startOfIsoMonth, thisMonthInZone, todayInZone } from "../../../lib/tenant-date";
 import {
   downloadMonthlyLibraryReportPdf,
   useLoansReportQuery,
@@ -47,6 +47,7 @@ import {
   downloadMostBorrowedReportXlsx,
   downloadOverdueMembersReportXlsx,
 } from "../reports-api";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import { ReportAccessionRegisterTable } from "./report-accession-register-table";
 import { ReportMembersTable } from "./report-members-table";
@@ -89,21 +90,10 @@ const REPORT_EXPORT_COLUMN_KEYS: Record<Exclude<ReportTab, "summary">, readonly 
   ],
 };
 
-function todayIso(): string {
-  return businessNow().toISOString().slice(0, 10);
-}
-
-function firstOfMonthIso(): string {
-  const now = businessNow();
-  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-}
-
-function monthIso(): string {
-  return businessNow().toISOString().slice(0, 7);
-}
-
 export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {}): ReactElement {
   const t = useTranslations("app.library.reports");
+  const timeZone = useTenantTimeZone();
+  const today = todayInZone(timeZone);
   const [tab, setTab] = useUrlState<ReportTab>(
     tabKey,
     [
@@ -117,9 +107,9 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
     ],
     "loans",
   );
-  const [from, setFrom] = useDateFilter("from", firstOfMonthIso());
-  const [to, setTo] = useDateFilter("to", todayIso());
-  const [month, setMonth] = useDateFilter("month", monthIso(), true);
+  const [from, setFrom] = useDateFilter("from", startOfIsoMonth(today));
+  const [to, setTo] = useDateFilter("to", today);
+  const [month, setMonth] = useDateFilter("month", thisMonthInZone(timeZone), true);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const exportOptions: Record<ReportTab, (options: ReportExportOptions) => Promise<void>> = {

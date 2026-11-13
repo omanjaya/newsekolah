@@ -75,4 +75,14 @@ describe("VisitsView filters", () => {
       { limit: 50, offset: 0 },
     );
   });
+
+  it("defaults the range to the first of the school's month through today, not the previous day", () => {
+    render(<VisitsView />);
+
+    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
+      "2026-09-01T00:00:00Z",
+      "2026-09-15T23:59:59Z",
+      { limit: 50, offset: 0 },
+    );
+  });
 });

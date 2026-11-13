@@ -15,6 +15,8 @@ vi.mock("@newsekolah/i18n", () => ({
   formatDate: (value: string) => value,
 }));
 
+vi.mock("../use-tenant-timezone", () => ({ useTenantTimeZone: () => "Asia/Jakarta" }));
+
 vi.mock("./my-library-loan-row", () => ({
   MyLibraryLoanRow: ({ loan }: { loan: LibraryLoan }) => <p>{loan.title_name ?? loan.id}</p>,
 }));

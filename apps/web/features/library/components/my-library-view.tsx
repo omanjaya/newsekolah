@@ -9,17 +9,14 @@ import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { bentoCells, tileColumns } from "../../../lib/layout/bento";
-import { businessNow } from "../../../lib/simulation/clock";
+import { todayInZone } from "../../../lib/tenant-date";
 import { useMyLibraryProfileQuery } from "../me-api";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import { MyLibraryHistoryTable } from "./my-library-history-table";
 import { MyLibraryLoanRow } from "./my-library-loan-row";
 import { MyLibraryReservations } from "./my-library-reservations";
 import { countMyLibraryTiles } from "./my-library-tiles";
-
-function todayIso(): string {
-  return businessNow().toLocaleDateString("en-CA");
-}
 
 /**
  * A student's own library screen, in the Hijau Segar bento language
@@ -31,7 +28,7 @@ function todayIso(): string {
 export function MyLibraryView(): ReactElement {
   const t = useTranslations("app.library.me");
   const locale = useLocale() as Locale;
-  const today = todayIso();
+  const today = todayInZone(useTenantTimeZone());
   const { data, isLoading, isError, refetch } = useMyLibraryProfileQuery();
 
   if (isError && !data) return <QueryError retry={() => refetch()} className="m-4" />;

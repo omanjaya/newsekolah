@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { useLibraryLoanRenewalsQuery } from "../api";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 
 /** Renewal history for one loan, shared by any screen that lists loan rows. */
 export function LoanRenewalsDialog({
@@ -18,6 +19,7 @@ export function LoanRenewalsDialog({
 }): ReactElement {
   const t = useTranslations("app.library.memberHistory.renewals");
   const locale = useLocale() as Locale;
+  const timeZone = useTenantTimeZone();
   const renewals = useLibraryLoanRenewalsQuery(loanId ?? "");
   const items = renewals.data?.data ?? [];
 
@@ -41,7 +43,9 @@ export function LoanRenewalsDialog({
           <ul className="flex flex-col gap-2 text-[13px]">
             {items.map((renewal) => (
               <li key={renewal.id} className="rounded-sm border border-border bg-surface p-2">
-                <p className="text-fg">{formatDateTime(renewal.renewed_at, { locale })}</p>
+                <p className="text-fg">
+                  {formatDateTime(renewal.renewed_at, { locale, timeZone })}
+                </p>
                 <p className="text-fg-muted">
                   {t("dueChange", {
                     previous: formatDate(renewal.previous_due_on, { locale }),

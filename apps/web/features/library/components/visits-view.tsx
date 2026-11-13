@@ -23,8 +23,9 @@ import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useCan } from "../../../lib/session/session-provider";
-import { businessNow } from "../../../lib/simulation/clock";
+import { startOfIsoMonth, todayInZone } from "../../../lib/tenant-date";
 import { useDirectoryNames } from "../../reference/directory-names";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 import {
   type LibraryVisit,
   useLibraryVisitSummaryQuery,
@@ -37,22 +38,15 @@ import { VisitRecordDialog } from "./visit-record-dialog";
 /** Rows per page; the visits API pages by offset and reports no total. */
 const VISITS_PAGE_SIZE = 50;
 
-function todayIso(): string {
-  return businessNow().toISOString().slice(0, 10);
-}
-
-function firstOfMonthIso(): string {
-  const now = businessNow();
-  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-}
-
 export function VisitsView(): ReactElement {
   const t = useTranslations("app.library.visits");
   const locale = useLocale() as Locale;
+  const timeZone = useTenantTimeZone();
+  const today = todayInZone(timeZone);
   const canRecord = useCan("manage_library_circulation");
 
-  const [from, setFrom] = useDateFilter("from", firstOfMonthIso());
-  const [to, setTo] = useDateFilter("to", todayIso());
+  const [from, setFrom] = useDateFilter("from", startOfIsoMonth(today));
+  const [to, setTo] = useDateFilter("to", today);
   const presets = useDateRangePresets();
   const [recording, setRecording] = useState(false);
 
@@ -135,10 +129,10 @@ export function VisitsView(): ReactElement {
         id: "visitedAt",
         header: t("columns.visitedAt"),
         enableSorting: false,
-        cell: ({ row }) => formatDateTime(row.original.visited_at, { locale }),
+        cell: ({ row }) => formatDateTime(row.original.visited_at, { locale, timeZone }),
       },
     ],
-    [t, locale, directoryMap],
+    [t, locale, directoryMap, timeZone],
   );
 
   return (
