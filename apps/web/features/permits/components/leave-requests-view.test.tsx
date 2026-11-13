@@ -9,6 +9,7 @@ vi.mock("next-intl", () => ({
 
 let canSubmit = false;
 let canIssue = false;
+let profileKind = "student";
 
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (permission: string) => {
@@ -16,6 +17,7 @@ vi.mock("../../../lib/session/session-provider", () => ({
     if (permission === "issue_leave_letters") return canIssue;
     return false;
   },
+  useSession: () => ({ me: { profile_kind: profileKind } }),
 }));
 
 vi.mock("./my-leave-requests", () => ({
@@ -45,6 +47,16 @@ describe("LeaveRequestsView", () => {
     render(<LeaveRequestsView />);
     expect(screen.getByText("issuerQueueUnavailableTitle")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "submit" })).not.toBeInTheDocument();
+  });
+
+  it("gives an admin, who holds the permission but files nothing, no submit flow", () => {
+    canSubmit = true;
+    canIssue = false;
+    profileKind = "staff";
+    render(<LeaveRequestsView />);
+    expect(screen.queryByRole("button", { name: "submit" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("my-leave-requests-stub")).not.toBeInTheDocument();
+    profileKind = "student";
   });
 
   it("shows the no-access empty state for a role with neither permission", () => {

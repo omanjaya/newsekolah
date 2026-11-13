@@ -23,6 +23,7 @@ import { useState } from "react";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { type WorkflowInstance, useMyExitPermitsQuery } from "../api";
+import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
 
 import { CreateForm, ExitPermitDetail } from "./exit-permit-detail";
 import { ApprovePanel, GatePanel } from "./exit-permit-panels";
@@ -35,7 +36,7 @@ import { WorkflowStatusBadge } from "./workflow-stepper";
  */
 export function ExitPermitsView({ embedded = false }: { embedded?: boolean } = {}): ReactElement {
   const t = useTranslations("app.permits.exit");
-  const canSubmit = useCan("submit_leave_requests");
+  const canSubmit = useCanSubmitPermit();
   const canApprove = useCan("issue_scan_tokens");
   const canGate = useCan("scan_exit_permits");
 

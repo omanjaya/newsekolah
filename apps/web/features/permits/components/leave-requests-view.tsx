@@ -9,6 +9,7 @@ import { useState } from "react";
 
 import { useQuickAction } from "../../../lib/hooks/use-quick-action";
 import { useCan } from "../../../lib/session/session-provider";
+import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
 
 import { MyLeaveRequests } from "./my-leave-requests";
 
@@ -19,7 +20,7 @@ import { MyLeaveRequests } from "./my-leave-requests";
  */
 export function LeaveRequestsView({ embedded = false }: { embedded?: boolean } = {}): ReactElement {
   const t = useTranslations("app.permits.leave");
-  const canSubmit = useCan("submit_leave_requests");
+  const canSubmit = useCanSubmitPermit();
   const canIssueLetter = useCan("issue_leave_letters");
   const [creating, setCreating] = useState(false);
   useQuickAction(

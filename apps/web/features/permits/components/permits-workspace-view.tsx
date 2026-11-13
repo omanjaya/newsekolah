@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { legacyQueueTarget, reviewerInboxTarget } from "../lib/queue-redirect";
+import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
 
 import { ExitPermitsView } from "./exit-permits-view";
 import { LateArrivalsView } from "./late-arrivals-view";
@@ -29,7 +30,7 @@ export function PermitsWorkspaceView({
   const router = useRouter();
   const { me, isReady } = useSession();
   const searchParams = useSearchParams();
-  const canSubmit = useCan("submit_leave_requests");
+  const canSubmit = useCanSubmitPermit();
   const canReviewLeave = useCan("review_leave_requests");
   const canIssue = useCan("issue_leave_letters");
   const canApproveExit = useCan("issue_scan_tokens");
