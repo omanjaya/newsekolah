@@ -2,11 +2,15 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { RolesView, slugFromName } from "./roles-view";
+import { slugFromName } from "./create-role-form";
+import { RolesView } from "./roles-view";
 
 const rolesQuery = vi.fn<() => unknown>();
 const permissionsQuery = vi.fn<() => unknown>();
 const can = vi.fn(() => true);
+const replaceMutate = vi.fn((_vars: unknown, opts?: { onSuccess?: () => void }) => {
+  opts?.onSuccess?.();
+});
 
 vi.mock("next-intl", () => ({
   useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
@@ -20,7 +24,7 @@ vi.mock("../api", () => ({
   usePermissionsQuery: () => permissionsQuery() as never,
   useCreateRoleMutation: () => ({ mutate: vi.fn(), isPending: false }),
   useDeleteRoleMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useReplaceRolePermissionsMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useReplaceRolePermissionsMutation: () => ({ mutate: replaceMutate, isPending: false }),
 }));
 
 const roles = [
@@ -69,6 +73,24 @@ describe("RolesView", () => {
 
     await user.click(screen.getByRole("button", { name: /Custom A/ }));
     expect(screen.getByRole("checkbox", { name: /view_y/ })).toBeChecked();
+  });
+
+  it("keeps the saved boxes while the roles refetch is pending", async () => {
+    const user = userEvent.setup();
+    render(<RolesView />);
+    await user.click(screen.getByRole("checkbox", { name: /view_y/ }));
+    await user.click(screen.getByRole("button", { name: "save" }));
+    // The roles list still holds the old set, as it does before the refetch lands.
+    expect(screen.getByRole("checkbox", { name: /view_y/ })).toBeChecked();
+    expect(screen.queryByText("unsaved")).not.toBeInTheDocument();
+
+    // A toggle right after the save keeps the saved code.
+    await user.click(screen.getByRole("checkbox", { name: /view_x/ }));
+    await user.click(screen.getByRole("button", { name: "save" }));
+    expect(replaceMutate).toHaveBeenLastCalledWith(
+      { id: "r1", permissions: ["view_y"] },
+      expect.anything(),
+    );
   });
 
   it("shows a retryable error instead of an empty grid when roles fail to load", () => {

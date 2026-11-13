@@ -8,7 +8,6 @@ import {
   ConfirmDialog,
   Dialog,
   DialogContent,
-  Input,
   PageHeader,
   Skeleton,
   cn,
@@ -24,12 +23,13 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import {
   type AdminRole,
-  useCreateRoleMutation,
   useDeleteRoleMutation,
   usePermissionsQuery,
   useReplaceRolePermissionsMutation,
   useRolesQuery,
 } from "../api";
+
+import { CreateRoleForm } from "./create-role-form";
 
 /**
  * identity/domain/errors.go's ErrLeavePermissionDirect: these two codes
@@ -149,14 +149,20 @@ function RoleMatrix({
   const permissions = usePermissionsQuery();
   const replace = useReplaceRolePermissionsMutation();
   const remove = useDeleteRoleMutation();
-  const granted = useMemo(() => new Set(draft ?? role.permissions), [draft, role.permissions]);
+  // Permissions just saved but not yet reflected by the refetched roles list.
+  // Without this the boxes would snap back to the old set until the refetch
+  // lands, and a toggle in that window would build on the stale set.
+  // Only trusted while the list still holds the array it held at save time.
+  const [saved, setSaved] = useState<{ permissions: string[]; stale: string[] } | undefined>();
+  const base = saved?.stale === role.permissions ? saved.permissions : role.permissions;
+  const granted = useMemo(() => new Set(draft ?? base), [draft, base]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const dirty = useMemo(() => {
-    const original = new Set(role.permissions);
+    const original = new Set(base);
     if (original.size !== granted.size) return true;
     for (const code of granted) if (!original.has(code)) return true;
     return false;
-  }, [role.permissions, granted]);
+  }, [base, granted]);
   const editable = canManage && !role.is_system;
 
   function save() {
@@ -164,6 +170,7 @@ function RoleMatrix({
       { id: role.id, permissions: [...granted] },
       {
         onSuccess: () => {
+          setSaved({ permissions: [...granted], stale: role.permissions });
           onDraftChange(undefined);
           toast.success(t("saved"));
         },
@@ -324,101 +331,4 @@ function RoleMatrix({
       />
     </section>
   );
-}
-
-function CreateRoleForm({ onDone }: { onDone: () => void }): ReactElement {
-  const t = useTranslations("app.roles");
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
-  const create = useCreateRoleMutation();
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  // Until the user edits the code themselves it follows the name.
-  const [slugTouched, setSlugTouched] = useState(false);
-  const [description, setDescription] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  return (
-    <form
-      className="flex flex-col gap-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (!name.trim() || !slug.trim()) {
-          setError(t("requiredError"));
-          return;
-        }
-        create.mutate(
-          {
-            name: name.trim(),
-            slug: slug.trim(),
-            ...(description.trim() ? { description: description.trim() } : {}),
-          },
-          {
-            onSuccess: () => {
-              toast.success(t("created"));
-              onDone();
-            },
-            onError: (err) => {
-              setError(
-                err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"),
-              );
-            },
-          },
-        );
-      }}
-    >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-          {error}
-        </p>
-      )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
-        <Input
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            if (!slugTouched) setSlug(slugFromName(e.target.value));
-          }}
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("slug")}</span>
-        <Input
-          value={slug}
-          onChange={(e) => {
-            setSlugTouched(true);
-            setSlug(e.target.value);
-          }}
-          pattern="[a-z0-9_]+"
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("description")}</span>
-        <Input
-          value={description}
-          onChange={(e) => {
-            setDescription(e.target.value);
-          }}
-        />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
-        <Button type="button" variant="secondary" onClick={onDone}>
-          {t("cancel")}
-        </Button>
-        <Button type="submit" loading={create.isPending}>
-          {t("save")}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-/** Lowercase, underscore-separated code derived from a role name, e.g. "Wali Asrama" -> "wali_asrama". */
-export function slugFromName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
 }
