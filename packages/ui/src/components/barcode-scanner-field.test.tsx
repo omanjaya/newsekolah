@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -115,5 +115,30 @@ describe("BarcodeScannerField continuous camera", () => {
     });
     expect(onScan).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("button", { name: "Tutup kamera" })).not.toBeInTheDocument();
+  });
+
+  it("explains a refused camera in a dialog instead of closing without a word", async () => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getUserMedia: vi.fn().mockRejectedValue(new DOMException("denied", "NotAllowedError")),
+      },
+    });
+    const user = userEvent.setup();
+    render(<BarcodeScannerField label="Kode" onScan={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Pindai dengan kamera" }));
+    const dialog = await screen.findByRole("dialog", { name: "Pindai dengan kamera" });
+    expect(await within(dialog).findByText("Akses kamera ditolak")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Masukkan kode manual" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByLabelText("Kode")).toHaveFocus();
+    });
+  });
+
+  it("holds the kiosk size at every width, past the compact field and button heights", () => {
+    render(<BarcodeScannerField label="Kartu anggota" onScan={vi.fn()} size="large" />);
+    expect(screen.getByLabelText("Kartu anggota")).toHaveClass("h-16", "md:pointer-fine:h-16");
+    expect(screen.getByRole("button", { name: "Catat" })).toHaveClass("h-16", "md:h-16");
   });
 });
