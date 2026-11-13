@@ -1,37 +1,101 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { createContext, useContext, type PropsWithChildren, type ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
+
+import { useCardContext } from "./card-context.js";
+import { IconCircle } from "./icon-circle.js";
+import type { Tone } from "./tone.js";
+
+export type EmptyStateVariant = "framed" | "inline" | "compact";
+
+const FramedSurfaceContext = createContext(false);
+
+/**
+ * Marks a container that already draws a frame (a table body, a panel),
+ * so a default `framed` EmptyState inside it renders `inline` instead of a
+ * frame inside a frame. Card does this for its own children.
+ */
+export function EmptyStateInlineScope({ children }: PropsWithChildren) {
+  return <FramedSurfaceContext.Provider value>{children}</FramedSurfaceContext.Provider>;
+}
 
 export interface EmptyStateProps {
   icon?: ReactNode;
   title: string;
   description?: string;
-  /** Every empty list needs one way forward, per docs/05-shared-components.md ("Setiap daftar wajib memberi aksi"). */
+  /** The way forward: every empty list needs one (docs/05-shared-components.md, "Setiap daftar wajib memberi aksi"). */
   action?: ReactNode;
+  /** A quieter second way forward, shown after `action` (a text link, a secondary button). */
+  secondaryAction?: ReactNode;
+  /**
+   * `framed` is its own surface for an empty page region; `inline` drops
+   * the frame for inside a card, a table or a panel; `compact` is one
+   * left-aligned row for a small card on a home screen. Unset, it is
+   * `inline` inside a Card or an EmptyStateInlineScope and `framed` elsewhere.
+   */
+  variant?: EmptyStateVariant;
+  /** Tints the icon circle; neutral by default, since the accent is for actions. */
+  tone?: Tone;
+  /** Heading level of the title, for when the empty state stands in for a titled section. */
+  titleAs?: "h2" | "h3" | "h4" | "p";
   className?: string;
 }
 
-export function EmptyState({ icon, title, description, action, className }: EmptyStateProps) {
+const FRAME_CLASS: Record<EmptyStateVariant, string> = {
+  framed: "items-center gap-4 rounded-lg border border-border bg-surface px-6 py-10 text-center",
+  inline: "items-center gap-4 px-6 py-8 text-center",
+  compact: "flex-row items-center gap-3 py-2 text-left",
+};
+
+/**
+ * An empty list or region: icon in a soft circle, a title on the heading
+ * role, one sentence, and its actions. Never a frame inside a frame.
+ */
+export function EmptyState({
+  icon,
+  title,
+  description,
+  action,
+  secondaryAction,
+  variant,
+  tone = "neutral",
+  titleAs: Title = "p",
+  className,
+}: EmptyStateProps) {
+  const card = useCardContext();
+  const inFrame = useContext(FramedSurfaceContext) || card !== null;
+  const look: EmptyStateVariant = variant ?? (inFrame ? "inline" : "framed");
+  const compact = look === "compact";
+  const hasActions = Boolean(action) || Boolean(secondaryAction);
+
   return (
-    <div
-      className={cn(
-        "flex flex-col items-center gap-4 rounded-lg border border-dashed border-border p-10 text-center",
-        className,
-      )}
-    >
+    <div className={cn("flex flex-col", FRAME_CLASS[look], className)}>
       {icon && (
-        <span
-          className="flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent-soft-fg [&>svg]:size-6"
-          aria-hidden="true"
-        >
+        <IconCircle tone={tone} size={compact ? "sm" : look === "framed" ? "lg" : "md"}>
           {icon}
-        </span>
+        </IconCircle>
       )}
-      <div className="flex flex-col gap-1">
-        <p className="text-heading text-fg">{title}</p>
-        {description && <p className="text-body-sm text-fg-muted">{description}</p>}
+      <div className={cn("flex min-w-0 flex-col", compact ? "flex-1 gap-0.5" : "max-w-sm gap-1")}>
+        <Title className={cn("text-fg", compact ? "text-label" : "text-heading")}>{title}</Title>
+        {description && (
+          <p className={cn("text-fg-muted", compact ? "text-caption" : "text-body-sm")}>
+            {description}
+          </p>
+        )}
       </div>
-      {action}
+      {hasActions && (
+        <div
+          className={cn(
+            "flex flex-wrap items-center gap-x-4 gap-y-2",
+            compact ? "shrink-0" : "mt-1 justify-center",
+          )}
+        >
+          {action}
+          {secondaryAction}
+        </div>
+      )}
     </div>
   );
 }
