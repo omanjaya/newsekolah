@@ -8,7 +8,13 @@ import { cn } from "../utils/cn.js";
 import { formatIsoDateRange, isIsoDate } from "../utils/iso-date.js";
 
 import { Calendar, type DateRange } from "./calendar.js";
-import { PickerField, type PickerFieldAriaProps } from "./picker-field.js";
+import {
+  focusPickerGrid,
+  keepEscapeForCalendarView,
+  PICKER_POPOVER,
+  PickerField,
+  type PickerFieldAriaProps,
+} from "./picker-field.js";
 import { Popover, PopoverContent } from "./popover.js";
 import { useUiLabels } from "./ui-labels.js";
 
@@ -146,10 +152,9 @@ export const DateRangePicker = forwardRef<HTMLButtonElement, DateRangePickerProp
           // 16px from the screen edges on a phone, where the range picker
           // (presets above the calendar) is nearly as wide as the screen.
           collisionPadding={16}
-          className="w-auto max-w-[calc(100vw-2rem)] p-3"
-          onOpenAutoFocus={(event) => {
-            event.preventDefault();
-          }}
+          className={cn(PICKER_POPOVER, "w-auto max-w-[calc(100vw-2rem)]")}
+          onOpenAutoFocus={focusPickerGrid}
+          onEscapeKeyDown={keepEscapeForCalendarView}
         >
           <div className="flex flex-col gap-3 md:flex-row">
             {presets && presets.length > 0 && (
@@ -180,7 +185,6 @@ export const DateRangePicker = forwardRef<HTMLButtonElement, DateRangePickerProp
                 isDateDisabled={isDateDisabled}
                 today={today}
                 locale={locale}
-                focusOnMount
               />
             </div>
           </div>

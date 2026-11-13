@@ -4,10 +4,17 @@ import { CalendarDays } from "lucide-react";
 import { forwardRef, useId, useState, type ReactNode } from "react";
 
 import { useControllableState } from "../hooks/use-controllable-state.js";
+import { cn } from "../utils/cn.js";
 import { formatIsoDate, isIsoDate, LONG_DATE } from "../utils/iso-date.js";
 
 import { Calendar, type CalendarDayInfo } from "./calendar.js";
-import { PickerField, type PickerFieldAriaProps } from "./picker-field.js";
+import {
+  focusPickerGrid,
+  keepEscapeForCalendarView,
+  PICKER_POPOVER,
+  PickerField,
+  type PickerFieldAriaProps,
+} from "./picker-field.js";
 import { Popover, PopoverContent } from "./popover.js";
 import { useUiLabels } from "./ui-labels.js";
 
@@ -110,12 +117,11 @@ export const DatePicker = forwardRef<HTMLButtonElement, DatePickerProps>(functio
         align={align}
         aria-label={placeholder ?? labels.datePickerPlaceholder}
         collisionPadding={16}
-        className="w-auto p-3"
-        // The calendar focuses its own day cell; Radix would pick the first
-        // button (previous month) instead.
-        onOpenAutoFocus={(event) => {
-          event.preventDefault();
-        }}
+        className={cn(PICKER_POPOVER, "w-auto")}
+        // The selected (or today's) day, not the first button Radix would
+        // pick (previous month).
+        onOpenAutoFocus={focusPickerGrid}
+        onEscapeKeyDown={keepEscapeForCalendarView}
       >
         <Calendar
           value={value}
@@ -130,7 +136,6 @@ export const DatePicker = forwardRef<HTMLButtonElement, DatePickerProps>(functio
           locale={locale}
           renderDay={renderDay}
           getDayDescription={getDayDescription}
-          focusOnMount
         />
       </PopoverContent>
     </Popover>

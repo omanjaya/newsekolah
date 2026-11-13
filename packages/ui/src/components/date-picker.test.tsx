@@ -7,7 +7,9 @@ import { expectNoAxeViolations } from "../test/axe.js";
 
 import { DatePicker, type DatePickerProps } from "./date-picker.js";
 import { DateRangePicker } from "./date-range-picker.js";
+import { Dialog, DialogContent } from "./dialog.js";
 import { MonthPicker } from "./month-picker.js";
+import { Sheet, SheetContent } from "./sheet.js";
 
 const TODAY = "2026-11-14";
 
@@ -107,6 +109,74 @@ describe("DatePicker", () => {
     await userEvent.click(screen.getByRole("combobox", { name: "Tanggal lahir" }));
     await expectOpenPickerAccessible(container);
   });
+
+  it("keeps keyboard focus in the calendar inside a Dialog", async () => {
+    const onChange = vi.fn();
+    render(
+      <Dialog open>
+        <DialogContent title="Ubah data siswa">
+          <DatePicker
+            aria-label="Tanggal lahir"
+            today={TODAY}
+            value="2026-11-14"
+            onChange={onChange}
+          />
+          <button type="button">Simpan</button>
+        </DialogContent>
+      </Dialog>,
+    );
+    const field = screen.getByRole("combobox", { name: "Tanggal lahir" });
+    field.focus();
+
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByRole("gridcell", { name: "Sabtu, 14 November 2026" })).toHaveFocus();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(screen.getByRole("gridcell", { name: "Minggu, 15 November 2026" })).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+
+    expect(onChange).toHaveBeenCalledWith("2026-11-15");
+    expect(screen.queryByRole("grid")).not.toBeInTheDocument();
+    expect(field).toHaveFocus();
+  });
+
+  it("takes Escape back from the year and month views before it closes", async () => {
+    render(<LabelledDatePicker value="2026-11-14" />);
+    await userEvent.click(screen.getByRole("combobox", { name: "Tanggal lahir" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "November 2026, pilih bulan dan tahun" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "2026, pilih tahun" }));
+    expect(screen.getByRole("gridcell", { name: "2026" })).toHaveFocus();
+
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByRole("gridcell", { name: "November 2026" })).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByRole("gridcell", { name: "Sabtu, 14 November 2026" })).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("grid")).not.toBeInTheDocument();
+  });
+
+  it("reaches a birth date decades back through the year view", async () => {
+    const onChange = vi.fn();
+    render(<LabelledDatePicker onChange={onChange} />);
+    await userEvent.click(screen.getByRole("combobox", { name: "Tanggal lahir" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "November 2026, pilih bulan dan tahun" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "2026, pilih tahun" }));
+    expect(screen.getByRole("grid", { name: "2016–2027" })).toBeInTheDocument();
+
+    const previousYears = screen.getByRole("button", { name: "Rentang tahun sebelumnya" });
+    await userEvent.click(previousYears);
+    await userEvent.click(previousYears);
+    await userEvent.click(previousYears);
+    await userEvent.click(screen.getByRole("gridcell", { name: "1980" }));
+    await userEvent.click(screen.getByRole("gridcell", { name: "Mei 1980" }));
+    expect(screen.getByRole("grid", { name: "Mei 1980" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("gridcell", { name: /^Sabtu, 17 Mei 1980/ }));
+
+    expect(onChange).toHaveBeenLastCalledWith("1980-05-17");
+  });
 });
 
 describe("DateRangePicker", () => {
@@ -148,6 +218,24 @@ describe("DateRangePicker", () => {
     await userEvent.click(screen.getByRole("combobox", { name: "Periode" }));
     await expectOpenPickerAccessible(container);
   });
+
+  it("keeps keyboard focus in the calendar inside a Sheet", async () => {
+    const onChange = vi.fn();
+    render(
+      <Sheet open>
+        <SheetContent title="Filter">
+          <DateRangePicker aria-label="Periode" today={TODAY} onChange={onChange} />
+          <button type="button">Terapkan</button>
+        </SheetContent>
+      </Sheet>,
+    );
+    screen.getByRole("combobox", { name: "Periode" }).focus();
+
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByRole("gridcell", { name: "Sabtu, 14 November 2026" })).toHaveFocus();
+    await userEvent.keyboard("{Enter}{ArrowRight}{ArrowRight}{Enter}");
+    expect(onChange).toHaveBeenLastCalledWith({ from: TODAY, to: "2026-11-16" });
+  });
 });
 
 describe("MonthPicker", () => {
@@ -180,5 +268,53 @@ describe("MonthPicker", () => {
     const { container } = render(<MonthPicker aria-label="Bulan laporan" today={TODAY} />);
     await userEvent.click(screen.getByRole("combobox", { name: "Bulan laporan" }));
     await expectOpenPickerAccessible(container);
+  });
+
+  it("keeps keyboard focus in the months inside a Dialog, and Escape closes from there", async () => {
+    const onChange = vi.fn();
+    render(
+      <Dialog open>
+        <DialogContent title="Laporan bulanan">
+          <MonthPicker aria-label="Bulan laporan" today={TODAY} onChange={onChange} />
+          <button type="button">Unduh</button>
+        </DialogContent>
+      </Dialog>,
+    );
+    const field = screen.getByRole("combobox", { name: "Bulan laporan" });
+    field.focus();
+
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByRole("gridcell", { name: "November 2026" })).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("grid")).not.toBeInTheDocument();
+    // The Dialog stays: Escape closed only the picker on top of it.
+    expect(screen.getByRole("dialog", { name: "Laporan bulanan" })).toBeInTheDocument();
+
+    await userEvent.keyboard("{ArrowDown}");
+    await userEvent.keyboard("{ArrowLeft}{Enter}");
+    expect(onChange).toHaveBeenCalledWith("2026-10");
+  });
+
+  it("reads a full date as its month for min, max and today", async () => {
+    render(
+      <MonthPicker
+        aria-label="Bulan laporan"
+        today="2026-11-14T08:00:00+08:00"
+        min="2026-10-15"
+        max="2026-11-30"
+      />,
+    );
+    await userEvent.click(screen.getByRole("combobox", { name: "Bulan laporan" }));
+    expect(screen.getByRole("gridcell", { name: "November 2026" })).toHaveAttribute(
+      "aria-current",
+      "date",
+    );
+    expect(screen.getByRole("gridcell", { name: "Oktober 2026" })).not.toHaveAttribute(
+      "aria-disabled",
+    );
+    expect(screen.getByRole("gridcell", { name: "September 2026" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
   });
 });

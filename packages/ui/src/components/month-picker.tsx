@@ -5,10 +5,24 @@ import { forwardRef, useId, useState } from "react";
 
 import { useControllableState } from "../hooks/use-controllable-state.js";
 import { useLocalToday } from "../hooks/use-local-today.js";
-import { formatIsoMonth, isoMonthOf, localTodayIso, parseIsoMonth } from "../utils/iso-date.js";
+import { cn } from "../utils/cn.js";
+import {
+  formatIsoMonth,
+  isoMonthOf,
+  localTodayIso,
+  normalizeIsoDate,
+  normalizeIsoMonth,
+  parseIsoMonth,
+} from "../utils/iso-date.js";
 
 import { CalendarMonthGrid } from "./calendar-month-grid.js";
-import { PickerField, type PickerFieldAriaProps } from "./picker-field.js";
+import {
+  focusPickerGrid,
+  keepEscapeForCalendarView,
+  PICKER_POPOVER,
+  PickerField,
+  type PickerFieldAriaProps,
+} from "./picker-field.js";
 import { Popover, PopoverContent } from "./popover.js";
 import { useUiLabels } from "./ui-labels.js";
 
@@ -42,8 +56,8 @@ export const MonthPicker = forwardRef<HTMLButtonElement, MonthPickerProps>(funct
     value: valueProp,
     defaultValue = "",
     onChange,
-    min,
-    max,
+    min: minProp,
+    max: maxProp,
     today: todayProp,
     locale: localeProp,
     placeholder,
@@ -58,7 +72,9 @@ export const MonthPicker = forwardRef<HTMLButtonElement, MonthPickerProps>(funct
   const labels = useUiLabels();
   const locale = localeProp ?? labels.locale;
   const localToday = useLocalToday();
-  const today = todayProp ?? localToday;
+  const today = normalizeIsoDate(todayProp) ?? localToday;
+  const min = normalizeIsoMonth(minProp);
+  const max = normalizeIsoMonth(maxProp);
   const contentId = useId();
   const [open, setOpen] = useState(false);
   const [rawValue, setValue] = useControllableState(
@@ -98,10 +114,9 @@ export const MonthPicker = forwardRef<HTMLButtonElement, MonthPickerProps>(funct
         align={align}
         aria-label={placeholder ?? labels.monthPickerPlaceholder}
         collisionPadding={16}
-        className="w-72 p-3"
-        onOpenAutoFocus={(event) => {
-          event.preventDefault();
-        }}
+        className={cn(PICKER_POPOVER, "w-72")}
+        onOpenAutoFocus={focusPickerGrid}
+        onEscapeKeyDown={keepEscapeForCalendarView}
       >
         <CalendarMonthGrid
           value={value}
@@ -110,7 +125,6 @@ export const MonthPicker = forwardRef<HTMLButtonElement, MonthPickerProps>(funct
           min={min}
           max={max}
           locale={locale}
-          focusOnMount
           onSelect={(month) => {
             setValue(month);
             setOpen(false);

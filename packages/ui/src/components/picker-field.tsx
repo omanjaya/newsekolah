@@ -11,6 +11,7 @@ import {
 
 import { cn } from "../utils/cn.js";
 
+import { CALENDAR_BACK_SELECTOR } from "./calendar-month-grid.js";
 import {
   FIELD_BOX,
   FIELD_BOX_BUTTON,
@@ -19,6 +20,40 @@ import {
   FIELD_ICON_FACE,
 } from "./field-box.js";
 import { PopoverTrigger } from "./popover.js";
+
+/**
+ * Classes for a picker's `PopoverContent`. The height cap keeps every row
+ * reachable when neither side of the field has room for the whole calendar
+ * (a phone, a short or scroll-locked Dialog): Radix places the popover
+ * `fixed` and does not slide it over its field, so without the cap the
+ * last weeks would be cut off.
+ */
+export const PICKER_POPOVER =
+  "max-h-(--radix-popover-content-available-height) overflow-y-auto p-3";
+
+/**
+ * `onOpenAutoFocus` for a picker's popover: focus the grid's roving cell.
+ * Radix calls it once the popover's focus scope is active, which pauses a
+ * surrounding Dialog or Sheet focus trap. Focusing from the grid's own
+ * mount effect comes before that, and the trap would pull focus straight
+ * back to the field.
+ */
+export function focusPickerGrid(event: Event): void {
+  event.preventDefault();
+  if (!(event.currentTarget instanceof HTMLElement)) return;
+  event.currentTarget.querySelector<HTMLElement>('[role="gridcell"][tabindex="0"]')?.focus();
+}
+
+/**
+ * `onEscapeKeyDown` for a picker's popover: in a month or year view Escape
+ * goes back a level, which the grid does itself once Radix is kept from
+ * closing the popover first. Anywhere else Escape closes the picker.
+ */
+export function keepEscapeForCalendarView(event: globalThis.KeyboardEvent): void {
+  if (event.target instanceof Element && event.target.closest(CALENDAR_BACK_SELECTOR)) {
+    event.preventDefault();
+  }
+}
 
 /** The ARIA and form props every picker forwards to its trigger. */
 export interface PickerFieldAriaProps {
