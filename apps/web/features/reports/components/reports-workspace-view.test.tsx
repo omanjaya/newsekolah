@@ -3,8 +3,14 @@ import type { ComponentType } from "react";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const session = vi.hoisted(() => ({ permissions: [] as string[] }));
+const session = vi.hoisted(() => ({
+  permissions: [] as string[],
+  disabled_modules: [] as string[],
+}));
 vi.mock("../../../lib/session/session-provider", () => ({ useSession: () => ({ me: session }) }));
+vi.mock("../../../components/module-unavailable-page", () => ({
+  ModuleUnavailablePage: () => <p>Module unavailable</p>,
+}));
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
@@ -36,6 +42,7 @@ import { ReportsWorkspaceView } from "./reports-workspace-view";
 describe("reports workspace permission isolation", () => {
   beforeEach(() => {
     session.permissions = [];
+    session.disabled_modules = [];
     window.history.replaceState(null, "", "/reports");
   });
   it("opens library reports without mounting school reports for a library-only account", async () => {
@@ -85,5 +92,46 @@ describe("reports workspace permission isolation", () => {
     expect(new URLSearchParams(window.location.search).get("tab")).toBe("schedules");
     expect(new URLSearchParams(window.location.search).get("libraryTab")).toBe("loans");
     expect(new URLSearchParams(window.location.search).get("visitorsTab")).toBe("monthly");
+  });
+});
+
+describe("reports workspace with switched-off modules", () => {
+  beforeEach(() => {
+    session.permissions = ["view_reports", "view_library_reports", "view_visitor_reports"];
+    session.disabled_modules = [];
+    window.history.replaceState(null, "", "/reports");
+  });
+
+  function renderWorkspace(): void {
+    render(
+      <Suspense>
+        <ReportsWorkspaceView />
+      </Suspense>,
+    );
+  }
+
+  it("keeps the library and visitor sections while only the report centre is off", async () => {
+    session.disabled_modules = ["reports"];
+    window.history.replaceState(null, "", "/reports?section=school");
+    renderWorkspace();
+    expect(await screen.findByTestId("library-report")).toBeInTheDocument();
+    expect(screen.queryByTestId("school-report")).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "schoolReports" })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "visitorReports" })).toBeInTheDocument();
+  });
+
+  it("drops the tabs when a single section is left", async () => {
+    session.disabled_modules = ["reports", "library"];
+    renderWorkspace();
+    expect(await screen.findByTestId("visitor-report")).toBeInTheDocument();
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+  });
+
+  it("says the module is unavailable once every granted section is off", () => {
+    session.permissions = ["view_reports", "view_library_reports"];
+    session.disabled_modules = ["reports", "library"];
+    renderWorkspace();
+    expect(screen.getByText("Module unavailable")).toBeInTheDocument();
+    expect(screen.queryByText("Forbidden")).not.toBeInTheDocument();
   });
 });

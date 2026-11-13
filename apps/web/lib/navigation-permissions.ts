@@ -1,5 +1,5 @@
 import { navigation, type NavItem } from "./navigation";
-import type { NavAccess } from "./navigation-access";
+import { moduleSectionsAccess, type NavAccess } from "./navigation-access";
 
 /**
  * The single permission a path needs, taken from the registry rather than
@@ -48,6 +48,7 @@ export function pathAccess(pathname: string, access: NavAccess): PathAccess {
     return "forbidden";
   }
   if (best.module && access.disabledModules.includes(best.module)) return "module-disabled";
+  if (best.moduleSections) return moduleSectionsAccess(best.moduleSections, access);
   return "ok";
 }
 

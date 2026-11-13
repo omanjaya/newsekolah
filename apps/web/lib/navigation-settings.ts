@@ -15,6 +15,7 @@ import {
 
 import type { NavItem } from "./navigation";
 import { NAV_GROUP } from "./navigation-groups";
+import { DOCUMENT_TEMPLATE_SECTIONS, REPORT_SECTIONS } from "./navigation-sections";
 
 /**
  * Settings, reporting and platform entries, split out of `navigation.ts`
@@ -53,9 +54,9 @@ export const settingsNavItems: NavItem[] = [
     key: "reports",
     labelKey: "app.reports.navLabel",
     href: "/reports",
-    module: "reports",
+    // One tab per report domain; open while any granted tab's module is on.
+    moduleSections: REPORT_SECTIONS,
     icon: FileSpreadsheet,
-    anyPermission: ["view_reports", "view_library_reports", "view_visitor_reports"],
   },
   {
     key: "setup",
@@ -151,7 +152,9 @@ export const settingsNavItems: NavItem[] = [
     key: "settings-document-templates",
     labelKey: "app.documents.templates.navLabel",
     href: "/settings/document-templates",
-    module: "permits",
+    // Templates are shared by every issuing module; the screen itself hides
+    // the kinds whose module is off.
+    moduleSections: DOCUMENT_TEMPLATE_SECTIONS,
     icon: domainIcons.document,
     permission: "manage_settings",
     group: NAV_GROUP.settings,

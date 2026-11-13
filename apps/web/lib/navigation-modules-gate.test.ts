@@ -8,7 +8,9 @@ import { FEATURE_MODULES, type FeatureModule } from "./modules/feature-modules";
 import { navigation, type NavItem, type NavProfileKind } from "./navigation";
 import { filterNavigationFixture, navAccessFixture } from "./navigation-access.fixture";
 import { pathAccess } from "./navigation-permissions";
+import { sectionModules } from "./navigation-sections";
 import { consolidateNavigation } from "./navigation-workspaces";
+import { availableQuickActions } from "./quick-actions";
 
 /**
  * The route prefixes each toggleable module owns: every page under them
@@ -26,7 +28,6 @@ const MODULE_ROUTE_PREFIXES: Record<FeatureModule, string[]> = {
     "/late-arrivals",
     "/duty",
     "/classroom-entry",
-    "/settings/document-templates",
     "/settings/workflows",
   ],
   announcements: ["/announcements"],
@@ -46,6 +47,22 @@ const MODULE_ROUTE_PREFIXES: Record<FeatureModule, string[]> = {
  */
 const UNMARKED_ALLOWLIST: string[] = [];
 
+/** The modules an entry is guarded by: its one module, or its sections' modules. */
+function entryModules(item: NavItem): FeatureModule[] {
+  if (item.module) return [item.module];
+  return item.moduleSections ? sectionModules(item.moduleSections) : [];
+}
+
+/** The registry entry that guards a route (longest href prefix, as pathAccess). */
+function guardingEntry(route: string): NavItem | undefined {
+  let best: NavItem | undefined;
+  for (const item of navigation) {
+    if (route !== item.href && !route.startsWith(`${item.href}/`)) continue;
+    if (!best || item.href.length > best.href.length) best = item;
+  }
+  return best;
+}
+
 function moduleForHref(href: string): FeatureModule | undefined {
   for (const [module, prefixes] of Object.entries(MODULE_ROUTE_PREFIXES)) {
     if (prefixes.some((prefix) => href === prefix || href.startsWith(`${prefix}/`))) {
@@ -61,7 +78,7 @@ describe("navigation modules", () => {
       .filter((item) => !UNMARKED_ALLOWLIST.includes(item.key))
       .flatMap((item) => {
         const expected = moduleForHref(item.href);
-        return expected && item.module !== expected
+        return expected && !entryModules(item).includes(expected)
           ? [`${item.key} (${item.href}): expected ${expected}, got ${item.module ?? "none"}`]
           : [];
       });
@@ -76,7 +93,7 @@ describe("navigation modules", () => {
   });
 
   it("covers every toggleable module with at least one entry", () => {
-    const covered = new Set(navigation.flatMap((item) => (item.module ? [item.module] : [])));
+    const covered = new Set(navigation.flatMap(entryModules));
     expect([...FEATURE_MODULES].filter((module) => !covered.has(module))).toEqual([]);
   });
 
@@ -88,10 +105,14 @@ describe("navigation modules", () => {
     const reachable = routes.flatMap((route) => {
       const module = moduleForHref(route);
       if (!module) return [route];
+      // A page made of sections stays open while any section's module is
+      // on, so it is refused only once all of them are off.
+      const entry = guardingEntry(route);
+      const disabled = entry?.moduleSections ? entryModules(entry) : [module];
       const outcomes = kinds.map((kind) =>
         pathAccess(
           route,
-          navAccessFixture(() => true, kind, [], [module]),
+          navAccessFixture(() => true, kind, [], disabled),
         ),
       );
       // Some entries are scoped to one profile kind; the others answer
@@ -148,10 +169,10 @@ describe("consolidated workspaces with disabled modules", () => {
     });
   }
 
-  it("keeps the reports workspace on its remaining destinations", () => {
+  it("keeps the reports workspace on /reports while another report domain is on", () => {
     const reports = workspaces(["reports"]).find((item) => item.key === "reports");
-    expect(reports?.href).toBe("/library/reports");
-    expect(reports?.aliases).toEqual(["library-reports", "visitors-recap"]);
+    expect(reports?.href).toBe("/reports");
+    expect(reports?.aliases).toEqual(["reports", "library-reports", "visitors-recap"]);
     expect(reports?.module).toBeUndefined();
   });
 
@@ -169,6 +190,68 @@ describe("consolidated workspaces with disabled modules", () => {
   it("keeps the counseling workspace on early-warning monitoring when discipline is off", () => {
     const counseling = workspaces(["discipline"]).find((item) => item.key === "counseling");
     expect(counseling?.href).toBe("/analytics");
+  });
+});
+
+describe("pages made of sections from several modules", () => {
+  const all = () => true;
+  const only =
+    (...codes: string[]) =>
+    (code: string) =>
+      codes.includes(code);
+  const access = (path: string, can: (code: string) => boolean, disabled: string[]) =>
+    pathAccess(path, navAccessFixture(can, "staff", [], disabled));
+  const listed = (key: string, can: (code: string) => boolean, disabled: string[]) =>
+    filterNavigationFixture(navigation, can, "staff", [], disabled).some(
+      (item) => item.key === key,
+    );
+
+  it("opens /reports while any granted report domain is on", () => {
+    expect(access("/reports", all, ["reports"])).toBe("ok");
+    expect(listed("reports", all, ["reports"])).toBe(true);
+    expect(access("/reports", all, ["reports", "library", "visitors"])).toBe("module-disabled");
+    expect(listed("reports", all, ["reports", "library", "visitors"])).toBe(false);
+  });
+
+  it("judges /reports by the reader's own grants, not every domain", () => {
+    const schoolOnly = only("view_reports");
+    expect(access("/reports", schoolOnly, ["reports"])).toBe("module-disabled");
+    expect(listed("reports", schoolOnly, ["reports"])).toBe(false);
+    const libraryOnly = only("view_library_reports");
+    expect(access("/reports", libraryOnly, ["reports"])).toBe("ok");
+    expect(listed("reports", libraryOnly, ["reports"])).toBe(true);
+    expect(access("/reports", only("manage_settings"), [])).toBe("forbidden");
+  });
+
+  it("opens /scan while permits or library is on", () => {
+    for (const kind of ["student", "teacher", "staff"] as const) {
+      expect(pathAccess("/scan", navAccessFixture(all, kind, [], ["permits"]))).toBe("ok");
+      expect(pathAccess("/scan", navAccessFixture(all, kind, [], ["library"]))).toBe("ok");
+      expect(pathAccess("/scan", navAccessFixture(all, kind, [], ["permits", "library"]))).toBe(
+        "module-disabled",
+      );
+    }
+    expect(listed("scan", all, ["permits"])).toBe(true);
+    expect(listed("scan", all, ["permits", "library"])).toBe(false);
+    const quick = (disabled: string[]) =>
+      availableQuickActions(navAccessFixture(all, "teacher", [], disabled)).map(
+        (action) => action.id,
+      );
+    expect(quick(["permits"])).toContain("scan-qr");
+    expect(quick(["permits", "library"])).not.toContain("scan-qr");
+  });
+
+  it("keeps document templates while any issuing module is on, workflows with permits only", () => {
+    expect(access("/settings/document-templates", all, ["permits"])).toBe("ok");
+    expect(listed("settings-document-templates", all, ["permits"])).toBe(true);
+    expect(access("/settings/document-templates", all, ["permits", "discipline", "visitors"])).toBe(
+      "module-disabled",
+    );
+    expect(listed("settings-document-templates", all, ["permits", "discipline", "visitors"])).toBe(
+      false,
+    );
+    expect(access("/settings/workflows", all, ["permits"])).toBe("module-disabled");
+    expect(listed("settings-workflows", all, ["permits"])).toBe(false);
   });
 });
 

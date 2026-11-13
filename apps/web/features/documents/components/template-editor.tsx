@@ -7,9 +7,11 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { isModuleEnabled } from "../../../lib/modules/feature-modules";
+import { useSession } from "../../../lib/session/session-provider";
 import {
-  DOCUMENT_TEMPLATE_KINDS,
   KNOWN_TEMPLATE_PLACEHOLDERS,
+  availableTemplateKinds,
   type DocumentTemplate,
   type DocumentTemplateKind,
   extractPlaceholders,
@@ -32,9 +34,15 @@ export function TemplateEditor({
   const apiErrorMessage = useApiErrorMessage();
   const create = useCreateDocumentTemplateMutation();
   const update = useUpdateDocumentTemplateMutation();
+  const { me } = useSession();
+  // A new template is offered only the kinds whose module is on; an
+  // existing one keeps its own kind (the list never holds a switched-off one).
+  const kinds = template
+    ? [template.kind as DocumentTemplateKind]
+    : availableTemplateKinds((module) => isModuleEnabled(me, module));
 
   const [kind, setKind] = useState<DocumentTemplateKind>(
-    (template?.kind ?? "leave_letter") as DocumentTemplateKind,
+    (template?.kind ?? kinds[0] ?? "class_journal") as DocumentTemplateKind,
   );
   const [name, setName] = useState(template?.name ?? "");
   const [body, setBody] = useState(template?.body ?? "");
@@ -98,7 +106,7 @@ export function TemplateEditor({
               setKind(value as DocumentTemplateKind);
             }}
             disabled={Boolean(template)}
-            options={DOCUMENT_TEMPLATE_KINDS.map((value) => ({ value, label: tKind(value) }))}
+            options={kinds.map((value) => ({ value, label: tKind(value) }))}
           />
         </label>
       </div>

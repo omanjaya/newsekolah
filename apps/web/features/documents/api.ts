@@ -4,6 +4,7 @@ import { queryKeys, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
+import type { FeatureModule } from "../../lib/modules/feature-modules";
 
 export type DocumentTemplate = components["schemas"]["DocumentTemplate"];
 export type DocumentTemplateWrite = components["schemas"]["DocumentTemplateWrite"];
@@ -12,12 +13,40 @@ export type DocumentTemplateKind = DocumentTemplateWrite["kind"];
 export const DOCUMENT_TEMPLATE_KINDS: DocumentTemplateKind[] = [
   "leave_letter",
   "warning_letter",
+  "visitor_badge",
   "class_journal",
   "member_card",
   "item_label",
   "clearance_letter",
   "report",
 ];
+
+/**
+ * The feature module whose documents use each kind, mirroring
+ * `TemplateKind.OwnerModule` on the API, which leaves a kind whose module is
+ * switched off out of the list and refuses it with 403 MODULE_DISABLED.
+ * `undefined` marks a kind owned by an always-on module.
+ */
+export const TEMPLATE_KIND_MODULE: Record<DocumentTemplateKind, FeatureModule | undefined> = {
+  leave_letter: "permits",
+  warning_letter: "discipline",
+  visitor_badge: "visitors",
+  class_journal: undefined,
+  member_card: "library",
+  item_label: "library",
+  clearance_letter: "library",
+  report: "reports",
+};
+
+/** The kinds a new template may take: those whose owner module is on. */
+export function availableTemplateKinds(
+  isEnabled: (module: FeatureModule) => boolean,
+): DocumentTemplateKind[] {
+  return DOCUMENT_TEMPLATE_KINDS.filter((kind) => {
+    const module = TEMPLATE_KIND_MODULE[kind];
+    return !module || isEnabled(module);
+  });
+}
 
 function useInvalidateDocumentTemplates() {
   const queryClient = useQueryClient();

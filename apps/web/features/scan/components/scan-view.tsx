@@ -6,9 +6,18 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useSession } from "../../../lib/session/session-provider";
+import { scanOffer, type ScanOffer } from "../lib/dispatch";
+
 import { type ScanOutcome, useScanDispatch } from "./use-scan-dispatch";
 
 const MAX_HISTORY = 20;
+
+const INTRO_KEY: Record<ScanOffer, "intro" | "introPermits" | "introLibrary"> = {
+  all: "intro",
+  permits: "introPermits",
+  library: "introLibrary",
+};
 
 /**
  * The one scanner for everyone (docs/07-ui-ux.md "Scanner"): classroom
@@ -22,6 +31,10 @@ const MAX_HISTORY = 20;
  */
 export function ScanView(): ReactElement {
   const t = useTranslations("app.scan");
+  const { me } = useSession();
+  // The route itself is refused by the shell once neither permits nor
+  // library is on (SCAN_SECTIONS); here the intro names only what is left.
+  const offer = scanOffer(me?.disabled_modules ?? []);
   const dispatch = useScanDispatch();
   const feedback = useScanFeedback();
   const [busy, setBusy] = useState(false);
@@ -50,7 +63,7 @@ export function ScanView(): ReactElement {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <p className="max-w-2xl text-[13px] text-fg-muted">{t("intro")}</p>
+      <p className="max-w-2xl text-[13px] text-fg-muted">{t(INTRO_KEY[offer])}</p>
       <div className="flex max-w-xl flex-col gap-4">
         <BarcodeScannerField
           label={t("scanLabel")}

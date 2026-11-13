@@ -22,10 +22,11 @@ import {
 
 import type { FeatureModule } from "./modules/feature-modules";
 import { academicNavItems } from "./navigation-academic";
-import type { NavAccess } from "./navigation-access";
+import { moduleSectionsAccess, type NavAccess, type NavModuleSection } from "./navigation-access";
 import { NAV_GROUP as GROUP } from "./navigation-groups";
 import { libraryNavItems } from "./navigation-library";
 import { moduleNavItems } from "./navigation-modules";
+import { SCAN_SECTIONS } from "./navigation-sections";
 import { settingsNavItems } from "./navigation-settings";
 
 export { navGroupIcons } from "./navigation-groups";
@@ -56,6 +57,14 @@ export interface NavItem {
    * is off.
    */
   module?: FeatureModule;
+  /**
+   * For a page whose parts each call a different feature module (the
+   * reports workspace, the universal scanner) instead of one `module`: the
+   * page is listed and opens while at least one part is usable, shows only
+   * those parts, and answers "module-disabled" once every granted part's
+   * module is off.
+   */
+  moduleSections?: readonly NavModuleSection[];
   /** Legacy destinations owned by a consolidated menu entry. */
   activePaths?: string[];
   aliases?: string[];
@@ -152,8 +161,10 @@ export const navigation: NavItem[] = [
     href: "/scan",
     icon: ScanLine,
     // Each QR action is authorized by the server on scan; the page itself
-    // needs nothing beyond a signed-in school account.
+    // needs nothing beyond a signed-in school account and one of the
+    // modules its actions call.
     profileKinds: ["student", "teacher", "staff"],
+    moduleSections: SCAN_SECTIONS,
   },
   {
     key: "student-profile",
@@ -507,6 +518,9 @@ export function filterNavigation(items: NavItem[], access: NavAccess): NavItem[]
   const { can, profileKind, roleSlugs, disabledModules } = access;
   return items.filter((item) => {
     if (item.module && disabledModules.includes(item.module)) return false;
+    if (item.moduleSections && moduleSectionsAccess(item.moduleSections, access) !== "ok") {
+      return false;
+    }
     if (item.permission && !can(item.permission)) return false;
     if (item.anyPermission && !item.anyPermission.some((code) => can(code))) return false;
     if (item.profileKinds && (!profileKind || !item.profileKinds.includes(profileKind))) {
