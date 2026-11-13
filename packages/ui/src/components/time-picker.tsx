@@ -32,7 +32,7 @@ import {
   FIELD_ICON_FACE,
   FIELD_INNER_INPUT,
 } from "./field-box.js";
-import { isInvalid } from "./picker-field.js";
+import { useFieldControl } from "./field-context.js";
 import { Popover, PopoverAnchor, PopoverContent } from "./popover.js";
 import { useUiLabels } from "./ui-labels.js";
 
@@ -107,17 +107,28 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
     locale: localeProp,
     placeholder,
     required,
-    disabled,
+    disabled: disabledProp,
     invalid,
     name,
     onBlur,
     className,
+    id,
     "aria-invalid": ariaInvalid,
+    "aria-describedby": ariaDescribedBy,
     ...aria
   },
   ref,
 ) {
   const labels = useUiLabels();
+  const field = useFieldControl({
+    id,
+    required,
+    disabled: disabledProp,
+    invalid,
+    "aria-invalid": ariaInvalid,
+    "aria-describedby": ariaDescribedBy,
+  });
+  const disabled = field.attributes.disabled;
   const locale = localeProp ?? labels.locale;
   const listId = useId();
   const boxRef = useRef<HTMLDivElement>(null);
@@ -222,7 +233,7 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
     }
   }
 
-  const showInvalid = isInvalid(invalid, ariaInvalid);
+  const showInvalid = field.invalid;
   const highlighted = open && navigated ? active : -1;
   const activeOption = highlighted >= 0 ? `${listId}-${highlighted}` : undefined;
 
@@ -240,7 +251,7 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
             FIELD_BOX,
             FIELD_BOX_WITH_INPUT,
             // Puts the list toggle's icon where Select's chevron sits.
-            "pr-0 md:pr-2",
+            "pr-0 md:pointer-fine:pr-2",
             showInvalid && FIELD_BOX_INVALID,
             disabled && FIELD_BOX_DISABLED,
             className,
@@ -257,8 +268,10 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
             aria-expanded={open}
             aria-controls={open ? listId : undefined}
             aria-activedescendant={activeOption}
-            aria-required={required ?? undefined}
+            id={field.attributes.id}
+            aria-required={field.attributes["aria-required"]}
             aria-invalid={showInvalid || undefined}
+            aria-describedby={field.attributes["aria-describedby"]}
             disabled={disabled}
             placeholder={placeholder ?? labels.timePickerPlaceholder}
             value={shown}
@@ -356,8 +369,9 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
             aria-selected={option === minutes}
             className={cn(
               // Same row as Select's options: pill-free, check on the right.
-              "relative flex h-11 cursor-pointer items-center rounded-xs px-3 pr-8 text-base tabular-nums text-fg md:h-9",
-              index === highlighted && "bg-bg",
+              "relative flex h-11 cursor-pointer items-center rounded-sm px-3 pr-9 text-body tabular-nums text-fg md:pointer-fine:h-9",
+              "transition-colors",
+              index === highlighted && "bg-state-hover",
             )}
           >
             {formatTime(option, locale)}

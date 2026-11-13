@@ -213,9 +213,9 @@ export function Calendar(props: CalendarProps): ReactElement {
             type="button"
             aria-label={labels.calendarChooseMonth(caption)}
             className={cn(
-              "inline-flex h-11 items-center gap-1 rounded-full px-3 md:h-8",
-              "font-heading text-base font-semibold text-fg",
-              "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-bg",
+              "inline-flex h-11 items-center gap-1 rounded-full px-3 md:pointer-fine:h-8",
+              "text-heading text-fg",
+              "transition-colors hover:bg-state-hover",
             )}
             onClick={() => {
               setView("months");

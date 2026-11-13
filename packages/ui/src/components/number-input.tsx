@@ -30,7 +30,7 @@ import {
   FIELD_ICON_FACE,
   FIELD_INNER_INPUT,
 } from "./field-box.js";
-import { isInvalid } from "./picker-field.js";
+import { useFieldControl } from "./field-context.js";
 import { useUiLabels } from "./ui-labels.js";
 
 export interface NumberInputProps extends Omit<
@@ -108,7 +108,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     useGrouping = false,
     locale: localeProp,
     invalid,
-    disabled,
+    disabled: disabledProp,
     readOnly,
     id: idProp,
     name,
@@ -117,7 +117,9 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     onBlur,
     onFocus,
     onKeyDown,
+    required,
     "aria-invalid": ariaInvalid,
+    "aria-describedby": ariaDescribedBy,
     ...inputProps
   },
   ref,
@@ -125,7 +127,16 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
   const labels = useUiLabels();
   const locale = localeProp ?? labels.locale;
   const generatedId = useId();
-  const id = idProp ?? generatedId;
+  const field = useFieldControl({
+    id: idProp,
+    required,
+    disabled: disabledProp,
+    invalid,
+    "aria-invalid": ariaInvalid,
+    "aria-describedby": ariaDescribedBy,
+  });
+  const id = field.attributes.id ?? generatedId;
+  const disabled = field.attributes.disabled;
   const precision = precisionProp ?? fractionDigitsOf(step);
   const allowNegative = min === undefined || min < 0;
   const negativeKeypad = min !== undefined && min < 0;
@@ -160,7 +171,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     }
   }
 
-  const showInvalid = isInvalid(invalid, ariaInvalid);
+  const showInvalid = field.invalid;
   const atMin = value !== null && min !== undefined && value <= min;
   const atMax = value !== null && max !== undefined && value >= max;
   const stepperButton = (direction: 1 | -1) => (
@@ -170,7 +181,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
       aria-label={direction === 1 ? labels.numberInputIncrement : labels.numberInputDecrement}
       aria-controls={id}
       disabled={Boolean(disabled) || Boolean(readOnly) || (direction === 1 ? atMax : atMin)}
-      className={cn(FIELD_ICON_BUTTON, "md:size-7")}
+      className={cn(FIELD_ICON_BUTTON, "md:pointer-fine:size-7")}
       // A press must not pull focus out of the input mid-edit.
       onMouseDown={(event) => {
         event.preventDefault();
@@ -202,7 +213,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
       className={cn(
         FIELD_BOX,
         FIELD_BOX_WITH_INPUT,
-        stepper && "gap-1.5 px-0 md:px-1",
+        stepper && "gap-1.5 px-0 md:pointer-fine:px-1",
         showInvalid && FIELD_BOX_INVALID,
         disabled && FIELD_BOX_DISABLED,
         className,
@@ -228,6 +239,9 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
         aria-valuemin={min}
         aria-valuemax={max}
         aria-invalid={showInvalid || undefined}
+        aria-describedby={field.attributes["aria-describedby"]}
+        aria-required={field.attributes["aria-required"]}
+        required={required}
         disabled={disabled}
         readOnly={readOnly}
         value={shown}
@@ -279,7 +293,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
 function Adornment({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <span
-      className={cn("flex shrink-0 items-center text-base text-fg-muted [&>svg]:size-4", className)}
+      className={cn("flex shrink-0 items-center text-body text-fg-muted [&>svg]:size-4", className)}
     >
       {children}
     </span>
