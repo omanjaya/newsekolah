@@ -171,7 +171,7 @@ export function CalendarView(): ReactElement {
                 return (
                   <div
                     key={iso}
-                    className={`flex min-h-24 flex-col gap-1 bg-surface p-1.5 md:h-full md:min-h-0 ${inMonth ? "" : "opacity-40"}`}
+                    className={`flex min-h-24 flex-col gap-1 p-1.5 md:h-full md:min-h-0 ${inMonth ? "bg-surface" : "bg-bg"}`}
                   >
                     <span className="shrink-0 text-[12px] text-fg-muted">{date.getDate()}</span>
                     <div className="flex flex-col gap-1 overflow-hidden md:min-h-0 md:flex-1 md:overflow-y-auto">

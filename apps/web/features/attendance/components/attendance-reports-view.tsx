@@ -43,7 +43,7 @@ export function AttendanceReportsView(): ReactElement {
       <AcademicWorkspaceLinks area="attendance" />
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
+        <TabsList className={canViewReports ? undefined : "hidden"}>
           <TabsTrigger value="mine">{t("tabs.mine")}</TabsTrigger>
           {canViewReports && <TabsTrigger value="daily">{t("tabs.daily")}</TabsTrigger>}
           {canViewReports && <TabsTrigger value="monthly">{t("tabs.monthly")}</TabsTrigger>}
