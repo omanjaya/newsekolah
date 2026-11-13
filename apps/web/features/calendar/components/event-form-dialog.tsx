@@ -138,7 +138,7 @@ export function EventFormDialog({
               <Button
                 type="button"
                 variant="secondary"
-                className="mr-auto text-status-late"
+                className="mr-auto text-danger"
                 onClick={onDelete}
               >
                 {t("deleteEvent")}

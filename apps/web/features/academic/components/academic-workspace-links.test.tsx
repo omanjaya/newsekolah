@@ -69,9 +69,22 @@ it("preserves source and destination years between independently authorized step
   expect(screen.queryByRole("link", { name: "setup" })).toBeNull();
 });
 
-it("keeps role administration independent of access to user accounts", () => {
+it("withholds the accounts link from a reader who can only administer roles", () => {
+  state.permissions = ["view_roles"];
+  render(<AcademicWorkspaceLinks area="users" />);
+  expect(screen.queryByRole("link", { name: "accounts" })).toBeNull();
+});
+
+it("renders both role and account links when both are permitted", () => {
   state.permissions = ["view_roles", "view_users"];
   render(<AcademicWorkspaceLinks area="users" />);
   expect(screen.getByRole("link", { name: "roles" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "accounts" })).toBeInTheDocument();
+});
+
+it("renders no strip for a schedule viewer who can open only the calendar", () => {
+  state.permissions = ["view_academic_data"];
+  state.pathname = "/school/calendar";
+  const { container } = render(<AcademicWorkspaceLinks area="schedule" />);
+  expect(container).toBeEmptyDOMElement();
 });

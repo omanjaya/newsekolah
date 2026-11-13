@@ -282,7 +282,7 @@ export function GradingView(): ReactElement {
         }}
       />
 
-      {!noAssignments && (canManageSettings || canManageGrades || canViewGrades) && (
+      {(canManageSettings || canManageGrades || canViewGrades) && (
         <Tabs
           value={tab}
           onValueChange={(value) => {
@@ -292,10 +292,12 @@ export function GradingView(): ReactElement {
           }}
         >
           <TabsList>
-            <TabsTrigger aria-controls={undefined} value="gradebook">
-              {t("tabGradebook")}
-            </TabsTrigger>
-            {canManageGrades && (
+            {!noAssignments && (
+              <TabsTrigger aria-controls={undefined} value="gradebook">
+                {t("tabGradebook")}
+              </TabsTrigger>
+            )}
+            {canManageGrades && !noAssignments && (
               <TabsTrigger aria-controls={undefined} value="tp">
                 {t("tabTpMapping")}
               </TabsTrigger>

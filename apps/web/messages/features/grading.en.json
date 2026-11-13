@@ -84,6 +84,7 @@
     "noMatch": "No student matches your search.",
     "scoresSaved": "Scores saved at {time}.",
     "unsavedChanges": "{count, plural, one {# unsaved change} other {# unsaved changes}}",
+    "discardChanges": "Your unsaved score changes will be lost. Continue?",
     "discardChangesTitle": "Discard unsaved changes?",
     "discardChangesBody": "{count, plural, one {# score change is} other {# score changes are}} not saved and will be lost if you continue.",
     "discardChangesConfirm": "Discard changes",

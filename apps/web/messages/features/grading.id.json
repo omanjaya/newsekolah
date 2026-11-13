@@ -84,6 +84,7 @@
     "noMatch": "Tidak ada siswa yang cocok dengan pencarian.",
     "scoresSaved": "Nilai tersimpan pukul {time}.",
     "unsavedChanges": "{count, plural, other {# perubahan belum tersimpan}}",
+    "discardChanges": "Perubahan nilai yang belum tersimpan akan hilang. Lanjutkan?",
     "discardChangesTitle": "Buang perubahan yang belum disimpan?",
     "discardChangesBody": "{count, plural, other {# perubahan nilai}} belum tersimpan dan akan hilang jika Anda melanjutkan.",
     "discardChangesConfirm": "Buang perubahan",

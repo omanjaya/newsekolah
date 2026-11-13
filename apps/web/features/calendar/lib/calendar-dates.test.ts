@@ -1,8 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { buildMonthGrid, toISODate } from "./calendar-dates";
 
 describe("toISODate", () => {
+  // Pinned to the school's zone: in UTC the old toISOString-based key
+  // returned the same strings, so the regression only shows east of UTC.
+  const originalTz = process.env.TZ;
+  beforeAll(() => {
+    process.env.TZ = "Asia/Makassar";
+  });
+  afterAll(() => {
+    if (originalTz === undefined) delete process.env.TZ;
+    else process.env.TZ = originalTz;
+  });
+
   it("keys a local-midnight date by its own day, whatever the zone offset", () => {
     expect(toISODate(new Date(2026, 10, 14))).toBe("2026-11-14");
     expect(toISODate(new Date(2026, 0, 1))).toBe("2026-01-01");

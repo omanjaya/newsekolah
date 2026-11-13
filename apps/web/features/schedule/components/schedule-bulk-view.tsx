@@ -114,7 +114,9 @@ export function ScheduleBulkView(): ReactElement {
 
       <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
         <h2 className="text-[16px] font-medium text-fg">{t("importSection.title")}</h2>
-        <p className="text-[13px] text-fg-muted">{t("importSection.body")}</p>
+        <p className="text-[13px] text-fg-muted [overflow-wrap:anywhere]">
+          {t("importSection.body")}
+        </p>
 
         <div className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium text-fg">{t("importSection.uploadLabel")}</span>

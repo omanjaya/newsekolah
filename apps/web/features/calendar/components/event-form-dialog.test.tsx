@@ -44,6 +44,22 @@ it("offers delete inside the dialog when editing, where it can be clicked", asyn
   expect(screen.getByDisplayValue("Ujian Tengah Semester")).toBeInTheDocument();
 });
 
+it("starts from the new event when the dialog is remounted for another one", () => {
+  const other: CalendarEvent = { ...EVENT, id: "event-2", name: "Libur Nasional" };
+  const props = {
+    open: true,
+    defaultDate: "2026-11-14",
+    gradeLevels: [],
+    pending: false,
+    onOpenChange: vi.fn(),
+    onSubmit: vi.fn(),
+  };
+  const view = render(<EventFormDialog key="a" {...props} initial={EVENT} />);
+  expect(screen.getByDisplayValue("Ujian Tengah Semester")).toBeInTheDocument();
+  view.rerender(<EventFormDialog key="b" {...props} initial={other} />);
+  expect(screen.getByDisplayValue("Libur Nasional")).toBeInTheDocument();
+});
+
 it("does not offer delete for a new event", () => {
   renderDialog({ onDelete: vi.fn() });
   expect(screen.queryByRole("button", { name: "deleteEvent" })).not.toBeInTheDocument();
