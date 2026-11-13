@@ -32,7 +32,7 @@
       "nameLabel": "Template name",
       "kindLabel": "Document kind",
       "bodyLabel": "Body (HTML)",
-      "bodyHint": "Use {{placeholder_name}} for parts filled in automatically when the document is issued.",
+      "bodyHint": "Use '{{'placeholder_name'}}' for parts filled in automatically when the document is issued.",
       "placeholdersLabel": "Placeholders used in this template",
       "noPlaceholders": "This template does not use any placeholders yet.",
       "knownPlaceholdersLabel": "Placeholders available for this kind",

@@ -32,7 +32,7 @@
       "nameLabel": "Nama template",
       "kindLabel": "Jenis dokumen",
       "bodyLabel": "Isi (HTML)",
-      "bodyHint": "Gunakan {{nama_placeholder}} untuk bagian yang diisi otomatis saat dokumen diterbitkan.",
+      "bodyHint": "Gunakan '{{'nama_placeholder'}}' untuk bagian yang diisi otomatis saat dokumen diterbitkan.",
       "placeholdersLabel": "Placeholder yang dipakai template ini",
       "noPlaceholders": "Template ini belum memakai placeholder apa pun.",
       "knownPlaceholdersLabel": "Placeholder yang tersedia untuk jenis ini",

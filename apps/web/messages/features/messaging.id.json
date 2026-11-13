@@ -52,9 +52,9 @@
     },
     "preview": {
       "title": "Pratinjau",
-      "variableValueLabel": "Nilai untuk {{variable}}",
+      "variableValueLabel": "Nilai untuk {variable}",
       "renderedLabel": "Hasil",
-      "missingVariables": "Variabel belum diisi: {{variables}}"
+      "missingVariables": "Variabel belum diisi: {variables}"
     },
     "created": "Template dibuat",
     "updated": "Template diperbarui",
