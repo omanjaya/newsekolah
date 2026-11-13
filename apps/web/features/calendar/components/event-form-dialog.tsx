@@ -17,6 +17,7 @@ export function EventFormDialog({
   gradeLevels,
   pending,
   onOpenChange,
+  onDelete,
   onSubmit,
 }: {
   open: boolean;
@@ -25,6 +26,8 @@ export function EventFormDialog({
   gradeLevels: GradeLevel[];
   pending: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Present only when editing an event the viewer may delete. */
+  onDelete?: () => void;
   onSubmit: (body: CalendarEventInput) => void;
 }): ReactElement {
   const t = useTranslations("app.calendar");
@@ -130,7 +133,17 @@ export function EventFormDialog({
               </div>
             </fieldset>
           )}
-          <div className="flex justify-end gap-2 border-t border-border pt-4">
+          <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+            {initial && onDelete && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="mr-auto text-status-late"
+                onClick={onDelete}
+              >
+                {t("deleteEvent")}
+              </Button>
+            )}
             <Button
               type="button"
               variant="secondary"

@@ -12,14 +12,15 @@ import {
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
+import { todayInZone } from "../../../lib/tenant-date";
 import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import { useGradeLevelsQuery } from "../../school/api";
 import {
@@ -30,6 +31,7 @@ import {
   useDeleteCalendarEventMutation,
   useUpdateCalendarEventMutation,
 } from "../api";
+import { buildMonthGrid, toISODate } from "../lib/calendar-dates";
 
 import { EventFormDialog } from "./event-form-dialog";
 
@@ -37,10 +39,6 @@ import { EventFormDialog } from "./event-form-dialog";
 // exams and ordinary events at a glance; the event name itself always
 // carries the actual meaning (never color alone).
 const NON_TEACHING_KINDS: CalendarEventKind[] = ["holiday", "no_school", "semester_break"];
-
-function toISODate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 function eventsForDay(events: CalendarEvent[], iso: string): CalendarEvent[] {
   return events.filter((e) => iso >= e.date && iso <= e.end_date);
@@ -52,6 +50,8 @@ export function CalendarView(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_academic_years");
+  const { me } = useSession();
+  const today = todayInZone(me?.tenant.timezone);
 
   const [month, setMonth] = useState(() => {
     const now = businessNow();
@@ -59,7 +59,10 @@ export function CalendarView(): ReactElement {
   });
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<CalendarEvent | undefined>(undefined);
-  const [defaultDate, setDefaultDate] = useState(() => toISODate(businessNow()));
+  const [defaultDate, setDefaultDate] = useState(today);
+  // The dialog keeps its field state from mount, so each open remounts it to
+  // start from the event being edited (or blank for a new one).
+  const [formKey, setFormKey] = useState(0);
   const [deleting, setDeleting] = useState<CalendarEvent | undefined>(undefined);
 
   const query = useCalendarEventsQuery();
@@ -83,6 +86,13 @@ export function CalendarView(): ReactElement {
     [days, events],
   );
 
+  function openForm(event: CalendarEvent | undefined, date: string) {
+    setEditing(event);
+    setDefaultDate(date);
+    setFormKey((key) => key + 1);
+    setFormOpen(true);
+  }
+
   function handleError(error: unknown) {
     toast.error(
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
@@ -105,9 +115,7 @@ export function CalendarView(): ReactElement {
               size="sm"
               icon={<Plus />}
               onClick={() => {
-                setEditing(undefined);
-                setDefaultDate(toISODate(businessNow()));
-                setFormOpen(true);
+                openForm(undefined, today);
               }}
             >
               {t("addEvent")}
@@ -168,24 +176,15 @@ export function CalendarView(): ReactElement {
                     <span className="shrink-0 text-[12px] text-fg-muted">{date.getDate()}</span>
                     <div className="flex flex-col gap-1 overflow-hidden md:min-h-0 md:flex-1 md:overflow-y-auto">
                       {dayEvents.map((e) => (
-                        <button
+                        <EventChip
                           key={e.id}
-                          type="button"
-                          disabled={!canManage}
-                          onClick={() => {
-                            setEditing(e);
-                            setDefaultDate(iso);
-                            setFormOpen(true);
+                          event={e}
+                          canManage={canManage}
+                          onOpen={() => {
+                            openForm(e, iso);
                           }}
                           className="shrink-0 text-left"
-                        >
-                          <Badge
-                            variant={NON_TEACHING_KINDS.includes(e.kind) ? "accent" : "neutral"}
-                            className="w-full truncate"
-                          >
-                            {e.name}
-                          </Badge>
-                        </button>
+                        />
                       ))}
                     </div>
                   </div>
@@ -208,28 +207,22 @@ export function CalendarView(): ReactElement {
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                   {dayEvents.map((e) => (
-                    <button
+                    <EventChip
                       key={e.id}
-                      type="button"
-                      disabled={!canManage}
-                      onClick={() => {
-                        setEditing(e);
-                        setDefaultDate(iso);
-                        setFormOpen(true);
+                      event={e}
+                      canManage={canManage}
+                      onOpen={() => {
+                        openForm(e, iso);
                       }}
                       className="min-h-11 w-full rounded-xs border border-border px-3 py-2 text-left"
-                    >
-                      <Badge
-                        variant={NON_TEACHING_KINDS.includes(e.kind) ? "accent" : "neutral"}
-                        className="w-full truncate"
-                      >
-                        {e.name}
-                      </Badge>
-                    </button>
+                    />
                   ))}
                 </div>
               </div>
             ))}
+            {agendaDays.length === 0 && events.length > 0 && (
+              <p className="py-6 text-center text-[13px] text-fg-muted">{t("emptyMonth")}</p>
+            )}
           </div>
         </>
       )}
@@ -238,17 +231,25 @@ export function CalendarView(): ReactElement {
         <EmptyState
           icon={<domainIcons.schedule aria-hidden="true" />}
           title={t("emptyTitle")}
-          description={t("emptyBody")}
+          description={canManage ? t("emptyBody") : t("emptyBodyReadOnly")}
         />
       )}
 
       <EventFormDialog
+        key={formKey}
         open={formOpen}
         initial={editing}
         defaultDate={defaultDate}
         gradeLevels={gradeLevels.data?.data ?? []}
         pending={createMutation.isPending || updateMutation.isPending}
         onOpenChange={setFormOpen}
+        onDelete={
+          editing && canManage
+            ? () => {
+                setDeleting(editing);
+              }
+            : undefined
+        }
         onSubmit={(body) => {
           if (editing) {
             updateMutation.mutate(
@@ -272,21 +273,6 @@ export function CalendarView(): ReactElement {
           }
         }}
       />
-
-      {formOpen && editing && canManage && (
-        <div className="flex justify-end">
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<X />}
-            onClick={() => {
-              setDeleting(editing);
-            }}
-          >
-            {t("deleteEvent")}
-          </Button>
-        </div>
-      )}
 
       <ConfirmDialog
         open={deleting !== undefined}
@@ -313,17 +299,40 @@ export function CalendarView(): ReactElement {
   );
 }
 
-function buildMonthGrid(month: Date): { date: Date; inMonth: boolean }[] {
-  const firstOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
-  const firstWeekday = (firstOfMonth.getDay() + 6) % 7; // Monday = 0
-  const start = new Date(firstOfMonth);
-  start.setDate(start.getDate() - firstWeekday);
-
-  const days: { date: Date; inMonth: boolean }[] = [];
-  for (let i = 0; i < 42; i += 1) {
-    const date = new Date(start);
-    date.setDate(start.getDate() + i);
-    days.push({ date, inMonth: date.getMonth() === month.getMonth() });
+/**
+ * Managers open the event for editing; readers get a plain label (with the
+ * full name on hover) because a disabled button promises an action that
+ * never comes.
+ */
+function EventChip({
+  event,
+  canManage,
+  onOpen,
+  className,
+}: {
+  event: CalendarEvent;
+  canManage: boolean;
+  onOpen: () => void;
+  className: string;
+}): ReactElement {
+  const badge = (
+    <Badge
+      variant={NON_TEACHING_KINDS.includes(event.kind) ? "accent" : "neutral"}
+      className="w-full truncate"
+    >
+      {event.name}
+    </Badge>
+  );
+  if (!canManage) {
+    return (
+      <div title={event.name} className={className}>
+        {badge}
+      </div>
+    );
   }
-  return days;
+  return (
+    <button type="button" onClick={onOpen} className={className}>
+      {badge}
+    </button>
+  );
 }

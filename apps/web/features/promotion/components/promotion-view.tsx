@@ -22,7 +22,8 @@ import { useMemo, useState } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { businessNow } from "../../../lib/simulation/clock";
+import { useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import { useAcademicYearsQuery } from "../../academic/api";
 import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import { useLookup } from "../../reference/api";
@@ -44,6 +45,7 @@ export function PromotionView(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
+  const { me } = useSession();
   const years = useAcademicYearsQuery();
   const yearOptions = years.data?.data ?? [];
 
@@ -66,7 +68,7 @@ export function PromotionView(): ReactElement {
       : undefined;
   const [overrides, setOverrides] = useState<Record<string, PromotionOverride>>({});
   const [confirming, setConfirming] = useState(false);
-  const [effectiveOn, setEffectiveOn] = useState(() => businessNow().toISOString().slice(0, 10));
+  const [effectiveOn, setEffectiveOn] = useState(() => todayInZone(me?.tenant.timezone));
 
   const fromClasses = useClassesForYearQuery(fromYearId);
   const fromClassMap = useLookup(fromClasses.data?.data);
