@@ -39,6 +39,16 @@ describe("Stepper", () => {
     expect(homeroom).toHaveTextContent("08.14");
   });
 
+  it("keeps actor and time apart for a screen reader, which skips the dot", () => {
+    render(<Stepper steps={WORKFLOW} currentIndex={2} />);
+    const homeroom = screen.getByText("Wali kelas").closest("li");
+    const spoken = homeroom?.cloneNode(true) as HTMLElement;
+    for (const hidden of Array.from(spoken.querySelectorAll("[aria-hidden='true']"))) {
+      hidden.remove();
+    }
+    expect(spoken.textContent).toMatch(/Disetujui Bu Rina\s+08\.14/);
+  });
+
   it("marks the current step and tells screen readers which steps are done", () => {
     render(
       <UiLabelsProvider labels={{ stepperStepComplete: "done" }}>
