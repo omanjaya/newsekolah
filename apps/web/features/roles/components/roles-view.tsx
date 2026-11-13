@@ -19,6 +19,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import {
@@ -45,8 +46,18 @@ export function RolesView(): ReactElement {
   const roles = useRolesQuery();
   const [selectedId, setSelectedId] = useState("");
   const [creating, setCreating] = useState(false);
+  // Unsaved checkbox edits are kept per role, so switching roles never
+  // silently throws a half-finished edit away.
+  const [drafts, setDrafts] = useState<Record<string, string[]>>({});
   const list = roles.data?.data ?? [];
   const selected = list.find((r) => r.id === selectedId) ?? list[0];
+
+  function setDraft(roleId: string, permissions: string[] | undefined) {
+    setDrafts((current) => {
+      const { [roleId]: _discarded, ...rest } = current;
+      return permissions ? { ...rest, [roleId]: permissions } : rest;
+    });
+  }
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -69,6 +80,8 @@ export function RolesView(): ReactElement {
       />
       {roles.isLoading ? (
         <Skeleton className="h-96 w-full" />
+      ) : roles.isError && !roles.data ? (
+        <QueryError retry={() => roles.refetch()} />
       ) : (
         <div className="grid gap-4 md:grid-cols-[240px_1fr]">
           <nav aria-label={t("title")} className="flex flex-row gap-1 overflow-x-auto md:flex-col">
@@ -83,13 +96,24 @@ export function RolesView(): ReactElement {
                 className={`flex min-h-11 shrink-0 items-center justify-between gap-3 whitespace-nowrap rounded-xs px-3 py-2 text-left text-[14px] ${selected?.id === r.id ? "bg-accent/10 text-accent" : "text-fg hover:bg-bg"}`}
               >
                 <span>{r.name}</span>
+                {drafts[r.id] && <span className="sr-only">{t("unsaved")}</span>}
                 {r.user_count !== undefined && (
                   <span className="text-[12px] text-fg-muted">{r.user_count}</span>
                 )}
               </button>
             ))}
           </nav>
-          {selected && <RoleMatrix key={selected.id} role={selected} canManage={canManage} />}
+          {selected && (
+            <RoleMatrix
+              key={selected.id}
+              role={selected}
+              canManage={canManage}
+              draft={drafts[selected.id]}
+              onDraftChange={(permissions) => {
+                setDraft(selected.id, permissions);
+              }}
+            />
+          )}
         </div>
       )}
       <Dialog open={creating} onOpenChange={setCreating}>
@@ -107,14 +131,25 @@ export function RolesView(): ReactElement {
   );
 }
 
-function RoleMatrix({ role, canManage }: { role: AdminRole; canManage: boolean }): ReactElement {
+function RoleMatrix({
+  role,
+  canManage,
+  draft,
+  onDraftChange,
+}: {
+  role: AdminRole;
+  canManage: boolean;
+  /** Unsaved permission codes for this role, kept by the parent across role switches. */
+  draft: string[] | undefined;
+  onDraftChange: (permissions: string[] | undefined) => void;
+}): ReactElement {
   const t = useTranslations("app.roles");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const permissions = usePermissionsQuery();
   const replace = useReplaceRolePermissionsMutation();
   const remove = useDeleteRoleMutation();
-  const [granted, setGranted] = useState<Set<string>>(() => new Set(role.permissions));
+  const granted = useMemo(() => new Set(draft ?? role.permissions), [draft, role.permissions]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const dirty = useMemo(() => {
     const original = new Set(role.permissions);
@@ -129,6 +164,7 @@ function RoleMatrix({ role, canManage }: { role: AdminRole; canManage: boolean }
       { id: role.id, permissions: [...granted] },
       {
         onSuccess: () => {
+          onDraftChange(undefined);
           toast.success(t("saved"));
         },
         onError: (error) => {
@@ -156,7 +192,9 @@ function RoleMatrix({ role, canManage }: { role: AdminRole; canManage: boolean }
           <h2 className="flex items-center gap-2 text-[18px] font-medium text-fg">
             {role.name} {role.is_system && <Badge>{t("system")}</Badge>}
           </h2>
-          <span className="text-[13px] text-fg-muted">{role.description ?? role.slug}</span>
+          {role.description && (
+            <span className="text-[13px] text-fg-muted">{role.description}</span>
+          )}
         </div>
         {editable && (
           <Button
@@ -170,9 +208,15 @@ function RoleMatrix({ role, canManage }: { role: AdminRole; canManage: boolean }
           </Button>
         )}
       </div>
-      {role.is_system && <p className="text-[13px] text-fg-muted">{t("systemHint")}</p>}
+      {role.is_system && (
+        <p className="text-[13px] text-fg-muted">
+          {canManage ? t("systemHint") : t("systemHintReadOnly")}
+        </p>
+      )}
       {permissions.isLoading ? (
         <Skeleton className="h-64 w-full" />
+      ) : permissions.isError && !permissions.data ? (
+        <QueryError retry={() => permissions.refetch()} />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {(permissions.data?.groups ?? []).map((group) => {
@@ -212,12 +256,10 @@ function RoleMatrix({ role, canManage }: { role: AdminRole; canManage: boolean }
                         checked={granted.has(p.code)}
                         disabled={disabled}
                         onCheckedChange={(v) => {
-                          setGranted((prev) => {
-                            const next = new Set(prev);
-                            if (v === true) next.add(p.code);
-                            else next.delete(p.code);
-                            return next;
-                          });
+                          const next = new Set(granted);
+                          if (v === true) next.add(p.code);
+                          else next.delete(p.code);
+                          onDraftChange([...next]);
                         }}
                       />
                       <span className="flex min-w-0 flex-col gap-0.5">
@@ -248,7 +290,7 @@ function RoleMatrix({ role, canManage }: { role: AdminRole; canManage: boolean }
               variant="secondary"
               size="sm"
               onClick={() => {
-                setGranted(new Set(role.permissions));
+                onDraftChange(undefined);
               }}
             >
               {t("cancel")}
@@ -291,6 +333,8 @@ function CreateRoleForm({ onDone }: { onDone: () => void }): ReactElement {
   const create = useCreateRoleMutation();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  // Until the user edits the code themselves it follows the name.
+  const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   return (
@@ -333,7 +377,7 @@ function CreateRoleForm({ onDone }: { onDone: () => void }): ReactElement {
           value={name}
           onChange={(e) => {
             setName(e.target.value);
-            if (!slug) setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "_"));
+            if (!slugTouched) setSlug(slugFromName(e.target.value));
           }}
           required
         />
@@ -343,6 +387,7 @@ function CreateRoleForm({ onDone }: { onDone: () => void }): ReactElement {
         <Input
           value={slug}
           onChange={(e) => {
+            setSlugTouched(true);
             setSlug(e.target.value);
           }}
           pattern="[a-z0-9_]+"
@@ -368,4 +413,12 @@ function CreateRoleForm({ onDone }: { onDone: () => void }): ReactElement {
       </div>
     </form>
   );
+}
+
+/** Lowercase, underscore-separated code derived from a role name, e.g. "Wali Asrama" -> "wali_asrama". */
+export function slugFromName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }

@@ -1481,6 +1481,7 @@
       "addRole": "Add role",
       "system": "Built-in",
       "systemHint": "Built-in roles cannot change. Create a new role for a custom permission set.",
+      "systemHintReadOnly": "Built-in role, view only.",
       "deleteRole": "Delete role",
       "deleteBody": "The {name} role will be deleted. Users holding it lose its permissions.",
       "deleted": "Role deleted",

@@ -1481,6 +1481,7 @@
       "addRole": "Tambah peran",
       "system": "Bawaan",
       "systemHint": "Peran bawaan tidak bisa diubah. Buat peran baru untuk kombinasi izin khusus.",
+      "systemHintReadOnly": "Peran bawaan, hanya bisa dilihat.",
       "deleteRole": "Hapus peran",
       "deleteBody": "Peran {name} akan dihapus. Pengguna yang memilikinya kehilangan izin dari peran ini.",
       "deleted": "Peran dihapus",
