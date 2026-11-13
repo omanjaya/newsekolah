@@ -4,8 +4,10 @@ import { Check, X } from "lucide-react";
 import { useState, type ReactElement } from "react";
 
 import { cn } from "../../utils/cn.js";
+import { Field, FieldError } from "../field.js";
 import { Input } from "../input.js";
 import { Popover, PopoverContent, PopoverTrigger } from "../popover.js";
+import { useUiLabels } from "../ui-labels.js";
 
 export interface DataTableFilterOption {
   value: string;
@@ -77,6 +79,11 @@ export interface DataTableFiltersLabels {
   dateRangeInvalid: string;
 }
 
+/**
+ * Legacy: the defaults now come from `UiLabels` (`tableFiltersReset`,
+ * `tableFilterRemove`...), so a locale provider translates them; this
+ * constant only keeps the old export working.
+ */
 export const DEFAULT_DATA_TABLE_FILTERS_LABELS: DataTableFiltersLabels = {
   reset: "Reset filter",
   removeFilter: (label) => `Hapus filter ${label}`,
@@ -116,11 +123,28 @@ export function DataTableFilters({
   labels: labelsOverride,
   className,
 }: DataTableFiltersProps): ReactElement {
-  const labels = { ...DEFAULT_DATA_TABLE_FILTERS_LABELS, ...labelsOverride };
+  const uiLabels = useUiLabels();
+  const labels: DataTableFiltersLabels = {
+    reset: uiLabels.tableFiltersReset,
+    removeFilter: uiLabels.tableFilterRemove,
+    dateRangeFrom: uiLabels.tableFilterDateFrom,
+    dateRangeTo: uiLabels.tableFilterDateTo,
+    dateRangeInvalid: uiLabels.tableFilterDateInvalid,
+    ...labelsOverride,
+  };
   const hasActiveFilter = filters.some(isFilterActive);
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
+    // One row that scrolls sideways on a phone (wrapped pills would push the
+    // list below the fold), wrapping from `md` up. The 4px vertical padding
+    // keeps the pills' focus rings inside the scroller's clip.
+    <div
+      className={cn(
+        "-my-1 flex scrollbar-none items-center gap-1.5 overflow-x-auto py-1 [&>*]:shrink-0",
+        "md:flex-wrap md:overflow-visible",
+        className,
+      )}
+    >
       {filters.map((filter) =>
         filter.type === "dateRange" ? (
           <DateRangeFilterPill
@@ -142,7 +166,7 @@ export function DataTableFilters({
       {hasActiveFilter && (
         <button
           type="button"
-          className="h-8 shrink-0 rounded-full px-2 text-label text-accent hover:underline"
+          className="h-11 shrink-0 rounded-full px-3 text-label text-accent transition-colors hover:bg-state-hover md:pointer-fine:h-8"
           onClick={() => {
             for (const filter of filters) {
               if (isFilterActive(filter)) clearFilter(filter);
@@ -160,7 +184,7 @@ export function DataTableFilters({
 // `overflow-hidden` shell: clipping would also cut off the keyboard focus
 // ring the base styles draw around whichever half has focus.
 const PILL_TRIGGER_CLASS =
-  "flex h-11 md:h-8 items-center gap-1 rounded-full px-3 text-label transition-colors";
+  "flex h-11 items-center gap-1 rounded-full px-3 text-label whitespace-nowrap transition-colors md:pointer-fine:h-8";
 
 function FilterPillShell({
   active,
@@ -187,7 +211,7 @@ function FilterPillShell({
         <button
           type="button"
           aria-label={removeLabel}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-state-hover md:h-8 md:w-8"
+          className="-ml-1 flex size-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-state-hover active:bg-state-pressed md:pointer-fine:size-8"
           onClick={onRemove}
         >
           <X className="size-3.5" aria-hidden="true" />
@@ -263,7 +287,7 @@ function DataTableFilterPill({
                 <button
                   key={option.value}
                   type="button"
-                  className="flex h-11 md:h-9 items-center justify-between rounded-sm px-2 text-left text-body-sm text-fg transition-colors hover:bg-state-hover focus-visible:bg-state-hover"
+                  className="flex min-h-11 items-center justify-between gap-2 rounded-sm px-3 text-left text-body text-fg transition-colors hover:bg-state-hover focus-visible:bg-state-hover focus-visible:-outline-offset-2 md:pointer-fine:min-h-9"
                   onClick={() => {
                     filter.onChange?.(option.value);
                     setOpen(false);
@@ -391,7 +415,7 @@ function DateRangeFilterPill({
                         key={preset.label}
                         type="button"
                         className={cn(
-                          "flex h-9 items-center gap-1 rounded-full border px-3 text-label",
+                          "flex h-11 items-center gap-1 rounded-full border px-3 text-label md:pointer-fine:h-8",
                           "transition-[color,background-color,border-color,box-shadow]",
                           // Its own surface stays under the hover layer (state-layer).
                           presetActive
@@ -410,36 +434,34 @@ function DateRangeFilterPill({
                   })}
                 </div>
               )}
-              <div className="flex items-end gap-2">
-                <label className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="text-label text-fg">{fromLabel}</span>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label={fromLabel}>
                   <Input
                     type="date"
-                    className="w-full min-w-0"
+                    size="sm"
                     value={draftFrom}
                     invalid={invalid}
                     onChange={(event) => {
                       commit(event.target.value, draftTo);
                     }}
                   />
-                </label>
-                <label className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="text-label text-fg">{toLabel}</span>
+                </Field>
+                <Field label={toLabel}>
                   <Input
                     type="date"
-                    className="w-full min-w-0"
+                    size="sm"
                     value={draftTo}
                     invalid={invalid}
                     onChange={(event) => {
                       commit(draftFrom, event.target.value);
                     }}
                   />
-                </label>
+                </Field>
               </div>
               {invalid && (
-                <p role="alert" className="text-caption text-danger">
-                  {invalidLabel}
-                </p>
+                <div role="alert">
+                  <FieldError>{invalidLabel}</FieldError>
+                </div>
               )}
             </div>
           </PopoverContent>

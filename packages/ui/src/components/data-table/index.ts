@@ -1,5 +1,6 @@
 export { DataTable, selectionColumn, type DataTableProps } from "./data-table.js";
 export { DataTableStateProvider, type DataTableLocalState } from "./data-table-state.js";
+export type { DataTableCardRole } from "./column-meta.js";
 export {
   DataTableFilters,
   DEFAULT_DATA_TABLE_FILTERS_LABELS,
@@ -18,6 +19,8 @@ export {
 export {
   DataTablePagination,
   DEFAULT_PAGINATION_LABELS,
+  type DataTableCursorPagination,
   type DataTablePaginationLabels,
   type DataTablePaginationProps,
 } from "./data-table-pagination.js";
+export { DataTableErrorState, type DataTableErrorStateProps } from "./data-table-states.js";

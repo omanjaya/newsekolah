@@ -1,18 +1,22 @@
-import type { Table } from "@tanstack/react-table";
-import { Columns3, Rows3 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+"use client";
+
+import type { Column, Table } from "@tanstack/react-table";
+import { Columns3, Ellipsis, Rows3, X } from "lucide-react";
+import { useState, type ReactElement, type ReactNode } from "react";
 
 import { cn } from "../../utils/cn.js";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "../dropdown-menu.js";
 import { IconButton } from "../icon-button.js";
 import { SearchInput } from "../search-input.js";
-import { useUiLabels } from "../ui-labels.js";
+import { useUiLabels, type UiLabels } from "../ui-labels.js";
 
+import { isActionsColumn, SELECT_COLUMN_ID } from "./column-meta.js";
 import {
   DataTableFilters,
   type DataTableFilterDef,
@@ -30,6 +34,11 @@ export interface DataTableToolbarLabels {
   clearSearch: string;
 }
 
+/**
+ * Legacy: the defaults now come from `UiLabels` (`tableSearchPlaceholder`,
+ * `tableColumns`...), so a locale provider translates them; this constant
+ * only keeps the old export working.
+ */
 export const DEFAULT_TOOLBAR_LABELS: DataTableToolbarLabels = {
   searchPlaceholder: "Cari",
   columns: "Kolom tampil",
@@ -40,6 +49,24 @@ export const DEFAULT_TOOLBAR_LABELS: DataTableToolbarLabels = {
   noSearchResultsDescription: "Coba kata kunci lain atau hapus pencarian.",
   clearSearch: "Hapus pencarian",
 };
+
+/** The toolbar's labels: the caller's overrides on top of the provider's `UiLabels`. */
+export function toolbarLabelsFrom(
+  uiLabels: UiLabels,
+  overrides?: Partial<DataTableToolbarLabels>,
+): DataTableToolbarLabels {
+  return {
+    searchPlaceholder: uiLabels.tableSearchPlaceholder,
+    columns: uiLabels.tableColumns,
+    density: uiLabels.tableDensity,
+    densityNormal: uiLabels.tableDensityNormal,
+    densityCompact: uiLabels.tableDensityCompact,
+    noSearchResultsTitle: uiLabels.tableNoResultsTitle,
+    noSearchResultsDescription: uiLabels.tableNoResultsDescription,
+    clearSearch: uiLabels.tableClearSearch,
+    ...overrides,
+  };
+}
 
 export function getDataTableColumnLabel(
   meta: unknown,
@@ -57,6 +84,8 @@ export interface DataTableToolbarProps<TData> {
   showSearch: boolean;
   searchValue: string;
   onSearchChange: (value: string) => void;
+  /** The search box's clear button and Escape: applied at once, past the typing debounce. */
+  onSearchClear?: () => void;
   density: "normal" | "compact";
   onDensityChange: (density: "normal" | "compact") => void;
   bulkActions?: ReactNode;
@@ -66,13 +95,69 @@ export interface DataTableToolbarProps<TData> {
   /** Rendered next to the search box, front page-level filters through `DataTableFilters`. */
   filters?: DataTableFilterDef[];
   filtersLabels?: Partial<DataTableFiltersLabels>;
+  /** The table's own actions ("Tambah"), at the toolbar's end, level with the search box. */
+  actions?: ReactNode;
 }
 
+/** 44px wherever the pointer is coarse, 32 with a cursor: the toolbar's one control height. */
+const TOOLBAR_ICON = "md:size-11 md:pointer-fine:size-8";
+
+function hideableColumns<TData>(
+  table: Table<TData>,
+  columnLabels: Record<string, ReactNode>,
+): Column<TData>[] {
+  return table
+    .getAllLeafColumns()
+    .filter(
+      (column) =>
+        column.getCanHide() &&
+        column.id !== SELECT_COLUMN_ID &&
+        !isActionsColumn(column) &&
+        columnLabels[column.id] !== undefined,
+    );
+}
+
+function ColumnItems<TData>({
+  columns,
+  columnLabels,
+}: {
+  columns: Column<TData>[];
+  columnLabels: Record<string, ReactNode>;
+}): ReactElement {
+  return (
+    <>
+      {columns.map((column) => (
+        <DropdownMenuCheckboxItem
+          key={column.id}
+          checked={column.getIsVisible()}
+          onCheckedChange={(value) => {
+            column.toggleVisibility(value);
+          }}
+          onSelect={(event) => {
+            event.preventDefault();
+          }}
+        >
+          {columnLabels[column.id]}
+        </DropdownMenuCheckboxItem>
+      ))}
+    </>
+  );
+}
+
+/**
+ * Search, filter pills, the table's own actions and its view options.
+ * On a phone: the search box takes the first row beside the actions and
+ * one overflow menu; the pills scroll sideways on a row of their own, so
+ * the first card is never pushed below the fold by wrapped pills. From
+ * `md` up it is one row (pills wrap if they must), density and columns as
+ * separate icons at the end.
+ */
 export function DataTableToolbar<TData>({
   table,
   showSearch,
   searchValue,
   onSearchChange,
+  onSearchClear,
   density,
   onDensityChange,
   bulkActions,
@@ -81,81 +166,103 @@ export function DataTableToolbar<TData>({
   labels: labelsOverride,
   filters,
   filtersLabels,
-}: DataTableToolbarProps<TData>) {
-  const labels = { ...DEFAULT_TOOLBAR_LABELS, ...labelsOverride };
+  actions,
+}: DataTableToolbarProps<TData>): ReactElement | null {
   const uiLabels = useUiLabels();
+  const labels = toolbarLabelsFrom(uiLabels, labelsOverride);
   const [localSearch, setLocalSearch] = useState(searchValue);
+  const columns = hideableColumns(table, columnLabels);
+  const hasFilters = filters !== undefined && filters.length > 0;
 
   if (selectedCount > 0 && bulkActions) {
     return (
-      <div className="flex items-center justify-between gap-4 rounded-md border border-border bg-bg px-3 py-2">
-        <span className="text-label text-fg">{uiLabels.tableSelectedRows(selectedCount)}</span>
-        <div className="flex items-center gap-2">{bulkActions}</div>
+      <div className="flex min-h-12 flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-md bg-accent-soft py-1.5 pr-2 pl-4 text-accent-soft-fg">
+        <span className="text-label">{uiLabels.tableSelectedRows(selectedCount)}</span>
+        <div className="flex items-center gap-2">
+          {bulkActions}
+          <IconButton
+            icon={<X />}
+            aria-label={uiLabels.tableClearSelection}
+            className={cn(TOOLBAR_ICON, "text-accent-soft-fg")}
+            onClick={() => {
+              table.resetRowSelection();
+            }}
+          />
+        </div>
       </div>
     );
   }
 
+  const densityLabel = `${labels.density}: ${density === "compact" ? labels.densityCompact : labels.densityNormal}`;
+  // Density is desktop-only (cards have none), so a bare table has no phone toolbar at all.
+  const emptyOnPhone = !showSearch && !hasFilters && actions === undefined && columns.length === 0;
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-        {showSearch && (
-          <SearchInput
-            value={localSearch}
-            onChange={(event) => {
-              setLocalSearch(event.target.value);
-              onSearchChange(event.target.value);
-            }}
-            placeholder={labels.searchPlaceholder}
-            aria-label={labels.searchPlaceholder}
-            className="w-full max-w-sm"
-          />
-        )}
-        {filters && filters.length > 0 && (
-          <DataTableFilters filters={filters} labels={filtersLabels} />
-        )}
-      </div>
-      <div className="flex items-center gap-1">
+    <div className={cn("flex flex-wrap items-center gap-2", emptyOnPhone && "max-md:hidden")}>
+      {showSearch && (
+        <SearchInput
+          size="sm"
+          value={localSearch}
+          onChange={(event) => {
+            setLocalSearch(event.target.value);
+            onSearchChange(event.target.value);
+          }}
+          onClear={onSearchClear}
+          placeholder={labels.searchPlaceholder}
+          aria-label={labels.searchPlaceholder}
+          className="order-1 min-w-0 flex-1 basis-0 md:w-72 md:flex-none md:basis-auto lg:w-80"
+        />
+      )}
+      {hasFilters && (
+        <DataTableFilters
+          filters={filters}
+          labels={filtersLabels}
+          className="order-4 basis-full md:order-2 md:min-w-0 md:flex-1 md:basis-auto"
+        />
+      )}
+      <div className="order-2 ml-auto flex shrink-0 items-center gap-1 md:order-3">
+        {actions !== undefined && <div className="mr-1 flex items-center gap-2">{actions}</div>}
         <IconButton
           icon={<Rows3 />}
-          aria-label={`${labels.density}: ${density === "compact" ? labels.densityCompact : labels.densityNormal}`}
+          aria-label={densityLabel}
+          aria-pressed={density === "compact"}
           onClick={() => {
             onDensityChange(density === "compact" ? "normal" : "compact");
           }}
           className={cn(
             "hidden md:inline-flex",
-            // `bg-bg` was the page color, so the "on" state was invisible on the page.
+            TOOLBAR_ICON,
             density === "compact" && "bg-state-selected text-accent",
           )}
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <IconButton icon={<Columns3 />} aria-label={labels.columns} />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllLeafColumns()
-              .filter(
-                (column) =>
-                  column.getCanHide() &&
-                  !["action", "actions", "select"].includes(column.id) &&
-                  columnLabels[column.id] !== undefined,
-              )
-              .map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(value) => {
-                    column.toggleVisibility(value);
-                  }}
-                  onSelect={(event) => {
-                    event.preventDefault();
-                  }}
-                >
-                  {columnLabels[column.id]}
-                </DropdownMenuCheckboxItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {columns.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <IconButton
+                icon={<Columns3 />}
+                aria-label={labels.columns}
+                className={cn("hidden md:inline-flex", TOOLBAR_ICON)}
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <ColumnItems columns={columns} columnLabels={columnLabels} />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        {columns.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <IconButton
+                icon={<Ellipsis />}
+                aria-label={uiLabels.tableMoreOptions}
+                className="md:hidden"
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{labels.columns}</DropdownMenuLabel>
+              <ColumnItems columns={columns} columnLabels={columnLabels} />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </div>
   );

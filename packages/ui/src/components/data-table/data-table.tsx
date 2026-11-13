@@ -1,3 +1,5 @@
+"use client";
+
 import {
   flexRender,
   getCoreRowModel,
@@ -10,6 +12,7 @@ import {
   type PaginationState,
   type RowSelectionState,
   type SortingState,
+  type Table,
 } from "@tanstack/react-table";
 import {
   useCallback,
@@ -21,17 +24,28 @@ import {
 } from "react";
 
 import { cn } from "../../utils/cn.js";
+import { useUiLabels } from "../ui-labels.js";
 
+import { DataTableBody, type DataTableDensity } from "./data-table-body.js";
 import { DataTableCards } from "./data-table-cards.js";
-import { DataTableSearchEmptyState } from "./data-table-empty-state.js";
 import type { DataTableFilterDef, DataTableFiltersLabels } from "./data-table-filters.js";
 import { DataTableHead } from "./data-table-head.js";
-import { DataTablePagination, type DataTablePaginationLabels } from "./data-table-pagination.js";
+import {
+  DataTableCursorFooter,
+  DataTablePagination,
+  type DataTableCursorPagination,
+  type DataTablePaginationLabels,
+} from "./data-table-pagination.js";
 import { useDataTableState } from "./data-table-state.js";
 import {
-  DEFAULT_TOOLBAR_LABELS,
+  DataTableEmptySlot,
+  DataTableErrorState,
+  DataTableSearchEmptyState,
+} from "./data-table-states.js";
+import {
   DataTableToolbar,
   getDataTableColumnLabel,
+  toolbarLabelsFrom,
   type DataTableToolbarLabels,
 } from "./data-table-toolbar.js";
 import { useDebouncedCallback } from "./use-debounced-callback.js";
@@ -43,7 +57,7 @@ export interface DataTableProps<TData> {
   /**
    * `local` applies search, sorting, and paging to the supplied rows.
    * `server` delegates those operations to the caller. `cursor` is server
-   * data with navigation supplied outside the table, so it has no page UI.
+   * data paged by cursor: pass `cursorPagination` for its footer.
    */
   mode?: "local" | "server" | "cursor";
   data: TData[];
@@ -59,24 +73,34 @@ export interface DataTableProps<TData> {
   searchable?: boolean;
   isLoading?: boolean;
   emptyState?: ReactNode;
+  /**
+   * A failed load. Any truthy value replaces the rows with an error state
+   * (title, a sentence, a retry button), so a failure never reads as "no
+   * data". A string or element is shown as its description; an object with
+   * a string `code` (an API error) adds a small support line. Pass the
+   * query's `error` or `isError`.
+   */
+  error?: unknown;
+  /** The error state's retry button, e.g. the query's `refetch`. */
+  onRetry?: () => void;
   rowSelection?: RowSelectionState;
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
   bulkActions?: ReactNode;
+  /** The table's own actions ("Tambah"), at the end of the toolbar beside the search. */
+  toolbarActions?: ReactNode;
   /**
    * `normal` (default) is a comfortable row: ~52px min height, `px-4 py-3`
-   * cells, vertically centered content -- a table read at a glance, not
-   * one with rows barely taller than the buttons inside them. `compact`
-   * keeps the tighter ~40px row every screen had before this default
-   * changed, for a screen that genuinely relies on seeing more rows at
-   * once; the in-toolbar density toggle lets a reader switch between the
-   * two regardless of which one this prop (or its absence) picked.
+   * cells, vertically centered content. `compact` keeps the tighter ~40px
+   * row for a screen that genuinely relies on seeing more rows at once;
+   * the toolbar's density toggle lets a reader switch either way.
    */
-  density?: "normal" | "compact";
-  onDensityChange?: (density: "normal" | "compact") => void;
+  density?: DataTableDensity;
+  onDensityChange?: (density: DataTableDensity) => void;
   storageKey?: string;
   /** Opt-in in-memory state key. Defaults to `storageKey` when provided. */
   stateKey?: string;
   getRowId?: (row: TData) => string;
+  /** Opens a row: a click anywhere on it (outside its own controls), Enter on the focused row, or a tap on its card. */
   onRowActivate?: (row: TData) => void;
   toolbarLabels?: Partial<DataTableToolbarLabels>;
   paginationLabels?: Partial<DataTablePaginationLabels>;
@@ -85,44 +109,61 @@ export interface DataTableProps<TData> {
   filtersLabels?: Partial<DataTableFiltersLabels>;
   /**
    * Desktop-only viewport-fit mode: the table's parent chain must pass
-   * height down (`min-h-0` flex) for this to do anything. The table area
-   * still sizes to its own rows first -- a short result list stays short,
-   * it does not stretch to fill the parent's height and leave a blank
-   * area below the last row. Only once the rows would be taller than the
-   * space the parent actually has does the header stick and the body
-   * scroll internally, so the page itself never scrolls. Mobile keeps the
-   * card list and normal document scroll.
+   * height down (`min-h-0` flex) for this to do anything. The card still
+   * sizes to its own rows first; only once they would be taller than the
+   * parent does the header stick and the body scroll inside the card, with
+   * the pagination footer kept in view. Mobile keeps the card list and
+   * normal document scroll.
    */
   fillHeight?: boolean;
   /**
    * `mode="local"`'s first page size, before any remembered `stateKey`
-   * state exists. Defaults to 50, the size every screen used before this
-   * prop existed. Lower it for a list whose rows render as tall mobile
-   * cards rather than dense table rows -- 50 cards is a long scroll on a
-   * phone even though 50 table rows on desktop is not (e.g. the library
-   * circulation desk's overdue queue, docs/analysis/
-   * ux-audit-2026-09-25.md finding 8, set to 10). Ignored outside
-   * `mode="local"`: server/cursor pagination is the caller's own
-   * `pagination` prop.
+   * state exists. Defaults to 50. Lower it for a list whose rows render as
+   * tall mobile cards (e.g. the library desk's overdue queue, 10).
    */
   defaultPageSize?: number;
+  /**
+   * Page sizes the footer offers (from `sm` up) while there is more than
+   * one page. Local tables default to 10, 25, 50 and 100; a server table
+   * shows the picker only when given these, since its caller refetches.
+   */
+  pageSizeOptions?: number[];
+  /** `mode="cursor"`'s previous and next, rendered in the table's own footer. */
+  cursorPagination?: DataTableCursorPagination;
 }
 
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_PAGINATION: PaginationState = { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE };
+const LOCAL_PAGE_SIZES = [10, 25, 50, 100];
 
-// `normal`'s row is a min-height, not a fixed one, so a cell that wraps (a
-// long title, a multi-line badge stack) still grows the row instead of
-// clipping it. `compact` keeps the exact row and cell padding every screen
-// had before `normal` became this roomy, for a table that deliberately
-// trades comfort for seeing more rows at once.
-const ROW_HEIGHT = { normal: "min-h-[52px]", compact: "h-10" } as const;
-const CELL_PADDING = { normal: "px-4 py-3", compact: "px-3" } as const;
+/** Column id to its rendered header, plus a plain label for columns the header groups skip. */
+function collectHeaders<TData>(
+  table: Table<TData>,
+  remembered: Record<string, ReactNode>,
+): Record<string, ReactNode> {
+  // Rendered once from the header groups, because a header cell needs a
+  // header context and a body cell cannot supply one.
+  const headers: Record<string, ReactNode> = {};
+  for (const headerGroup of table.getHeaderGroups()) {
+    for (const header of headerGroup.headers) {
+      if (header.isPlaceholder) continue;
+      headers[header.column.id] = flexRender(header.column.columnDef.header, header.getContext());
+    }
+  }
+  Object.assign(remembered, headers);
+  for (const column of table.getAllFlatColumns()) {
+    if (remembered[column.id] !== undefined) continue;
+    const label = getDataTableColumnLabel(column.columnDef.meta, column.columnDef.header);
+    if (label !== undefined) remembered[column.id] = label;
+  }
+  return headers;
+}
 
 /**
  * A TanStack table for local rows, offset-paginated server rows, and cursor
- * responses. Server mode delegates data operations to the caller; cursor
- * navigation remains outside the table. See docs/05-shared-components.md.
+ * responses: a toolbar, the rows in a card on desktop and as cards on a
+ * phone, one empty, error and loading treatment, and one pagination footer
+ * for every mode. See docs/05-shared-components.md.
  */
 export function DataTable<TData>({
   mode = "server",
@@ -138,9 +179,12 @@ export function DataTable<TData>({
   searchable,
   isLoading,
   emptyState,
+  error,
+  onRetry,
   rowSelection,
   onRowSelectionChange,
   bulkActions,
+  toolbarActions,
   density: densityProp,
   onDensityChange,
   storageKey,
@@ -153,7 +197,10 @@ export function DataTable<TData>({
   filtersLabels,
   fillHeight,
   defaultPageSize,
+  pageSizeOptions,
+  cursorPagination,
 }: DataTableProps<TData>) {
+  const uiLabels = useUiLabels();
   const rememberedState = useDataTableState(
     mode === "local" ? (stateKey ?? storageKey) : undefined,
   );
@@ -171,7 +218,7 @@ export function DataTable<TData>({
     () => rememberedState.initialState?.globalFilter ?? "",
   );
   const [searchResetKey, setSearchResetKey] = useState(0);
-  const [internalDensity, setInternalDensity] = useState<"normal" | "compact">("normal");
+  const [internalDensity, setInternalDensity] = useState<DataTableDensity>("normal");
   const density = densityProp ?? internalDensity;
   const setDensity = onDensityChange ?? setInternalDensity;
   const [columnVisibility, setColumnVisibility] = usePersistedColumnVisibility(storageKey);
@@ -196,24 +243,27 @@ export function DataTable<TData>({
   }, [internalGlobalFilter, internalPagination, internalSorting, mode, rememberedState]);
   const applyFilterChange = useCallback(
     (value: string) => {
-      if (mode === "local") setInternalGlobalFilter(value);
-      if (mode !== "local") {
-        onGlobalFilterChange?.(value);
-        onPaginationChange?.((current) => ({ ...current, pageIndex: 0 }));
-      }
       if (mode === "local") {
-        setPagination?.((current) => ({ ...current, pageIndex: 0 }));
+        setInternalGlobalFilter(value);
+        setInternalPagination((current) => ({ ...current, pageIndex: 0 }));
+        return;
       }
+      onGlobalFilterChange?.(value);
+      onPaginationChange?.((current) => ({ ...current, pageIndex: 0 }));
     },
-    [mode, onGlobalFilterChange, onPaginationChange, setPagination],
+    [mode, onGlobalFilterChange, onPaginationChange],
   );
   const debouncedFilterChange = useDebouncedCallback(applyFilterChange, 300);
 
-  const clearLocalSearch = useCallback(() => {
+  // Clearing is immediate, not debounced: the rows come back at once.
+  const clearSearch = useCallback(() => {
     debouncedFilterChange("");
     applyFilterChange("");
-    setSearchResetKey((key) => key + 1);
   }, [applyFilterChange, debouncedFilterChange]);
+  const clearLocalSearch = useCallback(() => {
+    clearSearch();
+    setSearchResetKey((key) => key + 1);
+  }, [clearSearch]);
 
   const table = useReactTable({
     data,
@@ -256,20 +306,6 @@ export function DataTable<TData>({
   useEffect(() => {
     if (mode === "local" && !isLoading) clampLocalPage(lastLocalPageIndex);
   }, [clampLocalPage, isLoading, lastLocalPageIndex, mode]);
-  const hasNoLocalSearchResults =
-    mode === "local" &&
-    tableGlobalFilter.trim() !== "" &&
-    data.length > 0 &&
-    filteredRowCount === 0;
-  const toolbarCopy = { ...DEFAULT_TOOLBAR_LABELS, ...toolbarLabels };
-  const localSearchEmptyState = (
-    <DataTableSearchEmptyState
-      title={toolbarCopy.noSearchResultsTitle}
-      description={toolbarCopy.noSearchResultsDescription}
-      clearLabel={toolbarCopy.clearSearch}
-      onClear={clearLocalSearch}
-    />
-  );
 
   const focusRow = useCallback(
     (index: number) => {
@@ -301,27 +337,47 @@ export function DataTable<TData>({
 
   const selectedCount = Object.values(rowSelection ?? {}).filter(Boolean).length;
   const skeletonRowCount = Math.min(tablePagination.pageSize, 8);
+  const cardHeaders = collectHeaders(table, columnLabelsRef.current);
 
-  // Rendered once from the header groups, because a header cell needs a
-  // header context and a body cell cannot supply one.
-  const cardHeaders: Record<string, ReactNode> = {};
-  for (const headerGroup of table.getHeaderGroups()) {
-    for (const header of headerGroup.headers) {
-      if (header.isPlaceholder) continue;
-      cardHeaders[header.column.id] = flexRender(
-        header.column.columnDef.header,
-        header.getContext(),
-      );
-    }
-  }
-  for (const [id, label] of Object.entries(cardHeaders)) {
-    columnLabelsRef.current[id] = label;
-  }
-  for (const column of table.getAllFlatColumns()) {
-    if (columnLabelsRef.current[column.id] !== undefined) continue;
-    const label = getDataTableColumnLabel(column.columnDef.meta, column.columnDef.header);
-    if (label !== undefined) columnLabelsRef.current[column.id] = label;
-  }
+  const failed = Boolean(error) && !isLoading;
+  const empty = !isLoading && !failed && rows.length === 0;
+  const hasNoLocalSearchResults =
+    mode === "local" &&
+    tableGlobalFilter.trim() !== "" &&
+    data.length > 0 &&
+    filteredRowCount === 0;
+  const toolbarCopy = toolbarLabelsFrom(uiLabels, toolbarLabels);
+  const stateContent = failed ? (
+    <DataTableErrorState error={error} onRetry={onRetry} />
+  ) : empty ? (
+    <DataTableEmptySlot>
+      {hasNoLocalSearchResults ? (
+        <DataTableSearchEmptyState
+          title={toolbarCopy.noSearchResultsTitle}
+          description={toolbarCopy.noSearchResultsDescription}
+          clearLabel={toolbarCopy.clearSearch}
+          onClear={clearLocalSearch}
+        />
+      ) : (
+        emptyState
+      )}
+    </DataTableEmptySlot>
+  ) : null;
+
+  const showFooter = !isLoading && !failed && rows.length > 0;
+  const footer = !showFooter ? null : mode === "cursor" ? (
+    cursorPagination && <DataTableCursorFooter cursor={cursorPagination} shownRows={rows.length} />
+  ) : (
+    <DataTablePagination
+      table={table}
+      pageCount={
+        mode === "local" ? Math.ceil(filteredRowCount / tablePagination.pageSize) : undefined
+      }
+      totalRows={mode === "local" ? filteredRowCount : rowCount}
+      pageSizeOptions={pageSizeOptions ?? (mode === "local" ? LOCAL_PAGE_SIZES : undefined)}
+      labels={paginationLabels}
+    />
+  );
 
   return (
     <div className={cn("flex flex-col gap-3", fillHeight && "md:h-full md:min-h-0")}>
@@ -331,6 +387,7 @@ export function DataTable<TData>({
         showSearch={hasSearch}
         searchValue={tableGlobalFilter}
         onSearchChange={debouncedFilterChange}
+        onSearchClear={clearSearch}
         density={density}
         onDensityChange={setDensity}
         bulkActions={bulkActions}
@@ -339,117 +396,73 @@ export function DataTable<TData>({
         labels={toolbarLabels}
         filters={filters}
         filtersLabels={filtersLabels}
+        actions={toolbarActions}
       />
       {/*
-        Below md the same rows render as cards: a table that only scrolls
-        sideways on a phone hides the columns carrying the answer, with
-        nothing on screen to say they exist.
+        One frame for both layouts: from md up it is the table's card, with
+        the footer inside it under a hairline; below md it is only a
+        column, the rows render as cards (a table that only scrolls sideways
+        on a phone hides the columns carrying the answer) and the footer
+        follows them. The empty and error states carry their own card on a
+        phone and sit flush inside the frame on desktop.
       */}
-      <div className="md:hidden">
-        <DataTableCards
-          rows={rows}
-          headers={cardHeaders}
-          isLoading={isLoading}
-          skeletonRowCount={skeletonRowCount}
-          emptyState={hasNoLocalSearchResults ? localSearchEmptyState : emptyState}
-          onRowActivate={onRowActivate}
-          selectionEnabled={!!onRowSelectionChange}
-          allRowsSelected={table.getIsAllRowsSelected()}
-          someRowsSelected={table.getIsSomeRowsSelected()}
-          onToggleAllRowsSelected={() => {
-            table.toggleAllRowsSelected();
-          }}
-        />
-      </div>
       <div
+        data-slot="data-table"
         className={cn(
-          "hidden overflow-x-auto rounded-lg border border-border bg-surface shadow-1 md:block",
+          "flex flex-col gap-1 md:gap-0 md:overflow-hidden md:rounded-lg md:border md:border-border md:bg-surface md:shadow-1",
           // No `flex-1`: the card sizes to its own rows first, growing no
-          // taller than that. Only once that content would exceed the
-          // parent's available height does `max-h-full` cap it and the
-          // header stick while the body scrolls -- a short result list
-          // never stretches to fill the page and leave a blank area below
-          // the last row.
-          fillHeight && "md:min-h-0 md:max-h-full md:overflow-y-auto",
+          // taller than that; only content taller than the parent makes
+          // `max-h-full` cap it, the header stick and the body scroll.
+          fillHeight && "md:min-h-0 md:max-h-full",
         )}
       >
-        <table className="w-full border-collapse text-body-sm tabular-nums">
-          <DataTableHead table={table} fillHeight={fillHeight} density={density} />
-          {/* Rows fade in (120ms) as they replace the skeleton. */}
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- rows use roving focus for j/k/Enter activation. */}
-          <tbody onKeyDown={handleKeyDown} className={cn(!isLoading && "animate-fade-in")}>
-            {isLoading ? (
-              // Each placeholder's highlight slides with `transform`, which
-              // the compositor runs without a style recalculation or repaint
-              // per frame, so a wide table's dozens of cells cost the main
-              // thread nothing (docs/16-audit-performa-web.md "Temuan
-              // menengah"; `skeleton` in styles.css).
-              Array.from({ length: skeletonRowCount }).map((_, index) => (
-                <tr key={index} className={cn("border-b border-line", ROW_HEIGHT[density])}>
-                  {columns.map((_column, columnIndex) => (
-                    <td key={columnIndex} className={cn(CELL_PADDING[density], "align-middle")}>
-                      <div
-                        role="presentation"
-                        data-slot="skeleton"
-                        className="skeleton h-4 w-full max-w-40 rounded-xs"
-                      />
-                    </td>
-                  ))}
-                </tr>
-              ))
-            ) : rows.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length} className="p-0">
-                  {hasNoLocalSearchResults ? localSearchEmptyState : emptyState}
-                </td>
-              </tr>
-            ) : (
-              rows.map((row, rowIndex) => (
-                <tr
-                  key={row.id}
-                  ref={(element) => {
-                    if (element) rowRefs.current.set(row.id, element);
-                    else rowRefs.current.delete(row.id);
-                  }}
-                  data-state={row.getIsSelected() ? "selected" : undefined}
-                  data-focused={rowIndex === focusedRowIndex ? "true" : undefined}
-                  tabIndex={onRowActivate ? (rowIndex === focusedRowIndex ? 0 : -1) : undefined}
-                  onFocus={() => {
-                    setFocusedRowIndex(rowIndex);
-                  }}
-                  className={cn(
-                    "border-b border-line last:border-b-0",
-                    ROW_HEIGHT[density],
-                    // The roving-focus row is only tinted while it actually
-                    // has keyboard focus; `data-focused` alone marks the
-                    // first row of every table, focused or not.
-                    "transition-colors hover:bg-state-hover",
-                    "focus-visible:bg-state-hover focus-visible:-outline-offset-2",
-                    "data-[state=selected]:bg-state-selected",
-                  )}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className={cn(CELL_PADDING[density], "align-middle")}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        {stateContent ? (
+          <div className="rounded-lg border border-border bg-surface shadow-1 md:rounded-none md:border-0 md:bg-transparent md:shadow-none">
+            {stateContent}
+          </div>
+        ) : (
+          <>
+            <div className="md:hidden">
+              <DataTableCards
+                rows={rows}
+                headers={cardHeaders}
+                isLoading={isLoading}
+                skeletonRowCount={skeletonRowCount}
+                onRowActivate={onRowActivate}
+                selectionEnabled={!!onRowSelectionChange}
+                allRowsSelected={table.getIsAllRowsSelected()}
+                someRowsSelected={table.getIsSomeRowsSelected()}
+                onToggleAllRowsSelected={() => {
+                  table.toggleAllRowsSelected();
+                }}
+              />
+            </div>
+            <div
+              className={cn(
+                "hidden overflow-x-auto md:block",
+                fillHeight && "md:min-h-0 md:overflow-y-auto",
+              )}
+            >
+              <table className="w-full border-collapse text-body-sm tabular-nums">
+                <DataTableHead table={table} fillHeight={fillHeight} density={density} />
+                <DataTableBody
+                  rows={rows}
+                  columnCount={columns.length}
+                  density={density}
+                  isLoading={isLoading}
+                  skeletonRowCount={skeletonRowCount}
+                  onRowActivate={onRowActivate}
+                  focusedRowIndex={focusedRowIndex}
+                  onFocusRow={setFocusedRowIndex}
+                  rowRefs={rowRefs}
+                  onKeyDown={handleKeyDown}
+                />
+              </table>
+            </div>
+          </>
+        )}
+        {footer && <div className="shrink-0 px-1 md:border-t md:border-line md:px-4">{footer}</div>}
       </div>
-      {mode !== "cursor" && !isLoading && rows.length > 0 && (
-        <DataTablePagination
-          table={table}
-          pageCount={
-            mode === "local"
-              ? Math.ceil(table.getFilteredRowModel().rows.length / tablePagination.pageSize)
-              : undefined
-          }
-          labels={paginationLabels}
-        />
-      )}
     </div>
   );
 }
