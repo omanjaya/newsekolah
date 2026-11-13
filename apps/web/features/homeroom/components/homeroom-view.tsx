@@ -192,22 +192,30 @@ export function HomeroomView(): ReactElement {
           );
         },
       },
-      {
-        id: "violations",
-        header: t("columns.violations"),
-        enableSorting: false,
-        cell: ({ row }) => {
-          const count = row.original.violation_count ?? 0;
-          if (count === 0) return <span className="text-fg-muted">{t("noViolations")}</span>;
-          return (
-            <span className="text-fg">
-              {t("violationSummary", { count, points: row.original.violation_points ?? 0 })}
-            </span>
-          );
-        },
-      },
+      // Discipline off: the API reports no violations for anyone, so the
+      // column is left out rather than reading "none" on every row.
+      ...(disciplineOn
+        ? [
+            {
+              id: "violations",
+              header: t("columns.violations"),
+              enableSorting: false,
+              cell: ({ row }) => {
+                const count = row.original.violation_count ?? 0;
+                if (count === 0) {
+                  return <span className="text-fg-muted">{t("noViolations")}</span>;
+                }
+                return (
+                  <span className="text-fg">
+                    {t("violationSummary", { count, points: row.original.violation_points ?? 0 })}
+                  </span>
+                );
+              },
+            } satisfies ColumnDef<Entry>,
+          ]
+        : []),
     ],
-    [t],
+    [t, disciplineOn],
   );
 
   if (!homeroom) {
