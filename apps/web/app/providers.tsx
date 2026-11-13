@@ -13,14 +13,16 @@ import { isExcludedPath } from "../lib/session/access-cookie";
 import { markAuthRedirect } from "../lib/session/auth-redirect-flag";
 import { SessionProvider } from "../lib/session/session-provider";
 import { SimulationSync } from "../lib/simulation/simulation-sync";
-import { TenantProvider } from "../lib/tenant/tenant-provider";
+import { TenantProvider, type TenantBranding } from "../lib/tenant/tenant-provider";
 import { ThemeProvider } from "../lib/theme/theme-provider";
 
 export function AppProviders({
   locale,
+  initialBranding,
   children,
 }: {
   locale: string;
+  initialBranding?: TenantBranding;
   children: ReactNode;
 }): ReactElement {
   const router = useRouter();
@@ -54,7 +56,7 @@ export function AppProviders({
   return (
     <QueryProvider>
       <ApiClientProvider locale={locale} onUnauthorized={handleUnauthorized}>
-        <TenantProvider>
+        <TenantProvider initialBranding={initialBranding}>
           <SessionProvider>
             <SimulationSync />
             <ThemeProvider>

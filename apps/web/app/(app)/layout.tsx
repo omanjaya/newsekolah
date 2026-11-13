@@ -26,9 +26,9 @@ import { AppLayoutClient } from "./app-layout-client";
  *   catalog the root used to serialize into every page, including `/login`.
  *
  * `getTenantBrandingServer()` is called again here (also called by the
- * root layout) rather than threaded down as a prop: Next.js memoizes
- * identical `fetch` calls within one request, so this costs nothing extra,
- * and it keeps this layout's locale resolution independent of the root's.
+ * root layout) rather than threaded down as a prop: it is wrapped in React
+ * `cache()`, so one request makes one upstream call, and it keeps this
+ * layout's locale resolution independent of the root's.
  */
 export default async function AppLayout({
   children,

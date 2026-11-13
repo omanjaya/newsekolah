@@ -1,8 +1,9 @@
 "use client";
 
-import type { components } from "@newsekolah/api-client";
+import { queryKeys, type components } from "@newsekolah/api-client";
 import { useTenantBranding } from "@newsekolah/api-client/react";
-import { createContext, useContext, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { useApiClient } from "../api/client";
@@ -32,8 +33,30 @@ const TenantContext = createContext<TenantContextValue | null>(null);
  * paired foregrounds keep filled buttons readable against the accent. The
  * runtime values feed globals.css so switching themes stays CSS-driven.
  */
-export function TenantProvider({ children }: { children: ReactNode }): ReactElement {
+export function TenantProvider({
+  children,
+  initialBranding,
+}: {
+  children: ReactNode;
+  /**
+   * Branding the server already fetched for this document. Seeds the query
+   * cache so a page load makes no browser request to the rate limited public
+   * endpoint (60 per minute per IP); it stays fresh for the whole session.
+   */
+  initialBranding?: TenantBranding;
+}): ReactElement {
   const client = useApiClient();
+  const queryClient = useQueryClient();
+  // Lazy initializer: runs once, before the query below first reads the cache.
+  useState(() => {
+    if (!initialBranding) return null;
+    const key = queryKeys.tenantBranding();
+    queryClient.setQueryDefaults(key, { staleTime: Infinity });
+    if (queryClient.getQueryData(key) === undefined) {
+      queryClient.setQueryData(key, initialBranding);
+    }
+    return null;
+  });
   const { data, isLoading } = useTenantBranding(client);
   const branding = data;
 
