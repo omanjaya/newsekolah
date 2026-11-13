@@ -6,10 +6,23 @@ const mocks = vi.hoisted(() => ({
   useLibraryMembersQuery: vi.fn(),
 }));
 
+// One translator for every call, as next-intl's own is stable: a new one per
+// render would rebuild the view's memoized columns, and TanStack would then
+// remount every cell of the table and the phone cards on each re-render.
+const translate = vi.hoisted(() => (key: string) => key);
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => translate,
   useLocale: () => "id",
 }));
+
+/**
+ * A full page is 50 members (the API's page size, which is what turns on
+ * Next), drawn twice: as the desktop table and as the phone cards, about
+ * 3,300 DOM nodes. Each role query after a re-render walks all of them, so
+ * the paging test needs about a second alone and more than vitest's 5s
+ * default when the whole monorepo runs in parallel.
+ */
+const FULL_PAGE_TIMEOUT_MS = 20_000;
 vi.mock("next/navigation", () => ({
   usePathname: () => "/library/members",
   useSearchParams: () => new URLSearchParams(window.location.search),
@@ -96,28 +109,32 @@ describe("MembersView filters", () => {
     expect(screen.getByRole("button", { name: "filters.type: Siswa" })).toBeInTheDocument();
   });
 
-  it("pages members by offset instead of capping the list at one page", async () => {
-    const full = Array.from({ length: 50 }, (_, i) => ({
-      user_id: `user-${i}`,
-      member_no: `M${i}`,
-      member_type_id: "type-student",
-      status: "active",
-    }));
-    mocks.useLibraryMembersQuery.mockReturnValue({ data: { data: full }, isLoading: false });
-    const user = userEvent.setup();
-    render(<MembersView />);
+  it(
+    "pages members by offset instead of capping the list at one page",
+    async () => {
+      const full = Array.from({ length: 50 }, (_, i) => ({
+        user_id: `user-${i}`,
+        member_no: `M${i}`,
+        member_type_id: "type-student",
+        status: "active",
+      }));
+      mocks.useLibraryMembersQuery.mockReturnValue({ data: { data: full }, isLoading: false });
+      const user = userEvent.setup();
+      render(<MembersView />);
 
-    expect(mocks.useLibraryMembersQuery).toHaveBeenLastCalledWith(
-      expect.objectContaining({ limit: 50, offset: 0 }),
-    );
-    expect(screen.getByRole("button", { name: "pagePrev" })).toBeDisabled();
+      expect(mocks.useLibraryMembersQuery).toHaveBeenLastCalledWith(
+        expect.objectContaining({ limit: 50, offset: 0 }),
+      );
+      expect(screen.getByRole("button", { name: "pagePrev" })).toBeDisabled();
 
-    await user.click(screen.getByRole("button", { name: "pageNext" }));
-    expect(mocks.useLibraryMembersQuery).toHaveBeenLastCalledWith(
-      expect.objectContaining({ limit: 50, offset: 50 }),
-    );
-    expect(screen.getByRole("button", { name: "pagePrev" })).toBeEnabled();
-  });
+      await user.click(screen.getByRole("button", { name: "pageNext" }));
+      expect(mocks.useLibraryMembersQuery).toHaveBeenLastCalledWith(
+        expect.objectContaining({ limit: 50, offset: 50 }),
+      );
+      expect(screen.getByRole("button", { name: "pagePrev" })).toBeEnabled();
+    },
+    FULL_PAGE_TIMEOUT_MS,
+  );
 
   it("clears a filter from its chip's remove control", async () => {
     window.history.replaceState(null, "", "/library/members?status=active");
