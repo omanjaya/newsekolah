@@ -144,7 +144,9 @@ export function CommandPalette({
                       onSelect={item.onSelect}
                       className={cn(
                         "group/item flex h-11 cursor-pointer items-center gap-3 rounded-[calc(var(--radius-lg)-8px)] px-3 text-body text-fg select-none",
-                        "pointer-coarse:h-12 transition-colors data-[selected=true]:bg-state-hover active:bg-state-pressed",
+                        // The pressed row is the selected one; a plain `active:`
+                        // rule would sort before the `data-` one and never show.
+                        "pointer-coarse:h-12 transition-colors data-[selected=true]:bg-state-hover data-[selected=true]:active:bg-state-pressed",
                         "data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",
                       )}
                     >
