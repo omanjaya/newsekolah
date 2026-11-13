@@ -228,6 +228,31 @@ function releaseClaimedDetailPaths(output: NavItem[], available: NavItem[]): voi
   }
 }
 
+const LIBRARY_WORKSPACES = [
+  "library-catalogue",
+  "library-desk",
+  "library-members",
+  "library-settings",
+  "library-me",
+];
+
+/**
+ * The library home is the dashboard of a reader who has no school dashboard.
+ * A reader who has both keeps the library home under the library entries, so
+ * the page does not light up Beranda while the library group stays closed.
+ */
+function moveLibraryHomeToLibrary(output: NavItem[], available: NavItem[]): void {
+  const dashboard = output.find((item) => item.key === "dashboard");
+  const home = available.find((item) => item.key === "library-dashboard");
+  if (!dashboard || !home || !dashboard.aliases?.includes("dashboard")) return;
+  const owner = LIBRARY_WORKSPACES.map((key) => output.find((item) => item.key === key)).find(
+    Boolean,
+  );
+  if (!owner) return;
+  dashboard.activePaths = dashboard.activePaths?.filter((path) => path !== home.href);
+  owner.activePaths = [...(owner.activePaths ?? []), home.href];
+}
+
 /** Merge only the already authorized destinations; custom permission sets get safe fallbacks. */
 export function consolidateNavigation(
   items: NavItem[],
@@ -267,6 +292,7 @@ export function consolidateNavigation(
     ];
   });
   releaseClaimedDetailPaths(output, available);
+  moveLibraryHomeToLibrary(output, available);
   // These remain direct mobile/account actions, not entries in the browsable menu.
   const assigned = new Set(WORKSPACES.flatMap((definition) => definition.members));
   const additional = available.filter(

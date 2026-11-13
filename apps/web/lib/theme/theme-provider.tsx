@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 
+import { applyThemeColor } from "./theme-color";
 import { THEME_STORAGE_KEY } from "./theme-script";
 
 export type ThemePreference = "system" | "light" | "dark";
@@ -41,12 +42,15 @@ export function ThemeProvider({ children }: { children: ReactNode }): ReactEleme
   const [theme, setThemeState] = useState<ThemePreference>("system");
 
   useEffect(() => {
+    const stored = readStoredTheme();
+    applyThemeColor(stored);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- see the note above `theme`'s useState.
-    setThemeState(readStoredTheme());
+    setThemeState(stored);
   }, []);
 
   const setTheme = (next: ThemePreference) => {
     setThemeState(next);
+    applyThemeColor(next);
     try {
       if (next === "system") {
         localStorage.removeItem(THEME_STORAGE_KEY);

@@ -111,6 +111,7 @@ describe("consolidated workspaces", () => {
     );
     expect(activeNavHref("/library/copies", items)).toBe("/library/catalogue");
     expect(activeNavHref("/library/reports", items)).toBe("/reports");
+    expect(activeNavHref("/library", items)).toBe("/library/catalogue");
     expect(activeNavHref("/visitors/recap", items)).toBe("/visitors/board");
     expect(activeNavHref("/settings/sso", items)).toBe("/settings");
     expect(activeNavHref("/discipline/warning-letters", items)).toBe("/discipline/violations");
