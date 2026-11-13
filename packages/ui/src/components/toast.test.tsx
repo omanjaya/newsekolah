@@ -1,7 +1,22 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+
+import { expectNoAxeViolations } from "../test/axe.js";
 
 import { Toaster, toast, useToast } from "./toast.js";
+import { UiLabelsProvider } from "./ui-labels.js";
+
+// sonner captures the pointer for its swipe-to-dismiss; jsdom has no pointer capture.
+beforeAll(() => {
+  window.HTMLElement.prototype.setPointerCapture = vi.fn();
+});
+
+afterEach(() => {
+  act(() => {
+    toast.dismiss();
+  });
+});
 
 describe("toast", () => {
   it("useToast returns the same plain API toast exposes, without needing a component", () => {
@@ -45,5 +60,59 @@ describe("toast", () => {
       expect(screen.getByText("Presensi tersimpan")).toBeInTheDocument();
     });
     expect(screen.queryByRole("alert")).not.toHaveTextContent("Presensi tersimpan");
+  });
+
+  it("runs an optional action on a success toast", async () => {
+    render(<Toaster />);
+    const onUndo = vi.fn();
+    toast.success("Buku dikembalikan", { action: { label: "Urungkan", onClick: onUndo } });
+    await userEvent.click(await screen.findByRole("button", { name: "Urungkan" }));
+    expect(onUndo).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows warning and info toasts and returns each toast's id for dismiss", async () => {
+    render(<Toaster />);
+    let id: string | number = "";
+    act(() => {
+      id = toast.warning("Jadwal bentrok dengan Fisika");
+      toast.info("Presensi tersimpan di perangkat");
+    });
+    expect(await screen.findByText("Jadwal bentrok dengan Fisika")).toBeInTheDocument();
+    expect(screen.getByText("Presensi tersimpan di perangkat")).toBeInTheDocument();
+    act(() => {
+      toast.dismiss(id);
+    });
+    await waitFor(() =>
+      expect(screen.queryByText("Jadwal bentrok dengan Fisika")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("puts the icon in a soft circle of the kind's tone", async () => {
+    render(<Toaster />);
+    toast.error("Gagal menyimpan");
+    await waitFor(() => {
+      expect(document.querySelector('[data-sonner-toast][data-type="error"]')).not.toBeNull();
+    });
+    const item = document.querySelector('[data-sonner-toast][data-type="error"]');
+    expect(item?.className ?? "").toContain("[&_[data-icon]]:bg-danger-soft");
+    expect(item?.querySelector("[data-icon]")).toHaveClass("size-8", "rounded-full");
+  });
+
+  it("names its region and an error's close button from UiLabels", async () => {
+    render(
+      <UiLabelsProvider labels={{ toastRegion: "Notifications", toastClose: "Close" }}>
+        <Toaster />
+      </UiLabelsProvider>,
+    );
+    toast.error("Could not save");
+    expect(await screen.findByRole("button", { name: "Close" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /Notifications/ })).toBeInTheDocument();
+  });
+
+  it("has no accessibility violations with a toast showing", async () => {
+    const { container } = render(<Toaster />);
+    toast.success("Izin berhasil dikirim", { description: "Wali kelas akan meninjau hari ini" });
+    await screen.findByText("Izin berhasil dikirim");
+    await expectNoAxeViolations(container);
   });
 });

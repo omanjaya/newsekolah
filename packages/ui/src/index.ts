@@ -117,6 +117,7 @@ export {
   useToast,
   type ToastActionOptions,
   type ToastApi,
+  type ToastOptions,
   type ToasterProps,
 } from "./components/toast.js";
 export { Alert, type AlertProps } from "./components/alert.js";
