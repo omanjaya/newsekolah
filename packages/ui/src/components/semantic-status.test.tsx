@@ -44,33 +44,38 @@ describe("semantic status mapping", () => {
   });
 });
 
+/** The pill around a label (the label itself sits in its own truncating span). */
+function pill(label: string): HTMLElement | null {
+  return screen.getByText(label).closest('[data-slot="badge"]');
+}
+
 describe("SemanticStatusBadge", () => {
   it("renders a pill in the semantic tone, with a dot and its label", async () => {
     const { container } = render(<SemanticStatusBadge status="approved" label="Disetujui" />);
-    const badge = screen.getByText("Disetujui");
+    const badge = pill("Disetujui");
     expect(badge).toHaveClass("rounded-full", "bg-success-soft", "text-success-soft-fg");
     expect(badge).toHaveAttribute("data-status", "approved");
-    expect(badge.querySelector('[aria-hidden="true"]')).toHaveClass("bg-success");
+    expect(badge?.querySelector('[aria-hidden="true"]')).toHaveClass("bg-success");
     await expectNoAxeViolations(container);
   });
 
   it("renders the same pill shape, neutral, for quiet states", () => {
     render(<SemanticStatusBadge status="cancelled" label="Dibatalkan" />);
-    expect(screen.getByText("Dibatalkan")).toHaveClass("rounded-full", "text-fg-muted");
+    expect(pill("Dibatalkan")).toHaveClass("rounded-full", "text-fg-muted");
   });
 });
 
 describe("StatusBadge", () => {
   it("renders an attendance status as a pill with its token dot and default name", async () => {
     const { container } = render(<StatusBadge status="late" />);
-    const badge = screen.getByText("Terlambat");
+    const badge = pill("Terlambat");
     expect(badge).toHaveClass("rounded-full", "text-fg");
-    expect(badge.querySelector('[aria-hidden="true"]')).toHaveClass("bg-status-late");
+    expect(badge?.querySelector('[aria-hidden="true"]')).toHaveClass("bg-status-late");
     await expectNoAxeViolations(container);
   });
 
   it("takes a localized label", () => {
     render(<StatusBadge status="present" label="Present" appearance="outline" />);
-    expect(screen.getByText("Present")).toHaveClass("ring-1");
+    expect(pill("Present")).toHaveClass("ring-1");
   });
 });

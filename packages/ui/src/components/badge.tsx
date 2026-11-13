@@ -1,4 +1,4 @@
-import { forwardRef, type ComponentPropsWithoutRef } from "react";
+import { Children, forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -12,10 +12,12 @@ export type BadgeSize = "sm" | "md";
 type LegacyBadgeVariant = "neutral" | "accent" | "success" | "warning" | "danger" | "info";
 
 // Both sizes are pills on the caption role at 600; the inset ring of
-// `outline` keeps all three appearances exactly the same size.
+// `outline` keeps all three appearances exactly the same size. The height
+// is a minimum: a text pill is exactly 24 or 20px, while a pill holding a
+// control (a remove button) grows around it instead of letting it spill.
 const SIZE_CLASS: Record<BadgeSize, string> = {
-  sm: "h-5 gap-1 px-2",
-  md: "h-6 gap-1.5 px-2.5",
+  sm: "min-h-5 gap-1 px-2",
+  md: "min-h-6 gap-1.5 px-2.5",
 };
 
 export interface BadgeProps extends ComponentPropsWithoutRef<"span"> {
@@ -49,6 +51,36 @@ export function badgeClassName({
   );
 }
 
+/**
+ * Puts each run of text in a span that can shrink and end in an ellipsis.
+ * Bare text in a flex container is an anonymous item no class can reach,
+ * so a long label would spill out of a pill capped by `max-w-full`.
+ * Elements (an icon, a button) stay items of their own.
+ */
+function truncatableText(children: ReactNode): ReactNode[] {
+  const items: ReactNode[] = [];
+  let run = "";
+  const flush = () => {
+    if (run === "") return;
+    items.push(
+      <span key={`text-${String(items.length)}`} className="min-w-0 truncate">
+        {run}
+      </span>,
+    );
+    run = "";
+  };
+  for (const child of Children.toArray(children)) {
+    if (typeof child === "string" || typeof child === "number") {
+      run += String(child);
+    } else {
+      flush();
+      items.push(child);
+    }
+  }
+  flush();
+  return items;
+}
+
 /** A status or label pill (docs/07-ui-ux.md): one shape for every chip in the product. */
 export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
   {
@@ -70,13 +102,14 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
   return (
     <span
       ref={ref}
+      data-slot="badge"
       className={cn(badgeClassName({ tone: resolvedTone, appearance, size }), className)}
       {...props}
     >
       {dot && (
         <span className={cn("size-1.5 shrink-0 rounded-full", dotColor)} aria-hidden="true" />
       )}
-      {children}
+      {truncatableText(children)}
     </span>
   );
 });

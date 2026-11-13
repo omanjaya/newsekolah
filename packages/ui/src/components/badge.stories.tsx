@@ -1,13 +1,11 @@
-import type { Decorator, Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
+import { X } from "lucide-react";
+
+import { phoneViewport } from "../stories/phone-viewport.js";
 
 import { Badge, type BadgeAppearance, type BadgeTone } from "./badge.js";
 import { CountBadge } from "./count-badge.js";
-
-const phoneFrame: Decorator = (Story) => (
-  <div className="mx-auto w-[390px] max-w-full p-4">
-    <Story />
-  </div>
-);
+import { IconButton } from "./icon-button.js";
 
 const meta: Meta<typeof Badge> = {
   title: "Components/Badge",
@@ -92,6 +90,34 @@ function Matrix() {
           </span>
         </div>
       </div>
+      <div className="flex flex-col gap-2">
+        <p className="text-caption text-fg-muted">
+          a long label in a 160px column, and pills around a remove button
+        </p>
+        <div className="flex flex-wrap items-start gap-6">
+          <div className="flex w-40 flex-col items-start gap-2 rounded-md border border-dashed border-border-strong p-2">
+            <Badge tone="blue">Pendidikan Pancasila dan Kewarganegaraan</Badge>
+            <Badge tone="neutral" dot>
+              Bahasa Indonesia Tingkat Lanjut
+            </Badge>
+          </div>
+          <div className="flex max-w-80 flex-wrap items-center gap-2">
+            {["kepala.sekolah@sman1.sch.id", "guru.matematika@sman1.sch.id", "tu@sman1.sch.id"].map(
+              (email) => (
+                <Badge key={email} tone="neutral" className="gap-0.5 pr-0">
+                  {email}
+                  <IconButton
+                    size="sm"
+                    icon={<X />}
+                    aria-label={`Hapus ${email}`}
+                    tooltip={false}
+                  />
+                </Badge>
+              ),
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -100,6 +126,6 @@ export const Default: Story = { render: () => <Matrix /> };
 export const Dark: Story = { globals: { theme: "dark" }, render: () => <Matrix /> };
 export const Phone: Story = {
   parameters: { layout: "fullscreen" },
-  decorators: [phoneFrame],
+  decorators: [phoneViewport],
   render: () => <Matrix />,
 };
