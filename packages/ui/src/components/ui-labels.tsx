@@ -31,6 +31,8 @@ export interface UiLabels {
   timePickerPlaceholder: string;
   timePickerShowOptions: string;
   timePickerOptions: string;
+  numberInputIncrement: string;
+  numberInputDecrement: string;
 }
 
 const DEFAULT_UI_LABELS: UiLabels = {
@@ -58,6 +60,8 @@ const DEFAULT_UI_LABELS: UiLabels = {
   timePickerPlaceholder: "Pilih jam",
   timePickerShowOptions: "Tampilkan pilihan jam",
   timePickerOptions: "Pilihan jam",
+  numberInputIncrement: "Tambah",
+  numberInputDecrement: "Kurangi",
 };
 
 const UiLabelsContext = createContext<UiLabels>(DEFAULT_UI_LABELS);
