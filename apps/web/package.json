@@ -27,7 +27,7 @@
     "@tanstack/react-table": "^8.21.3",
     "exceljs": "^4.4.0",
     "lucide-react": "^1.43.0",
-    "next": "15.5.25",
+    "next": "15.5.29",
     "next-intl": "^4.4.4",
     "qrcode.react": "^4.2.0",
     "react": "19.2.8",
@@ -37,7 +37,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "@next/eslint-plugin-next": "15.5.25",
+    "@next/eslint-plugin-next": "15.5.29",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
@@ -51,7 +51,7 @@
     "jsdom": "^30.0.1",
     "serwist": "^9.5.12",
     "typescript": "^5.9.3",
-    "vite": "^6.4.3",
+    "vite": "^6.4.6",
     "vitest": "^5.0.0"
   }
 }

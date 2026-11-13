@@ -43,8 +43,8 @@
   "devDependencies": {
     "@newsekolah/config": "workspace:*",
     "@tanstack/react-query": "^5.102.8",
-    "@types/node": "^22.10.0",
     "@testing-library/react": "^16.3.3",
+    "@types/node": "^22.10.0",
     "@types/react": "^19.2.7",
     "eslint": "^9.39.5",
     "jsdom": "^30.0.1",
@@ -54,6 +54,7 @@
     "react-dom": "^19.2.8",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
+    "vite": "^8.3.8",
     "vitest": "^5.0.0"
   }
 }
