@@ -95,16 +95,21 @@ export {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogFooter,
   DialogTrigger,
   type DialogContentProps,
+  type DialogSize,
 } from "./components/dialog.js";
 export { ConfirmDialog, type ConfirmDialogProps } from "./components/confirm-dialog.js";
 export {
   Sheet,
   SheetClose,
   SheetContent,
+  SheetFooter,
   SheetTrigger,
   type SheetContentProps,
+  type SheetSide,
+  type SheetSize,
 } from "./components/sheet.js";
 export {
   Toaster,

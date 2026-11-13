@@ -37,6 +37,26 @@ export interface UiLabels {
   timePickerOptions: string;
   numberInputIncrement: string;
   numberInputDecrement: string;
+
+  // Overlays, navigation and feedback (wave 2, stream 2).
+  confirmDialogConfirm: string;
+  confirmDialogCancel: string;
+  /** Accessible name of a toast's close button. */
+  toastClose: string;
+  /** Accessible name of the region that holds the toasts. */
+  toastRegion: string;
+  commandPaletteLabel: string;
+  commandPalettePlaceholder: string;
+  commandPaletteEmpty: string;
+  /** Footer hints next to the arrow, Enter and Esc keys. */
+  commandPaletteHintMove: string;
+  commandPaletteHintOpen: string;
+  commandPaletteHintClose: string;
+  /** Closes the full-screen palette on a phone, where there is no Esc key. */
+  commandPaletteCancel: string;
+  /** Read after a finished or stopped step's label by screen readers ("Wali kelas, selesai"). */
+  stepperStepComplete: string;
+  stepperStepStopped: string;
 }
 
 const DEFAULT_UI_LABELS: UiLabels = {
@@ -69,6 +89,20 @@ const DEFAULT_UI_LABELS: UiLabels = {
   timePickerOptions: "Pilihan jam",
   numberInputIncrement: "Tambah",
   numberInputDecrement: "Kurangi",
+
+  confirmDialogConfirm: "Lanjutkan",
+  confirmDialogCancel: "Batal",
+  toastClose: "Tutup notifikasi",
+  toastRegion: "Notifikasi",
+  commandPaletteLabel: "Pencarian global",
+  commandPalettePlaceholder: "Cari halaman, siswa, guru, atau aksi",
+  commandPaletteEmpty: "Tidak ada hasil yang cocok",
+  commandPaletteHintMove: "Pindah",
+  commandPaletteHintOpen: "Buka",
+  commandPaletteHintClose: "Tutup",
+  commandPaletteCancel: "Batal",
+  stepperStepComplete: "selesai",
+  stepperStepStopped: "dihentikan",
 };
 
 const UiLabelsContext = createContext<UiLabels>(DEFAULT_UI_LABELS);
