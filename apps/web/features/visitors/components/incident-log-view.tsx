@@ -32,11 +32,14 @@ import { type Incident, useIncidentsQuery } from "../api";
 import { IncidentDetailDialog } from "./incident-detail-dialog";
 import { IncidentForm } from "./incident-form";
 
-const SEVERITY_VARIANT: Record<Incident["severity"], "accent" | "neutral"> = {
+export const SEVERITY_VARIANT: Record<
+  Incident["severity"],
+  "neutral" | "info" | "warning" | "danger"
+> = {
   low: "neutral",
-  medium: "neutral",
-  high: "accent",
-  critical: "accent",
+  medium: "info",
+  high: "warning",
+  critical: "danger",
 };
 
 /**

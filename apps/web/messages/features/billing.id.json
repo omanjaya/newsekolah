@@ -132,7 +132,7 @@
     },
     "totalOutstanding": "Sisa tagihan",
     "billCount": "Jumlah tagihan",
-    "overdueCount": "Terlambat",
+    "overdueCount": "Menunggak",
     "shareReceipt": "Bagikan kuitansi",
     "method": {
       "cash": "Tunai",

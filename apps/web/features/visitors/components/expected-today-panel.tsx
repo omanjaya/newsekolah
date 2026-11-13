@@ -38,7 +38,7 @@ export function ExpectedTodayPanel({ search }: { search: string }): ReactElement
           {items.map((guest) => (
             <li
               key={guest.id}
-              className="flex flex-col gap-3 rounded-lg border border-border bg-bg-raised p-4"
+              className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4"
             >
               <div>
                 <p className="font-semibold">{guest.full_name}</p>

@@ -67,6 +67,12 @@
       "delete": "Menghapus jenis tugas",
       "replace_permissions": "Mengubah izin jenis tugas"
     },
+    "role_testing": {
+      "start": "Memulai uji peran",
+      "switch": "Berpindah akun uji",
+      "stop": "Menghentikan uji peran",
+      "logout": "Mengakhiri sesi uji peran"
+    },
     "feature_flag": {
       "update": "Mengubah modul sekolah"
     },

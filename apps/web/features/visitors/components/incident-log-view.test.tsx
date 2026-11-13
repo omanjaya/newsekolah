@@ -26,7 +26,7 @@ vi.mock("../api", () => ({
   useUpdateIncidentMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
-import { IncidentLogView } from "./incident-log-view";
+import { IncidentLogView, SEVERITY_VARIANT } from "./incident-log-view";
 
 describe("IncidentLogView filters", () => {
   beforeEach(() => {
@@ -108,5 +108,16 @@ describe("IncidentLogView filters", () => {
     );
     expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-09-01");
     expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-09-15");
+  });
+});
+
+describe("incident severity badges", () => {
+  it("gives every severity its own signal, with critical as danger", () => {
+    expect(SEVERITY_VARIANT).toEqual({
+      low: "neutral",
+      medium: "info",
+      high: "warning",
+      critical: "danger",
+    });
   });
 });

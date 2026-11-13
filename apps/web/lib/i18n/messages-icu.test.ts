@@ -8,7 +8,11 @@ import { getMessages } from "./get-messages";
 // Known offenders owned by another area, tracked as a handoff: their
 // placeholder examples use `{{x}}` without ICU escaping, so next-intl falls
 // back to showing the raw key. Remove an entry once that catalog is fixed.
-const KNOWN_INVALID_PREFIXES = ["app.discipline."];
+const KNOWN_INVALID_KEYS = new Set([
+  "app.discipline.warningLetters.template.patternHint",
+  "app.discipline.warningLetters.template.missingSeqError",
+  "app.discipline.warningLetters.template.seqPadHint",
+]);
 
 function collectLeaves(value: unknown, path: string[], out: [string, string][]): void {
   if (typeof value === "string") {
@@ -43,9 +47,7 @@ describe.each(["id", "en"] as const)("%s catalog", (locale) => {
       }
     }
 
-    const unexpected = invalid.filter(
-      (key) => !KNOWN_INVALID_PREFIXES.some((prefix) => key.startsWith(prefix)),
-    );
+    const unexpected = invalid.filter((key) => !KNOWN_INVALID_KEYS.has(key));
     expect(unexpected).toEqual([]);
   });
 });

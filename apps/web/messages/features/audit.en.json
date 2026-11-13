@@ -67,6 +67,12 @@
       "delete": "Removed a duty type",
       "replace_permissions": "Changed duty type permissions"
     },
+    "role_testing": {
+      "start": "Started role testing",
+      "switch": "Switched test account",
+      "stop": "Stopped role testing",
+      "logout": "Ended role testing session"
+    },
     "feature_flag": {
       "update": "Changed a school module"
     },
