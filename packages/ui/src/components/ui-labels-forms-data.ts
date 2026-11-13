@@ -10,6 +10,12 @@
 export interface FormsDataUiLabels {
   /** Suffix after the label of a field marked `optional`, e.g. "(opsional)". */
   fieldOptional: string;
+  /**
+   * Read as the description of a required control that cannot carry
+   * `aria-required` itself (Combobox's trigger is a button), since the
+   * label's asterisk is hidden from assistive tech.
+   */
+  fieldRequired: string;
   /** Default title of `FormError`, the summary box above a form. */
   formErrorTitle: string;
 
@@ -95,6 +101,7 @@ export interface FormsDataUiLabels {
 
 export const DEFAULT_FORMS_DATA_UI_LABELS: FormsDataUiLabels = {
   fieldOptional: "(opsional)",
+  fieldRequired: "Wajib diisi",
   formErrorTitle: "Periksa kembali isian berikut",
 
   passwordShow: "Tampilkan kata sandi",

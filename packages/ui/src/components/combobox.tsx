@@ -3,7 +3,7 @@
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { Command as CommandPrimitive } from "cmdk";
 import { Check, ChevronDown, Loader2, Search, SearchX } from "lucide-react";
-import { forwardRef, useState } from "react";
+import { forwardRef, useId, useState } from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -87,6 +87,7 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
 ) {
   const labels = useUiLabels();
   const [open, setOpen] = useState(false);
+  const requiredId = useId();
   const selected = options.find((option) => option.value === value);
   const { attributes } = useFieldControl({
     id,
@@ -96,6 +97,13 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
     "aria-describedby": ariaDescribedBy,
     "aria-invalid": ariaInvalid,
   });
+  // The trigger is a button, which cannot carry aria-required; a required
+  // field (its own `required` or a required `Field`) says so in the
+  // trigger's description instead, from a node kept out of reading order.
+  const isRequired = attributes["aria-required"] === true;
+  const describedBy =
+    [attributes["aria-describedby"], isRequired && requiredId].filter(Boolean).join(" ") ||
+    undefined;
   const showLoadingRow = loading && options.length === 0;
 
   return (
@@ -103,10 +111,9 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
       <PopoverPrimitive.Trigger
         ref={ref}
         type="button"
-        // A button cannot carry aria-required; the rest of the field wiring applies.
         id={attributes.id}
         disabled={attributes.disabled}
-        aria-describedby={attributes["aria-describedby"]}
+        aria-describedby={describedBy}
         aria-invalid={attributes["aria-invalid"]}
         className={cn(
           // `group/trigger` scopes the chevron's turn to this trigger, as in Select.
@@ -129,6 +136,11 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
           aria-hidden="true"
         />
       </PopoverPrimitive.Trigger>
+      {isRequired && (
+        <span id={requiredId} hidden>
+          {labels.fieldRequired}
+        </span>
+      )}
       <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content
           align="start"

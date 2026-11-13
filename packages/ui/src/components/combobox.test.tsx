@@ -131,8 +131,44 @@ describe("Combobox", () => {
     expect(screen.getByText("Nothing matches")).toBeInTheDocument();
   });
 
+  it("says it is required in its description, since a button cannot carry aria-required", () => {
+    render(
+      <UiLabelsProvider labels={{ fieldRequired: "Required" }}>
+        <Combobox
+          aria-label="Guru"
+          aria-describedby="hint"
+          options={[]}
+          value=""
+          onValueChange={vi.fn()}
+          search=""
+          onSearchChange={vi.fn()}
+          required
+        />
+        <p id="hint">Guru aktif saja.</p>
+      </UiLabelsProvider>,
+    );
+    const trigger = screen.getByRole("button", { name: "Guru" });
+    expect(trigger).toHaveAccessibleDescription("Guru aktif saja. Required");
+    expect(trigger).not.toHaveAttribute("aria-required");
+    // The words are for the description only, not read again in the page.
+    expect(screen.getByText("Required")).not.toBeVisible();
+  });
+
   it("has no accessibility violations", async () => {
-    const { container } = render(<Harness onValueChange={vi.fn()} />);
+    const { container } = render(
+      <>
+        <Harness onValueChange={vi.fn()} />
+        <Combobox
+          aria-label="Wajib"
+          options={[]}
+          value=""
+          onValueChange={vi.fn()}
+          search=""
+          onSearchChange={vi.fn()}
+          required
+        />
+      </>,
+    );
     await expectNoAxeViolations(container);
   });
 });
