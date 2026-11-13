@@ -184,3 +184,47 @@ export {
   type DataTableLocalState,
   type DataTableProps,
 } from "./components/data-table/index.js";
+
+// Forms and data (overhaul wave 2, stream 3).
+export {
+  DataTableErrorState,
+  type DataTableCardRole,
+  type DataTableCursorPagination,
+  type DataTableErrorStateProps,
+  type DataTablePaginationLabels,
+  type DataTableToolbarLabels,
+} from "./components/data-table/index.js";
+export {
+  Field,
+  FieldError,
+  type FieldOrientation,
+  type FieldProps,
+  type FieldRenderProps,
+} from "./components/field.js";
+export { useFieldControl, type FieldControl } from "./components/field-context.js";
+export {
+  FormActions,
+  FormError,
+  FormSection,
+  type FormActionsProps,
+  type FormErrorProps,
+  type FormSectionProps,
+} from "./components/form-layout.js";
+export { PasswordInput, type PasswordInputProps } from "./components/password-input.js";
+export { type SearchInputProps } from "./components/search-input.js";
+export { type FieldSize } from "./components/field-styles.js";
+export { Scanner, type ScannerProps, type ScannerVariant } from "./components/scanner.js";
+export {
+  ScannerResultBanner,
+  type ScannerResultTone,
+  type ScannerResultValue,
+} from "./components/scanner-result.js";
+export {
+  isCameraSupported,
+  queryCameraPermission,
+  useCameraScanner,
+  type CameraStatus,
+  type UseCameraScannerOptions,
+} from "./hooks/use-camera-scanner.js";
+export { QrPanelSkeleton } from "./components/qr-panel.js";
+export { TableFooter } from "./components/table.js";
