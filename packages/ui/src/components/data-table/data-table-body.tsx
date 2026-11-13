@@ -16,8 +16,22 @@ export const CELL_PADDING = { normal: "px-4 py-3", compact: "px-3" } as const;
 export type DataTableDensity = keyof typeof ROW_HEIGHT;
 
 /** A press on one of these inside a row is the control's own, not the row's. */
-const ROW_CONTROL_SELECTOR =
-  "a, button, input, select, textarea, label, [role=checkbox], [role=menuitem], [data-row-control]";
+const ROW_CONTROL_SELECTOR = [
+  "a",
+  "button",
+  "input",
+  "select",
+  "textarea",
+  "label",
+  "[role=checkbox]",
+  "[role=menuitem]",
+  "[role=menuitemcheckbox]",
+  "[role=menuitemradio]",
+  "[role=option]",
+  "[role=switch]",
+  "[role=tab]",
+  "[data-row-control]",
+].join(", ");
 
 export interface DataTableBodyProps<TData> {
   rows: Row<TData>[];
@@ -81,6 +95,10 @@ export function DataTableBody<TData>({
 
   const activateFromClick = (event: MouseEvent<HTMLTableRowElement>, row: Row<TData>) => {
     if (!onRowActivate) return;
+    // React bubbles a click through portals, so one inside a menu, dialog
+    // or popover opened from a cell reaches this row too; only a click on
+    // the row's own DOM opens it.
+    if (!(event.target instanceof Node) || !event.currentTarget.contains(event.target)) return;
     if (event.target instanceof Element && event.target.closest(ROW_CONTROL_SELECTOR)) return;
     // Selecting text in a cell is reading, not opening the row.
     if (typeof window !== "undefined" && window.getSelection()?.toString()) return;

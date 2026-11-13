@@ -4,6 +4,13 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../../test/axe.js";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "../dropdown-menu.js";
 import { EmptyState } from "../empty-state.js";
 import { UiLabelsProvider } from "../ui-labels.js";
 
@@ -294,6 +301,41 @@ describe("DataTable rows and cards", () => {
     expect(onRowActivate).toHaveBeenCalledWith(ROWS[1]);
     onRowActivate.mockClear();
     await userEvent.click(within(table).getByRole("button", { name: "Ubah Siswa 0" }));
+    expect(onRowActivate).not.toHaveBeenCalled();
+  });
+
+  it("does not open the row from a click inside a menu opened from one of its cells", async () => {
+    const onRowActivate = vi.fn();
+    const menuColumns: ColumnDef<Row>[] = [
+      { accessorKey: "name", header: "Nama" },
+      {
+        id: "actions",
+        header: "Aksi",
+        cell: () => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button">Menu</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Data siswa</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem checked>Tampilkan arsip</DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+      },
+    ];
+    render(
+      <DataTable
+        mode="local"
+        data={ROWS.slice(0, 1)}
+        columns={menuColumns}
+        onRowActivate={onRowActivate}
+      />,
+    );
+    await userEvent.click(within(screen.getByRole("table")).getByRole("button", { name: "Menu" }));
+    const menu = await screen.findByRole("menu");
+    await userEvent.click(within(menu).getByText("Data siswa"));
+    await userEvent.click(menu);
     expect(onRowActivate).not.toHaveBeenCalled();
   });
 
