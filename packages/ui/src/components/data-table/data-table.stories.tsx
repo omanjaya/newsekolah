@@ -107,7 +107,8 @@ const columns: ColumnDef<UserRow>[] = [
   },
 ];
 
-type Scenario = "rows" | "loading" | "empty" | "error" | "cursor" | "selection";
+type Scenario =
+  "rows" | "loading" | "empty" | "error" | "stale" | "cursor" | "selection" | "no-empty-state";
 
 function useFilters(): [DataTableFilterDef[], (rows: UserRow[]) => UserRow[]] {
   const [kind, setKind] = useState("");
@@ -205,13 +206,19 @@ function DataTableDemo({ scenario = "rows" }: { scenario?: Scenario }) {
   return (
     <DataTable
       mode="local"
-      data={scenario === "empty" || scenario === "error" ? [] : apply(USERS)}
+      data={
+        scenario === "empty" || scenario === "error" || scenario === "no-empty-state"
+          ? []
+          : apply(USERS)
+      }
       columns={scenario === "selection" ? [selectionColumn<UserRow>(), ...columns] : columns}
       getRowId={(row) => row.id}
       defaultPageSize={10}
       isLoading={scenario === "loading"}
       error={
-        scenario === "error" ? Object.assign(new Error("fetch failed"), { code: "NETWORK" }) : null
+        scenario === "error" || scenario === "stale"
+          ? Object.assign(new Error("fetch failed"), { code: "NETWORK" })
+          : null
       }
       onRetry={() => undefined}
       filters={filters}
@@ -224,7 +231,7 @@ function DataTableDemo({ scenario = "rows" }: { scenario?: Scenario }) {
         </Button>
       }
       onRowActivate={() => undefined}
-      emptyState={emptyState}
+      emptyState={scenario === "no-empty-state" ? undefined : emptyState}
     />
   );
 }
@@ -256,5 +263,9 @@ export const Phone: Story = { parameters: { layout: "fullscreen" }, decorators: 
 export const Loading: Story = { args: { scenario: "loading" } };
 export const Empty: Story = { args: { scenario: "empty" } };
 export const LoadFailed: Story = { args: { scenario: "error" } };
+/** A failed refetch with rows still loaded: the rows stay under an alert. */
+export const RefreshFailed: Story = { args: { scenario: "stale" } };
+/** No `emptyState` from the screen: the table's own default. */
+export const DefaultEmpty: Story = { args: { scenario: "no-empty-state" } };
 export const CursorPaging: Story = { args: { scenario: "cursor" } };
 export const Selection: Story = { args: { scenario: "selection" } };

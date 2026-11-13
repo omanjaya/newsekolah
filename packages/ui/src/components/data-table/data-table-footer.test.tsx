@@ -65,13 +65,47 @@ describe("DataTable error state", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it("uses a caller's own words as the description", () => {
-    render(<DataTable mode="local" data={ROWS} columns={columns} error="Server sedang sibuk." />);
-    expect(screen.getByRole("alert")).toHaveTextContent("Server sedang sibuk.");
-    expect(screen.queryByText("Siswa 0")).not.toBeInTheDocument();
+  it("keeps loaded rows after a failed refetch, under an alert in the caller's words", async () => {
+    const onRetry = vi.fn();
+    const { rerender } = render(
+      <DataTable
+        mode="local"
+        data={ROWS}
+        columns={columns}
+        error="Server sedang sibuk."
+        onRetry={onRetry}
+      />,
+    );
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("Data gagal dimuat");
+    expect(alert).toHaveTextContent("Server sedang sibuk.");
+    expect(within(screen.getByRole("table")).getByText("Siswa 0")).toBeInTheDocument();
+    await userEvent.click(within(alert).getByRole("button", { name: "Coba lagi" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <DataTable
+        mode="local"
+        data={ROWS}
+        columns={columns}
+        error="Server sedang sibuk."
+        onRetry={onRetry}
+        retrying
+      />,
+    );
+    expect(
+      within(screen.getByRole("alert")).getByRole("button", { name: /Coba lagi/ }),
+    ).toHaveAttribute("aria-busy", "true");
   });
 
-  it("strips the frame off the empty state inside the table card", () => {
+  it("shows a retry in flight on the error state", () => {
+    render(<DataTable mode="local" data={[]} columns={columns} error onRetry={vi.fn()} retrying />);
+    expect(
+      within(screen.getByRole("alert")).getByRole("button", { name: /Coba lagi/ }),
+    ).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("renders a caller's EmptyState inline inside the table card", () => {
     render(
       <DataTable
         mode="local"
@@ -80,13 +114,34 @@ describe("DataTable error state", () => {
         emptyState={<EmptyState title="Belum ada siswa" />}
       />,
     );
-    const slot = screen.getAllByText("Belum ada siswa")[0]?.closest("[data-slot=data-table-empty]");
-    expect(slot).toHaveClass("[&>*]:border-0", "[&>*]:rounded-none");
+    const [title] = screen.getAllByText("Belum ada siswa");
+    const root = title?.closest("[data-slot=data-table-empty] > *");
+    if (!(root instanceof HTMLElement)) throw new Error("Missing empty state");
+    // The inline variant: no frame of its own, the inline spacing.
+    expect(root).toHaveClass("py-8");
+    expect(root).not.toHaveClass("border");
+  });
+
+  it("says there is nothing yet when the caller gave no empty state", () => {
+    render(<DataTable mode="local" data={[]} columns={columns} />);
+    expect(screen.getAllByText("Belum ada data").length).toBeGreaterThan(0);
+  });
+
+  it("offers to clear a local search that matched nothing", async () => {
+    render(<DataTable mode="local" data={ROWS} columns={columns} />);
+    await userEvent.type(screen.getByRole("searchbox", { name: "Cari" }), "tidak ada");
+    // Past the 300ms typing debounce.
+    const [title] = await screen.findAllByText("Tidak ada hasil", undefined, { timeout: 2000 });
+    const slot = title?.closest<HTMLElement>("[data-slot=data-table-empty]");
+    if (!slot) throw new Error("Missing empty slot");
+    await userEvent.click(within(slot).getByRole("button", { name: "Hapus pencarian" }));
+    expect(await screen.findAllByText("Siswa 0")).not.toHaveLength(0);
+    expect(screen.getByRole("searchbox", { name: "Cari" })).toHaveValue("");
   });
 });
 
 describe("DataTable footer", () => {
-  it("counts rows and pages, and offers page sizes once there is more than one page", async () => {
+  it("counts rows and pages, and keeps the page size picker after a size that fits every row", async () => {
     render(<DataTable mode="local" data={ROWS} columns={columns} defaultPageSize={10} />);
     expect(screen.getByText("1–10 dari 12")).toBeInTheDocument();
     const pageSize = screen.getByRole("combobox", { name: "Baris per halaman" });
@@ -95,6 +150,76 @@ describe("DataTable footer", () => {
     await userEvent.click(screen.getByRole("option", { name: "25" }));
     expect(screen.getByText("12 data")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Ke halaman berikutnya" })).not.toBeInTheDocument();
+
+    // One page now, but the way back to 10 is still there.
+    const stillThere = screen.getByRole("combobox", { name: "Baris per halaman" });
+    await userEvent.click(stillThere);
+    await userEvent.click(screen.getByRole("option", { name: "10" }));
+    expect(screen.getByText("1–10 dari 12")).toBeInTheDocument();
+  });
+
+  it("offers no page size when every row fits the smallest one", () => {
+    render(<DataTable mode="local" data={ROWS.slice(0, 8)} columns={columns} />);
+    expect(screen.getByText("8 data")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Baris per halaman" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the way back on an empty server page past the first", async () => {
+    const onPaginationChange = vi.fn();
+    render(
+      <DataTable
+        mode="server"
+        data={[]}
+        columns={columns}
+        rowCount={20}
+        pagination={{ pageIndex: 2, pageSize: 10 }}
+        onPaginationChange={onPaginationChange}
+        emptyState={<EmptyState title="Belum ada siswa" />}
+      />,
+    );
+    const previous = screen.getByRole("button", { name: "Ke halaman sebelumnya" });
+    expect(screen.getByText("20 data")).toBeInTheDocument();
+    expect(screen.queryByText(/Halaman 3/)).not.toBeInTheDocument();
+    await userEvent.click(previous);
+    expect(onPaginationChange).toHaveBeenCalled();
+  });
+
+  it("keeps cursor previous on an empty page", () => {
+    render(
+      <DataTable
+        mode="cursor"
+        data={[]}
+        columns={columns}
+        cursorPagination={{
+          hasPrevious: true,
+          hasNext: false,
+          onPrevious: vi.fn(),
+          onNext: vi.fn(),
+        }}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Ke halaman sebelumnya" })).toBeEnabled();
+  });
+
+  it("stays mounted while the next page loads, holding previous and next still", async () => {
+    const onPaginationChange = vi.fn();
+    const props = {
+      mode: "server" as const,
+      columns,
+      rowCount: 30,
+      pagination: { pageIndex: 1, pageSize: 10 },
+      onPaginationChange,
+    };
+    const { rerender } = render(<DataTable {...props} data={ROWS.slice(0, 10)} />);
+    const next = screen.getByRole("button", { name: "Ke halaman berikutnya" });
+    next.focus();
+    rerender(<DataTable {...props} data={[]} isLoading />);
+    const held = screen.getByRole("button", { name: "Ke halaman berikutnya" });
+    expect(held).toBe(next);
+    expect(held).toHaveFocus();
+    expect(held).toHaveAttribute("aria-disabled", "true");
+    await userEvent.keyboard("{Enter}");
+    expect(onPaginationChange).not.toHaveBeenCalled();
   });
 
   it("renders cursor paging in the same footer, with the shown rows", async () => {

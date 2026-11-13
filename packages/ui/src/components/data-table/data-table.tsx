@@ -38,7 +38,9 @@ import {
 } from "./data-table-pagination.js";
 import { useDataTableState } from "./data-table-state.js";
 import {
+  DataTableDefaultEmptyState,
   DataTableEmptySlot,
+  DataTableErrorAlert,
   DataTableErrorState,
   DataTableSearchEmptyState,
 } from "./data-table-states.js";
@@ -72,17 +74,26 @@ export interface DataTableProps<TData> {
   /** Set false when the visible columns have no searchable data accessor. */
   searchable?: boolean;
   isLoading?: boolean;
+  /**
+   * What an empty table shows, usually an `EmptyState` with the way
+   * forward; it renders inline inside the table's card. Without one the
+   * table says `UiLabels.tableEmptyTitle` ("Belum ada data").
+   */
   emptyState?: ReactNode;
   /**
-   * A failed load. Any truthy value replaces the rows with an error state
-   * (title, a sentence, a retry button), so a failure never reads as "no
-   * data". A string or element is shown as its description; an object with
-   * a string `code` (an API error) adds a small support line. Pass the
-   * query's `error` or `isError`.
+   * A failed load. Any truthy value with no rows to show replaces the body
+   * with an error state (title, a sentence, a retry button), so a failure
+   * never reads as "no data". With rows still loaded (a failed background
+   * refetch) the rows stay and a danger alert above them says so. A string
+   * or element is shown as its description; an object with a string
+   * `code` (an API error) adds a small support line. Pass the query's
+   * `error`, or `isError`.
    */
   error?: unknown;
   /** The error state's retry button, e.g. the query's `refetch`. */
   onRetry?: () => void;
+  /** A retry is in flight (e.g. the query's `isRefetching`): the retry button shows its spinner. */
+  retrying?: boolean;
   rowSelection?: RowSelectionState;
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
   bulkActions?: ReactNode;
@@ -181,6 +192,7 @@ export function DataTable<TData>({
   emptyState,
   error,
   onRetry,
+  retrying,
   rowSelection,
   onRowSelectionChange,
   bulkActions,
@@ -339,7 +351,11 @@ export function DataTable<TData>({
   const skeletonRowCount = Math.min(tablePagination.pageSize, 8);
   const cardHeaders = collectHeaders(table, columnLabelsRef.current);
 
-  const failed = Boolean(error) && !isLoading;
+  const hasError = Boolean(error) && !isLoading;
+  // An error replaces the body only when there is nothing else to show; a
+  // failed refetch keeps the last good rows under an alert.
+  const failed = hasError && rows.length === 0;
+  const staleRows = hasError && rows.length > 0;
   const empty = !isLoading && !failed && rows.length === 0;
   const hasNoLocalSearchResults =
     mode === "local" &&
@@ -348,7 +364,7 @@ export function DataTable<TData>({
     filteredRowCount === 0;
   const toolbarCopy = toolbarLabelsFrom(uiLabels, toolbarLabels);
   const stateContent = failed ? (
-    <DataTableErrorState error={error} onRetry={onRetry} />
+    <DataTableErrorState error={error} onRetry={onRetry} retrying={retrying} />
   ) : empty ? (
     <DataTableEmptySlot>
       {hasNoLocalSearchResults ? (
@@ -359,14 +375,22 @@ export function DataTable<TData>({
           onClear={clearLocalSearch}
         />
       ) : (
-        emptyState
+        (emptyState ?? <DataTableDefaultEmptyState />)
       )}
     </DataTableEmptySlot>
   ) : null;
 
-  const showFooter = !isLoading && !failed && rows.length > 0;
+  // The footer is the way between pages, so it stays wherever there is
+  // one to go back to: an empty page past the first (its last row was just
+  // deleted) and a page that is loading keep it, with previous and next
+  // held still until the rows arrive.
+  const hasPagesBehind =
+    mode === "cursor" ? cursorPagination?.hasPrevious === true : tablePagination.pageIndex > 0;
+  const showFooter = !failed && (rows.length > 0 || hasPagesBehind);
   const footer = !showFooter ? null : mode === "cursor" ? (
-    cursorPagination && <DataTableCursorFooter cursor={cursorPagination} shownRows={rows.length} />
+    cursorPagination && (
+      <DataTableCursorFooter cursor={cursorPagination} shownRows={rows.length} busy={isLoading} />
+    )
   ) : (
     <DataTablePagination
       table={table}
@@ -376,6 +400,7 @@ export function DataTable<TData>({
       totalRows={mode === "local" ? filteredRowCount : rowCount}
       pageSizeOptions={pageSizeOptions ?? (mode === "local" ? LOCAL_PAGE_SIZES : undefined)}
       labels={paginationLabels}
+      busy={isLoading}
     />
   );
 
@@ -398,6 +423,7 @@ export function DataTable<TData>({
         filtersLabels={filtersLabels}
         actions={toolbarActions}
       />
+      {staleRows && <DataTableErrorAlert error={error} onRetry={onRetry} retrying={retrying} />}
       {/*
         One frame for both layouts: from md up it is the table's card, with
         the footer inside it under a hairline; below md it is only a
