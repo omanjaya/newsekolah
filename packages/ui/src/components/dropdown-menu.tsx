@@ -32,6 +32,8 @@ export const DropdownMenuContent = forwardRef<
         className={cn(
           "z-dropdown min-w-40 rounded-md border border-border bg-surface-raised p-1 shadow-2",
           "data-[state=open]:animate-popover-in data-[state=closed]:animate-popover-out",
+          // A closing menu stops taking clicks while it fades out.
+          "data-[state=closed]:pointer-events-none!",
           className,
         )}
         {...props}
@@ -48,8 +50,10 @@ export const DropdownMenuItem = forwardRef<
     <DropdownMenuPrimitive.Item
       ref={ref}
       className={cn(
-        "flex h-9 cursor-pointer items-center gap-2 rounded-sm px-2 text-body-sm text-fg outline-none",
-        "transition-colors data-[highlighted]:bg-state-hover",
+        // The pointer gets the soft highlight; keyboard focus also gets the
+        // inset focus ring, since a 5% tint alone is hard to follow.
+        "flex h-9 cursor-pointer items-center gap-2 rounded-sm px-2 text-body-sm text-fg",
+        "transition-colors data-[highlighted]:bg-state-hover focus-visible:-outline-offset-2",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className,
       )}
@@ -66,8 +70,10 @@ export const DropdownMenuCheckboxItem = forwardRef<
     <DropdownMenuPrimitive.CheckboxItem
       ref={ref}
       className={cn(
-        "flex h-9 cursor-pointer items-center gap-2 rounded-sm px-2 text-body-sm text-fg outline-none",
-        "transition-colors data-[highlighted]:bg-state-hover",
+        // The pointer gets the soft highlight; keyboard focus also gets the
+        // inset focus ring, since a 5% tint alone is hard to follow.
+        "flex h-9 cursor-pointer items-center gap-2 rounded-sm px-2 text-body-sm text-fg",
+        "transition-colors data-[highlighted]:bg-state-hover focus-visible:-outline-offset-2",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className,
       )}

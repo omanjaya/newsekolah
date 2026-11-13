@@ -20,6 +20,10 @@ export const TabsList = forwardRef<
         "inline-flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full bg-surface-sunken p-1",
         "scrollbar-none overscroll-x-contain",
         className,
+        // Always one row, after the caller's classes so `flex-wrap` cannot
+        // undo it: a wrapped list inside the rounded track becomes a
+        // two-row capsule. The track scrolls instead.
+        "flex-nowrap",
       )}
       {...props}
     />

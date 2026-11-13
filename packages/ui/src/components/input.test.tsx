@@ -21,15 +21,28 @@ describe("Input and Textarea", () => {
     );
     for (const name of ["Nama", "Catatan"]) {
       const field = screen.getByRole("textbox", { name });
-      expect(field).toHaveClass("border-border-strong");
+      expect(field).toHaveClass(
+        "border-(--field-border)",
+        "[--field-border:var(--color-border-strong)]",
+      );
       expect(field).not.toHaveClass("border-border");
     }
   });
 
-  it("marks an invalid field for assistive tech and in its border", () => {
+  it("marks an invalid field for assistive tech, which is what turns its border red", () => {
     render(<Input aria-label="Email" invalid />);
     const field = screen.getByRole("textbox", { name: "Email" });
     expect(field).toHaveAttribute("aria-invalid", "true");
-    expect(field).toHaveClass("border-danger");
+    expect(field).toHaveClass("aria-invalid:[--field-border:var(--color-danger)]");
+    // No plain hover border that could outrank the invalid one (field-styles.test.ts
+    // checks the compiled rule order).
+    expect(field.className).not.toMatch(/(^|\s)hover:border-/);
+  });
+
+  it("keeps a caller's border color under the pointer", () => {
+    render(<Input aria-label="Nilai" className="border-accent" />);
+    const field = screen.getByRole("textbox", { name: "Nilai" });
+    expect(field).toHaveClass("border-accent");
+    expect(field).not.toHaveClass("border-(--field-border)");
   });
 });

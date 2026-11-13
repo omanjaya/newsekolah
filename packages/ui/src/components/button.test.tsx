@@ -73,6 +73,58 @@ describe("Button", () => {
     expect(link).not.toHaveAttribute("disabled");
   });
 
+  it("takes a disabled asChild link out of the tab order and ignores Enter", async () => {
+    const onClick = vi.fn();
+    render(
+      <>
+        <Button asChild loading onClick={onClick}>
+          <a href="#next">Buka</a>
+        </Button>
+        <button type="button">Berikutnya</button>
+      </>,
+    );
+    const link = screen.getByRole("link", { name: "Buka" });
+    expect(link).toHaveAttribute("tabindex", "-1");
+
+    await userEvent.tab();
+    expect(screen.getByRole("button", { name: "Berikutnya" })).toHaveFocus();
+
+    link.focus();
+    await userEvent.keyboard("{Enter}");
+    expect(onClick).not.toHaveBeenCalled();
+    expect(window.location.hash).not.toBe("#next");
+  });
+
+  it("keeps an enabled asChild link focusable and clickable", async () => {
+    const onClick = vi.fn((event: { preventDefault: () => void }) => {
+      event.preventDefault();
+    });
+    render(
+      <Button asChild onClick={onClick}>
+        <a href="#next">Buka</a>
+      </Button>,
+    );
+    const link = screen.getByRole("link", { name: "Buka" });
+    expect(link).not.toHaveAttribute("tabindex");
+    await userEvent.click(link);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("lays its hover and press state over the secondary surface instead of replacing it", () => {
+    render(<Button variant="secondary">Batal</Button>);
+    const button = screen.getByRole("button", { name: "Batal" });
+    // `bg-surface` stays the only background; `state-layer` paints on top.
+    expect(button).toHaveClass("bg-surface", "state-layer");
+    expect(button.className).not.toMatch(/(hover|active):bg-/);
+  });
+
+  it("never wraps its label inside the fixed height", () => {
+    render(<Button>Unduh daftar siswa</Button>);
+    expect(screen.getByRole("button", { name: "Unduh daftar siswa" })).toHaveClass(
+      "whitespace-nowrap",
+    );
+  });
+
   it("does not fire onClick when disabled", async () => {
     const onClick = vi.fn();
     render(

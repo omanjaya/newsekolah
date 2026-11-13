@@ -4,6 +4,8 @@ import { forwardRef, type ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
+import { FIELD_BORDER_CLASSES } from "./field-styles.js";
+
 export interface SelectOption {
   value: string;
   label: string;
@@ -21,6 +23,8 @@ export interface SelectProps {
   name?: string;
   id?: string;
   "aria-describedby"?: string;
+  /** Set by `FormControl`; the `invalid` prop does the same for a field outside a form. */
+  "aria-invalid"?: boolean | "true" | "false";
   "aria-label"?: string;
   "aria-labelledby"?: string;
   className?: string;
@@ -37,6 +41,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
     "aria-label": ariaLabel,
     "aria-labelledby": ariaLabelledBy,
     "aria-describedby": ariaDescribedBy,
+    "aria-invalid": ariaInvalid,
     ...props
   },
   ref,
@@ -49,17 +54,15 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
         aria-describedby={ariaDescribedBy}
-        aria-invalid={invalid ?? undefined}
+        aria-invalid={invalid ?? ariaInvalid}
         className={cn(
           // Matches Input and Button: thumb-sized on a phone, compact once
           // there is a cursor.
-          "flex h-11 md:h-9 w-full items-center justify-between gap-2 rounded-md border border-border-strong",
+          "flex h-11 md:h-9 w-full items-center justify-between gap-2 rounded-md",
           "bg-surface px-3 text-body text-fg",
-          "transition-colors hover:border-fg-muted",
-          "focus-visible:border-accent",
+          FIELD_BORDER_CLASSES,
           "disabled:cursor-not-allowed disabled:opacity-50",
           "data-[placeholder]:text-fg-muted",
-          invalid && "border-danger",
           className,
         )}
       >
@@ -83,6 +86,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
             "z-popover min-w-(--radix-select-trigger-width) max-h-(--radix-select-content-available-height)",
             "overflow-hidden rounded-md border border-border bg-surface-raised shadow-2",
             "data-[state=open]:animate-popover-in data-[state=closed]:animate-popover-out",
+            "data-[state=closed]:pointer-events-none!",
           )}
         >
           <SelectPrimitive.Viewport className="max-h-80 p-1">
@@ -113,8 +117,9 @@ function SelectItem({
       disabled={disabled}
       className={cn(
         // An option in the open list is tapped too, so it grows the same way.
-        "relative flex h-11 md:h-9 cursor-pointer items-center rounded-sm px-3 pr-8 text-body text-fg outline-none",
-        "transition-colors data-[highlighted]:bg-state-hover",
+        // Soft highlight for the pointer, plus the inset focus ring for the keyboard.
+        "relative flex h-11 md:h-9 cursor-pointer items-center rounded-sm px-3 pr-8 text-body text-fg",
+        "transition-colors data-[highlighted]:bg-state-hover focus-visible:-outline-offset-2",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       )}
     >

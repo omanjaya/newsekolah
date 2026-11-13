@@ -27,7 +27,10 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       {/*
         The track's shape is reworked with the other primitives (spec
         section 5); this keeps it and only moves the unchecked border to
-        border-strong, so an off switch is as visible as a field.
+        border-strong, so an off switch is as visible as a field. The thumb
+        takes its color from the state: muted on the sunken off track (a
+        surface-colored thumb vanished there, so the switch read as an
+        empty field) and the accent's label color on the accent.
       */}
       <span
         aria-hidden="true"
@@ -41,8 +44,8 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       >
         <SwitchPrimitive.Thumb
           className={cn(
-            "motion-indicator block size-3.5 translate-x-0.5 rounded-xs bg-surface",
-            "data-[state=checked]:translate-x-[18px]",
+            "motion-indicator block size-3.5 translate-x-0.5 rounded-xs bg-fg-muted",
+            "data-[state=checked]:translate-x-[18px] data-[state=checked]:bg-accent-fg",
           )}
         />
       </span>

@@ -59,10 +59,29 @@ describe("Combobox", () => {
     );
     const combobox = screen.getByRole("button", { name: "Guru pengganti" });
     const select = screen.getByRole("combobox", { name: "Kelas" });
-    for (const shared of ["rounded-md", "h-11", "md:h-9", "border", "border-danger"]) {
+    for (const shared of [
+      "rounded-md",
+      "h-11",
+      "md:h-9",
+      "border",
+      "border-(--field-border)",
+      "aria-invalid:[--field-border:var(--color-danger)]",
+    ]) {
       expect(combobox).toHaveClass(shared);
       expect(select).toHaveClass(shared);
     }
+    expect(combobox).toHaveAttribute("aria-invalid", "true");
+    expect(select).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("lets the list, not the search field, give way when the room on screen is short", async () => {
+    render(<Harness onValueChange={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: "Guru pengganti" }));
+    const list = screen.getByRole("listbox");
+    const content = list.closest("[data-state]");
+    expect(content).toHaveClass("flex", "flex-col");
+    expect(list).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
+    expect(screen.getByRole("combobox")).toHaveClass("shrink-0");
   });
 
   it("caps the open list to the trigger's width and the room left on screen", async () => {

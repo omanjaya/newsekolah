@@ -1,7 +1,12 @@
 import { Slot, Slottable } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Loader2 } from "lucide-react";
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import {
+  forwardRef,
+  type ButtonHTMLAttributes,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+} from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -10,16 +15,20 @@ import { cn } from "../utils/cn.js";
 // soft clickable-surface language as inputs, cards, and dialogs. Border, not
 // shadow, since shadow is reserved for floating elements only.
 // `motion-press` carries the color transition and the 0.98 press scale.
+// The label never wraps: the height is fixed, so a second line would spill
+// out of the box. A row of actions that does not fit wraps or scrolls.
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-md text-label motion-press " +
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-label motion-press " +
     "disabled:pointer-events-none disabled:opacity-50 " +
     "aria-disabled:pointer-events-none aria-disabled:opacity-50",
   {
     variants: {
       variant: {
         primary: "bg-accent text-accent-fg hover:bg-accent-strong active:bg-accent-strong",
-        secondary:
-          "border border-border bg-surface text-fg hover:bg-state-hover active:bg-state-pressed",
+        // `state-layer` paints hover and press over the opaque surface
+        // instead of replacing it, so the button stays solid on any
+        // backdrop (a dark camera overlay, the dark page background).
+        secondary: "border border-border bg-surface text-fg state-layer",
         ghost: "text-fg hover:bg-state-hover active:bg-state-pressed",
         // `danger`'s fg is calibrated to sit on `bg`/`surface`, not to be a
         // solid fill with white text (it fails contrast in dark mode, where
@@ -52,6 +61,11 @@ export interface ButtonProps
   icon?: ReactNode;
 }
 
+/** A disabled link keeps its `href`; this stops Enter (and any click that gets through) from following it. */
+function preventActivation(event: ReactMouseEvent<HTMLButtonElement>) {
+  event.preventDefault();
+}
+
 /**
  * The one button. Defaults to `type="button"`, so a button inside a form
  * never submits it by accident; pass `type="submit"` for the one that
@@ -59,22 +73,25 @@ export interface ButtonProps
  * passes `disabled={false}` (a valid form that is already saving).
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { className, variant, size, asChild, loading, icon, disabled, type, children, ...props },
+  { className, variant, size, asChild, loading, icon, disabled, type, onClick, children, ...props },
   ref,
 ) {
   const Comp = asChild ? Slot : "button";
   const inactive = Boolean(disabled) || Boolean(loading);
+  const inactiveLink = asChild && inactive;
   return (
     <Comp
       ref={ref}
       className={cn(buttonVariants({ variant, size }), className)}
       // A child element (a link) has no `disabled`; it says so through ARIA
-      // instead, and the matching classes stop the pointer.
+      // instead, the matching classes stop the pointer, and below it leaves
+      // the tab order and ignores activation from the keyboard.
       {...(asChild
         ? { "aria-disabled": inactive || undefined }
         : { type: type ?? "button", disabled: inactive })}
       aria-busy={loading ?? undefined}
       {...props}
+      {...(inactiveLink ? { tabIndex: -1, onClick: preventActivation } : { onClick })}
     >
       {loading ? (
         <Loader2 className="size-5 animate-spin" aria-hidden="true" />

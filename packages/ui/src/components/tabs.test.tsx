@@ -45,4 +45,18 @@ describe("Tabs", () => {
       expect(tab).toHaveClass("shrink-0", "whitespace-nowrap");
     }
   });
+
+  it("stays one row even when a caller asks the list to wrap", () => {
+    render(
+      <Tabs defaultValue="a">
+        <TabsList aria-label="Keuangan" className="flex-wrap">
+          <TabsTrigger value="a">Loket</TabsTrigger>
+          <TabsTrigger value="b">Tagihan</TabsTrigger>
+        </TabsList>
+      </Tabs>,
+    );
+    const list = screen.getByRole("tablist", { name: "Keuangan" });
+    expect(list).toHaveClass("flex-nowrap");
+    expect(list).not.toHaveClass("flex-wrap");
+  });
 });

@@ -7,6 +7,8 @@ import { forwardRef, useState } from "react";
 
 import { cn } from "../utils/cn.js";
 
+import { FIELD_BORDER_CLASSES } from "./field-styles.js";
+
 export interface ComboboxOption {
   value: string;
   label: string;
@@ -71,12 +73,10 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
         className={cn(
           // The same field as Select: radius, height (thumb-sized on a
           // phone, compact once there is a cursor), border and states.
-          "flex h-11 md:h-9 w-full items-center justify-between gap-2 rounded-md border border-border-strong",
+          "flex h-11 md:h-9 w-full items-center justify-between gap-2 rounded-md",
           "bg-surface px-3 text-body text-fg",
-          "transition-colors hover:border-fg-muted",
-          "focus-visible:border-accent",
+          FIELD_BORDER_CLASSES,
           "disabled:cursor-not-allowed disabled:opacity-50",
-          invalid && "border-danger",
           className,
         )}
         {...aria}
@@ -94,23 +94,26 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
             // Like Select's list: at least as wide as the field (never a
             // fixed 18rem that a wide form field outgrows) and capped to the
             // room left on screen.
-            "z-popover w-(--radix-popover-trigger-width) min-w-72 max-w-[calc(100vw-2rem)]",
+            // A flex column, so when that room is short the list (not the
+            // search field) gives way and stays scrollable to its last option.
+            "z-popover flex w-(--radix-popover-trigger-width) min-w-72 max-w-[calc(100vw-2rem)] flex-col",
             "max-h-(--radix-popover-content-available-height) overflow-hidden",
             "rounded-md border border-border bg-surface-raised shadow-2",
             "data-[state=open]:animate-popover-in data-[state=closed]:animate-popover-out",
+            "data-[state=closed]:pointer-events-none!",
           )}
         >
-          <CommandPrimitive shouldFilter={false} className="flex flex-col">
+          <CommandPrimitive shouldFilter={false} className="flex min-h-0 flex-1 flex-col">
             <CommandPrimitive.Input
               value={search}
               onValueChange={onSearchChange}
               placeholder={searchPlaceholder}
               className={cn(
-                "h-11 md:h-9 w-full border-b border-line bg-transparent px-3 text-body text-fg outline-none",
+                "h-11 md:h-9 w-full shrink-0 border-b border-line bg-transparent px-3 text-body text-fg outline-none",
                 "placeholder:text-fg-muted",
               )}
             />
-            <CommandPrimitive.List className="max-h-64 overflow-y-auto p-1">
+            <CommandPrimitive.List className="max-h-64 min-h-0 flex-1 overflow-y-auto p-1">
               <CommandPrimitive.Empty className="px-3 py-6 text-center text-body-sm text-fg-muted">
                 {loading ? loadingLabel : emptyLabel}
               </CommandPrimitive.Empty>

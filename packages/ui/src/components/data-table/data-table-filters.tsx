@@ -391,10 +391,12 @@ function DateRangeFilterPill({
                         key={preset.label}
                         type="button"
                         className={cn(
-                          "flex h-9 items-center gap-1 rounded-full border px-3 text-label transition-colors",
+                          "flex h-9 items-center gap-1 rounded-full border px-3 text-label",
+                          "transition-[color,background-color,border-color,box-shadow]",
+                          // Its own surface stays under the hover layer (state-layer).
                           presetActive
                             ? "border-accent bg-accent-soft text-accent-soft-fg"
-                            : "border-border bg-surface text-fg hover:bg-state-hover",
+                            : "border-border bg-surface text-fg state-layer",
                         )}
                         onClick={() => {
                           commit(preset.from, preset.to);
