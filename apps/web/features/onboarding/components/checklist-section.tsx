@@ -31,17 +31,17 @@ const STEP_ORDER = [
 
 const STEP_HREF: Record<(typeof STEP_ORDER)[number], string> = {
   profile: "#school-profile",
-  academic_year: "/school/classes",
-  grade_levels: "/school/classes",
+  academic_year: "/academic/years",
+  grade_levels: "/school/structure?tab=grade-levels",
   classes: "/school/classes",
-  periods: "/school/periods",
-  subjects: "/school/subjects",
-  teachers: "/school/users",
-  students: "/school/users",
+  periods: "/school/learning?tab=periods",
+  subjects: "/school/learning?tab=subjects",
+  teachers: "/school/users?kind=teacher",
+  students: "/school/users?kind=student",
   enrollments: "/school/classes",
-  teaching_assignments: "/school/classes",
+  teaching_assignments: "/school/assignments?tab=teaching",
   schedules: "/schedule",
-  duties: "/school/duties",
+  duties: "/school/assignments?tab=duties",
 };
 
 /** The profile step's count is never shown: "1 profile" says nothing useful. */

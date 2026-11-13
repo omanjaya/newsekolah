@@ -38,7 +38,7 @@ export function AcademicWorkspaceLinks({
   area,
 }: {
   area: keyof typeof DESTINATIONS;
-}): ReactElement {
+}): ReactElement | null {
   const t = useTranslations("app.academic.workspace");
   const { me } = useSession();
   const pathname = usePathname();
@@ -54,6 +54,10 @@ export function AcademicWorkspaceLinks({
   const items = DESTINATIONS[area]
     .filter(([href]) => canOpen(href))
     .map(([href, key]) => ({ href: `${href}${suffix}`, label: t(key), active: pathname === href }));
+  // A strip with a single destination navigates nowhere (it only points at the
+  // page the viewer is already on, or at one they cannot otherwise reach), so
+  // it is dropped unless the schedule actions still need a home.
+  if (items.length < 2 && area !== "schedule") return null;
   return (
     <WorkspaceNav
       label={t(area)}

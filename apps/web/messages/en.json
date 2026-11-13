@@ -1309,6 +1309,9 @@
         "assignCount": "Place ({n})",
         "noTeachers": "No subject teachers yet.",
         "removeTeaching": "Remove",
+        "removeTeachingTitle": "Remove this teacher assignment?",
+        "removeTeachingBody": "{subject} taught by {teacher} will be removed from this class.",
+        "teachingRemoved": "Teacher assignment removed",
         "addTeaching": "Add",
         "teachingAdded": "Subject teacher added",
         "deactivateTeaching": "Deactivate",
@@ -1415,7 +1418,10 @@
         "templateUpdated": "Template name updated",
         "templateDeleted": "Template deleted",
         "deleteTemplateTitle": "Delete this template?",
-        "deleteTemplateBody": "\"{name}\" will be deleted. It cannot be deleted while a school day still uses it."
+        "deleteTemplateBody": "\"{name}\" will be deleted. It cannot be deleted while a school day still uses it.",
+        "deletePeriodTitle": "Delete this period?",
+        "deletePeriodBody": "\"{name}\" will be removed from this template.",
+        "periodDeleted": "Period deleted"
       },
       "duties": {
         "eyebrow": "School Data",

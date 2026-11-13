@@ -2,7 +2,7 @@
 
 import { Badge, cn } from "@newsekolah/ui";
 import { AlertTriangle, Copy, Pencil, Trash2 } from "lucide-react";
-import type { ReactElement } from "react";
+import { useEffect, useRef, type ReactElement } from "react";
 
 import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
@@ -106,12 +106,23 @@ export function ScheduleMobileAgenda({
   const hasLessons = lessonPeriods.some((p) => blocks.has(`${mobileDay}:${p.sequence}`));
   const nowSeq = mobileDay === today ? currentSeq : undefined;
 
+  // The chip row scrolls sideways, so a later weekday (e.g. Saturday) can sit
+  // past the right edge; bring the chosen day into view.
+  const selectedChip = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const chip = selectedChip.current;
+    // jsdom has no layout engine and no scrollIntoView.
+    if (chip && "scrollIntoView" in chip)
+      chip.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [mobileDay]);
+
   return (
     <div className="flex flex-col gap-3 md:hidden">
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
         {activeDays.map((day) => (
           <button
             key={day}
+            ref={mobileDay === day ? selectedChip : undefined}
             type="button"
             aria-pressed={mobileDay === day}
             onClick={() => {

@@ -1309,6 +1309,9 @@
         "assignCount": "Tempatkan ({n})",
         "noTeachers": "Belum ada guru pengampu.",
         "removeTeaching": "Hapus",
+        "removeTeachingTitle": "Hapus guru pengampu ini?",
+        "removeTeachingBody": "{subject} oleh {teacher} akan dihapus dari kelas ini.",
+        "teachingRemoved": "Guru pengampu dihapus",
         "addTeaching": "Tambah",
         "teachingAdded": "Guru pengampu ditambahkan",
         "deactivateTeaching": "Nonaktifkan",
@@ -1415,7 +1418,10 @@
         "templateUpdated": "Nama template diperbarui",
         "templateDeleted": "Template dihapus",
         "deleteTemplateTitle": "Hapus template ini?",
-        "deleteTemplateBody": "\"{name}\" akan dihapus. Tidak bisa dihapus jika masih dipakai hari sekolah."
+        "deleteTemplateBody": "\"{name}\" akan dihapus. Tidak bisa dihapus jika masih dipakai hari sekolah.",
+        "deletePeriodTitle": "Hapus jam ini?",
+        "deletePeriodBody": "\"{name}\" akan dihapus dari template ini.",
+        "periodDeleted": "Jam dihapus"
       },
       "duties": {
         "eyebrow": "Data Sekolah",
