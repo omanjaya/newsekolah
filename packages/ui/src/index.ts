@@ -46,6 +46,16 @@ export { Select, type SelectOption, type SelectProps } from "./components/select
 export { Combobox, type ComboboxOption, type ComboboxProps } from "./components/combobox.js";
 export { useDebouncedCallback } from "./components/data-table/use-debounced-callback.js";
 export { Checkbox, type CheckboxProps } from "./components/checkbox.js";
+export {
+  Calendar,
+  nextDateRange,
+  type CalendarDayInfo,
+  type CalendarLayout,
+  type CalendarProps,
+  type CalendarRangeProps,
+  type CalendarSingleProps,
+  type DateRange,
+} from "./components/calendar.js";
 export { Switch, type SwitchProps } from "./components/switch.js";
 export {
   Form,

@@ -6,6 +6,19 @@ export interface UiLabels {
   tableSelectedRows: (count: number) => string;
   tableSelectAllRows: string;
   tableSelectRow: string;
+
+  /**
+   * BCP 47 locale the date, time and number controls format with ("id-ID",
+   * "en-US"): month and weekday names, "14 November 2026", "08.30", "85,5".
+   * A `locale` prop on one control still wins.
+   */
+  locale: string;
+  calendarPreviousMonth: string;
+  calendarNextMonth: string;
+  calendarPreviousYear: string;
+  calendarNextYear: string;
+  /** Accessible name of the month caption that opens the month and year view. */
+  calendarChooseMonth: (caption: string) => string;
 }
 
 const DEFAULT_UI_LABELS: UiLabels = {
@@ -14,6 +27,13 @@ const DEFAULT_UI_LABELS: UiLabels = {
   tableSelectedRows: (count) => `${count} baris dipilih`,
   tableSelectAllRows: "Pilih semua baris",
   tableSelectRow: "Pilih baris",
+
+  locale: "id-ID",
+  calendarPreviousMonth: "Bulan sebelumnya",
+  calendarNextMonth: "Bulan berikutnya",
+  calendarPreviousYear: "Tahun sebelumnya",
+  calendarNextYear: "Tahun berikutnya",
+  calendarChooseMonth: (caption) => `${caption}, pilih bulan dan tahun`,
 };
 
 const UiLabelsContext = createContext<UiLabels>(DEFAULT_UI_LABELS);
