@@ -61,7 +61,7 @@ describe("SemanticStatusBadge", () => {
 
   it("renders the same pill shape, neutral, for quiet states", () => {
     render(<SemanticStatusBadge status="cancelled" label="Dibatalkan" />);
-    expect(pill("Dibatalkan")).toHaveClass("rounded-full", "text-fg-muted");
+    expect(pill("Dibatalkan")).toHaveClass("rounded-full", "bg-state-pressed", "text-fg/70");
   });
 });
 
