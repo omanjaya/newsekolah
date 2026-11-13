@@ -52,6 +52,9 @@ export function QrPanel(props: QrPanelProps): ReactElement {
 // eslint-disable-next-line no-restricted-syntax -- the QR tile is white in both themes
 const QR_TILE = "bg-white";
 
+/** Up to this many characters the fallback code is a human code, set large. */
+const SHORT_CODE_LENGTH = 12;
+
 function remaining(expiresAt: string): number {
   return Math.max(0, Math.round((new Date(expiresAt).getTime() - Date.now()) / 1000));
 }
@@ -125,10 +128,14 @@ function Countdown({
       {code !== "" && (
         <div className="flex w-full max-w-sm flex-col items-center gap-1.5">
           <span className="text-caption text-fg-muted">{labels.qrManualCode}</span>
+          {/* A short code ("K7F 2QD") is read aloud and typed, so it is set
+              large and spaced; a raw token only has to be copied whole. */}
           <code
             className={cn(
-              "w-full rounded-sm bg-surface-sunken px-3 py-2 text-center font-mono tracking-wide break-all text-fg select-all",
-              large ? "text-body" : "text-body-sm",
+              "w-full rounded-sm bg-surface-sunken px-3 py-2 text-center break-all text-fg select-all",
+              code.length <= SHORT_CODE_LENGTH
+                ? cn(large ? "text-title-lg" : "text-title", "tracking-widest")
+                : cn(large ? "text-body" : "text-body-sm", "font-mono"),
             )}
           >
             {code}

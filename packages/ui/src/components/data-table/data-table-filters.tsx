@@ -141,7 +141,8 @@ export function DataTableFilters({
     <div
       className={cn(
         "-my-1 flex scrollbar-none items-center gap-1.5 overflow-x-auto py-1 [&>*]:shrink-0",
-        "md:flex-wrap md:overflow-visible",
+        // The last 24px fade out, so a pill cut by the edge reads as "more this way".
+        "max-md:mask-r-from-[calc(100%-1.5rem)] md:flex-wrap md:overflow-visible",
         className,
       )}
     >

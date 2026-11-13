@@ -176,7 +176,7 @@ export function DataTableToolbar<TData>({
 
   if (selectedCount > 0 && bulkActions) {
     return (
-      <div className="flex min-h-12 flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-md bg-accent-soft py-1.5 pr-2 pl-4 text-accent-soft-fg">
+      <div className="flex min-h-13 flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-md bg-accent-soft py-1 pr-1 pl-4 text-accent-soft-fg md:pointer-fine:min-h-10">
         <span className="text-label">{uiLabels.tableSelectedRows(selectedCount)}</span>
         <div className="flex items-center gap-2">
           {bulkActions}
@@ -197,7 +197,13 @@ export function DataTableToolbar<TData>({
   // Density is desktop-only (cards have none), so a bare table has no phone toolbar at all.
   const emptyOnPhone = !showSearch && !hasFilters && actions === undefined && columns.length === 0;
   return (
-    <div className={cn("flex flex-wrap items-center gap-2", emptyOnPhone && "max-md:hidden")}>
+    <div
+      className={cn(
+        // As tall as the selection bar that replaces it, so ticking a row never moves the table.
+        "flex flex-wrap items-center gap-2 md:pointer-fine:min-h-10",
+        emptyOnPhone && "max-md:hidden",
+      )}
+    >
       {showSearch && (
         <SearchInput
           size="sm"
@@ -219,8 +225,19 @@ export function DataTableToolbar<TData>({
           className="order-4 basis-full md:order-2 md:min-w-0 md:flex-1 md:basis-auto"
         />
       )}
-      <div className="order-2 ml-auto flex shrink-0 items-center gap-1 md:order-3">
-        {actions !== undefined && <div className="mr-1 flex items-center gap-2">{actions}</div>}
+      {/* On a phone the table's own actions take the first row, each an equal
+          share of it, so the search below keeps the whole width. */}
+      {actions !== undefined && (
+        <div className="order-0 flex basis-full items-center gap-2 [&>*]:flex-1 md:order-3 md:ml-auto md:basis-auto md:[&>*]:flex-none">
+          {actions}
+        </div>
+      )}
+      <div
+        className={cn(
+          "order-2 ml-auto flex shrink-0 items-center gap-1 md:order-4",
+          actions !== undefined && "md:ml-0",
+        )}
+      >
         <IconButton
           icon={<Rows3 />}
           aria-label={densityLabel}

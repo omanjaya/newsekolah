@@ -261,37 +261,51 @@ export function Scanner({
         className,
       )}
     >
-      <div className={cn("flex w-full flex-col", kiosk ? "max-w-3xl gap-6" : "gap-4")}>
+      <div className={cn("flex w-full flex-col", kiosk ? "max-w-6xl gap-8" : "gap-4")}>
         {header}
-        {cameraOffered && (
-          <ScannerViewfinder
-            status={disabled ? "idle" : viewStatus}
-            videoRef={videoRef}
-            flash={flash}
-            variant={variant}
-            onStart={
-              disabled
-                ? undefined
-                : () => {
-                    setCameraOn(true);
-                  }
-            }
-            onStop={() => {
-              setCameraOn(false);
-            }}
-            onRetry={() => {
-              setCameraOn(true);
-              retry();
-            }}
-            onManualEntry={openManual}
-          />
-        )}
-        {/* Always mounted, so a new result is announced, not just shown. */}
-        <div aria-live="polite" aria-atomic="true" className="empty:hidden">
-          {result && <ScannerResultBanner key={result.key} result={result} variant={variant} />}
+        {/* A kiosk screen is landscape more often than not: the camera on the
+            left, what happened and the fallback on the right, all above the fold. */}
+        <div
+          className={cn(
+            "flex flex-col",
+            kiosk
+              ? "gap-6 lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start lg:gap-8"
+              : "gap-4",
+          )}
+        >
+          {cameraOffered && (
+            <ScannerViewfinder
+              status={disabled ? "idle" : viewStatus}
+              videoRef={videoRef}
+              flash={flash}
+              variant={variant}
+              onStart={
+                disabled
+                  ? undefined
+                  : () => {
+                      setCameraOn(true);
+                    }
+              }
+              onStop={() => {
+                setCameraOn(false);
+              }}
+              onRetry={() => {
+                setCameraOn(true);
+                retry();
+              }}
+              onManualEntry={openManual}
+              className={kiosk ? "max-h-[min(60dvh,34rem)]" : undefined}
+            />
+          )}
+          <div className={cn("flex min-w-0 flex-col", kiosk ? "gap-6" : "gap-4")}>
+            {/* Always mounted, so a new result is announced, not just shown. */}
+            <div aria-live="polite" aria-atomic="true" className="empty:hidden">
+              {result && <ScannerResultBanner key={result.key} result={result} variant={variant} />}
+            </div>
+            {manual}
+            {children}
+          </div>
         </div>
-        {manual}
-        {children}
       </div>
     </section>
   );
@@ -368,7 +382,9 @@ function ManualEntry({
                   onSubmit();
                 }
               }}
-              className={cn(kiosk && "h-16 px-4 text-title md:pointer-fine:h-16")}
+              className={cn(
+                kiosk && "h-16 px-4 text-title-lg font-sans font-normal md:pointer-fine:h-16",
+              )}
             />
           </Field>
           <Button

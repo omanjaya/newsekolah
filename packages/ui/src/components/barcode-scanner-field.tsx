@@ -76,7 +76,9 @@ export interface BarcodeScannerFieldProps {
  * pointer breakpoints Input and Button use for their compact boxes: a
  * kiosk is read from arm's length on a desktop screen too.
  */
-const LARGE_INPUT = "h-16 px-4 text-title-lg md:pointer-fine:h-16";
+const LARGE_INPUT = "h-16 px-4 text-title-lg font-sans font-normal md:pointer-fine:h-16";
+/** At the desk the field matches the 40px buttons beside it, so the row reads as one bar. */
+const DESK_INPUT = "md:pointer-fine:h-10";
 const LARGE_BUTTON = "h-16 flex-1 px-8 text-heading md:h-16 md:pointer-fine:h-16";
 
 /**
@@ -155,7 +157,7 @@ export function BarcodeScannerField({
         className,
       )}
     >
-      <div className={cn("flex flex-col gap-2", (stretch || large) && "min-w-0 flex-1 basis-60")}>
+      <div className={cn("flex flex-col gap-2", stretch && !large && "min-w-0 flex-1 basis-60")}>
         <label htmlFor={inputId} className={large ? "text-title text-fg" : "text-label text-fg"}>
           {label}
         </label>
@@ -178,7 +180,7 @@ export function BarcodeScannerField({
           autoComplete="off"
           spellCheck={false}
           maxLength={MANUAL_ENTRY_MAX_LENGTH}
-          className={large ? LARGE_INPUT : undefined}
+          className={large ? LARGE_INPUT : DESK_INPUT}
         />
       </div>
       <div className={cn("flex gap-3", large ? "w-full" : "contents")}>
@@ -309,13 +311,16 @@ function CameraOverlay({
       }}
     >
       <DialogPrimitive.Portal>
+        {/* A camera screen is dark in both themes: the overlay and what sits on
+            it take the dark tokens, which `data-theme` scopes to them. */}
         <DialogPrimitive.Overlay
-          // eslint-disable-next-line no-restricted-syntax -- the camera's backdrop is black in both themes
-          className="fixed inset-0 z-modal bg-black/85 data-[state=open]:animate-overlay-in"
+          data-theme="dark"
+          className="fixed inset-0 z-modal bg-bg/90 data-[state=open]:animate-overlay-in"
         />
         <DialogPrimitive.Content
+          data-theme="dark"
           aria-describedby={undefined}
-          className="fixed inset-0 z-modal flex flex-col items-center justify-center gap-4 p-4 outline-none data-[state=open]:animate-fade-in sm:p-6"
+          className="fixed inset-0 z-modal flex flex-col items-center justify-center gap-4 p-4 text-fg outline-none data-[state=open]:animate-fade-in sm:p-6"
         >
           <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
           <ScannerViewfinder

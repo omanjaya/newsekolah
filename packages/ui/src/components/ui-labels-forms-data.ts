@@ -69,6 +69,8 @@ export interface FormsDataUiLabels {
   scannerCameraDone: string;
   scannerCameraStarting: string;
   scannerCameraHint: string;
+  /** Under "turn the camera on": when the camera runs. */
+  scannerCameraIdleHint: string;
   scannerCameraDeniedTitle: string;
   scannerCameraDeniedDescription: string;
   scannerCameraUnavailableTitle: string;
@@ -142,6 +144,7 @@ export const DEFAULT_FORMS_DATA_UI_LABELS: FormsDataUiLabels = {
   scannerCameraDone: "Selesai",
   scannerCameraStarting: "Menyalakan kamera",
   scannerCameraHint: "Arahkan kode ke dalam bingkai",
+  scannerCameraIdleHint: "Kamera hanya menyala selama Anda memindai.",
   scannerCameraDeniedTitle: "Akses kamera ditolak",
   scannerCameraDeniedDescription:
     "Izinkan kamera di pengaturan peramban, lalu coba lagi. Kode juga bisa dimasukkan manual.",

@@ -23,11 +23,15 @@ import { useUiLabels } from "./ui-labels.js";
 
 export type FieldOrientation = "vertical" | "horizontal";
 
-/** What a render-prop child receives: spread it onto a control `Field` does not know. */
+/**
+ * What a render-prop child receives: spread it onto a control `Field` does
+ * not know. `labelId` names a group (a radio group, a segmented control)
+ * with `aria-labelledby`, where a label's `for` cannot point.
+ */
 export type FieldRenderProps = Pick<
   FieldControlProps,
   "id" | "aria-describedby" | "aria-invalid" | "aria-required"
->;
+> & { labelId: string };
 
 export interface FieldProps {
   label: ReactNode;
@@ -100,6 +104,7 @@ export function Field({
   const controlId = idProp ?? registeredId ?? `${baseId}-control`;
   const hintId = `${baseId}-hint`;
   const errorId = `${baseId}-error`;
+  const labelId = `${baseId}-label`;
 
   const error = errorProp ?? formField?.error;
   const hasError = isShown(error);
@@ -131,6 +136,7 @@ export function Field({
           "aria-describedby": describedBy,
           "aria-invalid": hasError || undefined,
           "aria-required": required || undefined,
+          labelId,
         })
       : children;
 
@@ -156,6 +162,7 @@ export function Field({
           )}
         >
           <label
+            id={labelId}
             htmlFor={controlId}
             className={cn(
               "min-w-0 text-label text-fg",
@@ -169,8 +176,12 @@ export function Field({
                 *
               </span>
             )}
+            {/* A real space, not a margin, so the accessible name reads "Alamat (opsional)". */}
             {optional && !required && (
-              <span className="ml-1 text-body-sm text-fg-muted">{labels.fieldOptional}</span>
+              <>
+                {" "}
+                <span className="text-body-sm text-fg-muted">{labels.fieldOptional}</span>
+              </>
             )}
           </label>
           {labelAside !== undefined && (

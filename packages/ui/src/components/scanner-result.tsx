@@ -88,9 +88,11 @@ export function ScannerResultBanner({
         {ICONS[result.tone]}
       </span>
       <div className="flex min-w-0 flex-col gap-0.5 pt-px">
-        <p className={kiosk ? "text-title-lg" : "text-heading"}>{result.title}</p>
+        <p className={kiosk ? "text-display" : "text-heading"}>{result.title}</p>
         {result.description !== undefined && (
-          <div className={kiosk ? "text-body" : "text-body-sm"}>{result.description}</div>
+          <div className={kiosk ? "text-heading font-sans font-normal" : "text-body-sm"}>
+            {result.description}
+          </div>
         )}
       </div>
     </div>

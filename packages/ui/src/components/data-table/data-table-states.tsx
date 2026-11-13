@@ -71,9 +71,7 @@ export function DataTableErrorState({
         <p className="text-body-sm text-fg-muted">
           {errorDescription(error) ?? labels.tableErrorDescription}
         </p>
-        {code && (
-          <p className="mt-1 font-mono text-caption text-fg-muted">{labels.tableErrorCode(code)}</p>
-        )}
+        {code && <p className="mt-1 text-caption text-fg-muted">{labels.tableErrorCode(code)}</p>}
       </div>
       {onRetry && (
         <Button

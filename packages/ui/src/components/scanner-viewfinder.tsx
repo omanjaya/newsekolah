@@ -27,16 +27,15 @@ export interface ScannerViewfinderProps {
 }
 
 /*
- * The camera feed is media, not a themed surface: it letterboxes on black
- * and its frame and hints are white in both themes, the way every camera
- * app draws them. These are the only fixed colours in the package.
+ * The camera feed is media, not a themed surface: in both themes it sits
+ * on near-black with light marks, the way every camera app draws it. The
+ * streaming box takes the dark theme's tokens (`data-theme="dark"` scopes
+ * them), so the letterbox, the frame and the success and danger flashes
+ * are the dark palette's, bright enough on a feed, with no fixed colour.
  */
-// eslint-disable-next-line no-restricted-syntax -- camera letterbox is black in both themes
-const MEDIA_SURFACE = "bg-black";
-// eslint-disable-next-line no-restricted-syntax -- white frame and text over the camera feed
-const ON_MEDIA = "text-white border-white";
-// eslint-disable-next-line no-restricted-syntax -- translucent chip over the camera feed
-const MEDIA_CHIP = "bg-black/60 text-white";
+const MEDIA_SURFACE = "bg-bg";
+const ON_MEDIA = "text-fg";
+const MEDIA_CHIP = "bg-bg/70 text-fg";
 
 /** One L-shaped corner of the aiming frame. */
 function Corner({ position }: { position: "tl" | "tr" | "bl" | "br" }): ReactElement {
@@ -89,12 +88,15 @@ function Panel({
   kiosk: boolean;
   children?: ReactNode;
 }): ReactElement {
+  // In the flow, not absolute: where a narrow screen leaves the 4:3 box too
+  // short for the words and two buttons, the box grows instead of cutting
+  // or squeezing them.
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-surface-sunken p-6 text-center">
+    <div className="flex min-h-full w-full flex-1 flex-col items-center justify-center gap-3 rounded-[inherit] bg-surface-sunken px-5 py-6 text-center">
       <span
         aria-hidden="true"
         className={cn(
-          "flex items-center justify-center rounded-full",
+          "mb-1 flex shrink-0 items-center justify-center rounded-full",
           kiosk ? "size-16 [&>svg]:size-8" : "size-12 [&>svg]:size-6",
           tone === "accent" && "bg-accent-soft text-accent-soft-fg",
           tone === "danger" && "bg-danger-soft text-danger",
@@ -146,17 +148,19 @@ export function ScannerViewfinder({
     <div
       data-slot="scanner-viewfinder"
       data-status={status}
+      data-theme={streaming ? "dark" : undefined}
       className={cn(
-        "relative isolate w-full overflow-hidden rounded-lg border border-border",
-        "aspect-[4/3]",
-        streaming && MEDIA_SURFACE,
+        // `overflow-hidden` only clips the feed: on a state panel it would
+        // also cancel the box's right to grow taller than 4:3 for its text.
+        "relative isolate flex aspect-[4/3] w-full rounded-lg border border-border",
+        streaming && cn("overflow-hidden", MEDIA_SURFACE),
         className,
       )}
     >
       {/* Mounted in every state, so the stream can attach before it shows. */}
       <video
         ref={videoRef}
-        className={cn("absolute inset-0 size-full object-cover", !streaming && "invisible")}
+        className={cn("absolute inset-0 size-full object-cover", !streaming && "hidden")}
         muted
         playsInline
         aria-hidden="true"
@@ -200,7 +204,7 @@ export function ScannerViewfinder({
           icon={<ScanLine />}
           tone="accent"
           title={labels.scannerCamera}
-          description={labels.scannerCameraHint}
+          description={labels.scannerCameraIdleHint}
           kiosk={kiosk}
         >
           {onStart && (

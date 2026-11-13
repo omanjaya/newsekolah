@@ -120,6 +120,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         "flex w-full min-w-0 cursor-text items-center gap-2 rounded-md bg-surface text-fg",
         FIELD_HEIGHT[size],
         FIELD_PADDING[size],
+        // Text adornments ("Rp", "kg") take the value's size.
+        FIELD_TEXT[size],
         FIELD_SHELL_BORDER_CLASSES,
         FIELD_SHELL_DISABLED_CLASSES,
         className,
