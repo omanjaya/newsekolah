@@ -140,6 +140,8 @@ Setiap modul mendaftarkan diri lewat `Register(deps)` dan memeriksa `school.feat
 
 Pekerjaan di luar request HTTP mengikuti aturan yang sama: job periodik melewati tenant yang modulnya mati (pembaca flag nil-safe disuntik dari `internal/wiring`), dan modul yang selalu aktif yang memanggil modul yang mati menurun dengan tenang (dilewati, daftar kosong, hitungan 0) tanpa menggagalkan operasinya sendiri. Modul yang mati tidak membuat data baru dan tidak mengirim notifikasi, tetapi data lamanya tidak dihapus. Setiap perubahan flag tercatat di `audit_logs` (`feature_flag.update`).
 
+Infrastruktur yang dipakai beberapa modul tidak ikut mati bersama satu modul: templat dokumen (tag `documents`) tetap terbuka selama salah satu pemakainya (permits, discipline, visitors) aktif, dan hanya jenis templat milik modul yang mati yang disembunyikan serta ditolak `MODULE_DISABLED`. Jenis laporan di pusat laporan mengikuti modul sumber datanya (`SourceModule`). Halaman publik tanpa sesi membaca `TenantBranding.disabled_public_modules`, yang sengaja hanya memuat modul berhalaman publik (library untuk OPAC). Di web, halaman yang bagiannya berasal dari beberapa modul (laporan, pindai, kotak aksi, templat dokumen) memakai `moduleSections` di registri navigasi: terbuka selama satu bagian masih bisa dipakai.
+
 ## 6. Hal yang sengaja dipertahankan dari desain lama
 
 - Scope tahun ajaran aktif pada semua data operasional (`academic_year_id`), dengan error `ACADEMIC_YEAR_REQUIRED` bila belum ada.
