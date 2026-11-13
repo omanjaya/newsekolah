@@ -37,6 +37,30 @@ export interface UiLabels {
   timePickerOptions: string;
   numberInputIncrement: string;
   numberInputDecrement: string;
+
+  // Surfaces and content (PageHeader, Avatar, DataList, Skeleton presets, EmptyState, StatePage, Alert, Stat, TextLink).
+  /** Accessible name of the breadcrumb trail above a page title. */
+  breadcrumbLabel: string;
+  /** The overflow button that holds a page's secondary actions on a phone. */
+  pageHeaderMoreActions: string;
+  /** Spoken name of the "+N" chip after the visible avatars of a group. */
+  avatarGroupMore: (count: number) => string;
+  /** Read instead of the visible dash when a definition has no value. */
+  dataListNoValue: string;
+  /** Spoken name of a skeleton preset while its content loads. */
+  loading: string;
+  emptyFilteredTitle: string;
+  emptyFilteredDescription: string;
+  emptyFilteredReset: string;
+  /** The small error code under a full-page state, for support ("Kode 404"). */
+  statePageCode: (code: string) => string;
+  alertDismiss: string;
+  /** Read before a stat's change figure, since its arrow is decorative. */
+  statDeltaUp: string;
+  statDeltaDown: string;
+  statDeltaFlat: string;
+  /** Read after a link that opens in a new tab. */
+  linkOpensInNewTab: string;
 }
 
 const DEFAULT_UI_LABELS: UiLabels = {
@@ -69,6 +93,21 @@ const DEFAULT_UI_LABELS: UiLabels = {
   timePickerOptions: "Pilihan jam",
   numberInputIncrement: "Tambah",
   numberInputDecrement: "Kurangi",
+
+  breadcrumbLabel: "Navigasi halaman",
+  pageHeaderMoreActions: "Aksi lainnya",
+  avatarGroupMore: (count) => `${count} orang lainnya`,
+  dataListNoValue: "Tidak ada",
+  loading: "Memuat",
+  emptyFilteredTitle: "Tidak ada yang cocok",
+  emptyFilteredDescription: "Coba kata kunci lain atau hapus filter yang aktif.",
+  emptyFilteredReset: "Hapus filter",
+  statePageCode: (code) => `Kode ${code}`,
+  alertDismiss: "Tutup pesan",
+  statDeltaUp: "Naik",
+  statDeltaDown: "Turun",
+  statDeltaFlat: "Tetap",
+  linkOpensInNewTab: "(membuka tab baru)",
 };
 
 const UiLabelsContext = createContext<UiLabels>(DEFAULT_UI_LABELS);
