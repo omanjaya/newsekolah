@@ -25,17 +25,16 @@ export function AnnouncementsView(): ReactElement {
   const [tab, setTab] = useState<"feed" | "manage">("feed");
   const [creating, setCreating] = useState(false);
 
-  // Radix's `TabsContent` unmounts the inactive tab, so the create button
-  // only belongs in the header while the manage tab is actually on screen
-  // (canCreate implies canManage, so the feed-only branch below never
-  // needs this action at all).
-  const showCreate = canCreate && tab === "manage";
-  const headerActions = showCreate ? (
+  // An author can start a new announcement from either tab: from the feed
+  // the click switches to the manage tab (whose editor is what opens), so the
+  // action is not hidden until the reader happens to find that tab.
+  const headerActions = canCreate ? (
     <Button
       size="sm"
       className="rounded-full"
       icon={<Plus />}
       onClick={() => {
+        setTab("manage");
         setCreating(true);
       }}
     >

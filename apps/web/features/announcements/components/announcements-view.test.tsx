@@ -26,10 +26,13 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-it("keeps the primary create action out of the header while the feed tab is active", () => {
+it("offers the create action from the feed tab and opens the editor on the manage tab", async () => {
+  const user = userEvent.setup();
   render(<AnnouncementsView />);
   expect(screen.getByTestId("feed")).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "actions.create" })).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "actions.create" }));
+  expect(screen.getByTestId("manage")).toHaveTextContent("creating");
 });
 
 it("shows the create pill in the shared header once the manage tab is active, and opens the editor from it", async () => {
