@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { forwardRef, type AnchorHTMLAttributes } from "react";
+import { Printer, Trash2 } from "lucide-react";
+import { createRef, forwardRef, type AnchorHTMLAttributes } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
@@ -104,5 +105,67 @@ describe("PageHeader", () => {
     await userEvent.click(within(menu).getByRole("menuitem", { name: "Arsipkan" }));
     expect(onArchive).toHaveBeenCalledOnce();
     expect(onExport).not.toHaveBeenCalled();
+  });
+
+  // The rows come from DropdownMenuItem as they are: the menu's own height,
+  // its danger tone (text, icon and highlight), and its icon sizing.
+  it("renders overflow items through the menu's own icon and danger tone", async () => {
+    render(
+      <PageHeader
+        title="X-A"
+        secondaryActions={[
+          { label: "Cetak", icon: <Printer />, onSelect: () => undefined },
+          { label: "Arsipkan", icon: <Trash2 />, onSelect: () => undefined, destructive: true },
+          { label: "Riwayat", href: "/history" },
+        ]}
+      />,
+    );
+    const [phoneMenu] = screen.getAllByRole("button", { name: "Aksi lainnya" });
+    if (!phoneMenu) throw new Error("expected the overflow menu");
+    await userEvent.click(phoneMenu);
+    const menu = await screen.findByRole("menu");
+    const archive = within(menu).getByRole("menuitem", { name: "Arsipkan" });
+    expect(archive).toHaveClass("text-danger", "data-[highlighted]:bg-danger-soft");
+    expect(archive).not.toHaveClass("min-h-11");
+    expect(archive.firstElementChild?.tagName.toLowerCase()).toBe("svg");
+    expect(within(menu).getByRole("menuitem", { name: "Cetak" })).not.toHaveClass("text-danger");
+    // A link item renders as the link itself, its icon slot inside it.
+    expect(within(menu).getByRole("menuitem", { name: "Riwayat" })).toHaveAttribute(
+      "href",
+      "/history",
+    );
+  });
+
+  // Wide actions wrap under the title instead of squeezing it: the title
+  // claims at least 16rem of a wrapping row, the actions may shrink and
+  // wrap on their own line. Layout itself is checked in Storybook
+  // ("Crowded actions"); here the classes that carry it.
+  it("lets wide actions wrap under the title rather than squeeze it", () => {
+    render(
+      <PageHeader
+        title="Penilaian"
+        actions={
+          <>
+            <Button>Kelas</Button>
+            <Button>Mapel</Button>
+            <Button>Semester</Button>
+          </>
+        }
+      />,
+    );
+    const heading = screen.getByRole("heading", { level: 1, name: "Penilaian" });
+    const row = heading.parentElement;
+    expect(row).toHaveClass("sm:flex-row", "sm:flex-wrap");
+    expect(row?.className).not.toMatch(/grid-cols/);
+    expect(heading).toHaveClass("min-w-0", "sm:basis-64", "sm:grow-999");
+    const actions = screen.getByRole("button", { name: "Kelas" }).parentElement;
+    expect(actions).toHaveClass("min-w-0", "flex-wrap", "sm:grow");
+  });
+
+  it("passes an id, a test id and a ref to its root", () => {
+    const ref = createRef<HTMLDivElement>();
+    render(<PageHeader ref={ref} id="top" data-testid="page-header" title="Siswa" />);
+    expect(screen.getByTestId("page-header")).toBe(ref.current);
+    expect(ref.current).toHaveAttribute("id", "top");
   });
 });

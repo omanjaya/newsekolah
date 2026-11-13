@@ -1,7 +1,7 @@
 "use client";
 
 import { Ellipsis } from "lucide-react";
-import { isValidElement, type ReactNode } from "react";
+import { isValidElement, type ComponentPropsWithRef, type ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -30,7 +30,7 @@ export interface PageHeaderAction {
   destructive?: boolean;
 }
 
-export interface PageHeaderProps {
+export interface PageHeaderProps extends Omit<ComponentPropsWithRef<"div">, "title" | "children"> {
   /** The section the page belongs to, above the title ("Data Sekolah"). */
   eyebrow?: ReactNode;
   title: ReactNode;
@@ -38,7 +38,7 @@ export interface PageHeaderProps {
   description?: ReactNode;
   /** The trail to this page: items, or a ready Breadcrumb. */
   breadcrumb?: PageHeaderBreadcrumbItem[] | ReactNode;
-  /** Free-form controls beside the title (filters, a select); they wrap under it on a phone. */
+  /** Free-form controls beside the title (filters, a select); they wrap under it on a phone or when they do not fit. */
   actions?: ReactNode;
   /** The page's one main action, always visible, rightmost. */
   primaryAction?: ReactNode;
@@ -46,7 +46,6 @@ export interface PageHeaderProps {
   secondaryActions?: PageHeaderAction[];
   /** A rule under the header; off by default, as in the artboard (sections are set apart by space). */
   divider?: boolean;
-  className?: string;
 }
 
 function SecondaryButtons({ actions }: { actions: PageHeaderAction[] }) {
@@ -80,34 +79,28 @@ function OverflowMenu({ actions, className }: { actions: PageHeaderAction[]; cla
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <IconButton
-            variant="outline"
+            variant="surface"
             icon={<Ellipsis />}
             aria-label={labels.pageHeaderMoreActions}
-            className="rounded-full bg-surface"
           />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-48">
-          {actions.map((action) => (
-            <DropdownMenuItem
-              key={action.label}
-              disabled={action.disabled}
-              onSelect={action.onSelect}
-              asChild={Boolean(action.href) && !action.disabled}
-              className={cn("min-h-11 [&>svg]:size-4", action.destructive && "text-danger")}
-            >
-              {action.href && !action.disabled ? (
-                <UiLink href={action.href}>
-                  {action.icon}
-                  {action.label}
-                </UiLink>
-              ) : (
-                <>
-                  {action.icon}
-                  {action.label}
-                </>
-              )}
-            </DropdownMenuItem>
-          ))}
+        <DropdownMenuContent align="end">
+          {actions.map((action) => {
+            // A disabled link is a plain item: there is nothing to follow.
+            const href = action.disabled ? undefined : action.href;
+            return (
+              <DropdownMenuItem
+                key={action.label}
+                icon={action.icon}
+                tone={action.destructive ? "danger" : "default"}
+                disabled={action.disabled}
+                onSelect={action.onSelect}
+                asChild={href !== undefined}
+              >
+                {href !== undefined ? <UiLink href={href}>{action.label}</UiLink> : action.label}
+              </DropdownMenuItem>
+            );
+          })}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -117,8 +110,9 @@ function OverflowMenu({ actions, className }: { actions: PageHeaderAction[]; cla
 /**
  * The top of every page (docs/07-ui-ux.md, "Hijau Segar"): breadcrumb,
  * muted eyebrow, the title on the display role, an optional description,
- * and the page's actions centred on the title line. On a phone the
- * actions move under the title and secondary ones collapse into a menu.
+ * and the page's actions centred on the title line. When the actions do
+ * not fit beside the title they wrap under it, as they do on a phone,
+ * where secondary ones also collapse into a menu.
  */
 export function PageHeader({
   eyebrow,
@@ -130,6 +124,7 @@ export function PageHeader({
   secondaryActions = [],
   divider = false,
   className,
+  ...props
 }: PageHeaderProps) {
   const crumbs = Array.isArray(breadcrumb) ? (
     <Breadcrumb items={breadcrumb} />
@@ -149,17 +144,24 @@ export function PageHeader({
         divider ? "border-b border-line pb-4" : "pb-2",
         className,
       )}
+      {...props}
     >
       {crumbs}
       <div className="flex flex-col gap-1">
         {eyebrow && <p className="text-body-sm text-fg-muted">{eyebrow}</p>}
-        {/* One column on a phone (title, description, then actions); from
-            640px the actions share the title's row and the description
-            runs under both. */}
-        <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-x-6">
-          <h1 className="min-w-0 text-display text-fg">{title}</h1>
+        {/* One column on a phone: title, description, then actions. From
+            640px a wrapping row: the title claims at least 16rem and takes
+            all the spare width, which pushes the actions to the right end;
+            when the actions do not fit beside that, they wrap onto their
+            own line under the title, start-aligned as on a phone, instead
+            of squeezing it. The description always gets a line of its own. */}
+        <div className="flex flex-col gap-y-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6">
+          <h1 className="min-w-0 text-display text-fg sm:grow-999 sm:basis-64">{title}</h1>
           {hasActions && (
-            <div className="order-last flex flex-wrap items-center gap-2 max-sm:mt-1 sm:order-none sm:justify-end">
+            <div
+              data-slot="page-header-actions"
+              className="order-last flex min-w-0 flex-wrap items-center gap-2 max-sm:mt-1 sm:order-none sm:grow"
+            >
               {actions}
               {buttons.length > 0 && <SecondaryButtons actions={buttons} />}
               {primaryAction}
@@ -172,7 +174,9 @@ export function PageHeader({
             </div>
           )}
           {description && (
-            <div className="max-w-prose text-body text-fg-muted sm:col-span-2">{description}</div>
+            <div className="text-body text-fg-muted sm:basis-full">
+              <div className="max-w-prose">{description}</div>
+            </div>
           )}
         </div>
       </div>
