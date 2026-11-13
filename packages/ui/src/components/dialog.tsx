@@ -13,6 +13,7 @@ import {
   OverlayFooter,
   OverlayHeader,
   OverlayScrim,
+  useOverlayContentRef,
 } from "./overlay-parts.js";
 import { useUiLabels } from "./ui-labels.js";
 
@@ -45,6 +46,12 @@ export interface DialogContentProps extends ComponentPropsWithoutRef<
   /** Overrides the close button's label from `UiLabels`. */
   closeLabel?: string;
   /**
+   * Disables the header's close button, for the moment the dialog cannot
+   * be dismissed (its action is running). Escape and the scrim are the
+   * caller's to block, in `onOpenChange`, as `ConfirmDialog` does.
+   */
+  closeDisabled?: boolean;
+  /**
    * Actions under the scrolling body, always visible. For a form whose
    * submit button must stay inside the `<form>`, end the form with
    * `DialogFooter` instead; it draws the same row.
@@ -75,6 +82,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
     description,
     hideHeader,
     closeLabel,
+    closeDisabled,
     footer,
     icon,
     size = "md",
@@ -87,11 +95,12 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
 ) {
   const labels = useUiLabels();
   const returnFocus = useReturnFocus(onOpenAutoFocus, onCloseAutoFocus);
+  const contentRef = useOverlayContentRef(ref);
   return (
     <DialogPrimitive.Portal>
       <OverlayScrim closeAnimation="responsive" />
       <DialogPrimitive.Content
-        ref={ref}
+        ref={contentRef}
         // Without a description there is nothing to point at; saying so
         // keeps Radix from warning about a missing one.
         {...(description ? {} : { "aria-describedby": undefined })}
@@ -128,6 +137,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
             description={description}
             icon={icon}
             closeLabel={closeLabel ?? labels.dialogClose}
+            closeDisabled={closeDisabled}
             className="pt-3 sm:pt-6"
           />
         )}

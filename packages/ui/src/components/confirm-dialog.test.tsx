@@ -115,8 +115,15 @@ describe("ConfirmDialog", () => {
     );
     expect(screen.getByRole("button", { name: "Hapus" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Batal" })).toBeDisabled();
+    // The header's X would do nothing either, so it does not look clickable.
+    expect(screen.getByRole("button", { name: "Tutup dialog" })).toBeDisabled();
     await userEvent.keyboard("{Escape}");
     expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it("keeps the close button active while nothing runs", () => {
+    render(<ConfirmDialog open onOpenChange={vi.fn()} title="Hapus?" onConfirm={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Tutup dialog" })).toBeEnabled();
   });
 
   it("has no accessibility violations", async () => {

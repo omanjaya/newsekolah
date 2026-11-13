@@ -13,6 +13,7 @@ import {
   OverlayFooter,
   OverlayHeader,
   OverlayScrim,
+  useOverlayContentRef,
 } from "./overlay-parts.js";
 import { useUiLabels } from "./ui-labels.js";
 
@@ -41,6 +42,8 @@ export interface SheetContentProps extends ComponentPropsWithoutRef<
   hideHeader?: boolean;
   /** Overrides the close button's label from `UiLabels`. */
   closeLabel?: string;
+  /** Disables the header's close button while the sheet cannot be dismissed. */
+  closeDisabled?: boolean;
   /** Actions under the scrolling body, always visible (or end a form with `SheetFooter`). */
   footer?: ReactNode;
   /** Shown before the title. */
@@ -70,6 +73,7 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
     description,
     hideHeader,
     closeLabel,
+    closeDisabled,
     footer,
     icon,
     side = "bottom",
@@ -83,12 +87,13 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
 ) {
   const labels = useUiLabels();
   const returnFocus = useReturnFocus(onOpenAutoFocus, onCloseAutoFocus);
+  const contentRef = useOverlayContentRef(ref);
   const drawer = side === "right";
   return (
     <DialogPrimitive.Portal>
       <OverlayScrim closeAnimation="sheet" />
       <DialogPrimitive.Content
-        ref={ref}
+        ref={contentRef}
         {...(description ? {} : { "aria-describedby": undefined })}
         data-side={side}
         className={cn(
@@ -131,6 +136,7 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
             description={description}
             icon={icon}
             closeLabel={closeLabel ?? labels.sheetClose}
+            closeDisabled={closeDisabled}
             className={drawer ? "pt-3 sm:pt-6" : "pt-3"}
           />
         )}

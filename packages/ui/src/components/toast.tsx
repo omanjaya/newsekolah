@@ -7,6 +7,7 @@ import { Toaster as SonnerToaster, toast as sonnerToast } from "sonner";
 
 import { cn } from "../utils/cn.js";
 
+import { TOAST_CLEARANCE_VAR, TOAST_EDGE_PX, TOAST_WIDTH_PX } from "./toast-clearance.js";
 import { useUiLabels } from "./ui-labels.js";
 
 export type ToasterProps = ComponentPropsWithoutRef<typeof SonnerToaster>;
@@ -73,7 +74,9 @@ function ToastIcon({ tone }: { tone: "success" | "danger" | "info" | "warning" }
  * the title on the label role and the description on body-sm. At the top
  * of a phone screen (clear of the tab bar and the save bar, under the
  * thumb's reach of nothing) and at the bottom right on a larger screen,
- * lifted above a `StickySaveBar` when one is showing. In over 200ms, out
+ * lifted above a `StickySaveBar` when one is showing, and above the
+ * action row of an open drawer or sheet that reaches that corner
+ * (toast-clearance.ts). In over 200ms, out
  * over 120ms (styles.css). At most three at once, per
  * docs/05-shared-components.md.
  */
@@ -84,13 +87,15 @@ export function Toaster({ toastOptions, style, ...props }: ToasterProps) {
     <>
       <SonnerToaster
         // Wider than sonner's 356px, so a title and an action fit one line.
-        style={{ "--width": "384px", ...style } as CSSProperties}
+        style={{ "--width": `${TOAST_WIDTH_PX}px`, ...style } as CSSProperties}
         position={phone ? "top-center" : "bottom-right"}
         visibleToasts={3}
         gap={8}
         offset={{
-          right: 24,
-          bottom: "calc(24px + var(--sticky-save-bar-height, 0px))",
+          right: TOAST_EDGE_PX,
+          // Above a StickySaveBar, and above the action row of an open
+          // drawer, sheet or tall dialog that reaches this corner.
+          bottom: `max(calc(${TOAST_EDGE_PX}px + var(--sticky-save-bar-height, 0px)), var(${TOAST_CLEARANCE_VAR}, 0px))`,
         }}
         mobileOffset={16}
         containerAriaLabel={labels.toastRegion}
