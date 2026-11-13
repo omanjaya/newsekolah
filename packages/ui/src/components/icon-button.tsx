@@ -9,6 +9,14 @@ import { cn } from "../utils/cn.js";
 
 import { EnsureTooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "./tooltip.js";
 
+// A white disc with a 1px ring on the page background (the artboard's
+// notification button), drawn like a secondary Button: a real border, so
+// a caller's `border-accent` still colours it, and `state-layer` for hover
+// and press. `state-layer` owns `box-shadow`, which is why the ring cannot
+// be an inset shadow.
+const SECONDARY = "border border-border bg-surface text-fg state-layer";
+const PRIMARY = "bg-accent text-accent-fg hover:bg-accent-strong active:bg-accent-strong";
+
 // Round, like the artboard's header buttons. A touch screen always gets at
 // least 44px (a minimum, so a caller's own larger size still wins); the
 // icon itself keeps its size, only the area around it grows.
@@ -18,15 +26,16 @@ const iconButtonVariants = cva(
     "pointer-coarse:min-h-11 pointer-coarse:min-w-11",
   {
     variants: {
+      // The same names as Button's, so a row pairing the two speaks one
+      // vocabulary. `surface`, `outline` and `accent` are older names kept
+      // for existing call sites; they render exactly the same.
       variant: {
         ghost: "text-fg hover:bg-state-hover active:bg-state-pressed",
-        // A white disc with a 1px ring on the page background (the
-        // artboard's notification button). `state-layer` paints hover
-        // over the fill instead of replacing it.
-        surface: "bg-surface text-fg shadow-[inset_0_0_0_1px_var(--color-border)] state-layer",
-        accent: "bg-accent text-accent-fg hover:bg-accent-strong active:bg-accent-strong",
-        // The older name for `surface`, kept for existing call sites; renders the same.
-        outline: "bg-surface text-fg shadow-[inset_0_0_0_1px_var(--color-border)] state-layer",
+        secondary: SECONDARY,
+        primary: PRIMARY,
+        surface: SECONDARY,
+        outline: SECONDARY,
+        accent: PRIMARY,
       },
       size: {
         sm: "size-8 [&>svg]:size-4",
@@ -53,6 +62,12 @@ export interface IconButtonProps
    * where a visible label already sits next to the button.
    */
   tooltip?: boolean | string;
+  /**
+   * Becomes the tooltip text (unless `tooltip` is a string) instead of the
+   * browser's own title, which would show a second tooltip with the same
+   * words. With `tooltip={false}` it stays a plain `title`.
+   */
+  title?: string;
   tooltipSide?: "top" | "right" | "bottom" | "left";
   /** Shows a spinner and disables the button. */
   loading?: boolean;
@@ -67,7 +82,7 @@ export interface IconButtonProps
  * opens until the reader shows a new intent: the pointer enters the
  * button again, or focus moves away and comes back.
  */
-function useTooltipOpen(expanded: boolean) {
+function useTooltipOpen(expanded: boolean, inactive: boolean) {
   const [open, setOpen] = useState(false);
   const [suppressed, setSuppressed] = useState(false);
   const [wasExpanded, setWasExpanded] = useState(expanded);
@@ -80,8 +95,11 @@ function useTooltipOpen(expanded: boolean) {
       setSuppressed(true);
     }
   }
+  // A button that turns disabled or busy under the pointer drops its
+  // tooltip, and does not bring it back by itself when it turns active.
+  if (inactive && open) setOpen(false);
   return {
-    open: open && !expanded,
+    open: open && !expanded && !inactive,
     onOpenChange: (next: boolean) => {
       setOpen(next && !suppressed);
     },
@@ -99,6 +117,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     icon,
     tooltip = true,
     tooltipSide = "top",
+    title,
     loading,
     asChild,
     disabled,
@@ -110,9 +129,9 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
 ) {
   const label = props["aria-label"];
   const expanded = props["aria-expanded"] === true || props["aria-expanded"] === "true";
-  const tooltipState = useTooltipOpen(expanded);
-  const Comp = asChild ? Slot : "button";
   const inactive = Boolean(disabled) || Boolean(loading);
+  const tooltipState = useTooltipOpen(expanded, inactive);
+  const Comp = asChild ? Slot : "button";
 
   // Typed from the button's own props, not inferred from `Comp`: an asChild
   // Slot types its events on HTMLElement, which would widen the event here.
@@ -136,6 +155,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       // The tooltip repeats the accessible name; describing the button with
       // it as well would make a screen reader say the name twice.
       aria-describedby={props["aria-describedby"]}
+      title={tooltip === false ? title : undefined}
       {...props}
       onPointerEnter={handlePointerEnter}
       onBlur={handleBlur}
@@ -145,14 +165,17 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     </Comp>
   );
 
-  if (tooltip === false || inactive) return button;
+  if (tooltip === false) return button;
 
+  // The tree keeps this shape while the button turns disabled or busy and
+  // back (the tooltip is held shut instead), so React keeps the same DOM
+  // node and a keyboard user's focus stays where it was.
   return (
     <EnsureTooltipProvider>
       <Tooltip open={tooltipState.open} onOpenChange={tooltipState.onOpenChange}>
         <TooltipTrigger asChild>{button}</TooltipTrigger>
         <TooltipContent side={tooltipSide}>
-          {typeof tooltip === "string" ? tooltip : label}
+          {typeof tooltip === "string" ? tooltip : (title ?? label)}
         </TooltipContent>
       </Tooltip>
     </EnsureTooltipProvider>

@@ -57,7 +57,7 @@ export function NotificationBell(): ReactElement {
     <Popover open={open} onOpenChange={setOpen}>
       <span className="relative inline-flex">
         <PopoverTrigger asChild>
-          <IconButton icon={<Bell />} aria-label={label} title={label} />
+          <IconButton icon={<Bell />} aria-label={label} />
         </PopoverTrigger>
         {count > 0 && (
           <span

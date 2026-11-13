@@ -64,9 +64,82 @@ describe("IconButton", () => {
     );
   });
 
-  it("keeps the old outline variant working as the surface look", () => {
-    render(<IconButton icon={<svg />} aria-label="Filter" variant="outline" />);
-    expect(screen.getByRole("button", { name: "Filter" })).toHaveClass("bg-surface", "state-layer");
+  it("draws the secondary ring as a border, which state-layer cannot paint over", () => {
+    const { rerender } = render(
+      <IconButton icon={<svg />} aria-label="Filter" variant="secondary" />,
+    );
+    const button = screen.getByRole("button", { name: "Filter" });
+    expect(button).toHaveClass("border", "border-border", "bg-surface", "state-layer");
+    // state-layer owns box-shadow, so a ring drawn as a shadow would vanish.
+    expect(button.className).not.toMatch(/shadow-/);
+
+    // A caller's border colour (a row with a note) now has a width to colour.
+    rerender(
+      <IconButton icon={<svg />} aria-label="Filter" variant="outline" className="border-accent" />,
+    );
+    expect(button).toHaveClass("border", "border-accent");
+    expect(button).not.toHaveClass("border-border");
+  });
+
+  it("speaks Button's variant names and keeps the older ones as aliases", () => {
+    render(
+      <div>
+        <IconButton icon={<svg />} aria-label="a" variant="secondary" />
+        <IconButton icon={<svg />} aria-label="b" variant="surface" />
+        <IconButton icon={<svg />} aria-label="c" variant="outline" />
+        <IconButton icon={<svg />} aria-label="d" variant="primary" />
+        <IconButton icon={<svg />} aria-label="e" variant="accent" />
+      </div>,
+    );
+    const classOf = (name: string) => screen.getByRole("button", { name }).className;
+    expect(classOf("b")).toBe(classOf("a"));
+    expect(classOf("c")).toBe(classOf("a"));
+    expect(classOf("e")).toBe(classOf("d"));
+    expect(classOf("d")).toMatch(/\bbg-accent\b/);
+  });
+
+  it("keeps the same DOM node and focus while it turns disabled or busy and back", () => {
+    const { rerender } = render(<IconButton icon={<svg />} aria-label="Naikkan" />);
+    const button = screen.getByRole("button", { name: "Naikkan" });
+    button.focus();
+
+    rerender(<IconButton icon={<svg />} aria-label="Naikkan" disabled />);
+    expect(screen.getByRole("button", { name: "Naikkan" })).toBe(button);
+    rerender(<IconButton icon={<svg />} aria-label="Naikkan" />);
+    expect(screen.getByRole("button", { name: "Naikkan" })).toBe(button);
+    expect(button).toHaveFocus();
+
+    rerender(<IconButton icon={<svg />} aria-label="Naikkan" loading />);
+    expect(screen.getByRole("button", { name: "Naikkan" })).toBe(button);
+    expect(button).toHaveFocus();
+    rerender(<IconButton icon={<svg />} aria-label="Naikkan" />);
+    expect(screen.getByRole("button", { name: "Naikkan" })).toBe(button);
+    expect(button).toHaveFocus();
+  });
+
+  it("shows no tooltip while disabled and does not reopen it by itself afterwards", async () => {
+    const { rerender } = render(<IconButton icon={<svg />} aria-label="Turunkan" />);
+    await userEvent.tab();
+    expect(await screen.findByRole("tooltip")).toBeInTheDocument();
+    rerender(<IconButton icon={<svg />} aria-label="Turunkan" disabled />);
+    await waitFor(() => expect(screen.queryByRole("tooltip")).not.toBeInTheDocument());
+    rerender(<IconButton icon={<svg />} aria-label="Turunkan" />);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("turns a title into the tooltip instead of a second, native one", async () => {
+    const { unmount } = render(
+      <IconButton icon={<svg />} aria-label="3 belum dibaca" title="Notifikasi: 3 belum dibaca" />,
+    );
+    const button = screen.getByRole("button", { name: "3 belum dibaca" });
+    expect(button).not.toHaveAttribute("title");
+    await userEvent.tab();
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Notifikasi: 3 belum dibaca");
+    unmount();
+
+    // Without a tooltip the title is the only hint, so it stays.
+    render(<IconButton icon={<svg />} aria-label="Tutup" title="Tutup panel" tooltip={false} />);
+    expect(screen.getByRole("button", { name: "Tutup" })).toHaveAttribute("title", "Tutup panel");
   });
 
   it("works as a menu trigger and does not flash its tooltip when the menu closes", async () => {
@@ -94,8 +167,8 @@ describe("IconButton", () => {
   it("has no accessibility violations", async () => {
     const { container } = render(
       <div>
-        <IconButton icon={<svg />} aria-label="Notifikasi" variant="surface" />
-        <IconButton icon={<svg />} aria-label="Tambah" variant="accent" />
+        <IconButton icon={<svg />} aria-label="Notifikasi" variant="secondary" />
+        <IconButton icon={<svg />} aria-label="Tambah" variant="primary" />
       </div>,
     );
     await expectNoAxeViolations(container);
