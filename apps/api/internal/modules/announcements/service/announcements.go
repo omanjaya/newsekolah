@@ -195,8 +195,12 @@ func (s *Service) Archive(ctx context.Context, tenantID, id uuid.UUID) (domain.A
 // starts_at has passed is published in its own tenant transaction, so one
 // tenant's empty audience never blocks another's. Tenants are visited one
 // by one because the table is only readable inside a tenant transaction.
-// A tenant with announcements turned off is skipped: its scheduled
-// announcements stay scheduled and nobody is notified.
+//
+// A tenant with announcements turned off publishes nothing and notifies
+// nobody. An announcement that comes due while the module is off is put
+// back to draft instead (see holdMissed), so switching the module back on
+// never publishes a notice late: staff see it as a draft whose start has
+// passed, and reschedule, publish or delete it themselves.
 func (s *Service) PublishDue(ctx context.Context) (published int, errs []error) {
 	tenantIDs, err := s.repo.ListActiveTenantIDs(ctx)
 	if err != nil {
@@ -209,6 +213,9 @@ func (s *Service) PublishDue(ctx context.Context) (published int, errs []error) 
 			continue
 		}
 		if !on {
+			if err := s.holdMissed(ctx, tenantID); err != nil {
+				errs = append(errs, err)
+			}
 			continue
 		}
 		var due []domain.Announcement
@@ -233,6 +240,26 @@ func (s *Service) PublishDue(ctx context.Context) (published int, errs []error) 
 		}
 	}
 	return published, errs
+}
+
+// holdMissed returns every scheduled announcement of a tenant with the
+// module switched off whose start has passed to draft: it missed its slot
+// and must not go out automatically, late, once the module is back. Its
+// content, audience and starts_at are kept; nothing is published and
+// nobody is notified.
+func (s *Service) holdMissed(ctx context.Context, tenantID uuid.UUID) error {
+	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		due, err := s.repo.ListDueScheduled(ctx)
+		if err != nil {
+			return err
+		}
+		for _, a := range due {
+			if _, err := s.repo.SetStatus(ctx, tenantID, a.ID, domain.StatusDraft); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 // FeedItem is one row of a reader's announcement list.
