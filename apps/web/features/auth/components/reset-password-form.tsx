@@ -77,12 +77,9 @@ export function ResetPasswordForm({
         <Alert variant="warning" title={t("invalidTitle")}>
           {t("invalidBody")}
         </Alert>
-        <Link
-          href="/forgot-password"
-          className="text-center text-[13px] text-accent hover:underline"
-        >
-          {t("requestNew")}
-        </Link>
+        <Button asChild>
+          <Link href="/forgot-password">{t("requestNew")}</Link>
+        </Button>
       </div>
     );
   }

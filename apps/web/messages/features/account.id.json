@@ -17,7 +17,7 @@
     "submit": "Simpan kata sandi baru",
     "success": "Kata sandi diubah, masuk dengan kata sandi baru Anda",
     "invalidTitle": "Tautan ini sudah tidak berlaku",
-    "invalidBody": "Tautan tidak valid, sudah dipakai, atau sudah kedaluwarsa. Minta tautan baru.",
+    "invalidBody": "Tautan tidak valid, sudah dipakai, atau sudah kedaluwarsa.",
     "requestNew": "Minta tautan baru"
   }
 }
