@@ -102,7 +102,7 @@ export function BillsListView(): ReactElement {
         id: "dueDate",
         header: t("columns.dueDate"),
         enableSorting: false,
-        cell: ({ row }) => formatDate(row.original.due_date, { locale }),
+        cell: ({ row }) => formatDate(row.original.due_date, { locale, timeZone: "UTC" }),
       },
       {
         id: "amount",

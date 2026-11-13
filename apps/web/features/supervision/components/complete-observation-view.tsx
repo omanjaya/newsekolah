@@ -82,7 +82,7 @@ export function CompleteObservationView({
 
   const teacherName =
     teacherMap.get(scheduled.teacher_user_id)?.name ?? tRoot("cycleDetail.unknownTeacher");
-  const lessonDateLabel = formatDate(scheduled.lesson_date, { locale });
+  const lessonDateLabel = formatDate(scheduled.lesson_date, { locale, timeZone: "UTC" });
   const contextLine = [lesson.subjectName, lesson.className].filter(Boolean).join(" · ");
 
   return (

@@ -18,8 +18,9 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import {
   type Bill,
@@ -71,13 +72,15 @@ export function StudentBillHistoryView({
   const locale = useLocale() as Locale;
   const canRecord = useCan("record_payments");
   const canVoid = useCan("void_payments");
-  const { data, isLoading } = useStudentBillHistoryQuery(studentId);
+  const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
+  const { data, isLoading, isError, refetch } = useStudentBillHistoryQuery(studentId);
   const receiptUrl = usePaymentReceiptUrlMutation();
 
   const [paying, setPaying] = useState<Bill | null>(null);
   const [voiding, setVoiding] = useState<{ payment: Payment; currency: string } | null>(null);
 
-  const today = todayInZone();
+  const today = todayInZone(timeZone);
   const entries = useMemo(() => {
     const list = data?.data ?? [];
     return [...list].sort(
@@ -113,6 +116,9 @@ export function StudentBillHistoryView({
   }
 
   if (isLoading) return <Skeleton className="h-32 w-full" />;
+
+  // A failed read must never look like "this student has no bills".
+  if (isError && !data) return <QueryError retry={() => refetch()} />;
 
   if (entries.length === 0) {
     return (
@@ -210,7 +216,8 @@ function BillCard({
         <div className="flex flex-col">
           <span className="text-[14px] font-medium text-fg">{bill.fee_type_name}</span>
           <span className="text-[13px] text-fg-muted">
-            {bill.period} · {t("dueDate", { date: formatDate(bill.due_date, { locale }) })}
+            {bill.period} ·{" "}
+            {t("dueDate", { date: formatDate(bill.due_date, { locale, timeZone: "UTC" }) })}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -235,7 +242,7 @@ function BillCard({
               <span className={payment.is_voided ? "text-fg-muted line-through" : "text-fg"}>
                 {formatCurrency(payment.amount_minor, bill.currency, { locale })} ·{" "}
                 {t(`method.${METHOD_KEY[payment.method]}`)} ·{" "}
-                {formatDate(payment.paid_on, { locale })}
+                {formatDate(payment.paid_on, { locale, timeZone: "UTC" })}
                 {payment.reference ? ` · ${payment.reference}` : ""}
               </span>
               <span className="flex items-center gap-2">

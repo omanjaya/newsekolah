@@ -17,6 +17,7 @@ import {
   type ReportExportOptions,
 } from "../../../components/report-export-dialog";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import { downloadTeacherSupervisionReport, useTeacherSupervisionReportQuery } from "../api";
 
 import { SupervisionWorkspaceNav } from "./supervision-workspace-nav";
@@ -43,6 +44,7 @@ export function TeacherSupervisionReportView({
   const t = useTranslations("app.supervision.teacherReport");
   const tRoot = useTranslations("app.supervision");
   const locale = useLocale() as Locale;
+  const { me } = useSession();
   const router = useRouter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -186,7 +188,9 @@ export function TeacherSupervisionReportView({
                     router.push(`/supervision/observations/${observation.id}`);
                   }}
                 >
-                  <span>{formatDate(observation.observed_at, { locale })}</span>
+                  <span>
+                    {formatDate(observation.observed_at, { locale, timeZone: me?.tenant.timezone })}
+                  </span>
                   <span className="tabular-nums text-fg-muted">
                     {t("scoreCount", { count: observation.scores.length })}
                   </span>
