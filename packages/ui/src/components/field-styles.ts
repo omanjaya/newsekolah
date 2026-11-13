@@ -5,7 +5,8 @@
  * The border is the only thing that shows where an empty field is, so it
  * rests on `border-strong` (3:1 on every surface), darkens one step on
  * hover, takes the accent on keyboard focus and turns `danger` whenever
- * `aria-invalid` is set, whether by the `invalid` prop or by `FormControl`.
+ * `aria-invalid` is set, whether by the `invalid` prop, by `Field` or by
+ * `FormControl`.
  *
  * Each state only sets `--field-border`, and the border reads that
  * variable, so a hover can never outrank the invalid state (variant order
@@ -24,3 +25,69 @@ export const FIELD_BORDER_CLASSES = [
   "focus-visible:[--field-border:var(--color-accent)] focus-visible:outline-offset-0",
   "aria-invalid:[--field-border:var(--color-danger)] aria-invalid:focus-visible:outline-danger",
 ].join(" ");
+
+/**
+ * The same states for a box that wraps a text input (an Input with an
+ * icon or button inside it, the time and number fields): the box draws
+ * the border and the focus ring, the input inside draws neither, so the
+ * ring hugs the whole field, adornments included. Only the input's own
+ * focus lights the box; a button inside it (show password, clear) keeps
+ * its own ring.
+ */
+export const FIELD_SHELL_BORDER_CLASSES = [
+  "border border-(--field-border) [--field-border:var(--color-border-strong)] transition-colors",
+  "hover:[--field-border:var(--color-fg-muted)]",
+  "has-[input:focus-visible,textarea:focus-visible]:[--field-border:var(--color-accent)]",
+  "has-[input:focus-visible,textarea:focus-visible]:outline-2",
+  "has-[input:focus-visible,textarea:focus-visible]:outline-offset-0",
+  "has-[input:focus-visible,textarea:focus-visible]:outline-focus-ring",
+  "has-[[aria-invalid=true]]:[--field-border:var(--color-danger)]",
+  "has-[[aria-invalid=true]:focus-visible]:outline-danger",
+].join(" ");
+
+/**
+ * A disabled field reads as a quiet, sunken box with muted text rather
+ * than a half-transparent one: it stays legible (a locked value is still a
+ * value) and never shows a hover. `disabled:` sorts after `hover:`, so the
+ * quiet border wins.
+ */
+export const FIELD_DISABLED_CLASSES =
+  "disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:text-fg-muted " +
+  "disabled:[--field-border:var(--color-border)]";
+
+/** `FIELD_DISABLED_CLASSES` for a shell around a disabled input. */
+export const FIELD_SHELL_DISABLED_CLASSES =
+  "has-[input:disabled,textarea:disabled]:cursor-not-allowed " +
+  "has-[input:disabled,textarea:disabled]:bg-surface-sunken " +
+  "has-[input:disabled,textarea:disabled]:text-fg-muted " +
+  "has-[input:disabled,textarea:disabled]:[--field-border:var(--color-border)]";
+
+export type FieldSize = "sm" | "md";
+
+/**
+ * Field heights. Every field is a 44px target wherever the pointer is
+ * coarse (a phone, a tablet, a touch laptop) and on any screen narrower
+ * than md; only a fine pointer on a wide screen gets the compact box: 36px
+ * for `md`, 32 for `sm` (dense filters, table toolbars), the same heights
+ * as Button's two sizes there.
+ */
+export const FIELD_HEIGHT: Record<FieldSize, string> = {
+  md: "h-11 md:pointer-fine:h-9",
+  sm: "h-11 md:pointer-fine:h-8",
+};
+
+/** Body text for `md`; the compact `sm` field takes the denser table text. */
+export const FIELD_TEXT: Record<FieldSize, string> = {
+  md: "text-body",
+  sm: "text-body md:pointer-fine:text-body-sm",
+};
+
+/**
+ * Horizontal padding, and the inset an adornment sits at. 12px keeps the
+ * text where every other field's text starts; an icon sits at the same
+ * 12px, the text then starts after it plus an 8px gap.
+ */
+export const FIELD_PADDING: Record<FieldSize, string> = {
+  md: "px-3",
+  sm: "px-3 md:pointer-fine:px-2.5",
+};
