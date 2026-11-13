@@ -2,12 +2,21 @@
 
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { Command as CommandPrimitive } from "cmdk";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Loader2, Search, SearchX } from "lucide-react";
 import { forwardRef, useState } from "react";
 
 import { cn } from "../utils/cn.js";
 
-import { FIELD_BORDER_CLASSES } from "./field-styles.js";
+import { useFieldControl } from "./field-context.js";
+import {
+  FIELD_BORDER_CLASSES,
+  FIELD_DISABLED_CLASSES,
+  FIELD_HEIGHT,
+  FIELD_PADDING,
+  FIELD_TEXT,
+  type FieldSize,
+} from "./field-styles.js";
+import { useUiLabels } from "./ui-labels.js";
 
 export interface ComboboxOption {
   value: string;
@@ -21,15 +30,25 @@ export interface ComboboxProps {
   onValueChange: (value: string) => void;
   search: string;
   onSearchChange: (search: string) => void;
+  /** Defaults to `UiLabels.comboboxPlaceholder`. */
   placeholder?: string;
+  /** Defaults to `UiLabels.comboboxSearchPlaceholder`. */
   searchPlaceholder?: string;
-  emptyLabel: string;
+  /** Shown when a finished search matched nothing. Defaults to `UiLabels.comboboxEmpty`. */
+  emptyLabel?: string;
+  /** Shown while `loading` and there is nothing to list yet. Defaults to `UiLabels.comboboxLoading`. */
   loadingLabel?: string;
+  /** A search is in flight: a spinner in the search box, and the loading row while the list is empty. */
   loading?: boolean;
   disabled?: boolean;
   invalid?: boolean;
+  required?: boolean;
+  size?: FieldSize;
+  id?: string;
   "aria-label"?: string;
+  "aria-labelledby"?: string;
   "aria-describedby"?: string;
+  "aria-invalid"?: boolean | "true" | "false";
   className?: string;
 }
 
@@ -39,7 +58,8 @@ export interface ComboboxProps {
  * renders exactly the `options` given rather than re-filtering them
  * client-side, since the server may match fields the label does not show
  * (e.g. an eligible-substitutes search that also matches a username).
- * For a fixed, already-loaded option list, use `Select` instead.
+ * The field and its list are `Select`'s: same height, radius, border,
+ * option rows and popover. For a fixed, already-loaded list, use `Select`.
  */
 export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Combobox(
   {
@@ -48,55 +68,78 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
     onValueChange,
     search,
     onSearchChange,
-    placeholder = "Pilih",
-    searchPlaceholder = "Cari",
+    placeholder,
+    searchPlaceholder,
     emptyLabel,
-    loadingLabel = "Memuat...",
-    loading,
+    loadingLabel,
+    loading = false,
     disabled,
     invalid,
+    required,
+    size = "md",
     className,
+    id,
+    "aria-describedby": ariaDescribedBy,
+    "aria-invalid": ariaInvalid,
     ...aria
   },
   ref,
 ) {
+  const labels = useUiLabels();
   const [open, setOpen] = useState(false);
   const selected = options.find((option) => option.value === value);
+  const { attributes } = useFieldControl({
+    id,
+    required,
+    disabled,
+    invalid,
+    "aria-describedby": ariaDescribedBy,
+    "aria-invalid": ariaInvalid,
+  });
+  const showLoadingRow = loading && options.length === 0;
 
   return (
     <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
       <PopoverPrimitive.Trigger
         ref={ref}
         type="button"
-        disabled={disabled}
-        aria-invalid={invalid ?? undefined}
+        // A button cannot carry aria-required; the rest of the field wiring applies.
+        id={attributes.id}
+        disabled={attributes.disabled}
+        aria-describedby={attributes["aria-describedby"]}
+        aria-invalid={attributes["aria-invalid"]}
         className={cn(
-          // The same field as Select: radius, height (thumb-sized on a
-          // phone, compact once there is a cursor), border and states.
-          "flex h-11 md:h-9 w-full items-center justify-between gap-2 rounded-md",
-          "bg-surface px-3 text-body text-fg",
+          "flex w-full min-w-0 items-center justify-between gap-2 rounded-md bg-surface text-fg",
+          FIELD_HEIGHT[size],
+          FIELD_PADDING[size],
+          FIELD_TEXT[size],
           FIELD_BORDER_CLASSES,
-          "disabled:cursor-not-allowed disabled:opacity-50",
+          FIELD_DISABLED_CLASSES,
+          "data-[state=open]:[--field-border:var(--color-accent)]",
           className,
         )}
         {...aria}
       >
         <span className={cn("min-w-0 flex-1 truncate text-left", !selected && "text-fg-muted")}>
-          {selected ? selected.label : placeholder}
+          {selected ? selected.label : (placeholder ?? labels.comboboxPlaceholder)}
         </span>
-        <ChevronDown className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
+        <ChevronDown
+          className="size-4 shrink-0 text-fg-muted transition-transform duration-fast in-data-[state=open]:rotate-180"
+          aria-hidden="true"
+        />
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content
           align="start"
           sideOffset={4}
+          collisionPadding={8}
           className={cn(
             // Like Select's list: at least as wide as the field (never a
             // fixed 18rem that a wide form field outgrows) and capped to the
             // room left on screen.
             // A flex column, so when that room is short the list (not the
             // search field) gives way and stays scrollable to its last option.
-            "z-popover flex w-(--radix-popover-trigger-width) min-w-72 max-w-[calc(100vw-2rem)] flex-col",
+            "z-popover flex w-(--radix-popover-trigger-width) min-w-72 max-w-[calc(100vw-1rem)] flex-col",
             "max-h-(--radix-popover-content-available-height) overflow-hidden",
             "rounded-md border border-border bg-surface-raised shadow-2",
             "data-[state=open]:animate-popover-in data-[state=closed]:animate-popover-out",
@@ -104,19 +147,41 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
           )}
         >
           <CommandPrimitive shouldFilter={false} className="flex min-h-0 flex-1 flex-col">
-            <CommandPrimitive.Input
-              value={search}
-              onValueChange={onSearchChange}
-              placeholder={searchPlaceholder}
-              className={cn(
-                "h-11 md:h-9 w-full shrink-0 border-b border-line bg-transparent px-3 text-body text-fg outline-none",
-                "placeholder:text-fg-muted",
+            <div className="flex shrink-0 items-center gap-2 border-b border-line px-3">
+              <Search className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
+              <CommandPrimitive.Input
+                value={search}
+                onValueChange={onSearchChange}
+                placeholder={searchPlaceholder ?? labels.comboboxSearchPlaceholder}
+                className={cn(
+                  "h-11 min-w-0 flex-1 bg-transparent text-body text-fg outline-none md:pointer-fine:h-10",
+                  "placeholder:text-fg-muted focus-visible:outline-none",
+                )}
+              />
+              {loading && (
+                <Loader2
+                  className="size-4 shrink-0 animate-spin text-fg-muted"
+                  aria-hidden="true"
+                />
               )}
-            />
-            <CommandPrimitive.List className="max-h-64 min-h-0 flex-1 overflow-y-auto p-1">
-              <CommandPrimitive.Empty className="px-3 py-6 text-center text-body-sm text-fg-muted">
-                {loading ? loadingLabel : emptyLabel}
-              </CommandPrimitive.Empty>
+            </div>
+            <CommandPrimitive.List
+              aria-busy={loading || undefined}
+              className="max-h-64 min-h-0 flex-1 overflow-y-auto p-1"
+            >
+              {showLoadingRow ? (
+                <CommandPrimitive.Loading>
+                  <div className="flex items-center justify-center gap-2 px-3 py-6 text-body-sm text-fg-muted">
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    {loadingLabel ?? labels.comboboxLoading}
+                  </div>
+                </CommandPrimitive.Loading>
+              ) : (
+                <CommandPrimitive.Empty className="flex flex-col items-center gap-2 px-3 py-6 text-center text-body-sm text-fg-muted">
+                  <SearchX className="size-5" aria-hidden="true" />
+                  {emptyLabel ?? labels.comboboxEmpty}
+                </CommandPrimitive.Empty>
+              )}
               {options.map((option) => (
                 <CommandPrimitive.Item
                   key={option.value}
@@ -127,12 +192,12 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
                   }}
                   className={cn(
                     // Select's option row: same height, radius and highlight.
-                    "flex min-h-11 md:min-h-9 cursor-pointer items-center justify-between gap-2 rounded-sm px-3 py-1",
+                    "flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-sm py-1.5 pr-3 pl-3 md:pointer-fine:min-h-9",
                     "text-body text-fg outline-none",
                     "transition-colors data-[selected=true]:bg-state-hover",
                   )}
                 >
-                  <span className="flex flex-col overflow-hidden text-left">
+                  <span className="flex min-w-0 flex-col text-left">
                     <span className="truncate">{option.label}</span>
                     {option.description && (
                       <span className="truncate text-caption text-fg-muted">

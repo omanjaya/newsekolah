@@ -62,7 +62,7 @@ describe("Combobox", () => {
     for (const shared of [
       "rounded-md",
       "h-11",
-      "md:h-9",
+      "md:pointer-fine:h-9",
       "border",
       "border-(--field-border)",
       "aria-invalid:[--field-border:var(--color-danger)]",
@@ -81,7 +81,8 @@ describe("Combobox", () => {
     const content = list.closest("[data-state]");
     expect(content).toHaveClass("flex", "flex-col");
     expect(list).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
-    expect(screen.getByRole("combobox")).toHaveClass("shrink-0");
+    // The search row (glass, input, spinner) keeps its height.
+    expect(screen.getByRole("combobox").parentElement).toHaveClass("shrink-0");
   });
 
   it("caps the open list to the trigger's width and the room left on screen", async () => {
