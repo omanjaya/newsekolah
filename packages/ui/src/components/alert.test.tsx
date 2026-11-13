@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
@@ -53,5 +54,36 @@ describe("Alert", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Dismiss" }));
     expect(onDismiss).toHaveBeenCalledOnce();
+  });
+
+  // A flex column would make every text run and inline element its own
+  // stacked item, putting the link on a line of its own.
+  it("keeps a sentence with an inline link in normal flow", () => {
+    render(
+      <Alert variant="warning" title="Judul sudah ada">
+        Judul &quot;Laskar Pelangi&quot; sudah ada di katalog. <a href="#title">Lihat</a>
+      </Alert>,
+    );
+    const description = screen.getByRole("link", { name: "Lihat" }).parentElement;
+    expect(description).toHaveClass("text-body-sm");
+    expect(description?.className).not.toMatch(/\b(flex|grid|flex-col)\b/);
+    expect(description).toHaveTextContent('Judul "Laskar Pelangi" sudah ada di katalog. Lihat');
+  });
+
+  it("takes `tone` as the name of its colour, `variant` still honoured", () => {
+    render(
+      <>
+        <Alert tone="success" title="Tersimpan" />
+        <Alert variant="warning" tone="danger" title="Gagal" />
+      </>,
+    );
+    expect(screen.getByRole("status")).toHaveClass("bg-success-soft");
+    expect(screen.getByRole("alert")).toHaveClass("bg-danger-soft");
+  });
+
+  it("forwards a ref to its root", () => {
+    const ref = createRef<HTMLDivElement>();
+    render(<Alert ref={ref} title="Catatan" />);
+    expect(ref.current).toBe(screen.getByRole("status"));
   });
 });
