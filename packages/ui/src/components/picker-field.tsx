@@ -11,7 +11,13 @@ import {
 
 import { cn } from "../utils/cn.js";
 
-import { FIELD_BOX, FIELD_BOX_BUTTON, FIELD_BOX_INVALID, FIELD_ICON_BUTTON } from "./field-box.js";
+import {
+  FIELD_BOX,
+  FIELD_BOX_BUTTON,
+  FIELD_BOX_INVALID,
+  FIELD_ICON_BUTTON,
+  FIELD_ICON_FACE,
+} from "./field-box.js";
 import { PopoverTrigger } from "./popover.js";
 
 /** The ARIA and form props every picker forwards to its trigger. */
@@ -121,10 +127,12 @@ export const PickerField = forwardRef<HTMLButtonElement, PickerFieldProps>(funct
         <button
           type="button"
           aria-label={clearLabel}
-          // right-2 puts the icon's centre where Select's chevron sits.
+          // right-0 (phone) and right-2 put the icon's centre where
+          // Select's chevron sits; my-0 because a margin would shift an
+          // absolutely placed button off centre.
           className={cn(
             FIELD_ICON_BUTTON,
-            "absolute right-0.5 top-1/2 -translate-y-1/2 md:right-2",
+            "absolute right-0 top-1/2 my-0 -translate-y-1/2 md:right-2",
           )}
           onClick={(event) => {
             // This button unmounts with the value; hand focus back to the
@@ -135,7 +143,9 @@ export const PickerField = forwardRef<HTMLButtonElement, PickerFieldProps>(funct
             onClear();
           }}
         >
-          <X aria-hidden="true" />
+          <span className={FIELD_ICON_FACE}>
+            <X aria-hidden="true" />
+          </span>
         </button>
       )}
       {hiddenInputs?.map((input) => (

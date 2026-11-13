@@ -62,6 +62,15 @@ interface DayGridProps {
   onPreview: (date: string | null) => void;
 }
 
+/**
+ * A compact day cell: 44px tall on a touch screen, and 44px wide unless
+ * the screen is too narrow for seven of those inside a popover (16px
+ * collision margin, 12px padding and a 1px border each side: 3.75rem). At
+ * 320px the cells give up a few pixels of width instead of the popover
+ * running off the screen. 40px square once there is a cursor.
+ */
+const COMPACT_CELL = "h-11 w-[min(2.75rem,calc((100vw_-_3.75rem)/7))] md:size-10";
+
 const LONG_DAY: Intl.DateTimeFormatOptions = {
   weekday: "long",
   day: "numeric",
@@ -110,13 +119,20 @@ function bandEdge(date: string, start: string, end: string): BandEdge {
 /**
  * The accent-soft band behind a range. Start and end cover only half a cell
  * so the endpoint pills cap the band; a band that wraps to the next week
- * gets rounded ends at the row's edges instead of a hard cut.
+ * gets rounded ends at the row's edges instead of a hard cut. Inside a row
+ * each piece reaches a pixel into its neighbour: cells narrowed to a
+ * fractional width on a small phone would otherwise show hairline seams
+ * where two antialiased edges meet. The band colour is opaque, so the
+ * overlap never shows.
  */
 function bandPlacement(edge: BandEdge, column: number): string | null {
-  if (edge === "start") return column === 6 ? null : "left-1/2 right-0";
-  if (edge === "end") return column === 0 ? null : "left-0 right-1/2";
+  if (edge === "start") return column === 6 ? null : "left-1/2 -right-px";
+  if (edge === "end") return column === 0 ? null : "-left-px right-1/2";
   if (edge === "middle") {
-    return cn("inset-x-0", column === 0 && "rounded-l-full", column === 6 && "rounded-r-full");
+    return cn(
+      column === 0 ? "left-0 rounded-l-full" : "-left-px",
+      column === 6 ? "right-0 rounded-r-full" : "-right-px",
+    );
   }
   return null;
 }
@@ -196,7 +212,7 @@ export function CalendarDayGrid(props: DayGridProps): ReactElement {
         aria-label={label.filter(Boolean).join(", ")}
         className={cn(
           "group relative p-0 outline-none",
-          fluid ? "h-16 align-top md:h-20" : "size-11 md:size-10",
+          fluid ? "h-16 align-top md:h-20" : COMPACT_CELL,
           disabled ? "cursor-not-allowed" : "cursor-pointer",
         )}
       >
@@ -302,9 +318,12 @@ function DayContent({
       className={cn(
         "relative flex shrink-0 items-center justify-center rounded-full text-sm tabular-nums",
         "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
+        // As wide as the cell up to 40px (36 with a cursor) and square, so
+        // the pill stays round in a narrowed cell. A percentage width adds
+        // nothing to the column's minimum, which a fixed 40px would.
         fluid
           ? "size-8"
-          : "size-10 group-focus-visible:outline-2 group-focus-visible:outline-offset-1 group-focus-visible:outline-accent md:size-9",
+          : "aspect-square w-full max-w-10 group-focus-visible:outline-2 group-focus-visible:outline-offset-1 group-focus-visible:outline-accent md:max-w-9",
         info.outside ? "text-fg-muted opacity-60" : "text-fg",
         inBand && !info.outside && "text-accent-soft-fg",
         info.today && !filled && "font-semibold text-accent",

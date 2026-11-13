@@ -27,6 +27,7 @@ import {
   FIELD_BOX_INVALID,
   FIELD_BOX_WITH_INPUT,
   FIELD_ICON_BUTTON,
+  FIELD_ICON_FACE,
   FIELD_INNER_INPUT,
 } from "./field-box.js";
 import { isInvalid } from "./picker-field.js";
@@ -178,7 +179,9 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
         stepBy(direction);
       }}
     >
-      {direction === 1 ? <Plus aria-hidden="true" /> : <Minus aria-hidden="true" />}
+      <span className={FIELD_ICON_FACE}>
+        {direction === 1 ? <Plus aria-hidden="true" /> : <Minus aria-hidden="true" />}
+      </span>
     </button>
   );
 
@@ -199,7 +202,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
       className={cn(
         FIELD_BOX,
         FIELD_BOX_WITH_INPUT,
-        stepper && "gap-1.5 px-0.5 md:px-1",
+        stepper && "gap-1.5 px-0 md:px-1",
         showInvalid && FIELD_BOX_INVALID,
         disabled && FIELD_BOX_DISABLED,
         className,

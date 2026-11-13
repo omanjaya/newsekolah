@@ -32,11 +32,22 @@ export const FIELD_BOX_INVALID = "border-danger";
 export const FIELD_BOX_DISABLED = "cursor-not-allowed opacity-50";
 
 /**
- * A small round button inside a field (clear, stepper, list toggle): 40px
- * on a touch screen, which is all a 44px field has room for, 24 with a
- * cursor. Placed so its icon lines up with `Select`'s chevron.
+ * A small round button inside a field (clear, stepper, list toggle). On a
+ * touch screen the button is a 44px target, as Checkbox's is: that is one
+ * pixel more each way than the inside of a 44px field, which -my-px hands
+ * back so the field does not grow. What it shows is `FIELD_ICON_FACE`, a
+ * 40px circle there and 24 with a cursor, placed so its icon lines up with
+ * `Select`'s chevron. Wrap the icon in a span with that class.
  */
 export const FIELD_ICON_BUTTON =
-  "inline-flex size-10 md:size-6 shrink-0 items-center justify-center rounded-full text-fg-muted " +
+  "group/icon inline-flex size-11 -my-px shrink-0 items-center justify-center rounded-full " +
+  "text-fg-muted focus-visible:outline-none md:my-0 md:size-6 " +
+  "disabled:pointer-events-none disabled:opacity-40";
+
+/** The visible circle inside a `FIELD_ICON_BUTTON`: hover and the focus ring draw here. */
+export const FIELD_ICON_FACE =
+  "flex size-10 items-center justify-center rounded-full md:size-full [&>svg]:size-4 " +
   "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] " +
-  "hover:bg-bg hover:text-fg disabled:pointer-events-none disabled:opacity-40 [&>svg]:size-4";
+  "group-hover/icon:bg-bg group-hover/icon:text-fg " +
+  "group-focus-visible/icon:outline-2 group-focus-visible/icon:outline-offset-2 " +
+  "group-focus-visible/icon:outline-accent";

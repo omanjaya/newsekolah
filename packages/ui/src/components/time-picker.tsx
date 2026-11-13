@@ -29,6 +29,7 @@ import {
   FIELD_BOX_INVALID,
   FIELD_BOX_WITH_INPUT,
   FIELD_ICON_BUTTON,
+  FIELD_ICON_FACE,
   FIELD_INNER_INPUT,
 } from "./field-box.js";
 import { isInvalid } from "./picker-field.js";
@@ -238,7 +239,8 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
           className={cn(
             FIELD_BOX,
             FIELD_BOX_WITH_INPUT,
-            "pr-0.5 md:pr-2",
+            // Puts the list toggle's icon where Select's chevron sits.
+            "pr-0 md:pr-2",
             showInvalid && FIELD_BOX_INVALID,
             disabled && FIELD_BOX_DISABLED,
             className,
@@ -296,7 +298,9 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
               boxRef.current?.querySelector("input")?.focus();
             }}
           >
-            <ChevronDown aria-hidden="true" />
+            <span className={FIELD_ICON_FACE}>
+              <ChevronDown aria-hidden="true" />
+            </span>
           </button>
           {name && (
             <input type="hidden" name={name} value={minutes === null ? "" : toTime(minutes)} />
