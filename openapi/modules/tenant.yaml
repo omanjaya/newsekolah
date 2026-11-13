@@ -413,6 +413,7 @@ components:
         - accent_color
         - locale
         - timezone
+        - disabled_public_modules
       properties:
         tenant_id:
           type: string
@@ -448,6 +449,20 @@ components:
           type: string
           enum: [sd, smp, sma, smk, other]
           description: Empty until the school profile setup step is completed.
+        disabled_public_modules:
+          type: array
+          description: >-
+            The feature modules with pages an anonymous visitor can open
+            (today only library, for the OPAC) that the school has switched
+            off, so public pages can show a "not available" state and drop
+            their links. Always present; empty while every one of them is on.
+            Deliberately restricted to public-facing modules: the full list
+            is only on Me.disabled_modules, and an anonymous caller learns
+            nothing here that the public endpoints would not already answer
+            with 403 MODULE_DISABLED.
+          items:
+            type: string
+            enum: [library]
     ReportHeaderSigner:
       type: object
       required: [role_label, name]

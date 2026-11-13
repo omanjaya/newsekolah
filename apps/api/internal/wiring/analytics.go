@@ -14,16 +14,26 @@ import (
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
+	platformdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 )
 
 // AnalyticsPermits adapts permits' PendingCount (which takes its own
 // domain.Kind) to analytics' PermitsReader (which takes a plain string,
-// so analytics never imports permits/domain).
-type AnalyticsPermits struct{ Svc *permitsservice.Service }
+// so analytics never imports permits/domain). Every queue counts 0 while
+// the tenant has permits turned off: nobody can act on them then, and the
+// admin dashboard leaves the tiles out.
+type AnalyticsPermits struct {
+	Svc *permitsservice.Service
+	// Flags reads the permits feature flag; nil leaves permits on.
+	Flags ModuleFlagReader
+}
 
 func (p AnalyticsPermits) PendingCount(ctx context.Context, tenantID uuid.UUID, kind string) (int, error) {
+	if on, err := moduleEnabled(ctx, p.Flags, tenantID, platformdomain.ModulePermits); err != nil || !on {
+		return 0, err
+	}
 	return p.Svc.PendingCount(ctx, tenantID, permitsdomain.Kind(kind))
 }
 
@@ -69,9 +79,19 @@ func (a AnalyticsAttendance) TodaySubmittedCount(ctx context.Context, tenantID u
 	return a.Svc.TodaySubmittedCount(ctx, tenantID)
 }
 
-type AnalyticsDiscipline struct{ Svc *disciplineservice.Service }
+// AnalyticsDiscipline feeds the discipline-points and warning-letter
+// signals. While the tenant has discipline turned off it returns no
+// summaries, so the early-warning score ignores both signals.
+type AnalyticsDiscipline struct {
+	Svc *disciplineservice.Service
+	// Flags reads the discipline feature flag; nil leaves discipline on.
+	Flags ModuleFlagReader
+}
 
 func (d AnalyticsDiscipline) StudentSummaries(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]analyticsservice.DisciplineSummary, error) {
+	if on, err := moduleEnabled(ctx, d.Flags, tenantID, platformdomain.ModuleDiscipline); err != nil || !on {
+		return map[uuid.UUID]analyticsservice.DisciplineSummary{}, err
+	}
 	rows, err := d.Svc.RiskTotalsForStudents(ctx, tenantID, studentIDs)
 	if err != nil {
 		return nil, err
@@ -85,14 +105,23 @@ func (d AnalyticsDiscipline) StudentSummaries(ctx context.Context, tenantID uuid
 	return out, nil
 }
 
-type AnalyticsGrading struct{ Svc *gradingservice.Service }
+// AnalyticsGrading feeds the grade-trend signal.
+type AnalyticsGrading struct {
+	Svc *gradingservice.Service
+	// Flags reads the grading feature flag; nil leaves grading on.
+	Flags ModuleFlagReader
+}
 
 // ReportTrends compares each student's current-term published report-score
 // average against the term immediately before it. Available is false when
 // either term has no published report score to average (e.g. the student's
 // first term, or a term whose grades are not yet published): analytics must
-// not invent a trend when the data does not support one.
+// not invent a trend when the data does not support one. While the tenant
+// has grading turned off nobody has a trend.
 func (g AnalyticsGrading) ReportTrends(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]analyticsservice.GradeTrend, error) {
+	if on, err := moduleEnabled(ctx, g.Flags, tenantID, platformdomain.ModuleGrading); err != nil || !on {
+		return map[uuid.UUID]analyticsservice.GradeTrend{}, err
+	}
 	trends, err := g.Svc.ReportTrendsForStudents(ctx, tenantID, studentIDs)
 	if err != nil {
 		return nil, err

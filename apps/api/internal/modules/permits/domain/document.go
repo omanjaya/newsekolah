@@ -26,6 +26,39 @@ const (
 	TemplateKindVisitorBadge    TemplateKind = "visitor_badge"
 )
 
+// OwnerModule names the toggleable feature module whose documents use
+// templates of this kind (the platform console's feature_flags.module
+// value), or "" for a kind owned by an always-on module (class_journal).
+// A kind whose owner module is switched off is hidden from the template
+// screen and refused by the template operations; its rows are kept.
+func (k TemplateKind) OwnerModule() string {
+	switch k {
+	case TemplateKindLeaveLetter:
+		return "permits"
+	case TemplateKindWarningLetter:
+		return "discipline"
+	case TemplateKindVisitorBadge:
+		return "visitors"
+	case TemplateKindMemberCard, TemplateKindItemLabel, TemplateKindClearanceLetter:
+		return "library"
+	case TemplateKindReport:
+		return "reports"
+	default:
+		return ""
+	}
+}
+
+// TemplateKindDisabledError refuses a document template whose kind's
+// owner module is switched off for the tenant. It matches
+// ErrTemplateKindDisabled with errors.Is.
+type TemplateKindDisabledError struct{ Module string }
+
+func (e *TemplateKindDisabledError) Error() string {
+	return "document template kind belongs to disabled module " + e.Module
+}
+
+func (e *TemplateKindDisabledError) Is(target error) bool { return target == ErrTemplateKindDisabled }
+
 type Engine string
 
 const (

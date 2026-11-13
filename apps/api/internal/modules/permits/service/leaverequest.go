@@ -644,17 +644,25 @@ func (s *Service) VerifyDocument(ctx context.Context, tenantID uuid.UUID, code s
 
 // Templates administration.
 
+// ListTemplates lists the tenant's templates, leaving out the kinds whose
+// owner module is switched off (kept, and listed again once it is back).
 func (s *Service) ListTemplates(ctx context.Context, tenantID uuid.UUID) ([]domain.Template, error) {
 	var out []domain.Template
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		out, err = s.repo.ListTemplates(ctx, tenantID)
+		all, err := s.repo.ListTemplates(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		out, err = s.availableTemplates(ctx, tenantID, all)
 		return err
 	})
 	return out, err
 }
 
 func (s *Service) CreateTemplate(ctx context.Context, t domain.Template) (domain.Template, error) {
+	if err := s.requireTemplateKind(ctx, t.TenantID, t.Kind); err != nil {
+		return domain.Template{}, err
+	}
 	if t.Engine == "" {
 		t.Engine = domain.EngineHTML
 	}
@@ -673,12 +681,16 @@ func (s *Service) CreateTemplate(ctx context.Context, t domain.Template) (domain
 func (s *Service) UpdateTemplate(ctx context.Context, tenantID, id uuid.UUID, name, body string, variables []string, letterheadAssetID uuid.NullUUID) (domain.Template, error) {
 	var out domain.Template
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		if _, ok, err := s.repo.GetTemplateByID(ctx, tenantID, id); err != nil {
+		current, ok, err := s.repo.GetTemplateByID(ctx, tenantID, id)
+		if err != nil {
 			return err
-		} else if !ok {
+		}
+		if !ok {
 			return domain.ErrTemplateNotFound
 		}
-		var err error
+		if err := s.requireTemplateKind(ctx, tenantID, current.Kind); err != nil {
+			return err
+		}
 		out, err = s.repo.UpdateTemplate(ctx, tenantID, id, name, body, variables, letterheadAssetID)
 		return err
 	})
@@ -694,6 +706,9 @@ func (s *Service) SetDefaultTemplate(ctx context.Context, tenantID, id uuid.UUID
 		}
 		if !ok {
 			return domain.ErrTemplateNotFound
+		}
+		if err := s.requireTemplateKind(ctx, tenantID, t.Kind); err != nil {
+			return err
 		}
 		out, err = s.repo.SetDefaultTemplate(ctx, tenantID, id, t.Kind)
 		return err

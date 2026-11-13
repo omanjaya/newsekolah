@@ -81,6 +81,12 @@ var permitErrorMap = map[error]error{
 }
 
 func mapError(err error) error {
+	// A template kind whose owner module is off answers like the central
+	// module gate does for that module's own operations.
+	var kindDisabled *domain.TemplateKindDisabledError
+	if errors.As(err, &kindDisabled) {
+		return httpx.ErrModuleDisabled.WithDetails(httpx.ErrorDetail{Field: "module", Code: kindDisabled.Module})
+	}
 	for domainErr, httpErr := range permitErrorMap {
 		if errors.Is(err, domainErr) {
 			return httpErr

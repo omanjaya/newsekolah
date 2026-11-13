@@ -46,9 +46,14 @@ tags:
   - name: audit
     description: Audit log
   - name: permits
-    description: Scan tokens, exit permits, late arrivals, leave requests, documents
+    description: Scan tokens, exit permits, late arrivals, leave requests, workflow definitions
   - name: documents
-    description: Public verification of issued documents; never gated by a feature module
+    description: >-
+      Public verification of issued documents, and the document templates
+      every issuing module (permits, discipline, visitors) renders through.
+      Never gated by a feature module as a whole; a template kind whose
+      owner module is switched off is hidden and refused with 403
+      MODULE_DISABLED.
   - name: discipline
     description: Violations, warning letters, counseling
   - name: grading

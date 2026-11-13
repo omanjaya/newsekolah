@@ -47,9 +47,11 @@ tags:
   - name: audit
     description: Audit log
   - name: permits
-    description: Scan tokens, exit permits, late arrivals, leave requests, documents
+    description: Scan tokens, exit permits, late arrivals, leave requests, workflow definitions
   - name: documents
-    description: Public verification of issued documents; never gated by a feature module
+    description: Public verification of issued documents, and the document templates every issuing module (permits,
+      discipline, visitors) renders through. Never gated by a feature module as a whole; a template kind whose owner
+      module is switched off is hidden and refused with 403 MODULE_DISABLED.
   - name: discipline
     description: Violations, warning letters, counseling
   - name: grading
@@ -14987,10 +14989,10 @@ paths:
   /v1/documents/templates:
     get:
       tags:
-        - permits
+        - documents
       operationId: listDocumentTemplates
       x-permission: manage_settings
-      summary: Document templates of the tenant
+      summary: Document templates of the tenant, without kinds whose owner module is switched off
       responses:
         "200":
           description: Templates
@@ -15011,10 +15013,10 @@ paths:
           $ref: "#/components/responses/Forbidden"
     post:
       tags:
-        - permits
+        - documents
       operationId: createDocumentTemplate
       x-permission: manage_settings
-      summary: Create a document template
+      summary: Create a document template (403 MODULE_DISABLED when its kind's owner module is off)
       requestBody:
         required: true
         content:
@@ -15037,10 +15039,10 @@ paths:
   /v1/documents/templates/{templateId}:
     put:
       tags:
-        - permits
+        - documents
       operationId: updateDocumentTemplate
       x-permission: manage_settings
-      summary: Update a template body
+      summary: Update a template body (403 MODULE_DISABLED when its kind's owner module is off)
       parameters:
         - name: templateId
           in: path
@@ -15090,10 +15092,10 @@ paths:
   /v1/documents/templates/{templateId}/set-default:
     post:
       tags:
-        - permits
+        - documents
       operationId: setDefaultDocumentTemplate
       x-permission: manage_settings
-      summary: Make this template the default of its kind
+      summary: Make this template the default of its kind (403 MODULE_DISABLED when its kind's owner module is off)
       parameters:
         - name: templateId
           in: path
@@ -27797,6 +27799,7 @@ components:
         - accent_color
         - locale
         - timezone
+        - disabled_public_modules
       properties:
         tenant_id:
           type: string
@@ -27837,6 +27840,17 @@ components:
             - smk
             - other
           description: Empty until the school profile setup step is completed.
+        disabled_public_modules:
+          type: array
+          description: 'The feature modules with pages an anonymous visitor can open (today only library, for the OPAC) that the
+            school has switched off, so public pages can show a "not available" state and drop their links. Always
+            present; empty while every one of them is on. Deliberately restricted to public-facing modules: the full
+            list is only on Me.disabled_modules, and an anonymous caller learns nothing here that the public endpoints
+            would not already answer with 403 MODULE_DISABLED.'
+          items:
+            type: string
+            enum:
+              - library
     ReportHeaderSigner:
       type: object
       required:

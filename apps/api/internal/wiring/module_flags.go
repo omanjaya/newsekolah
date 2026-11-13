@@ -45,6 +45,32 @@ func (f ModuleFlag) IsModuleEnabled(ctx context.Context, tenantID uuid.UUID) (bo
 	return moduleEnabled(ctx, f.Flags, tenantID, f.Module)
 }
 
+// PublicFacingModules are the toggleable modules with pages an anonymous
+// visitor can open: library's OPAC. Document verification is ungated
+// (tag documents) and the monitor belongs to always-on attendance.
+var PublicFacingModules = []platformdomain.Module{platformdomain.ModuleLibrary}
+
+// PublicModules serves the public branding view's disabled_public_modules:
+// the switched-off modules among PublicFacingModules, in that order. It is
+// deliberately not the full disabled list, which only signed-in users get
+// (Me.disabled_modules); an anonymous caller learns nothing here the public
+// endpoints would not already answer with 403 MODULE_DISABLED.
+type PublicModules struct{ Flags ModuleFlagReader }
+
+func (p PublicModules) DisabledPublicModules(ctx context.Context, tenantID uuid.UUID) ([]string, error) {
+	disabled := []string{}
+	for _, module := range PublicFacingModules {
+		on, err := moduleEnabled(ctx, p.Flags, tenantID, module)
+		if err != nil {
+			return nil, err
+		}
+		if !on {
+			disabled = append(disabled, string(module))
+		}
+	}
+	return disabled, nil
+}
+
 // moduleEnabled is the nil-safe lookup every cross-module adapter in this
 // package uses before calling into a toggleable module: a missing reader
 // means no flag wiring, which leaves the module on.

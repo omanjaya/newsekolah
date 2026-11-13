@@ -749,10 +749,14 @@ paths:
 
   /v1/documents/templates:
     get:
-      tags: [permits]
+      # Tagged documents, not permits: templates are shared by every issuing
+      # module (leave letters, warning letters, visitor badges), so permits
+      # being switched off must not hide the others. A kind whose owner
+      # module is off is left out here and refused by the writes below.
+      tags: [documents]
       operationId: listDocumentTemplates
       x-permission: manage_settings
-      summary: Document templates of the tenant
+      summary: Document templates of the tenant, without kinds whose owner module is switched off
       responses:
         "200":
           description: Templates
@@ -766,10 +770,10 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
     post:
-      tags: [permits]
+      tags: [documents]
       operationId: createDocumentTemplate
       x-permission: manage_settings
-      summary: Create a document template
+      summary: Create a document template (403 MODULE_DISABLED when its kind's owner module is off)
       requestBody:
         required: true
         content:
@@ -787,10 +791,10 @@ paths:
 
   /v1/documents/templates/{templateId}:
     put:
-      tags: [permits]
+      tags: [documents]
       operationId: updateDocumentTemplate
       x-permission: manage_settings
-      summary: Update a template body
+      summary: Update a template body (403 MODULE_DISABLED when its kind's owner module is off)
       parameters:
         - { name: templateId, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -818,10 +822,10 @@ paths:
 
   /v1/documents/templates/{templateId}/set-default:
     post:
-      tags: [permits]
+      tags: [documents]
       operationId: setDefaultDocumentTemplate
       x-permission: manage_settings
-      summary: Make this template the default of its kind
+      summary: Make this template the default of its kind (403 MODULE_DISABLED when its kind's owner module is off)
       parameters:
         - { name: templateId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:

@@ -77,6 +77,11 @@ func toAPIBranding(b domain.Branding) api.TenantBranding {
 		AccentColor: b.AccentColor,
 		Locale:      api.TenantBrandingLocale(b.Locale),
 		Timezone:    b.Timezone,
+
+		DisabledPublicModules: make([]api.TenantBrandingDisabledPublicModules, 0, len(b.DisabledPublicModules)),
+	}
+	for _, module := range b.DisabledPublicModules {
+		branding.DisabledPublicModules = append(branding.DisabledPublicModules, api.TenantBrandingDisabledPublicModules(module))
 	}
 	if b.ProductName != "" {
 		branding.ProductName = &b.ProductName

@@ -39,6 +39,9 @@ type Dependencies struct {
 	// Flags reads the permits feature flag for the background jobs; nil
 	// leaves the module on for every tenant.
 	Flags service.FlagReader
+	// ModuleFlags reads the other modules permits serves or feeds
+	// (discipline, document template owners); nil leaves them all on.
+	ModuleFlags service.ModuleFlags
 }
 
 type Module struct {
@@ -126,6 +129,9 @@ func Register(deps Dependencies) *Module {
 		documents.NewHTMLPDFRenderer(), clk, deps.Config)
 	if deps.Flags != nil {
 		svc.SetFlags(deps.Flags)
+	}
+	if deps.ModuleFlags != nil {
+		svc.SetModuleFlags(deps.ModuleFlags)
 	}
 	return &Module{Service: svc, Handler: transporthttp.New(svc, clk)}
 }

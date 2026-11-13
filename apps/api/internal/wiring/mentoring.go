@@ -11,6 +11,7 @@ import (
 	gradingdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/domain"
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	mentoringdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring/domain"
+	platformdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
 )
 
 // Mentoring's per-student view composes the early-warning-style signals
@@ -25,9 +26,20 @@ func (a MentoringAttendance) MonthlyStatusCounts(ctx context.Context, tenantID, 
 	return totals, err
 }
 
-type MentoringDiscipline struct{ Svc *disciplineservice.Service }
+// MentoringDiscipline reads a mentee's discipline points. While the tenant
+// has discipline turned off it reports none (0, 0) without reading
+// discipline's records; the web leaves the figures out rather than
+// showing zeros.
+type MentoringDiscipline struct {
+	Svc *disciplineservice.Service
+	// Flags reads the discipline feature flag; nil leaves discipline on.
+	Flags ModuleFlagReader
+}
 
 func (d MentoringDiscipline) StudentPoints(ctx context.Context, tenantID, studentID uuid.UUID) (points, activeCount int, err error) {
+	if on, err := moduleEnabled(ctx, d.Flags, tenantID, platformdomain.ModuleDiscipline); err != nil || !on {
+		return 0, 0, err
+	}
 	summary, err := d.Svc.StudentSummary(ctx, tenantID, studentID)
 	if err != nil {
 		return 0, 0, err

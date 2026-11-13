@@ -173,11 +173,12 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	backgroundFlags := &wiring.LateBoundFlags{}
 	permitsModule := permits.Register(permits.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Bus: eventBus, Hub: hub, Storage: sharedStorage,
-		Schedule:   permitsScheduleLookup{schedules: schedulingModule.ScheduleReader, periods: academicModule.Service, years: schoolModule.Service},
-		Sync:       sync,
-		Discipline: disc,
-		Flags:      wiring.ModuleFlag{Flags: backgroundFlags, Module: platformdomain.ModulePermits},
-		Clock:      clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
+		Schedule:    permitsScheduleLookup{schedules: schedulingModule.ScheduleReader, periods: academicModule.Service, years: schoolModule.Service},
+		Sync:        sync,
+		Discipline:  disc,
+		Flags:       wiring.ModuleFlag{Flags: backgroundFlags, Module: platformdomain.ModulePermits},
+		ModuleFlags: backgroundFlags,
+		Clock:       clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
 	})
 	lateViolations := &lateBoundViolations{}
 	lateDiscipline := &lateBoundDisciplineReader{}
@@ -185,7 +186,8 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Pool: pool, Bus: eventBus, Years: schoolModule.Service,
 		Schedules: schedulingModule.ScheduleReader, Access: schedulingModule.AccessChecker, Journals: schedulingModule.JournalService,
 		Perms: identityModule.Service, Hub: hub,
-		Blocker: permitsBlocker{svc: permitsModule.Service}, Overrider: wiring.PermitsOverrider{Svc: permitsModule.Service},
+		Blocker:    wiring.PermitsBlocker{Svc: permitsModule.Service, Flags: backgroundFlags},
+		Overrider:  wiring.PermitsOverrider{Svc: permitsModule.Service},
 		Violations: lateViolations, Discipline: lateDiscipline, Presence: presence,
 		Letterheads: wiring.ReportHeaderReports{Svc: schoolModule.Service},
 	})
@@ -217,7 +219,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	})
 	disc.inner = wiring.LateArrivalDiscipline{Discipline: disciplineModule.Service, Clock: clock.Real{}, Flags: backgroundFlags}
 	lateViolations.inner = wiring.DisciplineSessionViolations{Recorder: disciplineViolationsAdapter{svc: disciplineModule.Service}, Flags: backgroundFlags}
-	lateDiscipline.inner = disciplineModule.Service
+	lateDiscipline.inner = wiring.AttendanceDiscipline{Svc: disciplineModule.Service, Flags: backgroundFlags}
 
 	// analytics composes its risk signals through adapters over
 	// attendance, discipline and grading's own services (never their
@@ -225,15 +227,18 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	analyticsModule := analytics.Register(analytics.Dependencies{
 		Pool: pool, Years: schoolModule.Service,
 		Attendance: wiring.AnalyticsAttendance{Svc: attendanceModule.Service},
-		Discipline: wiring.AnalyticsDiscipline{Svc: disciplineModule.Service},
-		Grading:    wiring.AnalyticsGrading{Svc: gradingModule.Service},
+		Discipline: wiring.AnalyticsDiscipline{Svc: disciplineModule.Service, Flags: backgroundFlags},
+		Grading:    wiring.AnalyticsGrading{Svc: gradingModule.Service, Flags: backgroundFlags},
 		// Admin dashboard (identity/permits satisfy IdentityReader/
 		// PermitsReader structurally/via a small adapter -- see
 		// wiring/analytics.go). Presence reads the same tracker every
 		// GET /ws/me connection heartbeats, keyed
 		// "<tenantID>:<role>:<userID>" by wsMeHandler.
 		Identity: identityModule.Service,
-		Permits:  wiring.AnalyticsPermits{Svc: permitsModule.Service},
+		Permits:  wiring.AnalyticsPermits{Svc: permitsModule.Service, Flags: backgroundFlags},
+		// Stored early-warning results are read back without the signals
+		// of a module switched off after they were computed.
+		Flags:    backgroundFlags,
 		Presence: wiring.AnalyticsPresence{Presence: presence, Clock: clock.Real{}},
 		Clock:    clock.Real{},
 	})
@@ -318,7 +323,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	mentoringModule := mentoring.Register(mentoring.Dependencies{
 		Pool: pool, Years: schoolModule.Service,
 		Attendance: wiring.MentoringAttendance{Svc: attendanceModule.Service},
-		Discipline: wiring.MentoringDiscipline{Svc: disciplineModule.Service},
+		Discipline: wiring.MentoringDiscipline{Svc: disciplineModule.Service, Flags: backgroundFlags},
 		Grading:    wiring.MentoringGrading{Svc: gradingModule.Service},
 		Flags:      wiring.PlatformFlags{Svc: platformModule.Service},
 		Sealer:     sealer, Clock: clock.Real{},
@@ -409,6 +414,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	}
 	moduleFlags := wiring.NewCachedFlags(platformModule.Service, clock.Real{}, moduleFlagCacheTTL, gatedModules)
 	disabledModules.flags = moduleFlags
+	schoolModule.Service.SetPublicModules(wiring.PublicModules{Flags: moduleFlags})
 	platformModule.Service.OnFlagChanged(moduleFlags.Invalidate)
 	backgroundFlags.Bind(moduleFlags)
 	validateRequest, err := openapivalidate.NewMiddleware(doc, resolveOpenAPIValidationMode(cfg.OpenAPIValidation), logger)
@@ -695,16 +701,9 @@ func (l *lateBoundViolations) ReplaceSessionViolations(ctx context.Context, tena
 }
 
 // lateBoundDisciplineReader breaks the same attendance <-> discipline
-// construction cycle for the homeroom roster's violation summary. inner is
-// the concrete discipline service rather than attendance.DisciplineReader
-// so ViolationSummaryForClass can be built here, over discipline's
-// existing PointTotals, without the discipline module needing a batch
-// query of its own -- discipline's repository has no
-// ListPointTotalsForStudents(student_user_id = any($n)) query, only the
-// per-class ListStudentPointTotals PointTotals already uses, but a
-// homeroom roster is always exactly one class, so scoping by classID
-// instead of by student ID list gets the same one-query result.
-type lateBoundDisciplineReader struct{ inner *disciplineservice.Service }
+// construction cycle for the homeroom roster's violation summary; inner is
+// wiring.AttendanceDiscipline once discipline is built.
+type lateBoundDisciplineReader struct{ inner attendance.DisciplineReader }
 
 func (l *lateBoundDisciplineReader) ViolationSummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (int, int, error) {
 	if l.inner == nil {
@@ -713,22 +712,9 @@ func (l *lateBoundDisciplineReader) ViolationSummary(ctx context.Context, tenant
 	return l.inner.ViolationSummary(ctx, tenantID, academicYearID, studentUserID)
 }
 
-// homeroomClassPointTotalsLimit is passed to PointTotals in place of a
-// per-student ID list: it must cover every student a homeroom class can
-// hold, which is always far below PointTotals' own cap of 500.
-const homeroomClassPointTotalsLimit = 500
-
 func (l *lateBoundDisciplineReader) ViolationSummaryForClass(ctx context.Context, tenantID, classID uuid.UUID) (map[uuid.UUID]attendance.ViolationSummary, error) {
 	if l.inner == nil {
 		return nil, nil
 	}
-	totals, err := l.inner.PointTotals(ctx, tenantID, uuid.NullUUID{UUID: classID, Valid: true}, homeroomClassPointTotalsLimit)
-	if err != nil {
-		return nil, err
-	}
-	out := make(map[uuid.UUID]attendance.ViolationSummary, len(totals))
-	for _, t := range totals {
-		out[t.StudentUserID] = attendance.ViolationSummary{Count: t.RecordCount, Points: t.Total}
-	}
-	return out, nil
+	return l.inner.ViolationSummaryForClass(ctx, tenantID, classID)
 }

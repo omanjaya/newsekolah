@@ -198,6 +198,9 @@ type Service struct {
 	// flags is nil when no flag wiring is configured (tests, tools): the
 	// module then counts as enabled, matching feature_flags' opt-out rule.
 	flags FlagReader
+	// modules reads other modules' flags (see module_flags.go); nil leaves
+	// every module on.
+	modules ModuleFlags
 }
 
 // SetFlags attaches the feature-flag reader the background jobs consult.

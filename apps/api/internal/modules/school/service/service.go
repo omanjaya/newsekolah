@@ -102,6 +102,38 @@ type Service struct {
 	academic AcademicPort
 	identity IdentityPort
 	clk      clock.Clock
+
+	// publicModules is nil until SetPublicModules runs (and in tests):
+	// every public module then counts as on.
+	publicModules PublicModulesReader
+}
+
+// PublicModulesReader lists the switched-off feature modules that have
+// pages an anonymous visitor can open. The wiring layer satisfies it from
+// the platform console's flags, so school never imports the platform
+// module, and decides which modules count as public.
+type PublicModulesReader interface {
+	DisabledPublicModules(ctx context.Context, tenantID uuid.UUID) ([]string, error)
+}
+
+// SetPublicModules attaches the public-module reader the branding view
+// reports from. cmd/api calls it once the flag cache exists.
+func (s *Service) SetPublicModules(reader PublicModulesReader) {
+	s.publicModules = reader
+}
+
+// disabledPublicModules never fails the branding view: a lookup error
+// reads as "none off", the same degrade identity's Me.disabled_modules
+// uses, and the public endpoints still refuse a switched-off module.
+func (s *Service) disabledPublicModules(ctx context.Context, tenantID uuid.UUID) []string {
+	if s.publicModules == nil {
+		return []string{}
+	}
+	modules, err := s.publicModules.DisabledPublicModules(ctx, tenantID)
+	if err != nil || modules == nil {
+		return []string{}
+	}
+	return modules
 }
 
 func New(pool *pgxpool.Pool, repo Repository, mode tenant.Mode, storageClient Storage) *Service {
@@ -155,6 +187,8 @@ func (s *Service) Branding(ctx context.Context, tenantID uuid.UUID) (domain.Bran
 		Locale:         t.Locale,
 		Timezone:       t.Timezone,
 		EducationLevel: t.EducationLevel,
+
+		DisabledPublicModules: s.disabledPublicModules(ctx, t.ID),
 	}
 	b.ProductName = domain.DefaultProductName
 	if v, ok, err := s.repo.GetPlatformSetting(ctx, "product_name"); err == nil && ok && v != "" {

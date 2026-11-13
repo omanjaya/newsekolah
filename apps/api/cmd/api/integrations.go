@@ -18,7 +18,6 @@ import (
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
 	notificationsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/service"
-	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	schoolservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/school/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
@@ -94,17 +93,6 @@ func (a attendanceSyncAdapter) ForceStatus(ctx context.Context, tenantID, studen
 		source = string(attendancedomain.SourceLeave)
 	}
 	return a.force(ctx, tenantID, studentUserID, from, to, statusCode, source, reason)
-}
-
-// permitsBlocker exposes permits decisions to attendance (the overrider is wiring.PermitsOverrider).
-type permitsBlocker struct{ svc *permitsservice.Service }
-
-func (b permitsBlocker) IsBlocked(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (bool, string, error) {
-	blocked, err := b.svc.HasBlockingLateArrival(ctx, tenantID, studentUserID, date)
-	if err != nil || !blocked {
-		return false, "", err
-	}
-	return true, "late_arrival_in_progress", nil
 }
 
 // disciplineViolationsAdapter exposes discipline's per-session violation
