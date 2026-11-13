@@ -24,9 +24,9 @@ import { useState } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
-import { businessNow } from "../../../lib/simulation/clock";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
+import { todayInZone } from "../../attendance/api";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
@@ -84,9 +84,11 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
   const { data } = useClubMembersQuery(clubId, includeLeft);
   const join = useJoinClubMutation(clubId);
   const leave = useLeaveClubMutation();
+  const { me } = useSession();
+  const today = todayInZone(me?.tenant.timezone);
 
   const [studentId, setStudentId] = useState("");
-  const [joinedOn, setJoinedOn] = useState(() => businessNow().toISOString().slice(0, 10));
+  const [joinedOn, setJoinedOn] = useState(today);
 
   const members = data?.data ?? [];
   const nameById = useDirectoryNames(members.map((m) => m.student_user_id));
@@ -196,7 +198,7 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
                     variant="secondary"
                     onClick={() => {
                       leave.mutate(
-                        { membershipId: m.id, leftOn: businessNow().toISOString().slice(0, 10) },
+                        { membershipId: m.id, leftOn: today },
                         {
                           onSuccess: () => {
                             toast.success(t("left"));
@@ -231,7 +233,8 @@ function MeetingsPanel({ clubId }: { clubId: string }): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const { data } = useMeetingsQuery(clubId);
   const createMeeting = useCreateMeetingMutation(clubId);
-  const [meetingDate, setMeetingDate] = useState(() => businessNow().toISOString().slice(0, 10));
+  const { me } = useSession();
+  const [meetingDate, setMeetingDate] = useState(() => todayInZone(me?.tenant.timezone));
   const [selectedMeeting, setSelectedMeeting] = useState<string | null>(null);
 
   const meetings = data?.data ?? [];

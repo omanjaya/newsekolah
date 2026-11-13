@@ -4,14 +4,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MonitorView } from "./monitor-view";
 
-const mocks = vi.hoisted(() => ({
-  snapshot: {
-    isError: false,
-    isLoading: false,
-    error: null,
-    data: undefined,
-  },
-}));
+interface SnapshotState {
+  isError: boolean;
+  isLoading: boolean;
+  error: unknown;
+  data: unknown;
+}
+let snapshot: SnapshotState = { isError: false, isLoading: false, error: null, data: undefined };
 
 vi.mock("next-intl", () => ({
   useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
@@ -19,7 +18,7 @@ vi.mock("next-intl", () => ({
 vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => false }));
 vi.mock("../api", () => ({
   useMonitorSocket: () => "live",
-  useMonitorSnapshotQuery: () => ({ ...mocks.snapshot, refetch: vi.fn() }),
+  useMonitorSnapshotQuery: () => ({ ...snapshot, refetch: vi.fn() }),
   useMonitorPresenceQuery: () => ({ data: undefined }),
 }));
 
@@ -32,13 +31,13 @@ beforeEach(() => {
 
 describe("MonitorView snapshot errors", () => {
   it("blames the token only when the API refused it", () => {
-    mocks.snapshot = { isError: true, isLoading: false, error: apiError(401), data: undefined };
+    snapshot = { isError: true, isLoading: false, error: apiError(401), data: undefined };
     render(<MonitorView />);
     expect(screen.getByText("tokenInvalidTitle")).toBeInTheDocument();
   });
 
   it("reports a server failure as a retryable error, not an invalid token", () => {
-    mocks.snapshot = { isError: true, isLoading: false, error: apiError(500), data: undefined };
+    snapshot = { isError: true, isLoading: false, error: apiError(500), data: undefined };
     render(<MonitorView />);
     expect(screen.queryByText("tokenInvalidTitle")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "actions.retry" })).toBeInTheDocument();

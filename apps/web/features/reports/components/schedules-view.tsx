@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import { formatDateTime, type Locale } from "@newsekolah/i18n";
 import {
   Button,
   ConfirmDialog,
@@ -18,11 +19,12 @@ import {
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarClock, History, MoreHorizontal, Plus } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useCallback, useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import {
   useDeleteReportScheduleMutation,
   useReportSchedulesQuery,
@@ -45,6 +47,8 @@ export function SchedulesView(): ReactElement {
   const tKinds = useTranslations("app.reports.kinds");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const locale = useLocale() as Locale;
+  const timeZone = useSession().me?.tenant.timezone;
 
   const { data, isLoading } = useReportSchedulesQuery();
   const setEnabled = useSetReportScheduleEnabledMutation();
@@ -110,7 +114,7 @@ export function SchedulesView(): ReactElement {
         id: "next_run_at",
         header: t("columns.nextRun"),
         enableSorting: false,
-        cell: ({ row }) => new Date(row.original.next_run_at).toLocaleString(),
+        cell: ({ row }) => formatDateTime(row.original.next_run_at, { locale, timeZone }),
       },
       {
         id: "enabled",
@@ -178,7 +182,7 @@ export function SchedulesView(): ReactElement {
         },
       },
     ],
-    [t, apiErrorMessage, toast, setEnabled, reportKindLabel, cadenceLabel],
+    [t, apiErrorMessage, toast, setEnabled, reportKindLabel, cadenceLabel, locale, timeZone],
   );
 
   return (

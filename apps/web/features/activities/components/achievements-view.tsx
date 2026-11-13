@@ -23,8 +23,8 @@ import { useMemo, useState } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
-import { businessNow } from "../../../lib/simulation/clock";
+import { useCan, useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../attendance/api";
 import { useClassesQuery } from "../../reference/api";
 import { useDirectoryName } from "../../reference/directory-names";
 import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
@@ -248,13 +248,14 @@ function AchievementForm({
   const apiErrorMessage = useApiErrorMessage();
   const create = useCreateAchievementMutation();
   const update = useUpdateAchievementMutation();
+  const { me } = useSession();
 
   const [studentId, setStudentId] = useState(initial?.student_user_id ?? "");
   const [competitionName, setCompetitionName] = useState(initial?.competition_name ?? "");
   const [level, setLevel] = useState<AchievementLevel>(initial?.level ?? "school");
   const [placement, setPlacement] = useState(initial?.placement ?? "");
   const [achievedOn, setAchievedOn] = useState(
-    initial?.achieved_on ?? businessNow().toISOString().slice(0, 10),
+    initial?.achieved_on ?? todayInZone(me?.tenant.timezone),
   );
   const [notes, setNotes] = useState(initial?.notes ?? "");
 

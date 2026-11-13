@@ -23,6 +23,9 @@ vi.mock("../../reference/directory-names", async () => {
   ];
   return { ...directoryNamesStub(people), useDirectorySearch: mocks.search };
 });
+vi.mock("../../../lib/session/session-provider", () => ({
+  useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+}));
 vi.mock("../api", () => ({
   useRecordViolationMutation: () => ({ mutateAsync: mocks.record, isPending: false }),
   useViolationTypesQuery: () => ({
@@ -100,5 +103,20 @@ describe("ViolationRecordForm student search", () => {
       );
     });
     expect(onDone).toHaveBeenCalled();
+  });
+});
+
+describe("ViolationRecordForm date", () => {
+  it("defaults to the school's calendar day, not the UTC one", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // 20:00 UTC on 25 Sep is already 03:00 on 26 Sep in Jakarta.
+    vi.setSystemTime(new Date("2026-09-25T20:00:00Z"));
+    try {
+      const { container } = render(<ViolationRecordForm onDone={vi.fn()} />);
+      const input = container.querySelector<HTMLInputElement>('input[type="date"]');
+      expect(input?.value).toBe("2026-09-26");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

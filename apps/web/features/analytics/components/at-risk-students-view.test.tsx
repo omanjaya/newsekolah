@@ -4,9 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AtRiskStudentsView } from "./at-risk-students-view";
 
-const mocks = vi.hoisted(() => ({
-  query: { data: undefined, isLoading: false, error: null },
-}));
+interface QueryState {
+  data: unknown;
+  isLoading: boolean;
+  error: unknown;
+}
+let query: QueryState = { data: undefined, isLoading: false, error: null };
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -35,7 +38,7 @@ vi.mock("../../student-services/components/service-workspace-nav", () => ({
 vi.mock("../../students/components/student-link", () => ({
   StudentLink: ({ children }: { children: string }) => <span>{children}</span>,
 }));
-vi.mock("../api", () => ({ useAtRiskStudentsQuery: () => mocks.query }));
+vi.mock("../api", () => ({ useAtRiskStudentsQuery: () => query }));
 vi.mock("./policy-dialog", () => ({ PolicyDialog: () => null }));
 vi.mock("./risk-level-summary", () => ({ RiskLevelSummary: () => null }));
 
@@ -48,7 +51,7 @@ const row = (id: string, score: number) => ({
 });
 
 beforeEach(() => {
-  mocks.query = { data: { data: [row("s1", 10), row("s2", 5)] }, isLoading: false, error: null };
+  query = { data: { data: [row("s1", 10), row("s2", 5)] }, isLoading: false, error: null };
 });
 
 describe("AtRiskStudentsView", () => {
@@ -65,7 +68,7 @@ describe("AtRiskStudentsView", () => {
   });
 
   it("explains a missing assignment and offers a way back instead of a bare alert", () => {
-    mocks.query = {
+    query = {
       data: undefined,
       isLoading: false,
       error: new ApiError({ status: 403, code: "FORBIDDEN", message: "forbidden" }),
