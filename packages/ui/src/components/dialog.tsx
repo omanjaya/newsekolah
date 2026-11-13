@@ -3,6 +3,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
 
+import { useReturnFocus } from "../hooks/use-return-focus.js";
 import { cn } from "../utils/cn.js";
 
 import {
@@ -63,7 +64,9 @@ export interface DialogContentProps extends ComponentPropsWithoutRef<
  * indicator. In both, the header stays put, the body scrolls, and the
  * footer stays in reach, including a form's own trailing action row (see
  * `dialog-body` in styles.css), so existing dialogs get all of this
- * without changes.
+ * without changes. On closing, focus goes back to the element that had it
+ * when the dialog opened, even when the dialog was opened from state
+ * rather than a `DialogTrigger`.
  */
 export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(function DialogContent(
   {
@@ -75,12 +78,15 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
     footer,
     icon,
     size = "md",
+    onOpenAutoFocus,
+    onCloseAutoFocus,
     children,
     ...props
   },
   ref,
 ) {
   const labels = useUiLabels();
+  const returnFocus = useReturnFocus(onOpenAutoFocus, onCloseAutoFocus);
   return (
     <DialogPrimitive.Portal>
       <OverlayScrim closeAnimation="responsive" />
@@ -104,6 +110,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
           className,
         )}
         {...props}
+        {...returnFocus}
       >
         <GrabHandle className="sm:hidden" />
         {hideHeader ? (

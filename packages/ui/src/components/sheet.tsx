@@ -3,6 +3,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
 
+import { useReturnFocus } from "../hooks/use-return-focus.js";
 import { cn } from "../utils/cn.js";
 
 import {
@@ -59,7 +60,8 @@ export interface SheetContentProps extends ComponentPropsWithoutRef<
  * The same layer as `Dialog`'s phone layout (grab handle, title role,
  * scrolling body, sticky footer, safe-area padding), so a sheet and a
  * dialog on a phone are one object. A drawer slides in from the right at
- * the sheet's pace instead.
+ * the sheet's pace instead. Like `Dialog`, it gives focus back to the
+ * element that had it when it opened.
  */
 export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(function SheetContent(
   {
@@ -72,12 +74,15 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
     icon,
     side = "bottom",
     size = "md",
+    onOpenAutoFocus,
+    onCloseAutoFocus,
     children,
     ...props
   },
   ref,
 ) {
   const labels = useUiLabels();
+  const returnFocus = useReturnFocus(onOpenAutoFocus, onCloseAutoFocus);
   const drawer = side === "right";
   return (
     <DialogPrimitive.Portal>
@@ -108,6 +113,7 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
           className,
         )}
         {...props}
+        {...returnFocus}
       >
         <GrabHandle className={drawer ? "sm:hidden" : undefined} />
         {hideHeader ? (
