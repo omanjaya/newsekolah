@@ -106,8 +106,15 @@ type Story = StoryObj<typeof IconButton>;
 
 export const Variants: Story = { render: () => <Matrix /> };
 export const ArtboardHeader: Story = { render: () => <Header /> };
-export const SecondaryOnCard: Story = { render: () => <OnCard /> };
-export const SecondaryOnCardDark: Story = { globals: { theme: "dark" }, render: () => <OnCard /> };
+export const SecondaryOnCard: Story = {
+  parameters: { layout: "fullscreen" },
+  render: () => <OnCard />,
+};
+export const SecondaryOnCardDark: Story = {
+  parameters: { layout: "fullscreen" },
+  globals: { theme: "dark" },
+  render: () => <OnCard />,
+};
 export const TooltipShown: Story = {
   render: () => (
     <TooltipProvider delayDuration={0}>
