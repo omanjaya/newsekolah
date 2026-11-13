@@ -341,3 +341,6 @@ export {
 } from "./hooks/use-camera-scanner.js";
 export { QrPanelSkeleton } from "./components/qr-panel.js";
 export { TableFooter } from "./components/table.js";
+
+// Surfaces and content (overhaul wave 2, stream 1, review fixes).
+export { UiLink } from "./components/ui-link.js";
