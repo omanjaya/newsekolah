@@ -34,14 +34,82 @@ describe("NumberInput", () => {
     expect(input).toHaveAttribute("inputmode", "decimal");
 
     await userEvent.type(input, "8a5.5x");
-    expect(input).toHaveValue("85,5");
+    expect(input).toHaveValue("85.5");
     expect(onChange).toHaveBeenLastCalledWith(85.5);
     expect(onChange.mock.calls.every(([value]) => value === null || !Number.isNaN(value))).toBe(
       true,
     );
+    await userEvent.tab();
+    expect(input).toHaveValue("85,5");
 
     await userEvent.clear(input);
     expect(onChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it("reads grouping by the locale and drops a fraction in a whole-number field", async () => {
+    const onChange = vi.fn();
+    render(<ControlledNumberInput onChange={onChange} />);
+    const input = screen.getByRole("spinbutton", { name: "Nilai" });
+
+    await userEvent.type(input, "85,5");
+    expect(onChange).toHaveBeenLastCalledWith(85);
+    await userEvent.clear(input);
+    await userEvent.type(input, "1.500.000");
+    expect(onChange).toHaveBeenLastCalledWith(1500000);
+    await userEvent.tab();
+    expect(input).toHaveValue("1500000");
+  });
+
+  it("leaves a value that is only tabbed through untouched", async () => {
+    const onChange = vi.fn();
+    render(
+      <>
+        <ControlledNumberInput value={85.25} step={0.1} onChange={onChange} />
+        <NumberInput aria-label="Hari" value={2.5} onChange={onChange} />
+        <NumberInput aria-label="Sesi" value={0} min={1} max={10} onChange={onChange} />
+      </>,
+    );
+    const score = screen.getByRole("spinbutton", { name: "Nilai" });
+    // Shown in full: rounding is for what is typed, not for what is stored.
+    expect(score).toHaveValue("85,25");
+    expect(screen.getByRole("spinbutton", { name: "Hari" })).toHaveValue("2,5");
+
+    score.focus();
+    expect(score).toHaveValue("85,25");
+    await userEvent.tab();
+    await userEvent.tab();
+    await userEvent.tab();
+    await userEvent.tab();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(score).toHaveValue("85,25");
+  });
+
+  it("rounds an edited over-precise value on blur", async () => {
+    const onChange = vi.fn();
+    render(<ControlledNumberInput value={85.25} step={0.1} onChange={onChange} />);
+    const input = screen.getByRole("spinbutton", { name: "Nilai" });
+
+    await userEvent.click(input);
+    await userEvent.keyboard("{Home}{Delete}9");
+    expect(input).toHaveValue("95,25");
+    expect(onChange).toHaveBeenLastCalledWith(95.25);
+    await userEvent.tab();
+    expect(onChange).toHaveBeenLastCalledWith(95.3);
+    expect(input).toHaveValue("95,3");
+  });
+
+  it("offers the full keyboard only when negatives are asked for", () => {
+    render(
+      <>
+        <NumberInput aria-label="Saldo" min={-100} />
+        <NumberInput aria-label="Jumlah" />
+      </>,
+    );
+    expect(screen.getByRole("spinbutton", { name: "Saldo" })).toHaveAttribute("inputmode", "text");
+    expect(screen.getByRole("spinbutton", { name: "Jumlah" })).toHaveAttribute(
+      "inputmode",
+      "numeric",
+    );
   });
 
   it("rounds and clamps on blur", async () => {

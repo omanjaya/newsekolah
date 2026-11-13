@@ -39,13 +39,22 @@ export interface NumberInputProps extends Omit<
   /** The number, or null while the field is empty. */
   value?: number | null;
   defaultValue?: number | null;
-  /** Called on every keystroke that changes the number, and once more on blur if clamping changed it. Never NaN. */
+  /**
+   * Called on every keystroke that changes the number, and once more on
+   * blur if rounding or clamping what was typed changed it. A field only
+   * tabbed through never calls it. Never NaN.
+   */
   onChange?: (value: number | null) => void;
+  /** Lower bound for typing and stepping. Set it below 0 to allow negatives on a phone keypad. */
   min?: number;
   max?: number;
   /** Arrow keys and stepper buttons move by this much. Default 1. */
   step?: number;
-  /** Fraction digits kept. Defaults to the step's own (step 0.5 keeps 1, step 1 keeps none). */
+  /**
+   * Fraction digits a typed number is rounded to. Defaults to the step's
+   * own (step 0.5 keeps 1, step 1 keeps none). A value that already has
+   * more digits is shown in full until someone edits it.
+   */
   precision?: number;
   /** Shows minus and plus buttons either side of the number. */
   stepper?: boolean;
@@ -63,12 +72,25 @@ export interface NumberInputProps extends Omit<
   inputClassName?: string;
 }
 
+interface Draft {
+  /** The text as typed. */
+  text: string;
+  /** The number the text stood for when typed; if the caller replaces it, the text yields. */
+  value: number | null;
+  /** Typed into since focus. Only an edited value is rounded and clamped on blur. */
+  edited: boolean;
+  /** Fraction digits typing may hold: `precision`, or more if the value had more at focus. */
+  fractionLimit: number;
+}
+
 /**
  * A number field that never hands the caller NaN: typing keeps only what a
- * number can hold, the value is `number | null`, and on blur it is rounded
- * to `precision` and clamped to `min`/`max`. Arrow up/down step it. The
- * decimal separator follows the locale but either key works, since a
- * phone's keypad offers whichever its region uses.
+ * number can hold, the value is `number | null`, and once someone has typed
+ * into it, blur rounds it to `precision` and clamps it to `min`/`max`.
+ * Arrow up/down step it. Separators follow the locale ("1.500.000,5" in
+ * Indonesian), and a lone "." or "," with few enough digits after it is a
+ * decimal point either way, since a phone's keypad offers whichever its
+ * region uses.
  */
 export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(function NumberInput(
   {
@@ -105,15 +127,18 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
   const id = idProp ?? generatedId;
   const precision = precisionProp ?? fractionDigitsOf(step);
   const allowNegative = min === undefined || min < 0;
+  const negativeKeypad = min !== undefined && min < 0;
   const [rawValue, setValue] = useControllableState(valueProp, defaultValue, onChange);
   const value = rawValue !== null && Number.isFinite(rawValue) ? rawValue : null;
-  // While editing, the text and the number it stood for when typed. If the
-  // caller then rejects or replaces the number, the text yields to it.
-  const [draft, setDraft] = useState<{ text: string; value: number | null } | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
 
-  const editText = (next: number | null) =>
-    next === null ? "" : formatNumber(next, locale, { precision, useGrouping: false });
-  let shown = value === null ? "" : formatNumber(value, locale, { precision, useGrouping });
+  // Rounding is for what someone types, not for a value they only looked
+  // at: a stored 85,25 in a step-0.1 field shows as 85,25, not 85,3.
+  const digitsOf = (next: number) => Math.min(Math.max(precision, fractionDigitsOf(next)), 20);
+  const format = (next: number, grouping: boolean) =>
+    formatNumber(next, locale, { precision: digitsOf(next), useGrouping: grouping });
+  const editText = (next: number | null) => (next === null ? "" : format(next, false));
+  let shown = value === null ? "" : format(value, useGrouping);
   if (draft) shown = draft.value === value ? draft.text : editText(value);
 
   const normalize = (next: number) => clampNumber(roundTo(next, precision), min, max);
@@ -122,7 +147,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     const base = value ?? (direction === 1 ? (min ?? 0) - step : (max ?? 0) + step);
     const next = normalize(base + direction * step);
     setValue(next);
-    if (draft) setDraft({ text: editText(next), value: next });
+    if (draft) setDraft({ ...draft, text: editText(next), value: next });
   }
 
   function onInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -191,7 +216,10 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
         id={id}
         type="text"
         role="spinbutton"
-        inputMode={precision > 0 ? "decimal" : "numeric"}
+        // The numeric and decimal keypads have no minus key, so a field
+        // that is meant to take negatives (an explicit min below 0) gets
+        // the full keyboard. An unset min still accepts a typed minus.
+        inputMode={negativeKeypad ? "text" : precision > 0 ? "decimal" : "numeric"}
         autoComplete="off"
         aria-valuenow={value ?? undefined}
         aria-valuemin={min}
@@ -202,19 +230,30 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
         value={shown}
         className={cn(FIELD_INNER_INPUT, "tabular-nums", alignment, inputClassName)}
         onFocus={(event) => {
-          setDraft({ text: editText(value), value });
+          setDraft({
+            text: editText(value),
+            value,
+            edited: false,
+            fractionLimit: value === null ? precision : digitsOf(value),
+          });
           onFocus?.(event);
         }}
         onChange={(event) => {
-          const text = sanitizeNumberText(event.target.value, { locale, precision, allowNegative });
-          const next = parseNumberText(text, locale);
-          setDraft({ text, value: next });
+          const fractionLimit = draft?.fractionLimit ?? precision;
+          const text = sanitizeNumberText(event.target.value, {
+            locale,
+            precision: fractionLimit,
+            allowNegative,
+          });
+          const next = parseNumberText(text, { locale, precision: fractionLimit });
+          setDraft({ text, value: next, edited: true, fractionLimit });
           if (next !== value) setValue(next);
         }}
         onKeyDown={onInputKeyDown}
         onBlur={(event) => {
+          const edited = draft?.edited ?? false;
           setDraft(null);
-          if (value !== null) {
+          if (edited && value !== null) {
             const next = normalize(value);
             if (next !== value) setValue(next);
           }
