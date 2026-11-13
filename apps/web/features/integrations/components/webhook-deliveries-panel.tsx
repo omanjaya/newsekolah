@@ -10,6 +10,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import {
@@ -36,7 +37,7 @@ export function WebhookDeliveriesPanel({
   const endpoints = useWebhookEndpointsQuery();
   const [cursors, setCursors] = useState<string[]>([""]);
   const cursor = cursors[cursors.length - 1] ?? "";
-  const { data, isLoading } = useWebhookDeliveriesQuery(endpointId, cursor);
+  const { data, isLoading, isError, refetch } = useWebhookDeliveriesQuery(endpointId, cursor);
   const retry = useRetryWebhookDeliveryMutation();
 
   function resetPaging() {
@@ -142,11 +143,15 @@ export function WebhookDeliveriesPanel({
         isLoading={isLoading}
         getRowId={(delivery) => delivery.id}
         emptyState={
-          <EmptyState
-            icon={<History aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
+          isError && !data ? (
+            <QueryError retry={() => refetch()} />
+          ) : (
+            <EmptyState
+              icon={<History aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          )
         }
       />
 

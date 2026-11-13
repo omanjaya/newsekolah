@@ -6,6 +6,7 @@ import { Laptop, Smartphone } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { usePushDevicesQuery, useWebPush } from "../../notifications/push-api";
 
@@ -77,6 +78,8 @@ export function PushDevicesSection(): ReactElement {
         <h3 className="text-[13px] font-medium text-fg">{t("devicesTitle")}</h3>
         {devices.isLoading ? (
           <Skeleton className="h-16 w-full" />
+        ) : devices.isError && !devices.data ? (
+          <QueryError retry={() => devices.refetch()} />
         ) : items.length === 0 ? (
           <p className="text-[13px] text-fg-muted">{t("noDevices")}</p>
         ) : (

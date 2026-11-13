@@ -213,9 +213,9 @@ export function AuditLogsView(): ReactElement {
         )}
       </div>
 
-      {isError && !data ? (
-        <QueryError retry={() => refetch()} />
-      ) : (
+      {
+        // A failed read renders inside the table's empty slot so the filter
+        // bar stays reachable and a bad filter can still be changed or reset.
         <DataTable
           stateKey="features/audit/components/audit-logs-view:1"
           mode="cursor"
@@ -239,14 +239,18 @@ export function AuditLogsView(): ReactElement {
           getRowId={(entry) => entry.id}
           onRowActivate={setSelected}
           emptyState={
-            <EmptyState
-              icon={<History aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
+            isError && !data ? (
+              <QueryError retry={() => refetch()} />
+            ) : (
+              <EmptyState
+                icon={<History aria-hidden="true" />}
+                title={t("emptyTitle")}
+                description={t("emptyBody")}
+              />
+            )
           }
         />
-      )}
+      }
 
       <div className="flex justify-end gap-2">
         <Button
