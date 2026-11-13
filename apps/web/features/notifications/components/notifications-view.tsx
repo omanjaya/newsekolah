@@ -33,6 +33,7 @@ import {
   useMarkAllReadMutation,
   useMarkReadMutation,
   useNotificationsQuery,
+  useUnreadCountQuery,
 } from "../api";
 import { openableHref } from "../lib/openable-href";
 
@@ -58,7 +59,10 @@ export function NotificationsView(): ReactElement {
   const markRead = useMarkReadMutation();
   const markAllRead = useMarkAllReadMutation();
   const items = data?.data ?? [];
-  const hasUnread = items.some((n) => !n.read_at);
+  // Mark-all acts on every notification, not just the loaded page, so the
+  // server count decides whether it is worth offering.
+  const unreadCount = useUnreadCountQuery();
+  const hasUnread = (unreadCount.data?.count ?? 0) > 0 || items.some((n) => !n.read_at);
   const isFiltering = search.trim() !== "" || kind !== "";
   const dayGroups = groupByDay(items, (item) => item.created_at, me?.tenant.timezone);
   const dayLabel = useDayLabel();

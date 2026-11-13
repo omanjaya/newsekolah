@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+const unread = vi.hoisted(() => ({ count: 0 }));
+
 import { NotificationsView } from "./notifications-view";
 
 vi.mock("next-intl", () => ({
@@ -25,6 +27,7 @@ vi.mock("../api", () => ({
     isError: false,
     refetch: vi.fn(),
   }),
+  useUnreadCountQuery: () => ({ data: { count: unread.count } }),
   useMarkReadMutation: () => ({ mutate: vi.fn() }),
   useMarkAllReadMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
@@ -38,5 +41,17 @@ describe("NotificationsView", () => {
     const panel = document.getElementById(controls ?? "");
     expect(panel).toHaveAttribute("role", "tabpanel");
     expect(panel).toHaveTextContent("emptyTitle");
+  });
+
+  it("enables mark-all-read from the server unread count even when the loaded page has none", () => {
+    unread.count = 3;
+    render(<NotificationsView />);
+    expect(screen.getByRole("button", { name: "markAllRead" })).toBeEnabled();
+    unread.count = 0;
+  });
+
+  it("disables mark-all-read when nothing is unread", () => {
+    render(<NotificationsView />);
+    expect(screen.getByRole("button", { name: "markAllRead" })).toBeDisabled();
   });
 });
