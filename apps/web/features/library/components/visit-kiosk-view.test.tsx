@@ -48,4 +48,23 @@ describe("VisitKioskView", () => {
     expect(screen.getByText("issueFailedTitle")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "retry" })).toBeInTheDocument();
   });
+
+  it("retries by itself after a failed renewal and keeps the last QR meanwhile", () => {
+    issueState.current = {
+      data: { token: "tok", expires_at: new Date(Date.now() + 30_000).toISOString() },
+      isError: false,
+      isPending: false,
+    };
+    const { rerender } = render(<VisitKioskView />);
+    mutate.mockClear();
+
+    issueState.current = { data: undefined, isError: true, isPending: false };
+    rerender(<VisitKioskView />);
+
+    expect(screen.getByText("issueFailedTitle")).toBeInTheDocument();
+    act(() => {
+      vi.advanceTimersByTime(5100);
+    });
+    expect(mutate).toHaveBeenCalledTimes(1);
+  });
 });
