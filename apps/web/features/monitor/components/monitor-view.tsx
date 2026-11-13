@@ -1,11 +1,13 @@
 "use client";
 
+import { ApiError } from "@newsekolah/api-client";
 import { Alert, Button, EmptyState, Input, PageHeader, Skeleton } from "@newsekolah/ui";
 import { MonitorSmartphone, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useCan } from "../../../lib/session/session-provider";
 import {
   useMonitorPresenceQuery,
@@ -110,11 +112,20 @@ function MonitorDisplay({
   const presence = useMonitorPresenceQuery(canSeePresence);
 
   if (snapshot.isError) {
+    // Only a refused token means the token is wrong; a network or server
+    // failure says so and offers a retry instead of blaming the token.
+    const tokenRefused =
+      snapshot.error instanceof ApiError &&
+      (snapshot.error.status === 401 || snapshot.error.status === 403);
     return (
       <div className="flex flex-col gap-4 p-6">
-        <Alert variant="warning" title={t("tokenInvalidTitle")}>
-          {t("tokenInvalidBody")}
-        </Alert>
+        {tokenRefused ? (
+          <Alert variant="warning" title={t("tokenInvalidTitle")}>
+            {t("tokenInvalidBody")}
+          </Alert>
+        ) : (
+          <QueryError retry={() => snapshot.refetch()} />
+        )}
         <Button variant="secondary" onClick={onForget} className="w-fit">
           {t("tokenForget")}
         </Button>
