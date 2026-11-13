@@ -1,7 +1,10 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
 
+import { Button } from "./button.js";
 import { Combobox } from "./combobox.js";
+import { Dialog, DialogClose, DialogContent } from "./dialog.js";
+import { Field } from "./field.js";
 import { Select } from "./select.js";
 
 /** Select and Combobox side by side: one field, two ways to pick, in every state. */
@@ -69,3 +72,54 @@ type Story = StoryObj<typeof Gallery>;
 export const Light: Story = {};
 export const Dark: Story = { globals: { theme: "dark" } };
 export const Phone: Story = { parameters: { layout: "fullscreen" }, decorators: [phoneFrame] };
+
+/**
+ * Closed fields inside an open dialog: every Radix overlay carries
+ * data-state="open", and the chevrons must still point down until their
+ * own list opens.
+ */
+function InDialogDemo() {
+  const [teacher, setTeacher] = useState("");
+  const [search, setSearch] = useState("");
+  return (
+    <Dialog defaultOpen>
+      <DialogContent
+        size="sm"
+        title="Ubah kelas"
+        description="Wali kelas dan ruang berlaku mulai semester ini."
+        footer={
+          <>
+            <DialogClose asChild>
+              <Button variant="secondary" size="sm">
+                Batal
+              </Button>
+            </DialogClose>
+            <Button size="sm">Simpan</Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <Field label="Kelas" required>
+            <Select options={CLASSES} defaultValue="c9" />
+          </Field>
+          <Field label="Wali kelas" hint="Dicari dari daftar guru aktif.">
+            <Combobox
+              options={TEACHERS}
+              value={teacher}
+              onValueChange={setTeacher}
+              search={search}
+              onSearchChange={setSearch}
+              placeholder="Pilih guru"
+            />
+          </Field>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export const InDialog: StoryObj<typeof InDialogDemo> = { render: () => <InDialogDemo /> };
+export const InDialogDark: StoryObj<typeof InDialogDemo> = {
+  render: () => <InDialogDemo />,
+  globals: { theme: "dark" },
+};

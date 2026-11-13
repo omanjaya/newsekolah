@@ -109,7 +109,8 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
         aria-describedby={attributes["aria-describedby"]}
         aria-invalid={attributes["aria-invalid"]}
         className={cn(
-          "flex w-full min-w-0 items-center justify-between gap-2 rounded-md bg-surface text-fg",
+          // `group/trigger` scopes the chevron's turn to this trigger, as in Select.
+          "group/trigger flex w-full min-w-0 items-center justify-between gap-2 rounded-md bg-surface text-fg",
           FIELD_HEIGHT[size],
           FIELD_PADDING[size],
           FIELD_TEXT[size],
@@ -124,7 +125,7 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
           {selected ? selected.label : (placeholder ?? labels.comboboxPlaceholder)}
         </span>
         <ChevronDown
-          className="size-4 shrink-0 text-fg-muted transition-transform duration-fast in-data-[state=open]:rotate-180"
+          className="size-4 shrink-0 text-fg-muted transition-transform duration-fast group-data-[state=open]/trigger:rotate-180"
           aria-hidden="true"
         />
       </PopoverPrimitive.Trigger>

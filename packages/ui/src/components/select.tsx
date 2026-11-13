@@ -91,7 +91,10 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
         aria-invalid={attributes["aria-invalid"]}
         aria-required={attributes["aria-required"]}
         className={cn(
-          "flex w-full min-w-0 items-center justify-between gap-2 rounded-md bg-surface text-fg",
+          // `group/trigger` scopes the chevron's turn to this trigger's own
+          // open state: a bare `in-data-[state=open]` would also match an
+          // open Dialog, Sheet or Popover around a closed Select.
+          "group/trigger flex w-full min-w-0 items-center justify-between gap-2 rounded-md bg-surface text-fg",
           FIELD_HEIGHT[size],
           FIELD_PADDING[size],
           FIELD_TEXT[size],
@@ -109,7 +112,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
         </span>
         <SelectPrimitive.Icon asChild>
           <ChevronDown
-            className="size-4 shrink-0 text-fg-muted transition-transform duration-fast in-data-[state=open]:rotate-180"
+            className="size-4 shrink-0 text-fg-muted transition-transform duration-fast group-data-[state=open]/trigger:rotate-180"
             aria-hidden="true"
           />
         </SelectPrimitive.Icon>
