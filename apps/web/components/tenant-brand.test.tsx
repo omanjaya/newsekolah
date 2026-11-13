@@ -26,7 +26,7 @@ describe("TenantBrand", () => {
     // No product-name text, no tenant name text, no logo image — just placeholders.
     expect(screen.queryByText("SION")).not.toBeInTheDocument();
     expect(container.querySelector("img")).not.toBeInTheDocument();
-    expect(container.querySelectorAll(".animate-pulse")).toHaveLength(2);
+    expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(2);
   });
 
   it("shows only the mark skeleton in mark mode while loading, no name placeholder", () => {
@@ -34,7 +34,7 @@ describe("TenantBrand", () => {
 
     const { container } = render(<TenantBrand mark />);
 
-    expect(container.querySelectorAll(".animate-pulse")).toHaveLength(1);
+    expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(1);
   });
 
   it("renders the tenant's logo and name once branding has loaded", () => {
