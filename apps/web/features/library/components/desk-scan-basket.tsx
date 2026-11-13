@@ -52,45 +52,47 @@ export function DeskScanBasket({
 
   return (
     <div className="flex flex-col gap-3">
-      {items.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.library aria-hidden="true" />}
-          title={t(`emptyTitle.${mode}`)}
-          description={t(`emptyBody.${mode}`)}
-        />
-      ) : (
-        <ul className="flex flex-col gap-1.5" aria-live="polite">
-          {items.map((item) => (
-            <li
-              key={item.barcode}
-              data-state={item.state}
-              className={cn(
-                "flex items-center gap-2.5 rounded-sm border px-3 py-2",
-                ROW_ACCENT[item.state],
-              )}
-            >
-              <RowIcon state={item.state} />
-              <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-[13px] font-medium text-fg">{item.title}</span>
-                <span className="truncate text-[12px] text-fg-muted">
-                  {item.barcode}
-                  {item.detail ? ` · ${item.detail}` : ""}
-                </span>
-              </div>
-              {(item.state === "pending" || item.state === "blocked") && (
-                <IconButton
-                  icon={<X />}
-                  aria-label={t("removeFromList", { barcode: item.barcode })}
-                  variant="ghost"
-                  onClick={() => {
-                    onRemove(item.barcode);
-                  }}
-                />
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+      <div aria-live="polite">
+        {items.length === 0 ? (
+          <EmptyState
+            icon={<domainIcons.library aria-hidden="true" />}
+            title={t(`emptyTitle.${mode}`)}
+            description={t(`emptyBody.${mode}`)}
+          />
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {items.map((item) => (
+              <li
+                key={item.barcode}
+                data-state={item.state}
+                className={cn(
+                  "flex items-center gap-2.5 rounded-sm border px-3 py-2",
+                  ROW_ACCENT[item.state],
+                )}
+              >
+                <RowIcon state={item.state} />
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-[13px] font-medium text-fg">{item.title}</span>
+                  <span className="truncate text-[12px] text-fg-muted">
+                    {item.barcode}
+                    {item.detail ? ` · ${item.detail}` : ""}
+                  </span>
+                </div>
+                {(item.state === "pending" || item.state === "blocked") && (
+                  <IconButton
+                    icon={<X />}
+                    aria-label={t("removeFromList", { barcode: item.barcode })}
+                    variant="ghost"
+                    onClick={() => {
+                      onRemove(item.barcode);
+                    }}
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {mode === "borrow" && (
         <Button

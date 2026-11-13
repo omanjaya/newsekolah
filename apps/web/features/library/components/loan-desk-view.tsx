@@ -13,6 +13,7 @@ import {
 import { Undo2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+import { useEffect, useRef } from "react";
 
 import { bentoCells, tileColumns } from "../../../lib/layout/bento";
 import { useLibraryDashboardQuery } from "../dashboard-api";
@@ -45,6 +46,17 @@ export function LoanDeskView(): ReactElement {
   const session = useDeskSession();
   const dashboard = useLibraryDashboardQuery();
 
+  // The shared scanner field only focuses on mount, so hand focus back to it
+  // after a member is picked or the session ends, and after each scan (the
+  // field is disabled while a scan resolves, which drops focus).
+  const scanRowRef = useRef<HTMLDivElement>(null);
+  const memberId = session.member?.userId ?? null;
+  const { scanning } = session;
+  useEffect(() => {
+    if (scanning) return;
+    scanRowRef.current?.querySelector("input")?.focus();
+  }, [memberId, scanning]);
+
   const pendingCounts = {
     borrow: confirmableItems(session.basket.borrow).length,
     return: 0,
@@ -67,7 +79,7 @@ export function LoanDeskView(): ReactElement {
             onClear={session.endSession}
           />
 
-          <div className="flex flex-wrap items-end gap-3">
+          <div ref={scanRowRef} className="flex flex-wrap items-end gap-3">
             <BarcodeScannerField
               label={session.member ? t(`modes.scanLabel.${session.mode}`) : t("member.scanLabel")}
               onScan={session.handleScan}
