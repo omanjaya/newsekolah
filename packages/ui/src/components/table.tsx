@@ -109,8 +109,30 @@ export function TableRow({ className, ...props }: ComponentPropsWithoutRef<"tr">
   );
 }
 
+/**
+ * A header cell. In `TableHeader` it is a column header on the sunken band:
+ * caption-size muted label, at least 40px tall (`h-10` is a minimum in a
+ * table), with its own vertical padding so a header of several lines (a
+ * code over its weight) does not touch the card's edge. In `TableBody` and
+ * `TableFooter` it heads its row (a student's name, "Total"): the cell's
+ * padding, wrapping like a cell, `scope="row"`. A caller's `scope` wins.
+ */
 export function TableHead({ className, ...props }: ComponentPropsWithoutRef<"th">) {
   const density = useContext(TableDensityContext);
+  const section = useContext(TableSectionContext);
+  if (section === "body" || section === "footer") {
+    return (
+      <th
+        scope="row"
+        className={cn(
+          CELL_PADDING[density],
+          "text-left align-middle font-medium text-fg",
+          className,
+        )}
+        {...props}
+      />
+    );
+  }
   return (
     <th
       scope="col"
@@ -118,7 +140,7 @@ export function TableHead({ className, ...props }: ComponentPropsWithoutRef<"th"
         HEAD_PADDING[density],
         // The header's separator is drawn inside each cell, as in DataTable,
         // so it stays put under a sticky header.
-        "h-10 text-left align-middle text-caption font-semibold whitespace-nowrap text-fg-muted",
+        "h-10 py-2 text-left align-middle text-caption font-semibold whitespace-nowrap text-fg-muted",
         "shadow-[inset_0_-1px_0_var(--color-line)]",
         className,
       )}

@@ -67,6 +67,62 @@ export const Phone: Story = {
   ],
 };
 
+const students = [
+  { id: "s1", name: "Ahmad Fauzan Ramadhan Saputra", scores: [86, 90, 78] },
+  { id: "s2", name: "Siti Nurhaliza", scores: [92, 88, 95] },
+  { id: "s3", name: "Budi Santoso", scores: [74, 80, 70] },
+];
+const gradeComponents = [
+  { code: "UH1", weight: 30 },
+  { code: "UTS", weight: 30 },
+  { code: "UAS", weight: 40 },
+];
+
+/**
+ * A grade sheet: each student's name heads its row (`scope="row"`, the
+ * cell's padding, wrapping), and the column headers carry two lines.
+ */
+export const RowHeaders: Story = {
+  render: () => (
+    <Table density="compact" containerClassName="w-[36rem] max-w-full">
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-48">Siswa</TableHead>
+          {gradeComponents.map((component) => (
+            <TableHead key={component.code} className="text-right align-top">
+              <span className="flex flex-col items-end gap-0.5">
+                <span className="text-fg">{component.code}</span>
+                <span className="font-normal">Bobot {component.weight}%</span>
+              </span>
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {students.map((student) => (
+          <TableRow key={student.id} data-state={student.id === "s2" ? "selected" : undefined}>
+            <TableHead>{student.name}</TableHead>
+            {student.scores.map((score, index) => (
+              <TableCell key={gradeComponents[index]?.code} className="text-right tabular-nums">
+                {score}
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+      <TableFooter>
+        <TableRow>
+          <TableHead>Rata-rata</TableHead>
+          <TableCell className="text-right tabular-nums">84</TableCell>
+          <TableCell className="text-right tabular-nums">86</TableCell>
+          <TableCell className="text-right tabular-nums">81</TableCell>
+        </TableRow>
+      </TableFooter>
+    </Table>
+  ),
+};
+export const RowHeadersDark: Story = { ...RowHeaders, globals: { theme: "dark" } };
+
 export const Compact: Story = {
   render: () => (
     <Table density="compact">
