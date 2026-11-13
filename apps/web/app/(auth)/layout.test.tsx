@@ -6,7 +6,7 @@ import { initialsFor } from "../../lib/tenant/initials";
 import AuthLayout from "./layout";
 
 interface TenantHookResult {
-  branding: { logo_url?: string } | undefined;
+  branding: { logo_url?: string; disabled_public_modules?: string[] } | undefined;
   displayName: string;
   isLoading: boolean;
 }
@@ -112,5 +112,36 @@ describe("AuthLayout brand consistency across breakpoints", () => {
     // The decorative initials watermark ("SI", from the SION fallback) is left
     // out entirely while loading, not shown faint-but-wrong.
     expect(screen.queryByText("SI")).not.toBeInTheDocument();
+  });
+});
+
+describe("AuthLayout with the school's public modules", () => {
+  it("lists the library while the school has it on", () => {
+    mockUseTenant.mockReturnValue({
+      branding: { disabled_public_modules: [] },
+      displayName: "SMA 1 Denpasar",
+      isLoading: false,
+    });
+    render(
+      <AuthLayout>
+        <p>form</p>
+      </AuthLayout>,
+    );
+    expect(screen.getByText("featureLibrary")).toBeInTheDocument();
+  });
+
+  it("leaves the library out while the school has it off", () => {
+    mockUseTenant.mockReturnValue({
+      branding: { disabled_public_modules: ["library"] },
+      displayName: "SMA 1 Denpasar",
+      isLoading: false,
+    });
+    render(
+      <AuthLayout>
+        <p>form</p>
+      </AuthLayout>,
+    );
+    expect(screen.queryByText("featureLibrary")).not.toBeInTheDocument();
+    expect(screen.getByText("featureAttendance")).toBeInTheDocument();
   });
 });

@@ -1214,6 +1214,9 @@
     "success": "Loan closed as lost"
   },
   "opac": {
+    "unavailableTitle": "Catalog not available",
+    "unavailableBody": "The library catalog is not enabled at this school.",
+    "signIn": "Sign in to the app",
     "title": "Library catalog",
     "searchPlaceholder": "Search title, author, or ISBN",
     "columns": {

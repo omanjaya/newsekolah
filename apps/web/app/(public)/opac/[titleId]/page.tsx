@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 
+import { OpacGate } from "../../../../features/library/components/opac-gate";
 import { OpacTitleView } from "../../../../features/library/components/opac-title-view";
 
 export default async function Page({
@@ -8,5 +9,9 @@ export default async function Page({
   params: Promise<{ titleId: string }>;
 }): Promise<ReactElement> {
   const { titleId } = await params;
-  return <OpacTitleView titleId={titleId} />;
+  return (
+    <OpacGate>
+      <OpacTitleView titleId={titleId} />
+    </OpacGate>
+  );
 }

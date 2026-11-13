@@ -35,3 +35,26 @@ export interface ModuleFlags {
 export function isModuleEnabled(me: ModuleFlags | undefined, module: FeatureModule): boolean {
   return !me?.disabled_modules?.includes(module);
 }
+
+/**
+ * The slice of the public branding (`GET /v1/tenant/branding`) that says
+ * which modules with anonymous pages (library's OPAC) are off. It never
+ * lists the other modules: those reach a signed-in reader through
+ * `Me.disabled_modules`.
+ */
+export interface PublicModuleFlags {
+  disabled_public_modules?: readonly string[];
+}
+
+/**
+ * Whether a public page of `module` may be offered to an anonymous visitor.
+ * Unknown branding (still loading, or failed to load) counts as on, the
+ * same rule `isModuleEnabled` follows; the API still refuses the module's
+ * public endpoints.
+ */
+export function isPublicModuleEnabled(
+  branding: PublicModuleFlags | undefined,
+  module: FeatureModule,
+): boolean {
+  return !branding?.disabled_public_modules?.includes(module);
+}
