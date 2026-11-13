@@ -143,7 +143,7 @@ describe("useTeacherBlock", () => {
     const { result } = renderHook(() => useTeacherBlock(me, true));
 
     expect(result.current.hero?.priority).toBe(HERO_PRIORITY.teacherNowPending);
-    expect(result.current.hero?.action?.href).toBe("/attendance");
+    expect(result.current.hero?.action?.href).toBe("/attendance/s1");
   });
 
   it("shows a teacherNowPending hero for a running, unsubmitted session", () => {
@@ -169,7 +169,7 @@ describe("useTeacherBlock", () => {
     const { result } = renderHook(() => useTeacherBlock(me, true));
 
     expect(result.current.hero?.priority).toBe(HERO_PRIORITY.teacherNowPending);
-    expect(result.current.hero?.action?.href).toBe("/attendance");
+    expect(result.current.hero?.action?.href).toBe("/attendance/s1");
   });
 
   it("shows no hero once the running session is submitted and nothing else is upcoming", () => {

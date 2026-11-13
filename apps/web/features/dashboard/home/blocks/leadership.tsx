@@ -66,7 +66,10 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   const permitsOn = isModuleEnabled(me, "permits");
   const atRisk = useAtRiskStudentsQuery(active && canViewAtRisk);
   // Only the top rows are shown, so only their names are looked up.
-  const topAtRisk = [...(atRisk.data?.data ?? [])].sort((a, b) => b.score - a.score).slice(0, 5);
+  const topAtRisk = (atRisk.data?.data ?? [])
+    .filter((row) => row.level !== "none")
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
   const studentMap = useDirectoryNames(
     topAtRisk.map((row) => row.student_user_id),
     active,
@@ -91,7 +94,9 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
             total: attendanceToday.total,
           }),
           meta: t("hero.meta", { pending: attendanceToday.total - attendanceToday.submitted }),
-          action: { label: t("hero.action"), href: MONITOR_HREF },
+          // The monitor needs view_monitor_presence; without it the link would
+          // end on a "no access" page, so the hero simply has no action.
+          ...(canViewMonitor ? { action: { label: t("hero.action"), href: MONITOR_HREF } } : {}),
         }
       : undefined;
 
@@ -105,7 +110,7 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
         value: `${attendanceToday.submitted}/${attendanceToday.total}`,
         icon: ClipboardCheck,
         tone: "green",
-        href: MONITOR_HREF,
+        ...(canViewMonitor ? { href: MONITOR_HREF } : {}),
       });
     }
     if (permitsOn) {

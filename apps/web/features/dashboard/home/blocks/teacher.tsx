@@ -113,7 +113,7 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
           title,
           meta: t("hero.nowMeta", { start: startLabel, end: endLabel }),
           chip: t("hero.nowChip", { minutes: Math.max(0, now - start) }),
-          action: { label: t("hero.nowAction"), href: "/attendance" },
+          action: { label: t("hero.nowAction"), href: `/attendance/${session.id}` },
         };
       } else {
         block.hero = {
@@ -192,39 +192,41 @@ function TeacherTodayCard({
             {sessions.map((session) => {
               const running = session.id === runningId;
               return (
-                <li
-                  key={session.id}
-                  className="grid grid-cols-[3.25rem_1fr_auto] items-center gap-3 py-2"
-                >
-                  <span
-                    className={cn(
-                      "text-[13px] tabular-nums",
-                      running ? "font-bold text-accent" : "text-fg-muted",
-                    )}
+                <li key={session.id}>
+                  <Link
+                    href={`/attendance/${session.id}`}
+                    className="grid min-h-11 grid-cols-[3.25rem_1fr_auto] items-center gap-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   >
-                    {periodMap.get(session.start_period_id)?.starts_at ?? "--:--"}
-                  </span>
-                  <span className="min-w-0">
                     <span
                       className={cn(
-                        "block truncate text-[14px]",
-                        running ? "font-bold text-accent" : "text-fg",
+                        "text-[13px] tabular-nums",
+                        running ? "font-bold text-accent" : "text-fg-muted",
                       )}
                     >
-                      {classMap.get(session.class_id)?.name ?? "-"}
+                      {periodMap.get(session.start_period_id)?.starts_at ?? "--:--"}
                     </span>
-                    <span className="block truncate text-[13px] text-fg-muted">
-                      {subjectMap.get(session.subject_id)?.name ?? ""}
+                    <span className="min-w-0">
+                      <span
+                        className={cn(
+                          "block truncate text-[14px]",
+                          running ? "font-bold text-accent" : "text-fg",
+                        )}
+                      >
+                        {classMap.get(session.class_id)?.name ?? "-"}
+                      </span>
+                      <span className="block truncate text-[13px] text-fg-muted">
+                        {subjectMap.get(session.subject_id)?.name ?? ""}
+                      </span>
                     </span>
-                  </span>
-                  {session.submitted_at ? (
-                    <span className="flex items-center gap-1.5 text-[13px] text-fg-muted">
-                      <Check className="size-4" aria-hidden="true" />
-                      {t("card.statusSubmitted")}
-                    </span>
-                  ) : (
-                    <Badge variant="accent">{t("card.statusPending")}</Badge>
-                  )}
+                    {session.submitted_at ? (
+                      <span className="flex items-center gap-1.5 text-[13px] text-fg-muted">
+                        <Check className="size-4" aria-hidden="true" />
+                        {t("card.statusSubmitted")}
+                      </span>
+                    ) : (
+                      <Badge variant="accent">{t("card.statusPending")}</Badge>
+                    )}
+                  </Link>
                 </li>
               );
             })}

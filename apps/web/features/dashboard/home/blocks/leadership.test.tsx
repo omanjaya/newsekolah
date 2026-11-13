@@ -78,7 +78,9 @@ describe("useLeadershipBlock", () => {
       refetch: vi.fn(),
     });
 
-    const { result } = renderHook(() => useLeadershipBlock(me, true));
+    const { result } = renderHook(() =>
+      useLeadershipBlock({ ...me, permissions: ["view_monitor_presence"] }, true),
+    );
 
     expect(result.current.hero?.title).toContain('"submitted":3');
     expect(result.current.hero?.title).toContain('"total":5');
@@ -86,6 +88,22 @@ describe("useLeadershipBlock", () => {
       label: "hero.action",
       href: "/monitor",
     });
+  });
+
+  it("offers no monitor link to a reader without view_monitor_presence", () => {
+    dashboardQuery.mockReturnValue({
+      data: { ...baseDashboard, attendance_today: { submitted: 3, total: 5 } },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useLeadershipBlock(me, true));
+
+    expect(result.current.hero?.action).toBeUndefined();
+    expect(
+      result.current.tiles.find((tile) => tile.key === "school.sessions")?.href,
+    ).toBeUndefined();
   });
 
   it("omits the hero when no class is currently in session", () => {

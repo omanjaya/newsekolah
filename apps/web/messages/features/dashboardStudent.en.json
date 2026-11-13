@@ -8,7 +8,7 @@
   "leaveLabel": "Leave in review",
   "loansLabel": "Books borrowed",
   "loansHint": "Due {date}",
-  "gradesLabel": "New grades",
+  "gradesLabel": "Graded subjects",
   "gradesHint": "published",
   "scheduleTitle": "Today's schedule",
   "scheduleEmpty": "No lessons today",
