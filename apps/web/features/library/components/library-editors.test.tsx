@@ -118,7 +118,7 @@ describe("library editors", () => {
     const rowMenuButton = screen.getAllByRole("button", { name: "rowActions" })[0];
     if (!rowMenuButton) throw new Error("Missing title row actions menu");
     await user.click(rowMenuButton);
-    const editButton = await screen.findByRole("button", { name: "editTitle" });
+    const editButton = await screen.findByRole("menuitem", { name: "editTitle" });
     await user.click(editButton);
     const titleInput = screen.getByRole("textbox", { name: "title" });
     await user.clear(titleInput);
@@ -141,9 +141,9 @@ describe("library editors", () => {
   it("hides catalogue write actions for readers", () => {
     mocks.canManage = false;
     render(<CatalogueView />);
-    expect(screen.queryByRole("button", { name: "editTitle" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "editTitle" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "addTitle" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "deleteTitle" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "deleteTitle" })).not.toBeInTheDocument();
   });
 
   it("clears member expiry without changing their status", async () => {

@@ -145,10 +145,23 @@ export {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
+  type DropdownMenuItemProps,
 } from "./components/dropdown-menu.js";
-export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "./components/popover.js";
+export {
+  Popover,
+  PopoverAnchor,
+  PopoverClose,
+  PopoverContent,
+  PopoverTrigger,
+} from "./components/popover.js";
 export {
   RowActionsMenu,
   type RowActionsMenuItem,
