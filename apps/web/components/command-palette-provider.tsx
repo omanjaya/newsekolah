@@ -199,15 +199,28 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
     const id = () => String(nextId++);
 
     if (!query.trim()) {
-      const recentEntries = preferences.recent
-        .filter((item) => item.href !== activeHref)
-        .slice(0, RECENT_LIMIT)
-        .flatMap((item) => pages.filter((page) => page.item.key === item.key).slice(0, 1));
+      const entriesFor = (items: readonly NavItem[]) =>
+        items.flatMap((item) => pages.filter((page) => page.item.key === item.key).slice(0, 1));
+      const favoriteEntries = entriesFor(preferences.favorites);
+      const recentEntries = entriesFor(
+        preferences.recent
+          .filter((item) => item.href !== activeHref)
+          .filter((item) => !preferences.favorites.includes(item))
+          .slice(0, RECENT_LIMIT),
+      );
       const byHeading = new Map<string, PageEntry[]>();
       for (const page of pages) {
         byHeading.set(page.heading, [...(byHeading.get(page.heading) ?? []), page]);
       }
       return [
+        ...(favoriteEntries.length
+          ? [
+              {
+                heading: tNav("app.shell.mobileMenu.favorites"),
+                items: favoriteEntries.map((page) => pageItem(page, id())),
+              },
+            ]
+          : []),
         ...(recentEntries.length
           ? [{ heading: t("recent"), items: recentEntries.map((page) => pageItem(page, id())) }]
           : []),
@@ -250,6 +263,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
     query,
     pages,
     preferences.recent,
+    preferences.favorites,
     activeHref,
     orderedActions,
     students.group,
