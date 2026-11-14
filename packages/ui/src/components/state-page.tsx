@@ -34,8 +34,13 @@ export interface StatePageProps extends Omit<ComponentPropsWithRef<"div">, "titl
   title: string;
   /** One sentence: what happened and what to do. */
   description?: string;
-  /** The way out ("Kembali ke beranda", "Coba lagi"). */
+  /**
+   * The way out ("Kembali ke beranda", "Coba lagi"): always a primary
+   * Button, even when it is the only one, so every state page offers its
+   * exit the same way.
+   */
   action?: ReactNode;
+  /** A second, lesser way out beside it: a secondary Button or a TextLink. */
   secondaryAction?: ReactNode;
   /** A status or error code for support ("404", an error digest), shown small under the actions. */
   code?: string;
@@ -82,7 +87,9 @@ export function StatePage({
         </IconCircle>
         <div className="flex flex-col gap-2">
           <h1 className="text-title text-fg">{title}</h1>
-          {description && <p className="text-body text-fg-muted">{description}</p>}
+          {/* Balanced, so a centred sentence breaks into even lines
+              instead of leaving one word alone on the last. */}
+          {description && <p className="text-body text-balance text-fg-muted">{description}</p>}
         </div>
         {hasActions && (
           <div className="flex flex-wrap items-center justify-center gap-2">

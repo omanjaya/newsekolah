@@ -22,7 +22,8 @@ describe("StatePage", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Halaman tidak ditemukan" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Alamat yang dituju tidak ada.")).toBeInTheDocument();
+    // Balanced lines, so the centred sentence never ends on a lone word.
+    expect(screen.getByText("Alamat yang dituju tidak ada.")).toHaveClass("text-balance");
     expect(screen.getByRole("link", { name: "Kembali ke beranda" })).toBeInTheDocument();
     expect(screen.getByText("Code 404")).toBeInTheDocument();
     await expectNoAxeViolations(container);
