@@ -80,7 +80,7 @@ export function StocktakeView(): ReactElement {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <LibraryWorkspaceNav area="stocktake" />
+      <LibraryWorkspaceNav area="catalogue" />
       <div className="flex justify-end">
         <Button
           size="sm"

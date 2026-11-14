@@ -1,207 +1,189 @@
 "use client";
 
 import {
-  Alert,
-  BarcodeScannerField,
   Button,
   Card,
-  PageHeader,
-  Skeleton,
-  StatTile,
-  cn,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  type ScannerResultValue,
 } from "@newsekolah/ui";
-import { Undo2 } from "lucide-react";
+import { ScanLine, Undo2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useRef } from "react";
 
-import { bentoCells, tileColumns } from "../../../lib/layout/bento";
-import { useLibraryDashboardQuery } from "../dashboard-api";
+import { AppPage } from "../../../components/app-page";
 import { confirmableItems, hasUndoableItem } from "../lib/desk-basket";
+import { deskItemTone, deskLastResult } from "../lib/desk-last-result";
 
-import { DeskMemberPanel } from "./desk-member-panel";
-import { DeskModeTabs } from "./desk-mode-tabs";
+import { DeskMemberPanel, memberNeedsAttention } from "./desk-member-panel";
 import { DeskOverdueTable } from "./desk-overdue-table";
 import { DeskReceiptDialog } from "./desk-receipt-dialog";
+import { DeskScanBar } from "./desk-scan-bar";
 import { DeskScanBasket } from "./desk-scan-basket";
-import { buildDeskTodayTiles } from "./desk-today-tiles";
+import { DeskTodayPanel } from "./desk-today-panel";
 import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { useDeskSession } from "./use-desk-session";
 
 /**
- * The librarian's circulation desk, in the Hijau Segar bento language
- * (docs/07-ui-ux.md section 0): the pill mode switch (Pinjam/Kembali/
- * Perpanjang) sits in the header next to the session receipt button,
- * today's counts are four equal-width stat tiles from the same library
- * dashboard query the landing page uses, the scan+member panel and the
- * running basket form a symmetric two-card row of equal height, and the
- * overdue queue stays the shared table it already was
- * (`DeskOverdueTable`). Every circulation behavior -- barcode/USB scanner
- * input and its focus flow, member lookup, borrow/return/renew baskets,
- * receipts, violations, keyboard shortcuts, realtime refresh -- is
- * unchanged; only the chrome around it moved.
+ * The librarian's circulation desk, scan first (docs/07-ui-ux.md
+ * "Scanner"): one tall scan bar under the title, always focused, that
+ * takes a member card and then the books, with the mode on the bar and
+ * the last result large under it. The session (who is served, what was
+ * scanned) follows, then the overdue queue; today's figures and the
+ * occasional destinations sit in a side column. Every circulation
+ * behaviour lives in `useDeskSession`, unchanged: the scanner input and
+ * its focus flow, member lookup, the borrow, return and renew baskets,
+ * receipts, keyboard shortcuts and realtime refresh.
  */
 export function LoanDeskView(): ReactElement {
   const t = useTranslations("app.library.desk");
+  const tStatus = useTranslations("app.library.members.status");
   const session = useDeskSession();
-  const dashboard = useLibraryDashboardQuery();
 
-  // The shared scanner field only focuses on mount, so hand focus back to it
-  // after a member is picked or the session ends, and after each scan (the
-  // field is disabled while a scan resolves, which drops focus).
-  const scanRowRef = useRef<HTMLDivElement>(null);
+  // The scan field only focuses on mount, so hand focus back to it after a
+  // member is picked or the session ends, and after each scan resolves.
+  const inputRef = useRef<HTMLInputElement>(null);
   const memberId = session.member?.userId ?? null;
   const { scanning } = session;
   useEffect(() => {
     if (scanning) return;
-    scanRowRef.current?.querySelector("input")?.focus();
+    inputRef.current?.focus();
   }, [memberId, scanning]);
 
-  const pendingCounts = {
-    borrow: confirmableItems(session.basket.borrow).length,
-    return: 0,
-    renew: 0,
-  };
-  const canUndo = hasUndoableItem(session.basket[session.mode]);
+  const items = session.basket[session.mode];
+  const pendingBorrow = confirmableItems(session.basket.borrow).length;
+  const canUndo = hasUndoableItem(items);
+  const attention = memberNeedsAttention(session.memberStatus);
 
-  const tiles = dashboard.data ? buildDeskTodayTiles(dashboard.data.summary) : [];
-  const tileGrid = tileColumns(tiles.length || 1);
-
-  const cards = bentoCells([
-    {
-      key: "scan",
-      node: (
-        <Card className="flex h-full flex-col gap-4 p-4" data-testid="desk-scan-card">
-          <DeskMemberPanel
-            member={session.member}
-            memberStatus={session.memberStatus}
-            onSelectMember={session.selectMember}
-            onClear={session.endSession}
-          />
-
-          <div ref={scanRowRef} className="flex flex-wrap items-end gap-3">
-            <BarcodeScannerField
-              label={session.member ? t(`modes.scanLabel.${session.mode}`) : t("member.scanLabel")}
-              onScan={session.handleScan}
-              submitLabel={t("scanSubmit")}
-              disabled={session.scanning}
-              autoFocus
-              stretch
-            />
-            {session.member && (
-              <Button
-                type="button"
-                variant="secondary"
-                icon={<Undo2 />}
-                disabled={!canUndo}
-                onClick={() => {
-                  session.undo(session.mode);
-                }}
-              >
-                {t("undoLastScan")}
-              </Button>
-            )}
-          </div>
-          {session.scanError && (
-            <p role="alert" className="text-[13px] text-status-absent">
-              {session.scanError}
-            </p>
-          )}
-          {!session.member && (
-            <Alert variant="info" title={t("member.hintTitle")}>
-              {t("member.hintBody")}
-            </Alert>
-          )}
-        </Card>
-      ),
-    },
-    {
-      key: "basket",
-      node: (
-        <Card className="flex h-full flex-col gap-3 p-4" data-testid="desk-basket-card">
-          <DeskScanBasket
-            mode={session.mode}
-            items={session.basket[session.mode]}
-            confirming={session.confirmingBorrow}
-            onRemove={(barcode) => {
-              session.removeItem(session.mode, barcode);
-            }}
-            onConfirm={() => {
-              void session.confirmBorrow();
-            }}
-          />
-        </Card>
-      ),
-    },
-  ]);
+  const last = deskLastResult({
+    scanError: session.scanError,
+    memberName: session.member?.name ?? null,
+    memberNeedsAttention: attention,
+    items,
+  });
+  let result: ScannerResultValue | null = null;
+  if (last?.kind === "error") {
+    result = { tone: "danger", title: last.message, key: `error:${last.message}` };
+  } else if (last?.kind === "item") {
+    result = {
+      tone: deskItemTone(last.item.state),
+      title: last.item.title,
+      description: [last.item.barcode, last.item.detail ?? t(`basket.state.${last.item.state}`)]
+        .filter(Boolean)
+        .join(" · "),
+      key: `${session.mode}:${last.item.barcode}:${last.item.state}`,
+    };
+  } else if (last?.kind === "member") {
+    result = {
+      tone: last.attention ? "warning" : "success",
+      title: t("result.memberTitle", { name: last.name }),
+      description:
+        last.attention && session.memberStatus
+          ? t("result.memberAttention", { status: tStatus(session.memberStatus) })
+          : t(`result.memberNext.${session.mode}`),
+      key: `member:${memberId ?? ""}:${session.mode}`,
+    };
+  }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          <>
-            <DeskModeTabs
-              mode={session.mode}
-              onModeChange={session.setMode}
-              pendingCounts={pendingCounts}
-            />
-            {session.member && (
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  session.setReceiptOpen(true);
-                }}
-              >
-                {t("receipt.open")}
-              </Button>
-            )}
-          </>
-        }
-      />
-      <LibraryWorkspaceNav area="circulation" />
+    <AppPage variant="wide" nav={<LibraryWorkspaceNav area="circulation" />}>
+      {/* The work on the left, today and the occasional destinations on the
+          right; on a phone the overdue queue comes before the side column. */}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="flex min-w-0 flex-col gap-6">
+          <DeskScanBar
+            mode={session.mode}
+            onModeChange={session.setMode}
+            pendingBorrow={pendingBorrow}
+            hasMember={session.member !== null}
+            scanning={session.scanning}
+            onScan={session.handleScan}
+            onSelectMember={(selected) => {
+              session.selectMember({
+                userId: selected.user_id,
+                name: selected.user_name,
+                memberNo: selected.member_no,
+                nis: selected.nis,
+                username: selected.username,
+              });
+            }}
+            result={result}
+            inputRef={inputRef}
+          />
 
-      {dashboard.isLoading ? (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-busy="true">
-          <Skeleton className="h-[104px] w-full" />
-          <Skeleton className="h-[104px] w-full" />
-          <Skeleton className="h-[104px] w-full" />
-          <Skeleton className="h-[104px] w-full" />
-        </div>
-      ) : tiles.length > 0 ? (
-        <div className={tileGrid.container} data-testid="desk-tiles">
-          {tiles.map((tile, index) => (
-            <div
-              key={tile.key}
-              data-testid={`desk-tile-${tile.key}`}
-              className={cn("h-full", index === tiles.length - 1 && tileGrid.lastTileClassName)}
-            >
-              <StatTile
-                className="h-full"
-                icon={tile.icon}
-                tone={tile.tone}
-                value={tile.value}
-                label={t(`tiles.${tile.labelKey}`)}
+          <Card data-testid="desk-session">
+            {session.member ? (
+              <>
+                <div className="p-5">
+                  <DeskMemberPanel
+                    member={session.member}
+                    memberStatus={session.memberStatus}
+                    onOpenReceipt={() => {
+                      session.setReceiptOpen(true);
+                    }}
+                    onClear={session.endSession}
+                  />
+                </div>
+                <CardHeader
+                  className="border-t border-line pt-4"
+                  action={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={<Undo2 />}
+                      disabled={!canUndo}
+                      onClick={() => {
+                        session.undo(session.mode);
+                      }}
+                    >
+                      {t("undoLastScan")}
+                    </Button>
+                  }
+                >
+                  <CardTitle as="h2">{t(`basket.heading.${session.mode}`)}</CardTitle>
+                </CardHeader>
+                <div aria-live="polite">
+                  <DeskScanBasket
+                    mode={session.mode}
+                    items={items}
+                    onRemove={(barcode) => {
+                      session.removeItem(session.mode, barcode);
+                    }}
+                  />
+                </div>
+                {session.mode === "borrow" && pendingBorrow > 0 && (
+                  <div className="flex justify-end border-t border-line p-4">
+                    <Button
+                      size="lg"
+                      loading={session.confirmingBorrow}
+                      onClick={() => {
+                        void session.confirmBorrow();
+                      }}
+                      className="max-sm:w-full"
+                    >
+                      {t("basket.confirmBorrow", { count: pendingBorrow })}
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <EmptyState
+                icon={<ScanLine aria-hidden="true" />}
+                title={t("member.hintTitle")}
+                description={t("member.hintBody")}
               />
-            </div>
-          ))}
+            )}
+          </Card>
         </div>
-      ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2" data-testid="desk-cards">
-        {cards.map((cell) => (
-          <div
-            key={cell.key}
-            data-testid={`desk-cell-${cell.key}`}
-            className={cn("flex h-full flex-col", cell.span === "full" && "lg:col-span-2")}
-          >
-            <div className="flex-1">{cell.node}</div>
-          </div>
-        ))}
+        <DeskTodayPanel className="max-lg:order-last" />
+
+        <div className="min-w-0 lg:col-span-2">
+          <DeskOverdueTable />
+        </div>
       </div>
-
-      <DeskOverdueTable />
 
       <DeskReceiptDialog
         open={session.receiptOpen}
@@ -209,6 +191,6 @@ export function LoanDeskView(): ReactElement {
         member={session.member}
         basket={session.basket}
       />
-    </div>
+    </AppPage>
   );
 }

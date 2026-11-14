@@ -29,7 +29,6 @@ import {
   useLibraryMemberTypesQuery,
 } from "../members-api";
 
-import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { MemberTypeForm } from "./member-type-form";
 
 /** Manage member types: loan limits, renewal, fine rule, suspension, and validity per type. */
@@ -153,7 +152,6 @@ export function MemberTypesView({ embedded = false }: { embedded?: boolean }): R
       ) : (
         <>
           <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={addButton} />
-          <LibraryWorkspaceNav area="settings" />
         </>
       )}
 

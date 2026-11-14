@@ -38,7 +38,6 @@ import { useTenantTimeZone } from "../use-tenant-timezone";
 import { useMemberViolationsQuery } from "../violations-api";
 
 import { LibraryTitleName } from "./library-title-name";
-import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { LoanRenewalsDialog } from "./loan-renewals-dialog";
 import { MarkLostDialog } from "./mark-lost-dialog";
 import { MemberLoanRow, loanRowSortKey } from "./member-loan-row";
@@ -150,7 +149,6 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
           </div>
         }
       />
-      <LibraryWorkspaceNav area="members" />
 
       <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4 md:flex-row md:flex-wrap md:items-center md:gap-6">
         <div className="flex flex-col gap-1">

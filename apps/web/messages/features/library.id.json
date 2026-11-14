@@ -198,11 +198,11 @@
   },
   "desk": {
     "eyebrow": "Perpustakaan",
-    "title": "Meja sirkulasi",
+    "title": "Sirkulasi",
     "scanSubmit": "Catat",
     "tiles": {
-      "loansToday": "Pinjam hari ini",
-      "returnsToday": "Kembali hari ini",
+      "loansToday": "Dipinjam hari ini",
+      "returnsToday": "Dikembalikan hari ini",
       "overdue": "Terlambat",
       "visitsToday": "Kunjungan hari ini"
     },
@@ -217,11 +217,12 @@
       "scanLabel": "Pindai atau ketik kode kartu anggota",
       "scanHint": "Atau pindai kartu anggota untuk mulai.",
       "endSession": "Selesai",
-      "hintTitle": "Pilih anggota terlebih dahulu",
-      "hintBody": "Cari nama di atas atau pindai kartu anggota untuk mulai meminjamkan, mengembalikan, atau memperpanjang buku.",
+      "hintTitle": "Belum ada anggota yang dilayani",
+      "hintBody": "Pindai kartu anggota di kolom atas, atau cari namanya, untuk mulai meminjamkan, mengembalikan, atau memperpanjang buku.",
       "notFound": "Kartu atau kode \"{code}\" tidak dikenali",
       "ambiguous": "Kode \"{code}\" cocok dengan lebih dari satu anggota. Pilih dari pencarian.",
-      "lookupFailed": "Pencarian anggota gagal, coba lagi"
+      "lookupFailed": "Pencarian anggota gagal, coba lagi",
+      "sanctions": "Denda dan sanksi anggota"
     },
     "modes": {
       "borrow": "Pinjam",
@@ -232,7 +233,8 @@
         "borrow": "Pindai atau ketik barcode buku yang dipinjam",
         "return": "Pindai atau ketik barcode buku yang dikembalikan",
         "renew": "Pindai atau ketik barcode buku yang diperpanjang"
-      }
+      },
+      "label": "Mode sirkulasi"
     },
     "basket": {
       "emptyTitle": {
@@ -242,7 +244,7 @@
       },
       "emptyBody": {
         "borrow": "Pindai barcode buku untuk menambahkannya ke daftar pinjam.",
-        "return": "Pindai barcode buku untuk langsung mengembalikannya.",
+        "return": "Pindai barcode buku untuk langsung mencatat pengembaliannya.",
         "renew": "Pindai barcode buku untuk langsung memperpanjang peminjamannya."
       },
       "removeFromList": "Hapus {barcode} dari daftar",
@@ -254,7 +256,18 @@
       "borrowedDue": "Dipinjam, jatuh tempo {date}",
       "returnedOnTime": "Dikembalikan tepat waktu",
       "returnedLate": "Terlambat {days} hari, denda Rp{amount}",
-      "renewedUntil": "Diperpanjang sampai {date}"
+      "renewedUntil": "Diperpanjang sampai {date}",
+      "heading": {
+        "borrow": "Daftar pinjam",
+        "return": "Dikembalikan pada sesi ini",
+        "renew": "Diperpanjang pada sesi ini"
+      },
+      "state": {
+        "pending": "Masuk daftar pinjam",
+        "blocked": "Tidak bisa dipinjam",
+        "done": "Selesai",
+        "failed": "Gagal"
+      }
     },
     "borrow": {
       "codeNotFound": "Kode {code} tidak ditemukan"
@@ -272,7 +285,7 @@
       "columns": {
         "member": "Anggota",
         "class": "Kelas",
-        "guardianPhone": "HP orang tua/wali",
+        "guardianPhone": "HP orang tua atau wali",
         "dueOn": "Jatuh tempo",
         "actions": "Aksi",
         "title": "Buku dan eksemplar"
@@ -297,7 +310,42 @@
       "confirmReminders": {
         "title": "Kirim pengingat?",
         "body": "Pengingat dikirim ke anggota yang pinjamannya segera jatuh tempo. Pinjaman yang sudah terlambat tidak termasuk."
+      },
+      "description": "Diurutkan dari yang paling lama terlambat."
+    },
+    "bar": {
+      "placeholder": {
+        "member": "Pindai kartu anggota",
+        "borrow": "Pindai barcode buku yang dipinjam",
+        "return": "Pindai barcode buku yang dikembalikan",
+        "renew": "Pindai barcode buku yang diperpanjang"
+      },
+      "camera": "Pindai dengan kamera",
+      "searchMember": "Cari anggota",
+      "searchMemberPlaceholder": "Nama, NIS, atau nomor anggota",
+      "searchEmpty": "Tidak ada anggota yang cocok",
+      "idleHint": "Pemindai bisa dipakai kapan saja di halaman ini. Kode juga bisa diketik lalu tekan Enter.",
+      "shortcutsHint": "Pintasan: Alt+1 Pinjam, Alt+2 Kembalikan, Alt+3 Perpanjang, Alt+Z batalkan pindai terakhir."
+    },
+    "result": {
+      "memberTitle": "Melayani {name}",
+      "memberAttention": "Status anggota {status}. Periksa dulu sebelum meminjamkan.",
+      "memberNext": {
+        "borrow": "Pindai buku yang akan dipinjam.",
+        "return": "Pindai buku yang dikembalikan.",
+        "renew": "Pindai buku yang akan diperpanjang."
       }
+    },
+    "today": {
+      "heading": "Hari ini"
+    },
+    "shortcuts": {
+      "heading": "Pintasan",
+      "kiosk": "Kios mandiri",
+      "visitKiosk": "Kios kunjungan",
+      "loanRules": "Aturan peminjaman",
+      "report": "Laporan sirkulasi",
+      "newTab": "Terbuka di tab baru"
     }
   },
   "classLoans": {
@@ -374,7 +422,7 @@
   "members": {
     "pagePrev": "Sebelumnya",
     "pageNext": "Berikutnya",
-    "navLabel": "Anggota perpustakaan",
+    "navLabel": "Anggota",
     "eyebrow": "Perpustakaan",
     "title": "Anggota",
     "register": "Daftarkan anggota",
@@ -518,9 +566,9 @@
     "edit": "Ubah keanggotaan"
   },
   "violations": {
-    "navLabel": "Denda & Sanksi",
+    "navLabel": "Denda dan sanksi",
     "eyebrow": "Perpustakaan",
-    "title": "Denda & Sanksi",
+    "title": "Denda dan sanksi",
     "record": "Catat pelanggaran",
     "rowActions": "Aksi untuk {member}",
     "settle": {
@@ -851,8 +899,8 @@
   },
   "masterData": {
     "eyebrow": "Perpustakaan",
-    "title": "Pengaturan Katalog",
-    "navLabel": "Master data",
+    "title": "Data katalog",
+    "navLabel": "Data katalog",
     "tabs": {
       "materialTypes": "Jenis bahan",
       "acquisitionSources": "Sumber perolehan",
@@ -1361,8 +1409,8 @@
   },
   "me": {
     "eyebrow": "Perpustakaan",
-    "title": "Pinjaman saya",
-    "navLabel": "Pinjaman saya",
+    "title": "Pinjaman buku",
+    "navLabel": "Pinjaman buku",
     "notMemberTitle": "Belum terdaftar sebagai anggota perpustakaan",
     "notMemberBody": "Minta pustakawan mendaftarkan Anda untuk mulai meminjam dan memesan buku.",
     "unpaidFines": "Denda belum dibayar",
@@ -1437,8 +1485,8 @@
     "LIBRARY_MODULE_DISABLED": "Modul perpustakaan belum diaktifkan untuk sekolah ini."
   },
   "workspace": {
-    "catalogue": "Katalog",
-    "circulation": "Peminjaman & Pengembalian",
+    "catalogue": "Halaman katalog",
+    "circulation": "Halaman sirkulasi",
     "members": "Anggota",
     "settings": "Pengaturan Peminjaman",
     "visits": "Kunjungan",
@@ -1446,16 +1494,17 @@
     "titles": "Judul Buku",
     "copies": "Eksemplar",
     "importBooks": "Impor Buku",
-    "catalogueSettings": "Pengaturan Katalog",
+    "catalogueSettings": "Data katalog",
     "individual": "Individu",
     "class": "Kelas",
     "sanctions": "Denda & Sanksi",
-    "openKiosk": "Buka Kios Mandiri",
+    "openKiosk": "Buka kios mandiri",
     "loanSettings": "Pengaturan Peminjaman",
-    "memberTypes": "Jenis Anggota & Batas Pinjam",
+    "memberTypes": "Jenis anggota",
     "periodRules": "Aturan Periode & Kebijakan",
-    "openVisitKiosk": "Buka Kios Kunjungan",
-    "report": "Rekap",
-    "memberSanctions": "Denda & Sanksi Anggota"
+    "openVisitKiosk": "Buka kios kunjungan",
+    "report": "Laporan",
+    "memberSanctions": "Denda & Sanksi Anggota",
+    "loanRules": "Aturan peminjaman"
   }
 }

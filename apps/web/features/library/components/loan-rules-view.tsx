@@ -37,7 +37,6 @@ import {
 import { useLibraryMemberTypesQuery } from "../members-api";
 
 import { LibraryPolicyDialog } from "./library-policy-dialog";
-import { LibraryWorkspaceNav } from "./library-workspace-nav";
 
 /**
  * Dated loan rules per member type: shorten or extend limits, or close lending, for a period.
@@ -147,7 +146,6 @@ export function LoanRulesView({ embedded = false }: { embedded?: boolean }): Rea
       ) : (
         <>
           <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={actionButtons} />
-          <LibraryWorkspaceNav area="settings" />
         </>
       )}
 

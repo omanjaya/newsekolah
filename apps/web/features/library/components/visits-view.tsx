@@ -154,7 +154,7 @@ export function VisitsView(): ReactElement {
           )
         }
       />
-      <LibraryWorkspaceNav area="visits" />
+      <LibraryWorkspaceNav area="circulation" />
 
       <dl className="flex flex-wrap gap-6 rounded-sm border border-border bg-surface p-4 text-[13px]">
         <div className="flex flex-col gap-1">

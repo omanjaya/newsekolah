@@ -10,16 +10,14 @@ import { DeskOverdueTable } from "./desk-overdue-table";
 type LibraryOverdueLoanDetail = DeskApiModule.LibraryOverdueLoanDetail;
 
 vi.mock("../../../lib/session/session-provider", () => ({
-  useSession: () => ({ me: { permissions: [], profile_kind: "staff" } }),
+  useSession: () => ({
+    me: { permissions: [], profile_kind: "staff", tenant: { timezone: "Asia/Makassar" } },
+  }),
 }));
 
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
   useTranslations: () => (key: string) => key,
-}));
-
-vi.mock("@newsekolah/i18n", () => ({
-  formatDate: (value: string) => value,
 }));
 
 vi.mock("../../../lib/i18n/api-error-message", () => ({
@@ -151,15 +149,16 @@ describe("DeskOverdueTable", () => {
       data: undefined,
       isLoading: false,
       isError: true,
+      error: new Error("offline"),
       refetch,
     } as never);
 
     const user = userEvent.setup();
     render(<DeskOverdueTable />);
 
-    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "retry" }));
+    await user.click(screen.getByRole("button", { name: "Coba lagi" }));
     expect(refetch).toHaveBeenCalledOnce();
   });
 
