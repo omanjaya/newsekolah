@@ -3,14 +3,19 @@
 import { formatDateTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
-  Field,
+  Alert,
   Badge,
   Button,
+  Card,
   ConfirmDialog,
+  Field,
+  FormSection,
+  List,
+  ListRow,
   Select,
   Sheet,
   SheetContent,
-  Skeleton,
+  SkeletonList,
   Textarea,
   useToast,
 } from "@newsekolah/ui";
@@ -26,6 +31,7 @@ import {
   useLibraryCopyEventsQuery,
   useSetLibraryCopyStatusMutation,
 } from "../api";
+import { COPY_STATUS_TONE, toneOf } from "../lib/status-tones";
 import { useLibraryErrorMessage } from "../use-library-error-message";
 import { useTenantTimeZone } from "../use-tenant-timezone";
 
@@ -41,8 +47,10 @@ const MANUAL_STATUSES: LibraryCopyStatus[] = [
 ];
 
 /**
- * Per-copy detail: manual status change, delete (refused while ever
- * borrowed or currently on loan), and the audit trail of events.
+ * One copy in a drawer (a bottom sheet on a phone): its status and
+ * condition, a manual status change, the history of what happened to it,
+ * and deleting it (refused while it was ever borrowed or is on loan),
+ * which asks first.
  */
 export function CopyDetailSheet({
   copy,
@@ -96,134 +104,127 @@ export function CopyDetailSheet({
               ? copy.accession_number
               : undefined
           }
-          className="md:mx-auto md:max-w-2xl md:rounded-t-md md:border-x"
+          side="right"
+          size="md"
+          footer={
+            canManage && copy ? (
+              <Button
+                variant="danger"
+                icon={<Trash2 />}
+                onClick={() => {
+                  setConfirmingDelete(true);
+                }}
+              >
+                {t("deleteCopy")}
+              </Button>
+            ) : undefined
+          }
         >
           {copy && (
             <div className="flex flex-col gap-6">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={copy.status === "available" ? "accent" : "neutral"}>
-                  {tStatus(copy.status)}
-                </Badge>
+                <Badge tone={toneOf(COPY_STATUS_TONE, copy.status)}>{tStatus(copy.status)}</Badge>
                 <span className="text-body-sm text-fg-muted">
                   {t("condition", { condition: tCondition(copy.condition) })}
                 </span>
               </div>
 
-              {canManage && copy.status === "on_loan" && (
-                <p className="rounded-sm border border-border bg-surface p-3 text-body-sm text-fg-muted">
-                  {t("statusBlockedByLoan")}
-                </p>
-              )}
+              {canManage && copy.status === "on_loan" && <Alert title={t("statusBlockedByLoan")} />}
 
               {canManage && copy.status !== "on_loan" && (
-                <form
-                  className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-3"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (!nextStatus) return;
-                    setStatus.mutate(
-                      { copyId: copy.id, status: nextStatus, note: note.trim() || undefined },
-                      {
-                        onSuccess: () => {
-                          toast.success(t("statusChanged"));
-                          setNextStatus("");
-                          setNote("");
+                <Card asChild padding="md">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!nextStatus) return;
+                      setStatus.mutate(
+                        { copyId: copy.id, status: nextStatus, note: note.trim() || undefined },
+                        {
+                          onSuccess: () => {
+                            toast.success(t("statusChanged"));
+                            setNextStatus("");
+                            setNote("");
+                          },
+                          onError: (error) => {
+                            toast.error(libraryErrorMessage(error));
+                            setConfirmingDelete(false);
+                          },
                         },
-                        onError: (error) => {
-                          toast.error(libraryErrorMessage(error));
-                          setConfirmingDelete(false);
-                        },
-                      },
-                    );
-                  }}
-                >
-                  <h3 className="text-label text-fg">{t("changeStatus")}</h3>
-                  <Field label={t("newStatus")}>
-                    <Select
-                      options={MANUAL_STATUSES.filter((value) => value !== copy.status).map(
-                        (value) => ({ value, label: tStatus(value) }),
-                      )}
-                      value={nextStatus}
-                      onValueChange={(value) => {
-                        setNextStatus(value as LibraryCopyStatus);
-                      }}
-                      placeholder={t("newStatusPlaceholder")}
-                    />
-                  </Field>
-                  <Field label={t("note")}>
-                    <Textarea
-                      value={note}
-                      onChange={(e) => {
-                        setNote(e.target.value);
-                      }}
-                      maxLength={500}
-                      rows={2}
-                    />
-                  </Field>
-                  <Button
-                    type="submit"
-                    size="sm"
-                    variant="secondary"
-                    className="self-start"
-                    disabled={!nextStatus}
-                    loading={setStatus.isPending}
+                      );
+                    }}
                   >
-                    {t("applyStatus")}
-                  </Button>
-                </form>
+                    <FormSection title={t("changeStatus")} columns={1}>
+                      <Field label={t("newStatus")}>
+                        <Select
+                          options={MANUAL_STATUSES.filter((value) => value !== copy.status).map(
+                            (value) => ({ value, label: tStatus(value) }),
+                          )}
+                          value={nextStatus}
+                          onValueChange={(value) => {
+                            setNextStatus(value as LibraryCopyStatus);
+                          }}
+                          placeholder={t("newStatusPlaceholder")}
+                        />
+                      </Field>
+                      <Field label={t("note")}>
+                        <Textarea
+                          value={note}
+                          onChange={(e) => {
+                            setNote(e.target.value);
+                          }}
+                          maxLength={500}
+                          rows={2}
+                        />
+                      </Field>
+                    </FormSection>
+                    <Button
+                      type="submit"
+                      variant="secondary"
+                      className="self-start"
+                      disabled={!nextStatus}
+                      loading={setStatus.isPending}
+                    >
+                      {t("applyStatus")}
+                    </Button>
+                  </form>
+                </Card>
               )}
 
-              <div className="flex flex-col gap-2">
-                <h3 className="text-label text-fg">{t("eventsHeading")}</h3>
+              <section className="flex flex-col gap-2">
+                <h3 className="text-heading text-fg">{t("eventsHeading")}</h3>
                 {events.isLoading ? (
-                  <Skeleton className="h-24 w-full" />
+                  <SkeletonList rows={3} />
                 ) : (events.data?.data.length ?? 0) === 0 ? (
                   <p className="text-body-sm text-fg-muted">{t("noEvents")}</p>
                 ) : (
-                  <ul className="flex flex-col gap-1 text-body-sm">
+                  <List framed dense aria-label={t("eventsHeading")}>
                     {events.data?.data.map((event) => (
-                      <li key={event.id} className="rounded-sm border border-border bg-surface p-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-medium text-fg">
-                            {t(`eventType.${event.event_type}`)}
-                          </span>
-                          <span className="text-caption text-fg-muted">
-                            {formatDateTime(event.created_at, { locale, timeZone })}
-                          </span>
-                        </div>
-                        {(Boolean(event.from_status) || Boolean(event.to_status)) && (
-                          <p className="text-caption text-fg-muted">
-                            {event.from_status
+                      <ListRow
+                        key={event.id}
+                        title={t(`eventType.${event.event_type}`)}
+                        meta={[
+                          event.from_status || event.to_status
+                            ? event.from_status
                               ? t("statusTransition", {
                                   from: statusLabel(event.from_status),
                                   to: statusLabel(event.to_status),
                                 })
-                              : statusLabel(event.to_status)}
-                          </p>
-                        )}
-                        {event.note && <p className="text-caption text-fg-muted">{event.note}</p>}
-                      </li>
+                              : statusLabel(event.to_status)
+                            : undefined,
+                          event.note,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                        trailing={
+                          <span className="text-caption text-fg-muted">
+                            {formatDateTime(event.created_at, { locale, timeZone })}
+                          </span>
+                        }
+                      />
                     ))}
-                  </ul>
+                  </List>
                 )}
-              </div>
-
-              {canManage && (
-                <div className="flex flex-col gap-2 border-t border-border pt-4">
-                  <Button
-                    type="button"
-                    variant="danger"
-                    size="sm"
-                    icon={<Trash2 />}
-                    className="self-start"
-                    onClick={() => {
-                      setConfirmingDelete(true);
-                    }}
-                  >
-                    {t("deleteCopy")}
-                  </Button>
-                </div>
-              )}
+              </section>
             </div>
           )}
         </SheetContent>
@@ -235,7 +236,7 @@ export function CopyDetailSheet({
         title={t("deleteCopy")}
         description={copy ? t("deleteBody", { barcode: copy.barcode }) : ""}
         confirmLabel={t("deleteConfirm")}
-        destructive
+        tone="danger"
         confirming={deleteCopy.isPending}
         onConfirm={async () => {
           if (!copy) return;

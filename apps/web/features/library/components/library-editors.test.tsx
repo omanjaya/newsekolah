@@ -163,7 +163,7 @@ describe("library editors", () => {
         onDone={vi.fn()}
       />,
     );
-    fireEvent.change(screen.getByLabelText(/validUntil/), { target: { value: "" } });
+    await user.click(screen.getByRole("button", { name: "Hapus tanggal" }));
     await user.click(screen.getByRole("button", { name: "save" }));
     const payload: unknown = mocks.updateMember.mock.calls[0]?.[0];
     expect(payload).toEqual({

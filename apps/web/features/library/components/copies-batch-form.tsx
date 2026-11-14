@@ -1,6 +1,6 @@
 "use client";
 
-import { FormError, Field, Button, Input, Select, useToast } from "@newsekolah/ui";
+import { NumberInput, FormError, Field, Button, Select, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -72,13 +72,12 @@ export function CopiesBatchForm({
       }}
     >
       <Field label={t("count")}>
-        <Input
-          type="number"
+        <NumberInput
           min={1}
           max={200}
-          value={count}
-          onChange={(e) => {
-            setCount(e.target.value);
+          value={count === "" ? null : Number(count)}
+          onChange={(next) => {
+            setCount(next === null ? "" : String(next));
           }}
           required
         />

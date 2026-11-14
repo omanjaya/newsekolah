@@ -2,12 +2,13 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  DialogFooter,
+  NumberInput,
   FormError,
   Field,
   Button,
   Dialog,
   DialogContent,
-  Input,
   Select,
   Textarea,
 } from "@newsekolah/ui";
@@ -73,7 +74,7 @@ export function ViolationRecordDialog({
         onOpenChange(next);
       }}
     >
-      <DialogContent title={t("title")}>
+      <DialogContent title={t("title")} size="md">
         <form
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -133,24 +134,22 @@ export function ViolationRecordDialog({
           </Field>
           {penalty === "fine" && (
             <Field label={t("amount")}>
-              <Input
-                type="number"
+              <NumberInput
                 min={0}
-                value={amount}
-                onChange={(e) => {
-                  setAmount(e.target.value);
+                value={amount === "" ? null : Number(amount)}
+                onChange={(next) => {
+                  setAmount(next === null ? "" : String(next));
                 }}
               />
             </Field>
           )}
           {penalty === "suspend" && (
             <Field label={t("suspendDays")}>
-              <Input
-                type="number"
+              <NumberInput
                 min={0}
-                value={suspendDays}
-                onChange={(e) => {
-                  setSuspendDays(e.target.value);
+                value={suspendDays === "" ? null : Number(suspendDays)}
+                onChange={(next) => {
+                  setSuspendDays(next === null ? "" : String(next));
                 }}
               />
             </Field>
@@ -166,7 +165,7 @@ export function ViolationRecordDialog({
             />
           </Field>
           {error && <FormError>{error}</FormError>}
-          <div className="flex justify-end gap-2 border-t border-border pt-4">
+          <DialogFooter>
             <Button
               type="button"
               variant="secondary"
@@ -179,7 +178,7 @@ export function ViolationRecordDialog({
             <Button type="submit" loading={create.isPending} disabled={!memberUserId}>
               {t("submit")}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

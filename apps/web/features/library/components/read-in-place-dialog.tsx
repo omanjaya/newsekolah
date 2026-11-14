@@ -3,7 +3,18 @@
 import { ApiError } from "@newsekolah/api-client";
 import { formatDateTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { Field, Button, Dialog, DialogContent, Input, Skeleton, useToast } from "@newsekolah/ui";
+import {
+  Field,
+  Button,
+  Dialog,
+  DialogContent,
+  Input,
+  Skeleton,
+  useToast,
+  Badge,
+  List,
+  ListRow,
+} from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -94,33 +105,34 @@ export function ReadInPlaceDialog({
                 maxLength={150}
               />
             </Field>
-            <Button type="submit" size="sm" loading={start.isPending}>
+            <Button type="submit" loading={start.isPending}>
               {t("start")}
             </Button>
           </form>
 
           <div className="flex flex-col gap-1">
-            <h3 className="text-label text-fg">{t("logHeading")}</h3>
+            <h3 className="text-heading text-fg">{t("logHeading")}</h3>
             {log.isLoading ? (
               <Skeleton className="h-24 w-full" />
             ) : (log.data?.data.length ?? 0) === 0 ? (
               <p className="text-body-sm text-fg-muted">{t("emptyLog")}</p>
             ) : (
-              <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto text-body-sm">
+              <List framed dense aria-label={t("logHeading")} className="max-h-60 overflow-y-auto">
                 {log.data?.data.map((entry) => (
-                  <li key={entry.id} className="rounded-sm border border-border bg-surface p-2">
-                    <span className="text-fg">
-                      {formatDateTime(entry.started_at, { locale, timeZone })}
-                    </span>
-                    {entry.visitor_name && (
-                      <span className="text-fg-muted"> - {entry.visitor_name}</span>
-                    )}
-                    {!entry.ended_at && (
-                      <span className="ml-2 text-fg-muted">({t("ongoing")})</span>
-                    )}
-                  </li>
+                  <ListRow
+                    key={entry.id}
+                    title={formatDateTime(entry.started_at, { locale, timeZone })}
+                    meta={entry.visitor_name}
+                    trailing={
+                      entry.ended_at ? undefined : (
+                        <Badge tone="info" dot>
+                          {t("ongoing")}
+                        </Badge>
+                      )
+                    }
+                  />
                 ))}
-              </ul>
+              </List>
             )}
           </div>
         </div>

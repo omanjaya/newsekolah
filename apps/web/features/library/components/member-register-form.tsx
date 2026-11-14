@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { FormError, Field, Button, Input, Select } from "@newsekolah/ui";
+import { DialogFooter, FormError, Field, Button, Input, Select } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -117,7 +117,7 @@ export function MemberRegisterForm({
         />
       </Field>
       {error && <FormError>{error}</FormError>}
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button
           type="button"
           variant="secondary"
@@ -130,7 +130,7 @@ export function MemberRegisterForm({
         <Button type="submit" loading={register.isPending} disabled={!userId || !memberTypeId}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

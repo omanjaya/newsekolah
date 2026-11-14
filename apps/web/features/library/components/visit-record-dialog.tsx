@@ -1,7 +1,17 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { FormError, Field, Button, Dialog, DialogContent, Input, Select } from "@newsekolah/ui";
+import {
+  DialogFooter,
+  NumberInput,
+  FormError,
+  Field,
+  Button,
+  Dialog,
+  DialogContent,
+  Input,
+  Select,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -58,7 +68,7 @@ export function VisitRecordDialog({
         onOpenChange(next);
       }}
     >
-      <DialogContent title={t("title")}>
+      <DialogContent title={t("title")} size="md">
         <form
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -124,12 +134,11 @@ export function VisitRecordDialog({
           )}
           {kind === "group" && (
             <Field label={t("groupSize")}>
-              <Input
-                type="number"
+              <NumberInput
                 min={1}
-                value={groupSize}
-                onChange={(e) => {
-                  setGroupSize(e.target.value);
+                value={groupSize === "" ? null : Number(groupSize)}
+                onChange={(next) => {
+                  setGroupSize(next === null ? "" : String(next));
                 }}
               />
             </Field>
@@ -145,7 +154,7 @@ export function VisitRecordDialog({
             />
           </Field>
           {error && <FormError>{error}</FormError>}
-          <div className="flex justify-end gap-2 border-t border-border pt-4">
+          <DialogFooter>
             <Button
               type="button"
               variant="secondary"
@@ -158,7 +167,7 @@ export function VisitRecordDialog({
             <Button type="submit" loading={record.isPending} disabled={!canSubmit}>
               {t("submit")}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

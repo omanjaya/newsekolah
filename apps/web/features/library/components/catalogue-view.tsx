@@ -312,7 +312,7 @@ export function CatalogueView(): ReactElement {
           }
         }}
       >
-        <DialogContent title={editing ? t("editTitle") : t("addTitle")}>
+        <DialogContent title={editing ? t("editTitle") : t("addTitle")} size="lg">
           {(adding || editing) && (
             <TitleForm
               key={editing?.id ?? "new"}

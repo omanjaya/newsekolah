@@ -1,7 +1,15 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Field, Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  DatePicker,
+  DialogFooter,
+  Field,
+  Select,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -65,15 +73,8 @@ export function MemberProfileForm({
           disabled={types.isLoading}
         />
       </Field>
-      <Field label={t("validUntil")}>
-        <Input
-          type="date"
-          value={validUntil}
-          onChange={(event) => {
-            setValidUntil(event.target.value);
-          }}
-        />
-        <span className="text-fg-muted">{t("validUntilHint")}</span>
+      <Field label={t("validUntil")} hint={t("validUntilHint")}>
+        <DatePicker value={validUntil} onChange={setValidUntil} clearable />
       </Field>
       <Field label={t("notes")}>
         <Textarea
@@ -84,14 +85,14 @@ export function MemberProfileForm({
           maxLength={1000}
         />
       </Field>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
-        <Button type="button" variant="secondary" onClick={onDone}>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={update.isPending} disabled={!memberTypeId || types.isError}>
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

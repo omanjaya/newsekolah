@@ -2,6 +2,8 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  DialogFooter,
+  NumberInput,
   FormError,
   Field,
   Badge,
@@ -284,42 +286,38 @@ function MaterialTypeForm({
       </Field>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Field label={t("maxLoanItems")}>
-          <Input
-            type="number"
+          <NumberInput
             min={1}
-            value={maxLoanItems}
-            onChange={(e) => {
-              setMaxLoanItems(e.target.value);
+            value={maxLoanItems === "" ? null : Number(maxLoanItems)}
+            onChange={(next) => {
+              setMaxLoanItems(next === null ? "" : String(next));
             }}
           />
         </Field>
         <Field label={t("maxLoanDays")}>
-          <Input
-            type="number"
+          <NumberInput
             min={1}
-            value={maxLoanDays}
-            onChange={(e) => {
-              setMaxLoanDays(e.target.value);
+            value={maxLoanDays === "" ? null : Number(maxLoanDays)}
+            onChange={(next) => {
+              setMaxLoanDays(next === null ? "" : String(next));
             }}
           />
         </Field>
         <Field label={t("maxRenewals")}>
-          <Input
-            type="number"
+          <NumberInput
             min={0}
-            value={maxRenewals}
-            onChange={(e) => {
-              setMaxRenewals(e.target.value);
+            value={maxRenewals === "" ? null : Number(maxRenewals)}
+            onChange={(next) => {
+              setMaxRenewals(next === null ? "" : String(next));
             }}
           />
         </Field>
       </div>
       <Field label={t("sortOrder")}>
-        <Input
-          type="number"
-          value={sortOrder}
-          onChange={(e) => {
-            setSortOrder(e.target.value);
+        <NumberInput
+          value={sortOrder === "" ? null : Number(sortOrder)}
+          onChange={(next) => {
+            setSortOrder(next === null ? "" : String(next));
           }}
         />
       </Field>
@@ -328,14 +326,14 @@ function MaterialTypeForm({
         <span className="font-medium">{t("isActive")}</span>
       </label>
       {error && <FormError>{error}</FormError>}
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={mutation.isPending} disabled={!code.trim() || !name.trim()}>
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

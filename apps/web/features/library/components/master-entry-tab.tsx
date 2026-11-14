@@ -2,6 +2,8 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  DialogFooter,
+  NumberInput,
   Field,
   Badge,
   Button,
@@ -284,12 +286,11 @@ function MasterEntryForm({
         />
       </Field>
       <Field label={t("form.sortOrder")}>
-        <Input
-          type="number"
+        <NumberInput
           inputMode="numeric"
-          value={sortOrder}
-          onChange={(e) => {
-            setSortOrder(e.target.value);
+          value={sortOrder === "" ? null : Number(sortOrder)}
+          onChange={(next) => {
+            setSortOrder(next === null ? "" : String(next));
           }}
         />
       </Field>
@@ -302,14 +303,14 @@ function MasterEntryForm({
           {error}
         </p>
       )}
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("form.cancel")}
         </Button>
         <Button type="submit" loading={pending} disabled={!code.trim() || !name.trim()}>
           {t("form.save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

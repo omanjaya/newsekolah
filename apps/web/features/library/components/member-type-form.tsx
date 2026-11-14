@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { FormError, Field, Button, Input, Select } from "@newsekolah/ui";
+import { DialogFooter, NumberInput, FormError, Field, Button, Input, Select } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -97,42 +97,38 @@ export function MemberTypeForm({
       </Field>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Field label={t("maxLoanItems")}>
-          <Input
-            type="number"
+          <NumberInput
             min={1}
-            value={maxLoanItems}
-            onChange={(e) => {
-              setMaxLoanItems(e.target.value);
+            value={maxLoanItems === "" ? null : Number(maxLoanItems)}
+            onChange={(next) => {
+              setMaxLoanItems(next === null ? "" : String(next));
             }}
           />
         </Field>
         <Field label={t("maxLoanDays")}>
-          <Input
-            type="number"
+          <NumberInput
             min={1}
-            value={maxLoanDays}
-            onChange={(e) => {
-              setMaxLoanDays(e.target.value);
+            value={maxLoanDays === "" ? null : Number(maxLoanDays)}
+            onChange={(next) => {
+              setMaxLoanDays(next === null ? "" : String(next));
             }}
           />
         </Field>
         <Field label={t("renewalDays")}>
-          <Input
-            type="number"
+          <NumberInput
             min={1}
-            value={renewalDays}
-            onChange={(e) => {
-              setRenewalDays(e.target.value);
+            value={renewalDays === "" ? null : Number(renewalDays)}
+            onChange={(next) => {
+              setRenewalDays(next === null ? "" : String(next));
             }}
           />
         </Field>
         <Field label={t("maxRenewals")}>
-          <Input
-            type="number"
+          <NumberInput
             min={0}
-            value={maxRenewals}
-            onChange={(e) => {
-              setMaxRenewals(e.target.value);
+            value={maxRenewals === "" ? null : Number(maxRenewals)}
+            onChange={(next) => {
+              setMaxRenewals(next === null ? "" : String(next));
             }}
           />
         </Field>
@@ -146,42 +142,38 @@ export function MemberTypeForm({
           />
         </Field>
         <Field label={t("finePerTenor")}>
-          <Input
-            type="number"
+          <NumberInput
             min={0}
-            value={finePerTenor}
-            onChange={(e) => {
-              setFinePerTenor(e.target.value);
+            value={finePerTenor === "" ? null : Number(finePerTenor)}
+            onChange={(next) => {
+              setFinePerTenor(next === null ? "" : String(next));
             }}
           />
         </Field>
         <Field label={t("tenorDays")}>
-          <Input
-            type="number"
+          <NumberInput
             min={1}
-            value={tenorDays}
-            onChange={(e) => {
-              setTenorDays(e.target.value);
+            value={tenorDays === "" ? null : Number(tenorDays)}
+            onChange={(next) => {
+              setTenorDays(next === null ? "" : String(next));
             }}
           />
         </Field>
         <Field label={t("suspendDays")}>
-          <Input
-            type="number"
+          <NumberInput
             min={0}
-            value={suspendDays}
-            onChange={(e) => {
-              setSuspendDays(e.target.value);
+            value={suspendDays === "" ? null : Number(suspendDays)}
+            onChange={(next) => {
+              setSuspendDays(next === null ? "" : String(next));
             }}
           />
         </Field>
         <Field label={t("validityMonths")}>
-          <Input
-            type="number"
+          <NumberInput
             min={1}
-            value={validityMonths}
-            onChange={(e) => {
-              setValidityMonths(e.target.value);
+            value={validityMonths === "" ? null : Number(validityMonths)}
+            onChange={(next) => {
+              setValidityMonths(next === null ? "" : String(next));
             }}
           />
         </Field>
@@ -195,14 +187,14 @@ export function MemberTypeForm({
         </Field>
       </div>
       {error && <FormError>{error}</FormError>}
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={mutation.isPending} disabled={!name.trim()}>
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

@@ -1,7 +1,16 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Field, Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import {
+  DialogFooter,
+  NumberInput,
+  Field,
+  Button,
+  Input,
+  Select,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -154,11 +163,10 @@ export function TitleForm({
         />
       </Field>
       <Field label={t("publishYear")}>
-        <Input
-          type="number"
-          value={publishYear}
-          onChange={(e) => {
-            setPublishYear(e.target.value);
+        <NumberInput
+          value={publishYear === "" ? null : Number(publishYear)}
+          onChange={(next) => {
+            setPublishYear(next === null ? "" : String(next));
           }}
           min={1000}
           max={3000}
@@ -251,7 +259,7 @@ export function TitleForm({
           maxLength={2000}
         />
       </Field>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
@@ -262,7 +270,7 @@ export function TitleForm({
         >
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

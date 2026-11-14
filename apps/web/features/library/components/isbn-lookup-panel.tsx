@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { FormError, Button } from "@newsekolah/ui";
+import { FormError, Button, Card } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -39,7 +39,7 @@ export function IsbnLookupPanel({
   const result = lookup.data;
 
   return (
-    <div className="flex flex-col gap-2 rounded-sm border border-border bg-bg p-3">
+    <Card tone="sunken" padding="sm">
       <div className="flex items-center justify-between gap-2">
         <span className="text-body-sm text-fg-muted">{t("hint")}</span>
         <Button
@@ -78,7 +78,7 @@ export function IsbnLookupPanel({
                 <img
                   src={bibliography.cover_image_url}
                   alt=""
-                  className="h-24 w-16 shrink-0 rounded-xs border border-border object-cover"
+                  className="h-24 w-16 shrink-0 rounded-sm object-cover shadow-1"
                 />
               )}
               <div className="flex flex-1 flex-col gap-1">
@@ -128,6 +128,6 @@ export function IsbnLookupPanel({
             </div>
           );
         })()}
-    </div>
+    </Card>
   );
 }
