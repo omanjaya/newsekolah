@@ -2,8 +2,7 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
-import { Badge, EmptyState, Skeleton, domainIcons } from "@newsekolah/ui";
-import Link from "next/link";
+import { Badge, EmptyState, List, ListRow, SkeletonList, domainIcons } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -28,7 +27,7 @@ export function HomeroomDisciplineTab({ classId }: { classId: string }): ReactEl
   const items = data?.data ?? [];
   const studentMap = useDirectoryNames(items.map((item) => item.student_user_id));
 
-  if (isLoading) return <Skeleton className="h-24 w-full" aria-busy="true" />;
+  if (isLoading) return <SkeletonList rows={4} />;
   if (items.length === 0 && !paging.hasPrevious) {
     return (
       <EmptyState
@@ -40,26 +39,21 @@ export function HomeroomDisciplineTab({ classId }: { classId: string }): ReactEl
 
   return (
     <div className="flex flex-col gap-3">
-      <ul className="flex flex-col divide-y divide-border rounded-sm border border-border bg-surface px-4">
+      <List framed>
         {items.map((item) => (
-          <li key={item.id}>
-            <Link
-              href={studentProfileHref(item.student_user_id, "discipline")}
-              className="flex items-center justify-between gap-2 py-3 hover:text-accent"
-            >
-              <div className="flex min-w-0 flex-col">
-                <span className="truncate text-body-sm text-fg">
-                  {studentMap.get(item.student_user_id)?.name ?? t("unknownStudent")}
-                </span>
-                <span className="truncate text-caption font-normal text-fg-muted">
-                  {item.type_name} · {formatDate(item.occurred_on, { locale })}
-                </span>
-              </div>
-              <Badge variant="accent">{t("pointsBadge", { points: item.points })}</Badge>
-            </Link>
-          </li>
+          <ListRow
+            key={item.id}
+            title={studentMap.get(item.student_user_id)?.name ?? t("unknownStudent")}
+            meta={`${item.type_name} · ${formatDate(item.occurred_on, { locale })}`}
+            trailing={
+              <Badge tone="warning" size="sm">
+                {t("pointsBadge", { points: item.points })}
+              </Badge>
+            }
+            href={studentProfileHref(item.student_user_id, "discipline")}
+          />
         ))}
-      </ul>
+      </List>
       <CursorPagination
         hasPrevious={paging.hasPrevious}
         hasNext={paging.hasNextFor(items.length)}

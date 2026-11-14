@@ -1,11 +1,13 @@
 "use client";
 
-import { cn } from "@newsekolah/ui";
+import { Button, Card, CardHeader, CardTitle, RowActionsMenu, cn } from "@newsekolah/ui";
 import { AlertTriangle, Copy, Pencil, Plus, Trash2 } from "lucide-react";
+import { useLocale } from "next-intl";
 import type { ReactElement } from "react";
 
 import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
+import { clockLabel } from "../clock-label";
 import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
 
 import { LessonSubstitutionAction } from "./lesson-substitution-action";
@@ -62,90 +64,35 @@ export function ScheduleMobileDayList({
   onDelete: (block: ScheduleBlock) => void;
   t: (key: string) => string;
 }): ReactElement {
+  const locale = useLocale();
   const lessons = lessonPeriods.filter((period) => !period.is_break);
 
   return (
-    <div className="flex flex-col gap-3 md:hidden">
+    <div className="flex flex-col gap-4 md:hidden">
       {classes.map((classItem) => (
-        <section
-          key={classItem.id}
-          className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-3"
-        >
-          <h3 className="text-label text-fg">{classItem.name}</h3>
+        <Card key={classItem.id} padding="sm">
+          <CardHeader>
+            <CardTitle as="h3">{classItem.name}</CardTitle>
+          </CardHeader>
           <ul className="flex flex-col gap-2">
             {lessons.map((period) => {
               const block = blocks.get(`${classItem.id}:${period.sequence}`);
               if (block && block.start_seq !== period.sequence) return null;
-              const tone = block ? subjectTone(block.subject_id) : null;
+              const time = clockLabel(period.starts_at, locale);
 
-              return (
-                <li
-                  key={period.id}
-                  className={cn(
-                    "flex flex-col gap-1 rounded-md px-3 py-2",
-                    tone ? SUBJECT_TONE_CLASSES[tone] : "border border-border",
-                  )}
-                >
-                  <div className="flex flex-col">
-                    <span className={cn("text-body-sm", !tone && "text-fg-muted")}>
-                      {period.name}
-                    </span>
-                    <span className={cn("text-caption font-normal", !tone && "text-fg-muted")}>
-                      {period.starts_at.slice(0, 5)}-{period.ends_at.slice(0, 5)}
-                    </span>
-                  </div>
-                  {block ? (
-                    <>
-                      <span className="flex items-center gap-1.5 font-medium">
-                        <span className="truncate">
-                          {subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
-                        </span>
-                        {blockCrossesBreak(block, lessonPeriods) && (
-                          <span
-                            role="img"
-                            aria-label={t("crossesBreakWarning")}
-                            title={t("crossesBreakWarning")}
-                            className="inline-flex shrink-0 items-center justify-center rounded-full bg-surface/80 p-0.5 text-status-late"
-                          >
-                            <AlertTriangle className="size-3" aria-hidden="true" />
-                          </span>
-                        )}
-                      </span>
-                      <span className="text-caption font-normal">
-                        {teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher")}
-                      </span>
-                      <LessonSubstitutionAction block={block} />
-                      {canManage && (
-                        <div className="mt-1 flex w-fit flex-wrap items-center gap-2 rounded-full bg-surface/70 px-1">
-                          <DayAction
-                            label={t("copyBlock")}
-                            icon={<Copy className="size-3.5" aria-hidden="true" />}
-                            onClick={() => {
-                              onCopy(block);
-                            }}
-                          />
-                          <DayAction
-                            label={t("editBlock")}
-                            icon={<Pencil className="size-3.5" aria-hidden="true" />}
-                            onClick={() => {
-                              onEdit(block);
-                            }}
-                          />
-                          <DayAction
-                            label={t("deleteBlock")}
-                            danger
-                            icon={<Trash2 className="size-3.5" aria-hidden="true" />}
-                            onClick={() => {
-                              onDelete(block);
-                            }}
-                          />
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    canManage && (
-                      <button
-                        type="button"
+              if (!block) {
+                return (
+                  <li
+                    key={period.id}
+                    className="flex min-h-11 items-center gap-3 rounded-md border border-dashed border-border px-3 py-1.5 text-body-sm text-fg-muted"
+                  >
+                    <span className="w-12 shrink-0 tabular-nums">{time}</span>
+                    <span className="min-w-0 flex-1 truncate">{period.name}</span>
+                    {canManage && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={copied ? <Copy /> : <Plus />}
                         onClick={() => {
                           if (copied) {
                             onPaste(classItem.id, period.sequence);
@@ -153,50 +100,82 @@ export function ScheduleMobileDayList({
                           }
                           onAdd(classItem.id, period.sequence);
                         }}
-                        className="mt-1 flex min-h-11 w-full items-center justify-center gap-1 rounded-xs border border-dashed border-border text-caption font-normal text-fg-muted hover:bg-bg"
                       >
-                        {copied ? (
-                          <Copy className="size-3.5" aria-hidden="true" />
-                        ) : (
-                          <Plus className="size-3.5" aria-hidden="true" />
-                        )}
                         {copied ? t("pasteHere") : t("addHere")}
-                      </button>
-                    )
+                      </Button>
+                    )}
+                  </li>
+                );
+              }
+
+              return (
+                <li
+                  key={period.id}
+                  className={cn(
+                    "flex items-start gap-3 rounded-md px-3 py-2.5",
+                    SUBJECT_TONE_CLASSES[subjectTone(block.subject_id)],
+                  )}
+                >
+                  <span className="w-12 shrink-0 pt-0.5 text-label tabular-nums">{time}</span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="flex items-center gap-1.5">
+                      <span className="truncate text-label">
+                        {subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
+                      </span>
+                      {blockCrossesBreak(block, lessonPeriods) && (
+                        <span
+                          role="img"
+                          aria-label={t("crossesBreakWarning")}
+                          title={t("crossesBreakWarning")}
+                          className="inline-flex shrink-0 text-warning"
+                        >
+                          <AlertTriangle className="size-3.5" aria-hidden="true" />
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-body-sm opacity-90">
+                      {teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher")} ·{" "}
+                      {period.name}
+                    </span>
+                    <div className="-ml-3 empty:hidden">
+                      <LessonSubstitutionAction block={block} />
+                    </div>
+                  </div>
+                  {canManage && (
+                    <RowActionsMenu
+                      ariaLabel={t("blockActions")}
+                      items={[
+                        {
+                          label: t("copyBlock"),
+                          icon: <Copy />,
+                          onClick: () => {
+                            onCopy(block);
+                          },
+                        },
+                        {
+                          label: t("editBlock"),
+                          icon: <Pencil />,
+                          onClick: () => {
+                            onEdit(block);
+                          },
+                        },
+                        {
+                          label: t("deleteBlock"),
+                          icon: <Trash2 />,
+                          tone: "danger",
+                          onClick: () => {
+                            onDelete(block);
+                          },
+                        },
+                      ]}
+                    />
                   )}
                 </li>
               );
             })}
           </ul>
-        </section>
+        </Card>
       ))}
     </div>
-  );
-}
-
-/** A labelled action on a day-list row, thumb-sized because it is tapped. */
-function DayAction({
-  label,
-  icon,
-  danger,
-  onClick,
-}: {
-  label: string;
-  icon: ReactElement;
-  danger?: boolean;
-  onClick: () => void;
-}): ReactElement {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex min-h-11 items-center gap-1 px-1 text-caption font-normal text-fg-muted",
-        danger ? "hover:text-status-absent" : "hover:text-fg",
-      )}
-    >
-      {icon}
-      {label}
-    </button>
   );
 }

@@ -1,7 +1,16 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Select, Skeleton, Textarea, useToast, Field } from "@newsekolah/ui";
+import {
+  Alert,
+  Button,
+  DialogFooter,
+  Field,
+  Select,
+  Skeleton,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -149,11 +158,7 @@ export function ScheduleForm({
         void submit();
       }}
     >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-body-sm">
-          {error}
-        </p>
-      )}
+      {error && <Alert variant="danger">{error}</Alert>}
       {field(
         t("class"),
         <Select
@@ -181,18 +186,22 @@ export function ScheduleForm({
           labels={teacherLabels}
         />,
       )}
-      <div className="grid gap-4 md:grid-cols-3">
-        {field(
-          t("day"),
-          <Select
-            options={[1, 2, 3, 4, 5, 6, 7].map((d) => ({
-              value: String(d),
-              label: tDays(String(d)),
-            }))}
-            value={day}
-            onValueChange={setDay}
-          />,
-        )}
+      {/* The day on its own row, the two periods side by side, so a period
+          label ("Jam 1 (07:00)") never wraps inside its select. */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2">
+          {field(
+            t("day"),
+            <Select
+              options={[1, 2, 3, 4, 5, 6, 7].map((d) => ({
+                value: String(d),
+                label: tDays(String(d)),
+              }))}
+              value={day}
+              onValueChange={setDay}
+            />,
+          )}
+        </div>
         {field(
           t("start"),
           <Select options={periodOptions} value={startId} onValueChange={setStartId} />,
@@ -202,12 +211,20 @@ export function ScheduleForm({
       {editing && detail.isLoading ? (
         <Skeleton className="h-20 w-full" aria-busy="true" />
       ) : editing && detail.isError ? (
-        <div className="flex flex-col gap-2 rounded-xs border border-status-late/40 px-3 py-2 text-body-sm">
-          <p role="alert">{t("notesLoadError")}</p>
-          <Button type="button" variant="secondary" size="sm" onClick={() => void detail.refetch()}>
-            {tCommon("retry")}
-          </Button>
-        </div>
+        <Alert
+          variant="danger"
+          title={t("notesLoadError")}
+          action={
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => void detail.refetch()}
+            >
+              {tCommon("retry")}
+            </Button>
+          }
+        />
       ) : (
         field(
           t("notes"),
@@ -222,7 +239,7 @@ export function ScheduleForm({
           />,
         )
       )}
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button
           type="button"
           variant="secondary"
@@ -238,7 +255,7 @@ export function ScheduleForm({
         >
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

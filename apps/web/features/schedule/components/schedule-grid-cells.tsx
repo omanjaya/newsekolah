@@ -214,7 +214,7 @@ function BreakWarningBadge({ label }: { label: string }): ReactElement {
       role="img"
       aria-label={label}
       title={label}
-      className="inline-flex shrink-0 items-center justify-center rounded-full bg-surface/80 p-0.5 text-status-late"
+      className="inline-flex shrink-0 items-center justify-center rounded-full bg-surface/80 p-0.5 text-warning"
     >
       <AlertTriangle className="size-3" aria-hidden="true" />
     </span>

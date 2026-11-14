@@ -2,7 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import { formatTime, type Locale } from "@newsekolah/i18n";
-import { Alert, Button, Input, Select, useToast, Field } from "@newsekolah/ui";
+import { Alert, Button, DatePicker, DialogFooter, Field, Select, useToast } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -191,20 +191,23 @@ export function JournalForm({
       }}
     >
       {draftOffer && (
-        <Alert variant="warning" title={t("draftFoundTitle")}>
-          <p>
-            {t("draftFoundBody", {
-              time: formatTime(draftOffer.savedAt, { locale, timeZone: me?.tenant.timezone }),
-            })}
-          </p>
-          <div className="mt-2 flex gap-2">
-            <Button type="button" size="sm" onClick={restoreDraft}>
-              {t("draftRestore")}
-            </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={dismissDraft}>
-              {t("draftDismiss")}
-            </Button>
-          </div>
+        <Alert
+          variant="warning"
+          title={t("draftFoundTitle")}
+          action={
+            <div className="flex gap-2">
+              <Button type="button" size="sm" variant="secondary" onClick={dismissDraft}>
+                {t("draftDismiss")}
+              </Button>
+              <Button type="button" size="sm" onClick={restoreDraft}>
+                {t("draftRestore")}
+              </Button>
+            </div>
+          }
+        >
+          {t("draftFoundBody", {
+            time: formatTime(draftOffer.savedAt, { locale, timeZone: me?.tenant.timezone }),
+          })}
         </Alert>
       )}
       <Field label={t("class")}>
@@ -228,14 +231,11 @@ export function JournalForm({
         />
       </Field>
       <Field label={t("date")}>
-        <Input
-          type="date"
+        <DatePicker
           value={lessonDate}
-          onChange={(e) => {
-            setLessonDate(e.target.value);
-          }}
+          onChange={setLessonDate}
+          clearable={false}
           disabled={locked}
-          aria-label={t("date")}
         />
       </Field>
 
@@ -249,14 +249,14 @@ export function JournalForm({
         onReflectionChange={setReflection}
       />
 
-      <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={upsert.isPending} disabled={!canSubmit}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }
