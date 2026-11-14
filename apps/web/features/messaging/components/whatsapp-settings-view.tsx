@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
-import { AppPage } from "../../../components/app-page";
+import { SettingsPage } from "../../settings/components/settings-page";
 
 import { DeliveriesView } from "./deliveries-view";
 import { ProviderConfigView } from "./provider-config-view";
@@ -13,15 +13,16 @@ import { TemplatesView } from "./templates-view";
 /**
  * WhatsApp gateway configuration, message templates, and the delivery
  * log: docs/12-roadmap.md Fase 5 ("adapter WhatsApp Business API dan
- * email; template pesan; log pengiriman").
+ * email; template pesan; log pengiriman"). It sits in the settings frame
+ * like its sibling pages: its registry name as the title, a trail back to
+ * the hub and the communication section's pages as tabs under the header,
+ * with the page's own three panels below.
  */
 export function WhatsAppSettingsView(): ReactElement {
   const t = useTranslations("app.messaging");
 
   return (
-    // The settings area draws its own section switch above; this page names
-    // itself after its menu entry rather than the settings hub.
-    <AppPage nav={false} title={t("title")} description={t("description")}>
+    <SettingsPage navKey="settings-whatsapp" variant="default" description={t("description")}>
       <Tabs defaultValue="provider" className="flex flex-col gap-5">
         <TabsList aria-label={t("title")}>
           <TabsTrigger value="provider">{t("tabs.provider")}</TabsTrigger>
@@ -38,6 +39,6 @@ export function WhatsAppSettingsView(): ReactElement {
           <DeliveriesView />
         </TabsContent>
       </Tabs>
-    </AppPage>
+    </SettingsPage>
   );
 }
