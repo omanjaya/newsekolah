@@ -17,7 +17,12 @@ body {
   background-color: var(--color-accent);
   color: var(--color-accent-fg);
   border-radius: var(--radius-xs);
-  font-size: var(--text-13);
+  /* The label role (packages/ui-tokens), whole: family, size, line, weight. */
+  font-family: var(--font-sans);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  letter-spacing: var(--type-label-tracking);
 }
 
 .skip-link:focus {
@@ -80,8 +85,8 @@ body {
 }
 
 /*
- * Auth hero motion: slow-drifting gradient orbs behind the login brand panel.
- * Purely decorative, so it collapses to a static position under
+ * Auth hero motion: the light bloom behind the sign-in brand panel drifts
+ * very slowly. Purely decorative, so it stays still under
  * prefers-reduced-motion.
  */
 @keyframes auth-orb-a {
@@ -93,26 +98,12 @@ body {
   }
 }
 
-@keyframes auth-orb-b {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  100% {
-    transform: translate3d(-8%, 6%, 0) scale(1.1);
-  }
-}
-
 .auth-orb-a {
   animation: auth-orb-a 18s ease-in-out infinite alternate;
 }
 
-.auth-orb-b {
-  animation: auth-orb-b 22s ease-in-out infinite alternate;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .auth-orb-a,
-  .auth-orb-b {
+  .auth-orb-a {
     animation: none;
   }
 }
