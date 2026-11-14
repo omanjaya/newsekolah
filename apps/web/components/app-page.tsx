@@ -32,6 +32,8 @@ export interface AppPageProps {
   documentTitle?: string;
   /** Muted line above the title. Defaults to the sidebar group ("Data Sekolah") on an area's own pages; `false` hides it. */
   eyebrow?: ReactNode | false;
+  /** An avatar or icon circle before the title, for a page about one person or thing. */
+  leading?: ReactNode;
   description?: ReactNode;
   /** The trail above the title. Defaults to "page > this" on a detail route; `false` hides it. */
   breadcrumb?: BreadcrumbItem[] | false;
@@ -89,6 +91,7 @@ export function AppPage({
   title,
   documentTitle,
   eyebrow,
+  leading,
   description,
   breadcrumb,
   actions,
@@ -171,6 +174,7 @@ export function AppPage({
             className="pb-0"
             eyebrow={resolvedEyebrow}
             title={resolvedTitle}
+            leading={leading}
             description={description}
             actions={actions}
             primaryAction={primaryAction}

@@ -35,6 +35,12 @@ export interface PageHeaderProps extends Omit<ComponentPropsWithRef<"div">, "tit
   /** The section the page belongs to, above the title ("Data Sekolah"). */
   eyebrow?: ReactNode;
   title: ReactNode;
+  /**
+   * An avatar or an icon circle before the title, for a page about one
+   * person or thing (a student's record, a book). It is centred on the
+   * title and its description together.
+   */
+  leading?: ReactNode;
   /** One sentence under the title, at most a line and a half wide. */
   description?: ReactNode;
   /** The trail to this page: items, or a ready Breadcrumb. */
@@ -114,18 +120,35 @@ function OverflowMenu({ actions, className }: { actions: PageHeaderAction[]; cla
   );
 }
 
+/*
+ * The title block is a grid, so the leading avatar, the title, the phone's
+ * overflow button and the description each keep their place without a
+ * wrapper between the title and its description. Spelled out per case:
+ * Tailwind only sees whole class names.
+ */
+function headingColumns(leading: boolean, phoneMenu: boolean): string {
+  if (leading && phoneMenu) {
+    return "grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)]";
+  }
+  if (leading) return "grid-cols-[auto_minmax(0,1fr)]";
+  if (phoneMenu) return "grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)]";
+  return "grid-cols-[minmax(0,1fr)]";
+}
+
 /**
  * The top of every page (docs/07-ui-ux.md, "Hijau Segar"): breadcrumb,
- * muted eyebrow, the title on the display role, an optional description,
- * and the page's actions centred on the title line. When the actions do
- * not fit beside the title they wrap under it, as they do on a phone,
- * where secondary ones also collapse into a menu. While the title is
- * scrolled out of view it is offered to the app's compact header
+ * muted eyebrow, an optional leading avatar or icon, the title on the
+ * display role, an optional description, and the page's actions centred on
+ * the title line. When the actions do not fit beside the title they wrap
+ * under it, as they do on a phone, where secondary ones collapse into a
+ * menu whose button sits at the end of the title's own line. While the
+ * title is scrolled out of view it is offered to the app's compact header
  * (`compactTitle`).
  */
 export function PageHeader({
   eyebrow,
   title,
+  leading,
   description,
   breadcrumb,
   actions,
@@ -144,6 +167,11 @@ export function PageHeader({
     breadcrumb
   ) : null;
   const hasActions = Boolean(actions) || Boolean(primaryAction) || secondaryActions.length > 0;
+  // On a phone only the free-form actions and the primary one keep a row
+  // under the title; the overflow menu sits on the title's line.
+  const phoneActions = Boolean(actions) || Boolean(primaryAction);
+  const phoneMenu = secondaryActions.length > 0;
+  const hasLeading = leading !== undefined && leading !== null && leading !== false;
   // A destructive action never sits out as a button: it waits in the menu
   // at every width, where it takes a deliberate second tap.
   const buttons = secondaryActions.filter((action) => !action.destructive);
@@ -178,15 +206,41 @@ export function PageHeader({
           <div
             data-slot="page-header-heading"
             className={cn(
-              "flex min-w-0 flex-col gap-2 sm:grow-999",
+              "grid min-w-0 items-start gap-x-3 gap-y-2 sm:grow-999",
+              headingColumns(hasLeading, phoneMenu),
+              hasLeading && "gap-x-4",
               description ? "sm:basis-112" : "sm:basis-64",
             )}
           >
-            <h1 ref={titleRef} className="text-display text-fg">
+            {hasLeading && (
+              <div
+                data-slot="page-header-leading"
+                className={cn("flex shrink-0 self-center", description && "row-span-2")}
+              >
+                {leading}
+              </div>
+            )}
+            <h1 ref={titleRef} className="min-w-0 text-display text-fg">
               {title}
             </h1>
+            {/* The phone's overflow button ends the title's first line
+                (a 36px button, 44px on touch, centred on the 28px line)
+                instead of taking a row of its own under the description. */}
+            {phoneMenu && (
+              <OverflowMenu
+                actions={secondaryActions}
+                className="-my-1 self-start pointer-coarse:-my-2 sm:hidden"
+              />
+            )}
             {description && (
-              <div className="max-w-prose text-body text-fg-muted">{description}</div>
+              <div
+                className={cn(
+                  "max-w-prose text-body text-fg-muted",
+                  hasLeading ? "col-[2/-1]" : "col-span-full",
+                )}
+              >
+                {description}
+              </div>
             )}
           </div>
           {/* A 40px row centred on the 32px title line: 4px above it, so a
@@ -194,14 +248,14 @@ export function PageHeader({
           {hasActions && (
             <div
               data-slot="page-header-actions"
-              className="flex min-w-0 flex-wrap items-center gap-2 sm:-mt-1 sm:min-h-10 sm:grow"
+              className={cn(
+                "min-w-0 flex-wrap items-center gap-2 sm:-mt-1 sm:flex sm:min-h-10 sm:grow",
+                phoneActions ? "flex" : "hidden",
+              )}
             >
               {actions}
               {buttons.length > 0 && <SecondaryButtons actions={buttons} />}
               {primaryAction}
-              {secondaryActions.length > 0 && (
-                <OverflowMenu actions={secondaryActions} className="sm:hidden" />
-              )}
               {destructive.length > 0 && (
                 <OverflowMenu actions={destructive} className="hidden sm:block" />
               )}

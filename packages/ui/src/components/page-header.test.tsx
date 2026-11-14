@@ -196,6 +196,63 @@ describe("PageHeader", () => {
     expect(block).not.toHaveClass("sm:basis-64");
   });
 
+  // The session editor lost a whole row to the menu button on a phone; it
+  // now ends the title's line, and a header with nothing else to show
+  // there keeps no empty actions row on a phone.
+  it("puts the phone's overflow button on the title's line", () => {
+    render(
+      <PageHeader
+        title="Pertemuan 2"
+        description="X-A · Matematika"
+        secondaryActions={[{ label: "Riwayat", href: "/history" }]}
+      />,
+    );
+    const heading = screen.getByRole("heading", { level: 1, name: "Pertemuan 2" });
+    const block = heading.parentElement;
+    const [phoneMenu] = screen.getAllByRole("button", { name: "Aksi lainnya" });
+    expect(phoneMenu?.closest("[data-slot=page-header-heading]")).toBe(block);
+    expect(phoneMenu?.parentElement).toHaveClass("sm:hidden", "self-start");
+    expect(block).toHaveClass("grid-cols-[minmax(0,1fr)_auto]", "sm:grid-cols-[minmax(0,1fr)]");
+    expect(screen.getByText("X-A · Matematika")).toHaveClass("col-span-full");
+    // From 640px the action sits out as a button in the actions row.
+    const actions = screen
+      .getByRole("link", { name: "Riwayat" })
+      .closest("[data-slot=page-header-actions]");
+    expect(actions).toHaveClass("hidden", "sm:flex");
+  });
+
+  it("keeps the actions row on a phone for a primary action", () => {
+    render(
+      <PageHeader
+        title="Pelanggaran"
+        primaryAction={<Button>Catat</Button>}
+        secondaryActions={[{ label: "Unduh rekap", onSelect: () => undefined }]}
+      />,
+    );
+    const actions = screen.getByRole("button", { name: "Catat" }).parentElement;
+    expect(actions).toHaveAttribute("data-slot", "page-header-actions");
+    expect(actions).toHaveClass("flex");
+    expect(actions).not.toHaveClass("hidden");
+  });
+
+  it("sets a leading avatar beside the title and its description", async () => {
+    const { container } = render(
+      <PageHeader
+        title="Nadia Putri"
+        description="NIS 22014 · X-A"
+        leading={<span data-testid="avatar">NP</span>}
+      />,
+    );
+    const leading = screen.getByTestId("avatar").parentElement;
+    expect(leading).toHaveAttribute("data-slot", "page-header-leading");
+    expect(leading).toHaveClass("row-span-2", "self-center");
+    const block = screen.getByRole("heading", { level: 1, name: "Nadia Putri" }).parentElement;
+    expect(leading?.parentElement).toBe(block);
+    expect(block).toHaveClass("grid-cols-[auto_minmax(0,1fr)]");
+    expect(screen.getByText("NIS 22014 · X-A")).toHaveClass("col-[2/-1]");
+    await expectNoAxeViolations(container);
+  });
+
   it("passes an id, a test id and a ref to its root", () => {
     const ref = createRef<HTMLDivElement>();
     render(<PageHeader ref={ref} id="top" data-testid="page-header" title="Siswa" />);
