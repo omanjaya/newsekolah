@@ -32,7 +32,14 @@ export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
   size?: FieldSize;
   /** An icon or short text before the value, e.g. a search glass or "Rp". */
   leading?: ReactNode;
-  /** An icon, unit or small button after the value, e.g. "kg" or a clear button. */
+  /**
+   * An icon, unit or small button after the value, e.g. "kg" or a clear
+   * button. For one that comes and goes (a clear button only while
+   * filled), pass `null` or `false` while it is hidden, never `undefined`:
+   * a given adornment keeps the field's boxed structure, so the input is
+   * not remounted (losing focus and the next keystroke) when it appears,
+   * and an empty slot takes no room.
+   */
   trailing?: ReactNode;
   /**
    * With `leading` or `trailing`, `className` lands on the box (size it
@@ -44,6 +51,11 @@ export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
 
 /** Adornment slot: icons take the field's muted 16px, text the body size. */
 const ADORNMENT = "flex shrink-0 items-center text-fg-muted [&_svg]:size-4";
+
+/** `null`, `false`, `true` and "" render nothing, so their slot is left out rather than drawn empty. */
+function hasContent(node: ReactNode): boolean {
+  return node !== undefined && node !== null && typeof node !== "boolean" && node !== "";
+}
 
 /**
  * The text field. Reads its label, description and invalid state from a
@@ -82,6 +94,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     else if (ref) ref.current = element;
   };
 
+  // Given at all (even as null or false), an adornment keeps the boxed
+  // structure for the life of the field; see `trailing`.
   if (leading === undefined && trailing === undefined) {
     return (
       <input
@@ -128,7 +142,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       )}
       onMouseDown={focusInput}
     >
-      {leading !== undefined && <span className={ADORNMENT}>{leading}</span>}
+      {hasContent(leading) && <span className={ADORNMENT}>{leading}</span>}
       <input
         ref={setRefs}
         className={cn(
@@ -140,7 +154,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         {...control}
         {...props}
       />
-      {trailing !== undefined && <span className={ADORNMENT}>{trailing}</span>}
+      {hasContent(trailing) && <span className={ADORNMENT}>{trailing}</span>}
     </div>
   );
 });

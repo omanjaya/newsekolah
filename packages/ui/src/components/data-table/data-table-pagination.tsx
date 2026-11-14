@@ -15,17 +15,6 @@ export interface DataTablePaginationLabels {
   next: string;
 }
 
-/**
- * Legacy: the defaults now come from `UiLabels` (`tablePageOf`,
- * `tablePrevious`, `tableNext`), so a locale provider translates them; this
- * constant only keeps the old export working.
- */
-export const DEFAULT_PAGINATION_LABELS: DataTablePaginationLabels = {
-  pageLabel: (current, total) => `Halaman ${current} dari ${total}`,
-  previous: "Ke halaman sebelumnya",
-  next: "Ke halaman berikutnya",
-};
-
 /** Previous and next for a list that pages by cursor or offset without a total. */
 export interface DataTableCursorPagination {
   hasPrevious: boolean;
@@ -48,6 +37,11 @@ interface PaginationBarProps {
   previousLabel: string;
   nextLabel: string;
   pageSize?: { value: number; options: number[]; onChange: (size: number) => void };
+  /**
+   * A page is loading: previous and next stay where they are (a focused
+   * button keeps its focus) but do nothing until the rows arrive.
+   */
+  busy?: boolean;
   className?: string;
 }
 
@@ -68,6 +62,7 @@ export function PaginationBar({
   previousLabel,
   nextLabel,
   pageSize,
+  busy = false,
   className,
 }: PaginationBarProps): ReactElement {
   const labels = useUiLabels();
@@ -112,14 +107,16 @@ export function PaginationBar({
               <IconButton
                 icon={<ChevronLeft />}
                 aria-label={previousLabel}
-                onClick={onPrevious}
+                onClick={busy ? undefined : onPrevious}
                 disabled={!canPrevious}
+                aria-disabled={busy && canPrevious ? true : undefined}
               />
               <IconButton
                 icon={<ChevronRight />}
                 aria-label={nextLabel}
-                onClick={onNext}
+                onClick={busy ? undefined : onNext}
                 disabled={!canNext}
+                aria-disabled={busy && canNext ? true : undefined}
               />
             </div>
           )}
@@ -135,9 +132,15 @@ export interface DataTablePaginationProps<TData> {
   pageCount?: number;
   /** All rows across pages, when known; drives "1–10 dari 48". */
   totalRows?: number;
-  /** Offers a page size picker (from `sm` up) with these choices. */
+  /**
+   * Offers a page size picker (from `sm` up) with these choices whenever
+   * the rows outnumber the smallest one, so a size that fits every row on
+   * one page can still be changed back.
+   */
   pageSizeOptions?: number[];
   labels?: Partial<DataTablePaginationLabels>;
+  /** See `PaginationBar`'s `busy`. */
+  busy?: boolean;
   className?: string;
 }
 
@@ -148,26 +151,37 @@ export function DataTablePagination<TData>({
   totalRows,
   pageSizeOptions,
   labels: labelsOverride,
+  busy,
   className,
 }: DataTablePaginationProps<TData>): ReactElement {
   const uiLabels = useUiLabels();
   const pageLabelOf = labelsOverride?.pageLabel ?? uiLabels.tablePageOf;
   const { pageIndex, pageSize } = table.getState().pagination;
   const rawPageCount = pageCountOverride ?? table.getPageCount();
-  // A server table without a row count has an unknown number of pages
-  // (TanStack reports -1): it keeps previous and next, without "of N".
+  // A TanStack table created with `pageCount: -1` has an unknown number of
+  // pages: it keeps previous and next, without "of N". `DataTable` always
+  // knows its count (the rows, or `rowCount`), so only a caller's own
+  // table reaches this.
   const knownPageCount = rawPageCount >= 0 ? Math.max(1, rawPageCount) : undefined;
   const multiPage = knownPageCount === undefined || knownPageCount > 1;
+  const sizes = pageSizeOptions ?? [];
+  const offersPageSize =
+    sizes.length > 1 && (totalRows !== undefined ? totalRows > Math.min(...sizes) : multiPage);
   const shown = table.getRowModel().rows.length;
   const from = pageIndex * pageSize + 1;
   const to = pageIndex * pageSize + shown;
+  // A server page past the end (its last row was just deleted) keeps the
+  // way back, without a "Halaman 6 dari 5".
+  const pastLastPage = knownPageCount !== undefined && pageIndex >= knownPageCount;
 
   let summary: string | undefined;
-  if (totalRows !== undefined) {
+  if (shown === 0) {
+    summary = totalRows !== undefined ? uiLabels.tableRowCount(totalRows) : undefined;
+  } else if (totalRows !== undefined) {
     summary = multiPage
       ? uiLabels.tableRange(from, Math.min(to, totalRows), totalRows)
       : uiLabels.tableRowCount(totalRows);
-  } else if (shown > 0) {
+  } else {
     summary = uiLabels.tableRangeOpen(from, to);
   }
 
@@ -176,9 +190,11 @@ export function DataTablePagination<TData>({
       className={className}
       summary={summary}
       pageLabel={
-        knownPageCount !== undefined ? pageLabelOf(pageIndex + 1, knownPageCount) : undefined
+        knownPageCount !== undefined && !pastLastPage
+          ? pageLabelOf(pageIndex + 1, knownPageCount)
+          : undefined
       }
-      navigation={multiPage}
+      navigation={multiPage || pageIndex > 0}
       canPrevious={table.getCanPreviousPage()}
       canNext={table.getCanNextPage()}
       onPrevious={() => {
@@ -189,13 +205,14 @@ export function DataTablePagination<TData>({
       }}
       previousLabel={labelsOverride?.previous ?? uiLabels.tablePrevious}
       nextLabel={labelsOverride?.next ?? uiLabels.tableNext}
+      busy={busy}
       pageSize={
-        pageSizeOptions && pageSizeOptions.length > 1 && multiPage
+        offersPageSize
           ? {
               value: pageSize,
-              options: pageSizeOptions.includes(pageSize)
-                ? pageSizeOptions
-                : [...pageSizeOptions, pageSize].sort((a, b) => a - b),
+              options: sizes.includes(pageSize)
+                ? sizes
+                : [...sizes, pageSize].sort((a, b) => a - b),
               onChange: (size) => {
                 table.setPageSize(size);
               },
@@ -210,10 +227,12 @@ export function DataTablePagination<TData>({
 export function DataTableCursorFooter({
   cursor,
   shownRows,
+  busy,
   className,
 }: {
   cursor: DataTableCursorPagination;
   shownRows: number;
+  busy?: boolean;
   className?: string;
 }): ReactElement {
   const uiLabels = useUiLabels();
@@ -235,6 +254,7 @@ export function DataTableCursorFooter({
       onNext={cursor.onNext}
       previousLabel={uiLabels.tablePrevious}
       nextLabel={uiLabels.tableNext}
+      busy={busy}
     />
   );
 }

@@ -64,12 +64,31 @@ describe("Scanner", () => {
     const onScan = vi.fn();
     render(<Scanner onScan={onScan} />);
     expect(screen.queryByRole("button", { name: "Nyalakan kamera" })).not.toBeInTheDocument();
+    // A person types well past the scanner's 30ms average between keys.
+    const person = userEvent.setup({ delay: 60 });
+    await person.type(screen.getByLabelText("Kode"), "K7F2QD{Enter}");
+    await waitFor(() => {
+      expect(onScan).toHaveBeenCalledWith(
+        expect.objectContaining({ code: "K7F2QD", source: "manual" }),
+      );
+    });
+    expect(onScan).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText("Kode")).toHaveValue("");
+  });
+
+  it("reports a hardware scan into the focused manual field once", async () => {
+    const onScan = vi.fn();
+    render(<Scanner onScan={onScan} />);
+    // userEvent's default typing is scanner speed: the whole code in a few ms.
     await userEvent.type(screen.getByLabelText("Kode"), "sion:gate:abc{Enter}");
     await waitFor(() => {
       expect(onScan).toHaveBeenCalledWith(
-        expect.objectContaining({ code: "sion:gate:abc", source: "manual" }),
+        expect.objectContaining({ code: "sion:gate:abc", source: "scanner" }),
       );
     });
+    // Let the scan queue settle before counting.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(onScan).toHaveBeenCalledTimes(1);
     expect(screen.getByLabelText("Kode")).toHaveValue("");
   });
 

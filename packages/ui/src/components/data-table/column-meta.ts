@@ -28,8 +28,21 @@ declare module "@tanstack/react-table" {
 export const ACTIONS_COLUMN_ID = "actions";
 export const SELECT_COLUMN_ID = "select";
 
+/**
+ * Column ids the column menu has always left out. "action" is not the
+ * row-actions column (tables use it for data: an audit entry's action, a
+ * promotion decision), so it only keeps its old place outside the menu.
+ */
+const UNLISTED_COLUMN_IDS: readonly string[] = [ACTIONS_COLUMN_ID, SELECT_COLUMN_ID, "action"];
+
+/** Only the exact `ACTIONS_COLUMN_ID`: a data column named "action" stays an ordinary column. */
 export function isActionsColumn<TData>(column: Column<TData>): boolean {
-  return column.id === ACTIONS_COLUMN_ID || column.id === "action";
+  return column.id === ACTIONS_COLUMN_ID;
+}
+
+/** Whether the column menu may offer to hide or show this column. */
+export function isListedInColumnMenu<TData>(column: Column<TData>): boolean {
+  return !UNLISTED_COLUMN_IDS.includes(column.id);
 }
 
 export function columnAlign<TData>(column: Column<TData>): "start" | "end" {

@@ -8,6 +8,7 @@ import {
   TableBody,
   TableCaption,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -66,6 +67,63 @@ describe("Table", () => {
     const numericCell = screen.getByRole("cell", { name: "12" });
     expect(numericCell.className).toContain("text-right");
     expect(numericCell.className).toContain("tabular-nums");
+  });
+
+  it("gives a column header the band's padding with room for several lines", () => {
+    renderTable("compact");
+    const header = screen.getByRole("columnheader", { name: "Judul" });
+    expect(header).toHaveAttribute("scope", "col");
+    expect(header).toHaveClass("px-3", "py-2", "h-10", "shadow-[inset_0_-1px_0_var(--color-line)]");
+  });
+
+  it("heads a body row like a cell: its padding, wrapping, no header rule", () => {
+    render(
+      <Table density="compact">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Siswa</TableHead>
+            <TableHead>Nilai</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow data-state="selected">
+            <TableHead>Ahmad Fauzan Ramadhan Saputra</TableHead>
+            <TableCell>88</TableCell>
+          </TableRow>
+        </TableBody>
+        <TableFooter>
+          <TableRow>
+            <TableHead>Rata-rata</TableHead>
+            <TableCell>88</TableCell>
+          </TableRow>
+        </TableFooter>
+      </Table>,
+    );
+    const rowHeader = screen.getByRole("rowheader", { name: "Ahmad Fauzan Ramadhan Saputra" });
+    expect(rowHeader).toHaveAttribute("scope", "row");
+    expect(rowHeader).toHaveClass("px-3", "py-2", "text-left");
+    expect(rowHeader).not.toHaveClass("whitespace-nowrap");
+    expect(rowHeader).not.toHaveClass("h-10");
+    expect(rowHeader.className).not.toContain("shadow-");
+    expect(rowHeader.closest("tr")).toHaveClass("data-[state=selected]:bg-state-selected");
+
+    const total = screen.getByRole("rowheader", { name: "Rata-rata" });
+    expect(total).toHaveAttribute("scope", "row");
+    expect(total.closest("tfoot")).toHaveClass("bg-surface-sunken");
+    expect(total.closest("tr")).toHaveClass("border-t");
+  });
+
+  it("keeps a caller's own scope", () => {
+    render(
+      <Table>
+        <TableBody>
+          <TableRow>
+            <TableHead scope="col">Kolom</TableHead>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    expect(screen.getByRole("columnheader", { name: "Kolom" })).toHaveAttribute("scope", "col");
   });
 
   it("has no axe violations", async () => {

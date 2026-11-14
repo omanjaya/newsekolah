@@ -87,10 +87,6 @@ interface PickerFieldProps extends PickerFieldAriaProps {
   className?: string;
 }
 
-export function isInvalid(invalid: boolean | undefined, ariaInvalid: unknown): boolean {
-  return invalid ?? (ariaInvalid === true || ariaInvalid === "true");
-}
-
 /**
  * The field-shaped trigger the date, range and month pickers share: it
  * sits in a form exactly like `Select`, a select-only combobox whose text

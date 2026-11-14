@@ -348,3 +348,6 @@ export {
   FirstUseEmptyState,
   type FirstUseEmptyStateProps,
 } from "./components/first-use-empty-state.js";
+
+// Forms and data review fixes (wave 2).
+export type { BarcodeScannerHandle } from "./hooks/use-barcode-scanner.js";

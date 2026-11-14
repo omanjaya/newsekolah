@@ -3,7 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
+import { compiledSelector } from "../test/tailwind-selector.js";
 
+import { Combobox } from "./combobox.js";
+import { Dialog, DialogContent } from "./dialog.js";
 import { Field } from "./field.js";
 import { Select } from "./select.js";
 import { UiLabelsProvider } from "./ui-labels.js";
@@ -76,5 +79,42 @@ describe("Select", () => {
       </Field>,
     );
     await expectNoAxeViolations(container);
+  });
+});
+
+describe("Select and Combobox chevrons", () => {
+  // Every Radix overlay carries data-state="open", so a chevron keyed to any
+  // open ancestor would point up for good inside a dialog.
+  it("turn only with their own trigger, not with an open Dialog around them", async () => {
+    render(
+      <Dialog open>
+        <DialogContent title="Ubah kelas">
+          <Select aria-label="Kelas" options={[{ value: "x-a", label: "X-A" }]} />
+          <Combobox
+            aria-label="Wali kelas"
+            options={[{ value: "rina", label: "Rina" }]}
+            value=""
+            onValueChange={vi.fn()}
+            search=""
+            onSearchChange={vi.fn()}
+          />
+        </DialogContent>
+      </Dialog>,
+    );
+    const select = screen.getByRole("combobox", { name: "Kelas" });
+    const combobox = screen.getByRole("button", { name: "Wali kelas" });
+    const turned = async (trigger: HTMLElement) => {
+      const icon = trigger.querySelector("svg");
+      if (!icon) throw new Error("Missing chevron");
+      const rotate = Array.from(icon.classList).find((name) => name.endsWith(":rotate-180"));
+      if (!rotate) throw new Error("Chevron has no open rotation");
+      return icon.matches(await compiledSelector(rotate));
+    };
+    expect(await turned(select)).toBe(false);
+    expect(await turned(combobox)).toBe(false);
+
+    await userEvent.click(combobox);
+    expect(await turned(combobox)).toBe(true);
+    expect(await turned(select)).toBe(false);
   });
 });

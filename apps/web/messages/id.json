@@ -104,7 +104,8 @@
       "controls": {
         "field": {
           "optional": "(opsional)",
-          "formErrorTitle": "Periksa kembali isian berikut"
+          "formErrorTitle": "Periksa kembali isian berikut",
+          "required": "Wajib diisi"
         },
         "password": {
           "show": "Tampilkan kata sandi",
@@ -149,7 +150,8 @@
           "filterRemove": "Hapus filter {label}",
           "filterDateFrom": "Dari",
           "filterDateTo": "Sampai",
-          "filterDateInvalid": "Tanggal mulai harus sebelum atau sama dengan tanggal akhir"
+          "filterDateInvalid": "Tanggal mulai harus sebelum atau sama dengan tanggal akhir",
+          "emptyTitle": "Belum ada data"
         },
         "scanner": {
           "manualLabel": "Kode",
@@ -207,6 +209,52 @@
           "timeOptions": "Pilihan jam",
           "numberIncrement": "Tambah",
           "numberDecrement": "Kurangi"
+        },
+        "page": {
+          "breadcrumb": "Navigasi halaman",
+          "moreActions": "Aksi lainnya"
+        },
+        "avatar": {
+          "groupMore": "{count, number} orang lainnya"
+        },
+        "dataList": {
+          "noValue": "Tidak ada"
+        },
+        "empty": {
+          "filteredTitle": "Tidak ada yang cocok",
+          "filteredDescription": "Coba kata kunci lain atau hapus filter yang aktif.",
+          "filteredReset": "Hapus filter"
+        },
+        "statePage": {
+          "code": "Kode {code}"
+        },
+        "alert": {
+          "dismiss": "Tutup pesan"
+        },
+        "stat": {
+          "deltaUp": "Naik",
+          "deltaDown": "Turun",
+          "deltaFlat": "Tetap"
+        },
+        "link": {
+          "opensInNewTab": "(membuka tab baru)"
+        },
+        "toast": {
+          "close": "Tutup notifikasi",
+          "region": "Notifikasi"
+        },
+        "commandPalette": {
+          "label": "Pencarian global",
+          "placeholder": "Cari halaman, siswa, guru, atau aksi",
+          "empty": "Tidak ada hasil yang cocok",
+          "hintMove": "Pindah",
+          "hintOpen": "Buka",
+          "hintClose": "Tutup",
+          "cancel": "Batal"
+        },
+        "stepper": {
+          "complete": "selesai",
+          "stopped": "dihentikan"
         }
       }
     },

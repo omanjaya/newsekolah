@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
 import { pressArrow } from "../test/press-arrow.js";
+import { compiledSelector } from "../test/tailwind-selector.js";
 
 import { RadioGroup, RadioGroupItem } from "./radio-group.js";
 
@@ -52,6 +53,26 @@ describe("RadioGroup", () => {
     await userEvent.click(screen.getByRole("radio", { name: "Gelap" }));
     expect(screen.getByRole("radio", { name: "Gelap" })).toBeChecked();
     await expectNoAxeViolations(container);
+  });
+
+  it("looks disabled when the whole group is, labels and the checked dot included", async () => {
+    render(
+      <RadioGroup aria-label="Cakupan" defaultValue="class" disabled>
+        <RadioGroupItem value="class" label="Per kelas" />
+        <RadioGroupItem value="grade" label="Per angkatan" />
+      </RadioGroup>,
+    );
+    const checked = screen.getByRole("radio", { name: "Per kelas" });
+    expect(checked).toBeDisabled();
+    const label = screen.getByText("Per kelas");
+    expect(
+      label.matches(await compiledSelector("group-has-disabled/radio:cursor-not-allowed")),
+    ).toBe(true);
+    const dot = checked.querySelector("span");
+    if (!dot) throw new Error("Missing dot");
+    expect(
+      dot.matches(await compiledSelector("group-disabled:group-data-[state=checked]:opacity-50")),
+    ).toBe(true);
   });
 
   it("has no accessibility violations", async () => {

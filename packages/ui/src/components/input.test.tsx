@@ -1,10 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
 
+import { Dialog, DialogContent } from "./dialog.js";
 import { Input } from "./input.js";
 import { PasswordInput } from "./password-input.js";
 import { SearchInput } from "./search-input.js";
@@ -78,11 +79,73 @@ describe("Input and Textarea", () => {
     expect(input).toHaveFocus();
   });
 
-  it("grows an autosizing textarea with its content and drops the resize handle", () => {
-    render(<Textarea aria-label="Catatan" autoResize defaultValue={"a\nb\nc"} />);
+  it("keeps one input while an adornment given as null comes and goes", async () => {
+    function ClearableField() {
+      const [value, setValue] = useState("");
+      return (
+        <Input
+          aria-label="Nama"
+          value={value}
+          onChange={(event) => {
+            setValue(event.target.value);
+          }}
+          trailing={value === "" ? null : <span>{value.length}</span>}
+        />
+      );
+    }
+    render(<ClearableField />);
+    const input = screen.getByRole("textbox", { name: "Nama" });
+    await userEvent.type(input, "ab");
+    expect(screen.getByRole("textbox", { name: "Nama" })).toBe(input);
+    expect(input).toHaveValue("ab");
+    expect(input).toHaveFocus();
+    expect(screen.getByText("2")).toBeInTheDocument();
+  });
+
+  it("draws no empty slot for an adornment that is false or null", () => {
+    render(<Input aria-label="Berat" trailing={false} />);
+    const box = screen.getByRole("textbox", { name: "Berat" }).parentElement;
+    expect(box?.children).toHaveLength(1);
+  });
+
+  it("grows an autosizing textarea with its content up to maxRows, then scrolls", () => {
+    // jsdom has no layout: report a content height from the line count.
+    const scrollHeight = vi
+      .spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get")
+      .mockImplementation(function (this: HTMLTextAreaElement) {
+        return this.value.split("\n").length * 20 + 16;
+      });
+    const { rerender } = render(
+      <Textarea aria-label="Catatan" autoResize maxRows={4} value="a" onChange={() => undefined} />,
+    );
     const textarea = screen.getByRole("textbox", { name: "Catatan" });
     expect(textarea).toHaveClass("resize-none");
-    expect(textarea.style.height).not.toBe("");
+    const oneLine = Number.parseFloat(textarea.style.height);
+    rerender(
+      <Textarea
+        aria-label="Catatan"
+        autoResize
+        maxRows={4}
+        value={"a\nb\nc"}
+        onChange={() => undefined}
+      />,
+    );
+    const threeLines = Number.parseFloat(textarea.style.height);
+    expect(threeLines).toBeGreaterThan(oneLine);
+    expect(textarea.style.overflowY).toBe("hidden");
+    rerender(
+      <Textarea
+        aria-label="Catatan"
+        autoResize
+        maxRows={4}
+        value={"1\n2\n3\n4\n5\n6\n7"}
+        onChange={() => undefined}
+      />,
+    );
+    // Capped at four lines plus the padding and border, and scrolling past it.
+    expect(Number.parseFloat(textarea.style.height)).toBe(4 * 20 + 18);
+    expect(textarea.style.overflowY).toBe("auto");
+    scrollHeight.mockRestore();
   });
 
   it("has no accessibility violations", async () => {
@@ -149,6 +212,33 @@ describe("SearchInput", () => {
     await userEvent.type(box, "Budi");
     await userEvent.keyboard("{Escape}");
     expect(box).toHaveValue("");
+  });
+
+  it("empties a filled box on Escape before a surrounding dialog closes, then lets Escape through", async () => {
+    const onOpenChange = vi.fn();
+    const onClear = vi.fn();
+    render(
+      <Dialog open onOpenChange={onOpenChange}>
+        <DialogContent title="Pilih siswa">
+          <SearchInput aria-label="Cari siswa" defaultValue="Nadia" onClear={onClear} />
+        </DialogContent>
+      </Dialog>,
+    );
+    const box = screen.getByRole("searchbox", { name: "Cari siswa" });
+    box.focus();
+    await userEvent.keyboard("{Escape}");
+    expect(box).toHaveValue("");
+    expect(onClear).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).not.toHaveBeenCalled();
+
+    await userEvent.keyboard("{Escape}");
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("keeps the native clear button hidden alongside a caller's inputClassName", () => {
+    render(<SearchInput aria-label="Cari" inputClassName="text-right" />);
+    const box = screen.getByRole("searchbox", { name: "Cari" });
+    expect(box).toHaveClass("text-right", "[&::-webkit-search-cancel-button]:appearance-none");
   });
 
   it("has no accessibility violations", async () => {

@@ -131,7 +131,7 @@ export function BarcodeScannerField({
     createDuplicateScanGuard(continuous ? CAMERA_DUPLICATE_WINDOW_MS : duplicateWindowMs),
   );
 
-  useBarcodeScanner({
+  const hardware = useBarcodeScanner({
     onScan: (event) => {
       setValue("");
       void onScan(event);
@@ -169,10 +169,11 @@ export function BarcodeScannerField({
             setValue(event.target.value);
           }}
           onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              submitManual();
-            }
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            // A hardware scan typed into this field is reported once, by the
+            // page-wide listener, as a "scanner" scan.
+            if (!hardware.isScanPending()) submitManual();
           }}
           placeholder={placeholder}
           disabled={disabled}

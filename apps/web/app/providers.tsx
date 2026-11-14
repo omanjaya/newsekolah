@@ -60,13 +60,16 @@ export function AppProviders({
           <SessionProvider>
             <SimulationSync />
             <ThemeProvider>
-              {/*
-                Kept global (rather than scoped to `(app)`, docs/16-audit-performa-web.md
-                item 8) because `(auth)/change-password` and `(auth)/reset-password`
-                also call `useToast()` and need a mounted `<Toaster />` to render it.
-              */}
-              <UiLocaleProvider>{children}</UiLocaleProvider>
-              <Toaster />
+              <UiLocaleProvider>
+                {children}
+                {/*
+                  Kept global (rather than scoped to `(app)`, docs/16-audit-performa-web.md
+                  item 8) because `(auth)/change-password` and `(auth)/reset-password`
+                  also call `useToast()` and need a mounted `<Toaster />` to render it.
+                  Inside UiLocaleProvider so its close button and region are translated.
+                */}
+                <Toaster />
+              </UiLocaleProvider>
             </ThemeProvider>
           </SessionProvider>
         </TenantProvider>

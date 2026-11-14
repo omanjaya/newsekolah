@@ -7,14 +7,20 @@ import { z } from "zod";
 
 import { expectNoAxeViolations } from "../test/axe.js";
 
+import { Combobox } from "./combobox.js";
 import { DatePicker } from "./date-picker.js";
+import { DateRangePicker } from "./date-range-picker.js";
+import { Dialog, DialogContent, DialogTrigger } from "./dialog.js";
 import { Field } from "./field.js";
 import { FormActions, FormError, FormSection } from "./form-layout.js";
 import { Form, FormField } from "./form.js";
 import { Input } from "./input.js";
+import { MonthPicker } from "./month-picker.js";
 import { NumberInput } from "./number-input.js";
+import { Popover, PopoverContent, PopoverTrigger } from "./popover.js";
 import { Select } from "./select.js";
 import { Textarea } from "./textarea.js";
+import { TimePicker } from "./time-picker.js";
 import { UiLabelsProvider } from "./ui-labels.js";
 
 describe("Field", () => {
@@ -94,6 +100,111 @@ describe("Field", () => {
     expect(screen.getByRole("spinbutton", { name: "Lama" })).toHaveAccessibleDescription(
       "Dalam hari.",
     );
+  });
+
+  it("wires Combobox, TimePicker, DateRangePicker and MonthPicker too", () => {
+    render(
+      <>
+        <Field label="Pengganti" required hint="Guru yang sedang tidak mengajar.">
+          <Combobox
+            options={[]}
+            value=""
+            onValueChange={() => undefined}
+            search=""
+            onSearchChange={() => undefined}
+          />
+        </Field>
+        <Field label="Jam masuk" error="Isi jam masuk">
+          <TimePicker />
+        </Field>
+        <Field label="Periode" hint="Paling lama satu semester.">
+          <DateRangePicker />
+        </Field>
+        <Field label="Bulan" disabled>
+          <MonthPicker />
+        </Field>
+      </>,
+    );
+    // A button cannot carry aria-required, so its description says it.
+    const combobox = screen.getByRole("button", { name: /Pengganti/ });
+    expect(combobox).toHaveAccessibleDescription("Guru yang sedang tidak mengajar. Wajib diisi");
+    expect(combobox).not.toHaveAttribute("aria-required");
+
+    const time = screen.getByRole("combobox", { name: "Jam masuk" });
+    expect(time).toHaveAttribute("aria-invalid", "true");
+    expect(time).toHaveAccessibleDescription("Isi jam masuk");
+    expect(screen.getByRole("combobox", { name: "Periode" })).toHaveAccessibleDescription(
+      "Paling lama satu semester.",
+    );
+    expect(screen.getByRole("combobox", { name: "Bulan" })).toBeDisabled();
+  });
+
+  it("gives its id to the first control only, so a second keeps its own", () => {
+    render(
+      <Field label="Jam pelajaran" error="Jam selesai harus setelah jam mulai">
+        <div className="flex gap-2">
+          <TimePicker aria-label="Mulai" />
+          <TimePicker aria-label="Selesai" />
+        </div>
+      </Field>,
+    );
+    const [start, end] = screen.getAllByRole("combobox");
+    if (!start || !end) throw new Error("Missing pickers");
+    expect(start.id).not.toBe("");
+    expect(end.id).not.toBe(start.id);
+    expect(screen.getByText("Jam pelajaran").closest("label")).toHaveAttribute("for", start.id);
+    expect(start).toHaveAttribute("aria-invalid", "true");
+    expect(end).not.toHaveAttribute("aria-invalid");
+  });
+
+  it("keeps a control inside a popover from a render-prop trigger out of the field's wiring", async () => {
+    render(
+      <Field label="Warna" error="Pilih warna">
+        {(control) => (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button type="button" {...control}>
+                Hijau
+              </button>
+            </PopoverTrigger>
+            <PopoverContent>
+              <Input aria-label="Kode hex" />
+            </PopoverContent>
+          </Popover>
+        )}
+      </Field>,
+    );
+    const trigger = screen.getByRole("button", { name: "Warna" });
+    await userEvent.click(trigger);
+    const inner = await screen.findByRole("textbox", { name: "Kode hex" });
+    expect(inner.id).not.toBe(trigger.id);
+    expect(inner).not.toHaveAttribute("aria-invalid");
+    expect(inner).not.toHaveAttribute("aria-describedby");
+    expect(screen.getByText("Warna").closest("label")).toHaveAttribute("for", trigger.id);
+  });
+
+  it("keeps a control in a dialog opened from beside the field's own control out of its wiring", async () => {
+    render(
+      <Field label="Kode buku" error="Kode tidak dikenal">
+        <div className="flex gap-2">
+          <Input />
+          <Dialog>
+            <DialogTrigger asChild>
+              <button type="button">Cari</button>
+            </DialogTrigger>
+            <DialogContent title="Cari buku">
+              <Input aria-label="Judul" />
+            </DialogContent>
+          </Dialog>
+        </div>
+      </Field>,
+    );
+    const own = screen.getByRole("textbox", { name: "Kode buku" });
+    await userEvent.click(screen.getByRole("button", { name: "Cari" }));
+    const inner = await screen.findByRole("textbox", { name: "Judul" });
+    expect(inner.id).not.toBe(own.id);
+    expect(inner).not.toHaveAttribute("aria-invalid");
+    expect(own).toHaveAttribute("aria-invalid", "true");
   });
 
   it("hands ids to a control it does not know through a render prop", () => {

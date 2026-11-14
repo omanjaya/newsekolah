@@ -162,7 +162,7 @@ export function Scanner({
     },
   });
 
-  useBarcodeScanner({
+  const hardware = useBarcodeScanner({
     onScan: (event) => {
       setValue("");
       submit(event);
@@ -242,6 +242,7 @@ export function Scanner({
       value={value}
       onChange={setValue}
       onSubmit={submitManual}
+      isScanPending={hardware.isScanPending}
       disabled={disabled}
       label={manualLabel ?? labels.scannerManualLabel}
       placeholder={manualPlaceholder ?? labels.scannerManualPlaceholder}
@@ -319,6 +320,7 @@ function ManualEntry({
   value,
   onChange,
   onSubmit,
+  isScanPending,
   disabled,
   label,
   placeholder,
@@ -331,6 +333,8 @@ function ManualEntry({
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
+  /** A hardware scanner just typed here: its Enter is the scanner hook's, not this field's. */
+  isScanPending: () => boolean;
   disabled: boolean;
   label: string;
   placeholder: string;
@@ -377,10 +381,11 @@ function ManualEntry({
                 onChange(event.target.value);
               }}
               onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  onSubmit();
-                }
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                // A hardware scan typed into this field is reported once, by
+                // the page-wide listener, as a "scanner" scan.
+                if (!isScanPending()) onSubmit();
               }}
               className={cn(
                 kiosk && "h-16 px-4 text-title-lg font-sans font-normal md:pointer-fine:h-16",

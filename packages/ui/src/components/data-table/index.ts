@@ -12,13 +12,11 @@ export {
 } from "./data-table-filters.js";
 export {
   DataTableToolbar,
-  DEFAULT_TOOLBAR_LABELS,
   type DataTableToolbarLabels,
   type DataTableToolbarProps,
 } from "./data-table-toolbar.js";
 export {
   DataTablePagination,
-  DEFAULT_PAGINATION_LABELS,
   type DataTableCursorPagination,
   type DataTablePaginationLabels,
   type DataTablePaginationProps,

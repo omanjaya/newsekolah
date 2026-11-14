@@ -37,6 +37,29 @@ describe("BarcodeScannerField", () => {
       expect.objectContaining({ code: payload, source: "manual" }),
     );
   });
+
+  it("reports a hardware scan into the focused field once, as a scan", async () => {
+    const onScan = vi.fn();
+    render(<BarcodeScannerField label="Kode buku" onScan={onScan} />);
+    // userEvent's default typing is scanner speed: the whole code in a few ms.
+    await userEvent.type(screen.getByLabelText("Kode buku"), "B-000123{Enter}");
+    expect(onScan).toHaveBeenCalledTimes(1);
+    expect(onScan).toHaveBeenCalledWith(
+      expect.objectContaining({ code: "B-000123", source: "scanner" }),
+    );
+    expect(screen.getByLabelText("Kode buku")).toHaveValue("");
+  });
+
+  it("submits a code a person typed and confirmed with Enter", async () => {
+    const onScan = vi.fn();
+    render(<BarcodeScannerField label="Kode buku" onScan={onScan} />);
+    const person = userEvent.setup({ delay: 60 });
+    await person.type(screen.getByLabelText("Kode buku"), "B-12{Enter}");
+    expect(onScan).toHaveBeenCalledTimes(1);
+    expect(onScan).toHaveBeenCalledWith(
+      expect.objectContaining({ code: "B-12", source: "manual" }),
+    );
+  });
 });
 
 describe("BarcodeScannerField continuous camera", () => {

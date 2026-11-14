@@ -10,6 +10,12 @@
 export interface FormsDataUiLabels {
   /** Suffix after the label of a field marked `optional`, e.g. "(opsional)". */
   fieldOptional: string;
+  /**
+   * Read as the description of a required control that cannot carry
+   * `aria-required` itself (Combobox's trigger is a button), since the
+   * label's asterisk is hidden from assistive tech.
+   */
+  fieldRequired: string;
   /** Default title of `FormError`, the summary box above a form. */
   formErrorTitle: string;
 
@@ -33,6 +39,8 @@ export interface FormsDataUiLabels {
   /** The phone toolbar's overflow menu holding the column and density options. */
   tableMoreOptions: string;
   tableClearSelection: string;
+  /** What an empty table says when its screen gave no empty state of its own. */
+  tableEmptyTitle: string;
   tableNoResultsTitle: string;
   tableNoResultsDescription: string;
   tableClearSearch: string;
@@ -93,6 +101,7 @@ export interface FormsDataUiLabels {
 
 export const DEFAULT_FORMS_DATA_UI_LABELS: FormsDataUiLabels = {
   fieldOptional: "(opsional)",
+  fieldRequired: "Wajib diisi",
   formErrorTitle: "Periksa kembali isian berikut",
 
   passwordShow: "Tampilkan kata sandi",
@@ -113,6 +122,7 @@ export const DEFAULT_FORMS_DATA_UI_LABELS: FormsDataUiLabels = {
   tableDensityCompact: "Padat",
   tableMoreOptions: "Opsi tabel",
   tableClearSelection: "Batalkan pilihan",
+  tableEmptyTitle: "Belum ada data",
   tableNoResultsTitle: "Tidak ada hasil",
   tableNoResultsDescription: "Coba kata kunci lain atau hapus pencarian.",
   tableClearSearch: "Hapus pencarian",

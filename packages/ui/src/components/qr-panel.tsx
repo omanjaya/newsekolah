@@ -31,10 +31,18 @@ export interface QrPanelProps {
    * up to min(60vh, 420px), for a kiosk or a duty screen read from afar.
    */
   size?: "md" | "lg";
-  /** Asks for a new code by itself when this one expires, for an unattended screen. */
+  /**
+   * Asks for a new code by itself when this one expires, for an unattended
+   * screen: once at expiry, then, while renewals fail (or keep returning a
+   * code that is already expired), again after 5, 15 and 60 seconds. After
+   * that it stops and leaves the "Buat kode baru" button to a person.
+   */
   autoRenew?: boolean;
   className?: string;
 }
+
+/** Waits before each retry of a failed automatic renewal; past the last one, none. */
+const QR_AUTO_RENEW_RETRY_MS: readonly number[] = [5_000, 15_000, 60_000];
 
 /**
  * A short-lived QR in a calm frame: the code large on a white tile (in both
@@ -44,8 +52,81 @@ export interface QrPanelProps {
  * expires (docs/05-shared-components.md `QrDisplay`).
  */
 export function QrPanel(props: QrPanelProps): ReactElement {
+  const { expiresAt, onRenew, renewing, autoRenew = false } = props;
+  // Which code the countdown saw run out; a new code is alive until its own does.
+  const [expiredCode, setExpiredCode] = useState<string | null>(null);
+  useAutoRenew({
+    expiresAt,
+    expired: expiredCode === expiresAt,
+    enabled: autoRenew,
+    renewing,
+    onRenew,
+  });
   // Keyed on expiresAt so a renewed token restarts the countdown cleanly.
-  return <Countdown key={props.expiresAt} {...props} />;
+  return (
+    <Countdown
+      key={expiresAt}
+      {...props}
+      onExpire={() => {
+        setExpiredCode(expiresAt);
+      }}
+    />
+  );
+}
+
+/**
+ * Asks for a new code once per expiry, then retries on
+ * `QR_AUTO_RENEW_RETRY_MS` while renewals fail: `renewing` falling back to
+ * false with the same expired code is a failure, and so is a renewal that
+ * brings back a code already expired (a client clock far ahead of the
+ * server). Lives above the keyed countdown so a remount keeps the count.
+ */
+function useAutoRenew({
+  expiresAt,
+  expired,
+  enabled,
+  renewing,
+  onRenew,
+}: {
+  expiresAt: string;
+  expired: boolean;
+  enabled: boolean;
+  renewing: boolean;
+  onRenew: () => void;
+}): void {
+  const attempts = useRef(0);
+  const onRenewRef = useRef(onRenew);
+  useEffect(() => {
+    onRenewRef.current = onRenew;
+  });
+  // A code that arrives alive means the last renewal worked.
+  useEffect(() => {
+    if (remaining(expiresAt) > 0) attempts.current = 0;
+  }, [expiresAt]);
+  useEffect(() => {
+    if (!expired || !enabled || renewing) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const waitFor = (attempt: number) => QR_AUTO_RENEW_RETRY_MS[attempt - 1];
+    const renew = () => {
+      const attempt = attempts.current;
+      attempts.current = attempt + 1;
+      onRenewRef.current();
+      // The next try is already on the clock, so a renewal that fails
+      // without `renewing` ever showing still backs off. A live code, or
+      // `renewing` going true, clears it.
+      const delay = waitFor(attempt + 1);
+      if (delay !== undefined) timer = setTimeout(renew, delay);
+    };
+    const attempt = attempts.current;
+    if (attempt === 0) renew();
+    else {
+      const delay = waitFor(attempt);
+      if (delay !== undefined) timer = setTimeout(renew, delay);
+    }
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [expired, enabled, renewing]);
 }
 
 /** A QR is read best dark on white, so its tile stays white in both themes. */
@@ -70,22 +151,15 @@ function Countdown({
   renewLabel,
   label,
   size = "md",
-  autoRenew = false,
   className,
-}: QrPanelProps): ReactElement {
+  onExpire,
+}: QrPanelProps & { onExpire: () => void }): ReactElement {
   const labels = useUiLabels();
   // Only the *transition* to expired lives here, not the 1s tick itself: a
   // kiosk/duty screen keeps this panel mounted indefinitely, and re-running
   // `Countdown` every second would reconcile the whole QR subtree forever
   // for no visual change. The tick lives in `CountdownStatus` instead.
   const [expired, setExpired] = useState(() => remaining(expiresAt) <= 0);
-  const onRenewRef = useRef(onRenew);
-  useEffect(() => {
-    onRenewRef.current = onRenew;
-  });
-  useEffect(() => {
-    if (expired && autoRenew && !renewing) onRenewRef.current();
-  }, [expired, autoRenew, renewing]);
 
   const large = size === "lg";
   return (
@@ -123,6 +197,7 @@ function Countdown({
         expiresInLabel={expiresInLabel ?? labels.qrExpiresIn}
         onExpire={() => {
           setExpired(true);
+          onExpire();
         }}
       />
       {code !== "" && (

@@ -156,6 +156,30 @@ describe("useBarcodeScanner", () => {
     expect(onScan).toHaveBeenCalledTimes(1);
     expect(onScan).toHaveBeenCalledWith(expect.objectContaining({ code: "1234567890" }));
   });
+
+  it("tells a field whether the Enter it is about to handle ends a scan", () => {
+    const clock = { t: 0 };
+    const { result } = renderHook(() =>
+      useBarcodeScanner({ onScan: vi.fn(), target, now: () => clock.t }),
+    );
+    const typeOnly = (code: string, gapMs: number) => {
+      for (const char of code) {
+        clock.t += gapMs;
+        target.dispatchEvent(new KeyboardEvent("keydown", { key: char }));
+      }
+    };
+
+    expect(result.current.isScanPending()).toBe(false);
+    typeOnly("8991234567", 5);
+    expect(result.current.isScanPending()).toBe(true);
+    // A pause past the burst reset means the next Enter is a person's.
+    clock.t += 900;
+    expect(result.current.isScanPending()).toBe(false);
+
+    target.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+    typeOnly("K7F2", 150);
+    expect(result.current.isScanPending()).toBe(false);
+  });
 });
 
 describe("createDuplicateScanGuard", () => {
