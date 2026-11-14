@@ -583,9 +583,9 @@
         "save": "Save settings"
       },
       "branding": {
-        "navLabel": "School Branding",
+        "navLabel": "School brand",
         "eyebrow": "Settings",
-        "title": "School Branding",
+        "title": "School brand",
         "identityTitle": "Identity",
         "nameLabel": "School name",
         "nameRequiredError": "School name is required.",
@@ -603,18 +603,48 @@
           "previewAlt": "School logo",
           "none": "None yet",
           "change": "Change logo",
-          "hint": "PNG, WebP, or SVG, up to 2 MB.",
+          "hint": "PNG, WebP or SVG, up to 2 MB.",
           "uploading": "Uploading... {percent}%",
-          "updated": "Logo updated"
+          "updated": "Logo updated",
+          "emptyHint": "No logo yet. PNG, WebP or SVG, up to 2 MB.",
+          "upload": "Upload logo"
         },
         "favicon": {
           "title": "Favicon",
           "previewAlt": "School favicon",
           "none": "None yet",
           "change": "Change favicon",
-          "hint": "PNG, WebP, or SVG, up to 512 KB.",
+          "hint": "The small icon in the browser tab. PNG, WebP or SVG, up to 512 KB.",
           "uploading": "Uploading... {percent}%",
-          "updated": "Favicon updated"
+          "updated": "Favicon updated",
+          "emptyHint": "No favicon yet. PNG, WebP or SVG, up to 512 KB.",
+          "upload": "Upload favicon"
+        },
+        "description": "The name, colour and logo every user sees in the app, on the sign-in page and in the browser tab.",
+        "shortNameHint": "Used where space is tight, such as the browser tab and the phone menu bar.",
+        "taglineHint": "A short line under the school name, for example on the sign-in page.",
+        "colorTitle": "Colour",
+        "accentColorFormat": "A 6-digit hex code, for example #0F7A5F.",
+        "accentColorPicker": "Pick the accent colour",
+        "assetsTitle": "Logo and favicon",
+        "assetsDescription": "Saved as soon as the upload finishes.",
+        "preview": {
+          "title": "Preview",
+          "description": "Changes as you type, before you save.",
+          "namePlaceholder": "School name",
+          "browserTab": "Browser tab",
+          "tabTitle": "{page} · {school}",
+          "homePage": "Home",
+          "app": "Menu and buttons",
+          "announcements": "Announcements",
+          "primaryButton": "Primary button",
+          "link": "Link",
+          "badge": "Active",
+          "signIn": "Sign-in page",
+          "variants": "Colours the app uses",
+          "light": "Light",
+          "dark": "Dark",
+          "adjusted": "The app adjusts the colour's brightness in each theme so text and buttons stay readable."
         }
       },
       "reportHeader": {

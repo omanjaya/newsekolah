@@ -1,7 +1,8 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Progress, useToast } from "@newsekolah/ui";
+import { Button, cn, Progress, useToast } from "@newsekolah/ui";
+import { ImageOff, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useRef, useState } from "react";
@@ -37,7 +38,11 @@ const LOGO_MAX_LONG_EDGE: Record<"logo" | "favicon", number> = {
   favicon: 256,
 };
 
-/** One presigned-upload slot for the tenant logo or favicon, sharing the AvatarUpload flow: request URL, PUT, confirm. */
+/**
+ * One presigned-upload row for the tenant logo or favicon (preview tile,
+ * name and format, and the upload button), sharing the AvatarUpload flow:
+ * request URL, PUT, confirm. It saves as soon as the upload lands.
+ */
 export function BrandAssetUpload({
   kind,
   currentUrl,
@@ -100,54 +105,59 @@ export function BrandAssetUpload({
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-      <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-      <div className="flex items-center gap-4">
-        <div className="flex size-16 shrink-0 items-center justify-center rounded-xs border border-border bg-bg">
-          {currentUrl ? (
-            <img
-              src={currentUrl}
-              alt={t("previewAlt")}
-              className="max-h-14 max-w-14 object-contain"
-            />
-          ) : (
-            <span className="text-[11px] text-fg-muted">{t("none")}</span>
-          )}
-        </div>
-        <div className="flex flex-col items-start gap-2">
-          {progress !== null ? (
-            <Progress
-              value={progress}
-              label={t("uploading", { percent: progress })}
-              className="w-40"
-            />
-          ) : (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                fileInputRef.current?.click();
-              }}
-            >
-              {t("change")}
-            </Button>
-          )}
-          <p className="text-[12px] text-fg-muted">{t("hint")}</p>
-        </div>
+    <div className="flex items-center gap-4">
+      <div
+        className={cn(
+          "flex shrink-0 items-center justify-center rounded-md bg-surface-sunken",
+          kind === "logo" ? "size-16" : "size-12",
+        )}
+      >
+        {currentUrl ? (
+          <img
+            src={currentUrl}
+            alt={t("previewAlt")}
+            className={cn("object-contain", kind === "logo" ? "max-h-12 max-w-12" : "size-6")}
+          />
+        ) : (
+          <ImageOff className="size-5 text-fg-muted" aria-label={t("none")} />
+        )}
       </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <p className="text-label text-fg">{t("title")}</p>
+        {progress !== null ? (
+          <Progress
+            value={progress}
+            label={t("uploading", { percent: progress })}
+            className="max-w-48"
+          />
+        ) : (
+          <p className="text-body-sm text-fg-muted">{currentUrl ? t("hint") : t("emptyHint")}</p>
+        )}
+      </div>
+      <Button
+        type="button"
+        variant="secondary"
+        icon={<Upload />}
+        disabled={progress !== null}
+        onClick={() => {
+          fileInputRef.current?.click();
+        }}
+      >
+        <span className="sr-only sm:not-sr-only">{currentUrl ? t("change") : t("upload")}</span>
+      </Button>
       <input
         ref={fileInputRef}
         type="file"
         accept={ACCEPTED_TYPES.join(",")}
         className="sr-only"
-        aria-label={t("change")}
+        tabIndex={-1}
+        aria-label={currentUrl ? t("change") : t("upload")}
         onChange={(e) => {
           const file = e.target.files?.[0];
           e.target.value = "";
           if (file) void handleFile(file);
         }}
       />
-    </section>
+    </div>
   );
 }

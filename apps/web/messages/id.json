@@ -585,7 +585,7 @@
       "branding": {
         "navLabel": "Merek sekolah",
         "eyebrow": "Pengaturan",
-        "title": "Merek Sekolah",
+        "title": "Merek sekolah",
         "identityTitle": "Identitas",
         "nameLabel": "Nama sekolah",
         "nameRequiredError": "Nama sekolah wajib diisi.",
@@ -605,16 +605,46 @@
           "change": "Ganti logo",
           "hint": "PNG, WebP, atau SVG, maksimal 2 MB.",
           "uploading": "Mengunggah... {percent}%",
-          "updated": "Logo diperbarui"
+          "updated": "Logo diperbarui",
+          "emptyHint": "Belum ada logo. PNG, WebP, atau SVG, maksimal 2 MB.",
+          "upload": "Unggah logo"
         },
         "favicon": {
           "title": "Favicon",
           "previewAlt": "Favicon sekolah",
           "none": "Belum ada",
           "change": "Ganti favicon",
-          "hint": "PNG, WebP, atau SVG, maksimal 512 KB.",
+          "hint": "Ikon kecil di tab peramban. PNG, WebP, atau SVG, maksimal 512 KB.",
           "uploading": "Mengunggah... {percent}%",
-          "updated": "Favicon diperbarui"
+          "updated": "Favicon diperbarui",
+          "emptyHint": "Belum ada favicon. PNG, WebP, atau SVG, maksimal 512 KB.",
+          "upload": "Unggah favicon"
+        },
+        "description": "Nama, warna, dan logo yang dilihat semua pengguna di aplikasi, halaman masuk, dan tab peramban.",
+        "shortNameHint": "Dipakai di ruang sempit, seperti tab peramban dan bilah menu ponsel.",
+        "taglineHint": "Kalimat pendek di bawah nama sekolah, misalnya di halaman masuk.",
+        "colorTitle": "Warna",
+        "accentColorFormat": "Kode heksadesimal 6 digit, misalnya #0F7A5F.",
+        "accentColorPicker": "Pilih warna aksen",
+        "assetsTitle": "Logo dan favicon",
+        "assetsDescription": "Tersimpan langsung begitu selesai diunggah.",
+        "preview": {
+          "title": "Pratinjau",
+          "description": "Berubah langsung saat Anda mengetik, sebelum disimpan.",
+          "namePlaceholder": "Nama sekolah",
+          "browserTab": "Tab peramban",
+          "tabTitle": "{page} · {school}",
+          "homePage": "Beranda",
+          "app": "Menu dan tombol",
+          "announcements": "Pengumuman",
+          "primaryButton": "Tombol utama",
+          "link": "Tautan",
+          "badge": "Aktif",
+          "signIn": "Halaman masuk",
+          "variants": "Warna yang dipakai aplikasi",
+          "light": "Terang",
+          "dark": "Gelap",
+          "adjusted": "Aplikasi menyesuaikan kecerahan warna di tiap tema agar teks dan tombol tetap terbaca."
         }
       },
       "reportHeader": {
