@@ -2,13 +2,17 @@ import type { Meta, StoryObj } from "@storybook/react";
 import {
   BookOpen,
   CalendarCheck,
+  CircleCheck,
   ClipboardCheck,
   ClockAlert,
+  Eye,
   FileText,
   Star,
+  TriangleAlert,
   UserCheck,
   Users,
 } from "lucide-react";
+import { useState } from "react";
 
 import { phoneViewport } from "../stories/phone-viewport.js";
 
@@ -99,10 +103,39 @@ function Loading() {
   );
 }
 
+/** Tiles that filter the list under them: one at a time, tap again to clear. */
+function FilterTiles() {
+  const [level, setLevel] = useState<string>("risk");
+  const tiles = [
+    { key: "risk", label: "Berisiko", value: 4, tone: "red", icon: <TriangleAlert /> },
+    { key: "watch", label: "Dipantau", value: 11, tone: "amber", icon: <Eye /> },
+    { key: "none", label: "Aman", value: 187, tone: "green", icon: <CircleCheck /> },
+  ] as const;
+  return (
+    <StatGrid variant="tiles" aria-label="Tingkat risiko" className="grid-cols-3">
+      {tiles.map((tile) => (
+        <Stat
+          key={tile.key}
+          icon={tile.icon}
+          tone={tile.tone}
+          value={tile.value}
+          label={tile.label}
+          hint={level === tile.key ? "Menyaring daftar" : undefined}
+          selected={level === tile.key}
+          onClick={() => {
+            setLevel(level === tile.key ? "" : tile.key);
+          }}
+        />
+      ))}
+    </StatGrid>
+  );
+}
+
 function Gallery() {
   return (
     <div className="flex max-w-default flex-col gap-8">
       <Tiles />
+      <FilterTiles />
       <Strip />
       <Plain />
       <Loading />
@@ -123,6 +156,7 @@ export const Phone: Story = {
         <Stat icon={<Star />} tone="purple" value={3} label="Nilai baru" href="#c" />
         <Stat icon={<BookOpen />} tone="blue" value="2 buku" label="Kembali Sabtu" href="#d" />
       </StatGrid>
+      <FilterTiles />
       <Strip />
       <Plain />
     </div>
