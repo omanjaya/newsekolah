@@ -1,12 +1,33 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Button, PageHeader, Textarea, cn, useToast, Field } from "@newsekolah/ui";
-import { FileUp } from "lucide-react";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Field,
+  SectionHeader,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
+import { Download, FileUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ChangeEvent, ReactElement } from "react";
 import { useMemo, useRef, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
@@ -23,6 +44,34 @@ import { useNamedConflict } from "../use-named-conflict";
 
 import { ClearSchedulesSection } from "./clear-schedules-section";
 
+/** The sheet's columns, in order: shown as chips and written into the template. */
+const CSV_COLUMNS = [
+  "class",
+  "subject",
+  "teacher",
+  "day",
+  "start_period",
+  "end_period",
+  "notes",
+] as const;
+
+/** Saves an empty sheet with the right header, so nobody types the columns by hand. */
+function downloadTemplate() {
+  const blob = new Blob([`${CSV_COLUMNS.join(",")}\n`], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "templat-jadwal.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Bulk timetable operations, under the timetable's breadcrumb: one card
+ * to load a CSV (the template, the columns as chips, a file or a paste),
+ * one card to preview every line before the all-or-nothing import, and the
+ * danger zone that clears the year's timetable kept apart at the end.
+ */
 export function ScheduleBulkView(): ReactElement {
   const t = useTranslations("app.schedule.bulk");
   // Conflict messages ("period X in class Y is already taken by...") are
@@ -109,124 +158,130 @@ export function ScheduleBulkView(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+    <AppPage variant="narrow" title={t("title")}>
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">{t("importSection.title")}</CardTitle>
+          <CardDescription>{t("importSection.intro")}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 pt-0">
+          <div className="flex flex-col gap-2">
+            <span className="text-label text-fg">{t("importSection.columnsLabel")}</span>
+            <ul className="flex flex-wrap gap-1.5" aria-label={t("importSection.columnsLabel")}>
+              {CSV_COLUMNS.map((column) => (
+                <li key={column}>
+                  <Badge tone="neutral" className="font-mono">
+                    {column}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-      <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-        <h2 className="text-heading text-fg">{t("importSection.title")}</h2>
-        <p className="text-body-sm text-fg-muted [overflow-wrap:anywhere]">
-          {t("importSection.body")}
-        </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              id="schedule-bulk-import-file"
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              aria-label={t("importSection.uploadLabel")}
+              onChange={handleFile}
+              disabled={!canManage}
+              className="peer sr-only"
+            />
+            <Button
+              asChild
+              variant="secondary"
+              icon={<FileUp />}
+              aria-disabled={!canManage || undefined}
+              className="w-fit max-w-full peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus-ring"
+            >
+              <label htmlFor="schedule-bulk-import-file" className="cursor-pointer">
+                <span className="truncate">{fileName ?? t("importSection.uploadLabel")}</span>
+              </label>
+            </Button>
+            <Button variant="ghost" icon={<Download />} onClick={downloadTemplate}>
+              {t("importSection.template")}
+            </Button>
+          </div>
 
-        <div className="flex flex-col gap-1 text-body-sm">
-          <span className="font-medium text-fg">{t("importSection.uploadLabel")}</span>
-          <input
-            id="schedule-bulk-import-file"
-            ref={fileInputRef}
-            type="file"
-            accept=".csv,text/csv"
-            aria-label={t("importSection.uploadLabel")}
-            onChange={handleFile}
-            disabled={!canManage}
-            className="peer sr-only"
-          />
-          <label
-            htmlFor="schedule-bulk-import-file"
-            className={cn(
-              "flex h-11 w-fit max-w-full items-center gap-2 rounded-sm border border-border px-3 text-body-sm text-fg peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent md:h-8",
-              canManage ? "cursor-pointer hover:bg-bg" : "cursor-not-allowed opacity-60",
-            )}
-          >
-            <FileUp className="size-4 shrink-0" aria-hidden="true" />
-            <span className="truncate">{fileName ?? t("importSection.noFileChosen")}</span>
-          </label>
-        </div>
+          <Field label={t("importSection.textareaLabel")}>
+            <Textarea
+              value={csvText}
+              onChange={(e) => {
+                setCsvText(e.target.value);
+                setImportError(null);
+              }}
+              rows={6}
+              disabled={!canManage}
+              className="font-mono text-caption font-normal"
+            />
+          </Field>
+        </CardContent>
+      </Card>
 
-        <Field label={t("importSection.textareaLabel")}>
-          <Textarea
-            value={csvText}
-            onChange={(e) => {
-              setCsvText(e.target.value);
-              setImportError(null);
-            }}
-            rows={8}
-            disabled={!canManage}
-            className="font-mono text-caption font-normal"
-          />
-        </Field>
-
-        <div className="flex flex-col gap-3">
-          <h3 className="text-label text-fg">{t("importSection.previewTitle")}</h3>
-          {rows.length === 0 ? (
-            <p className="text-body-sm text-fg-muted">{t("importSection.empty")}</p>
-          ) : (
-            <>
-              <p className="text-body-sm text-fg-muted">
-                {t("importSection.previewSummary", {
+      <section className="flex flex-col gap-3">
+        <SectionHeader
+          title={t("importSection.previewTitle")}
+          description={
+            rows.length > 0
+              ? t("importSection.previewSummary", {
                   valid: resolvedRows.length,
                   invalid: invalidCount,
-                })}
-              </p>
-              <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-                <table className="w-full min-w-[560px] text-body-sm">
-                  <thead>
-                    <tr className="border-b border-line bg-bg text-left">
-                      <th
-                        scope="col"
-                        className="px-4 py-3 text-caption font-normal font-semibold text-fg-muted"
-                      >
-                        {t("importSection.columnLine")}
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-4 py-3 text-caption font-normal font-semibold text-fg-muted"
-                      >
-                        {t("importSection.columnStatus")}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row) => (
-                      <tr
-                        key={row.line}
-                        className="border-b border-line last:border-b-0 hover:bg-bg"
-                      >
-                        <td className="px-4 py-3 text-fg">{row.line}</td>
-                        <td className="px-4 py-3">
-                          {row.resolved ? (
-                            <span className="text-fg">{t("importSection.statusValid")}</span>
-                          ) : (
-                            <span className="text-status-absent">
-                              {t("importSection.statusInvalid", { columns: row.errors.join(", ") })}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {importError && (
-                <Alert variant="warning" title={t("importSection.applyErrorTitle")}>
-                  <p>{importError}</p>
-                </Alert>
-              )}
-              {canManage && (
-                <Button
-                  size="sm"
-                  disabled={resolvedRows.length === 0 || invalidCount > 0}
-                  loading={bulkImport.isPending}
-                  onClick={handleApply}
-                >
-                  {t("importSection.apply", { count: resolvedRows.length })}
-                </Button>
-              )}
-            </>
-          )}
-        </div>
+                })
+              : undefined
+          }
+          action={
+            canManage &&
+            rows.length > 0 && (
+              <Button
+                disabled={resolvedRows.length === 0 || invalidCount > 0}
+                loading={bulkImport.isPending}
+                onClick={handleApply}
+              >
+                {t("importSection.apply", { count: resolvedRows.length })}
+              </Button>
+            )
+          }
+        />
+        {importError && (
+          <Alert variant="danger" title={t("importSection.applyErrorTitle")}>
+            {importError}
+          </Alert>
+        )}
+        {rows.length === 0 ? (
+          <EmptyState variant="compact" title={t("importSection.empty")} />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-20">{t("importSection.columnLine")}</TableHead>
+                <TableHead>{t("importSection.columnStatus")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow key={row.line}>
+                  <TableCell className="tabular-nums">{row.line}</TableCell>
+                  <TableCell>
+                    {row.resolved ? (
+                      <Badge tone="success" size="sm" dot>
+                        {t("importSection.statusValid")}
+                      </Badge>
+                    ) : (
+                      <span className="text-body-sm text-danger">
+                        {t("importSection.statusInvalid", { columns: row.errors.join(", ") })}
+                      </span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </section>
 
       {canManage && <ClearSchedulesSection academicYearId={year.id} yearLabel={year.label} />}
-    </div>
+    </AppPage>
   );
 }

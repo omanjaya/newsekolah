@@ -896,11 +896,11 @@
       "bulk": {
         "navLink": "Operasi massal",
         "eyebrow": "Akademik",
-        "title": "Operasi jadwal massal",
+        "title": "Operasi massal",
         "importSection": {
-          "title": "Impor dari CSV",
+          "title": "Impor jadwal dari CSV",
           "body": "Tempel atau unggah berkas CSV dengan kolom class,subject,teacher,day,start_period,end_period,notes. Nama kelas, mata pelajaran, guru, dan jam pelajaran dicocokkan dengan data yang sudah ada; hari memakai angka 1 (Senin) sampai 7 (Minggu).",
-          "uploadLabel": "Unggah berkas CSV",
+          "uploadLabel": "Pilih berkas CSV",
           "noFileChosen": "Belum ada berkas dipilih",
           "textareaLabel": "Atau tempel isi CSV di sini",
           "previewTitle": "Pratinjau",
@@ -912,7 +912,10 @@
           "apply": "Impor {count} jadwal",
           "applyErrorTitle": "Tidak ada jadwal yang disimpan; impor bersifat sekali jalan untuk semua baris.",
           "applied": "{count} jadwal berhasil diimpor",
-          "empty": "Belum ada data untuk dipratinjau."
+          "empty": "Belum ada data untuk dipratinjau.",
+          "intro": "Unggah atau tempel berkas CSV. Nama kelas, mata pelajaran, guru, dan jam pelajaran dicocokkan dengan data yang ada; hari ditulis 1 (Senin) sampai 7 (Minggu).",
+          "columnsLabel": "Kolom berkas",
+          "template": "Unduh templat"
         },
         "clearSection": {
           "title": "Hapus semua jadwal tahun ajaran ini",

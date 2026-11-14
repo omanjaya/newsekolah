@@ -896,11 +896,11 @@
       "bulk": {
         "navLink": "Bulk operations",
         "eyebrow": "Academic",
-        "title": "Bulk schedule operations",
+        "title": "Bulk operations",
         "importSection": {
-          "title": "Import from CSV",
+          "title": "Import a timetable from CSV",
           "body": "Paste or upload a CSV with columns class,subject,teacher,day,start_period,end_period,notes. Class, subject, teacher and period names are matched against existing data; day is the ISO weekday, 1 (Monday) to 7 (Sunday).",
-          "uploadLabel": "Upload a CSV file",
+          "uploadLabel": "Choose a CSV file",
           "noFileChosen": "No file chosen",
           "textareaLabel": "Or paste the CSV content here",
           "previewTitle": "Preview",
@@ -912,7 +912,10 @@
           "apply": "Import {count} schedules",
           "applyErrorTitle": "Nothing was saved; the whole batch is applied together or not at all.",
           "applied": "{count} schedules imported",
-          "empty": "Nothing to preview yet."
+          "empty": "Nothing to preview yet.",
+          "intro": "Upload or paste a CSV file. Class, subject, teacher and period names are matched to existing data; days are written 1 (Monday) to 7 (Sunday).",
+          "columnsLabel": "File columns",
+          "template": "Download the template"
         },
         "clearSection": {
           "title": "Clear every schedule this year",
