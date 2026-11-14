@@ -2,7 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import { useTenantBranding } from "@newsekolah/api-client/react";
-import { Button, Input, PageHeader, Skeleton, useToast } from "@newsekolah/ui";
+import { Field, FormError, FormSection, Input, SkeletonForm, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -13,8 +13,12 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { type BrandingWrite, type TenantBranding, useUpdateBrandingMutation } from "../api";
 
 import { BrandAssetUpload } from "./brand-asset-upload";
+import { BrandingPreview } from "./branding-preview";
+import { SettingsPage } from "./settings-page";
+import { SettingsSaveBar } from "./settings-save-bar";
 
 const ACCENT_PATTERN = /^#[0-9A-Fa-f]{6}$/;
+const NAV_KEY = "settings-branding";
 
 /**
  * School name, short name, tagline and accent color (PUT /v1/tenant/branding),
@@ -23,60 +27,94 @@ const ACCENT_PATTERN = /^#[0-9A-Fa-f]{6}$/;
  * title, so a save here updates the whole app, not just this screen.
  */
 export function BrandingView(): ReactElement {
-  const t = useTranslations("app.settings.branding");
   const client = useApiClient();
-  const { data, isLoading, isError, refetch } = useTenantBranding(client);
+  const { data, isLoading, isError, error, refetch } = useTenantBranding(client);
 
-  if (isError && !data) return <QueryError retry={() => refetch()} className="m-4" />;
+  if (isError && !data) {
+    return (
+      <SettingsPage navKey={NAV_KEY}>
+        <QueryError retry={() => refetch()} error={error} />
+      </SettingsPage>
+    );
+  }
 
   if (isLoading || !data) {
     return (
-      <div className="flex flex-col gap-6 p-4 md:p-6" aria-busy="true">
-        <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <SettingsPage navKey={NAV_KEY} variant="default">
+        <div aria-busy="true" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <SkeletonForm fields={4} actions={false} />
+          <SkeletonForm fields={3} actions={false} className="hidden lg:flex" />
+        </div>
+      </SettingsPage>
     );
   }
 
   return <BrandingForm initial={data} />;
 }
 
+interface BrandingValues {
+  name: string;
+  shortName: string;
+  tagline: string;
+  accentColor: string;
+}
+
+function valuesOf(branding: TenantBranding): BrandingValues {
+  return {
+    name: branding.name,
+    shortName: branding.short_name ?? "",
+    tagline: branding.tagline ?? "",
+    accentColor: branding.accent_color,
+  };
+}
+
+/**
+ * Two panes: the form on the left, a live preview of the unsaved values on
+ * the right (it stays in view on a desktop; on a phone it follows the
+ * form). Name, tagline and colour save from the bar at the bottom edge;
+ * logo and favicon save as soon as they are uploaded.
+ */
 function BrandingForm({ initial }: { initial: TenantBranding }): ReactElement {
   const t = useTranslations("app.settings.branding");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const update = useUpdateBrandingMutation();
 
-  const [name, setName] = useState(initial.name);
-  const [shortName, setShortName] = useState(initial.short_name ?? "");
-  const [tagline, setTagline] = useState(initial.tagline ?? "");
-  const [accentColor, setAccentColor] = useState(initial.accent_color);
+  const saved = valuesOf(initial);
+  const [values, setValues] = useState<BrandingValues>(saved);
+  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const dirty =
-    name !== initial.name ||
-    shortName !== (initial.short_name ?? "") ||
-    tagline !== (initial.tagline ?? "") ||
-    accentColor !== initial.accent_color;
+    values.name !== saved.name ||
+    values.shortName !== saved.shortName ||
+    values.tagline !== saved.tagline ||
+    values.accentColor.toUpperCase() !== saved.accentColor.toUpperCase();
+  const nameError = submitted && !values.name.trim() ? t("nameRequiredError") : undefined;
+  const accentValid = ACCENT_PATTERN.test(values.accentColor);
+  const accentError =
+    values.accentColor !== "" && !accentValid && (submitted || values.accentColor.length >= 7)
+      ? t("accentColorError")
+      : undefined;
+
+  function set<K extends keyof BrandingValues>(key: K, value: BrandingValues[K]) {
+    setValues((current) => ({ ...current, [key]: value }));
+  }
 
   function save() {
+    setSubmitted(true);
     setError(null);
-    if (!name.trim()) {
-      setError(t("nameRequiredError"));
-      return;
-    }
-    if (!ACCENT_PATTERN.test(accentColor)) {
-      setError(t("accentColorError"));
-      return;
-    }
+    if (!values.name.trim() || !accentValid) return;
     const body: BrandingWrite = {
-      name: name.trim(),
-      accent_color: accentColor,
-      ...(shortName.trim() ? { short_name: shortName.trim() } : {}),
-      ...(tagline.trim() ? { tagline: tagline.trim() } : {}),
+      name: values.name.trim(),
+      accent_color: values.accentColor,
+      ...(values.shortName.trim() ? { short_name: values.shortName.trim() } : {}),
+      ...(values.tagline.trim() ? { tagline: values.tagline.trim() } : {}),
     };
     update.mutate(body, {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        setValues(valuesOf(data));
+        setSubmitted(false);
         toast.success(t("saved"));
       },
       onError: (err) => {
@@ -86,85 +124,111 @@ function BrandingForm({ initial }: { initial: TenantBranding }): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-
-      <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-        <h2 className="text-[16px] font-medium text-fg">{t("identityTitle")}</h2>
-        {error && (
-          <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-            {error}
-          </p>
-        )}
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("nameLabel")}</span>
-            <Input
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-              }}
-              maxLength={160}
-              required
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("shortNameLabel")}</span>
-            <Input
-              value={shortName}
-              onChange={(e) => {
-                setShortName(e.target.value);
-              }}
-              maxLength={40}
-              placeholder={t("shortNamePlaceholder")}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px] md:col-span-2">
-            <span className="font-medium text-fg">{t("taglineLabel")}</span>
-            <Input
-              value={tagline}
-              onChange={(e) => {
-                setTagline(e.target.value);
-              }}
-              maxLength={200}
-              placeholder={t("taglinePlaceholder")}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("accentColorLabel")}</span>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={ACCENT_PATTERN.test(accentColor) ? accentColor : "#0f7a5f"}
-                onChange={(e) => {
-                  setAccentColor(e.target.value);
-                }}
-                aria-label={t("accentColorLabel")}
-                className="h-9 w-9 shrink-0 cursor-pointer rounded-xs border border-border bg-surface p-0.5"
-              />
+    <SettingsPage
+      navKey={NAV_KEY}
+      variant="default"
+      description={t("description")}
+      floating={
+        <SettingsSaveBar
+          container="default"
+          dirty={dirty}
+          saving={update.isPending}
+          onSave={save}
+          onDiscard={() => {
+            setValues(saved);
+            setSubmitted(false);
+            setError(null);
+          }}
+        />
+      }
+    >
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="flex min-w-0 flex-col gap-6">
+          {error && <FormError>{error}</FormError>}
+          <FormSection variant="card" title={t("identityTitle")}>
+            <Field label={t("nameLabel")} required error={nameError}>
               <Input
-                value={accentColor}
+                value={values.name}
                 onChange={(e) => {
-                  setAccentColor(e.target.value);
+                  set("name", e.target.value);
                 }}
-                placeholder="#0F7A5F"
-                className="w-32"
+                maxLength={160}
               />
-            </div>
-            <span className="text-fg-muted">{t("accentColorHint")}</span>
-          </label>
-        </div>
-        <div className="flex justify-end border-t border-border pt-4">
-          <Button disabled={!dirty} loading={update.isPending} onClick={save}>
-            {t("save")}
-          </Button>
-        </div>
-      </section>
+            </Field>
+            <Field label={t("shortNameLabel")} optional hint={t("shortNameHint")}>
+              <Input
+                value={values.shortName}
+                onChange={(e) => {
+                  set("shortName", e.target.value);
+                }}
+                maxLength={40}
+              />
+            </Field>
+            <Field
+              label={t("taglineLabel")}
+              optional
+              hint={t("taglineHint")}
+              className="col-span-full"
+            >
+              <Input
+                value={values.tagline}
+                onChange={(e) => {
+                  set("tagline", e.target.value);
+                }}
+                maxLength={200}
+              />
+            </Field>
+          </FormSection>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <BrandAssetUpload kind="logo" currentUrl={initial.logo_url} />
-        <BrandAssetUpload kind="favicon" currentUrl={initial.favicon_url} />
+          <FormSection variant="card" title={t("colorTitle")} description={t("accentColorHint")}>
+            <Field label={t("accentColorLabel")} error={accentError} hint={t("accentColorFormat")}>
+              <Input
+                value={values.accentColor}
+                onChange={(e) => {
+                  set("accentColor", e.target.value.trim());
+                }}
+                maxLength={7}
+                inputClassName="font-mono uppercase"
+                className="sm:w-56"
+                leading={
+                  // The swatch is the system colour picker: a tap opens it,
+                  // and the field beside it takes a typed hex code.
+                  <input
+                    type="color"
+                    aria-label={t("accentColorPicker")}
+                    value={accentValid ? values.accentColor.toLowerCase() : "#0f7a5f"}
+                    onChange={(e) => {
+                      set("accentColor", e.target.value.toUpperCase());
+                    }}
+                    className="size-6 shrink-0 cursor-pointer appearance-none rounded-full border border-border-strong bg-transparent p-0 [&::-moz-color-swatch]:rounded-full [&::-moz-color-swatch]:border-0 [&::-webkit-color-swatch]:rounded-full [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch-wrapper]:p-0"
+                  />
+                }
+              />
+            </Field>
+          </FormSection>
+
+          <FormSection
+            variant="card"
+            columns={1}
+            title={t("assetsTitle")}
+            description={t("assetsDescription")}
+          >
+            <BrandAssetUpload kind="logo" currentUrl={initial.logo_url} />
+            <BrandAssetUpload kind="favicon" currentUrl={initial.favicon_url} />
+          </FormSection>
+        </div>
+
+        <div className="lg:sticky lg:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)]">
+          <BrandingPreview
+            name={values.name}
+            shortName={values.shortName}
+            tagline={values.tagline}
+            accent={accentValid ? values.accentColor : saved.accentColor}
+            logoUrl={initial.logo_url}
+            faviconUrl={initial.favicon_url}
+          />
+        </div>
       </div>
-    </div>
+    </SettingsPage>
   );
 }

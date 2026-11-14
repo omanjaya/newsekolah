@@ -1,148 +1,230 @@
 "use client";
 
-import { ApiError } from "@newsekolah/api-client";
-import { Button, ConfirmDialog, useToast } from "@newsekolah/ui";
-import { Plus } from "lucide-react";
+import {
+  Badge,
+  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Stepper,
+} from "@newsekolah/ui";
+import { ListOrdered, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
 
-import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
-import {
-  type WorkflowDefinition,
-  type WorkflowKind,
-  type WorkflowStage,
-  useReplaceWorkflowDefinitionMutation,
-} from "../api";
+import type { WorkflowStage } from "../api";
 
-import { StageRow } from "./stage-row";
+import { StageRow, useApproverRuleLabel } from "./stage-row";
 
-function newStage(index: number): WorkflowStage {
-  return {
-    key: `stage_${index + 1}`,
-    label: "",
-    approver_rule: "any_teacher",
-    verification: "manual",
-  };
+/** A stage being edited, with a client id that survives reordering. */
+export interface StageItem {
+  id: string;
+  stage: WorkflowStage;
+  /** Added in this edit: its code follows its name until typed by hand. */
+  isNew: boolean;
+  keyTouched: boolean;
+}
+
+let nextId = 0;
+export function newItemId(): string {
+  nextId += 1;
+  return `stage-item-${nextId}`;
+}
+
+/** `Guru piket` becomes `guru_piket`: a stage code made from its name. */
+export function stageKeyFrom(label: string): string {
+  return label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+/** The first of `base`, `base_2`, `base_3`... no other stage uses. */
+export function uniqueStageKey(base: string, taken: ReadonlySet<string>): string {
+  const root = base || "tahap";
+  if (!taken.has(root)) return root;
+  for (let n = 2; ; n += 1) {
+    const candidate = `${root}_${n}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+}
+
+/** Per stage id, why its code cannot be saved: empty, or used by an earlier stage. */
+export function stageKeyErrors(
+  items: StageItem[],
+  messages: { empty: string; duplicate: string },
+): Map<string, string> {
+  const errors = new Map<string, string>();
+  const seen = new Set<string>();
+  for (const item of items) {
+    const key = item.stage.key.trim();
+    if (!key) errors.set(item.id, messages.empty);
+    else if (seen.has(key)) errors.set(item.id, messages.duplicate);
+    seen.add(key);
+  }
+  return errors;
+}
+
+export interface StageEditorProps {
+  items: StageItem[];
+  editable: boolean;
+  dutySlugs: { value: string; label: string }[];
+  /** The active definition's version, when one exists. */
+  version: number | undefined;
+  keyErrors: ReadonlyMap<string, string>;
+  /** Item ids to open on mount: stages added in this edit. */
+  openIds: ReadonlySet<string>;
+  onChange: (items: StageItem[]) => void;
+  onAdd: () => void;
+  onRemove: (index: number) => void;
 }
 
 /**
- * Owns the editable stage list for one workflow kind's active definition.
- * Remounted (via a `key` in the parent) whenever the kind or version
- * changes, so its local state always starts from the freshly loaded
- * definition without an effect syncing it after the fact.
+ * The stages of one workflow kind: the editable list on the left, each
+ * stage a row that opens into its form, and on the right a summary of the
+ * flow in order (who approves, how) that follows every edit and stays in
+ * view on a desktop.
  */
 export function StageEditor({
-  kind,
-  active,
+  items,
+  editable,
   dutySlugs,
-}: {
-  kind: WorkflowKind;
-  active: WorkflowDefinition | undefined;
-  dutySlugs: { value: string; label: string }[];
-}): ReactElement {
+  version,
+  keyErrors,
+  openIds,
+  onChange,
+  onAdd,
+  onRemove,
+}: StageEditorProps): ReactElement {
   const t = useTranslations("app.workflows");
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
-  const canManage = useCan("manage_workflows");
-  const replace = useReplaceWorkflowDefinitionMutation();
+  const ruleLabel = useApproverRuleLabel(dutySlugs);
 
-  const [stages, setStages] = useState<WorkflowStage[]>(active?.stages ?? []);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
-  const dirty = JSON.stringify(active?.stages ?? []) !== JSON.stringify(stages);
-
-  function updateStage(index: number, next: WorkflowStage) {
-    setStages((prev) => prev.map((s, i) => (i === index ? next : s)));
+  function update(index: number, stage: WorkflowStage) {
+    onChange(
+      items.map((item, i) => {
+        if (i !== index) return item;
+        // A new stage's code follows its name until the code is typed by hand.
+        if (item.isNew && !item.keyTouched && stage.label !== item.stage.label) {
+          const taken = new Set(
+            items.filter((_, j) => j !== index).map((other) => other.stage.key),
+          );
+          return {
+            ...item,
+            stage: { ...stage, key: uniqueStageKey(stageKeyFrom(stage.label), taken) },
+          };
+        }
+        return { ...item, stage };
+      }),
+    );
   }
 
-  function moveStage(index: number, direction: -1 | 1) {
-    setStages((prev) => {
-      const target = index + direction;
-      if (target < 0 || target >= prev.length) return prev;
-      const next = [...prev];
-      const [moved] = next.splice(index, 1);
-      if (moved) next.splice(target, 0, moved);
-      return next;
-    });
+  function move(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= items.length) return;
+    const next = [...items];
+    const [moved] = next.splice(index, 1);
+    if (moved) next.splice(target, 0, moved);
+    onChange(next);
   }
 
-  function removeStage(index: number) {
-    setStages((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  function addStage() {
-    setStages((prev) => [...prev, newStage(prev.length)]);
-  }
-
-  async function handleSave() {
-    try {
-      await replace.mutateAsync({ kind, stages, config: active?.config });
-      toast.success(t("saved"));
-      setConfirmOpen(false);
-    } catch (error) {
-      toast.error(
-        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-      );
-    }
-  }
+  const addButton = editable ? (
+    <Button variant="secondary" icon={<Plus />} onClick={onAdd}>
+      {t("addStage")}
+    </Button>
+  ) : undefined;
 
   return (
-    <>
-      {active && (
-        <p className="text-[13px] text-fg-muted">
-          {t("versionLabel", { version: active.version })}
-        </p>
-      )}
-      <div className="flex flex-col gap-3">
-        {stages.map((stage, index) => (
-          <StageRow
-            key={index}
-            stage={stage}
-            index={index}
-            isFirst={index === 0}
-            isLast={index === stages.length - 1}
-            dutySlugs={dutySlugs}
-            onChange={(next) => {
-              updateStage(index, next);
-            }}
-            onMove={(direction) => {
-              moveStage(index, direction);
-            }}
-            onRemove={() => {
-              removeStage(index);
-            }}
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <Card className="min-w-0">
+        <CardHeader
+          action={
+            version !== undefined ? (
+              <Badge tone="neutral" size="sm">
+                {t("versionLabel", { version })}
+              </Badge>
+            ) : (
+              <Badge tone="info" size="sm">
+                {t("noVersion")}
+              </Badge>
+            )
+          }
+        >
+          <CardTitle as="h2">{t("stagesTitle")}</CardTitle>
+          <CardDescription>{t("stagesHint")}</CardDescription>
+        </CardHeader>
+        {items.length === 0 ? (
+          <EmptyState
+            icon={<ListOrdered aria-hidden="true" />}
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+            action={addButton}
           />
-        ))}
-      </div>
+        ) : (
+          <>
+            <ol
+              aria-label={t("stagesTitle")}
+              className="flex flex-col divide-y divide-line border-t border-line"
+            >
+              {items.map((item, index) => (
+                <StageRow
+                  key={item.id}
+                  stage={item.stage}
+                  index={index}
+                  isFirst={index === 0}
+                  isLast={index === items.length - 1}
+                  defaultOpen={openIds.has(item.id)}
+                  keyError={keyErrors.get(item.id)}
+                  editable={editable}
+                  dutySlugs={dutySlugs}
+                  onChange={(stage) => {
+                    update(index, stage);
+                  }}
+                  onKeyTouched={() => {
+                    onChange(
+                      items.map((other, i) =>
+                        i === index ? { ...other, keyTouched: true } : other,
+                      ),
+                    );
+                  }}
+                  onMove={(direction) => {
+                    move(index, direction);
+                  }}
+                  onRemove={() => {
+                    onRemove(index);
+                  }}
+                />
+              ))}
+            </ol>
+            {addButton && <div className="border-t border-line p-4 md:px-5">{addButton}</div>}
+          </>
+        )}
+      </Card>
 
-      {canManage && (
-        <div className="flex flex-wrap items-center gap-3">
-          <Button variant="secondary" size="sm" icon={<Plus />} onClick={addStage}>
-            {t("addStage")}
-          </Button>
-          <Button
-            size="sm"
-            disabled={!dirty || stages.length === 0}
-            onClick={() => {
-              setConfirmOpen(true);
-            }}
-          >
-            {t("save")}
-          </Button>
+      <Card className="lg:sticky lg:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)]">
+        <CardHeader>
+          <CardTitle as="h2">{t("summaryTitle")}</CardTitle>
+          <CardDescription>{t("summaryHint")}</CardDescription>
+        </CardHeader>
+        <div className="px-5 pb-5">
+          {items.length === 0 ? (
+            <p className="text-body-sm text-fg-muted">{t("summaryEmpty")}</p>
+          ) : (
+            <Stepper
+              orientation="vertical"
+              currentIndex={-1}
+              steps={items.map((item, index) => ({
+                id: item.id,
+                label: item.stage.label.trim() || t("stage.untitled", { index: index + 1 }),
+                description: t(`stage.verification.${item.stage.verification}`),
+                actor: ruleLabel(item.stage.approver_rule),
+                state: "upcoming",
+              }))}
+            />
+          )}
         </div>
-      )}
-
-      <ConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title={t("confirmTitle")}
-        description={t("confirmBody")}
-        confirmLabel={t("confirmSave")}
-        confirming={replace.isPending}
-        onConfirm={handleSave}
-      />
-    </>
+      </Card>
+    </div>
   );
 }

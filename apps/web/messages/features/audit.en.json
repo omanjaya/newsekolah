@@ -2,7 +2,7 @@
   "navLabel": "Audit trail",
   "eyebrow": "Settings",
   "title": "Audit trail",
-  "description": "History of changes made by users in this system, newest first.",
+  "description": "Who changed what and when, newest first. Open a row to see the change.",
   "system": "System",
   "actingAs": "impersonating {name}",
   "filters": {
@@ -12,7 +12,7 @@
     "entityType": "Entity type",
     "from": "From date",
     "to": "To date",
-    "reset": "Reset filters",
+    "reset": "Clear filters",
     "entityTypeAll": "All types",
     "removeFilter": "Remove {label} filter",
     "dateRange": "Date range",
@@ -35,7 +35,13 @@
     "after": "After",
     "noValue": "No data",
     "requestId": "Request ID",
-    "entityId": "Entity ID"
+    "entityId": "Entity ID",
+    "code": "Action code",
+    "changes": "What changed",
+    "field": "Field",
+    "showRaw": "Show raw data",
+    "hideRaw": "Hide raw data",
+    "noChanges": "No field changed in this entry."
   },
   "impersonationNote": "This session is impersonating another user. View details and stop it from the profile page.",
   "impersonationLink": "Open profile",

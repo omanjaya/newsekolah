@@ -2,21 +2,27 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
-  Alert,
   Button,
+  Card,
+  Field,
+  FormSection,
   Input,
-  PageHeader,
+  NumberInput,
+  PasswordInput,
   Select,
-  Skeleton,
-  Switch,
+  SkeletonForm,
   useToast,
 } from "@newsekolah/ui";
-import { Eye, EyeOff } from "lucide-react";
+import { ScanSearch, Send } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { SettingSwitchRow } from "../../settings/components/setting-switch-row";
+import { SettingsSaveBar } from "../../settings/components/settings-save-bar";
 import {
   type PlatformOperatorAlertChatCandidate,
   type PlatformOperatorAlertSettings,
@@ -25,6 +31,8 @@ import {
   useTestOperatorAlertMutation,
   useUpdateOperatorAlertSettingsMutation,
 } from "../api";
+
+import { PlatformNav } from "./platform-nav";
 
 interface FormState {
   enabled: boolean;
@@ -38,12 +46,12 @@ interface FormState {
   checkBackup: boolean;
   checkCertificate: boolean;
   checkErrors5xx: boolean;
-  diskThresholdPercent: string;
-  memoryThresholdMb: string;
-  backupMaxAgeHours: string;
-  certExpiryDays: string;
+  diskThresholdPercent: number | null;
+  memoryThresholdMb: number | null;
+  backupMaxAgeHours: number | null;
+  certExpiryDays: number | null;
   dailySummaryEnabled: boolean;
-  dailySummaryHour: string;
+  dailySummaryHour: number;
 }
 
 const CHECK_FIELDS = [
@@ -55,6 +63,8 @@ const CHECK_FIELDS = [
   ["checkCertificate", "checks.certificate"],
   ["checkErrors5xx", "checks.errors5xx"],
 ] as const;
+
+const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
 
 function formFromSettings(settings: PlatformOperatorAlertSettings): FormState {
   return {
@@ -69,20 +79,21 @@ function formFromSettings(settings: PlatformOperatorAlertSettings): FormState {
     checkBackup: settings.check_backup,
     checkCertificate: settings.check_certificate,
     checkErrors5xx: settings.check_errors_5xx,
-    diskThresholdPercent: String(settings.disk_threshold_percent),
-    memoryThresholdMb: String(settings.memory_threshold_mb),
-    backupMaxAgeHours: String(settings.backup_max_age_hours),
-    certExpiryDays: String(settings.cert_expiry_days),
+    diskThresholdPercent: settings.disk_threshold_percent,
+    memoryThresholdMb: settings.memory_threshold_mb,
+    backupMaxAgeHours: settings.backup_max_age_hours,
+    certExpiryDays: settings.cert_expiry_days,
     dailySummaryEnabled: settings.daily_summary_enabled,
-    dailySummaryHour: String(settings.daily_summary_hour),
+    dailySummaryHour: settings.daily_summary_hour,
   };
 }
 
-function toInt(value: string, fallback: number): number {
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
+/**
+ * The operator's Telegram alerts for server health: the bot and chat that
+ * receive them, which checks run and at what thresholds, and a daily
+ * summary. Saves from the shared bar; "Kirim pesan uji" tests what is on
+ * screen, saved or not.
+ */
 export function OperatorAlertsView(): ReactElement {
   const t = useTranslations("app.platform.operatorAlerts");
   const toast = useToast();
@@ -101,13 +112,20 @@ export function OperatorAlertsView(): ReactElement {
   const [seededFrom, setSeededFrom] = useState<PlatformOperatorAlertSettings | undefined>(
     undefined,
   );
-  const [showToken, setShowToken] = useState(false);
   const [candidates, setCandidates] = useState<PlatformOperatorAlertChatCandidate[] | null>(null);
 
   const settings = query.data;
   if (settings && settings !== seededFrom) {
     setSeededFrom(settings);
     setForm(formFromSettings(settings));
+  }
+  const dirty =
+    form !== null &&
+    settings !== undefined &&
+    JSON.stringify(form) !== JSON.stringify(formFromSettings(settings));
+
+  function patch(next: Partial<FormState>) {
+    setForm((current) => (current ? { ...current, ...next } : current));
   }
 
   function onError(error: unknown) {
@@ -131,12 +149,12 @@ export function OperatorAlertsView(): ReactElement {
         check_backup: form.checkBackup,
         check_certificate: form.checkCertificate,
         check_errors_5xx: form.checkErrors5xx,
-        disk_threshold_percent: toInt(form.diskThresholdPercent, 85),
-        memory_threshold_mb: toInt(form.memoryThresholdMb, 512),
-        backup_max_age_hours: toInt(form.backupMaxAgeHours, 30),
-        cert_expiry_days: toInt(form.certExpiryDays, 14),
+        disk_threshold_percent: form.diskThresholdPercent ?? 85,
+        memory_threshold_mb: form.memoryThresholdMb ?? 512,
+        backup_max_age_hours: form.backupMaxAgeHours ?? 30,
+        cert_expiry_days: form.certExpiryDays ?? 14,
         daily_summary_enabled: form.dailySummaryEnabled,
-        daily_summary_hour: toInt(form.dailySummaryHour, 7),
+        daily_summary_hour: form.dailySummaryHour,
       });
       toast.success(t("saved"));
     } catch (error) {
@@ -184,249 +202,224 @@ export function OperatorAlertsView(): ReactElement {
     }
   }
 
-  if (query.isError) {
-    return (
-      <div className="flex flex-col gap-6 p-4 md:p-6">
-        <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-        <Alert variant="warning" title={t("loadError")} />
-      </div>
-    );
+  const page = (children: ReactElement, floating?: ReactElement) => (
+    <AppPage variant="narrow" description={t("subtitle")} nav={<PlatformNav />} floating={floating}>
+      {children}
+    </AppPage>
+  );
+
+  if (query.isError && !settings) {
+    return page(<QueryError retry={() => query.refetch()} error={query.error} />);
   }
 
   if (query.isLoading || !form) {
-    return (
-      <div className="flex flex-col gap-6 p-4 md:p-6">
-        <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-        <Skeleton className="h-96 w-full" />
-      </div>
-    );
+    return page(<SkeletonForm fields={6} actions={false} />);
   }
 
-  return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <p className="text-[13px] text-fg-muted">{t("subtitle")}</p>
+  const tokenStored = Boolean(settings?.telegram_token_set) && !form.telegramTokenClear;
 
-      <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-        <div>
-          <h2 className="text-[16px] font-medium text-fg">{t("botSetup.title")}</h2>
-          <ol className="mt-2 list-decimal space-y-1 pl-5 text-[13px] text-fg-muted">
+  return page(
+    <>
+      <FormSection
+        variant="card"
+        columns={1}
+        title={t("bot.title")}
+        description={t("bot.description")}
+      >
+        <Card tone="sunken" padding="sm">
+          <p className="text-label text-fg">{t("botSetup.title")}</p>
+          <ol className="flex list-decimal flex-col gap-1 pl-5 text-body-sm text-fg-muted">
             <li>{t("botSetup.step1")}</li>
             <li>{t("botSetup.step2")}</li>
             <li>{t("botSetup.step3")}</li>
           </ol>
-        </div>
-
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("token.label")}</span>
-          <div className="relative">
-            <Input
-              type={showToken ? "text" : "password"}
-              className="pr-11"
-              value={form.telegramToken}
-              onChange={(e) => {
-                const value = e.target.value;
-                setForm((f) => (f ? { ...f, telegramToken: value, telegramTokenClear: false } : f));
-              }}
-              placeholder={
-                settings?.telegram_token_set && !form.telegramTokenClear
-                  ? settings.telegram_token_hint
-                    ? `${t("token.placeholderSet")} (${settings.telegram_token_hint})`
-                    : t("token.placeholderSet")
-                  : t("token.placeholderUnset")
-              }
-            />
-            <button
-              type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-fg-muted"
-              aria-label={showToken ? t("token.hide") : t("token.show")}
-              onClick={() => {
-                setShowToken((visible) => !visible);
-              }}
-            >
-              {showToken ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
-            </button>
-          </div>
-          {settings?.telegram_token_set ? (
-            <button
-              type="button"
-              className="self-start text-[13px] text-fg-muted underline"
-              onClick={() => {
-                setForm((f) => (f ? { ...f, telegramToken: "", telegramTokenClear: true } : f));
-              }}
-            >
-              {form.telegramTokenClear ? t("token.removed") : t("token.remove")}
-            </button>
-          ) : null}
-        </label>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => void handleDetect()}
-            disabled={detect.isPending}
-          >
-            {detect.isPending ? t("detect.loading") : t("detect.button")}
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => void handleTest()}
-            disabled={test.isPending}
-          >
-            {t("test.button")}
-          </Button>
-        </div>
-
-        {candidates ? (
-          candidates.length === 0 ? (
-            <p className="text-[13px] text-fg-muted">{t("detect.empty")}</p>
+        </Card>
+        <Field
+          label={t("token.label")}
+          hint={form.telegramTokenClear ? t("token.removed") : undefined}
+          labelAside={
+            settings?.telegram_token_set ? (
+              <Button
+                variant="link"
+                size="sm"
+                onClick={() => {
+                  patch({ telegramToken: "", telegramTokenClear: !form.telegramTokenClear });
+                }}
+              >
+                {form.telegramTokenClear ? t("token.keep") : t("token.remove")}
+              </Button>
+            ) : undefined
+          }
+        >
+          <PasswordInput
+            value={form.telegramToken}
+            autoComplete="off"
+            onChange={(e) => {
+              patch({ telegramToken: e.target.value, telegramTokenClear: false });
+            }}
+            placeholder={
+              tokenStored
+                ? settings?.telegram_token_hint
+                  ? `${t("token.placeholderSet")} (${settings.telegram_token_hint})`
+                  : t("token.placeholderSet")
+                : t("token.placeholderUnset")
+            }
+          />
+        </Field>
+        <Field label={t("chatId.label")} hint={t("chatId.hint")}>
+          <Input
+            value={form.telegramChatId}
+            placeholder={t("chatId.placeholder")}
+            inputMode="numeric"
+            onChange={(e) => {
+              patch({ telegramChatId: e.target.value });
+            }}
+          />
+        </Field>
+        {candidates &&
+          (candidates.length === 0 ? (
+            <p className="text-body-sm text-fg-muted">{t("detect.empty")}</p>
           ) : (
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium text-fg">{t("chatId.picker")}</span>
+            <Field label={t("chatId.picker")}>
               <Select
                 value={form.telegramChatId}
                 onValueChange={(value) => {
-                  setForm((f) => (f ? { ...f, telegramChatId: value } : f));
+                  patch({ telegramChatId: value });
                 }}
                 options={candidates.map((c) => ({
                   value: String(c.id),
                   label: `${c.title} (${c.type})`,
                 }))}
               />
-            </label>
-          )
-        ) : null}
-
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("chatId.label")}</span>
-          <Input
-            value={form.telegramChatId}
-            placeholder={t("chatId.placeholder")}
-            onChange={(e) => {
-              const value = e.target.value;
-              setForm((f) => (f ? { ...f, telegramChatId: value } : f));
-            }}
-          />
-        </label>
-      </div>
-
-      <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-        <label className="flex items-center gap-2 text-[13px]">
-          <Switch
-            checked={form.enabled}
-            onCheckedChange={(checked) => {
-              setForm((f) => (f ? { ...f, enabled: checked } : f));
-            }}
-          />
-          <span className="font-medium text-fg">{t("enabled")}</span>
-        </label>
-
-        <div>
-          <h3 className="text-[14px] font-medium text-fg">{t("checks.title")}</h3>
-          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {CHECK_FIELDS.map(([key, labelKey]) => (
-              <label key={key} className="flex items-center gap-2 text-[13px]">
-                <Switch
-                  checked={form[key]}
-                  onCheckedChange={(checked) => {
-                    setForm((f) => (f ? { ...f, [key]: checked } : f));
-                  }}
-                />
-                <span className="text-fg">{t(labelKey)}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-[14px] font-medium text-fg">{t("thresholds.title")}</h3>
-          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="text-fg-muted">{t("thresholds.diskPercent")}</span>
-              <Input
-                type="number"
-                min={1}
-                max={100}
-                value={form.diskThresholdPercent}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setForm((f) => (f ? { ...f, diskThresholdPercent: value } : f));
-                }}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="text-fg-muted">{t("thresholds.memoryMb")}</span>
-              <Input
-                type="number"
-                min={1}
-                value={form.memoryThresholdMb}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setForm((f) => (f ? { ...f, memoryThresholdMb: value } : f));
-                }}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="text-fg-muted">{t("thresholds.backupHours")}</span>
-              <Input
-                type="number"
-                min={1}
-                value={form.backupMaxAgeHours}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setForm((f) => (f ? { ...f, backupMaxAgeHours: value } : f));
-                }}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="text-fg-muted">{t("thresholds.certDays")}</span>
-              <Input
-                type="number"
-                min={1}
-                value={form.certExpiryDays}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setForm((f) => (f ? { ...f, certExpiryDays: value } : f));
-                }}
-              />
-            </label>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-[14px] font-medium text-fg">{t("dailySummary.title")}</h3>
-          <label className="mt-2 flex items-center gap-2 text-[13px]">
-            <Switch
-              checked={form.dailySummaryEnabled}
-              onCheckedChange={(checked) => {
-                setForm((f) => (f ? { ...f, dailySummaryEnabled: checked } : f));
-              }}
-            />
-            <span className="text-fg">{t("dailySummary.enabled")}</span>
-          </label>
-          <label className="mt-2 flex max-w-40 flex-col gap-1 text-[13px]">
-            <span className="text-fg-muted">{t("dailySummary.hour")}</span>
-            <Input
-              type="number"
-              min={0}
-              max={23}
-              value={form.dailySummaryHour}
-              onChange={(e) => {
-                const value = e.target.value;
-                setForm((f) => (f ? { ...f, dailySummaryHour: value } : f));
-              }}
-            />
-          </label>
-        </div>
-
-        <div>
-          <Button onClick={() => void handleSave()} disabled={save.isPending}>
-            {t("save")}
+            </Field>
+          ))}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            icon={<ScanSearch />}
+            loading={detect.isPending}
+            onClick={() => void handleDetect()}
+          >
+            {t("detect.button")}
+          </Button>
+          <Button
+            variant="secondary"
+            icon={<Send />}
+            loading={test.isPending}
+            onClick={() => void handleTest()}
+          >
+            {t("test.button")}
           </Button>
         </div>
-      </div>
-    </div>
+      </FormSection>
+
+      <FormSection variant="card" columns={1} title={t("checks.title")}>
+        <SettingSwitchRow
+          label={t("enabled")}
+          hint={t("enabledHint")}
+          checked={form.enabled}
+          onCheckedChange={(enabled) => {
+            patch({ enabled });
+          }}
+        />
+        <div className="grid gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-2">
+          {CHECK_FIELDS.map(([key, labelKey]) => (
+            <SettingSwitchRow
+              key={key}
+              label={t(labelKey)}
+              checked={form[key]}
+              disabled={!form.enabled}
+              onCheckedChange={(checked) => {
+                patch({ [key]: checked });
+              }}
+            />
+          ))}
+        </div>
+      </FormSection>
+
+      <FormSection
+        variant="card"
+        title={t("thresholds.title")}
+        description={t("thresholds.description")}
+      >
+        <Field label={t("thresholds.disk")}>
+          <NumberInput
+            min={1}
+            max={100}
+            suffix="%"
+            value={form.diskThresholdPercent}
+            onChange={(value) => {
+              patch({ diskThresholdPercent: value });
+            }}
+          />
+        </Field>
+        <Field label={t("thresholds.memory")}>
+          <NumberInput
+            min={1}
+            suffix="MB"
+            value={form.memoryThresholdMb}
+            onChange={(value) => {
+              patch({ memoryThresholdMb: value });
+            }}
+          />
+        </Field>
+        <Field label={t("thresholds.backup")}>
+          <NumberInput
+            min={1}
+            suffix={t("thresholds.hours")}
+            value={form.backupMaxAgeHours}
+            onChange={(value) => {
+              patch({ backupMaxAgeHours: value });
+            }}
+          />
+        </Field>
+        <Field label={t("thresholds.cert")}>
+          <NumberInput
+            min={1}
+            suffix={t("thresholds.days")}
+            value={form.certExpiryDays}
+            onChange={(value) => {
+              patch({ certExpiryDays: value });
+            }}
+          />
+        </Field>
+      </FormSection>
+
+      <FormSection variant="card" columns={1} title={t("dailySummary.title")}>
+        <SettingSwitchRow
+          label={t("dailySummary.enabled")}
+          hint={t("dailySummary.enabledHint")}
+          checked={form.dailySummaryEnabled}
+          onCheckedChange={(dailySummaryEnabled) => {
+            patch({ dailySummaryEnabled });
+          }}
+        />
+        <Field
+          label={t("dailySummary.hour")}
+          hint={t("dailySummary.hourHint")}
+          disabled={!form.dailySummaryEnabled}
+          className="sm:max-w-xs"
+        >
+          <Select
+            value={String(form.dailySummaryHour)}
+            onValueChange={(value) => {
+              patch({ dailySummaryHour: Number(value) });
+            }}
+            options={HOURS.map((hour) => ({
+              value: String(hour),
+              label: `${String(hour).padStart(2, "0")}.00`,
+            }))}
+          />
+        </Field>
+      </FormSection>
+    </>,
+    <SettingsSaveBar
+      dirty={dirty}
+      saving={save.isPending}
+      onSave={() => void handleSave()}
+      onDiscard={() => {
+        if (settings) setForm(formFromSettings(settings));
+      }}
+    />,
   );
 }

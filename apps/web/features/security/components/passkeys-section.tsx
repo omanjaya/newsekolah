@@ -3,20 +3,31 @@
 import { ApiError } from "@newsekolah/api-client";
 import {
   Button,
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
   ConfirmDialog,
   Dialog,
   DialogContent,
+  DialogFooter,
   EmptyState,
-  IconButton,
+  Field,
+  IconCircle,
   Input,
-  Skeleton,
+  List,
+  ListRow,
+  RowActionsMenu,
+  SkeletonList,
   useToast,
 } from "@newsekolah/ui";
-import { KeyRound, Pencil, Trash2 } from "lucide-react";
+import { Fingerprint, Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { usePasskeySupported } from "../../../lib/webauthn";
 import {
@@ -27,10 +38,71 @@ import {
   type Passkey,
 } from "../api";
 
+/** A short name dialog (add or rename): one labelled field, actions in the footer. */
+function NameDialog({
+  open,
+  title,
+  description,
+  initial,
+  confirmLabel,
+  pending,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  title: string;
+  description?: string;
+  initial: string;
+  confirmLabel: string;
+  pending: boolean;
+  onClose: () => void;
+  onSubmit: (name: string) => void;
+}): ReactElement {
+  const t = useTranslations("app.security.passkeys");
+  const [name, setName] = useState(initial);
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DialogContent title={title} description={description} size="sm">
+        <form
+          className="flex flex-col gap-5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (name.trim()) onSubmit(name.trim());
+          }}
+        >
+          <Field label={t("nameLabel")}>
+            <Input
+              value={name}
+              placeholder={t("namePlaceholder")}
+              maxLength={80}
+              onChange={(event) => {
+                setName(event.target.value);
+              }}
+            />
+          </Field>
+          <DialogFooter>
+            <Button variant="secondary" onClick={onClose}>
+              {t("cancel")}
+            </Button>
+            <Button type="submit" loading={pending} disabled={!name.trim()}>
+              {confirmLabel}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 /**
  * Passkey management: add, rename, and remove a WebAuthn credential for
  * the current account. Registration must run from a user gesture (the
- * "add" button click), which is why it is not started automatically or
+ * dialog's submit button), which is why it is not started automatically or
  * from a dialog that opens on its own.
  */
 export function PasskeysSection(): ReactElement | null {
@@ -43,10 +115,8 @@ export function PasskeysSection(): ReactElement | null {
   const rename = useRenamePasskeyMutation();
   const remove = useDeletePasskeyMutation();
 
-  const [addName, setAddName] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [renaming, setRenaming] = useState<Passkey | null>(null);
-  const [renameValue, setRenameValue] = useState("");
   const [deleting, setDeleting] = useState<Passkey | null>(null);
   const passkeySupported = usePasskeySupported();
 
@@ -60,23 +130,18 @@ export function PasskeysSection(): ReactElement | null {
     );
   }
 
-  async function handleAddSubmit() {
-    const name = addName.trim();
-    if (!name) return;
+  async function handleAdd(name: string) {
     try {
       await register.mutateAsync(name);
       setShowAddDialog(false);
-      setAddName("");
       toast.success(t("toasts.added"));
     } catch (error) {
       reportError(error);
     }
   }
 
-  async function handleRenameSubmit() {
+  async function handleRename(name: string) {
     if (!renaming) return;
-    const name = renameValue.trim();
-    if (!name) return;
     try {
       await rename.mutateAsync({ passkeyId: renaming.id, name });
       setRenaming(null);
@@ -98,128 +163,107 @@ export function PasskeysSection(): ReactElement | null {
   }
 
   const items = passkeys.data ?? [];
+  const addButton = (variant: "primary" | "secondary") => (
+    <Button
+      variant={variant}
+      icon={<Plus />}
+      onClick={() => {
+        setShowAddDialog(true);
+      }}
+    >
+      {t("addAction")}
+    </Button>
+  );
 
   return (
-    <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4 md:max-w-2xl">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-        <p className="text-[13px] text-fg-muted">{t("description")}</p>
-      </div>
+    <Card>
+      <CardHeader>
+        <CardTitle as="h2">{t("title")}</CardTitle>
+        <CardDescription>{t("description")}</CardDescription>
+      </CardHeader>
 
-      {passkeys.isLoading ? (
-        <Skeleton className="h-24 w-full" />
+      {passkeys.isError && !passkeys.data ? (
+        <div className="px-5 pb-5">
+          <QueryError retry={() => passkeys.refetch()} error={passkeys.error} />
+        </div>
+      ) : passkeys.isLoading ? (
+        <SkeletonList rows={2} framed={false} className="px-5 pb-5" />
       ) : items.length === 0 ? (
         <EmptyState
-          icon={<KeyRound />}
+          icon={<Fingerprint aria-hidden="true" />}
           title={t("emptyTitle")}
           description={t("emptyBody")}
-          action={
-            <Button
-              size="sm"
-              onClick={() => {
-                setShowAddDialog(true);
-              }}
-            >
-              {t("addAction")}
-            </Button>
-          }
+          action={addButton("secondary")}
         />
       ) : (
         <>
-          <ul className="flex flex-col gap-2">
+          <List>
             {items.map((passkey) => (
-              <li
+              <ListRow
                 key={passkey.id}
-                className="flex items-center justify-between gap-3 rounded-sm border border-border px-3 py-2"
-              >
-                <div className="flex items-center gap-2 overflow-hidden">
-                  <KeyRound className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
-                  <span className="truncate text-[14px] text-fg">{passkey.name}</span>
-                </div>
-                <div className="flex shrink-0 gap-1">
-                  <IconButton
-                    icon={<Pencil />}
-                    aria-label={t("renameAction")}
-                    onClick={() => {
-                      setRenaming(passkey);
-                      setRenameValue(passkey.name);
-                    }}
+                leading={
+                  <IconCircle tone="neutral" size="sm">
+                    <Fingerprint />
+                  </IconCircle>
+                }
+                title={passkey.name}
+                action={
+                  <RowActionsMenu
+                    ariaLabel={t("rowActions", { name: passkey.name })}
+                    items={[
+                      {
+                        label: t("renameAction"),
+                        icon: <Pencil />,
+                        onClick: () => {
+                          setRenaming(passkey);
+                        },
+                      },
+                      {
+                        label: t("removeAction"),
+                        icon: <Trash2 />,
+                        tone: "danger",
+                        onClick: () => {
+                          setDeleting(passkey);
+                        },
+                      },
+                    ]}
                   />
-                  <IconButton
-                    icon={<Trash2 />}
-                    aria-label={t("removeAction")}
-                    onClick={() => {
-                      setDeleting(passkey);
-                    }}
-                  />
-                </div>
-              </li>
+                }
+              />
             ))}
-          </ul>
-          <div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                setShowAddDialog(true);
-              }}
-            >
-              {t("addAction")}
-            </Button>
-          </div>
+          </List>
+          <CardFooter>{addButton("secondary")}</CardFooter>
         </>
       )}
 
-      <Dialog
-        open={showAddDialog}
-        onOpenChange={(open) => {
-          if (!open) setShowAddDialog(false);
-        }}
-      >
-        <DialogContent title={t("addDialogTitle")} description={t("addDialogBody")}>
-          <div className="flex flex-col gap-4">
-            <Input
-              value={addName}
-              placeholder={t("namePlaceholder")}
-              onChange={(event) => {
-                setAddName(event.target.value);
-              }}
-            />
-            <Button
-              loading={register.isPending}
-              disabled={!addName.trim()}
-              onClick={() => void handleAddSubmit()}
-            >
-              {t("addConfirm")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {showAddDialog && (
+        <NameDialog
+          open
+          title={t("addDialogTitle")}
+          description={t("addDialogBody")}
+          initial=""
+          confirmLabel={t("addConfirm")}
+          pending={register.isPending}
+          onClose={() => {
+            setShowAddDialog(false);
+          }}
+          onSubmit={(name) => void handleAdd(name)}
+        />
+      )}
 
-      <Dialog
-        open={renaming !== null}
-        onOpenChange={(open) => {
-          if (!open) setRenaming(null);
-        }}
-      >
-        <DialogContent title={t("renameDialogTitle")}>
-          <div className="flex flex-col gap-4">
-            <Input
-              value={renameValue}
-              onChange={(event) => {
-                setRenameValue(event.target.value);
-              }}
-            />
-            <Button
-              loading={rename.isPending}
-              disabled={!renameValue.trim()}
-              onClick={() => void handleRenameSubmit()}
-            >
-              {t("renameConfirm")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {renaming && (
+        <NameDialog
+          open
+          title={t("renameDialogTitle")}
+          initial={renaming.name}
+          confirmLabel={t("renameConfirm")}
+          pending={rename.isPending}
+          onClose={() => {
+            setRenaming(null);
+          }}
+          onSubmit={(name) => void handleRename(name)}
+        />
+      )}
 
       <ConfirmDialog
         open={deleting !== null}
@@ -229,10 +273,10 @@ export function PasskeysSection(): ReactElement | null {
         title={t("removeDialogTitle")}
         description={deleting ? t("removeDialogBody", { name: deleting.name }) : undefined}
         confirmLabel={t("removeAction")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={() => void handleDeleteConfirm()}
       />
-    </section>
+    </Card>
   );
 }

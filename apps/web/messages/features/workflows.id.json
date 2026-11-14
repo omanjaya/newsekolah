@@ -2,8 +2,8 @@
   "navLabel": "Alur persetujuan",
   "eyebrow": "Pengaturan",
   "title": "Alur persetujuan",
-  "body": "Susun tahapan persetujuan untuk tiap jenis permohonan. Mengubah dan menyimpan membuat versi baru; pengajuan yang sedang berjalan tetap memakai tahapan versi yang berlaku saat dibuka, hanya pengajuan baru yang memakai versi ini.",
-  "versionLabel": "Versi aktif: {version}",
+  "body": "Urutan persetujuan untuk tiap jenis pengajuan. Menyimpan membuat versi baru: pengajuan yang sedang berjalan tetap memakai versi lama, pengajuan baru memakai versi ini.",
+  "versionLabel": "Versi {version}",
   "kind": {
     "exit_permit": "Izin keluar",
     "late_arrival": "Keterlambatan",
@@ -12,15 +12,15 @@
   "addStage": "Tambah tahap",
   "save": "Simpan perubahan",
   "saved": "Alur persetujuan disimpan",
-  "confirmTitle": "Simpan alur persetujuan baru",
+  "confirmTitle": "Simpan sebagai versi baru?",
   "confirmBody": "Perubahan ini berlaku sebagai versi baru. Pengajuan yang sudah berjalan tetap memakai tahapan versi sebelumnya sampai selesai; hanya pengajuan baru setelah ini yang memakai susunan tahap yang baru.",
   "confirmSave": "Simpan sebagai versi baru",
   "stage": {
     "labelField": "Nama tahap",
     "keyField": "Kode tahap",
     "approverRuleField": "Siapa yang menyetujui",
-    "dutySlugField": "Petugas piket",
-    "dutySlugPlaceholder": "Pilih jenis piket",
+    "dutySlugField": "Jenis tugas",
+    "dutySlugPlaceholder": "Pilih jenis tugas",
     "verificationField": "Cara verifikasi",
     "moveUp": "Pindah ke atas",
     "moveDown": "Pindah ke bawah",
@@ -29,12 +29,38 @@
       "any_teacher": "Guru mana pun",
       "teacher_of_class_now": "Guru yang sedang mengajar kelas ini",
       "homeroom_of_student": "Wali kelas siswa",
-      "duty": "Petugas piket tertentu"
+      "duty": "Guru dengan tugas tertentu"
     },
     "verification": {
       "qr_scan": "Pindai QR",
       "manual": "Disetujui manual",
       "auto": "Otomatis"
-    }
-  }
+    },
+    "labelPlaceholder": "Contoh: Guru piket",
+    "untitled": "Tahap {index}",
+    "stageNumber": "Tahap {index}:",
+    "actions": "Aksi untuk {name}",
+    "dutySlugHint": "Guru yang sedang bertugas sebagai ini yang menyetujui.",
+    "advanced": "Lanjutan",
+    "keyHint": "Dipakai sistem untuk mengenali tahap ini. Terisi dari nama untuk tahap baru.",
+    "keyEmpty": "Kode tahap wajib diisi.",
+    "keyDuplicate": "Kode ini sudah dipakai tahap lain."
+  },
+  "kindLabel": "Jenis pengajuan",
+  "noVersion": "Belum ada versi",
+  "stagesTitle": "Tahap persetujuan",
+  "stagesHint": "Dijalankan berurutan dari atas. Buka satu tahap untuk mengubahnya.",
+  "emptyTitle": "Belum ada tahap",
+  "emptyBody": "Tambahkan tahap pertama: siapa yang menyetujui dan bagaimana caranya.",
+  "summaryTitle": "Ringkasan alur",
+  "summaryHint": "Siapa menyetujui di tiap tahap dan caranya, mengikuti perubahan Anda.",
+  "summaryEmpty": "Alur ini belum punya tahap.",
+  "stageRemoved": "Tahap {name} dihapus dari alur",
+  "undo": "Urungkan",
+  "stagesRequired": "Alur perlu paling sedikit satu tahap.",
+  "keysInvalid": "Ada kode tahap yang kosong atau dipakai dua kali. Periksa tahap yang terbuka.",
+  "unsaved": "Perubahan alur {kind} belum disimpan",
+  "discardTitle": "Buang perubahan?",
+  "discardBody": "Perubahan alur {kind} yang belum disimpan akan hilang.",
+  "discardConfirm": "Buang perubahan"
 }

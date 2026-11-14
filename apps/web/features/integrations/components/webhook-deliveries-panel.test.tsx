@@ -75,7 +75,8 @@ describe("WebhookDeliveriesPanel filters", () => {
       refetch: vi.fn(),
     });
     render(<WebhookDeliveriesPanel endpointId="" onEndpointChange={vi.fn()} />);
-    expect(screen.getAllByRole("button", { name: "actions.retry" }).length).toBeGreaterThan(0);
+    // The table's own error state, with its retry (UiLabels.tableRetry).
+    expect(screen.getAllByRole("button", { name: "Coba lagi" }).length).toBeGreaterThan(0);
     expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
   });
 });

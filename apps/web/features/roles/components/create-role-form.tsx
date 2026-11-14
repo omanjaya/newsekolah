@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, useToast } from "@newsekolah/ui";
+import { Button, DialogFooter, Field, FormError, Input, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -9,6 +9,9 @@ import { useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCreateRoleMutation } from "../api";
 
+const SLUG_PATTERN = /^[a-z0-9_]+$/;
+
+/** The body of the "Tambah peran" dialog; its actions sit in the dialog's footer. */
 export function CreateRoleForm({ onDone }: { onDone: () => void }): ReactElement {
   const t = useTranslations("app.roles");
   const toast = useToast();
@@ -19,16 +22,26 @@ export function CreateRoleForm({ onDone }: { onDone: () => void }): ReactElement
   // Until the user edits the code themselves it follows the name.
   const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState("");
+  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const nameError = submitted && !name.trim() ? t("nameRequired") : undefined;
+  const slugError =
+    submitted && !slug.trim()
+      ? t("slugRequired")
+      : slug.trim() && !SLUG_PATTERN.test(slug.trim())
+        ? t("slugFormat")
+        : undefined;
+
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        if (!name.trim() || !slug.trim()) {
-          setError(t("requiredError"));
-          return;
-        }
+        setSubmitted(true);
+        setError(null);
+        if (!name.trim() || !slug.trim() || !SLUG_PATTERN.test(slug.trim())) return;
         create.mutate(
           {
             name: name.trim(),
@@ -49,51 +62,45 @@ export function CreateRoleForm({ onDone }: { onDone: () => void }): ReactElement
         );
       }}
     >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-          {error}
-        </p>
-      )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
+      {error && <FormError>{error}</FormError>}
+      <Field label={t("name")} required error={nameError}>
         <Input
           value={name}
           onChange={(e) => {
             setName(e.target.value);
             if (!slugTouched) setSlug(slugFromName(e.target.value));
           }}
-          required
+          maxLength={100}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("slug")}</span>
+      </Field>
+      <Field label={t("slug")} required hint={t("slugHint")} error={slugError}>
         <Input
           value={slug}
           onChange={(e) => {
             setSlugTouched(true);
             setSlug(e.target.value);
           }}
-          pattern="[a-z0-9_]+"
-          required
+          maxLength={60}
+          className="font-mono"
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("description")}</span>
+      </Field>
+      <Field label={t("description")} optional>
         <Input
           value={description}
           onChange={(e) => {
             setDescription(e.target.value);
           }}
+          maxLength={200}
         />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
-        <Button type="button" variant="secondary" onClick={onDone}>
+      </Field>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={create.isPending}>
-          {t("save")}
+          {t("create")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

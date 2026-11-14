@@ -42,8 +42,12 @@
       "copyToken": "Copy token",
       "tokenCopied": "Token copied",
       "copyFailed": "Could not copy automatically, copy it manually",
-      "done": "Saved it"
-    }
+      "done": "Saved it",
+      "cancel": "Cancel",
+      "permissionsHint": "{count, plural, one {# permission} other {# permissions}} selected. Only permissions you hold yourself."
+    },
+    "morePermissions": "+{count} more",
+    "rowActions": "Actions for key {name}"
   },
   "webhooks": {
     "description": "A webhook endpoint receives events as an HMAC-signed POST request.",
@@ -69,12 +73,16 @@
       "editTitle": "Edit webhook endpoint",
       "dialogBody": "The URL must be publicly reachable; a private or loopback address is refused.",
       "urlLabel": "Endpoint URL",
-      "descriptionLabel": "Description (optional)",
+      "descriptionLabel": "Description",
       "eventTypesLabel": "Event types",
-      "submit": "Save",
+      "submit": "Save endpoint",
       "created": "Endpoint created",
-      "updated": "Endpoint updated"
-    }
+      "updated": "Endpoint updated",
+      "cancel": "Cancel",
+      "eventTypesHint": "{count, plural, one {# event} other {# events}} selected."
+    },
+    "moreEvents": "+{count} more",
+    "rowActions": "Actions for {url}"
   },
   "deliveries": {
     "filterEndpoint": "Endpoint",
@@ -83,7 +91,7 @@
       "reset": "Reset filter",
       "removeFilter": "Remove filter {label}"
     },
-    "retry": "Retry",
+    "retry": "Resend",
     "retryEnqueued": "Retry enqueued",
     "emptyTitle": "No deliveries yet",
     "emptyBody": "Delivery history appears once the first event occurs.",
@@ -95,9 +103,11 @@
       "eventType": "Event type",
       "status": "Status",
       "attempts": "Attempts",
-      "reason": "Reason"
+      "reason": "Reason",
+      "actions": "Actions"
     },
     "pagePrev": "Previous",
     "pageNext": "Next"
-  }
+  },
+  "tabsLabel": "Integration sections"
 }

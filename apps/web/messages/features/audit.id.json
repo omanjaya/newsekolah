@@ -2,7 +2,7 @@
   "navLabel": "Jejak audit",
   "eyebrow": "Pengaturan",
   "title": "Jejak audit",
-  "description": "Riwayat perubahan yang dilakukan pengguna di sistem ini, terbaru di atas.",
+  "description": "Siapa mengubah apa dan kapan, terbaru di atas. Buka satu baris untuk melihat perubahannya.",
   "system": "Sistem",
   "actingAs": "meniru {name}",
   "filters": {
@@ -12,7 +12,7 @@
     "entityType": "Jenis entitas",
     "from": "Dari tanggal",
     "to": "Sampai tanggal",
-    "reset": "Reset filter",
+    "reset": "Hapus filter",
     "entityTypeAll": "Semua jenis",
     "removeFilter": "Hapus filter {label}",
     "dateRange": "Rentang tanggal",
@@ -35,7 +35,13 @@
     "after": "Sesudah",
     "noValue": "Tidak ada data",
     "requestId": "ID permintaan",
-    "entityId": "ID entitas"
+    "entityId": "ID entitas",
+    "code": "Kode aksi",
+    "changes": "Yang berubah",
+    "field": "Kolom",
+    "showRaw": "Lihat data mentah",
+    "hideRaw": "Sembunyikan data mentah",
+    "noChanges": "Tidak ada kolom yang berubah di catatan ini."
   },
   "impersonationNote": "Sesi ini sedang meniru pengguna lain. Lihat detail dan hentikan di halaman profil.",
   "impersonationLink": "Buka profil",

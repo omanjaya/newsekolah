@@ -183,7 +183,7 @@
         "schoolProfile": "School Profile",
         "policies": "Policies",
         "documentTemplates": "Document Templates",
-        "rolesAndAccess": "Roles and Access",
+        "rolesAndAccess": "Roles and access",
         "integrations": "Integrations",
         "sessionsAndSecurity": "Sessions and Security",
         "modules": "Modules"
@@ -193,7 +193,7 @@
       "label": "Platform",
       "items": {
         "tenants": "Schools",
-        "operatorAlerts": "Operator Alerts"
+        "operatorAlerts": "Operator alerts"
       }
     },
     "compact": {

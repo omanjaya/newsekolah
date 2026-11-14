@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { navAccessFixture } from "../../lib/navigation-access.fixture";
 import { visibleLibrarySettingsTabs } from "../library/library-settings-tabs";
 
-import { buildSettingsHubSections } from "./settings-hub";
+import { buildSettingsHubSections, settingsPageContext } from "./settings-hub";
 
 const translate = (key: string): string => key;
 const grant =
@@ -20,8 +20,12 @@ function hrefs(codes: string[], query?: string): string[] {
 }
 
 describe("buildSettingsHubSections", () => {
-  it("shows only ungated cards to a reader with no permissions", () => {
-    expect(hrefs([])).toEqual(["/settings/security"]);
+  it("shows only the reader's own account pages to a reader with no permissions", () => {
+    expect(hrefs([])).toEqual([
+      "/settings/security",
+      "/settings/notifications",
+      "/settings/appearance",
+    ]);
   });
 
   it("shows everything for a full settings administrator", () => {
@@ -40,7 +44,7 @@ describe("buildSettingsHubSections", () => {
     expect(all).toContain("/settings/audit-logs");
     expect(all).toContain("/settings/workflows");
     expect(all).toContain("/setup");
-    expect(all).toHaveLength(14);
+    expect(all).toHaveLength(16);
   });
 
   it("gates a card on the permission of its registry entry", () => {
@@ -53,7 +57,7 @@ describe("buildSettingsHubSections", () => {
       access: navAccessFixture(grant("manage_whatsapp")),
       translate,
     });
-    expect(sections.map((section) => section.key)).toEqual(["access", "communication"]);
+    expect(sections.map((section) => section.key)).toEqual(["communication", "account"]);
   });
 
   it("filters by label or description, case-insensitively", () => {
@@ -65,6 +69,48 @@ describe("buildSettingsHubSections", () => {
 
   it("never lets search reveal a card the reader may not open", () => {
     expect(hrefs([], "audit")).toEqual([]);
+  });
+});
+
+describe("settingsPageContext", () => {
+  const admin = navAccessFixture(grant("manage_settings", "view_audit_logs", "view_roles"));
+
+  it("names a page after its registry entry and tabs the pages of its hub section", () => {
+    const context = settingsPageContext("settings-report-header", { access: admin, translate });
+    expect(context?.section).toBe("identity");
+    expect(context?.title).toBe("app.settings.reportHeader.navLabel");
+    expect(context?.tabs.map((tab) => tab.href)).toEqual([
+      "/settings/branding",
+      "/settings/report-header",
+      "/settings/document-templates",
+    ]);
+  });
+
+  it("leaves pages of other areas out of the tabs", () => {
+    const context = settingsPageContext("settings-session", { access: admin, translate });
+    // Users and roles live in Data Sekolah's users area, not in these tabs.
+    expect(context?.tabs.map((tab) => tab.href)).toEqual([
+      "/settings/session",
+      "/settings/sso",
+      "/settings/audit-logs",
+    ]);
+  });
+
+  it("only tabs the pages the reader may open", () => {
+    const context = settingsPageContext("settings-audit", {
+      access: navAccessFixture(grant("view_audit_logs")),
+      translate,
+    });
+    expect(context?.tabs.map((tab) => tab.href)).toEqual(["/settings/audit-logs"]);
+  });
+
+  it("groups the reader's own account pages apart from the school's", () => {
+    const context = settingsPageContext("settings-appearance", {
+      access: navAccessFixture(grant()),
+      translate,
+    });
+    expect(context?.section).toBe("account");
+    expect(context?.tabs).toHaveLength(3);
   });
 });
 

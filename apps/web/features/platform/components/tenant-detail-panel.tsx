@@ -1,16 +1,38 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Badge, Button, Input, Skeleton, Switch, useToast } from "@newsekolah/ui";
+import { formatDateTime, type Locale } from "@newsekolah/i18n";
+import {
+  Badge,
+  Button,
+  DataList,
+  DataListItem,
+  Field,
+  Input,
+  List,
+  ListRow,
+  Sheet,
+  SheetContent,
+  SkeletonDetail,
+  Switch,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  TextLink,
+  useToast,
+} from "@newsekolah/ui";
 import { Download } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import {
   type PlatformModule,
+  type PlatformTenantDetail,
   useExportQuery,
   useRequestExportMutation,
   useSetTenantFlagMutation,
@@ -18,6 +40,8 @@ import {
   useTenantFlagsQuery,
   useUpdateTenantDomainMutation,
 } from "../api";
+
+import { TENANT_STATUS_TONE } from "./tenant-status";
 
 const MODULES: PlatformModule[] = [
   "library",
@@ -29,23 +53,65 @@ const MODULES: PlatformModule[] = [
   "billing",
 ];
 
-export function TenantDetailPanel({ tenantId }: { tenantId: string }): ReactElement {
+/**
+ * One school in a side drawer (a bottom sheet on a phone): its name and
+ * status in the header, then tabs for the summary, the feature modules,
+ * the custom domain and the data export.
+ */
+export function TenantDetailSheet({
+  tenantId,
+  onOpenChange,
+}: {
+  tenantId: string | null;
+  onOpenChange: (open: boolean) => void;
+}): ReactElement {
+  const t = useTranslations("app.platform.tenants");
+  const detail = useTenantDetailQuery(tenantId ?? "");
+  const name = tenantId ? detail.data?.name : undefined;
+
+  return (
+    <Sheet open={tenantId !== null} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="right"
+        size="lg"
+        title={name ?? t("detail.title")}
+        description={
+          detail.data
+            ? `${t(`level.${detail.data.education_level}`)} · ${detail.data.slug}`
+            : undefined
+        }
+      >
+        {tenantId &&
+          (detail.isError && !detail.data ? (
+            <QueryError retry={() => detail.refetch()} error={detail.error} />
+          ) : detail.isLoading || !detail.data ? (
+            <SkeletonDetail rows={5} />
+          ) : (
+            // Keyed on the school, so the domain field starts from its saved value.
+            <TenantDetail key={detail.data.id} tenant={detail.data} />
+          ))}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function TenantDetail({ tenant }: { tenant: PlatformTenantDetail }): ReactElement {
   const t = useTranslations("app.platform.tenants");
   const td = useTranslations("app.platform.tenants.detail");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const locale = useLocale() as Locale;
+  const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
 
-  const { data, isLoading, isError, refetch } = useTenantDetailQuery(tenantId);
-  const detail = data;
-  const flags = useTenantFlagsQuery(tenantId);
+  const flags = useTenantFlagsQuery(tenant.id);
   const updateDomain = useUpdateTenantDomainMutation();
   const setFlag = useSetTenantFlagMutation();
   const requestExport = useRequestExportMutation();
-
-  const [domain, setDomain] = useState(detail?.primary_domain ?? "");
+  const [domain, setDomain] = useState(tenant.primary_domain ?? "");
   const [exportId, setExportId] = useState("");
-
-  const exportQuery = useExportQuery(tenantId, exportId);
+  const exportQuery = useExportQuery(tenant.id, exportId);
+  const exportView = exportQuery.data;
 
   const onError = (error: unknown) => {
     toast.error(
@@ -53,49 +119,94 @@ export function TenantDetailPanel({ tenantId }: { tenantId: string }): ReactElem
     );
   };
 
-  if (isError && !detail) return <QueryError retry={refetch} />;
-
-  if (isLoading || !detail) {
-    return (
-      <div className="flex flex-col gap-3">
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-32 w-full" />
-      </div>
-    );
-  }
-
   const flagByModule = new Map((flags.data?.data ?? []).map((f) => [f.module, f.enabled]));
-  const exportView = exportQuery.data;
+  const domainDirty = domain.trim() !== (tenant.primary_domain ?? "");
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={detail.status === "active" ? "accent" : "neutral"}>
-          {t(`status.${detail.status}`)}
-        </Badge>
-        <span className="text-[13px] text-fg-muted">{t(`level.${detail.education_level}`)}</span>
-        <span className="text-[13px] text-fg-muted">
-          {td("storageBucket")}: {detail.storage_bucket || "-"}
-        </span>
+        <Badge tone={TENANT_STATUS_TONE[tenant.status]}>{t(`status.${tenant.status}`)}</Badge>
+        <Badge tone="neutral">{td("userCount", { count: tenant.user_count })}</Badge>
       </div>
 
-      <section className="flex flex-col gap-2">
-        <h3 className="text-[13px] font-medium">{td("domainTitle")}</h3>
-        <div className="flex gap-2">
-          <Input
-            value={domain}
-            onChange={(e) => {
-              setDomain(e.target.value);
-            }}
-            placeholder={td("domainPlaceholder")}
-          />
-          <Button
-            variant="secondary"
-            loading={updateDomain.isPending}
-            onClick={() => {
+      <Tabs defaultValue="summary" className="flex flex-col gap-4">
+        <TabsList aria-label={td("sectionsLabel")}>
+          <TabsTrigger value="summary">{td("tabs.summary")}</TabsTrigger>
+          <TabsTrigger value="modules">{td("tabs.modules")}</TabsTrigger>
+          <TabsTrigger value="domain">{td("tabs.domain")}</TabsTrigger>
+          <TabsTrigger value="export">{td("tabs.export")}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="summary">
+          <DataList>
+            <DataListItem label={td("slug")}>
+              <span className="font-mono">{tenant.slug}</span>
+            </DataListItem>
+            <DataListItem label={td("domainTitle")}>{tenant.primary_domain}</DataListItem>
+            <DataListItem label={td("timezone")}>{tenant.timezone}</DataListItem>
+            <DataListItem label={t("columns.activeYear")}>
+              {tenant.active_academic_year}
+            </DataListItem>
+            <DataListItem label={t("columns.lastActivity")}>
+              {tenant.last_activity_at
+                ? formatDateTime(tenant.last_activity_at, { locale, timeZone })
+                : t("never")}
+            </DataListItem>
+            <DataListItem label={td("createdAt")}>
+              {formatDateTime(tenant.created_at, { locale, timeZone })}
+            </DataListItem>
+            <DataListItem label={td("storageBucket")}>
+              <span className="font-mono break-all">{tenant.storage_bucket}</span>
+            </DataListItem>
+          </DataList>
+        </TabsContent>
+
+        <TabsContent value="modules" className="flex flex-col gap-3">
+          <p className="text-body-sm text-fg-muted">{td("flagsHint")}</p>
+          {flags.isError && !flags.data ? (
+            <QueryError retry={() => flags.refetch()} error={flags.error} />
+          ) : flags.isLoading ? (
+            <SkeletonDetail rows={MODULES.length} />
+          ) : (
+            <List framed>
+              {MODULES.map((module) => (
+                <ListRow
+                  key={module}
+                  title={td(`modules.${module}`)}
+                  action={
+                    <Switch
+                      checked={flagByModule.get(module) ?? false}
+                      aria-label={td(`modules.${module}`)}
+                      onCheckedChange={(enabled) => {
+                        setFlag.mutate(
+                          { tenantId: tenant.id, module, enabled },
+                          {
+                            onSuccess: () => {
+                              toast.success(
+                                enabled
+                                  ? td("flagOn", { module: td(`modules.${module}`) })
+                                  : td("flagOff", { module: td(`modules.${module}`) }),
+                              );
+                            },
+                            onError,
+                          },
+                        );
+                      }}
+                    />
+                  }
+                />
+              ))}
+            </List>
+          )}
+        </TabsContent>
+
+        <TabsContent value="domain">
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
               updateDomain.mutate(
-                { tenantId, domain },
+                { tenantId: tenant.id, domain: domain.trim() },
                 {
                   onSuccess: () => {
                     toast.success(td("domainSaved"));
@@ -105,79 +216,72 @@ export function TenantDetailPanel({ tenantId }: { tenantId: string }): ReactElem
               );
             }}
           >
-            {td("domainSave")}
-          </Button>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <h3 className="text-[13px] font-medium">{td("flagsTitle")}</h3>
-        {flags.isError && !flags.data ? (
-          <QueryError retry={flags.refetch} />
-        ) : flags.isLoading ? (
-          <Skeleton className="h-40 w-full" />
-        ) : (
-          <ul className="flex flex-col divide-y divide-border rounded-sm border border-border">
-            {MODULES.map((module) => (
-              <li key={module} className="flex items-center justify-between gap-4 px-3 py-2">
-                <span className="text-[13px]">{td(`modules.${module}`)}</span>
-                <Switch
-                  checked={flagByModule.get(module) ?? false}
-                  onCheckedChange={(enabled) => {
-                    setFlag.mutate(
-                      { tenantId, module, enabled },
-                      {
-                        onSuccess: () => {
-                          toast.success(td("flagUpdated"));
-                        },
-                        onError,
-                      },
-                    );
-                  }}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <h3 className="text-[13px] font-medium">{td("exportTitle")}</h3>
-        <p className="text-[13px] text-fg-muted">{td("exportBody")}</p>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="secondary"
-            loading={requestExport.isPending}
-            onClick={() => {
-              requestExport.mutate(tenantId, {
-                onSuccess: (result) => {
-                  const id = result.id;
-                  if (id) setExportId(id);
-                },
-                onError,
-              });
-            }}
-          >
-            {td("exportButton")}
-          </Button>
-          {exportView && (
-            <span className="text-[13px] text-fg-muted">
-              {td(`exportStatus.${exportView.status}`)}
-            </span>
-          )}
-          {exportView?.download_url && (
-            <a
-              href={exportView.download_url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[13px] font-medium text-accent hover:underline"
+            <Field label={td("domainTitle")} hint={td("domainHint")}>
+              <Input
+                value={domain}
+                onChange={(e) => {
+                  setDomain(e.target.value);
+                }}
+                placeholder={td("domainPlaceholder")}
+                inputMode="url"
+                autoCapitalize="none"
+                spellCheck={false}
+              />
+            </Field>
+            <Button
+              type="submit"
+              className="self-end"
+              disabled={!domainDirty}
+              loading={updateDomain.isPending}
             >
-              <Download className="size-4" aria-hidden="true" />
-              {td("exportDownload")}
-            </a>
+              {td("domainSave")}
+            </Button>
+          </form>
+        </TabsContent>
+
+        <TabsContent value="export" className="flex flex-col gap-4">
+          <p className="text-body-sm text-fg-muted">{td("exportBody")}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="secondary"
+              loading={requestExport.isPending}
+              onClick={() => {
+                requestExport.mutate(tenant.id, {
+                  onSuccess: (result) => {
+                    setExportId(result.id);
+                  },
+                  onError,
+                });
+              }}
+            >
+              {td("exportButton")}
+            </Button>
+            {exportView && (
+              <Badge
+                tone={
+                  exportView.status === "done"
+                    ? "success"
+                    : exportView.status === "failed"
+                      ? "danger"
+                      : "info"
+                }
+                dot={exportView.status === "pending" || exportView.status === "running"}
+              >
+                {td(`exportStatus.${exportView.status}`)}
+              </Badge>
+            )}
+            {exportView?.download_url && (
+              <TextLink href={exportView.download_url} external>
+                <Download className="size-4" aria-hidden="true" />
+                {td("exportDownload")}
+              </TextLink>
+            )}
+          </div>
+          {exportView?.error_message && (
+            <p className="text-body-sm text-danger">{exportView.error_message}</p>
           )}
-        </div>
-      </section>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
