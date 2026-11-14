@@ -28,7 +28,8 @@ export function columnWidth<TData>(header: Header<TData, unknown>): number | und
 }
 
 /**
- * The desktop table's `<thead>`: a quiet sunken band with caption-size
+ * The desktop table's `<thead>`: a quiet band (`bg-surface-header`, the
+ * sunken tint in light and a step above the card in dark) with caption-size
  * muted labels, one sort button per sortable column. An actions column
  * keeps its header for assistive tech only and hugs its buttons on the
  * right. Split out of `data-table.tsx` to keep that file under the
@@ -42,7 +43,7 @@ export function DataTableHead<TData>({
   return (
     <thead className={cn(fillHeight && "sticky top-0 z-10")}>
       {table.getHeaderGroups().map((headerGroup) => (
-        <tr key={headerGroup.id} className="bg-surface-sunken">
+        <tr key={headerGroup.id} className="bg-surface-header">
           {headerGroup.headers.map((header) => {
             const end = columnAlign(header.column) === "end";
             const actions = isActionsColumn(header.column);

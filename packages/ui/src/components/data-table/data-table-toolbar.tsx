@@ -1,6 +1,6 @@
 "use client";
 
-import type { Column, Table } from "@tanstack/react-table";
+import { flexRender, type Column, type Table } from "@tanstack/react-table";
 import { Columns3, Ellipsis, Rows3, X } from "lucide-react";
 import { useState, type ReactElement, type ReactNode } from "react";
 
@@ -61,6 +61,33 @@ export function getDataTableColumnLabel(
     if (typeof label === "string" || typeof label === "number") return label;
   }
   return typeof header === "string" || typeof header === "number" ? header : undefined;
+}
+
+/**
+ * Column id to its rendered header (the phone cards' field labels), and
+ * into `remembered` a plain label for columns the header groups skip (the
+ * column menu's names).
+ */
+export function collectColumnHeaders<TData>(
+  table: Table<TData>,
+  remembered: Record<string, ReactNode>,
+): Record<string, ReactNode> {
+  // Rendered once from the header groups, because a header cell needs a
+  // header context and a body cell cannot supply one.
+  const headers: Record<string, ReactNode> = {};
+  for (const headerGroup of table.getHeaderGroups()) {
+    for (const header of headerGroup.headers) {
+      if (header.isPlaceholder) continue;
+      headers[header.column.id] = flexRender(header.column.columnDef.header, header.getContext());
+    }
+  }
+  Object.assign(remembered, headers);
+  for (const column of table.getAllFlatColumns()) {
+    if (remembered[column.id] !== undefined) continue;
+    const label = getDataTableColumnLabel(column.columnDef.meta, column.columnDef.header);
+    if (label !== undefined) remembered[column.id] = label;
+  }
+  return headers;
 }
 
 export interface DataTableToolbarProps<TData> {
@@ -186,7 +213,10 @@ export function DataTableToolbar<TData>({
     <div
       className={cn(
         // As tall as the selection bar that replaces it, so ticking a row never moves the table.
-        "flex flex-wrap items-center gap-2 md:pointer-fine:min-h-10",
+        // Top-aligned from md up: every control there is one height, and
+        // pills that wrap to a second row hang below the first instead of
+        // pulling the search box and the actions down to their middle.
+        "flex flex-wrap items-center gap-2 md:items-start md:pointer-fine:min-h-10",
         emptyOnPhone && "max-md:hidden",
       )}
     >
@@ -204,11 +234,15 @@ export function DataTableToolbar<TData>({
           className="order-1 min-w-0 flex-1 basis-0 md:w-72 md:flex-none md:basis-auto lg:w-80"
         />
       )}
+      {/* From md up the pills take the room the search box, the actions and
+          the view icons leave (basis 0, at least 12rem) and wrap inside it,
+          so a long set of pills never pushes the actions or the icons onto
+          a row of their own. */}
       {hasFilters && (
         <DataTableFilters
           filters={filters}
           labels={filtersLabels}
-          className="order-4 basis-full md:order-2 md:min-w-0 md:flex-1 md:basis-auto"
+          className="order-4 basis-full md:order-2 md:min-w-48 md:flex-1 md:basis-0"
         />
       )}
       {/* On a phone the table's own actions take the first row, each an equal

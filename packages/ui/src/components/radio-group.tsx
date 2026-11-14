@@ -85,7 +85,9 @@ function RadioDot(): ReactElement {
         "flex size-4 shrink-0 items-center justify-center rounded-full border border-border-strong bg-surface",
         "transition-colors group-hover:border-fg-muted group-active:bg-state-pressed",
         "group-data-[state=checked]:border-accent group-data-[state=checked]:bg-accent",
-        "group-disabled:border-border group-disabled:bg-surface-sunken",
+        // Half the resting ring: plain `border` vanished on the sunken fill
+        // in dark, leaving a disabled option with no visible control.
+        "group-disabled:border-border-strong/50 group-disabled:bg-surface-sunken",
         // A disabled checked radio keeps its fill (the value still shows) at half strength, as Checkbox does.
         "group-disabled:group-data-[state=checked]:opacity-50",
       )}

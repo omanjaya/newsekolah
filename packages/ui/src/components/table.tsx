@@ -78,11 +78,14 @@ export function TableBody({ className, ...props }: ComponentPropsWithoutRef<"tbo
   );
 }
 
-/** A totals row band under the body, on the header's sunken tint. */
+/**
+ * A totals row band under the body, on the header's tint
+ * (`bg-surface-header`: sunken in light, a step above the card in dark).
+ */
 export function TableFooter({ className, ...props }: ComponentPropsWithoutRef<"tfoot">) {
   return (
     <TableSectionContext.Provider value="footer">
-      <tfoot className={cn("bg-surface-sunken font-semibold", className)} {...props} />
+      <tfoot className={cn("bg-surface-header font-semibold", className)} {...props} />
     </TableSectionContext.Provider>
   );
 }
@@ -94,7 +97,7 @@ export function TableRow({ className, ...props }: ComponentPropsWithoutRef<"tr">
     <tr
       className={cn(
         section === "header"
-          ? "bg-surface-sunken"
+          ? "bg-surface-header"
           : section === "footer"
             ? cn(ROW_MIN_HEIGHT[density], "border-t border-line")
             : cn(
@@ -110,7 +113,7 @@ export function TableRow({ className, ...props }: ComponentPropsWithoutRef<"tr">
 }
 
 /**
- * A header cell. In `TableHeader` it is a column header on the sunken band:
+ * A header cell. In `TableHeader` it is a column header on the header band:
  * caption-size muted label, at least 40px tall (`h-10` is a minimum in a
  * table), with its own vertical padding so a header of several lines (a
  * code over its weight) does not touch the card's edge. In `TableBody` and

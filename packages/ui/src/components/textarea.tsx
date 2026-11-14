@@ -11,7 +11,7 @@ import {
 import { cn } from "../utils/cn.js";
 
 import { useFieldControl } from "./field-context.js";
-import { FIELD_BORDER_CLASSES, FIELD_DISABLED_CLASSES } from "./field-styles.js";
+import { FIELD_BORDER_CLASSES, FIELD_DISABLED_CLASSES, FIELD_TEXT } from "./field-styles.js";
 
 export type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   invalid?: boolean;
@@ -25,8 +25,14 @@ export type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   maxRows?: number;
 };
 
-const LINE_HEIGHT_PX = 20; // text-body
+/** text-body's line with a cursor; on touch the field reads 16/24, so the live value is measured. */
+const LINE_HEIGHT_PX = 20;
 const VERTICAL_CHROME_PX = 18; // py-2 plus the 1px border, top and bottom
+
+function lineHeightOf(element: HTMLElement): number {
+  const measured = Number.parseFloat(getComputedStyle(element).lineHeight);
+  return Number.isFinite(measured) && measured > 0 ? measured : LINE_HEIGHT_PX;
+}
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
   {
@@ -64,7 +70,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   const fit = useCallback(() => {
     const element = innerRef.current;
     if (!autoResize || !element) return;
-    const max = maxRows * LINE_HEIGHT_PX + VERTICAL_CHROME_PX;
+    const max = maxRows * lineHeightOf(element) + VERTICAL_CHROME_PX;
     element.style.height = "auto";
     const next = Math.min(element.scrollHeight + 2, max);
     element.style.height = `${next}px`;
@@ -87,7 +93,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
       ref={setRefs}
       rows={minRows}
       className={cn(
-        "block w-full min-w-0 rounded-md bg-surface px-3 py-2 text-body text-fg",
+        "block w-full min-w-0 rounded-md bg-surface px-3 py-2 text-fg",
+        FIELD_TEXT.md,
         autoResize ? "resize-none" : "min-h-20 resize-y",
         FIELD_BORDER_CLASSES,
         FIELD_DISABLED_CLASSES,

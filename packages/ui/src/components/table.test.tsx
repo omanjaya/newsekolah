@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
+import { compiledFormsDataCss } from "../test/forms-data-css.js";
 
 import {
   Table,
@@ -109,7 +110,7 @@ describe("Table", () => {
 
     const total = screen.getByRole("rowheader", { name: "Rata-rata" });
     expect(total).toHaveAttribute("scope", "row");
-    expect(total.closest("tfoot")).toHaveClass("bg-surface-sunken");
+    expect(total.closest("tfoot")).toHaveClass("bg-surface-header");
     expect(total.closest("tr")).toHaveClass("border-t");
   });
 
@@ -129,5 +130,34 @@ describe("Table", () => {
   it("has no axe violations", async () => {
     const { container } = renderTable();
     await expectNoAxeViolations(container);
+  });
+});
+
+describe("Table header band", () => {
+  it("draws the header row and the totals row on the header surface", () => {
+    renderTable();
+    const [headerRow] = screen.getAllByRole("row");
+    expect(headerRow).toHaveClass("bg-surface-header");
+    expect(headerRow).not.toHaveClass("bg-surface-sunken");
+  });
+
+  // The sunken surface is darker than the page in dark, so a band of it
+  // read as a black slot across every table card.
+  it("is the sunken tint in light and a step above the card in dark", async () => {
+    const css = await compiledFormsDataCss(["bg-surface-header"]);
+    expect(css).toContain("background-color: var(--color-surface-header)");
+    expect(css).toMatch(/:root \{\s*--color-surface-header: var\(--color-surface-sunken\);/);
+    // Tailwind puts the plain card colour first for a browser without
+    // color-mix, then the lift; never the sunken surface in dark.
+    const lift =
+      "--color-surface-header: color-mix(in srgb, var(--color-surface) 96%, var(--color-fg))";
+    const darkRule = (start: string) => {
+      const from = css.indexOf(start);
+      return css.slice(from, css.indexOf("}\n  }", from));
+    };
+    for (const selector of ['[data-theme="dark"] {', ':root:not([data-theme="light"]) {']) {
+      expect(darkRule(selector)).toContain(lift);
+      expect(darkRule(selector)).not.toContain("sunken");
+    }
   });
 });

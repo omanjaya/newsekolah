@@ -116,8 +116,7 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
         aria-describedby={describedBy}
         aria-invalid={attributes["aria-invalid"]}
         className={cn(
-          // `group/trigger` scopes the chevron's turn to this trigger, as in Select.
-          "group/trigger flex w-full min-w-0 items-center justify-between gap-2 rounded-md bg-surface text-fg",
+          "flex w-full min-w-0 items-center justify-between gap-2 rounded-md bg-surface text-fg",
           FIELD_HEIGHT[size],
           FIELD_PADDING[size],
           FIELD_TEXT[size],
@@ -131,10 +130,8 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
         <span className={cn("min-w-0 flex-1 truncate text-left", !selected && "text-fg-muted")}>
           {selected ? selected.label : (placeholder ?? labels.comboboxPlaceholder)}
         </span>
-        <ChevronDown
-          className="size-4 shrink-0 text-fg-muted transition-transform duration-fast group-data-[state=open]/trigger:rotate-180"
-          aria-hidden="true"
-        />
+        {/* A still chevron, as on every dropdown field: the accent border is the open state. */}
+        <ChevronDown className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
       </PopoverPrimitive.Trigger>
       {isRequired && (
         <span id={requiredId} hidden>
@@ -167,7 +164,8 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
                 onValueChange={onSearchChange}
                 placeholder={searchPlaceholder ?? labels.comboboxSearchPlaceholder}
                 className={cn(
-                  "h-11 min-w-0 flex-1 bg-transparent text-body text-fg outline-none md:pointer-fine:h-10",
+                  "h-11 min-w-0 flex-1 bg-transparent text-fg outline-none md:pointer-fine:h-10",
+                  FIELD_TEXT.md,
                   "placeholder:text-fg-muted focus-visible:outline-none",
                 )}
               />

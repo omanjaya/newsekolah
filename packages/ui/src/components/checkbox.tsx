@@ -60,7 +60,9 @@ export const Checkbox = forwardRef<HTMLButtonElement, CheckboxProps>(function Ch
           "group-data-[state=checked]:border-accent group-data-[state=checked]:bg-accent",
           "group-data-[state=indeterminate]:border-accent group-data-[state=indeterminate]:bg-accent",
           "group-aria-invalid:border-danger",
-          "group-disabled:border-border group-disabled:bg-surface-sunken",
+          // Half the resting ring, as RadioGroup's: plain `border` all but
+          // vanished on the sunken fill in dark.
+          "group-disabled:border-border-strong/50 group-disabled:bg-surface-sunken",
           "group-disabled:group-data-[state=checked]:opacity-50",
           "group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus-ring",
         )}

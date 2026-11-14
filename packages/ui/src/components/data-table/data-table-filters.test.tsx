@@ -49,6 +49,28 @@ function dateRangeFilter(overrides: Partial<DataTableFilterDef> = {}): DataTable
 }
 
 describe("DataTableFilters", () => {
+  // Without a glyph the pills read as action buttons next to "Tambah".
+  it("ends a pill that opens a list or a date popover in a chevron, but not an on/off pill", () => {
+    render(
+      <DataTableFilters
+        filters={[materialTypeFilter(), dateRangeFilter(), availabilityFilter()]}
+      />,
+    );
+    const chevron = (name: string) =>
+      screen.getByRole("button", { name }).querySelector("svg[aria-hidden=true]");
+    expect(chevron("Jenis bahan")).not.toBeNull();
+    expect(chevron("Tanggal")).not.toBeNull();
+    expect(chevron("Hanya tersedia")).toBeNull();
+  });
+
+  it("fades the strip's edges only while pills scroll past them, as a tab strip does", () => {
+    const { container } = render(<DataTableFilters filters={[materialTypeFilter()]} />);
+    const strip = container.firstElementChild;
+    expect(strip).toHaveClass("scroll-fade-x");
+    // jsdom lays nothing out, so nothing overflows and no edge is marked.
+    expect(strip).not.toHaveAttribute("data-overflow-end");
+  });
+
   it("shows only the label for an unset filter, with no remove control", () => {
     render(<DataTableFilters filters={[materialTypeFilter()]} />);
     expect(screen.getByRole("button", { name: "Jenis bahan" })).toBeInTheDocument();

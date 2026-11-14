@@ -1,8 +1,9 @@
 "use client";
 
-import { Check, X } from "lucide-react";
-import { useState, type ReactElement } from "react";
+import { Check, ChevronDown, X } from "lucide-react";
+import { useRef, useState, type ReactElement } from "react";
 
+import { useScrollEdges } from "../../hooks/use-scroll-edges.js";
 import { cn } from "../../utils/cn.js";
 import { Field, FieldError } from "../field.js";
 import { Input } from "../input.js";
@@ -139,16 +140,21 @@ export function DataTableFilters({
     ...labelsOverride,
   };
   const hasActiveFilter = filters.some(isFilterActive);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  useScrollEdges(scrollerRef, { axis: "x" });
 
   return (
     // One row that scrolls sideways on a phone (wrapped pills would push the
     // list below the fold), wrapping from `md` up. The 4px vertical padding
     // keeps the pills' focus rings inside the scroller's clip.
     <div
+      ref={scrollerRef}
       className={cn(
         "-my-1 flex scrollbar-none items-center gap-1.5 overflow-x-auto py-1 [&>*]:shrink-0",
-        // The last 24px fade out, so a pill cut by the edge reads as "more this way".
-        "max-md:mask-r-from-[calc(100%-1.5rem)] md:flex-wrap md:overflow-visible",
+        // An edge with more pills past it fades out, as a tab strip's does,
+        // so a pill cut by the edge reads as "more this way"; a row that
+        // fits (and the wrapped row from md up) has no fade at all.
+        "scroll-fade-x md:flex-wrap md:overflow-visible",
         className,
       )}
     >
@@ -192,6 +198,23 @@ export function DataTableFilters({
 // ring the base styles draw around whichever half has focus.
 const PILL_TRIGGER_CLASS =
   "flex h-11 items-center gap-1 rounded-full px-3 text-label whitespace-nowrap transition-colors md:pointer-fine:h-8";
+
+/**
+ * A pill that opens a list or a date popover ends in a small chevron, so it
+ * reads as a filter to pick from, not as one more action button next to
+ * "Tambah"; the chevron side is a little tighter. An on/off pill
+ * (`type: "boolean"`) acts at once and has none.
+ */
+const PILL_MENU_TRIGGER_CLASS = `${PILL_TRIGGER_CLASS} pr-2.5`;
+
+function PillChevron({ active }: { active: boolean }): ReactElement {
+  return (
+    <ChevronDown
+      className={cn("size-3.5 shrink-0", active ? "opacity-70" : "text-fg-muted")}
+      aria-hidden="true"
+    />
+  );
+}
 
 function FilterPillShell({
   active,
@@ -279,13 +302,14 @@ function DataTableFilterPill({
             <button
               type="button"
               className={cn(
-                PILL_TRIGGER_CLASS,
+                PILL_MENU_TRIGGER_CLASS,
                 active
                   ? "text-accent-soft-fg hover:bg-state-hover"
                   : "text-fg hover:bg-state-hover",
               )}
             >
               {triggerLabel}
+              <PillChevron active={active} />
             </button>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-56 p-1">
@@ -402,13 +426,14 @@ function DateRangeFilterPill({
             <button
               type="button"
               className={cn(
-                PILL_TRIGGER_CLASS,
+                PILL_MENU_TRIGGER_CLASS,
                 active
                   ? "text-accent-soft-fg hover:bg-state-hover"
                   : "text-fg hover:bg-state-hover",
               )}
             >
               {triggerLabel}
+              <PillChevron active={active} />
             </button>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-80 p-3">

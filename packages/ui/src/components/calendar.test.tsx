@@ -89,6 +89,13 @@ describe("Calendar", () => {
 
     expect(cell("Rabu, 4 November 2026")).toHaveAttribute("aria-disabled", "true");
     expect(cell("Rabu, 11 November 2026")).toHaveAttribute("aria-disabled", "true");
+    // A refused day of this month is struck through, so it never reads as
+    // a neighbouring month's day, which is only muted.
+    const pill = (name: string) => within(cell(name)).getByText(/^\d+$/);
+    expect(pill("Rabu, 11 November 2026")).toHaveClass("line-through");
+    expect(pill("Kamis, 12 November 2026")).not.toHaveClass("line-through");
+    expect(pill("Kamis, 29 Oktober 2026")).not.toHaveClass("line-through");
+    expect(pill("Kamis, 29 Oktober 2026")).toHaveClass("text-fg-muted");
     await userEvent.click(cell("Rabu, 4 November 2026"));
     await userEvent.click(cell("Rabu, 11 November 2026"));
     expect(onChange).not.toHaveBeenCalled();

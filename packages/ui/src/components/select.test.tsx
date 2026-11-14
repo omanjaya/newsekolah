@@ -3,12 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
-import { compiledSelector } from "../test/tailwind-selector.js";
 
 import { Combobox } from "./combobox.js";
 import { Dialog, DialogContent } from "./dialog.js";
 import { Field } from "./field.js";
 import { Select } from "./select.js";
+import { TimePicker } from "./time-picker.js";
 import { UiLabelsProvider } from "./ui-labels.js";
 
 describe("Select", () => {
@@ -82,10 +82,12 @@ describe("Select", () => {
   });
 });
 
-describe("Select and Combobox chevrons", () => {
-  // Every Radix overlay carries data-state="open", so a chevron keyed to any
-  // open ancestor would point up for good inside a dialog.
-  it("turn only with their own trigger, not with an open Dialog around them", async () => {
+describe("Dropdown field chevrons", () => {
+  // TimePicker and the calendar caption never turned theirs, so a Select
+  // or Combobox that did read as a different control (and as "opens
+  // upward" over a list that opened below). The open state is the accent
+  // border; the chevron stays still on every dropdown field.
+  it("stay still on Select, Combobox and TimePicker, closed and open, inside a Dialog", async () => {
     render(
       <Dialog open>
         <DialogContent title="Ubah kelas">
@@ -98,23 +100,23 @@ describe("Select and Combobox chevrons", () => {
             search=""
             onSearchChange={vi.fn()}
           />
+          <TimePicker aria-label="Jam" value="07:00" onChange={vi.fn()} />
         </DialogContent>
       </Dialog>,
     );
     const select = screen.getByRole("combobox", { name: "Kelas" });
     const combobox = screen.getByRole("button", { name: "Wali kelas" });
-    const turned = async (trigger: HTMLElement) => {
+    const timeToggle = screen.getByRole("button", { name: "Tampilkan pilihan jam" });
+    const chevronClasses = (trigger: HTMLElement) => {
       const icon = trigger.querySelector("svg");
       if (!icon) throw new Error("Missing chevron");
-      const rotate = Array.from(icon.classList).find((name) => name.endsWith(":rotate-180"));
-      if (!rotate) throw new Error("Chevron has no open rotation");
-      return icon.matches(await compiledSelector(rotate));
+      return icon.getAttribute("class") ?? "";
     };
-    expect(await turned(select)).toBe(false);
-    expect(await turned(combobox)).toBe(false);
 
     await userEvent.click(combobox);
-    expect(await turned(combobox)).toBe(true);
-    expect(await turned(select)).toBe(false);
+    expect(combobox).toHaveAttribute("data-state", "open");
+    for (const trigger of [select, combobox, timeToggle]) {
+      expect(chevronClasses(trigger)).not.toMatch(/rotate/);
+    }
   });
 });

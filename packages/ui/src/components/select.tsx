@@ -91,10 +91,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
         aria-invalid={attributes["aria-invalid"]}
         aria-required={attributes["aria-required"]}
         className={cn(
-          // `group/trigger` scopes the chevron's turn to this trigger's own
-          // open state: a bare `in-data-[state=open]` would also match an
-          // open Dialog, Sheet or Popover around a closed Select.
-          "group/trigger flex w-full min-w-0 items-center justify-between gap-2 rounded-md bg-surface text-fg",
+          "flex w-full min-w-0 items-center justify-between gap-2 rounded-md bg-surface text-fg",
           FIELD_HEIGHT[size],
           FIELD_PADDING[size],
           FIELD_TEXT[size],
@@ -110,11 +107,12 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
         <span className="min-w-0 flex-1 truncate text-left">
           <SelectPrimitive.Value placeholder={placeholder ?? labels.selectPlaceholder} />
         </span>
+        {/* The chevron stays still, as on every dropdown field (Combobox,
+            TimePicker, the date pickers): the accent border says "open",
+            and a turned chevron read as "opens upward" over a list that
+            opened below. */}
         <SelectPrimitive.Icon asChild>
-          <ChevronDown
-            className="size-4 shrink-0 text-fg-muted transition-transform duration-fast group-data-[state=open]/trigger:rotate-180"
-            aria-hidden="true"
-          />
+          <ChevronDown className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
         </SelectPrimitive.Icon>
       </SelectPrimitive.Trigger>
       <SelectPrimitive.Portal>
@@ -153,13 +151,23 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
   );
 });
 
-/** Shown by Radix only while the list overflows in that direction. */
+/**
+ * Shown by Radix only while the list overflows in that direction. An
+ * opaque strip with a hairline on its list side, so an option scrolled
+ * half out of view is cut cleanly at the line rather than sliced under a
+ * floating chevron.
+ */
 function SelectScrollButton({ direction }: { direction: "up" | "down" }) {
   const Button =
     direction === "up" ? SelectPrimitive.ScrollUpButton : SelectPrimitive.ScrollDownButton;
   const Icon = direction === "up" ? ChevronUp : ChevronDown;
   return (
-    <Button className="flex h-6 cursor-default items-center justify-center text-fg-muted">
+    <Button
+      className={cn(
+        "flex h-6 shrink-0 cursor-default items-center justify-center bg-surface-raised text-fg-muted",
+        direction === "up" ? "border-b border-line" : "border-t border-line",
+      )}
+    >
       <Icon className="size-4" aria-hidden="true" />
     </Button>
   );

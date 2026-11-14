@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
@@ -12,7 +11,6 @@ import {
   type PaginationState,
   type RowSelectionState,
   type SortingState,
-  type Table,
 } from "@tanstack/react-table";
 import {
   useCallback,
@@ -45,8 +43,8 @@ import {
   DataTableSearchEmptyState,
 } from "./data-table-states.js";
 import {
+  collectColumnHeaders,
   DataTableToolbar,
-  getDataTableColumnLabel,
   toolbarLabelsFrom,
   type DataTableToolbarLabels,
 } from "./data-table-toolbar.js";
@@ -146,29 +144,6 @@ export interface DataTableProps<TData> {
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_PAGINATION: PaginationState = { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE };
 const LOCAL_PAGE_SIZES = [10, 25, 50, 100];
-
-/** Column id to its rendered header, plus a plain label for columns the header groups skip. */
-function collectHeaders<TData>(
-  table: Table<TData>,
-  remembered: Record<string, ReactNode>,
-): Record<string, ReactNode> {
-  // Rendered once from the header groups, because a header cell needs a
-  // header context and a body cell cannot supply one.
-  const headers: Record<string, ReactNode> = {};
-  for (const headerGroup of table.getHeaderGroups()) {
-    for (const header of headerGroup.headers) {
-      if (header.isPlaceholder) continue;
-      headers[header.column.id] = flexRender(header.column.columnDef.header, header.getContext());
-    }
-  }
-  Object.assign(remembered, headers);
-  for (const column of table.getAllFlatColumns()) {
-    if (remembered[column.id] !== undefined) continue;
-    const label = getDataTableColumnLabel(column.columnDef.meta, column.columnDef.header);
-    if (label !== undefined) remembered[column.id] = label;
-  }
-  return headers;
-}
 
 /**
  * A TanStack table for local rows, offset-paginated server rows, and cursor
@@ -305,6 +280,7 @@ export function DataTable<TData>({
   });
 
   const rows = table.getRowModel().rows;
+  const visibleColumns = table.getVisibleLeafColumns();
   const filteredRowCount = table.getFilteredRowModel().rows.length;
   const lastLocalPageIndex = Math.max(
     0,
@@ -349,7 +325,7 @@ export function DataTable<TData>({
 
   const selectedCount = Object.values(rowSelection ?? {}).filter(Boolean).length;
   const skeletonRowCount = Math.min(tablePagination.pageSize, 8);
-  const cardHeaders = collectHeaders(table, columnLabelsRef.current);
+  const cardHeaders = collectColumnHeaders(table, columnLabelsRef.current);
 
   const hasError = Boolean(error) && !isLoading;
   // An error replaces the body only when there is nothing else to show; a
@@ -452,6 +428,7 @@ export function DataTable<TData>({
               <DataTableCards
                 rows={rows}
                 headers={cardHeaders}
+                columns={visibleColumns}
                 isLoading={isLoading}
                 skeletonRowCount={skeletonRowCount}
                 onRowActivate={onRowActivate}
@@ -473,7 +450,7 @@ export function DataTable<TData>({
                 <DataTableHead table={table} fillHeight={fillHeight} density={density} />
                 <DataTableBody
                   rows={rows}
-                  columnCount={columns.length}
+                  columns={visibleColumns}
                   density={density}
                   isLoading={isLoading}
                   skeletonRowCount={skeletonRowCount}

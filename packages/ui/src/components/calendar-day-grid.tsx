@@ -330,7 +330,12 @@ function DayContent({
         !fluid && !info.disabled && !filled && "group-hover:bg-state-hover",
         pending && "bg-surface ring-1 ring-accent ring-inset",
         filled && "bg-accent font-semibold text-accent-fg group-hover:bg-accent-strong",
-        info.disabled && "text-fg-muted opacity-40",
+        // A refused day of this month (out of bounds, a weekend, a holiday)
+        // is struck through, so it never reads as a neighbouring month's
+        // day, which is only muted; a refused neighbouring day stays muted
+        // and fades a step further.
+        info.disabled &&
+          (info.outside ? "opacity-40" : "text-fg-muted line-through decoration-1 opacity-70"),
       )}
     >
       {info.day}

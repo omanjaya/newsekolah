@@ -75,6 +75,19 @@ describe("RadioGroup", () => {
     ).toBe(true);
   });
 
+  // A plain `border` ring all but vanished on the sunken fill in dark.
+  it("keeps a disabled ring at half the resting ring's strength", () => {
+    render(
+      <RadioGroup aria-label="Baris">
+        <RadioGroupItem value="3" label="Baris 3" disabled />
+      </RadioGroup>,
+    );
+    const dot = screen.getByRole("radio", { name: "Baris 3" }).querySelector("span");
+    if (!dot) throw new Error("Missing dot");
+    expect(dot).toHaveClass("group-disabled:border-border-strong/50");
+    expect(dot).not.toHaveClass("group-disabled:border-border");
+  });
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <RadioGroup aria-label="Cakupan" defaultValue="class" orientation="horizontal">
