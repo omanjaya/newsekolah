@@ -110,9 +110,12 @@ export function Header(): ReactElement {
             <button
               type="button"
               aria-label={t("profileMenu.label")}
-              className="flex size-11 items-center justify-center rounded-full transition-colors hover:bg-bg md:size-8"
+              className="flex size-11 items-center justify-center rounded-full transition-colors hover:bg-state-hover md:size-9"
             >
-              <Avatar name={me?.name ?? "?"} src={me?.avatar_url} size="sm" />
+              {/* The same 32px and two initials as the person's avatar
+                  everywhere else, in a 36px target that matches the
+                  tools beside it. */}
+              <Avatar name={me?.name ?? "?"} src={me?.avatar_url} size={32} />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

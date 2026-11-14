@@ -158,7 +158,7 @@ export function EnrollmentPanel({
                 <span className="w-6 shrink-0 text-right text-[12px] tabular-nums text-fg-muted">
                   {i + 1}
                 </span>
-                <Avatar size="sm" name={name} />
+                <Avatar size={32} name={name} />
                 <div className="min-w-0 flex-1">
                   <p className="break-words text-[14px] md:truncate" title={name}>
                     <StudentLink studentId={e.student_user_id}>{name}</StudentLink>

@@ -84,7 +84,7 @@ export const SessionRosterRow = memo(function SessionRosterRow({
     <li className="flex flex-col gap-1.5 px-4 py-2.5" data-changed={changed || undefined}>
       <div className="flex flex-col gap-1.5 md:flex-row md:items-center md:justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <Avatar name={item.name} size="sm" />
+          <Avatar name={item.name} size={32} />
           <div className="flex min-w-0 flex-col">
             <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[14px] text-fg">
               <span className="truncate">

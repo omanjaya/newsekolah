@@ -44,8 +44,8 @@ function AchievementStudentCell({ id }: { id: string }): ReactElement {
   const t = useTranslations("app.activities.students");
   const name = useDirectoryName(id)?.name ?? t("unknown");
   return (
-    <div className="flex min-w-0 items-center gap-2">
-      <Avatar size="sm" name={name} />
+    <div className="flex min-w-0 items-center gap-3">
+      <Avatar size={32} name={name} />
       <span className="truncate text-fg">{name}</span>
     </div>
   );

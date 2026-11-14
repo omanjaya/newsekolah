@@ -66,7 +66,7 @@ export function DeskMemberPanel({
   return (
     <div className="flex items-center justify-between gap-3 rounded-sm border border-border bg-surface px-3 py-2.5">
       <div className="flex min-w-0 items-center gap-3">
-        <Avatar name={member.name} size="sm" />
+        <Avatar name={member.name} size={32} />
         <div className="flex min-w-0 flex-col">
           <span className="flex flex-wrap items-center gap-2 text-[14px] font-medium text-fg">
             <span className="truncate">

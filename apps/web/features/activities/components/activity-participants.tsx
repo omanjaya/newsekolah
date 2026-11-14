@@ -115,8 +115,8 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
                   key={participant.id}
                   className="flex items-center justify-between gap-2 py-2 text-[13px]"
                 >
-                  <div className="flex min-w-0 items-center gap-2">
-                    {participant.scope === "student" && <Avatar name={name} size="sm" />}
+                  <div className="flex min-w-0 items-center gap-3">
+                    {participant.scope === "student" && <Avatar name={name} size={32} />}
                     <span className="truncate">
                       <span className="text-fg-muted">{t(participant.scope)}: </span>
                       {formatDisplayName(name)}

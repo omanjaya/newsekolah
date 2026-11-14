@@ -156,8 +156,8 @@ export function UsersView(): ReactElement {
         header: t("columns.name"),
         enableSorting: false,
         cell: ({ row }) => (
-          <div className="flex min-w-0 items-center gap-2">
-            <Avatar size="sm" name={row.original.name} />
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar size={32} name={row.original.name} />
             <div className="flex min-w-0 flex-col">
               <span className="truncate text-fg">{row.original.name}</span>
               <span className="truncate text-[12px] text-fg-muted">

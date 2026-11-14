@@ -114,8 +114,8 @@ export function DutiesView(): ReactElement {
                   key={a.id}
                   className="group flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-bg md:flex-row md:items-center md:justify-between"
                 >
-                  <div className="flex min-w-0 items-center gap-2">
-                    {name !== "-" && <Avatar size="sm" name={name} />}
+                  <div className="flex min-w-0 items-center gap-3">
+                    {name !== "-" && <Avatar size={32} name={name} />}
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <span className="truncate text-[14px] text-fg">{name}</span>
                       <span className="flex flex-wrap items-center gap-2 text-[13px] text-fg-muted">

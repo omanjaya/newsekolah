@@ -131,8 +131,8 @@ export function MembersView(): ReactElement {
         cell: ({ row }) => {
           const name = directoryMap.get(row.original.user_id)?.name ?? t("unknownUser");
           return (
-            <div className="flex min-w-0 items-center gap-2">
-              <Avatar size="sm" name={name} />
+            <div className="flex min-w-0 items-center gap-3">
+              <Avatar size={32} name={name} />
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-fg">
                   <StudentLink
