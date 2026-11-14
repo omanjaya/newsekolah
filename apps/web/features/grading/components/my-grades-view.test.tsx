@@ -87,6 +87,9 @@ describe("MyGradesView", () => {
     expect(failing.textContent).toContain('kktpLine:{"kktp":75}');
     expect(failing.textContent).toContain('belowKktpBy:{"points":"15,0"}');
     expect(screen.getAllByRole("meter")).toHaveLength(3);
+    // The KKTP is a line on each meter's scale, not only words in its label.
+    const line = failing.querySelector<HTMLElement>("[data-slot=progress-marker]");
+    expect(line?.style.getPropertyValue("--marker")).toBe("0.75");
   });
 
   it("sends a staff member to grading instead of a student's empty state", () => {

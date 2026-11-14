@@ -285,6 +285,8 @@ function SubjectCard({
                 ? t("aboveKktp")
                 : t("belowKktpBy", { points: formatScore(kktp - score, locale) })
             }
+            // The KKTP drawn on the scale; the label above already names it.
+            markers={[{ value: kktp }]}
           />
         </CardContent>
       )}
