@@ -827,14 +827,22 @@
   },
   "visitKiosk": {
     "navLabel": "Kios kunjungan",
-    "title": "Kios kunjungan perpustakaan",
-    "instructions": "Pindai kode ini dengan aplikasi sekolah untuk mencatat kunjungan.",
+    "title": "Catat kunjungan Anda",
+    "instructions": "Pindai kode QR di layar ini dengan aplikasi sekolah di HP Anda.",
     "expired": "Kode sudah kedaluwarsa",
     "expiresIn": "Berlaku {seconds} detik lagi",
     "renew": "Buat kode baru",
-    "issueFailedTitle": "Kode tidak bisa dibuat",
-    "issueFailedBody": "Periksa koneksi layar ini lalu coba lagi.",
-    "retry": "Coba lagi"
+    "issueFailedTitle": "Kode belum bisa dibuat",
+    "issueFailedBody": "Layar ini mencoba lagi sendiri. Bila terus gagal, periksa koneksi internetnya.",
+    "retry": "Coba lagi",
+    "eyebrow": "Kios kunjungan perpustakaan",
+    "qrLabel": "Kode QR kunjungan perpustakaan",
+    "stepNumber": "Langkah {number}",
+    "steps": {
+      "open": "Buka aplikasi sekolah, pilih Pindai",
+      "scan": "Arahkan kamera ke kode QR",
+      "done": "Kunjungan tercatat di HP Anda"
+    }
   },
   "readInPlace": {
     "title": "Baca di tempat",
@@ -1355,19 +1363,31 @@
     "navLabel": "Kios mandiri",
     "eyebrow": "Perpustakaan",
     "idle": {
-      "title": "Kios perpustakaan",
-      "instructions": "Tempelkan atau pindai kartu anggota untuk mulai",
-      "scanLabel": "Kartu anggota",
-      "submit": "Masuk"
+      "title": "Pinjam dan kembalikan buku sendiri",
+      "instructions": "Pindai kartu anggota untuk mulai, lalu pindai buku yang dipinjam atau dikembalikan.",
+      "scanLabel": "Kode kartu anggota",
+      "submit": "Masuk",
+      "eyebrow": "Kios mandiri perpustakaan",
+      "stepNumber": "Langkah {number}",
+      "steps": {
+        "card": "Pindai kartu anggota",
+        "books": "Pindai bukunya",
+        "done": "Tekan Selesai"
+      },
+      "privacy": "Sesi berakhir sendiri setelah 20 detik tanpa pindaian, jadi data Anda tidak terlihat orang berikutnya."
     },
     "active": {
-      "title": "Pindai buku untuk pinjam atau kembalikan",
+      "title": "Pindai buku untuk dipinjam atau dikembalikan",
       "done": "Selesai",
-      "dueOn": "Jatuh tempo",
+      "dueOn": "Kembali {date}",
       "limit": "{count} dari {max} batas pinjaman terpakai",
-      "empty": "Belum ada buku yang sedang dipinjam",
-      "scanLabel": "Barcode buku",
-      "submit": "Catat"
+      "empty": "Belum ada buku yang sedang dipinjam.",
+      "scanLabel": "Kode barcode buku",
+      "submit": "Catat",
+      "eyebrow": "Sesi Anda",
+      "resetsIn": "Berakhir dalam {seconds} detik",
+      "loansHeading": "Buku yang sedang Anda pinjam",
+      "overdue": "Terlambat {days} hari"
     },
     "feedback": {
       "unknownCard": "Kartu anggota tidak dikenali",

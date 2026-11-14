@@ -1,62 +1,83 @@
-import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { Skeleton } from "@newsekolah/ui";
+import {
+  Badge,
+  Card,
+  CardHeader,
+  CardTitle,
+  IconCircle,
+  List,
+  ListRow,
+  SkeletonList,
+} from "@newsekolah/ui";
+import { BookOpen } from "lucide-react";
+import { useLocale } from "next-intl";
 import type { ReactElement } from "react";
 
 import type { KioskMemberSession } from "../kiosk-session";
+import { classifyDueDate, overdueDays } from "../lib/due-date";
+import { formatShortDate } from "../lib/short-date";
 
 export interface KioskMemberPanelProps {
   session: KioskMemberSession;
-  locale: Locale;
-  dueOnLabel: string;
-  limitLabel: (count: number, max: number) => string;
+  /** The school's calendar day, "YYYY-MM-DD". */
+  today: string;
+  heading: string;
+  dueOnLabel: (date: string) => string;
+  overdueLabel: (days: number) => string;
   emptyLabel: string;
 }
 
 /**
- * The reader's own loans, shown large enough to read from the reading-room
- * floor: title and due date, plus how many of their loan slots are used.
+ * The reader's own loans at the kiosk, large enough to read standing in
+ * front of the screen: each title with its due date, late ones in danger
+ * with the number of days, never colour alone.
  */
 export function KioskMemberPanel({
   session,
-  locale,
+  today,
+  heading,
   dueOnLabel,
-  limitLabel,
+  overdueLabel,
   emptyLabel,
 }: KioskMemberPanelProps): ReactElement {
-  if (session.isLoading) {
-    return (
-      <div className="flex flex-col gap-3">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-24 w-full" />
-      </div>
-    );
-  }
+  const locale = useLocale() as Locale;
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-[20px] font-medium text-fg">
-        {session.maxActiveLoans !== undefined
-          ? limitLabel(session.activeLoanCount, session.maxActiveLoans)
-          : null}
-      </p>
-      {session.activeLoans.length === 0 ? (
-        <p className="text-[20px] text-fg-muted">{emptyLabel}</p>
+    <Card>
+      <CardHeader>
+        <CardTitle as="h2">{heading}</CardTitle>
+      </CardHeader>
+      {session.isLoading ? (
+        <div className="px-5 pb-5">
+          <SkeletonList rows={2} />
+        </div>
+      ) : session.activeLoans.length === 0 ? (
+        <p className="px-5 pb-5 text-body text-fg-muted">{emptyLabel}</p>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {session.activeLoans.map(({ loan, titleName }) => (
-            <li
-              key={loan.id}
-              className="flex flex-wrap items-baseline justify-between gap-2 rounded-sm border border-border bg-surface p-4"
-            >
-              <span className="text-[20px] font-medium text-fg">{titleName}</span>
-              <span className="text-[16px] text-fg-muted">
-                {dueOnLabel} {formatDate(loan.due_on, { locale })}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <List>
+          {session.activeLoans.map(({ loan, titleName }) => {
+            const overdue = classifyDueDate(loan.due_on, today) === "overdue";
+            return (
+              <ListRow
+                key={loan.id}
+                leading={
+                  <IconCircle tone={overdue ? "danger" : "accent"}>
+                    <BookOpen />
+                  </IconCircle>
+                }
+                title={<span className="text-heading">{titleName}</span>}
+                trailing={
+                  <Badge tone={overdue ? "danger" : "neutral"} size="md">
+                    {overdue
+                      ? overdueLabel(overdueDays(loan.due_on, today))
+                      : dueOnLabel(formatShortDate(loan.due_on, locale, { today }))}
+                  </Badge>
+                }
+              />
+            );
+          })}
+        </List>
       )}
-    </div>
+    </Card>
   );
 }
