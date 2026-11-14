@@ -35,7 +35,16 @@ interface Section {
  * reader's favorites. Stars only show in "Atur favorit" mode, so the list
  * stays quiet the rest of the time.
  */
-export function MobileMenu({ items, scope }: { items: NavItem[]; scope?: string }): ReactElement {
+export function MobileMenu({
+  items,
+  scope,
+  current = false,
+}: {
+  items: NavItem[];
+  scope?: string;
+  /** The page being viewed is reached through this menu rather than a tab. */
+  current?: boolean;
+}): ReactElement {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const pathname = usePathname();
@@ -95,7 +104,7 @@ export function MobileMenu({ items, scope }: { items: NavItem[]; scope?: string 
       }}
     >
       <SheetTrigger asChild>
-        <TabSlot icon={<Menu />} label={t("app.shell.mobileMenu.title")} />
+        <TabSlot icon={<Menu />} label={t("app.shell.mobileMenu.title")} active={current} />
       </SheetTrigger>
       <SheetContent title={t("app.shell.mobileMenu.title")} closeLabel={t("common.actions.close")}>
         <nav aria-label={t("app.shell.sidebar.label")} className="flex flex-col gap-6">

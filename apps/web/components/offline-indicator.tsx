@@ -9,8 +9,7 @@ import { ShellStrip } from "./shell-strip";
 
 /** PWA requirement: a visible, honest state while offline (docs/07-ui-ux.md section 5). */
 export function OfflineIndicator(): ReactElement | null {
-  const t = useTranslations("app.shell.offline");
-  const tStrip = useTranslations("app.shell.strip");
+  const t = useTranslations("app.shell.strip");
   // Starts `false` to match the server-rendered pass (no `navigator` there);
   // the effect below corrects it immediately after mount. A lazy
   // initializer reading the real value would make the very case this
@@ -38,5 +37,5 @@ export function OfflineIndicator(): ReactElement | null {
 
   if (!isOffline) return null;
 
-  return <ShellStrip icon={<WifiOff />} title={tStrip("offline")} detail={t("banner")} />;
+  return <ShellStrip icon={<WifiOff />} title={t("offline")} detail={t("offlineDetail")} />;
 }

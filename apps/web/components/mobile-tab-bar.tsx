@@ -40,6 +40,9 @@ export function MobileTabBar({
   // matched against the tabs: otherwise a page that lives in the menu (for
   // example /library/desk) is claimed by whichever tab it merely prefixes.
   const activeHref = activeNavHref(pathname, items);
+  // A page reached through Menu lights Menu up, so the bar always says where
+  // the reader is, without claiming a tab the page does not belong to.
+  const inMenu = activeHref !== undefined && !tabItems.some((item) => item.href === activeHref);
 
   return (
     <nav
@@ -61,7 +64,7 @@ export function MobileTabBar({
           </li>
         ))}
         <li className="min-w-0 flex-1">
-          <MobileMenu items={items} scope={scope} />
+          <MobileMenu items={items} scope={scope} current={inMenu} />
         </li>
       </ul>
     </nav>
