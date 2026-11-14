@@ -45,11 +45,41 @@ describe("Progress", () => {
     expect(meter).toHaveAttribute("aria-valuetext", "67%");
   });
 
+  it("draws threshold markers on the scale, outside the meter's fill", () => {
+    const { container } = render(
+      <Progress
+        variant="meter"
+        value={60}
+        label="KKTP 75"
+        markers={[{ value: 75 }, { value: 50, label: "Remedial" }, { value: 120, label: "Batas" }]}
+      />,
+    );
+    const meter = screen.getByRole("meter", { name: "KKTP 75" });
+    // The fill stays the meter's only child; the lines sit beside it.
+    expect(meter.children).toHaveLength(1);
+    const lines = Array.from(
+      container.querySelectorAll<HTMLElement>("[data-slot=progress-marker]"),
+    );
+    expect(lines.map((line) => line.style.getPropertyValue("--marker"))).toEqual([
+      "0.75",
+      "0.5",
+      "1",
+    ]);
+    expect(lines[0]).toHaveAttribute("aria-hidden", "true");
+    expect(lines[0]).toHaveClass("-translate-x-1/2", "bg-fg");
+    // A marker past the end is held at the end, drawn inside the track.
+    expect(lines[2]).toHaveClass("-translate-x-full");
+    // Only named markers get a name under the line, centred or held in.
+    expect(screen.getByText("Remedial")).toHaveClass("-translate-x-1/2", "text-caption");
+    expect(screen.getByText("Batas")).toHaveClass("-translate-x-full");
+  });
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <div>
         <Progress value={40} label="Mengunggah" />
         <Progress variant="meter" value={96} label="Kehadiran" tone="success" />
+        <Progress value={30} aria-label="Poin" markers={[{ value: 25, label: "SP 1" }]} />
       </div>,
     );
     await expectNoAxeViolations(container);

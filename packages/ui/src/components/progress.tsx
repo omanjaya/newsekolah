@@ -6,6 +6,14 @@ import { cn } from "../utils/cn.js";
 
 export type ProgressTone = "accent" | "success" | "warning" | "danger" | "info";
 
+/** A threshold drawn on the track: a passing grade, a warning-letter level. */
+export interface ProgressMarker {
+  /** Where the line sits, on the same scale as `value` (0 to `max`). */
+  value: number;
+  /** A short name under the line ("SP 1", "KKTP"); without it the line stands alone. */
+  label?: string;
+}
+
 export interface ProgressProps {
   /** Progress so far, from 0 to `max`. Values outside that range are clamped. */
   value: number;
@@ -22,6 +30,13 @@ export interface ProgressProps {
   tone?: ProgressTone;
   /** The meter's value text; defaults to the rounded percentage ("96%"). */
   valueLabel?: ReactNode;
+  /**
+   * Thresholds on the scale, each a thin line across the track with an
+   * optional short name under it. They are drawn, not announced: say the
+   * thresholds in text as well (the label, a legend), as the meter's own
+   * value text does not include them.
+   */
+  markers?: ProgressMarker[];
   /** The accessible name when no visible `label` is shown. */
   "aria-label"?: string;
   className?: string;
@@ -53,6 +68,17 @@ function nextFrame(callback: () => void): { cancel: () => void } {
   };
 }
 
+/** Where a marker's name sits against its line: from the line near the start, up to it near the end. */
+function markerLabelAlign(fraction: number): string {
+  if (fraction <= 0.1) return "";
+  if (fraction >= 0.9) return "-translate-x-full";
+  return "-translate-x-1/2";
+}
+
+function markerStyle(fraction: number): CSSProperties {
+  return { "--marker": String(fraction) } as CSSProperties;
+}
+
 /**
  * A determinate bar or meter -- not for indeterminate loading, which uses
  * Skeleton instead. The fill grows with `motion-meter` (320ms, transform
@@ -66,6 +92,7 @@ export function Progress({
   variant = "bar",
   tone = "accent",
   valueLabel,
+  markers = [],
   "aria-label": ariaLabel,
   className,
 }: ProgressProps) {
@@ -83,6 +110,11 @@ export function Progress({
   }, [fraction]);
 
   const meter = variant === "meter";
+  const fractions = markers.map((marker, index) => ({
+    key: `${String(index)}-${String(marker.value)}`,
+    fraction: Math.min(safeMax, Math.max(0, marker.value)) / safeMax,
+    label: marker.label,
+  }));
   const fillStyle = { "--progress": String(shown) } as CSSProperties;
 
   return (
@@ -101,26 +133,60 @@ export function Progress({
           )}
         </div>
       )}
-      <div
-        role={meter ? "meter" : "progressbar"}
-        aria-valuenow={Math.round(clamped * 100) / 100}
-        aria-valuemin={0}
-        aria-valuemax={safeMax}
-        aria-valuetext={typeof valueLabel === "string" ? valueLabel : `${percent}%`}
-        aria-label={ariaLabel ?? label}
-        className={cn(
-          "w-full overflow-hidden rounded-full bg-surface-sunken",
-          meter ? "h-2.5" : "h-1.5",
-        )}
-      >
+      <div className="relative">
         <div
-          style={fillStyle}
+          role={meter ? "meter" : "progressbar"}
+          aria-valuenow={Math.round(clamped * 100) / 100}
+          aria-valuemin={0}
+          aria-valuemax={safeMax}
+          aria-valuetext={typeof valueLabel === "string" ? valueLabel : `${percent}%`}
+          aria-label={ariaLabel ?? label}
           className={cn(
-            "h-full w-full origin-left scale-x-(--progress) rounded-full motion-meter",
-            FILL_TONE[tone],
+            "w-full overflow-hidden rounded-full bg-surface-sunken",
+            meter ? "h-2.5" : "h-1.5",
           )}
-        />
+        >
+          <div
+            style={fillStyle}
+            className={cn(
+              "h-full w-full origin-left scale-x-(--progress) rounded-full motion-meter",
+              FILL_TONE[tone],
+            )}
+          />
+        </div>
+        {/* Outside the clipped track, so each line reaches 4px past it on
+            both sides and reads against the fill and the empty track alike. */}
+        {fractions.map(({ key, fraction }) => (
+          <span
+            key={key}
+            aria-hidden="true"
+            data-slot="progress-marker"
+            style={markerStyle(fraction)}
+            className={cn(
+              "pointer-events-none absolute -inset-y-1 left-[calc(var(--marker)*100%)] w-0.5 rounded-full bg-fg",
+              fraction <= 0 ? "" : fraction >= 1 ? "-translate-x-full" : "-translate-x-1/2",
+            )}
+          />
+        ))}
       </div>
+      {fractions.some(({ label: name }) => Boolean(name)) && (
+        <div aria-hidden="true" className="relative h-4">
+          {fractions.map(({ key, fraction, label: name }) =>
+            name ? (
+              <span
+                key={key}
+                style={markerStyle(fraction)}
+                className={cn(
+                  "absolute top-0 left-[calc(var(--marker)*100%)] text-caption whitespace-nowrap text-fg-muted",
+                  markerLabelAlign(fraction),
+                )}
+              >
+                {name}
+              </span>
+            ) : null,
+          )}
+        </div>
+      )}
     </div>
   );
 }
