@@ -164,6 +164,29 @@ describe("Button", () => {
     expect(button).not.toHaveClass("h-9");
   });
 
+  it("keeps its full fill while loading, unlike a disabled button", () => {
+    render(
+      <>
+        <Button loading>Menyimpan</Button>
+        <Button disabled>Nonaktif</Button>
+        <Button asChild loading>
+          <a href="/rekap">Mengunduh</a>
+        </Button>
+      </>,
+    );
+    const saving = screen.getByRole("button", { name: "Menyimpan" });
+    expect(saving).toBeDisabled();
+    expect(saving).toHaveAttribute("aria-busy", "true");
+    expect(saving).toHaveClass("disabled:opacity-100", "disabled:pointer-events-none");
+    expect(saving).not.toHaveClass("disabled:opacity-50");
+
+    expect(screen.getByRole("button", { name: "Nonaktif" })).toHaveClass("disabled:opacity-50");
+
+    const link = screen.getByRole("link", { name: "Mengunduh" });
+    expect(link).toHaveClass("aria-disabled:opacity-100");
+    expect(link).not.toHaveClass("aria-disabled:opacity-50");
+  });
+
   it("marks itself so a dialog's action row can hold it to the fields' height", () => {
     render(<Button size="sm">Batal</Button>);
     expect(screen.getByRole("button", { name: "Batal" })).toHaveAttribute("data-slot", "button");

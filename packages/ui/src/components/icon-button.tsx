@@ -69,7 +69,7 @@ export interface IconButtonProps
    */
   title?: string;
   tooltipSide?: "top" | "right" | "bottom" | "left";
-  /** Shows a spinner and disables the button. */
+  /** Shows a spinner and disables the button, keeping its full fill. */
   loading?: boolean;
   /** Renders onto the single child element (a `Link`) instead of a `<button>`. */
   asChild?: boolean;
@@ -147,7 +147,12 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
   const button = (
     <Comp
       ref={ref}
-      className={cn(iconButtonVariants({ variant, size }), className)}
+      className={cn(
+        iconButtonVariants({ variant, size }),
+        // Busy, not unavailable: the fill stays, like Button's.
+        loading && "disabled:opacity-100 aria-disabled:opacity-100",
+        className,
+      )}
       {...(asChild
         ? { "aria-disabled": inactive || undefined }
         : { type: type ?? "button", disabled: inactive })}

@@ -84,7 +84,11 @@ export interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   /** Renders the props onto the single child element instead of a `<button>` (e.g. a `Link`). */
   asChild?: boolean;
-  /** Shows a spinner and disables the button, whatever `disabled` says; content stays mounted for a stable width. */
+  /**
+   * Shows a spinner and disables the button, whatever `disabled` says;
+   * content stays mounted for a stable width. Unlike a disabled button it
+   * keeps its full fill.
+   */
   loading?: boolean;
   /** Leading icon, sized and colored automatically. */
   icon?: ReactNode;
@@ -118,6 +122,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       className={cn(
         buttonVariants({ variant, size }),
         leading && variant !== "link" && ICON_PADDING[size ?? "md"],
+        // A running action keeps its full fill, the spinner alone saying it
+        // is busy: a save in progress must not read as unavailable. It
+        // still takes no pointer, like a disabled button.
+        loading && "disabled:opacity-100 aria-disabled:opacity-100",
         className,
       )}
       // A child element (a link) has no `disabled`; it says so through ARIA
