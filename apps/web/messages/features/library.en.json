@@ -103,7 +103,13 @@
       "materialTypePlaceholder": "Pick a material type",
       "save": "Save",
       "saved": "Title saved",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "sections": {
+        "lookup": "Fill in from the ISBN",
+        "identity": "The book",
+        "publication": "Publication",
+        "classification": "Classification and summary"
+      }
     },
     "isbnLookup": {
       "hint": "Look up bibliographic data from the ISBN above.",

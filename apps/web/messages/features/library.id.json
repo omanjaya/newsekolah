@@ -103,7 +103,13 @@
       "materialTypePlaceholder": "Pilih jenis bahan",
       "save": "Simpan",
       "saved": "Judul disimpan",
-      "cancel": "Batal"
+      "cancel": "Batal",
+      "sections": {
+        "lookup": "Isi dari ISBN",
+        "identity": "Identitas buku",
+        "publication": "Penerbitan",
+        "classification": "Klasifikasi dan ringkasan"
+      }
     },
     "isbnLookup": {
       "hint": "Cari data bibliografi dari ISBN di atas.",

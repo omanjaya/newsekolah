@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  FormSection,
   DialogFooter,
   NumberInput,
   Field,
@@ -77,7 +78,7 @@ export function TitleForm({
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-6"
       onSubmit={(e) => {
         e.preventDefault();
         const body: LibraryTitleWrite = {
@@ -125,142 +126,150 @@ export function TitleForm({
         else create.mutate(body, callbacks);
       }}
     >
-      <Field label={t("title")}>
-        <Input
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-          }}
-          required
-          maxLength={300}
-        />
-      </Field>
-      <Field label={t("subtitle")}>
-        <Input
-          value={subtitle}
-          onChange={(e) => {
-            setSubtitle(e.target.value);
-          }}
-          maxLength={300}
-        />
-      </Field>
-      <Field label={t("author")}>
-        <Input
-          value={author}
-          onChange={(e) => {
-            setAuthor(e.target.value);
-          }}
-          maxLength={200}
-        />
-      </Field>
-      <Field label={t("publisher")}>
-        <Input
-          value={publisher}
-          onChange={(e) => {
-            setPublisher(e.target.value);
-          }}
-          maxLength={200}
-        />
-      </Field>
-      <Field label={t("publishYear")}>
-        <NumberInput
-          value={publishYear === "" ? null : Number(publishYear)}
-          onChange={(next) => {
-            setPublishYear(next === null ? "" : String(next));
-          }}
-          min={1000}
-          max={3000}
-        />
-      </Field>
-      <Field label={t("isbn")}>
-        <Input
-          value={isbn}
-          onChange={(e) => {
-            setIsbn(e.target.value);
-          }}
-          maxLength={32}
-        />
-      </Field>
-      {isbn !== initial?.isbn && <DuplicateTitleWarning isbn={isbn} />}
-      <IsbnLookupPanel isbn={isbn} onApply={applyLookup} onCoverImported={setCoverAssetId} />
-      <Field label={t("classification")}>
-        <Input
-          value={classification}
-          onChange={(e) => {
-            setClassification(e.target.value);
-          }}
-          maxLength={60}
-        />
-      </Field>
-      <Field label={t("materialType")}>
-        <Select
-          options={(options.data?.material_types ?? []).map((mt) => ({
-            value: mt.id,
-            label: mt.name,
-          }))}
-          value={materialTypeId}
-          onValueChange={setMaterialTypeId}
-          placeholder={t("materialTypePlaceholder")}
-          disabled={options.isLoading}
-        />
-      </Field>
-      <Field label={t("additionalAuthors")}>
-        <Input
-          value={additionalAuthors}
-          onChange={(e) => {
-            setAdditionalAuthors(e.target.value);
-          }}
-          maxLength={500}
-        />
-      </Field>
-      <Field label={t("publishPlace")}>
-        <Input
-          value={publishPlace}
-          onChange={(e) => {
-            setPublishPlace(e.target.value);
-          }}
-          maxLength={120}
-        />
-      </Field>
-      <Field label={t("pages")}>
-        <Input
-          value={pages}
-          onChange={(e) => {
-            setPages(e.target.value);
-          }}
-          maxLength={60}
-        />
-      </Field>
-      <Field label={t("subjects")}>
-        <Input
-          value={subjects}
-          onChange={(e) => {
-            setSubjects(e.target.value);
-          }}
-          maxLength={500}
-        />
-      </Field>
-      <Field label={t("language")}>
-        <Input
-          value={language}
-          onChange={(e) => {
-            setLanguage(e.target.value);
-          }}
-          maxLength={10}
-        />
-      </Field>
-      <Field label={t("abstract")}>
-        <Textarea
-          value={abstract}
-          onChange={(e) => {
-            setAbstract(e.target.value);
-          }}
-          rows={3}
-          maxLength={2000}
-        />
-      </Field>
+      <FormSection title={t("sections.lookup")} columns={1}>
+        <Field label={t("isbn")}>
+          <Input
+            value={isbn}
+            onChange={(e) => {
+              setIsbn(e.target.value);
+            }}
+            maxLength={32}
+          />
+        </Field>
+        {isbn !== initial?.isbn && <DuplicateTitleWarning isbn={isbn} />}
+        <IsbnLookupPanel isbn={isbn} onApply={applyLookup} onCoverImported={setCoverAssetId} />
+      </FormSection>
+      <FormSection title={t("sections.identity")}>
+        <Field label={t("title")} required className="col-span-full">
+          <Input
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+            }}
+            required
+            maxLength={300}
+          />
+        </Field>
+        <Field label={t("subtitle")} className="col-span-full">
+          <Input
+            value={subtitle}
+            onChange={(e) => {
+              setSubtitle(e.target.value);
+            }}
+            maxLength={300}
+          />
+        </Field>
+        <Field label={t("author")}>
+          <Input
+            value={author}
+            onChange={(e) => {
+              setAuthor(e.target.value);
+            }}
+            maxLength={200}
+          />
+        </Field>
+        <Field label={t("additionalAuthors")}>
+          <Input
+            value={additionalAuthors}
+            onChange={(e) => {
+              setAdditionalAuthors(e.target.value);
+            }}
+            maxLength={500}
+          />
+        </Field>
+      </FormSection>
+      <FormSection title={t("sections.publication")}>
+        <Field label={t("publisher")}>
+          <Input
+            value={publisher}
+            onChange={(e) => {
+              setPublisher(e.target.value);
+            }}
+            maxLength={200}
+          />
+        </Field>
+        <Field label={t("publishPlace")}>
+          <Input
+            value={publishPlace}
+            onChange={(e) => {
+              setPublishPlace(e.target.value);
+            }}
+            maxLength={120}
+          />
+        </Field>
+        <Field label={t("publishYear")}>
+          <NumberInput
+            value={publishYear === "" ? null : Number(publishYear)}
+            onChange={(next) => {
+              setPublishYear(next === null ? "" : String(next));
+            }}
+            min={1000}
+            max={3000}
+          />
+        </Field>
+        <Field label={t("pages")}>
+          <Input
+            value={pages}
+            onChange={(e) => {
+              setPages(e.target.value);
+            }}
+            maxLength={60}
+          />
+        </Field>
+        <Field label={t("language")}>
+          <Input
+            value={language}
+            onChange={(e) => {
+              setLanguage(e.target.value);
+            }}
+            maxLength={10}
+          />
+        </Field>
+      </FormSection>
+      <FormSection title={t("sections.classification")}>
+        <Field label={t("classification")}>
+          <Input
+            value={classification}
+            onChange={(e) => {
+              setClassification(e.target.value);
+            }}
+            maxLength={60}
+          />
+        </Field>
+        <Field label={t("materialType")}>
+          <Select
+            options={(options.data?.material_types ?? []).map((mt) => ({
+              value: mt.id,
+              label: mt.name,
+            }))}
+            value={materialTypeId}
+            onValueChange={setMaterialTypeId}
+            placeholder={t("materialTypePlaceholder")}
+            disabled={options.isLoading}
+          />
+        </Field>
+        <Field label={t("subjects")} className="col-span-full">
+          <Input
+            value={subjects}
+            onChange={(e) => {
+              setSubjects(e.target.value);
+            }}
+            maxLength={500}
+          />
+        </Field>
+        <Field label={t("abstract")} className="col-span-full">
+          <Textarea
+            value={abstract}
+            onChange={(e) => {
+              setAbstract(e.target.value);
+            }}
+            rows={3}
+            maxLength={2000}
+          />
+        </Field>
+      </FormSection>
       <DialogFooter>
-        <Button type="button" variant="secondary" onClick={onDone}>
+        <Button variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button
