@@ -4,16 +4,18 @@ import {
   FIELD_HEIGHT,
   FIELD_SHELL_BORDER_CLASSES,
   FIELD_SHELL_DISABLED_CLASSES,
+  FIELD_TEXT,
 } from "./field-styles.js";
 
 /**
  * The bordered box single-line fields share, so the pickers and the number
  * field are one family with `Input` and `Select`: the same height (44px
  * wherever the pointer is coarse, 36 with a cursor on a wide screen),
- * radius, surface, body text and the border states of field-styles.ts.
- * Internal to the package.
+ * radius, surface, body text (16px on touch, so iOS does not zoom into the
+ * input inside) and the border states of field-styles.ts. Internal to the
+ * package.
  */
-export const FIELD_BOX = `flex ${FIELD_HEIGHT.md} w-full min-w-0 items-center gap-2 rounded-md bg-surface px-3 text-body text-fg`;
+export const FIELD_BOX = `flex ${FIELD_HEIGHT.md} w-full min-w-0 items-center gap-2 rounded-md bg-surface px-3 ${FIELD_TEXT.md} text-fg`;
 
 /** For a box that is itself the focusable element (a picker's trigger button). */
 export const FIELD_BOX_BUTTON = `text-left ${FIELD_BORDER_CLASSES} ${FIELD_DISABLED_CLASSES} data-[state=open]:[--field-border:var(--color-accent)]`;
@@ -25,8 +27,9 @@ export const FIELD_BOX_BUTTON = `text-left ${FIELD_BORDER_CLASSES} ${FIELD_DISAB
  */
 export const FIELD_BOX_WITH_INPUT = `${FIELD_SHELL_BORDER_CLASSES} ${FIELD_SHELL_DISABLED_CLASSES}`;
 
+/** The input inside a `FIELD_BOX`; it carries the touch size itself too, so it holds outside one. */
 export const FIELD_INNER_INPUT =
-  "h-full min-w-0 flex-1 bg-transparent text-body text-fg outline-none placeholder:text-fg-muted " +
+  `h-full min-w-0 flex-1 bg-transparent ${FIELD_TEXT.md} text-fg outline-none placeholder:text-fg-muted ` +
   "focus-visible:outline-none disabled:cursor-not-allowed";
 
 /**

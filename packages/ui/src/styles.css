@@ -576,3 +576,30 @@
     }
   }
 }
+
+/* ========================================================================
+ * Wave 2, stream 3: forms and data.
+ * Owned by the field family (field-styles.ts, field-box.ts), Table and
+ * DataTable.
+ * ===================================================================== */
+
+/*
+ * Field text on touch. iOS Safari zooms the page into any focused field
+ * whose text is under 16px, and the reader has to pinch back out after
+ * every tap. Wherever a field is a 44px touch target (FIELD_HEIGHT: a
+ * coarse or missing pointer, or a screen narrower than md), this raises
+ * the body role it reads to 16/24; with a cursor on a wide screen the role
+ * stays 14/20. Only the role's own size variables change, so the field
+ * keeps its family, weight and tracking, the text inside its shell
+ * (adornments, a picker's value, a stepper's input) follows, and a
+ * caller's `text-body-sm` still replaces the role outright.
+ *
+ * A stand-in for a 16/24 role in packages/ui-tokens; move the values there
+ * when the token set takes one.
+ */
+@utility field-text-touch {
+  @media (width < 48rem), (pointer: coarse), (pointer: none) {
+    --type-body-size: var(--text-16);
+    --type-body-line-height: calc(var(--text-16) * 1.5);
+  }
+}

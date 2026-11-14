@@ -83,10 +83,22 @@ export const FIELD_HEIGHT: Record<FieldSize, string> = {
   sm: "h-11 md:pointer-fine:h-8",
 };
 
-/** Body text for `md`; the compact `sm` field takes the denser table text. */
+/**
+ * Raises a field's body text to 16px wherever its box is the 44px touch
+ * size, because iOS Safari zooms the page into any focused field under
+ * 16px (the `field-text-touch` utility in styles.css). Put it on the
+ * element that carries the text or on the shell around it: the inner
+ * input of a shell inherits it.
+ */
+export const FIELD_TOUCH_TEXT = "field-text-touch";
+
+/**
+ * Body text for `md`; the compact `sm` field takes the denser table text
+ * with a cursor. Both are 16px on touch (`FIELD_TOUCH_TEXT`).
+ */
 export const FIELD_TEXT: Record<FieldSize, string> = {
-  md: "text-body",
-  sm: "text-body md:pointer-fine:text-body-sm",
+  md: `text-body ${FIELD_TOUCH_TEXT}`,
+  sm: `text-body ${FIELD_TOUCH_TEXT} md:pointer-fine:text-body-sm`,
 };
 
 /**

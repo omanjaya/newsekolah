@@ -167,7 +167,8 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
                 onValueChange={onSearchChange}
                 placeholder={searchPlaceholder ?? labels.comboboxSearchPlaceholder}
                 className={cn(
-                  "h-11 min-w-0 flex-1 bg-transparent text-body text-fg outline-none md:pointer-fine:h-10",
+                  "h-11 min-w-0 flex-1 bg-transparent text-fg outline-none md:pointer-fine:h-10",
+                  FIELD_TEXT.md,
                   "placeholder:text-fg-muted focus-visible:outline-none",
                 )}
               />
