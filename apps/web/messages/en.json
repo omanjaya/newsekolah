@@ -1513,18 +1513,10 @@
           "noCustomRoles": "No custom roles yet. Create one under Settings > Roles and Access."
         },
         "import": {
-          "eyebrow": "School Data",
           "title": "Import users",
           "description": "Download the template, fill it in outside the system, upload it back, then check the outcome before anything is actually created.",
-          "steps": {
-            "upload": "Upload",
-            "preview": "Preview",
-            "done": "Done"
-          },
-          "step1Title": "1. Download the template",
           "step1Body": "The template includes an example row and a Referensi sheet listing the accepted codes for each column (gender, blood type, role, and so on).",
           "downloadTemplate": "Download XLSX template",
-          "step2Title": "2. Upload the filled-in file",
           "step2Body": "Up to 5000 rows in one file. Blank rows are skipped.",
           "mode": {
             "label": "Import mode",
@@ -1542,12 +1534,6 @@
             "no-sheet": "The file has no data sheet at all.",
             "empty": "No data rows could be read from this file."
           },
-          "step3Title": "3. Preview",
-          "rowCount": "{n} rows",
-          "createCount": "{n} to create",
-          "updateCount": "{n} to update",
-          "unchangedCount": "{n} unchanged",
-          "invalidCount": "{n} invalid rows",
           "blockedTitle": "Not ready to import",
           "blockedBody": "The import runs as one transaction: as long as a single row is invalid, nothing at all will be written. Fix the flagged rows, then upload the file again.",
           "readyTitle": "Ready to import",
@@ -1575,7 +1561,16 @@
               "unchanged": "Unchanged",
               "error": "Invalid"
             }
-          }
+          },
+          "prepareTitle": "Prepare the file",
+          "fileLabel": "User file",
+          "reviewTitle": "Review the result",
+          "rowsLabel": "Rows",
+          "createLabel": "To create",
+          "updateLabel": "To update",
+          "unchangedLabel": "Unchanged",
+          "invalidLabel": "Invalid",
+          "backToUsers": "Back to the user list"
         }
       },
       "classes": {
@@ -1815,6 +1810,18 @@
             "nameTaken": "Another duty type already uses this name. Choose a different name."
           }
         }
+      },
+      "importFlow": {
+        "steps": {
+          "upload": "Upload",
+          "preview": "Review",
+          "done": "Done"
+        },
+        "chooseOther": "Change file",
+        "noFile": "No file yet",
+        "showRows": "Show rows",
+        "allRows": "All rows",
+        "problemRows": "With problems"
       }
     },
     "roles": {

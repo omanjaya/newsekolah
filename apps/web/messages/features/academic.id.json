@@ -206,20 +206,15 @@
     "emptyBody": "Pilih tahun ajaran dan guru untuk melihat dan mengatur penugasan mengajarnya."
   },
   "enrollmentImport": {
-    "eyebrow": "Data Sekolah",
     "title": "Impor penempatan kelas",
-    "description": "Unduh templatenya, isi penempatan siswa ke kelas, lalu unggah untuk ditinjau sebelum diterapkan.",
+    "description": "Unduh templat, isi penempatan siswa ke kelas, lalu unggah untuk ditinjau sebelum diterapkan.",
     "year": "Tahun ajaran",
-    "downloadTemplate": "Unduh template",
-    "chooseFile": "Pilih berkas xlsx",
-    "noFileChosen": "Belum ada berkas dipilih",
+    "downloadTemplate": "Unduh templat",
+    "chooseFile": "Pilih berkas XLSX",
     "moveExisting": "Pindahkan siswa yang sudah punya kelas lain tahun ini",
     "partial": "Tetap terapkan baris yang valid meski ada baris bermasalah",
-    "preview": "Tinjau",
     "commit": "Terapkan",
-    "committedLabel": "Sudah diterapkan",
     "committed": "Penempatan kelas diterapkan",
-    "rowCount": "{n} baris",
     "errorCount": "{n} bermasalah",
     "table": {
       "row": "Baris",
@@ -234,7 +229,21 @@
       "unchanged": "Tidak berubah",
       "skipped": "Dilewati",
       "error": "Bermasalah"
-    }
+    },
+    "prepareTitle": "Siapkan berkas",
+    "prepareBody": "Pilih tahun ajaran, unduh templatnya, isi kelas tiap siswa, lalu unggah kembali. Berkas langsung ditinjau tanpa disimpan.",
+    "optionsLabel": "Pilihan",
+    "fileLabel": "Berkas penempatan",
+    "previewAgain": "Perbarui pratinjau",
+    "reviewTitle": "Tinjau penempatan",
+    "rowsLabel": "Baris",
+    "placedLabel": "Ditempatkan atau dipindah",
+    "skippedLabel": "Dilewati",
+    "errorLabel": "Bermasalah",
+    "partialNote": "Baris yang valid tetap diterapkan; baris bermasalah dilewati.",
+    "blockedNote": "Selama ada baris bermasalah, tidak ada yang diterapkan. Perbaiki berkasnya atau centang pilihan untuk menerapkan baris yang valid saja.",
+    "startOver": "Mulai ulang",
+    "importAnother": "Impor berkas lain"
   },
   "newYearSetup": {
     "eyebrow": "Data Sekolah",

@@ -1,26 +1,53 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Badge, Button, Checkbox, PageHeader, Select, useToast } from "@newsekolah/ui";
-import { Download, FileSpreadsheet, FileUp } from "lucide-react";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Checkbox,
+  DataTable,
+  Field,
+  FormActions,
+  FormSection,
+  SectionHeader,
+  Select,
+  Stat,
+  StatGrid,
+  useToast,
+  type BadgeTone,
+  type DataTableProps,
+} from "@newsekolah/ui";
+import { Download, FileSpreadsheet, School, SkipForward, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import {
+  ImportFileField,
+  ImportProgress,
+  ImportRowFilter,
+  type ImportStage,
+} from "../../school/components/import-layout";
 import { useAcademicYearsQuery } from "../api";
 import { type ImportRowResult, useEnrollmentImportMutation } from "../api-enrollment";
 import { downloadEnrollmentImportTemplate } from "../lib/enrollment-import";
 
-const ERROR_ACTION_TEXT: Record<ImportRowResult["action"], string> = {
-  assign: "",
-  move: "",
-  unchanged: "",
-  skipped: "text-warning",
-  error: "text-status-absent",
+const ACTION_TONE: Record<ImportRowResult["action"], BadgeTone> = {
+  assign: "success",
+  move: "info",
+  unchanged: "neutral",
+  skipped: "warning",
+  error: "danger",
 };
 
 /**
@@ -45,6 +72,7 @@ export function EnrollmentImportView(): ReactElement {
   const [downloading, setDownloading] = useState(false);
   const [moveExisting, setMoveExisting] = useState(false);
   const [partial, setPartial] = useState(false);
+  const [rowFilter, setRowFilter] = useState<"all" | "problems">("all");
 
   const preview = useEnrollmentImportMutation("preview");
   const commit = useEnrollmentImportMutation("commit");
@@ -56,190 +84,259 @@ export function EnrollmentImportView(): ReactElement {
   };
 
   const errorCount = (rows ?? []).filter((r) => r.action === "error").length;
+  const skippedCount = (rows ?? []).filter((r) => r.action === "skipped").length;
+  const placedCount = (rows ?? []).filter(
+    (r) => r.action === "assign" || r.action === "move",
+  ).length;
+  const stage: ImportStage = committed ? "done" : rows ? "preview" : "upload";
+  const visible = (rows ?? []).filter(
+    (r) => rowFilter === "all" || r.action === "error" || r.action === "skipped",
+  );
+
+  function runPreview(nextFile: File) {
+    preview.mutate(
+      { academicYearId: effectiveYearId, file: nextFile, moveExisting, partial },
+      {
+        onSuccess: (data) => {
+          setRows(data);
+          setCommitted(false);
+        },
+        onError: fail,
+      },
+    );
+  }
+
+  function reset() {
+    setFile(null);
+    setRows(null);
+    setCommitted(false);
+    setRowFilter("all");
+  }
+
+  const columns: DataTableProps<ImportRowResult>["columns"] = [
+    {
+      id: "row",
+      header: t("table.row"),
+      accessorFn: (row) => row.row_number,
+      meta: { card: "meta", align: "end" },
+      cell: ({ getValue }) => (
+        <span className="text-fg-muted tabular-nums">{getValue() as number}</span>
+      ),
+    },
+    {
+      id: "student",
+      header: t("table.student"),
+      accessorFn: (row) => row.student_name ?? row.nis ?? row.username ?? "",
+      meta: { card: "title" },
+      cell: ({ getValue }) => <span className="font-medium">{(getValue() as string) || "-"}</span>,
+    },
+    {
+      id: "class",
+      header: t("table.class"),
+      accessorFn: (row) => row.class_name ?? "",
+      meta: { card: "subtitle" },
+      cell: ({ getValue }) => (getValue() as string) || "-",
+    },
+    {
+      id: "outcome",
+      header: t("table.action"),
+      accessorFn: (row) => row.action,
+      meta: { card: "meta", label: t("table.action") },
+      cell: ({ row }) => (
+        <Badge tone={ACTION_TONE[row.original.action]} dot={row.original.action === "error"}>
+          {t(`action.${row.original.action}`)}
+        </Badge>
+      ),
+    },
+    {
+      id: "message",
+      header: t("table.message"),
+      accessorFn: (row) => row.message ?? "",
+      meta: { card: "field", label: t("table.message") },
+      cell: ({ row }) => (
+        <span className={row.original.action === "error" ? "text-danger" : "text-fg-muted"}>
+          {row.original.message ?? "-"}
+        </span>
+      ),
+    },
+  ];
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      {canViewClasses && (
-        <Button asChild variant="secondary" size="sm" className="self-start">
-          <Link href="/school/classes">{tWorkspace("backToClasses")}</Link>
-        </Button>
-      )}
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
+    <AppPage title={t("title")} description={t("description")}>
+      <ImportProgress stage={stage} />
 
-      <label className="flex w-full flex-col md:w-fit gap-1 text-[13px]">
-        <span className="font-medium">{t("year")}</span>
-        <Select
-          options={(years.data?.data ?? []).map((y) => ({ value: y.id, label: y.label }))}
-          value={effectiveYearId}
-          onValueChange={setYearId}
-          className="w-full md:w-64"
-        />
-      </label>
-
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={<Download />}
-          loading={downloading}
-          disabled={!effectiveYearId}
-          onClick={() => {
-            setDownloading(true);
-            downloadEnrollmentImportTemplate(effectiveYearId)
-              .catch(fail)
-              .finally(() => {
-                setDownloading(false);
-              });
-          }}
-        >
-          {t("downloadTemplate")}
-        </Button>
-      </div>
-
-      <div className="flex flex-col gap-3 rounded-xs border border-border bg-surface p-4">
-        <div className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("chooseFile")}</span>
-          <input
-            id="enrollment-import-file"
-            type="file"
-            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            aria-label={t("chooseFile")}
-            onChange={(e) => {
-              setFile(e.target.files?.[0] ?? null);
-              setRows(null);
-              setCommitted(false);
-            }}
-            className="peer sr-only"
-          />
-          {/* The native file button cannot be sized for a thumb, so the
-              input stays for keyboard and screen readers and this label is
-              what is tapped; it shows the input's focus ring. */}
-          <label
-            htmlFor="enrollment-import-file"
-            className="flex h-11 w-fit max-w-full cursor-pointer items-center gap-2 rounded-sm border border-border px-3 text-[13px] text-fg hover:bg-bg peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent md:h-8"
-          >
-            <FileUp className="size-4 shrink-0" aria-hidden="true" />
-            <span className="truncate">{file ? file.name : t("noFileChosen")}</span>
-          </label>
-        </div>
-
-        <label className="flex min-h-11 items-center gap-2 text-[13px] md:min-h-0">
-          <Checkbox
-            checked={moveExisting}
-            onCheckedChange={(v) => {
-              setMoveExisting(v === true);
-            }}
-          />
-          {t("moveExisting")}
-        </label>
-        <label className="flex min-h-11 items-center gap-2 text-[13px] md:min-h-0">
-          <Checkbox
-            checked={partial}
-            onCheckedChange={(v) => {
-              setPartial(v === true);
-            }}
-          />
-          {t("partial")}
-        </label>
-
-        <div>
-          <Button
-            size="sm"
-            icon={<FileSpreadsheet />}
-            disabled={!file || !effectiveYearId}
-            loading={preview.isPending}
-            onClick={() => {
-              if (!file) return;
-              preview.mutate(
-                { academicYearId: effectiveYearId, file, moveExisting, partial },
-                {
-                  onSuccess: (data) => {
-                    setRows(data);
+      {!committed && (
+        <Card padding="md">
+          <CardHeader>
+            <CardTitle as="h2">{t("prepareTitle")}</CardTitle>
+            <CardDescription>{t("prepareBody")}</CardDescription>
+          </CardHeader>
+          <FormSection columns={2}>
+            <Field label={t("year")}>
+              <Select
+                options={(years.data?.data ?? []).map((y) => ({ value: y.id, label: y.label }))}
+                value={effectiveYearId}
+                onValueChange={setYearId}
+              />
+            </Field>
+            <div className="flex items-end">
+              <Button
+                variant="secondary"
+                icon={<Download />}
+                loading={downloading}
+                disabled={!effectiveYearId}
+                onClick={() => {
+                  setDownloading(true);
+                  downloadEnrollmentImportTemplate(effectiveYearId)
+                    .catch(fail)
+                    .finally(() => {
+                      setDownloading(false);
+                    });
+                }}
+              >
+                {t("downloadTemplate")}
+              </Button>
+            </div>
+            <Field label={t("optionsLabel")} className="col-span-full">
+              {(control) => (
+                <div role="group" aria-labelledby={control.labelId} className="flex flex-col gap-3">
+                  <Checkbox
+                    checked={moveExisting}
+                    onCheckedChange={(v) => {
+                      setMoveExisting(v === true);
+                    }}
+                    label={t("moveExisting")}
+                  />
+                  <Checkbox
+                    checked={partial}
+                    onCheckedChange={(v) => {
+                      setPartial(v === true);
+                    }}
+                    label={t("partial")}
+                  />
+                </div>
+              )}
+            </Field>
+            <Field label={t("fileLabel")} className="col-span-full">
+              {() => (
+                <ImportFileField
+                  label={t("chooseFile")}
+                  fileName={file?.name}
+                  loading={preview.isPending}
+                  disabled={!effectiveYearId}
+                  onFile={(next) => {
+                    setFile(next);
+                    setRows(null);
                     setCommitted(false);
-                  },
-                  onError: fail,
-                },
-              );
-            }}
-          >
-            {t("preview")}
-          </Button>
-        </div>
-      </div>
+                    runPreview(next);
+                  }}
+                />
+              )}
+            </Field>
+          </FormSection>
+          {file && (
+            <div className="flex justify-end">
+              <Button
+                variant="secondary"
+                icon={<FileSpreadsheet />}
+                loading={preview.isPending}
+                onClick={() => {
+                  runPreview(file);
+                }}
+              >
+                {t("previewAgain")}
+              </Button>
+            </div>
+          )}
+        </Card>
+      )}
 
       {rows && (
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap gap-2 text-[13px]">
-            <Badge variant="neutral">{t("rowCount", { n: rows.length })}</Badge>
-            {errorCount > 0 && <Badge variant="accent">{t("errorCount", { n: errorCount })}</Badge>}
-          </div>
-          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-            <table className="w-full min-w-[720px] text-[13px]">
-              <thead>
-                <tr className="border-b border-line bg-bg text-left">
-                  <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
-                    {t("table.row")}
-                  </th>
-                  <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
-                    {t("table.student")}
-                  </th>
-                  <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
-                    {t("table.class")}
-                  </th>
-                  <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
-                    {t("table.action")}
-                  </th>
-                  <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
-                    {t("table.message")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr
-                    key={row.row_number}
-                    className="border-b border-line last:border-b-0 hover:bg-bg"
-                  >
-                    <td className="px-4 py-3 text-fg-muted">{row.row_number}</td>
-                    <td className="px-4 py-3">
-                      {row.student_name ?? row.nis ?? row.username ?? "-"}
-                    </td>
-                    <td className="px-4 py-3">{row.class_name ?? "-"}</td>
-                    <td className={`px-4 py-3 ${ERROR_ACTION_TEXT[row.action]}`}>
-                      {t(`action.${row.action}`)}
-                    </td>
-                    <td className="px-4 py-3 text-fg-muted">{row.message ?? "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex justify-end border-t border-border pt-4">
-            <Button
-              disabled={committed || errorCount === rows.length}
-              loading={commit.isPending}
-              onClick={() => {
-                if (!file) return;
-                commit.mutate(
-                  { academicYearId: effectiveYearId, file, moveExisting, partial },
-                  {
-                    onSuccess: (data) => {
-                      setRows(data);
-                      setCommitted(true);
-                      toast.success(t("committed"));
-                    },
-                    onError: fail,
-                  },
-                );
-              }}
-            >
-              {committed ? t("committedLabel") : t("commit")}
-            </Button>
-          </div>
-        </div>
+        <section className="flex flex-col gap-4" aria-labelledby="enrollment-import-review">
+          <SectionHeader titleId="enrollment-import-review" title={t("reviewTitle")} />
+          <StatGrid variant="strip" aria-label={t("reviewTitle")}>
+            <Stat
+              icon={<FileSpreadsheet />}
+              tone="blue"
+              label={t("rowsLabel")}
+              value={rows.length}
+            />
+            <Stat icon={<School />} tone="green" label={t("placedLabel")} value={placedCount} />
+            <Stat
+              icon={<SkipForward />}
+              tone="amber"
+              label={t("skippedLabel")}
+              value={skippedCount}
+            />
+            <Stat
+              icon={<TriangleAlert />}
+              tone={errorCount > 0 ? "red" : "green"}
+              label={t("errorLabel")}
+              value={errorCount}
+            />
+          </StatGrid>
+          {committed ? (
+            <Alert tone="success" title={t("committed")} />
+          ) : errorCount > 0 ? (
+            <Alert tone={partial ? "warning" : "danger"} title={t("errorCount", { n: errorCount })}>
+              {partial ? t("partialNote") : t("blockedNote")}
+            </Alert>
+          ) : null}
+          {errorCount + skippedCount > 0 && (
+            <ImportRowFilter
+              value={rowFilter}
+              onValueChange={setRowFilter}
+              total={rows.length}
+              problems={errorCount + skippedCount}
+            />
+          )}
+          <DataTable
+            mode="local"
+            stateKey="features/academic/components/enrollment-import-view:1"
+            data={visible}
+            columns={columns}
+            getRowId={(row) => String(row.row_number)}
+          />
+          <FormActions>
+            {committed ? (
+              <>
+                {canViewClasses && (
+                  <Button asChild variant="secondary">
+                    <Link href="/school/classes">{tWorkspace("backToClasses")}</Link>
+                  </Button>
+                )}
+                <Button onClick={reset}>{t("importAnother")}</Button>
+              </>
+            ) : (
+              <>
+                <Button variant="secondary" onClick={reset}>
+                  {t("startOver")}
+                </Button>
+                <Button
+                  disabled={errorCount === rows.length}
+                  loading={commit.isPending}
+                  onClick={() => {
+                    if (!file) return;
+                    commit.mutate(
+                      { academicYearId: effectiveYearId, file, moveExisting, partial },
+                      {
+                        onSuccess: (data) => {
+                          setRows(data);
+                          setCommitted(true);
+                          toast.success(t("committed"));
+                        },
+                        onError: fail,
+                      },
+                    );
+                  }}
+                >
+                  {t("commit")}
+                </Button>
+              </>
+            )}
+          </FormActions>
+        </section>
       )}
-    </div>
+    </AppPage>
   );
 }

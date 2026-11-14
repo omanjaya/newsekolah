@@ -206,20 +206,15 @@
     "emptyBody": "Pick an academic year and a teacher to view and manage their teaching assignments."
   },
   "enrollmentImport": {
-    "eyebrow": "School Data",
     "title": "Class assignment import",
-    "description": "Download the template, fill in student class assignments, then upload it to review before anything is applied.",
+    "description": "Download the template, fill in each student's class, then upload it to review before applying.",
     "year": "Academic year",
     "downloadTemplate": "Download template",
-    "chooseFile": "Choose an xlsx file",
-    "noFileChosen": "No file chosen",
+    "chooseFile": "Choose an XLSX file",
     "moveExisting": "Move students who already have a different class this year",
     "partial": "Apply valid rows even if some rows have errors",
-    "preview": "Preview",
     "commit": "Apply",
-    "committedLabel": "Applied",
     "committed": "Class assignments applied",
-    "rowCount": "{n} rows",
     "errorCount": "{n} need attention",
     "table": {
       "row": "Row",
@@ -234,7 +229,21 @@
       "unchanged": "Unchanged",
       "skipped": "Skipped",
       "error": "Needs attention"
-    }
+    },
+    "prepareTitle": "Prepare the file",
+    "prepareBody": "Choose the academic year, download its template, fill in each student's class and upload it. The file is reviewed first; nothing is saved yet.",
+    "optionsLabel": "Options",
+    "fileLabel": "Placement file",
+    "previewAgain": "Refresh the preview",
+    "reviewTitle": "Review the placement",
+    "rowsLabel": "Rows",
+    "placedLabel": "Placed or moved",
+    "skippedLabel": "Skipped",
+    "errorLabel": "With problems",
+    "partialNote": "Valid rows are applied; rows with problems are skipped.",
+    "blockedNote": "While any row has a problem, nothing is applied. Fix the file, or tick the option to apply only the valid rows.",
+    "startOver": "Start over",
+    "importAnother": "Import another file"
   },
   "newYearSetup": {
     "eyebrow": "School Data",

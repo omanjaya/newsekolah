@@ -1513,18 +1513,10 @@
           "noCustomRoles": "Belum ada peran khusus. Buat di Pengaturan > Peran dan Akses."
         },
         "import": {
-          "eyebrow": "Data Sekolah",
           "title": "Impor pengguna",
           "description": "Unduh templat, isi di luar sistem, unggah kembali, lalu periksa hasilnya sebelum benar-benar dibuat.",
-          "steps": {
-            "upload": "Unggah",
-            "preview": "Pratinjau",
-            "done": "Selesai"
-          },
-          "step1Title": "1. Unduh templat",
           "step1Body": "Templat berisi contoh baris dan sheet Referensi berisi kode yang diterima untuk setiap kolom (jenis kelamin, golongan darah, peran, dan sejenisnya).",
           "downloadTemplate": "Unduh templat XLSX",
-          "step2Title": "2. Unggah berkas yang sudah diisi",
           "step2Body": "Maksimal 5000 baris dalam satu berkas. Baris kosong dilewati.",
           "mode": {
             "label": "Mode impor",
@@ -1542,12 +1534,6 @@
             "no-sheet": "Berkas tidak memiliki sheet data sama sekali.",
             "empty": "Tidak ada baris data yang terbaca dari berkas ini."
           },
-          "step3Title": "3. Pratinjau",
-          "rowCount": "{n} baris",
-          "createCount": "{n} akan dibuat",
-          "updateCount": "{n} akan diperbarui",
-          "unchangedCount": "{n} tidak berubah",
-          "invalidCount": "{n} baris tidak valid",
           "blockedTitle": "Belum bisa diimpor",
           "blockedBody": "Impor berjalan dalam satu transaksi: selama masih ada satu baris tidak valid, tidak ada apa pun yang akan disimpan. Perbaiki baris yang ditandai, lalu unggah ulang berkasnya.",
           "readyTitle": "Siap diimpor",
@@ -1575,7 +1561,16 @@
               "unchanged": "Tidak berubah",
               "error": "Tidak valid"
             }
-          }
+          },
+          "prepareTitle": "Siapkan berkas",
+          "fileLabel": "Berkas pengguna",
+          "reviewTitle": "Tinjau hasil",
+          "rowsLabel": "Baris",
+          "createLabel": "Akan dibuat",
+          "updateLabel": "Akan diperbarui",
+          "unchangedLabel": "Tidak berubah",
+          "invalidLabel": "Tidak valid",
+          "backToUsers": "Kembali ke daftar pengguna"
         }
       },
       "classes": {
@@ -1815,6 +1810,18 @@
             "nameTaken": "Nama ini sudah dipakai jenis tugas lain. Pilih nama yang berbeda."
           }
         }
+      },
+      "importFlow": {
+        "steps": {
+          "upload": "Unggah",
+          "preview": "Tinjau",
+          "done": "Selesai"
+        },
+        "chooseOther": "Ganti berkas",
+        "noFile": "Belum ada berkas",
+        "showRows": "Tampilkan baris",
+        "allRows": "Semua baris",
+        "problemRows": "Bermasalah"
       }
     },
     "roles": {
