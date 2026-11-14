@@ -1200,8 +1200,10 @@
       "accessionRegister": "Accession register"
     },
     "monthly": {
-      "monthLabel": "Monthly report",
-      "download": "Download monthly PDF"
+      "monthLabel": "Month",
+      "download": "Download monthly PDF",
+      "heading": "Monthly report",
+      "description": "One month in one PDF, ready to print or send to the principal."
     },
     "loans": {
       "title": "Loans within the date range",
@@ -1257,20 +1259,23 @@
       "emptyTitle": "No visits in this range",
       "total": "{count} visits",
       "columns": {
-        "day": "Date",
-        "class": "Class",
+        "day": "By date",
+        "class": "By class",
         "count": "Count"
-      }
+      },
+      "summaryLabel": "Visit summary",
+      "totalLabel": "Visits in this period"
     },
     "members": {
       "emptyTitle": "No members yet",
       "total": "Total members",
       "active": "Active members",
       "columns": {
-        "type": "Member type",
-        "class": "Class",
+        "type": "By member type",
+        "class": "By class",
         "count": "Count"
-      }
+      },
+      "summaryLabel": "Member summary"
     },
     "accessionRegister": {
       "emptyTitle": "No additions in this range",
@@ -1338,7 +1343,9 @@
           "acquired_on": "Acquired On"
         }
       }
-    }
+    },
+    "tabsLabel": "Library report types",
+    "periodLabel": "Report period"
   },
   "markLost": {
     "title": "Mark copy lost",

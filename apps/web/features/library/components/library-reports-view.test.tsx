@@ -18,6 +18,8 @@ vi.mock("../../../lib/simulation/clock", () => ({
   businessNow: () => new Date("2026-09-15T02:00:00Z"),
 }));
 vi.mock("../use-tenant-timezone", () => ({ useTenantTimeZone: () => "Asia/Jakarta" }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+vi.mock("../../../lib/hooks/use-date-range-presets", () => ({ useDateRangePresets: () => [] }));
 vi.mock("../../../components/report-export-dialog", () => ({ ReportExportDialog: () => null }));
 vi.mock("../../reference/directory-names", async () => {
   const { directoryNamesStub } = await import("../../../test/directory-names-stub");
@@ -91,11 +93,23 @@ describe("LibraryReportsView overdue members tab", () => {
       data: undefined,
       isLoading: false,
       isError: true,
+      error: new Error("offline"),
       refetch: vi.fn(),
     });
     render(<LibraryReportsView />);
 
     expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "actions.retry" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Coba lagi" })).toBeInTheDocument();
+  });
+
+  it("names the period with the shared range picker, not native date inputs", () => {
+    window.history.replaceState(null, "", "/library/reports?tab=loans");
+    mocks.overdue.mockReturnValue({ data: { data: [] }, isLoading: false });
+    const { container } = render(<LibraryReportsView />);
+
+    expect(container.querySelector('input[type="date"]')).toBeNull();
+    expect(container.querySelector('input[type="month"]')).toBeNull();
+    expect(screen.getByText("periodLabel")).toBeInTheDocument();
   });
 });

@@ -1200,8 +1200,10 @@
       "accessionRegister": "Buku induk"
     },
     "monthly": {
-      "monthLabel": "Laporan bulanan",
-      "download": "Unduh PDF bulanan"
+      "monthLabel": "Bulan",
+      "download": "Unduh PDF bulanan",
+      "heading": "Laporan bulanan",
+      "description": "Rekap satu bulan dalam satu berkas PDF, siap dicetak atau dikirim ke kepala sekolah."
     },
     "loans": {
       "title": "Peminjaman dalam rentang tanggal",
@@ -1257,20 +1259,23 @@
       "emptyTitle": "Tidak ada kunjungan pada rentang ini",
       "total": "{count} kunjungan",
       "columns": {
-        "day": "Tanggal",
-        "class": "Kelas",
+        "day": "Per tanggal",
+        "class": "Per kelas",
         "count": "Jumlah"
-      }
+      },
+      "summaryLabel": "Ringkasan kunjungan",
+      "totalLabel": "Kunjungan pada periode ini"
     },
     "members": {
       "emptyTitle": "Belum ada anggota",
       "total": "Total anggota",
       "active": "Anggota aktif",
       "columns": {
-        "type": "Jenis anggota",
-        "class": "Kelas",
+        "type": "Per jenis anggota",
+        "class": "Per kelas",
         "count": "Jumlah"
-      }
+      },
+      "summaryLabel": "Ringkasan anggota"
     },
     "accessionRegister": {
       "emptyTitle": "Tidak ada penambahan pada rentang ini",
@@ -1338,7 +1343,9 @@
           "acquired_on": "Tanggal Pengadaan"
         }
       }
-    }
+    },
+    "tabsLabel": "Jenis laporan perpustakaan",
+    "periodLabel": "Periode laporan"
   },
   "markLost": {
     "title": "Tandai eksemplar hilang",

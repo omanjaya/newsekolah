@@ -1,47 +1,53 @@
 "use client";
 
-import { formatCurrency, formatDate } from "@newsekolah/i18n";
+import { formatCurrency } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
-  Field,
+  Badge,
   Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  DataTable,
+  DateRangePicker,
   EmptyState,
-  Input,
-  PageHeader,
-  Skeleton,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Field,
+  MonthPicker,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
+  TextLink,
   domainIcons,
 } from "@newsekolah/ui";
-import { Download } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { Download, FileText } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-import { QueryError } from "../../../components/query-error";
+import { AppPage } from "../../../components/app-page";
 import {
   ReportExportDialog,
   type ReportExportColumn,
   type ReportExportOptions,
 } from "../../../components/report-export-dialog";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { startOfIsoMonth, thisMonthInZone, todayInZone } from "../../../lib/tenant-date";
 import { useDirectoryLookup } from "../../reference/directory-names";
 import {
+  type LibraryMostBorrowedTitle,
+  type LibraryOverdueMember,
   downloadMonthlyLibraryReportPdf,
   useLoansReportQuery,
   useMostBorrowedReportQuery,
   useOverdueMembersReportQuery,
 } from "../api";
+import { formatShortDate } from "../lib/short-date";
+import { LOAN_STATUS_TONE, toneOf } from "../lib/status-tones";
 import {
   downloadLibraryAccessionRegisterReportXlsx,
   downloadLibraryMembersReportXlsx,
@@ -55,9 +61,18 @@ import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import { ReportAccessionRegisterTable } from "./report-accession-register-table";
 import { ReportMembersTable } from "./report-members-table";
-import { ReportCard, ReportCardTitle, ReportField } from "./report-mobile-card";
 import { ReportSummaryTable } from "./report-summary-table";
 import { ReportVisitsTable } from "./report-visits-table";
+
+const REPORT_TABS = [
+  "loans",
+  "overdueMembers",
+  "mostBorrowed",
+  "summary",
+  "visits",
+  "members",
+  "accessionRegister",
+] as const;
 
 type ReportTab =
   | "loans"
@@ -94,27 +109,24 @@ const REPORT_EXPORT_COLUMN_KEYS: Record<Exclude<ReportTab, "summary">, readonly 
   ],
 };
 
+/**
+ * The library's reports: one pill tab per report, the period they cover
+ * (where it applies) and the XLSX export above the tab's table, and the
+ * monthly PDF in its own card. On its own route the page shows the
+ * reports area's tabs; inside the reports hub (`tabKey` other than "tab")
+ * it is one section of that page.
+ */
 export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {}): ReactElement {
   const t = useTranslations("app.library.reports");
   const timeZone = useTenantTimeZone();
   const today = todayInZone(timeZone);
-  const [tab, setTab] = useUrlState<ReportTab>(
-    tabKey,
-    [
-      "loans",
-      "overdueMembers",
-      "mostBorrowed",
-      "summary",
-      "visits",
-      "members",
-      "accessionRegister",
-    ],
-    "loans",
-  );
+  const presets = useDateRangePresets();
+  const [tab, setTab] = useUrlState<ReportTab>(tabKey, REPORT_TABS, "loans");
   const [from, setFrom] = useDateFilter("from", startOfIsoMonth(today));
   const [to, setTo] = useDateFilter("to", today);
   const [month, setMonth] = useDateFilter("month", thisMonthInZone(timeZone), true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const embedded = tabKey !== "tab";
 
   const exportOptions: Record<ReportTab, (options: ReportExportOptions) => Promise<void>> = {
     loans: (options) => downloadLoansReportXlsx(from, to, options),
@@ -139,277 +151,291 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
         }));
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-
+    <AppPage
+      title={embedded ? t("title") : undefined}
+      nav={embedded ? false : undefined}
+      primaryAction={
+        <Button
+          icon={<Download />}
+          onClick={() => {
+            setDialogOpen(true);
+          }}
+        >
+          {t("exportXlsx")}
+        </Button>
+      }
+    >
       <Tabs
-        className="flex flex-col gap-6"
+        className="flex flex-col gap-4"
         value={tab}
         onValueChange={(value) => {
           setTab(value as ReportTab);
         }}
       >
-        <TabsList>
-          <TabsTrigger value="loans">{t("tabs.loans")}</TabsTrigger>
-          <TabsTrigger value="overdueMembers">{t("tabs.overdueMembers")}</TabsTrigger>
-          <TabsTrigger value="mostBorrowed">{t("tabs.mostBorrowed")}</TabsTrigger>
-          <TabsTrigger value="summary">{t("tabs.summary")}</TabsTrigger>
-          <TabsTrigger value="visits">{t("tabs.visits")}</TabsTrigger>
-          <TabsTrigger value="members">{t("tabs.members")}</TabsTrigger>
-          <TabsTrigger value="accessionRegister">{t("tabs.accessionRegister")}</TabsTrigger>
+        <TabsList aria-label={t("tabsLabel")}>
+          {REPORT_TABS.map((key) => (
+            <TabsTrigger key={key} value={key}>
+              {t(`tabs.${key}`)}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          {!TABS_WITHOUT_DATE_RANGE.includes(tab) ? (
-            <div className="flex flex-wrap items-end gap-3">
-              <Field label={t("fromLabel")}>
-                <Input
-                  type="date"
-                  value={from}
-                  onChange={(e) => {
-                    setFrom(e.target.value);
-                  }}
-                />
-              </Field>
-              <Field label={t("toLabel")}>
-                <Input
-                  type="date"
-                  value={to}
-                  onChange={(e) => {
-                    setTo(e.target.value);
-                  }}
-                />
-              </Field>
-            </div>
-          ) : (
-            <span />
-          )}
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={<Download />}
-            onClick={() => {
-              setDialogOpen(true);
-            }}
-          >
-            {t("exportXlsx")}
-          </Button>
-        </div>
+        {!TABS_WITHOUT_DATE_RANGE.includes(tab) && (
+          <Field label={t("periodLabel")} className="sm:max-w-xs">
+            <DateRangePicker
+              value={{ from, to }}
+              onChange={(range) => {
+                if (!range.from || !range.to) return;
+                setFrom(range.from);
+                setTo(range.to);
+              }}
+              presets={presets}
+              today={today}
+            />
+          </Field>
+        )}
 
-        <ReportExportDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          reportKey={`library.reports.${tab}`}
-          defaultTitle={t(`export.${tab}.defaultTitle`)}
-          availableColumns={exportColumns}
-          columnsCustomizable={tab !== "summary"}
-          onExport={handleExport}
-        />
-
-        <TabsContent value={tab} className="pt-0">
-          {tab === "loans" && <LoansReportTable from={from} to={to} />}
-          {tab === "overdueMembers" && <OverdueMembersReportTable />}
-          {tab === "mostBorrowed" && <MostBorrowedReportTable from={from} to={to} />}
-          {tab === "summary" && <ReportSummaryTable from={from} to={to} />}
-          {tab === "visits" && <ReportVisitsTable from={from} to={to} />}
-          {tab === "members" && <ReportMembersTable />}
-          {tab === "accessionRegister" && <ReportAccessionRegisterTable from={from} to={to} />}
+        <TabsContent value="loans">
+          <LoansReportTable from={from} to={to} />
+        </TabsContent>
+        <TabsContent value="overdueMembers">
+          <OverdueMembersReportTable />
+        </TabsContent>
+        <TabsContent value="mostBorrowed">
+          <MostBorrowedReportTable from={from} to={to} />
+        </TabsContent>
+        <TabsContent value="summary">
+          <ReportSummaryTable from={from} to={to} />
+        </TabsContent>
+        <TabsContent value="visits">
+          <ReportVisitsTable from={from} to={to} />
+        </TabsContent>
+        <TabsContent value="members">
+          <ReportMembersTable />
+        </TabsContent>
+        <TabsContent value="accessionRegister">
+          <ReportAccessionRegisterTable from={from} to={to} />
         </TabsContent>
       </Tabs>
 
-      <div className="flex flex-wrap items-end gap-3 border-t border-border pt-6">
-        <Field label={t("monthly.monthLabel")}>
-          <Input
-            type="month"
-            value={month}
-            onChange={(e) => {
-              setMonth(e.target.value);
+      <ReportExportDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        reportKey={`library.reports.${tab}`}
+        defaultTitle={t(`export.${tab}.defaultTitle`)}
+        availableColumns={exportColumns}
+        columnsCustomizable={tab !== "summary"}
+        onExport={handleExport}
+      />
+
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">{t("monthly.heading")}</CardTitle>
+          <CardDescription>{t("monthly.description")}</CardDescription>
+        </CardHeader>
+        <div className="flex flex-col gap-3 px-5 pb-5 sm:flex-row sm:items-end">
+          <Field label={t("monthly.monthLabel")} className="sm:w-56">
+            <MonthPicker value={month} onChange={setMonth} />
+          </Field>
+          <Button
+            variant="secondary"
+            icon={<FileText />}
+            onClick={() => {
+              void downloadMonthlyLibraryReportPdf(month);
             }}
-          />
-        </Field>
-        <Button
-          size="sm"
-          variant="secondary"
-          icon={<Download />}
-          onClick={() => {
-            void downloadMonthlyLibraryReportPdf(month);
-          }}
-        >
-          {t("monthly.download")}
-        </Button>
-      </div>
-    </div>
+          >
+            {t("monthly.download")}
+          </Button>
+        </div>
+      </Card>
+    </AppPage>
   );
 }
+
+type LoanReportRow = NonNullable<ReturnType<typeof useLoansReportQuery>["data"]>["data"][number];
 
 function LoansReportTable({ from, to }: { from: string; to: string }): ReactElement {
   const t = useTranslations("app.library.reports.loans");
   const tStatus = useTranslations("app.library.memberHistory.status");
   const locale = useLocale() as Locale;
-  const { data, isLoading } = useLoansReportQuery(from, to);
+  const { data, isLoading, error, refetch } = useLoansReportQuery(from, to);
   const loans = data?.data ?? [];
 
-  if (isLoading) return <Skeleton className="h-64 w-full" />;
-  if (loans.length === 0) {
-    return <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />;
-  }
-
-  const statusLabel = (status: string) => (tStatus.has(status) ? tStatus(status) : status);
+  const columns = useMemo<ColumnDef<LoanReportRow>[]>(
+    () => [
+      {
+        id: "title",
+        header: t("columns.copy"),
+        enableSorting: false,
+        meta: { card: "title" },
+        accessorFn: (row) => row.title,
+      },
+      {
+        id: "member",
+        header: t("columns.member"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        accessorFn: (row) => row.member_name,
+        cell: ({ row }) => (
+          <TextLink href={`/library/members/${row.original.loan.member_user_id}`}>
+            {row.original.member_name}
+          </TextLink>
+        ),
+      },
+      {
+        id: "borrowedAt",
+        header: t("columns.borrowedAt"),
+        enableSorting: false,
+        cell: ({ row }) => formatShortDate(row.original.loan.borrowed_at, locale),
+      },
+      {
+        id: "dueOn",
+        header: t("columns.dueOn"),
+        enableSorting: false,
+        cell: ({ row }) => formatShortDate(row.original.loan.due_on, locale),
+      },
+      {
+        id: "status",
+        header: t("columns.status"),
+        enableSorting: false,
+        meta: { card: "meta", skeleton: "badge" },
+        cell: ({ row }) => (
+          <Badge tone={toneOf(LOAN_STATUS_TONE, row.original.loan.status)}>
+            {tStatus.has(row.original.loan.status)
+              ? tStatus(row.original.loan.status)
+              : row.original.loan.status}
+          </Badge>
+        ),
+      },
+    ],
+    [t, tStatus, locale],
+  );
 
   return (
-    <>
-      <ul className="flex flex-col gap-2 md:hidden">
-        {loans.map((row) => (
-          <li key={row.loan.id}>
-            <ReportCard>
-              <ReportCardTitle>{row.title}</ReportCardTitle>
-              <ReportField label={t("columns.member")} value={row.member_name} />
-              <ReportField
-                label={t("columns.borrowedAt")}
-                value={formatDate(row.loan.borrowed_at, { locale })}
-              />
-              <ReportField
-                label={t("columns.dueOn")}
-                value={formatDate(row.loan.due_on, { locale })}
-              />
-              <ReportField label={t("columns.status")} value={statusLabel(row.loan.status)} />
-            </ReportCard>
-          </li>
-        ))}
-      </ul>
-      <div className="hidden md:block">
-        <Table className="min-w-[560px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col">{t("columns.copy")}</TableHead>
-              <TableHead scope="col">{t("columns.member")}</TableHead>
-              <TableHead scope="col">{t("columns.borrowedAt")}</TableHead>
-              <TableHead scope="col">{t("columns.dueOn")}</TableHead>
-              <TableHead scope="col">{t("columns.status")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loans.map((row) => (
-              <TableRow key={row.loan.id}>
-                <TableCell>{row.title}</TableCell>
-                <TableCell>{row.member_name}</TableCell>
-                <TableCell className="text-fg-muted">
-                  {formatDate(row.loan.borrowed_at, { locale })}
-                </TableCell>
-                <TableCell className="text-fg-muted">
-                  {formatDate(row.loan.due_on, { locale })}
-                </TableCell>
-                <TableCell className="text-fg-muted">{statusLabel(row.loan.status)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </>
+    <DataTable
+      stateKey="features/library/components/library-reports-view:loans"
+      mode="local"
+      data={loans}
+      columns={columns}
+      searchable={loans.length > 10}
+      isLoading={isLoading}
+      error={error}
+      onRetry={() => void refetch()}
+      getRowId={(row) => row.loan.id}
+      emptyState={
+        <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />
+      }
+    />
   );
 }
 
 function OverdueMembersReportTable(): ReactElement {
   const t = useTranslations("app.library.reports.overdueMembers");
   const locale = useLocale() as Locale;
-  const { data, isLoading, isError, refetch } = useOverdueMembersReportQuery();
-  const members = data?.data ?? [];
+  const { data, isLoading, isError, error, refetch } = useOverdueMembersReportQuery();
+  const members = useMemo(() => data?.data ?? [], [data]);
   const { names, isLoading: namesLoading } = useDirectoryLookup(
     members.map((member) => member.member_user_id),
   );
-  const nameOf = (userId: string) => names.get(userId)?.name ?? t("unknownMember");
 
-  if (isLoading || (namesLoading && members.length > 0)) {
-    return <Skeleton className="h-64 w-full" />;
-  }
-  if (isError) return <QueryError retry={() => refetch()} />;
-  if (members.length === 0) {
-    return <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />;
-  }
+  const columns = useMemo<ColumnDef<LibraryOverdueMember>[]>(
+    () => [
+      {
+        id: "member",
+        header: t("columns.member"),
+        enableSorting: false,
+        meta: { card: "title" },
+        accessorFn: (row) => names.get(row.member_user_id)?.name ?? t("unknownMember"),
+        cell: ({ row }) => (
+          <TextLink href={`/library/members/${row.original.member_user_id}`}>
+            {names.get(row.original.member_user_id)?.name ?? t("unknownMember")}
+          </TextLink>
+        ),
+      },
+      {
+        accessorKey: "loan_count",
+        header: t("columns.loanCount"),
+        enableSorting: false,
+        meta: { align: "end" },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.loan_count}</span>,
+      },
+      {
+        accessorKey: "total_fine",
+        header: t("columns.fine"),
+        enableSorting: false,
+        meta: { align: "end" },
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {formatCurrency(row.original.total_fine, "IDR", { locale })}
+          </span>
+        ),
+      },
+    ],
+    [t, locale, names],
+  );
 
   return (
-    <>
-      <ul className="flex flex-col gap-2 md:hidden">
-        {members.map((member) => (
-          <li key={member.member_user_id}>
-            <ReportCard>
-              <ReportCardTitle>{nameOf(member.member_user_id)}</ReportCardTitle>
-              <ReportField label={t("columns.loanCount")} value={member.loan_count} />
-              <ReportField
-                label={t("columns.fine")}
-                value={formatCurrency(member.total_fine, "IDR", { locale })}
-              />
-            </ReportCard>
-          </li>
-        ))}
-      </ul>
-      <div className="hidden md:block">
-        <Table className="min-w-[480px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col">{t("columns.member")}</TableHead>
-              <TableHead scope="col">{t("columns.loanCount")}</TableHead>
-              <TableHead scope="col">{t("columns.fine")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {members.map((member) => (
-              <TableRow key={member.member_user_id}>
-                <TableCell>{nameOf(member.member_user_id)}</TableCell>
-                <TableCell className="text-fg-muted">{member.loan_count}</TableCell>
-                <TableCell className="text-fg-muted">
-                  {formatCurrency(member.total_fine, "IDR", { locale })}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </>
+    <DataTable
+      stateKey="features/library/components/library-reports-view:overdue-members"
+      mode="local"
+      data={members}
+      columns={columns}
+      searchable={members.length > 10}
+      isLoading={isLoading || (namesLoading && members.length > 0)}
+      error={isError ? error : undefined}
+      onRetry={() => void refetch()}
+      getRowId={(row) => row.member_user_id}
+      emptyState={
+        <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />
+      }
+    />
   );
 }
 
 function MostBorrowedReportTable({ from, to }: { from: string; to: string }): ReactElement {
   const t = useTranslations("app.library.reports.mostBorrowed");
-  const { data, isLoading, isError, refetch } = useMostBorrowedReportQuery(from, to);
+  const { data, isLoading, error, refetch } = useMostBorrowedReportQuery(from, to);
   const titles = data?.data ?? [];
 
-  if (isLoading) return <Skeleton className="h-64 w-full" />;
-  if (isError) return <QueryError retry={() => refetch()} />;
-  if (titles.length === 0) {
-    return <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />;
-  }
+  const columns = useMemo<ColumnDef<LibraryMostBorrowedTitle>[]>(
+    () => [
+      {
+        id: "title",
+        header: t("columns.title"),
+        enableSorting: false,
+        meta: { card: "title" },
+        accessorFn: (row) => row.title.title,
+        cell: ({ row }) => (
+          <TextLink href={`/library/catalogue/${row.original.title.id}`}>
+            {row.original.title.title}
+          </TextLink>
+        ),
+      },
+      {
+        accessorKey: "loan_count",
+        header: t("columns.loanCount"),
+        enableSorting: false,
+        meta: { align: "end" },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.loan_count}</span>,
+      },
+    ],
+    [t],
+  );
 
   return (
-    <>
-      <ul className="flex flex-col gap-2 md:hidden">
-        {titles.map((entry) => (
-          <li key={entry.title.id}>
-            <ReportCard>
-              <ReportCardTitle>{entry.title.title}</ReportCardTitle>
-              <ReportField label={t("columns.loanCount")} value={entry.loan_count} />
-            </ReportCard>
-          </li>
-        ))}
-      </ul>
-      <div className="hidden md:block">
-        <Table className="min-w-[480px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col">{t("columns.title")}</TableHead>
-              <TableHead scope="col">{t("columns.loanCount")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {titles.map((entry) => (
-              <TableRow key={entry.title.id}>
-                <TableCell>{entry.title.title}</TableCell>
-                <TableCell className="text-fg-muted">{entry.loan_count}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </>
+    <DataTable
+      stateKey="features/library/components/library-reports-view:most-borrowed"
+      mode="local"
+      data={titles}
+      columns={columns}
+      searchable={titles.length > 10}
+      isLoading={isLoading}
+      error={error}
+      onRetry={() => void refetch()}
+      getRowId={(row) => row.title.id}
+      emptyState={
+        <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />
+      }
+    />
   );
 }
