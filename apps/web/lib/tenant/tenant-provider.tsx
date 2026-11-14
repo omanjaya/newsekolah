@@ -10,10 +10,11 @@ import { useApiClient } from "../api/client";
 import { setDocumentSchoolName } from "../page-title";
 
 import { resolveTenantAccents } from "./accent";
+import { PRODUCT_NAME_FALLBACK } from "./product-name";
 
 export type TenantBranding = components["schemas"]["TenantBranding"];
 
-export const PRODUCT_NAME_FALLBACK = "SION";
+export { PRODUCT_NAME_FALLBACK };
 
 interface TenantContextValue {
   branding: TenantBranding | undefined;

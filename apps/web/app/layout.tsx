@@ -11,7 +11,7 @@ import { getMessagesForNamespaces } from "../lib/i18n/get-messages";
 import { ROOT_NAMESPACES } from "../lib/i18n/namespace-sets";
 import { TITLE_SEPARATOR } from "../lib/page-title-format";
 import { getTenantBrandingServer } from "../lib/tenant/get-branding.server";
-import { PRODUCT_NAME_FALLBACK } from "../lib/tenant/tenant-provider";
+import { PRODUCT_NAME_FALLBACK } from "../lib/tenant/product-name";
 import { getThemeBootstrapScript } from "../lib/theme/theme-script";
 
 import { manrope, plusJakartaSans } from "./fonts";
