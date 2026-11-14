@@ -39,7 +39,8 @@ describe("APIKeysPanel", () => {
       refetch: vi.fn(),
     });
     render(<APIKeysPanel />);
-    expect(screen.getByRole("button", { name: "actions.retry" })).toBeInTheDocument();
+    // The table's own error state, with its retry (UiLabels.tableRetry).
+    expect(screen.getByRole("button", { name: "Coba lagi" })).toBeInTheDocument();
     expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
   });
 

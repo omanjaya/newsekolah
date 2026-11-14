@@ -43,7 +43,9 @@
       "tokenCopied": "Token disalin",
       "copyFailed": "Token tidak dapat disalin otomatis, salin secara manual",
       "done": "Sudah disimpan"
-    }
+    },
+    "morePermissions": "+{count} izin",
+    "rowActions": "Aksi untuk kunci {name}"
   },
   "webhooks": {
     "description": "Endpoint webhook menerima peristiwa lewat permintaan POST bertanda tangan HMAC.",
@@ -69,21 +71,23 @@
       "editTitle": "Ubah endpoint webhook",
       "dialogBody": "URL harus dapat diakses publik; alamat privat atau loopback ditolak.",
       "urlLabel": "URL endpoint",
-      "descriptionLabel": "Deskripsi (opsional)",
+      "descriptionLabel": "Deskripsi",
       "eventTypesLabel": "Jenis peristiwa",
       "submit": "Simpan",
       "created": "Endpoint dibuat",
       "updated": "Endpoint diperbarui"
-    }
+    },
+    "moreEvents": "+{count} peristiwa",
+    "rowActions": "Aksi untuk {url}"
   },
   "deliveries": {
     "filterEndpoint": "Endpoint",
     "filterEndpointAll": "Semua endpoint",
     "filters": {
-      "reset": "Reset filter",
+      "reset": "Atur ulang filter",
       "removeFilter": "Hapus filter {label}"
     },
-    "retry": "Coba lagi",
+    "retry": "Kirim ulang",
     "retryEnqueued": "Pengiriman ulang dijadwalkan",
     "emptyTitle": "Belum ada riwayat pengiriman",
     "emptyBody": "Riwayat pengiriman muncul setelah peristiwa pertama terjadi.",
@@ -95,9 +99,11 @@
       "eventType": "Jenis peristiwa",
       "status": "Status",
       "attempts": "Percobaan",
-      "reason": "Alasan"
+      "reason": "Alasan",
+      "actions": "Aksi"
     },
     "pagePrev": "Sebelumnya",
     "pageNext": "Berikutnya"
-  }
+  },
+  "tabsLabel": "Bagian integrasi"
 }

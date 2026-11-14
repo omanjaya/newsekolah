@@ -43,7 +43,9 @@
       "tokenCopied": "Token copied",
       "copyFailed": "Could not copy automatically, copy it manually",
       "done": "Saved it"
-    }
+    },
+    "morePermissions": "+{count} more",
+    "rowActions": "Actions for key {name}"
   },
   "webhooks": {
     "description": "A webhook endpoint receives events as an HMAC-signed POST request.",
@@ -74,7 +76,9 @@
       "submit": "Save",
       "created": "Endpoint created",
       "updated": "Endpoint updated"
-    }
+    },
+    "moreEvents": "+{count} more",
+    "rowActions": "Actions for {url}"
   },
   "deliveries": {
     "filterEndpoint": "Endpoint",
@@ -83,7 +87,7 @@
       "reset": "Reset filter",
       "removeFilter": "Remove filter {label}"
     },
-    "retry": "Retry",
+    "retry": "Resend",
     "retryEnqueued": "Retry enqueued",
     "emptyTitle": "No deliveries yet",
     "emptyBody": "Delivery history appears once the first event occurs.",
@@ -95,9 +99,11 @@
       "eventType": "Event type",
       "status": "Status",
       "attempts": "Attempts",
-      "reason": "Reason"
+      "reason": "Reason",
+      "actions": "Actions"
     },
     "pagePrev": "Previous",
     "pageNext": "Next"
-  }
+  },
+  "tabsLabel": "Integration sections"
 }

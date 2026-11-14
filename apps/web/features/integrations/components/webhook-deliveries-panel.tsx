@@ -3,14 +3,22 @@
 import { ApiError } from "@newsekolah/api-client";
 import { formatDateTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { Button, DataTable, EmptyState, useToast, type DataTableFilterDef } from "@newsekolah/ui";
+import {
+  Badge,
+  Button,
+  DataTable,
+  EmptyState,
+  FilteredEmptyState,
+  useToast,
+  type BadgeTone,
+  type DataTableFilterDef,
+} from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { History, RotateCw } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
-import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import {
@@ -20,6 +28,21 @@ import {
   useWebhookEndpointsQuery,
 } from "../api";
 
+const PAGE_SIZE = 20;
+
+const STATUS_TONE: Record<WebhookDelivery["status"], BadgeTone> = {
+  success: "success",
+  failed: "danger",
+  pending: "warning",
+};
+
+const STATUS_LABEL: Record<WebhookDelivery["status"], string> = {
+  success: "statusSuccess",
+  failed: "statusFailed",
+  pending: "statusPending",
+};
+
+/** Every delivery attempt to the school's webhooks, newest first, filterable by endpoint; a failed one can be retried. */
 export function WebhookDeliveriesPanel({
   endpointId,
   onEndpointChange,
@@ -37,7 +60,10 @@ export function WebhookDeliveriesPanel({
   const endpoints = useWebhookEndpointsQuery();
   const [cursors, setCursors] = useState<string[]>([""]);
   const cursor = cursors[cursors.length - 1] ?? "";
-  const { data, isLoading, isError, refetch } = useWebhookDeliveriesQuery(endpointId, cursor);
+  const { data, isLoading, isError, error, refetch, isRefetching } = useWebhookDeliveriesQuery(
+    endpointId,
+    cursor,
+  );
   const retry = useRetryWebhookDeliveryMutation();
 
   function resetPaging() {
@@ -48,54 +74,66 @@ export function WebhookDeliveriesPanel({
     try {
       await retry.mutateAsync(delivery.id);
       toast.success(t("retryEnqueued"));
-    } catch (error) {
-      toast.error(
-        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-      );
+    } catch (err) {
+      toast.error(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
     }
   }
 
   const columns: ColumnDef<WebhookDelivery>[] = [
     {
-      accessorKey: "created_at",
-      header: t("columns.when"),
-      cell: ({ row }) => formatDateTime(row.original.created_at, { locale, timeZone }),
+      accessorKey: "event_type",
+      header: t("columns.eventType"),
+      meta: { card: "title" },
+      cell: ({ row }) => <span className="font-mono text-body-sm">{row.original.event_type}</span>,
     },
-    { accessorKey: "event_type", header: t("columns.eventType") },
     {
       id: "status",
       header: t("columns.status"),
+      meta: { card: "meta", skeleton: "badge" },
       cell: ({ row }) => {
-        const delivery = row.original;
-        if (delivery.status === "success") {
-          return <span className="text-status-present">{t("statusSuccess")}</span>;
-        }
-        if (delivery.status === "failed") {
-          return <span className="text-status-absent">{t("statusFailed")}</span>;
-        }
-        return <span className="text-status-late">{t("statusPending")}</span>;
+        const status = row.original.status;
+        return (
+          <Badge size="sm" tone={STATUS_TONE[status]}>
+            {t(STATUS_LABEL[status])}
+          </Badge>
+        );
       },
     },
-    { accessorKey: "attempt_count", header: t("columns.attempts") },
     {
-      id: "reason",
-      header: t("columns.reason"),
+      accessorKey: "created_at",
+      header: t("columns.when"),
+      meta: { card: "subtitle" },
       cell: ({ row }) => (
-        <span className="text-fg-muted">
-          {row.original.last_error ||
-            (row.original.last_status_code ? `HTTP ${row.original.last_status_code}` : "-")}
+        <span className="whitespace-nowrap">
+          {formatDateTime(row.original.created_at, { locale, timeZone })}
         </span>
       ),
     },
     {
+      accessorKey: "attempt_count",
+      header: t("columns.attempts"),
+      meta: { align: "end" },
+      cell: ({ row }) => <span className="tabular-nums">{row.original.attempt_count}</span>,
+    },
+    {
+      id: "reason",
+      header: t("columns.reason"),
+      cell: ({ row }) => {
+        const { last_error: lastError, last_status_code: statusCode } = row.original;
+        const reason = lastError !== "" ? lastError : statusCode ? `HTTP ${statusCode}` : "-";
+        return <span className="text-fg-muted">{reason}</span>;
+      },
+    },
+    {
       id: "actions",
-      header: "",
+      header: t("columns.actions"),
       cell: ({ row }) =>
         row.original.status === "failed" ? (
           <Button
             variant="secondary"
             size="sm"
             icon={<RotateCw />}
+            loading={retry.isPending && retry.variables === row.original.id}
             onClick={() => void handleRetry(row.original)}
           >
             {t("retry")}
@@ -105,6 +143,9 @@ export function WebhookDeliveriesPanel({
   ];
 
   const items = data?.data ?? [];
+  // A failed read with no error object still counts as failed.
+  const failure: unknown = error;
+  const loadError = isError && !data ? (failure ?? true) : undefined;
 
   const filters: DataTableFilterDef[] = [
     {
@@ -123,61 +164,52 @@ export function WebhookDeliveriesPanel({
   ];
 
   return (
-    <div className="flex flex-col gap-4">
-      <DataTable
-        stateKey="features/integrations/components/webhook-deliveries-panel:1"
-        mode="cursor"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 20 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        filters={filters}
-        filtersLabels={{
-          reset: t("filters.reset"),
-          removeFilter: (label) => t("filters.removeFilter", { label }),
-        }}
-        isLoading={isLoading}
-        getRowId={(delivery) => delivery.id}
-        emptyState={
-          isError && !data ? (
-            <QueryError retry={() => refetch()} />
-          ) : (
-            <EmptyState
-              icon={<History aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
-          )
-        }
-      />
-
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={cursors.length <= 1}
-          onClick={() => {
-            setCursors((prev) => prev.slice(0, -1));
-          }}
-        >
-          {t("pagePrev")}
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={!data?.page.next_cursor}
-          onClick={() => {
-            const next = data?.page.next_cursor;
-            if (next) setCursors((prev) => [...prev, next]);
-          }}
-        >
-          {t("pageNext")}
-        </Button>
-      </div>
-    </div>
+    <DataTable
+      stateKey="features/integrations/components/webhook-deliveries-panel:2"
+      mode="cursor"
+      data={items}
+      columns={columns}
+      searchable={false}
+      filters={filters}
+      filtersLabels={{
+        reset: t("filters.reset"),
+        removeFilter: (label) => t("filters.removeFilter", { label }),
+      }}
+      isLoading={isLoading}
+      // A failed read keeps the filter bar, so a bad filter can still be changed.
+      error={loadError}
+      onRetry={() => void refetch()}
+      retrying={isRefetching}
+      getRowId={(delivery) => delivery.id}
+      cursorPagination={{
+        hasPrevious: cursors.length > 1,
+        hasNext: Boolean(data?.page.next_cursor),
+        onPrevious: () => {
+          setCursors((prev) => prev.slice(0, -1));
+        },
+        onNext: () => {
+          const next = data?.page.next_cursor;
+          if (next) setCursors((prev) => [...prev, next]);
+        },
+        page: cursors.length,
+        pageSize: PAGE_SIZE,
+      }}
+      emptyState={
+        endpointId !== "" ? (
+          <FilteredEmptyState
+            onReset={() => {
+              onEndpointChange("");
+              resetPaging();
+            }}
+          />
+        ) : (
+          <EmptyState
+            icon={<History aria-hidden="true" />}
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+          />
+        )
+      }
+    />
   );
 }

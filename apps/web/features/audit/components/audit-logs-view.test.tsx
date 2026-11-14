@@ -154,7 +154,8 @@ describe("AuditLogsView filters", () => {
       refetch: vi.fn(),
     });
     render(<AuditLogsView />);
-    expect(screen.getAllByRole("button", { name: "actions.retry" }).length).toBeGreaterThan(0);
+    // The table's own error state, with its retry (UiLabels.tableRetry).
+    expect(screen.getAllByRole("button", { name: "Coba lagi" }).length).toBeGreaterThan(0);
     expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
     // The filter bar stays so a failing filter can still be changed or reset.
     expect(screen.getAllByRole("button", { name: /filters\./ }).length).toBeGreaterThan(0);
