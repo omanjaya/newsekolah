@@ -1188,8 +1188,8 @@
       "title": "Guru pengganti",
       "request": "Minta pengganti",
       "todayBadge": "Hari ini",
-      "incoming": "Masuk",
-      "outgoing": "Keluar",
+      "incoming": "Untuk saya",
+      "outgoing": "Dari saya",
       "emptyTitle": "Belum ada permintaan",
       "emptyIncomingBody": "Permintaan dari rekan guru untuk menggantikan jadwal Anda tampil di sini.",
       "emptyOutgoingBody": "Permintaan yang Anda kirim ke rekan guru tampil di sini.",
@@ -1221,7 +1221,8 @@
         "sent": "Permintaan terkirim",
         "cancel": "Batal",
         "send": "Kirim permintaan"
-      }
+      },
+      "directionLabel": "Arah permintaan"
     },
     "permits": {
       "workflow": {

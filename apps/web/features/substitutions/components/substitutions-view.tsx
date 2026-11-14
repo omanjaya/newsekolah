@@ -1,31 +1,30 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import type { Locale } from "@newsekolah/i18n";
-import { formatDate } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
+  Card,
+  CardFooter,
+  CardTitle,
   Dialog,
   DialogContent,
   EmptyState,
-  PageHeader,
-  Skeleton,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  cn,
+  SegmentedControl,
+  SkeletonList,
   useToast,
+  type BadgeTone,
 } from "@newsekolah/ui";
 import { Plus, Repeat } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
-import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import {
   useAllPeriodsQuery,
   useClassesQuery,
@@ -33,6 +32,7 @@ import {
   useSubjectsQuery,
 } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
+import { clockRange } from "../../schedule/clock-label";
 import {
   type Direction,
   type Substitution,
@@ -43,23 +43,31 @@ import {
 
 import { RequestForm } from "./request-form";
 
-const STATUS_VARIANT: Record<Substitution["status"], "neutral" | "accent"> = {
-  pending: "accent",
-  accepted: "accent",
+const STATUS_TONE: Record<Substitution["status"], BadgeTone> = {
+  pending: "warning",
+  accepted: "success",
   rejected: "neutral",
   cancelled: "neutral",
 };
 
-/** Requests I received (incoming) and requests I sent (outgoing), rendered with the same session-card look as the attendance day list. */
+/**
+ * Substitution requests: the ones asking this teacher to stand in ("Untuk
+ * saya", with how many still wait on an answer) and the ones they sent
+ * ("Dari saya"), as one list of cards. Each card names the lesson, the day
+ * and the other teacher, and carries its own answer or cancel action.
+ */
 export function SubstitutionsView(): ReactElement {
   const t = useTranslations("app.substitutions");
-  const locale = useLocale() as Locale;
+  const format = useFormatter();
+  const locale = useLocale();
   const { me } = useSession();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const [direction, setDirection] = useState<Direction>("incoming");
   const [creating, setCreating] = useState(false);
-  const { data, isLoading } = useSubstitutionsQuery(direction);
+  const incoming = useSubstitutionsQuery("incoming");
+  const outgoing = useSubstitutionsQuery("outgoing");
+  const list = direction === "incoming" ? incoming : outgoing;
   const respond = useRespondSubstitutionMutation();
   const cancel = useCancelSubstitutionMutation();
   const classes = useClassesQuery();
@@ -77,142 +85,125 @@ export function SubstitutionsView(): ReactElement {
     );
   }
 
-  const items = data?.data ?? [];
+  const items = list.data?.data ?? [];
+  const pendingIncoming = (incoming.data?.data ?? []).filter((r) => r.status === "pending").length;
   const teacherMap = useDirectoryNames(
     items.map((item) =>
       direction === "incoming" ? item.requester_user_id : item.substitute_user_id,
     ),
   );
 
-  return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <AcademicWorkspaceLinks area="schedule" />
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          <Button
-            size="sm"
-            icon={<Plus />}
-            onClick={() => {
-              setCreating(true);
-            }}
-          >
-            {t("request")}
-          </Button>
-        }
-      />
-      <Tabs
-        value={direction}
-        onValueChange={(v) => {
-          setDirection(v as Direction);
-        }}
-      >
-        <TabsList>
-          <TabsTrigger aria-controls={undefined} value="incoming">
-            {t("incoming")}
-          </TabsTrigger>
-          <TabsTrigger aria-controls={undefined} value="outgoing">
-            {t("outgoing")}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+  const requestButton = (
+    <Button
+      icon={<Plus />}
+      onClick={() => {
+        setCreating(true);
+      }}
+    >
+      {t("request")}
+    </Button>
+  );
 
-      {isLoading ? (
-        <Skeleton className="h-40 w-full" aria-busy="true" />
+  return (
+    <AppPage
+      primaryAction={requestButton}
+      toolbar={
+        <SegmentedControl<Direction>
+          aria-label={t("directionLabel")}
+          value={direction}
+          onValueChange={setDirection}
+          options={[
+            {
+              value: "incoming",
+              label: t("incoming"),
+              count: pendingIncoming > 0 ? pendingIncoming : undefined,
+            },
+            { value: "outgoing", label: t("outgoing") },
+          ]}
+        />
+      }
+    >
+      {list.isLoading ? (
+        <SkeletonList rows={3} />
+      ) : list.isError ? (
+        <QueryError retry={list.refetch} error={list.error} />
       ) : items.length === 0 ? (
         <EmptyState
           icon={<Repeat aria-hidden="true" />}
           title={t("emptyTitle")}
           description={direction === "incoming" ? t("emptyIncomingBody") : t("emptyOutgoingBody")}
+          action={requestButton}
         />
       ) : (
-        <ul className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {items.map((item) => {
             const other =
               direction === "incoming" ? item.requester_user_id : item.substitute_user_id;
-            const className = item.class_id
-              ? (classMap.get(item.class_id)?.name ?? undefined)
-              : undefined;
-            const subjectName = item.subject_id
-              ? (subjectMap.get(item.subject_id)?.name ?? undefined)
-              : undefined;
+            const lesson = [
+              item.subject_id ? subjectMap.get(item.subject_id)?.name : undefined,
+              item.class_id ? classMap.get(item.class_id)?.name : undefined,
+            ]
+              .filter(Boolean)
+              .join(" · ");
             const start = item.start_period_id ? periodMap.get(item.start_period_id) : undefined;
             const end = item.end_period_id ? periodMap.get(item.end_period_id) : undefined;
             const isToday = item.date === today;
+            const when = [
+              format.dateTime(new Date(`${item.date}T12:00:00Z`), {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                timeZone: me?.tenant.timezone,
+              }),
+              start && end ? `${start.name} – ${end.name}` : undefined,
+              start && end ? clockRange(start.starts_at, end.ends_at, locale) : undefined,
+            ]
+              .filter(Boolean)
+              .join(" · ");
             return (
-              <li
+              <Card
                 key={item.id}
-                className={cn(
-                  "flex flex-col gap-3 rounded-sm border bg-surface p-4 md:flex-row md:items-center md:justify-between",
-                  isToday && item.status === "accepted"
-                    ? "border-accent ring-1 ring-accent/40"
-                    : "border-border",
-                )}
+                padding="md"
+                tone={isToday && item.status === "accepted" ? "accent-soft" : "default"}
+                data-testid={`substitution-${item.id}`}
               >
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {isToday && <Badge variant="accent">{t("todayBadge")}</Badge>}
-                    <span className="text-heading text-fg">
-                      {formatDate(item.date, { locale, timeZone: me?.tenant.timezone })}
-                    </span>
-                    <Badge variant={STATUS_VARIANT[item.status]}>
-                      {t(`status.${item.status}`)}
-                    </Badge>
-                  </div>
-                  {(className ?? subjectName) && (
-                    <span className="text-body text-fg">
-                      {className}
-                      {className && subjectName ? " • " : ""}
-                      {subjectName}
-                      {start && end && (
-                        <span className="text-fg-muted">
-                          {" "}
-                          ({start.name} - {end.name})
-                        </span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <CardTitle as="h2" className="min-w-0">
+                      {lesson || when}
+                    </CardTitle>
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      {isToday && (
+                        <Badge tone="accent" size="sm">
+                          {t("todayBadge")}
+                        </Badge>
                       )}
+                      <Badge tone={STATUS_TONE[item.status]} size="sm" dot>
+                        {t(`status.${item.status}`)}
+                      </Badge>
                     </span>
-                  )}
-                  <span className="text-body-sm text-fg-muted">
+                  </div>
+                  {lesson && <p className="text-body-sm text-fg-muted">{when}</p>}
+                  <p className="text-body-sm text-fg-muted">
                     {direction === "incoming" ? t("fromTeacher") : t("toTeacher")}:{" "}
-                    {teacherMap.get(other)?.name ?? t("unknownTeacher")}
-                  </span>
+                    <span className="text-fg">
+                      {teacherMap.get(other)?.name ?? t("unknownTeacher")}
+                    </span>
+                  </p>
                   {item.requester_note && (
-                    <span className="text-body-sm text-fg">{item.requester_note}</span>
+                    <p className="text-body-sm text-fg">{item.requester_note}</p>
                   )}
                   {item.response_note && (
-                    <span className="text-body-sm text-fg-muted">
+                    <p className="text-body-sm text-fg-muted">
                       {t("responseNote")}: {item.response_note}
-                    </span>
+                    </p>
                   )}
                 </div>
                 {item.status === "pending" && (
-                  <div className="flex gap-2">
+                  <CardFooter className="justify-end">
                     {direction === "incoming" ? (
                       <>
                         <Button
-                          size="sm"
-                          loading={
-                            respond.isPending &&
-                            respond.variables.id === item.id &&
-                            respond.variables.accept
-                          }
-                          onClick={() => {
-                            respond.mutate(
-                              { id: item.id, accept: true },
-                              {
-                                onError: fail,
-                                onSuccess: () => {
-                                  toast.success(t("accepted"));
-                                },
-                              },
-                            );
-                          }}
-                        >
-                          {t("accept")}
-                        </Button>
-                        <Button
-                          size="sm"
                           variant="secondary"
                           loading={
                             respond.isPending &&
@@ -233,10 +224,29 @@ export function SubstitutionsView(): ReactElement {
                         >
                           {t("reject")}
                         </Button>
+                        <Button
+                          loading={
+                            respond.isPending &&
+                            respond.variables.id === item.id &&
+                            respond.variables.accept
+                          }
+                          onClick={() => {
+                            respond.mutate(
+                              { id: item.id, accept: true },
+                              {
+                                onError: fail,
+                                onSuccess: () => {
+                                  toast.success(t("accepted"));
+                                },
+                              },
+                            );
+                          }}
+                        >
+                          {t("accept")}
+                        </Button>
                       </>
                     ) : (
                       <Button
-                        size="sm"
                         variant="secondary"
                         loading={cancel.isPending && cancel.variables === item.id}
                         onClick={() => {
@@ -251,12 +261,12 @@ export function SubstitutionsView(): ReactElement {
                         {t("cancel")}
                       </Button>
                     )}
-                  </div>
+                  </CardFooter>
                 )}
-              </li>
+              </Card>
             );
           })}
-        </ul>
+        </div>
       )}
 
       <Dialog open={creating} onOpenChange={setCreating}>
@@ -270,6 +280,6 @@ export function SubstitutionsView(): ReactElement {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </AppPage>
   );
 }

@@ -1188,8 +1188,8 @@
       "title": "Substitute teachers",
       "request": "Request a substitute",
       "todayBadge": "Today",
-      "incoming": "Incoming",
-      "outgoing": "Outgoing",
+      "incoming": "For me",
+      "outgoing": "From me",
       "emptyTitle": "No requests yet",
       "emptyIncomingBody": "Requests from colleagues to cover your schedule show up here.",
       "emptyOutgoingBody": "Requests you sent to colleagues show up here.",
@@ -1221,7 +1221,8 @@
         "sent": "Request sent",
         "cancel": "Cancel",
         "send": "Send request"
-      }
+      },
+      "directionLabel": "Request direction"
     },
     "permits": {
       "workflow": {

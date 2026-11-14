@@ -2,14 +2,16 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Alert,
   Button,
   Combobox,
-  Input,
+  DatePicker,
+  DialogFooter,
+  Field,
   Select,
   Textarea,
   useDebouncedCallback,
   useToast,
-  Field,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -105,11 +107,7 @@ export function RequestForm({
         void submit();
       }}
     >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-body-sm">
-          {error}
-        </p>
-      )}
+      {error && <Alert variant="danger">{error}</Alert>}
       <Field label={t("schedule")}>
         <Select
           options={scheduleOptions}
@@ -119,13 +117,7 @@ export function RequestForm({
         />
       </Field>
       <Field label={t("date")}>
-        <Input
-          type="date"
-          value={date}
-          onChange={(e) => {
-            setDate(e.target.value);
-          }}
-        />
+        <DatePicker value={date} onChange={setDate} clearable={false} />
       </Field>
       <Field label={t("substitute")}>
         <Combobox
@@ -155,14 +147,14 @@ export function RequestForm({
           }}
         />
       </Field>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone} disabled={create.isPending}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={create.isPending}>
           {t("send")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }
