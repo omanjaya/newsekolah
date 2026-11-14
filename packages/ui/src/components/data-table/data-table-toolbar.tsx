@@ -1,6 +1,6 @@
 "use client";
 
-import type { Column, Table } from "@tanstack/react-table";
+import { flexRender, type Column, type Table } from "@tanstack/react-table";
 import { Columns3, Ellipsis, Rows3, X } from "lucide-react";
 import { useState, type ReactElement, type ReactNode } from "react";
 
@@ -61,6 +61,33 @@ export function getDataTableColumnLabel(
     if (typeof label === "string" || typeof label === "number") return label;
   }
   return typeof header === "string" || typeof header === "number" ? header : undefined;
+}
+
+/**
+ * Column id to its rendered header (the phone cards' field labels), and
+ * into `remembered` a plain label for columns the header groups skip (the
+ * column menu's names).
+ */
+export function collectColumnHeaders<TData>(
+  table: Table<TData>,
+  remembered: Record<string, ReactNode>,
+): Record<string, ReactNode> {
+  // Rendered once from the header groups, because a header cell needs a
+  // header context and a body cell cannot supply one.
+  const headers: Record<string, ReactNode> = {};
+  for (const headerGroup of table.getHeaderGroups()) {
+    for (const header of headerGroup.headers) {
+      if (header.isPlaceholder) continue;
+      headers[header.column.id] = flexRender(header.column.columnDef.header, header.getContext());
+    }
+  }
+  Object.assign(remembered, headers);
+  for (const column of table.getAllFlatColumns()) {
+    if (remembered[column.id] !== undefined) continue;
+    const label = getDataTableColumnLabel(column.columnDef.meta, column.columnDef.header);
+    if (label !== undefined) remembered[column.id] = label;
+  }
+  return headers;
 }
 
 export interface DataTableToolbarProps<TData> {
