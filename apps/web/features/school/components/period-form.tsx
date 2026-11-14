@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Checkbox, Input } from "@newsekolah/ui";
+import { Button, Checkbox, DialogFooter, Field, Input } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -49,8 +49,7 @@ export function PeriodForm({
       }}
     >
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("name")}</span>
+        <Field label={t("name")}>
           <Input
             value={name}
             onChange={(e) => {
@@ -58,9 +57,8 @@ export function PeriodForm({
             }}
             required
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("sequence")}</span>
+        </Field>
+        <Field label={t("sequence")}>
           <Input
             type="number"
             min={1}
@@ -70,9 +68,8 @@ export function PeriodForm({
             }}
             required
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("start")}</span>
+        </Field>
+        <Field label={t("start")}>
           <Input
             type="time"
             value={start}
@@ -81,9 +78,8 @@ export function PeriodForm({
             }}
             required
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("end")}</span>
+        </Field>
+        <Field label={t("end")}>
           <Input
             type="time"
             value={end}
@@ -92,9 +88,9 @@ export function PeriodForm({
             }}
             required
           />
-        </label>
+        </Field>
       </div>
-      <label className="flex items-center gap-2 text-[13px]">
+      <label className="flex items-center gap-2 text-body-sm">
         <Checkbox
           checked={isBreak}
           onCheckedChange={(v) => {
@@ -103,14 +99,14 @@ export function PeriodForm({
         />
         {t("break")}
       </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onCancel}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={pending}>
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

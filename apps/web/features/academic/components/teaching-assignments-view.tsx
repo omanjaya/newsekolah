@@ -98,7 +98,7 @@ function AssignmentsEditor({
             className="group flex items-center justify-between gap-2 px-3 py-2 transition-colors hover:bg-bg"
           >
             <div className="flex min-w-0 items-center gap-2">
-              <span className="truncate text-[14px] font-medium">
+              <span className="truncate text-body font-medium">
                 {subjectMap.get(pair.subject_id)?.name ?? "-"}
               </span>
               <Badge variant="neutral">{classMap.get(pair.class_id)?.name ?? "-"}</Badge>
@@ -116,7 +116,7 @@ function AssignmentsEditor({
           </li>
         ))}
         {pairs.length === 0 && (
-          <li className="px-3 py-6 text-center text-[13px] text-fg-muted">{t("noAssignments")}</li>
+          <li className="px-3 py-6 text-center text-body-sm text-fg-muted">{t("noAssignments")}</li>
         )}
       </ul>
 
@@ -210,10 +210,10 @@ export function TeachingAssignmentsView(): ReactElement {
     // md:h-full: fills the tab panel's height; the whole column scrolls
     // since the form and result list together are usually short.
     <div className="flex flex-col gap-4 md:h-full md:min-h-0 md:overflow-y-auto">
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
+      <p className="text-body-sm text-fg-muted">{t("description")}</p>
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
+        <label className="flex w-full flex-col gap-1 text-body-sm md:w-auto">
           <span className="font-medium">{t("year")}</span>
           <Select
             options={(years.data?.data ?? []).map((y) => ({ value: y.id, label: y.label }))}
@@ -222,7 +222,7 @@ export function TeachingAssignmentsView(): ReactElement {
             className="w-full md:w-56"
           />
         </label>
-        <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
+        <label className="flex w-full flex-col gap-1 text-body-sm md:w-auto">
           <span className="font-medium">{t("teacher")}</span>
           <DirectoryPicker
             profileKind="teacher"

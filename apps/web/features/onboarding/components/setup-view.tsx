@@ -66,12 +66,12 @@ function ProgressSummary({
       className="flex flex-col gap-1 rounded-sm border border-border bg-surface p-4"
       role="status"
     >
-      <p className="text-[14px] font-medium tabular-nums text-fg">
+      <p className="text-body font-medium tabular-nums text-fg">
         {t("stepsLabel", { done: requiredDone, total: requiredTotal })}
       </p>
-      <p className="text-[13px] text-fg-muted">{t(readyToOperate ? "ready" : "notReady")}</p>
+      <p className="text-body-sm text-fg-muted">{t(readyToOperate ? "ready" : "notReady")}</p>
       {activeYearLabel && (
-        <p className="text-[13px] text-fg-muted">{t("activeYear", { label: activeYearLabel })}</p>
+        <p className="text-body-sm text-fg-muted">{t("activeYear", { label: activeYearLabel })}</p>
       )}
     </section>
   );

@@ -1750,7 +1750,8 @@
         "deleteTemplateBody": "\"{name}\" will be deleted. It cannot be deleted while a school day still uses it.",
         "deletePeriodTitle": "Delete this period?",
         "deletePeriodBody": "\"{name}\" will be removed from this template.",
-        "periodDeleted": "Period deleted"
+        "periodDeleted": "Period deleted",
+        "actions": "Actions"
       },
       "duties": {
         "eyebrow": "School Data",

@@ -158,7 +158,7 @@ export function UsersView(): ReactElement {
             <Avatar size={32} name={row.original.name} />
             <div className="flex min-w-0 flex-col">
               <span className="truncate text-fg">{row.original.name}</span>
-              <span className="truncate text-[12px] text-fg-muted">
+              <span className="truncate text-caption text-fg-muted">
                 {row.original.username}
                 {row.original.email ? ` · ${row.original.email}` : ""}
               </span>
@@ -376,8 +376,8 @@ export function UsersView(): ReactElement {
         }}
       >
         <DialogContent title={t("resetTitle")}>
-          <p className="text-[13px] text-fg-muted">{t("resetBody")}</p>
-          <code className="mt-3 block rounded-xs bg-bg p-3 text-[12px] break-all">
+          <p className="text-body-sm text-fg-muted">{t("resetBody")}</p>
+          <code className="mt-3 block rounded-xs bg-bg p-3 text-caption break-all">
             {typeof window !== "undefined"
               ? `${window.location.origin}/reset-password?token=${resetToken ?? ""}`
               : resetToken}

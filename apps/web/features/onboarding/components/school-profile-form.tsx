@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, Skeleton } from "@newsekolah/ui";
+import { Button, Field, Input, Select, Skeleton } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -39,8 +39,8 @@ export function SchoolProfileSection(): ReactElement {
       className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4"
     >
       <div className="flex flex-col gap-1">
-        <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-        <p className="text-[13px] text-fg-muted">{t("body")}</p>
+        <h2 className="text-heading text-fg">{t("title")}</h2>
+        <p className="text-body-sm text-fg-muted">{t("body")}</p>
       </div>
       {branding.isError && !branding.data ? (
         <QueryError retry={() => branding.refetch()} />
@@ -97,18 +97,20 @@ function SchoolProfileForm({ initial }: { initial: TenantBranding }): ReactEleme
       }}
     >
       {error && (
-        <p role="alert" className="rounded-xs border border-status-absent/40 px-3 py-2 text-[13px]">
+        <p
+          role="alert"
+          className="rounded-xs border border-status-absent/40 px-3 py-2 text-body-sm"
+        >
           {error}
         </p>
       )}
       {saved && !error && (
-        <p role="status" className="text-[13px] text-fg-muted">
+        <p role="status" className="text-body-sm text-fg-muted">
           {t("saved")}
         </p>
       )}
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("name")}</span>
+        <Field label={t("name")}>
           <Input
             value={name}
             onChange={(e) => {
@@ -116,9 +118,8 @@ function SchoolProfileForm({ initial }: { initial: TenantBranding }): ReactEleme
             }}
             required
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("educationLevel")}</span>
+        </Field>
+        <Field label={t("educationLevel")}>
           <Select
             options={EDUCATION_LEVELS.map((level) => ({ value: level, label: tLevels(level) }))}
             value={educationLevel}
@@ -127,18 +128,16 @@ function SchoolProfileForm({ initial }: { initial: TenantBranding }): ReactEleme
             }}
             placeholder={t("pick")}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("timezone")}</span>
+        </Field>
+        <Field label={t("timezone")}>
           <Select
             options={TIMEZONES.map((zone) => ({ value: zone, label: zone }))}
             value={timezone}
             onValueChange={setTimezone}
             placeholder={t("pick")}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("language")}</span>
+        </Field>
+        <Field label={t("language")}>
           <Select
             options={LOCALES.map((code) => ({ value: code, label: tLocales(code) }))}
             value={locale}
@@ -147,7 +146,7 @@ function SchoolProfileForm({ initial }: { initial: TenantBranding }): ReactEleme
             }}
             placeholder={t("pick")}
           />
-        </label>
+        </Field>
       </div>
       <div>
         <Button type="submit" size="sm" loading={update.isPending}>

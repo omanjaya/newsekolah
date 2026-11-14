@@ -7,7 +7,9 @@ import {
   DataTable,
   Dialog,
   DialogContent,
+  DialogFooter,
   EmptyState,
+  Field,
   IconButton,
   Input,
   useToast,
@@ -35,7 +37,7 @@ export function RoomsView(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_master_data");
   const [search, setSearch] = useRememberedViewState("rooms-search", "");
-  const { data, isLoading } = useRoomsQuery(search);
+  const { data, isLoading, error, refetch, isRefetching } = useRoomsQuery(search);
   const create = useCreateRoomMutation();
   const update = useUpdateRoomMutation();
   const remove = useDeleteRoomMutation();
@@ -81,8 +83,18 @@ export function RoomsView(): ReactElement {
   const columns = useMemo<ColumnDef<Room>[]>(
     () => [
       // Name leads because the phone card uses the first column as its title.
-      { accessorKey: "name", header: t("columns.name"), enableSorting: false },
-      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
+      {
+        accessorKey: "code",
+        header: t("columns.code"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+      },
       {
         accessorKey: "capacity",
         header: t("columns.capacity"),
@@ -119,21 +131,19 @@ export function RoomsView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
-        {canManage && (
-          <Button
-            size="sm"
-            icon={<Plus />}
-            onClick={() => {
-              open("new");
-            }}
-          >
-            {t("add")}
-          </Button>
-        )}
-      </div>
       <DataTable
+        toolbarActions={
+          canManage ? (
+            <Button
+              icon={<Plus />}
+              onClick={() => {
+                open("new");
+              }}
+            >
+              {t("add")}
+            </Button>
+          ) : undefined
+        }
         stateKey="features/academic/components/rooms-view:1"
         data={rows}
         columns={columns}
@@ -145,12 +155,27 @@ export function RoomsView(): ReactElement {
         globalFilter={search}
         onGlobalFilterChange={setSearch}
         isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        retrying={isRefetching}
         getRowId={(r) => r.id}
         emptyState={
           <EmptyState
             icon={<DoorOpen aria-hidden="true" />}
             title={t("emptyTitle")}
             description={t("emptyBody")}
+            action={
+              canManage ? (
+                <Button
+                  icon={<Plus />}
+                  onClick={() => {
+                    open("new");
+                  }}
+                >
+                  {t("add")}
+                </Button>
+              ) : undefined
+            }
           />
         }
       />
@@ -169,8 +194,7 @@ export function RoomsView(): ReactElement {
               void save();
             }}
           >
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.code")}</span>
+            <Field label={t("columns.code")}>
               <Input
                 value={code}
                 maxLength={16}
@@ -179,9 +203,8 @@ export function RoomsView(): ReactElement {
                 }}
                 required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.name")}</span>
+            </Field>
+            <Field label={t("columns.name")}>
               <Input
                 value={name}
                 onChange={(e) => {
@@ -189,9 +212,8 @@ export function RoomsView(): ReactElement {
                 }}
                 required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.capacity")}</span>
+            </Field>
+            <Field label={t("columns.capacity")}>
               <Input
                 type="number"
                 min={1}
@@ -201,8 +223,8 @@ export function RoomsView(): ReactElement {
                 }}
                 className="w-32"
               />
-            </label>
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            </Field>
+            <DialogFooter>
               <Button
                 type="button"
                 variant="secondary"
@@ -215,7 +237,7 @@ export function RoomsView(): ReactElement {
               <Button type="submit" loading={create.isPending || update.isPending}>
                 {t("save")}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

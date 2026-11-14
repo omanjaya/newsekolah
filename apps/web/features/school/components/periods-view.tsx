@@ -6,11 +6,13 @@ import {
   ConfirmDialog,
   Dialog,
   DialogContent,
+  DialogFooter,
   EmptyState,
+  Field,
   IconButton,
   Input,
   Select,
-  Skeleton,
+  SkeletonList,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
@@ -25,17 +27,12 @@ import {
   useUpdatePeriodTemplateMutation,
 } from "../../academic/api-school-extras";
 import {
-  type Period,
   type PeriodTemplate,
-  useCreatePeriodMutation,
   useCreatePeriodTemplateMutation,
-  useDeletePeriodMutation,
   usePeriodTemplatesQuery,
-  useTemplatePeriodsQuery,
-  useUpdatePeriodMutation,
 } from "../api";
 
-import { PeriodForm } from "./period-form";
+import { PeriodTable } from "./period-table";
 import { WeekPanel } from "./week-panel";
 
 export function PeriodsView(): ReactElement {
@@ -68,8 +65,7 @@ export function PeriodsView(): ReactElement {
     // the fixed template row scrolls internally.
     <div className="flex min-w-0 flex-col gap-4 md:h-full md:min-h-0">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("template")}</span>
+        <Field label={t("template")}>
           <Select
             options={list.map((x) => ({
               value: x.id,
@@ -77,10 +73,10 @@ export function PeriodsView(): ReactElement {
             }))}
             value={selected?.id ?? ""}
             onValueChange={setTemplateId}
-            className="w-64"
+            className="w-full sm:w-64"
             placeholder={t("noTemplate")}
           />
-        </label>
+        </Field>
         {selected && (
           <div className="flex gap-1">
             <IconButton
@@ -113,7 +109,7 @@ export function PeriodsView(): ReactElement {
         </Button>
       </div>
       {templates.isLoading ? (
-        <Skeleton className="h-64 w-full" />
+        <SkeletonList rows={6} framed />
       ) : selected ? (
         <div className="grid gap-6 md:min-h-0 md:flex-1 md:overflow-y-auto xl:grid-cols-[minmax(0,1fr)_360px]">
           <PeriodTable templateId={selected.id} />
@@ -147,8 +143,7 @@ export function PeriodsView(): ReactElement {
               );
             }}
           >
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("newTemplate")}</span>
+            <Field label={t("newTemplate")}>
               <Input
                 value={newTemplate}
                 onChange={(e) => {
@@ -157,8 +152,8 @@ export function PeriodsView(): ReactElement {
                 placeholder={t("newTemplatePlaceholder")}
                 required
               />
-            </label>
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            </Field>
+            <DialogFooter>
               <Button
                 type="button"
                 variant="secondary"
@@ -171,7 +166,7 @@ export function PeriodsView(): ReactElement {
               <Button type="submit" loading={createTemplate.isPending}>
                 {t("addTemplate")}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -203,8 +198,7 @@ export function PeriodsView(): ReactElement {
               );
             }}
           >
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("newTemplate")}</span>
+            <Field label={t("newTemplate")}>
               <Input
                 value={renameValue}
                 onChange={(e) => {
@@ -212,8 +206,8 @@ export function PeriodsView(): ReactElement {
                 }}
                 required
               />
-            </label>
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            </Field>
+            <DialogFooter>
               <Button
                 type="button"
                 variant="secondary"
@@ -226,7 +220,7 @@ export function PeriodsView(): ReactElement {
               <Button type="submit" loading={updateTemplate.isPending}>
                 {t("save")}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -255,147 +249,5 @@ export function PeriodsView(): ReactElement {
         }}
       />
     </div>
-  );
-}
-
-function PeriodTable({ templateId }: { templateId: string }): ReactElement {
-  const t = useTranslations("app.school.periods");
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
-  const periods = useTemplatePeriodsQuery(templateId);
-  const create = useCreatePeriodMutation(templateId);
-  const update = useUpdatePeriodMutation();
-  const remove = useDeletePeriodMutation();
-  const [editing, setEditing] = useState<Period | "new" | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<Period | null>(null);
-  const rows = [...(periods.data?.data ?? [])].sort((a, b) => a.sequence - b.sequence);
-  const fail = (error: unknown) => {
-    toast.error(
-      error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-    );
-  };
-
-  return (
-    <section className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[16px] font-medium text-fg">{t("periodsTitle")}</h2>
-        <Button
-          size="sm"
-          icon={<Plus />}
-          onClick={() => {
-            setEditing("new");
-          }}
-        >
-          {t("addPeriod")}
-        </Button>
-      </div>
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-        <table className="w-full text-[13px]">
-          <thead>
-            <tr className="border-b border-line bg-bg text-left">
-              <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">#</th>
-              <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">{t("name")}</th>
-              <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">{t("time")}</th>
-              <th className="px-4 py-3 text-[12px] font-semibold text-fg-muted">{t("kind")}</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((p) => (
-              <tr key={p.id} className="group border-b border-line last:border-b-0 hover:bg-bg">
-                <td className="px-4 py-3 tabular-nums text-fg-muted">{p.sequence}</td>
-                <td className="px-4 py-3">{p.name}</td>
-                <td className="px-4 py-3 tabular-nums">
-                  {p.starts_at.slice(0, 5)}-{p.ends_at.slice(0, 5)}
-                </td>
-                <td className="px-4 py-3 text-fg-muted">{p.is_break ? t("break") : t("lesson")}</td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-1">
-                    <IconButton
-                      icon={<Pencil />}
-                      aria-label={t("edit")}
-                      className="md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-visible:opacity-100"
-                      onClick={() => {
-                        setEditing(p);
-                      }}
-                    />
-                    <IconButton
-                      icon={<Trash2 />}
-                      aria-label={t("delete")}
-                      className="md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-visible:opacity-100"
-                      onClick={() => {
-                        setPendingDelete(p);
-                      }}
-                    />
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {rows.length === 0 && !periods.isLoading && (
-              <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-fg-muted">
-                  {t("noPeriods")}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      <ConfirmDialog
-        open={pendingDelete !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingDelete(null);
-        }}
-        title={t("deletePeriodTitle")}
-        description={pendingDelete ? t("deletePeriodBody", { name: pendingDelete.name }) : ""}
-        confirmLabel={t("delete")}
-        cancelLabel={t("cancel")}
-        destructive
-        confirming={remove.isPending}
-        onConfirm={() => {
-          if (!pendingDelete) return;
-          remove.mutate(pendingDelete.id, {
-            onSuccess: () => {
-              setPendingDelete(null);
-              toast.success(t("periodDeleted"));
-            },
-            onError: (error) => {
-              setPendingDelete(null);
-              fail(error);
-            },
-          });
-        }}
-      />
-      <Dialog
-        open={editing !== null}
-        onOpenChange={(o) => {
-          if (!o) setEditing(null);
-        }}
-      >
-        <DialogContent title={editing === "new" ? t("addPeriod") : t("edit")}>
-          {editing !== null && (
-            <PeriodForm
-              initial={editing === "new" ? undefined : editing}
-              nextSequence={(rows[rows.length - 1]?.sequence ?? 0) + 1}
-              lastEnd={rows[rows.length - 1]?.ends_at.slice(0, 5) ?? "07:00"}
-              pending={create.isPending || update.isPending}
-              onSubmit={async (body) => {
-                try {
-                  if (editing === "new") await create.mutateAsync(body);
-                  else await update.mutateAsync({ id: editing.id, body });
-                  toast.success(t("saved"));
-                  setEditing(null);
-                } catch (error) {
-                  fail(error);
-                }
-              }}
-              onCancel={() => {
-                setEditing(null);
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </section>
   );
 }

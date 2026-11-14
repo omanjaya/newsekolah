@@ -1,7 +1,15 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Dialog, DialogContent, Input, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  Field,
+  Input,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -52,9 +60,8 @@ function EndForm({
   return (
     <DialogContent title={t("end")}>
       <div className="flex flex-col gap-4">
-        <p className="text-[13px] text-fg-muted">{t("endBody", { duty: assignment.duty_name })}</p>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("endsOn")}</span>
+        <p className="text-body-sm text-fg-muted">{t("endBody", { duty: assignment.duty_name })}</p>
+        <Field label={t("endsOn")}>
           <Input
             type="date"
             value={endsOn}
@@ -63,8 +70,8 @@ function EndForm({
               setEndsOn(e.target.value);
             }}
           />
-        </label>
-        <div className="flex justify-end gap-2 border-t border-border pt-3">
+        </Field>
+        <DialogFooter>
           <Button variant="secondary" onClick={onClose}>
             {t("cancel")}
           </Button>
@@ -92,7 +99,7 @@ function EndForm({
           >
             {t("end")}
           </Button>
-        </div>
+        </DialogFooter>
       </div>
     </DialogContent>
   );

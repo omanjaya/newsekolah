@@ -7,7 +7,9 @@ import {
   DataTable,
   Dialog,
   DialogContent,
+  DialogFooter,
   EmptyState,
+  Field,
   IconButton,
   Input,
   Select,
@@ -38,7 +40,7 @@ export function GradeLevelsView(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_master_data");
-  const { data, isLoading } = useGradeLevelsQuery();
+  const { data, isLoading, error, refetch, isRefetching } = useGradeLevelsQuery();
   const create = useCreateGradeLevelMutation();
   const update = useUpdateGradeLevelMutation();
   const remove = useDeleteGradeLevelMutation();
@@ -90,9 +92,24 @@ export function GradeLevelsView(): ReactElement {
   const columns = useMemo<ColumnDef<GradeLevel>[]>(
     () => [
       // Name leads because the phone card uses the first column as its title.
-      { accessorKey: "name", header: t("columns.name"), enableSorting: false },
-      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
-      { accessorKey: "sequence", header: t("columns.sequence"), enableSorting: false },
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
+      {
+        accessorKey: "code",
+        header: t("columns.code"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+      },
+      {
+        accessorKey: "sequence",
+        header: t("columns.sequence"),
+        enableSorting: false,
+        meta: { card: "meta", align: "end" },
+      },
       {
         id: "actions",
         header: t("columns.actions"),
@@ -123,33 +140,30 @@ export function GradeLevelsView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
-        {canManage && (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={<Wand2 />}
-              onClick={() => {
-                setTemplateOpen(true);
-              }}
-            >
-              {t("applyTemplate")}
-            </Button>
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                open("new");
-              }}
-            >
-              {t("add")}
-            </Button>
-          </div>
-        )}
-      </div>
       <DataTable
+        toolbarActions={
+          canManage ? (
+            <>
+              <Button
+                variant="secondary"
+                icon={<Wand2 />}
+                onClick={() => {
+                  setTemplateOpen(true);
+                }}
+              >
+                {t("applyTemplate")}
+              </Button>
+              <Button
+                icon={<Plus />}
+                onClick={() => {
+                  open("new");
+                }}
+              >
+                {t("add")}
+              </Button>
+            </>
+          ) : undefined
+        }
         stateKey="features/academic/components/grade-levels-view:1"
         mode="local"
         data={rows}
@@ -161,12 +175,27 @@ export function GradeLevelsView(): ReactElement {
         onSortingChange={() => undefined}
         globalFilter=""
         isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        retrying={isRefetching}
         getRowId={(g) => g.id}
         emptyState={
           <EmptyState
             icon={<GraduationCap aria-hidden="true" />}
             title={t("emptyTitle")}
             description={t("emptyBody")}
+            action={
+              canManage ? (
+                <Button
+                  icon={<Plus />}
+                  onClick={() => {
+                    open("new");
+                  }}
+                >
+                  {t("add")}
+                </Button>
+              ) : undefined
+            }
           />
         }
       />
@@ -185,8 +214,7 @@ export function GradeLevelsView(): ReactElement {
               void save();
             }}
           >
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.code")}</span>
+            <Field label={t("columns.code")}>
               <Input
                 value={code}
                 maxLength={8}
@@ -195,9 +223,8 @@ export function GradeLevelsView(): ReactElement {
                 }}
                 required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.name")}</span>
+            </Field>
+            <Field label={t("columns.name")}>
               <Input
                 value={name}
                 onChange={(e) => {
@@ -205,9 +232,8 @@ export function GradeLevelsView(): ReactElement {
                 }}
                 required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.sequence")}</span>
+            </Field>
+            <Field label={t("columns.sequence")}>
               <Input
                 type="number"
                 min={1}
@@ -217,8 +243,8 @@ export function GradeLevelsView(): ReactElement {
                 }}
                 className="w-24"
               />
-            </label>
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            </Field>
+            <DialogFooter>
               <Button
                 type="button"
                 variant="secondary"
@@ -231,7 +257,7 @@ export function GradeLevelsView(): ReactElement {
               <Button type="submit" loading={create.isPending || update.isPending}>
                 {t("save")}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -239,7 +265,7 @@ export function GradeLevelsView(): ReactElement {
       <Dialog open={templateOpen} onOpenChange={setTemplateOpen}>
         <DialogContent title={t("applyTemplate")}>
           <div className="flex flex-col gap-4">
-            <p className="text-[13px] text-fg-muted">{t("applyTemplateBody")}</p>
+            <p className="text-body-sm text-fg-muted">{t("applyTemplateBody")}</p>
             <Select
               options={TEMPLATES.map((value) => ({ value, label: t(`template.${value}`) }))}
               value={template}
@@ -247,7 +273,7 @@ export function GradeLevelsView(): ReactElement {
                 setTemplate(value as GradeLevelTemplate);
               }}
             />
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <DialogFooter>
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -270,7 +296,7 @@ export function GradeLevelsView(): ReactElement {
               >
                 {t("apply")}
               </Button>
-            </div>
+            </DialogFooter>
           </div>
         </DialogContent>
       </Dialog>

@@ -8,6 +8,8 @@ import {
   ConfirmDialog,
   Dialog,
   DialogContent,
+  DialogFooter,
+  Field,
   Input,
   Select,
   Skeleton,
@@ -125,7 +127,7 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
               onClick={() => {
                 setSelectedId(d.id);
               }}
-              className={`flex min-h-11 items-center justify-between rounded-xs px-3 py-2 text-left text-[14px] ${selected?.id === d.id ? "bg-accent/10 text-accent" : "text-fg hover:bg-bg"}`}
+              className={`flex min-h-11 items-center justify-between rounded-xs px-3 py-2 text-left text-body ${selected?.id === d.id ? "bg-accent/10 text-accent" : "text-fg hover:bg-bg"}`}
             >
               <span>{d.name}</span>
               {!d.is_active && <Badge>{t("types.inactive")}</Badge>}
@@ -136,7 +138,7 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
       {selected ? (
         <DutyTypeDetail key={selected.id} duty={selected} canManage={canManage} />
       ) : (
-        <p className="text-[13px] text-fg-muted">{t("types.empty")}</p>
+        <p className="text-body-sm text-fg-muted">{t("types.empty")}</p>
       )}
       <Dialog
         open={creating}
@@ -156,13 +158,12 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
             {error && (
               <p
                 role="alert"
-                className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]"
+                className="rounded-xs border border-status-late/40 px-3 py-2 text-body-sm"
               >
                 {error}
               </p>
             )}
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("types.name")}</span>
+            <Field label={t("types.name")}>
               <Input
                 value={name}
                 onChange={(e) => {
@@ -170,9 +171,8 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
                 }}
                 required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("types.scope")}</span>
+            </Field>
+            <Field label={t("types.scope")}>
               <Select
                 options={SCOPE_KINDS.map((s) => ({ value: s, label: t(`types.scopeKinds.${s}`) }))}
                 value={scopeKind}
@@ -180,8 +180,8 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
                   setScopeKind(v as DutyType["scope_kind"]);
                 }}
               />
-            </label>
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            </Field>
+            <DialogFooter>
               <Button
                 type="button"
                 variant="secondary"
@@ -194,7 +194,7 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
               <Button type="submit" loading={create.isPending}>
                 {t("types.save")}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -260,7 +260,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
   return (
     <section className="flex flex-col gap-6 rounded-sm border border-border bg-surface p-4 md:min-h-0 md:overflow-y-auto">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <h2 className="text-[18px] font-medium text-fg">{duty.name}</h2>
+        <h2 className="text-title text-fg">{duty.name}</h2>
         {canManage && (
           <Button
             variant="ghost"
@@ -276,8 +276,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("types.name")}</span>
+        <Field label={t("types.name")}>
           <Input
             value={name}
             disabled={!canManage}
@@ -285,9 +284,8 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
               setName(e.target.value);
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("types.scope")}</span>
+        </Field>
+        <Field label={t("types.scope")}>
           <Select
             options={SCOPE_KINDS.map((s) => ({ value: s, label: t(`types.scopeKinds.${s}`) }))}
             value={scopeKind}
@@ -296,8 +294,8 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
               setScopeKind(v as DutyType["scope_kind"]);
             }}
           />
-        </label>
-        <label className="flex items-center gap-2 text-[13px]">
+        </Field>
+        <label className="flex items-center gap-2 text-body-sm">
           <Switch checked={isActive} disabled={!canManage} onCheckedChange={setIsActive} />
           <span className="font-medium">{t("types.active")}</span>
         </label>
@@ -312,7 +310,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
 
       <div className="flex flex-col gap-3 border-t border-border pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-[14px] font-medium text-fg">{t("types.permissionsTitle")}</h3>
+          <h3 className="text-body font-medium text-fg">{t("types.permissionsTitle")}</h3>
           {canManage && (
             <Button
               size="sm"
@@ -324,7 +322,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
             </Button>
           )}
         </div>
-        <p className="text-[13px] text-fg-muted">{t("types.permissionsBody")}</p>
+        <p className="text-body-sm text-fg-muted">{t("types.permissionsBody")}</p>
         {permissions.isLoading ? (
           <Skeleton className="h-48 w-full" />
         ) : (
@@ -334,13 +332,13 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
                 key={group.name}
                 className="flex flex-col gap-2 rounded-xs border border-border p-3"
               >
-                <legend className="px-1 text-[13px] font-medium text-fg">
+                <legend className="px-1 text-label text-fg">
                   {tGroups.has(`groups.${group.name}`)
                     ? tGroups(`groups.${group.name}`)
                     : group.name}
                 </legend>
                 {group.permissions.map((p) => (
-                  <div key={p.code} className="flex items-start gap-2 text-[13px]">
+                  <div key={p.code} className="flex items-start gap-2 text-body-sm">
                     <Checkbox
                       id={`duty-perm-${duty.id}-${p.code}`}
                       aria-label={p.code}
@@ -357,7 +355,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
                     />
                     <span className="flex flex-col">
                       <label htmlFor={`duty-perm-${duty.id}-${p.code}`}>{p.code}</label>
-                      <span className="text-[12px] text-fg-muted">{p.description}</span>
+                      <span className="text-caption text-fg-muted">{p.description}</span>
                     </span>
                   </div>
                 ))}

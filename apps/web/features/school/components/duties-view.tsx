@@ -11,7 +11,9 @@ import {
   ConfirmDialog,
   Dialog,
   DialogContent,
+  DialogFooter,
   EmptyState,
+  Field,
   IconButton,
   Input,
   Select,
@@ -78,10 +80,10 @@ export function DutiesView(): ReactElement {
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-[13px] text-fg-muted tabular-nums">
+          <p className="text-body-sm text-fg-muted tabular-nums">
             {assignments.data ? t("activeCount", { n: activeRows.length }) : null}
           </p>
-          <label className="flex items-center gap-2 text-[13px] text-fg-muted">
+          <label className="flex items-center gap-2 text-body-sm text-fg-muted">
             <Switch checked={showEnded} onCheckedChange={setShowEnded} />
             {t("showEnded")}
           </label>
@@ -117,8 +119,8 @@ export function DutiesView(): ReactElement {
                   <div className="flex min-w-0 items-center gap-3">
                     {name !== "-" && <Avatar size={32} name={name} />}
                     <div className="flex min-w-0 flex-col gap-0.5">
-                      <span className="truncate text-[14px] text-fg">{name}</span>
-                      <span className="flex flex-wrap items-center gap-2 text-[13px] text-fg-muted">
+                      <span className="truncate text-body text-fg">{name}</span>
+                      <span className="flex flex-wrap items-center gap-2 text-body-sm text-fg-muted">
                         <Badge variant={a.is_active ? "accent" : "neutral"}>{a.duty_name}</Badge>
                         {a.scope_class_id && (
                           <span>{classMap.get(a.scope_class_id)?.name ?? "-"}</span>
@@ -304,21 +306,19 @@ function AssignForm({
       }}
     >
       {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
+        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-body-sm">
           {error}
         </p>
       )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("duty")}</span>
+      <Field label={t("duty")}>
         <Select
           options={types.filter((x) => x.is_active).map((x) => ({ value: x.id, label: x.name }))}
           value={typeId}
           onValueChange={setTypeId}
           placeholder={t("pick")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("person")}</span>
+      </Field>
+      <Field label={t("person")}>
         <Combobox
           options={userOptions}
           value={userId}
@@ -334,20 +334,18 @@ function AssignForm({
           loading={staffOptionsQuery.isLoading}
           aria-label={t("person")}
         />
-      </label>
+      </Field>
       {type?.scope_kind === "class" && (
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("class")}</span>
+        <Field label={t("class")}>
           <Select
             options={(classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
             value={classId}
             onValueChange={setClassId}
             placeholder={t("pick")}
           />
-        </label>
+        </Field>
       )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("startsOn")}</span>
+      <Field label={t("startsOn")}>
         <Input
           type="date"
           value={startsOn}
@@ -355,15 +353,15 @@ function AssignForm({
             setStartsOn(e.target.value);
           }}
         />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      </Field>
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={create.isPending}>
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

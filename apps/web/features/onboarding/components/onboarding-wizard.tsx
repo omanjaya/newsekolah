@@ -6,6 +6,7 @@ import {
   Button,
   DataTable,
   EmptyState,
+  Field,
   Progress,
   Select,
   Stepper,
@@ -117,8 +118,8 @@ export function OnboardingWizard(): ReactElement {
   return (
     <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
       <div className="flex flex-col gap-1">
-        <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-        <p className="text-[13px] text-fg-muted">{t("body")}</p>
+        <h2 className="text-heading text-fg">{t("title")}</h2>
+        <p className="text-body-sm text-fg-muted">{t("body")}</p>
       </div>
 
       <Stepper
@@ -128,10 +129,9 @@ export function OnboardingWizard(): ReactElement {
 
       {step === "template" && (
         <div className="flex flex-col gap-3">
-          <p className="text-[13px] text-fg-muted">{t("templateBody")}</p>
+          <p className="text-body-sm text-fg-muted">{t("templateBody")}</p>
           <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("templateLabel")}</span>
+            <Field label={t("templateLabel")}>
               <Select
                 options={(templates.data?.data ?? []).map((tpl) => ({
                   value: tpl.key,
@@ -145,7 +145,7 @@ export function OnboardingWizard(): ReactElement {
                 disabled={templates.isLoading}
                 className="w-56"
               />
-            </label>
+            </Field>
             <Button
               size="sm"
               icon={<Layers />}
@@ -172,7 +172,7 @@ export function OnboardingWizard(): ReactElement {
 
       {step === "upload" && (
         <div className="flex flex-col gap-3">
-          <p className="text-[13px] text-fg-muted">{t("uploadBody")}</p>
+          <p className="text-body-sm text-fg-muted">{t("uploadBody")}</p>
           <input
             type="file"
             accept=".csv,text/csv"
@@ -180,7 +180,7 @@ export function OnboardingWizard(): ReactElement {
             onChange={(e) => {
               setFile(e.target.files?.[0] ?? null);
             }}
-            className="text-[13px] text-fg file:mr-3 file:rounded-xs file:border file:border-border file:bg-surface file:px-3 file:py-1.5 file:text-[13px] file:font-medium"
+            className="text-body-sm text-fg file:mr-3 file:rounded-xs file:border file:border-border file:bg-surface file:px-3 file:py-1.5 file:text-body-sm file:font-medium"
           />
           {isUploading && (
             <Progress value={uploadPercent} label={t("uploading", { percent: uploadPercent })} />
@@ -203,7 +203,7 @@ export function OnboardingWizard(): ReactElement {
 
       {step === "review" && report && (
         <div className="flex flex-col gap-3">
-          <p className="text-[13px] text-fg-muted">
+          <p className="text-body-sm text-fg-muted">
             {t("reviewSummary", {
               create: report.data.filter((r) => r.action === "create").length,
               update: report.data.filter((r) => r.action === "update").length,
@@ -257,9 +257,9 @@ export function OnboardingWizard(): ReactElement {
         <div className="flex flex-col items-start gap-3">
           <div className="flex items-center gap-2 text-fg">
             <CheckCircle2 className="size-5 text-accent" aria-hidden="true" />
-            <p className="text-[14px] font-medium">{t("doneTitle", { count: committedCount })}</p>
+            <p className="text-body font-medium">{t("doneTitle", { count: committedCount })}</p>
           </div>
-          <p className="text-[13px] text-fg-muted">{t("doneBody")}</p>
+          <p className="text-body-sm text-fg-muted">{t("doneBody")}</p>
         </div>
       )}
     </section>

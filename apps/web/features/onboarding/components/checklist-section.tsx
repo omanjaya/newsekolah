@@ -64,7 +64,7 @@ export function ChecklistSection({
 
   return (
     <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-      <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
+      <h2 className="text-heading text-fg">{t("title")}</h2>
       <ul className="flex flex-col divide-y divide-border">
         {STEP_ORDER.map((key) => {
           const step = byKey.get(key);
@@ -105,18 +105,18 @@ function ChecklistRow({ step, href }: { step: SetupStep; href: string }): ReactE
           </span>
           <div className="flex flex-col gap-0.5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[14px] font-medium text-fg">{tStep("label")}</span>
+              <span className="text-body font-medium text-fg">{tStep("label")}</span>
               {!step.required && <Badge>{t("optional")}</Badge>}
             </div>
-            <p className="text-[13px] text-fg-muted">{tStep("description")}</p>
+            <p className="text-body-sm text-fg-muted">{tStep("description")}</p>
             {showCount && (
-              <p className="text-[13px] tabular-nums text-fg-muted">
+              <p className="text-body-sm tabular-nums text-fg-muted">
                 {tStep("count", { count: step.count })}
               </p>
             )}
           </div>
         </div>
-        <span className="flex shrink-0 items-center gap-0.5 whitespace-nowrap text-[13px] font-medium text-accent">
+        <span className="flex shrink-0 items-center gap-0.5 whitespace-nowrap text-label text-accent">
           {t("openStep")}
           <ChevronRight className="size-4" aria-hidden="true" />
         </span>

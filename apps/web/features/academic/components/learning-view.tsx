@@ -1,10 +1,11 @@
 "use client";
 
-import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { SegmentedControl } from "@newsekolah/ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { PeriodsView } from "../../school/components/periods-view";
 import { SubjectsView } from "../../school/components/subjects-view";
 
@@ -17,51 +18,44 @@ const sections = [
   { value: "periods", label: "periods", View: PeriodsView },
 ] as const;
 
-/** The workspace strip owns the top-level choice; only sibling sections stay as inner tabs. */
-const sectionGroups: readonly (readonly string[])[] = [["subjects", "offerings"], ["periods"]];
+type Section = (typeof sections)[number]["value"];
 
+/** The workspace strip owns the top-level choice; sibling sections switch in the toolbar. */
+const sectionGroups: readonly (readonly Section[])[] = [["subjects", "offerings"], ["periods"]];
+
+/**
+ * Pembelajaran: subjects (and their offering per academic year) and the
+ * lesson periods. The area's tabs sit under the header; the two views of
+ * subjects are a segmented switch, all kept in `?tab=`.
+ */
 export function LearningView(): ReactElement {
   const t = useTranslations("app.academic.learning");
-  const tNav = useTranslations("app.navigation");
-  const tWorkspace = useTranslations("app.workspace");
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const requested = searchParams.get("tab");
-  const active = sections.find((section) => section.value === requested)?.value ?? "subjects";
-
-  const siblings = sectionGroups.find((group) => group.includes(active)) ?? [active];
+  const requested = useSearchParams().get("tab");
+  const active = sections.find((section) => section.value === requested) ?? sections[0];
+  const siblings = sectionGroups.find((group) => group.includes(active.value)) ?? [active.value];
+  const ActiveView = active.View;
 
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the active tab's panel scrolls internally.
-    <div className="flex min-w-0 flex-col gap-4 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <LearningWorkspaceNav />
-      <PageHeader eyebrow={tNav("masterData")} title={tWorkspace("learning")} />
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
-      <Tabs
-        value={active}
-        onValueChange={(value) => {
-          router.push(`/school/learning?tab=${value}`, { scroll: false });
-        }}
-        className="flex flex-col md:min-h-0 md:flex-1"
-      >
-        {siblings.length > 1 && (
-          <TabsList aria-label={t("title")}>
-            {sections
+    <AppPage
+      description={t("description")}
+      nav={<LearningWorkspaceNav />}
+      toolbar={
+        siblings.length > 1 ? (
+          <SegmentedControl
+            aria-label={t("title")}
+            options={sections
               .filter(({ value }) => siblings.includes(value))
-              .map(({ value, label }) => (
-                <TabsTrigger key={value} value={value}>
-                  {t(label)}
-                </TabsTrigger>
-              ))}
-          </TabsList>
-        )}
-        {sections.map(({ value, View }) => (
-          <TabsContent key={value} value={value} className="md:min-h-0 md:flex-1">
-            <View />
-          </TabsContent>
-        ))}
-      </Tabs>
-    </div>
+              .map(({ value, label }) => ({ value, label: t(label) }))}
+            value={active.value}
+            onValueChange={(value) => {
+              router.push(`/school/learning?tab=${value}`, { scroll: false });
+            }}
+          />
+        ) : undefined
+      }
+    >
+      <ActiveView />
+    </AppPage>
   );
 }

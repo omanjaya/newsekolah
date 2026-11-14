@@ -22,14 +22,14 @@ export function WeekPanel({ templateId }: { templateId: string }): ReactElement 
 
   return (
     <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-      <h2 className="text-[16px] font-medium text-fg">{t("weekTitle")}</h2>
-      <p className="text-[13px] text-fg-muted">{t("weekBody")}</p>
+      <h2 className="text-heading text-fg">{t("weekTitle")}</h2>
+      <p className="text-body-sm text-fg-muted">{t("weekBody")}</p>
       <ul className="flex flex-col divide-y divide-border">
         {[1, 2, 3, 4, 5, 6, 7].map((day) => {
           const on = active.get(day) ?? false;
           const usesThis = assigned.get(day) === templateId;
           return (
-            <li key={day} className="flex items-center justify-between py-2 text-[14px]">
+            <li key={day} className="flex items-center justify-between py-2 text-body">
               <span className="flex items-center gap-2">
                 <Switch
                   checked={on}
@@ -53,7 +53,7 @@ export function WeekPanel({ templateId }: { templateId: string }): ReactElement 
               </span>
               {on &&
                 (usesThis ? (
-                  <span className="text-[12px] text-accent">{t("usesTemplate")}</span>
+                  <span className="text-caption text-accent">{t("usesTemplate")}</span>
                 ) : (
                   <Button
                     variant="ghost"

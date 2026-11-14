@@ -1,22 +1,22 @@
 {
   "assignments": {
-    "title": "Pembagian Tugas",
+    "title": "Pembagian tugas",
     "description": "Kelola pembagian mengajar dan tugas tambahan warga sekolah.",
     "teaching": "Mengajar",
-    "duties": "Tugas Tambahan",
-    "types": "Jenis Tugas"
+    "duties": "Tugas tambahan",
+    "types": "Jenis tugas"
   },
   "learning": {
-    "title": "Mata Pelajaran",
+    "title": "Mata pelajaran",
     "description": "Kelola mata pelajaran, alokasi per tahun ajaran, dan jam pelajaran.",
     "subjects": "Mapel",
-    "offerings": "Mapel per Tahun Ajaran",
-    "periods": "Jam Pelajaran"
+    "offerings": "Mapel per tahun ajaran",
+    "periods": "Jam pelajaran"
   },
   "structure": {
-    "title": "Struktur Sekolah",
+    "title": "Struktur sekolah",
     "description": "Kelola tingkat kelas, peminatan, dan ruang sekolah.",
-    "gradeLevels": "Tingkat Kelas",
+    "gradeLevels": "Tingkat kelas",
     "tracks": "Peminatan",
     "rooms": "Ruang"
   },

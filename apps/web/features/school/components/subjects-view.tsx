@@ -7,7 +7,9 @@ import {
   DataTable,
   Dialog,
   DialogContent,
+  DialogFooter,
   EmptyState,
+  Field,
   IconButton,
   Input,
   domainIcons,
@@ -32,7 +34,7 @@ export function SubjectsView(): ReactElement {
   const t = useTranslations("app.school.subjects");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const { data, isLoading } = useSubjectsQuery();
+  const { data, isLoading, error, refetch, isRefetching } = useSubjectsQuery();
   const create = useCreateSubjectMutation();
   const update = useUpdateSubjectMutation();
   const remove = useDeleteSubjectMutation();
@@ -64,8 +66,18 @@ export function SubjectsView(): ReactElement {
 
   const columns = useMemo<ColumnDef<Subject>[]>(
     () => [
-      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
-      { accessorKey: "name", header: t("columns.name"), enableSorting: false },
+      {
+        accessorKey: "code",
+        header: t("columns.code"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+      },
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
       {
         id: "actions",
         header: t("columns.actions"),
@@ -113,18 +125,17 @@ export function SubjectsView(): ReactElement {
   return (
     // md:h-full: fills the tab panel's height so only the table rows scroll.
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex justify-end">
-        <Button
-          size="sm"
-          icon={<Plus />}
-          onClick={() => {
-            open("new");
-          }}
-        >
-          {t("add")}
-        </Button>
-      </div>
       <DataTable
+        toolbarActions={
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              open("new");
+            }}
+          >
+            {t("add")}
+          </Button>
+        }
         stateKey="features/school/components/subjects-view:1"
         data={items}
         columns={columns}
@@ -136,6 +147,9 @@ export function SubjectsView(): ReactElement {
         globalFilter={filter}
         onGlobalFilterChange={setFilter}
         isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        retrying={isRefetching}
         getRowId={(s) => s.id}
         fillHeight
         emptyState={
@@ -143,6 +157,16 @@ export function SubjectsView(): ReactElement {
             icon={<domainIcons.grades aria-hidden="true" />}
             title={t("emptyTitle")}
             description={t("emptyBody")}
+            action={
+              <Button
+                icon={<Plus />}
+                onClick={() => {
+                  open("new");
+                }}
+              >
+                {t("add")}
+              </Button>
+            }
           />
         }
       />
@@ -160,8 +184,7 @@ export function SubjectsView(): ReactElement {
               void save();
             }}
           >
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.code")}</span>
+            <Field label={t("columns.code")}>
               <Input
                 value={code}
                 maxLength={16}
@@ -170,9 +193,8 @@ export function SubjectsView(): ReactElement {
                 }}
                 required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.name")}</span>
+            </Field>
+            <Field label={t("columns.name")}>
               <Input
                 value={name}
                 onChange={(e) => {
@@ -180,8 +202,8 @@ export function SubjectsView(): ReactElement {
                 }}
                 required
               />
-            </label>
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            </Field>
+            <DialogFooter>
               <Button
                 type="button"
                 variant="secondary"
@@ -194,7 +216,7 @@ export function SubjectsView(): ReactElement {
               <Button type="submit" loading={create.isPending || update.isPending}>
                 {t("save")}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
