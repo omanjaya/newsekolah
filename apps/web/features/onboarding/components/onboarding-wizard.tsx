@@ -5,6 +5,9 @@ import {
   Badge,
   Button,
   Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
   DataTable,
   EmptyState,
   Field,
@@ -20,6 +23,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { ImportFileField } from "../../school/components/import-layout";
 import {
   type DapodikImportReport,
   type DapodikImportRow,
@@ -118,12 +122,13 @@ export function OnboardingWizard(): ReactElement {
 
   return (
     <Card padding="md" className="gap-4">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-heading text-fg">{t("title")}</h2>
-        <p className="text-body-sm text-fg-muted">{t("body")}</p>
-      </div>
+      <CardHeader>
+        <CardTitle as="h2">{t("title")}</CardTitle>
+        <CardDescription>{t("body")}</CardDescription>
+      </CardHeader>
 
       <Stepper
+        variant="compact"
         currentIndex={STEP_ORDER.indexOf(step)}
         steps={STEP_ORDER.map((key) => ({ id: key, label: t(`steps.${key}`) }))}
       />
@@ -174,14 +179,11 @@ export function OnboardingWizard(): ReactElement {
       {step === "upload" && (
         <div className="flex flex-col gap-3">
           <p className="text-body-sm text-fg-muted">{t("uploadBody")}</p>
-          <input
-            type="file"
+          <ImportFileField
+            label={t("uploadLabel")}
             accept=".csv,text/csv"
-            aria-label={t("uploadLabel")}
-            onChange={(e) => {
-              setFile(e.target.files?.[0] ?? null);
-            }}
-            className="text-body-sm text-fg file:mr-3 file:rounded-xs file:border file:border-border file:bg-surface file:px-3 file:py-1.5 file:text-body-sm file:font-medium"
+            fileName={file?.name}
+            onFile={setFile}
           />
           {isUploading && (
             <Progress value={uploadPercent} label={t("uploading", { percent: uploadPercent })} />
@@ -280,7 +282,7 @@ function useDapodikColumns(): ColumnDef<DapodikImportRow>[] {
         header: t("columnAction"),
         enableSorting: false,
         cell: ({ row }) => (
-          <Badge variant={row.original.action === "error" ? "neutral" : "accent"}>
+          <Badge tone={row.original.action === "error" ? "danger" : "success"}>
             {t(`action.${row.original.action}`)}
           </Badge>
         ),

@@ -41,6 +41,7 @@ export function ImportFileField({
   loading,
   disabled,
   onFile,
+  accept = ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   className,
 }: {
   label: string;
@@ -48,6 +49,8 @@ export function ImportFileField({
   loading?: boolean;
   disabled?: boolean;
   onFile: (file: File) => void;
+  /** File types the picker offers; a spreadsheet by default. */
+  accept?: string;
   className?: string;
 }): ReactElement {
   const t = useTranslations("app.school.importFlow");
@@ -75,7 +78,7 @@ export function ImportFileField({
         ref={input}
         type="file"
         hidden
-        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        accept={accept}
         aria-label={label}
         onChange={(event) => {
           const file = event.target.files?.[0];
