@@ -2,28 +2,26 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
-import { Button, EmptyState, PageHeader, Skeleton, domainIcons } from "@newsekolah/ui";
-import { ArrowLeft } from "lucide-react";
+import { Button, EmptyState, SkeletonForm, domainIcons } from "@newsekolah/ui";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { useScheduledObservationsQuery, useSupervisionCycleQuery } from "../api";
 import { useLessonContext } from "../lib/use-lesson-context";
 
 import { CompleteObservationForm } from "./complete-observation-form";
-import { SupervisionWorkspaceNav } from "./supervision-workspace-nav";
 
 /**
  * The full-page "fill the instrument" screen for one scheduled observation:
- * who is being observed, in which class/subject, for which cycle, and when
- * the visit was planned -- then the scoring form itself. Its own route
- * (rather than the dialog this used to open from the cycle detail table)
- * so the sticky bottom save bar sits at the true screen edge, the way it
- * does for the attendance roster, instead of fighting a modal's bounds.
+ * the trail back to its cycle, who is being observed, in which subject and
+ * class and on which day, then the scoring form itself. Its own route
+ * (rather than a dialog on the cycle page) so the sticky save bar sits at
+ * the true screen edge, the way it does for the attendance roster.
  */
 export function CompleteObservationView({
   cycleId,
@@ -47,75 +45,72 @@ export function CompleteObservationView({
   const lesson = useLessonContext(scheduled?.teacher_user_id ?? "", scheduled?.schedule_id ?? "");
 
   const backHref = `/supervision/cycles/${cycleId}`;
+  const breadcrumb = [
+    { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
+    { label: cycle.data?.name ?? tRoot("navLabelCycles"), href: backHref },
+    { label: t("breadcrumb") },
+  ];
 
-  if (cycle.isError && !cycle.data)
-    return <QueryError retry={() => cycle.refetch()} className="m-4" />;
-  if (scheduledList.isError && !scheduledList.data)
-    return <QueryError retry={() => scheduledList.refetch()} className="m-4" />;
+  const failed = (cycle.isError && !cycle.data) || (scheduledList.isError && !scheduledList.data);
+  if (failed) {
+    return (
+      <AppPage variant="narrow" nav={false} breadcrumb={breadcrumb} title={t("breadcrumb")}>
+        <QueryError
+          retry={() => {
+            void cycle.refetch();
+            void scheduledList.refetch();
+          }}
+          error={cycle.error ?? scheduledList.error}
+        />
+      </AppPage>
+    );
+  }
 
   if (cycle.isLoading || !cycle.data || scheduledList.isLoading || !scheduledList.data) {
     return (
-      <div className="flex flex-col gap-4 p-4 md:p-6" aria-busy="true">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-96 w-full" />
-      </div>
+      <AppPage variant="narrow" nav={false} breadcrumb={breadcrumb} title={t("breadcrumb")}>
+        <SkeletonForm fields={5} />
+      </AppPage>
     );
   }
 
   if (!scheduled) {
     return (
-      <div className="flex flex-col gap-4 p-4 md:p-6">
-        <Button asChild variant="secondary" size="sm" className="self-start">
-          <Link href={backHref}>
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            {t("backToCycle")}
-          </Link>
-        </Button>
+      <AppPage variant="narrow" nav={false} breadcrumb={breadcrumb} title={t("breadcrumb")}>
         <EmptyState
-          icon={<domainIcons.supervision aria-hidden="true" />}
+          icon={<domainIcons.supervision />}
           title={t("notFoundTitle")}
           description={t("notFoundBody")}
+          action={
+            <Button asChild variant="secondary">
+              <Link href={backHref}>{t("backToCycle")}</Link>
+            </Button>
+          }
         />
-      </div>
+      </AppPage>
     );
   }
 
   const teacherName =
     teacherMap.get(scheduled.teacher_user_id)?.name ?? tRoot("cycleDetail.unknownTeacher");
-  const lessonDateLabel = formatDate(scheduled.lesson_date, { locale, timeZone: "UTC" });
-  const contextLine = [lesson.subjectName, lesson.className].filter(Boolean).join(" · ");
+  const details = [
+    formatDate(scheduled.lesson_date, { locale, timeZone: "UTC" }),
+    lesson.subjectName,
+    lesson.className,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <div className="flex flex-col gap-6 p-4 pb-28 md:p-6 md:pb-28">
-      <div className="flex flex-col gap-2">
-        <Button asChild variant="secondary" size="sm" className="self-start">
-          <Link href={backHref}>
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            {t("backToCycle")}
-          </Link>
-        </Button>
-        <PageHeader
-          breadcrumb={[
-            { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
-            { label: cycle.data.name, href: backHref },
-          ]}
-          eyebrow={cycle.data.name}
-          title={teacherName}
-        />
-        <p className="text-[13px] text-fg-muted">
-          {lessonDateLabel}
-          {contextLine && <> &middot; {contextLine}</>}
-        </p>
-      </div>
-      <SupervisionWorkspaceNav cycleId={cycleId} />
-
-      <CompleteObservationForm
-        scheduled={scheduled}
-        instrument={cycle.data.instrument}
-        onDone={() => {
-          router.push(backHref);
-        }}
-      />
-    </div>
+    <CompleteObservationForm
+      scheduled={scheduled}
+      instrument={cycle.data.instrument}
+      title={teacherName}
+      description={details}
+      breadcrumb={breadcrumb}
+      onDone={() => {
+        router.push(backHref);
+      }}
+    />
   );
 }

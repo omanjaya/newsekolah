@@ -1,15 +1,31 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Checkbox, Dialog, DialogContent, Input, Textarea, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  Checkbox,
+  Dialog,
+  DialogContent,
+  Field,
+  FormSection,
+  Textarea,
+  TimePicker,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import { type AttendanceRecord, useCorrectStaffAttendanceRecordMutation } from "../api";
-import { dateTimeLocalToIso, isoToDateTimeLocal } from "../time";
+import { schoolClock, schoolInstant, shiftDateISO } from "../time";
 
+/**
+ * Corrects one day's record: its arrival and departure on the school's
+ * clock (either can be cleared), its note, and the reason, which is
+ * required and kept with the correction.
+ */
 export function CorrectionDialog({
   record,
   onOpenChange,
@@ -20,6 +36,7 @@ export function CorrectionDialog({
   const t = useTranslations("app.staffAttendance.correction");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const timeZone = useSession().me?.tenant.timezone;
   const mutation = useCorrectStaffAttendanceRecordMutation();
 
   const [arrival, setArrival] = useState("");
@@ -37,29 +54,26 @@ export function CorrectionDialog({
 
   if (record && record !== seededFrom) {
     setSeededFrom(record);
-    setArrival(isoToDateTimeLocal(record.arrival_at));
+    setArrival(schoolClock(record.arrival_at, timeZone));
     setClearArrival(false);
-    setDeparture(isoToDateTimeLocal(record.departure_at));
+    setDeparture(schoolClock(record.departure_at, timeZone));
     setClearDeparture(false);
     setNotes(record.notes ?? "");
     setReason("");
     setAttemptedSave(false);
   }
 
+  const overnight = arrival !== "" && departure !== "" && departure < arrival;
+
   return (
-    <Dialog
-      open={record !== null}
-      onOpenChange={(open) => {
-        onOpenChange(open);
-      }}
-    >
+    <Dialog open={record !== null} onOpenChange={onOpenChange}>
       <DialogContent
         title={t("title")}
+        description={record ? t("bodyFor", { name: record.employee_name }) : undefined}
         footer={
           <>
             <Button
               variant="secondary"
-              size="sm"
               onClick={() => {
                 onOpenChange(false);
               }}
@@ -67,9 +81,7 @@ export function CorrectionDialog({
               {t("cancel")}
             </Button>
             <Button
-              size="sm"
               loading={mutation.isPending}
-              disabled={reason.trim() === ""}
               onClick={() => {
                 setAttemptedSave(true);
                 if (!record?.record_id || reason.trim() === "") return;
@@ -77,9 +89,17 @@ export function CorrectionDialog({
                   {
                     recordId: record.record_id,
                     body: {
-                      arrival_at: clearArrival ? null : dateTimeLocalToIso(arrival),
+                      arrival_at: clearArrival
+                        ? null
+                        : schoolInstant(record.date, arrival, timeZone),
                       clear_arrival: clearArrival,
-                      departure_at: clearDeparture ? null : dateTimeLocalToIso(departure),
+                      departure_at: clearDeparture
+                        ? null
+                        : schoolInstant(
+                            overnight ? shiftDateISO(record.date, 1) : record.date,
+                            departure,
+                            timeZone,
+                          ),
                       clear_departure: clearDeparture,
                       notes,
                       reason: reason.trim(),
@@ -107,54 +127,38 @@ export function CorrectionDialog({
         }
       >
         {record && (
-          <div className="flex flex-col gap-4">
-            <p className="text-[13px] text-fg-muted">{t("body")}</p>
-            <div className="flex flex-col gap-2">
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("arrival")}</span>
-                <Input
-                  type="datetime-local"
-                  value={arrival}
-                  disabled={clearArrival}
-                  onChange={(e) => {
-                    setArrival(e.target.value);
-                  }}
-                />
-              </label>
-              <label className="flex items-center gap-2 text-[13px]">
+          <FormSection columns={1}>
+            <div className="grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2">
+              <div className="flex flex-col gap-3">
+                <Field label={t("arrival")} disabled={clearArrival}>
+                  <TimePicker value={arrival} onChange={setArrival} disabled={clearArrival} />
+                </Field>
                 <Checkbox
                   checked={clearArrival}
+                  label={t("clearArrival")}
                   onCheckedChange={(checked) => {
                     setClearArrival(checked === true);
                   }}
                 />
-                {t("clearArrival")}
-              </label>
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("departure")}</span>
-                <Input
-                  type="datetime-local"
-                  value={departure}
+              </div>
+              <div className="flex flex-col gap-3">
+                <Field
+                  label={t("departure")}
                   disabled={clearDeparture}
-                  onChange={(e) => {
-                    setDeparture(e.target.value);
-                  }}
-                />
-              </label>
-              <label className="flex items-center gap-2 text-[13px]">
+                  hint={overnight && !clearDeparture ? t("overnightHint") : undefined}
+                >
+                  <TimePicker value={departure} onChange={setDeparture} disabled={clearDeparture} />
+                </Field>
                 <Checkbox
                   checked={clearDeparture}
+                  label={t("clearDeparture")}
                   onCheckedChange={(checked) => {
                     setClearDeparture(checked === true);
                   }}
                 />
-                {t("clearDeparture")}
-              </label>
+              </div>
             </div>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("notes")}</span>
+            <Field label={t("notes")} optional>
               <Textarea
                 rows={2}
                 value={notes}
@@ -163,9 +167,13 @@ export function CorrectionDialog({
                 }}
                 maxLength={500}
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("reason")}</span>
+            </Field>
+            <Field
+              label={t("reason")}
+              required
+              hint={t("body")}
+              error={attemptedSave && reason.trim() === "" ? t("reasonRequired") : undefined}
+            >
               <Textarea
                 rows={2}
                 value={reason}
@@ -174,11 +182,8 @@ export function CorrectionDialog({
                 }}
                 maxLength={500}
               />
-              {attemptedSave && reason.trim() === "" && (
-                <span className="text-[12px] text-status-absent">{t("reasonRequired")}</span>
-              )}
-            </label>
-          </div>
+            </Field>
+          </FormSection>
         )}
       </DialogContent>
     </Dialog>

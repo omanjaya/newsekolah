@@ -1,18 +1,24 @@
 "use client";
 
-import { EmptyState, domainIcons } from "@newsekolah/ui";
+import { EmptyState, Field, domainIcons } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { DirectoryPicker } from "../../reference/components/directory-picker";
+import { useDirectoryName } from "../../reference/directory-names";
 
 import { StudentBillHistoryView } from "./student-bill-history-view";
 
+/** A user id as the API issues them; anything else in the URL is ignored. */
+const isUserId = (value: string) => /^[\w-]{1,64}$/.test(value);
+
 /**
- * The finance office's front desk: pick a student, see every bill they
- * have this year and the payments recorded against each, record a new
- * payment, void a mistaken one, or print/share a receipt.
+ * The finance office's front desk: find a student, then see what they
+ * owe, record a payment, hand over the receipt or void a mistake. The
+ * student is kept in the URL (`?student=`), so a refresh or the back
+ * button returns to them and the arrears report can link straight here.
  *
  * The picker searches the directory on the server (debounced, capped at
  * 50 results) instead of loading every student, so it stays fast for a
@@ -20,37 +26,42 @@ import { StudentBillHistoryView } from "./student-bill-history-view";
  */
 export function PaymentDeskView(): ReactElement {
   const t = useTranslations("app.billing.paymentDesk");
-  const [studentId, setStudentId] = useState("");
-  const [studentName, setStudentName] = useState("");
+  const [studentId, setStudentId] = useUrlState<string>("student", isUserId, "");
+  const [pickedName, setPickedName] = useState("");
+  const person = useDirectoryName(studentId === "" ? undefined : studentId);
+  const studentName = person?.name ?? pickedName;
 
   return (
-    <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("pickStudent")}</span>
+    <div className="flex flex-col gap-6">
+      <Field label={t("pickStudent")} hint={t("pickStudentHint")} className="sm:max-w-md">
         <DirectoryPicker
           profileKind="student"
           value={studentId}
           onValueChange={(id, label) => {
+            setPickedName(label);
             setStudentId(id);
-            setStudentName(label);
           }}
           labels={{
             placeholder: t("pickStudentPlaceholder"),
             searchPlaceholder: t("pickStudentSearchPlaceholder"),
             emptyLabel: t("pickStudentEmpty"),
           }}
-          className="w-full sm:w-80"
         />
-      </label>
+      </Field>
 
       {studentId === "" ? (
         <EmptyState
-          icon={<domainIcons.billing aria-hidden="true" />}
+          icon={<domainIcons.billing />}
           title={t("pickStudentTitle")}
           description={t("pickStudentBody")}
         />
       ) : (
-        <StudentBillHistoryView studentId={studentId} studentName={studentName} />
+        <StudentBillHistoryView
+          key={studentId}
+          studentId={studentId}
+          studentName={studentName}
+          studentNis={person?.nis}
+        />
       )}
     </div>
   );

@@ -2,12 +2,17 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Avatar,
   Badge,
   Button,
+  ConfirmDialog,
   Dialog,
   DialogContent,
   EmptyState,
-  IconButton,
+  List,
+  ListRow,
+  RowActionsMenu,
+  SkeletonList,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
@@ -16,6 +21,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useDirectoryNames } from "../../reference/directory-names";
 import {
@@ -24,9 +30,15 @@ import {
   useDeleteDiscountMutation,
   useFeeTypeDiscountsQuery,
 } from "../api";
+import { useBillingFormat } from "../lib/use-billing-format";
 
 import { DiscountForm } from "./discount-form";
 
+/**
+ * The per-student discounts on one fee: who gets one, why, and how much
+ * (a percentage, a fixed amount or a full waiver). Adding or editing one
+ * swaps the list for the form in the same dialog; removing one asks first.
+ */
 export function FeeTypeDiscountsDialog({
   feeType,
   onOpenChange,
@@ -37,19 +49,27 @@ export function FeeTypeDiscountsDialog({
   const t = useTranslations("app.billing.discounts");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const { money } = useBillingFormat();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Discount | null>(null);
-  const { data, isLoading } = useFeeTypeDiscountsQuery(feeType?.id ?? "", feeType !== null);
+  const [removing, setRemoving] = useState<Discount | null>(null);
+  const { data, isLoading, isError, error, refetch } = useFeeTypeDiscountsQuery(
+    feeType?.id ?? "",
+    feeType !== null,
+  );
   const remove = useDeleteDiscountMutation();
 
   const discounts = data?.data ?? [];
   const studentMap = useDirectoryNames(discounts.map((item) => item.student_user_id));
+  const nameOf = (discount: Discount) =>
+    studentMap.get(discount.student_user_id)?.name ?? t("unknownStudent");
+  const listing = feeType !== null && !adding && !editing;
 
-  function describe(kind: string, percentageBp?: number, amountMinor?: number): string {
-    if (kind === "waiver") return t("kind.waiver");
-    if (kind === "percentage")
-      return t("percentageValue", { value: ((percentageBp ?? 0) / 100).toString() });
-    return t("fixedValue", { amount: amountMinor ?? 0 });
+  function describe(discount: Discount): string {
+    if (discount.kind === "waiver") return t("kind.waiver");
+    if (discount.kind === "percentage")
+      return t("percentageValue", { value: ((discount.percentage_bp ?? 0) / 100).toString() });
+    return money(discount.amount_minor ?? 0, feeType?.currency);
   }
 
   return (
@@ -61,72 +81,82 @@ export function FeeTypeDiscountsDialog({
         onOpenChange(open);
       }}
     >
-      <DialogContent title={feeType ? t("title", { name: feeType.name }) : ""}>
-        {feeType && !adding && !editing && (
-          <div className="flex flex-col gap-4">
-            <div className="flex justify-end">
-              <Button
-                size="sm"
-                icon={<Plus />}
-                onClick={() => {
-                  setAdding(true);
-                }}
-              >
-                {t("add")}
-              </Button>
-            </div>
-            {isLoading ? null : discounts.length === 0 ? (
-              <EmptyState
-                icon={<domainIcons.billing aria-hidden="true" />}
-                title={t("emptyTitle")}
-                description={t("emptyBody")}
-              />
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {discounts.map((discount) => (
-                  <li
-                    key={discount.id}
-                    className="flex items-center justify-between gap-2 rounded-sm border border-border p-2 text-[13px]"
-                  >
-                    <div className="flex min-w-0 flex-col">
-                      <span className="truncate text-fg">
-                        {studentMap.get(discount.student_user_id)?.name ?? t("unknownStudent")}
-                      </span>
-                      <span className="truncate text-fg-muted">{discount.reason}</span>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Badge variant={discount.is_active ? "accent" : "neutral"}>
-                        {describe(discount.kind, discount.percentage_bp, discount.amount_minor)}
-                      </Badge>
-                      <IconButton
-                        icon={<Pencil />}
-                        aria-label={t("edit")}
-                        onClick={() => {
-                          setEditing(discount);
-                        }}
-                      />
-                      <IconButton
-                        icon={<Trash2 />}
-                        aria-label={t("remove")}
-                        onClick={() => {
-                          remove.mutate(discount.id, {
-                            onError: (error) => {
-                              toast.error(
-                                error instanceof ApiError
-                                  ? apiErrorMessage(error.code)
-                                  : apiErrorMessage("UNKNOWN"),
-                              );
-                            },
-                          });
-                        }}
-                      />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+      <DialogContent
+        title={feeType ? t("title", { name: feeType.name }) : ""}
+        size="lg"
+        footer={
+          listing && discounts.length > 0 ? (
+            <Button
+              icon={<Plus />}
+              onClick={() => {
+                setAdding(true);
+              }}
+            >
+              {t("add")}
+            </Button>
+          ) : undefined
+        }
+      >
+        {listing &&
+          (isLoading ? (
+            <SkeletonList rows={3} />
+          ) : isError && !data ? (
+            <QueryError retry={() => refetch()} error={error} />
+          ) : discounts.length === 0 ? (
+            <EmptyState
+              icon={<domainIcons.billing />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+              action={
+                <Button
+                  icon={<Plus />}
+                  onClick={() => {
+                    setAdding(true);
+                  }}
+                >
+                  {t("add")}
+                </Button>
+              }
+            />
+          ) : (
+            <List framed aria-label={t("listLabel")}>
+              {discounts.map((discount) => (
+                <ListRow
+                  key={discount.id}
+                  leading={<Avatar name={nameOf(discount)} size={32} decorative />}
+                  title={nameOf(discount)}
+                  meta={discount.reason}
+                  trailing={
+                    <Badge tone={discount.is_active ? "success" : "neutral"} size="sm">
+                      {describe(discount)}
+                    </Badge>
+                  }
+                  action={
+                    <RowActionsMenu
+                      ariaLabel={t("rowActions", { name: nameOf(discount) })}
+                      items={[
+                        {
+                          label: t("edit"),
+                          icon: <Pencil />,
+                          onClick: () => {
+                            setEditing(discount);
+                          },
+                        },
+                        {
+                          label: t("remove"),
+                          icon: <Trash2 />,
+                          tone: "danger",
+                          onClick: () => {
+                            setRemoving(discount);
+                          },
+                        },
+                      ]}
+                    />
+                  }
+                />
+              ))}
+            </List>
+          ))}
         {feeType && (adding || editing) && (
           <DiscountForm
             key={editing?.id ?? "new"}
@@ -138,6 +168,32 @@ export function FeeTypeDiscountsDialog({
             }}
           />
         )}
+        <ConfirmDialog
+          open={removing !== null}
+          onOpenChange={(open) => {
+            if (!open) setRemoving(null);
+          }}
+          title={t("removeTitle")}
+          description={removing ? t("removeBody", { name: nameOf(removing) }) : ""}
+          confirmLabel={t("remove")}
+          tone="danger"
+          confirming={remove.isPending}
+          onConfirm={() => {
+            if (!removing) return;
+            remove.mutate(removing.id, {
+              onError: (removeError) => {
+                toast.error(
+                  removeError instanceof ApiError
+                    ? apiErrorMessage(removeError.code)
+                    : apiErrorMessage("UNKNOWN"),
+                );
+              },
+              onSettled: () => {
+                setRemoving(null);
+              },
+            });
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

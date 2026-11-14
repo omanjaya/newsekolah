@@ -1,13 +1,14 @@
 {
-  "navGroup": "Keuangan",
-  "navLabel": "Pembayaran SPP",
-  "eyebrow": "Keuangan",
-  "title": "Pembayaran SPP",
+  "navGroup": "Administrasi",
+  "navLabel": "Tagihan dan pembayaran",
+  "eyebrow": "Administrasi",
+  "title": "Tagihan dan pembayaran",
+  "tabsLabel": "Bagian tagihan dan pembayaran",
   "tabs": {
-    "desk": "Loket Pembayaran",
-    "bills": "Daftar Tagihan",
-    "feeTypes": "Jenis Biaya",
-    "generate": "Terbitkan Tagihan",
+    "desk": "Loket pembayaran",
+    "bills": "Daftar tagihan",
+    "feeTypes": "Jenis biaya",
+    "generate": "Terbitkan tagihan",
     "arrears": "Tunggakan"
   },
   "feeTypes": {
@@ -23,7 +24,8 @@
     "emptyBody": "Tambahkan jenis biaya seperti SPP bulanan atau uang pangkal.",
     "edit": "Ubah",
     "manageDiscounts": "Kelola potongan",
-    "deleteTitle": "Nonaktifkan jenis biaya",
+    "rowActions": "Aksi untuk {name}",
+    "deleteTitle": "Nonaktifkan jenis biaya?",
     "deleteBody": "\"{name}\" tidak lagi bisa dipakai untuk tagihan baru. Tagihan yang sudah terbit tetap menyimpan datanya sendiri.",
     "deleteConfirm": "Nonaktifkan",
     "recurrenceMonthly": "Bulanan",
@@ -43,34 +45,44 @@
       "editTitle": "Ubah jenis biaya",
       "name": "Nama",
       "description": "Keterangan",
-      "amount": "Jumlah (Rp)",
+      "amount": "Jumlah",
       "recurrence": {
-        "label": "Jenis periode",
+        "label": "Penagihan",
         "monthly": "Bulanan (SPP)",
         "oneOff": "Sekali bayar"
       },
       "period": "Kode periode",
+      "periodHint": "Nama singkat penagihan ini, tampil di setiap tagihan yang terbit.",
       "periodPlaceholder": "mis. 2026-uang-pangkal",
       "active": "Aktif",
+      "activeHint": "Hanya jenis biaya aktif yang ikut diterbitkan.",
+      "errors": {
+        "name": "Isi nama jenis biaya.",
+        "amount": "Isi jumlah biaya.",
+        "period": "Isi kode periode untuk biaya sekali bayar."
+      },
       "cancel": "Batal",
       "submit": "Simpan"
     }
   },
   "discounts": {
     "title": "Potongan untuk {name}",
+    "listLabel": "Daftar potongan",
     "add": "Tambah potongan",
     "saved": "Potongan tersimpan",
     "emptyTitle": "Belum ada potongan",
     "emptyBody": "Tambahkan potongan atau pembebasan untuk siswa tertentu.",
     "unknownStudent": "Siswa tidak diketahui",
+    "rowActions": "Aksi potongan {name}",
     "remove": "Hapus",
+    "removeTitle": "Hapus potongan?",
+    "removeBody": "Potongan untuk {name} dihapus. Tagihan yang sudah terbit tidak berubah.",
     "kind": {
       "waiver": "Dibebaskan penuh",
       "percentage": "Potongan persen",
       "fixed": "Potongan tetap"
     },
     "percentageValue": "{value}%",
-    "fixedValue": "Rp {amount}",
     "form": {
       "student": "Siswa",
       "studentPlaceholder": "Pilih siswa",
@@ -78,24 +90,40 @@
         "label": "Jenis potongan",
         "percentage": "Persentase",
         "fixed": "Jumlah tetap",
-        "waiver": "Dibebaskan penuh"
+        "waiver": "Bebas penuh"
       },
-      "percentage": "Persentase (%)",
-      "amount": "Jumlah potongan (Rp)",
+      "percentage": "Persentase",
+      "amount": "Jumlah potongan",
       "reason": "Alasan",
       "reasonPlaceholder": "mis. Potongan anak kedua, beasiswa prestasi",
+      "errors": {
+        "student": "Pilih siswa yang mendapat potongan.",
+        "percentage": "Isi persentase potongan.",
+        "amount": "Isi jumlah potongan.",
+        "reason": "Tulis alasan potongan."
+      },
       "cancel": "Batal",
       "submit": "Simpan",
-      "active": "Diskon aktif"
+      "active": "Potongan aktif"
     },
-    "edit": "Ubah diskon"
+    "edit": "Ubah potongan"
   },
   "generation": {
     "period": "Periode",
+    "steps": {
+      "period": "Pilih periode",
+      "preview": "Pratinjau",
+      "issue": "Terbitkan"
+    },
     "preview": "Pratinjau",
+    "startTitle": "Pilih periode, lalu lihat pratinjau",
+    "startBody": "Pratinjau menunjukkan siapa yang akan ditagih dan siapa yang dilewati karena sudah tertagih. Tagihan baru terbit setelah Anda menyetujuinya.",
+    "summaryLabel": "Ringkasan pratinjau",
+    "toCreate": "Tagihan baru",
+    "skipped": "Sudah tertagih",
+    "total": "Total nilai",
     "resultTitle": "Tagihan berhasil diterbitkan",
     "resultBody": "{created} tagihan baru dibuat, {skipped} sudah tertagih sebelumnya dan dilewati.",
-    "previewSummary": "{count} tagihan akan dibuat, {skipped} sudah tertagih dan dilewati. Total: {total}.",
     "generate": "Terbitkan tagihan",
     "confirmTitle": "Terbitkan tagihan?",
     "confirmBody": "{count} tagihan senilai {total} akan diterbitkan. Tindakan ini aman diulang; tagihan yang sudah ada tidak akan digandakan.",
@@ -112,17 +140,30 @@
   },
   "paymentDesk": {
     "pickStudent": "Siswa",
+    "pickStudentHint": "Cari dengan nama atau NIS.",
     "pickStudentPlaceholder": "Pilih siswa",
-    "pickStudentSearchPlaceholder": "Ketik nama siswa",
+    "pickStudentSearchPlaceholder": "Ketik nama atau NIS",
     "pickStudentEmpty": "Tidak ada siswa yang cocok",
-    "pickStudentTitle": "Pilih siswa",
-    "pickStudentBody": "Cari dan pilih siswa untuk melihat riwayat tagihan dan pembayarannya.",
+    "pickStudentTitle": "Pilih siswa untuk mulai",
+    "pickStudentBody": "Tagihan tahun ini, sisa yang harus dibayar, dan riwayat pembayarannya muncul di sini.",
+    "nis": "NIS {nis}",
+    "summaryLabel": "Ringkasan tagihan siswa",
     "emptyTitle": "Belum ada tagihan",
     "emptyBody": "Siswa ini belum memiliki tagihan tahun ajaran ini.",
-    "dueDate": "jatuh tempo {date}",
+    "billsTitle": "Tagihan tahun ini",
+    "billMeta": "{period} · jatuh tempo {date}",
+    "billsCount": "{count, plural, =0 {Tidak ada} other {# tagihan}}",
+    "remaining": "Sisa bayar",
+    "billAmount": "Jumlah tagihan",
+    "ofTotal": "dari {amount}",
+    "paidShare": "Sudah dibayar {amount}",
+    "paymentsTitle": "Riwayat pembayaran",
     "pay": "Bayar",
     "receipt": "Kuitansi",
-    "void": "Batalkan",
+    "receiptTitle": "Kuitansi pembayaran",
+    "receiptFor": "Kuitansi pembayaran {amount}",
+    "paymentActions": "Aksi pembayaran {amount}",
+    "void": "Batalkan pembayaran",
     "voidedLabel": "Dibatalkan",
     "status": {
       "unpaid": "Belum dibayar",
@@ -131,9 +172,8 @@
       "overdue": "Menunggak"
     },
     "totalOutstanding": "Sisa tagihan",
-    "billCount": "Jumlah tagihan",
     "overdueCount": "Menunggak",
-    "shareReceipt": "Bagikan kuitansi",
+    "paidTotal": "Sudah dibayar",
     "method": {
       "cash": "Tunai",
       "bankTransfer": "Transfer bank",
@@ -141,8 +181,13 @@
     },
     "paymentForm": {
       "title": "Catat pembayaran",
-      "outstanding": "Sisa tagihan: {amount}",
-      "amount": "Jumlah dibayar (Rp)",
+      "bill": "Tagihan",
+      "dueDate": "Jatuh tempo",
+      "outstandingLabel": "Sisa tagihan",
+      "amount": "Jumlah dibayar",
+      "payInFull": "Lunasi",
+      "settlesBill": "Pembayaran ini melunasi tagihan.",
+      "remainderAfter": "Sisa setelah pembayaran: {amount}",
       "method": {
         "label": "Metode pembayaran",
         "cash": "Tunai",
@@ -151,22 +196,36 @@
       },
       "paidOn": "Tanggal bayar",
       "reference": "Referensi",
-      "referencePlaceholder": "No. slip transfer, dsb. (opsional)",
+      "referenceHint": "Nomor slip transfer atau catatan lain.",
+      "errors": {
+        "amount": "Isi jumlah yang dibayar.",
+        "tooMuch": "Melebihi sisa tagihan ({amount}).",
+        "paidOn": "Pilih tanggal bayar."
+      },
       "cancel": "Batal",
-      "submit": "Catat pembayaran",
+      "submit": "Simpan pembayaran",
       "recorded": "Pembayaran tercatat"
     },
+    "paymentDone": {
+      "title": "Pembayaran {bill} tercatat",
+      "remainder": "Sisa tagihan {amount}",
+      "settled": "Tagihan sudah lunas",
+      "receiptNumber": "Kuitansi {number}",
+      "done": "Selesai",
+      "receipt": "Cetak kuitansi"
+    },
     "voidDialog": {
-      "title": "Batalkan pembayaran",
-      "cancel": "Batal",
+      "title": "Batalkan pembayaran?",
+      "cancel": "Kembali",
       "confirm": "Batalkan pembayaran",
       "voided": "Pembayaran dibatalkan",
-      "body": "Pembayaran {amount} tetap tersimpan untuk audit tetapi tidak lagi dihitung sebagai lunas.",
-      "reason": "Alasan pembatalan"
+      "body": "Pembayaran {amount} tetap tersimpan untuk audit tetapi tidak lagi dihitung sebagai pembayaran.",
+      "reason": "Alasan pembatalan",
+      "reasonRequired": "Tulis alasan pembatalan."
     }
   },
   "bills": {
-    "periodPlaceholder": "Semua periode",
+    "periodPlaceholder": "Semua bulan",
     "statusLabel": "Status",
     "statusAll": "Semua status",
     "classLabel": "Kelas",
@@ -176,14 +235,15 @@
       "removeFilter": "Hapus filter {label}"
     },
     "unknownStudent": "Siswa tidak diketahui",
-    "emptyTitle": "Tidak ada tagihan",
-    "emptyBody": "Tidak ada tagihan yang cocok dengan filter ini.",
+    "emptyTitle": "Belum ada tagihan",
+    "emptyBody": "Tagihan yang diterbitkan muncul di sini.",
     "columns": {
       "student": "Siswa",
       "feeType": "Jenis biaya",
       "period": "Periode",
       "dueDate": "Jatuh tempo",
       "amount": "Jumlah",
+      "remaining": "Sisa",
       "status": "Status"
     },
     "status": {
@@ -199,11 +259,15 @@
     "billAmount": "Jumlah tagihan",
     "paidAmount": "Sudah dibayar",
     "paymentsTitle": "Pembayaran",
-    "noPayments": "Belum ada pembayaran untuk tagihan ini.",
-    "pagePrev": "Sebelumnya",
-    "pageNext": "Berikutnya"
+    "noPayments": "Belum ada pembayaran untuk tagihan ini",
+    "openAtDesk": "Buka di loket"
   },
   "arrears": {
+    "summaryLabel": "Ringkasan tunggakan",
+    "total": "Sisa tagihan",
+    "students": "Siswa belum lunas",
+    "largestClass": "Kelas dengan sisa terbesar",
+    "viewLabel": "Tampilkan per",
     "byClass": "Per kelas",
     "byStudent": "Per siswa",
     "unknownStudent": "Siswa tidak diketahui",
@@ -214,7 +278,7 @@
       "student": "Siswa",
       "class": "Kelas",
       "billCount": "Jumlah tagihan",
-      "outstanding": "Tunggakan",
+      "outstanding": "Sisa tagihan",
       "studentCount": "Jumlah siswa"
     }
   }

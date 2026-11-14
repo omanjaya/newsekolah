@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useStaffAttendanceHistoryQuery: vi.fn(),
@@ -29,38 +29,24 @@ vi.mock("../api", () => ({
   downloadStaffAttendanceRecap: vi.fn(),
   downloadAllStaffAttendanceRecap: vi.fn(),
 }));
-// Radix's Select needs real pointer-capture APIs jsdom doesn't implement; a
-// plain native <select> exercises the same employee-picking behavior
-// without that dependency, matching the pattern in
-// settings-workspace.test.tsx.
-vi.mock("@newsekolah/ui", async () => {
-  const actual = await vi.importActual<Record<string, unknown>>("@newsekolah/ui");
-  return {
-    ...actual,
-    Select: ({
-      options,
-      value,
-      onValueChange,
-    }: {
-      options: { value: string; label: string }[];
-      value: string;
-      onValueChange: (value: string) => void;
-    }) => (
-      <select
-        value={value}
-        onChange={(event) => {
-          onValueChange(event.target.value);
-        }}
-      >
-        <option value="" />
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    ),
-  };
+// The employee picker is the shared searchable Combobox (a popover and a
+// cmdk list), which measures itself and scrolls its active option.
+beforeAll(() => {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe(): undefined {
+        return undefined;
+      }
+      unobserve(): undefined {
+        return undefined;
+      }
+      disconnect(): undefined {
+        return undefined;
+      }
+    },
+  );
+  Element.prototype.scrollIntoView = vi.fn();
 });
 
 import { EmployeeRecapView } from "./employee-recap-view";
@@ -74,9 +60,12 @@ describe("EmployeeRecapView filters", () => {
     window.history.replaceState(null, "", "/staff-attendance");
   });
 
+  /** Picks the employee in the searchable picker, then shows any date range. */
   async function selectEmployee() {
     const user = userEvent.setup();
-    await user.selectOptions(screen.getByRole("combobox", { name: "schedule.employee" }), "emp-1");
+    await user.click(screen.getByRole("button", { name: "schedule.employee" }));
+    await user.click(await screen.findByRole("option", { name: /Budi/ }));
+    await user.click(screen.getByRole("radio", { name: "recap.byRange" }));
     return user;
   }
 
