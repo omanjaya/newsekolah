@@ -205,6 +205,22 @@ export function DataTable<TData>({
     () => rememberedState.initialState?.globalFilter ?? "",
   );
   const [searchResetKey, setSearchResetKey] = useState(0);
+  // A new state scope (another account, school year or page) starts the
+  // table over from that scope's remembered state, as a fresh mount would;
+  // the provider no longer remounts its subtree to get there.
+  const [stateScope, setStateScope] = useState(rememberedState.scope);
+  if (stateScope !== rememberedState.scope) {
+    setStateScope(rememberedState.scope);
+    setInternalPagination(
+      rememberedState.initialState?.pagination ?? {
+        pageIndex: 0,
+        pageSize: defaultPageSize ?? DEFAULT_PAGE_SIZE,
+      },
+    );
+    setInternalSorting(rememberedState.initialState?.sorting ?? []);
+    setInternalGlobalFilter(rememberedState.initialState?.globalFilter ?? "");
+    setSearchResetKey((key) => key + 1);
+  }
   const [internalDensity, setInternalDensity] = useState<DataTableDensity>("normal");
   const density = densityProp ?? internalDensity;
   const setDensity = onDensityChange ?? setInternalDensity;
