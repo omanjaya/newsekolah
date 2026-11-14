@@ -14,7 +14,14 @@ const meta: Meta<typeof StatePage> = {
 export default meta;
 type Story = StoryObj<typeof StatePage>;
 
+// One rule on every state page: the first action is primary, even alone;
+// a second one is secondary or a link.
 const home = (
+  <Button asChild>
+    <a href="#home">Kembali ke beranda</a>
+  </Button>
+);
+const homeSecondary = (
   <Button asChild variant="secondary">
     <a href="#home">Kembali ke beranda</a>
   </Button>
@@ -25,11 +32,7 @@ export const NotFound: Story = {
     kind: "not-found",
     title: "Halaman tidak ditemukan",
     description: "Alamat yang dituju tidak ada atau sudah dipindahkan.",
-    action: (
-      <Button asChild>
-        <a href="#home">Kembali ke beranda</a>
-      </Button>
-    ),
+    action: home,
     code: "404",
   },
 };
@@ -40,7 +43,7 @@ export const Error: Story = {
     title: "Terjadi kesalahan",
     description: "Halaman ini gagal dimuat. Coba lagi; bila berulang, hubungi admin sekolah.",
     action: <Button>Coba lagi</Button>,
-    secondaryAction: home,
+    secondaryAction: homeSecondary,
     code: "a1b2c3d4",
   },
 };

@@ -70,7 +70,9 @@ function People() {
           leading={<Avatar name="Sari Dewi" size={40} decorative />}
           title="Sari Dewi"
           meta="X-B · Izin sakit sejak Senin"
-          action={<IconButton aria-label="Aksi untuk Sari Dewi" icon={<MoreHorizontal />} />}
+          action={
+            <IconButton size="sm" aria-label="Aksi untuk Sari Dewi" icon={<MoreHorizontal />} />
+          }
         />
       </List>
     </Card>

@@ -179,7 +179,7 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
           return (
             <li key={m.id} className="flex items-center justify-between gap-2 p-3 text-[13px]">
               <div className="flex min-w-0 items-center gap-3">
-                <Avatar name={name} size="sm" />
+                <Avatar name={name} size={32} />
                 <div className="flex min-w-0 flex-col">
                   <span className="truncate font-medium">{formatDisplayName(name)}</span>
                   <span className="text-fg-muted">

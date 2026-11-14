@@ -55,7 +55,7 @@ export const MeetingRosterRow = memo(function MeetingRosterRow({
       data-changed={changed || undefined}
     >
       <div className="flex min-w-0 items-center gap-3">
-        <Avatar name={name} size="sm" />
+        <Avatar name={name} size={32} />
         <span className="flex min-w-0 items-center gap-1.5 text-[14px] text-fg">
           <span className="truncate">{formatDisplayName(name)}</span>
           {changed && (

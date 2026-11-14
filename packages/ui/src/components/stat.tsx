@@ -275,10 +275,13 @@ export function Stat({
           />
         )}
       </Detail>
+      {/* The hint is smaller than the label it qualifies, so it is also
+          no heavier: the caption role at 400 instead of its 500. Only the
+          change keeps a weight of its own. */}
       {hasFooter && (
         <Detail
           id={hintId}
-          className="order-3 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-caption text-fg-muted"
+          className="order-3 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-caption font-normal text-fg-muted"
         >
           {delta && <DeltaText delta={delta} />}
           {hint}

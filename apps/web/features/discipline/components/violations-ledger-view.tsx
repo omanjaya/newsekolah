@@ -143,8 +143,8 @@ export function ViolationsLedgerView(): ReactElement {
           const name = studentMap.get(row.original.student_user_id)?.name;
           if (!name) return t("unknownStudent");
           return (
-            <div className="flex min-w-0 items-center gap-2">
-              <Avatar size="sm" name={name} />
+            <div className="flex min-w-0 items-center gap-3">
+              <Avatar size={32} name={name} />
               <span className="truncate">
                 <StudentLink studentId={row.original.student_user_id} tab="discipline">
                   {name}

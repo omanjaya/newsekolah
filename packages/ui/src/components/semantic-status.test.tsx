@@ -66,16 +66,49 @@ describe("SemanticStatusBadge", () => {
 });
 
 describe("StatusBadge", () => {
-  it("renders an attendance status as a pill with its token dot and default name", async () => {
-    const { container } = render(<StatusBadge status="late" />);
-    const badge = pill("Terlambat");
-    expect(badge).toHaveClass("rounded-full", "text-fg");
-    expect(badge?.querySelector('[aria-hidden="true"]')).toHaveClass("bg-status-late");
+  it("renders an attendance status as a neutral pill with its token dot and default name", async () => {
+    const { container } = render(<StatusBadge status="sick" />);
+    const badge = pill("Sakit");
+    expect(badge).toHaveClass("rounded-full", "bg-state-pressed", "text-fg");
+    expect(badge?.querySelector('[aria-hidden="true"]')).toHaveClass("bg-status-sick");
     await expectNoAxeViolations(container);
   });
 
-  it("takes a localized label", () => {
-    render(<StatusBadge status="present" label="Present" appearance="outline" />);
-    expect(pill("Present")).toHaveClass("ring-1");
+  // An Alfa or a Terlambat has to stand out of a roster of Hadir; the
+  // excused statuses stay neutral so the two oranges (sick, late) never
+  // sit side by side as fills.
+  it("tints absent and late in the semantic soft fills and keeps the rest neutral", async () => {
+    const { container } = render(
+      <>
+        <StatusBadge status="present" />
+        <StatusBadge status="sick" />
+        <StatusBadge status="excused" />
+        <StatusBadge status="dispensation" />
+        <StatusBadge status="absent" />
+        <StatusBadge status="late" />
+      </>,
+    );
+    for (const label of ["Hadir", "Sakit", "Izin", "Dispensasi"]) {
+      expect(pill(label)).toHaveClass("bg-state-pressed", "text-fg");
+    }
+    const absent = pill("Alfa");
+    expect(absent).toHaveClass("bg-danger-soft", "text-danger-soft-fg");
+    expect(absent).not.toHaveClass("text-fg");
+    expect(absent?.querySelector('[aria-hidden="true"]')).toHaveClass("bg-status-absent");
+    const late = pill("Terlambat");
+    expect(late).toHaveClass("bg-warning-soft", "text-warning-soft-fg");
+    expect(late?.querySelector('[aria-hidden="true"]')).toHaveClass("bg-status-late");
+    await expectNoAxeViolations(container);
+  });
+
+  it("takes a localized label, and tints the outline of an exception too", () => {
+    render(
+      <>
+        <StatusBadge status="present" label="Present" appearance="outline" />
+        <StatusBadge status="absent" label="Absent" appearance="outline" />
+      </>,
+    );
+    expect(pill("Present")).toHaveClass("ring-1", "text-fg");
+    expect(pill("Absent")).toHaveClass("ring-1", "ring-danger", "text-danger");
   });
 });

@@ -64,6 +64,21 @@ function Gallery() {
           ))}
         </AvatarGroup>
       </div>
+      {/* The widest initials at the smallest size, and the size a person takes in a table row. */}
+      <div className="flex flex-wrap items-center gap-6">
+        <div className="flex items-center gap-2">
+          {["Made Wirawan", "Wayan Made", "Guru BK Contoh", "Siswa Dua Contoh"].map((name) => (
+            <Avatar key={name} name={name} size={24} />
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <Avatar name="Guru BK Contoh" size={32} decorative />
+          <div className="flex flex-col">
+            <span className="text-body text-fg">Guru BK Contoh</span>
+            <span className="text-caption text-fg-muted">gurubk</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

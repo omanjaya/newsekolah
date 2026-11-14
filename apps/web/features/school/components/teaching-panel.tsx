@@ -103,8 +103,8 @@ export function TeachingPanel({
             const teacherName = teacherMap.get(a.teacher_user_id)?.name ?? "-";
             return (
               <li key={a.id} className="group flex items-center justify-between px-3 py-2">
-                <div className="flex min-w-0 items-center gap-2">
-                  <Avatar size="sm" name={teacherName} />
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar size={32} name={teacherName} />
                   <div className="min-w-0">
                     <p className="truncate text-[14px] font-medium">
                       {subjectMap.get(a.subject_id)?.name ?? "-"}
@@ -166,8 +166,8 @@ export function TeachingPanel({
                     key={a.id}
                     className="group flex items-center justify-between px-3 py-2 opacity-70"
                   >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Avatar size="sm" name={teacherName} />
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Avatar size={32} name={teacherName} />
                       <div className="min-w-0">
                         <p className="truncate text-[14px] font-medium">
                           {subjectMap.get(a.subject_id)?.name ?? "-"}

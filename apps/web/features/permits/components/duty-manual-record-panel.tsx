@@ -173,8 +173,8 @@ export function DutyManualRecordPanel(): ReactElement {
         <span className="font-medium">{t("student")}</span>
         {selectedStudent ? (
           <div className="flex items-center justify-between gap-2 rounded-sm border border-accent bg-accent/10 px-3 py-2">
-            <span className="flex items-center gap-2">
-              <Avatar size="sm" name={selectedStudent.name} />
+            <span className="flex items-center gap-3">
+              <Avatar size={32} name={selectedStudent.name} />
               <span className="text-fg">{selectedStudent.name}</span>
             </span>
             <button
@@ -213,7 +213,7 @@ export function DutyManualRecordPanel(): ReactElement {
                       setStudentId(student.id);
                     }}
                   >
-                    <Avatar size="sm" name={student.name} />
+                    <Avatar size={32} name={student.name} />
                     <span className="flex-1 truncate text-fg">{student.name}</span>
                   </button>
                 ))

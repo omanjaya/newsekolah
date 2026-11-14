@@ -56,6 +56,29 @@ describe("Alert", () => {
     expect(onDismiss).toHaveBeenCalledOnce();
   });
 
+  // The action and the close button line up with each other and with the
+  // icon in every alert, on the first line of text, rather than the action
+  // centring on a two-line block while the close button sits on the title.
+  it("puts the action and the close button on the title line, as one group", () => {
+    render(
+      <Alert
+        tone="danger"
+        title="Data gagal dimuat"
+        action={<button type="button">Coba lagi</button>}
+        onDismiss={() => undefined}
+        dismissLabel="Tutup"
+      >
+        Periksa koneksi lalu coba lagi.
+      </Alert>,
+    );
+    const action = screen.getByRole("button", { name: "Coba lagi" }).parentElement;
+    const dismiss = screen.getByRole("button", { name: "Tutup" }).parentElement;
+    // One line tall (the title's 20px), the control centred on it.
+    expect(action).toHaveClass("sm:h-5", "items-center");
+    expect(dismiss).toHaveClass("h-5", "items-center", "sm:-ml-2");
+    expect(action?.parentElement?.className).not.toMatch(/items-center/);
+  });
+
   // A flex column would make every text run and inline element its own
   // stacked item, putting the link on a line of its own.
   it("keeps a sentence with an inline link in normal flow", () => {

@@ -22,7 +22,9 @@ describe("Card", () => {
     expect(card).not.toHaveClass("p-5");
     expect(screen.getByTestId("header")).toHaveClass("p-5");
     expect(screen.getByTestId("content")).toHaveClass("p-5", "pt-0");
-    expect(screen.getByTestId("footer")).toHaveClass("border-t", "p-5");
+    // Set apart by space, not a rule: the content's 20px inset and 4px more.
+    expect(screen.getByTestId("footer")).toHaveClass("p-5", "pt-1");
+    expect(screen.getByTestId("footer")).not.toHaveClass("border-t");
     expect(screen.getByRole("heading", { level: 3, name: "Pengumuman" })).toHaveClass(
       "text-heading",
     );
@@ -42,8 +44,9 @@ describe("Card", () => {
     expect(screen.getByTestId("card")).toHaveClass("p-4", "gap-3", "flex-col");
     expect(screen.getByTestId("header")).not.toHaveClass("p-5");
     expect(screen.getByTestId("content")).not.toHaveClass("p-5");
-    expect(screen.getByTestId("footer")).toHaveClass("pt-3");
+    expect(screen.getByTestId("footer")).toHaveClass("pt-1");
     expect(screen.getByTestId("footer")).not.toHaveClass("p-5");
+    expect(screen.getByTestId("footer")).not.toHaveClass("border-t");
   });
 
   it("puts the header action beside the title and lets the title pick its level", () => {

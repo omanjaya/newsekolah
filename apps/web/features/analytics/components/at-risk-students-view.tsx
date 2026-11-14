@@ -81,8 +81,8 @@ export function AtRiskStudentsView(): ReactElement {
         cell: ({ row }) => {
           const student = studentMap.get(row.original.student_user_id);
           return student ? (
-            <div className="flex min-w-0 items-center gap-2">
-              <Avatar size="sm" name={student.name} />
+            <div className="flex min-w-0 items-center gap-3">
+              <Avatar size={32} name={student.name} />
               <span className="truncate">
                 <StudentLink studentId={student.id}>{student.name}</StudentLink>
               </span>

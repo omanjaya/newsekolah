@@ -36,7 +36,8 @@ export function CountBadge({
   return (
     <span
       className={cn(
-        "inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-caption font-semibold tabular-nums",
+        // `w-fit`, like Badge: a column parent never stretches the count into a bar.
+        "inline-flex h-5 w-fit min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-caption font-semibold tabular-nums",
         TONE_CLASS[tone],
         className,
       )}

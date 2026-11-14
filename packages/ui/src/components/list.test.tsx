@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Ellipsis } from "lucide-react";
 import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -7,6 +8,7 @@ import { expectNoAxeViolations } from "../test/axe.js";
 
 import { Card, CardContent, CardHeader, CardTitle } from "./card.js";
 import { Dialog, DialogContent } from "./dialog.js";
+import { IconButton } from "./icon-button.js";
 import { ListRow } from "./list-row.js";
 import { List } from "./list.js";
 import { SectionHeader } from "./section-header.js";
@@ -67,6 +69,31 @@ describe("List and ListRow", () => {
     await userEvent.click(row);
     expect(onOpen).toHaveBeenCalledOnce();
     expect(screen.getByRole("listitem")).toHaveClass("bg-state-selected");
+  });
+
+  // A row menu sits under the chevrons of the rows around it: its glyph
+  // centred on theirs and as muted. A text button keeps its own box.
+  it("sets a lone icon action like the chevron, and leaves a text action alone", () => {
+    render(
+      <List>
+        <ListRow
+          title="Sari Dewi"
+          action={<IconButton size="sm" aria-label="Aksi" icon={<Ellipsis />} tooltip={false} />}
+        />
+        <ListRow title="Budi" action={<button type="button">Kembalikan</button>} />
+      </List>,
+    );
+    const slot = screen.getByRole("button", { name: "Aksi" }).parentElement;
+    expect(slot).toHaveAttribute("data-slot", "list-row-action");
+    expect(slot).toHaveClass(
+      "[&>button[aria-label]:has(>svg:only-child)]:-mr-2",
+      "pointer-coarse:[&>button[aria-label]:has(>svg:only-child)]:-mr-3.5",
+      "[&>button[aria-label]:has(>svg:only-child)]:text-fg-muted",
+    );
+    const iconButton = screen.getByRole("button", { name: "Aksi" });
+    expect(iconButton.matches("button[aria-label]:has(>svg:only-child)")).toBe(true);
+    const textButton = screen.getByRole("button", { name: "Kembalikan" });
+    expect(textButton.matches("button[aria-label]:has(>svg:only-child)")).toBe(false);
   });
 
   it("disables a row", () => {

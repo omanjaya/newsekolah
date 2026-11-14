@@ -207,7 +207,7 @@ export function ViolationRecordForm({
                       toggleStudent(student.id);
                     }}
                   />
-                  <Avatar size="sm" name={student.name} />
+                  <Avatar size={32} name={student.name} />
                   <span className="flex-1 truncate text-fg">{student.name}</span>
                 </label>
               );
