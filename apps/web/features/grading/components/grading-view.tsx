@@ -226,7 +226,7 @@ export function GradingView(): ReactElement {
       <div className="col-span-2 sm:col-span-1">{termSelect}</div>
     </div>
   ) : (
-    <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-2 sm:flex sm:w-auto">
+    <div className="grid w-full grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-2 sm:flex sm:w-auto">
       <Select
         options={assignmentPairs.map((pair) => ({
           value: pairKey(pair),
@@ -247,7 +247,7 @@ export function GradingView(): ReactElement {
         aria-label={t("pickAssignment")}
         className="w-full sm:w-60"
       />
-      <div className="w-40 sm:w-auto">{termSelect}</div>
+      <div className="min-w-0 sm:w-auto">{termSelect}</div>
     </div>
   );
 
