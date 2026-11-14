@@ -170,7 +170,7 @@ export function VisitsView(): ReactElement {
       primaryAction={recordButton}
       secondaryActions={shortcuts}
     >
-      <StatGrid variant="strip" aria-label={t("summary.heading")} className="animate-enter">
+      <StatGrid variant="strip" aria-label={t("summary.heading")}>
         <Stat
           icon={<DoorOpen />}
           category="purple"

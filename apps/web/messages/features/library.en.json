@@ -14,11 +14,12 @@
     "navLabel": "Dashboard",
     "currency": "Rp{amount}",
     "today": {
-      "loansToday": "Loans today",
-      "returnsToday": "Returns today",
+      "loansToday": "Borrowed today",
+      "returnsToday": "Returned today",
       "overdue": "Overdue",
       "openDesk": "Open loan desk",
-      "followUp": "Follow up"
+      "followUp": "Needs follow-up",
+      "heading": "Circulation today"
     },
     "stats": {
       "titles": "Titles",
@@ -38,7 +39,9 @@
       "loans": "{count} loans",
       "returns": "{count} returns",
       "chartLabel": "30-day chart: {loans} loans, {returns} returns",
-      "dayTooltip": "{day}: {loans} loans, {returns} returns"
+      "dayTooltip": "{day}: {loans} loans, {returns} returns",
+      "emptyTitle": "No loans in the last 30 days",
+      "emptyBody": "The chart appears once books are lent or returned at the circulation desk."
     },
     "latestLoans": "Latest loans",
     "longestOverdue": "Longest overdue",
@@ -47,7 +50,10 @@
     "noOverdue": "Nothing is overdue right now.",
     "noPopularTitles": "Not enough loan history yet for a ranking.",
     "openDesk": "Open the loan desk",
-    "loanCount": "borrowed {count} times"
+    "loanCount": "borrowed {count} times",
+    "collectionHeading": "Collection and members",
+    "unknownMember": "Member",
+    "followUpAll": "Follow up at circulation"
   },
   "catalogue": {
     "eyebrow": "Library",

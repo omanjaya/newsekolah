@@ -14,11 +14,12 @@
     "navLabel": "Dasbor",
     "currency": "Rp{amount}",
     "today": {
-      "loansToday": "Peminjaman hari ini",
-      "returnsToday": "Pengembalian hari ini",
+      "loansToday": "Dipinjam hari ini",
+      "returnsToday": "Dikembalikan hari ini",
       "overdue": "Terlambat",
       "openDesk": "Buka meja sirkulasi",
-      "followUp": "Tindak lanjuti"
+      "followUp": "Perlu ditindaklanjuti",
+      "heading": "Sirkulasi hari ini"
     },
     "stats": {
       "titles": "Judul",
@@ -38,7 +39,9 @@
       "loans": "{count} peminjaman",
       "returns": "{count} pengembalian",
       "chartLabel": "Grafik 30 hari: {loans} peminjaman, {returns} pengembalian",
-      "dayTooltip": "{day}: {loans} peminjaman, {returns} pengembalian"
+      "dayTooltip": "{day}: {loans} peminjaman, {returns} pengembalian",
+      "emptyTitle": "Belum ada peminjaman 30 hari terakhir",
+      "emptyBody": "Grafik muncul setelah ada peminjaman atau pengembalian di meja sirkulasi."
     },
     "latestLoans": "Peminjaman terbaru",
     "longestOverdue": "Paling lama terlambat",
@@ -47,7 +50,10 @@
     "noOverdue": "Tidak ada yang terlambat saat ini.",
     "noPopularTitles": "Belum cukup data peminjaman untuk peringkat ini.",
     "openDesk": "Buka meja sirkulasi",
-    "loanCount": "{count} kali dipinjam"
+    "loanCount": "{count} kali dipinjam",
+    "collectionHeading": "Koleksi dan anggota",
+    "unknownMember": "Anggota",
+    "followUpAll": "Tindak lanjuti di sirkulasi"
   },
   "catalogue": {
     "eyebrow": "Perpustakaan",
