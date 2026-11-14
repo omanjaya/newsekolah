@@ -193,3 +193,20 @@ export const LIBRARY_NAMESPACES: readonly string[] = [
   "app.reportExport",
   "app.librarySettings",
 ];
+
+/**
+ * `(kiosk)/layout.tsx`'s provider: the wall monitor and the two library
+ * kiosks, which render without the app shell. The shared catalog and the
+ * root-level `app.*` namespaces (the frame reads `app.page`, the screens
+ * `QueryError`), the three screens' own slices, and the access states the
+ * frame shows in place of a screen the reader may not open.
+ */
+export const KIOSK_NAMESPACES: readonly string[] = [
+  ...SHARED_NAMESPACES,
+  ...ROOT_APP_NAMESPACES,
+  "app.forbidden",
+  "app.moduleUnavailable",
+  "app.monitor",
+  "app.library.kiosk",
+  "app.library.visitKiosk",
+];
