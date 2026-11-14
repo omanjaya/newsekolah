@@ -183,7 +183,8 @@ export const settingsNavItems: NavItem[] = [
     key: "settings-appearance",
     labelKey: "app.shell.appearance",
     href: "/settings/appearance",
-    icon: Settings,
+    // Not the gear: that glyph is the school settings entry in the sidebar.
+    icon: Palette,
     group: NAV_GROUP.settings,
     sidebarPlacement: "hidden",
     accountMenu: true,
@@ -191,6 +192,7 @@ export const settingsNavItems: NavItem[] = [
   {
     key: "profile",
     labelKey: "nav.compact.profile",
+    tabLabelKey: "app.shell.nav.short.profile",
     href: "/profile",
     icon: UserRound,
     showInTabBar: true,

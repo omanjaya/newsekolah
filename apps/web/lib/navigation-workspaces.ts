@@ -179,20 +179,49 @@ function relevant(item: NavItem, context: NavigationContext): boolean {
   return true;
 }
 
+/** Menu labels live in the shell catalog, in sentence case (app.shell.nav.items). */
+const LABELS = "app.shell.nav.items";
+
 function labelFor(
   definition: WorkspaceDefinition,
   selected: NavItem,
   context: NavigationContext,
 ): string {
   if (definition.key === "attendance" && context.profileKind === "student")
-    return "app.workspace.myAttendance";
-  if (definition.key === "grading" && selected.key === "my-grades") return "app.workspace.myGrades";
+    return `${LABELS}.myAttendance`;
+  if (definition.key === "grading" && selected.key === "my-grades") return `${LABELS}.myGrades`;
   if (definition.key === "violations" && selected.key === "my-discipline")
-    return "app.workspace.myDiscipline";
+    return `${LABELS}.myDiscipline`;
   if (definition.key === "counseling" && selected.key === "analytics")
-    return "app.workspace.monitoring";
-  return definition.label ? `app.workspace.${definition.label}` : selected.labelKey;
+    return `${LABELS}.monitoring`;
+  return definition.label ? `${LABELS}.${definition.label}` : selected.labelKey;
 }
+
+/**
+ * Bottom tab bar labels: one short word each, so five fit a 360px phone
+ * without truncating (app.shell.nav.short).
+ */
+const TAB_LABELS: Record<string, string> = {
+  reports: "reports",
+  attendance: "attendance",
+  schedule: "schedule",
+  "leave-requests": "permits",
+  grading: "grades",
+  violations: "discipline",
+  counseling: "counseling",
+  duty: "duty",
+  "visitors-board": "visitors",
+  "library-desk": "circulation",
+  "library-catalogue": "catalogue",
+  "library-members": "members",
+  "school-users": "users",
+  "school-classes": "classes",
+};
+
+/** Shorter labels for a row under its group heading (app.shell.nav.inGroup). */
+const IN_GROUP_LABELS: Record<string, string> = {
+  "library-settings": "app.shell.nav.inGroup.librarySettings",
+};
 
 /** docs/17: the top of the menu is daily work, in this order, before everything else. */
 const LEADING_KEYS = ["dashboard", "inbox", "scan", "reports"];
@@ -270,6 +299,7 @@ export function consolidateNavigation(
       );
     const selected = members[0];
     if (!selected) return [];
+    const tab = TAB_LABELS[definition.key];
     return [
       {
         ...selected,
@@ -285,9 +315,8 @@ export function consolidateNavigation(
         aliases: members.map((item) => item.key),
         activePaths: [...members.map((item) => item.href), ...(definition.detailPaths ?? [])],
         searchTerms: members.map((item) => item.labelKey),
-        tabLabelKey: ["attendance", "schedule", "leave-requests"].includes(definition.key)
-          ? `app.workspace.short.${definition.key}`
-          : selected.tabLabelKey,
+        tabLabelKey: tab ? `app.shell.nav.short.${tab}` : selected.tabLabelKey,
+        groupLabelKey: IN_GROUP_LABELS[definition.key] ?? selected.groupLabelKey,
       },
     ];
   });

@@ -30,7 +30,7 @@ describe("consolidated workspaces", () => {
       expect.arrayContaining(["school-classes", "academic-years", "homeroom"]),
     );
     expect(items.find((item) => item.key === "attendance")?.labelKey).toBe(
-      "app.workspace.myAttendance",
+      "app.shell.nav.items.myAttendance",
     );
     expect(items.find((item) => item.key === "grading")?.href).toBe("/my-grades");
     expect(mobileNavigation(items, "student").map((item) => item.key)).toContain("scan");
