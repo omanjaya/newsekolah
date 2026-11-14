@@ -5,11 +5,12 @@ import {
   Button,
   Dialog,
   DialogContent,
-  Input,
-  Textarea,
-  cn,
-  useToast,
+  DialogFooter,
   Field,
+  NumberInput,
+  SegmentedControl,
+  Textarea,
+  useToast,
 } from "@newsekolah/ui";
 import { Minus, Plus, Star } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -18,6 +19,7 @@ import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useGiveStarMutation } from "../api";
+import { fromText, toText } from "../lib/number-text";
 
 export interface StarDialogProps {
   onOpenChange: (open: boolean) => void;
@@ -91,52 +93,28 @@ export function StarDialog({
             <Star className="size-4" aria-hidden="true" />
             {t("currentBalance", { count: currentBalance })}
           </p>
-          <div className="flex gap-2" role="radiogroup" aria-label={t("action")}>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={direction === 1}
-              onClick={() => {
-                setDirection(1);
-              }}
-              className={cn(
-                "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xs border border-border px-3 py-2 text-label md:min-h-0",
-                direction === 1 ? "border-accent bg-accent/10 text-accent" : "text-fg hover:bg-bg",
-              )}
-            >
-              <Plus className="size-4" aria-hidden="true" />
-              {t("give")}
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={direction === -1}
-              onClick={() => {
-                setDirection(-1);
-              }}
-              className={cn(
-                "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xs border border-border px-3 py-2 text-label md:min-h-0",
-                direction === -1
-                  ? "border-status-absent bg-status-absent/10 text-status-absent"
-                  : "text-fg hover:bg-bg",
-              )}
-            >
-              <Minus className="size-4" aria-hidden="true" />
-              {t("take")}
-            </button>
-          </div>
-          <Field label={t("amount")}>
-            <Input
-              type="number"
+          <SegmentedControl<"give" | "take">
+            aria-label={t("action")}
+            fullWidth
+            value={direction === 1 ? "give" : "take"}
+            onValueChange={(value) => {
+              setDirection(value === "give" ? 1 : -1);
+            }}
+            options={[
+              { value: "give", label: t("give"), icon: <Plus /> },
+              { value: "take", label: t("take"), icon: <Minus /> },
+            ]}
+          />
+          <Field label={t("amount")} hint={t("amountHint")}>
+            <NumberInput
               min={1}
               max={999}
-              value={amount}
-              onChange={(e) => {
-                setAmount(e.target.value);
+              value={fromText(amount)}
+              onChange={(value) => {
+                setAmount(toText(value));
               }}
-              className="w-24"
+              className="w-32"
             />
-            <span className="text-caption font-normal text-fg-muted">{t("amountHint")}</span>
           </Field>
           <Field label={t("note")}>
             <Textarea
@@ -149,7 +127,7 @@ export function StarDialog({
               }}
             />
           </Field>
-          <div className="flex justify-end gap-2 border-t border-border pt-4">
+          <DialogFooter>
             <Button
               type="button"
               variant="secondary"
@@ -162,7 +140,7 @@ export function StarDialog({
             <Button type="submit" loading={giveStar.isPending} disabled={!validAmount}>
               {t("save")}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

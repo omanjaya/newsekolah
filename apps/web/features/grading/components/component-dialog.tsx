@@ -6,10 +6,12 @@ import {
   ConfirmDialog,
   Dialog,
   DialogContent,
+  DialogFooter,
+  Field,
   Input,
+  NumberInput,
   Select,
   useToast,
-  Field,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -23,6 +25,7 @@ import {
   useDeleteComponentMutation,
   useUpdateComponentMutation,
 } from "../api";
+import { fromText, toText } from "../lib/number-text";
 
 const KINDS: AssessmentComponentKind[] = [
   "formative",
@@ -151,46 +154,44 @@ export function ComponentDialog({
             </Field>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label={t("weight")}>
-                <Input
-                  type="number"
+                <NumberInput
                   min={0}
-                  step="0.1"
-                  value={weight}
-                  onChange={(e) => {
-                    setWeight(e.target.value);
+                  step={0.1}
+                  value={fromText(weight)}
+                  onChange={(value) => {
+                    setWeight(toText(value));
                   }}
                   required
                 />
               </Field>
               <Field label={t("sequence")}>
-                <Input
-                  type="number"
+                <NumberInput
                   min={1}
-                  step="1"
-                  value={sequence}
-                  onChange={(e) => {
-                    setSequence(e.target.value);
+                  step={1}
+                  value={fromText(sequence)}
+                  onChange={(value) => {
+                    setSequence(toText(value));
                   }}
                 />
               </Field>
             </div>
             <Field label={t("kktp")}>
-              <Input
-                type="number"
+              <NumberInput
                 min={0}
-                step="1"
-                value={kktp}
+                step={1}
+                value={fromText(kktp)}
                 placeholder={t("kktpPlaceholder")}
-                onChange={(e) => {
-                  setKktp(e.target.value);
+                onChange={(value) => {
+                  setKktp(toText(value));
                 }}
               />
             </Field>
-            <div className="flex items-center justify-between gap-2 border-t border-border pt-4">
+            <DialogFooter className="sm:justify-between">
               {editing ? (
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="ghost"
+                  className="text-danger"
                   onClick={() => {
                     setConfirmingDelete(true);
                   }}
@@ -200,7 +201,7 @@ export function ComponentDialog({
               ) : (
                 <span />
               )}
-              <div className="flex gap-2">
+              <div className="flex gap-2 max-sm:contents">
                 <Button
                   type="button"
                   variant="secondary"
@@ -214,7 +215,7 @@ export function ComponentDialog({
                   {t("save")}
                 </Button>
               </div>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -224,7 +225,7 @@ export function ComponentDialog({
         title={t("deleteTitle")}
         description={editing ? t("deleteBody", { code: editing.code }) : ""}
         confirmLabel={t("delete")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={confirmDelete}
       />

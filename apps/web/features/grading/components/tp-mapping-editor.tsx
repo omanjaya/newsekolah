@@ -14,6 +14,7 @@ import {
   TableRow,
   useToast,
   Field,
+  NumberInput,
 } from "@newsekolah/ui";
 import { Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -30,6 +31,7 @@ import {
   useTPMappingsQuery,
   useTermsQuery,
 } from "../api";
+import { fromText, toText } from "../lib/number-text";
 
 interface RowState {
   export_code: string;
@@ -219,46 +221,42 @@ function TPMappingTable({
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1">
-                  <Input
+                  <NumberInput
                     className="w-16"
-                    type="number"
                     aria-label={t("columns.rMin")}
-                    value={row.r_min}
-                    onChange={(e) => {
-                      updateRow(component.id, { r_min: e.target.value });
+                    value={fromText(row.r_min)}
+                    onChange={(value) => {
+                      updateRow(component.id, { r_min: toText(value) });
                     }}
                   />
                   <span className="text-fg-muted">-</span>
-                  <Input
+                  <NumberInput
                     className="w-16"
-                    type="number"
                     aria-label={t("columns.rMax")}
-                    value={row.r_max}
-                    onChange={(e) => {
-                      updateRow(component.id, { r_max: e.target.value });
+                    value={fromText(row.r_max)}
+                    onChange={(value) => {
+                      updateRow(component.id, { r_max: toText(value) });
                     }}
                   />
                 </div>
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1">
-                  <Input
+                  <NumberInput
                     className="w-16"
-                    type="number"
                     aria-label={t("columns.tMin")}
-                    value={row.t_min}
-                    onChange={(e) => {
-                      updateRow(component.id, { t_min: e.target.value });
+                    value={fromText(row.t_min)}
+                    onChange={(value) => {
+                      updateRow(component.id, { t_min: toText(value) });
                     }}
                   />
                   <span className="text-fg-muted">-</span>
-                  <Input
+                  <NumberInput
                     className="w-16"
-                    type="number"
                     aria-label={t("columns.tMax")}
-                    value={row.t_max}
-                    onChange={(e) => {
-                      updateRow(component.id, { t_max: e.target.value });
+                    value={fromText(row.t_max)}
+                    onChange={(value) => {
+                      updateRow(component.id, { t_max: toText(value) });
                     }}
                   />
                 </div>
