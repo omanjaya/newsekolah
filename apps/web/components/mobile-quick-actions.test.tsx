@@ -28,12 +28,13 @@ describe("MobileQuickActions", () => {
     fireEvent.click(screen.getByRole("button", { name: "trigger" }));
 
     const links = screen.getAllByRole("link");
+    // Most frequent first: scanning, clocking in, then the occasional request.
     expect(links.map((link) => link.textContent)).toEqual([
-      "actions.submitLeave",
-      "actions.checkIn",
       "actions.scanQr",
+      "actions.checkIn",
+      "actions.submitLeave",
     ]);
-    expect(links[0]).toHaveAttribute(
+    expect(links[2]).toHaveAttribute(
       "href",
       "/leave-requests?type=leave&tab=mine&quick=submit-leave",
     );

@@ -7,15 +7,18 @@ import {
   FileBarChart,
   Fingerprint,
   GraduationCap,
-  Home,
+  HeartHandshake,
+  House,
   Inbox,
   LogIn,
+  MailWarning,
   MonitorSmartphone,
   NotebookPen,
   Repeat,
   ScanLine,
   ShieldAlert,
   ShieldCheck,
+  UserCog,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -29,7 +32,7 @@ import { moduleNavItems } from "./navigation-modules";
 import { INBOX_SECTIONS, SCAN_SECTIONS } from "./navigation-sections";
 import { settingsNavItems } from "./navigation-settings";
 
-export { navGroupIcons } from "./navigation-groups";
+export { navGroupIcons, navGroupLabelKey } from "./navigation-groups";
 
 /** Profile kinds a nav item can be restricted to, mirroring `Me["profile_kind"]`. */
 export type NavProfileKind = "student" | "teacher" | "staff";
@@ -125,6 +128,12 @@ export interface NavItem {
    */
   tabLabelKey?: string;
   /**
+   * Shorter label for a row shown under its group heading, where the group
+   * already names the context (Perpustakaan > Pengaturan). Falls back to
+   * `labelKey`; the palette and the recent list keep the full label.
+   */
+  groupLabelKey?: string;
+  /**
    * Sidebar group, as a message key (e.g. "nav.academic.label"), translated
    * by the sidebar. Omitted items render flat above the groups.
    */
@@ -144,10 +153,18 @@ export interface NavItem {
  * documented information architecture.
  */
 export const navigation: NavItem[] = [
-  { key: "dashboard", labelKey: "nav.home", href: "/dashboard", icon: Home, showInTabBar: true },
+  {
+    key: "dashboard",
+    labelKey: "nav.home",
+    tabLabelKey: "app.shell.nav.short.home",
+    href: "/dashboard",
+    icon: House,
+    showInTabBar: true,
+  },
   {
     key: "inbox",
-    labelKey: "app.inbox.title",
+    labelKey: "app.shell.nav.items.inbox",
+    tabLabelKey: "app.shell.nav.short.inbox",
     href: "/inbox",
     icon: Inbox,
     // Every queue on the page gates itself; late arrivals have no permission
@@ -159,6 +176,7 @@ export const navigation: NavItem[] = [
   {
     key: "scan",
     labelKey: "app.scan.navLabel",
+    tabLabelKey: "app.shell.nav.short.scan",
     href: "/scan",
     icon: ScanLine,
     // Each QR action is authorized by the server on scan; the page itself
@@ -331,7 +349,7 @@ export const navigation: NavItem[] = [
     labelKey: "nav.discipline.items.warningLetters",
     href: "/discipline/warning-letters",
     module: "discipline",
-    icon: domainIcons.violation,
+    icon: MailWarning,
     permission: "view_discipline",
     group: GROUP.students,
   },
@@ -340,7 +358,9 @@ export const navigation: NavItem[] = [
     labelKey: "nav.discipline.items.counseling",
     href: "/discipline/counseling",
     module: "discipline",
-    icon: domainIcons.violation,
+    // Not the violation shield: counseling sits next to discipline in the
+    // tab bar and the menu, and two shields read as one destination.
+    icon: HeartHandshake,
     permission: "manage_counseling",
     group: GROUP.students,
   },
@@ -467,7 +487,8 @@ export const navigation: NavItem[] = [
     key: "school-users",
     labelKey: "app.navigation.users",
     href: "/school/users",
-    icon: UserRound,
+    // Not UserRound: that glyph is the reader's own profile.
+    icon: UserCog,
     permission: "view_users",
     group: GROUP.masterData,
   },

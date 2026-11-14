@@ -24,8 +24,9 @@ describe("mobile daily destinations", () => {
       "staff",
     );
     const keys = mobileNavigation(permitted, "staff").map((item) => item.key);
+    // The office's day: the approval queue and the accounts, not the timetable.
     expect(keys).toContain("school-users");
-    expect(keys).toContain("schedule");
+    expect(keys).toContain("inbox");
     expect(keys).not.toContain("exit-permits");
     expect(keys).not.toContain("duty");
   });
@@ -74,7 +75,9 @@ describe("mobile daily destinations", () => {
     expect(keys).not.toContain("attendance");
     expect(keys).not.toContain("schedule");
   });
-  it("gives a duty teacher (guru piket) the duty desk ahead of the teaching schedule", () => {
+  it("gives a duty teacher (guru piket) the duty desk and the scanner ahead of teaching", () => {
+    // Every teacher may show a class QR (issue_scan_tokens), so the duty
+    // desk alone does not mark picket duty; the duty itself does.
     const permitted = filterNavigationFixture(
       navigation,
       (permission) =>
@@ -83,8 +86,75 @@ describe("mobile daily destinations", () => {
         ),
       "teacher",
     );
-    const keys = mobileNavigation(permitted, "teacher").map((item) => item.key);
-    expect(keys).toEqual(["dashboard", "duty", "attendance", "profile"]);
+    const keys = mobileNavigation(permitted, "teacher", [{ slug: "picket" }]).map(
+      (item) => item.key,
+    );
+    expect(keys).toEqual(["dashboard", "duty", "scan", "attendance"]);
+  });
+  it("keeps a teacher who only may show a class QR on teaching", () => {
+    const can = (permission: string) =>
+      ["manage_attendance", "view_schedules", "view_attendance", "issue_scan_tokens"].includes(
+        permission,
+      );
+    const items = consolidateNavigation(filterNavigationFixture(navigation, can, "teacher"), {
+      profileKind: "teacher",
+      can,
+    });
+    const keys = mobileNavigation(items, "teacher").map((item) => item.key);
+    expect(keys.slice(0, 3)).toEqual(["dashboard", "attendance", "schedule"]);
+    expect(keys).not.toContain("duty");
+  });
+  it("gives gate duty (satpam) the scanner, the visitor book and exit permits", () => {
+    const permitted = filterNavigationFixture(
+      navigation,
+      (permission) =>
+        ["scan_exit_permits", "view_visitors", "issue_scan_tokens", "view_academic_data"].includes(
+          permission,
+        ),
+      "staff",
+    );
+    const keys = mobileNavigation(permitted, "staff", [{ slug: "security" }]).map(
+      (item) => item.key,
+    );
+    expect(keys.slice(0, 3)).toEqual(["dashboard", "scan", "visitors-board"]);
+  });
+  it("gives a librarian the circulation desk and the catalogue, not the timetable", () => {
+    const permitted = filterNavigationFixture(
+      navigation,
+      (permission) =>
+        [
+          "manage_library_circulation",
+          "manage_library_catalogue",
+          "manage_library_members",
+          "view_schedules",
+        ].includes(permission),
+      "staff",
+    );
+    const keys = mobileNavigation(permitted, "staff", [{ slug: "librarian" }]).map(
+      (item) => item.key,
+    );
+    expect(keys[1]).toBe("library-desk");
+    expect(keys).not.toContain("schedule");
+  });
+  it("gives school leadership the queue, the reports and attendance", () => {
+    const can = (permission: string) =>
+      [
+        "view_staff_attendance",
+        "view_reports",
+        "view_attendance",
+        "review_leave_requests",
+        "view_schedules",
+      ].includes(permission);
+    const items = consolidateNavigation(filterNavigationFixture(navigation, can, "teacher"), {
+      profileKind: "teacher",
+      can,
+    });
+    const keys = mobileNavigation(items, "teacher").map((item) => item.key);
+    expect(keys).toEqual(["dashboard", "inbox", "reports", "attendance"]);
+  });
+  it("never offers more than Beranda and three daily destinations", () => {
+    const permitted = filterNavigationFixture(navigation, () => true, "staff");
+    expect(mobileNavigation(permitted, "staff").length).toBeLessThanOrEqual(4);
   });
   it("gives a homeroom teacher attendance and the action inbox", () => {
     const can = (permission: string) =>
@@ -95,7 +165,7 @@ describe("mobile daily destinations", () => {
       can,
     });
     const keys = mobileNavigation(items, "teacher").map((item) => item.key);
-    expect(keys).toEqual(["dashboard", "attendance", "inbox", "profile"]);
+    expect(keys).toEqual(["dashboard", "attendance", "inbox", "schedule"]);
   });
   it("keeps a plain teacher on attendance and schedule", () => {
     const can = (permission: string) =>

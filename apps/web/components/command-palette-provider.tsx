@@ -1,8 +1,8 @@
 "use client";
 
-import { domainIcons, type CommandPaletteGroup } from "@newsekolah/ui";
+import { domainIcons, type CommandPaletteGroup, type CommandPaletteItem } from "@newsekolah/ui";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
@@ -10,12 +10,16 @@ import type { ReactElement, ReactNode } from "react";
 import { studentProfileHref } from "../features/students/href";
 import { usePaletteStudentGroup } from "../features/students/lib/use-palette-student-group";
 import { groupNavigation } from "../lib/group-navigation";
-import { navigation, filterNavigation } from "../lib/navigation";
+import { navigation, filterNavigation, navGroupLabelKey, type NavItem } from "../lib/navigation";
+import { activeNavHref } from "../lib/navigation/active-href";
+import { useNavigationPreferences } from "../lib/navigation/use-navigation-preferences";
 import { confirmUnsavedChangesBeforeNavigation } from "../lib/navigation/use-unsaved-changes-protection";
 import { navAccessFromMe } from "../lib/navigation-access";
 import { canOpenPath } from "../lib/navigation-permissions";
+import { sortQuickActions } from "../lib/navigation-quick-actions";
+import { rankSearch } from "../lib/navigation-search";
 import { consolidateNavigation } from "../lib/navigation-workspaces";
-import { quickActionHref } from "../lib/quick-actions";
+import { quickActionHref, type QuickAction } from "../lib/quick-actions";
 import { useSession } from "../lib/session/session-provider";
 import { useQuickActions } from "../lib/use-quick-actions";
 
@@ -34,18 +38,53 @@ const CommandPalette = dynamic(() => import("@newsekolah/ui").then((mod) => mod.
   ssr: false,
 });
 
+/** Recent pages listed when nothing is typed yet. */
+const RECENT_LIMIT = 5;
+/** Where the student results rank among the page groups: below a page whose words match. */
+const STUDENT_SCORE = 36;
+
+/** Heading for pages outside any group (Beranda, Perlu tindakan, Pindai). */
+const UNGROUPED = "app.shell.palette.results";
+
+interface PageEntry {
+  item: NavItem;
+  label: string;
+  keywords: string[];
+  heading: string;
+}
+
+interface Bucket {
+  group: CommandPaletteGroup;
+  best: number;
+}
+
 /**
  * Global Ctrl/Cmd+K search (docs/07-ui-ux.md section 2). Wired to the same
  * `navigation` registry as the sidebar and tab bar, filtered by the same
- * permissions, so it can never offer a page the user cannot open.
+ * permissions, so it can never offer a page the reader cannot open.
+ *
+ * The palette does its own ranking (`shouldFilter={false}`): pages match on
+ * their translated label first, then on a word of it, then on their
+ * keywords (lib/navigation-search.ts), and the results stay grouped under
+ * their menu group, the groups ordered by their best match. With nothing
+ * typed it opens on the reader's recent pages and quick actions, then every
+ * page by group.
  */
 export function CommandPaletteProvider({ children }: { children: ReactNode }): ReactElement {
-  const [isOpen, setIsOpen] = useState(false);
+  // Open state and the typed query change together: every opening starts
+  // from an empty query, like the input the dialog mounts with.
+  const [palette, setPalette] = useState({ open: false, query: "" });
+  const isOpen = palette.open;
+  const query = palette.query;
+  const setIsOpen = useCallback((open: boolean) => {
+    setPalette((prev) => (open ? { open, query: prev.open ? prev.query : "" } : { ...prev, open }));
+  }, []);
   // The dialog (and its chunk) loads on the first open, not on shell mount.
   const [hasOpened, setHasOpened] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { me } = useSession();
-  const t = useTranslations("app.shell.commandPalette");
+  const t = useTranslations("app.shell.palette");
   const tQuick = useTranslations("app.quickActions");
   const tNav = useTranslations();
   const quickActions = useQuickActions();
@@ -55,7 +94,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setHasOpened(true);
-        setIsOpen((prev) => !prev);
+        setPalette((prev) => ({ open: !prev.open, query: "" }));
       }
     }
     window.addEventListener("keydown", handleKeyDown);
@@ -64,7 +103,16 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
     };
   }, []);
 
-  const pageGroups: CommandPaletteGroup[] = useMemo(() => {
+  const go = useCallback(
+    (href: string) => {
+      if (!confirmUnsavedChangesBeforeNavigation()) return;
+      setIsOpen(false);
+      router.push(href);
+    },
+    [router, setIsOpen],
+  );
+
+  const pages: PageEntry[] = useMemo(() => {
     const access = navAccessFromMe(me);
     const { can } = access;
     const authorizedItems = filterNavigation(navigation, access);
@@ -81,44 +129,46 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
       ...workspaces,
       ...authorizedItems.filter((item) => !hrefs.has(item.href)),
     ].filter((item) => !item.routeOnly && canOpenPath(item.href, access));
-    // The shared palette matches on `${label} ${heading} ${id}`. The registry
-    // keys are English slugs (`quick-record-violation`), so using them as ids
-    // made unrelated pages match any short query as a subsequence. A numeric
-    // id keeps every value unique without adding searchable letters; the
-    // searchable text is the translated label plus its translated keywords.
-    let nextId = 0;
-    return groupNavigation(items).map((group) => ({
-      heading: tNav(group.labelKey),
-      items: group.items.map((item) => ({
-        id: String(nextId++),
+    return groupNavigation(items).flatMap((group) =>
+      group.items.map((item) => ({
+        item,
         label: tNav(item.labelKey),
-        keywords: item.searchTerms?.map((key) => tNav(key)),
-        icon: <item.icon aria-hidden="true" />,
-        onSelect: () => {
-          if (!confirmUnsavedChangesBeforeNavigation()) return;
-          setIsOpen(false);
-          router.push(item.href);
-        },
+        keywords: (item.searchTerms ?? []).map((key) => tNav(key)),
+        heading: item.group ? navGroupLabelKey(item.group) : UNGROUPED,
       })),
-    }));
-  }, [me, router, tNav]);
+    );
+  }, [me, tNav]);
 
-  const quickActionGroup: CommandPaletteGroup | null = useMemo(() => {
-    if (quickActions.length === 0) return null;
-    return {
-      heading: tQuick("group"),
-      items: quickActions.map((action, index) => ({
-        id: `-${index + 1}`,
-        label: tQuick(`actions.${action.labelKey}`),
-        icon: <action.icon aria-hidden="true" />,
-        onSelect: () => {
-          if (!confirmUnsavedChangesBeforeNavigation()) return;
-          setIsOpen(false);
-          router.push(quickActionHref(action));
-        },
-      })),
-    };
-  }, [quickActions, router, tQuick]);
+  const scope = me ? `${me.tenant.tenant_id}:${me.id}` : undefined;
+  const pageItems = useMemo(() => pages.map((page) => page.item), [pages]);
+  const preferences = useNavigationPreferences(scope, pageItems, pathname);
+  const activeHref = activeNavHref(pathname, pageItems);
+
+  // Item ids only need to be unique; numbers add no searchable letters.
+  const pageItem = useCallback(
+    (page: PageEntry, id: string): CommandPaletteItem => ({
+      id,
+      label: page.label,
+      icon: <page.item.icon aria-hidden="true" />,
+      onSelect: () => {
+        go(page.item.href);
+      },
+    }),
+    [go],
+  );
+  const actionItem = useCallback(
+    (action: QuickAction, id: string): CommandPaletteItem => ({
+      id,
+      label: tQuick(`actions.${action.labelKey}`),
+      icon: <action.icon aria-hidden="true" />,
+      onSelect: () => {
+        go(quickActionHref(action));
+      },
+    }),
+    [go, tQuick],
+  );
+
+  const orderedActions = useMemo(() => sortQuickActions(quickActions), [quickActions]);
 
   // Same right as the student-profile registry entry: no student request is
   // made for a reader who could not open the page it leads to.
@@ -129,11 +179,9 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
   const studentIcon = useMemo(() => <domainIcons.users aria-hidden="true" />, []);
   const openStudent = useCallback(
     (studentId: string) => {
-      if (!confirmUnsavedChangesBeforeNavigation()) return;
-      setIsOpen(false);
-      router.push(studentProfileHref(studentId));
+      go(studentProfileHref(studentId));
     },
-    [router],
+    [go],
   );
   const students = usePaletteStudentGroup({
     enabled: hasOpened && isOpen && canOpenStudentProfile,
@@ -146,19 +194,99 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
     if (!isOpen) resetStudentSearch();
   }, [isOpen, resetStudentSearch]);
 
-  const groups = useMemo(
-    () => [
-      ...(students.group ? [students.group] : []),
-      ...(quickActionGroup ? [quickActionGroup] : []),
-      ...pageGroups,
-    ],
-    [students.group, quickActionGroup, pageGroups],
+  const groups: CommandPaletteGroup[] = useMemo(() => {
+    let nextId = 0;
+    const id = () => String(nextId++);
+
+    if (!query.trim()) {
+      const entriesFor = (items: readonly NavItem[]) =>
+        items.flatMap((item) => pages.filter((page) => page.item.key === item.key).slice(0, 1));
+      const favoriteEntries = entriesFor(preferences.favorites);
+      const recentEntries = entriesFor(
+        preferences.recent
+          .filter((item) => item.href !== activeHref)
+          .filter((item) => !preferences.favorites.includes(item))
+          .slice(0, RECENT_LIMIT),
+      );
+      const byHeading = new Map<string, PageEntry[]>();
+      for (const page of pages) {
+        byHeading.set(page.heading, [...(byHeading.get(page.heading) ?? []), page]);
+      }
+      return [
+        ...(favoriteEntries.length
+          ? [
+              {
+                heading: tNav("app.shell.mobileMenu.favorites"),
+                items: favoriteEntries.map((page) => pageItem(page, id())),
+              },
+            ]
+          : []),
+        ...(recentEntries.length
+          ? [{ heading: t("recent"), items: recentEntries.map((page) => pageItem(page, id())) }]
+          : []),
+        ...(orderedActions.length
+          ? [{ heading: tQuick("group"), items: orderedActions.map((a) => actionItem(a, id())) }]
+          : []),
+        ...[...byHeading.entries()].map(([heading, entries]) => ({
+          heading: tNav(heading),
+          items: entries.map((page) => pageItem(page, id())),
+        })),
+      ];
+    }
+
+    const buckets = new Map<string, Bucket>();
+    for (const { entry, score } of rankSearch(query, pages, (page) => page)) {
+      const bucket = buckets.get(entry.heading) ?? {
+        group: { heading: tNav(entry.heading), items: [] },
+        best: score,
+      };
+      bucket.group.items.push(pageItem(entry, id()));
+      buckets.set(entry.heading, bucket);
+    }
+    const actions = rankSearch(query, orderedActions, (action) => ({
+      label: tQuick(`actions.${action.labelKey}`),
+    }));
+    const ranked: Bucket[] = [...buckets.values()];
+    if (actions.length) {
+      ranked.push({
+        group: {
+          heading: tQuick("group"),
+          items: actions.map(({ entry }) => actionItem(entry, id())),
+        },
+        best: actions[0]?.score ?? 0,
+      });
+    }
+    if (students.group?.items.length) ranked.push({ group: students.group, best: STUDENT_SCORE });
+    // Stable: equal bests keep pages ahead of actions and students.
+    return ranked.sort((a, b) => b.best - a.best).map((bucket) => bucket.group);
+  }, [
+    query,
+    pages,
+    preferences.recent,
+    preferences.favorites,
+    activeHref,
+    orderedActions,
+    students.group,
+    pageItem,
+    actionItem,
+    t,
+    tQuick,
+    tNav,
+  ]);
+
+  const onSearchChange = students.onSearchChange;
+  const handleSearchChange = useCallback(
+    (search: string) => {
+      setPalette((prev) => ({ ...prev, query: search }));
+      onSearchChange(search);
+    },
+    [onSearchChange],
   );
 
   const open = useCallback(() => {
     setHasOpened(true);
     setIsOpen(true);
-  }, []);
+  }, [setIsOpen]);
   // Same rationale as SessionProvider/TenantProvider: keep the value's
   // identity stable so consumers of `useCommandPalette()` don't re-render on
   // every render of this provider (docs/16-audit-performa-web.md item 3).
@@ -172,10 +300,10 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
           open={isOpen}
           onOpenChange={setIsOpen}
           groups={groups}
-          onSearchChange={students.onSearchChange}
+          shouldFilter={false}
+          onSearchChange={handleSearchChange}
           placeholder={t("placeholder")}
-          label={t("trigger")}
-          emptyLabel={t("empty")}
+          label={t("placeholder")}
         />
       )}
     </CommandPaletteContext.Provider>
@@ -188,4 +316,9 @@ export function useCommandPalette(): CommandPaletteContextValue {
     throw new Error("useCommandPalette must be used within CommandPaletteProvider");
   }
   return context;
+}
+
+/** The palette when the shell provides one; `null` outside it (a component rendered on its own). */
+export function useCommandPaletteOptional(): CommandPaletteContextValue | null {
+  return useContext(CommandPaletteContext);
 }

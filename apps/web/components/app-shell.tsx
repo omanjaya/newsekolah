@@ -18,6 +18,7 @@ import { CommandPaletteProvider } from "./command-palette-provider";
 import { ForbiddenPage } from "./forbidden-page";
 import { Header } from "./header";
 import { ImpersonationBanner } from "./impersonation-banner";
+import { MobileQuickActions } from "./mobile-quick-actions";
 import { MobileTabBar } from "./mobile-tab-bar";
 import { ModuleUnavailablePage } from "./module-unavailable-page";
 import { OfflineIndicator } from "./offline-indicator";
@@ -27,8 +28,9 @@ import { UpdateAvailable } from "./update-available";
 
 /**
  * Single layout for the `(app)` route group (docs/03-layered-architecture.md
- * section 3): sidebar on desktop, bottom tab bar on mobile, one header, all
- * reading from the same `navigation` registry.
+ * section 3): sidebar on desktop, bottom tab bar and a floating quick-action
+ * button on a phone, one header, all reading from the same `navigation`
+ * registry.
  *
  * `LiveSocketProvider` wraps the whole shell so every screen under it can
  * call `useLiveInvalidate`/`useLiveTopic`
@@ -84,31 +86,28 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
         <Sidebar items={items} className="hidden md:flex" />
         <div className="flex min-w-0 flex-1 flex-col">
           {/*
-            Sticky like the sidebar: search and the notification bell are
-            reached from wherever the reader is on a long page, not only
-            from the top of it.
+            One sticky stack: the header, then any standing state as a
+            one-line strip (testing as another account, a simulated clock,
+            no connection, a new version). Strips stay in view on a long
+            page and never sit over the phone's tab bar.
           */}
-          <div className="sticky top-0 z-(--z-sticky)">
+          <div className="sticky top-0 z-sticky">
             <Header />
+            <ImpersonationBanner />
+            <SimulationControls />
+            <OfflineIndicator />
+            <UpdateAvailable />
             {/*
-              Not inside components/header.tsx itself: that file is
-              outside this chunk's scope
-              (docs/analysis/realtime-plan-2026-09-25.md chunk D). A thin
-              right-aligned row under the header keeps it close to where
-              the notification bell lives without touching that file, and
-              renders nothing (ConnectionStatusIndicator returns null)
-              except during a sustained disconnect.
+              Renders nothing (ConnectionStatusIndicator returns null)
+              except during a sustained realtime disconnect.
             */}
             <div className="flex justify-end px-4 md:px-6">
               <ConnectionStatusIndicator />
             </div>
-            <SimulationControls />
           </div>
-          <ImpersonationBanner />
-          <OfflineIndicator />
           <main
             id="main-content"
-            className="flex-1 pb-[calc(var(--shell-mobile-tab-offset)+1rem)] md:pb-0"
+            className="flex-1 pb-[calc(var(--shell-mobile-tab-offset)+var(--shell-fab-space,0px)+1rem)] md:pb-0"
           >
             {routeAccess === "ok" ? (
               children
@@ -123,10 +122,11 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
       <MobileTabBar
         items={items}
         profile={me?.profile_kind}
+        duties={me?.duties}
         scope={me ? `${me.tenant.tenant_id}:${me.id}` : undefined}
         className="md:hidden"
       />
-      <UpdateAvailable />
+      <MobileQuickActions className="md:hidden" />
     </CommandPaletteProvider>
   );
 }

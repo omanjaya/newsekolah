@@ -1,71 +1,73 @@
 import type { NavItem, NavProfileKind } from "./navigation";
 
-/** Choose two daily destinations from the already authorized registry. */
-export function mobileNavigation(items: NavItem[], profile?: NavProfileKind): NavItem[] {
-  // A counselor (guru BK) is seeded with the "teacher" profile kind like any
-  // other teacher, but their counselor duty (docs/07-ui-ux.md section 1's
-  // Guru BK persona: "Antrean izin, SP, konseling") rarely comes with a teaching
-  // assignment, so attendance/schedule are usually empty for them. The
-  // registry only grants the "counseling" item via manage_counseling, which
-  // ordinary teachers never hold, so its presence is a safe proxy -- no new
-  // signal needs to be threaded through from the caller.
-  const isCounselor = items.some((item) =>
-    item.aliases ? item.aliases.includes("counseling") : item.key === "counseling",
-  );
-  // The duty desk and the homeroom hub only reach the registry for a reader
-  // holding that duty (issue_scan_tokens, and navigation-workspaces.ts's
-  // homeroom check), so their presence is the same kind of proxy.
+/** Destinations between Beranda and Menu in the bottom tab bar. */
+const DAILY_SLOTS = 3;
+
+/** Shape of `Me["duties"]`: only the slug matters here. */
+type Duties = readonly { slug: string }[] | undefined;
+
+/**
+ * Which daily destinations a reader's tab bar leads with, from the work
+ * each persona does every day (docs/07-ui-ux.md section 1). The reader's
+ * duties (picket, counselor, security, librarian, leadership, homeroom)
+ * name the persona when present; otherwise the already authorized
+ * registry does, since an entry is only there when the reader holds the
+ * permission behind it.
+ */
+function dailyPriorities(items: NavItem[], profile: NavProfileKind | undefined, duties: Duties) {
   const has = (key: string) => items.some((item) => item.key === key);
-  const priorities =
-    profile === "teacher"
-      ? isCounselor
-        ? ["inbox", "counseling"]
-        : has("duty")
-          ? ["duty", "attendance"]
-          : has("homeroom")
-            ? ["attendance", "inbox"]
-            : ["attendance", "schedule"]
-      : profile === "student"
-        ? // Scanning into class happens every single lesson, several
-          // times a day; an exit permit is occasional. The daily tab bar
-          // has room for two, so classroom entry earns the slot exit
-          // permits held before (exit permits stays reachable from Menu).
-          // /scan reads every QR kind, classroom entry included.
-          ["schedule", "scan"]
-        : // Admin, office/TU staff, and gate duty (satpam) all seed with
-          // `profile_kind: "staff"` (or no profile row at all for a
-          // bootstrap admin), with no further persona signal threaded
-          // through from the caller, so this ranks candidates by how
-          // permission-specific they are instead of guessing which one the
-          // reader is: "school-users"/"schedule" only ever show up for an
-          // admin (view_users, view_schedules); "exit-permits"/
-          // "visitors-board" are the front-desk/gate duty's daily pair
-          // (issue_scan_tokens or scan_exit_permits, and view_visitors --
-          // most other staff accounts, ranked below the admin-only pair);
-          // the rest is the generic fallback for every other staff account
-          // (e.g. a librarian, who only has "library-desk") -- see
-          // docs/analysis/ux-audit-2026-09-25.md finding 8.
-          [
-            "school-users",
-            "schedule",
-            "visitors-board",
-            "duty",
-            "library-desk",
-            // Gate duty scans exit permits from /scan, which also covers
-            // every other QR kind; it ranks after the role-specific desks.
-            "scan",
-            "school-classes",
-            "attendance",
-          ];
-  const daily = priorities
-    .flatMap((key) => {
-      const item = items.find((entry) => entry.key === key);
-      return item ? [item] : [];
-    })
-    .slice(0, 2);
-  return [
-    items.find((item) => item.key === "dashboard"),
-    ...daily,
-    items.find((item) => item.key === "profile"),
-  ].filter((item): item is NavItem => Boolean(item));
+  const holds = (slug: string) => duties?.some((duty) => duty.slug === slug) ?? false;
+  // The counseling workspace can also open on the early-warning page alone
+  // (a principal's "Pemantauan siswa"); only the counseling page itself
+  // marks a counselor.
+  const counselor =
+    holds("counselor") ||
+    items.some((item) =>
+      item.aliases ? item.aliases.includes("counseling") : item.key === "counseling",
+    );
+
+  // Scanning into class happens every lesson; a leave request is the
+  // student's other own task. Grades and the library live in Menu.
+  if (profile === "student") return ["schedule", "scan", "leave-requests"];
+  // The school office: the approval queue, accounts, and the rosters.
+  if (has("school-users")) return ["inbox", "school-users", "school-classes"];
+  if (counselor) return ["inbox", "counseling", "violations"];
+  // Picket duty: the QR desk first, then the scanner for late arrivals and
+  // exit permits; a picket teacher still teaches.
+  if (holds("picket")) return ["duty", "scan", "attendance"];
+  // Gate duty (satpam): the gate scanner, the visitor book, exit permits.
+  if (holds("security")) return ["scan", "visitors-board", "leave-requests"];
+  if (holds("librarian") || has("library-desk")) {
+    return ["library-desk", "library-catalogue", "library-members"];
+  }
+  // School leadership: decisions waiting, the reports, and attendance.
+  if (holds("leadership") || has("staff-attendance")) return ["inbox", "reports", "attendance"];
+  if (has("visitors-board")) return ["scan", "visitors-board", "leave-requests"];
+  if (profile === "teacher") {
+    return holds("homeroom") || has("homeroom")
+      ? ["attendance", "inbox", "schedule"]
+      : ["attendance", "schedule", "grading"];
+  }
+  return ["inbox", "scan", "schedule", "attendance", "reports"];
+}
+
+/**
+ * The bottom tab bar's destinations: Beranda, then three of the reader's
+ * daily destinations, topped up with Profil and other everyday pages when
+ * the reader has fewer. Menu is added by the tab bar itself.
+ */
+export function mobileNavigation(
+  items: NavItem[],
+  profile?: NavProfileKind,
+  duties?: Duties,
+): NavItem[] {
+  const find = (key: string) => items.find((item) => item.key === key);
+  const candidates = [...dailyPriorities(items, profile, duties), "profile", "inbox", "scan"];
+  const daily: NavItem[] = [];
+  for (const key of candidates) {
+    const item = find(key);
+    if (item && item.key !== "dashboard" && !daily.includes(item)) daily.push(item);
+  }
+  const home = find("dashboard");
+  return [...(home ? [home] : []), ...daily.slice(0, DAILY_SLOTS)];
 }

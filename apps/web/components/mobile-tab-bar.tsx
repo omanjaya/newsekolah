@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@newsekolah/ui";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -11,69 +10,63 @@ import type { NavItem, NavProfileKind } from "../lib/navigation";
 import { activeNavHref } from "../lib/navigation/active-href";
 
 import { MobileMenu } from "./mobile-menu";
-import { MobileQuickActions } from "./mobile-quick-actions";
+import { TabLink } from "./mobile-tab-slot";
 
 /**
- * Frequent destinations surround a browsable menu. Global search remains
- * available from the header, while the menu exposes every permitted module.
+ * The phone's bottom tab bar (docs/superpowers/specs/2026-11-14-ui-overhaul-design.md
+ * section 6, after the artboard): five slots, Beranda and three of the
+ * reader's daily destinations (lib/mobile-navigation.ts), then Menu on the
+ * right with everything else. Quick actions float above the bar
+ * (MobileQuickActions) rather than taking a sixth slot. The bar pads
+ * itself clear of the home indicator.
  */
 export function MobileTabBar({
   items,
   className,
   scope,
   profile,
+  duties,
 }: {
   items: NavItem[];
   className?: string;
   scope?: string;
   profile?: NavProfileKind;
+  duties?: readonly { slug: string }[];
 }): ReactElement {
   const pathname = usePathname();
   const t = useTranslations();
-  const tabItems = mobileNavigation(items, profile);
+  const tabItems = mobileNavigation(items, profile, duties);
   // The owner of the current route is resolved across the whole menu, then
   // matched against the tabs: otherwise a page that lives in the menu (for
   // example /library/desk) is claimed by whichever tab it merely prefixes.
   const activeHref = activeNavHref(pathname, items);
-  const [left, right] = [
-    tabItems.slice(0, Math.ceil(tabItems.length / 2)),
-    tabItems.slice(Math.ceil(tabItems.length / 2)),
-  ];
-
-  function renderItem(item: NavItem): ReactElement {
-    const active = item.href === activeHref;
-    return (
-      <Link
-        key={item.key}
-        href={item.href}
-        aria-current={active ? "page" : undefined}
-        title={t(item.tabLabelKey ?? item.labelKey)}
-        className={cn(
-          "flex min-w-16 flex-1 flex-col items-center gap-1 py-2 text-[12px] font-medium",
-          active ? "text-accent" : "text-fg-muted",
-        )}
-      >
-        <item.icon className="size-5 shrink-0" aria-hidden="true" />
-        <span className="w-full truncate px-1 text-center">
-          {t(item.tabLabelKey ?? item.labelKey)}
-        </span>
-      </Link>
-    );
-  }
+  // A page reached through Menu lights Menu up, so the bar always says where
+  // the reader is, without claiming a tab the page does not belong to.
+  const inMenu = activeHref !== undefined && !tabItems.some((item) => item.href === activeHref);
 
   return (
     <nav
       aria-label={t("app.shell.sidebar.label")}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-(--z-sticky) flex min-h-[var(--shell-mobile-tab-offset)] items-center border-t border-line bg-surface",
+        "fixed inset-x-0 bottom-0 z-sticky h-(--shell-mobile-tab-offset) border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]",
         className,
       )}
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      {left.map(renderItem)}
-      <MobileMenu items={items} scope={scope} />
-      {right.map(renderItem)}
-      <MobileQuickActions />
+      <ul className="mx-auto flex h-full max-w-xl items-center px-1">
+        {tabItems.map((item) => (
+          <li key={item.key} className="min-w-0 flex-1">
+            <TabLink
+              href={item.href}
+              icon={<item.icon aria-hidden="true" />}
+              label={t(item.tabLabelKey ?? item.labelKey)}
+              active={item.href === activeHref}
+            />
+          </li>
+        ))}
+        <li className="min-w-0 flex-1">
+          <MobileMenu items={items} scope={scope} current={inMenu} />
+        </li>
+      </ul>
     </nav>
   );
 }
