@@ -137,6 +137,34 @@ export const Kiosk: Story = {
   },
   parameters: { layout: "fullscreen" },
 };
+/** Inside a kiosk frame that already draws the screen: no page background or padding of its own. */
+export const KioskInFrame: Story = {
+  args: {
+    variant: "kiosk",
+    fullScreen: false,
+    manualEntry: "open",
+    manualLabel: "Barcode buku",
+    submitLabel: "Catat",
+    result: { tone: "danger", title: "Buku ini sedang dipinjam", key: 0 },
+  },
+  decorators: [
+    (Story) => (
+      <div className="flex min-h-dvh flex-col bg-bg">
+        <div className="border-b border-line bg-surface px-6 py-4 text-heading text-fg-muted">
+          Kios perpustakaan
+        </div>
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-8">
+          <Story />
+        </div>
+      </div>
+    ),
+  ],
+  parameters: { layout: "fullscreen" },
+};
+export const KioskInFrameDark: Story = {
+  ...KioskInFrame,
+  globals: { theme: "dark" },
+};
 export const CameraStates: Story = {
   render: () => <ViewfinderStates />,
 };

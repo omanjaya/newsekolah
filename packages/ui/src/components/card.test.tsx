@@ -61,6 +61,19 @@ describe("Card", () => {
     expect(screen.getByRole("link", { name: "Lihat semua" })).toBeInTheDocument();
   });
 
+  it("lets a card that is the whole screen carry the page's h1", () => {
+    render(
+      <Card>
+        <CardTitle as="h1" className="text-title">
+          Hubungkan layar monitor
+        </CardTitle>
+      </Card>,
+    );
+    expect(screen.getByRole("heading", { level: 1, name: "Hubungkan layar monitor" })).toHaveClass(
+      "text-title",
+    );
+  });
+
   it("renders an interactive card onto its link child with press feedback", async () => {
     const { container } = render(
       <Card interactive asChild padding="md">

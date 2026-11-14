@@ -52,6 +52,18 @@ function Tones() {
         meta="Kelas X-A, X-B dan XI IPA 1"
         action={<Button>Isi jurnal</Button>}
       />
+      <HeroCard
+        size="kiosk"
+        eyebrow="Kios perpustakaan"
+        chip="Selesai dalam 14 detik"
+        title="Pindai buku yang dipinjam atau dikembalikan"
+        meta="2 dari 3 buku dipinjam"
+        action={
+          <Button size="lg" variant="secondary">
+            Selesai
+          </Button>
+        }
+      />
     </div>
   );
 }

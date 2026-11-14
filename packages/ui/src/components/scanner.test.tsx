@@ -133,7 +133,37 @@ describe("Scanner", () => {
     const { rerender } = render(<Scanner title="Pindai" onScan={vi.fn()} />);
     expect(screen.getByRole("heading", { name: "Pindai" })).toHaveClass("text-heading");
     rerender(<Scanner variant="kiosk" title="Pindai" onScan={vi.fn()} />);
-    expect(screen.getByRole("heading", { name: "Pindai" })).toHaveClass("text-display");
+    expect(screen.getByRole("heading", { name: "Pindai" })).toHaveClass("text-kiosk-title");
+  });
+
+  it("reads a kiosk result on the kiosk title role", () => {
+    render(
+      <Scanner
+        variant="kiosk"
+        onScan={vi.fn()}
+        result={{ tone: "success", title: "Buku dipinjam", description: "Kembali Sabtu", key: 1 }}
+      />,
+    );
+    expect(screen.getByText("Buku dipinjam")).toHaveClass("text-kiosk-title");
+    expect(screen.getByText("Kembali Sabtu")).toHaveClass("text-body-lg");
+  });
+
+  it("fills the screen as a kiosk unless it sits inside a kiosk frame", () => {
+    const { container, rerender } = render(<Scanner variant="kiosk" onScan={vi.fn()} />);
+    const section = () => container.querySelector("[data-slot=scanner]");
+    expect(section()).toHaveClass("min-h-dvh", "bg-bg", "px-4");
+    expect(section()).toHaveAttribute("data-full-screen");
+
+    rerender(<Scanner variant="kiosk" fullScreen={false} onScan={vi.fn()} />);
+    expect(section()).not.toHaveClass("min-h-dvh");
+    expect(section()).not.toHaveClass("bg-bg");
+    expect(section()).not.toHaveClass("px-4");
+    expect(section()).not.toHaveAttribute("data-full-screen");
+    expect(section()).toHaveClass("w-full", "items-center");
+
+    // An ordinary page's scanner is a card either way.
+    rerender(<Scanner fullScreen={false} onScan={vi.fn()} />);
+    expect(section()).toHaveClass("rounded-lg", "bg-surface");
   });
 
   it("has no accessibility violations", async () => {

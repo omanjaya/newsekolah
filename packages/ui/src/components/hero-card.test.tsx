@@ -40,6 +40,22 @@ describe("HeroCard", () => {
     expect(screen.getByText("Ruang X-A")).toHaveClass("text-accent-soft-fg-muted");
   });
 
+  it("sets a kiosk card on the kiosk title role and the large body role", () => {
+    render(
+      <HeroCard
+        size="kiosk"
+        titleAs="h1"
+        eyebrow="Kios perpustakaan"
+        title="Pinjam dan kembalikan buku"
+        meta="Pindai kartu anggota untuk mulai."
+      />,
+    );
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Pinjam dan kembalikan buku" }),
+    ).toHaveClass("text-kiosk-title");
+    expect(screen.getByText("Pindai kartu anggota untuk mulai.")).toHaveClass("text-body-lg");
+  });
+
   it("offers a neutral and a warning tone, and a live chip", () => {
     const { container, rerender } = render(
       <HeroCard tone="neutral" title="Tidak ada jadwal lagi" chip="Selesai" />,

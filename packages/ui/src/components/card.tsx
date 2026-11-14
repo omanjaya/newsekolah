@@ -152,8 +152,12 @@ export function CardHeader({ className, action, children, ...props }: CardHeader
 }
 
 export interface CardTitleProps extends ComponentPropsWithRef<"h3"> {
-  /** Heading level; `h3` by default, under the page's h1 and a section's h2. */
-  as?: "h2" | "h3" | "h4" | "p";
+  /**
+   * Heading level; `h3` by default, under the page's h1 and a section's h2.
+   * `h1` for a card that is the whole screen (a sign-in or a gate card on
+   * a page with no header of its own).
+   */
+  as?: "h1" | "h2" | "h3" | "h4" | "p";
 }
 
 export function CardTitle({ className, as: Heading = "h3", children, ...props }: CardTitleProps) {
