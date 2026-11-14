@@ -1,6 +1,6 @@
 {
   "eyebrow": "Settings",
-  "title": "School Settings",
+  "title": "School settings",
   "description": "All school settings in one place.",
   "searchLabel": "Search settings",
   "searchPlaceholder": "Search settings...",
@@ -10,12 +10,12 @@
   "noAccessDescription": "Your account has no access to school settings yet.",
   "sections": {
     "identity": {
-      "title": "School Identity",
-      "description": "Appearance, letterhead, and document templates."
+      "title": "School identity",
+      "description": "Brand, report letterhead, and document templates."
     },
     "access": {
-      "title": "Access & Security",
-      "description": "Users, roles, sessions, and the audit trail."
+      "title": "Access and security",
+      "description": "Users, roles, sign-in sessions, and the audit trail."
     },
     "communication": {
       "title": "Communication",
@@ -24,6 +24,10 @@
     "workflow": {
       "title": "Workflows",
       "description": "Approval flows and initial setup."
+    },
+    "account": {
+      "title": "My account",
+      "description": "Applies to your own account, not the whole school."
     }
   },
   "cards": {
@@ -33,13 +37,21 @@
     "users": "Manage school user accounts.",
     "roles": "Set roles and the access each user holds.",
     "session": "Sign-in session duration and rules.",
-    "sso": "Single sign-on through the school identity provider.",
-    "security": "Your password, verification, and devices.",
+    "sso": "Single sign-on with the school's Google Workspace accounts.",
+    "security": "Two-step verification and passkeys for your account.",
     "audit": "History of important changes made by users.",
     "notificationDefaults": "School-wide notification defaults.",
     "whatsapp": "Connect and configure school WhatsApp messaging.",
     "integrations": "Connect third-party apps and services.",
     "workflows": "Configure request and approval flows.",
-    "setup": "Step-by-step guide to the initial school setup."
+    "setup": "Step-by-step guide to the initial school setup.",
+    "notifications": "Your notification channels and quiet hours.",
+    "appearance": "Light or dark theme on this device."
+  },
+  "saveBar": {
+    "unsaved": "You have unsaved changes",
+    "discard": "Discard",
+    "save": "Save changes",
+    "leaveConfirm": "Unsaved changes will be lost. Leave this page anyway?"
   }
 }

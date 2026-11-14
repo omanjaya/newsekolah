@@ -517,7 +517,7 @@
         "themeDark": "Gelap"
       },
       "notifications": {
-        "navLabel": "Notifikasi",
+        "navLabel": "Preferensi notifikasi",
         "eyebrow": "Pengaturan",
         "title": "Preferensi notifikasi",
         "channelsTitle": "Kanal per jenis",
@@ -583,7 +583,7 @@
         "save": "Simpan pengaturan"
       },
       "branding": {
-        "navLabel": "Merek Sekolah",
+        "navLabel": "Merek sekolah",
         "eyebrow": "Pengaturan",
         "title": "Merek Sekolah",
         "identityTitle": "Identitas",
@@ -618,7 +618,7 @@
         }
       },
       "reportHeader": {
-        "navLabel": "Kop Laporan",
+        "navLabel": "Kop laporan",
         "eyebrow": "Pengaturan",
         "title": "Kop Laporan",
         "showLogoLabel": "Tampilkan logo sekolah",
@@ -1911,7 +1911,7 @@
       "title": "Peran dan akses",
       "addRole": "Tambah peran",
       "system": "Bawaan",
-      "systemHint": "Peran bawaan tidak bisa diubah. Buat peran baru untuk kombinasi izin khusus.",
+      "systemHint": "Peran bawaan tidak bisa diubah. Untuk kombinasi izin lain, buat peran baru.",
       "systemHintReadOnly": "Peran bawaan, hanya bisa dilihat.",
       "deleteRole": "Hapus peran",
       "deleteBody": "Peran {name} akan dihapus. Pengguna yang memilikinya kehilangan izin dari peran ini.",
@@ -2311,7 +2311,29 @@
         }
       },
       "permissionCount": "{granted} dari {total} izin",
-      "unsaved": "Ada perubahan yang belum disimpan"
+      "unsaved": "Ada perubahan yang belum disimpan",
+      "rolesTitle": "Peran",
+      "custom": "Khusus",
+      "roleMetaUsers": "{kind} · {count} pengguna",
+      "roleTally": "{granted} dari {total} izin diberikan",
+      "rolePicker": "Peran",
+      "roleOptionUnsaved": "{name} (belum disimpan)",
+      "searchLabel": "Cari izin",
+      "searchPlaceholder": "Cari izin",
+      "scopeLabel": "Tampilkan izin",
+      "scopeAll": "Semua",
+      "scopeGranted": "Diberikan",
+      "selectAll": "Berikan semua izin {group}",
+      "changed": "Diubah",
+      "grantedState": "(diberikan)",
+      "notGrantedState": "(tidak diberikan)",
+      "unsavedRole": "{count} perubahan izin {name} belum disimpan",
+      "leaveConfirm": "Perubahan izin yang belum disimpan akan hilang. Tetap tinggalkan halaman ini?",
+      "nameRequired": "Nama peran wajib diisi.",
+      "slugRequired": "Kode peran wajib diisi.",
+      "slugFormat": "Pakai huruf kecil, angka, dan garis bawah saja.",
+      "slugHint": "Terisi dari nama. Huruf kecil, angka, dan garis bawah, misalnya wali_asrama.",
+      "create": "Buat peran"
     }
   }
 }

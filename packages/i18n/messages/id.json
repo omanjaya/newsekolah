@@ -183,7 +183,7 @@
         "schoolProfile": "Profil Sekolah",
         "policies": "Kebijakan",
         "documentTemplates": "Template Dokumen",
-        "rolesAndAccess": "Peran dan Akses",
+        "rolesAndAccess": "Peran dan akses",
         "integrations": "Integrasi",
         "sessionsAndSecurity": "Sesi dan Keamanan",
         "modules": "Modul"
@@ -193,7 +193,7 @@
       "label": "Platform",
       "items": {
         "tenants": "Sekolah",
-        "operatorAlerts": "Notifikasi Operator"
+        "operatorAlerts": "Notifikasi operator"
       }
     },
     "compact": {

@@ -1911,7 +1911,7 @@
       "title": "Roles and access",
       "addRole": "Add role",
       "system": "Built-in",
-      "systemHint": "Built-in roles cannot change. Create a new role for a custom permission set.",
+      "systemHint": "Built-in roles cannot be changed. For another combination of permissions, create a new role.",
       "systemHintReadOnly": "Built-in role, view only.",
       "deleteRole": "Delete role",
       "deleteBody": "The {name} role will be deleted. Users holding it lose its permissions.",
@@ -2311,7 +2311,29 @@
         }
       },
       "permissionCount": "{granted} of {total} permissions",
-      "unsaved": "You have unsaved changes"
+      "unsaved": "You have unsaved changes",
+      "rolesTitle": "Roles",
+      "custom": "Custom",
+      "roleMetaUsers": "{kind} · {count, plural, one {# user} other {# users}}",
+      "roleTally": "{granted} of {total} permissions granted",
+      "rolePicker": "Role",
+      "roleOptionUnsaved": "{name} (not saved)",
+      "searchLabel": "Search permissions",
+      "searchPlaceholder": "Search permissions",
+      "scopeLabel": "Show permissions",
+      "scopeAll": "All",
+      "scopeGranted": "Granted",
+      "selectAll": "Grant every {group} permission",
+      "changed": "Changed",
+      "grantedState": "(granted)",
+      "notGrantedState": "(not granted)",
+      "unsavedRole": "{count, plural, one {# permission change} other {# permission changes}} to {name} not saved yet",
+      "leaveConfirm": "Unsaved permission changes will be lost. Leave this page anyway?",
+      "nameRequired": "Enter a role name.",
+      "slugRequired": "Enter a role code.",
+      "slugFormat": "Use lowercase letters, digits and underscores only.",
+      "slugHint": "Filled in from the name. Lowercase letters, digits and underscores, e.g. boarding_mentor.",
+      "create": "Create role"
     }
   }
 }
