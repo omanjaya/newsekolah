@@ -3,13 +3,30 @@
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
-import { Button, PageHeader, Skeleton, cn, useToast } from "@newsekolah/ui";
-import { Download } from "lucide-react";
-import { useRouter } from "next/navigation";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  List,
+  ListRow,
+  Progress,
+  SectionHeader,
+  SkeletonCards,
+  SkeletonList,
+  Stat,
+  StatGrid,
+  domainIcons,
+  useToast,
+} from "@newsekolah/ui";
+import { ClipboardCheck, Download, Gauge } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 import { useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import {
   ReportExportDialog,
@@ -18,15 +35,112 @@ import {
 } from "../../../components/report-export-dialog";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
-import { downloadTeacherSupervisionReport, useTeacherSupervisionReportQuery } from "../api";
+import {
+  type TeacherSupervisionReport,
+  downloadTeacherSupervisionReport,
+  useTeacherSupervisionReportQuery,
+} from "../api";
+import { averageScore, formatScore } from "../lib/score-format";
 
-import { SupervisionWorkspaceNav } from "./supervision-workspace-nav";
+import { CycleNav } from "./cycle-nav";
 
 /**
- * One teacher's observations within one cycle: overall and per-criterion
- * averages, then every observation's date and score for the reader to
- * judge for themselves — this screen never characterizes the teacher, only
- * reports the recorded numbers (see the task's neutrality requirement).
+ * The figures of one report: the overall average against the scale, each
+ * criterion's average as a meter, then every observation with its own
+ * average and whether the teacher has responded. It reports the recorded
+ * numbers only and never characterizes the teacher.
+ */
+function ReportContent({ report }: { report: TeacherSupervisionReport }): ReactElement {
+  const t = useTranslations("app.supervision.teacherReport");
+  const locale = useLocale() as Locale;
+  const { me } = useSession();
+  const { scale_min: min, scale_max: max, criteria } = report.cycle.instrument;
+  // No completed observation yet: an average of 0,00 would read as a score.
+  const hasScores = report.observations.length > 0;
+  const span = Math.max(max - min, 1);
+
+  return (
+    <>
+      <StatGrid variant="tiles" className="grid-cols-1 sm:grid-cols-2">
+        <Stat
+          icon={<Gauge />}
+          tone="green"
+          label={t("overallAverage")}
+          value={hasScores ? formatScore(report.overall_average, locale) : "–"}
+          hint={t("ofScale", { min, max })}
+        />
+        <Stat
+          icon={<ClipboardCheck />}
+          tone="blue"
+          label={t("completed")}
+          value={report.observations.length}
+        />
+      </StatGrid>
+
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">{t("byCriterion")}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {criteria.map((criterion, index) => {
+            const average = report.criterion_average[criterion.key] ?? 0;
+            return (
+              <Progress
+                key={criterion.key}
+                variant="meter"
+                label={`${String(index + 1)}. ${criterion.name}`}
+                value={hasScores ? average - min : 0}
+                max={span}
+                valueLabel={hasScores ? formatScore(average, locale) : "–"}
+              />
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      <section className="flex flex-col gap-3">
+        <SectionHeader title={t("observations")} count={report.observations.length} />
+        {report.observations.length === 0 ? (
+          <EmptyState
+            icon={<domainIcons.supervision />}
+            title={t("noObservationsTitle")}
+            description={t("noObservations")}
+          />
+        ) : (
+          <List framed aria-label={t("observations")}>
+            {report.observations.map((observation) => {
+              const average = averageScore(observation.scores);
+              return (
+                <ListRow
+                  key={observation.id}
+                  title={formatDate(observation.observed_at, {
+                    locale,
+                    timeZone: me?.tenant.timezone,
+                  })}
+                  meta={[
+                    average === null
+                      ? undefined
+                      : t("observationAverage", { average: formatScore(average, locale) }),
+                    observation.teacher_response ? t("responded") : t("notResponded"),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                  href={`/supervision/observations/${observation.id}`}
+                />
+              );
+            })}
+          </List>
+        )}
+      </section>
+    </>
+  );
+}
+
+/**
+ * One teacher's observations within one cycle, exportable. On its own
+ * route it is a page of the cycle's results; embedded in "Supervisi saya"
+ * (`hideHeader`) it is just the content, with the host's cycle picker as
+ * `toolbar` beside the export.
  */
 export function TeacherSupervisionReportView({
   cycleId,
@@ -43,35 +157,28 @@ export function TeacherSupervisionReportView({
 }): ReactElement {
   const t = useTranslations("app.supervision.teacherReport");
   const tRoot = useTranslations("app.supervision");
-  const locale = useLocale() as Locale;
-  const { me } = useSession();
-  const router = useRouter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const { data, isLoading, isError, refetch } = useTeacherSupervisionReportQuery(
+  const { data, isLoading, isError, error, refetch } = useTeacherSupervisionReportQuery(
     cycleId,
     teacherId,
   );
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Embedded under another page's header, the host already pads the page.
-  const shell = cn("flex flex-col gap-6", !hideHeader && "p-4 md:p-6");
-
+  let content: ReactElement;
   if (isError && !data) {
-    return <QueryError retry={() => refetch()} className={hideHeader ? undefined : "m-4"} />;
-  }
-
-  if (isLoading || !data) {
-    return (
-      <div className={shell} aria-busy="true">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-48 w-full" />
+    content = <QueryError retry={() => refetch()} error={error} />;
+  } else if (isLoading || !data) {
+    content = (
+      <div className="flex flex-col gap-6" aria-busy="true">
+        <SkeletonCards count={2} className="grid-cols-1 sm:grid-cols-2" />
+        <SkeletonList rows={4} leading={false} />
       </div>
     );
+  } else {
+    content = <ReportContent report={data} />;
   }
-
-  const report = data;
 
   // Must match supervision/service/report.go's teacherReportColumns keys
   // and order exactly: the observation date, one column per instrument
@@ -80,7 +187,10 @@ export function TeacherSupervisionReportView({
   // vocabulary), then the average and the three free-text fields.
   const columns: ReportExportColumn[] = [
     { key: "date", label: t("columns.date") },
-    ...report.cycle.instrument.criteria.map((c) => ({ key: `criterion_${c.key}`, label: c.name })),
+    ...(data?.cycle.instrument.criteria ?? []).map((c) => ({
+      key: `criterion_${c.key}`,
+      label: c.name,
+    })),
     { key: "average", label: t("columns.average") },
     { key: "observer_notes", label: t("columns.observer_notes") },
     { key: "teacher_response", label: t("columns.teacher_response") },
@@ -88,118 +198,67 @@ export function TeacherSupervisionReportView({
   ];
 
   async function handleExport(options: ReportExportOptions) {
+    if (!data) return;
     try {
       await downloadTeacherSupervisionReport(
         cycleId,
         teacherId,
-        `${report.teacher_name}-${report.cycle.name}`,
+        `${data.teacher_name}-${data.cycle.name}`,
         options,
       );
-    } catch (error) {
-      if (error instanceof ApiError) toast.error(apiErrorMessage(error.code));
-      throw error;
+    } catch (exportError) {
+      if (exportError instanceof ApiError) toast.error(apiErrorMessage(exportError.code));
+      throw exportError;
     }
   }
 
-  // No completed observation yet: an average of 0.00 would read as a score.
-  const hasScores = data.observations.length > 0;
-
-  const exportButton = (
-    <Button
-      size="sm"
-      variant="secondary"
-      icon={<Download />}
-      onClick={() => {
-        setDialogOpen(true);
-      }}
-    >
-      {t("export")}
-    </Button>
+  const exportDialog = (
+    <ReportExportDialog
+      open={dialogOpen}
+      onOpenChange={setDialogOpen}
+      reportKey="supervision.teacher-report"
+      defaultTitle={t("defaultTitle")}
+      availableColumns={columns}
+      onExport={handleExport}
+    />
   );
+  const openExport = () => {
+    setDialogOpen(true);
+  };
+
+  if (hideHeader) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          {toolbar ?? <span />}
+          <Button variant="secondary" icon={<Download />} disabled={!data} onClick={openExport}>
+            {t("export")}
+          </Button>
+        </div>
+        {content}
+        {exportDialog}
+      </div>
+    );
+  }
 
   return (
-    <div className={shell}>
-      {hideHeader ? (
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          {toolbar ?? <span />}
-          {exportButton}
-        </div>
-      ) : (
-        <PageHeader
-          breadcrumb={[
-            { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
-            { label: data.cycle.name, href: `/supervision/cycles/${cycleId}` },
-            {
-              label: tRoot("cycleReport.breadcrumb"),
-              href: `/supervision/cycles/${cycleId}/report`,
-            },
-          ]}
-          title={data.teacher_name}
-          actions={exportButton}
-        />
-      )}
-
-      {!hideHeader && <SupervisionWorkspaceNav cycleId={cycleId} />}
-
-      <ReportExportDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        reportKey="supervision.teacher-report"
-        defaultTitle={t("defaultTitle")}
-        availableColumns={columns}
-        onExport={handleExport}
-      />
-
-      <div className="grid gap-4 md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
-        <section className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-4">
-          <h2 className="text-[13px] font-medium text-fg-muted">{t("overallAverage")}</h2>
-          <p className="text-[28px] font-medium tabular-nums">
-            {hasScores ? data.overall_average.toFixed(2) : "-"}
-          </p>
-        </section>
-
-        <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-          <h2 className="text-[13px] font-medium text-fg-muted">{t("byCriterion")}</h2>
-          <ul className="flex flex-col gap-2 text-[13px]">
-            {data.cycle.instrument.criteria.map((c) => (
-              <li key={c.key} className="flex justify-between gap-3">
-                <span>{c.name}</span>
-                <span className="shrink-0 font-medium tabular-nums">
-                  {hasScores ? (data.criterion_average[c.key] ?? 0).toFixed(2) : "-"}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-[16px] font-medium">{t("observations")}</h2>
-        {data.observations.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("noObservations")}</p>
-        ) : (
-          <ul className="flex flex-col divide-y divide-border rounded-sm border border-border bg-surface">
-            {data.observations.map((observation) => (
-              <li key={observation.id}>
-                <button
-                  type="button"
-                  className="flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left text-[13px] hover:bg-bg md:min-h-9"
-                  onClick={() => {
-                    router.push(`/supervision/observations/${observation.id}`);
-                  }}
-                >
-                  <span>
-                    {formatDate(observation.observed_at, { locale, timeZone: me?.tenant.timezone })}
-                  </span>
-                  <span className="tabular-nums text-fg-muted">
-                    {t("scoreCount", { count: observation.scores.length })}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+    <AppPage
+      title={data?.teacher_name}
+      breadcrumb={[
+        { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
+        {
+          label: data?.cycle.name ?? tRoot("cycleReport.breadcrumb"),
+          href: `/supervision/cycles/${cycleId}`,
+        },
+        { label: tRoot("cycleReport.breadcrumb"), href: `/supervision/cycles/${cycleId}/report` },
+      ]}
+      nav={<CycleNav cycleId={cycleId} current="report" />}
+      secondaryActions={
+        data ? [{ label: t("export"), icon: <Download />, onSelect: openExport }] : []
+      }
+    >
+      {content}
+      {exportDialog}
+    </AppPage>
   );
 }
