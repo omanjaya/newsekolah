@@ -19,7 +19,7 @@ import {
   IconButton,
   List,
   Select,
-  Skeleton,
+  SkeletonList,
   Switch,
   useDebouncedCallback,
   useToast,
@@ -101,7 +101,7 @@ export function DutiesView(): ReactElement {
       </div>
       <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
         {assignments.isLoading ? (
-          <Skeleton className="h-64 w-full" />
+          <SkeletonList rows={5} leading framed />
         ) : rows.length === 0 ? (
           <EmptyState
             icon={<ShieldCheck aria-hidden="true" />}

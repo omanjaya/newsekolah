@@ -11,7 +11,7 @@ import {
   Field,
   Input,
   Select,
-  Skeleton,
+  SkeletonForm,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -53,7 +53,7 @@ export function SchoolProfileSection(): ReactElement {
       {branding.isError && !branding.data ? (
         <QueryError retry={() => branding.refetch()} />
       ) : branding.isLoading || !branding.data ? (
-        <Skeleton className="h-48 w-full" />
+        <SkeletonForm fields={6} />
       ) : (
         <SchoolProfileForm key={branding.dataUpdatedAt} initial={branding.data} />
       )}

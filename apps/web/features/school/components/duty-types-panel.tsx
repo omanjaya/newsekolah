@@ -11,15 +11,18 @@ import {
   Dialog,
   DialogContent,
   DialogFooter,
+  EmptyState,
   Field,
   FormError,
   Input,
+  List,
+  ListRow,
   Select,
-  Skeleton,
+  SkeletonList,
   Switch,
   useToast,
 } from "@newsekolah/ui";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -63,7 +66,7 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
   const selected = list.find((d) => d.id === selectedId) ?? list[0];
 
   if (types.isLoading) {
-    return <Skeleton className="h-64 w-full" />;
+    return <SkeletonList rows={5} framed />;
   }
 
   function resetCreateForm() {
@@ -118,30 +121,39 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
             {t("types.add")}
           </Button>
         )}
-        <nav
+        {/* A phone picks the type here; the list below is for a wide screen. */}
+        <Select
+          className="md:hidden"
           aria-label={t("types.title")}
-          className="flex flex-row gap-1 overflow-x-auto md:min-h-0 md:flex-col md:overflow-y-auto"
-        >
-          {list.map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              aria-current={selected?.id === d.id ? "true" : undefined}
-              onClick={() => {
-                setSelectedId(d.id);
-              }}
-              className={`flex min-h-11 items-center justify-between rounded-xs px-3 py-2 text-left text-body ${selected?.id === d.id ? "bg-accent/10 text-accent" : "text-fg hover:bg-bg"}`}
-            >
-              <span>{d.name}</span>
-              {!d.is_active && <Badge>{t("types.inactive")}</Badge>}
-            </button>
-          ))}
-        </nav>
+          options={list.map((d) => ({ value: d.id, label: d.name }))}
+          value={selected?.id}
+          onValueChange={setSelectedId}
+        />
+        <Card className="max-md:hidden md:min-h-0 md:overflow-y-auto">
+          <nav aria-label={t("types.title")}>
+            <List dense variant="plain">
+              {list.map((d) => (
+                <ListRow
+                  key={d.id}
+                  title={d.name}
+                  selected={selected?.id === d.id}
+                  chevron={false}
+                  trailing={
+                    d.is_active ? undefined : <Badge tone="neutral">{t("types.inactive")}</Badge>
+                  }
+                  onClick={() => {
+                    setSelectedId(d.id);
+                  }}
+                />
+              ))}
+            </List>
+          </nav>
+        </Card>
       </div>
       {selected ? (
         <DutyTypeDetail key={selected.id} duty={selected} canManage={canManage} />
       ) : (
-        <p className="text-body-sm text-fg-muted">{t("types.empty")}</p>
+        <EmptyState icon={<ShieldCheck aria-hidden="true" />} title={t("types.empty")} />
       )}
       <Dialog
         open={creating}
@@ -321,7 +333,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
         </div>
         <p className="text-body-sm text-fg-muted">{t("types.permissionsBody")}</p>
         {permissions.isLoading ? (
-          <Skeleton className="h-48 w-full" />
+          <SkeletonList rows={4} />
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {(permissions.data?.groups ?? []).map((group) => (

@@ -9,8 +9,9 @@ import {
   Field,
   IconButton,
   List,
+  ListRow,
   Select,
-  Skeleton,
+  SkeletonList,
   useToast,
 } from "@newsekolah/ui";
 import { Plus, Trash2, UsersRound } from "lucide-react";
@@ -95,30 +96,27 @@ function AssignmentsEditor({
     <>
       <List framed>
         {pairs.map((pair) => (
-          <li
+          <ListRow
             key={pairKey(pair)}
-            className="group flex items-center justify-between gap-2 px-3 py-2 transition-colors hover:bg-bg"
-          >
-            <div className="flex min-w-0 items-center gap-2">
-              <span className="truncate text-body font-medium">
-                {subjectMap.get(pair.subject_id)?.name ?? "-"}
-              </span>
-              <Badge tone="neutral">{classMap.get(pair.class_id)?.name ?? "-"}</Badge>
-            </div>
-            {canManage && (
-              <IconButton
-                icon={<Trash2 />}
-                aria-label={t("removePair")}
-                className="md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-visible:opacity-100"
-                onClick={() => {
-                  setPairs((prev) => prev.filter((p) => pairKey(p) !== pairKey(pair)));
-                }}
-              />
-            )}
-          </li>
+            title={subjectMap.get(pair.subject_id)?.name ?? "-"}
+            trailing={<Badge tone="neutral">{classMap.get(pair.class_id)?.name ?? "-"}</Badge>}
+            action={
+              canManage ? (
+                <IconButton
+                  size="sm"
+                  variant="ghost"
+                  icon={<Trash2 />}
+                  aria-label={t("removePair")}
+                  onClick={() => {
+                    setPairs((prev) => prev.filter((p) => pairKey(p) !== pairKey(pair)));
+                  }}
+                />
+              ) : undefined
+            }
+          />
         ))}
         {pairs.length === 0 && (
-          <li className="px-3 py-6 text-center text-body-sm text-fg-muted">{t("noAssignments")}</li>
+          <li className="px-4 py-6 text-center text-body-sm text-fg-muted">{t("noAssignments")}</li>
         )}
       </List>
 
@@ -241,7 +239,7 @@ export function TeachingAssignmentsView(): ReactElement {
           description={t("emptyBody")}
         />
       ) : assignments.isLoading ? (
-        <Skeleton className="h-48 w-full" />
+        <SkeletonList rows={4} framed />
       ) : (
         <AssignmentsEditor
           key={`${effectiveYearId}:${teacherId}`}
