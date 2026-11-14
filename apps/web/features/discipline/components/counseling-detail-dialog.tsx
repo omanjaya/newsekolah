@@ -93,7 +93,7 @@ export function CounselingDetailDialog({
         ) : detail.isLoading || !note ? (
           <Skeleton className="h-40 w-full" aria-busy="true" />
         ) : (
-          <div className="flex flex-col gap-3 text-[13px]">
+          <div className="flex flex-col gap-3 text-body-sm">
             <dl className="grid grid-cols-2 gap-2">
               <dt className="text-fg-muted">{t("columns.student")}</dt>
               <dd>{studentMap.get(note.student_user_id)?.name ?? t("unknownStudent")}</dd>

@@ -18,7 +18,6 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 
-import { CursorPagination } from "../../../components/cursor-pagination";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
@@ -48,7 +47,7 @@ export function IssuedLettersPanel(): ReactElement {
   const classes = useClassesQuery();
   const [search, setSearch] = useUrlState<string>("letters_q", () => true, "");
   const paging = useOffsetPage(PAGE_SIZE, "letters_page");
-  const { data, isLoading } = useWarningLettersQuery(classId || undefined, {
+  const { data, isLoading, error, refetch } = useWarningLettersQuery(classId || undefined, {
     limit: paging.limit,
     offset: paging.offset,
     search,
@@ -147,6 +146,16 @@ export function IssuedLettersPanel(): ReactElement {
           rowCount={items.length}
           pagination={{ pageIndex: 0, pageSize: PAGE_SIZE }}
           onPaginationChange={() => undefined}
+          cursorPagination={{
+            hasPrevious: paging.hasPrevious,
+            hasNext: paging.hasNextFor(items.length),
+            onPrevious: paging.goPrevious,
+            onNext: paging.goNext,
+            page: paging.page,
+            pageSize: paging.limit,
+          }}
+          error={error}
+          onRetry={() => void refetch()}
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter={search}
@@ -172,12 +181,6 @@ export function IssuedLettersPanel(): ReactElement {
           }
         />
       </div>
-      <CursorPagination
-        hasPrevious={paging.hasPrevious}
-        hasNext={paging.hasNextFor(items.length)}
-        onPrevious={paging.goPrevious}
-        onNext={paging.goNext}
-      />
     </div>
   );
 }

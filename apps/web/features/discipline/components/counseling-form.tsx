@@ -3,7 +3,7 @@
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatTime } from "@newsekolah/i18n";
-import { Alert, Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import { Field, Alert, Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
@@ -173,8 +173,7 @@ export function CounselingForm({
           </div>
         </Alert>
       )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("student")}</span>
+      <Field label={t("student")}>
         <DirectoryPicker
           profileKind="student"
           value={studentId}
@@ -182,9 +181,8 @@ export function CounselingForm({
           labels={studentLabels}
           disabled={initial !== undefined}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("sessionAt")}</span>
+      </Field>
+      <Field label={t("sessionAt")}>
         <Input
           type="datetime-local"
           value={sessionAt}
@@ -193,9 +191,8 @@ export function CounselingForm({
           }}
           required
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("kind")}</span>
+      </Field>
+      <Field label={t("kind")}>
         <Select
           options={KINDS.map((k) => ({ value: k, label: t(`kindOptions.${k}`) }))}
           value={kind}
@@ -203,9 +200,8 @@ export function CounselingForm({
             setKind(v as CounselingKind);
           }}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("topic")}</span>
+      </Field>
+      <Field label={t("topic")}>
         <Select
           options={TOPICS.map((topicOption) => ({
             value: topicOption,
@@ -216,10 +212,9 @@ export function CounselingForm({
             setTopic(v as CounselingTopic);
           }}
         />
-      </label>
+      </Field>
       {topic === "career" && (
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("careerGoals")}</span>
+        <Field label={t("careerGoals")}>
           <Textarea
             rows={2}
             value={careerGoals}
@@ -229,11 +224,10 @@ export function CounselingForm({
             placeholder={t("careerGoalsPlaceholder")}
             maxLength={5000}
           />
-        </label>
+        </Field>
       )}
       {topic === "problem" && (
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("problemDescription")}</span>
+        <Field label={t("problemDescription")}>
           <Textarea
             rows={2}
             value={problemDescription}
@@ -243,10 +237,9 @@ export function CounselingForm({
             placeholder={t("problemDescriptionPlaceholder")}
             maxLength={5000}
           />
-        </label>
+        </Field>
       )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("title")}</span>
+      <Field label={t("title")}>
         <Input
           value={title}
           onChange={(e) => {
@@ -256,9 +249,8 @@ export function CounselingForm({
           required
           maxLength={200}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("content")}</span>
+      </Field>
+      <Field label={t("content")}>
         <Textarea
           rows={5}
           value={content}
@@ -268,9 +260,8 @@ export function CounselingForm({
           placeholder={t("contentPlaceholder")}
           required
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("followUpPlan")}</span>
+      </Field>
+      <Field label={t("followUpPlan")}>
         <Textarea
           rows={2}
           value={followUpPlan}
@@ -279,9 +270,8 @@ export function CounselingForm({
           }}
           placeholder={t("followUpPlanPlaceholder")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("visibility")}</span>
+      </Field>
+      <Field label={t("visibility")} hint={t(`visibilityHint.${visibility}`)}>
         <Select
           options={VISIBILITIES.map((v) => ({ value: v, label: t(`visibilityOptions.${v}`) }))}
           value={visibility}
@@ -289,8 +279,7 @@ export function CounselingForm({
             setVisibility(v as CounselingVisibility);
           }}
         />
-        <span className="text-[12px] text-fg-muted">{t(`visibilityHint.${visibility}`)}</span>
-      </label>
+      </Field>
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}

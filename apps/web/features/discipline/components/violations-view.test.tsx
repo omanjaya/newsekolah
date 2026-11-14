@@ -13,9 +13,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (permission: string) => mocks.permissions.has(permission),
 }));
-vi.mock("../../student-services/components/service-workspace-nav", () => ({
-  DisciplineWorkspaceNav: () => null,
-}));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("./violations-ledger-view", () => ({
   ViolationsLedgerView: () => <div>ledger-panel</div>,
 }));
@@ -32,35 +30,36 @@ describe("ViolationsView warning-letter tabs", () => {
     window.history.replaceState(null, "", "/discipline/violations");
   });
 
-  it("hides the candidate and letter tabs without view_discipline", () => {
+  it("hides the candidate tab without view_discipline", () => {
     render(<ViolationsView />);
-
     expect(screen.queryByRole("tab", { name: "tabs.atRisk" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "tabs.letters" })).not.toBeInTheDocument();
     expect(screen.getByText("ledger-panel")).toBeInTheDocument();
   });
 
-  it("shows the candidate and letter tabs with view_discipline", () => {
+  it("shows the candidate tab with view_discipline, and leaves issued letters to their own page", () => {
     mocks.permissions = new Set(["view_discipline"]);
     render(<ViolationsView />);
-
     expect(screen.getByRole("tab", { name: "tabs.atRisk" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "tabs.letters" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "tabs.letters" })).not.toBeInTheDocument();
   });
 
   it("opens the candidates panel from the tab URL param", () => {
     mocks.permissions = new Set(["view_discipline"]);
     window.history.replaceState(null, "", "/discipline/violations?tab=atRisk");
     render(<ViolationsView />);
-
     expect(screen.getByText("at-risk-panel")).toBeInTheDocument();
   });
 
-  it("ignores a letters tab param when the permission is missing", () => {
-    window.history.replaceState(null, "", "/discipline/violations?tab=letters");
+  it("falls back to the ledger for a tab param the reader cannot open", () => {
+    window.history.replaceState(null, "", "/discipline/violations?tab=atRisk");
     render(<ViolationsView />);
-
-    expect(screen.queryByText("letters-panel")).not.toBeInTheDocument();
+    expect(screen.queryByText("at-risk-panel")).not.toBeInTheDocument();
     expect(screen.getByText("ledger-panel")).toBeInTheDocument();
+  });
+
+  it("puts the record action in the page header for a recorder", () => {
+    mocks.permissions = new Set(["record_violations"]);
+    render(<ViolationsView />);
+    expect(screen.getByRole("button", { name: "record" })).toBeInTheDocument();
   });
 });

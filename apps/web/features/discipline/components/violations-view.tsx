@@ -1,64 +1,80 @@
 "use client";
 
-import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+import { useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
+import { useQuickAction } from "../../../lib/hooks/use-quick-action";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
-import { DisciplineWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 
 import { AtRiskPanel } from "./at-risk-panel";
 import { DisciplinePolicyView } from "./discipline-policy-view";
-import { IssuedLettersPanel } from "./issued-letters-panel";
 import { ViolationCatalogView } from "./violation-catalog-view";
 import { ViolationsLedgerView } from "./violations-ledger-view";
 
+/**
+ * Pelanggaran: the point ledger, the students due a warning letter, and
+ * (for whoever manages them) the violation catalog and the letter policy.
+ * Issued letters have one home, the Surat peringatan page next door.
+ */
 export function ViolationsView(): ReactElement {
-  const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.discipline.violations");
+  const tNav = useTranslations("app.shell.nav.items");
   const canViewLetters = useCan("view_discipline");
+  const canRecord = useCan("record_violations");
   const canManageCatalog = useCan("manage_discipline_catalog");
   const canManagePolicy = useCan("manage_settings");
   const [tab, setTab] = useUrlState<string>(
     "tab",
     [
       "ledger",
-      ...(canViewLetters ? ["atRisk", "letters"] : []),
+      ...(canViewLetters ? ["atRisk"] : []),
       ...(canManageCatalog ? ["catalog"] : []),
       ...(canManagePolicy ? ["policy"] : []),
     ],
     "ledger",
   );
+  const [recording, setRecording] = useState(false);
+  function record() {
+    setTab("ledger");
+    setRecording(true);
+  }
+  useQuickAction("record-violation", record, canRecord);
 
   const showTabs = canViewLetters || canManageCatalog || canManagePolicy;
+  const ledger = <ViolationsLedgerView recording={recording} onRecordingChange={setRecording} />;
 
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the active tab's panel scrolls internally.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <DisciplineWorkspaceNav />
-      <PageHeader eyebrow={t("eyebrow")} title={workspace("discipline")} />
+    <AppPage
+      variant="fit"
+      title={t("title")}
+      eyebrow={tNav("discipline")}
+      primaryAction={
+        canRecord ? (
+          <Button icon={<Plus />} onClick={record}>
+            {t("record")}
+          </Button>
+        ) : undefined
+      }
+    >
       {showTabs ? (
         <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
           <TabsList>
             <TabsTrigger value="ledger">{t("tabs.ledger")}</TabsTrigger>
             {canViewLetters && <TabsTrigger value="atRisk">{t("tabs.atRisk")}</TabsTrigger>}
-            {canViewLetters && <TabsTrigger value="letters">{t("tabs.letters")}</TabsTrigger>}
             {canManageCatalog && <TabsTrigger value="catalog">{t("tabs.catalog")}</TabsTrigger>}
             {canManagePolicy && <TabsTrigger value="policy">{t("tabs.policy")}</TabsTrigger>}
           </TabsList>
           <TabsContent value="ledger" className="pt-4 md:min-h-0 md:flex-1">
-            <ViolationsLedgerView />
+            {ledger}
           </TabsContent>
           {canViewLetters && (
             <TabsContent value="atRisk" className="pt-4 md:min-h-0 md:flex-1">
               <AtRiskPanel />
-            </TabsContent>
-          )}
-          {canViewLetters && (
-            <TabsContent value="letters" className="pt-4 md:min-h-0 md:flex-1">
-              <IssuedLettersPanel />
             </TabsContent>
           )}
           {canManageCatalog && (
@@ -73,10 +89,8 @@ export function ViolationsView(): ReactElement {
           )}
         </Tabs>
       ) : (
-        <div className="flex flex-col md:min-h-0 md:flex-1">
-          <ViolationsLedgerView />
-        </div>
+        <div className="flex flex-col md:min-h-0 md:flex-1">{ledger}</div>
       )}
-    </div>
+    </AppPage>
   );
 }

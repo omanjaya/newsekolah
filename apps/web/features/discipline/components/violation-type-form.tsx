@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Checkbox, Input, useToast } from "@newsekolah/ui";
+import { Field, Button, Checkbox, Input, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -63,8 +63,7 @@ export function ViolationTypeForm({
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("code")}</span>
+      <Field label={t("code")}>
         <Input
           value={code}
           onChange={(e) => {
@@ -73,9 +72,8 @@ export function ViolationTypeForm({
           required
           maxLength={20}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
+      </Field>
+      <Field label={t("name")}>
         <Input
           value={name}
           onChange={(e) => {
@@ -84,9 +82,8 @@ export function ViolationTypeForm({
           required
           maxLength={200}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("points")}</span>
+      </Field>
+      <Field label={t("points")}>
         <Input
           type="number"
           value={points}
@@ -96,9 +93,8 @@ export function ViolationTypeForm({
           required
           min={0}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("category")}</span>
+      </Field>
+      <Field label={t("category")}>
         <Input
           value={category}
           onChange={(e) => {
@@ -107,8 +103,8 @@ export function ViolationTypeForm({
           placeholder={t("categoryPlaceholder")}
           maxLength={100}
         />
-      </label>
-      <label className="flex items-center gap-2 text-[13px]">
+      </Field>
+      <label className="flex items-center gap-2 text-body-sm">
         <Checkbox
           checked={isActive}
           onCheckedChange={(v) => {

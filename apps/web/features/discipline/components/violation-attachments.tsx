@@ -115,7 +115,7 @@ export function ViolationAttachments({
   return (
     <div className="flex flex-col gap-2 border-t border-border pt-3">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-medium text-fg">{t("title")}</span>
+        <span className="text-label text-fg">{t("title")}</span>
         {canUpload && !atMax && (
           <Button
             type="button"
@@ -141,9 +141,9 @@ export function ViolationAttachments({
           }}
         />
       </div>
-      {canUpload && atMax && <p className="text-[13px] text-fg-muted">{t("maxReached")}</p>}
+      {canUpload && atMax && <p className="text-body-sm text-fg-muted">{t("maxReached")}</p>}
       {items.length === 0 ? (
-        <p className="text-[13px] text-fg-muted">{t("empty")}</p>
+        <p className="text-body-sm text-fg-muted">{t("empty")}</p>
       ) : (
         <ul className="flex flex-wrap gap-2">
           {items.map((attachment) => {

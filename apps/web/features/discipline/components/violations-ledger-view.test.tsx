@@ -54,7 +54,7 @@ describe("ViolationsLedgerView filters", () => {
 
   it("passes the chosen class to the violations query and writes it to the URL", async () => {
     const user = userEvent.setup();
-    render(<ViolationsLedgerView />);
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "filters.class" }));
     await user.click(await screen.findByRole("button", { name: "7B" }));
@@ -68,7 +68,7 @@ describe("ViolationsLedgerView filters", () => {
 
   it("toggles the include-voided filter directly and writes include_voided=true to the URL", async () => {
     const user = userEvent.setup();
-    render(<ViolationsLedgerView />);
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
     const toggle = screen.getByRole("button", { name: "filters.includeVoided" });
     expect(toggle).toHaveAttribute("aria-pressed", "false");
@@ -83,7 +83,7 @@ describe("ViolationsLedgerView filters", () => {
 
   it("reads an initial class_id URL param back into the filter bar", () => {
     window.history.replaceState(null, "", "/discipline/violations?class_id=class-7a");
-    render(<ViolationsLedgerView />);
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ classId: "class-7a" }),
@@ -95,7 +95,7 @@ describe("ViolationsLedgerView filters", () => {
   it("clears an active filter from its chip's remove control", async () => {
     window.history.replaceState(null, "", "/discipline/violations?include_voided=true");
     const user = userEvent.setup();
-    render(<ViolationsLedgerView />);
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(
@@ -107,7 +107,7 @@ describe("ViolationsLedgerView filters", () => {
 
   it("sets a date range from the two native date inputs and writes both bounds to the URL", async () => {
     const user = userEvent.setup();
-    render(<ViolationsLedgerView />);
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "filters.dateRange" }));
     fireEvent.change(screen.getByLabelText("filters.from"), {

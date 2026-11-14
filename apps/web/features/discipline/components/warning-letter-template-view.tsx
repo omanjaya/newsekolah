@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Skeleton, Textarea, useToast } from "@newsekolah/ui";
+import { Field, Button, Input, Skeleton, Textarea, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -114,20 +114,19 @@ function WarningLetterTemplateEditor({
 
   return (
     <div className="flex flex-col gap-4 md:h-full md:min-h-0 md:flex-1 md:overflow-y-auto">
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
+      <p className="text-body-sm text-fg-muted">{t("description")}</p>
 
       <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
         {error && (
           <p
             role="alert"
-            className="rounded-xs border border-status-absent/40 px-3 py-2 text-[13px]"
+            className="rounded-xs border border-status-absent/40 px-3 py-2 text-body-sm"
           >
             {error}
           </p>
         )}
 
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("patternLabel")}</span>
+        <Field label={t("patternLabel")}>
           <Input
             value={pattern}
             disabled={!canEdit}
@@ -140,10 +139,9 @@ function WarningLetterTemplateEditor({
             invalid={error === t("missingSeqError")}
           />
           <span className="text-fg-muted">{t("patternHint")}</span>
-        </label>
+        </Field>
 
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("seqPadLabel")}</span>
+        <Field label={t("seqPadLabel")}>
           <Input
             type="number"
             min={MIN_SEQ_PAD}
@@ -156,15 +154,14 @@ function WarningLetterTemplateEditor({
             className="w-24"
           />
           <span className="text-fg-muted">{t("seqPadHint")}</span>
-        </label>
+        </Field>
 
-        <div className="flex flex-col gap-1 rounded-xs border border-border bg-bg px-3 py-2 text-[13px]">
+        <div className="flex flex-col gap-1 rounded-xs border border-border bg-bg px-3 py-2 text-body-sm">
           <span className="font-medium text-fg-muted">{t("previewLabel")}</span>
           <span className="font-medium tabular-nums text-fg">{preview}</span>
         </div>
 
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("openingLabel")}</span>
+        <Field label={t("openingLabel")}>
           <Textarea
             rows={3}
             value={openingText}
@@ -173,10 +170,9 @@ function WarningLetterTemplateEditor({
               setOpeningText(e.target.value);
             }}
           />
-        </label>
+        </Field>
 
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("closingLabel")}</span>
+        <Field label={t("closingLabel")}>
           <Textarea
             rows={3}
             value={closingText}
@@ -185,7 +181,7 @@ function WarningLetterTemplateEditor({
               setClosingText(e.target.value);
             }}
           />
-        </label>
+        </Field>
 
         {canEdit && (
           <div className="flex justify-end border-t border-border pt-4">
