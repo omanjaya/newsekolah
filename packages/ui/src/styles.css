@@ -626,3 +626,28 @@
     margin-top: auto;
   }
 }
+
+/*
+ * Tooltip colors. In the light theme an inverse pill (the text color as
+ * its fill), so it never melts into the white card or button it points
+ * at; in the dark theme the raised surface and its hairline, which
+ * already stand apart from every card. The theme selectors are the token
+ * layer's own.
+ */
+:root {
+  --tooltip-bg: var(--color-fg);
+  --tooltip-fg: var(--color-bg);
+  --tooltip-border: transparent;
+}
+[data-theme="dark"] {
+  --tooltip-bg: var(--color-surface-raised);
+  --tooltip-fg: var(--color-fg);
+  --tooltip-border: var(--color-border);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --tooltip-bg: var(--color-surface-raised);
+    --tooltip-fg: var(--color-fg);
+    --tooltip-border: var(--color-border);
+  }
+}
