@@ -52,7 +52,8 @@ export function AuthBrandPanel(): ReactElement {
         )}
       />
 
-      <div className="flex min-w-0 animate-enter items-center gap-3 lg:my-auto lg:flex-col lg:items-start lg:gap-6 lg:pb-16">
+      {/* Below 1024px the band's identity lines up with the form's column. */}
+      <div className="flex min-w-0 animate-enter items-center gap-3 sm:mx-auto sm:max-w-md lg:mx-0 lg:my-auto lg:max-w-none lg:flex-col lg:items-start lg:gap-6 lg:pb-16">
         <SchoolMark
           surface="brand"
           size={40}
