@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 
 import { initialsFor } from "../../lib/tenant/initials";
-import { PRODUCT_NAME_FALLBACK } from "../../lib/tenant/tenant-provider";
+import { PRODUCT_NAME_FALLBACK } from "../../lib/tenant/product-name";
 
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 

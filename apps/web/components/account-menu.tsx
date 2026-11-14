@@ -40,7 +40,7 @@ const ACCOUNT_ORDER = [
 
 function useAccount() {
   const { me } = useSession();
-  const { displayName } = useTenant();
+  const { displayName, isLoading: brandingUnknown } = useTenant();
   const t = useTranslations("app.shell.account");
   const rank = (item: NavItem) => {
     const index = ACCOUNT_ORDER.indexOf(item.key);
@@ -51,7 +51,8 @@ function useAccount() {
     .sort((a, b) => rank(a) - rank(b));
   const role = me?.roles.find((entry) => entry.is_primary)?.name ?? me?.roles[0]?.name ?? "";
   const context = [
-    displayName,
+    // Never the product name in the school's place.
+    brandingUnknown ? null : displayName,
     me?.current_class ? t("className", { name: me.current_class.name }) : null,
     me?.active_academic_year
       ? t("schoolYear", { label: me.active_academic_year.label })
