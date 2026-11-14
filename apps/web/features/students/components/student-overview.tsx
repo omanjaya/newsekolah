@@ -17,6 +17,7 @@ import {
   Stat,
   StatGrid,
   TextLink,
+  cn,
   domainIcons,
 } from "@newsekolah/ui";
 import { CalendarCheck, FileWarning, MessagesSquare, ShieldAlert, TrendingUp } from "lucide-react";
@@ -60,6 +61,10 @@ export function StudentOverviewTab({ studentId }: { studentId: string }): ReactE
   const mentoringOn = useModuleEnabled("mentoring");
   const canSnapshot = useCan("view_mentoring") && mentoringOn;
   const risk = useStudentRiskQuery(studentId, canRisk);
+  const disciplineOn = useModuleEnabled("discipline");
+  const canDiscipline = useCan("view_discipline");
+  const canCounsel = useCan("manage_counseling");
+  const hasHistory = (canDiscipline || canCounsel) && disciplineOn;
 
   return (
     <div className="flex flex-col gap-6">
@@ -70,7 +75,12 @@ export function StudentOverviewTab({ studentId }: { studentId: string }): ReactE
         </Card>
       )}
       {!canRisk && canSnapshot && <SnapshotOverview studentId={studentId} />}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div
+        className={cn(
+          "grid gap-6",
+          canUsers && hasHistory && "lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]",
+        )}
+      >
         {canUsers && <StudentBiodata studentId={studentId} />}
         <StudentHistory studentId={studentId} />
       </div>
