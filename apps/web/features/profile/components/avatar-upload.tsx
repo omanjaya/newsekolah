@@ -2,8 +2,9 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import { Avatar, Button, Progress, useToast } from "@newsekolah/ui";
+import { Camera } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useRef, useState } from "react";
 
 import { uploadToPresignedUrl } from "../../../lib/api/presigned-upload";
@@ -23,7 +24,11 @@ const MAX_BYTES = 2 * 1024 * 1024;
 // data without visible quality loss.
 const AVATAR_MAX_LONG_EDGE = 512;
 
-export function AvatarUpload(): ReactElement | null {
+/**
+ * The reader's photo with its "change photo" control. `children` (the
+ * name and role beside the photo) turn it into the profile's identity row.
+ */
+export function AvatarUpload({ children }: { children?: ReactNode } = {}): ReactElement | null {
   const { me } = useSession();
   const t = useTranslations("app.profile.avatar");
   const toast = useToast();
@@ -71,9 +76,10 @@ export function AvatarUpload(): ReactElement | null {
   }
 
   return (
-    <div className="flex items-center gap-4">
-      <Avatar name={me.name} src={me.avatar_url} className="size-16 text-[20px]" />
-      <div className="flex flex-col items-start gap-2">
+    <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+      <Avatar name={me.name} src={me.avatar_url} size={64} decorative={children !== undefined} />
+      <div className="min-w-0">{children}</div>
+      <div className="col-span-2 flex flex-col items-start gap-1.5 sm:col-span-1 sm:items-end">
         {progress !== null ? (
           <Progress
             value={progress}
@@ -85,6 +91,7 @@ export function AvatarUpload(): ReactElement | null {
             type="button"
             variant="secondary"
             size="sm"
+            icon={<Camera />}
             onClick={() => {
               fileInputRef.current?.click();
             }}
@@ -92,7 +99,7 @@ export function AvatarUpload(): ReactElement | null {
             {t("change")}
           </Button>
         )}
-        <p className="text-[12px] text-fg-muted">{t("hint")}</p>
+        <p className="text-caption text-fg-muted">{t("hint")}</p>
       </div>
       <input
         ref={fileInputRef}

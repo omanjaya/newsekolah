@@ -417,27 +417,20 @@
     },
     "profile": {
       "title": "Profil",
-      "identityTitle": "Identitas",
       "usernameLabel": "Nama pengguna",
       "emailLabel": "Email",
-      "emailEmpty": "Belum diisi",
-      "rolesLabel": "Peran",
-      "sessionsColumnDevice": "Perangkat",
-      "sessionsColumnLastSeen": "Terakhir aktif",
-      "sessionsColumnActions": "Aksi",
       "sessionsEmptyTitle": "Tidak ada sesi lain",
       "sessionsEmptyBody": "Sesi lain akan tampil di sini setelah masuk dari perangkat lain.",
       "revokeSuccess": "Sesi berhasil diakhiri",
       "changePasswordTitle": "Ubah kata sandi",
       "avatar": {
-        "title": "Foto",
         "change": "Ganti foto",
         "hint": "JPEG, PNG, atau WebP, maksimal 2 MB",
         "uploading": "Mengunggah, {percent, number}%",
         "updated": "Foto diperbarui"
       },
       "edit": {
-        "title": "Ubah profil",
+        "title": "Akun",
         "nameLabel": "Nama lengkap",
         "emailLabel": "Email",
         "phoneLabel": "Telepon",
@@ -449,7 +442,9 @@
         "save": "Simpan perubahan",
         "saved": "Profil diperbarui",
         "usernameLabel": "Nama pengguna",
-        "usernameLengthError": "Nama pengguna minimal 3 karakter."
+        "usernameLengthError": "Nama pengguna minimal 3 karakter.",
+        "description": "Nama dan kontak yang dilihat guru, siswa, dan staf sekolah.",
+        "phoneHint": "Nomor yang tersimpan tidak ditampilkan; isi untuk menggantinya."
       },
       "detail": {
         "title": "Data diri",
@@ -482,8 +477,34 @@
         "employeeNumber": "Nomor induk pegawai",
         "position": "Jabatan",
         "save": "Simpan data diri",
-        "saved": "Data diri diperbarui"
-      }
+        "saved": "Data diri diperbarui",
+        "unset": "Belum dipilih",
+        "institutionalHint": "Diisi dan diubah oleh admin sekolah.",
+        "identitySection": "Identitas",
+        "addressSection": "Alamat",
+        "familySection": "Keluarga dan sekolah asal",
+        "educationSection": "Pendidikan",
+        "employmentStatuses": {
+          "pns": "PNS",
+          "pppk": "PPPK",
+          "tetap": "Pegawai tetap",
+          "gty": "Guru tetap yayasan",
+          "gtt": "Guru tidak tetap",
+          "honorer": "Honorer",
+          "kontrak": "Kontrak"
+        }
+      },
+      "tabsLabel": "Bagian profil",
+      "tabs": {
+        "account": "Akun",
+        "personal": "Data diri",
+        "security": "Keamanan"
+      },
+      "academicYear": "Tahun ajaran {year}",
+      "noAcademicYear": "Belum ada tahun ajaran aktif",
+      "unsavedChanges": "Ada perubahan yang belum disimpan",
+      "changePasswordHint": "Gunakan kata sandi yang tidak dipakai di layanan lain.",
+      "sessionLastSeen": "Terakhir aktif {time}"
     },
     "settings": {
       "appearance": {
