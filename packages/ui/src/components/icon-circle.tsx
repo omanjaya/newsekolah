@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -14,7 +14,7 @@ const SIZE_CLASS: Record<IconCircleSize, string> = {
   xl: "size-14 [&>svg]:size-7",
 };
 
-export interface IconCircleProps extends ComponentPropsWithoutRef<"span"> {
+export interface IconCircleProps extends ComponentPropsWithRef<"span"> {
   /** Category hues code a topic, semantic tones a state, `neutral` stays quiet. */
   tone?: Tone;
   /** `sm` 32, `md` 40, `lg` 48, `xl` 56. */

@@ -1,10 +1,9 @@
 "use client";
 
-import { createContext, useContext, type ComponentPropsWithoutRef, type ReactNode } from "react";
+import { createContext, useContext, type ComponentPropsWithRef, type ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
-import { CARD_FLUSH_CLASS, useCardContext } from "./card-context.js";
 import { useUiLabels } from "./ui-labels.js";
 
 export type DataListLayout = "inline" | "stacked";
@@ -17,7 +16,7 @@ const COLUMNS_CLASS = {
   3: "sm:grid-cols-2 lg:grid-cols-3",
 } as const;
 
-export interface DataListProps extends ComponentPropsWithoutRef<"dl"> {
+export interface DataListProps extends ComponentPropsWithRef<"dl"> {
   /**
    * `inline` (default): label beside value on rows divided by a rule, label
    * above value on a phone. `stacked`: label above value in a grid of
@@ -31,18 +30,19 @@ export interface DataListProps extends ComponentPropsWithoutRef<"dl"> {
 /**
  * Key and value details (a student's NIS, class, homeroom teacher) as a
  * real definition list: each item is one `div` holding exactly one `dt`
- * and one `dd`, the only grouping a `dl` allows. Inside a Card an inline
- * list spans the card and lines up with its header.
+ * and one `dd`, the only grouping a `dl` allows. An inline list put
+ * straight inside a Card spans the card and lines up with its header;
+ * deeper down it keeps the inset of whatever holds it.
  */
 export function DataList({ layout = "inline", columns = 2, className, ...props }: DataListProps) {
-  const card = useCardContext();
   return (
     <DataListContext.Provider value={layout}>
       <dl
+        data-slot="data-list"
         data-card-flush={layout === "inline" ? "" : undefined}
         className={cn(
           layout === "inline"
-            ? cn("flex flex-col", card && CARD_FLUSH_CLASS[card.padding])
+            ? "flex flex-col"
             : cn("grid grid-cols-1 gap-x-6 gap-y-4", COLUMNS_CLASS[columns]),
           className,
         )}
@@ -52,7 +52,7 @@ export function DataList({ layout = "inline", columns = 2, className, ...props }
   );
 }
 
-export interface DataListItemProps extends Omit<ComponentPropsWithoutRef<"div">, "children"> {
+export interface DataListItemProps extends Omit<ComponentPropsWithRef<"div">, "children"> {
   label: ReactNode;
   /** The value; empty, `null` or `undefined` shows a dash, read out as "no value". */
   children?: ReactNode;

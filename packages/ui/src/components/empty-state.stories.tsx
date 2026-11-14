@@ -1,19 +1,13 @@
-import type { Decorator, Meta, StoryObj } from "@storybook/react";
-import { Plus } from "lucide-react";
+import type { Meta, StoryObj } from "@storybook/react";
 
 import { domainIcons } from "../icons.js";
+import { phoneViewport } from "../stories/phone-viewport.js";
 
-import { Button } from "./button.js";
 import { Card, CardHeader, CardTitle } from "./card.js";
 import { EmptyState } from "./empty-state.js";
 import { FilteredEmptyState } from "./filtered-empty-state.js";
+import { FirstUseEmptyState } from "./first-use-empty-state.js";
 import { TextLink } from "./text-link.js";
-
-const phoneFrame: Decorator = (Story) => (
-  <div className="mx-auto w-[390px] max-w-full p-4">
-    <Story />
-  </div>
-);
 
 const meta: Meta<typeof EmptyState> = {
   title: "Components/EmptyState",
@@ -29,11 +23,13 @@ const PermitIcon = domainIcons.exitPermit;
 function Gallery() {
   return (
     <div className="flex max-w-default flex-col gap-6">
-      <EmptyState
+      {/* The first-use preset: nothing created yet, the add action always there. */}
+      <FirstUseEmptyState
         icon={<PermitIcon />}
         title="Belum ada izin keluar"
         description="Izin yang diajukan siswa hari ini akan muncul di sini."
-        action={<Button icon={<Plus />}>Ajukan izin</Button>}
+        actionLabel="Ajukan izin"
+        onAction={() => undefined}
         secondaryAction={<TextLink href="#">Pelajari alurnya</TextLink>}
       />
       <div className="grid gap-4 md:grid-cols-2">
@@ -68,6 +64,6 @@ export const Default: Story = { render: () => <Gallery /> };
 export const Dark: Story = { globals: { theme: "dark" }, render: () => <Gallery /> };
 export const Phone: Story = {
   parameters: { layout: "fullscreen" },
-  decorators: [phoneFrame],
+  decorators: [phoneViewport],
   render: () => <Gallery />,
 };

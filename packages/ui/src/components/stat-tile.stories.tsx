@@ -1,13 +1,9 @@
-import type { Decorator, Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
 import { BookOpen, CalendarCheck, GraduationCap, ShieldAlert, Users } from "lucide-react";
 
-import { StatTile } from "./stat-tile.js";
+import { phoneViewport } from "../stories/phone-viewport.js";
 
-const phoneFrame: Decorator = (Story) => (
-  <div className="mx-auto w-[390px] max-w-full p-4">
-    <Story />
-  </div>
-);
+import { StatTile } from "./stat-tile.js";
 
 /** The legacy name for `Stat appearance="tile"`; same component underneath. */
 const meta: Meta<typeof StatTile> = {
@@ -44,6 +40,6 @@ export const AllTones: Story = { render: () => <AllTonesGrid /> };
 export const Dark: Story = { globals: { theme: "dark" }, render: () => <AllTonesGrid /> };
 export const Phone: Story = {
   parameters: { layout: "fullscreen" },
-  decorators: [phoneFrame],
+  decorators: [phoneViewport],
   render: () => <AllTonesGrid />,
 };

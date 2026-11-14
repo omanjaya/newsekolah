@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronRight } from "lucide-react";
-import { useId, type ReactNode } from "react";
+import { useId, type ComponentPropsWithRef, type ReactNode } from "react";
 
 import { useCountUp, type UseCountUpOptions } from "../hooks/use-count-up.js";
 import { cn } from "../utils/cn.js";
@@ -26,29 +26,38 @@ export interface StatDelta {
   tone?: "success" | "danger" | "neutral";
 }
 
-export interface StatProps {
+export interface StatProps extends Omit<
+  ComponentPropsWithRef<"div">,
+  "children" | "onClick" | "title"
+> {
   label: ReactNode;
+  /** A number is formatted with the UiLabels locale ("1.284"); any other node is shown as given. */
   value: ReactNode;
   /** Secondary line: a unit, a period, a comparison. */
   hint?: ReactNode;
   delta?: StatDelta;
   /** Line icon shown in a soft circle in the category colour (the artboard's "Kehadiran 96%" tile). */
   icon?: ReactNode;
-  /** Tints the icon circle; `green` (the accent hue) by default. */
+  /** Tints the icon circle; `green` (the accent hue) by default. The name the other components use for `category`. */
+  tone?: StatCategory;
+  /** The first name for `tone`; still honoured, `tone` wins when both are set. */
   category?: StatCategory;
   /** `plain` (default) has no surface; `tile` is the card tile; `compact` is an item of a strip. Inside a StatGrid the grid's variant decides. */
   appearance?: StatAppearance;
   /** Counts a numeric `value` up once on first render (320ms), unless motion is reduced. */
   countUp?: boolean | Omit<UseCountUpOptions, "decimals">;
-  /** Formats a numeric `value` (and each step of the count); defaults to the UiLabels locale. */
+  /** Formats a numeric `value` (and each step of the count) instead of the UiLabels locale. */
   formatValue?: (value: number) => string;
   /** Holds the value's place with a skeleton until the number is known. */
   loading?: boolean;
-  /** Makes the whole stat a link; the label is the link text. */
+  /** Makes the whole stat a link; the label is the link text. With `onClick` too, both run. */
   href?: string;
-  /** Makes the whole stat a button. */
+  /** Makes the whole stat a button, or runs before a link's navigation when `href` is set. */
   onClick?: () => void;
-  className?: string;
+}
+
+function hasContent(node: ReactNode): boolean {
+  return node !== undefined && node !== null && node !== false && node !== "";
 }
 
 // Tile: the artboard's 16px padding, 104px minimum height and radius 20.
@@ -96,10 +105,12 @@ function DeltaText({ delta }: { delta: StatDelta }) {
 }
 
 /**
- * The value as shown, and whether it is mid-count. Figures are tabular only
- * while counting, so the digits do not jitter; at rest a lone display
- * number keeps Manrope's proportional figures, whose tabular "1" opens a
- * gap ("1 0", "0/ 1") that reads as a typo at this size.
+ * The value as shown, and whether it is mid-count. A number is always
+ * formatted the same way, so turning the count on never changes the text
+ * it settles on. Figures are tabular only while counting, so the digits do
+ * not jitter; at rest a lone display number keeps Manrope's proportional
+ * figures, whose tabular "1" opens a gap ("1 0", "0/ 1") that reads as a
+ * typo at this size.
  */
 function useDisplayValue(
   value: ReactNode,
@@ -113,7 +124,7 @@ function useDisplayValue(
     ...options,
     enabled: Boolean(countUp) && numeric !== null && options.enabled !== false,
   });
-  if (numeric === null || (!countUp && !formatValue)) return { node: value, counting: false };
+  if (numeric === null) return { node: value, counting: false };
   const shown = countUp ? counted : numeric;
   const node = formatValue
     ? formatValue(shown)
@@ -132,7 +143,13 @@ function StatTarget({
     "outline-none after:absolute after:inset-0 after:rounded-[inherit] after:content-['']";
   if (href !== undefined) {
     return (
-      <UiLink href={href} data-stat-target="" aria-describedby={describedBy} className={className}>
+      <UiLink
+        href={href}
+        onClick={onClick}
+        data-stat-target=""
+        aria-describedby={describedBy}
+        className={className}
+      >
         {children}
       </UiLink>
     );
@@ -163,7 +180,8 @@ export function Stat({
   hint,
   delta,
   icon,
-  category = "green",
+  tone,
+  category,
   appearance,
   countUp,
   formatValue,
@@ -171,6 +189,7 @@ export function Stat({
   href,
   onClick,
   className,
+  ...props
 }: StatProps) {
   const grid = useStatGrid();
   const look: StatAppearance = appearance ?? grid.appearance ?? "plain";
@@ -181,10 +200,11 @@ export function Stat({
   const shown = useDisplayValue(value, countUp, formatValue);
   const interactive = href !== undefined || onClick !== undefined;
   const compact = look === "compact";
-  const hasFooter = hint !== undefined || delta !== undefined;
+  const hasFooter = hasContent(hint) || delta !== undefined;
 
   return (
     <div
+      {...props}
       className={cn(
         ROOT_CLASS[look],
         compact && Boolean(icon) && "pl-15",
@@ -228,11 +248,14 @@ export function Stat({
       <Detail id={valueId} className={cn("order-1 flex flex-col", !compact && "gap-3.5")}>
         {icon && (
           <IconCircle
-            tone={category}
+            tone={tone ?? category ?? "green"}
             size={compact ? "sm" : "md"}
             className={cn(
               !compact && "size-9.5",
               compact && "absolute top-1/2 left-4 -translate-y-1/2",
+              // A positioned circle paints above the stretched target and
+              // would swallow the click; let it fall through to the target.
+              interactive && "pointer-events-none",
             )}
           >
             {icon}
@@ -247,7 +270,7 @@ export function Stat({
         )}
         {interactive && look === "tile" && (
           <ChevronRight
-            className="absolute top-4 right-4 size-4 text-fg-muted"
+            className="pointer-events-none absolute top-4 right-4 size-4 text-fg-muted"
             aria-hidden="true"
           />
         )}

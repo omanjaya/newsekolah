@@ -61,9 +61,11 @@ export function Breadcrumb({ items, label, className }: BreadcrumbProps): ReactE
               )}
               {isParent && <ChevronLeft className="size-4 shrink-0 sm:hidden" aria-hidden="true" />}
               {item.href !== undefined ? (
+                // On a touch screen the padding makes the link 44px tall
+                // around its one line, whatever the line height.
                 <UiLink
                   href={item.href}
-                  className="truncate rounded-xs transition-colors hover:text-fg hover:underline pointer-coarse:py-3"
+                  className="truncate rounded-xs transition-colors hover:text-fg hover:underline pointer-coarse:py-[calc((--spacing(11)-1lh)/2)]"
                 >
                   {item.label}
                 </UiLink>

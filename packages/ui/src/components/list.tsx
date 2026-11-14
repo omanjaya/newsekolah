@@ -1,10 +1,8 @@
 "use client";
 
-import { createContext, useContext, useMemo, type ComponentPropsWithoutRef } from "react";
+import { createContext, useContext, useMemo, type ComponentPropsWithRef } from "react";
 
 import { cn } from "../utils/cn.js";
-
-import { CARD_EDGE_CLIP_CLASS, CARD_FLUSH_CLASS, useCardContext } from "./card-context.js";
 
 export type ListVariant = "divided" | "inset" | "plain";
 
@@ -19,7 +17,7 @@ export function useListContext(): ListContextValue {
   return useContext(ListContext);
 }
 
-export interface ListProps extends ComponentPropsWithoutRef<"ul"> {
+export interface ListProps extends ComponentPropsWithRef<"ul"> {
   /**
    * `divided` (default): full-width 1px rules between rows. `inset`: rules
    * that start at the text, past the leading avatar or icon. `plain`: none.
@@ -32,9 +30,11 @@ export interface ListProps extends ComponentPropsWithoutRef<"ul"> {
 }
 
 /**
- * A list of rows (ListRow). Inside a Card it spans the card from edge to
- * edge and aligns its rows with the card's inset; put it straight in the
- * Card, not in CardContent.
+ * A list of rows (ListRow), its rows inset 16px from its edges. Put
+ * straight inside a Card (not in CardContent), it spans the card from edge
+ * to edge and lines its rows up with the card's own inset; anywhere deeper
+ * (a section, a tab panel, a dialog opened from the card) it is a plain
+ * list again. styles.css draws both from `data-card-flush`.
  */
 export function List({
   variant = "divided",
@@ -43,21 +43,15 @@ export function List({
   className,
   ...props
 }: ListProps) {
-  const card = useCardContext();
   const context = useMemo(() => ({ variant, dense }), [variant, dense]);
   return (
     <ListContext.Provider value={context}>
       <ul
         data-slot="list"
-        data-card-flush=""
+        data-card-flush={framed ? undefined : ""}
         className={cn(
           "flex flex-col",
-          framed
-            ? "overflow-hidden rounded-lg border border-border bg-surface shadow-1 [--list-inset:16px]"
-            : card
-              ? cn(CARD_FLUSH_CLASS[card.padding], CARD_EDGE_CLIP_CLASS)
-              : // 16px on a bare list, the artboard's row padding.
-                "[--list-inset:16px]",
+          framed && "overflow-hidden rounded-lg border border-border bg-surface shadow-1",
           className,
         )}
         {...props}

@@ -1,15 +1,11 @@
-import type { Decorator, Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
 import { ScanLine } from "lucide-react";
+
+import { phoneViewport } from "../stories/phone-viewport.js";
 
 import { Button } from "./button.js";
 import { HeroCard } from "./hero-card.js";
 import { TextLink } from "./text-link.js";
-
-const phoneFrame: Decorator = (Story) => (
-  <div className="mx-auto w-[390px] max-w-full p-5">
-    <Story />
-  </div>
-);
 
 const meta: Meta<typeof HeroCard> = {
   title: "Components/HeroCard",
@@ -64,6 +60,6 @@ export const Default: Story = { render: () => <Tones /> };
 export const Dark: Story = { globals: { theme: "dark" }, render: () => <Tones /> };
 export const Phone: Story = {
   parameters: { layout: "fullscreen" },
-  decorators: [phoneFrame],
+  decorators: [phoneViewport],
   render: () => <Tones />,
 };

@@ -1,6 +1,7 @@
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CalendarCheck } from "lucide-react";
+import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
@@ -126,5 +127,116 @@ describe("Stat", () => {
     const { container } = render(<Stat value={0} label="Kehadiran" loading />);
     expect(container.querySelector('[data-slot="skeleton"]')).toBeInTheDocument();
     expect(screen.queryByText("0")).not.toBeInTheDocument();
+  });
+
+  // The whole stat is the target through the label's stretched ::after. The
+  // chevron and a strip cell's icon are positioned, so they paint above
+  // that layer; they must let the pointer through or they are dead spots.
+  it("lets clicks on the tile chevron and the strip icon fall through to the target", () => {
+    const { container, rerender } = render(
+      <StatGrid variant="tiles">
+        <Stat icon={<CalendarCheck />} value="96%" label="Kehadiran" href="/attendance" />
+      </StatGrid>,
+    );
+    expect(container.querySelector("svg.lucide-chevron-right")).toHaveClass(
+      "pointer-events-none",
+      "absolute",
+    );
+    rerender(
+      <StatGrid variant="strip">
+        <Stat icon={<CalendarCheck />} value="96%" label="Kehadiran" onClick={() => undefined} />
+      </StatGrid>,
+    );
+    const icon = container.querySelector("svg.lucide-calendar-check")?.parentElement;
+    expect(icon).toHaveClass("pointer-events-none", "absolute");
+  });
+
+  it("formats every number with the UiLabels locale, counting or not", () => {
+    render(
+      <UiLabelsProvider labels={{ locale: "id-ID" }}>
+        <Stat value={1284} label="Total" />
+        <Stat value="1284" label="Kode" />
+      </UiLabelsProvider>,
+    );
+    expect(screen.getByText("1.284")).toBeInTheDocument();
+    // A string is shown as given.
+    expect(screen.getByText("1284")).toBeInTheDocument();
+  });
+
+  it("renders no footer for an empty hint", () => {
+    const { container } = render(
+      <StatGrid>
+        <Stat value={3} label="Izin" hint="" />
+        <Stat value={4} label="Sakit" hint={null} />
+        <Stat value={5} label="Alfa" hint={false} />
+      </StatGrid>,
+    );
+    for (const group of Array.from(container.querySelectorAll("dl > div"))) {
+      expect(group.querySelectorAll("dd")).toHaveLength(1);
+    }
+    expect(screen.getAllByRole("definition")).toHaveLength(3);
+  });
+
+  it("takes `tone` as the name of the icon colour, `category` still honoured", () => {
+    const { container } = render(
+      <>
+        <Stat icon={<CalendarCheck />} tone="purple" value={1} label="A" />
+        <Stat icon={<CalendarCheck />} category="amber" value={2} label="B" />
+        <Stat icon={<CalendarCheck />} tone="blue" category="red" value={3} label="C" />
+      </>,
+    );
+    const circles = Array.from(container.querySelectorAll("svg.lucide-calendar-check")).map(
+      (svg) => svg.parentElement,
+    );
+    expect(circles[0]).toHaveClass("bg-category-purple-soft");
+    expect(circles[1]).toHaveClass("bg-category-amber-soft");
+    expect(circles[2]).toHaveClass("bg-category-blue-soft");
+  });
+
+  it("runs onClick and follows href when a stat has both", async () => {
+    const onClick = vi.fn();
+    render(<Stat value={3} label="Izin" href="#permits" onClick={onClick} />);
+    await userEvent.click(screen.getByRole("link", { name: "Izin" }));
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(window.location.hash).toBe("#permits");
+  });
+
+  it("puts an id, a test id and a ref on its root", () => {
+    const ref = createRef<HTMLDivElement>();
+    render(<Stat ref={ref} id="total" data-testid="total-stat" value={3} label="Izin" />);
+    expect(screen.getByTestId("total-stat")).toBe(ref.current);
+    expect(ref.current).toHaveAttribute("id", "total");
+  });
+});
+
+describe("StatGrid strip", () => {
+  it("names its scrolling group from its own aria-label and is not a tab stop when all fit", async () => {
+    const { container } = render(
+      <StatGrid variant="strip" aria-label="Ringkasan nilai">
+        <Stat value={32} label="Siswa" />
+        <Stat value={6} label="Di bawah KKM" />
+      </StatGrid>,
+    );
+    const group = screen.getByRole("group", { name: "Ringkasan nilai" });
+    // jsdom lays nothing out, so the figures fit and the strip is not focusable.
+    expect(group).not.toHaveAttribute("tabindex");
+    expect(group.querySelector("dl")).not.toHaveAttribute("aria-label");
+    await expectNoAxeViolations(container);
+  });
+
+  it("becomes a tab stop while figures sit past its edge", () => {
+    const scrollWidth = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(600);
+    const clientWidth = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(358);
+    try {
+      render(
+        <StatGrid variant="strip" aria-label="Ringkasan">
+          <Stat value={32} label="Siswa" />
+        </StatGrid>,
+      );
+      expect(screen.getByRole("group", { name: "Ringkasan" })).toHaveAttribute("tabindex", "0");
+    } finally {
+      scrollWidth.mockRestore();
+      clientWidth.mockRestore();
+    }
   });
 });

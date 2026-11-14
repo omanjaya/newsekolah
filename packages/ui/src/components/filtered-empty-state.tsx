@@ -4,17 +4,17 @@ import { SearchX } from "lucide-react";
 import type { ReactElement } from "react";
 
 import { Button } from "./button.js";
-import { EmptyState, type EmptyStateVariant } from "./empty-state.js";
+import { EmptyState, type EmptyStateProps } from "./empty-state.js";
 import { useUiLabels } from "./ui-labels.js";
 
-export interface FilteredEmptyStateProps {
+export interface FilteredEmptyStateProps extends Omit<
+  EmptyStateProps,
+  "title" | "icon" | "action"
+> {
   /** Clears the search and filters; without it the state has no button. */
   onReset?: () => void;
   title?: string;
-  description?: string;
   resetLabel?: string;
-  variant?: EmptyStateVariant;
-  className?: string;
 }
 
 /**
@@ -27,17 +27,15 @@ export function FilteredEmptyState({
   title,
   description,
   resetLabel,
-  variant,
-  className,
+  ...props
 }: FilteredEmptyStateProps): ReactElement {
   const labels = useUiLabels();
   return (
     <EmptyState
+      {...props}
       icon={<SearchX />}
       title={title ?? labels.emptyFilteredTitle}
       description={description ?? labels.emptyFilteredDescription}
-      variant={variant}
-      className={className}
       action={
         onReset && (
           <Button variant="secondary" size="sm" onClick={onReset}>

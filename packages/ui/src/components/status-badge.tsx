@@ -1,5 +1,5 @@
 import { statusNames, type StatusName } from "@newsekolah/ui-tokens/dist/tokens.ts";
-import type { ComponentPropsWithoutRef } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -19,7 +19,7 @@ const STATUS_DOT_CLASS: Record<StatusName, string> = {
   late: "bg-status-late",
 };
 
-export interface StatusBadgeProps extends Omit<ComponentPropsWithoutRef<"span">, "children"> {
+export interface StatusBadgeProps extends Omit<ComponentPropsWithRef<"span">, "children"> {
   status: StatusName;
   /** Overrides the default Indonesian label (e.g. for @newsekolah/i18n's "en" catalog). */
   label?: string;

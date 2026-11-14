@@ -1,9 +1,13 @@
-import type { Decorator, Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
 import { Bell, BookOpen, FileText, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 
+import { phoneViewport } from "../stories/phone-viewport.js";
+
 import { Avatar } from "./avatar.js";
-import { Card, CardHeader, CardTitle } from "./card.js";
+import { Button } from "./button.js";
+import { Card, CardContent, CardHeader, CardTitle } from "./card.js";
+import { Dialog, DialogContent, DialogTrigger } from "./dialog.js";
 import { IconButton } from "./icon-button.js";
 import { IconCircle } from "./icon-circle.js";
 import { ListRow } from "./list-row.js";
@@ -11,12 +15,6 @@ import { List } from "./list.js";
 import { SectionHeader } from "./section-header.js";
 import { SemanticStatusBadge } from "./semantic-status.js";
 import { TextLink } from "./text-link.js";
-
-const phoneFrame: Decorator = (Story) => (
-  <div className="mx-auto w-[390px] max-w-full p-4">
-    <Story />
-  </div>
-);
 
 const meta: Meta<typeof List> = {
   title: "Components/List",
@@ -164,10 +162,71 @@ function Gallery() {
   );
 }
 
+const SUBJECTS = ["Matematika", "Fisika", "Kimia"];
+
+function Rows() {
+  return (
+    <List>
+      {SUBJECTS.map((subject) => (
+        <ListRow key={subject} href={`#${subject}`} title={subject} meta="Bu Rina · Ruang X-A" />
+      ))}
+    </List>
+  );
+}
+
+/**
+ * Only a list placed straight in a Card spans it edge to edge; one inside
+ * CardContent, a column of a padded card or a dialog opened from a card
+ * keeps its own 16px row inset and stays inside its container's padding.
+ */
+function Nesting() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="grid max-w-default items-start gap-6 md:grid-cols-2">
+      <Card padding="md" data-testid="direct">
+        <CardTitle>Langsung di kartu</CardTitle>
+        <Rows />
+      </Card>
+      <Card data-testid="in-content">
+        <CardHeader>
+          <CardTitle>Di dalam CardContent</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Rows />
+        </CardContent>
+      </Card>
+      <Card padding="md" data-testid="in-column">
+        <CardTitle>Di kolom kartu berpadding</CardTitle>
+        <div className="grid grid-cols-2 gap-4">
+          <section className="rounded-md bg-surface-sunken">
+            <Rows />
+          </section>
+          <p className="text-body-sm text-fg-muted">
+            Kolom tetangga tidak tertimpa oleh daftar di sebelahnya.
+          </p>
+        </div>
+      </Card>
+      <Card padding="md" data-testid="with-dialog">
+        <CardTitle>Dialog dari kartu</CardTitle>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button variant="secondary">Buka rincian</Button>
+          </DialogTrigger>
+          <DialogContent title="Rincian jadwal">
+            <Rows />
+          </DialogContent>
+        </Dialog>
+      </Card>
+    </div>
+  );
+}
+
+export const InACard: Story = { render: () => <Nesting /> };
+
 export const Default: Story = { render: () => <Gallery /> };
 export const Dark: Story = { globals: { theme: "dark" }, render: () => <Gallery /> };
 export const Phone: Story = {
   parameters: { layout: "fullscreen" },
-  decorators: [phoneFrame],
+  decorators: [phoneViewport],
   render: () => <Gallery />,
 };

@@ -15,10 +15,10 @@ export interface StatTileProps extends Omit<StatProps, "icon" | "category" | "ap
 
 /**
  * The home-screen tile: `Stat` with the `tile` appearance, taking a Lucide
- * component and a `tone` instead of an icon element and a `category`. Kept
- * as its own name for the call sites that already use it; new code can use
- * `<Stat appearance="tile" icon={<Icon />} category="green" />` directly.
+ * component instead of an icon element. Kept as its own name for the call
+ * sites that already use it; new code can use
+ * `<Stat appearance="tile" icon={<Icon />} tone="green" />` directly.
  */
-export function StatTile({ icon: Icon, tone, ...props }: StatTileProps): ReactElement {
-  return <Stat {...props} appearance="tile" icon={<Icon />} category={tone} />;
+export function StatTile({ icon: Icon, ...props }: StatTileProps): ReactElement {
+  return <Stat {...props} appearance="tile" icon={<Icon />} />;
 }

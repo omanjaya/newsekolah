@@ -12,21 +12,26 @@ import {
   type Ref,
 } from "react";
 
+/**
+ * What a link component is handed: anchor attributes and a string `href`.
+ * The contract leaves `ref` out on purpose. A ref still reaches the
+ * component (React 19 passes it as a prop, a forwardRef component takes it
+ * as its ref), but naming it here would tie the type to one copy of
+ * @types/react, and next/link's typings resolve their own, whose `Ref` is
+ * not assignable to ours; without it `component={Link}` type-checks.
+ */
 export interface UiLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   href: string;
-  ref?: Ref<HTMLAnchorElement>;
 }
 
 /** Anything that renders an anchor from `href` plus anchor attributes: a plain `a`, or next/link's `Link`. */
 export type UiLinkComponent = ComponentType<UiLinkProps>;
 
-const PlainLink = forwardRef<HTMLAnchorElement, Omit<UiLinkProps, "ref">>(
-  function PlainLink(props, ref) {
-    // The href and children arrive through the spread; the rule cannot see them.
-    // eslint-disable-next-line jsx-a11y/anchor-has-content
-    return <a ref={ref} {...props} />;
-  },
-);
+const PlainLink = forwardRef<HTMLAnchorElement, UiLinkProps>(function PlainLink(props, ref) {
+  // The href and children arrive through the spread; the rule cannot see them.
+  // eslint-disable-next-line jsx-a11y/anchor-has-content
+  return <a ref={ref} {...props} />;
+});
 
 const UiLinkContext = createContext<UiLinkComponent>(PlainLink);
 
@@ -53,7 +58,7 @@ export function useUiLink(): UiLinkComponent {
  * components render for an `href`. The ref is a plain prop (React 19) and
  * travels with the rest.
  */
-export function UiLink(props: UiLinkProps): ReactElement {
+export function UiLink(props: UiLinkProps & { ref?: Ref<HTMLAnchorElement> }): ReactElement {
   const component = useUiLink();
   // createElement, not JSX: the component comes from context, which a JSX
   // tag would read as a component declared during render.

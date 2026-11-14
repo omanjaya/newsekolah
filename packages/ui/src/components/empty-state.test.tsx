@@ -8,6 +8,7 @@ import { expectNoAxeViolations } from "../test/axe.js";
 import { Card } from "./card.js";
 import { EmptyState, EmptyStateInlineScope } from "./empty-state.js";
 import { FilteredEmptyState } from "./filtered-empty-state.js";
+import { FirstUseEmptyState } from "./first-use-empty-state.js";
 import { UiLabelsProvider } from "./ui-labels.js";
 
 describe("EmptyState", () => {
@@ -87,5 +88,44 @@ describe("FilteredEmptyState", () => {
   it("has no button without a reset handler", () => {
     render(<FilteredEmptyState />);
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("passes element props to the root", () => {
+    render(<FilteredEmptyState data-testid="no-match" id="no-match" />);
+    expect(screen.getByTestId("no-match")).toHaveAttribute("id", "no-match");
+  });
+});
+
+describe("FirstUseEmptyState", () => {
+  it("always offers the add action as the primary button with a plus", async () => {
+    const onAction = vi.fn();
+    const { container } = render(
+      <FirstUseEmptyState
+        title="Belum ada siswa"
+        description="Tambahkan siswa pertama untuk mulai mencatat presensi."
+        actionLabel="Tambah siswa"
+        onAction={onAction}
+      />,
+    );
+    const button = screen.getByRole("button", { name: "Tambah siswa" });
+    expect(button).toHaveClass("bg-accent");
+    expect(button.querySelector("svg.lucide-plus")).toBeInTheDocument();
+    await userEvent.click(button);
+    expect(onAction).toHaveBeenCalledOnce();
+    await expectNoAxeViolations(container);
+  });
+
+  it("links to a create page instead, with a smaller button in the compact variant", () => {
+    render(
+      <FirstUseEmptyState
+        variant="compact"
+        title="Belum ada pengumuman"
+        actionLabel="Buat pengumuman"
+        href="/announcements/new"
+      />,
+    );
+    const link = screen.getByRole("link", { name: "Buat pengumuman" });
+    expect(link).toHaveAttribute("href", "/announcements/new");
+    expect(link).toHaveClass("h-8");
   });
 });

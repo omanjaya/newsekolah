@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactElement, ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -36,7 +36,7 @@ const TONE: Record<HeroCardTone, ToneStyle> = {
   },
 };
 
-export interface HeroCardProps {
+export interface HeroCardProps extends Omit<ComponentPropsWithRef<"section">, "title"> {
   /** What this card is about, in sentence case ("Pelajaran berikutnya"). */
   eyebrow?: ReactNode;
   title: ReactNode;
@@ -55,7 +55,6 @@ export interface HeroCardProps {
   /** `accent-soft` (default) for "now", `neutral` for a calm state, `warning` for something overdue. */
   tone?: HeroCardTone;
   titleAs?: "h1" | "h2" | "h3";
-  className?: string;
 }
 
 /**
@@ -75,6 +74,7 @@ export function HeroCard({
   tone = "accent-soft",
   titleAs: Title = "h2",
   className,
+  ...props
 }: HeroCardProps): ReactElement {
   const style = TONE[tone];
   const hasActions = Boolean(action) || Boolean(secondaryAction);
@@ -85,6 +85,7 @@ export function HeroCard({
         style.surface,
         className,
       )}
+      {...props}
     >
       {(Boolean(eyebrow) || Boolean(chip)) && (
         <div className="flex min-h-6 flex-wrap items-center justify-between gap-x-3 gap-y-1">

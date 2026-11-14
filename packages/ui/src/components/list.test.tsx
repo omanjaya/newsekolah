@@ -1,10 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
 
-import { Card, CardHeader, CardTitle } from "./card.js";
+import { Card, CardContent, CardHeader, CardTitle } from "./card.js";
+import { Dialog, DialogContent } from "./dialog.js";
 import { ListRow } from "./list-row.js";
 import { List } from "./list.js";
 import { SectionHeader } from "./section-header.js";
@@ -77,10 +79,14 @@ describe("List and ListRow", () => {
     expect(screen.getByRole("button", { name: "Diarsipkan" })).toBeDisabled();
   });
 
-  it("spans a card and lines up with its header", () => {
+  // styles.css spans a list across a card only when it is a direct child
+  // (`[data-slot=card][data-card-padding] > [data-card-flush]`), so the
+  // card says its padding and the list marks itself; nothing about the
+  // list's own classes depends on a card being somewhere above it.
+  it("marks itself for the card's flush rule and the card says its padding", () => {
     render(
-      <Card>
-        <CardHeader data-testid="header">
+      <Card padding="md">
+        <CardHeader>
           <CardTitle>Hari ini</CardTitle>
         </CardHeader>
         <List variant="inset">
@@ -88,8 +94,83 @@ describe("List and ListRow", () => {
         </List>
       </Card>,
     );
-    expect(screen.getByRole("list")).toHaveClass("[--list-inset:20px]");
-    expect(screen.getByRole("list")).toHaveAttribute("data-card-flush");
+    const list = screen.getByRole("list");
+    expect(list).toHaveAttribute("data-card-flush");
+    expect(list.parentElement).toHaveAttribute("data-slot", "card");
+    expect(list.parentElement).toHaveAttribute("data-card-padding", "md");
+  });
+
+  it("renders the same list at any depth, in a card section or a dialog opened from a card", async () => {
+    const bare = render(
+      <List>
+        <ListRow title="Matematika" />
+      </List>,
+    );
+    const bareClass = screen.getByRole("list").className;
+    bare.unmount();
+
+    render(
+      <Card padding="md">
+        <CardContent>
+          <List aria-label="in content">
+            <ListRow title="Matematika" />
+          </List>
+        </CardContent>
+        <div className="grid grid-cols-2">
+          <List aria-label="in a column">
+            <ListRow title="Fisika" />
+          </List>
+        </div>
+        <Dialog open>
+          <DialogContent title="Rincian">
+            <List aria-label="in a dialog">
+              <ListRow title="Kimia" />
+            </List>
+          </DialogContent>
+        </Dialog>
+      </Card>,
+    );
+    // The open modal hides the card behind it from the accessibility tree.
+    for (const name of ["in content", "in a column", "in a dialog"]) {
+      const list = await screen.findByRole("list", { name, hidden: true });
+      expect(list.className).toBe(bareClass);
+      expect(list.parentElement).not.toHaveAttribute("data-slot", "card");
+    }
+  });
+
+  it("does not take the card's flush rule when it draws its own frame", () => {
+    render(
+      <Card padding="md">
+        <List framed>
+          <ListRow title="Matematika" />
+        </List>
+      </Card>,
+    );
+    expect(screen.getByRole("list")).not.toHaveAttribute("data-card-flush");
+  });
+
+  it("runs onClick and follows href when a row has both", async () => {
+    const onClick = vi.fn();
+    render(
+      <List>
+        <ListRow href="#detail" onClick={onClick} title="Nadia Putri" />
+      </List>,
+    );
+    await userEvent.click(screen.getByRole("link", { name: "Nadia Putri" }));
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(window.location.hash).toBe("#detail");
+  });
+
+  it("forwards a ref to the list and to a row", () => {
+    const listRef = createRef<HTMLUListElement>();
+    const rowRef = createRef<HTMLLIElement>();
+    render(
+      <List ref={listRef}>
+        <ListRow ref={rowRef} title="Matematika" />
+      </List>,
+    );
+    expect(listRef.current).toBe(screen.getByRole("list"));
+    expect(rowRef.current).toBe(screen.getByRole("listitem"));
   });
 });
 

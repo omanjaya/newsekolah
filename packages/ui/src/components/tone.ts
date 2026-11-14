@@ -34,9 +34,13 @@ export const TONE_CLASSES: Record<Tone, ToneClasses> = {
   // Neutral fills are the translucent pressed layer rather than a surface
   // colour: a sunken fill vanishes on the page background in dark mode and
   // reads as a hole in a card, while 9% of the text colour shows on every
-  // surface in both themes (no neutral-soft token exists yet).
+  // surface in both themes (no neutral-soft token exists yet). Its text is
+  // the text colour at 70% rather than `fg-muted`: about as quiet in the
+  // light theme, but it keeps 5.3:1 or more on every surface of both
+  // themes, where `fg-muted` drops to 4.25:1 on a dark raised surface (a
+  // menu, a popover). tone.test.ts checks it against tokens.json.
   neutral: {
-    soft: "bg-state-pressed text-fg-muted",
+    soft: "bg-state-pressed text-fg/70",
     solid: "bg-fg text-bg",
     outline: "text-fg-muted ring-border-strong",
     dot: "bg-fg-muted",

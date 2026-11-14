@@ -55,4 +55,19 @@ describe("AvatarGroup", () => {
     expect(screen.getByRole("img", { name: "2 more" })).toHaveTextContent("+2");
     await expectNoAxeViolations(container);
   });
+
+  // The type role sets a weight of its own; written after it, the chip's
+  // 600 survives tailwind-merge at every size.
+  it("keeps the +N chip semibold next to the role at every size", () => {
+    for (const size of [24, 32, 40, 64] as const) {
+      const { unmount } = render(
+        <AvatarGroup size={size} max={1}>
+          <Avatar name="Agus Pratama" />
+          <Avatar name="Made Ari" />
+        </AvatarGroup>,
+      );
+      expect(screen.getByText("+1")).toHaveClass("font-semibold");
+      unmount();
+    }
+  });
 });

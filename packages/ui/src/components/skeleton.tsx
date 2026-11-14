@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -10,7 +10,7 @@ import { cn } from "../utils/cn.js";
  * when it replaces the skeleton. Not for an absolutely positioned box: the
  * skeleton positions itself to hold its highlight.
  */
-export function Skeleton({ className, ...props }: ComponentPropsWithoutRef<"div">) {
+export function Skeleton({ className, ...props }: ComponentPropsWithRef<"div">) {
   return (
     <div
       role="presentation"

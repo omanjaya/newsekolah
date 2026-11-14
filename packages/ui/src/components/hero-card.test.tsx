@@ -47,6 +47,7 @@ describe("HeroCard", () => {
     expect(container.firstElementChild).toHaveClass("bg-surface", "border-border");
     rerender(<HeroCard tone="warning" title="3 jurnal belum diisi" chip="Lewat 2 hari" live />);
     expect(container.firstElementChild).toHaveClass("bg-warning-soft");
-    expect(screen.getByText("Lewat 2 hari").querySelector(".animate-live")).toBeInTheDocument();
+    const chip = screen.getByText("Lewat 2 hari").closest('[data-slot="badge"]');
+    expect(chip?.querySelector(".animate-live")).toBeInTheDocument();
   });
 });

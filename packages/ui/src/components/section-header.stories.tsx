@@ -1,15 +1,11 @@
-import type { Decorator, Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
 import { Plus } from "lucide-react";
+
+import { phoneViewport } from "../stories/phone-viewport.js";
 
 import { Button } from "./button.js";
 import { SectionHeader } from "./section-header.js";
 import { TextLink } from "./text-link.js";
-
-const phoneFrame: Decorator = (Story) => (
-  <div className="mx-auto w-[390px] max-w-full p-4">
-    <Story />
-  </div>
-);
 
 const meta: Meta<typeof SectionHeader> = {
   title: "Components/SectionHeader",
@@ -46,6 +42,6 @@ export const Default: Story = { render: () => <Gallery /> };
 export const Dark: Story = { globals: { theme: "dark" }, render: () => <Gallery /> };
 export const Phone: Story = {
   parameters: { layout: "fullscreen" },
-  decorators: [phoneFrame],
+  decorators: [phoneViewport],
   render: () => <Gallery />,
 };
