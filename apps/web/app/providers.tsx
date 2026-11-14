@@ -1,6 +1,6 @@
 "use client";
 
-import { Toaster, UiLinkProvider } from "@newsekolah/ui";
+import { Toaster, TooltipProvider, UiLinkProvider } from "@newsekolah/ui";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
@@ -16,6 +16,9 @@ import { SessionProvider } from "../lib/session/session-provider";
 import { SimulationSync } from "../lib/simulation/simulation-sync";
 import { TenantProvider, type TenantBranding } from "../lib/tenant/tenant-provider";
 import { ThemeProvider } from "../lib/theme/theme-provider";
+
+/** How long a pointer rests on a control before its tooltip opens. */
+const TOOLTIP_DELAY_MS = 400;
 
 export function AppProviders({
   locale,
@@ -69,7 +72,14 @@ export function AppProviders({
               */}
               <UiLinkProvider component={Link}>
                 <UiLocaleProvider>
-                  {children}
+                  {/*
+                    One tooltip provider for the whole app, so the
+                    IconButtons on a page share it (and its skip delay:
+                    moving from one tooltip to the next shows the next at
+                    once) instead of each mounting its own. Same delay as
+                    an IconButton's fallback provider.
+                  */}
+                  <TooltipProvider delayDuration={TOOLTIP_DELAY_MS}>{children}</TooltipProvider>
                   {/*
                     Kept global (rather than scoped to `(app)`, docs/16-audit-performa-web.md
                     item 8) because `(auth)/change-password` and `(auth)/reset-password`
