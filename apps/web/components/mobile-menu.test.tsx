@@ -20,13 +20,20 @@ describe("mobile menu", () => {
             icon: Users,
             group: "Academic",
           },
+          {
+            key: "schedule",
+            labelKey: "Schedule",
+            href: "/schedule",
+            icon: Users,
+            group: "Academic",
+          },
         ]}
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "app.shell.mobileMenu.title" }));
     expect(screen.getByRole("heading", { name: "Academic" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Classes" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getAllByRole("link")).toHaveLength(2);
+    expect(screen.getAllByRole("link")).toHaveLength(3);
     fireEvent.click(screen.getByRole("link", { name: "Classes" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
@@ -49,5 +56,44 @@ describe("mobile menu", () => {
     expect(screen.getAllByRole("link", { name: "Classes" })).toHaveLength(1);
     expect(screen.getAllByRole("link", { name: "Home" })).toHaveLength(2);
     window.localStorage.removeItem("newsekolah:navigation:test-scope");
+  });
+
+  it("folds a group the reader sees only one page of into the top-level rows, as the sidebar does", () => {
+    render(
+      <MobileMenu
+        items={[
+          { key: "home", labelKey: "Home", href: "/dashboard", icon: Home },
+          { key: "loans", labelKey: "Loans", href: "/library/me", icon: Users, group: "Library" },
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "app.shell.mobileMenu.title" }));
+    expect(screen.queryByRole("heading", { name: "Library" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Loans" })).toBeInTheDocument();
+  });
+
+  it("shows favorite stars only while editing favorites", () => {
+    render(
+      <MobileMenu
+        scope="edit-scope"
+        items={[
+          { key: "home", labelKey: "Home", href: "/dashboard", icon: Home },
+          { key: "classes", labelKey: "Classes", href: "/school/classes", icon: Users },
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "app.shell.mobileMenu.title" }));
+    expect(
+      screen.queryByRole("button", { name: "app.shell.phoneMenu.favoriteAdd" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "app.shell.phoneMenu.edit" }));
+    const stars = screen.getAllByRole("button", { name: "app.shell.phoneMenu.favoriteAdd" });
+    expect(stars).toHaveLength(2);
+    const [first] = stars;
+    if (first) fireEvent.click(first);
+    expect(
+      screen.getAllByRole("button", { name: "app.shell.phoneMenu.favoriteRemove" }).length,
+    ).toBeGreaterThan(0);
+    window.localStorage.removeItem("newsekolah:navigation:edit-scope");
   });
 });
