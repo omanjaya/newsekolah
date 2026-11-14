@@ -15,8 +15,9 @@ import {
 import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { bentoCells, tileColumns } from "../../../lib/layout/bento";
 import { isModuleEnabled } from "../../../lib/modules/feature-modules";
@@ -51,7 +52,12 @@ const LOADING_ME = { tenant: { timezone: "UTC" }, permissions: [], duties: [] } 
  * across all of them win the fold. Replaces the single permission-driven
  * view (docs/superpowers/plans/2026-09-26-dashboard-per-peran.md Task 7).
  */
-export function DashboardView(): ReactElement {
+export function DashboardView({
+  shortcuts,
+}: {
+  /** Shortcut buttons into the reader's daily pages, under the greeting. */
+  shortcuts?: ReactNode;
+} = {}): ReactElement {
   useSimulation();
   const { data: me, isLoading, isError, refetch } = useDashboardData();
   const t = useTranslations("app.dashboard");
@@ -73,12 +79,18 @@ export function DashboardView(): ReactElement {
   const librarian = useLibrarianBlock(blockMe, active("librarian"));
   const unread = useUnreadCountQuery(Boolean(me));
 
-  if (isError) return <QueryError retry={() => refetch()} className="m-4" />;
+  if (isError) {
+    return (
+      <AppPage variant="wide" title={t("title")} nav={false}>
+        <QueryError retry={() => refetch()} />
+      </AppPage>
+    );
+  }
 
   if (isLoading || !me) {
     return (
-      <div className="mx-auto flex max-w-[1280px] flex-col gap-4 p-4 md:p-6" aria-busy="true">
-        <Skeleton className="h-16 w-full" />
+      <AppPage variant="wide" header={false} nav={false} documentTitle={t("title")}>
+        <Skeleton className="h-16 w-full" aria-busy="true" />
         <Skeleton className="h-36 w-full" />
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Skeleton className="h-[104px] w-full" />
@@ -92,7 +104,7 @@ export function DashboardView(): ReactElement {
           <Skeleton className="h-64 w-full" />
           <Skeleton className="h-64 w-full" />
         </div>
-      </div>
+      </AppPage>
     );
   }
 
@@ -154,23 +166,22 @@ export function DashboardView(): ReactElement {
   ]);
 
   return (
-    <div className="mx-auto flex max-w-[1280px] flex-col gap-4 p-4 md:p-6">
-      <header className="flex flex-wrap items-start justify-between gap-3 pb-1">
-        <div className="min-w-0">
-          <p className="mb-1 text-[12px] text-fg-muted">
-            {t("title")} ·{" "}
-            {format.dateTime(businessNow(), {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              timeZone: me.tenant.timezone,
-            })}
-          </p>
-          <h1 className="font-heading text-[28px] font-bold tracking-tight text-fg">
-            {t("greeting", { name: me.name })}
-          </h1>
-        </div>
-        <div className="flex items-center gap-3 md:flex-col md:items-end md:gap-1.5">
+    // The home runs wide (dashboards and their tile rows). The greeting is
+    // the page title, the date its eyebrow, and the reader's roles and
+    // school year sit beside it; the tab reads "Beranda".
+    <AppPage
+      variant="wide"
+      nav={false}
+      documentTitle={t("title")}
+      eyebrow={`${t("title")} · ${format.dateTime(businessNow(), {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        timeZone: me.tenant.timezone,
+      })}`}
+      title={t("greeting", { name: me.name })}
+      actions={
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 md:ml-auto md:flex-col md:items-end">
           <div className="flex flex-wrap gap-1.5">
             {me.roles.map((role) => (
               <Badge key={role.id} variant="neutral">
@@ -178,12 +189,13 @@ export function DashboardView(): ReactElement {
               </Badge>
             ))}
           </div>
-          <p className="text-[12px] text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {me.active_academic_year?.label ?? t("noAcademicYear")}
           </p>
         </div>
-      </header>
-
+      }
+      toolbar={shortcuts}
+    >
       {hero && (
         <HeroCard
           eyebrow={hero.eyebrow}
@@ -245,6 +257,6 @@ export function DashboardView(): ReactElement {
           </div>
         ))}
       </div>
-    </div>
+    </AppPage>
   );
 }

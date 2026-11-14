@@ -13,6 +13,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => mocks.canManage }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/view-state/view-state-provider", () => ({
   useRememberedViewState: () => ["", vi.fn()],
 }));
@@ -111,18 +112,26 @@ describe("CatalogueView filters", () => {
     expect(new URLSearchParams(window.location.search).get("availability")).toBe("");
   });
 
-  it("consolidates header actions into a single row with a Lainnya menu", async () => {
-    const user = userEvent.setup();
+  it("leads the header with adding a title, with export and the report as secondary actions", () => {
     render(<CatalogueView />);
 
     expect(screen.getByRole("button", { name: "addTitle" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "exportCatalogue" })).toBeInTheDocument();
-    expect(screen.queryByRole("menuitem", { name: "importBooks" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "report" })).toHaveAttribute(
+      "href",
+      "/library/reports?tab=accessionRegister",
+    );
+    // Import and catalogue settings are tabs of the area (navigation registry), not buttons.
+    expect(screen.queryByRole("link", { name: "importBooks" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "catalogueSettings" })).not.toBeInTheDocument();
+  });
 
-    await user.click(screen.getByRole("button", { name: "more" }));
-    expect(screen.getByRole("menuitem", { name: "importBooks" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "catalogueSettings" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "report" })).toBeInTheDocument();
+  it("leaves a catalogue reader without the editing actions", () => {
+    mocks.canManage = false;
+    render(<CatalogueView />);
+
+    expect(screen.queryByRole("button", { name: "addTitle" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "exportCatalogue" })).not.toBeInTheDocument();
   });
 
   it("pages the titles query by offset and keeps the page in the URL", async () => {

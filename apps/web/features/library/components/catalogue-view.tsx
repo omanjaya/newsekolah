@@ -7,24 +7,21 @@ import {
   DataTable,
   Dialog,
   DialogContent,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   EmptyState,
-  PageHeader,
   RowActionsMenu,
   domainIcons,
   useToast,
   type DataTableFilterDef,
+  type PageHeaderAction,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { BookOpen, ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Download, FileBarChart, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { CursorPagination } from "../../../components/cursor-pagination";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
@@ -53,7 +50,6 @@ export function CatalogueView(): ReactElement {
   const toast = useToast();
   const libraryErrorMessage = useLibraryErrorMessage();
   const canManage = useCan("manage_library_catalog");
-  const canView = useCan("view_library");
   const canReport = useCan("view_library_reports");
   const [search, setSearch] = useRememberedViewState("catalogue-search", "");
   const [materialTypeId, setMaterialTypeId] = useUrlState<string>("material_type", () => true, "");
@@ -189,87 +185,51 @@ export function CatalogueView(): ReactElement {
     [t, canManage],
   );
 
-  return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the table scrolls its rows internally while the
-    // action row stays put. See school/users-view.tsx for the reference
-    // pattern.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <nav
-          aria-label={tWorkspace("catalogue")}
-          className="inline-flex w-fit items-center gap-1 rounded-full bg-bg p-1"
-        >
-          <Link
-            href="/library/catalogue"
-            aria-current="page"
-            className="flex h-11 items-center justify-center rounded-full bg-surface px-4 text-[13px] font-medium text-fg shadow-(--shadow-card) md:h-8"
-          >
-            {tWorkspace("titles")}
-          </Link>
-          <Link
-            href="/library/copies"
-            className="flex h-11 items-center justify-center rounded-full px-4 text-[13px] font-medium text-fg-muted hover:text-fg md:h-8"
-          >
-            {tWorkspace("copies")}
-          </Link>
-        </nav>
-        <div className="flex flex-wrap items-center gap-2">
-          {canManage && (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                void downloadLibraryCatalogueExportXlsx();
-              }}
-            >
-              {t("exportCatalogue")}
-            </Button>
-          )}
-          {canManage && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                setAdding(true);
-              }}
-            >
-              {t("addTitle")}
-            </Button>
-          )}
-          {(canManage || canView || canReport) && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="secondary">
-                  {t("more")}
-                  <ChevronDown aria-hidden="true" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {canManage && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/library/import">{tWorkspace("importBooks")}</Link>
-                  </DropdownMenuItem>
-                )}
-                {canView && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/library/master-data">{tWorkspace("catalogueSettings")}</Link>
-                  </DropdownMenuItem>
-                )}
-                {canReport && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/library/reports?tab=accessionRegister">
-                      {tWorkspace("report")}
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
+  const secondaryActions: PageHeaderAction[] = [
+    ...(canManage
+      ? [
+          {
+            label: t("exportCatalogue"),
+            icon: <Download />,
+            onSelect: () => {
+              void downloadLibraryCatalogueExportXlsx();
+            },
+          },
+        ]
+      : []),
+    ...(canReport
+      ? [
+          {
+            label: tWorkspace("report"),
+            icon: <FileBarChart />,
+            href: "/library/reports?tab=accessionRegister",
+          },
+        ]
+      : []),
+  ];
 
+  return (
+    // Viewport-fit on desktop: the page itself never scrolls; the table
+    // scrolls its rows internally. Eyebrow, title and the area's tabs
+    // (titles, copies, import, catalogue data, stocktake) come from the
+    // navigation registry, so import and catalogue settings are tabs here,
+    // not buttons.
+    <AppPage
+      variant="fit"
+      primaryAction={
+        canManage ? (
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              setAdding(true);
+            }}
+          >
+            {t("addTitle")}
+          </Button>
+        ) : undefined
+      }
+      secondaryActions={secondaryActions}
+    >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/library/components/catalogue-view:1"
@@ -353,7 +313,7 @@ export function CatalogueView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }
 

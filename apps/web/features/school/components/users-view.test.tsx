@@ -20,9 +20,7 @@ vi.mock("../../../lib/session/session-provider", () => ({
 vi.mock("../../../lib/view-state/view-state-provider", () => ({
   useRememberedViewState: () => ["", vi.fn()],
 }));
-vi.mock("../../academic/components/academic-workspace-links", () => ({
-  AcademicWorkspaceLinks: () => null,
-}));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../api", () => ({
   useUsersQuery: mocks.useUsersQuery,
   useArchiveUserMutation: () => ({ mutate: vi.fn(), isPending: false }),

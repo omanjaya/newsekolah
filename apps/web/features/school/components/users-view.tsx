@@ -14,24 +14,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   IconButton,
-  PageHeader,
   useToast,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Plus, Upload } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { CursorPagination } from "../../../components/cursor-pagination";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
-import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import {
   type AdminUser,
   type ProfileKind,
@@ -53,7 +51,6 @@ const STATUS_VALUES = ["", ...STATUSES] as const;
 const ARCHIVED_VALUES = ["", "true"] as const;
 
 export function UsersView(): ReactElement {
-  const tWorkspace = useTranslations("app.academic.workspace");
   const t = useTranslations("app.school.users");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -273,34 +270,30 @@ export function UsersView(): ReactElement {
   const items = data?.data ?? [];
 
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the table scrolls its rows internally while the
-    // filter row and pagination stay put. See classes-view.tsx for the
-    // reference pattern.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <AcademicWorkspaceLinks area="users" />
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={tWorkspace("users")}
-        actions={
-          canCreate && (
-            <div className="flex gap-2">
-              <Button asChild variant="secondary" size="sm" icon={<Upload />}>
-                <Link href="/school/users/import">{t("actions.import")}</Link>
-              </Button>
-              <Button
-                size="sm"
-                icon={<Plus />}
-                onClick={() => {
-                  setEditing("new");
-                }}
-              >
-                {t("actions.create")}
-              </Button>
-            </div>
-          )
-        }
-      />
+    // Viewport-fit on desktop: the page itself never scrolls; the table
+    // scrolls its rows internally while the filter row and pagination stay
+    // put. Eyebrow, title and the accounts/roles tabs come from the
+    // navigation registry.
+    <AppPage
+      variant="fit"
+      primaryAction={
+        canCreate ? (
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              setEditing("new");
+            }}
+          >
+            {t("actions.create")}
+          </Button>
+        ) : undefined
+      }
+      secondaryActions={
+        canCreate
+          ? [{ label: t("actions.import"), icon: <Upload />, href: "/school/users/import" }]
+          : undefined
+      }
+    >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/school/components/users-view:1"
@@ -413,6 +406,6 @@ export function UsersView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }

@@ -5,7 +5,6 @@ import {
   Button,
   EmptyState,
   IconButton,
-  PageHeader,
   Select,
   Skeleton,
   cn,
@@ -19,12 +18,12 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { bentoCells } from "../../../lib/layout/bento";
 import { useCan, useSession } from "../../../lib/session/session-provider";
-import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import {
   useClassesQuery,
   useLookup,
@@ -52,25 +51,18 @@ export function AttendanceView(): ReactElement {
   const canManage = useCan("manage_attendance");
   const { me } = useSession();
 
-  if (canManage) {
-    return (
-      <div className="flex flex-col gap-4 p-4 md:p-6">
-        <AcademicWorkspaceLinks area="attendance" />
-        <DaySessions />
-      </div>
-    );
-  }
+  if (canManage) return <DaySessions />;
 
   if (me?.profile_kind === "staff" || me?.profile_kind === "teacher") {
     return <StaffAttendanceHub />;
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <AcademicWorkspaceLinks area="attendance" />
-      {/* The calendar renders its own page heading and month navigator. */}
+    // The calendar still renders its own heading and month navigator; the
+    // template keeps the frame, the tab title and the area's tabs.
+    <AppPage header={false}>
       <AttendanceCalendar />
-    </div>
+    </AppPage>
   );
 }
 
@@ -366,24 +358,30 @@ export function DaySessions(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={headerActions} />
-
-      {showTeacherPicker && (
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("teacherLabel")}</span>
-          <Select
-            options={teacherSelectOptions}
-            value={selectedTeacherId}
-            onValueChange={setSelectedTeacherId}
-            placeholder={t("teacherPlaceholder")}
-            disabled={teacherOptions.isLoading}
-            aria-label={t("teacherLabel")}
-            className="w-56"
-          />
-        </label>
-      )}
-
+    // The day switcher and the report links stay beside the title; the
+    // teacher picker filters the content, so it is the toolbar. The area's
+    // tabs come from the registry and keep the chosen day.
+    <AppPage
+      title={t("title")}
+      actions={headerActions}
+      navParams={["date"]}
+      toolbar={
+        showTeacherPicker ? (
+          <label className="flex flex-col gap-1 text-[13px]">
+            <span className="font-medium text-fg">{t("teacherLabel")}</span>
+            <Select
+              options={teacherSelectOptions}
+              value={selectedTeacherId}
+              onValueChange={setSelectedTeacherId}
+              placeholder={t("teacherPlaceholder")}
+              disabled={teacherOptions.isLoading}
+              aria-label={t("teacherLabel")}
+              className="w-56"
+            />
+          </label>
+        ) : undefined
+      }
+    >
       {selectedTeacherId === "" ? (
         <EmptyState
           icon={<domainIcons.attendance aria-hidden="true" />}
@@ -444,6 +442,6 @@ export function DaySessions(): ReactElement {
           </div>
         </section>
       )}
-    </div>
+    </AppPage>
   );
 }
