@@ -2,8 +2,8 @@
   "navLabel": "Approval workflows",
   "eyebrow": "Settings",
   "title": "Approval workflows",
-  "body": "Arrange the approval stages for each request kind. Saving a change creates a new version; requests already in progress keep the stages of the version active when they were opened -- only new requests use this one.",
-  "versionLabel": "Active version: {version}",
+  "body": "The order of approvals for each kind of request. Saving creates a new version: requests in progress keep the old one, new requests use this one.",
+  "versionLabel": "Version {version}",
   "kind": {
     "exit_permit": "Exit permit",
     "late_arrival": "Late arrival",
@@ -12,15 +12,15 @@
   "addStage": "Add stage",
   "save": "Save changes",
   "saved": "Workflow saved",
-  "confirmTitle": "Save new approval workflow",
+  "confirmTitle": "Save as a new version?",
   "confirmBody": "This change takes effect as a new version. Requests already in progress keep the previous version's stages until they finish; only requests opened after this uses the new stage list.",
   "confirmSave": "Save as new version",
   "stage": {
     "labelField": "Stage name",
-    "keyField": "Stage key",
+    "keyField": "Stage code",
     "approverRuleField": "Who approves",
-    "dutySlugField": "Duty officer",
-    "dutySlugPlaceholder": "Pick a duty type",
+    "dutySlugField": "Duty type",
+    "dutySlugPlaceholder": "Choose a duty type",
     "verificationField": "Verification",
     "moveUp": "Move up",
     "moveDown": "Move down",
@@ -29,12 +29,38 @@
       "any_teacher": "Any teacher",
       "teacher_of_class_now": "Teacher currently teaching this class",
       "homeroom_of_student": "Student's homeroom teacher",
-      "duty": "A specific duty officer"
+      "duty": "A teacher on a given duty"
     },
     "verification": {
       "qr_scan": "QR scan",
       "manual": "Manual approval",
       "auto": "Automatic"
-    }
-  }
+    },
+    "labelPlaceholder": "For example: Duty teacher",
+    "untitled": "Stage {index}",
+    "stageNumber": "Stage {index}:",
+    "actions": "Actions for {name}",
+    "dutySlugHint": "The teacher on this duty at the time approves.",
+    "advanced": "Advanced",
+    "keyHint": "How the system recognises this stage. Filled in from the name for a new stage.",
+    "keyEmpty": "Enter a stage code.",
+    "keyDuplicate": "Another stage already uses this code."
+  },
+  "kindLabel": "Request kind",
+  "noVersion": "No version yet",
+  "stagesTitle": "Approval stages",
+  "stagesHint": "Run in order from the top. Open a stage to change it.",
+  "emptyTitle": "No stages yet",
+  "emptyBody": "Add the first stage: who approves and how.",
+  "summaryTitle": "Flow summary",
+  "summaryHint": "Who approves at each stage and how, following your changes.",
+  "summaryEmpty": "This flow has no stages yet.",
+  "stageRemoved": "Stage {name} removed from the flow",
+  "undo": "Undo",
+  "stagesRequired": "A flow needs at least one stage.",
+  "keysInvalid": "A stage code is empty or used twice. Check the open stages.",
+  "unsaved": "Changes to the {kind} flow are not saved yet",
+  "discardTitle": "Discard changes?",
+  "discardBody": "Unsaved changes to the {kind} flow will be lost.",
+  "discardConfirm": "Discard changes"
 }
