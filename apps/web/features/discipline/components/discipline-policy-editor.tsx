@@ -2,6 +2,8 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Card,
+  NumberInput,
   Field,
   Button,
   EmptyState,
@@ -116,13 +118,12 @@ export function DisciplinePolicyEditor({
                 <label className="sr-only" htmlFor={`sp-level-points-${index}`}>
                   {t("columns.minPoints")}
                 </label>
-                <Input
+                <NumberInput
                   id={`sp-level-points-${index}`}
-                  type="number"
                   min={0}
-                  value={level.minPoints}
-                  onChange={(e) => {
-                    updateLevel(index, { minPoints: e.target.value });
+                  value={level.minPoints === "" ? null : Number(level.minPoints)}
+                  onChange={(next) => {
+                    updateLevel(index, { minPoints: next === null ? "" : String(next) });
                   }}
                 />
                 <IconButton
@@ -140,9 +141,9 @@ export function DisciplinePolicyEditor({
           {/* Mobile: one card per level, fields stacked full width. */}
           <div className="flex flex-col gap-3 sm:hidden">
             {levels.map((level, index) => (
-              <div key={index} className="flex flex-col gap-2 rounded-sm border border-border p-3">
+              <Card key={index} tone="sunken" padding="sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-body font-medium tabular-nums text-fg">
+                  <span className="text-label tabular-nums text-fg">
                     {t("columns.level")} {level.level}
                   </span>
                   <IconButton
@@ -164,16 +165,15 @@ export function DisciplinePolicyEditor({
                   />
                 </Field>
                 <Field label={t("columns.minPoints")}>
-                  <Input
-                    type="number"
+                  <NumberInput
                     min={0}
-                    value={level.minPoints}
-                    onChange={(e) => {
-                      updateLevel(index, { minPoints: e.target.value });
+                    value={level.minPoints === "" ? null : Number(level.minPoints)}
+                    onChange={(next) => {
+                      updateLevel(index, { minPoints: next === null ? "" : String(next) });
                     }}
                   />
                 </Field>
-              </div>
+              </Card>
             ))}
           </div>
         </div>

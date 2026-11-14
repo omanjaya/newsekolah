@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Alert,
   Badge,
   Button,
   DataTable,
@@ -193,10 +194,9 @@ export function AtRiskPanel(): ReactElement {
 
   if (levels.length === 0 && !policy.isLoading) {
     return (
-      <div className="rounded-sm border border-border bg-surface p-4 text-body-sm text-fg-muted">
-        {t("noPolicyTitle")}
-        <p className="mt-1">{t("noPolicyBody")}</p>
-      </div>
+      <Alert variant="info" title={t("noPolicyTitle")}>
+        {t("noPolicyBody")}
+      </Alert>
     );
   }
 

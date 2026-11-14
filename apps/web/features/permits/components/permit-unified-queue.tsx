@@ -222,7 +222,7 @@ export function PermitUnifiedQueue(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="max-w-3xl text-sm text-fg-muted">{t("queueHint")}</p>
+      <p className="max-w-3xl text-body-sm text-fg-muted">{t("queueHint")}</p>
 
       {/* A lone count already shows on the queue's own tab, so one tile would only repeat it. */}
       {!loading && tiles.length > 1 && (
@@ -288,13 +288,13 @@ export function PermitUnifiedQueue(): ReactElement {
       )}
       {errors.map((source, index) => (
         <section key={`${source.label}-${index}`} aria-label={source.label}>
-          <h2 className="text-sm font-medium">{source.label}</h2>
+          <h2 className="text-label">{source.label}</h2>
           <QueryError retry={() => source.query.refetch()} />
         </section>
       ))}
       {loading && <Skeleton className="h-24 w-full" aria-busy="true" />}
       {!loading && errors.length === 0 && visible.length === 0 && (
-        <p className="py-6 text-center text-sm text-fg-muted">
+        <p className="py-6 text-center text-body-sm text-fg-muted">
           {t(rows.length === 0 ? "queueEmpty" : "queueNoMatch")}
         </p>
       )}

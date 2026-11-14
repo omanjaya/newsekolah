@@ -3,7 +3,16 @@
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatTime } from "@newsekolah/i18n";
-import { Field, Alert, Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import {
+  DialogFooter,
+  Field,
+  Alert,
+  Button,
+  Input,
+  Select,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
@@ -27,6 +36,8 @@ import {
   loadCounselingDraft,
   saveCounselingDraft,
 } from "../lib/counseling-draft";
+
+import { DateTimeFields } from "./date-time-fields";
 
 const KINDS: CounselingKind[] = ["individual", "group", "parent", "referral"];
 const TOPICS: CounselingTopic[] = ["career", "problem", "personal", "learning", "social", "other"];
@@ -182,16 +193,13 @@ export function CounselingForm({
           disabled={initial !== undefined}
         />
       </Field>
-      <Field label={t("sessionAt")}>
-        <Input
-          type="datetime-local"
-          value={sessionAt}
-          onChange={(e) => {
-            setSessionAt(e.target.value);
-          }}
-          required
-        />
-      </Field>
+      <DateTimeFields
+        value={sessionAt}
+        onChange={setSessionAt}
+        dateLabel={t("sessionDate")}
+        timeLabel={t("sessionTime")}
+        required
+      />
       <Field label={t("kind")}>
         <Select
           options={KINDS.map((k) => ({ value: k, label: t(`kindOptions.${k}`) }))}
@@ -280,14 +288,14 @@ export function CounselingForm({
           }}
         />
       </Field>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={pending} disabled={!studentId}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

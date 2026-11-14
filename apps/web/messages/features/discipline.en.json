@@ -315,7 +315,9 @@
       "draftFoundTitle": "There is an unsaved draft note",
       "draftFoundBody": "The draft was last saved automatically at {time}. Restore it to continue?",
       "draftRestore": "Restore draft",
-      "draftDismiss": "Start over"
+      "draftDismiss": "Start over",
+      "sessionDate": "Session date",
+      "sessionTime": "Session time"
     }
   },
   "myDiscipline": {

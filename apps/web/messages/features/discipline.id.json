@@ -315,7 +315,9 @@
       "draftFoundTitle": "Ada draf catatan yang belum tersimpan",
       "draftFoundBody": "Draf terakhir disimpan otomatis pukul {time}. Pulihkan untuk melanjutkan?",
       "draftRestore": "Pulihkan draf",
-      "draftDismiss": "Mulai dari awal"
+      "draftDismiss": "Mulai dari awal",
+      "sessionDate": "Tanggal sesi",
+      "sessionTime": "Jam sesi"
     }
   },
   "myDiscipline": {

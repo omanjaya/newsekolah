@@ -155,18 +155,15 @@ export function ViolationAttachments({
                     <img
                       src={src}
                       alt={t("photoAlt")}
-                      className="size-20 rounded-sm border border-border object-cover"
+                      className="size-20 rounded-md border border-border object-cover"
                     />
                   </a>
                 ) : src === null ? (
-                  <div className="flex size-20 items-center justify-center rounded-sm border border-border bg-bg text-fg-muted">
+                  <div className="flex size-20 items-center justify-center rounded-md border border-border bg-surface-sunken text-fg-muted">
                     <ImageOff className="size-5" aria-hidden="true" />
                   </div>
                 ) : (
-                  <div
-                    className="size-20 animate-pulse rounded-sm border border-border bg-bg"
-                    aria-busy="true"
-                  />
+                  <div className="skeleton size-20 rounded-md" aria-busy="true" />
                 )}
               </li>
             );

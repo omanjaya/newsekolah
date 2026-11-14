@@ -1,7 +1,18 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Field, Button, Input, Skeleton, Textarea, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  Card,
+  Field,
+  FormActions,
+  FormError,
+  Input,
+  NumberInput,
+  SkeletonForm,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -31,7 +42,7 @@ export function WarningLetterTemplateView(): ReactElement {
     return <QueryError retry={() => policy.refetch()} className="m-4" />;
 
   if (policy.isLoading || !policy.data) {
-    return <Skeleton className="h-64 w-full" aria-busy="true" />;
+    return <SkeletonForm fields={4} />;
   }
 
   return (
@@ -116,17 +127,10 @@ function WarningLetterTemplateEditor({
     <div className="flex flex-col gap-4 md:h-full md:min-h-0 md:flex-1 md:overflow-y-auto">
       <p className="text-body-sm text-fg-muted">{t("description")}</p>
 
-      <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-        {error && (
-          <p
-            role="alert"
-            className="rounded-xs border border-status-absent/40 px-3 py-2 text-body-sm"
-          >
-            {error}
-          </p>
-        )}
+      <Card padding="md" className="max-w-2xl">
+        {error && <FormError>{error}</FormError>}
 
-        <Field label={t("patternLabel")}>
+        <Field label={t("patternLabel")} hint={t("patternHint")}>
           <Input
             value={pattern}
             disabled={!canEdit}
@@ -138,28 +142,25 @@ function WarningLetterTemplateEditor({
             }}
             invalid={error === t("missingSeqError")}
           />
-          <span className="text-fg-muted">{t("patternHint")}</span>
         </Field>
 
-        <Field label={t("seqPadLabel")}>
-          <Input
-            type="number"
+        <Field label={t("seqPadLabel")} hint={t("seqPadHint")}>
+          <NumberInput
             min={MIN_SEQ_PAD}
             max={MAX_SEQ_PAD}
-            value={seqPad}
+            value={seqPad === "" ? null : Number(seqPad)}
             disabled={!canEdit}
-            onChange={(e) => {
-              setSeqPad(e.target.value);
+            onChange={(next) => {
+              setSeqPad(next === null ? "" : String(next));
             }}
-            className="w-24"
+            className="w-32"
           />
-          <span className="text-fg-muted">{t("seqPadHint")}</span>
         </Field>
 
-        <div className="flex flex-col gap-1 rounded-xs border border-border bg-bg px-3 py-2 text-body-sm">
-          <span className="font-medium text-fg-muted">{t("previewLabel")}</span>
-          <span className="font-medium tabular-nums text-fg">{preview}</span>
-        </div>
+        <Card tone="sunken" padding="sm" className="gap-1">
+          <span className="text-caption text-fg-muted">{t("previewLabel")}</span>
+          <span className="text-label tabular-nums text-fg">{preview}</span>
+        </Card>
 
         <Field label={t("openingLabel")}>
           <Textarea
@@ -184,13 +185,13 @@ function WarningLetterTemplateEditor({
         </Field>
 
         {canEdit && (
-          <div className="flex justify-end border-t border-border pt-4">
+          <FormActions>
             <Button disabled={!dirty} loading={update.isPending} onClick={save}>
               {t("save")}
             </Button>
-          </div>
+          </FormActions>
         )}
-      </section>
+      </Card>
     </div>
   );
 }

@@ -1,7 +1,15 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Field, Button, Checkbox, Input, useToast } from "@newsekolah/ui";
+import {
+  NumberInput,
+  DialogFooter,
+  Field,
+  Button,
+  Checkbox,
+  Input,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -84,11 +92,10 @@ export function ViolationTypeForm({
         />
       </Field>
       <Field label={t("points")}>
-        <Input
-          type="number"
-          value={points}
-          onChange={(e) => {
-            setPoints(e.target.value);
+        <NumberInput
+          value={points === "" ? null : Number(points)}
+          onChange={(next) => {
+            setPoints(next === null ? "" : String(next));
           }}
           required
           min={0}
@@ -113,14 +120,14 @@ export function ViolationTypeForm({
         />
         {t("active")}
       </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={pending}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }
