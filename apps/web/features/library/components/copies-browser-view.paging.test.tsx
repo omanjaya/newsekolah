@@ -28,6 +28,10 @@ vi.mock("../../../lib/view-state/view-state-provider", () => ({
   useRememberedViewState: () => ["", vi.fn()],
 }));
 vi.mock("../../reference/api", () => ({ useLookup: () => new Map() }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+vi.mock("./library-title-name", () => ({
+  LibraryTitleName: ({ titleId }: { titleId: string }) => titleId,
+}));
 vi.mock("../copies-api", () => ({
   useLibraryCopiesFilteredQuery: mocks.useLibraryCopiesFilteredQuery,
   useCollectionCategoriesQuery: () => ({
@@ -71,7 +75,7 @@ describe("CopiesBrowserView paging", () => {
       expect(mocks.useLibraryCopiesFilteredQuery).toHaveBeenLastCalledWith(
         expect.objectContaining({ limit: 50, offset: 0 }),
       );
-      await user.click(screen.getByRole("button", { name: "next" }));
+      await user.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
 
       expect(mocks.useLibraryCopiesFilteredQuery).toHaveBeenLastCalledWith(
         expect.objectContaining({ limit: 50, offset: 50 }),

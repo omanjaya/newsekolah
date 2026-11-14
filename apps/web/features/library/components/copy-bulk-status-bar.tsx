@@ -21,11 +21,11 @@ const STATUSES: LibraryCopyStatus[] = [
 ];
 
 /**
- * Shown once at least one copy is selected: sets a single manual status on
- * the whole batch. A copy on loan is skipped rather than failing the whole
- * request, and the result names how many were skipped.
+ * A table bulk action, shown in the selection bar: sets a single manual
+ * status on the whole batch. A copy on loan is skipped rather than failing
+ * the whole request, and the result names how many were skipped.
  */
-export function CopyBulkStatusBar({
+export function CopyBulkStatusAction({
   selectedIds,
   onDone,
 }: {
@@ -44,16 +44,17 @@ export function CopyBulkStatusBar({
   if (selectedIds.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-sm border border-border bg-surface p-3 text-[13px]">
-      <span className="text-fg">{t("label")}</span>
+    <>
       <Select
+        size="sm"
+        aria-label={t("label")}
         options={STATUSES.map((value) => ({ value, label: tStatus(value) }))}
         value={status}
         onValueChange={(value) => {
           setStatus(value as LibraryCopyStatus);
         }}
         placeholder={t("statusPlaceholder")}
-        className="w-44"
+        className="w-40"
       />
       <Button
         size="sm"
@@ -97,6 +98,6 @@ export function CopyBulkStatusBar({
           }
         }}
       />
-    </div>
+    </>
   );
 }
