@@ -69,6 +69,14 @@ describe("VerifyView", () => {
     expect(screen.getByText("SI-0042")).toBeInTheDocument();
   });
 
+  it("treats a malformed code as unknown, not as a failed check", async () => {
+    get.mockRejectedValue(new ApiError({ status: 400, code: "VALIDATION_FAILED", message: "x" }));
+    renderView();
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "notFoundTitle" }),
+    ).toBeInTheDocument();
+  });
+
   it("offers a retry, not an 'unknown' verdict, when the check itself fails", async () => {
     get.mockRejectedValue(new ApiError({ status: 500, code: "INTERNAL", message: "x" }));
     renderView();

@@ -41,9 +41,10 @@ export function VerifyView({ code }: { code: string }): ReactElement {
     queryFn: () => client.GET("/v1/documents/verify/{code}", { params: { path: { code } } }),
     retry: false,
   });
-  // Anything but a clean "no such code" (no network, a server error) is not
-  // a verdict on the document, so it gets a retry instead of "unknown".
-  const failed = error !== null && !(error instanceof ApiError && error.status === 404);
+  // The API answering that the code matches nothing (404) or is not a code
+  // at all (400) is a verdict on the code. Anything else (no network, a
+  // server error, the rate limit) is not, so it gets a retry instead.
+  const failed = error !== null && !isVerdictOnCode(error);
 
   return (
     <div className={cn(PUBLIC_CONTAINER, "flex flex-col items-center gap-5 py-8 md:py-14")}>
@@ -98,6 +99,10 @@ export function VerifyView({ code }: { code: string }): ReactElement {
       <p className="max-w-xl text-center text-caption text-fg-muted">{t("footer")}</p>
     </div>
   );
+}
+
+function isVerdictOnCode(error: Error): boolean {
+  return error instanceof ApiError && (error.status === 404 || error.status === 400);
 }
 
 function Verdict({
