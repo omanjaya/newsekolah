@@ -4,8 +4,17 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type * as ReferenceApi from "../../reference/api";
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, values?: Record<string, unknown>) =>
+    values ? `${key}:${JSON.stringify(values)}` : key,
   useLocale: () => "id",
+}));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+
+const profileKind = vi.hoisted(() => ({ value: "student" }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useSession: () => ({
+    me: { profile_kind: profileKind.value, permissions: [], roles: [], modules: [] },
+  }),
 }));
 
 const myGradesFixture = {
@@ -60,25 +69,33 @@ afterEach(() => {
 });
 
 describe("MyGradesView", () => {
-  it("renders the three stat tiles (average, passing subjects, new scores)", () => {
+  it("sums the term up in one strip, stars included", () => {
     render(<MyGradesView />);
 
     expect(screen.getByTestId("my-grades-tiles")).toBeInTheDocument();
     expect(screen.getByTestId("my-grades-tile-average")).toBeInTheDocument();
     expect(screen.getByTestId("my-grades-tile-tuntas")).toBeInTheDocument();
     expect(screen.getByTestId("my-grades-tile-newScores")).toBeInTheDocument();
+    expect(screen.getByTestId("my-grades-tile-stars")).toBeInTheDocument();
   });
 
-  it("renders one bento card per subject, the odd one spanning the full row", () => {
+  it("sets each report score large with a meter against the KKTP", () => {
     render(<MyGradesView />);
 
-    expect(screen.getByTestId("my-grades-subject-card-s1")).toBeInTheDocument();
-    expect(screen.getByTestId("my-grades-subject-card-s2")).toBeInTheDocument();
-    expect(screen.getByTestId("my-grades-subject-card-s3")).toBeInTheDocument();
+    const failing = screen.getByTestId("my-grades-subject-card-s2");
+    expect(failing.textContent).toContain("60,0");
+    expect(failing.textContent).toContain('kktpLine:{"kktp":75}');
+    expect(failing.textContent).toContain('belowKktpBy:{"points":"15,0"}');
+    expect(screen.getAllByRole("meter")).toHaveLength(3);
+  });
 
-    // Three cards is odd -- the last one spans both columns (bentoCells).
-    expect(screen.getByTestId("my-grades-subject-cell-s3")).toHaveClass("md:col-span-2");
-    expect(screen.getByTestId("my-grades-subject-cell-s1")).not.toHaveClass("md:col-span-2");
+  it("sends a staff member to grading instead of a student's empty state", () => {
+    profileKind.value = "teacher";
+    render(<MyGradesView />);
+
+    expect(screen.getByText("studentsOnlyTitle")).toBeInTheDocument();
+    expect(screen.queryByTestId("my-grades-tiles")).not.toBeInTheDocument();
+    profileKind.value = "student";
   });
 
   it("shows the tuntas badge for a passing subject and not for a failing one", () => {

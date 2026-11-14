@@ -180,7 +180,7 @@
     "emptyBody": "Your subject teacher will publish grades once the score sheet is complete.",
     "unknownSubject": "Subject",
     "noComponents": "No graded components for this subject yet.",
-    "belowKktp": "Below minimum mastery",
+    "belowKktp": "Below KKTP",
     "average": "Average {score}",
     "starsBreakdown": "Stars by subject and teacher",
     "starsBreakdownEmpty": "No stars yet.",
@@ -194,7 +194,15 @@
       "up": "Up",
       "down": "Down",
       "flat": "Steady"
-    }
+    },
+    "statsLabel": "Grade summary",
+    "statStars": "Stars",
+    "kktpLine": "KKTP {kktp}",
+    "aboveKktp": "Passed",
+    "belowKktpBy": "{points} points short",
+    "studentsOnlyTitle": "This page is for students",
+    "studentsOnlyBody": "My grades shows the grades published to a student. Your account is not a student account.",
+    "openGrading": "Open grading"
   },
   "erapor": {
     "pickTerm": "Select term",

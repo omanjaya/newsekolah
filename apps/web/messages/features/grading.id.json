@@ -194,7 +194,15 @@
       "up": "Naik",
       "down": "Turun",
       "flat": "Stabil"
-    }
+    },
+    "statsLabel": "Ringkasan nilai",
+    "statStars": "Bintang",
+    "kktpLine": "KKTP {kktp}",
+    "aboveKktp": "Sudah tuntas",
+    "belowKktpBy": "Kurang {points} poin",
+    "studentsOnlyTitle": "Halaman ini untuk siswa",
+    "studentsOnlyBody": "Nilai saya menampilkan nilai yang diterbitkan untuk seorang siswa. Akun Anda bukan akun siswa.",
+    "openGrading": "Buka penilaian"
   },
   "erapor": {
     "pickTerm": "Pilih semester",
