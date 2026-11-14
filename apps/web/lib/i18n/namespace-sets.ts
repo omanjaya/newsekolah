@@ -45,6 +45,9 @@ const ROOT_APP_NAMESPACES = [
   "app.verify",
   "app.account",
   "app.security",
+  // The page template, the state pages and the kiosk frame: read by every
+  // `(app)` screen, the library screens under their own provider, and `(kiosk)`.
+  "app.page",
 ] as const;
 
 /**

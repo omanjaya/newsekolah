@@ -1,0 +1,22 @@
+{
+  "sections": "Bagian {area}",
+  "notFound": {
+    "search": "Cari halaman"
+  },
+  "error": {
+    "title": "Halaman ini gagal ditampilkan",
+    "body": "Bagian lain aplikasi tetap bisa dipakai. Coba lagi, atau hubungi admin sekolah bila terus terjadi.",
+    "retry": "Coba lagi",
+    "home": "Kembali ke beranda"
+  },
+  "kiosk": {
+    "exit": "Keluar dari mode kios",
+    "clock": "Waktu sekolah"
+  },
+  "queryError": {
+    "title": "Data gagal dimuat",
+    "offlineTitle": "Tidak ada koneksi",
+    "forbiddenTitle": "Data ini tidak bisa dibuka",
+    "code": "Kode galat: {code}"
+  }
+}
