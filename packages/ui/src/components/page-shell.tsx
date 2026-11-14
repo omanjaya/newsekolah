@@ -65,8 +65,8 @@ export interface PageShellProps extends Omit<ComponentPropsWithRef<"div">, "chil
  * mounts, so moving between the tabs of one area keeps its title still.
  *
  * The `fit` variant subtracts `--page-offset-top` (the sticky chrome above
- * the page, 0 by default) from the viewport height; the app sets it once
- * for its own header.
+ * the page) from the viewport height. Unset, it reads the app shell's
+ * measured `--shell-header-height` (header and strips), then 0.
  */
 export function PageShell({
   variant = "default",
@@ -95,7 +95,7 @@ export function PageShell({
       data-variant={variant}
       className={cn(
         "flex w-full min-w-0 flex-col px-4 py-4 md:px-6 md:py-6",
-        fit && "md:h-[calc(100dvh-var(--page-offset-top,0px))]",
+        fit && "md:h-[calc(100dvh-var(--page-offset-top,var(--shell-header-height,0px)))]",
         className,
       )}
       {...props}

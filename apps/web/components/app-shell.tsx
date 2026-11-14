@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { ReactElement, ReactNode } from "react";
+import { useRef, type ReactElement, type ReactNode } from "react";
 
 import { useActionInboxCount } from "../features/inbox/use-action-inbox-count";
 import { useNotificationsSocket } from "../features/notifications/realtime";
@@ -25,6 +25,7 @@ import { OfflineIndicator } from "./offline-indicator";
 import { Sidebar } from "./sidebar";
 import { SimulationControls } from "./simulation-controls";
 import { UpdateAvailable } from "./update-available";
+import { useShellHeaderHeight } from "./use-shell-header-height";
 
 /**
  * Single layout for the `(app)` route group (docs/03-layered-architecture.md
@@ -76,22 +77,27 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
   // inside the shell rather than around it, so a refusal still leaves the
   // reader somewhere to go.
   const routeAccess = pathAccess(pathname, access);
+  // The stack's height, strips included, for the `fit` pages under it.
+  const shellRef = useRef<HTMLDivElement>(null);
+  const stackRef = useRef<HTMLDivElement>(null);
+  useShellHeaderHeight(stackRef, shellRef);
 
   return (
     <CommandPaletteProvider>
       <a href="#main-content" className="skip-link">
         {t("skipToContent")}
       </a>
-      <div className="flex min-h-dvh">
+      <div ref={shellRef} className="flex min-h-dvh">
         <Sidebar items={items} className="hidden md:flex" />
         <div className="flex min-w-0 flex-1 flex-col">
           {/*
             One sticky stack: the header, then any standing state as a
             one-line strip (testing as another account, a simulated clock,
             no connection, a new version). Strips stay in view on a long
-            page and never sit over the phone's tab bar.
+            page and never sit over the phone's tab bar. Its measured
+            height is published as --shell-header-height.
           */}
-          <div className="sticky top-0 z-sticky">
+          <div ref={stackRef} className="sticky top-0 z-sticky">
             <Header />
             <ImpersonationBanner />
             <SimulationControls />
