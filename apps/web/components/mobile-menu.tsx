@@ -12,9 +12,11 @@ import { splitSidebarGroups } from "../lib/group-navigation";
 import { navGroupIcons, navGroupLabelKey, type NavItem } from "../lib/navigation";
 import { activeNavHref } from "../lib/navigation/active-href";
 import { useNavigationPreferences } from "../lib/navigation/use-navigation-preferences";
+import type { QuickAction } from "../lib/quick-actions";
 
 import { useCommandPaletteOptional } from "./command-palette-provider";
-import { TabSlot } from "./mobile-tab-slot";
+import { QuickActionGrid } from "./mobile-quick-actions";
+import { TabBadge, TabSlot } from "./mobile-tab-slot";
 
 /** Recent pages shown as chips; more would wrap into a second row on a phone. */
 const RECENT_LIMIT = 4;
@@ -31,19 +33,26 @@ interface Section {
  * Every permitted destination, as a bottom sheet behind the tab bar's Menu
  * slot. The same structure as the desktop sidebar (daily pages, then one
  * card per group, then the school's settings), plus a search field that
- * opens the command palette, the last pages visited as chips, and the
- * reader's favorites. Stars only show in "Atur favorit" mode, so the list
- * stays quiet the rest of the time.
+ * opens the command palette, the quick actions the tab bar's centre does
+ * not already offer, the last pages visited as chips, and the reader's
+ * favorites. Stars only show in "Atur favorit" mode, so the list stays
+ * quiet the rest of the time.
  */
 export function MobileMenu({
   items,
   scope,
   current = false,
+  badgeCount = 0,
+  quickActions = [],
 }: {
   items: NavItem[];
   scope?: string;
   /** The page being viewed is reached through this menu rather than a tab. */
   current?: boolean;
+  /** Items waiting behind entries that only live in this menu (the action inbox, say). */
+  badgeCount?: number;
+  /** Quick actions listed under the search field, those the bar's centre does not cover (`menuQuickActions`). */
+  quickActions?: readonly QuickAction[];
 }): ReactElement {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -104,7 +113,16 @@ export function MobileMenu({
       }}
     >
       <SheetTrigger asChild>
-        <TabSlot icon={<Menu />} label={t("app.shell.mobileMenu.title")} active={current} />
+        <TabSlot
+          icon={<Menu aria-hidden="true" />}
+          label={t("app.shell.mobileMenu.title")}
+          active={current}
+          badge={
+            badgeCount > 0 ? (
+              <TabBadge count={badgeCount} label={t("app.shell.navBadge", { count: badgeCount })} />
+            ) : undefined
+          }
+        />
       </SheetTrigger>
       <SheetContent title={t("app.shell.mobileMenu.title")} closeLabel={t("common.actions.close")}>
         <nav aria-label={t("app.shell.sidebar.label")} className="flex flex-col gap-6">
@@ -120,6 +138,15 @@ export function MobileMenu({
               <Search aria-hidden="true" className="size-5 shrink-0" />
               <span className="min-w-0 flex-1 truncate">{t("app.shell.phoneMenu.search")}</span>
             </button>
+          )}
+
+          {quickActions.length > 0 && (
+            <section aria-labelledby="mobile-menu-quick" className="flex flex-col gap-2">
+              <h2 id="mobile-menu-quick" className="text-label text-fg-muted">
+                {t("app.quickActions.title")}
+              </h2>
+              <QuickActionGrid actions={quickActions} onNavigate={close} layout="row" />
+            </section>
           )}
 
           {recent.length > 0 && (

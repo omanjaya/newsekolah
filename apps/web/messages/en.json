@@ -210,6 +210,21 @@
         "recent": "Recently visited",
         "favorite": "Favorite: {name}"
       },
+      "tabBar": {
+        "withCount": "{name}, {count} waiting",
+        "centre": {
+          "scan": { "label": "Scan", "name": "Scan QR" },
+          "dutyQr": { "label": "Duty QR", "name": "Show duty QR" },
+          "attendance": { "label": "Roll call", "name": "Take the roll call" },
+          "circulation": { "label": "Desk", "name": "Circulation desk" },
+          "recordViolation": { "label": "Record", "name": "Record a violation" },
+          "inbox": { "label": "Actions", "name": "Actions needed" },
+          "checkIn": { "label": "Clock in", "name": "Clock in or out" },
+          "addVisitor": { "label": "Visitor", "name": "Add a visitor" },
+          "submitLeave": { "label": "Leave", "name": "Request leave" },
+          "quickActions": { "label": "Shortcuts", "name": "Shortcuts" }
+        }
+      },
       "table": {
         "selectedRows": "{count} rows selected",
         "selectAllRows": "Select all rows",

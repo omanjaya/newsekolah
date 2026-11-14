@@ -58,7 +58,25 @@ body {
   --tenant-accent-fg: #ffffff;
   --tenant-accent-dark-fg: #06261d;
   --shell-sidebar-width: 15rem;
-  --shell-mobile-tab-offset: calc(4rem + env(safe-area-inset-bottom));
+  /*
+   * The phone's tab bar (components/mobile-tab-bar.tsx, geometry in
+   * mobile-tab-slot.tsx): a 64px row of slots, padded clear of the home
+   * indicator, with the 56px centre button rising 24px above it, plus its
+   * 4px ring: 28px of overhang, and 4px of air on top of that make the
+   * 32px raise. The offset is everything at the bottom that content keeps
+   * clear of (the page's end, a StickySaveBar, a sticky form row): the
+   * bar, the home indicator and the raise. A bar without a centre action
+   * (`data-centre` absent) raises nothing.
+   */
+  --shell-mobile-tab-bar: 4rem;
+  --shell-mobile-tab-raise: 2rem;
+  --shell-mobile-tab-offset: calc(
+    var(--shell-mobile-tab-bar) + var(--shell-mobile-tab-raise) + env(safe-area-inset-bottom)
+  );
+}
+
+:root:has([data-tab-bar]:not([data-centre])) {
+  --shell-mobile-tab-raise: 0px;
 }
 
 :root:root {
@@ -105,5 +123,46 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .auth-orb-a {
     animation: none;
+  }
+}
+
+/*
+ * Phone tab bar (components/mobile-tab-slot.tsx).
+ *
+ * Press feedback: every slot shrinks while held, twice the press token's
+ * dip (0.98, so 0.96) in 80ms, and settles back at the normal 120ms.
+ * Derived from the token, so reduced motion (which sets it to 1) keeps the
+ * slot still.
+ */
+.tab-press {
+  transition-property: color, scale;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-standard);
+}
+
+.tab-press:active {
+  scale: calc(1 - 2 * (1 - var(--motion-scale-press)));
+  transition-duration: var(--duration-instant);
+}
+
+/*
+ * The active tab's icon reads as filled without leaving Lucide: a heavier
+ * stroke and a faint wash of the accent inside its closed shapes (open
+ * strokes, like the menu's lines, enclose nothing and stay as they are).
+ */
+.tab-icon-active > svg {
+  stroke-width: 2.4;
+  fill: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+/*
+ * A form's own sticky action row (FormActions `sticky`) rides above the
+ * phone's tab bar instead of sliding under it. Dialogs and sheets are
+ * portalled outside <main>, so their rows keep the dialog's bottom edge.
+ */
+@media (width < 48rem) {
+  main [data-slot="form-actions"].sticky {
+    bottom: var(--shell-mobile-tab-offset);
+    padding-bottom: var(--space-3);
   }
 }

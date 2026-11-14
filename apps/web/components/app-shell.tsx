@@ -6,19 +6,22 @@ import { useRef, type ReactElement, type ReactNode } from "react";
 
 import { useActionInboxCount } from "../features/inbox/use-action-inbox-count";
 import { useNotificationsSocket } from "../features/notifications/realtime";
+import { mobileTabLayout } from "../lib/mobile-navigation";
 import { navigation, filterNavigation } from "../lib/navigation";
 import { navAccessFromMe } from "../lib/navigation-access";
-import { pathAccess } from "../lib/navigation-permissions";
+import { canOpenPath, pathAccess } from "../lib/navigation-permissions";
+import { sortQuickActions } from "../lib/navigation-quick-actions";
 import { consolidateNavigation } from "../lib/navigation-workspaces";
 import { ConnectionStatusIndicator } from "../lib/realtime/connection-status-indicator";
 import { LiveSocketProvider } from "../lib/realtime/live-socket-provider";
 import { useSession } from "../lib/session/session-provider";
+import { useQuickActions } from "../lib/use-quick-actions";
 
 import { CommandPaletteProvider } from "./command-palette-provider";
+import { useCurrentSessionHref } from "./current-session-href";
 import { ForbiddenPage } from "./forbidden-page";
 import { Header } from "./header";
 import { ImpersonationBanner } from "./impersonation-banner";
-import { MobileQuickActions } from "./mobile-quick-actions";
 import { MobileTabBar } from "./mobile-tab-bar";
 import { ModuleUnavailablePage } from "./module-unavailable-page";
 import { OfflineIndicator } from "./offline-indicator";
@@ -29,8 +32,8 @@ import { useShellHeaderHeight } from "./use-shell-header-height";
 
 /**
  * Single layout for the `(app)` route group (docs/03-layered-architecture.md
- * section 3): sidebar on desktop, bottom tab bar and a floating quick-action
- * button on a phone, one header, all reading from the same `navigation`
+ * section 3): sidebar on desktop, a bottom tab bar with a raised centre
+ * action on a phone, one header, all reading from the same `navigation`
  * registry.
  *
  * `LiveSocketProvider` wraps the whole shell so every screen under it can
@@ -82,6 +85,24 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
   const stackRef = useRef<HTMLDivElement>(null);
   useShellHeaderHeight(stackRef, shellRef);
 
+  // The phone bar: its tabs and the raised centre action, checked against
+  // the same route access as the home hero. A teacher's "Isi presensi"
+  // opens the session running now or next, as the hero does.
+  const quickActions = sortQuickActions(useQuickActions());
+  const layout = mobileTabLayout({
+    items,
+    profile: me?.profile_kind,
+    duties: me?.duties,
+    quickActions,
+    canOpen: (path) => canOpenPath(path, access),
+  });
+  const teaching = layout.centre?.id === "attendance";
+  const sessionHref = useCurrentSessionHref(me?.tenant.timezone, teaching);
+  const tabBar =
+    teaching && layout.centre
+      ? { ...layout, centre: { ...layout.centre, href: sessionHref } }
+      : layout;
+
   return (
     <CommandPaletteProvider>
       <a href="#main-content" className="skip-link">
@@ -113,7 +134,7 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
           </div>
           <main
             id="main-content"
-            className="flex-1 pb-[calc(var(--shell-mobile-tab-offset)+var(--shell-fab-space,0px)+1rem)] md:pb-0"
+            className="flex-1 pb-[calc(var(--shell-mobile-tab-offset)+1rem)] md:pb-0"
           >
             {routeAccess === "ok" ? (
               children
@@ -127,12 +148,11 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
       </div>
       <MobileTabBar
         items={items}
-        profile={me?.profile_kind}
-        duties={me?.duties}
+        layout={tabBar}
+        quickActions={quickActions}
         scope={me ? `${me.tenant.tenant_id}:${me.id}` : undefined}
         className="md:hidden"
       />
-      <MobileQuickActions className="md:hidden" />
     </CommandPaletteProvider>
   );
 }

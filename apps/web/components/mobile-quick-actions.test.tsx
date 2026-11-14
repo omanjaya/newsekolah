@@ -49,6 +49,16 @@ describe("MobileQuickActions", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("sits in the tab bar as the raised centre button, with a short label under it", () => {
+    render(<MobileQuickActions />);
+
+    const trigger = screen.getByRole("button", { name: "trigger" });
+    // No longer a floating button over the page: it lives in the bar's slot.
+    expect(trigger).not.toHaveClass("fixed");
+    expect(trigger).toHaveTextContent("label");
+    expect(trigger.querySelector("[data-tab-centre]")).toBeInTheDocument();
+  });
+
   it("renders no button when the reader has no quick action", () => {
     // Scan and check-in are scoped to known profile kinds, so a session
     // without one is offered nothing.

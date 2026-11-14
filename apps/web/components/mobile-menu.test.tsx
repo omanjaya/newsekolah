@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { Home, Users } from "lucide-react";
+import { Home, LogIn, Users } from "lucide-react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/school/classes" }));
@@ -70,6 +70,58 @@ describe("mobile menu", () => {
     fireEvent.click(screen.getByRole("button", { name: "app.shell.mobileMenu.title" }));
     expect(screen.queryByRole("heading", { name: "Library" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Loans" })).toBeInTheDocument();
+  });
+
+  it("lists the quick actions the bar's centre does not cover, and closes after one", () => {
+    render(
+      <MobileMenu
+        items={[{ key: "home", labelKey: "Home", href: "/dashboard", icon: Home }]}
+        quickActions={[
+          { id: "check-in", labelKey: "checkIn", icon: LogIn, path: "/check-in" },
+          {
+            id: "record-violation",
+            labelKey: "recordViolation",
+            icon: Users,
+            path: "/discipline/violations",
+            query: { quick: "record-violation" },
+          },
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "app.shell.mobileMenu.title" }));
+    expect(screen.getByRole("heading", { name: "app.quickActions.title" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "actions.checkIn" })).toHaveAttribute(
+      "href",
+      "/check-in",
+    );
+    expect(screen.getByRole("link", { name: "actions.recordViolation" })).toHaveAttribute(
+      "href",
+      "/discipline/violations?quick=record-violation",
+    );
+    fireEvent.click(screen.getByRole("link", { name: "actions.checkIn" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("shows no quick-action section when there is nothing to add", () => {
+    render(
+      <MobileMenu items={[{ key: "home", labelKey: "Home", href: "/dashboard", icon: Home }]} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "app.shell.mobileMenu.title" }));
+    expect(
+      screen.queryByRole("heading", { name: "app.quickActions.title" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("carries the count of what waits behind entries that only live in the menu", () => {
+    render(
+      <MobileMenu
+        items={[{ key: "home", labelKey: "Home", href: "/dashboard", icon: Home }]}
+        badgeCount={4}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /app\.shell\.mobileMenu\.title/ })).toHaveTextContent(
+      "4",
+    );
   });
 
   it("shows favorite stars only while editing favorites", () => {
