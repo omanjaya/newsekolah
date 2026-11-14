@@ -1,8 +1,21 @@
 "use client";
 
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Skeleton } from "@newsekolah/ui";
-import { FileClock, Users } from "lucide-react";
-import Link from "next/link";
+import {
+  Badge,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  List,
+  ListRow,
+  Skeleton,
+  SkeletonList,
+  StatusBadge,
+  TextLink,
+  type StatusName,
+} from "@newsekolah/ui";
+import { CheckCheck, FileClock, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -15,6 +28,17 @@ import { EMPTY_BLOCK, HERO_PRIORITY, type Me, type PersonaBlock } from "../types
 /** Large enough to cover a whole homeroom class in one page, matching
  * `homeroom-view.tsx`'s own dashboard sections. */
 const DASHBOARD_LIMIT = 200;
+
+const LEAVE_HREF = "/leave-requests";
+
+/** Homeroom status codes that are attendance statuses, in roster order. */
+const CODE_STATUS: Record<string, StatusName> = {
+  H: "present",
+  S: "sick",
+  I: "excused",
+  D: "dispensation",
+  A: "absent",
+};
 
 /**
  * A homeroom teacher's binaan class: the leave-request queue scoped to
@@ -38,7 +62,12 @@ export function useHomeroomBlock(me: Me, active: boolean): PersonaBlock {
   if (!active) return EMPTY_BLOCK;
 
   const pending = (leaveQueue.data?.data ?? []).filter((item) => item.class_id === classId);
-  const block: PersonaBlock = { tiles: [], left: [], right: [] };
+  const block: PersonaBlock = {
+    tiles: [],
+    main: [],
+    side: [],
+    pending: (permitsOn && leaveQueue.isLoading) || attendance.isLoading,
+  };
 
   if (leaveQueue.isSuccess) {
     block.tiles.push({
@@ -46,7 +75,7 @@ export function useHomeroomBlock(me: Me, active: boolean): PersonaBlock {
       priority: 85,
       label: t("tiles.leaveLabel"),
       value: String(pending.length),
-      href: "/leave-requests",
+      href: LEAVE_HREF,
       icon: FileClock,
       tone: "amber",
     });
@@ -56,7 +85,8 @@ export function useHomeroomBlock(me: Me, active: boolean): PersonaBlock {
         priority: HERO_PRIORITY.leaveQueue,
         eyebrow: className ? t("hero.eyebrow", { className }) : t("hero.eyebrowFallback"),
         title: t("hero.title", { count: pending.length }),
-        action: { label: t("hero.action"), href: "/leave-requests" },
+        meta: t("hero.meta"),
+        action: { label: t("hero.action"), href: LEAVE_HREF },
       };
     }
   }
@@ -73,10 +103,11 @@ export function useHomeroomBlock(me: Me, active: boolean): PersonaBlock {
       hint: className ? t("tiles.rateHint", { className }) : undefined,
       icon: Users,
       tone: "blue",
+      href: "/homeroom",
     });
   }
 
-  block.left = [
+  block.main = [
     {
       key: "homeroom.class",
       node: (
@@ -85,13 +116,12 @@ export function useHomeroomBlock(me: Me, active: boolean): PersonaBlock {
           showLeave={permitsOn}
           pending={pending}
           pendingLoading={leaveQueue.isLoading}
-          pendingError={leaveQueue.isError}
+          pendingError={leaveQueue.isError ? leaveQueue.error : null}
           onRetryPending={() => void leaveQueue.refetch()}
           counts={counts}
           countsLoading={attendance.isLoading}
-          countsError={attendance.isError}
+          countsError={attendance.isError ? attendance.error : null}
           onRetryCounts={() => void attendance.refetch()}
-          t={t}
         />
       ),
     },
@@ -111,21 +141,20 @@ function HomeroomClassCard({
   countsLoading,
   countsError,
   onRetryCounts,
-  t,
 }: {
   className: string;
   /** False when the school switched permits off: the leave section and its link go away. */
   showLeave: boolean;
   pending: LeaveRequestSummary[];
   pendingLoading: boolean;
-  pendingError: boolean;
+  pendingError: unknown;
   onRetryPending: () => void;
   counts: Record<string, number>;
   countsLoading: boolean;
-  countsError: boolean;
+  countsError: unknown;
   onRetryCounts: () => void;
-  t: ReturnType<typeof useTranslations>;
 }): ReactElement {
+  const t = useTranslations("app.dashboardTeaching.homeroom");
   // Reuses the existing leave-category and homeroom status-code catalogs
   // (app.permits.leave.categories, app.homeroom.codes) rather than
   // duplicating those labels in this new catalog.
@@ -134,73 +163,72 @@ function HomeroomClassCard({
   const codes = Object.entries(counts).filter(([, count]) => count > 0);
 
   return (
-    <Card className="h-full">
-      <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
-        <CardTitle>
+    <Card>
+      <CardHeader
+        action={showLeave ? <TextLink href={LEAVE_HREF}>{t("card.action")}</TextLink> : undefined}
+      >
+        <CardTitle as="h2">
           {className ? t("card.title", { className }) : t("card.titleFallback")}
         </CardTitle>
-        {showLeave && (
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/leave-requests">{t("card.action")}</Link>
-          </Button>
-        )}
+        <CardDescription>
+          {className ? t("card.statusTitle", { className }) : t("card.statusTitleFallback")}
+        </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4 pt-0">
-        {showLeave && (
-          <div>
-            {pendingLoading ? (
-              <Skeleton className="h-16 w-full" aria-busy="true" />
-            ) : pendingError ? (
-              <QueryError retry={onRetryPending} />
-            ) : pending.length === 0 ? (
-              <p className="text-[13px] text-fg-muted">{t("card.empty")}</p>
-            ) : (
-              <ul className="flex flex-col divide-y divide-border">
-                {pending.slice(0, 5).map((item) => (
-                  <li
-                    key={item.instance_id}
-                    className="flex items-center justify-between gap-3 py-2"
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate text-[14px] text-fg">
-                        {item.student_name}
-                      </span>
-                      <span className="block truncate text-[12px] text-fg-muted">
-                        {categoryT(`categories.${item.category}`)}
-                      </span>
-                    </span>
-                    <Link
-                      href="/leave-requests"
-                      className="shrink-0 text-[13px] text-accent underline underline-offset-2"
-                    >
-                      {t("card.review")}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-        <div>
-          {countsLoading ? (
-            <Skeleton className="h-8 w-full" aria-busy="true" />
-          ) : countsError ? (
-            <QueryError retry={onRetryCounts} />
-          ) : codes.length === 0 ? (
-            <p className="text-[13px] text-fg-muted">{t("card.noStatus")}</p>
-          ) : (
-            <ul className="flex flex-wrap gap-2">
-              {codes.map(([code, count]) => (
+      <div className="px-5 pb-4">
+        {countsLoading ? (
+          <Skeleton className="h-6 w-2/3" aria-busy="true" />
+        ) : countsError ? (
+          <QueryError retry={onRetryCounts} error={countsError} />
+        ) : codes.length === 0 ? (
+          <p className="text-body-sm text-fg-muted">{t("card.noStatus")}</p>
+        ) : (
+          <ul className="flex flex-wrap gap-2" aria-label={t("card.statusLabel")}>
+            {codes.map(([code, count]) => {
+              const status = CODE_STATUS[code];
+              const label = `${statusT(`codes.${code}`)} ${count}`;
+              return (
                 <li key={code}>
-                  <Badge variant="neutral">
-                    {statusT(`codes.${code}`)}: {count}
-                  </Badge>
+                  {status ? (
+                    <StatusBadge status={status} label={label} />
+                  ) : (
+                    <Badge tone="warning">{label}</Badge>
+                  )}
                 </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </CardContent>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+      {showLeave &&
+        (pendingLoading ? (
+          <div className="px-5 pb-5">
+            <SkeletonList rows={2} framed={false} />
+          </div>
+        ) : pendingError ? (
+          <div className="px-5 pb-5">
+            <QueryError retry={onRetryPending} error={pendingError} />
+          </div>
+        ) : pending.length === 0 ? (
+          <div className="px-5 pb-5">
+            <EmptyState variant="compact" icon={<CheckCheck />} title={t("card.empty")} />
+          </div>
+        ) : (
+          <List className="border-t border-line">
+            {pending.slice(0, 5).map((item) => (
+              <ListRow
+                key={item.instance_id}
+                href={`${LEAVE_HREF}/${item.instance_id}`}
+                title={item.student_name}
+                meta={categoryT(`categories.${item.category}`)}
+                trailing={
+                  <Badge tone="warning" size="sm">
+                    {t("card.review")}
+                  </Badge>
+                }
+              />
+            ))}
+          </List>
+        ))}
     </Card>
   );
 }

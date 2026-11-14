@@ -389,8 +389,7 @@
     },
     "dashboard": {
       "title": "Beranda",
-      "greeting": "Selamat datang, {name}",
-      "noAcademicYear": "Belum ada tahun ajaran aktif",
+      "greeting": "Halo, {name}",
       "tiles": {
         "notifications": {
           "label": "Notifikasi",
@@ -398,7 +397,23 @@
         }
       },
       "announcementsTitle": "Pengumuman terbaru",
-      "openAnnouncements": "Lihat semua"
+      "openAnnouncements": "Lihat semua",
+      "statsLabel": "Ringkasan hari ini",
+      "fallback": {
+        "eyebrow": "Hari ini",
+        "title": "Tidak ada yang mendesak",
+        "meta": "Notifikasi dan pengumuman terbaru tetap bisa dibuka dari sini.",
+        "action": "Buka notifikasi",
+        "inboxEyebrow": "Perlu tindakan",
+        "inboxTitle": "{count} hal menunggu tindakan Anda",
+        "inboxMeta": "Pengajuan yang menunggu keputusan Anda ada di satu tempat.",
+        "inboxAction": "Buka perlu tindakan"
+      },
+      "shortcuts": {
+        "title": "Pintasan",
+        "monitor": "Monitor presensi",
+        "setup": "Persiapan sekolah"
+      }
     },
     "profile": {
       "title": "Profil",
@@ -770,7 +785,8 @@
         "previewUntitled": "(Tanpa judul)",
         "previewEmptyBody": "(Isi belum ditulis)",
         "previewHint": "Begini tampilan pengumuman ini bagi penerimanya."
-      }
+      },
+      "feedEmptyCompact": "Belum ada pengumuman"
     },
     "duty": {
       "navLabel": "Piket",

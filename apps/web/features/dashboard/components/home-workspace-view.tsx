@@ -1,66 +1,15 @@
 "use client";
 
-import { Button } from "@newsekolah/ui";
-import dynamic from "next/dynamic";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-
-import { isModuleEnabled } from "../../../lib/modules/feature-modules";
-import { navAccessFromMe } from "../../../lib/navigation-access";
-import { canOpenPath } from "../../../lib/navigation-permissions";
-import { useSession } from "../../../lib/session/session-provider";
 
 import { DashboardView } from "./dashboard-view";
 
-const LibraryDashboard = dynamic(() =>
-  import("../../library/components/library-dashboard-view").then(
-    (module) => module.LibraryDashboardView,
-  ),
-);
-
-/** Personal data and work queues share the home destination, without duplicate sidebar entries. */
+/**
+ * The home destination for every role. One template serves them all (the
+ * librarian included): the persona blocks decide the hero, the tiles and
+ * the cards, and the side column carries the reader's shortcuts, so no
+ * row of buttons sits above the greeting any more.
+ */
 export function HomeWorkspaceView(): ReactElement {
-  const { me } = useSession();
-  const t = useTranslations("app.workspace");
-  const can = (permission: string) => me?.permissions.includes(permission) ?? false;
-  const access = navAccessFromMe(me);
-  const libraryHome =
-    isModuleEnabled(me, "library") &&
-    can("view_library") &&
-    can("manage_library_circulation") &&
-    !can("manage_master_data") &&
-    !can("manage_attendance");
-  // Shortcuts into a module the school switched off are dropped, the same
-  // registry check the menu uses.
-  const allActions = [
-    ...(me?.profile_kind === "student" ? [{ href: "/classroom-entry", label: "scanClass" }] : []),
-    ...(["teacher", "staff"].includes(me?.profile_kind ?? "")
-      ? [{ href: "/check-in", label: "checkIn" }]
-      : []),
-    ...(can("view_monitor_presence") ? [{ href: "/monitor", label: "openMonitor" }] : []),
-    ...(can("manage_settings") ? [{ href: "/setup", label: "setup" }] : []),
-    ...(!libraryHome && can("view_library")
-      ? [{ href: "/library", label: "libraryOverview" }]
-      : []),
-  ];
-  const actions = allActions.filter((action) => canOpenPath(action.href, access));
-  const shortcuts =
-    actions.length > 0
-      ? actions.map((action) => (
-          <Button key={action.href} asChild variant="secondary" size="sm">
-            <Link href={action.href}>{t(action.label)}</Link>
-          </Button>
-        ))
-      : undefined;
-  // The school home takes the shortcuts under its greeting, as the page
-  // toolbar; the library home keeps them above its own header until it
-  // moves to the page template too.
-  if (!libraryHome) return <DashboardView shortcuts={shortcuts} />;
-  return (
-    <>
-      {shortcuts && <div className="flex flex-wrap gap-2 px-4 pt-4 md:px-6">{shortcuts}</div>}
-      <LibraryDashboard />
-    </>
-  );
+  return <DashboardView />;
 }

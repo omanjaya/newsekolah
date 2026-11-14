@@ -3,17 +3,21 @@
 import { ApiError } from "@newsekolah/api-client";
 import { formatTime, type Locale } from "@newsekolah/i18n";
 import {
+  Badge,
   Button,
   Card,
+  CardContent,
   CardHeader,
   CardTitle,
+  DataList,
+  DataListItem,
   Skeleton,
   StatusBadge,
+  TextLink,
   useToast,
   type StatusName,
 } from "@newsekolah/ui";
 import { LogIn, LogOut } from "lucide-react";
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -60,7 +64,8 @@ export function useCheckInBlock(me: Me, active: boolean): PersonaBlock {
 
   return {
     tiles: [],
-    left: [
+    main: [],
+    side: [
       {
         key: "checkIn.card",
         node: (
@@ -70,6 +75,7 @@ export function useCheckInBlock(me: Me, active: boolean): PersonaBlock {
             timeZone={me.tenant.timezone}
             isLoading={history.isLoading}
             isError={history.isError}
+            error={history.error}
             refetch={history.refetch}
             record={history.data?.data.find((day) => day.date === today) ?? null}
             scan={scan}
@@ -77,7 +83,6 @@ export function useCheckInBlock(me: Me, active: boolean): PersonaBlock {
         ),
       },
     ],
-    right: [],
   };
 }
 
@@ -86,6 +91,7 @@ function CheckInCard({
   timeZone,
   isLoading,
   isError,
+  error,
   refetch,
   record,
   scan,
@@ -94,6 +100,7 @@ function CheckInCard({
   timeZone: string;
   isLoading: boolean;
   isError: boolean;
+  error: unknown;
   refetch: () => unknown;
   record: AttendanceRecord | null;
   scan: ReturnType<typeof useScanStaffAttendanceMutation>;
@@ -129,58 +136,46 @@ function CheckInCard({
   }
 
   return (
-    <Card className="h-full">
-      <CardHeader className="flex-row items-center justify-between gap-3">
-        {/* The title takes the room the link leaves (and wraps only past it); the link stays on one line. */}
-        <CardTitle className="min-w-0">{t("title")}</CardTitle>
-        <Link
-          href={CHECK_IN_HREF}
-          className="shrink-0 whitespace-nowrap text-body-sm text-accent underline underline-offset-2"
-        >
-          {t("openPage")}
-        </Link>
+    <Card>
+      <CardHeader action={<TextLink href={CHECK_IN_HREF}>{t("openPage")}</TextLink>}>
+        <CardTitle as="h2">{t("title")}</CardTitle>
       </CardHeader>
-      <div className="flex flex-col gap-4 px-5 pb-5">
+      <CardContent className="flex flex-col gap-4">
         {isError ? (
-          <QueryError retry={refetch} />
+          <QueryError retry={refetch} error={error} />
         ) : isLoading ? (
-          <Skeleton className="h-24 w-full" aria-busy="true" />
+          <Skeleton className="h-28 w-full" aria-busy="true" />
         ) : (
           <>
-            <dl className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1 rounded-sm bg-bg p-3">
-                <dt className="text-[12px] text-fg-muted">{tSelf("arrival")}</dt>
-                <dd className="text-[18px] font-medium tabular-nums">
-                  {time(current?.arrival_at)}
-                </dd>
-              </div>
-              <div className="flex flex-col gap-1 rounded-sm bg-bg p-3">
-                <dt className="text-[12px] text-fg-muted">{tSelf("departure")}</dt>
-                <dd className="text-[18px] font-medium tabular-nums">
-                  {time(current?.departure_at)}
-                </dd>
-              </div>
-            </dl>
-            <div className="flex flex-wrap items-center gap-2 text-[13px]">
+            <DataList layout="stacked" columns={2} className="grid-cols-2">
+              <DataListItem label={tSelf("arrival")}>
+                <span className="text-heading tabular-nums">{time(current?.arrival_at)}</span>
+              </DataListItem>
+              <DataListItem label={tSelf("departure")}>
+                <span className="text-heading tabular-nums">{time(current?.departure_at)}</span>
+              </DataListItem>
+            </DataList>
+            <div className="flex flex-wrap items-center gap-2">
               {current ? (
                 statusToken ? (
                   <StatusBadge status={statusToken} label={tStatus(current.status_code)} />
                 ) : (
-                  <span className="text-fg-muted">{tStatus(current.status_code)}</span>
+                  <Badge>{tStatus(current.status_code)}</Badge>
                 )
               ) : (
-                <span className="text-fg-muted">{t("notYet")}</span>
+                <span className="text-body-sm text-fg-muted">{t("notYet")}</span>
               )}
               {current && current.late_minutes > 0 && (
-                <span className="text-fg-muted">
+                <span className="text-body-sm text-fg-muted">
                   {tSelf("lateBy", { minutes: current.late_minutes })}
                 </span>
               )}
             </div>
             {done ? (
-              <p className="text-[13px] text-fg-muted">{t("done")}</p>
+              <p className="text-body-sm text-fg-muted">{t("done")}</p>
             ) : (
               <Button
+                variant={hasArrival ? "secondary" : "primary"}
                 className="w-full"
                 icon={hasArrival ? <LogOut /> : <LogIn />}
                 loading={scan.isPending}
@@ -191,7 +186,7 @@ function CheckInCard({
             )}
           </>
         )}
-      </div>
+      </CardContent>
     </Card>
   );
 }

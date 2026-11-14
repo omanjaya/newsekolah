@@ -41,7 +41,7 @@ describe("useHomeroomBlock", () => {
   it("returns EMPTY_BLOCK and disables every query when inactive", () => {
     const { result } = renderHook(() => useHomeroomBlock(meWithHomeroom(), false));
 
-    expect(result.current).toEqual({ tiles: [], left: [], right: [] });
+    expect(result.current).toEqual({ tiles: [], main: [], side: [] });
     expect(attendanceQuery).toHaveBeenCalledWith(expect.anything(), false);
     expect(leaveQueueQuery).toHaveBeenCalledWith(false);
   });
@@ -142,6 +142,7 @@ describe("useHomeroomBlock", () => {
       data: undefined,
       isLoading: false,
       isError: true,
+      error: new Error("failed"),
       isSuccess: false,
       refetch: vi.fn(),
     });
@@ -149,12 +150,13 @@ describe("useHomeroomBlock", () => {
       data: undefined,
       isLoading: false,
       isError: true,
+      error: new Error("failed"),
       isSuccess: false,
       refetch: vi.fn(),
     });
 
     const { result } = renderHook(() => useHomeroomBlock(meWithHomeroom(), true));
-    render(<>{result.current.left.map((slot) => slot.node)}</>);
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
 
     expect(screen.getAllByRole("button").length).toBeGreaterThan(0);
   });

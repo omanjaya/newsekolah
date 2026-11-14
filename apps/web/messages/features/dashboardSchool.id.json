@@ -1,27 +1,35 @@
 {
   "leadership": {
     "hero": {
-      "eyebrow": "Hari ini",
-      "title": "{submitted} dari {total} sesi sudah dipresensi",
-      "meta": "{pending} sesi belum diisi",
-      "action": "Lihat monitor"
+      "eyebrow": "Presensi saat ini",
+      "title": "{submitted} dari {total} kelas sudah dipresensi",
+      "meta": "{pending} kelas yang sedang belajar belum mengisi presensi",
+      "action": "Buka monitor",
+      "metaDone": "Semua kelas yang sedang belajar sudah dipresensi",
+      "reportsAction": "Buka laporan",
+      "progressLabel": "Presensi kelas yang sedang belajar",
+      "queueEyebrow": "Perlu tindakan",
+      "queueTitle": "{count} pengajuan menunggu tinjauan",
+      "queueMeta": "Izin, izin keluar, dan keterlambatan yang belum selesai.",
+      "queueAction": "Buka perlu tindakan",
+      "idleTitle": "Belum ada kelas yang sedang belajar",
+      "idleMeta": "Progres presensi muncul saat jam pelajaran berlangsung."
     },
     "tiles": {
-      "sessions": "Sesi dipresensi",
+      "sessions": "Kelas dipresensi",
       "pending": "Menunggu tinjauan",
       "users": "Pengguna aktif",
-      "online": "Sedang online"
+      "online": "Sedang daring"
     },
     "queue": {
       "title": "Antrean sekolah",
-      "type": "Jenis pengajuan",
-      "count": "Menunggu",
-      "open": "Buka antrean",
       "labels": {
         "leave_request": "Izin terencana",
         "exit_permit": "Izin keluar",
         "late_arrival": "Keterlambatan"
-      }
+      },
+      "openInbox": "Perlu tindakan",
+      "allClear": "Semua antrean kosong"
     },
     "activity": {
       "title": "Aktivitas login",
@@ -32,14 +40,14 @@
       "onlineTitle": "Sedang daring",
       "onlineEmpty": "Tidak ada yang sedang terhubung saat ini.",
       "roleNames": {
-        "super_admin": "Super Admin",
-        "admin": "Admin Sekolah",
+        "super_admin": "Super admin",
+        "admin": "Admin sekolah",
         "teacher": "Guru",
         "staff": "Pegawai",
         "student": "Siswa",
-        "parent": "Orang Tua",
+        "parent": "Orang tua",
         "librarian": "Pustakawan",
-        "principal": "Kepala Sekolah"
+        "principal": "Kepala sekolah"
       }
     },
     "atRisk": {
@@ -47,26 +55,29 @@
       "viewAll": "Lihat semua",
       "empty": "Tidak ada siswa berisiko saat ini.",
       "unknownStudent": "Siswa tidak dikenal"
-    },
-    "presence": {
-      "title": "Kehadiran hari ini",
-      "summary": "{submitted} dari {total} sesi sudah dipresensi",
-      "pending": "{pending} sesi belum diisi",
-      "empty": "Belum ada sesi presensi hari ini.",
-      "open": "Buka monitor"
     }
   },
   "librarian": {
     "hero": {
       "eyebrow": "Meja sirkulasi",
-      "title": "{loans} pinjam · {returns} kembali",
-      "meta": "{overdue} terlambat",
-      "action": "Buka meja sirkulasi"
+      "title": "{loans} dipinjam, {returns} dikembalikan hari ini",
+      "meta": "{overdue} peminjaman terlambat",
+      "action": "Buka meja sirkulasi",
+      "metaClear": "Tidak ada peminjaman terlambat",
+      "overviewAction": "Ringkasan perpustakaan"
     },
     "tile": "Terlambat",
     "overdue": {
       "title": "Terlambat terlama",
-      "empty": "Tidak ada peminjaman terlambat."
+      "empty": "Tidak ada peminjaman terlambat.",
+      "action": "Buka meja",
+      "due": "Jatuh tempo {date}",
+      "late": "Terlambat {days} hari"
+    },
+    "tiles": {
+      "loansToday": "Dipinjam hari ini",
+      "returnsToday": "Dikembalikan hari ini",
+      "visitsToday": "Kunjungan hari ini"
     }
   }
 }

@@ -2,7 +2,7 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatRelative } from "@newsekolah/i18n";
-import { Badge, Card, EmptyState, SafeHtml, Skeleton, cn, domainIcons } from "@newsekolah/ui";
+import { Card, EmptyState, List, SafeHtml, SkeletonList, cn, domainIcons } from "@newsekolah/ui";
 import { ChevronDown, Pin } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -44,7 +44,7 @@ export function AnnouncementFeed({
 }): ReactElement {
   const t = useTranslations("app.announcements");
   const { me } = useSession();
-  const { data, isLoading, isError, refetch } = useMyAnnouncementsQuery();
+  const { data, isLoading, isError, error, refetch } = useMyAnnouncementsQuery();
   const markRead = useMarkAnnouncementReadMutation();
   const [open, setOpen] = useState<string | null>(null);
   const items = (data?.data ?? []).slice(0, limit);
@@ -54,28 +54,37 @@ export function AnnouncementFeed({
     if (!item.is_read) markRead.mutate(item.id);
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-2" aria-busy="true">
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-20 w-full" />
-      </div>
-    );
-  }
-  if (isError) return <QueryError retry={refetch} />;
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={<domainIcons.announcement aria-hidden="true" />}
-        title={t("feedEmptyTitle")}
-        description={t("feedEmptyBody")}
-      />
-    );
-  }
-
   if (compact) {
+    // The home card's preview: rows straight in the card, the card's own
+    // inset around the states (a framed empty box would be a frame in a
+    // frame; audit home-personal-19).
+    if (isLoading) {
+      return (
+        <div className="px-5 pb-5">
+          <SkeletonList rows={2} leading={false} framed={false} />
+        </div>
+      );
+    }
+    if (isError) {
+      return (
+        <div className="px-5 pb-5">
+          <QueryError retry={refetch} error={error} />
+        </div>
+      );
+    }
+    if (items.length === 0) {
+      return (
+        <div className="px-5 pb-5">
+          <EmptyState
+            variant="compact"
+            icon={<domainIcons.announcement aria-hidden="true" />}
+            title={t("feedEmptyCompact")}
+          />
+        </div>
+      );
+    }
     return (
-      <ul className="flex flex-col divide-y divide-border">
+      <List>
         {items.map((item) => (
           <AnnouncementRow
             key={item.id}
@@ -86,7 +95,21 @@ export function AnnouncementFeed({
             }}
           />
         ))}
-      </ul>
+      </List>
+    );
+  }
+
+  if (isLoading) {
+    return <SkeletonList rows={3} leading={false} />;
+  }
+  if (isError) return <QueryError retry={refetch} error={error} />;
+  if (items.length === 0) {
+    return (
+      <EmptyState
+        icon={<domainIcons.announcement aria-hidden="true" />}
+        title={t("feedEmptyTitle")}
+        description={t("feedEmptyBody")}
+      />
     );
   }
 
@@ -126,7 +149,10 @@ export function AnnouncementFeed({
   );
 }
 
-/** The dashboard's compact preview row -- unchanged from before the bento redesign. */
+/**
+ * One row of the home card's preview: a disclosure that opens the body in
+ * place (and records the read receipt), as a row of the card's List.
+ */
 function AnnouncementRow({
   item,
   expanded,
@@ -141,37 +167,50 @@ function AnnouncementRow({
   const { me } = useSession();
 
   return (
-    <li className="bg-surface">
+    <li className="border-b border-line last:border-b-0">
       <button
         type="button"
         aria-expanded={expanded}
         onClick={onToggle}
-        className="flex w-full flex-col items-start gap-1 px-1 py-3 text-left hover:bg-bg"
+        className="flex w-full items-start gap-3 px-(--list-inset) py-3 text-left transition-colors hover:bg-state-hover"
       >
-        <span className="flex w-full items-center gap-2">
-          {item.is_pinned && (
-            <Pin className="size-4 shrink-0 text-accent" aria-label={t("pinned")} />
-          )}
-          <span className={cn("flex-1 text-[15px]", !item.is_read && "font-medium")}>
-            {item.title}
-          </span>
-          {!item.is_read && <Badge variant="accent">{t("unread")}</Badge>}
-          <ChevronDown
-            className={cn(
-              "size-4 shrink-0 text-fg-muted transition-transform duration-[var(--duration-fast)]",
-              expanded && "rotate-180",
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="flex items-center gap-2">
+            {item.is_pinned && (
+              <Pin className="size-4 shrink-0 text-accent" aria-label={t("pinned")} />
             )}
-            aria-hidden="true"
+            <span
+              className={cn(
+                "min-w-0 flex-1 truncate text-body text-fg",
+                !item.is_read && "font-semibold",
+              )}
+            >
+              {item.title}
+            </span>
+          </span>
+          <span className="text-caption text-fg-muted">
+            {formatRelative(item.published_at, { locale, timeZone: me?.tenant.timezone })}
+          </span>
+        </span>
+        {!item.is_read && (
+          <span
+            className="mt-2 size-2 shrink-0 rounded-full bg-accent"
+            role="img"
+            aria-label={t("unread")}
           />
-        </span>
-        <span className="text-[12px] text-fg-muted">
-          {formatRelative(item.published_at, { locale, timeZone: me?.tenant.timezone })}
-        </span>
+        )}
+        <ChevronDown
+          className={cn(
+            "mt-0.5 size-4 shrink-0 text-fg-muted transition-transform",
+            expanded && "rotate-180",
+          )}
+          aria-hidden="true"
+        />
       </button>
       {expanded && (
         <SafeHtml
           html={item.body_html}
-          className="prose-announcement border-t border-border px-4 py-3 text-[14px] text-fg"
+          className="prose-announcement px-(--list-inset) pb-4 text-body text-fg"
         />
       )}
     </li>

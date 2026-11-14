@@ -132,7 +132,7 @@ describe("useCounselorBlock", () => {
     );
 
     const { result } = renderHook(() => useCounselorBlock(meWithoutReview, true));
-    render(<>{result.current.left.map((slot) => slot.node)}</>);
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
 
     expect(screen.queryByText("counselor.leaveSectionTitle")).not.toBeInTheDocument();
     expect(screen.getByText("counselor.spSectionTitle")).toBeInTheDocument();
@@ -145,7 +145,7 @@ describe("useCounselorBlock", () => {
     spCandidatesQuery.mockReturnValue(refetchable({}));
 
     const { result } = renderHook(() => useCounselorBlock(meWithoutIssue, true));
-    render(<>{result.current.left.map((slot) => slot.node)}</>);
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
 
     expect(screen.getByText("counselor.leaveSectionTitle")).toBeInTheDocument();
     expect(screen.queryByText("counselor.spSectionTitle")).not.toBeInTheDocument();
@@ -159,7 +159,7 @@ describe("useCounselorBlock", () => {
 
     const { result } = renderHook(() => useCounselorBlock(meWithNeither, true));
 
-    expect(result.current.left).toEqual([]);
+    expect(result.current.main).toEqual([]);
     expect(result.current.tiles).toEqual([]);
   });
 
@@ -171,7 +171,7 @@ describe("useCounselorBlock", () => {
     const { result } = renderHook(() => useCounselorBlock(counselorWithBothPermissions, true));
 
     expect(result.current.tiles.find((t) => t.key === "counselor.leave")).toBeUndefined();
-    render(<>{result.current.left.map((slot) => slot.node)}</>);
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
     expect(screen.getByRole("button")).toBeInTheDocument();
   });
 
@@ -196,8 +196,8 @@ describe("useCounselorBlock", () => {
     const { result } = renderHook(() => useCounselorBlock(meWithEarlyWarning, true));
 
     expect(atRiskQuery).toHaveBeenCalledWith(true);
-    expect(result.current.right.map((slot) => slot.key)).toEqual(["counselor.atRisk"]);
-    render(<>{result.current.right.map((slot) => slot.node)}</>);
+    expect(result.current.side.map((slot) => slot.key)).toEqual(["counselor.atRisk"]);
+    render(<>{result.current.side.map((slot) => slot.node)}</>);
     expect(screen.getByText('count:{"count":4}')).toBeInTheDocument();
     expect(screen.getByText("Siswa A")).toBeInTheDocument();
     // Only the top three by score are listed (s2, s1, s3); s2 and s3 are unknown to the directory.
@@ -212,6 +212,6 @@ describe("useCounselorBlock", () => {
     const { result } = renderHook(() => useCounselorBlock(counselorWithBothPermissions, true));
 
     expect(atRiskQuery).toHaveBeenCalledWith(false);
-    expect(result.current.right).toEqual([]);
+    expect(result.current.side).toEqual([]);
   });
 });
