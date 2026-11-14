@@ -30,6 +30,41 @@ describe("List and ListRow", () => {
     await expectNoAxeViolations(container);
   });
 
+  it("truncates the title to one line unless it may take two", () => {
+    render(
+      <List>
+        <ListRow title="Laskar Pelangi" />
+        <ListRow title="Sapiens: Riwayat Singkat Umat Manusia" titleLines={2} />
+        <ListRow href="/opac/2" title="Bumi Manusia: Tetralogi Buru" titleLines={2} />
+      </List>,
+    );
+    expect(screen.getByText("Laskar Pelangi")).toHaveClass("truncate");
+    const wrapped = screen.getByText("Sapiens: Riwayat Singkat Umat Manusia");
+    expect(wrapped).toHaveClass("line-clamp-2");
+    expect(wrapped).not.toHaveClass("truncate");
+    // A link target clamps itself, so the row stays one target.
+    expect(screen.getByRole("link", { name: "Bumi Manusia: Tetralogi Buru" })).toHaveClass(
+      "line-clamp-2",
+    );
+  });
+
+  it("gives the trailing slot no box, so a child hidden at some width leaves no gap", () => {
+    const { container } = render(
+      <List>
+        <ListRow
+          title="Laskar Pelangi"
+          trailing={<span className="hidden sm:inline">3 eksemplar</span>}
+        />
+        <ListRow title="Fisika" />
+      </List>,
+    );
+    const trailing = container.querySelector("[data-slot=list-row-trailing]");
+    expect(trailing).toHaveClass("contents", "*:shrink-0");
+    expect(trailing).toContainElement(screen.getByText("3 eksemplar"));
+    // A row without a trailing value renders no slot at all.
+    expect(container.querySelectorAll("[data-slot=list-row-trailing]")).toHaveLength(1);
+  });
+
   it("makes a row one link named by its title, with a chevron", async () => {
     const { container } = render(
       <List>

@@ -149,12 +149,43 @@ function Dense() {
   );
 }
 
+/**
+ * Long titles that may take two lines (titleLines={2}), and a trailing
+ * count shown only from 640px: below it the row gets that width back.
+ */
+function Catalogue() {
+  const books = [
+    { id: "sapiens", title: "Sapiens: Riwayat Singkat Umat Manusia", meta: "Yuval Noah Harari" },
+    { id: "bumi", title: "Bumi Manusia", meta: "Pramoedya Ananta Toer" },
+  ];
+  return (
+    <List framed>
+      {books.map((book) => (
+        <ListRow
+          key={book.id}
+          href={`#${book.id}`}
+          leading={
+            <IconCircle tone="blue">
+              <BookOpen />
+            </IconCircle>
+          }
+          title={book.title}
+          titleLines={2}
+          meta={book.meta}
+          trailing={<span className="hidden sm:inline">3 eksemplar</span>}
+        />
+      ))}
+    </List>
+  );
+}
+
 function Gallery() {
   return (
     <div className="grid max-w-default gap-6 md:grid-cols-2">
       <div className="flex flex-col gap-6">
         <Today />
         <Dense />
+        <Catalogue />
       </div>
       <div className="flex flex-col gap-6">
         <People />
