@@ -78,11 +78,14 @@ describe("TenantBrand", () => {
 
     render(<TenantBrand mark />);
 
-    // White on the deep green in both themes (5.3:1), where the dark
-    // theme's accent label colour gave 3.05:1.
+    // The school's colour and the label colour TenantProvider computed for
+    // that fill, the same in both themes (white on the deep green, 5.3:1),
+    // where the dark theme's accent label colour gave 3.05:1. Token
+    // classes, not an inline style: the shared SchoolMark at 32px.
     const mark = screen.getByText(initialsFor("SMA Contoh"));
-    expect(mark).toHaveStyle({ backgroundColor: "#0F7A5F", color: "#FFFFFF" });
+    expect(mark).toHaveClass("bg-(--tenant-accent)", "text-(--tenant-accent-fg)", "size-8");
     expect(mark).not.toHaveClass("text-accent-fg");
+    expect(mark).not.toHaveAttribute("style");
   });
 
   it("omits the name and keeps only the mark for the collapsed sidebar rail", () => {
