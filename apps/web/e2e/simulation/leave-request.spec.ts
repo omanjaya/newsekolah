@@ -53,13 +53,17 @@ test("leave request: submit -> homeroom queue live -> approve -> student status 
 
     await student.page.goto("/leave-requests");
     await expect(student.page.getByRole("heading", { level: 1 })).toBeVisible();
-    await student.page.getByRole("button", { name: "Ajukan izin" }).click();
+    // A student with no request yet sees the action twice: in the header and
+    // in the empty state.
+    await student.page.getByRole("button", { name: "Ajukan izin", exact: true }).first().click();
     const dialog = student.page.getByRole("dialog");
     await expect(dialog).toBeVisible();
 
-    const today = new Date().toISOString().slice(0, 10);
-    await dialog.getByLabel("Mulai").fill(today);
-    await dialog.getByLabel("Sampai").fill(today);
+    // The date range picker opens on today; Enter twice picks today as a
+    // one-day range and closes it.
+    await dialog.getByLabel("Tanggal izin").click();
+    await student.page.keyboard.press("Enter");
+    await student.page.keyboard.press("Enter");
     await dialog
       .getByLabel("Keterangan")
       .fill("Simulasi otomatis: izin sakit ringan (school-day simulation)");
@@ -74,7 +78,10 @@ test("leave request: submit -> homeroom queue live -> approve -> student status 
 
     // The detail dialog re-opens on the new request; its stepper shows the
     // first stage ("Wali kelas") is what it is waiting on.
-    await expect(student.page.getByText("Menunggu: Wali kelas")).toBeVisible({ timeout: 20_000 });
+    // The status card on the page says the same, so look inside the dialog.
+    await expect(student.page.getByRole("dialog").getByText("Menunggu: Wali kelas")).toBeVisible({
+      timeout: 20_000,
+    });
 
     // Homeroom's already-open queue picks the new request up live. Scoped
     // to this student's own row (not the whole list, and not assuming the
@@ -94,7 +101,9 @@ test("leave request: submit -> homeroom queue live -> approve -> student status 
     // The student's still-open detail dialog moves to the next stage live,
     // with no navigation on their page at all.
     await assertNoNavigation(student.page, async () => {
-      await expect(student.page.getByText("Menunggu: Guru BK")).toBeVisible({ timeout: 20_000 });
+      await expect(student.page.getByRole("dialog").getByText("Menunggu: Guru BK")).toBeVisible({
+        timeout: 20_000,
+      });
     });
 
     // Drive it to completion so a re-run of this spec does not collide

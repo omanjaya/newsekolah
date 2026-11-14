@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   remove: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/activities/events" }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
   useTranslations: () => (key: string) => key,

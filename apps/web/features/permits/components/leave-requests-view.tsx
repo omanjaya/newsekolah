@@ -1,25 +1,28 @@
 "use client";
 
-import { Alert, Button, EmptyState, PageHeader, domainIcons } from "@newsekolah/ui";
-import { Plus } from "lucide-react";
+import { Button, EmptyState, domainIcons } from "@newsekolah/ui";
+import { BellRing, Plus } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useQuickAction } from "../../../lib/hooks/use-quick-action";
 import { useCan } from "../../../lib/session/session-provider";
 import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
 
 import { MyLeaveRequests } from "./my-leave-requests";
+import { ReviewInboxBanner } from "./review-inbox-banner";
 
 /**
- * The submitter's request form plus history. Reviewing lives in the Perlu
- * Tindakan inbox, so there is no queue tab here; a counselor who only issues
- * letters is told where their requests arrive.
+ * Izin tidak masuk. A student files and follows their own requests; a
+ * counselor who only issues letters is told where those requests arrive.
+ * Reviewing lives in the Perlu tindakan inbox, so there is no queue here.
  */
-export function LeaveRequestsView({ embedded = false }: { embedded?: boolean } = {}): ReactElement {
+export function LeaveRequestsView(): ReactElement {
   const t = useTranslations("app.permits.leave");
+  const tNav = useTranslations("app.shell.nav.items");
   const canSubmit = useCanSubmitPermit();
   const canIssueLetter = useCan("issue_leave_letters");
   const [creating, setCreating] = useState(false);
@@ -31,29 +34,36 @@ export function LeaveRequestsView({ embedded = false }: { embedded?: boolean } =
     canSubmit,
   );
 
-  const headerActions = canSubmit ? (
-    <Button
-      size="sm"
-      icon={<Plus />}
-      onClick={() => {
-        setCreating(true);
-      }}
-    >
-      {t("submit")}
-    </Button>
-  ) : undefined;
-
   return (
-    <div className={embedded ? "flex flex-col gap-6" : "flex flex-col gap-6 p-4 md:p-6"}>
-      {embedded ? (
-        headerActions && <div className="flex justify-end">{headerActions}</div>
-      ) : (
-        <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={headerActions} />
-      )}
+    <AppPage
+      title={t("title")}
+      eyebrow={tNav("permits")}
+      primaryAction={
+        canSubmit ? (
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              setCreating(true);
+            }}
+          >
+            {t("submit")}
+          </Button>
+        ) : undefined
+      }
+    >
       {canSubmit ? (
-        <MyLeaveRequests creating={creating} onCreatingChange={setCreating} />
+        <MyLeaveRequests
+          creating={creating}
+          onCreatingChange={setCreating}
+          onCreate={() => {
+            setCreating(true);
+          }}
+        />
       ) : canIssueLetter ? (
-        <IssuerQueueUnavailable />
+        <>
+          <ReviewInboxBanner />
+          <IssuerQueueUnavailable />
+        </>
       ) : (
         <EmptyState
           icon={<domainIcons.exitPermit aria-hidden="true" />}
@@ -61,7 +71,7 @@ export function LeaveRequestsView({ embedded = false }: { embedded?: boolean } =
           description={t("noAccessBody")}
         />
       )}
-    </div>
+    </AppPage>
   );
 }
 
@@ -75,14 +85,16 @@ export function LeaveRequestsView({ embedded = false }: { embedded?: boolean } =
 function IssuerQueueUnavailable(): ReactElement {
   const t = useTranslations("app.permits.leave");
   return (
-    <Alert variant="info" title={t("issuerQueueUnavailableTitle")}>
-      <p>{t("issuerQueueUnavailableBody")}</p>
-      <Link
-        href="/notifications"
-        className="mt-2 inline-flex min-h-11 items-center font-medium underline underline-offset-2"
-      >
-        {t("openNotifications")}
-      </Link>
-    </Alert>
+    <EmptyState
+      icon={<BellRing aria-hidden="true" />}
+      tone="info"
+      title={t("issuerQueueUnavailableTitle")}
+      description={t("issuerQueueUnavailableBody")}
+      action={
+        <Button asChild>
+          <Link href="/notifications">{t("openNotifications")}</Link>
+        </Button>
+      }
+    />
   );
 }

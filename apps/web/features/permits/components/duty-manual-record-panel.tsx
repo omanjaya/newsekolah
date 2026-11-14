@@ -4,12 +4,23 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Avatar,
   Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
   Checkbox,
+  Field,
+  FormActions,
+  FormError,
+  FormSection,
   Input,
+  List,
+  ListRow,
+  SearchInput,
+  SegmentedControl,
   Select,
-  Skeleton,
+  SkeletonList,
   Textarea,
-  domainIcons,
   useDebouncedCallback,
   useToast,
 } from "@newsekolah/ui";
@@ -27,6 +38,11 @@ type Kind = "exit" | "late";
 const STUDENT_RESULTS = 30;
 const SEARCH_DEBOUNCE_MS = 300;
 
+export interface ManualRecord {
+  kind: Kind;
+  studentName: string;
+}
+
 /**
  * The duty teacher's ad-hoc desk/gate record: for a student who is not
  * carrying a phone, search or pick them here instead of relying on their
@@ -35,7 +51,11 @@ const SEARCH_DEBOUNCE_MS = 300;
  * same lists, review queues and reports as a self-service one -- with the
  * duty teacher (not the student) as who recorded it.
  */
-export function DutyManualRecordPanel(): ReactElement {
+export function DutyManualRecordPanel({
+  onRecorded,
+}: {
+  onRecorded?: (record: ManualRecord) => void;
+} = {}): ReactElement {
   const t = useTranslations("app.duty.manualForm");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -55,6 +75,7 @@ export function DutyManualRecordPanel(): ReactElement {
   const [endPeriodId, setEndPeriodId] = useState("");
   const [reason, setReason] = useState("");
   const [homeroomReported, setHomeroomReported] = useState(false);
+  const [attempted, setAttempted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   // Search on the server; the picked student's name comes from the cache the
@@ -79,20 +100,22 @@ export function DutyManualRecordPanel(): ReactElement {
     setEndPeriodId("");
     setReason("");
     setHomeroomReported(false);
+    setAttempted(false);
+  }
+
+  function fail(error: unknown) {
+    setFormError(
+      error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+    );
   }
 
   function submit() {
     setFormError(null);
-    if (!studentId) {
-      setFormError(t("requiredError"));
-      return;
-    }
+    setAttempted(true);
+    if (!studentId) return;
     const studentName = studentMap.get(studentId)?.name ?? "";
     if (kind === "exit") {
-      if (!destination.trim() || !startPeriodId || !endPeriodId) {
-        setFormError(t("requiredError"));
-        return;
-      }
+      if (!destination.trim() || !startPeriodId || !endPeriodId) return;
       recordExit.mutate(
         {
           student_user_id: studentId,
@@ -103,203 +126,198 @@ export function DutyManualRecordPanel(): ReactElement {
         {
           onSuccess: () => {
             toast.success(t("recordedExit", { student: studentName }));
+            onRecorded?.({ kind, studentName });
             resetAfterSuccess();
           },
-          onError: (error) => {
-            toast.error(
-              error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-            );
-          },
+          onError: fail,
         },
       );
       return;
     }
-    if (!reason.trim()) {
-      setFormError(t("requiredError"));
-      return;
-    }
+    if (!reason.trim()) return;
     recordLate.mutate(
       { student_user_id: studentId, reason: reason.trim(), homeroom_reported: homeroomReported },
       {
         onSuccess: () => {
           toast.success(t("recordedLate", { student: studentName }));
+          onRecorded?.({ kind, studentName });
           resetAfterSuccess();
         },
-        onError: (error) => {
-          toast.error(
-            error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-          );
-        },
+        onError: fail,
       },
     );
   }
 
+  const required = t("requiredError");
   return (
-    <form
-      className="flex flex-col gap-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-    >
-      <p className="text-[13px] text-fg-muted">{t("intro")}</p>
+    <Card padding="md">
+      <CardHeader>
+        <CardTitle as="h2">{t("title")}</CardTitle>
+        <CardDescription>{t("intro")}</CardDescription>
+      </CardHeader>
+      <form
+        className="flex flex-col gap-5"
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        {formError && <FormError>{formError}</FormError>}
 
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant={kind === "exit" ? "primary" : "secondary"}
-          icon={<domainIcons.exitPermit />}
-          className="flex-1"
-          onClick={() => {
-            setKind("exit");
-          }}
-        >
-          {t("kindExit")}
-        </Button>
-        <Button
-          type="button"
-          variant={kind === "late" ? "primary" : "secondary"}
-          icon={<domainIcons.late />}
-          className="flex-1"
-          onClick={() => {
-            setKind("late");
-          }}
-        >
-          {t("kindLate")}
-        </Button>
-      </div>
+        <SegmentedControl<Kind>
+          aria-label={t("kindLabel")}
+          fullWidth
+          options={[
+            { value: "exit", label: t("kindExit") },
+            { value: "late", label: t("kindLate") },
+          ]}
+          value={kind}
+          onValueChange={setKind}
+        />
 
-      <div className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("student")}</span>
-        {selectedStudent ? (
-          <div className="flex items-center justify-between gap-2 rounded-sm border border-accent bg-accent/10 px-3 py-2">
-            <span className="flex items-center gap-3">
-              <Avatar size={32} name={selectedStudent.name} />
-              <span className="text-fg">{selectedStudent.name}</span>
-            </span>
-            <button
-              type="button"
-              className="text-[12px] font-medium text-accent"
-              onClick={() => {
-                setStudentId("");
-              }}
+        <Field
+          label={t("student")}
+          required
+          error={attempted && !studentId ? t("studentRequired") : undefined}
+        >
+          {(control) =>
+            selectedStudent ? (
+              <List variant="plain">
+                <ListRow
+                  leading={<Avatar size={40} name={selectedStudent.name} decorative />}
+                  title={selectedStudent.name}
+                  selected
+                  action={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setStudentId("");
+                      }}
+                    >
+                      {t("changeStudent")}
+                    </Button>
+                  }
+                />
+              </List>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <SearchInput
+                  id={control.id}
+                  aria-describedby={control["aria-describedby"]}
+                  value={studentSearch}
+                  onChange={(e) => {
+                    setStudentSearch(e.target.value);
+                    debounceStudentQuery(e.target.value.trim());
+                  }}
+                  placeholder={t("studentSearchPlaceholder")}
+                  aria-label={t("studentSearchPlaceholder")}
+                />
+                <Card tone="sunken" className="max-h-60 overflow-y-auto">
+                  {found.isFetching && found.data === undefined ? (
+                    <SkeletonList rows={3} leading />
+                  ) : visibleStudents.length === 0 ? (
+                    <p className="px-4 py-3 text-body-sm text-fg-muted">{t("noStudents")}</p>
+                  ) : (
+                    <List dense>
+                      {visibleStudents.map((student) => (
+                        <ListRow
+                          key={student.id}
+                          leading={<Avatar size={32} name={student.name} decorative />}
+                          title={student.name}
+                          chevron={false}
+                          onClick={() => {
+                            setStudentId(student.id);
+                          }}
+                        />
+                      ))}
+                    </List>
+                  )}
+                </Card>
+              </div>
+            )
+          }
+        </Field>
+
+        {kind === "exit" ? (
+          <FormSection>
+            <Field
+              label={t("destination")}
+              required
+              error={attempted && !destination.trim() ? required : undefined}
+              className="col-span-full"
             >
-              {t("changeStudent")}
-            </button>
-          </div>
-        ) : (
-          <>
-            <Input
-              value={studentSearch}
-              onChange={(e) => {
-                setStudentSearch(e.target.value);
-                debounceStudentQuery(e.target.value.trim());
-              }}
-              placeholder={t("studentSearchPlaceholder")}
-              aria-label={t("studentSearchPlaceholder")}
-            />
-            <div className="flex max-h-48 flex-col gap-0.5 overflow-y-auto rounded-sm border border-border p-1">
-              {found.isFetching && found.data === undefined ? (
-                <Skeleton className="h-16 w-full" />
-              ) : visibleStudents.length === 0 ? (
-                <p className="px-2 py-2 text-fg-muted">{t("noStudents")}</p>
-              ) : (
-                visibleStudents.map((student) => (
-                  <button
-                    key={student.id}
-                    type="button"
-                    className="flex min-h-11 items-center gap-2 rounded-xs px-1.5 py-1 text-left hover:bg-bg"
-                    onClick={() => {
-                      setStudentId(student.id);
-                    }}
-                  >
-                    <Avatar size={32} name={student.name} />
-                    <span className="flex-1 truncate text-fg">{student.name}</span>
-                  </button>
-                ))
-              )}
-            </div>
-          </>
-        )}
-      </div>
-
-      {kind === "exit" ? (
-        <>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("destination")}</span>
-            <Input
-              value={destination}
-              onChange={(e) => {
-                setDestination(e.target.value);
-              }}
-              placeholder={t("destinationPlaceholder")}
-              maxLength={500}
-            />
-          </label>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("startPeriod")}</span>
+              <Input
+                value={destination}
+                onChange={(e) => {
+                  setDestination(e.target.value);
+                }}
+                placeholder={t("destinationPlaceholder")}
+                maxLength={500}
+              />
+            </Field>
+            <Field
+              label={t("startPeriod")}
+              required
+              error={attempted && !startPeriodId ? required : undefined}
+              hint={periodOptions.length === 0 && !periods.isLoading ? t("noPeriods") : undefined}
+            >
               <Select
                 options={periodOptions}
                 value={startPeriodId}
                 onValueChange={setStartPeriodId}
                 placeholder={t("selectPeriod")}
-                aria-label={t("startPeriod")}
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("endPeriod")}</span>
+            </Field>
+            <Field
+              label={t("endPeriod")}
+              required
+              error={attempted && !endPeriodId ? required : undefined}
+            >
               <Select
                 options={periodOptions}
                 value={endPeriodId}
                 onValueChange={setEndPeriodId}
                 placeholder={t("selectPeriod")}
-                aria-label={t("endPeriod")}
               />
-            </label>
-          </div>
-          {periodOptions.length === 0 && !periods.isLoading && (
-            <p className="text-[13px] text-fg-muted">{t("noPeriods")}</p>
-          )}
-        </>
-      ) : (
-        <>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("reason")}</span>
-            <Textarea
-              rows={2}
-              value={reason}
-              onChange={(e) => {
-                setReason(e.target.value);
-              }}
-              placeholder={t("reasonPlaceholder")}
-              maxLength={500}
-            />
-          </label>
-          <label className="flex min-h-11 items-center gap-2 text-[13px]">
+            </Field>
+          </FormSection>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <Field
+              label={t("reason")}
+              required
+              error={attempted && !reason.trim() ? required : undefined}
+            >
+              <Textarea
+                rows={2}
+                autoResize
+                value={reason}
+                onChange={(e) => {
+                  setReason(e.target.value);
+                }}
+                placeholder={t("reasonPlaceholder")}
+                maxLength={500}
+              />
+            </Field>
             <Checkbox
+              label={t("homeroomReported")}
               checked={homeroomReported}
               onCheckedChange={(v) => {
                 setHomeroomReported(v === true);
               }}
             />
-            {t("homeroomReported")}
-          </label>
-        </>
-      )}
+          </div>
+        )}
 
-      {formError && (
-        <p role="alert" className="text-[13px] text-status-late">
-          {formError}
-        </p>
-      )}
-      <p className="text-[12px] text-fg-muted">{t("recordedHint")}</p>
-
-      <div className="flex justify-end border-t border-border pt-4">
-        <Button type="submit" loading={submitting} disabled={!studentId}>
-          {t("submit")}
-        </Button>
-      </div>
-    </form>
+        <p className="text-caption text-fg-muted">{t("recordedHint")}</p>
+        <FormActions>
+          <Button type="submit" loading={submitting}>
+            {t("submit")}
+          </Button>
+        </FormActions>
+      </form>
+    </Card>
   );
 }

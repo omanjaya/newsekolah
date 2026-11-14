@@ -62,7 +62,7 @@ export function ClassroomEntryScanView(): ReactElement {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <p className="max-w-2xl text-[13px] text-fg-muted">{t("intro")}</p>
+      <p className="max-w-2xl text-body-sm text-fg-muted">{t("intro")}</p>
 
       {me && me.profile_kind !== "student" ? (
         <Alert variant="info" title={t("studentsOnlyTitle")} className="max-w-xl">

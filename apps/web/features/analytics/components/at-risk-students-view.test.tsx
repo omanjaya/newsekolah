@@ -15,11 +15,18 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => "id",
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => "/analytics",
+  useSearchParams: () => new URLSearchParams(window.location.search),
+}));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
-vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => false }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useCan: () => false,
+  useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+}));
 vi.mock("../../reference/api", () => ({
   useClassesQuery: () => ({ data: { data: [{ id: "c1", name: "X-A" }] } }),
   useLookup: (items: { id: string; name: string }[] = []) =>
@@ -33,6 +40,7 @@ let names = loadedNames;
 vi.mock("../../reference/directory-names", () => ({
   useDirectoryNames: () => names,
 }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../student-services/components/service-workspace-nav", () => ({
   CounselingWorkspaceNav: () => null,
 }));

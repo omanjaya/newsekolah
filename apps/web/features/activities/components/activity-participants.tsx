@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Avatar, Button, ConfirmDialog, EmptyState, Select, useToast } from "@newsekolah/ui";
+import { Alert, Avatar, Button, ConfirmDialog, EmptyState, Select, useToast } from "@newsekolah/ui";
 import { Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, type ReactElement } from "react";
@@ -90,12 +90,8 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
           {t("add")}
         </Button>
       </form>
-      {event.isError && (
-        <p role="alert" className="text-[13px] text-status-absent">
-          {t("loadError")}
-        </p>
-      )}
-      {event.isLoading && <p className="text-[13px] text-fg-muted">{t("loading")}</p>}
+      {event.isError && <Alert variant="danger" title={t("loadError")} />}
+      {event.isLoading && <p className="text-body-sm text-fg-muted">{t("loading")}</p>}
       {!event.isLoading &&
         !event.isError &&
         ((event.data?.participants ?? []).length === 0 ? (
@@ -113,7 +109,7 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
               return (
                 <li
                   key={participant.id}
-                  className="flex items-center justify-between gap-2 py-2 text-[13px]"
+                  className="flex items-center justify-between gap-2 py-2 text-body-sm"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     {participant.scope === "student" && <Avatar name={name} size={32} />}

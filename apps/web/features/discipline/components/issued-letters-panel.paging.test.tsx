@@ -67,7 +67,7 @@ describe("IssuedLettersPanel paging", () => {
       offset: 0,
       search: "",
     });
-    await user.click(screen.getByRole("button", { name: "next" }));
+    await user.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
 
     expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith(undefined, {
       limit: 50,

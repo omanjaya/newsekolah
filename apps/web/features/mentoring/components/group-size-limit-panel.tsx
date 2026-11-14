@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Skeleton, useToast } from "@newsekolah/ui";
+import { Button, Field, FormActions, NumberInput, SkeletonForm, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -25,20 +25,20 @@ export function GroupSizeLimitPanel(): ReactElement {
   const setLimit = useSetGroupSizeLimitMutation();
   // `undefined` means the field still shows the server's own value; once the
   // user types, this takes over and stays in charge for the rest of the edit.
-  const [draft, setDraft] = useState<string | undefined>(undefined);
+  const [draft, setDraft] = useState<number | null | undefined>(undefined);
 
   if (isLoading) {
-    return <Skeleton className="h-24 w-full max-w-sm" aria-busy="true" />;
+    return <SkeletonForm fields={1} />;
   }
 
-  const value = draft ?? (data ? String(data.limit) : "");
-  const parsed = Number.parseInt(value, 10);
-  const dirty = data !== undefined && parsed !== data.limit;
-  const invalid = value !== "" && (!Number.isFinite(parsed) || parsed < 1);
+  const value = draft === undefined ? (data?.limit ?? null) : draft;
+  const parsed = value ?? Number.NaN;
+  const dirty = data !== undefined && value !== null && parsed !== data.limit;
+  const invalid = value !== null && parsed < 1;
 
   return (
     <form
-      className="flex max-w-sm flex-col gap-3"
+      className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
         if (invalid) return;
@@ -54,25 +54,15 @@ export function GroupSizeLimitPanel(): ReactElement {
         });
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("label")}</span>
-        <Input
-          type="number"
-          min={1}
-          value={value}
-          disabled={!canManage}
-          onChange={(e) => {
-            setDraft(e.target.value);
-          }}
-        />
-        <span className="text-[12px] text-fg-muted">{t("hint")}</span>
-      </label>
+      <Field label={t("label")} hint={t("hint")}>
+        <NumberInput min={1} value={value} disabled={!canManage} onChange={setDraft} />
+      </Field>
       {canManage && (
-        <div>
-          <Button type="submit" size="sm" loading={setLimit.isPending} disabled={!dirty || invalid}>
+        <FormActions>
+          <Button type="submit" loading={setLimit.isPending} disabled={!dirty || invalid}>
             {t("submit")}
           </Button>
-        </div>
+        </FormActions>
       )}
     </form>
   );

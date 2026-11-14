@@ -48,13 +48,13 @@
     "dismiss": "Not now",
     "form": {
       "title": "Record violation",
-      "student": "Students (pick one or more)",
+      "student": "Students",
       "studentPlaceholder": "Choose a student",
       "studentSearchPlaceholder": "Search student name",
       "studentsSelected": "{count, plural, one {# student selected} other {# students selected}}",
       "noStudents": "No matching student.",
       "maxStudentsReached": "50 students selected, the most allowed per record.",
-      "type": "Violation types (choose 1 to 50)",
+      "type": "Violation types",
       "typeSearchPlaceholder": "Search violation type",
       "noMatch": "No matching violation type.",
       "selectedTotal": "Selected total: {points} points",
@@ -72,7 +72,13 @@
         "error": "Could not load current points. Points will still be recorded correctly on save.",
         "totals": "{current} + {added} = {next}",
         "crosses": "Reaches {level}"
-      }
+      },
+      "description": "Pick the students and what they did. The new point totals and any warning letter they reach show before you save.",
+      "studentRequired": "Pick at least one student.",
+      "typeRequired": "Pick at least one violation type.",
+      "selectedStudents": "Picked students",
+      "removeStudent": "Remove {name} from the picks",
+      "points": "{points} pts"
     },
     "voidDialog": {
       "title": "Void violation record",
@@ -89,7 +95,8 @@
       "tooLarge": "The file exceeds the 10 MB limit",
       "maxReached": "3 photos added, the most allowed per record",
       "photoAlt": "Violation evidence photo"
-    }
+    },
+    "pointsValue": "{points} pts"
   },
   "catalog": {
     "includeInactive": "Show inactive",
@@ -215,7 +222,7 @@
   "counseling": {
     "searchPlaceholder": "Search by name or NIS",
     "eyebrow": "Discipline",
-    "title": "Counseling",
+    "title": "Counseling notes",
     "add": "Log counseling",
     "tabs": {
       "mine": "My notes",
@@ -308,19 +315,27 @@
       "draftFoundTitle": "There is an unsaved draft note",
       "draftFoundBody": "The draft was last saved automatically at {time}. Restore it to continue?",
       "draftRestore": "Restore draft",
-      "draftDismiss": "Start over"
+      "draftDismiss": "Start over",
+      "sessionDate": "Session date",
+      "sessionTime": "Session time"
     }
   },
   "myDiscipline": {
     "eyebrow": "Student affairs",
     "title": "Discipline points",
     "loadError": "Could not load your discipline record.",
-    "emptyTitle": "No records yet",
-    "emptyBody": "No violations or warning letters on file.",
+    "emptyTitle": "No violations",
+    "emptyBody": "No violation is on your record this year.",
     "totalPoints": "Total points: {points}",
     "letters": "Warning letters",
-    "records": "Record history",
-    "recordsEmpty": "No violations recorded"
+    "records": "Violation history",
+    "recordsEmpty": "No violations recorded",
+    "heroEyebrow": "Discipline points",
+    "points": "{points} points",
+    "clean": "No violation on record. Keep it that way.",
+    "toNext": "{points} points before {level}",
+    "pastAll": "Every warning letter threshold has been passed.",
+    "recordPoints": "+{points} pts"
   },
   "studentDetail": {
     "eyebrow": "Discipline",
@@ -338,9 +353,20 @@
     "lettersEmpty": "No warning letters issued yet",
     "records": "Violation records",
     "recordsEmptyTitle": "No violation records",
-    "recordsEmptyBody": "This student has no violations on file this year.",
-    "recordPoints": "{points} points",
+    "recordsEmptyBody": "This student has no violations this year.",
+    "recordPoints": "+{points} pts",
     "counselingHistory": "Counseling history",
-    "counselingHistoryEmpty": "No counseling notes for this student yet, or you don't have access to read them."
+    "counselingHistoryEmpty": "No counseling notes for this student yet, or you don't have access to read them.",
+    "recordsCount": "{count, plural, one {# record} other {# records}}",
+    "recordCounseling": "Record counseling",
+    "nis": "Student no. {nis}",
+    "openProfile": "Open the student profile"
+  },
+  "pointsMeter": {
+    "label": "{points} points against the warning letter thresholds",
+    "segment": "{level}, threshold {points} points",
+    "threshold": "{level} · {points}",
+    "reachedOn": "Reached {date}",
+    "notReached": "Not reached"
   }
 }

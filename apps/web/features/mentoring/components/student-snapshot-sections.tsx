@@ -1,6 +1,19 @@
 "use client";
 
-import { Badge, Stat, StatGrid, StatusBadge } from "@newsekolah/ui";
+import {
+  Badge,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  List,
+  ListRow,
+  Stat,
+  StatGrid,
+  StatusBadge,
+} from "@newsekolah/ui";
+import { BookOpenCheck, CalendarCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -34,7 +47,7 @@ function sortAttendanceEntries(entries: [string, number][]): [string, number][] 
  * The three sections of a student's mentoring snapshot (this month's
  * attendance, discipline, published grades), composed from other modules
  * through `GET /v1/mentoring/students/{id}/snapshot`. Shared by the
- * mentor's per-student page and the student profile.
+ * mentor's per-student page and the student profile. Each is a card.
  */
 
 export function SnapshotAttendanceSection({
@@ -47,14 +60,18 @@ export function SnapshotAttendanceSection({
   const entries = sortAttendanceEntries(Object.entries(snapshot.attendance_by_status));
 
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-[16px] font-medium text-fg">{t("attendance.title")}</h2>
+    <Card padding="md">
+      <CardHeader>
+        <CardTitle as="h2">{t("attendance.title")}</CardTitle>
+      </CardHeader>
       {entries.length === 0 ? (
-        <p className="rounded-sm border border-dashed border-border p-4 text-center text-[13px] text-fg-muted">
-          {t("attendance.empty")}
-        </p>
+        <EmptyState
+          variant="compact"
+          icon={<CalendarCheck aria-hidden="true" />}
+          title={t("attendance.empty")}
+        />
       ) : (
-        <div className="flex flex-wrap gap-x-6 gap-y-3 rounded-sm border border-border bg-surface p-4">
+        <div className="flex flex-wrap gap-x-6 gap-y-3">
           {entries.map(([code, count]) => {
             const token = statusToken(code);
             const label = tCodes.has(code) ? tCodes(code) : code;
@@ -63,15 +80,15 @@ export function SnapshotAttendanceSection({
                 {token ? (
                   <StatusBadge status={token} label={label} />
                 ) : (
-                  <Badge variant="neutral">{label}</Badge>
+                  <Badge tone="neutral">{label}</Badge>
                 )}
-                <span className="text-[16px] font-medium tabular-nums text-fg">{count}</span>
+                <span className="text-heading tabular-nums text-fg">{count}</span>
               </div>
             );
           })}
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -88,22 +105,22 @@ export function SnapshotDisciplineSection({
   const disciplineOn = useModuleEnabled("discipline");
   if (!disciplineOn) return null;
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-[16px] font-medium text-fg">{t("discipline.title")}</h2>
-      <StatGrid className="max-w-sm grid-cols-2 rounded-sm border border-border bg-surface p-4">
+    <Card padding="md">
+      <CardHeader>
+        <CardTitle as="h2">{t("discipline.title")}</CardTitle>
+      </CardHeader>
+      <StatGrid className="grid-cols-2 sm:max-w-md">
         <Stat label={t("discipline.points")} value={snapshot.discipline_points} />
         <Stat
           label={t("discipline.active")}
           value={
-            <span
-              className={snapshot.discipline_active_count > 0 ? "text-status-absent" : undefined}
-            >
+            <span className={snapshot.discipline_active_count > 0 ? "text-danger" : undefined}>
               {snapshot.discipline_active_count}
             </span>
           }
         />
       </StatGrid>
-    </section>
+    </Card>
   );
 }
 
@@ -120,24 +137,29 @@ export function SnapshotGradesSection({
 
   if (!gradingOn) return null;
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-[16px] font-medium text-fg">{t("grades.title")}</h2>
+    <Card>
+      <CardHeader>
+        <CardTitle as="h2">{t("grades.title")}</CardTitle>
+      </CardHeader>
       {snapshot.published_subjects.length === 0 ? (
-        <p className="rounded-sm border border-dashed border-border p-4 text-center text-[13px] text-fg-muted">
-          {t("grades.empty")}
-        </p>
+        <CardContent>
+          <EmptyState
+            variant="compact"
+            icon={<BookOpenCheck aria-hidden="true" />}
+            title={t("grades.empty")}
+          />
+        </CardContent>
       ) : (
-        <div className="flex flex-col divide-y divide-border rounded-sm border border-border bg-surface">
+        <List dense>
           {snapshot.published_subjects.map((s) => (
-            <div key={s.subject_id} className="flex items-center justify-between gap-3 px-4 py-2.5">
-              <span className="text-[13px] text-fg">
-                {subjectMap.get(s.subject_id)?.name ?? t("grades.unknownSubject")}
-              </span>
-              <span className="text-[14px] font-medium tabular-nums text-fg">{s.score}</span>
-            </div>
+            <ListRow
+              key={s.subject_id}
+              title={subjectMap.get(s.subject_id)?.name ?? t("grades.unknownSubject")}
+              trailing={<span className="text-label text-fg tabular-nums">{s.score}</span>}
+            />
           ))}
-        </div>
+        </List>
       )}
-    </section>
+    </Card>
   );
 }

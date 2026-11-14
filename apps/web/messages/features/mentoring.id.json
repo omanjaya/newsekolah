@@ -1,7 +1,7 @@
 {
   "navGroupLabel": "Mentoring",
   "navLabelGroups": "Kelompok mentoring",
-  "navLabelMyGroups": "Kelompok saya",
+  "navLabelMyGroups": "Mentoring saya",
   "groups": {
     "eyebrow": "Mentoring",
     "title": "Kelompok mentoring",
@@ -18,7 +18,7 @@
     "emptyBody": "Buat kelompok untuk mulai menempatkan siswa di bawah bimbingan seorang guru wali.",
     "tabs": {
       "groups": "Kelompok",
-      "limit": "Batas anggota"
+      "limit": "Batas anggota kelompok"
     },
     "form": {
       "createTitle": "Buat kelompok mentoring",
@@ -34,7 +34,9 @@
     "deleteTitle": "Hapus kelompok mentoring",
     "deleteBody": "Kelompok \"{name}\" akan dihapus permanen dan tidak bisa dikembalikan.",
     "deleteConfirm": "Hapus",
-    "deleted": "Kelompok mentoring dihapus"
+    "deleted": "Kelompok mentoring dihapus",
+    "limitAction": "Atur batas anggota",
+    "searchPlaceholder": "Cari nama kelompok atau guru wali"
   },
   "groupSizeLimit": {
     "label": "Batas jumlah anggota per kelompok",
@@ -123,7 +125,9 @@
       "cancel": "Batal",
       "submit": "Simpan",
       "saved": "Catatan pertemuan tersimpan",
-      "unknownStudent": "Siswa tidak diketahui"
+      "unknownStudent": "Siswa tidak diketahui",
+      "metDate": "Tanggal pertemuan",
+      "metTime": "Jam pertemuan"
     }
   },
   "studentView": {

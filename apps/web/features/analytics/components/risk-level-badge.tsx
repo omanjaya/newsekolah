@@ -1,12 +1,13 @@
-import { cn } from "@newsekolah/ui";
+import { Badge, type BadgeTone } from "@newsekolah/ui";
 import type { ReactElement } from "react";
 
 import type { RiskLevel } from "../api";
 
-const LEVEL_CLASS: Record<RiskLevel, string> = {
-  none: "text-status-present",
-  watch: "text-status-sick",
-  at_risk: "text-status-absent",
+/** The semantic tone for each level: red at risk, amber to watch, green clear. */
+export const RISK_LEVEL_TONE: Record<RiskLevel, BadgeTone> = {
+  none: "success",
+  watch: "warning",
+  at_risk: "danger",
 };
 
 export interface RiskLevelBadgeProps {
@@ -15,21 +16,13 @@ export interface RiskLevelBadgeProps {
 }
 
 /**
- * Colors the level with the same dot-plus-label convention as attendance's
- * StatusBadge (packages/ui), reusing its status tokens rather than adding
- * new ones: never color alone, per DESIGN.md.
+ * A risk level as the shared status pill: a dot plus the label, never
+ * colour alone, in the semantic tones every other status column uses.
  */
 export function RiskLevelBadge({ level, label }: RiskLevelBadgeProps): ReactElement {
   return (
-    <span
-      className={cn("inline-flex items-center gap-1.5 text-[13px] font-medium", LEVEL_CLASS[level])}
-    >
-      <span
-        className="size-2 shrink-0 rounded-xs"
-        style={{ backgroundColor: "currentColor" }}
-        aria-hidden="true"
-      />
+    <Badge tone={RISK_LEVEL_TONE[level]} dot>
       {label}
-    </span>
+    </Badge>
   );
 }

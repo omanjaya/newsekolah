@@ -1,12 +1,11 @@
 "use client";
 
-import { PageHeader, Select, Skeleton } from "@newsekolah/ui";
+import { SkeletonDetail } from "@newsekolah/ui";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect } from "react";
 
-import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { AppPage } from "../../../components/app-page";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { legacyQueueTarget, reviewerInboxTarget } from "../lib/queue-redirect";
 import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
@@ -14,49 +13,49 @@ import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
 import { ExitPermitsView } from "./exit-permits-view";
 import { LateArrivalsView } from "./late-arrivals-view";
 import { LeaveRequestsView } from "./leave-requests-view";
-import { ReviewInboxBanner } from "./review-inbox-banner";
+
+export type PermitType = "leave" | "exit" | "late";
+
+/** Which permit routes have something for this reader to do. */
+export function usePermitTypes(): PermitType[] {
+  const canSubmit = useCanSubmitPermit();
+  const canIssue = useCan("issue_leave_letters");
+  const canApproveExit = useCan("issue_scan_tokens");
+  const canGate = useCan("scan_exit_permits");
+  return [
+    ...(canSubmit || canIssue ? (["leave"] as const) : []),
+    ...(canSubmit || canApproveExit || canGate ? (["exit"] as const) : []),
+    ...(canSubmit ? (["late"] as const) : []),
+  ];
+}
 
 /**
- * Submit and follow requests per type (leave, exit, late). Reviewing lives
- * in the Perlu Tindakan inbox: reviewers get a link to it here, and old
- * review-queue links, or a reviewer with nothing to submit, go straight there.
+ * One route, one meaning (docs/07-ui-ux.md section 8: no route aliases):
+ * /leave-requests, /exit-permits and /late-arrivals each render their own
+ * screen with their own title, and the area's tabs move between them.
+ * Reviewing lives in the Perlu tindakan inbox: old review-queue links, and
+ * a reviewer with nothing to do on this route, go straight there.
  */
 export function PermitsWorkspaceView({
   initialType = "leave",
 }: {
   initialType?: string;
 }): ReactElement {
-  const t = useTranslations("app.serviceWorkspace");
   const router = useRouter();
   const { me, isReady } = useSession();
   const searchParams = useSearchParams();
-  const canSubmit = useCanSubmitPermit();
+  const types = usePermitTypes();
   const canReviewLeave = useCan("review_leave_requests");
-  const canIssue = useCan("issue_leave_letters");
   const canApproveExit = useCan("issue_scan_tokens");
   const canGate = useCan("scan_exit_permits");
   const canReviewLate = me?.profile_kind === "teacher" || me?.profile_kind === "staff";
   const canReview = canReviewLeave || canApproveExit || canGate || canReviewLate;
-  const options = [
-    ...(canSubmit || canIssue ? [{ value: "leave", label: t("leave") }] : []),
-    ...(canSubmit || canApproveExit || canGate ? [{ value: "exit", label: t("exit") }] : []),
-    ...(canSubmit ? [{ value: "late", label: t("late") }] : []),
-  ];
-  const defaultType = options.some((option) => option.value === initialType)
-    ? initialType
-    : (options[0]?.value ?? "none");
-  const [type, setType] = useUrlState<string>(
-    "type",
-    options.map((option) => option.value),
-    defaultType,
-  );
+  const type = types.find((option) => option === initialType);
 
   const redirectTarget =
     isReady && canReview
       ? (legacyQueueTarget(new URLSearchParams(searchParams.toString()), initialType) ??
-        (options.length === 0 || !options.some((option) => option.value === initialType)
-          ? reviewerInboxTarget(initialType)
-          : null))
+        (type === undefined ? reviewerInboxTarget(initialType) : null))
       : null;
   useEffect(() => {
     if (redirectTarget) router.replace(redirectTarget);
@@ -64,31 +63,13 @@ export function PermitsWorkspaceView({
 
   if (redirectTarget) {
     return (
-      <div className="p-4 md:p-6">
-        <Skeleton className="h-24 w-full" aria-busy="true" />
-      </div>
+      <AppPage header={false} nav={false}>
+        <SkeletonDetail />
+      </AppPage>
     );
   }
 
-  return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader title={t("permits")} />
-      {canReview && <ReviewInboxBanner />}
-      {options.length > 0 ? (
-        <>
-          {options.length > 1 && (
-            <label className="flex max-w-sm flex-col gap-1 text-[13px]">
-              <span className="font-medium">{canSubmit ? t("requestKind") : t("permitKind")}</span>
-              <Select value={type} onValueChange={setType} options={options} />
-            </label>
-          )}
-          {type === "leave" && <LeaveRequestsView embedded />}
-          {type === "exit" && <ExitPermitsView embedded />}
-          {type === "late" && <LateArrivalsView embedded />}
-        </>
-      ) : (
-        <p className="text-sm text-fg-muted">{t("noAccess")}</p>
-      )}
-    </div>
-  );
+  if (initialType === "exit") return <ExitPermitsView />;
+  if (initialType === "late") return <LateArrivalsView />;
+  return <LeaveRequestsView />;
 }

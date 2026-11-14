@@ -1,6 +1,6 @@
 "use client";
 
-import { Inbox } from "lucide-react";
+import { Alert, Button } from "@newsekolah/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -18,13 +18,14 @@ export function ReviewInboxBanner(): ReactElement | null {
   if (count === 0) return null;
 
   return (
-    <Link
-      href="/inbox"
-      className="flex min-h-11 flex-wrap items-center gap-x-2 rounded-lg border border-accent/40 bg-accent/5 px-4 py-2 text-[13px] text-fg transition-colors hover:bg-accent/10"
-    >
-      <Inbox className="size-4 shrink-0" aria-hidden="true" />
-      <span className="font-medium">{t("reviewBanner", { count })}</span>
-      <span className="underline underline-offset-2">{t("openInbox")}</span>
-    </Link>
+    <Alert
+      variant="info"
+      title={t("reviewBanner", { count })}
+      action={
+        <Button asChild size="sm" variant="secondary">
+          <Link href="/inbox">{t("openInbox")}</Link>
+        </Button>
+      }
+    />
   );
 }

@@ -22,9 +22,7 @@ vi.mock("../../reference/directory-names", async () => {
   const { directoryNamesStub } = await import("../../../test/directory-names-stub");
   return directoryNamesStub([]);
 });
-vi.mock("../../student-services/components/service-workspace-nav", () => ({
-  CounselingWorkspaceNav: () => null,
-}));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../api-counseling-extras", () => ({
   useMyCounselingsQuery: mocks.useMyCounselingsQuery,
   useDeleteCounselingMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -61,7 +59,7 @@ describe("CounselingView paging", () => {
       offset: 0,
       search: "",
     });
-    await user.click(screen.getByRole("button", { name: "next" }));
+    await user.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
 
     expect(mocks.useMyCounselingsQuery).toHaveBeenLastCalledWith({
       limit: 50,

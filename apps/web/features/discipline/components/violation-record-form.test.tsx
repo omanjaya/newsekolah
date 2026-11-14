@@ -87,13 +87,14 @@ describe("ViolationRecordForm student search", () => {
     const onDone = vi.fn();
     render(<ViolationRecordForm onDone={onDone} />);
 
-    await user.type(screen.getByRole("textbox", { name: "studentSearchPlaceholder" }), "sar");
+    await user.type(screen.getByRole("searchbox", { name: "studentSearchPlaceholder" }), "sar");
     await waitFor(() => {
       expect(mocks.search).toHaveBeenLastCalledWith(expect.objectContaining({ query: "sar" }));
     });
 
     await user.click(screen.getAllByRole("checkbox").at(0) ?? document.body);
-    expect(screen.getByRole("button", { name: /Sari/ })).toBeInTheDocument();
+    // The picked student shows as a removable chip.
+    expect(screen.getByRole("button", { name: /removeStudent.*Sari/ })).toHaveTextContent("Sari");
     await user.click(screen.getByRole("checkbox", { name: /Terlambat/ }));
     await user.click(screen.getByRole("button", { name: "submit" }));
 
@@ -113,7 +114,7 @@ describe("ViolationRecordForm date", () => {
     vi.setSystemTime(new Date("2026-09-25T20:00:00Z"));
     try {
       const { container } = render(<ViolationRecordForm onDone={vi.fn()} />);
-      const input = container.querySelector<HTMLInputElement>('input[type="date"]');
+      const input = container.querySelector<HTMLInputElement>('input[name="occurred_on"]');
       expect(input?.value).toBe("2026-09-26");
     } finally {
       vi.useRealTimers();

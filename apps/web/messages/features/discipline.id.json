@@ -48,13 +48,13 @@
     "dismiss": "Nanti saja",
     "form": {
       "title": "Catat pelanggaran",
-      "student": "Siswa (pilih 1 atau lebih)",
+      "student": "Siswa",
       "studentPlaceholder": "Pilih siswa",
       "studentSearchPlaceholder": "Cari nama siswa",
       "studentsSelected": "{count, plural, other {# siswa terpilih}}",
       "noStudents": "Tidak ada siswa yang cocok.",
       "maxStudentsReached": "50 siswa terpilih, batas maksimum per catatan.",
-      "type": "Jenis pelanggaran (pilih 1 sampai 50)",
+      "type": "Jenis pelanggaran",
       "typeSearchPlaceholder": "Cari jenis pelanggaran",
       "noMatch": "Tidak ada jenis pelanggaran yang cocok.",
       "selectedTotal": "Total terpilih: {points} poin",
@@ -72,7 +72,13 @@
         "error": "Poin saat ini tidak dapat dimuat. Poin tetap akan tercatat dengan benar saat disimpan.",
         "totals": "{current} + {added} = {next}",
         "crosses": "Mencapai {level}"
-      }
+      },
+      "description": "Pilih siswa dan jenis pelanggarannya. Total poin dan surat peringatan yang tercapai terlihat sebelum disimpan.",
+      "studentRequired": "Pilih minimal satu siswa.",
+      "typeRequired": "Pilih minimal satu jenis pelanggaran.",
+      "selectedStudents": "Siswa terpilih",
+      "removeStudent": "Hapus {name} dari pilihan",
+      "points": "{points} poin"
     },
     "voidDialog": {
       "title": "Batalkan catatan pelanggaran",
@@ -89,7 +95,8 @@
       "tooLarge": "Ukuran berkas melebihi batas 10 MB",
       "maxReached": "3 foto sudah ditambahkan, batas maksimum per catatan",
       "photoAlt": "Foto bukti pelanggaran"
-    }
+    },
+    "pointsValue": "{points} poin"
   },
   "catalog": {
     "includeInactive": "Tampilkan yang nonaktif",
@@ -215,7 +222,7 @@
   "counseling": {
     "searchPlaceholder": "Cari nama atau NIS",
     "eyebrow": "Kesiswaan",
-    "title": "Konseling",
+    "title": "Catatan konseling",
     "add": "Catat konseling",
     "tabs": {
       "mine": "Catatan saya",
@@ -308,19 +315,27 @@
       "draftFoundTitle": "Ada draf catatan yang belum tersimpan",
       "draftFoundBody": "Draf terakhir disimpan otomatis pukul {time}. Pulihkan untuk melanjutkan?",
       "draftRestore": "Pulihkan draf",
-      "draftDismiss": "Mulai dari awal"
+      "draftDismiss": "Mulai dari awal",
+      "sessionDate": "Tanggal sesi",
+      "sessionTime": "Jam sesi"
     }
   },
   "myDiscipline": {
     "eyebrow": "Kesiswaan",
     "title": "Poin kedisiplinan",
     "loadError": "Data kedisiplinan gagal dimuat.",
-    "emptyTitle": "Belum ada catatan",
-    "emptyBody": "Tidak ada pelanggaran atau surat peringatan yang tercatat.",
+    "emptyTitle": "Belum ada pelanggaran",
+    "emptyBody": "Tidak ada pelanggaran yang tercatat untukmu tahun ini.",
     "totalPoints": "Total poin: {points}",
     "letters": "Surat peringatan",
-    "records": "Riwayat catatan",
-    "recordsEmpty": "Belum ada catatan pelanggaran"
+    "records": "Riwayat pelanggaran",
+    "recordsEmpty": "Belum ada catatan pelanggaran",
+    "heroEyebrow": "Poin tata tertib",
+    "points": "{points} poin",
+    "clean": "Belum ada pelanggaran yang tercatat. Pertahankan.",
+    "toNext": "{points} poin lagi menuju {level}",
+    "pastAll": "Semua ambang surat peringatan sudah terlewati.",
+    "recordPoints": "+{points} poin"
   },
   "studentDetail": {
     "eyebrow": "Kesiswaan",
@@ -339,8 +354,19 @@
     "records": "Catatan pelanggaran",
     "recordsEmptyTitle": "Tidak ada catatan pelanggaran",
     "recordsEmptyBody": "Siswa ini tidak memiliki pelanggaran tahun ini.",
-    "recordPoints": "{points} poin",
+    "recordPoints": "+{points} poin",
     "counselingHistory": "Riwayat konseling",
-    "counselingHistoryEmpty": "Belum ada catatan konseling untuk siswa ini, atau Anda tidak memiliki akses membacanya."
+    "counselingHistoryEmpty": "Belum ada catatan konseling untuk siswa ini, atau Anda tidak memiliki akses membacanya.",
+    "recordsCount": "{count, plural, other {# catatan}}",
+    "recordCounseling": "Catat konseling",
+    "nis": "NIS {nis}",
+    "openProfile": "Lihat profil siswa"
+  },
+  "pointsMeter": {
+    "label": "{points} poin terhadap ambang surat peringatan",
+    "segment": "{level}, ambang {points} poin",
+    "threshold": "{level} · {points}",
+    "reachedOn": "Tercapai {date}",
+    "notReached": "Belum tercapai"
   }
 }

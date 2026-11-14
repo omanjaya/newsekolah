@@ -1,7 +1,16 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, EmptyState, Input, StickySaveBar, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  Card,
+  SkeletonList,
+  Button,
+  EmptyState,
+  Input,
+  StickySaveBar,
+  useToast,
+} from "@newsekolah/ui";
 import { Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -50,14 +59,10 @@ export function MeetingAttendanceEditor({
   );
 
   if (roster.isLoading || members.isLoading || directory.isLoading) {
-    return <p className="mt-2 p-3 text-[13px] text-fg-muted">{t("loading")}</p>;
+    return <SkeletonList rows={4} leading framed />;
   }
   if (roster.isError || members.isError) {
-    return (
-      <p role="alert" className="mt-2 p-3 text-[13px] text-status-absent">
-        {t("loadError")}
-      </p>
-    );
+    return <Alert variant="danger" title={t("loadError")} />;
   }
 
   const activeMembers = (members.data?.data ?? []).filter((m) => m.status === "active");
@@ -194,28 +199,30 @@ function RosterEditor({
 
       <MeetingStatusFilterChips counts={counts} active={statusFilter} onToggle={toggleFilter} />
 
-      <ul className="divide-y divide-border rounded-sm border border-border">
-        {visible.map((s) => (
-          <MeetingRosterRow
-            key={s.id}
-            studentId={s.id}
-            name={s.name}
-            status={statuses[s.id] ?? "H"}
-            changed={changes.changedStudentIds.has(s.id)}
-            disabled={saving}
-            onStatusChange={(studentId, code) => {
-              setStatuses((prev) => ({ ...prev, [studentId]: code }));
-            }}
-          />
-        ))}
-        {visible.length === 0 && (
-          <li className="px-4 py-6 text-center text-[13px] text-fg-muted">{t("noMatch")}</li>
-        )}
-      </ul>
+      <Card className="divide-y divide-line overflow-hidden" asChild>
+        <ul>
+          {visible.map((s) => (
+            <MeetingRosterRow
+              key={s.id}
+              studentId={s.id}
+              name={s.name}
+              status={statuses[s.id] ?? "H"}
+              changed={changes.changedStudentIds.has(s.id)}
+              disabled={saving}
+              onStatusChange={(studentId, code) => {
+                setStatuses((prev) => ({ ...prev, [studentId]: code }));
+              }}
+            />
+          ))}
+          {visible.length === 0 && (
+            <li className="px-4 py-6 text-center text-body-sm text-fg-muted">{t("noMatch")}</li>
+          )}
+        </ul>
+      </Card>
 
       <StickySaveBar
         leadingSlot={
-          <span className="text-[13px] text-fg-muted">
+          <span className="text-body-sm text-fg-muted">
             {changes.count > 0 ? t("unsavedChanges", { count: changes.count }) : t("saveHint")}
           </span>
         }

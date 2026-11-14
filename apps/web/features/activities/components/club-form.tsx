@@ -1,7 +1,18 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Checkbox, Input, Textarea, useToast } from "@newsekolah/ui";
+import {
+  Select,
+  NumberInput,
+  TimePicker,
+  DialogFooter,
+  Field,
+  Button,
+  Checkbox,
+  Input,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import { useState, type ReactElement } from "react";
 
@@ -13,6 +24,9 @@ import {
   useUpdateExtracurricularMutation,
 } from "../api";
 const WEEKDAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+/** Radix Select has no empty value; this one stands for "no fixed day". */
+const NO_DAY = "none";
 
 export function ClubForm({
   initial,
@@ -73,8 +87,7 @@ export function ClubForm({
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
+      <Field label={t("name")}>
         <Input
           value={name}
           onChange={(e) => {
@@ -83,9 +96,8 @@ export function ClubForm({
           required
           maxLength={150}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("description")}</span>
+      </Field>
+      <Field label={t("description")}>
         <Textarea
           value={description}
           onChange={(e) => {
@@ -94,21 +106,18 @@ export function ClubForm({
           maxLength={2000}
           rows={3}
         />
-      </label>
+      </Field>
       <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("capacity")}</span>
-          <Input
-            type="number"
-            value={capacity}
-            onChange={(e) => {
-              setCapacity(e.target.value);
-            }}
+        <Field label={t("capacity")}>
+          <NumberInput
+            value={capacity === "" ? null : Number(capacity)}
             min={1}
+            onChange={(next) => {
+              setCapacity(next === null ? "" : String(next));
+            }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("location")}</span>
+        </Field>
+        <Field label={t("location")}>
           <Input
             value={location}
             onChange={(e) => {
@@ -116,66 +125,48 @@ export function ClubForm({
             }}
             maxLength={150}
           />
-        </label>
+        </Field>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("meetingDay")}</span>
-          <select
-            className="h-9 rounded-md border border-border-strong bg-surface px-2 text-[13px]"
-            value={meetingDay}
-            onChange={(e) => {
-              setMeetingDay(e.target.value);
+        <Field label={t("meetingDay")}>
+          <Select
+            value={meetingDay === "" ? NO_DAY : meetingDay}
+            onValueChange={(next) => {
+              setMeetingDay(next === NO_DAY ? "" : next);
             }}
-          >
-            <option value="">{t("meetingDayNone")}</option>
-            {WEEKDAY_KEYS.map((key, index) => (
-              <option key={key} value={index}>
-                {tClubs(`weekdays.${key}`)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("meetingStart")}</span>
-          <Input
-            type="time"
-            value={meetingStart}
-            onChange={(e) => {
-              setMeetingStart(e.target.value);
-            }}
+            options={[
+              { value: NO_DAY, label: t("meetingDayNone") },
+              ...WEEKDAY_KEYS.map((key, index) => ({
+                value: String(index),
+                label: tClubs(`weekdays.${key}`),
+              })),
+            ]}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("meetingEnd")}</span>
-          <Input
-            type="time"
-            value={meetingEnd}
-            onChange={(e) => {
-              setMeetingEnd(e.target.value);
-            }}
-          />
-        </label>
+        </Field>
+        <Field label={t("meetingStart")}>
+          <TimePicker value={meetingStart} onChange={setMeetingStart} />
+        </Field>
+        <Field label={t("meetingEnd")}>
+          <TimePicker value={meetingEnd} onChange={setMeetingEnd} />
+        </Field>
       </div>
       {initial && (
-        <label className="flex items-center gap-2 text-[13px]">
-          <Checkbox
-            checked={isActive}
-            onCheckedChange={(checked) => {
-              setIsActive(checked === true);
-            }}
-          />
-          {t("active")}
-        </label>
+        <Checkbox
+          label={t("active")}
+          checked={isActive}
+          onCheckedChange={(checked) => {
+            setIsActive(checked === true);
+          }}
+        />
       )}
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={pending}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

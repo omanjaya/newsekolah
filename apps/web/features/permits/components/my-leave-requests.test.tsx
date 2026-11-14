@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import type { LeaveRequestSummary } from "../api";
@@ -37,6 +38,9 @@ vi.mock("../api", () => ({
     isError: false,
     refetch: vi.fn(),
   }),
+  // The active request's detail (stage labels and times) is still loading:
+  // the card falls back to the compact track built from the summary.
+  useLeaveRequestQuery: () => ({ data: undefined, isLoading: true }),
 }));
 
 function item(
@@ -56,26 +60,32 @@ function item(
   };
 }
 
+function renderMine(onCreate = vi.fn()) {
+  return render(
+    <MyLeaveRequests creating={false} onCreatingChange={vi.fn()} onCreate={onCreate} />,
+  );
+}
+
 describe("MyLeaveRequests", () => {
-  it("renders the calm empty sentence, not a dashed empty-state box, when there are nothing", () => {
+  it("offers the first request from the empty state, with no counts yet", async () => {
     mineItems = [];
     mineLoading = false;
-    const { container } = render(<MyLeaveRequests creating={false} onCreatingChange={vi.fn()} />);
-    expect(screen.getByText("emptyBody")).toBeInTheDocument();
-    expect(container.querySelector(".border-dashed")).toBeNull();
+    const onCreate = vi.fn();
+    renderMine(onCreate);
+    expect(screen.getByText("emptyTitle")).toBeInTheDocument();
     expect(screen.queryByTestId("leave-mine-tiles")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "submit" }));
+    expect(onCreate).toHaveBeenCalledOnce();
   });
 
-  it("counts requests by status into the four stat tiles", () => {
+  it("counts requests by status into the four stats", () => {
     mineItems = [
       item({ instance_id: "a", status: "in_progress" }),
       item({ instance_id: "b", status: "approved" }),
       item({ instance_id: "c", status: "completed" }),
       item({ instance_id: "d", status: "rejected" }),
     ];
-    mineLoading = false;
-    render(<MyLeaveRequests creating={false} onCreatingChange={vi.fn()} />);
-
+    renderMine();
     expect(within(screen.getByTestId("leave-mine-tile-total")).getByText("4")).toBeInTheDocument();
     expect(
       within(screen.getByTestId("leave-mine-tile-inProgress")).getByText("2"),
@@ -88,60 +98,42 @@ describe("MyLeaveRequests", () => {
     ).toBeInTheDocument();
   });
 
-  it("spans the last card full width for an odd request count", () => {
+  it("puts the request on its way first as the status card, the rest in the history", () => {
     mineItems = [
-      item({ instance_id: "a" }),
-      item({ instance_id: "b" }),
-      item({ instance_id: "c" }),
+      item({ instance_id: "done", status: "completed" }),
+      item({ instance_id: "live", status: "in_progress" }),
     ];
-    mineLoading = false;
-    render(<MyLeaveRequests creating={false} onCreatingChange={vi.fn()} />);
-
-    const cells = ["a", "b", "c"].map((id) => screen.getByTestId(`leave-mine-cell-${id}`));
-    expect(cells[0]?.className).not.toContain("lg:col-span-2");
-    expect(cells[1]?.className).not.toContain("lg:col-span-2");
-    expect(cells[2]?.className).toContain("lg:col-span-2");
+    renderMine();
+    const hero = screen.getByTestId("leave-mine-card-live");
+    expect(within(hero).getByText("hero.eyebrow")).toBeInTheDocument();
+    // The compact track marks the stage it waits on.
+    const current = within(hero)
+      .getAllByRole("listitem")
+      .find((node) => node.getAttribute("aria-current") === "step");
+    expect(current).toHaveTextContent("stageHomeroom");
+    expect(screen.getByText("historyTitle")).toBeInTheDocument();
+    expect(screen.getByTestId("leave-mine-card-done")).toBeInTheDocument();
   });
 
-  it("does not span any card for an even request count", () => {
-    mineItems = [item({ instance_id: "a" }), item({ instance_id: "b" })];
-    mineLoading = false;
-    render(<MyLeaveRequests creating={false} onCreatingChange={vi.fn()} />);
-
-    for (const id of ["a", "b"]) {
-      expect(screen.getByTestId(`leave-mine-cell-${id}`).className).not.toContain("lg:col-span-2");
-    }
+  it("says a request once in its date range, with the number of days", () => {
+    mineItems = [
+      item({
+        instance_id: "a",
+        status: "completed",
+        starts_on: "2026-09-29",
+        ends_on: "2026-10-01",
+      }),
+    ];
+    renderMine();
+    const row = screen.getByTestId("leave-mine-card-a");
+    expect(row).toHaveTextContent('days:{"count":3}');
+    expect(row).not.toHaveTextContent(/29 Sep 2026.*29 Sep 2026/);
   });
 
-  it("shows the compact stage track with the current stage marked for an in-progress request", () => {
-    mineItems = [item({ instance_id: "a", status: "in_progress", current_stage_index: 0 })];
-    mineLoading = false;
-    render(<MyLeaveRequests creating={false} onCreatingChange={vi.fn()} />);
-
-    const card = screen.getByTestId("leave-mine-card-a");
-    expect(within(card).getByTestId("mine-stage-track-node-submitted")).toHaveAttribute(
-      "data-state",
-      "complete",
-    );
-    expect(within(card).getByTestId("mine-stage-track-node-homeroom")).toHaveAttribute(
-      "data-state",
-      "current",
-    );
-    expect(within(card).getByTestId("mine-stage-track-node-done")).toHaveAttribute(
-      "data-state",
-      "upcoming",
-    );
-  });
-
-  it("shows the stage track stopped at the rejected stage", () => {
-    mineItems = [item({ instance_id: "a", status: "rejected", current_stage_index: 0 })];
-    mineLoading = false;
-    render(<MyLeaveRequests creating={false} onCreatingChange={vi.fn()} />);
-
-    const card = screen.getByTestId("leave-mine-card-a");
-    expect(within(card).getByTestId("mine-stage-track-node-homeroom")).toHaveAttribute(
-      "data-state",
-      "stopped",
-    );
+  it("opens the detail when a history row is chosen", async () => {
+    mineItems = [item({ instance_id: "a", status: "completed" })];
+    renderMine();
+    await userEvent.click(within(screen.getByTestId("leave-mine-card-a")).getByRole("button"));
+    expect(screen.getByTestId("detail-stub")).toHaveTextContent("a");
   });
 });

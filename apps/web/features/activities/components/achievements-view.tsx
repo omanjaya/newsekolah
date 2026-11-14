@@ -2,6 +2,10 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Select,
+  DatePicker,
+  DialogFooter,
+  Field,
   Avatar,
   Button,
   ConfirmDialog,
@@ -10,7 +14,6 @@ import {
   DialogContent,
   EmptyState,
   Input,
-  PageHeader,
   Textarea,
   useToast,
   type DataTableFilterDef,
@@ -21,13 +24,13 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import { useClassesQuery } from "../../reference/api";
 import { useDirectoryName } from "../../reference/directory-names";
-import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   type Achievement,
   type AchievementLevel,
@@ -61,11 +64,13 @@ const LEVELS: AchievementLevel[] = [
 ];
 
 export function AchievementsView(): ReactElement {
-  const workspace = useTranslations("app.workspace");
+  const tNav = useTranslations("app.activities");
+  const tShell = useTranslations("app.shell.nav.items");
   const t = useTranslations("app.activities.achievements");
+  const [search, setSearch] = useState("");
   const canManage = useCan("manage_achievements");
   const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
-  const { data, isLoading } = useAchievementsQuery(undefined, classId || undefined);
+  const { data, isLoading, error, refetch } = useAchievementsQuery(undefined, classId || undefined);
   const classes = useClassesQuery();
   const [editing, setEditing] = useState<Achievement | "new" | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Achievement | null>(null);
@@ -137,18 +142,13 @@ export function AchievementsView(): ReactElement {
   );
 
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the table scrolls its rows internally while the
-    // actions row stays put. See school/components/users-view.tsx for the
-    // reference pattern.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <ActivitiesWorkspaceNav />
-      <PageHeader eyebrow={t("eyebrow")} title={workspace("studentActivities")} />
-
-      {canManage && (
-        <div className="flex justify-end">
+    <AppPage
+      variant="fit"
+      title={tNav("navLabelAchievements")}
+      eyebrow={tShell("studentActivities")}
+      primaryAction={
+        canManage ? (
           <Button
-            size="sm"
             icon={<Plus />}
             onClick={() => {
               setEditing("new");
@@ -156,9 +156,9 @@ export function AchievementsView(): ReactElement {
           >
             {t("add")}
           </Button>
-        </div>
-      )}
-
+        ) : undefined
+      }
+    >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/activities/components/achievements-view:1"
@@ -170,13 +170,16 @@ export function AchievementsView(): ReactElement {
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
-          globalFilter=""
+          globalFilter={search}
+          onGlobalFilterChange={setSearch}
           filters={filters}
           filtersLabels={{
             reset: t("filters.reset"),
             removeFilter: (label) => t("filters.removeFilter", { label }),
           }}
           isLoading={isLoading}
+          error={error}
+          onRetry={() => void refetch()}
           getRowId={(item) => item.id}
           fillHeight
           emptyState={
@@ -184,6 +187,18 @@ export function AchievementsView(): ReactElement {
               icon={<Trophy aria-hidden="true" />}
               title={t("emptyTitle")}
               description={t("emptyBody")}
+              action={
+                canManage ? (
+                  <Button
+                    icon={<Plus />}
+                    onClick={() => {
+                      setEditing("new");
+                    }}
+                  >
+                    {t("add")}
+                  </Button>
+                ) : undefined
+              }
             />
           }
         />
@@ -231,7 +246,7 @@ export function AchievementsView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }
 
@@ -287,12 +302,10 @@ function AchievementForm({
         else create.mutate(body, callbacks);
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("studentId")}</span>
+      <Field label={t("studentId")}>
         <StudentPicker value={studentId} onChange={setStudentId} />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("competitionName")}</span>
+      </Field>
+      <Field label={t("competitionName")}>
         <Input
           value={competitionName}
           onChange={(e) => {
@@ -301,26 +314,18 @@ function AchievementForm({
           required
           maxLength={200}
         />
-      </label>
+      </Field>
       <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("level")}</span>
-          <select
-            className="h-9 rounded-md border border-border-strong bg-surface px-2 text-[13px]"
+        <Field label={t("level")}>
+          <Select
             value={level}
-            onChange={(e) => {
-              setLevel(e.target.value as AchievementLevel);
+            onValueChange={(next) => {
+              setLevel(next as AchievementLevel);
             }}
-          >
-            {LEVELS.map((lvl) => (
-              <option key={lvl} value={lvl}>
-                {tAchievements(`levels.${lvl}`)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("placement")}</span>
+            options={LEVELS.map((lvl) => ({ value: lvl, label: tAchievements(`levels.${lvl}`) }))}
+          />
+        </Field>
+        <Field label={t("placement")}>
           <Input
             value={placement}
             onChange={(e) => {
@@ -329,21 +334,12 @@ function AchievementForm({
             required
             maxLength={100}
           />
-        </label>
+        </Field>
       </div>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("achievedOn")}</span>
-        <Input
-          type="date"
-          value={achievedOn}
-          onChange={(e) => {
-            setAchievedOn(e.target.value);
-          }}
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("notes")}</span>
+      <Field label={t("achievedOn")}>
+        <DatePicker value={achievedOn} required onChange={setAchievedOn} />
+      </Field>
+      <Field label={t("notes")}>
         <Textarea
           value={notes}
           onChange={(e) => {
@@ -352,15 +348,15 @@ function AchievementForm({
           maxLength={1000}
           rows={2}
         />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      </Field>
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" disabled={!studentId} loading={create.isPending || update.isPending}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

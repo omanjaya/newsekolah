@@ -11,7 +11,7 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
-  PageHeader,
+  FilteredEmptyState,
   Tabs,
   TabsContent,
   TabsList,
@@ -26,13 +26,12 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
-import { CursorPagination } from "../../../components/cursor-pagination";
+import { AppPage } from "../../../components/app-page";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryNames } from "../../reference/directory-names";
-import { CounselingWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { StudentLink } from "../../students/components/student-link";
 import { type Counseling } from "../api";
 import { useDeleteCounselingMutation, useMyCounselingsQuery } from "../api-counseling-extras";
@@ -45,7 +44,7 @@ import { CounselingForm } from "./counseling-form";
 const PAGE_SIZE = 50;
 
 export function CounselingView(): ReactElement {
-  const workspace = useTranslations("app.serviceWorkspace");
+  const tNav = useTranslations("app.shell.nav.items");
   const t = useTranslations("app.discipline.counseling");
   const locale = useLocale() as Locale;
   const toast = useToast();
@@ -56,7 +55,7 @@ export function CounselingView(): ReactElement {
 
   const [search, setSearch] = useUrlState<string>("mine_q", () => true, "");
   const paging = useOffsetPage(PAGE_SIZE, "mine_page");
-  const { data, isLoading } = useMyCounselingsQuery({
+  const { data, isLoading, error, refetch } = useMyCounselingsQuery({
     limit: paging.limit,
     offset: paging.offset,
     search,
@@ -113,29 +112,23 @@ export function CounselingView(): ReactElement {
   );
 
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the active tab's table scrolls its rows
-    // internally. See users-view.tsx / learning-view.tsx for the pattern.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <CounselingWorkspaceNav />
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={workspace("counseling")}
-        actions={
-          canManage && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                setEditing("new");
-              }}
-            >
-              {t("add")}
-            </Button>
-          )
-        }
-      />
-
+    <AppPage
+      variant="fit"
+      title={t("title")}
+      eyebrow={tNav("counseling")}
+      primaryAction={
+        canManage ? (
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              setEditing("new");
+            }}
+          >
+            {t("add")}
+          </Button>
+        ) : undefined
+      }
+    >
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
         <TabsList>
           <TabsTrigger value="mine">{t("tabs.mine")}</TabsTrigger>
@@ -151,6 +144,16 @@ export function CounselingView(): ReactElement {
               rowCount={items.length}
               pagination={{ pageIndex: 0, pageSize: PAGE_SIZE }}
               onPaginationChange={() => undefined}
+              cursorPagination={{
+                hasPrevious: paging.hasPrevious,
+                hasNext: paging.hasNextFor(items.length),
+                onPrevious: paging.goPrevious,
+                onNext: paging.goNext,
+                page: paging.page,
+                pageSize: paging.limit,
+              }}
+              error={error}
+              onRetry={() => void refetch()}
               sorting={[]}
               onSortingChange={() => undefined}
               globalFilter={search}
@@ -163,18 +166,32 @@ export function CounselingView(): ReactElement {
               }}
               fillHeight
               emptyState={
-                <EmptyState
-                  icon={<domainIcons.users aria-hidden="true" />}
-                  title={t("emptyTitle")}
-                  description={t("emptyBody")}
-                />
+                search !== "" ? (
+                  <FilteredEmptyState
+                    onReset={() => {
+                      paging.resetting(setSearch)("");
+                    }}
+                  />
+                ) : (
+                  <EmptyState
+                    icon={<domainIcons.users aria-hidden="true" />}
+                    title={t("emptyTitle")}
+                    description={t("emptyBody")}
+                    action={
+                      canManage ? (
+                        <Button
+                          icon={<Plus />}
+                          onClick={() => {
+                            setEditing("new");
+                          }}
+                        >
+                          {t("add")}
+                        </Button>
+                      ) : undefined
+                    }
+                  />
+                )
               }
-            />
-            <CursorPagination
-              hasPrevious={paging.hasPrevious}
-              hasNext={paging.hasNextFor(items.length)}
-              onPrevious={paging.goPrevious}
-              onNext={paging.goNext}
             />
           </div>
         </TabsContent>
@@ -195,7 +212,7 @@ export function CounselingView(): ReactElement {
       >
         <DialogContent
           title={editing === "new" ? t("form.createTitle") : t("form.editTitle")}
-          className="max-w-2xl"
+          size="lg"
         >
           {editing !== null && (
             <CounselingForm
@@ -234,7 +251,7 @@ export function CounselingView(): ReactElement {
         title={t("deleteTitle")}
         description={pendingDelete ? t("deleteBody", { title: pendingDelete.title }) : ""}
         confirmLabel={t("deleteConfirm")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={async () => {
           if (!pendingDelete) return;
@@ -250,6 +267,6 @@ export function CounselingView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }

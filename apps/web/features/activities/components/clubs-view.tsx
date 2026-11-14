@@ -9,21 +9,20 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
-  PageHeader,
   useToast,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus, Users } from "lucide-react";
+import { Plus, SlidersHorizontal, Users } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
-import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   type Extracurricular,
   useDeleteExtracurricularMutation,
@@ -36,8 +35,10 @@ import { MembershipPolicyForm } from "./membership-policy-form";
 const WEEKDAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
 export function ClubsView(): ReactElement {
-  const workspace = useTranslations("app.workspace");
+  const tNav = useTranslations("app.activities");
+  const tShell = useTranslations("app.shell.nav.items");
   const t = useTranslations("app.activities.clubs");
+  const [search, setSearch] = useState("");
   const canManage = useCan("manage_extracurriculars");
   const canManagePolicy = useCan("manage_settings");
   const [includeInactiveParam, setIncludeInactiveParam] = useUrlState<"" | "true">(
@@ -46,7 +47,7 @@ export function ClubsView(): ReactElement {
     "",
   );
   const includeInactive = includeInactiveParam === "true";
-  const { data, isLoading } = useExtracurricularsQuery(includeInactive);
+  const { data, isLoading, error, refetch } = useExtracurricularsQuery(includeInactive);
   const [editing, setEditing] = useState<Extracurricular | "new" | null>(null);
 
   const [pendingDelete, setPendingDelete] = useState<Extracurricular | null>(null);
@@ -152,44 +153,36 @@ export function ClubsView(): ReactElement {
   );
 
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the table scrolls its rows internally while the
-    // filter row stays put. See school/components/users-view.tsx for the
-    // reference pattern.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <ActivitiesWorkspaceNav />
-      <PageHeader eyebrow={t("eyebrow")} title={workspace("studentActivities")} />
-
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        {(canManage || canManagePolicy) && (
-          <div className="grid w-full gap-2 sm:flex sm:w-auto">
-            {canManagePolicy && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
+    <AppPage
+      variant="fit"
+      title={tNav("navLabelClubs")}
+      eyebrow={tShell("studentActivities")}
+      primaryAction={
+        canManage ? (
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              setEditing("new");
+            }}
+          >
+            {t("add")}
+          </Button>
+        ) : undefined
+      }
+      secondaryActions={
+        canManagePolicy
+          ? [
+              {
+                label: t("policy.title"),
+                icon: <SlidersHorizontal />,
+                onSelect: () => {
                   setPolicyOpen(true);
-                }}
-              >
-                {t("policy.title")}
-              </Button>
-            )}
-            {canManage && (
-              <Button
-                size="sm"
-                icon={<Plus />}
-                className="order-first sm:order-none"
-                onClick={() => {
-                  setEditing("new");
-                }}
-              >
-                {t("add")}
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-
+                },
+              },
+            ]
+          : undefined
+      }
+    >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/activities/components/clubs-view:1"
@@ -201,13 +194,16 @@ export function ClubsView(): ReactElement {
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
-          globalFilter=""
+          globalFilter={search}
+          onGlobalFilterChange={setSearch}
           filters={filters}
           filtersLabels={{
             reset: t("filters.reset"),
             removeFilter: (label) => t("filters.removeFilter", { label }),
           }}
           isLoading={isLoading}
+          error={error}
+          onRetry={() => void refetch()}
           getRowId={(item) => item.id}
           fillHeight
           emptyState={
@@ -215,6 +211,18 @@ export function ClubsView(): ReactElement {
               icon={<Users aria-hidden="true" />}
               title={t("emptyTitle")}
               description={t("emptyBody")}
+              action={
+                canManage ? (
+                  <Button
+                    icon={<Plus />}
+                    onClick={() => {
+                      setEditing("new");
+                    }}
+                  >
+                    {t("add")}
+                  </Button>
+                ) : undefined
+              }
             />
           }
         />
@@ -271,6 +279,6 @@ export function ClubsView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }

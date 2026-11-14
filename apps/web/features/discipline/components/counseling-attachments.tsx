@@ -104,7 +104,7 @@ export function CounselingAttachments({
   return (
     <div className="flex flex-col gap-2 border-t border-border pt-3">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-medium text-fg">{t("title")}</span>
+        <span className="text-label text-fg">{t("title")}</span>
         {canUpload && (
           <Button
             type="button"
@@ -130,11 +130,14 @@ export function CounselingAttachments({
         />
       </div>
       {items.length === 0 ? (
-        <p className="text-[13px] text-fg-muted">{t("empty")}</p>
+        <p className="text-body-sm text-fg-muted">{t("empty")}</p>
       ) : (
         <ul className="flex flex-col gap-1">
           {items.map((attachment) => (
-            <li key={attachment.id} className="flex items-center justify-between gap-2 text-[13px]">
+            <li
+              key={attachment.id}
+              className="flex items-center justify-between gap-2 text-body-sm"
+            >
               <span className="flex items-center gap-1.5 text-fg">
                 <Paperclip className="size-4 text-fg-muted" aria-hidden="true" />
                 {formatDateTime(attachment.created_at, { locale, timeZone: me?.tenant.timezone })}

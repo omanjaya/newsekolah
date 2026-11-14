@@ -3,6 +3,7 @@
 import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
 import {
+  Field,
   Button,
   Card,
   Checkbox,
@@ -81,18 +82,18 @@ export function PermitQueueCard({
           />
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-[14px] font-medium text-fg">
+          <span className="truncate text-body font-medium text-fg">
             <StudentLink studentId={row.studentId}>{formatDisplayName(name)}</StudentLink>
             {row.className && (
-              <span className="ml-1.5 text-[13px] font-normal text-fg-muted">
+              <span className="ml-1.5 text-body-sm font-normal text-fg-muted">
                 ({row.className})
               </span>
             )}
           </span>
-          <span className="text-[13px] text-fg-muted">
+          <span className="text-body-sm text-fg-muted">
             {t(row.type)} · {formatDateTime(row.openedAt, { locale, timeZone })}
           </span>
-          {row.description && <span className="text-[13px] text-fg">{row.description}</span>}
+          {row.description && <span className="text-body-sm text-fg">{row.description}</span>}
         </div>
         <WorkflowStatusBadge status={row.status} />
       </div>
@@ -110,8 +111,7 @@ export function PermitQueueCard({
               </PopoverTrigger>
               <PopoverContent align="end" className="w-72">
                 <div className="flex flex-col gap-2">
-                  <label className="flex flex-col gap-1 text-[13px]">
-                    <span className="font-medium">{tLeave("reviewNote")}</span>
+                  <Field label={tLeave("reviewNote")}>
                     <Textarea
                       rows={2}
                       value={reason}
@@ -120,7 +120,7 @@ export function PermitQueueCard({
                       }}
                       maxLength={500}
                     />
-                  </label>
+                  </Field>
                   <div className="flex justify-end gap-2">
                     <Button
                       type="button"

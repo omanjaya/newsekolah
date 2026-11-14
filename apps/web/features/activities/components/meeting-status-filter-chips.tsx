@@ -52,7 +52,7 @@ export function MeetingStatusFilterChips({
               onToggle(code);
             }}
             className={cn(
-              "flex min-h-8 shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] font-medium transition-colors",
+              "flex min-h-8 shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1 text-label transition-colors",
               selected ? CHIP_ACTIVE_CLASS[token] : "border-border text-fg-muted hover:bg-bg",
             )}
           >

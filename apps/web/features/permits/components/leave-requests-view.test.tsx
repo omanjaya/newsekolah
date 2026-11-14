@@ -20,6 +20,9 @@ vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { profile_kind: profileKind } }),
 }));
 
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+vi.mock("./review-inbox-banner", () => ({ ReviewInboxBanner: () => null }));
+
 vi.mock("./my-leave-requests", () => ({
   MyLeaveRequests: () => <div data-testid="my-leave-requests-stub" />,
 }));

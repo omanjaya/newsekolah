@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, useToast } from "@newsekolah/ui";
+import { Card, Button, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -73,17 +73,15 @@ export function BulkApproveBar({ bulk }: { bulk: BulkLeaveApproval }): ReactElem
   if (bulk.selected.size === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-sm border border-accent/40 bg-accent/5 px-3 py-2 text-[13px]">
-      <span className="font-medium text-fg">
-        {t("bulkSelected", { count: bulk.selected.size })}
-      </span>
+    <Card tone="accent-soft" className="flex flex-wrap items-center gap-2 px-4 py-3">
+      <span className="text-label">{t("bulkSelected", { count: bulk.selected.size })}</span>
       <Button size="sm" loading={bulk.pending} onClick={() => void bulk.approveSelected()}>
         {t("bulkApprove")}
       </Button>
       <Button size="sm" variant="secondary" disabled={bulk.pending} onClick={bulk.clear}>
         {t("bulkClear")}
       </Button>
-      <span className="w-full text-[12px] text-fg-muted">{t("bulkApproveHint")}</span>
-    </div>
+      <span className="w-full text-caption font-normal">{t("bulkApproveHint")}</span>
+    </Card>
   );
 }

@@ -1,7 +1,7 @@
 {
   "navGroupLabel": "Mentoring",
-  "navLabelGroups": "Mentor groups",
-  "navLabelMyGroups": "My groups",
+  "navLabelGroups": "Mentoring groups",
+  "navLabelMyGroups": "My mentoring",
   "groups": {
     "eyebrow": "Mentoring",
     "title": "Mentor groups",
@@ -18,7 +18,7 @@
     "emptyBody": "Create a group to start placing students under a mentor teacher.",
     "tabs": {
       "groups": "Groups",
-      "limit": "Member limit"
+      "limit": "Group member limit"
     },
     "form": {
       "createTitle": "Create mentor group",
@@ -34,7 +34,9 @@
     "deleteTitle": "Delete mentor group",
     "deleteBody": "\"{name}\" will be deleted permanently and cannot be undone.",
     "deleteConfirm": "Delete",
-    "deleted": "Mentor group deleted"
+    "deleted": "Mentor group deleted",
+    "limitAction": "Set the member limit",
+    "searchPlaceholder": "Search a group or mentor name"
   },
   "groupSizeLimit": {
     "label": "Member limit per group",
@@ -123,7 +125,9 @@
       "cancel": "Cancel",
       "submit": "Save",
       "saved": "Meeting note saved",
-      "unknownStudent": "Unknown student"
+      "unknownStudent": "Unknown student",
+      "metDate": "Meeting date",
+      "metTime": "Meeting time"
     }
   },
   "studentView": {

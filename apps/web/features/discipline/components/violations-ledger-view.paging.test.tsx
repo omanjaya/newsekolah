@@ -58,14 +58,14 @@ describe("ViolationsLedgerView paging", () => {
 
   it("requests the second page at offset 50 and keeps it in the URL", async () => {
     const user = userEvent.setup();
-    render(<ViolationsLedgerView />);
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(expect.anything(), {
       limit: 50,
       offset: 0,
       search: "",
     });
-    await user.click(screen.getByRole("button", { name: "next" }));
+    await user.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
 
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(expect.anything(), {
       limit: 50,
@@ -78,7 +78,7 @@ describe("ViolationsLedgerView paging", () => {
   it("returns to the first page when a filter changes", async () => {
     window.history.replaceState(null, "", "/discipline/violations?ledger_page=3");
     const user = userEvent.setup();
-    render(<ViolationsLedgerView />);
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "filters.class" }));
     await user.click(await screen.findByRole("button", { name: "7A" }));
@@ -93,7 +93,7 @@ describe("ViolationsLedgerView paging", () => {
   it("sends the debounced search and returns to the first page", async () => {
     window.history.replaceState(null, "", "/discipline/violations?ledger_page=3");
     const user = userEvent.setup();
-    render(<ViolationsLedgerView />);
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
     await user.type(screen.getByRole("searchbox", { name: "searchPlaceholder" }), "bud");
 

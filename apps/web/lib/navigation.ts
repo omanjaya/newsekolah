@@ -328,7 +328,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "violations",
-    labelKey: "nav.discipline.items.violations",
+    labelKey: "app.discipline.violations.title",
     href: "/discipline/violations",
     module: "discipline",
     icon: domainIcons.violation,
@@ -337,7 +337,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "my-discipline",
-    labelKey: "nav.discipline.items.myDiscipline",
+    labelKey: "app.shell.nav.items.myDiscipline",
     href: "/my-discipline",
     module: "discipline",
     icon: domainIcons.violation,
@@ -346,7 +346,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "warning-letters",
-    labelKey: "nav.discipline.items.warningLetters",
+    labelKey: "app.discipline.warningLetters.title",
     href: "/discipline/warning-letters",
     module: "discipline",
     icon: MailWarning,
@@ -355,7 +355,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "counseling",
-    labelKey: "nav.discipline.items.counseling",
+    labelKey: "app.discipline.counseling.title",
     href: "/discipline/counseling",
     module: "discipline",
     // Not the violation shield: counseling sits next to discipline in the
@@ -366,7 +366,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "student-discipline",
-    labelKey: "nav.discipline.items.violations",
+    labelKey: "app.discipline.violations.title",
     href: "/discipline/students",
     module: "discipline",
     icon: domainIcons.violation,
@@ -387,7 +387,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "leave-requests",
-    labelKey: "nav.permits.items.plannedLeave",
+    labelKey: "app.permits.leave.title",
     tabLabelKey: "nav.compact.permits",
     href: "/leave-requests",
     module: "permits",
@@ -404,7 +404,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "exit-permits",
-    labelKey: "nav.permits.items.exitPermit",
+    labelKey: "app.permits.exit.title",
     href: "/exit-permits",
     module: "permits",
     icon: domainIcons.exitPermit,
@@ -419,7 +419,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "late-arrivals",
-    labelKey: "nav.permits.items.late",
+    labelKey: "app.permits.late.title",
     href: "/late-arrivals",
     module: "permits",
     icon: domainIcons.late,
@@ -436,7 +436,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "duty",
-    labelKey: "app.duty.navLabel",
+    labelKey: "app.duty.title",
     href: "/duty",
     module: "permits",
     icon: domainIcons.qr,

@@ -14,7 +14,6 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 
-import { CursorPagination } from "../../../components/cursor-pagination";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useDirectoryNames } from "../../reference/directory-names";
@@ -40,7 +39,7 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
 
   const [search, setSearch] = useUrlState<string>("team_q", () => true, "");
   const paging = useOffsetPage(PAGE_SIZE, "team_page");
-  const { data, isLoading } = useBKTeamCounselingsQuery(topic, {
+  const { data, isLoading, error, refetch } = useBKTeamCounselingsQuery(topic, {
     limit: paging.limit,
     offset: paging.offset,
     search,
@@ -115,6 +114,16 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
           rowCount={items.length}
           pagination={{ pageIndex: 0, pageSize: PAGE_SIZE }}
           onPaginationChange={() => undefined}
+          cursorPagination={{
+            hasPrevious: paging.hasPrevious,
+            hasNext: paging.hasNextFor(items.length),
+            onPrevious: paging.goPrevious,
+            onNext: paging.goNext,
+            page: paging.page,
+            pageSize: paging.limit,
+          }}
+          error={error}
+          onRetry={() => void refetch()}
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter={search}
@@ -140,12 +149,6 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
           }
         />
       </div>
-      <CursorPagination
-        hasPrevious={paging.hasPrevious}
-        hasNext={paging.hasNextFor(items.length)}
-        onPrevious={paging.goPrevious}
-        onNext={paging.goNext}
-      />
     </div>
   );
 }

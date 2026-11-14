@@ -4,6 +4,9 @@ import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
 import {
+  Card,
+  CardHeader,
+  CardTitle,
   ConfirmDialog,
   DataTable,
   Dialog,
@@ -92,8 +95,10 @@ export function StudentCounselingHistory({ studentId }: { studentId: string }): 
   if (isLoading) return <Skeleton className="h-32 w-full" />;
 
   return (
-    <section className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-4">
-      <h2 className="text-[16px] font-medium text-fg">{tDetail("counselingHistory")}</h2>
+    <Card padding="sm">
+      <CardHeader>
+        <CardTitle as="h2">{tDetail("counselingHistory")}</CardTitle>
+      </CardHeader>
       {isError ? (
         <QueryError retry={refetch} />
       ) : items.length === 0 ? (
@@ -124,7 +129,7 @@ export function StudentCounselingHistory({ studentId }: { studentId: string }): 
           if (!open) setEditing(null);
         }}
       >
-        <DialogContent title={t("form.editTitle")} className="max-w-2xl">
+        <DialogContent title={t("form.editTitle")} size="lg">
           {editing !== null && (
             <CounselingForm
               initial={editing}
@@ -177,6 +182,6 @@ export function StudentCounselingHistory({ studentId }: { studentId: string }): 
           }
         }}
       />
-    </section>
+    </Card>
   );
 }
