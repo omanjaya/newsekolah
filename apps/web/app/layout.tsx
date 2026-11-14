@@ -12,6 +12,7 @@ import { ROOT_NAMESPACES } from "../lib/i18n/namespace-sets";
 import { TITLE_SEPARATOR } from "../lib/page-title-format";
 import { getTenantBrandingServer } from "../lib/tenant/get-branding.server";
 import { PRODUCT_NAME_FALLBACK } from "../lib/tenant/product-name";
+import { THEME_COLOR } from "../lib/theme/theme-color";
 import { getThemeBootstrapScript } from "../lib/theme/theme-script";
 
 import { manrope, plusJakartaSans } from "./fonts";
@@ -35,13 +36,21 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+/**
+ * `viewportFit: "cover"` lets an installed app reach under the status bar
+ * and the home indicator; the shell pads itself clear of both with the
+ * safe-area insets (the header's top, the tab bar's bottom, the body's
+ * sides). The theme colour is the page colour the phone's header takes in
+ * each theme (lib/theme/theme-color.ts pins it when the theme is forced).
+ */
 export function generateViewport(): Viewport {
   return {
     width: "device-width",
     initialScale: 1,
+    viewportFit: "cover",
     themeColor: [
-      { media: "(prefers-color-scheme: light)", color: "#F7F6F2" },
-      { media: "(prefers-color-scheme: dark)", color: "#171613" },
+      { media: "(prefers-color-scheme: light)", color: THEME_COLOR.light },
+      { media: "(prefers-color-scheme: dark)", color: THEME_COLOR.dark },
     ],
   };
 }
