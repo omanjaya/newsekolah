@@ -711,7 +711,9 @@
       "kindAll": "Semua jenis",
       "kindFilterLabel": "Jenis notifikasi",
       "emptyFilteredTitle": "Tidak ada notifikasi yang cocok",
-      "emptyFilteredBody": "Coba ubah kata pencarian atau pilih jenis lain."
+      "emptyFilteredBody": "Coba ubah kata pencarian atau pilih jenis lain.",
+      "filterLabel": "Tampilkan notifikasi",
+      "showAll": "Lihat semua notifikasi"
     },
     "announcements": {
       "eyebrow": "Komunikasi",

@@ -711,7 +711,9 @@
       "kindAll": "All kinds",
       "kindFilterLabel": "Notification kind",
       "emptyFilteredTitle": "No notifications match",
-      "emptyFilteredBody": "Try a different search term or kind."
+      "emptyFilteredBody": "Try a different search term or kind.",
+      "filterLabel": "Show notifications",
+      "showAll": "Show all notifications"
     },
     "announcements": {
       "eyebrow": "Communication",
