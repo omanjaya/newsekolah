@@ -1,7 +1,7 @@
 {
   "navGroupLabel": "Activities",
   "navLabelClubs": "Extracurriculars",
-  "navLabelEvents": "Events calendar",
+  "navLabelEvents": "Activity agenda",
   "navLabelAchievements": "Achievements",
   "clubs": {
     "eyebrow": "Activities",
@@ -120,7 +120,7 @@
   },
   "events": {
     "eyebrow": "Activities",
-    "title": "Events calendar",
+    "title": "Activity agenda",
     "add": "Add activity",
     "saved": "Activity saved",
     "emptyTitle": "No activities yet",

@@ -4,13 +4,16 @@ import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
 import {
+  DatePicker,
+  Field,
   Avatar,
   Badge,
   Button,
   Checkbox,
   EmptyState,
   Input,
-  PageHeader,
+  List,
+  ListRow,
   Tabs,
   TabsContent,
   TabsList,
@@ -22,13 +25,13 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryNames } from "../../reference/directory-names";
-import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   useClubMembersQuery,
   useCreateMeetingMutation,
@@ -53,10 +56,7 @@ export function ClubDetailView({ clubId }: { clubId: string }): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 pb-24 md:p-6 md:pb-24">
-      <ActivitiesWorkspaceNav />
-      <PageHeader eyebrow={t("eyebrow")} title={club?.name ?? "..."} />
-      {club?.description && <p className="text-[13px] text-fg-muted">{club.description}</p>}
+    <AppPage title={club?.name} description={club?.description}>
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="members">{t("tabs.members")}</TabsTrigger>
@@ -71,7 +71,7 @@ export function ClubDetailView({ clubId }: { clubId: string }): ReactElement {
           </TabsContent>
         )}
       </Tabs>
-    </div>
+    </AppPage>
   );
 }
 
@@ -123,21 +123,12 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
             );
           }}
         >
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("studentId")}</span>
+          <Field label={t("studentId")}>
             <StudentPicker value={studentId} onChange={setStudentId} />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("joinedOn")}</span>
-            <Input
-              type="date"
-              value={joinedOn}
-              onChange={(e) => {
-                setJoinedOn(e.target.value);
-              }}
-              required
-            />
-          </label>
+          </Field>
+          <Field label={t("joinedOn")}>
+            <DatePicker value={joinedOn} required onChange={setJoinedOn} />
+          </Field>
           <Button type="submit" disabled={!studentId} loading={join.isPending}>
             {t("join")}
           </Button>
@@ -154,74 +145,67 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
           aria-label={t("searchPlaceholder")}
           className="w-full sm:w-64"
         />
-        <label className="flex min-h-11 items-center gap-2 text-[13px] sm:min-h-0">
-          <Checkbox
-            checked={includeLeft}
-            onCheckedChange={(v) => {
-              setIncludeLeft(v === true);
-            }}
-          />
-          {t("includeLeft")}
-        </label>
+        <Checkbox
+          label={t("includeLeft")}
+          checked={includeLeft}
+          onCheckedChange={(v) => {
+            setIncludeLeft(v === true);
+          }}
+        />
       </div>
 
-      <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
-        {visible.length === 0 && (
-          <li className="p-3">
-            <EmptyState
-              icon={<Users aria-hidden="true" />}
-              title={search ? t("noMatch") : t("empty")}
-            />
-          </li>
-        )}
-        {visible.map((m) => {
-          const name = nameById.get(m.student_user_id)?.name ?? t("unknownStudent");
-          return (
-            <li key={m.id} className="flex items-center justify-between gap-2 p-3 text-[13px]">
-              <div className="flex min-w-0 items-center gap-3">
-                <Avatar name={name} size={32} />
-                <div className="flex min-w-0 flex-col">
-                  <span className="truncate font-medium">{formatDisplayName(name)}</span>
-                  <span className="text-fg-muted">
-                    {m.joined_on}
-                    {m.left_on ? ` - ${m.left_on}` : ""}
-                  </span>
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <Badge variant={m.status === "active" ? "accent" : "neutral"}>
-                  {t(`status.${m.status}`)}
-                </Badge>
-                {canManage && m.status === "active" && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      leave.mutate(
-                        { membershipId: m.id, leftOn: today },
-                        {
-                          onSuccess: () => {
-                            toast.success(t("left"));
+      {visible.length === 0 ? (
+        <EmptyState
+          icon={<Users aria-hidden="true" />}
+          title={search ? t("noMatch") : t("empty")}
+        />
+      ) : (
+        <List framed>
+          {visible.map((m) => {
+            const name = nameById.get(m.student_user_id)?.name ?? t("unknownStudent");
+            return (
+              <ListRow
+                key={m.id}
+                leading={<Avatar name={name} size={40} decorative />}
+                title={formatDisplayName(name)}
+                meta={`${m.joined_on}${m.left_on ? ` - ${m.left_on}` : ""}`}
+                trailing={
+                  <Badge tone={m.status === "active" ? "success" : "neutral"}>
+                    {t(`status.${m.status}`)}
+                  </Badge>
+                }
+                action={
+                  canManage && m.status === "active" ? (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        leave.mutate(
+                          { membershipId: m.id, leftOn: today },
+                          {
+                            onSuccess: () => {
+                              toast.success(t("left"));
+                            },
+                            onError: (error) => {
+                              toast.error(
+                                error instanceof ApiError
+                                  ? apiErrorMessage(error.code)
+                                  : apiErrorMessage("UNKNOWN"),
+                              );
+                            },
                           },
-                          onError: (error) => {
-                            toast.error(
-                              error instanceof ApiError
-                                ? apiErrorMessage(error.code)
-                                : apiErrorMessage("UNKNOWN"),
-                            );
-                          },
-                        },
-                      );
-                    }}
-                  >
-                    {t("leave")}
-                  </Button>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+                        );
+                      }}
+                    >
+                      {t("leave")}
+                    </Button>
+                  ) : undefined
+                }
+              />
+            );
+          })}
+        </List>
+      )}
     </div>
   );
 }
@@ -262,17 +246,9 @@ function MeetingsPanel({ clubId }: { clubId: string }): ReactElement {
           );
         }}
       >
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("meetingDate")}</span>
-          <Input
-            type="date"
-            value={meetingDate}
-            onChange={(e) => {
-              setMeetingDate(e.target.value);
-            }}
-            required
-          />
-        </label>
+        <Field label={t("meetingDate")}>
+          <DatePicker value={meetingDate} required onChange={setMeetingDate} />
+        </Field>
         <Button type="submit" loading={createMeeting.isPending}>
           {t("schedule")}
         </Button>
@@ -287,7 +263,7 @@ function MeetingsPanel({ clubId }: { clubId: string }): ReactElement {
               <button
                 type="button"
                 aria-expanded={selectedMeeting === m.id}
-                className="flex min-h-11 w-full items-center rounded-md border border-border p-3 text-left text-[13px] hover:bg-state-hover"
+                className="flex min-h-11 w-full items-center rounded-md border border-border p-3 text-left text-body-sm hover:bg-state-hover"
                 onClick={() => {
                   setSelectedMeeting(m.id === selectedMeeting ? null : m.id);
                 }}

@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   canManage: true,
 }));
 
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/activities/achievements",

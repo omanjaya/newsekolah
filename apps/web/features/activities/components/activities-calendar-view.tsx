@@ -2,6 +2,9 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  DatePicker,
+  DialogFooter,
+  Field,
   Button,
   ConfirmDialog,
   DataTable,
@@ -9,7 +12,6 @@ import {
   DialogContent,
   EmptyState,
   Input,
-  PageHeader,
   Textarea,
   useToast,
 } from "@newsekolah/ui";
@@ -19,9 +21,9 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
-import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   type ActivityEvent,
   type ActivityEventWrite,
@@ -34,10 +36,11 @@ import {
 import { ActivityParticipants } from "./activity-participants";
 
 export function ActivitiesCalendarView(): ReactElement {
-  const workspace = useTranslations("app.workspace");
+  const tNav = useTranslations("app.activities");
+  const tShell = useTranslations("app.shell.nav.items");
   const t = useTranslations("app.activities.events");
   const canManage = useCan("manage_activity_events");
-  const { data, isLoading } = useActivityEventsQuery();
+  const { data, isLoading, error, refetch } = useActivityEventsQuery();
   const [editing, setEditing] = useState<ActivityEvent | "new" | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ActivityEvent | null>(null);
   const remove = useDeleteActivityEventMutation();
@@ -105,18 +108,13 @@ export function ActivitiesCalendarView(): ReactElement {
   );
 
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the table scrolls its rows internally while the
-    // actions row stays put. See school/components/users-view.tsx for the
-    // reference pattern.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <ActivitiesWorkspaceNav />
-      <PageHeader eyebrow={t("eyebrow")} title={workspace("studentActivities")} />
-
-      {canManage && (
-        <div className="flex justify-end">
+    <AppPage
+      variant="fit"
+      title={tNav("navLabelEvents")}
+      eyebrow={tShell("studentActivities")}
+      primaryAction={
+        canManage ? (
           <Button
-            size="sm"
             icon={<Plus />}
             onClick={() => {
               setEditing("new");
@@ -124,9 +122,9 @@ export function ActivitiesCalendarView(): ReactElement {
           >
             {t("add")}
           </Button>
-        </div>
-      )}
-
+        ) : undefined
+      }
+    >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/activities/components/activities-calendar-view:1"
@@ -140,6 +138,8 @@ export function ActivitiesCalendarView(): ReactElement {
           onSortingChange={() => undefined}
           globalFilter=""
           isLoading={isLoading}
+          error={error}
+          onRetry={() => void refetch()}
           getRowId={(item) => item.id}
           fillHeight
           emptyState={
@@ -147,6 +147,18 @@ export function ActivitiesCalendarView(): ReactElement {
               icon={<CalendarRange aria-hidden="true" />}
               title={t("emptyTitle")}
               description={t("emptyBody")}
+              action={
+                canManage ? (
+                  <Button
+                    icon={<Plus />}
+                    onClick={() => {
+                      setEditing("new");
+                    }}
+                  >
+                    {t("add")}
+                  </Button>
+                ) : undefined
+              }
             />
           }
         />
@@ -204,7 +216,7 @@ export function ActivitiesCalendarView(): ReactElement {
           {participants && <ActivityParticipants activityId={participants.id} />}
         </DialogContent>
       </Dialog>
-    </div>
+    </AppPage>
   );
 }
 
@@ -256,8 +268,7 @@ function ActivityEventForm({
         else create.mutate(body, callbacks);
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
+      <Field label={t("name")}>
         <Input
           value={name}
           onChange={(e) => {
@@ -266,9 +277,8 @@ function ActivityEventForm({
           required
           maxLength={200}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("description")}</span>
+      </Field>
+      <Field label={t("description")}>
         <Textarea
           value={description}
           onChange={(e) => {
@@ -277,9 +287,8 @@ function ActivityEventForm({
           maxLength={4000}
           rows={3}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("location")}</span>
+      </Field>
+      <Field label={t("location")}>
         <Input
           value={location}
           onChange={(e) => {
@@ -287,40 +296,23 @@ function ActivityEventForm({
           }}
           maxLength={200}
         />
-      </label>
+      </Field>
       <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("startDate")}</span>
-          <Input
-            type="date"
-            value={startDate}
-            onChange={(e) => {
-              setStartDate(e.target.value);
-            }}
-            required
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("endDate")}</span>
-          <Input
-            type="date"
-            min={startDate}
-            value={endDate}
-            onChange={(e) => {
-              setEndDate(e.target.value);
-            }}
-            required
-          />
-        </label>
+        <Field label={t("startDate")}>
+          <DatePicker value={startDate} required onChange={setStartDate} />
+        </Field>
+        <Field label={t("endDate")}>
+          <DatePicker min={startDate} value={endDate} required onChange={setEndDate} />
+        </Field>
       </div>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={create.isPending || update.isPending}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }
