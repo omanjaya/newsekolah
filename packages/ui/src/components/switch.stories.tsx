@@ -1,5 +1,6 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/react";
 
+import { Field } from "./field.js";
 import { Switch } from "./switch.js";
 
 const phoneFrame: Decorator = (Story) => (
@@ -31,6 +32,27 @@ function Settings() {
   );
 }
 
+/** Inside a Field: the field's label names the switch, its hint describes it. */
+function InField() {
+  return (
+    <div className="flex w-96 max-w-full flex-col gap-5">
+      <Field
+        label="Perbarui peran"
+        hint="Peran pengguna yang sudah ada diganti dengan isi berkas."
+        orientation="horizontal"
+      >
+        <Switch />
+      </Field>
+      <Field label="Terbitkan nilai" orientation="inline">
+        <Switch defaultChecked />
+      </Field>
+      <Field label="Kirim ringkasan" error="Isi nomor WhatsApp dulu." disabled>
+        <Switch />
+      </Field>
+    </div>
+  );
+}
+
 const meta: Meta<typeof Switch> = {
   title: "Components/Switch",
   component: Switch,
@@ -40,6 +62,8 @@ export default meta;
 type Story = StoryObj<typeof Switch>;
 
 export const InSettings: Story = { render: () => <Settings /> };
+export const WithField: Story = { render: () => <InField /> };
+export const WithFieldDark: Story = { globals: { theme: "dark" }, render: () => <InField /> };
 export const Off: Story = {};
 export const On: Story = { args: { defaultChecked: true } };
 export const Dark: Story = { globals: { theme: "dark" }, render: () => <Settings /> };

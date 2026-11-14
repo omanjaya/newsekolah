@@ -14,6 +14,13 @@ import { createContext, useContext, useLayoutEffect, useState } from "react";
  */
 export interface FieldContextValue {
   controlId: string;
+  /**
+   * The label's own id, for a control whose focusable part is not the
+   * labelled element (a file zone's button beside its hidden input), so
+   * it can name itself with `aria-labelledby`. Optional for providers
+   * written before it existed.
+   */
+  labelId?: string;
   /** Space-separated ids of the hint and error, when shown. */
   describedBy: string | undefined;
   invalid: boolean;
@@ -75,6 +82,8 @@ export interface FieldControl {
   attributes: FieldControlProps;
   /** True when the control should draw its invalid state. */
   invalid: boolean;
+  /** The owning field's label id; undefined outside a `Field` or when another control owns it. */
+  labelId: string | undefined;
 }
 
 function isTrue(value: FieldControlInput["aria-invalid"]): boolean {
@@ -120,5 +129,6 @@ export function useFieldControl(props: FieldControlInput): FieldControl {
       disabled: props.disabled ?? (context?.disabled === true ? true : undefined),
     },
     invalid,
+    labelId: field?.labelId,
   };
 }
