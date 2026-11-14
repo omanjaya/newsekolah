@@ -1,8 +1,12 @@
 import { Home } from "lucide-react";
 import { describe, expect, it } from "vitest";
 
-import { navigation, type NavItem } from "./navigation";
-import { filterNavigationFixture } from "./navigation-access.fixture";
+import { filterNavigation, navigation, type NavItem } from "./navigation";
+import {
+  canOpenPathFixture,
+  filterNavigationFixture,
+  navAccessFixture,
+} from "./navigation-access.fixture";
 
 const items: NavItem[] = [
   { key: "public", labelKey: "nav.home", href: "/dashboard", icon: Home },
@@ -179,11 +183,11 @@ describe("navigation registry: per-role audiences", () => {
     // cannot single them out -- excludeRoles does (navigation.ts's
     // "journal" entry).
     expect(keys).not.toContain("journal");
-    // A librarian's profile kind is "staff" like any other staff account,
-    // so the deliberately duty-agnostic late-arrivals review queue
-    // (features/permits/components/late-arrivals-view.tsx) still reaches
-    // them -- not a bug this ticket changes.
-    expect(keys).toContain("late-arrivals");
+    // Only a student has a screen on /late-arrivals; staff reach the late
+    // queue through the inbox, so the entry is not offered to a librarian
+    // (the route still opens and forwards them there).
+    expect(keys).not.toContain("late-arrivals");
+    expect(canOpenPathFixture("/late-arrivals", can, "staff", ["librarian"])).toBe(true);
   });
 
   it("gives a student their own leave/exit self-service but not the staff master-data roster", () => {
@@ -232,7 +236,7 @@ describe("navigation registry: per-role audiences", () => {
     const keys = filterNavigationFixture(navigation, can, "teacher").map((item) => item.key);
     expect(keys).not.toContain("leave-requests");
     expect(keys).toContain("exit-permits");
-    expect(keys).toContain("late-arrivals");
+    expect(keys).not.toContain("late-arrivals");
     expect(keys).toContain("school-classes");
     expect(keys).toContain("academic-years");
   });
@@ -284,18 +288,15 @@ describe("navigation registry: per-role audiences", () => {
 
     // Sees everything the school runs: attendance, staff attendance,
     // discipline, reports, library, billing, visitors, supervision,
-    // academic structure, journals -- and the late-arrivals queue every
-    // account reaches regardless of permission.
+    // academic structure and journals.
     for (const key of [
       "schedule",
       "attendance",
-      "attendance-reports",
       "staff-attendance",
       "journal",
       "violations",
       "warning-letters",
       "analytics",
-      "late-arrivals",
       "school-classes",
       "school-calendar",
       "library-dashboard",
@@ -316,8 +317,12 @@ describe("navigation registry: per-role audiences", () => {
     // Never an operator/administrator: no settings, master data,
     // grade-editing (only the read-only "grading" entry itself, asserted
     // above), counseling, user management, workflow or permits-actor
-    // screen.
+    // screen. Attendance reports open with manage_attendance (the
+    // principal reads attendance on /reports), and the late-arrival
+    // check-in is a student's screen.
     for (const key of [
+      "attendance-reports",
+      "late-arrivals",
       "settings-roles",
       "school-users",
       "school-learning",
@@ -349,5 +354,84 @@ describe("navigation registry: per-role audiences", () => {
     ]) {
       expect(keys).not.toContain(key);
     }
+  });
+});
+
+/**
+ * `offeredTo` narrows the menus without narrowing the route: the entry
+ * leaves the sidebar, the tabs and the palette, while an old link or a
+ * notification still opens the page.
+ */
+describe("navigation registry: entries offered to part of their audience", () => {
+  const teacherCan = (permission: string) =>
+    ["view_academic_data", "view_attendance", "view_early_warning"].includes(permission);
+
+  function offered(
+    can: (permission: string) => boolean,
+    profileKind: "student" | "teacher" | "staff",
+    roles: string[],
+    duties: string[],
+  ): string[] {
+    const access = { ...navAccessFixture(can, profileKind, roles), duties };
+    return filterNavigation(navigation, access).map((item) => item.key);
+  }
+
+  it("offers early warning only to an overseer role or a counselor, leadership or homeroom duty", () => {
+    expect(offered(teacherCan, "teacher", ["teacher"], [])).not.toContain("analytics");
+    expect(offered(teacherCan, "teacher", ["teacher"], ["picket"])).not.toContain("analytics");
+    expect(offered(teacherCan, "teacher", ["teacher"], ["homeroom"])).toContain("analytics");
+    expect(offered(teacherCan, "teacher", ["teacher"], ["counselor"])).toContain("analytics");
+    expect(offered(teacherCan, "teacher", ["principal"], [])).toContain("analytics");
+    expect(offered(teacherCan, "staff", ["staff"], ["security"])).not.toContain("analytics");
+    // The page itself still opens and shows its own state.
+    expect(canOpenPathFixture("/analytics", teacherCan, "teacher", ["teacher"])).toBe(true);
+  });
+
+  it("keeps the teaching journal out of a gate duty's menus", () => {
+    expect(offered(teacherCan, "staff", ["staff"], ["security"])).not.toContain("journal");
+    expect(offered(teacherCan, "staff", ["staff"], [])).toContain("journal");
+    expect(offered(teacherCan, "teacher", ["teacher"], ["homeroom"])).toContain("journal");
+  });
+
+  it("offers the late-arrival check-in to students only", () => {
+    const studentCan = (permission: string) => permission === "submit_leave_requests";
+    expect(offered(studentCan, "student", ["student"], [])).toContain("late-arrivals");
+    expect(offered(teacherCan, "teacher", ["teacher"], ["picket"])).not.toContain("late-arrivals");
+    expect(canOpenPathFixture("/late-arrivals", teacherCan, "teacher")).toBe(true);
+  });
+
+  it("offers the library home to library staff, not to every catalogue reader", () => {
+    const reader = (permission: string) => permission === "view_library";
+    const librarian = (permission: string) =>
+      ["view_library", "manage_library_circulation"].includes(permission);
+    expect(offered(reader, "teacher", ["teacher"], [])).not.toContain("library-dashboard");
+    expect(offered(librarian, "staff", ["librarian"], [])).toContain("library-dashboard");
+    expect(canOpenPathFixture("/library", reader, "teacher")).toBe(true);
+  });
+
+  it("keeps the redirect-only library routes out of every menu while they still open", () => {
+    const listed = navigation.filter((item) => !item.routeOnly).map((item) => item.key);
+    expect(listed).not.toContain("library-loan-rules");
+    expect(listed).not.toContain("library-member-types");
+    const can = (permission: string) => permission === "manage_library_settings";
+    expect(canOpenPathFixture("/library/loan-rules", can, "staff")).toBe(true);
+    expect(canOpenPathFixture("/library/member-types", can, "staff")).toBe(true);
+  });
+
+  it("skips the duty rules for a caller that does not know the reader's duties", () => {
+    const keys = filterNavigationFixture(navigation, teacherCan, "teacher").map((item) => item.key);
+    expect(keys).toContain("analytics");
+  });
+});
+
+describe("navigation registry: icons", () => {
+  it("gives every listed library and settings entry a glyph of its own", () => {
+    const listed = navigation.filter(
+      (item) =>
+        !item.routeOnly &&
+        (item.group === "nav.library.label" || item.group === "nav.settings.label"),
+    );
+    const icons = listed.map((item) => item.icon);
+    expect(new Set(icons).size).toBe(icons.length);
   });
 });

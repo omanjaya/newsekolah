@@ -2,35 +2,53 @@ import { domainIcons } from "@newsekolah/ui";
 import {
   ArrowLeftRight,
   Barcode,
+  BookCopy,
   BookMarked,
-  ClipboardCheck,
-  Database,
-  DoorOpen,
-  FileBarChart,
+  FileChartPie,
+  Footprints,
+  Gavel,
+  Hourglass,
   IdCard,
+  Layers,
   LibraryBig,
   MonitorSmartphone,
+  ScanBarcode,
   SlidersHorizontal,
+  TabletSmartphone,
+  Tags,
   Upload,
-  Users,
 } from "lucide-react";
 
 import type { NavItem } from "./navigation";
+
+/** The library's working permissions: who has a library day to look at. */
+const LIBRARY_STAFF = [
+  "manage_library_circulation",
+  "manage_library_catalog",
+  "view_library_reports",
+];
 
 /**
  * Library module screens, split out of `navigation.ts` so that file stays
  * under the 400-line cap (docs/04-clean-code.md), mirroring
  * navigation-academic.ts. Spread into the `library` group in
- * `navigation.ts`.
+ * `navigation.ts`. Each entry has a glyph of its own, since the palette
+ * lists them side by side.
  */
 export const libraryNavItems: NavItem[] = [
   {
     key: "library-dashboard",
-    labelKey: "app.library.dashboard.navLabel",
+    // The page's own title, so the menu entry and the heading read alike;
+    // under the Perpustakaan heading the row says just "Dasbor".
+    labelKey: "app.library.dashboard.title",
+    groupLabelKey: "app.library.dashboard.navLabel",
     href: "/library",
     module: "library",
     icon: domainIcons.library,
     permission: "view_library",
+    // Every teacher can browse the catalogue (view_library); the day's
+    // circulation is offered to the people who run or oversee the library.
+    offeredTo: { anyPermission: LIBRARY_STAFF },
     group: "nav.library.label",
   },
   {
@@ -65,7 +83,7 @@ export const libraryNavItems: NavItem[] = [
     labelKey: "app.library.classLoans.navLabel",
     href: "/library/class-loans",
     module: "library",
-    icon: Users,
+    icon: BookCopy,
     permission: "manage_library_circulation",
     group: "nav.library.label",
   },
@@ -74,7 +92,7 @@ export const libraryNavItems: NavItem[] = [
     labelKey: "nav.library.items.stockOpname",
     href: "/library/stocktake",
     module: "library",
-    icon: ClipboardCheck,
+    icon: ScanBarcode,
     permission: "manage_library_catalog",
     group: "nav.library.label",
   },
@@ -83,7 +101,7 @@ export const libraryNavItems: NavItem[] = [
     labelKey: "app.library.masterData.navLabel",
     href: "/library/master-data",
     module: "library",
-    icon: Database,
+    icon: Tags,
     permission: "view_library",
     group: "nav.library.label",
   },
@@ -101,8 +119,12 @@ export const libraryNavItems: NavItem[] = [
     labelKey: "app.library.loanRules.navLabel",
     href: "/library/loan-rules",
     module: "library",
-    icon: SlidersHorizontal,
+    icon: Hourglass,
     permission: "manage_library_settings",
+    // Only redirects to its section of /library/settings now: the route
+    // stays for old links, but it is no destination of its own.
+    sidebarPlacement: "hidden",
+    routeOnly: true,
     group: "nav.library.label",
   },
   {
@@ -110,7 +132,7 @@ export const libraryNavItems: NavItem[] = [
     labelKey: "app.library.reports.navLabel",
     href: "/library/reports",
     module: "library",
-    icon: FileBarChart,
+    icon: FileChartPie,
     permission: "view_library_reports",
     group: "nav.library.label",
   },
@@ -137,8 +159,11 @@ export const libraryNavItems: NavItem[] = [
     labelKey: "app.library.memberTypes.navLabel",
     href: "/library/member-types",
     module: "library",
-    icon: IdCard,
+    icon: Layers,
     permission: "manage_library_settings",
+    // Redirects to its section of /library/settings, like loan rules.
+    sidebarPlacement: "hidden",
+    routeOnly: true,
     group: "nav.library.label",
   },
   {
@@ -146,7 +171,8 @@ export const libraryNavItems: NavItem[] = [
     labelKey: "app.library.violations.navLabel",
     href: "/library/violations",
     module: "library",
-    icon: domainIcons.violation,
+    // Not the discipline shield: a library violation is a fine or a sanction.
+    icon: Gavel,
     permission: "manage_library_circulation",
     group: "nav.library.label",
   },
@@ -164,7 +190,7 @@ export const libraryNavItems: NavItem[] = [
     labelKey: "app.library.visits.navLabel",
     href: "/library/visits",
     module: "library",
-    icon: DoorOpen,
+    icon: Footprints,
     permission: "manage_library_circulation",
     group: "nav.library.label",
   },
@@ -173,7 +199,7 @@ export const libraryNavItems: NavItem[] = [
     labelKey: "app.library.visitKiosk.navLabel",
     href: "/library/visit-kiosk",
     module: "library",
-    icon: MonitorSmartphone,
+    icon: TabletSmartphone,
     permission: "manage_library_circulation",
     group: "nav.library.label",
   },

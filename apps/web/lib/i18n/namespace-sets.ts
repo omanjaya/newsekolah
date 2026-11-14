@@ -141,11 +141,12 @@ const APP_BASE_NAMESPACES = [
  * provider on every page and label the library nav entries from the
  * library catalog, so those exact leaf keys ride along with `(app)` even
  * though the catalog itself stays scoped to `/library/*`. Derived from the
- * registry so a new library screen can't silently lose its nav label.
+ * registry so a new library screen can't silently lose its nav label, the
+ * shorter one under the group heading included.
  */
 const LIBRARY_NAV_LABEL_KEYS = libraryNavItems
-  .map((item) => item.labelKey)
-  .filter((labelKey) => labelKey.startsWith("app.library."));
+  .flatMap((item) => [item.labelKey, item.groupLabelKey])
+  .filter((labelKey): labelKey is string => labelKey?.startsWith("app.library.") ?? false);
 
 /**
  * The student profile's library tab (`/students/[studentId]`) reuses the

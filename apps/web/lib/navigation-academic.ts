@@ -1,4 +1,4 @@
-import { Building2, CalendarPlus, CalendarRange, FileSpreadsheet } from "lucide-react";
+import { CalendarCog, CalendarPlus, FileUp, Network } from "lucide-react";
 
 import type { NavItem } from "./navigation";
 import { NAV_GROUP } from "./navigation-groups";
@@ -13,7 +13,8 @@ export const academicNavItems: NavItem[] = [
     key: "academic-years",
     labelKey: "nav.schoolData.items.academicYear",
     href: "/academic/years",
-    icon: CalendarRange,
+    // Not the activity agenda's range: this is the year and its terms.
+    icon: CalendarCog,
     permission: "view_academic_data",
     // Same reasoning as "school-classes" in navigation.ts: view_academic_data
     // is also a student's own permission, but year/term setup is a
@@ -25,7 +26,7 @@ export const academicNavItems: NavItem[] = [
     key: "school-structure",
     labelKey: "app.academic.structure.title",
     href: "/school/structure",
-    icon: Building2,
+    icon: Network,
     permission: "manage_master_data",
     group: NAV_GROUP.masterData,
   },
@@ -33,7 +34,8 @@ export const academicNavItems: NavItem[] = [
     key: "academic-enrollment-import",
     labelKey: "nav.schoolData.items.enrollmentImport",
     href: "/academic/enrollment-import",
-    icon: FileSpreadsheet,
+    // Not the reports' spreadsheet: this one is uploaded.
+    icon: FileUp,
     permission: "manage_enrollments",
     group: NAV_GROUP.masterData,
   },
