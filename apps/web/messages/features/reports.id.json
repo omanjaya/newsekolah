@@ -1,14 +1,14 @@
 {
   "navLabel": "Pusat laporan",
-  "eyebrow": "Data Sekolah",
-  "title": "Pusat laporan",
+  "eyebrow": "Laporan",
+  "title": "Laporan",
   "description": "Unduh laporan sebagai berkas Excel. Hanya laporan yang boleh dijalankan akun ini yang ditampilkan.",
   "emptyTitle": "Tidak ada laporan yang bisa diunduh",
   "emptyBody": "Akun ini belum memiliki akses ke laporan apa pun. Hubungi admin sekolah bila akses ini diperlukan.",
   "download": "Unduh",
   "tabs": {
     "exports": "Unduhan",
-    "schedules": "Jadwal"
+    "schedules": "Jadwal kirim"
   },
   "schedules": {
     "description": "Laporan berulang yang dikirim otomatis lewat email sesuai jadwal yang dipilih.",
@@ -189,5 +189,7 @@
       "label": "Izin keluar tahunan",
       "description": "Rekap seluruh izin keluar siswa dalam satu tahun ajaran."
     }
-  }
+  },
+  "tabsLabel": "Bagian pusat laporan",
+  "close": "Tutup"
 }

@@ -3,7 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import type { ComponentType, ReactElement } from "react";
+import type { ComponentType, ReactElement, ReactNode } from "react";
 
 import { ForbiddenPage } from "../../../components/forbidden-page";
 import { ModuleUnavailablePage } from "../../../components/module-unavailable-page";
@@ -16,9 +16,13 @@ interface SectionViewProps {
   tabKey?: string;
 }
 
+interface SchoolViewProps extends SectionViewProps {
+  sectionNav?: ReactNode;
+}
+
 type ReportSectionKey = (typeof REPORT_SECTIONS)[number]["key"];
 
-const SchoolReports: ComponentType<SectionViewProps> = dynamic(() =>
+const SchoolReports: ComponentType<SchoolViewProps> = dynamic(() =>
   import("./reports-view").then((module) => module.ReportsView),
 );
 const LibraryReports: ComponentType<SectionViewProps> = dynamic(() =>
@@ -72,22 +76,30 @@ export function ReportsWorkspaceView(): ReactElement {
     );
   }
   const { View } = SECTION_VIEWS[selected.key];
-  const view = <View tabKey={selected.key === "school" ? "tab" : `${selected.key}Tab`} />;
-  if (sections.length <= 1) return view;
+  const tabKey = selected.key === "school" ? "tab" : `${selected.key}Tab`;
+  if (sections.length <= 1) return <View tabKey={tabKey} />;
+  // The section strip sits under the page title: the report centre takes
+  // it into its own page header; the library and visitor views still draw
+  // their own header, so for them it stays above (a handoff to those areas).
+  const strip = (
+    <TabsList variant="underline" aria-label={t("reports")}>
+      {sections.map((entry) => (
+        <TabsTrigger key={entry.key} value={entry.key}>
+          {t(SECTION_VIEWS[entry.key].label)}
+        </TabsTrigger>
+      ))}
+    </TabsList>
+  );
   return (
     <Tabs value={selected.key} onValueChange={setSection}>
-      <div className="px-4 pt-4 md:px-6">
-        <TabsList aria-label={t("reports")}>
-          {sections.map((entry) => (
-            <TabsTrigger key={entry.key} value={entry.key}>
-              {t(SECTION_VIEWS[entry.key].label)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </div>
+      {selected.key !== "school" && <div className="px-4 pt-4 md:px-6">{strip}</div>}
       {/* The section view is the panel of whichever section tab is active. */}
-      <TabsContent value={selected.key} className="pt-0">
-        {view}
+      <TabsContent value={selected.key}>
+        {selected.key === "school" ? (
+          <SchoolReports tabKey={tabKey} sectionNav={strip} />
+        ) : (
+          <View tabKey={tabKey} />
+        )}
       </TabsContent>
     </Tabs>
   );

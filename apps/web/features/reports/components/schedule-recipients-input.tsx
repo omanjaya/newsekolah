@@ -92,7 +92,7 @@ export function ScheduleRecipientsInput({
         </Button>
       </div>
       {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
+        <p role="alert" className="text-body-sm text-danger">
           {error}
         </p>
       )}

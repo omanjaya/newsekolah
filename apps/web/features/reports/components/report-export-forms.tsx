@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, useToast } from "@newsekolah/ui";
+import { Button, DatePicker, Field, SegmentedControl, Select, useToast } from "@newsekolah/ui";
 import { Download } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -96,8 +96,7 @@ export function ClassScopedExportForm({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("arguments.scopeType")}</span>
+        <Field label={t("arguments.scopeType")}>
           <Select
             options={[
               { value: "none", label: t("arguments.scopeTypeAll") },
@@ -111,10 +110,9 @@ export function ClassScopedExportForm({
             aria-label={t("arguments.scopeType")}
             className="w-40"
           />
-        </label>
+        </Field>
         {scopeType === "class" && (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("arguments.class")}</span>
+          <Field label={t("arguments.class")}>
             <Select
               options={(classes.data?.data ?? []).map((item) => ({
                 value: item.id,
@@ -127,11 +125,10 @@ export function ClassScopedExportForm({
               aria-label={t("arguments.class")}
               className="w-56"
             />
-          </label>
+          </Field>
         )}
         {scopeType === "gradeLevel" && (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("arguments.gradeLevel")}</span>
+          <Field label={t("arguments.gradeLevel")}>
             <Select
               options={(gradeLevels.data?.data ?? []).map((item) => ({
                 value: item.id,
@@ -144,7 +141,7 @@ export function ClassScopedExportForm({
               aria-label={t("arguments.gradeLevel")}
               className="w-56"
             />
-          </label>
+          </Field>
         )}
       </div>
       <div>
@@ -284,44 +281,23 @@ export function AttendanceDailyExportForm({ report }: { report: ReportDefinition
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("arguments.scope")}</span>
-          <div role="radiogroup" aria-label={t("arguments.scope")} className="flex gap-2">
-            <button
-              type="button"
-              role="radio"
-              aria-checked={scope === "class"}
-              onClick={() => {
-                setScope("class");
+        <Field label={t("arguments.scope")}>
+          {(control) => (
+            <SegmentedControl
+              aria-labelledby={control.labelId}
+              options={[
+                { value: "class", label: t("arguments.scopeClass") },
+                { value: "gradeLevel", label: t("arguments.scopeGradeLevel") },
+              ]}
+              value={scope}
+              onValueChange={(value) => {
+                setScope(value);
               }}
-              className={`flex min-h-9 items-center rounded-sm border px-3 text-[13px] font-medium ${
-                scope === "class"
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-border text-fg-muted"
-              }`}
-            >
-              {t("arguments.scopeClass")}
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={scope === "gradeLevel"}
-              onClick={() => {
-                setScope("gradeLevel");
-              }}
-              className={`flex min-h-9 items-center rounded-sm border px-3 text-[13px] font-medium ${
-                scope === "gradeLevel"
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-border text-fg-muted"
-              }`}
-            >
-              {t("arguments.scopeGradeLevel")}
-            </button>
-          </div>
-        </div>
+            />
+          )}
+        </Field>
         {scope === "class" ? (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("arguments.class")}</span>
+          <Field label={t("arguments.class")}>
             <Select
               options={(classes.data?.data ?? []).map((item) => ({
                 value: item.id,
@@ -334,10 +310,9 @@ export function AttendanceDailyExportForm({ report }: { report: ReportDefinition
               aria-label={t("arguments.class")}
               className="w-56"
             />
-          </label>
+          </Field>
         ) : (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("arguments.gradeLevel")}</span>
+          <Field label={t("arguments.gradeLevel")}>
             <Select
               options={(gradeLevels.data?.data ?? []).map((item) => ({
                 value: item.id,
@@ -350,19 +325,11 @@ export function AttendanceDailyExportForm({ report }: { report: ReportDefinition
               aria-label={t("arguments.gradeLevel")}
               className="w-56"
             />
-          </label>
+          </Field>
         )}
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("arguments.date")}</span>
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => {
-              setDate(e.target.value);
-            }}
-            aria-label={t("arguments.date")}
-          />
-        </label>
+        <Field label={t("arguments.date")}>
+          <DatePicker value={date === "" ? null : date} onChange={setDate} className="w-48" />
+        </Field>
       </div>
       <div>
         <Button

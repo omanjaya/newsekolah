@@ -188,7 +188,7 @@ export function SchedulesView(): ReactElement {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[13px] text-fg-muted">{t("description")}</p>
+        <p className="text-body-sm text-fg-muted">{t("description")}</p>
         <Button
           size="sm"
           icon={<Plus />}
