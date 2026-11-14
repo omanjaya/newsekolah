@@ -16,17 +16,41 @@ describe("Avatar", () => {
     await expectNoAxeViolations(container);
   });
 
-  it("maps the legacy names and pixel sizes, with one initial at 24px", () => {
+  it("maps the legacy names and pixel sizes", () => {
     render(
       <>
         <Avatar name="Budi Santoso" size="sm" />
         <Avatar name="Rina Wulandari" size={64} />
       </>,
     );
-    const small = screen.getByRole("img", { name: "Budi Santoso" });
-    expect(small).toHaveClass("size-6");
-    expect(small).toHaveTextContent(/^B$/);
+    expect(screen.getByRole("img", { name: "Budi Santoso" })).toHaveClass("size-6");
     expect(screen.getByRole("img", { name: "Rina Wulandari" })).toHaveClass("size-16");
+  });
+
+  // One person reads the same at every size, and two people who share a
+  // first initial stay apart even in the smallest chip.
+  it("shows the same first and last initials at every size, 24px included", () => {
+    for (const size of [24, 32, 40, 44, 48, 64] as const) {
+      const { unmount } = render(
+        <>
+          <Avatar name="Budi Santoso" size={size} />
+          <Avatar name="Bayu Adi Pratama" size={size} />
+          <Avatar name="Admin" size={size} />
+        </>,
+      );
+      expect(screen.getByRole("img", { name: "Budi Santoso" })).toHaveTextContent(/^BS$/);
+      expect(screen.getByRole("img", { name: "Bayu Adi Pratama" })).toHaveTextContent(/^BP$/);
+      expect(screen.getByRole("img", { name: "Admin" })).toHaveTextContent(/^A$/);
+      unmount();
+    }
+  });
+
+  // The weight comes after the role, so it survives tailwind-merge.
+  it("sets the 24px initials lighter and tighter so a wide pair clears the edge", () => {
+    render(<Avatar name="Made Wirawan" size={24} />);
+    const avatar = screen.getByRole("img", { name: "Made Wirawan" });
+    expect(avatar).toHaveClass("text-caption", "font-semibold", "tracking-tighter");
+    expect(avatar).toHaveTextContent(/^MW$/);
   });
 
   it("pins a tone and can be hidden when the name is written beside it", () => {

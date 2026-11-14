@@ -13,9 +13,11 @@ import {
 import { useUiLabels } from "./ui-labels.js";
 
 // The overlap grows with the avatar, about a fifth of its width: enough to
-// read as one stack, little enough that the covered avatar's initials stay legible.
+// read as one stack, little enough that the covered avatar's initials stay
+// legible. At 24px two initials fill most of the circle, so the stack
+// overlaps by 2px and lets the 2px surface ring do the separating.
 const OVERLAP_CLASS: Record<AvatarPixelSize, string> = {
-  24: "-space-x-1",
+  24: "-space-x-0.5",
   32: "-space-x-1.5",
   40: "-space-x-2",
   44: "-space-x-2",
