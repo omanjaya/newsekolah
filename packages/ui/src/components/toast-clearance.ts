@@ -11,8 +11,12 @@ import { useEffect, useState } from "react";
  * height. The Toaster reads both.
  */
 
-/** The toast's width, its distance from the right and bottom edges (Toaster). */
-export const TOAST_WIDTH_PX = 384;
+/**
+ * The toast's width from 600px up (sonner spans the screen below that),
+ * and its distance from the right and bottom edges (Toaster). 420 keeps a
+ * title, a one-line description and the close button on their own lines.
+ */
+export const TOAST_WIDTH_PX = 420;
 export const TOAST_EDGE_PX = 24;
 /** Root variable: toasts keep their bottom edge at least this far from the viewport's. */
 export const TOAST_CLEARANCE_VAR = "--overlay-toast-clearance";

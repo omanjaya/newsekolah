@@ -74,11 +74,12 @@ function ToastIcon({ tone }: { tone: "success" | "danger" | "info" | "warning" }
  * the title on the label role and the description on body-sm. At the top
  * of a phone screen (clear of the tab bar and the save bar, under the
  * thumb's reach of nothing) and at the bottom right on a larger screen,
- * lifted above a `StickySaveBar` when one is showing, and above the
- * action row of an open drawer or sheet that reaches that corner
- * (toast-clearance.ts). In over 200ms, out
- * over 120ms (styles.css). At most three at once, per
- * docs/05-shared-components.md.
+ * 420 wide, lifted above a `StickySaveBar` when one is showing, and above
+ * the action row of an open drawer or sheet that reaches that corner
+ * (toast-clearance.ts). A toast with both a description and an action
+ * puts the action under the text (styles.css), so neither squeezes the
+ * other. In over 200ms, out over 120ms (styles.css). At most three at
+ * once, per docs/05-shared-components.md.
  */
 export function Toaster({ toastOptions, style, ...props }: ToasterProps) {
   const labels = useUiLabels();
@@ -86,7 +87,7 @@ export function Toaster({ toastOptions, style, ...props }: ToasterProps) {
   return (
     <>
       <SonnerToaster
-        // Wider than sonner's 356px, so a title and an action fit one line.
+        // Wider than sonner's 356px, so a title and its description fit one line each.
         style={{ "--width": `${TOAST_WIDTH_PX}px`, ...style } as CSSProperties}
         position={phone ? "top-center" : "bottom-right"}
         visibleToasts={3}
@@ -117,7 +118,8 @@ export function Toaster({ toastOptions, style, ...props }: ToasterProps) {
             icon: "flex size-8 shrink-0 items-center justify-center rounded-full [&>svg]:size-5",
             content: "flex min-w-0 flex-1 flex-col",
             title: "text-label text-fg",
-            description: "text-body-sm text-fg-muted",
+            // A second line, when there is one, never holds a lone word.
+            description: "text-body-sm text-pretty text-fg-muted",
             actionButton: cn(
               "relative -my-1 inline-flex h-8 shrink-0 items-center rounded-full px-3 text-label text-accent",
               "transition-colors hover:bg-state-hover active:bg-state-pressed",
