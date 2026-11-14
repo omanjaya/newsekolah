@@ -31,6 +31,16 @@ describe("RiskLevelSummary", () => {
     expect(onSelect).toHaveBeenCalledWith("");
   });
 
+  it("says which level filters the list with aria-pressed", () => {
+    render(<RiskLevelSummary rows={rows} selected="watch" onSelect={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /watch/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /at_risk/ })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByRole("button", { name: /none/ })).toHaveAttribute("aria-pressed", "false");
+  });
+
   it("renders nothing for an empty roster", () => {
     const { container } = render(<RiskLevelSummary rows={[]} selected="" onSelect={vi.fn()} />);
     expect(container).toBeEmptyDOMElement();
