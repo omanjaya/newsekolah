@@ -1,16 +1,29 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import type { Locale } from "@newsekolah/i18n";
-import { formatDate } from "@newsekolah/i18n";
-import { Alert, Badge, Button, Card, Dialog, DialogContent, Skeleton, cn } from "@newsekolah/ui";
-import { CheckCircle2, Circle, NotebookPen } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import {
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CountBadge,
+  Dialog,
+  DialogContent,
+  EmptyState,
+  List,
+  ListRow,
+  SkeletonList,
+  cn,
+} from "@newsekolah/ui";
+import { CheckCircle2, PenLine } from "lucide-react";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
-import { bentoCells } from "../../../lib/layout/bento";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useSimulation } from "../../../lib/simulation/clock";
 import { todayInZone } from "../../../lib/tenant-date";
@@ -133,124 +146,129 @@ export function useJournalTodayData(): {
 }
 
 /**
- * "What did I teach recently, and did I write it up" (docs/07-ui-ux.md's
- * Hijau Segar bento language). Today's lessons needing attention render as
- * the same bento card grid as the attendance day list
- * (`AttendanceSessionCard`): one card per lesson, a primary "Tulis jurnal"
- * for an unfilled one, a quieter "Lihat jurnal" once it is saved. Earlier
- * days in the window stay a compact history list below -- context, not
- * something still to act on. Renders nothing (not even a skeleton) once
- * the schedule/journal data resolves to no recent lesson at all, rather
- * than an empty panel above an already-adequate history table.
+ * "Perlu diisi": the lessons of the last week of school days that still
+ * have no journal, newest first, each with one "Tulis" action that opens
+ * the form already filled with its class, subject and date. Written
+ * lessons are not repeated here; they are the history table beside it.
+ * The one home of the journal backlog (the attendance screens only show a
+ * session's own journal state). Renders nothing for a reader without a
+ * timetable, and a calm "all written" line once nothing is missing.
  */
-export function JournalTodayPanel(): ReactElement | null {
+export function JournalTodayPanel({ className }: { className?: string }): ReactElement | null {
   const t = useTranslations("app.journal.recent");
   const tApp = useTranslations("app");
-  const locale = useLocale() as Locale;
+  const format = useFormatter();
   const { me } = useSession();
   const data = useJournalTodayData();
 
-  const [target, setTarget] = useState<PrefillTarget | Journal | null>(null);
+  const [target, setTarget] = useState<PrefillTarget | null>(null);
 
   if (!data.loading && data.isError) {
     return (
-      <Alert variant="warning" title={t("loadError")}>
-        <Button size="sm" variant="secondary" onClick={data.refetch}>
-          {tApp("offlinePage.retry")}
-        </Button>
-      </Alert>
+      <Alert
+        variant="danger"
+        title={t("loadError")}
+        className={className}
+        action={
+          <Button size="sm" variant="secondary" onClick={data.refetch}>
+            {tApp("offlinePage.retry")}
+          </Button>
+        }
+      />
     );
   }
 
   if (data.loading) {
-    return <Skeleton className="h-24 w-full" aria-busy="true" />;
+    return (
+      <Card className={className}>
+        <SkeletonList rows={3} leading={false} />
+      </Card>
+    );
   }
 
   if (data.groups.length === 0) return null;
 
-  const todayGroup = data.groups.find((group) => group.date === data.today);
-  const historyGroups = data.groups.filter((group) => group.date !== data.today);
+  // Newest first, so today's and yesterday's lessons lead the list.
+  const missing = [...data.groups]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .flatMap((group) =>
+      group.lessons
+        .filter((lesson) => !lesson.filled)
+        .map((lesson) => ({ ...lesson, date: group.date })),
+    );
 
   function dayLabel(date: string): string {
+    if (date === data.today) return t("todayLabel");
     if (date === data.yesterday) return t("yesterdayLabel");
-    return formatDate(new Date(`${date}T00:00:00`), { locale, timeZone: me?.tenant.timezone });
-  }
-
-  function open(classId: string, subjectId: string, date: string) {
-    const existing = data.journalByKey.get(journalEntryKey(classId, subjectId, date));
-    setTarget(existing ?? { classId, subjectId, date });
+    return format.dateTime(new Date(`${date}T12:00:00Z`), {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      timeZone: me?.tenant.timezone,
+    });
   }
 
   return (
-    <section className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-[14px] font-medium text-fg">{t("title")}</h2>
-        <p className="text-[13px] text-fg-muted">{t("subtitle")}</p>
-      </div>
-
-      {todayGroup && (
-        <div className="flex flex-col gap-2">
-          <p className="text-[12px] font-medium text-fg-muted">{t("todayLabel")}</p>
-          <TodayLessonCards
-            group={todayGroup}
-            classMap={data.classMap}
-            subjectMap={data.subjectMap}
-            onOpen={open}
+    <Card className={cn("flex min-h-0 flex-col", className)} data-testid="journal-backlog">
+      <CardHeader>
+        <CardTitle as="h2" className="flex items-center gap-2">
+          {t("title")}
+          <CountBadge count={missing.length} tone="accent" />
+        </CardTitle>
+        <CardDescription>{missing.length > 0 ? t("subtitle") : t("allWritten")}</CardDescription>
+      </CardHeader>
+      {missing.length > 0 ? (
+        <div className="min-h-0 overflow-y-auto">
+          <List>
+            {missing.map((lesson) => {
+              const key = journalEntryKey(lesson.classId, lesson.subjectId, lesson.date);
+              const title = [
+                data.subjectMap.get(lesson.subjectId)?.name,
+                data.classMap.get(lesson.classId)?.name,
+              ]
+                .filter(Boolean)
+                .join(" · ");
+              return (
+                <ListRow
+                  key={key}
+                  data-testid={`journal-backlog-${key}`}
+                  leading={
+                    <span className="w-20 shrink-0 text-caption whitespace-nowrap text-fg-muted">
+                      {dayLabel(lesson.date)}
+                    </span>
+                  }
+                  title={title}
+                  action={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={<PenLine />}
+                      aria-label={t("writeFor", { lesson: title })}
+                      onClick={() => {
+                        setTarget({
+                          classId: lesson.classId,
+                          subjectId: lesson.subjectId,
+                          date: lesson.date,
+                        });
+                      }}
+                    >
+                      {t("writePrimary")}
+                    </Button>
+                  }
+                />
+              );
+            })}
+          </List>
+        </div>
+      ) : (
+        <CardContent className="pt-0">
+          <EmptyState
+            variant="compact"
+            tone="success"
+            icon={<CheckCircle2 aria-hidden="true" />}
+            title={t("allWrittenTitle")}
           />
-        </div>
-      )}
-
-      {historyGroups.length > 0 && (
-        <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
-          {historyGroups.map((group) => (
-            <div key={group.date} className="flex flex-col gap-1.5">
-              <p className="text-[12px] font-medium text-fg-muted">{dayLabel(group.date)}</p>
-              <ul className="flex flex-col divide-y divide-border rounded-sm border border-border">
-                {group.lessons.map((lesson) => {
-                  const className = data.classMap.get(lesson.classId)?.name ?? "";
-                  const subjectName = data.subjectMap.get(lesson.subjectId)?.name ?? "";
-                  const key = journalEntryKey(lesson.classId, lesson.subjectId, group.date);
-                  return (
-                    <li key={key}>
-                      <button
-                        type="button"
-                        className="flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-bg"
-                        onClick={() => {
-                          open(lesson.classId, lesson.subjectId, group.date);
-                        }}
-                      >
-                        <span className="flex min-w-0 flex-1 items-center gap-2">
-                          {lesson.filled ? (
-                            <CheckCircle2
-                              className="size-4 shrink-0 text-status-present"
-                              aria-hidden="true"
-                            />
-                          ) : (
-                            <Circle className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
-                          )}
-                          <span className="flex min-w-0 flex-col">
-                            <span className="truncate text-[13px] font-medium text-fg">
-                              {className}
-                            </span>
-                            <span className="truncate text-[12px] text-fg-muted">
-                              {subjectName}
-                            </span>
-                          </span>
-                        </span>
-                        <Badge
-                          variant={lesson.filled ? "accent" : "neutral"}
-                          className={cn("shrink-0", !lesson.filled && "text-fg-muted")}
-                        >
-                          {lesson.filled ? t("filled") : t("unfilled")}
-                        </Badge>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
-        </div>
+        </CardContent>
       )}
 
       <Dialog
@@ -259,122 +277,19 @@ export function JournalTodayPanel(): ReactElement | null {
           if (!open) setTarget(null);
         }}
       >
-        <DialogContent title={target && "id" in target ? t("editAction") : t("fillAction")}>
-          {target !== null &&
-            ("id" in target ? (
-              <JournalForm
-                initial={target}
-                onDone={() => {
-                  setTarget(null);
-                }}
-              />
-            ) : (
-              <JournalForm
-                prefillClassId={target.classId}
-                prefillSubjectId={target.subjectId}
-                prefillDate={target.date}
-                onDone={() => {
-                  setTarget(null);
-                }}
-              />
-            ))}
+        <DialogContent title={t("fillAction")}>
+          {target !== null && (
+            <JournalForm
+              prefillClassId={target.classId}
+              prefillSubjectId={target.subjectId}
+              prefillDate={target.date}
+              onDone={() => {
+                setTarget(null);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
-    </section>
-  );
-}
-
-/**
- * Today's lessons as the shared bento grid (`bentoCells`, docs/07-ui-ux.md):
- * one card per lesson, equal heights, the odd one out spanning the full
- * row -- same layout rule as the attendance day list.
- */
-function TodayLessonCards({
-  group,
-  classMap,
-  subjectMap,
-  onOpen,
-}: {
-  group: LessonDayGroup;
-  classMap: Map<string, ClassRef>;
-  subjectMap: Map<string, SubjectRef>;
-  onOpen: (classId: string, subjectId: string, date: string) => void;
-}): ReactElement {
-  const cells = bentoCells(
-    group.lessons.map((lesson) => ({
-      key: journalEntryKey(lesson.classId, lesson.subjectId, group.date),
-      node: (
-        <TodayLessonCard
-          lesson={lesson}
-          className={classMap.get(lesson.classId)?.name ?? ""}
-          subjectName={subjectMap.get(lesson.subjectId)?.name ?? ""}
-          onOpen={() => {
-            onOpen(lesson.classId, lesson.subjectId, group.date);
-          }}
-        />
-      ),
-    })),
-  );
-
-  return (
-    <div className="grid gap-4 lg:grid-cols-2" data-testid="journal-today-cards">
-      {cells.map((cell) => (
-        <div
-          key={cell.key}
-          data-testid={`journal-today-cell-${cell.key}`}
-          className={cn("flex h-full flex-col", cell.span === "full" && "lg:col-span-2")}
-        >
-          <div className="flex-1">{cell.node}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function TodayLessonCard({
-  lesson,
-  className,
-  subjectName,
-  onOpen,
-}: {
-  lesson: LessonDayGroup["lessons"][number];
-  className: string;
-  subjectName: string;
-  onOpen: () => void;
-}): ReactElement {
-  const t = useTranslations("app.journal.recent");
-  return (
-    <Card
-      className="flex h-full flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between"
-      data-testid={`journal-today-card-${lesson.scheduleId}`}
-    >
-      <div className="flex min-w-0 flex-1 items-start gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-category-green-soft text-category-green-soft-fg">
-          <NotebookPen className="size-5" aria-hidden="true" />
-        </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="truncate text-[15px] font-medium text-fg">
-            {subjectName} <span className="text-fg-muted">&middot;</span> {className}
-          </p>
-          <Badge
-            variant={lesson.filled ? "accent" : "neutral"}
-            className={cn(lesson.filled ? "" : "text-fg-muted", "w-fit")}
-          >
-            {lesson.filled ? t("filled") : t("unfilled")}
-          </Badge>
-        </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-2 self-end md:self-auto">
-        {lesson.filled ? (
-          <Button size="sm" variant="secondary" onClick={onOpen}>
-            {t("editAction")}
-          </Button>
-        ) : (
-          <Button size="sm" onClick={onOpen}>
-            {t("writePrimary")}
-          </Button>
-        )}
-      </div>
     </Card>
   );
 }

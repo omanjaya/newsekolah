@@ -19,9 +19,9 @@
     "to": "Sampai",
     "invalidRange": "Tanggal mulai harus sebelum tanggal akhir."
   },
-  "exportXlsx": "Unduh Excel/PDF",
-  "exportReportTitle": "Jurnal Mengajar",
-  "exportDocx": "Unduh Word",
+  "exportXlsx": "Excel atau PDF",
+  "exportReportTitle": "Jurnal mengajar",
+  "exportDocx": "Word",
   "emptyTitle": "Belum ada jurnal",
   "emptyBody": "Catat topik dan kegiatan setiap kali selesai mengajar.",
   "unknown": "-",
@@ -56,20 +56,31 @@
     "draftDismiss": "Abaikan"
   },
   "recent": {
-    "title": "Pelajaran terakhir",
-    "subtitle": "Ketuk pelajaran untuk mengisi jurnal dalam hitungan detik",
+    "title": "Perlu diisi",
+    "subtitle": "Pelajaran seminggu terakhir yang belum berjurnal.",
     "filled": "Sudah diisi",
     "unfilled": "Belum diisi",
-    "fillAction": "Isi jurnal",
+    "fillAction": "Tulis jurnal",
     "editAction": "Lihat jurnal",
-    "writePrimary": "Tulis jurnal",
+    "writePrimary": "Tulis",
     "loadError": "Jadwal gagal dimuat.",
     "todayLabel": "Hari ini",
-    "yesterdayLabel": "Kemarin"
+    "yesterdayLabel": "Kemarin",
+    "allWritten": "Semua pelajaran seminggu terakhir sudah berjurnal.",
+    "allWrittenTitle": "Tidak ada yang tertunda",
+    "writeFor": "Tulis jurnal {lesson}"
   },
-  "tiles": {
-    "filledWeek": "Jurnal minggu ini",
-    "missingToday": "Sesi tanpa jurnal hari ini"
-  },
-  "loadError": "Jurnal gagal dimuat."
+  "loadError": "Jurnal gagal dimuat.",
+  "download": "Unduh",
+  "weekSummary": "{count, plural, =0 {Belum ada jurnal minggu ini} other {# jurnal ditulis minggu ini}}",
+  "exportColumns": {
+    "date": "Tanggal",
+    "class": "Kelas",
+    "subject": "Mata pelajaran",
+    "teacher": "Guru",
+    "author": "Ditulis oleh",
+    "topic": "Topik",
+    "activities": "Kegiatan",
+    "reflection": "Refleksi"
+  }
 }
