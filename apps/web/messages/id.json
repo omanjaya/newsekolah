@@ -1109,7 +1109,7 @@
     },
     "homeroom": {
       "eyebrow": "Akademik",
-      "title": "Wali Kelas",
+      "title": "Wali kelas",
       "titleWithClass": "Kelas binaan {className}",
       "dateLabel": "Tanggal",
       "searchPlaceholder": "Cari nama atau NIS",
@@ -1126,7 +1126,7 @@
       "noMatchTitle": "Tidak ada siswa yang cocok",
       "noMatchBody": "Ubah kata kunci pencarian atau filter status.",
       "statTotal": "Total siswa",
-      "statAbsent": "Alpha",
+      "statAbsent": "Alpa",
       "statIncomplete": "Belum lengkap",
       "statPendingLeave": "Izin menunggu",
       "attentionTitle": "Perlu perhatian hari ini",
@@ -1169,7 +1169,19 @@
       "exitPermitsTitle": "Izin keluar menunggu",
       "exitPermitsEmpty": "Tidak ada izin keluar yang menunggu.",
       "unknownStudent": "Siswa",
-      "pointsBadge": "{points} poin"
+      "pointsBadge": "{points} poin",
+      "tabsLabel": "Bagian wali kelas",
+      "prevDay": "Hari sebelumnya",
+      "nextDay": "Hari berikutnya",
+      "today": "Hari ini",
+      "statsLabel": "Ringkasan kelas",
+      "attentionCount": "{count, plural, other {# siswa perlu perhatian}}",
+      "attentionNoneTitle": "Semua siswa tercatat",
+      "attentionBreakdown": "{absent} alpa · {incomplete} presensi belum lengkap",
+      "attentionOpen": "Lihat di presensi kelas",
+      "attentionListTitle": "Perlu dihubungi",
+      "noHomeroomAdminBody": "Halaman ini menampilkan rekap harian kelas binaan. Wali kelas diatur di penugasan.",
+      "openAssignments": "Buka penugasan"
     },
     "substitutions": {
       "eyebrow": "Akademik",

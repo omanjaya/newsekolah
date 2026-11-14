@@ -1110,7 +1110,7 @@
     "homeroom": {
       "eyebrow": "Academic",
       "title": "Homeroom",
-      "titleWithClass": "Homeroom {className}",
+      "titleWithClass": "Homeroom class {className}",
       "dateLabel": "Date",
       "searchPlaceholder": "Search name or NIS",
       "statusFilterLabel": "Status",
@@ -1169,7 +1169,19 @@
       "exitPermitsTitle": "Exit permits awaiting approval",
       "exitPermitsEmpty": "No exit permits are waiting.",
       "unknownStudent": "Student",
-      "pointsBadge": "{points} points"
+      "pointsBadge": "{points} points",
+      "tabsLabel": "Homeroom sections",
+      "prevDay": "Previous day",
+      "nextDay": "Next day",
+      "today": "Today",
+      "statsLabel": "Class summary",
+      "attentionCount": "{count, plural, one {# student needs attention} other {# students need attention}}",
+      "attentionNoneTitle": "Every student is accounted for",
+      "attentionBreakdown": "{absent} absent · {incomplete} with attendance still incomplete",
+      "attentionOpen": "Open in class attendance",
+      "attentionListTitle": "To contact",
+      "noHomeroomAdminBody": "This page shows the daily summary of a homeroom class. Homeroom teachers are set in the duty assignments.",
+      "openAssignments": "Open assignments"
     },
     "substitutions": {
       "eyebrow": "Academic",
