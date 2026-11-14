@@ -77,13 +77,12 @@ export function ConfirmDialog({
         footer={
           <>
             <DialogClose asChild>
-              <Button variant="secondary" size="sm" disabled={confirming}>
+              <Button variant="secondary" disabled={confirming}>
                 {cancelLabel ?? labels.confirmDialogCancel}
               </Button>
             </DialogClose>
             <Button
               variant={danger ? "danger" : "primary"}
-              size="sm"
               loading={confirming}
               onClick={() => void onConfirm()}
             >

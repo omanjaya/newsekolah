@@ -136,19 +136,22 @@ describe("Button", () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  it("gives a touch screen a 44px minimum at every box size, whatever the window width", () => {
+  it("shares the fields' heights, 32 and 36, and grows to 44 wherever they do", () => {
     render(
       <>
         <Button size="sm">Kecil</Button>
         <Button>Sedang</Button>
       </>,
     );
+    // FIELD_HEIGHT: 44px unless the pointer is fine on a screen from md up.
     expect(screen.getByRole("button", { name: "Kecil" })).toHaveClass(
       "h-8",
+      "max-md:min-h-11",
       "pointer-coarse:min-h-11",
     );
     expect(screen.getByRole("button", { name: "Sedang" })).toHaveClass(
-      "h-10",
+      "h-9",
+      "max-md:min-h-11",
       "pointer-coarse:min-h-11",
     );
     expect(screen.getByRole("button", { name: "Kecil" }).className).not.toMatch(/\bmd:h-/);
@@ -158,7 +161,12 @@ describe("Button", () => {
     render(<Button className="h-16">Pindai</Button>);
     const button = screen.getByRole("button", { name: "Pindai" });
     expect(button).toHaveClass("h-16");
-    expect(button).not.toHaveClass("h-10");
+    expect(button).not.toHaveClass("h-9");
+  });
+
+  it("marks itself so a dialog's action row can hold it to the fields' height", () => {
+    render(<Button size="sm">Batal</Button>);
+    expect(screen.getByRole("button", { name: "Batal" })).toHaveAttribute("data-slot", "button");
   });
 
   it("has a large size for the one main action on a phone screen", () => {

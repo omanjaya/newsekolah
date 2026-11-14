@@ -69,11 +69,9 @@ function BillDrawer() {
         footer={
           <>
             <SheetClose asChild>
-              <Button variant="secondary" size="sm">
-                Tutup
-              </Button>
+              <Button variant="secondary">Tutup</Button>
             </SheetClose>
-            <Button size="sm">Catat pembayaran</Button>
+            <Button>Catat pembayaran</Button>
           </>
         }
       >
@@ -119,13 +117,9 @@ function NoteSheet() {
           </div>
           <SheetFooter>
             <SheetClose asChild>
-              <Button variant="secondary" size="sm">
-                Batal
-              </Button>
+              <Button variant="secondary">Batal</Button>
             </SheetClose>
-            <Button type="submit" size="sm">
-              Simpan
-            </Button>
+            <Button type="submit">Simpan</Button>
           </SheetFooter>
         </form>
       </SheetContent>

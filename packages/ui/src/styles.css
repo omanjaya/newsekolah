@@ -576,3 +576,23 @@
     }
   }
 }
+
+/* ========================================================================
+ * Wave 2 review fixes, stream 2: overlays, navigation and feedback.
+ * Owned by Dialog, Sheet, Tooltip and Toast.
+ * ===================================================================== */
+
+/*
+ * The action row of a Dialog or Sheet (the `footer` prop's row,
+ * `DialogFooter`, a form's lifted trailing row): its buttons are never
+ * shorter than the 36px fields above them, whatever size a caller gave
+ * them, so the primary action is never the smallest control in the
+ * dialog. Component layer, so Button's own 44px touch minimum (a
+ * utility) still wins on a phone.
+ */
+@layer components {
+  :is([data-overlay-footer], .dialog-body > :is(form, div) > .border-t.justify-end:last-child)
+    [data-slot="button"] {
+    min-height: 2.25rem;
+  }
+}

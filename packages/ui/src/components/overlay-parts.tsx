@@ -167,7 +167,11 @@ export function OverlayBody({
 const FOOTER_LAYOUT =
   "flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-transparent px-(--dialog-px) transition-colors max-sm:*:flex-1";
 
-/** The `footer` prop's row, below the scrolling body. */
+/**
+ * The `footer` prop's row, below the scrolling body. Its buttons are `md`,
+ * the fields' height; one passed as `sm` is held to that height anyway
+ * (styles.css), so the primary action is never the smallest control.
+ */
 export function OverlayFooter({ children }: { children: ReactNode }): ReactElement {
   return (
     <div

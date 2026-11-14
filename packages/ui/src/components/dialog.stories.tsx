@@ -59,6 +59,7 @@ function LegacyForm() {
       <Field label="Alamat">
         <Textarea rows={3} />
       </Field>
+      {/* Some existing rows pass size="sm"; the action row holds them to md's height. */}
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         <DialogClose asChild>
           <Button variant="secondary" size="sm">
@@ -103,11 +104,9 @@ function FooterPropDialog() {
         footer={
           <>
             <DialogClose asChild>
-              <Button variant="secondary" size="sm">
-                Batal
-              </Button>
+              <Button variant="secondary">Batal</Button>
             </DialogClose>
-            <Button size="sm">Terbitkan</Button>
+            <Button>Terbitkan</Button>
           </>
         }
       >
@@ -151,13 +150,9 @@ function DialogFooterInForm() {
           </Field>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="secondary" size="sm">
-                Batal
-              </Button>
+              <Button variant="secondary">Batal</Button>
             </DialogClose>
-            <Button type="submit" size="sm">
-              Simpan catatan
-            </Button>
+            <Button type="submit">Simpan catatan</Button>
           </DialogFooter>
         </form>
       </DialogContent>

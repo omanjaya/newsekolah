@@ -10,6 +10,9 @@ import {
 
 import { cn } from "../utils/cn.js";
 
+/** 44px wherever a field is 44px: a coarse pointer, or a screen narrower than md. */
+const TOUCH_MIN_HEIGHT = "max-md:min-h-11 pointer-coarse:min-h-11";
+
 // Radius 14 (controls, docs/07-ui-ux.md's "Hijau Segar" scale; not the 999
 // pill radius, which stays for pills/avatars) so buttons read as the same
 // soft clickable-surface language as inputs, cards, and dialogs.
@@ -50,18 +53,25 @@ const buttonVariants = cva(
           "relative rounded-xs text-accent underline-offset-4 transition-colors hover:underline active:text-accent-strong " +
           "pointer-coarse:after:absolute pointer-coarse:after:-inset-x-2 pointer-coarse:after:-inset-y-3.5",
       },
+      // The fields' scale (field-styles.ts FIELD_HEIGHT), so a button and
+      // the field beside it are one height: 32 and 36 with a mouse on a
+      // screen from md up, and both grow to 44 together wherever fields
+      // do, on a touch screen at any width (a tablet or a touch laptop is
+      // as imprecise as a phone) and on any screen narrower than md. The
+      // growth is a minimum, so a caller's own taller height still wins.
       size: {
-        // Touch screens get at least 44px whatever the window width (a
-        // tablet or a touch laptop is as imprecise as a phone). It is a
-        // minimum, so a caller's own taller height still wins.
-        sm: "h-8 px-3 pointer-coarse:min-h-11",
-        md: "h-10 px-4 pointer-coarse:min-h-11",
+        sm: `h-8 px-3 ${TOUCH_MIN_HEIGHT}`,
+        md: `h-9 px-4 ${TOUCH_MIN_HEIGHT}`,
         lg: "h-12 px-5 text-body font-semibold [&>svg]:size-5",
       },
     },
     // A link is as tall as its text and sits on the text's baseline.
     compoundVariants: [
-      { variant: "link", size: ["sm", "md", "lg"], class: "h-auto px-0 pointer-coarse:min-h-0" },
+      {
+        variant: "link",
+        size: ["sm", "md", "lg"],
+        class: "h-auto px-0 max-md:min-h-0 pointer-coarse:min-h-0",
+      },
     ],
     defaultVariants: { variant: "primary", size: "md" },
   },
@@ -103,6 +113,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   return (
     <Comp
       ref={ref}
+      // Lets a container size its buttons (a dialog's action row, styles.css).
+      data-slot="button"
       className={cn(
         buttonVariants({ variant, size }),
         leading && variant !== "link" && ICON_PADDING[size ?? "md"],
