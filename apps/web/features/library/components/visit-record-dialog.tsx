@@ -118,10 +118,7 @@ export function VisitRecordDialog({
               />
             </Field>
           ) : (
-            <label className="flex flex-col gap-1 text-body-sm">
-              <span className="font-medium">
-                {kind === "group" ? t("groupName") : t("visitorName")}
-              </span>
+            <Field label={kind === "group" ? t("groupName") : t("visitorName")} required>
               <Input
                 value={visitorName}
                 onChange={(e) => {
@@ -130,7 +127,7 @@ export function VisitRecordDialog({
                 maxLength={150}
                 required
               />
-            </label>
+            </Field>
           )}
           {kind === "group" && (
             <Field label={t("groupSize")}>

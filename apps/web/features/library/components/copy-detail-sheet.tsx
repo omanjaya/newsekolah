@@ -3,6 +3,7 @@
 import { formatDateTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
+  SectionHeader,
   Alert,
   Badge,
   Button,
@@ -191,7 +192,7 @@ export function CopyDetailSheet({
               )}
 
               <section className="flex flex-col gap-2">
-                <h3 className="text-heading text-fg">{t("eventsHeading")}</h3>
+                <SectionHeader as="h3" title={t("eventsHeading")} />
                 {events.isLoading ? (
                   <SkeletonList rows={3} />
                 ) : (events.data?.data.length ?? 0) === 0 ? (

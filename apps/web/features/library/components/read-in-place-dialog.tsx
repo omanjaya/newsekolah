@@ -4,6 +4,7 @@ import { ApiError } from "@newsekolah/api-client";
 import { formatDateTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
+  SectionHeader,
   Field,
   Button,
   Dialog,
@@ -111,7 +112,7 @@ export function ReadInPlaceDialog({
           </form>
 
           <div className="flex flex-col gap-1">
-            <h3 className="text-heading text-fg">{t("logHeading")}</h3>
+            <SectionHeader as="h3" title={t("logHeading")} />
             {log.isLoading ? (
               <Skeleton className="h-24 w-full" />
             ) : (log.data?.data.length ?? 0) === 0 ? (

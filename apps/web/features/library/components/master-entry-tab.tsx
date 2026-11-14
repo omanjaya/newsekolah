@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  FormError,
   DialogFooter,
   NumberInput,
   Field,
@@ -44,6 +45,9 @@ export interface MasterEntryTabProps {
   stateKey: string;
   items: LibraryMasterEntry[];
   isLoading: boolean;
+  /** The list query's error: shown in place of the rows, with a retry. */
+  error?: unknown;
+  onRetry?: () => void;
   create: UseMutationResult<unknown, Error, LibraryMasterEntryWrite>;
   update: UseMutationResult<unknown, Error, LibraryMasterEntryWrite & { id: string }>;
   remove: UseMutationResult<unknown, Error, string>;
@@ -58,6 +62,8 @@ export function MasterEntryTab({
   stateKey,
   items,
   isLoading,
+  error,
+  onRetry,
   create,
   update,
   remove,
@@ -73,8 +79,19 @@ export function MasterEntryTab({
 
   const columns = useMemo<ColumnDef<LibraryMasterEntry>[]>(
     () => [
-      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
-      { accessorKey: "name", header: t("columns.name"), enableSorting: false },
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
+      {
+        accessorKey: "code",
+        header: t("columns.code"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.code}</span>,
+      },
       {
         id: "status",
         header: t("columns.status"),
@@ -123,46 +140,44 @@ export function MasterEntryTab({
     setEditing(null);
   };
 
-  return (
-    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      {canManage && (
-        <div className="flex justify-end">
-          <Button
-            size="sm"
-            icon={<Plus />}
-            onClick={() => {
-              setCreating(true);
-            }}
-          >
-            {t("add")}
-          </Button>
-        </div>
-      )}
+  const addButton = canManage ? (
+    <Button
+      icon={<Plus />}
+      onClick={() => {
+        setCreating(true);
+      }}
+    >
+      {t("add")}
+    </Button>
+  ) : undefined;
 
-      <div className="flex flex-col md:min-h-0 md:flex-1">
-        <DataTable
-          stateKey={stateKey}
-          mode="local"
-          data={items}
-          columns={columns}
-          rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
-          isLoading={isLoading}
-          getRowId={(item) => item.id}
-          fillHeight
-          emptyState={
-            <EmptyState
-              icon={<domainIcons.library aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
-          }
-        />
-      </div>
+  return (
+    <div className="flex flex-col gap-4">
+      <DataTable
+        stateKey={stateKey}
+        mode="local"
+        data={items}
+        columns={columns}
+        rowCount={items.length}
+        pagination={{ pageIndex: 0, pageSize: 50 }}
+        onPaginationChange={() => undefined}
+        sorting={[]}
+        onSortingChange={() => undefined}
+        globalFilter=""
+        isLoading={isLoading}
+        error={error}
+        onRetry={onRetry}
+        toolbarActions={addButton}
+        getRowId={(item) => item.id}
+        emptyState={
+          <EmptyState
+            icon={<domainIcons.library aria-hidden="true" />}
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+            action={addButton}
+          />
+        }
+      />
 
       <Dialog
         open={formOpen}
@@ -294,15 +309,10 @@ function MasterEntryForm({
           }}
         />
       </Field>
-      <label className="flex min-h-11 items-center gap-2 text-body-sm">
+      <Field label={t("form.isActive")} orientation="horizontal">
         <Switch checked={isActive} onCheckedChange={setIsActive} />
-        <span className="font-medium">{t("form.isActive")}</span>
-      </label>
-      {error && (
-        <p role="alert" className="text-body-sm text-danger">
-          {error}
-        </p>
-      )}
+      </Field>
+      {error && <FormError>{error}</FormError>}
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("form.cancel")}

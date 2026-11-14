@@ -43,7 +43,7 @@ export function PartnersTab(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_library_catalog");
 
-  const { data, isLoading } = useLibraryPartnersQuery();
+  const { data, isLoading, error, refetch } = useLibraryPartnersQuery();
   const deletePartner = useDeleteLibraryPartnerMutation();
   const [editing, setEditing] = useState<LibraryPartner | null>(null);
   const [creating, setCreating] = useState(false);
@@ -53,8 +53,19 @@ export function PartnersTab(): ReactElement {
 
   const columns = useMemo<ColumnDef<LibraryPartner>[]>(
     () => [
-      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
-      { accessorKey: "name", header: t("columns.name"), enableSorting: false },
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
+      {
+        accessorKey: "code",
+        header: t("columns.code"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.code}</span>,
+      },
       {
         id: "contact",
         header: t("columns.contact"),
@@ -104,46 +115,44 @@ export function PartnersTab(): ReactElement {
     [t, canManage],
   );
 
-  return (
-    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex justify-end">
-        {canManage && (
-          <Button
-            size="sm"
-            icon={<Plus />}
-            onClick={() => {
-              setCreating(true);
-            }}
-          >
-            {t("add")}
-          </Button>
-        )}
-      </div>
+  const addButton = canManage ? (
+    <Button
+      icon={<Plus />}
+      onClick={() => {
+        setCreating(true);
+      }}
+    >
+      {t("add")}
+    </Button>
+  ) : undefined;
 
-      <div className="flex flex-col md:min-h-0 md:flex-1">
-        <DataTable
-          stateKey="features/library/components/partners-tab:1"
-          mode="local"
-          data={items}
-          columns={columns}
-          rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
-          isLoading={isLoading}
-          getRowId={(item) => item.id}
-          fillHeight
-          emptyState={
-            <EmptyState
-              icon={<domainIcons.library aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
-          }
-        />
-      </div>
+  return (
+    <div className="flex flex-col gap-4">
+      <DataTable
+        stateKey="features/library/components/partners-tab:1"
+        mode="local"
+        data={items}
+        columns={columns}
+        rowCount={items.length}
+        pagination={{ pageIndex: 0, pageSize: 50 }}
+        onPaginationChange={() => undefined}
+        sorting={[]}
+        onSortingChange={() => undefined}
+        globalFilter=""
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        toolbarActions={addButton}
+        getRowId={(item) => item.id}
+        emptyState={
+          <EmptyState
+            icon={<domainIcons.library aria-hidden="true" />}
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+            action={addButton}
+          />
+        }
+      />
 
       <Dialog
         open={creating}
@@ -316,10 +325,9 @@ function PartnerForm({
           }}
         />
       </Field>
-      <label className="flex items-center gap-2 text-body-sm">
+      <Field label={t("isActive")} orientation="horizontal">
         <Switch checked={isActive} onCheckedChange={setIsActive} />
-        <span className="font-medium">{t("isActive")}</span>
-      </label>
+      </Field>
       {error && <FormError>{error}</FormError>}
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>

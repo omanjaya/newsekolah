@@ -13,13 +13,15 @@ import { MasterEntryTab } from "./master-entry-tab";
 
 /** Collection categories (fiction, reference, ...) used on copies to group the catalogue. */
 export function CollectionCategoriesTab(): ReactElement {
-  const { data, isLoading } = useCollectionCategoriesQuery();
+  const { data, isLoading, error, refetch } = useCollectionCategoriesQuery();
   return (
     <MasterEntryTab
       namespace="app.library.masterData.collectionCategories"
       stateKey="features/library/components/collection-categories-tab:1"
       items={data?.data ?? []}
       isLoading={isLoading}
+      error={error}
+      onRetry={() => void refetch()}
       create={useCreateCollectionCategoryMutation()}
       update={useUpdateCollectionCategoryMutation()}
       remove={useDeleteCollectionCategoryMutation()}
