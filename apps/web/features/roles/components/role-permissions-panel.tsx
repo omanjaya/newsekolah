@@ -5,6 +5,7 @@ import {
   Badge,
   Button,
   Card,
+  CardTitle,
   FilteredEmptyState,
   SearchInput,
   SegmentedControl,
@@ -166,7 +167,9 @@ export function RolePermissionsPanel({
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
             <div className="hidden flex-wrap items-center gap-2 md:flex">
-              <h2 className="text-title text-fg">{role.name}</h2>
+              <CardTitle as="h2" className="text-title">
+                {role.name}
+              </CardTitle>
               <Badge tone={role.is_system ? "neutral" : "info"} size="sm">
                 {role.is_system ? t("system") : t("custom")}
               </Badge>

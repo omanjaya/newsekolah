@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogContent } from "@newsekolah/ui";
+import { Card, Dialog, DialogContent } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import { QRCodeSVG } from "qrcode.react";
 import type { ReactElement } from "react";
@@ -40,23 +40,30 @@ export function EnrollDialog({
         if (!open) onClose();
       }}
     >
-      <DialogContent title={t("dialogTitle")} description={t("scanStepBody")}>
-        <div className="flex flex-col gap-4">
-          <div className="flex justify-center rounded-sm border border-border bg-bg p-4">
-            <QRCodeSVG value={enrolment.otpauth_url} size={180} level="M" marginSize={2} />
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-[13px] text-fg-muted">{t("manualEntryLabel")}</span>
-            <code className="break-all rounded-xs bg-bg px-2 py-1 text-[13px] tracking-wide text-fg">
+      <DialogContent title={t("dialogTitle")} description={t("scanStepBody")} size="md">
+        <MfaCodeForm
+          codeLabel={t("codeLabel")}
+          submitLabel={t("confirm")}
+          onSubmit={handleConfirm}
+          onCancel={onClose}
+        >
+          {/* The QR code stays dark on light in both themes, so any scanner reads it. */}
+          <Card tone="sunken" padding="sm" className="items-center">
+            <QRCodeSVG
+              value={enrolment.otpauth_url}
+              size={180}
+              level="M"
+              marginSize={2}
+              className="rounded-md"
+            />
+          </Card>
+          <div className="flex flex-col gap-1.5">
+            <p className="text-label text-fg">{t("manualEntryLabel")}</p>
+            <code className="break-all rounded-md bg-surface-sunken px-3 py-2 font-mono text-body-sm tracking-wide text-fg select-all">
               {enrolment.secret}
             </code>
           </div>
-          <MfaCodeForm
-            codeLabel={t("codeLabel")}
-            submitLabel={t("confirm")}
-            onSubmit={handleConfirm}
-          />
-        </div>
+        </MfaCodeForm>
       </DialogContent>
     </Dialog>
   );

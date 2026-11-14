@@ -1,7 +1,17 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Checkbox, Dialog, DialogContent, Input, Textarea, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  Card,
+  Checkbox,
+  Dialog,
+  DialogContent,
+  Field,
+  Input,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -51,6 +61,9 @@ export function WebhookEndpointDialog({
   const isEditing = endpoint !== undefined;
   const pending = createEndpoint.isPending || updateEndpoint.isPending;
   const canSubmit = url.trim() !== "" && selected.size > 0 && !pending;
+  const offered = offeredWebhookEvents(eventTypes.data?.data ?? [], (module) =>
+    isModuleEnabled(me, module),
+  );
 
   async function handleSave() {
     const body = { url, description: description || undefined, event_types: Array.from(selected) };
@@ -75,32 +88,38 @@ export function WebhookEndpointDialog({
       <DialogContent
         title={isEditing ? t("editTitle") : t("createTitle")}
         description={t("dialogBody")}
+        size="md"
         footer={
-          <Button
-            size="sm"
-            disabled={!canSubmit}
-            loading={pending}
-            onClick={() => void handleSave()}
-          >
-            {t("submit")}
-          </Button>
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                onOpenChange(false);
+              }}
+            >
+              {t("cancel")}
+            </Button>
+            <Button disabled={!canSubmit} loading={pending} onClick={() => void handleSave()}>
+              {t("submit")}
+            </Button>
+          </>
         }
       >
-        <div className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("urlLabel")}</span>
+        <div className="flex flex-col gap-5">
+          <Field label={t("urlLabel")} required>
             <Input
               type="url"
               value={url}
               maxLength={2048}
               placeholder="https://example.com/webhooks/newsekolah"
+              autoCapitalize="none"
+              spellCheck={false}
               onChange={(e) => {
                 setUrl(e.target.value);
               }}
             />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("descriptionLabel")}</span>
+          </Field>
+          <Field label={t("descriptionLabel")} optional>
             <Textarea
               value={description}
               maxLength={500}
@@ -109,15 +128,24 @@ export function WebhookEndpointDialog({
                 setDescription(e.target.value);
               }}
             />
-          </label>
-          <div className="flex flex-col gap-2">
-            <span className="text-[13px] font-medium text-fg">{t("eventTypesLabel")}</span>
-            <div className="flex max-h-56 flex-col gap-2 overflow-y-auto rounded-sm border border-border p-3">
-              {offeredWebhookEvents(eventTypes.data?.data ?? [], (module) =>
-                isModuleEnabled(me, module),
-              ).map((eventType) => (
-                <label key={eventType} className="flex items-center gap-2 text-[13px] text-fg">
+          </Field>
+          <Field
+            label={t("eventTypesLabel")}
+            required
+            hint={t("eventTypesHint", { count: selected.size })}
+          >
+            {(control) => (
+              <Card
+                tone="sunken"
+                role="group"
+                aria-labelledby={control.labelId}
+                aria-describedby={control["aria-describedby"]}
+                className="max-h-64 overflow-y-auto px-4 py-1"
+              >
+                {offered.map((eventType) => (
                   <Checkbox
+                    key={eventType}
+                    label={<span className="font-mono text-body-sm">{eventType}</span>}
                     checked={selected.has(eventType)}
                     onCheckedChange={(checked) => {
                       setSelected((prev) => {
@@ -128,11 +156,10 @@ export function WebhookEndpointDialog({
                       });
                     }}
                   />
-                  {eventType}
-                </label>
-              ))}
-            </div>
-          </div>
+                ))}
+              </Card>
+            )}
+          </Field>
         </div>
       </DialogContent>
     </Dialog>

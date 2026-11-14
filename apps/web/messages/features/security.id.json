@@ -80,5 +80,6 @@
   "passwordAndSessions": {
     "title": "Kata sandi dan sesi aktif",
     "body": "Ubah kata sandi dan keluarkan perangkat yang tidak Anda kenali, di halaman profil."
-  }
+  },
+  "cancel": "Batal"
 }

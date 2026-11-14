@@ -80,5 +80,6 @@
   "passwordAndSessions": {
     "title": "Password and active sessions",
     "body": "Change your password and sign out devices you do not recognise, on your profile."
-  }
+  },
+  "cancel": "Cancel"
 }
