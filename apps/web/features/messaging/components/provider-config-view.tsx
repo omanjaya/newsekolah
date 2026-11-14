@@ -1,7 +1,20 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, Skeleton, Switch, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Field,
+  FormActions,
+  Input,
+  Select,
+  Skeleton,
+  Switch,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -85,14 +98,13 @@ export function ProviderConfigView(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-      <div>
-        <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-        <p className="text-[13px] text-fg-muted">{t("body")}</p>
-      </div>
+    <Card padding="md">
+      <CardHeader>
+        <CardTitle as="h2">{t("title")}</CardTitle>
+        <CardDescription>{t("body")}</CardDescription>
+      </CardHeader>
 
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("providerLabel")}</span>
+      <Field label={t("providerLabel")}>
         <Select
           value={form.provider}
           onValueChange={(value) => {
@@ -103,22 +115,19 @@ export function ProviderConfigView(): ReactElement {
             { value: "gateway", label: t("providerGateway") },
           ]}
         />
-      </label>
+      </Field>
 
       {form.provider === "meta" ? (
         <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("meta.phoneNumberIdLabel")}</span>
+          <Field label={t("meta.phoneNumberIdLabel")} hint={t("meta.phoneNumberIdHint")}>
             <Input
               value={form.phoneNumberId}
               onChange={(e) => {
                 setForm((f) => ({ ...f, phoneNumberId: e.target.value }));
               }}
             />
-            <span className="text-fg-muted">{t("meta.phoneNumberIdHint")}</span>
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("meta.accessTokenLabel")}</span>
+          </Field>
+          <Field label={t("meta.accessTokenLabel")}>
             <Input
               type="password"
               value={form.accessToken}
@@ -131,31 +140,27 @@ export function ProviderConfigView(): ReactElement {
                   : t("meta.accessTokenPlaceholderUnset")
               }
             />
-          </label>
+          </Field>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("gateway.urlLabel")}</span>
+          <Field label={t("gateway.urlLabel")} hint={t("gateway.urlHint")}>
             <Input
               value={form.gatewayUrl}
               onChange={(e) => {
                 setForm((f) => ({ ...f, gatewayUrl: e.target.value }));
               }}
             />
-            <span className="text-fg-muted">{t("gateway.urlHint")}</span>
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("gateway.headerNameLabel")}</span>
+          </Field>
+          <Field label={t("gateway.headerNameLabel")}>
             <Input
               value={form.gatewayHeaderName}
               onChange={(e) => {
                 setForm((f) => ({ ...f, gatewayHeaderName: e.target.value }));
               }}
             />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("gateway.headerValueLabel")}</span>
+          </Field>
+          <Field label={t("gateway.headerValueLabel")}>
             <Input
               type="password"
               value={form.gatewayHeaderValue}
@@ -168,26 +173,24 @@ export function ProviderConfigView(): ReactElement {
                   : t("gateway.headerValuePlaceholderUnset")
               }
             />
-          </label>
+          </Field>
         </div>
       )}
 
-      <label className="flex items-center gap-2 text-[13px]">
+      <Field label={t("activeLabel")} hint={t("activeHint")} orientation="horizontal">
         <Switch
           checked={form.isActive}
           onCheckedChange={(checked) => {
             setForm((f) => ({ ...f, isActive: checked }));
           }}
         />
-        <span className="font-medium text-fg">{t("activeLabel")}</span>
-      </label>
-      <p className="text-[13px] text-fg-muted">{t("activeHint")}</p>
+      </Field>
 
-      <div>
-        <Button onClick={() => void handleSave()} disabled={save.isPending}>
+      <FormActions>
+        <Button onClick={() => void handleSave()} loading={save.isPending}>
           {t("save")}
         </Button>
-      </div>
-    </div>
+      </FormActions>
+    </Card>
   );
 }

@@ -86,6 +86,7 @@
     "resend": "Resend",
     "resent": "Resend queued",
     "loadMore": "Load more",
-    "errorLabel": "Failure reason"
+    "errorLabel": "Failure reason",
+    "filterLabel": "Filter by status"
   }
 }
