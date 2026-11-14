@@ -40,7 +40,7 @@ export function TenantBrand({
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2.5">
       {branding?.logo_url ? (
         // Tenant-supplied external URL: next/image's optimizer would need every
         // school's image host allow-listed, so a plain <img> is the right call here.
@@ -55,7 +55,7 @@ export function TenantBrand({
         // that fill. The themed `accent-fg` belongs to the bright dark
         // accent in dark mode and is too dim on this deep fill.
         <span
-          className={`${dimension} shrink-0 rounded-sm text-center text-[11px] font-medium leading-none`}
+          className={`${dimension} shrink-0 rounded-sm text-center text-caption leading-none font-bold tracking-wide`}
           style={{
             backgroundColor: markColor,
             color: foregroundFor(markColor),
@@ -67,7 +67,11 @@ export function TenantBrand({
           {initialsFor(displayName)}
         </span>
       )}
-      {!mark && <span className="truncate text-[14px] font-medium text-fg">{displayName}</span>}
+      {!mark && (
+        <span className="truncate font-heading text-body font-bold tracking-tight text-fg">
+          {displayName}
+        </span>
+      )}
     </div>
   );
 }

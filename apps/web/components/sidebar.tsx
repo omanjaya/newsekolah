@@ -1,25 +1,33 @@
 "use client";
 
 import { TooltipProvider, cn } from "@newsekolah/ui";
-import { ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 
 import { splitSidebarGroups } from "../lib/group-navigation";
 import type { NavItem } from "../lib/navigation";
 import { activeNavHref } from "../lib/navigation/active-href";
 
-import { GroupFlyout, NavLink, RailLabel } from "./sidebar-nav";
+import {
+  GroupFlyout,
+  NAV_MARKER_OFFSETS,
+  NavGroup,
+  NavRow,
+  RailLabel,
+  RowLabel,
+} from "./sidebar-nav";
 import { TenantBrand } from "./tenant-brand";
+import { useNavMarker } from "./use-nav-marker";
 
 const GROUPS_STORAGE_KEY = "newsekolah-sidebar-collapsed-groups-v2";
 const RAIL_STORAGE_KEY = "newsekolah-sidebar-rail";
 
-/** Wide enough for a two-line group label; the rail fits a 20px icon plus its hit area. */
+/** Room for the longest sentence-case label; the rail is the 40px row plus the 12px gutters. */
 const WIDTH_EXPANDED = "15rem";
-const WIDTH_RAIL = "3.75rem";
+const WIDTH_RAIL = "4rem";
 
 /** Ignore sub-pixel scroll offsets so the edge fades do not flicker at rest. */
 const SCROLL_EPSILON = 4;
@@ -51,22 +59,38 @@ function persist(key: string, value: string) {
   }
 }
 
+/** The one marker per list; `useNavMarker` places it beside the active row. */
+function Marker({ markerRef }: { markerRef: RefObject<HTMLSpanElement | null> }): ReactElement {
+  return (
+    <span
+      ref={markerRef}
+      aria-hidden="true"
+      className={cn(
+        "pointer-events-none absolute top-0 left-0 h-5 w-[3px] rounded-full bg-accent opacity-0",
+        "[translate:var(--nav-marker-x,0px)_var(--nav-marker-y,0px)] motion-indicator",
+        "data-[instant]:transition-none data-[visible]:opacity-100",
+      )}
+    />
+  );
+}
+
 /**
- * Desktop sidebar. Two widths: the full list, or a rail of icons for readers
- * who want the screen back. Both the rail choice and each group's open state
- * persist to localStorage.
+ * Desktop sidebar (docs/17-penyederhanaan-menu.md): daily destinations
+ * first (Beranda, Perlu tindakan, Pindai, Laporan), then one row per group,
+ * as heavy as a link and carrying the group's icon, over its pages on a
+ * guide rule. Two widths: the full list, or a rail of icons whose groups
+ * open in flyouts. The rail choice and each group's open state persist to
+ * localStorage.
  *
- * Every stored preference is applied in an effect rather than read during
- * render. The server has no localStorage, so reading it while rendering
- * would make the first client pass disagree with the server HTML and React
- * would discard the tree (the hydration mismatch the passkey buttons hit).
- * `animate` stays false until that effect lands, so restoring a rail on load
- * snaps into place instead of sliding across the screen unprompted.
- *
- * Motion here runs past DESIGN.md's MOTION 1 dial by explicit request; see
- * that file's note. `prefers-reduced-motion` still governs, free of charge:
- * every duration below reads a token that the tokens package zeroes out
- * under that query.
+ * Stored preferences are applied in an effect rather than read during
+ * render: the server has no localStorage, and reading it while rendering
+ * would make the first client pass disagree with the server HTML.
+ * `animate` stays false until that effect lands, so restoring a rail or a
+ * closed group on load snaps into place instead of sliding unprompted.
+ * Motion follows the spec's layout vocabulary: the width and a group's
+ * rows animate over 200ms (`motion-layout`, `motion-collapse`), and the
+ * active marker glides between rows (`motion-indicator`). Reduced motion
+ * strips the travel through the token layer.
  */
 export function Sidebar({
   items,
@@ -75,7 +99,6 @@ export function Sidebar({
   items: NavItem[];
   className?: string;
 }): ReactElement {
-  const t = useTranslations();
   const tShell = useTranslations("app.shell");
   const pathname = usePathname();
 
@@ -84,6 +107,10 @@ export function Sidebar({
   const [animate, setAnimate] = useState(false);
   const [overflow, setOverflow] = useState({ above: false, below: false });
   const navRef = useRef<HTMLElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const markerRef = useRef<HTMLSpanElement | null>(null);
+  const footerRef = useRef<HTMLDivElement | null>(null);
+  const footerMarkerRef = useRef<HTMLSpanElement | null>(null);
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- restoring stored preferences; see the note above. */
@@ -111,40 +138,36 @@ export function Sidebar({
   const mainItems = items.filter(
     (item) => !item.sidebarPlacement || item.sidebarPlacement === "main",
   );
-  const { ungrouped, groups: orderedGroups } = splitSidebarGroups(mainItems);
+  const { ungrouped, groups } = splitSidebarGroups(mainItems);
   const footerItems = items.filter((item) => item.sidebarPlacement === "footer");
 
-  // Open the active group by default, preserving the reader's saved choice.
   // Only the best match is active, across every group: on /library/copies
   // the library dashboard ("/library") is an ancestor, not the current page.
   const activeHref = activeNavHref(pathname, items);
   const activeGroup = items.find((item) => item.group && item.href === activeHref)?.group;
 
   function isOpen(group: string): boolean {
-    // A rail has no room for a group header, so its items always show:
-    // collapsed groups there would hide destinations behind nothing.
-    if (rail) return true;
+    // The active group opens by default; the reader's saved choice wins.
     return !(storedGroups[group] ?? group !== activeGroup);
   }
+
+  const openKey = groups.map(([group]) => (isOpen(group) ? "1" : "0")).join("");
+  useNavMarker(listRef, markerRef, NAV_MARKER_OFFSETS, [activeHref, rail, openKey, items]);
+  useNavMarker(footerRef, footerMarkerRef, NAV_MARKER_OFFSETS, [activeHref, rail, items]);
 
   // A list this long scrolls without saying so. The fades appear only on the
   // edge that actually has more behind it, so a list that fits stays clean.
   useEffect(() => {
     const el = navRef.current;
     if (!el) return;
-    // The ResizeObserver fires on every child during the grid-rows animation
-    // (each frame changes the group's measured height), and the scroll
-    // listener can fire just as often. Coalescing every trigger into a
-    // single rAF-scheduled read caps the work at one measurement per frame
-    // instead of a layout read per event.
+    // Coalesce scroll and resize triggers into one read per frame: the
+    // ResizeObserver fires on every frame of a group's collapse.
     let frame: number | null = null;
     function measure() {
       frame = null;
       if (!el) return;
       const above = el.scrollTop > SCROLL_EPSILON;
       const below = el.scrollTop + el.clientHeight < el.scrollHeight - SCROLL_EPSILON;
-      // Skip the setState entirely when neither boolean moved, so a storm of
-      // observer callbacks with no visible change never triggers a re-render.
       setOverflow((prev) =>
         prev.above === above && prev.below === below ? prev : { above, below },
       );
@@ -155,12 +178,9 @@ export function Sidebar({
     }
     scheduleMeasure();
     el.addEventListener("scroll", scheduleMeasure, { passive: true });
-    // Opening a group or switching to the rail changes the scroll height
-    // without a scroll event, and the transition means the final height
-    // arrives a few frames late.
     const observer = new ResizeObserver(scheduleMeasure);
     observer.observe(el);
-    for (const child of el.children) observer.observe(child);
+    if (listRef.current) observer.observe(listRef.current);
     return () => {
       if (frame !== null) cancelAnimationFrame(frame);
       el.removeEventListener("scroll", scheduleMeasure);
@@ -183,8 +203,10 @@ export function Sidebar({
     });
   }
 
+  const toggleLabel = rail ? tShell("sidebar.expand") : tShell("sidebar.collapse");
+
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delayDuration={300}>
       {/*
         `self-start` matters: a flex child stretches to the container's full
         height by default, and an element as tall as its container never
@@ -193,16 +215,14 @@ export function Sidebar({
       */}
       <aside
         style={{ width: rail ? WIDTH_RAIL : WIDTH_EXPANDED }}
+        data-rail={rail ? "" : undefined}
         className={cn(
           "sticky top-0 h-dvh shrink-0 flex-col self-start overflow-hidden border-r border-line bg-surface",
-          // The width transition below reflows layout on every frame; contain
-          // it to this subtree so the toggle does not re-layout the rest of
-          // the page. Both flyout (GroupFlyout) and tooltip content render
-          // through a Radix Portal to document.body, outside this subtree,
-          // so containment here cannot clip them.
+          // The width transition reflows layout every frame; contain it to
+          // this subtree. Flyouts and tooltips portal to the body, so the
+          // containment cannot clip them.
           "[contain:layout_paint]",
-          animate &&
-            "transition-[width] duration-[calc(var(--duration-base)*1.2)] ease-[var(--ease-standard)]",
+          animate && "motion-layout",
           className,
         )}
       >
@@ -213,156 +233,89 @@ export function Sidebar({
         <div className="relative min-h-0 flex-1">
           <nav
             ref={navRef}
-            className="flex h-full flex-col gap-0.5 overflow-x-hidden overflow-y-auto p-2"
             aria-label={tShell("sidebar.label")}
+            className="h-full overflow-x-hidden overflow-y-auto overscroll-contain"
           >
-            {ungrouped.map((item) => (
-              <NavLink
-                key={item.key}
-                item={item}
-                rail={rail}
-                animate={animate}
-                delayMs={0}
-                nested={false}
-                activeHref={activeHref}
-              />
-            ))}
-
-            {rail
-              ? orderedGroups.map(([group, groupItems]) => (
+            <div ref={listRef} className="relative flex flex-col gap-0.5 px-3 py-3">
+              <Marker markerRef={markerRef} />
+              {ungrouped.map((item) => (
+                <NavRow
+                  key={item.key}
+                  item={item}
+                  variant="top"
+                  rail={rail}
+                  activeHref={activeHref}
+                />
+              ))}
+              {groups.length > 0 &&
+                (rail ? (
+                  <span aria-hidden="true" className="mx-auto my-2 h-px w-6 shrink-0 bg-line" />
+                ) : (
+                  <span aria-hidden="true" className="h-3 shrink-0" />
+                ))}
+              {groups.map(([group, groupItems]) =>
+                rail ? (
                   <GroupFlyout
                     key={group}
                     group={group}
                     items={groupItems}
-                    animate={animate}
                     activeHref={activeHref}
                   />
-                ))
-              : orderedGroups.map(([group, groupItems]) => {
-                  const open = isOpen(group);
-                  return (
-                    <div key={group} className="flex shrink-0 flex-col gap-0.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          toggleGroup(group);
-                        }}
-                        aria-expanded={open}
-                        className={cn(
-                          "mt-2 flex h-8 shrink-0 items-center justify-between rounded-md px-3 text-[12px] font-medium text-fg-muted hover:text-fg",
-                          animate &&
-                            "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
-                        )}
-                      >
-                        <span className="truncate">{t(group)}</span>
-                        <ChevronDown
-                          className={cn(
-                            "size-4 shrink-0",
-                            animate &&
-                              "transition-transform duration-[var(--duration-base)] ease-[var(--ease-standard)]",
-                            !open && "-rotate-90",
-                          )}
-                          aria-hidden="true"
-                        />
-                      </button>
-                      {/*
-                        Rows are kept mounted and the wrapper's track is animated
-                        from 0fr to 1fr: height alone cannot transition to `auto`,
-                        and measuring the list in JS would fight the font loading.
-                      */}
-                      <div
-                        className={cn(
-                          "grid",
-                          animate &&
-                            "transition-[grid-template-rows] duration-[var(--duration-base)] ease-[var(--ease-standard)]",
-                          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-                        )}
-                      >
-                        <div inert={!open} className="overflow-hidden [contain:layout_paint]">
-                          {/*
-                            The guide rule is what makes these rows read as the
-                            group's children rather than its siblings.
-                          */}
-                          <div className="ml-5 flex flex-col gap-0.5 border-l border-line pl-2">
-                            {groupItems.map((item, index) => (
-                              <NavLink
-                                key={item.key}
-                                item={item}
-                                rail={false}
-                                animate={animate}
-                                delayMs={open ? index * 25 : 0}
-                                nested
-                                activeHref={activeHref}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                ) : (
+                  <NavGroup
+                    key={group}
+                    group={group}
+                    items={groupItems}
+                    open={isOpen(group)}
+                    animate={animate}
+                    activeHref={activeHref}
+                    onToggle={() => {
+                      toggleGroup(group);
+                    }}
+                  />
+                ),
+              )}
+            </div>
           </nav>
 
           <span
             aria-hidden="true"
             className={cn(
-              "pointer-events-none absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-surface to-transparent",
-              animate &&
-                "transition-opacity duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
+              "pointer-events-none absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-surface to-transparent transition-opacity",
               overflow.above ? "opacity-100" : "opacity-0",
             )}
           />
           <span
             aria-hidden="true"
             className={cn(
-              "pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-surface to-transparent",
-              animate &&
-                "transition-opacity duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
+              "pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-surface to-transparent transition-opacity",
               overflow.below ? "opacity-100" : "opacity-0",
             )}
           />
         </div>
 
-        <div className="flex shrink-0 flex-col gap-0.5 border-t border-line p-2">
+        <div
+          ref={footerRef}
+          className="relative flex shrink-0 flex-col gap-0.5 border-t border-line px-3 py-2"
+        >
+          <Marker markerRef={footerMarkerRef} />
           {footerItems.map((item) => (
-            <NavLink
-              key={item.key}
-              item={item}
-              animate={animate}
-              activeHref={activeHref}
-              rail={rail}
-              delayMs={0}
-              nested={false}
-            />
+            <NavRow key={item.key} item={item} variant="top" rail={rail} activeHref={activeHref} />
           ))}
-          <RailLabel label={tShell("sidebar.expand")} enabled={rail}>
+          <RailLabel label={toggleLabel} enabled={rail}>
             <button
               type="button"
               onClick={toggleRail}
-              aria-label={rail ? tShell("sidebar.expand") : tShell("sidebar.collapse")}
+              aria-label={toggleLabel}
               aria-expanded={!rail}
-              className={cn(
-                "flex h-9 w-full items-center gap-3 rounded-md px-3 text-[13px] text-fg-muted",
-                "hover:bg-accent/8 hover:text-fg active:bg-accent/15",
-                animate &&
-                  "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
-              )}
+              className="flex h-9 w-full shrink-0 items-center gap-3 rounded-md px-2.5 text-left text-body-sm font-medium text-fg-muted outline-none transition-colors hover:bg-state-hover hover:text-fg focus-visible:-outline-offset-2 active:bg-state-pressed"
             >
               {rail ? (
                 <PanelLeftOpen className="size-5 shrink-0" aria-hidden="true" />
               ) : (
                 <PanelLeftClose className="size-5 shrink-0" aria-hidden="true" />
               )}
-              <span
-                className={cn(
-                  "truncate",
-                  animate &&
-                    "transition-[opacity,transform] duration-[var(--duration-base)] ease-[var(--ease-standard)]",
-                  rail ? "-translate-x-1 opacity-0" : "translate-x-0 opacity-100",
-                )}
-              >
-                {tShell("sidebar.collapse")}
-              </span>
+              <RowLabel rail={rail}>{tShell("sidebar.collapse")}</RowLabel>
             </button>
           </RailLabel>
         </div>
