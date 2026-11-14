@@ -510,11 +510,15 @@
       "appearance": {
         "eyebrow": "Settings",
         "title": "Appearance",
-        "description": "Set the light or dark theme for this device.",
+        "description": "The app's theme on this device. Other users are not affected.",
         "themeLabel": "Theme",
         "themeSystem": "Follow system",
         "themeLight": "Light",
-        "themeDark": "Dark"
+        "themeDark": "Dark",
+        "themeSystemHint": "Follows the device's light or dark setting.",
+        "themeLightHint": "A light background at all times.",
+        "themeDarkHint": "A dark background, easy in dim rooms.",
+        "appliesNow": "Applies at once, nothing to save."
       },
       "notifications": {
         "navLabel": "Notifications",

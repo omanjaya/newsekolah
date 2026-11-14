@@ -65,12 +65,20 @@
     "addConfirm": "Buat passkey",
     "renameDialogTitle": "Ubah nama passkey",
     "renameConfirm": "Simpan",
-    "removeDialogTitle": "Hapus passkey",
+    "removeDialogTitle": "Hapus passkey?",
     "removeDialogBody": "Passkey \"{name}\" tidak akan bisa dipakai lagi untuk masuk.",
     "toasts": {
       "added": "Passkey ditambahkan",
       "renamed": "Nama passkey diperbarui",
       "removed": "Passkey dihapus"
-    }
+    },
+    "nameLabel": "Nama passkey",
+    "cancel": "Batal",
+    "rowActions": "Aksi untuk {name}"
+  },
+  "pageDescription": "Cara Anda masuk ke akun ini: verifikasi dua langkah, passkey, kata sandi, dan perangkat yang sedang masuk.",
+  "passwordAndSessions": {
+    "title": "Kata sandi dan sesi aktif",
+    "body": "Ubah kata sandi dan keluarkan perangkat yang tidak Anda kenali, di halaman profil."
   }
 }

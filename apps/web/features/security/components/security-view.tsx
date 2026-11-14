@@ -1,13 +1,28 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Badge, Button, PageHeader, Skeleton, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  IconCircle,
+  SkeletonForm,
+  useToast,
+} from "@newsekolah/ui";
+import { ChevronRight, KeyRound, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { SettingsPage } from "../../settings/components/settings-page";
 import {
   useDisableMfaMutation,
   useMfaStatusQuery,
@@ -21,15 +36,18 @@ import { PasskeysSection } from "./passkeys-section";
 import { RecoveryCodesDialog } from "./recovery-codes-dialog";
 
 const LOW_RECOVERY_CODES_THRESHOLD = 2;
+const NAV_KEY = "settings-security";
 
 type ActiveDialog = "enroll" | "disable" | "regenerate" | null;
 
 /**
- * Two-factor authentication settings (docs/08-security.md section 2:
- * "TOTP wajib untuk role operator platform dan admin sekolah; opsional
- * guru"). The started-but-not-yet-confirmed enrolment and any freshly
- * issued recovery codes live only in this component's memory: neither is
- * refetchable, and the API returns each exactly once.
+ * The reader's own account security: two-step verification and passkeys,
+ * with the password and open sessions one step away on the profile's
+ * security tab (docs/08-security.md section 2: "TOTP wajib untuk role
+ * operator platform dan admin sekolah; opsional guru"). The
+ * started-but-not-yet-confirmed enrolment and any freshly issued recovery
+ * codes live only in this component's memory: neither is refetchable, and
+ * the API returns each exactly once.
  */
 export function SecurityView(): ReactElement {
   const t = useTranslations("app.security");
@@ -73,83 +91,93 @@ export function SecurityView(): ReactElement {
     setRevealedCodes(result.recovery_codes);
   }
 
-  if (status.isError && !status.data)
-    return <QueryError retry={() => status.refetch()} className="m-4" />;
-
-  if (status.isLoading || !status.data) {
-    return (
-      <div className="flex flex-col gap-6 p-4 md:p-6">
-        <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-        <p className="text-[13px] text-fg-muted">{t("description")}</p>
-        <Skeleton className="h-40 w-full" />
-      </div>
-    );
-  }
-
   const data = status.data;
   const showLowCodesWarning =
-    data.confirmed && data.remaining_recovery_codes <= LOW_RECOVERY_CODES_THRESHOLD;
+    data?.confirmed === true && data.remaining_recovery_codes <= LOW_RECOVERY_CODES_THRESHOLD;
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
-
-      <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4 md:max-w-2xl">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <h2 className="text-[16px] font-medium text-fg">{t("status.title")}</h2>
-            <Badge variant={data.confirmed ? "accent" : "neutral"}>
-              {data.confirmed ? t("status.enabledBadge") : t("status.disabledBadge")}
-            </Badge>
+    <SettingsPage navKey={NAV_KEY} description={t("pageDescription")}>
+      <Card>
+        <CardHeader
+          action={
+            data && (
+              <Badge tone={data.confirmed ? "success" : "neutral"}>
+                {data.confirmed ? t("status.enabledBadge") : t("status.disabledBadge")}
+              </Badge>
+            )
+          }
+        >
+          <CardTitle as="h2">{t("title")}</CardTitle>
+          <CardDescription>{t("description")}</CardDescription>
+        </CardHeader>
+        {status.isError && !data ? (
+          <div className="px-5 pb-5">
+            <QueryError retry={() => status.refetch()} error={status.error} />
           </div>
-          <p className="text-[13px] text-fg-muted">
-            {data.confirmed ? t("status.enabledBody") : t("status.disabledBody")}
-          </p>
-          {data.confirmed && (
-            <p className="text-[13px] text-fg-muted">
-              {t("status.recoveryCodesRemaining", { count: data.remaining_recovery_codes })}
-            </p>
-          )}
-        </div>
-
-        {showLowCodesWarning && <Alert variant="warning" title={t("status.recoveryCodesLow")} />}
-
-        <div className="flex flex-wrap gap-2">
-          {data.confirmed ? (
-            <>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setActiveDialog("regenerate");
-                }}
-              >
-                {t("status.regenerateAction")}
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => {
-                  setActiveDialog("disable");
-                }}
-              >
-                {t("status.disableAction")}
-              </Button>
-            </>
-          ) : (
-            <Button
-              size="sm"
-              loading={startEnrolment.isPending}
-              onClick={() => void handleEnableClick()}
-            >
-              {t("status.enableAction")}
-            </Button>
-          )}
-        </div>
-      </section>
+        ) : status.isLoading || !data ? (
+          <SkeletonForm fields={1} actions={false} className="px-5 pb-5" />
+        ) : (
+          <>
+            <div className="flex flex-col gap-3 px-5">
+              <p className="text-body-sm text-fg">
+                {data.confirmed ? t("status.enabledBody") : t("status.disabledBody")}
+              </p>
+              {data.confirmed && (
+                <p className="text-body-sm text-fg-muted">
+                  {t("status.recoveryCodesRemaining", { count: data.remaining_recovery_codes })}
+                </p>
+              )}
+              {showLowCodesWarning && <Alert tone="warning" title={t("status.recoveryCodesLow")} />}
+            </div>
+            <CardFooter className="flex-wrap">
+              {data.confirmed ? (
+                <>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setActiveDialog("regenerate");
+                    }}
+                  >
+                    {t("status.regenerateAction")}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="text-danger"
+                    onClick={() => {
+                      setActiveDialog("disable");
+                    }}
+                  >
+                    {t("status.disableAction")}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  icon={<ShieldCheck />}
+                  loading={startEnrolment.isPending}
+                  onClick={() => void handleEnableClick()}
+                >
+                  {t("status.enableAction")}
+                </Button>
+              )}
+            </CardFooter>
+          </>
+        )}
+      </Card>
 
       <PasskeysSection />
+
+      <Card interactive asChild>
+        <Link href="/profile?tab=security" className="flex items-center gap-3 p-5">
+          <IconCircle tone="neutral">
+            <KeyRound />
+          </IconCircle>
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-heading text-fg">{t("passwordAndSessions.title")}</span>
+            <span className="text-body-sm text-fg-muted">{t("passwordAndSessions.body")}</span>
+          </span>
+          <ChevronRight className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
+        </Link>
+      </Card>
 
       {activeDialog === "enroll" && startEnrolment.data && (
         <EnrollDialog
@@ -196,6 +224,6 @@ export function SecurityView(): ReactElement {
           }}
         />
       )}
-    </div>
+    </SettingsPage>
   );
 }

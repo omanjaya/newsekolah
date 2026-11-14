@@ -510,11 +510,15 @@
       "appearance": {
         "eyebrow": "Pengaturan",
         "title": "Tampilan",
-        "description": "Atur tema terang atau gelap untuk perangkat ini.",
+        "description": "Tema aplikasi di perangkat ini. Pengguna lain tidak terpengaruh.",
         "themeLabel": "Tema",
         "themeSystem": "Ikuti sistem",
         "themeLight": "Terang",
-        "themeDark": "Gelap"
+        "themeDark": "Gelap",
+        "themeSystemHint": "Mengikuti pengaturan terang atau gelap perangkat.",
+        "themeLightHint": "Latar terang di setiap waktu.",
+        "themeDarkHint": "Latar gelap, nyaman di ruang redup.",
+        "appliesNow": "Langsung berlaku, tanpa perlu disimpan."
       },
       "notifications": {
         "navLabel": "Preferensi notifikasi",

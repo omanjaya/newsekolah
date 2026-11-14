@@ -65,12 +65,20 @@
     "addConfirm": "Create passkey",
     "renameDialogTitle": "Rename passkey",
     "renameConfirm": "Save",
-    "removeDialogTitle": "Remove passkey",
+    "removeDialogTitle": "Remove passkey?",
     "removeDialogBody": "The passkey \"{name}\" will no longer work to sign in.",
     "toasts": {
       "added": "Passkey added",
       "renamed": "Passkey renamed",
       "removed": "Passkey removed"
-    }
+    },
+    "nameLabel": "Passkey name",
+    "cancel": "Cancel",
+    "rowActions": "Actions for {name}"
+  },
+  "pageDescription": "How you sign in to this account: two-step verification, passkeys, your password and the devices signed in.",
+  "passwordAndSessions": {
+    "title": "Password and active sessions",
+    "body": "Change your password and sign out devices you do not recognise, on your profile."
   }
 }

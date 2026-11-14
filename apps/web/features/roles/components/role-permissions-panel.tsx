@@ -195,7 +195,7 @@ export function RolePermissionsPanel({
           />
         )}
         {permissions.isLoading ? (
-          <SkeletonList rows={6} className="px-4 md:px-5" />
+          <SkeletonList rows={6} framed={false} leading={false} className="px-4 md:px-5" />
         ) : permissions.isError && !permissions.data ? (
           <div className="px-4 pb-4 md:px-5">
             <QueryError retry={() => permissions.refetch()} error={permissions.error} />
