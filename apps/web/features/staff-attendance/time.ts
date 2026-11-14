@@ -1,8 +1,10 @@
+import { instantFromSchoolTime, schoolDateTime } from "../../lib/simulation/clock";
+
 /**
  * Staff attendance schedules store times as minutes since local midnight
- * (matching the API and the domain's `ScheduleDay`), but an `<input
- * type="time">` reads and writes "HH:MM" strings. These two helpers are
- * the only place that conversion happens.
+ * (matching the API and the domain's `ScheduleDay`), but the time picker
+ * reads and writes "HH:MM" strings. These two helpers are the only place
+ * that conversion happens.
  */
 
 const MINUTES_PER_HOUR = 60;
@@ -24,22 +26,30 @@ export function timeInputToMinutes(value: string): number {
 }
 
 /**
- * Converts an ISO timestamp to the "YYYY-MM-DDTHH:MM" shape an
- * `<input type="datetime-local">` expects, in the browser's local time --
- * same approach as `toLocalInput` in
- * features/discipline/components/counseling-form.tsx.
+ * An instant as the school's wall clock, "HH:mm" (or "" for none), the
+ * value the shared time picker reads. Falls back to the browser's zone
+ * while the school's is unknown.
  */
-export function isoToDateTimeLocal(iso?: string | null): string {
+export function schoolClock(iso: string | null | undefined, timeZone?: string): string {
   if (!iso) return "";
-  const date = new Date(iso);
+  const instant = new Date(iso);
+  if (Number.isNaN(instant.getTime())) return "";
+  if (timeZone) return schoolDateTime(instant, timeZone).time;
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${pad(instant.getHours())}:${pad(instant.getMinutes())}`;
 }
 
-/** Converts a `datetime-local` input value back to an ISO timestamp. */
-export function dateTimeLocalToIso(value: string): string | null {
-  if (!value) return null;
-  return new Date(value).toISOString();
+/**
+ * The ISO instant a school date and wall-clock time stand for, or null when
+ * the time is empty or invalid. A departure earlier than its arrival is a
+ * night shift: pass the next day's date for it.
+ */
+export function schoolInstant(date: string, time: string, timeZone?: string): string | null {
+  if (date === "" || time === "") return null;
+  const instant = timeZone
+    ? instantFromSchoolTime(date, time, timeZone)
+    : new Date(`${date}T${time}`);
+  return instant && !Number.isNaN(instant.getTime()) ? instant.toISOString() : null;
 }
 
 /**
