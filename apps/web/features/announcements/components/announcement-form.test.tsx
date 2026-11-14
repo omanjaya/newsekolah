@@ -67,9 +67,8 @@ it("still creates a draft from the restructured compose tab", async () => {
   const user = userEvent.setup();
   render(<AnnouncementForm onSaved={onSaved} onCancel={vi.fn()} />);
 
-  // getByLabelText can't be used for the body field: its wrapping <label>
-  // also contains the "bodyHint" span after the textarea, so the label's
-  // computed accessible name is "body bodyHint", not "body" alone.
+  // Found by role and tag rather than by label, so the test stays about
+  // saving a draft and not about how the fields are labelled.
   const textboxes = screen.getAllByRole("textbox");
   const titleInput = textboxes.find((el) => el.tagName === "INPUT");
   const bodyInput = textboxes.find((el) => el.tagName === "TEXTAREA");
