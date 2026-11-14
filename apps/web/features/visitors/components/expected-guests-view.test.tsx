@@ -13,6 +13,7 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/visitors/expected",
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: () => mocks.canManage,
   useSession: () => ({ me: undefined }),
@@ -90,11 +91,20 @@ describe("ExpectedGuestsView filters", () => {
     const user = userEvent.setup();
     render(<ExpectedGuestsView />);
 
-    const cancelButton = screen.getAllByRole("button", { name: "cancel" }).find(Boolean);
-    if (!cancelButton) throw new Error("cancel button missing");
-    await user.click(cancelButton);
+    // Withdrawing is the row's destructive action, kept in its menu.
+    await user.click(screen.getByRole("button", { name: "rowActions" }));
+    await user.click(screen.getByRole("menuitem", { name: "cancel" }));
     expect(mocks.cancel).not.toHaveBeenCalled();
     expect(await screen.findByText("cancelDialog.body")).toBeInTheDocument();
+  });
+
+  it("shows the visit's purpose so the guard knows why the guest came", () => {
+    mocks.useExpectedGuestsQuery.mockReturnValue({
+      data: { data: [pendingGuest] },
+      isLoading: false,
+    });
+    render(<ExpectedGuestsView />);
+    expect(screen.getAllByText("Rapat").length).toBeGreaterThan(0);
   });
 
   it("hides the empty actions column from a read-only reader", () => {
@@ -112,10 +122,12 @@ describe("ExpectedGuestsView filters", () => {
       data: undefined,
       isLoading: false,
       isError: true,
+      error: new Error("boom"),
       refetch: vi.fn(),
     });
     render(<ExpectedGuestsView />);
-    expect(screen.getByRole("button", { name: "actions.retry" })).toBeInTheDocument();
+    // The table's own error state, with its retry, stands in for the rows.
+    expect(screen.getByRole("button", { name: "Coba lagi" })).toBeInTheDocument();
     expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
   });
 });

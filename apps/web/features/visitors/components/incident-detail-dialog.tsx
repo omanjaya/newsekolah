@@ -4,23 +4,35 @@ import { ApiError } from "@newsekolah/api-client";
 import { formatDateTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
+  Badge,
   Button,
   ConfirmDialog,
+  DataList,
+  DataListItem,
   Dialog,
   DialogContent,
   SemanticStatusBadge,
+  SkeletonDetail,
   useToast,
 } from "@newsekolah/ui";
+import { Pencil } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useCloseIncidentMutation, useIncidentQuery } from "../api";
+import { SEVERITY_VARIANT } from "../lib/incident-severity";
 
 import { IncidentForm } from "./incident-form";
 
+/**
+ * One incident: its status and severity, when it happened, the account,
+ * who was involved and what was done. While it is open, a manager can edit
+ * it or close it (after a confirmation, since a closed incident is final).
+ */
 export function IncidentDetailDialog({
   incidentId,
   onOpenChange,
@@ -38,66 +50,90 @@ export function IncidentDetailDialog({
   const [editing, setEditing] = useState(false);
   const [confirmingClose, setConfirmingClose] = useState(false);
 
-  const { data: incident, isLoading } = useIncidentQuery(incidentId ?? "", incidentId !== null);
+  const {
+    data: incident,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useIncidentQuery(incidentId ?? "", incidentId !== null);
+  const canChange = canManage && incident !== undefined && !incident.is_closed && !editing;
 
   return (
-    <Dialog open={incidentId !== null} onOpenChange={onOpenChange}>
-      <DialogContent title={t("title")}>
-        {isLoading && <p className="text-[13px] text-fg-muted">{t("loading")}</p>}
+    <Dialog
+      open={incidentId !== null}
+      onOpenChange={(open) => {
+        if (!open) setEditing(false);
+        onOpenChange(open);
+      }}
+    >
+      <DialogContent
+        title={editing ? t("editTitle") : t("title")}
+        size="lg"
+        footer={
+          canChange ? (
+            <>
+              <Button
+                variant="secondary"
+                icon={<Pencil />}
+                onClick={() => {
+                  setEditing(true);
+                }}
+              >
+                {t("edit")}
+              </Button>
+              <Button
+                loading={close.isPending}
+                onClick={() => {
+                  setConfirmingClose(true);
+                }}
+              >
+                {t("close")}
+              </Button>
+            </>
+          ) : undefined
+        }
+      >
+        {isLoading && <SkeletonDetail />}
+        {isError && !incident && <QueryError retry={() => refetch()} error={error} />}
         {incident && !editing && (
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-2">
               <SemanticStatusBadge
                 status={incident.is_closed ? "closed" : "open"}
                 label={t(incident.is_closed ? "status.closed" : "status.open")}
               />
-              <span className="text-[13px] text-fg-muted">
-                {formatDateTime(incident.occurred_at, { locale, timeZone: me?.tenant.timezone })}
-              </span>
+              <Badge tone={SEVERITY_VARIANT[incident.severity]} dot>
+                {t(`severities.${incident.severity}`)}
+              </Badge>
             </div>
-            <dl className="flex flex-col gap-2 text-[13px]">
-              <div>
-                <dt className="font-medium text-fg-muted">{t("severity")}</dt>
-                <dd>{t(`severities.${incident.severity}`)}</dd>
-              </div>
-              <div>
-                <dt className="font-medium text-fg-muted">{t("description")}</dt>
-                <dd className="whitespace-pre-wrap">{incident.description}</dd>
-              </div>
-              {incident.persons_involved && (
-                <div>
-                  <dt className="font-medium text-fg-muted">{t("personsInvolved")}</dt>
-                  <dd className="whitespace-pre-wrap">{incident.persons_involved}</dd>
-                </div>
-              )}
-              {incident.action_taken && (
-                <div>
-                  <dt className="font-medium text-fg-muted">{t("actionTaken")}</dt>
-                  <dd className="whitespace-pre-wrap">{incident.action_taken}</dd>
-                </div>
-              )}
-            </dl>
-            {canManage && !incident.is_closed && (
-              <div className="flex justify-end gap-2 border-t border-border pt-4">
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setEditing(true);
-                  }}
-                >
-                  {t("edit")}
-                </Button>
-                <Button
-                  loading={close.isPending}
-                  onClick={() => {
-                    setConfirmingClose(true);
-                  }}
-                >
-                  {t("close")}
-                </Button>
-              </div>
-            )}
+            <DataList>
+              <DataListItem label={t("occurredAt")}>
+                {formatDateTime(incident.occurred_at, { locale, timeZone: me?.tenant.timezone })}
+              </DataListItem>
+              <DataListItem label={t("description")}>
+                <span className="whitespace-pre-wrap">{incident.description}</span>
+              </DataListItem>
+              <DataListItem label={t("personsInvolved")}>
+                {incident.persons_involved && (
+                  <span className="whitespace-pre-wrap">{incident.persons_involved}</span>
+                )}
+              </DataListItem>
+              <DataListItem label={t("actionTaken")}>
+                {incident.action_taken && (
+                  <span className="whitespace-pre-wrap">{incident.action_taken}</span>
+                )}
+              </DataListItem>
+            </DataList>
           </div>
+        )}
+        {incident && editing && (
+          <IncidentForm
+            incident={incident}
+            onDone={() => {
+              setEditing(false);
+            }}
+          />
         )}
         {incident && (
           <ConfirmDialog
@@ -112,10 +148,10 @@ export function IncidentDetailDialog({
                 onSuccess: () => {
                   toast.success(t("closed"));
                 },
-                onError: (error) => {
+                onError: (closeError) => {
                   toast.error(
-                    error instanceof ApiError
-                      ? apiErrorMessage(error.code)
+                    closeError instanceof ApiError
+                      ? apiErrorMessage(closeError.code)
                       : apiErrorMessage("UNKNOWN"),
                   );
                 },
@@ -123,14 +159,6 @@ export function IncidentDetailDialog({
                   setConfirmingClose(false);
                 },
               });
-            }}
-          />
-        )}
-        {incident && editing && (
-          <IncidentForm
-            incident={incident}
-            onDone={() => {
-              setEditing(false);
             }}
           />
         )}

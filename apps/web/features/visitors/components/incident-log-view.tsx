@@ -10,7 +10,8 @@ import {
   DialogContent,
   domainIcons,
   EmptyState,
-  PageHeader,
+  FilteredEmptyState,
+  FirstUseEmptyState,
   SemanticStatusBadge,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
@@ -20,7 +21,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
-import { QueryError } from "../../../components/query-error";
+import { AppPage } from "../../../components/app-page";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
@@ -28,19 +29,23 @@ import { useCan, useSession } from "../../../lib/session/session-provider";
 import { dayRangeInZone, shiftIsoDate, todayInZone } from "../../../lib/tenant-date";
 import { VisitorsWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { type Incident, useIncidentsQuery } from "../api";
+import { SEVERITY_VARIANT } from "../lib/incident-severity";
 
 import { IncidentDetailDialog } from "./incident-detail-dialog";
 import { IncidentForm } from "./incident-form";
 
-export const SEVERITY_VARIANT: Record<
-  Incident["severity"],
-  "neutral" | "info" | "warning" | "danger"
-> = {
-  low: "neutral",
-  medium: "info",
-  high: "warning",
-  critical: "danger",
-};
+export { SEVERITY_VARIANT };
+
+/** "14 Okt – 13 Nov 2026" for two calendar dates ("YYYY-MM-DD"). */
+function formatDayRange(from: string, to: string, locale: Locale): string {
+  const format = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  return format.formatRange(new Date(`${from}T00:00:00Z`), new Date(`${to}T00:00:00Z`));
+}
 
 /**
  * The security office's incident log, defaulting to the last 30 days but
@@ -51,7 +56,6 @@ export const SEVERITY_VARIANT: Record<
  * listing it.
  */
 export function IncidentLogView(): ReactElement {
-  const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.visitors.incidents");
   const locale = useLocale() as Locale;
   const canManage = useCan("manage_visitor_incidents");
@@ -59,8 +63,9 @@ export function IncidentLogView(): ReactElement {
   const timeZone = me?.tenant.timezone;
   // Default window: the last 30 days up to today on the school's own calendar.
   const today = todayInZone(timeZone);
+  const defaultFrom = shiftIsoDate(today, -30);
 
-  const [from, setFrom] = useDateFilter("from", shiftIsoDate(today, -30));
+  const [from, setFrom] = useDateFilter("from", defaultFrom);
   const [to, setTo] = useDateFilter("to", today);
   const presets = useDateRangePresets();
   const [onlyOpen, setOnlyOpen] = useUrlState<"" | "true">("only_open", ["", "true"], "");
@@ -68,12 +73,15 @@ export function IncidentLogView(): ReactElement {
   const [openIncidentId, setOpenIncidentId] = useState<string | null>(null);
 
   const range = dayRangeInZone(from, to, timeZone);
-  const { data, isLoading, isError, refetch } = useIncidentsQuery(
+  const { data, isLoading, isError, error, refetch, isRefetching } = useIncidentsQuery(
     range.from,
     range.to,
     onlyOpen !== "true",
   );
   const items = data?.data ?? [];
+  const startCreate = () => {
+    setCreating(true);
+  };
 
   const filters: DataTableFilterDef[] = [
     {
@@ -106,14 +114,16 @@ export function IncidentLogView(): ReactElement {
         accessorKey: "occurred_at",
         header: t("columns.occurredAt"),
         enableSorting: false,
+        meta: { card: "subtitle" },
         cell: ({ row }) => formatDateTime(row.original.occurred_at, { locale, timeZone }),
       },
       {
         id: "severity",
         header: t("columns.severity"),
         enableSorting: false,
+        meta: { card: "meta", skeleton: "badge" },
         cell: ({ row }) => (
-          <Badge variant={SEVERITY_VARIANT[row.original.severity]}>
+          <Badge tone={SEVERITY_VARIANT[row.original.severity]} dot>
             {t(`severities.${row.original.severity}`)}
           </Badge>
         ),
@@ -122,14 +132,16 @@ export function IncidentLogView(): ReactElement {
         accessorKey: "description",
         header: t("columns.description"),
         enableSorting: false,
+        meta: { card: "title", skeleton: "lines" },
         cell: ({ row }) => (
-          <span className="line-clamp-2 max-w-[420px]">{row.original.description}</span>
+          <span className="line-clamp-2 max-w-md">{row.original.description}</span>
         ),
       },
       {
         id: "status",
         header: t("columns.status"),
         enableSorting: false,
+        meta: { card: "meta", skeleton: "badge" },
         cell: ({ row }) => (
           <SemanticStatusBadge
             status={row.original.is_closed ? "closed" : "open"}
@@ -157,30 +169,27 @@ export function IncidentLogView(): ReactElement {
     [t, locale, timeZone],
   );
 
-  return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the table scrolls its rows internally while the
-    // filter row stays put. See school/components/users-view.tsx for the
-    // reference pattern.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <VisitorsWorkspaceNav />
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={workspace("visitors")}
-        actions={
-          canManage && (
-            <Button
-              icon={<Plus />}
-              onClick={() => {
-                setCreating(true);
-              }}
-            >
-              {t("record")}
-            </Button>
-          )
-        }
-      />
+  const filtered = onlyOpen === "true" || from !== defaultFrom || to !== today;
+  const rangeText = from !== "" && to !== "" ? formatDayRange(from, to, locale) : "";
+  const empty = {
+    icon: <domainIcons.incident />,
+    title: t("emptyTitle"),
+    description: rangeText ? t("emptyRange", { range: rangeText }) : t("emptyBody"),
+  };
 
+  return (
+    <AppPage
+      variant="fit"
+      nav={<VisitorsWorkspaceNav />}
+      documentTitle={t("documentTitle")}
+      primaryAction={
+        canManage ? (
+          <Button icon={<Plus />} onClick={startCreate}>
+            {t("record")}
+          </Button>
+        ) : undefined
+      }
+    >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/visitors/components/incident-log-view:1"
@@ -188,11 +197,7 @@ export function IncidentLogView(): ReactElement {
           data={items}
           columns={columns}
           rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
+          searchable={false}
           filters={filters}
           filtersLabels={{
             reset: t("filters.reset"),
@@ -202,20 +207,28 @@ export function IncidentLogView(): ReactElement {
             dateRangeInvalid: t("filters.invalidRange"),
           }}
           isLoading={isLoading}
+          error={isError ? error : undefined}
+          onRetry={() => void refetch()}
+          retrying={isRefetching}
           getRowId={(item) => item.id}
           fillHeight
           onRowActivate={(item) => {
             setOpenIncidentId(item.id);
           }}
           emptyState={
-            isError ? (
-              <QueryError retry={refetch} />
-            ) : (
-              <EmptyState
-                icon={<domainIcons.incident aria-hidden="true" />}
-                title={t("emptyTitle")}
-                description={t("emptyBody")}
+            filtered ? (
+              <FilteredEmptyState
+                description={empty.description}
+                onReset={() => {
+                  setOnlyOpen("");
+                  setFrom(defaultFrom);
+                  setTo(today);
+                }}
               />
+            ) : canManage ? (
+              <FirstUseEmptyState {...empty} actionLabel={t("record")} onAction={startCreate} />
+            ) : (
+              <EmptyState {...empty} />
             )
           }
         />
@@ -228,12 +241,7 @@ export function IncidentLogView(): ReactElement {
         }}
       />
 
-      <Dialog
-        open={creating}
-        onOpenChange={(open) => {
-          setCreating(open);
-        }}
-      >
+      <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent title={t("record")}>
           {creating && (
             <IncidentForm
@@ -244,6 +252,6 @@ export function IncidentLogView(): ReactElement {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </AppPage>
   );
 }
