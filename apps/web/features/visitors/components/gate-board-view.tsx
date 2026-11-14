@@ -1,94 +1,233 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { formatDateTime } from "@newsekolah/i18n";
-import type { Locale } from "@newsekolah/i18n";
+import { formatTime, type Locale } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
+  cn,
   ConfirmDialog,
   Dialog,
   DialogContent,
   EmptyState,
-  PageHeader,
+  FilteredEmptyState,
+  FirstUseEmptyState,
   SearchInput,
-  Select,
-  Skeleton,
+  SectionHeader,
+  SegmentedControl,
+  SkeletonList,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
 import { Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useId, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useQuickAction } from "../../../lib/hooks/use-quick-action";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import { VisitorsWorkspaceNav } from "../../student-services/components/service-workspace-nav";
-import { type BoardEntry, useCheckOutVisitMutation, useVisitorBoardQuery } from "../api";
+import {
+  type Visit,
+  useCheckOutVisitMutation,
+  useExpectedGuestsQuery,
+  useVisitorBoardQuery,
+} from "../api";
+import { matchesSearch, sortBoardEntries } from "../lib/board";
 
 import { CheckInForm } from "./check-in-form";
 import { ExpectedTodayPanel } from "./expected-today-panel";
+import { OnSiteList } from "./on-site-list";
 
-function BoardCard({ entry }: { entry: BoardEntry }): ReactElement {
+const FILTERS = ["all", "onSite", "expected"] as const;
+type BoardFilter = (typeof FILTERS)[number];
+
+/**
+ * Whether the board is current: a pulsing "updated 10.42" while the live
+ * feed and the 30s refresh keep it fresh, a warning once a refresh failed
+ * (the list below is then the last one that loaded).
+ */
+function LiveStatus({ updatedAt, failed }: { updatedAt: number; failed: boolean }) {
   const t = useTranslations("app.visitors.board");
   const locale = useLocale() as Locale;
+  const { me } = useSession();
+  if (updatedAt === 0) return null;
+  const time = formatTime(updatedAt, { locale, timeZone: me?.tenant.timezone });
+  return failed ? (
+    <Badge tone="warning" size="sm" dot>
+      {t("stale", { time })}
+    </Badge>
+  ) : (
+    <Badge tone="success" size="sm" dot dotClassName="bg-success animate-live">
+      {t("live", { time })}
+    </Badge>
+  );
+}
+
+/**
+ * The gate board, the screen a guard works from all day, often on a phone:
+ * who is on site now (with whom they came to see and for how long), a
+ * one-tap check out that asks first, today's scheduled visitors to check
+ * in, one search over both, and "Tamu baru" in the header (also offered by
+ * the phone's quick-action button). Live updates plus a 30s refresh keep
+ * it current; the header of the list says when it last did.
+ */
+export function GateBoardView(): ReactElement {
+  const t = useTranslations("app.visitors.board");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
+  const board = useVisitorBoardQuery();
+  const expected = useExpectedGuestsQuery(todayInZone(timeZone));
   const checkOut = useCheckOutVisitMutation();
   const canManage = useCan("manage_visitors");
-  const { me } = useSession();
-  const [confirmingCheckOut, setConfirmingCheckOut] = useState(false);
-  const { visit } = entry;
+  const [status, setStatus] = useUrlState<BoardFilter>("status", FILTERS, "all");
+  const [search, setSearch] = useState("");
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [checkingOut, setCheckingOut] = useState<Visit | null>(null);
+  const onSiteTitleId = useId();
+  const startCheckIn = () => {
+    setCheckingIn(true);
+  };
+  useQuickAction("add-visitor", startCheckIn, canManage);
+
+  const entries = sortBoardEntries(board.data?.data ?? []);
+  const visible = entries.filter(({ visit }) =>
+    matchesSearch(search, visit.full_name, visit.organization),
+  );
+  const expectedCount = expected.data?.data.length ?? 0;
+  const showOnSite = status !== "expected";
+  const showExpected = status !== "onSite";
+
+  let onSiteBody: ReactElement;
+  if (board.isLoading) {
+    onSiteBody = <SkeletonList rows={3} />;
+  } else if (board.isError && !board.data) {
+    onSiteBody = <QueryError retry={() => board.refetch()} error={board.error} />;
+  } else if (entries.length === 0) {
+    const empty = {
+      icon: <domainIcons.visitor />,
+      title: t("emptyTitle"),
+      description: t("emptyBody"),
+    };
+    onSiteBody = canManage ? (
+      <FirstUseEmptyState {...empty} actionLabel={t("newVisitor")} onAction={startCheckIn} />
+    ) : (
+      <EmptyState {...empty} />
+    );
+  } else if (visible.length === 0) {
+    onSiteBody = (
+      <FilteredEmptyState
+        title={t("searchEmptyTitle")}
+        description={t("searchEmptyBody", { query: search.trim() })}
+        resetLabel={t("clearSearch")}
+        onReset={() => {
+          setSearch("");
+        }}
+      />
+    );
+  } else {
+    onSiteBody = (
+      <OnSiteList
+        entries={visible}
+        timeZone={timeZone}
+        canManage={canManage}
+        onCheckOut={setCheckingOut}
+      />
+    );
+  }
 
   return (
-    <li
-      className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4"
-      data-overdue={entry.overdue || undefined}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col">
-          <span className="text-[17px] font-semibold">{visit.full_name}</span>
-          {visit.organization && (
-            <span className="text-[13px] text-fg-muted">{visit.organization}</span>
-          )}
+    <AppPage
+      nav={<VisitorsWorkspaceNav />}
+      documentTitle={t("documentTitle")}
+      primaryAction={
+        canManage ? (
+          <Button icon={<Plus />} onClick={startCheckIn}>
+            {t("newVisitor")}
+          </Button>
+        ) : undefined
+      }
+      toolbar={
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <SearchInput
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+            }}
+            placeholder={t("searchPlaceholder")}
+            aria-label={t("searchPlaceholder")}
+            className="sm:max-w-sm sm:flex-1"
+          />
+          <SegmentedControl<BoardFilter>
+            aria-label={t("filterLabel")}
+            value={status}
+            onValueChange={setStatus}
+            fullWidth
+            className="sm:inline-flex sm:w-fit"
+            options={[
+              { value: "all", label: t("filters.all") },
+              {
+                value: "onSite",
+                label: t("filters.onSite"),
+                count: board.data ? entries.length : undefined,
+              },
+              {
+                value: "expected",
+                label: t("filters.expected"),
+                count: expected.data ? expectedCount : undefined,
+              },
+            ]}
+          />
         </div>
-        {entry.overdue && <Badge variant="accent">{t("overdue")}</Badge>}
+      }
+    >
+      <div
+        className={cn(
+          "grid grid-cols-1 gap-6",
+          showOnSite && showExpected && "lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start",
+        )}
+      >
+        {showOnSite && (
+          <section aria-labelledby={onSiteTitleId} className="flex min-w-0 flex-col gap-3">
+            <SectionHeader
+              titleId={onSiteTitleId}
+              title={t("onSiteTitle")}
+              count={board.data ? entries.length : undefined}
+              action={
+                <LiveStatus
+                  updatedAt={board.dataUpdatedAt}
+                  failed={board.isError && board.data !== undefined}
+                />
+              }
+            />
+            {onSiteBody}
+          </section>
+        )}
+        {showExpected && <ExpectedTodayPanel search={search} />}
       </div>
-      <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[13px]">
-        <dt className="text-fg-muted">{t("purpose")}</dt>
-        <dd>{visit.purpose || t("noPurpose")}</dd>
-        <dt className="text-fg-muted">{t("arrivedAt")}</dt>
-        <dd>{formatDateTime(visit.arrived_at, { locale, timeZone: me?.tenant.timezone })}</dd>
-        <dt className="text-fg-muted">{t("badgeNumber")}</dt>
-        <dd>{visit.badge_number || t("noBadge")}</dd>
-      </dl>
-      {canManage && (
-        <Button
-          variant="secondary"
-          loading={checkOut.isPending}
-          className="min-h-14 text-[16px] font-semibold"
-          onClick={() => {
-            setConfirmingCheckOut(true);
-          }}
-        >
-          {t("checkOut")}
-        </Button>
-      )}
+
       <ConfirmDialog
-        open={confirmingCheckOut}
-        onOpenChange={setConfirmingCheckOut}
+        open={checkingOut !== null}
+        onOpenChange={(open) => {
+          if (!open) setCheckingOut(null);
+        }}
         title={t("checkOutDialog.title")}
-        description={t("checkOutDialog.body", { name: visit.full_name })}
+        description={t("checkOutDialog.body", { name: checkingOut?.full_name ?? "" })}
         confirmLabel={t("checkOut")}
         confirming={checkOut.isPending}
         onConfirm={() => {
-          checkOut.mutate(visit.id, {
+          if (!checkingOut) return;
+          const name = checkingOut.full_name;
+          checkOut.mutate(checkingOut.id, {
             onSuccess: () => {
-              toast.success(t("signedOut", { name: visit.full_name }));
+              toast.success(t("signedOut", { name }));
             },
             onError: (error) => {
               toast.error(
@@ -98,125 +237,13 @@ function BoardCard({ entry }: { entry: BoardEntry }): ReactElement {
               );
             },
             onSettled: () => {
-              setConfirmingCheckOut(false);
+              setCheckingOut(null);
             },
           });
         }}
       />
-    </li>
-  );
-}
 
-/**
- * The screen a guard actually works from, standing at the gate desk: big
- * cards with one large action each, a 30s auto-refresh, and a single
- * button to start a new sign-in. Touch targets stay at
- * least 44px tall even at desk-tablet width.
- */
-export function GateBoardView(): ReactElement {
-  const workspace = useTranslations("app.serviceWorkspace");
-  const t = useTranslations("app.visitors.board");
-  const board = useVisitorBoardQuery();
-  const canManage = useCan("manage_visitors");
-  const [status, setStatus] = useUrlState<string>("status", ["all", "onSite", "expected"], "all");
-  const [checkingIn, setCheckingIn] = useState(false);
-  useQuickAction(
-    "add-visitor",
-    () => {
-      setCheckingIn(true);
-    },
-    canManage,
-  );
-  const [search, setSearch] = useState("");
-
-  const entries = board.data?.data ?? [];
-  const query = search.trim().toLowerCase();
-  const visibleEntries = useMemo(() => {
-    if (query === "") return entries;
-    return entries.filter(
-      (entry) =>
-        entry.visit.full_name.toLowerCase().includes(query) ||
-        entry.visit.organization.toLowerCase().includes(query),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `entries` is a fresh array each render; `query` alone decides when this needs to rerun.
-  }, [query, board.data]);
-
-  return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
-      <VisitorsWorkspaceNav />
-      <PageHeader eyebrow={t("eyebrow")} title={workspace("visitors")} />
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[13px] text-fg-muted">{t("count", { count: entries.length })}</p>
-        {canManage && (
-          <Button
-            icon={<Plus />}
-            className="min-h-14 text-[16px] font-semibold"
-            onClick={() => {
-              setCheckingIn(true);
-            }}
-          >
-            {t("newVisitor")}
-          </Button>
-        )}
-      </div>
-
-      <label className="flex max-w-xs flex-col gap-1 text-sm">
-        <span>{workspace("visitStatus")}</span>
-        <Select
-          value={status}
-          onValueChange={setStatus}
-          options={[
-            { value: "all", label: workspace("allToday") },
-            { value: "onSite", label: workspace("onSite") },
-            { value: "expected", label: workspace("expectedToday") },
-          ]}
-        />
-      </label>
-      <SearchInput
-        value={search}
-        onChange={(e) => {
-          setSearch(e.target.value);
-        }}
-        placeholder={t("searchPlaceholder")}
-        aria-label={t("searchPlaceholder")}
-        className="max-w-sm"
-      />
-
-      {status !== "expected" && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold">{workspace("onSite")}</h2>
-          {board.isLoading ? (
-            <Skeleton className="h-24 w-full" aria-busy="true" />
-          ) : board.isError ? (
-            <QueryError retry={() => board.refetch()} />
-          ) : entries.length === 0 ? (
-            <EmptyState
-              icon={<domainIcons.visitor aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
-          ) : visibleEntries.length === 0 ? (
-            <EmptyState
-              icon={<domainIcons.visitor aria-hidden="true" />}
-              title={t("searchEmptyTitle")}
-              description={t("searchEmptyBody", { query: search.trim() })}
-            />
-          ) : (
-            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {visibleEntries.map((entry) => (
-                <BoardCard key={entry.visit.id} entry={entry} />
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
-      {status !== "onSite" && <ExpectedTodayPanel search={search} />}
-      <Dialog
-        open={checkingIn}
-        onOpenChange={(open) => {
-          setCheckingIn(open);
-        }}
-      >
+      <Dialog open={checkingIn} onOpenChange={setCheckingIn}>
         <DialogContent title={t("newVisitor")}>
           {checkingIn && (
             <CheckInForm
@@ -227,6 +254,6 @@ export function GateBoardView(): ReactElement {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </AppPage>
   );
 }
