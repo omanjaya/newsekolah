@@ -7,6 +7,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { useApiClient } from "../api/client";
+import { setDocumentSchoolName } from "../page-title";
 
 import { resolveTenantAccents } from "./accent";
 
@@ -81,8 +82,10 @@ export function TenantProvider({
     };
   }, [branding?.accent_color]);
 
+  // The school half of the tab title; the page template adds the page's
+  // name in front ("Pengguna · SMA Contoh", lib/page-title.ts).
   useEffect(() => {
-    document.title = branding?.name ?? PRODUCT_NAME_FALLBACK;
+    setDocumentSchoolName(branding?.name ?? PRODUCT_NAME_FALLBACK);
   }, [branding?.name]);
 
   const displayName = branding?.name ?? PRODUCT_NAME_FALLBACK;
