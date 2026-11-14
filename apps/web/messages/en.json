@@ -965,11 +965,11 @@
       "bulk": {
         "navLink": "Bulk operations",
         "eyebrow": "Academic",
-        "title": "Bulk schedule operations",
+        "title": "Bulk operations",
         "importSection": {
-          "title": "Import from CSV",
+          "title": "Import a timetable from CSV",
           "body": "Paste or upload a CSV with columns class,subject,teacher,day,start_period,end_period,notes. Class, subject, teacher and period names are matched against existing data; day is the ISO weekday, 1 (Monday) to 7 (Sunday).",
-          "uploadLabel": "Upload a CSV file",
+          "uploadLabel": "Choose a CSV file",
           "noFileChosen": "No file chosen",
           "textareaLabel": "Or paste the CSV content here",
           "previewTitle": "Preview",
@@ -981,7 +981,10 @@
           "apply": "Import {count} schedules",
           "applyErrorTitle": "Nothing was saved; the whole batch is applied together or not at all.",
           "applied": "{count} schedules imported",
-          "empty": "Nothing to preview yet."
+          "empty": "Nothing to preview yet.",
+          "intro": "Upload or paste a CSV file. Class, subject, teacher and period names are matched to existing data; days are written 1 (Monday) to 7 (Sunday).",
+          "columnsLabel": "File columns",
+          "template": "Download the template"
         },
         "clearSection": {
           "title": "Clear every schedule this year",
@@ -1014,7 +1017,12 @@
       "mine": "My schedule",
       "loadError": "The schedule could not be loaded.",
       "noClassTitle": "Not placed in a class yet",
-      "noClassBody": "Your timetable appears once you are placed in a class for this academic year. Contact your homeroom teacher or the school admin."
+      "noClassBody": "Your timetable appears once you are placed in a class for this academic year. Contact your homeroom teacher or the school admin.",
+      "viewLabel": "Timetable view",
+      "noTeachingTitle": "You have no teaching timetable yet",
+      "noTeachingBody": "Your lessons appear here once the timetable manager adds them. Class timetables can still be viewed by class.",
+      "viewByClass": "View by class",
+      "blockActions": "Lesson actions"
     },
     "attendance": {
       "eyebrow": "Academic",
@@ -1044,9 +1052,9 @@
       "pickTeacherBody": "You have no teaching schedule. Select a teacher above to take their class's attendance, or open the attendance reports and monitor with the buttons at the top of the page.",
       "openReports": "Open attendance reports",
       "myReportLink": "My attendance report",
-      "openMonitor": "Open the attendance monitor",
+      "openMonitor": "Attendance monitor",
       "staffHubTitle": "Class attendance is taken by the teaching staff",
-      "staffHubBody": "Your account has no personal attendance to show here. See school-wide attendance through the links below when your role has access.",
+      "staffHubBody": "Class attendance is taken by the teaching staff; from here you follow the results.",
       "notSchoolDayTitle": "Not a school day",
       "notSchoolDayBody": "This date is not a school day according to the academic calendar.",
       "noScheduleTitle": "No teaching schedule",
@@ -1103,7 +1111,7 @@
         "back": "Attendance",
         "backToList": "Back to attendance list",
         "correctionMode": "Correction mode",
-        "searchPlaceholder": "Search student",
+        "searchPlaceholder": "Search students",
         "filterByStatus": "Filter by status",
         "blocked": "Locked",
         "noMatch": "No matching students.",
@@ -1115,7 +1123,7 @@
         "menuBack": "Back",
         "rowChanged": "This row changed since it was last saved",
         "markAllPresent": "Mark everyone present",
-        "markAllPresentHint": "Sick, excused, and dispensation statuses are not overwritten.",
+        "markAllPresentHint": "Sick, excused and dispensation stay as they are.",
         "resetChanges": "Discard changes",
         "previousStatus": "Previously: {status}",
         "source": {
@@ -1141,20 +1149,42 @@
         "violations": {
           "menuLabel": "Record a violation",
           "title": "Violations",
-          "empty": "No violation types."
-        }
+          "empty": "No violation types.",
+          "loading": "Loading violation types…",
+          "points": "{points} pts"
+        },
+        "tabsLabel": "Session sections",
+        "markedAllPresent": "Everyone marked present",
+        "rosterLabel": "Students"
       },
       "editor": {
         "timeRange": "Period {start}-{end}",
         "saveSummary": "{total} students · {changed} changed from present",
         "recapSummary": "This year: {summary}",
         "recapAllClear": "This year: nothing to note."
+      },
+      "daySummary": "{total, plural, one {# session} other {# sessions}} · {saved} saved · {pending} to fill",
+      "otherSessions": "Other sessions",
+      "daySessions": "Teaching sessions",
+      "heroOngoing": "Lesson now",
+      "heroNext": "Next lesson",
+      "viewSaved": "View attendance",
+      "pickTeacherHint": "To fill in or correct a class's attendance, pick its teacher above.",
+      "schoolToday": {
+        "eyebrow": "School attendance today",
+        "title": "Follow the school's attendance",
+        "body": "See each class's record in the reports, or the classes in session on the monitor.",
+        "progressTitle": "{submitted} of {total} classes have filled in",
+        "progressBody": "Classes in session that have saved their attendance.",
+        "noneRunning": "No class is in session right now.",
+        "openReports": "Open attendance reports",
+        "openMonitor": "Open the monitor"
       }
     },
     "homeroom": {
       "eyebrow": "Academic",
       "title": "Homeroom",
-      "titleWithClass": "Homeroom {className}",
+      "titleWithClass": "Homeroom class {className}",
       "dateLabel": "Date",
       "searchPlaceholder": "Search name or NIS",
       "statusFilterLabel": "Status",
@@ -1213,15 +1243,27 @@
       "exitPermitsTitle": "Exit permits awaiting approval",
       "exitPermitsEmpty": "No exit permits are waiting.",
       "unknownStudent": "Student",
-      "pointsBadge": "{points} points"
+      "pointsBadge": "{points} points",
+      "tabsLabel": "Homeroom sections",
+      "prevDay": "Previous day",
+      "nextDay": "Next day",
+      "today": "Today",
+      "statsLabel": "Class summary",
+      "attentionCount": "{count, plural, one {# student needs attention} other {# students need attention}}",
+      "attentionNoneTitle": "Every student is accounted for",
+      "attentionBreakdown": "{absent} absent · {incomplete} with attendance still incomplete",
+      "attentionOpen": "Open in class attendance",
+      "attentionListTitle": "To contact",
+      "noHomeroomAdminBody": "This page shows the daily summary of a homeroom class. Homeroom teachers are set in the duty assignments.",
+      "openAssignments": "Open assignments"
     },
     "substitutions": {
       "eyebrow": "Academic",
       "title": "Substitute teachers",
       "request": "Request a substitute",
       "todayBadge": "Today",
-      "incoming": "Incoming",
-      "outgoing": "Outgoing",
+      "incoming": "For me",
+      "outgoing": "From me",
       "emptyTitle": "No requests yet",
       "emptyIncomingBody": "Requests from colleagues to cover your schedule show up here.",
       "emptyOutgoingBody": "Requests you sent to colleagues show up here.",
@@ -1253,7 +1295,8 @@
         "sent": "Request sent",
         "cancel": "Cancel",
         "send": "Send request"
-      }
+      },
+      "directionLabel": "Request direction"
     },
     "permits": {
       "workflow": {
@@ -1282,17 +1325,18 @@
         "navLabel": "Scan classroom entry",
         "eyebrow": "Students",
         "title": "Scan classroom entry",
-        "intro": "Scan the QR your teacher displays at the front of the room to record your attendance for the running session.",
+        "intro": "Point the camera at the QR your teacher shows at the front of the class to record your attendance for the running lesson.",
         "scanLabel": "Classroom entry code",
-        "placeholder": "Paste or type the code under the QR",
+        "placeholder": "The code under the QR",
         "submit": "Submit code",
         "cameraLabel": "Scan with camera",
         "successTitle": "Recorded",
-        "successBody": "You are recorded as present in {teacher}'s class at {time}.",
+        "successBody": "Checked into {teacher}'s class at {time}.",
         "scanAgain": "Scan again",
         "errorTitle": "Scan failed",
         "studentsOnlyTitle": "Students only",
-        "studentsOnlyBody": "Students use this page to scan the classroom-entry QR shown by a teacher. Your account is not a student account."
+        "studentsOnlyBody": "Students use this page to scan the classroom-entry QR shown by a teacher. Your account is not a student account.",
+        "backHome": "Go home"
       },
       "qr": {
         "expiresIn": "Valid for {seconds} more seconds",

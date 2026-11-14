@@ -22,7 +22,8 @@ const todayData = vi.hoisted(() =>
   })),
 );
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, values?: Record<string, unknown>) =>
+    values ? `${key}:${JSON.stringify(values)}` : key,
   useLocale: () => "id",
   useFormatter: () => ({ dateTime: (value: Date) => value.toISOString().slice(0, 10) }),
 }));
@@ -46,9 +47,7 @@ vi.mock("../../reference/api", () => ({
   useSubjectsQuery: () => ({ data: { data: [] } }),
   useLookup: () => new Map(),
 }));
-vi.mock("../../academic/components/academic-workspace-links", () => ({
-  AcademicWorkspaceLinks: () => null,
-}));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("./journal-form", () => ({ JournalForm: () => null }));
 vi.mock("./journal-today-panel", () => ({
   JournalTodayPanel: () => null,
@@ -129,7 +128,7 @@ it("passes the chosen date range to the query and writes it to the URL state", a
   expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-09-30");
 });
 
-it("shows the journal-this-week and missing-today stat tiles derived from the today-panel data", () => {
+it("sums up the week's journals in the header from the backlog's own data", () => {
   todayData.mockReturnValue({
     loading: false,
     isError: false,
@@ -152,8 +151,28 @@ it("shows the journal-this-week and missing-today stat tiles derived from the to
   query.mockReturnValue({ data: { total: 0, data: [] }, isLoading: false });
   render(<JournalView />);
 
-  const tiles = screen.getByTestId("journal-tiles");
-  expect(tiles).toBeInTheDocument();
-  expect(screen.getByTestId("journal-tile-filledWeek")).toHaveTextContent("1");
-  expect(screen.getByTestId("journal-tile-missingToday")).toHaveTextContent("1");
+  expect(screen.getByText('weekSummary:{"count":1}')).toBeInTheDocument();
+});
+
+it("offers both downloads from one menu", async () => {
+  query.mockReturnValue({ data: { total: 0, data: [] }, isLoading: false });
+  const user = userEvent.setup();
+  render(<JournalView />);
+
+  await user.click(screen.getByRole("button", { name: "download" }));
+  expect(await screen.findByRole("menuitem", { name: "exportXlsx" })).toBeInTheDocument();
+  expect(screen.getByRole("menuitem", { name: "exportDocx" })).toBeInTheDocument();
+});
+
+it("shows a failed history load as an error with a retry, not as an empty journal", () => {
+  query.mockReturnValue({
+    data: undefined,
+    isLoading: false,
+    isError: true,
+    error: new Error("boom"),
+    refetch: vi.fn(),
+  });
+  render(<JournalView />);
+
+  expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
 });

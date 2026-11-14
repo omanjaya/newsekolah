@@ -1,6 +1,16 @@
 "use client";
 
-import { Button, DataTable, EmptyState, Input, Select, StatusBadge, cn } from "@newsekolah/ui";
+import {
+  Badge,
+  Button,
+  DataTable,
+  DatePicker,
+  EmptyState,
+  Field,
+  Select,
+  StatusBadge,
+  cn,
+} from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Download, FileBarChart } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -52,7 +62,12 @@ export function DailyReportTab(): ReactElement {
 
   const columns = useMemo<ColumnDef<RosterEntry>[]>(
     () => [
-      { accessorKey: "name", header: t("columns.name"), enableSorting: false },
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
       {
         accessorKey: "status_code",
         header: t("columns.status"),
@@ -65,10 +80,13 @@ export function DailyReportTab(): ReactElement {
               {token ? (
                 <StatusBadge status={token} label={t(`codes.${code}`)} />
               ) : (
-                <span className="text-fg-muted">{t(`codes.${code}`)}</span>
+                <Badge tone="neutral">{t(`codes.${code}`)}</Badge>
               )}
               {row.original.partial_absence && (
-                <span className="text-[12px] text-status-absent" title={t("partialAbsenceHint")}>
+                <span
+                  className="text-caption font-normal text-status-absent"
+                  title={t("partialAbsenceHint")}
+                >
                   {t("partialAbsence")}
                 </span>
               )}
@@ -81,7 +99,7 @@ export function DailyReportTab(): ReactElement {
         header: t("columns.sessions"),
         enableSorting: false,
         cell: ({ row }) => (
-          <span className={cn(!row.original.complete && "text-status-late")}>
+          <span className={cn(!row.original.complete && "text-warning")}>
             {row.original.submitted_sessions}/{row.original.expected_sessions}
           </span>
         ),
@@ -97,8 +115,7 @@ export function DailyReportTab(): ReactElement {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("class")}</span>
+        <Field label={t("class")}>
           <Select
             options={classOptions(classes.data?.data)}
             value={classId}
@@ -106,29 +123,27 @@ export function DailyReportTab(): ReactElement {
             placeholder={t("classPlaceholder")}
             disabled={classes.isLoading}
             aria-label={t("class")}
-            className="w-56"
+            className="w-full sm:w-56"
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("date")}</span>
-          <Input
-            type="date"
+        </Field>
+        <Field label={t("date")}>
+          <DatePicker
             value={date}
-            onChange={(e) => {
-              setDate(e.target.value);
-            }}
-            aria-label={t("date")}
-            className="w-44"
+            onChange={setDate}
+            clearable={false}
+            className="w-full sm:w-44"
           />
-        </label>
+        </Field>
         <Button
-          size="sm"
           variant="secondary"
+          icon={<Download />}
+          className="sm:ml-auto"
           onClick={() => {
+            // Start the export from the class on screen.
+            if (classId !== "") setDownloadScope({ kind: "class", classId });
             setExportOpen(true);
           }}
         >
-          <Download className="size-4" aria-hidden="true" />
           {t("download")}
         </Button>
       </div>
@@ -155,7 +170,7 @@ export function DailyReportTab(): ReactElement {
               gradeLevelPlaceholder={t("gradeLevelPlaceholder")}
             />
             {!scopeIsReady(downloadScope) && (
-              <p className="text-[13px] text-fg-muted">{t("exportScopeHint")}</p>
+              <p className="text-body-sm text-fg-muted">{t("exportScopeHint")}</p>
             )}
           </div>
         }
@@ -170,20 +185,17 @@ export function DailyReportTab(): ReactElement {
       ) : (
         <>
           {report.data && (
-            <dl className="flex flex-wrap gap-4 text-[13px]">
-              <div className="flex items-center gap-1">
-                <dt className="text-fg-muted">{t("summarySubmitted")}</dt>
-                <dd className="font-medium text-fg">
-                  {report.data.submitted_sessions}/{report.data.expected_sessions}
-                </dd>
-              </div>
+            <div className="flex flex-wrap items-center gap-2" data-testid="daily-report-counts">
+              <Badge tone="neutral">
+                {t("summarySubmitted")} {report.data.submitted_sessions}/
+                {report.data.expected_sessions}
+              </Badge>
               {Object.entries(report.data.status_counts).map(([code, count]) => (
-                <div key={code} className="flex items-center gap-1">
-                  <dt className="text-fg-muted">{t(`codes.${code}`)}</dt>
-                  <dd className="font-medium text-fg">{count}</dd>
-                </div>
+                <Badge key={code} tone="neutral">
+                  {t(`codes.${code}`)} {count}
+                </Badge>
               ))}
-            </dl>
+            </div>
           )}
           <DataTable
             stateKey="features/attendance/components/daily-report-tab:1"
@@ -197,6 +209,10 @@ export function DailyReportTab(): ReactElement {
             onSortingChange={() => undefined}
             globalFilter=""
             isLoading={report.isLoading}
+            error={report.isError ? report.error : undefined}
+            onRetry={() => {
+              void report.refetch();
+            }}
             getRowId={(r) => r.student_user_id}
             emptyState={
               <EmptyState icon={<FileBarChart aria-hidden="true" />} title={t("emptyTitle")} />

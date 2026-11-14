@@ -19,9 +19,9 @@
     "to": "To",
     "invalidRange": "The start date must be before the end date."
   },
-  "exportXlsx": "Download Excel/PDF",
-  "exportReportTitle": "Teaching Journal",
-  "exportDocx": "Download Word",
+  "exportXlsx": "Excel or PDF",
+  "exportReportTitle": "Teaching journal",
+  "exportDocx": "Word",
   "emptyTitle": "No journal entries yet",
   "emptyBody": "Note the topic and activities every time you finish teaching.",
   "unknown": "-",
@@ -56,20 +56,31 @@
     "draftDismiss": "Dismiss"
   },
   "recent": {
-    "title": "Recent lessons",
-    "subtitle": "Tap a lesson to fill in its journal in seconds",
+    "title": "To write",
+    "subtitle": "Lessons from the past week without a journal.",
     "filled": "Filled in",
     "unfilled": "Not filled in",
-    "fillAction": "Fill in journal",
+    "fillAction": "Write the journal",
     "editAction": "View journal",
-    "writePrimary": "Write journal",
+    "writePrimary": "Write",
     "loadError": "Schedule failed to load.",
     "todayLabel": "Today",
-    "yesterdayLabel": "Yesterday"
+    "yesterdayLabel": "Yesterday",
+    "allWritten": "Every lesson from the past week has a journal.",
+    "allWrittenTitle": "Nothing outstanding",
+    "writeFor": "Write the journal for {lesson}"
   },
-  "tiles": {
-    "filledWeek": "Journals this week",
-    "missingToday": "Today's sessions without a journal"
-  },
-  "loadError": "Journal failed to load."
+  "loadError": "Journal failed to load.",
+  "download": "Download",
+  "weekSummary": "{count, plural, =0 {No journal written this week} one {# journal written this week} other {# journals written this week}}",
+  "exportColumns": {
+    "date": "Date",
+    "class": "Class",
+    "subject": "Subject",
+    "teacher": "Teacher",
+    "author": "Written by",
+    "topic": "Topic",
+    "activities": "Activities",
+    "reflection": "Reflection"
+  }
 }

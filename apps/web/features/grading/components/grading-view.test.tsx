@@ -7,6 +7,7 @@ vi.mock("next-intl", () => ({
   useLocale: () => "id",
 }));
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/hooks/use-active-year", () => ({ useActiveYear: () => ({ id: "year-1" }) }));
 vi.mock("../../academic/api-offerings", () => ({
   // A teacher (canOpenAny=false) is scoped to their own assignments; a
@@ -57,24 +58,7 @@ vi.mock("./gradebook-sheet", () => ({
     </div>
   ),
 }));
-vi.mock("./grading-assignment-card", () => ({
-  GradingAssignmentCard: ({ classId, subjectId }: { classId: string; subjectId: string }) => (
-    <div data-testid={`grading-assignment-card-${classId}-${subjectId}`} />
-  ),
-}));
 vi.mock("../api", () => ({
-  useGradebookQuery: () => ({
-    data: {
-      class_id: "class-1",
-      subject_id: "subject-1",
-      term_id: "term-1",
-      is_published: false,
-      scale: { min: 0, max: 100, default_kktp: 75 },
-      components: [{ id: "c1" }],
-      students: [{ student_user_id: "s1", name: "Siswa", scores: {} }],
-    },
-    isLoading: false,
-  }),
   useTermsQuery: () => ({ data: { data: [] }, isLoading: false }),
 }));
 
@@ -89,6 +73,8 @@ import { GradingView } from "./grading-view";
 afterEach(() => {
   cleanup();
   canFn.mockReset();
+  // The tab lives in the address; start every test on the default panel.
+  window.history.replaceState(null, "", "/");
 });
 
 /** Permission holder: view_grades + view_reports only, exactly a principal
@@ -136,19 +122,34 @@ describe("GradingView read-only rendering for view_grades", () => {
     expect(screen.getByRole("tab", { name: "tabErapor" })).toBeInTheDocument();
   });
 
-  it("shows the entry stat-tile row and the teaching assignment as a bento card, alongside the opened sheet", () => {
+  it("opens the sheet first, scoped by one picker of the teacher's own assignments", () => {
     grantManageGrades();
     render(<GradingView />);
 
-    expect(screen.getByTestId("grading-entry-tiles")).toBeInTheDocument();
-    expect(screen.getByTestId("grading-entry-tile-students")).toBeInTheDocument();
-    expect(screen.getByTestId("grading-entry-tile-components")).toBeInTheDocument();
-    expect(screen.getByTestId("grading-entry-tile-filled")).toBeInTheDocument();
-    expect(screen.getByTestId("grading-entry-tile-published")).toBeInTheDocument();
-
-    expect(screen.getByTestId("grading-assignment-cards")).toBeInTheDocument();
-    expect(screen.getByTestId("grading-assignment-card-class-1-subject-1")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "pickAssignment" })).toHaveTextContent(
+      "X-A · Matematika",
+    );
+    expect(screen.queryByRole("combobox", { name: "pickClass" })).not.toBeInTheDocument();
     expect(screen.getByTestId("gradebook-sheet")).toBeInTheDocument();
+  });
+
+  it("gives a school-wide reader separate class and subject pickers", () => {
+    grantViewGradesOnly();
+    render(<GradingView />);
+
+    expect(screen.getByRole("combobox", { name: "pickClass" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "pickSubject" })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "pickAssignment" })).not.toBeInTheDocument();
+  });
+
+  it("hides the class and subject pickers on the e-Rapor panel, which has its own scope", async () => {
+    grantManageGrades();
+    const user = userEvent.setup();
+    render(<GradingView />);
+
+    await user.click(screen.getByRole("tab", { name: "tabErapor" }));
+    expect(screen.getByRole("tabpanel")).toContainElement(screen.getByTestId("erapor-export"));
+    expect(screen.queryByRole("combobox", { name: "pickAssignment" })).not.toBeInTheDocument();
   });
 
   it("shows no tab bar at all for a reader with neither manage_grades nor view_grades", () => {

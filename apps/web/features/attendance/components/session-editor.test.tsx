@@ -1,5 +1,6 @@
 import type * as UiModule from "@newsekolah/ui";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -11,7 +12,7 @@ import type * as AttendanceApiModule from "../api";
 
 import { SessionEditor } from "./session-editor";
 
-const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }));
 const saveMutateAsync = vi.hoisted(() => vi.fn());
 const push = vi.hoisted(() => vi.fn());
 
@@ -63,7 +64,25 @@ vi.mock("../api", async () => {
 // The header, roster, and journal panels have their own tests; this suite
 // only cares about `submit()`'s "saved at" toast, so they render as inert
 // stand-ins. The save bar keeps a real button so `submit()` can be reached.
-vi.mock("./session-roster-header", () => ({ SessionRosterHeader: () => null }));
+vi.mock("./session-roster-header", () => ({
+  SessionRosterHeader: ({
+    children,
+    floating,
+    onMarkAllPresent,
+  }: {
+    children: ReactNode;
+    floating: ReactNode;
+    onMarkAllPresent: () => void;
+  }) => (
+    <div>
+      <button type="button" onClick={onMarkAllPresent}>
+        mark-all
+      </button>
+      {children}
+      {floating}
+    </div>
+  ),
+}));
 vi.mock("./session-roster-panel", () => ({ SessionRosterPanel: () => null }));
 vi.mock("./session-journal-panel", () => ({ SessionJournalPanel: () => null }));
 vi.mock("./session-save-bar", () => ({
@@ -97,10 +116,21 @@ afterEach(() => {
   syncSimulationIdentity(undefined);
   saveMutateAsync.mockReset();
   toast.success.mockReset();
+  toast.info.mockReset();
   push.mockReset();
 });
 
 describe("SessionEditor", () => {
+  it("says what marking everyone present left alone", () => {
+    render(<SessionEditor session={session} openedInCorrection={false} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "mark-all" }));
+
+    expect(toast.info).toHaveBeenCalledWith("markedAllPresent", {
+      description: "markAllPresentHint",
+    });
+  });
+
   it("reports the simulated business clock, not the real one, in the saved-at toast", async () => {
     saveMutateAsync.mockResolvedValue(session);
 

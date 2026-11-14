@@ -10,11 +10,12 @@ export type SubstitutionCreate = components["schemas"]["SubstitutionCreateReques
 export type SubstituteCandidate = components["schemas"]["SubstituteCandidate"];
 export type Direction = "incoming" | "outgoing";
 
-export function useSubstitutionsQuery(direction: Direction) {
+export function useSubstitutionsQuery(direction: Direction, enabled = true) {
   const client = useApiClient();
   return useQuery({
     queryKey: queryKeys.substitutions(direction),
     queryFn: () => client.GET("/v1/substitutions", { params: { query: { direction } } }),
+    enabled,
   });
 }
 

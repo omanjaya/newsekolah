@@ -1,6 +1,16 @@
 "use client";
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, cn } from "@newsekolah/ui";
+import {
+  Button,
+  CountBadge,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  cn,
+} from "@newsekolah/ui";
 import { Star } from "lucide-react";
 import { useLocale, type useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -88,26 +98,53 @@ export function GradebookDesktopTable({
   onPasteBlock,
 }: GradebookDesktopTableProps): ReactElement {
   const locale = useLocale();
+  // The header stays in view while the rows scroll inside the table's own
+  // card (the page is as tall as the screen on desktop), so a long class
+  // never loses which column is which.
+  const stickyHead = "sticky top-0 z-10 bg-surface-header";
   return (
-    <Table density="compact" className="min-w-[720px] border-collapse">
+    <Table
+      density="compact"
+      className="min-w-[720px] border-collapse"
+      containerClassName="min-h-0 overflow-auto"
+    >
       <TableHeader>
         <TableRow>
-          <TableHead scope="col" className="sticky left-0 z-10 min-w-48 bg-bg">
+          <TableHead scope="col" className={cn(stickyHead, "left-0 z-20 min-w-48")}>
             {t("studentColumn")}
           </TableHead>
           {components.map((component) => {
             const missing = missingByComponent.get(component.id) ?? 0;
             const hasInvalid = invalidComponentIds.has(component.id);
+            const weight = t("weightLabel", { weight: component.weight });
+            const kktp =
+              component.kktp !== undefined ? t("kktpLabel", { kktp: component.kktp }) : undefined;
             return (
               <TableHead
                 key={component.id}
                 scope="col"
-                className="border-l border-line px-2 align-top font-medium"
+                className={cn(stickyHead, "w-28 min-w-28 border-l border-line px-2")}
               >
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-1">
-                    <span className="text-fg">{component.code}</span>
-                    {canManage && (
+                <div className="flex items-center gap-1">
+                  <span
+                    className="flex min-w-0 flex-col"
+                    title={[weight, kktp].filter(Boolean).join(" · ")}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span className="truncate text-label text-fg">{component.code}</span>
+                      {missing > 0 && (
+                        <>
+                          <CountBadge count={missing} aria-hidden="true" />
+                          <span className="sr-only">{t("missingCount", { count: missing })}</span>
+                        </>
+                      )}
+                    </span>
+                    <span className="truncate text-caption font-normal text-fg-muted">
+                      {weight}
+                    </span>
+                  </span>
+                  {canManage && (
+                    <span className="ml-auto">
                       <GradebookColumnMenu
                         t={t}
                         code={component.code}
@@ -121,28 +158,19 @@ export function GradebookDesktopTable({
                           onSaveColumn(component.id);
                         }}
                       />
-                    )}
-                  </div>
-                  <span className="text-[12px] font-normal text-fg-muted">
-                    {t("weightLabel", { weight: component.weight })}
-                    {component.kktp !== undefined ? ` · KKTP ${component.kktp}` : ""}
-                  </span>
-                  {missing > 0 && (
-                    <span className="text-[12px] font-normal text-fg-muted">
-                      {t("missingCount", { count: missing })}
                     </span>
                   )}
                 </div>
               </TableHead>
             );
           })}
-          <TableHead scope="col" className="border-l border-line text-right font-medium">
+          <TableHead scope="col" className={cn(stickyHead, "border-l border-line text-right")}>
             {t("averageColumn")}
           </TableHead>
-          <TableHead scope="col" className="border-l border-line text-right font-medium">
+          <TableHead scope="col" className={cn(stickyHead, "border-l border-line text-right")}>
             {t("reportScoreColumn")}
           </TableHead>
-          <TableHead scope="col" className="border-l border-line font-medium">
+          <TableHead scope="col" className={cn(stickyHead, "border-l border-line")}>
             {t("starsColumn")}
           </TableHead>
         </TableRow>
@@ -155,7 +183,7 @@ export function GradebookDesktopTable({
             <TableRow key={student.student_user_id}>
               <TableHead
                 scope="row"
-                className="sticky left-0 z-10 bg-surface text-left text-[13px] font-normal text-fg"
+                className="sticky left-0 z-1 bg-surface text-left font-normal text-fg"
               >
                 {student.name}
               </TableHead>
@@ -168,7 +196,7 @@ export function GradebookDesktopTable({
                     value={cellValue(component.id, student)}
                     disabled={!canManage}
                     ariaLabel={t("scoreFor", { name: student.name, code: component.code })}
-                    className="w-20 text-right [font-variant-numeric:tabular-nums]"
+                    className="w-full text-right tabular-nums"
                     min={scaleMin}
                     max={scaleMax}
                     rangeHint={rangeHint}
@@ -180,28 +208,34 @@ export function GradebookDesktopTable({
                   />
                 </TableCell>
               ))}
-              <TableCell className="border-l border-line text-right text-fg [font-variant-numeric:tabular-nums]">
+              <TableCell className="border-l border-line text-right text-fg tabular-nums">
                 {live?.average !== undefined ? formatScore(live.average, locale) : "-"}
               </TableCell>
-              <TableCell className="border-l border-line text-right [font-variant-numeric:tabular-nums]">
-                <button
-                  type="button"
-                  disabled={!canManage}
-                  onClick={() => {
-                    onManualOverride(student);
-                  }}
-                  title={pending ? t("reportScorePending") : undefined}
-                  className={cn(
-                    "font-medium text-fg underline decoration-dotted underline-offset-2",
-                    !canManage && "no-underline",
-                  )}
-                >
-                  {student.report_score !== undefined
-                    ? formatScore(student.report_score, locale)
-                    : "-"}
-                </button>
+              <TableCell className="border-l border-line text-right tabular-nums">
+                {canManage ? (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => {
+                      onManualOverride(student);
+                    }}
+                    title={pending ? t("reportScorePending") : undefined}
+                    className="text-fg underline decoration-dotted underline-offset-2"
+                  >
+                    {student.report_score !== undefined
+                      ? formatScore(student.report_score, locale)
+                      : "-"}
+                  </Button>
+                ) : (
+                  <span className="text-label text-fg">
+                    {student.report_score !== undefined
+                      ? formatScore(student.report_score, locale)
+                      : "-"}
+                  </span>
+                )}
                 {pending && (
                   <span
+                    role="img"
                     className="ml-1 inline-block size-1.5 rounded-full bg-accent align-middle"
                     aria-label={t("reportScorePending")}
                     title={t("reportScorePending")}
@@ -209,18 +243,19 @@ export function GradebookDesktopTable({
                 )}
               </TableCell>
               <TableCell className="border-l border-line">
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   disabled={!canManage}
                   onClick={() => {
                     onGiveStar(student);
                   }}
-                  className="flex items-center gap-1 text-fg-muted hover:text-fg disabled:hover:text-fg-muted"
+                  className="-ml-2 px-2 text-fg-muted tabular-nums hover:text-fg disabled:opacity-100"
                   aria-label={t("starsFor", { name: student.name })}
                 >
-                  <Star className="size-3.5" aria-hidden="true" />
+                  <Star aria-hidden="true" />
                   {starBalances.get(student.student_user_id) ?? 0}
-                </button>
+                </Button>
               </TableCell>
             </TableRow>
           );

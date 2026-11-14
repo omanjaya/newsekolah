@@ -10,23 +10,6 @@
   "tabSettings": "Settings",
   "tabErapor": "e-Rapor",
   "tabTpMapping": "TP mapping",
-  "entryTiles": {
-    "students": "Students",
-    "components": "Components",
-    "filled": "Scores filled",
-    "published": "Status",
-    "publishedValue": "Published",
-    "draftValue": "Draft"
-  },
-  "pageTiles": {
-    "average": "Class average",
-    "tuntas": "Passing KKTP",
-    "ungraded": "Not yet graded"
-  },
-  "assignmentCard": {
-    "open": "Open gradebook",
-    "studentCount": "{count, plural, one {# student} other {# students}}"
-  },
   "kind": {
     "formative": "Formative",
     "summative": "Summative",
@@ -37,7 +20,7 @@
   },
   "sheet": {
     "loadError": "The score sheet failed to load.",
-    "searchPlaceholder": "Search student name",
+    "searchPlaceholder": "Search students",
     "addComponent": "Add component",
     "publishToggleLabel": "Publish to students",
     "emptyTitle": "No assessment components yet",
@@ -51,9 +34,8 @@
     "unpublishConfirmBody": "Students and parents will no longer see this subject's grades until it is published again.",
     "confirmPublish": "Publish",
     "confirmUnpublish": "Hide",
-    "exportGradebook": "Export e-Rapor",
+    "exportGradebook": "Export scores",
     "exportDefaultTitle": "Gradebook",
-    "moreActions": "More",
     "exportColumnName": "Student Name",
     "exportColumnAverage": "Average",
     "exportColumnReportScore": "Report Score",
@@ -62,7 +44,9 @@
     "exportScopeClassPlaceholder": "Choose a class",
     "exportScopeGradeLevelPlaceholder": "Choose a grade level",
     "publishedBadge": "Published",
-    "draftBadge": "Draft"
+    "draftBadge": "Draft",
+    "meta": "{students, plural, one {# student} other {# students}} · {components, plural, one {# component} other {# components}}",
+    "exportColumnNumber": "No"
   },
   "table": {
     "studentColumn": "Student",
@@ -102,8 +86,15 @@
       "label": "Score entry mode",
       "component": "By component",
       "student": "By student",
-      "componentPicker": "Choose an assessment component"
-    }
+      "componentPicker": "Choose an assessment component",
+      "componentShort": "Component",
+      "studentShort": "Student"
+    },
+    "kktpLabel": "KKTP {kktp}",
+    "saveComponent": "Save {code}",
+    "rowUnsaved": "Not saved yet",
+    "scoresFor": "{code} scores",
+    "addComponent": "Add component"
   },
   "componentDialog": {
     "editTitle": "Edit component",
@@ -189,7 +180,7 @@
     "emptyBody": "Your subject teacher will publish grades once the score sheet is complete.",
     "unknownSubject": "Subject",
     "noComponents": "No graded components for this subject yet.",
-    "belowKktp": "Below minimum mastery",
+    "belowKktp": "Below KKTP",
     "average": "Average {score}",
     "starsBreakdown": "Stars by subject and teacher",
     "starsBreakdownEmpty": "No stars yet.",
@@ -203,7 +194,15 @@
       "up": "Up",
       "down": "Down",
       "flat": "Steady"
-    }
+    },
+    "statsLabel": "Grade summary",
+    "statStars": "Stars",
+    "kktpLine": "KKTP {kktp}",
+    "aboveKktp": "Passed",
+    "belowKktpBy": "{points} points short",
+    "studentsOnlyTitle": "This page is for students",
+    "studentsOnlyBody": "My grades shows the grades published to a student. Your account is not a student account.",
+    "openGrading": "Open grading"
   },
   "erapor": {
     "pickTerm": "Select term",
@@ -255,5 +254,17 @@
     "deleted": "Mapping removed."
   },
   "noAssignmentsTitle": "No classes assigned to you yet",
-  "noAssignmentsBody": "The gradebook opens once an admin assigns the classes and subjects you teach under Teaching assignments."
+  "noAssignmentsBody": "The gradebook opens once an admin assigns the classes and subjects you teach under Teaching assignments.",
+  "pickAssignment": "Class and subject",
+  "pickBothTitle": "Choose a score sheet",
+  "openSchedule": "View schedule",
+  "tabsLabel": "Grading sections",
+  "summary": {
+    "label": "Score sheet summary",
+    "students": "Students",
+    "average": "Class average",
+    "tuntas": "Passing KKTP",
+    "ungraded": "Not yet graded",
+    "filled": "Scores filled"
+  }
 }

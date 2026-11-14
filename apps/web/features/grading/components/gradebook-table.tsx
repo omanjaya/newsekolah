@@ -1,7 +1,7 @@
 "use client";
 
 import { formatTime, type Locale } from "@newsekolah/i18n";
-import { Alert, Button, StickySaveBar, useMediaQuery } from "@newsekolah/ui";
+import { Alert, Button, SearchInput, StickySaveBar, useMediaQuery } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -34,10 +34,14 @@ export interface GradebookTableProps {
   sheet: Gradebook;
   canManage: boolean;
   search: string;
+  /** The phone layout draws the search beside the entry-mode switch; the desktop one sits above the table in the sheet. */
+  onSearchChange: (search: string) => void;
   onEditComponent: (component: AssessmentComponent) => void;
   onManualOverride: (student: GradebookStudent) => void;
   starBalances: Map<string, number>;
   onGiveStar: (student: GradebookStudent) => void;
+  /** Opens the new-component dialog from the phone's component picker. */
+  onAddComponent: () => void;
   onPendingChangesChange?: (count: number) => void;
 }
 
@@ -62,13 +66,16 @@ export function GradebookTable({
   sheet,
   canManage,
   search,
+  onSearchChange,
   onEditComponent,
   onManualOverride,
   starBalances,
   onGiveStar,
+  onAddComponent,
   onPendingChangesChange,
 }: GradebookTableProps): ReactElement {
   const t = useTranslations("app.grading.table");
+  const tSheet = useTranslations("app.grading.sheet");
   const locale = useLocale() as Locale;
   const { me } = useSession();
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -291,26 +298,42 @@ export function GradebookTable({
   }
 
   if (components.length === 0) {
-    return <p className="p-6 text-center text-[13px] text-fg-muted">{t("noComponents")}</p>;
+    return <p className="p-6 text-center text-body-sm text-fg-muted">{t("noComponents")}</p>;
   }
+
+  // The bar only appears once there is something to save (or a save is
+  // still running): a permanent disabled "Simpan semua" took a band of the
+  // phone's screen from a teacher who was only reading.
+  const showSaveBar = canManage && (pendingChanges > 0 || hasInvalidEdits || savingAll);
+  // Edits confined to one component name it on the button ("Simpan TG1").
+  const editedComponents = components.filter(
+    (component) => Object.keys(edits[component.id] ?? {}).length > 0,
+  );
+  const saveLabel =
+    editedComponents.length === 1 && editedComponents[0]
+      ? t("saveComponent", { code: editedComponents[0].code })
+      : t("saveAll");
 
   return (
     <>
       {draftOffer && (
-        <Alert variant="warning" title={t("draftFoundTitle")}>
-          <p>
-            {t("draftFoundBody", {
-              time: formatTime(draftOffer.savedAt, { locale, timeZone: me?.tenant.timezone }),
-            })}
-          </p>
-          <div className="mt-2 flex gap-2">
-            <Button size="sm" onClick={restoreDraft}>
-              {t("draftRestore")}
-            </Button>
-            <Button size="sm" variant="secondary" onClick={dismissDraft}>
-              {t("draftDismiss")}
-            </Button>
-          </div>
+        <Alert
+          variant="warning"
+          title={t("draftFoundTitle")}
+          action={
+            <div className="flex gap-2">
+              <Button size="sm" variant="secondary" onClick={dismissDraft}>
+                {t("draftDismiss")}
+              </Button>
+              <Button size="sm" onClick={restoreDraft}>
+                {t("draftRestore")}
+              </Button>
+            </div>
+          }
+        >
+          {t("draftFoundBody", {
+            time: formatTime(draftOffer.savedAt, { locale, timeZone: me?.tenant.timezone }),
+          })}
         </Alert>
       )}
 
@@ -342,9 +365,20 @@ export function GradebookTable({
         />
       ) : (
         <div className="flex flex-col gap-3">
-          {canManage && (
-            <GradebookEntryModeToggle t={t} mode={entryMode} onModeChange={setEntryMode} />
-          )}
+          <div className="flex items-center gap-2">
+            <SearchInput
+              value={search}
+              onChange={(e) => {
+                onSearchChange(e.target.value);
+              }}
+              placeholder={tSheet("searchPlaceholder")}
+              aria-label={tSheet("searchPlaceholder")}
+              className="min-w-0 flex-1"
+            />
+            {canManage && (
+              <GradebookEntryModeToggle t={t} mode={entryMode} onModeChange={setEntryMode} />
+            )}
+          </div>
           {entryMode === "component" && canManage ? (
             <GradebookMobileComponentEntry
               t={t}
@@ -352,15 +386,13 @@ export function GradebookTable({
               students={students}
               edits={edits}
               cellValue={cellValue}
-              savingComponentId={savingComponentId}
               scaleMin={sheet.scale.min}
               scaleMax={sheet.scale.max}
               rangeHint={rangeHint}
               missingByComponent={missingByComponent}
-              invalidComponentIds={invalidComponentIds}
               activeComponentId={activeComponentId}
               onActiveComponentChange={setRawActiveComponentId}
-              onSaveColumn={saveColumn}
+              onAddComponent={onAddComponent}
               onCommit={commitCell}
               onRegisterRef={registerInputRef}
               onNavigate={handleNavigate}
@@ -388,32 +420,33 @@ export function GradebookTable({
         </div>
       )}
 
-      {canManage && (
-        <StickySaveBar
-          leadingSlot={
-            <span className="text-[13px] text-fg-muted" aria-live="polite">
-              {pendingChanges > 0 ? t("unsavedChanges", { count: pendingChanges }) : t("saveHint")}
-            </span>
-          }
-          trailingSlot={
-            hasInvalidEdits ? (
-              <span role="alert" className="flex items-center gap-2 text-[13px] text-status-absent">
-                {t("invalidCount", { count: invalidCells.length })}
-                <button
-                  type="button"
-                  className="font-medium underline"
-                  onClick={focusFirstInvalidCell}
-                >
-                  {t("invalidFocus")}
-                </button>
+      {showSaveBar && (
+        <>
+          <StickySaveBar
+            container="wide"
+            leadingSlot={
+              <span className="text-body-sm text-fg-muted" aria-live="polite">
+                {pendingChanges > 0
+                  ? t("unsavedChanges", { count: pendingChanges })
+                  : t("saveHint")}
               </span>
-            ) : undefined
-          }
-          saveLabel={t("saveAll")}
-          saving={savingAll}
-          disabled={pendingChanges === 0 || hasInvalidEdits}
-          onSave={saveAll}
-        />
+            }
+            trailingSlot={
+              hasInvalidEdits ? (
+                <span role="alert" className="flex items-center gap-2 text-body-sm text-danger">
+                  {t("invalidCount", { count: invalidCells.length })}
+                  <Button variant="link" size="sm" onClick={focusFirstInvalidCell}>
+                    {t("invalidFocus")}
+                  </Button>
+                </span>
+              ) : undefined
+            }
+            saveLabel={saveLabel}
+            saving={savingAll}
+            disabled={pendingChanges === 0 || hasInvalidEdits}
+            onSave={saveAll}
+          />
+        </>
       )}
     </>
   );

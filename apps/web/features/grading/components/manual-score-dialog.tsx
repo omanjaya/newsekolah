@@ -1,7 +1,15 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Dialog, DialogContent, Input, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  Field,
+  NumberInput,
+  useToast,
+} from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -9,6 +17,7 @@ import { useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSetManualReportScoreMutation } from "../api";
 import { formatScore } from "../lib/format-score";
+import { fromText, toText } from "../lib/number-text";
 
 export interface ManualScoreDialogProps {
   onOpenChange: (open: boolean) => void;
@@ -76,24 +85,21 @@ export function ManualScoreDialog({
           }}
         >
           {computedAverage !== undefined && (
-            <p className="text-[13px] text-fg-muted">
+            <p className="text-body-sm text-fg-muted">
               {t("computedAverage", { score: formatScore(computedAverage, locale) })}
             </p>
           )}
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("score")}</span>
-            <Input
-              type="number"
-              step="0.1"
-              value={value}
+          <Field label={t("score")} hint={t("hint")}>
+            <NumberInput
+              step={0.1}
+              value={fromText(value)}
               placeholder={t("scorePlaceholder")}
-              onChange={(e) => {
-                setValue(e.target.value);
+              onChange={(value) => {
+                setValue(toText(value));
               }}
             />
-          </label>
-          <p className="text-[13px] text-fg-muted">{t("hint")}</p>
-          <div className="flex justify-end gap-2 border-t border-border pt-4">
+          </Field>
+          <DialogFooter>
             <Button
               type="button"
               variant="secondary"
@@ -106,7 +112,7 @@ export function ManualScoreDialog({
             <Button type="submit" loading={setManual.isPending}>
               {t("save")}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

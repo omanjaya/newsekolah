@@ -2,10 +2,20 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
-import { Badge, Skeleton } from "@newsekolah/ui";
-import Link from "next/link";
+import {
+  Badge,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CountBadge,
+  EmptyState,
+  List,
+  ListRow,
+  SkeletonList,
+} from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useExitPermitReviewQueueQuery, useLeaveReviewQueueQuery } from "../../permits/api";
@@ -29,67 +39,83 @@ export function HomeroomPermitsTab({
 
   const leave = (leaveQueue.data?.data ?? []).filter((item) => item.class_id === classId);
   const exits = (exitQueue.data?.data ?? []).filter((item) => item.class_id === classId);
+  const review = (
+    <Badge tone="warning" size="sm">
+      {t("pendingLeaveReview")}
+    </Badge>
+  );
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <section className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-4">
-        <h2 className="text-[14px] font-medium text-fg">{t("pendingLeaveTitle")}</h2>
-        {leaveQueue.isLoading ? (
-          <Skeleton className="h-16 w-full" aria-busy="true" />
-        ) : leave.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("pendingLeaveEmpty")}</p>
-        ) : (
-          <ul className="flex flex-col divide-y divide-border">
-            {leave.map((item) => (
-              <li key={item.instance_id}>
-                <Link
-                  href={`/leave-requests/${item.instance_id}`}
-                  className="flex items-center justify-between gap-2 py-2 hover:text-accent"
-                >
-                  <div className="flex min-w-0 flex-col">
-                    <span className="truncate text-[13px] text-fg">
-                      {formatDisplayName(item.student_name)}
-                    </span>
-                    <span className="text-[12px] text-fg-muted">
-                      {formatDate(item.starts_on, { locale, timeZone })} -{" "}
-                      {formatDate(item.ends_on, { locale, timeZone })}
-                    </span>
-                  </div>
-                  <Badge variant="accent">{t("pendingLeaveReview")}</Badge>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+      <QueueCard
+        title={t("pendingLeaveTitle")}
+        count={leave.length}
+        loading={leaveQueue.isLoading}
+        empty={t("pendingLeaveEmpty")}
+      >
+        {leave.map((item) => (
+          <ListRow
+            key={item.instance_id}
+            title={formatDisplayName(item.student_name)}
+            meta={`${formatDate(item.starts_on, { locale, timeZone })} – ${formatDate(item.ends_on, { locale, timeZone })}`}
+            trailing={review}
+            href={`/leave-requests/${item.instance_id}`}
+          />
+        ))}
+      </QueueCard>
 
-      <section className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-4">
-        <h2 className="text-[14px] font-medium text-fg">{t("exitPermitsTitle")}</h2>
-        {exitQueue.isLoading ? (
-          <Skeleton className="h-16 w-full" aria-busy="true" />
-        ) : exits.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("exitPermitsEmpty")}</p>
-        ) : (
-          <ul className="flex flex-col divide-y divide-border">
-            {exits.map((item) => (
-              <li key={item.instance_id}>
-                <Link
-                  href="/exit-permits"
-                  className="flex items-center justify-between gap-2 py-2 hover:text-accent"
-                >
-                  <div className="flex min-w-0 flex-col">
-                    <span className="truncate text-[13px] text-fg">
-                      {formatDisplayName(item.student_name ?? "")}
-                    </span>
-                    <span className="truncate text-[12px] text-fg-muted">{item.destination}</span>
-                  </div>
-                  <Badge variant="accent">{t("pendingLeaveReview")}</Badge>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <QueueCard
+        title={t("exitPermitsTitle")}
+        count={exits.length}
+        loading={exitQueue.isLoading}
+        empty={t("exitPermitsEmpty")}
+      >
+        {exits.map((item) => (
+          <ListRow
+            key={item.instance_id}
+            title={formatDisplayName(item.student_name ?? "")}
+            meta={item.destination}
+            trailing={review}
+            href="/exit-permits"
+          />
+        ))}
+      </QueueCard>
     </div>
+  );
+}
+
+function QueueCard({
+  title,
+  count,
+  loading,
+  empty,
+  children,
+}: {
+  title: string;
+  count: number;
+  loading: boolean;
+  empty: string;
+  children: ReactNode;
+}): ReactElement {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle as="h2" className="flex items-center gap-2">
+          {title}
+          {!loading && <CountBadge count={count} tone="accent" />}
+        </CardTitle>
+      </CardHeader>
+      {loading ? (
+        <CardContent className="pt-0">
+          <SkeletonList rows={2} framed={false} />
+        </CardContent>
+      ) : count === 0 ? (
+        <CardContent className="pt-0">
+          <EmptyState variant="compact" title={empty} />
+        </CardContent>
+      ) : (
+        <List>{children}</List>
+      )}
+    </Card>
   );
 }

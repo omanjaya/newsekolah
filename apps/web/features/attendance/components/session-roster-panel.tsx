@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, Input } from "@newsekolah/ui";
+import { EmptyState, List } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -15,12 +15,10 @@ type AttendanceStatus = SessionDetail["statuses"][number];
 const EMPTY_VIOLATIONS: string[] = [];
 
 /**
- * Search, the sticky per-status filter tiles, and the roster list itself
- * -- everything above the fold once a teacher scrolls past the header
- * (docs/07-ui-ux.md's "sticky compact summary bar on scroll"). The
- * page-level bulk actions ("Tandai semua hadir"/"Kosongkan perubahan")
- * moved to `SessionRosterHeader`; this panel only owns the search and
- * filter that scope the visible list.
+ * The sticky per-status count row and the roster list itself (docs/07-ui-ux.md's
+ * "sticky compact summary bar on scroll"). The page-level bulk actions
+ * ("Tandai semua hadir"/"Kosongkan perubahan") live in the page header and
+ * the search beside the roster's tab; this panel applies both to the list.
  */
 export function SessionRosterPanel({
   roster,
@@ -36,7 +34,6 @@ export function SessionRosterPanel({
   defaultCode,
   disabled,
   search,
-  onSearchChange,
   statusFilter,
   onToggleStatusFilter,
   onStatusChange,
@@ -56,7 +53,6 @@ export function SessionRosterPanel({
   defaultCode: string;
   disabled: boolean;
   search: string;
-  onSearchChange: (value: string) => void;
   statusFilter: Set<string>;
   onToggleStatusFilter: (code: string) => void;
   onStatusChange: (studentId: string, statusCode: string) => void;
@@ -76,17 +72,8 @@ export function SessionRosterPanel({
 
   return (
     <div className="flex flex-col gap-3">
-      <Input
-        value={search}
-        onChange={(e) => {
-          onSearchChange(e.target.value);
-        }}
-        placeholder={t("searchPlaceholder")}
-        aria-label={t("searchPlaceholder")}
-        className="w-full sm:w-64"
-      />
-
-      <div className="sticky top-14 z-(--z-sticky) -mx-4 border-y border-border bg-surface px-4 py-2 md:mx-0 md:rounded-sm md:border">
+      {/* Sticks under the app header while the roster scrolls. */}
+      <div className="sticky top-14 z-sticky -mx-4 border-b border-line bg-bg px-4 py-2 md:-mx-1 md:border-b-0 md:px-1">
         <AttendanceStatusFilterChips
           statuses={statuses}
           counts={counts}
@@ -95,36 +82,33 @@ export function SessionRosterPanel({
         />
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <ul className="divide-y divide-border">
-            {visible.map((item) => {
-              const current = currentStatuses[item.student_user_id] ?? defaultCode;
-              return (
-                <SessionRosterRow
-                  key={item.student_user_id}
-                  item={item}
-                  changed={changedStudentIds.has(item.student_user_id)}
-                  statuses={statuses}
-                  currentStatus={current}
-                  note={notes[item.student_user_id] ?? ""}
-                  violationIds={violations[item.student_user_id] ?? EMPTY_VIOLATIONS}
-                  violationTypes={violationTypes}
-                  violationTypesLoading={violationTypesLoading}
-                  isPresent={presentCodes.has(current)}
-                  disabled={disabled}
-                  onStatusChange={onStatusChange}
-                  onNoteChange={onNoteChange}
-                  onToggleViolation={onToggleViolation}
-                />
-              );
-            })}
-            {visible.length === 0 && (
-              <li className="px-4 py-6 text-center text-[13px] text-fg-muted">{t("noMatch")}</li>
-            )}
-          </ul>
-        </CardContent>
-      </Card>
+      {visible.length === 0 ? (
+        <EmptyState variant="compact" title={t("noMatch")} />
+      ) : (
+        <List framed aria-label={t("rosterLabel")}>
+          {visible.map((item) => {
+            const current = currentStatuses[item.student_user_id] ?? defaultCode;
+            return (
+              <SessionRosterRow
+                key={item.student_user_id}
+                item={item}
+                changed={changedStudentIds.has(item.student_user_id)}
+                statuses={statuses}
+                currentStatus={current}
+                note={notes[item.student_user_id] ?? ""}
+                violationIds={violations[item.student_user_id] ?? EMPTY_VIOLATIONS}
+                violationTypes={violationTypes}
+                violationTypesLoading={violationTypesLoading}
+                isPresent={presentCodes.has(current)}
+                disabled={disabled}
+                onStatusChange={onStatusChange}
+                onNoteChange={onNoteChange}
+                onToggleViolation={onToggleViolation}
+              />
+            );
+          })}
+        </List>
+      )}
     </div>
   );
 }

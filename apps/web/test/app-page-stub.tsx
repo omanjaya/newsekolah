@@ -37,7 +37,12 @@ export function AppPage({
                 {action.label}
               </a>
             ) : (
-              <button key={action.label} type="button" onClick={action.onSelect}>
+              <button
+                key={action.label}
+                type="button"
+                disabled={action.disabled}
+                onClick={action.onSelect}
+              >
                 {action.label}
               </button>
             ),

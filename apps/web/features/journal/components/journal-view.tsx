@@ -2,23 +2,26 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
-  Alert,
   Button,
   ConfirmDialog,
   DataTable,
   Dialog,
   DialogContent,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   EmptyState,
-  PageHeader,
   useToast,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { PaginationState } from "@tanstack/react-table";
-import { Download, NotebookPen, Plus } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, NotebookPen, Plus } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import {
   ReportExportDialog,
   type ReportExportOptions,
@@ -30,7 +33,6 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
-import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import {
   downloadJournalExport,
@@ -43,20 +45,19 @@ import { computeJournalWeekStats } from "../lib/journal-week-stats";
 
 import { useJournalColumns } from "./journal-columns";
 import { JournalForm } from "./journal-form";
-import { JournalStatTiles } from "./journal-stat-tiles";
 import { JournalTodayPanel, useJournalTodayData } from "./journal-today-panel";
 
 /** {@link ReportExportDialog}'s availableColumns, mirroring journal_export.go's journalReportColumns exactly. */
 const JOURNAL_EXPORT_COLUMNS = [
-  { key: "date", label: "Tanggal" },
-  { key: "class", label: "Kelas" },
-  { key: "subject", label: "Mata Pelajaran" },
-  { key: "teacher", label: "Guru" },
-  { key: "author", label: "Ditulis Oleh" },
-  { key: "topic", label: "Topik" },
-  { key: "activities", label: "Kegiatan" },
-  { key: "reflection", label: "Refleksi" },
-];
+  "date",
+  "class",
+  "subject",
+  "teacher",
+  "author",
+  "topic",
+  "activities",
+  "reflection",
+] as const;
 
 /**
  * A teacher's own class journals on the web, mirroring apps/mobile's
@@ -65,7 +66,6 @@ const JOURNAL_EXPORT_COLUMNS = [
  */
 export function JournalView(): ReactElement {
   const t = useTranslations("app.journal");
-  const tApp = useTranslations("app");
   const format = useFormatter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -134,6 +134,11 @@ export function JournalView(): ReactElement {
     },
   ];
 
+  const exportColumns = JOURNAL_EXPORT_COLUMNS.map((key) => ({
+    key,
+    label: t(`exportColumns.${key}`),
+  }));
+
   const items = useMemo(
     () => [...(list.data?.data ?? [])].sort((a, b) => (a.lesson_date < b.lesson_date ? 1 : -1)),
     [list.data],
@@ -185,83 +190,59 @@ export function JournalView(): ReactElement {
     onDelete: setPendingDelete,
   });
 
+  const downloads = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="secondary" icon={<Download />} loading={downloadingDocx}>
+          {t("download")}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          icon={<FileSpreadsheet />}
+          onSelect={() => {
+            setExportOpen(true);
+          }}
+        >
+          {t("exportXlsx")}
+        </DropdownMenuItem>
+        <DropdownMenuItem icon={<FileText />} onSelect={() => void handleDocxExport()}>
+          {t("exportDocx")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the table scrolls its rows internally while the
-    // filter/export row stays put. See users-view.tsx for the reference
-    // pattern.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <AcademicWorkspaceLinks area="attendance" />
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          <>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="rounded-full"
-              onClick={() => {
-                setExportOpen(true);
-              }}
-            >
-              <Download className="size-4" aria-hidden="true" />
-              {t("exportXlsx")}
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="rounded-full"
-              loading={downloadingDocx}
-              onClick={() => void handleDocxExport()}
-            >
-              <Download className="size-4" aria-hidden="true" />
-              {t("exportDocx")}
-            </Button>
-            <Button
-              size="sm"
-              className="rounded-full"
-              icon={<Plus />}
-              onClick={() => {
-                setEditing("new");
-              }}
-            >
-              {t("new")}
-            </Button>
-          </>
-        }
-      />
-
-      <JournalStatTiles weekStats={weekStats} />
-
-      <JournalTodayPanel />
-
+    // The history fills the screen on desktop and scrolls inside its table,
+    // beside the backlog as a rail of its own, so neither can squeeze the
+    // other to nothing; a phone stacks the backlog above the history.
+    <AppPage
+      variant="fit"
+      description={t("weekSummary", { count: weekStats.filledThisWeek })}
+      primaryAction={
+        <Button
+          icon={<Plus />}
+          onClick={() => {
+            setEditing("new");
+          }}
+        >
+          {t("new")}
+        </Button>
+      }
+    >
       <ReportExportDialog
         open={exportOpen}
         onOpenChange={setExportOpen}
         reportKey="journal"
         defaultTitle={t("exportReportTitle")}
-        availableColumns={JOURNAL_EXPORT_COLUMNS}
+        availableColumns={exportColumns}
         onExport={handleReportExport}
       />
 
-      <div className="flex flex-col md:min-h-80 md:flex-1">
-        {list.isError ? (
-          <Alert variant="warning" title={t("loadError")}>
-            <div className="flex flex-col items-start gap-2">
-              {list.error instanceof ApiError && <p>{apiErrorMessage(list.error.code)}</p>}
-              <Button
-                variant="secondary"
-                loading={list.isRefetching}
-                onClick={() => {
-                  void list.refetch();
-                }}
-              >
-                {tApp("offlinePage.retry")}
-              </Button>
-            </div>
-          </Alert>
-        ) : (
+      <div className="flex flex-col gap-6 md:min-h-0 md:flex-1 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:grid-rows-[minmax(0,1fr)]">
+        <JournalTodayPanel className="lg:order-last lg:max-h-full lg:self-start" />
+        <div className="flex min-h-96 flex-col md:min-h-0 md:flex-1">
           <DataTable
             stateKey="features/journal/components/journal-view:1"
             mode="server"
@@ -286,7 +267,12 @@ export function JournalView(): ReactElement {
               dateRangeInvalid: t("filters.invalidRange"),
             }}
             toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
+            toolbarActions={downloads}
             isLoading={list.isLoading}
+            error={list.error ?? list.isError}
+            onRetry={() => {
+              void list.refetch();
+            }}
             getRowId={(item) => item.id}
             fillHeight
             emptyState={
@@ -296,7 +282,6 @@ export function JournalView(): ReactElement {
                 description={t("emptyBody")}
                 action={
                   <Button
-                    size="sm"
                     icon={<Plus />}
                     onClick={() => {
                       setEditing("new");
@@ -308,7 +293,7 @@ export function JournalView(): ReactElement {
               />
             }
           />
-        )}
+        </div>
       </div>
 
       <Dialog
@@ -357,6 +342,6 @@ export function JournalView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }

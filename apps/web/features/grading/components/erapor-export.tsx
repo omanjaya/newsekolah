@@ -4,8 +4,18 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Alert,
   Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Field,
+  List,
+  ListRow,
+  SectionHeader,
   Select,
-  Skeleton,
+  SkeletonList,
   Table,
   TableBody,
   TableCell,
@@ -101,35 +111,32 @@ export function EraporExport(): ReactElement {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
-          <span className="font-medium">{t("pickTerm")}</span>
+        <Field label={t("pickTerm")} className="w-full md:w-auto">
           <Select
             options={termOptions}
             value={termId}
             onValueChange={setTermId}
             className="w-full md:w-56"
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("formatLabel")}</span>
+        </Field>
+        <Field label={t("formatLabel")}>
           <Select
             options={formatOptions}
             value={format}
             onValueChange={(value) => {
               setFormat(value as EraporFormat);
             }}
-            className="w-40"
+            className="w-full md:w-40"
           />
-        </label>
-        <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
-          <span className="font-medium">{t("pickClass")}</span>
+        </Field>
+        <Field label={t("pickClass")} className="w-full md:w-auto">
           <Select
             options={classOptions}
             value={effectiveClassId}
             onValueChange={setClassId}
             className="w-full md:w-56"
           />
-        </label>
+        </Field>
         <Button
           icon={<Download />}
           loading={downloading}
@@ -141,10 +148,10 @@ export function EraporExport(): ReactElement {
       </div>
 
       {preview.isLoading ? (
-        <Skeleton className="h-40 w-full" aria-busy="true" />
+        <SkeletonList rows={4} leading={false} />
       ) : preview.isError ? (
         <Alert
-          variant="warning"
+          variant="danger"
           title={
             preview.error instanceof ApiError
               ? apiErrorMessage(preview.error.code)
@@ -155,17 +162,17 @@ export function EraporExport(): ReactElement {
         </Alert>
       ) : (
         <>
-          <p className="text-[13px] text-fg-muted">
+          <p className="text-body-sm text-fg-muted">
             {t("summary", { rows: rows.length, skipped: skipped.length })}
           </p>
 
-          <section className="flex flex-col gap-2">
-            <h3 className="text-[14px] font-medium text-fg">{t("rowsTitle")}</h3>
+          <section className="flex flex-col gap-3">
+            <SectionHeader as="h3" title={t("rowsTitle")} count={rows.length} />
             {rows.length === 0 ? (
-              <p className="text-[13px] text-fg-muted">{t("rowsEmpty")}</p>
+              <EmptyState variant="compact" title={t("rowsEmpty")} />
             ) : (
-              <div className="overflow-hidden rounded-lg border border-border">
-                <Table containerClassName="rounded-none border-0">
+              <div className="flex flex-col gap-2">
+                <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t("rowsColumnNisn")}</TableHead>
@@ -186,7 +193,7 @@ export function EraporExport(): ReactElement {
                   </TableBody>
                 </Table>
                 {rows.length > MAX_ROWS_SHOWN && (
-                  <p className="border-t border-border bg-surface px-4 py-2 text-[13px] text-fg-muted">
+                  <p className="text-body-sm text-fg-muted">
                     {t("rowsMore", { count: rows.length - MAX_ROWS_SHOWN })}
                   </p>
                 )}
@@ -194,42 +201,42 @@ export function EraporExport(): ReactElement {
             )}
           </section>
 
-          <section className="flex flex-col gap-2">
-            <h3 className="text-[14px] font-medium text-fg">{t("skippedTitle")}</h3>
+          <section className="flex flex-col gap-3">
+            <SectionHeader as="h3" title={t("skippedTitle")} count={skipped.length} />
             {skipped.length === 0 ? (
-              <p className="text-[13px] text-fg-muted">{t("skippedEmpty")}</p>
+              <EmptyState variant="compact" title={t("skippedEmpty")} />
             ) : (
-              <ul className="divide-y divide-border rounded-sm border border-border">
+              <List framed dense>
                 {skipped.map((skip) => (
-                  <li
+                  <ListRow
                     key={`${skip.student_name}-${skip.subject_name}-${skip.reason}`}
-                    className="flex items-center justify-between gap-3 px-3 py-2 text-[13px]"
-                  >
-                    <span className="text-fg">
-                      {t("skippedRow", { student: skip.student_name, subject: skip.subject_name })}
-                    </span>
-                    <span className="text-fg-muted">{t(`reason.${skip.reason}`)}</span>
-                  </li>
+                    title={t("skippedRow", {
+                      student: skip.student_name,
+                      subject: skip.subject_name,
+                    })}
+                    meta={t(`reason.${skip.reason}`)}
+                  />
                 ))}
-              </ul>
+              </List>
             )}
           </section>
         </>
       )}
 
-      <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-        <h3 className="text-[14px] font-medium text-fg">{t("legacyTitle")}</h3>
-        <p className="text-[13px] text-fg-muted">{t("legacyHint")}</p>
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
-            <span className="font-medium">{t("legacySubject")}</span>
+      <Card>
+        <CardHeader>
+          <CardTitle as="h3">{t("legacyTitle")}</CardTitle>
+          <CardDescription>{t("legacyHint")}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-end gap-3 pt-0">
+          <Field label={t("legacySubject")} className="w-full md:w-auto">
             <Select
               options={subjectOptions}
               value={legacySubjectId}
               onValueChange={setLegacySubjectId}
               className="w-full md:w-56"
             />
-          </label>
+          </Field>
           <Button
             variant="secondary"
             icon={<Download />}
@@ -239,8 +246,8 @@ export function EraporExport(): ReactElement {
           >
             {t("legacyDownload")}
           </Button>
-        </div>
-      </section>
+        </CardContent>
+      </Card>
     </div>
   );
 }

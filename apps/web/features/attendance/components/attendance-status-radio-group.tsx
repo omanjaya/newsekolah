@@ -16,29 +16,26 @@ type AttendanceStatus = SessionDetail["statuses"][number];
 // tenant that reconfigured its status policy -- falls back to its own
 // `color` hex from the API via inline style in {@link colorStyle} instead.
 const SELECTED_CLASS: Record<StatusName, string> = {
-  present: "border-status-present bg-status-present text-bg",
-  sick: "border-status-sick bg-status-sick text-bg",
-  excused: "border-status-excused bg-status-excused text-bg",
-  dispensation: "border-status-dispensation bg-status-dispensation text-bg",
-  absent: "border-status-absent bg-status-absent text-bg",
-  late: "border-status-late bg-status-late text-bg",
+  present: "bg-status-present text-bg",
+  sick: "bg-status-sick text-bg",
+  excused: "bg-status-excused text-bg",
+  dispensation: "bg-status-dispensation text-bg",
+  absent: "bg-status-absent text-bg",
+  late: "bg-status-late text-bg",
 };
 
 const UNSELECTED_CLASS: Record<StatusName, string> = {
-  present: "border-status-present/40 text-status-present-fg hover:bg-status-present/10",
-  sick: "border-status-sick/40 text-status-sick-fg hover:bg-status-sick/10",
-  excused: "border-status-excused/40 text-status-excused-fg hover:bg-status-excused/10",
-  dispensation:
-    "border-status-dispensation/40 text-status-dispensation-fg hover:bg-status-dispensation/10",
-  absent: "border-status-absent/40 text-status-absent-fg hover:bg-status-absent/10",
-  late: "border-status-late/40 text-status-late-fg hover:bg-status-late/10",
+  present: "text-status-present-fg hover:bg-status-present/10",
+  sick: "text-status-sick-fg hover:bg-status-sick/10",
+  excused: "text-status-excused-fg hover:bg-status-excused/10",
+  dispensation: "text-status-dispensation-fg hover:bg-status-dispensation/10",
+  absent: "text-status-absent-fg hover:bg-status-absent/10",
+  late: "text-status-late-fg hover:bg-status-late/10",
 };
 
 /** Inline fallback for a status code with no design token (a custom tenant policy). */
 function colorStyle(color: string, selected: boolean): CSSProperties {
-  return selected
-    ? { backgroundColor: color, borderColor: color, color: "var(--color-bg)" }
-    : { borderColor: `color-mix(in srgb, ${color} 40%, transparent)`, color };
+  return selected ? { backgroundColor: color, color: "var(--color-bg)" } : { color };
 }
 
 export function AttendanceStatusRadioGroup({
@@ -72,7 +69,13 @@ export function AttendanceStatusRadioGroup({
   }
 
   return (
-    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1">
+    // One joined control (the shared radius on the outside, cells meeting
+    // in the middle) so a row reads as one choice, not five loose buttons.
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className="flex w-full divide-x divide-line overflow-hidden rounded-md border border-border-strong bg-surface sm:w-auto"
+    >
       {statuses.map((status, index) => {
         const selected = value === status.code;
         const token = statusToken(status.code);
@@ -100,7 +103,9 @@ export function AttendanceStatusRadioGroup({
             }}
             style={token ? undefined : colorStyle(status.color, selected)}
             className={cn(
-              "min-h-11 min-w-11 rounded-xs border px-2.5 py-2 text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+              "min-h-11 min-w-11 flex-1 px-2.5 text-label transition-colors md:pointer-fine:min-h-9 sm:flex-none",
+              "outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring",
+              "disabled:cursor-not-allowed disabled:opacity-50",
               token && (selected ? SELECTED_CLASS[token] : UNSELECTED_CLASS[token]),
             )}
           >

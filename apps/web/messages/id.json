@@ -965,11 +965,11 @@
       "bulk": {
         "navLink": "Operasi massal",
         "eyebrow": "Akademik",
-        "title": "Operasi jadwal massal",
+        "title": "Operasi massal",
         "importSection": {
-          "title": "Impor dari CSV",
+          "title": "Impor jadwal dari CSV",
           "body": "Tempel atau unggah berkas CSV dengan kolom class,subject,teacher,day,start_period,end_period,notes. Nama kelas, mata pelajaran, guru, dan jam pelajaran dicocokkan dengan data yang sudah ada; hari memakai angka 1 (Senin) sampai 7 (Minggu).",
-          "uploadLabel": "Unggah berkas CSV",
+          "uploadLabel": "Pilih berkas CSV",
           "noFileChosen": "Belum ada berkas dipilih",
           "textareaLabel": "Atau tempel isi CSV di sini",
           "previewTitle": "Pratinjau",
@@ -981,7 +981,10 @@
           "apply": "Impor {count} jadwal",
           "applyErrorTitle": "Tidak ada jadwal yang disimpan; impor bersifat sekali jalan untuk semua baris.",
           "applied": "{count} jadwal berhasil diimpor",
-          "empty": "Belum ada data untuk dipratinjau."
+          "empty": "Belum ada data untuk dipratinjau.",
+          "intro": "Unggah atau tempel berkas CSV. Nama kelas, mata pelajaran, guru, dan jam pelajaran dicocokkan dengan data yang ada; hari ditulis 1 (Senin) sampai 7 (Minggu).",
+          "columnsLabel": "Kolom berkas",
+          "template": "Unduh templat"
         },
         "clearSection": {
           "title": "Hapus semua jadwal tahun ajaran ini",
@@ -1014,7 +1017,12 @@
       "mine": "Jadwal saya",
       "loadError": "Jadwal gagal dimuat.",
       "noClassTitle": "Belum terdaftar di kelas",
-      "noClassBody": "Jadwal tampil setelah Anda ditempatkan di kelas untuk tahun ajaran ini. Hubungi wali kelas atau admin sekolah."
+      "noClassBody": "Jadwal tampil setelah Anda ditempatkan di kelas untuk tahun ajaran ini. Hubungi wali kelas atau admin sekolah.",
+      "viewLabel": "Tampilan jadwal",
+      "noTeachingTitle": "Anda belum punya jadwal mengajar",
+      "noTeachingBody": "Jadwal mengajar muncul di sini setelah dibuat oleh pengelola jadwal. Jadwal kelas tetap bisa dilihat per kelas.",
+      "viewByClass": "Lihat per kelas",
+      "blockActions": "Aksi jadwal"
     },
     "attendance": {
       "eyebrow": "Akademik",
@@ -1044,9 +1052,9 @@
       "pickTeacherBody": "Anda tidak memiliki jadwal mengajar. Pilih guru di atas untuk mengisi presensi kelasnya, atau buka laporan dan monitor presensi lewat tombol di bagian atas halaman.",
       "openReports": "Buka laporan presensi",
       "myReportLink": "Laporan presensi saya",
-      "openMonitor": "Buka monitor presensi",
+      "openMonitor": "Monitor kehadiran",
       "staffHubTitle": "Presensi kelas diisi oleh guru pengajar",
-      "staffHubBody": "Akun Anda tidak memiliki kehadiran pribadi untuk ditampilkan di sini. Lihat ringkasan kehadiran sekolah lewat tautan di bawah ini bila tersedia untuk peran Anda.",
+      "staffHubBody": "Presensi kelas diisi oleh guru pengajar; dari sini Anda memantau hasilnya.",
       "notSchoolDayTitle": "Bukan hari sekolah",
       "notSchoolDayBody": "Tanggal ini bukan hari sekolah menurut kalender akademik.",
       "noScheduleTitle": "Tidak ada jadwal mengajar",
@@ -1103,7 +1111,7 @@
         "back": "Presensi",
         "backToList": "Kembali ke daftar presensi",
         "correctionMode": "Mode koreksi",
-        "searchPlaceholder": "Cari nama siswa",
+        "searchPlaceholder": "Cari siswa",
         "filterByStatus": "Filter berdasarkan status",
         "blocked": "Terkunci",
         "noMatch": "Tidak ada siswa yang cocok.",
@@ -1115,7 +1123,7 @@
         "menuBack": "Kembali",
         "rowChanged": "Baris ini berubah sejak tersimpan terakhir",
         "markAllPresent": "Tandai semua hadir",
-        "markAllPresentHint": "Status Sakit, Izin, dan Dispensasi tidak ditimpa.",
+        "markAllPresentHint": "Sakit, izin, dan dispensasi tidak diubah.",
         "resetChanges": "Kosongkan perubahan",
         "previousStatus": "Sebelumnya: {status}",
         "source": {
@@ -1141,19 +1149,41 @@
         "violations": {
           "menuLabel": "Catat pelanggaran",
           "title": "Pelanggaran",
-          "empty": "Tidak ada jenis pelanggaran."
-        }
+          "empty": "Tidak ada jenis pelanggaran.",
+          "loading": "Memuat jenis pelanggaran…",
+          "points": "{points} poin"
+        },
+        "tabsLabel": "Bagian sesi",
+        "markedAllPresent": "Semua siswa ditandai hadir",
+        "rosterLabel": "Daftar siswa"
       },
       "editor": {
         "timeRange": "Jam {start}-{end}",
         "saveSummary": "{total} siswa · {changed} diubah dari hadir",
         "recapSummary": "Tahun ini: {summary}",
         "recapAllClear": "Tahun ini: tidak ada catatan."
+      },
+      "daySummary": "{total, plural, other {# sesi}} · {saved} tersimpan · {pending} belum diisi",
+      "otherSessions": "Sesi lainnya",
+      "daySessions": "Sesi mengajar",
+      "heroOngoing": "Pelajaran sekarang",
+      "heroNext": "Pelajaran berikutnya",
+      "viewSaved": "Lihat presensi",
+      "pickTeacherHint": "Untuk mengisi atau mengoreksi presensi sebuah kelas, pilih gurunya di atas.",
+      "schoolToday": {
+        "eyebrow": "Presensi sekolah hari ini",
+        "title": "Pantau presensi sekolah",
+        "body": "Lihat rekap per kelas di laporan, atau kelas yang sedang belajar di monitor.",
+        "progressTitle": "{submitted} dari {total} kelas sudah mengisi",
+        "progressBody": "Kelas yang sedang belajar dan sudah menyimpan presensinya.",
+        "noneRunning": "Belum ada kelas yang sedang belajar saat ini.",
+        "openReports": "Buka laporan presensi",
+        "openMonitor": "Buka monitor"
       }
     },
     "homeroom": {
       "eyebrow": "Akademik",
-      "title": "Wali Kelas",
+      "title": "Wali kelas",
       "titleWithClass": "Kelas binaan {className}",
       "dateLabel": "Tanggal",
       "searchPlaceholder": "Cari nama atau NIS",
@@ -1170,7 +1200,7 @@
       "noMatchTitle": "Tidak ada siswa yang cocok",
       "noMatchBody": "Ubah kata kunci pencarian atau filter status.",
       "statTotal": "Total siswa",
-      "statAbsent": "Alpha",
+      "statAbsent": "Alpa",
       "statIncomplete": "Belum lengkap",
       "statPendingLeave": "Izin menunggu",
       "attentionTitle": "Perlu perhatian hari ini",
@@ -1213,15 +1243,27 @@
       "exitPermitsTitle": "Izin keluar menunggu",
       "exitPermitsEmpty": "Tidak ada izin keluar yang menunggu.",
       "unknownStudent": "Siswa",
-      "pointsBadge": "{points} poin"
+      "pointsBadge": "{points} poin",
+      "tabsLabel": "Bagian wali kelas",
+      "prevDay": "Hari sebelumnya",
+      "nextDay": "Hari berikutnya",
+      "today": "Hari ini",
+      "statsLabel": "Ringkasan kelas",
+      "attentionCount": "{count, plural, other {# siswa perlu perhatian}}",
+      "attentionNoneTitle": "Semua siswa tercatat",
+      "attentionBreakdown": "{absent} alpa · {incomplete} presensi belum lengkap",
+      "attentionOpen": "Lihat di presensi kelas",
+      "attentionListTitle": "Perlu dihubungi",
+      "noHomeroomAdminBody": "Halaman ini menampilkan rekap harian kelas binaan. Wali kelas diatur di penugasan.",
+      "openAssignments": "Buka penugasan"
     },
     "substitutions": {
       "eyebrow": "Akademik",
       "title": "Guru pengganti",
       "request": "Minta pengganti",
       "todayBadge": "Hari ini",
-      "incoming": "Masuk",
-      "outgoing": "Keluar",
+      "incoming": "Untuk saya",
+      "outgoing": "Dari saya",
       "emptyTitle": "Belum ada permintaan",
       "emptyIncomingBody": "Permintaan dari rekan guru untuk menggantikan jadwal Anda tampil di sini.",
       "emptyOutgoingBody": "Permintaan yang Anda kirim ke rekan guru tampil di sini.",
@@ -1253,7 +1295,8 @@
         "sent": "Permintaan terkirim",
         "cancel": "Batal",
         "send": "Kirim permintaan"
-      }
+      },
+      "directionLabel": "Arah permintaan"
     },
     "permits": {
       "workflow": {
@@ -1282,17 +1325,18 @@
         "navLabel": "Pindai masuk kelas",
         "eyebrow": "Kesiswaan",
         "title": "Pindai masuk kelas",
-        "intro": "Pindai QR yang ditampilkan guru di depan kelas untuk mencatat kehadiran Anda pada sesi yang sedang berjalan.",
+        "intro": "Arahkan kamera ke QR yang ditampilkan guru di depan kelas untuk mencatat kehadiran Anda pada pelajaran yang sedang berjalan.",
         "scanLabel": "Kode masuk kelas",
-        "placeholder": "Tempel atau ketik kode di bawah QR",
+        "placeholder": "Kode di bawah QR",
         "submit": "Kirim kode",
         "cameraLabel": "Pindai dengan kamera",
         "successTitle": "Berhasil dicatat",
-        "successBody": "Anda tercatat masuk kelas {teacher} pada {time}.",
+        "successBody": "Tercatat masuk kelas {teacher} pukul {time}.",
         "scanAgain": "Pindai lagi",
         "errorTitle": "Pindai gagal",
         "studentsOnlyTitle": "Khusus siswa",
-        "studentsOnlyBody": "Halaman ini dipakai siswa untuk memindai QR masuk kelas dari guru. Akun Anda bukan akun siswa."
+        "studentsOnlyBody": "Halaman ini dipakai siswa untuk memindai QR masuk kelas dari guru. Akun Anda bukan akun siswa.",
+        "backHome": "Ke beranda"
       },
       "qr": {
         "expiresIn": "Berlaku {seconds} detik lagi",

@@ -85,15 +85,17 @@ export function ScheduleWeekGrid({
   const today = todayOfWeek(me?.tenant.timezone);
 
   return (
-    <Card className="hidden overflow-hidden p-0 md:block">
-      <div className="overflow-x-auto">
+    // As tall as the page leaves it on desktop: the grid scrolls inside the
+    // card, under day headings that stay in view.
+    <Card className="hidden min-h-0 overflow-hidden p-0 md:flex md:flex-col">
+      <div className="min-h-0 overflow-auto">
         <table
-          className="w-full table-fixed border-collapse text-[13px]"
+          className="w-full table-fixed border-collapse text-body-sm"
           style={{ minWidth: gridMinWidth(activeDays.length) }}
         >
           <GridColumns columnCount={activeDays.length} />
           <thead>
-            <tr className="bg-bg text-left text-fg-muted">
+            <tr className="text-left text-fg-muted">
               <HeadCell first>{t("periodColumn")}</HeadCell>
               {activeDays.map((day) => (
                 <HeadCell key={day} current={day === today}>

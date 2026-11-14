@@ -6,7 +6,10 @@ import {
   ConfirmDialog,
   Dialog,
   DialogContent,
+  DialogFooter,
+  Field,
   Input,
+  NumberInput,
   Select,
   useToast,
 } from "@newsekolah/ui";
@@ -22,6 +25,7 @@ import {
   useDeleteComponentMutation,
   useUpdateComponentMutation,
 } from "../api";
+import { fromText, toText } from "../lib/number-text";
 
 const KINDS: AssessmentComponentKind[] = [
   "formative",
@@ -129,8 +133,7 @@ export function ComponentDialog({
               void save();
             }}
           >
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("code")}</span>
+            <Field label={t("code")}>
               <Input
                 value={code}
                 maxLength={32}
@@ -139,9 +142,8 @@ export function ComponentDialog({
                 }}
                 required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("kind")}</span>
+            </Field>
+            <Field label={t("kind")}>
               <Select
                 options={KINDS.map((value) => ({ value, label: tKind(value) }))}
                 value={kind}
@@ -149,52 +151,47 @@ export function ComponentDialog({
                   setKind(value as AssessmentComponentKind);
                 }}
               />
-            </label>
+            </Field>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("weight")}</span>
-                <Input
-                  type="number"
+              <Field label={t("weight")}>
+                <NumberInput
                   min={0}
-                  step="0.1"
-                  value={weight}
-                  onChange={(e) => {
-                    setWeight(e.target.value);
+                  step={0.1}
+                  value={fromText(weight)}
+                  onChange={(value) => {
+                    setWeight(toText(value));
                   }}
                   required
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("sequence")}</span>
-                <Input
-                  type="number"
+              </Field>
+              <Field label={t("sequence")}>
+                <NumberInput
                   min={1}
-                  step="1"
-                  value={sequence}
-                  onChange={(e) => {
-                    setSequence(e.target.value);
+                  step={1}
+                  value={fromText(sequence)}
+                  onChange={(value) => {
+                    setSequence(toText(value));
                   }}
                 />
-              </label>
+              </Field>
             </div>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("kktp")}</span>
-              <Input
-                type="number"
+            <Field label={t("kktp")}>
+              <NumberInput
                 min={0}
-                step="1"
-                value={kktp}
+                step={1}
+                value={fromText(kktp)}
                 placeholder={t("kktpPlaceholder")}
-                onChange={(e) => {
-                  setKktp(e.target.value);
+                onChange={(value) => {
+                  setKktp(toText(value));
                 }}
               />
-            </label>
-            <div className="flex items-center justify-between gap-2 border-t border-border pt-4">
+            </Field>
+            <DialogFooter className="sm:justify-between">
               {editing ? (
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="ghost"
+                  className="text-danger"
                   onClick={() => {
                     setConfirmingDelete(true);
                   }}
@@ -204,7 +201,7 @@ export function ComponentDialog({
               ) : (
                 <span />
               )}
-              <div className="flex gap-2">
+              <div className="flex gap-2 max-sm:contents">
                 <Button
                   type="button"
                   variant="secondary"
@@ -218,7 +215,7 @@ export function ComponentDialog({
                   {t("save")}
                 </Button>
               </div>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -228,7 +225,7 @@ export function ComponentDialog({
         title={t("deleteTitle")}
         description={editing ? t("deleteBody", { code: editing.code }) : ""}
         confirmLabel={t("delete")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={confirmDelete}
       />

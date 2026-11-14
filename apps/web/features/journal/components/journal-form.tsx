@@ -2,7 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import { formatTime, type Locale } from "@newsekolah/i18n";
-import { Alert, Button, Input, Select, useToast } from "@newsekolah/ui";
+import { Alert, Button, DatePicker, DialogFooter, Field, Select, useToast } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -191,24 +191,26 @@ export function JournalForm({
       }}
     >
       {draftOffer && (
-        <Alert variant="warning" title={t("draftFoundTitle")}>
-          <p>
-            {t("draftFoundBody", {
-              time: formatTime(draftOffer.savedAt, { locale, timeZone: me?.tenant.timezone }),
-            })}
-          </p>
-          <div className="mt-2 flex gap-2">
-            <Button type="button" size="sm" onClick={restoreDraft}>
-              {t("draftRestore")}
-            </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={dismissDraft}>
-              {t("draftDismiss")}
-            </Button>
-          </div>
+        <Alert
+          variant="warning"
+          title={t("draftFoundTitle")}
+          action={
+            <div className="flex gap-2">
+              <Button type="button" size="sm" variant="secondary" onClick={dismissDraft}>
+                {t("draftDismiss")}
+              </Button>
+              <Button type="button" size="sm" onClick={restoreDraft}>
+                {t("draftRestore")}
+              </Button>
+            </div>
+          }
+        >
+          {t("draftFoundBody", {
+            time: formatTime(draftOffer.savedAt, { locale, timeZone: me?.tenant.timezone }),
+          })}
         </Alert>
       )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("class")}</span>
+      <Field label={t("class")}>
         <Select
           options={classOptions}
           value={effectiveClassId}
@@ -217,9 +219,8 @@ export function JournalForm({
           disabled={classes.isLoading || locked}
           aria-label={t("class")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("subject")}</span>
+      </Field>
+      <Field label={t("subject")}>
         <Select
           options={subjectOptions}
           value={effectiveSubjectId}
@@ -228,19 +229,15 @@ export function JournalForm({
           disabled={subjects.isLoading || effectiveClassId === "" || locked}
           aria-label={t("subject")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("date")}</span>
-        <Input
-          type="date"
+      </Field>
+      <Field label={t("date")}>
+        <DatePicker
           value={lessonDate}
-          onChange={(e) => {
-            setLessonDate(e.target.value);
-          }}
+          onChange={setLessonDate}
+          clearable={false}
           disabled={locked}
-          aria-label={t("date")}
         />
-      </label>
+      </Field>
 
       <JournalFields
         topic={topic}
@@ -252,14 +249,14 @@ export function JournalForm({
         onReflectionChange={setReflection}
       />
 
-      <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={upsert.isPending} disabled={!canSubmit}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }
