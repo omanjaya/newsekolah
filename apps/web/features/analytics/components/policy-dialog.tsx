@@ -111,14 +111,14 @@ function PolicyForm({
         });
       }}
     >
-      <p className="text-sm text-fg-muted">{t("description")}</p>
+      <p className="text-body-sm text-fg-muted">{t("description")}</p>
       {error && <Alert variant="warning" title={error} />}
       <div className="grid gap-3 sm:grid-cols-2">
         {shown.map((key) => {
           const rate = key.endsWith("_rate");
           const decimal = rate || key.startsWith("grade_drop_");
           return (
-            <label key={key} className="flex flex-col gap-1 text-sm">
+            <label key={key} className="flex flex-col gap-1 text-body-sm">
               <span>{t(`fields.${key}`)}</span>
               <Input
                 type="number"

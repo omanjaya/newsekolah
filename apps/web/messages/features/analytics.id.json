@@ -7,7 +7,7 @@
     "columns": {
       "student": "Siswa",
       "class": "Kelas",
-      "level": "Status",
+      "level": "Level",
       "score": "Skor",
       "computedAt": "Diperbarui"
     },
@@ -16,12 +16,19 @@
     "emptyBody": "Belum ada siswa di kelas ini yang mencapai ambang siaga atau berisiko.",
     "policy": "Atur kebijakan",
     "summary": {
-      "chartLabel": "Dari {total} siswa: {none} aman, {watch} siaga, {at_risk} berisiko."
+      "chartLabel": "Dari {total} siswa: {none} aman, {watch} siaga, {at_risk} berisiko.",
+      "label": "Siswa per level",
+      "filtering": "Menyaring daftar",
+      "filterHint": "Ketuk untuk menyaring"
     },
     "searchPlaceholder": "Cari nama siswa atau kelas",
     "notAssignedTitle": "Belum ada kelas yang Anda pantau",
     "notAssignedBody": "Daftar ini tersedia untuk wali kelas, guru BK, atau pimpinan sekolah yang memiliki penugasan aktif.",
-    "backHome": "Kembali ke beranda"
+    "backHome": "Kembali ke beranda",
+    "filters": {
+      "class": "Kelas"
+    },
+    "computedAt": "Data dihitung {time}"
   },
   "level": {
     "none": "Aman",
@@ -40,7 +47,7 @@
     "reasonWeight": "{weight} poin",
     "signalsTitle": "Sinyal",
     "signals": {
-      "attendance": "Kehadiran",
+      "attendance": "Presensi",
       "attendanceValue": "Absen {absent} dari {considered} hari sekolah terakhir",
       "attendancePresentTooltip": "Hadir {count} hari",
       "attendanceAbsentTooltip": "Absen {count} hari",
@@ -63,7 +70,8 @@
       "grade_drop_watch": "Rata-rata nilai rapor turun dari {previous_average} ke {current_average}",
       "grade_drop_at_risk": "Rata-rata nilai rapor turun dari {previous_average} ke {current_average}",
       "unknown": "Sinyal tidak dikenal"
-    }
+    },
+    "openProfile": "Lihat profil siswa"
   },
   "policy": {
     "title": "Kebijakan peringatan dini",

@@ -1,16 +1,15 @@
 "use client";
 
-import { Button, PageHeader } from "@newsekolah/ui";
-import { ArrowLeft } from "lucide-react";
+import { Button, TextLink } from "@newsekolah/ui";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryNames } from "../../reference/directory-names";
-import { CounselingWorkspaceNav } from "../../student-services/components/service-workspace-nav";
+import { studentProfileHref } from "../../students/href";
 
 import { StudentRiskPanel } from "./student-risk-panel";
 
@@ -22,6 +21,7 @@ export interface StudentRiskDetailViewProps {
  * One student's signals and the reasons behind the level, so a homeroom
  * teacher or counselor can see exactly what to bring up, not just a
  * label. The body is `StudentRiskPanel`, shared with the student profile.
+ * The trail back to the list comes from the page template.
  */
 export function StudentRiskDetailView({ studentId }: StudentRiskDetailViewProps): ReactElement {
   const t = useTranslations("app.analytics.detail");
@@ -29,39 +29,25 @@ export function StudentRiskDetailView({ studentId }: StudentRiskDetailViewProps)
   // Counseling is part of discipline: the follow-up goes away with it.
   const disciplineOn = useModuleEnabled("discipline");
   const canCounsel = useCan("manage_counseling") && disciplineOn;
-  const router = useRouter();
 
   const studentMap = useDirectoryNames([studentId]);
   const studentName = studentMap.get(studentId)?.name ?? t("unknownStudent");
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <Button
-        variant="secondary"
-        size="sm"
-        className="self-start"
-        onClick={() => {
-          router.back();
-        }}
-      >
-        <ArrowLeft className="size-4" aria-hidden="true" />
-        {t("back")}
-      </Button>
-      <CounselingWorkspaceNav />
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={studentName}
-        actions={
-          canCounsel && (
-            <Button asChild size="sm">
-              <Link href={`/discipline/counseling?studentId=${encodeURIComponent(studentId)}`}>
-                {workspace("followUpCounseling")}
-              </Link>
-            </Button>
-          )
-        }
-      />
+    <AppPage
+      title={studentName}
+      description={<TextLink href={studentProfileHref(studentId)}>{t("openProfile")}</TextLink>}
+      primaryAction={
+        canCounsel ? (
+          <Button asChild>
+            <Link href={`/discipline/counseling?studentId=${encodeURIComponent(studentId)}`}>
+              {workspace("followUpCounseling")}
+            </Link>
+          </Button>
+        ) : undefined
+      }
+    >
       <StudentRiskPanel studentId={studentId} />
-    </div>
+    </AppPage>
   );
 }

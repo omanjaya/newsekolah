@@ -26,22 +26,22 @@ export function AttendanceRatioBar({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <p className="text-[13px] text-fg">{label}</p>
+      <p className="text-body-sm text-fg">{label}</p>
       <div
         role="img"
         aria-label={label}
-        className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-xs bg-bg"
+        className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full bg-surface-sunken"
       >
         {presentDays > 0 && (
           <div
-            className="h-full rounded-xs bg-status-present"
+            className="h-full rounded-full bg-status-present"
             style={{ width: `${(presentDays / consideredDays) * 100}%` }}
             title={t("attendancePresentTooltip", { count: presentDays })}
           />
         )}
         {absentDays > 0 && (
           <div
-            className="h-full rounded-xs bg-status-absent"
+            className="h-full rounded-full bg-status-absent"
             style={{ width: `${(absentDays / consideredDays) * 100}%` }}
             title={t("attendanceAbsentTooltip", { count: absentDays })}
           />
