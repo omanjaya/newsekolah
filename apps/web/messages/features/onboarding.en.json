@@ -6,7 +6,9 @@
     "stepsLabel": "{done} of {total} required steps done",
     "ready": "The school is ready for daily operation.",
     "notReady": "The school is not ready yet. Finish the remaining required steps below.",
-    "activeYear": "Active academic year: {label}"
+    "activeYear": "Active academic year: {label}",
+    "readyChip": "Ready to use",
+    "meterLabel": "Required steps done"
   },
   "levels": {
     "sd": "Elementary",
@@ -36,7 +38,9 @@
     "optional": "Optional",
     "done": "Done",
     "notDone": "Not done",
-    "openStep": "Open"
+    "openStep": "Open",
+    "left": "{n} steps left, listed first.",
+    "allDone": "Every step is done. Open any step to change its data."
   },
   "steps": {
     "profile": {

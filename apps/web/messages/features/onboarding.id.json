@@ -6,7 +6,9 @@
     "stepsLabel": "{done} dari {total} langkah wajib selesai",
     "ready": "Sekolah siap dipakai untuk operasional harian.",
     "notReady": "Sekolah belum siap dipakai. Selesaikan langkah wajib yang tersisa di bawah.",
-    "activeYear": "Tahun ajaran aktif: {label}"
+    "activeYear": "Tahun ajaran aktif: {label}",
+    "readyChip": "Siap dipakai",
+    "meterLabel": "Langkah wajib selesai"
   },
   "levels": {
     "sd": "SD",
@@ -36,7 +38,9 @@
     "optional": "Opsional",
     "done": "Selesai",
     "notDone": "Belum",
-    "openStep": "Buka"
+    "openStep": "Buka",
+    "left": "{n} langkah belum selesai, ditampilkan paling atas.",
+    "allDone": "Semua langkah sudah selesai. Buka langkah mana pun untuk mengubah datanya."
   },
   "steps": {
     "profile": {
@@ -49,7 +53,7 @@
       "count": "{count} tahun ajaran"
     },
     "grade_levels": {
-      "label": "Jenjang kelas",
+      "label": "Tingkat kelas",
       "description": "Daftar jenjang (misalnya kelas 1 sampai 6) yang menjadi dasar pembagian kelas.",
       "count": "{count} jenjang"
     },
@@ -79,7 +83,7 @@
       "count": "{count} siswa"
     },
     "enrollments": {
-      "label": "Pendaftaran siswa ke kelas",
+      "label": "Penempatan siswa ke kelas",
       "description": "Siswa yang sudah ditempatkan ke kelasnya masing-masing.",
       "count": "{count} pendaftaran"
     },

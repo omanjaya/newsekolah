@@ -1,7 +1,18 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Field, Input, Select, Skeleton } from "@newsekolah/ui";
+import {
+  Alert,
+  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Field,
+  Input,
+  Select,
+  Skeleton,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -34,14 +45,11 @@ export function SchoolProfileSection(): ReactElement {
   const branding = useTenantBrandingQuery();
 
   return (
-    <section
-      id="school-profile"
-      className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4"
-    >
-      <div className="flex flex-col gap-1">
-        <h2 className="text-heading text-fg">{t("title")}</h2>
-        <p className="text-body-sm text-fg-muted">{t("body")}</p>
-      </div>
+    <Card id="school-profile" padding="md" className="scroll-mt-20">
+      <CardHeader>
+        <CardTitle as="h2">{t("title")}</CardTitle>
+        <CardDescription>{t("body")}</CardDescription>
+      </CardHeader>
       {branding.isError && !branding.data ? (
         <QueryError retry={() => branding.refetch()} />
       ) : branding.isLoading || !branding.data ? (
@@ -49,7 +57,7 @@ export function SchoolProfileSection(): ReactElement {
       ) : (
         <SchoolProfileForm key={branding.dataUpdatedAt} initial={branding.data} />
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -96,19 +104,8 @@ function SchoolProfileForm({ initial }: { initial: TenantBranding }): ReactEleme
         void submit();
       }}
     >
-      {error && (
-        <p
-          role="alert"
-          className="rounded-xs border border-status-absent/40 px-3 py-2 text-body-sm"
-        >
-          {error}
-        </p>
-      )}
-      {saved && !error && (
-        <p role="status" className="text-body-sm text-fg-muted">
-          {t("saved")}
-        </p>
-      )}
+      {error && <Alert tone="danger" title={error} />}
+      {saved && !error && <Alert tone="success" title={t("saved")} />}
       <div className="grid gap-4 md:grid-cols-2">
         <Field label={t("name")}>
           <Input
