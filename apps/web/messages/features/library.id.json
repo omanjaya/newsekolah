@@ -350,7 +350,7 @@
   },
   "classLoans": {
     "eyebrow": "Perpustakaan",
-    "title": "Peminjaman buku pelajaran",
+    "title": "Peminjaman kelas",
     "navLabel": "Peminjaman kelas",
     "changeTitle": "Ganti judul",
     "titleSearchPlaceholder": "Cari judul buku pelajaran",
@@ -371,7 +371,8 @@
       "previewEmptyBody": "Eksemplar judul ini tidak cukup untuk kelas yang dipilih, atau semua siswa sudah meminjamnya.",
       "rejectedTitle": "Tidak bisa dipinjamkan",
       "commit": "Pinjamkan {count} eksemplar",
-      "committed": "{count} peminjaman kelas berhasil dicatat"
+      "committed": "{count} peminjaman kelas berhasil dicatat",
+      "pairsLabel": "Pasangan siswa dan eksemplar"
     },
     "returns": {
       "heading": "Kembalikan dari satu kelas",
@@ -383,7 +384,8 @@
       "submit": "Kembalikan semua",
       "success": "{count} pengembalian kelas berhasil dicatat",
       "rejectedTitle": "Tidak bisa dikembalikan"
-    }
+    },
+    "tabsLabel": "Jenis peminjaman kelas"
   },
   "memberHistory": {
     "currentLoans": "Sedang dipinjam",

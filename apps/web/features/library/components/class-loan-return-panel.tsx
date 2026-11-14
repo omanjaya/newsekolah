@@ -1,7 +1,17 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Field, Button, Select, useToast } from "@newsekolah/ui";
+import {
+  Field,
+  Button,
+  Select,
+  useToast,
+  Alert,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -46,11 +56,13 @@ export function ClassLoanReturnPanel(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-      <h2 className="text-heading text-fg">{t("heading")}</h2>
-      <p className="text-body-sm text-fg-muted">{t("description")}</p>
+    <Card>
+      <CardHeader>
+        <CardTitle as="h2">{t("heading")}</CardTitle>
+        <CardDescription>{t("description")}</CardDescription>
+      </CardHeader>
 
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="grid items-end gap-4 px-5 pb-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
         <Field label={t("classLabel")}>
           <Select
             options={classOptions}
@@ -61,23 +73,24 @@ export function ClassLoanReturnPanel(): ReactElement {
             }}
             placeholder={classes.isLoading ? t("loadingClasses") : t("classPlaceholder")}
             disabled={classes.isLoading}
-            className="w-56"
           />
         </Field>
-        <div className="flex flex-col gap-1 text-body-sm">
-          <span className="font-medium text-fg">{t("titleLabel")}</span>
-          <ClassTitlePicker
-            selected={title}
-            onSelect={(next) => {
-              setTitle(next);
-              setResult(null);
-            }}
-            onClear={() => {
-              setTitle(null);
-              setResult(null);
-            }}
-          />
-        </div>
+        <Field label={t("titleLabel")}>
+          {(control) => (
+            <ClassTitlePicker
+              id={control.id}
+              selected={title}
+              onSelect={(next) => {
+                setTitle(next);
+                setResult(null);
+              }}
+              onClear={() => {
+                setTitle(null);
+                setResult(null);
+              }}
+            />
+          )}
+        </Field>
         <Button
           type="button"
           loading={commitReturns.isPending}
@@ -89,17 +102,16 @@ export function ClassLoanReturnPanel(): ReactElement {
       </div>
 
       {result && result.rejected.length > 0 && (
-        <div className="flex flex-col gap-1 rounded-xs border border-status-absent/40 bg-status-absent/5 p-3">
-          <span className="text-label text-danger">{t("rejectedTitle")}</span>
+        <Alert tone="danger" title={t("rejectedTitle")} className="mx-5 mb-5">
           <ul className="flex flex-col gap-1">
             {result.rejected.map((item) => (
-              <li key={item.barcode} className="text-body-sm text-fg">
+              <li key={item.barcode}>
                 {item.barcode}: {item.reason}
               </li>
             ))}
           </ul>
-        </div>
+        </Alert>
       )}
-    </div>
+    </Card>
   );
 }

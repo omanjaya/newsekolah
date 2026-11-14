@@ -1,7 +1,21 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Field, Button, EmptyState, Select, domainIcons, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Field,
+  List,
+  ListRow,
+  Select,
+  domainIcons,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -80,11 +94,13 @@ export function ClassLoanBorrowPanel(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-      <h2 className="text-heading text-fg">{t("heading")}</h2>
-      <p className="text-body-sm text-fg-muted">{t("description")}</p>
+    <Card>
+      <CardHeader>
+        <CardTitle as="h2">{t("heading")}</CardTitle>
+        <CardDescription>{t("description")}</CardDescription>
+      </CardHeader>
 
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="grid items-end gap-4 px-5 pb-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
         <Field label={t("classLabel")}>
           <Select
             options={classOptions}
@@ -101,23 +117,24 @@ export function ClassLoanBorrowPanel(): ReactElement {
                   : t("classPlaceholder")
             }
             disabled={!canViewClasses || classes.isLoading}
-            className="w-56"
           />
         </Field>
-        <div className="flex flex-col gap-1 text-body-sm">
-          <span className="font-medium text-fg">{t("titleLabel")}</span>
-          <ClassTitlePicker
-            selected={title}
-            onSelect={(next) => {
-              setTitle(next);
-              setPreview(null);
-            }}
-            onClear={() => {
-              setTitle(null);
-              setPreview(null);
-            }}
-          />
-        </div>
+        <Field label={t("titleLabel")}>
+          {(control) => (
+            <ClassTitlePicker
+              id={control.id}
+              selected={title}
+              onSelect={(next) => {
+                setTitle(next);
+                setPreview(null);
+              }}
+              onClear={() => {
+                setTitle(null);
+                setPreview(null);
+              }}
+            />
+          )}
+        </Field>
         <Button
           type="button"
           variant="secondary"
@@ -130,7 +147,19 @@ export function ClassLoanBorrowPanel(): ReactElement {
       </div>
 
       {preview && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4 border-t border-line pt-4">
+          {preview.rejected.length > 0 && (
+            <Alert tone="danger" title={t("rejectedTitle")} className="mx-5">
+              <ul className="flex flex-col gap-1">
+                {preview.rejected.map((item) => (
+                  <li key={item.student_user_id}>
+                    {item.student_name}: {item.reason}
+                  </li>
+                ))}
+              </ul>
+            </Alert>
+          )}
+
           {preview.pairs.length === 0 ? (
             <EmptyState
               icon={<domainIcons.library aria-hidden="true" />}
@@ -138,45 +167,37 @@ export function ClassLoanBorrowPanel(): ReactElement {
               description={t("previewEmptyBody")}
             />
           ) : (
-            <ul className="flex flex-col gap-1">
+            <List aria-label={t("pairsLabel")} data-testid="class-loan-pairs">
               {preview.pairs.map((pair) => (
-                <li
+                <ListRow
                   key={pair.student_user_id}
-                  className="flex items-center justify-between rounded-xs border border-border px-3 py-2 text-body-sm"
-                >
-                  <span className="text-fg">
+                  title={
                     <StudentLink studentId={pair.student_user_id} tab="library">
                       {pair.student_name}
                     </StudentLink>
-                  </span>
-                  <span className="text-fg-muted">{pair.barcode}</span>
-                </li>
+                  }
+                  trailing={
+                    <span className="text-body-sm tabular-nums text-fg-muted">{pair.barcode}</span>
+                  }
+                />
               ))}
-            </ul>
-          )}
-
-          {preview.rejected.length > 0 && (
-            <div className="flex flex-col gap-1 rounded-xs border border-status-absent/40 bg-status-absent/5 p-3">
-              <span className="text-label text-danger">{t("rejectedTitle")}</span>
-              <ul className="flex flex-col gap-1">
-                {preview.rejected.map((item) => (
-                  <li key={item.student_user_id} className="text-body-sm text-fg">
-                    {item.student_name}: {item.reason}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            </List>
           )}
 
           {preview.pairs.length > 0 && (
-            <div>
-              <Button type="button" loading={commitMutation.isPending} onClick={commit}>
+            <div className="flex justify-end border-t border-line p-4">
+              <Button
+                size="lg"
+                className="max-sm:w-full"
+                loading={commitMutation.isPending}
+                onClick={commit}
+              >
                 {t("commit", { count: preview.pairs.length })}
               </Button>
             </div>
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

@@ -350,7 +350,7 @@
   },
   "classLoans": {
     "eyebrow": "Library",
-    "title": "Class textbook loans",
+    "title": "Class loans",
     "navLabel": "Class loans",
     "changeTitle": "Change title",
     "titleSearchPlaceholder": "Search a textbook title",
@@ -371,7 +371,8 @@
       "previewEmptyBody": "This title does not have enough copies for the class, or every student already has one on loan.",
       "rejectedTitle": "Could not be lent",
       "commit": "Lend {count} copies",
-      "committed": "{count} class loans recorded"
+      "committed": "{count} class loans recorded",
+      "pairsLabel": "Student and copy pairs"
     },
     "returns": {
       "heading": "Return from one class",
@@ -383,7 +384,8 @@
       "submit": "Return all",
       "success": "{count} class returns recorded",
       "rejectedTitle": "Could not be returned"
-    }
+    },
+    "tabsLabel": "Class loan kinds"
   },
   "memberHistory": {
     "currentLoans": "Currently borrowed",
