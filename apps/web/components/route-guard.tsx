@@ -1,7 +1,7 @@
 "use client";
 
-import { Skeleton } from "@newsekolah/ui";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import type { ReactElement, ReactNode } from "react";
 
@@ -10,6 +10,7 @@ import { useSession } from "../lib/session/session-provider";
 
 import { ForbiddenPage } from "./forbidden-page";
 import { ModuleUnavailablePage } from "./module-unavailable-page";
+import { PageSkeleton } from "./page-skeleton";
 
 export interface RouteGuardProps {
   children: ReactNode;
@@ -34,6 +35,7 @@ export function RouteGuard({
   const { status, me, isReady } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  const tStates = useTranslations("common.states");
 
   useEffect(() => {
     if (!isReady) return;
@@ -47,12 +49,7 @@ export function RouteGuard({
   }, [status, isReady, me?.must_change_password, pathname, router]);
 
   if (!isReady || status === "anonymous" || me?.must_change_password) {
-    return (
-      <div className="flex flex-col gap-4 p-6" aria-busy="true">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-32 w-full" />
-      </div>
-    );
+    return <PageSkeleton label={tStates("loading")} />;
   }
 
   if (requiredPermission && !me?.permissions.includes(requiredPermission)) {

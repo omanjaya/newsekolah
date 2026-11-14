@@ -1,16 +1,45 @@
 "use client";
 
+import { TriangleAlert } from "lucide-react";
 import type { ReactElement } from "react";
 import { useEffect } from "react";
 
-/**
+/*
  * Replaces the entire document, including the root layout, so it cannot
- * assume the i18n provider, Tailwind classes, or any other context from
- * layout.tsx rendered successfully — that layout is exactly what just
- * threw. Kept to plain inline styles and hardcoded Indonesian copy for
- * that reason; this screen exists to be readable when everything else
- * has failed.
+ * assume the i18n provider, the stylesheet, or any other context from
+ * layout.tsx rendered successfully: that layout is exactly what just threw.
+ * It mirrors StatePage (danger icon in a soft circle, title, one sentence,
+ * the action, a small code) with its own plain CSS, carrying the Hijau
+ * Segar token values for both themes, and hardcoded Indonesian copy; this
+ * screen exists to be readable when everything else has failed.
  */
+const STYLES = `
+  :root { color-scheme: light dark; }
+  .ge-body {
+    margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
+    padding: 24px; box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #F7F6F2; color: #1B1D1A;
+  }
+  .ge-box { max-width: 448px; display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center; }
+  .ge-icon { width: 56px; height: 56px; border-radius: 999px; display: grid; place-items: center; background: #FBE2DE; color: #B3261E; }
+  .ge-title { margin: 0 0 8px; font-size: 18px; line-height: 24px; font-weight: 700; letter-spacing: -0.01em; }
+  .ge-text { margin: 0; font-size: 14px; line-height: 20px; color: #5E625B; }
+  .ge-button {
+    height: 40px; padding: 0 16px; border: 0; border-radius: 14px; cursor: pointer;
+    background: #0F7A5F; color: #FFFFFF; font: inherit; font-size: 13px; font-weight: 600;
+  }
+  .ge-button:focus-visible { outline: 2px solid #0F7A5F; outline-offset: 2px; }
+  .ge-code { margin: 0; font-size: 12px; line-height: 16px; color: #5E625B; }
+  @media (prefers-color-scheme: dark) {
+    .ge-body { background: #171613; color: #F4F2EC; }
+    .ge-icon { background: #3B1815; color: #F0776B; }
+    .ge-text, .ge-code { color: #A6A39A; }
+    .ge-button { background: #2FD6A0; color: #06261D; }
+    .ge-button:focus-visible { outline-color: #2FD6A0; }
+  }
+`;
+
 export default function GlobalError({
   error,
   reset,
@@ -24,43 +53,25 @@ export default function GlobalError({
 
   return (
     <html lang="id">
-      <body
-        style={{
-          margin: 0,
-          minHeight: "100dvh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily:
-            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-          backgroundColor: "#F7F6F2",
-          color: "#1B1D1A",
-        }}
-      >
-        <div style={{ maxWidth: 360, textAlign: "center", padding: 24 }}>
-          <p style={{ fontSize: 16, fontWeight: 500, margin: "0 0 8px" }}>Aplikasi gagal dimuat</p>
-          <p style={{ fontSize: 13, color: "#5E625B", margin: "0 0 16px" }}>
-            Coba muat ulang halaman. Bila terus terjadi, hubungi dukungan sekolah.
-            {error.digest ? ` Kode: ${error.digest}` : ""}
-          </p>
-          <button
-            type="button"
-            onClick={reset}
-            style={{
-              height: 40,
-              padding: "0 16px",
-              borderRadius: 14,
-              border: "none",
-              backgroundColor: "#0F7A5F",
-              color: "#FFFFFF",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-          >
+      <head>
+        <style>{STYLES}</style>
+      </head>
+      <body className="ge-body">
+        <main className="ge-box">
+          <span className="ge-icon" aria-hidden="true">
+            <TriangleAlert size={28} />
+          </span>
+          <div>
+            <h1 className="ge-title">Aplikasi gagal dimuat</h1>
+            <p className="ge-text">
+              Muat ulang halaman ini, dan bila tetap gagal, beri tahu admin sekolah kode di bawah.
+            </p>
+          </div>
+          <button type="button" className="ge-button" onClick={reset}>
             Coba lagi
           </button>
-        </div>
+          {error.digest && <p className="ge-code">Kode: {error.digest}</p>}
+        </main>
       </body>
     </html>
   );
