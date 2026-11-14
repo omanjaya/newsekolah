@@ -114,6 +114,33 @@ describe("generated tokens", () => {
     expect(block(roles, "@utility text-heading")).not.toContain("text-wrap-style");
   });
 
+  it("has wall-screen kiosk roles above display, Manrope and tight", () => {
+    const roles = buildTypeRolesCss();
+    const root = block(css, ":root");
+    expect(root).toContain("--type-kiosk-display-size: 56px;");
+    expect(root).toContain("--type-kiosk-display-line-height: 60px;");
+    expect(root).toContain("--type-kiosk-display-weight: 700;");
+    expect(root).toContain("--type-kiosk-title-size: 32px;");
+    expect(root).toContain("--type-kiosk-title-line-height: 40px;");
+    expect(block(roles, "@utility text-kiosk-display")).toContain(
+      "font-family: var(--font-heading);",
+    );
+    expect(block(roles, "@utility text-kiosk-title")).toContain("text-wrap-style: balance;");
+    // A clock is digits: nothing to balance.
+    expect(block(roles, "@utility text-kiosk-display")).not.toContain("text-wrap-style");
+    // Still large, but it fits a phone opened on the kiosk page.
+    expect(block(css, "@media (width < 40rem)")).toContain("--type-kiosk-display-size: 40px;");
+  });
+
+  it("has a 16/24 body role for field text on touch", () => {
+    const root = block(css, ":root");
+    expect(root).toContain("--type-body-lg-size: 16px;");
+    expect(root).toContain("--type-body-lg-line-height: 24px;");
+    expect(block(buildTypeRolesCss(), "@utility text-body-lg")).toContain(
+      "font-family: var(--font-sans);",
+    );
+  });
+
   it("gives long travel its own easing curve", () => {
     expect(block(css, ":root")).toContain("--ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);");
   });

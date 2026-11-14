@@ -27,10 +27,13 @@ const STATUS_ORDER: StatusName[] = ["present", "sick", "excused", "dispensation"
 const CATEGORY_ORDER: CategoryName[] = ["green", "amber", "purple", "blue", "red"];
 const SEMANTIC_ORDER: SemanticName[] = ["success", "warning", "danger", "info"];
 const TYPE_ROLE_ORDER: TypeRoleName[] = [
+  "kiosk-display",
+  "kiosk-title",
   "display",
   "title-lg",
   "title",
   "heading",
+  "body-lg",
   "body",
   "body-sm",
   "label",
@@ -44,6 +47,7 @@ const THEME_KEYS: [keyof ThemeColors, string][] = [
   ["surfaceRaised", "surface-raised"],
   ["surfaceSunken", "surface-sunken"],
   ["surfaceOverlay", "surface-overlay"],
+  ["surfaceHeader", "surface-header"],
   ["scrim", "scrim"],
   ["fg", "fg"],
   ["fgMuted", "fg-muted"],
@@ -54,7 +58,10 @@ const THEME_KEYS: [keyof ThemeColors, string][] = [
   ["accentFg", "accent-fg"],
   ["accentSoft", "accent-soft"],
   ["accentSoftFg", "accent-soft-fg"],
+  ["accentSoftFgMuted", "accent-soft-fg-muted"],
   ["accentStrong", "accent-strong"],
+  ["neutralSoft", "neutral-soft"],
+  ["neutralSoftFg", "neutral-soft-fg"],
   ["stateHover", "state-hover"],
   ["statePressed", "state-pressed"],
   ["stateSelected", "state-selected"],
@@ -226,7 +233,7 @@ ${reducedMotionVars().join("\n")}
  * does. Not `heading`: a short card title next to a link would be split
  * into two stubby lines instead of keeping its first line full.
  */
-const BALANCED_ROLES = new Set<TypeRoleName>(["display", "title"]);
+const BALANCED_ROLES = new Set<TypeRoleName>(["kiosk-title", "display", "title"]);
 
 /**
  * Tailwind v4 `@utility` rules, one per role, so `text-display` sets the

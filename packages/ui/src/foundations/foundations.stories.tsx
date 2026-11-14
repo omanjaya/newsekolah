@@ -44,10 +44,13 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 // Full class names so Tailwind's scanner generates them.
 const ROLE_CLASS: Record<TypeRoleName, string> = {
+  "kiosk-display": "text-kiosk-display",
+  "kiosk-title": "text-kiosk-title",
   display: "text-display",
   "title-lg": "text-title-lg",
   title: "text-title",
   heading: "text-heading",
+  "body-lg": "text-body-lg",
   body: "text-body",
   "body-sm": "text-body-sm",
   label: "text-label",
@@ -55,10 +58,15 @@ const ROLE_CLASS: Record<TypeRoleName, string> = {
 };
 
 const ROLE_SAMPLE: Record<TypeRoleName, string> = {
+  // Wall screens only: the kiosk clock and a kiosk's headline.
+  "kiosk-display": "07.42",
+  "kiosk-title": "Monitor presensi",
   display: "Selamat datang, Nadia",
   "title-lg": "96%",
   title: "Terbitkan izin keluar",
   heading: "Hari ini",
+  // A field's text on touch, where iOS zooms into anything smaller.
+  "body-lg": "Nadia Putri",
   body: "Presensi kelas X-A sudah diisi untuk jam pertama.",
   "body-sm": "Wali kelas akan meninjau hari ini.",
   label: "Nama lengkap",
@@ -217,6 +225,19 @@ export const SemanticColors: Story = {
           <div className="rounded-md bg-state-pressed p-4 text-body-sm text-fg">state-pressed</div>
           <div className="rounded-md bg-state-selected p-4 text-body-sm text-fg">
             state-selected
+          </div>
+        </div>
+      </Section>
+      <Section title="Isian lembut dan pita">
+        <div className="grid grid-cols-3 gap-3 rounded-lg border border-border bg-surface p-4">
+          <div className="rounded-md bg-neutral-soft p-4 text-body-sm text-neutral-soft-fg">
+            neutral-soft
+          </div>
+          <div className="rounded-md bg-accent-soft p-4 text-body-sm text-accent-soft-fg-muted">
+            accent-soft-fg-muted
+          </div>
+          <div className="rounded-md bg-surface-header p-4 text-body-sm text-fg-muted">
+            surface-header
           </div>
         </div>
       </Section>

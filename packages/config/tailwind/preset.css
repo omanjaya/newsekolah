@@ -7,9 +7,9 @@
  * `bg-bg`, `bg-surface-raised`, `border-border-strong`, `shadow-2`,
  * `text-status-present` or `rounded-xl` resolve to the same CSS custom
  * properties the tokens package generates, including their dark-mode
- * overrides. Typography roles (`text-display` ... `text-caption`) are
- * generated into @newsekolah/ui-tokens/dist/type-roles.css from the same
- * source.
+ * overrides. Typography roles (`text-kiosk-display` ... `text-caption`)
+ * are generated into @newsekolah/ui-tokens/dist/type-roles.css from the
+ * same source.
  *
  * Consumers import this file once, after `@import "tailwindcss"`:
  *   @import "tailwindcss";
@@ -28,6 +28,8 @@
   --color-surface-raised: var(--color-surface-raised);
   --color-surface-sunken: var(--color-surface-sunken);
   --color-surface-overlay: var(--color-surface-overlay);
+  /* A table's header band and totals row. */
+  --color-surface-header: var(--color-surface-header);
   --color-scrim: var(--color-scrim);
   --color-fg: var(--color-fg);
   --color-fg-muted: var(--color-fg-muted);
@@ -38,7 +40,12 @@
   --color-accent-fg: var(--color-accent-fg);
   --color-accent-soft: var(--color-accent-soft);
   --color-accent-soft-fg: var(--color-accent-soft-fg);
+  --color-accent-soft-fg-muted: var(--color-accent-soft-fg-muted);
   --color-accent-strong: var(--color-accent-strong);
+
+  /* The neutral soft fill (Badge, CountBadge, IconCircle) and its text, both translucent. */
+  --color-neutral-soft: var(--color-neutral-soft);
+  --color-neutral-soft-fg: var(--color-neutral-soft-fg);
 
   /* Neutral state layers (translucent): hover, pressed, and the accent-tinted selected layer. */
   --color-state-hover: var(--color-state-hover);
@@ -114,7 +121,9 @@
   /*
    * The plain size scale stays for compatibility; new code uses the
    * typography roles (text-display, text-title-lg, text-title,
-   * text-heading, text-body, text-body-sm, text-label, text-caption).
+   * text-heading, text-body-lg, text-body, text-body-sm, text-label,
+   * text-caption, and on wall screens only text-kiosk-display and
+   * text-kiosk-title).
    */
   --text-xs: var(--text-12);
   --text-sm: var(--text-13);

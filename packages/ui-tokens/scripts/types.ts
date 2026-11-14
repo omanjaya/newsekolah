@@ -31,6 +31,12 @@ export interface ThemeColors {
   surfaceSunken: string;
   /** Dialogs: above `surface`, below the popovers and menus opened from them. */
   surfaceOverlay: string;
+  /**
+   * The band under a table's column headers and its totals row: the sunken
+   * tint in light; in dark, where sunken is darker than the page and read
+   * as a black slot across a card, the card lifted a step toward `fg`.
+   */
+  surfaceHeader: string;
   /** Backdrop behind dialogs and sheets. Translucent (rgba). */
   scrim: string;
   fg: string;
@@ -52,8 +58,18 @@ export interface ThemeColors {
   accentFg: string;
   accentSoft: string;
   accentSoftFg: string;
+  /** Secondary text on `accentSoft` (a hero card's meta line, a tinted card's description). */
+  accentSoftFgMuted: string;
   /** Hover/pressed shade for solid accent surfaces (buttons). */
   accentStrong: string;
+  /**
+   * The neutral soft fill of a Badge, a CountBadge or an IconCircle.
+   * Translucent (fg-based rgba), so it shows on every surface in both
+   * themes, where an opaque sunken fill vanishes on the dark page.
+   */
+  neutralSoft: string;
+  /** Text on `neutralSoft` (rgba of `fg`): AA on that fill over every surface. */
+  neutralSoftFg: string;
   /** Neutral state layers (rgba), laid over whatever surface an element sits on. */
   stateHover: string;
   statePressed: string;
@@ -83,8 +99,24 @@ export interface TypeRole {
   compact?: { size: number; lineHeight: number };
 }
 
+/**
+ * `kiosk-display` and `kiosk-title` are for wall screens read from across
+ * a room (the kiosk clock, a kiosk's headline), never for app pages.
+ * `body-lg` is 16/24 body text: a field's text on touch, where iOS zooms
+ * into anything smaller.
+ */
 export type TypeRoleName =
-  "display" | "title-lg" | "title" | "heading" | "body" | "body-sm" | "label" | "caption";
+  | "kiosk-display"
+  | "kiosk-title"
+  | "display"
+  | "title-lg"
+  | "title"
+  | "heading"
+  | "body-lg"
+  | "body"
+  | "body-sm"
+  | "label"
+  | "caption";
 
 export type ElevationLevel = "0" | "1" | "2" | "3";
 

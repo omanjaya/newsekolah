@@ -89,5 +89,18 @@ describe("cn", () => {
     expect(cn("bg-surface", "bg-surface-raised")).toBe("bg-surface-raised");
     expect(cn("hover:bg-bg", "hover:bg-state-hover")).toBe("hover:bg-state-hover");
     expect(cn("border-border", "border-border-strong")).toBe("border-border-strong");
+    expect(cn("bg-surface-sunken", "bg-surface-header")).toBe("bg-surface-header");
+    expect(cn("bg-state-pressed", "bg-neutral-soft")).toBe("bg-neutral-soft");
+    expect(cn("text-accent-soft-fg", "text-accent-soft-fg-muted")).toBe(
+      "text-accent-soft-fg-muted",
+    );
+    // A color next to a role stays: one is the hue, the other the style.
+    expect(cn("text-neutral-soft-fg", "text-caption")).toBe("text-neutral-soft-fg text-caption");
+  });
+
+  it("treats the kiosk and body-lg roles as roles", () => {
+    expect(cn("text-display", "text-kiosk-display")).toBe("text-kiosk-display");
+    expect(cn("text-kiosk-title", "text-body-lg")).toBe("text-body-lg");
+    expect(cn("text-kiosk-display", "text-fg")).toBe("text-kiosk-display text-fg");
   });
 });
