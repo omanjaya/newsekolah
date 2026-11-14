@@ -180,22 +180,25 @@ export function CardContent({ className, ...props }: ComponentPropsWithRef<"div"
   return <div className={cn(inset ? "" : "p-5 pt-0", className)} {...props} />;
 }
 
+/*
+ * The footer is set apart by space, not a rule (hierarchy through type and
+ * space; lines only inside lists and tables): 4px more than the rhythm of
+ * the sections above it. In an unpadded card it follows the content's own
+ * 20px inset; after an edge-to-edge list, whose rows bring 12px, it takes
+ * 12px so the gap still totals 24.
+ */
 const FOOTER_INSET: Record<CardPadding, string> = {
-  none: "p-5",
-  sm: "pt-3",
-  md: "pt-4",
-  lg: "pt-5",
+  none: "p-5 pt-1 [[data-card-flush]+&]:pt-3",
+  sm: "pt-1",
+  md: "pt-1",
+  lg: "pt-1",
 };
 
 export function CardFooter({ className, ...props }: ComponentPropsWithRef<"div">) {
   const card = useCardContext();
   return (
     <div
-      className={cn(
-        "flex items-center gap-2 border-t border-line",
-        FOOTER_INSET[card?.padding ?? "none"],
-        className,
-      )}
+      className={cn("flex items-center gap-2", FOOTER_INSET[card?.padding ?? "none"], className)}
       {...props}
     />
   );
