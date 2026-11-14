@@ -2,8 +2,19 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
-import { formatDate } from "@newsekolah/i18n";
-import { Alert, Button, EmptyState, Input, Skeleton, domainIcons, useToast } from "@newsekolah/ui";
+import { formatDateTime } from "@newsekolah/i18n";
+import {
+  Alert,
+  Button,
+  DataList,
+  DataListItem,
+  EmptyState,
+  Field,
+  Input,
+  SkeletonDetail,
+  domainIcons,
+  useToast,
+} from "@newsekolah/ui";
 import { Download, Upload } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -21,6 +32,7 @@ import {
   useReviewLeaveRequestMutation,
   useUploadEvidenceMutation,
 } from "../api";
+import { countDays, formatDayRange } from "../lib/permit-dates";
 
 import { WorkflowStepper } from "./workflow-stepper";
 
@@ -40,7 +52,7 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
   const fileRef = useRef<HTMLInputElement>(null);
   const [note, setNote] = useState("");
 
-  if (isLoading) return <Skeleton className="h-64 w-full" aria-busy="true" />;
+  if (isLoading) return <SkeletonDetail rows={4} />;
   if (error instanceof ApiError && (error.status === 404 || error.status === 403)) {
     return (
       <EmptyState
@@ -50,7 +62,7 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
       />
     );
   }
-  if (error || !data) return <QueryError retry={refetch} />;
+  if (error || !data) return <QueryError retry={refetch} error={error} />;
   const inst = data.instance;
   const isOwner = inst.subject_user_id === me?.id;
   const fail = (error: unknown) => {
@@ -59,6 +71,8 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
     );
   };
   const stageKey = inst.current_stage?.key;
+  const canAct = inst.status === "in_progress" && canReview && stageKey === "homeroom" && !isOwner;
+  const canIssueNow = inst.status === "in_progress" && canIssue && stageKey === "counselor";
 
   async function openDocument(kind: "evidence" | "letter") {
     try {
@@ -72,34 +86,32 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1">
-        <p className="font-heading text-[16px] font-bold tracking-tight text-fg">
-          {t(`categories.${data.category}`)} <span className="text-fg-muted">&middot;</span>{" "}
-          {formatDate(data.starts_on, { locale, timeZone: me?.tenant.timezone })} -{" "}
-          {formatDate(data.ends_on, { locale, timeZone: me?.tenant.timezone })}
-        </p>
-        <p className="text-[13px] text-fg-muted">
-          {t("student")}: {data.student_name} ({data.class_name})
+        <p className="text-heading text-fg">{t(`categories.${data.category}`)}</p>
+        <p className="text-body-sm text-fg-muted">
+          {formatDayRange(data.starts_on, data.ends_on, locale)} ·{" "}
+          {t("days", { count: countDays(data.starts_on, data.ends_on) })}
         </p>
       </div>
 
       <WorkflowStepper instance={inst} />
 
-      <dl className="grid grid-cols-2 gap-2 text-[13px]">
-        <dt className="text-fg-muted">{t("form.reason")}</dt>
-        <dd>{data.reason}</dd>
+      <DataList>
+        <DataListItem label={t("student")}>
+          {data.student_name} ({data.class_name})
+        </DataListItem>
+        <DataListItem label={t("form.reason")}>{data.reason}</DataListItem>
+        <DataListItem label={t("opened")}>
+          {formatDateTime(inst.opened_at, { locale, timeZone: me?.tenant.timezone })}
+        </DataListItem>
         {data.letter_number && (
-          <>
-            <dt className="text-fg-muted">{t("letterNumber")}</dt>
-            <dd>{data.letter_number}</dd>
-          </>
+          <DataListItem label={t("letterNumber")}>{data.letter_number}</DataListItem>
         )}
-      </dl>
+      </DataList>
 
       <div className="flex flex-wrap gap-2">
         {data.has_evidence ? (
           <Button
             variant="secondary"
-            size="sm"
             icon={<Download />}
             loading={docUrl.isPending}
             onClick={() => void openDocument("evidence")}
@@ -134,7 +146,6 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
             />
             <Button
               variant="secondary"
-              size="sm"
               icon={<Upload />}
               loading={upload.isPending}
               onClick={() => fileRef.current?.click()}
@@ -146,7 +157,6 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
         {data.has_letter && (
           <Button
             variant="secondary"
-            size="sm"
             icon={<Download />}
             loading={docUrl.isPending}
             onClick={() => void openDocument("letter")}
@@ -156,10 +166,9 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
         )}
       </div>
 
-      {inst.status === "in_progress" && canReview && stageKey === "homeroom" && !isOwner && (
-        <div className="flex flex-col gap-3 border-t border-border pt-4">
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("reviewNote")}</span>
+      {canAct && (
+        <div className="flex flex-col gap-4 border-t border-line pt-4">
+          <Field label={t("reviewNote")} optional>
             <Input
               value={note}
               onChange={(e) => {
@@ -167,8 +176,8 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
               }}
               maxLength={500}
             />
-          </label>
-          <div className="flex justify-end gap-2">
+          </Field>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
               variant="secondary"
               loading={review.isPending && !review.variables.approve}
@@ -205,8 +214,8 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
           </div>
         </div>
       )}
-      {inst.status === "in_progress" && canIssue && stageKey === "counselor" && (
-        <div className="flex justify-end border-t border-border pt-4">
+      {canIssueNow && (
+        <div className="flex flex-col gap-2 border-t border-line pt-4 sm:flex-row sm:justify-end">
           <Button
             loading={issue.isPending}
             onClick={() => {
@@ -223,7 +232,7 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
         </div>
       )}
       {(inst.status === "completed" || inst.status === "approved") && data.has_letter && (
-        <Alert variant="info" title={t("issuedTitle")}>
+        <Alert variant="success" title={t("issuedTitle")}>
           {t("issuedBody")}
         </Alert>
       )}

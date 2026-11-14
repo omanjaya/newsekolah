@@ -773,21 +773,22 @@
       }
     },
     "duty": {
-      "navLabel": "Duty desk",
+      "navLabel": "Today's duty",
       "eyebrow": "Student Affairs",
-      "title": "Duty desk",
+      "title": "Today's duty",
       "intro": "Show the QR for each purpose. Every code is single-use and renews itself when it expires. Exit permit approvals live on the Exit Permits page, Approve tab.",
       "purposes": {
-        "classroom_entry": "Classroom entry QR",
-        "late_arrival": "Late arrival QR",
-        "manual": "Manual record"
+        "classroom_entry": "Class entry",
+        "late_arrival": "Late",
+        "manual": "Manual record",
+        "exit": "Exit permit"
       },
       "help": {
-        "classroom_entry": "Students scan this code when entering class to record their own presence for the running session.",
-        "late_arrival": "Students arriving late scan this code. They appear in the review queue on the Late Arrivals page."
+        "classroom_entry": "Students scan this code when entering class to record their presence in the running session. The code renews itself when it runs out.",
+        "late_arrival": "Students who arrive late scan this code. Their names go straight into the late queue on this page."
       },
       "manualForm": {
-        "intro": "For a student with no phone on hand: search for the student, pick an exit permit or a late arrival, and record it directly here.",
+        "intro": "For a student with no phone on hand: pick the kind, find the student, and record it here.",
         "kindExit": "Exit permit",
         "kindLate": "Late arrival",
         "student": "Student",
@@ -803,11 +804,38 @@
         "reason": "Reason for lateness",
         "reasonPlaceholder": "E.g. traffic, overslept",
         "homeroomReported": "Homeroom teacher already notified",
-        "requiredError": "Fill in the required fields.",
+        "requiredError": "Required.",
         "recordedHint": "Recorded as entered by the duty teacher, not the student's own request.",
         "recordedExit": "Exit permit recorded for {student}",
         "recordedLate": "Late arrival recorded for {student}",
-        "submit": "Record"
+        "submit": "Record",
+        "title": "Record without the student's phone",
+        "kindLabel": "Record kind",
+        "studentRequired": "Pick a student first."
+      },
+      "openMonitor": "Open the monitor screen",
+      "modeLabel": "Duty mode",
+      "qrLabel": {
+        "classroom_entry": "Class entry QR code",
+        "late_arrival": "Late arrival QR code"
+      },
+      "queue": {
+        "title": "Late queue",
+        "description": "Students who scanned the late QR and wait for your review.",
+        "openInbox": "Needs action",
+        "emptyTitle": "Nobody is late yet",
+        "emptyBody": "Students who scan the late QR show up here.",
+        "occurrence": "Late #{n}, {time}"
+      },
+      "log": {
+        "title": "Recorded today",
+        "description": "Manual records and reviews from this screen since it opened.",
+        "empty": "Nothing recorded from this screen yet.",
+        "kinds": {
+          "exit": "Exit permit recorded",
+          "late": "Late arrival recorded",
+          "review": "Late arrival reviewed"
+        }
       }
     },
     "common": {
@@ -1206,7 +1234,8 @@
       "scan": {
         "placeholder": "Paste or type the code under the QR",
         "submit": "Submit code",
-        "cameraLabel": "Scan with camera"
+        "cameraLabel": "Scan with camera",
+        "failedTitle": "Code not accepted"
       },
       "classroomEntry": {
         "navLabel": "Scan classroom entry",
@@ -1262,21 +1291,33 @@
           "stagesHint": "After submitting, ask the duty teacher and then your class teacher to scan and approve. The gate QR appears after the last stage.",
           "requiredError": "Destination and period range are required.",
           "created": "Exit permit requested",
-          "submit": "Submit"
+          "submit": "Submit",
+          "required": "Required.",
+          "cancel": "Cancel",
+          "description": "Write where you are going and which periods you will miss."
         },
         "approve": {
-          "hint": "Ask the student for their permit code, then show the approval QR for them to scan.",
+          "hint": "Ask the student for their permit code, type or scan it, then let the student scan the approval QR that appears.",
           "permitCode": "Student's permit code",
-          "showQr": "Show approval QR"
+          "showQr": "Show approval QR",
+          "title": "Approve an exit permit stage",
+          "permitCodePlaceholder": "Type or paste the permit code",
+          "qrLabel": "Exit permit approval QR code",
+          "class": "Class",
+          "destination": "Destination"
         },
         "gate": {
-          "hint": "Scan the gate QR the student shows, or paste its code.",
+          "hint": "Point the camera at the gate QR on the student's phone. The result shows under the camera.",
           "payloadLabel": "Gate QR code",
           "needPayload": "The gate code must come from the student's QR.",
           "passed": "Student cleared to leave",
           "lastTitle": "Last exit",
           "todayListTitle": "Just cleared the gate",
-          "undoLast": "Hide from this list"
+          "undoLast": "Hide from this list",
+          "title": "Scan the gate QR",
+          "refused": "Cannot leave",
+          "todayListHint": "Kept on this screen while the page stays open.",
+          "todayListEmpty": "No student has passed the gate yet."
         },
         "queue": {
           "emptyTitle": "Nothing waiting right now",
@@ -1287,7 +1328,27 @@
           "process": "Process",
           "awaitingGate": "Awaiting gate scan",
           "yearlyReportLink": "Yearly exit-permit report"
-        }
+        },
+        "periodRange": "{from} to {to}",
+        "openedAt": "Requested at {time}",
+        "hero": {
+          "activeEyebrow": "Exit permit in progress",
+          "approvedEyebrow": "Ready for the gate",
+          "exitedEyebrow": "Left school",
+          "exitedAt": "Through the gate at {time}",
+          "scanStage": "Scan the {stage} QR",
+          "scanHint": "Ask the {stage} to show the approval QR, then point the camera at it."
+        },
+        "codeHint": "Show this code to the approving teacher.",
+        "waitManual": "Waiting for {stage} to review.",
+        "gateQrLabel": "Exit permit gate QR code",
+        "lessons": "Periods",
+        "opened": "Requested",
+        "exitedLabel": "Through the gate",
+        "idleTitle": "No exit permit in progress",
+        "idleBody": "Need to leave school during lessons? Request a permit, then ask a teacher to scan at each stage. The gate QR appears after the last stage.",
+        "historyTitle": "Exit permit history",
+        "modeLabel": "Task on this page"
       },
       "late": {
         "eyebrow": "Student Affairs",
@@ -1321,23 +1382,35 @@
         "reviewHint": "After review, the student scans the leadership QR to close the flow.",
         "reviewed": "Review saved",
         "cancel": "Cancel",
-        "submitReview": "Save review"
+        "submitReview": "Save review",
+        "noAccessTitle": "For students",
+        "noAccessBody": "Students who arrive late scan the QR at the duty desk from this page. The duty teacher reviews them on the Today's duty page.",
+        "scanTitle": "Scan the QR at the duty desk",
+        "scanBody": "Arrived late? Point the camera at the late-arrival QR at the duty desk. Your name goes straight into the duty teacher's queue.",
+        "reasonHint": "Fill it in before scanning.",
+        "reasonPlaceholder": "For example: flat tyre on the way",
+        "hero": {
+          "eyebrow": "Late arrival #{n}",
+          "title": "Recorded at {time}",
+          "scanStage": "Scan the {stage} QR",
+          "scanHint": "Ask the {stage} to show the QR, then point the camera at it."
+        }
       },
       "leave": {
         "eyebrow": "Student Affairs",
-        "title": "Planned leave",
+        "title": "Absence leave",
         "tabQueue": "Queue",
         "tabMine": "My requests",
         "noAccessTitle": "No access",
         "noAccessBody": "Your role is not part of the planned leave flow.",
-        "issuerQueueUnavailableTitle": "Requests to issue arrive as notifications",
-        "issuerQueueUnavailableBody": "Requests awaiting letter issuance are linked from your notifications. Open the related notification to view and issue the letter.",
+        "issuerQueueUnavailableTitle": "Leave letters are issued from notifications",
+        "issuerQueueUnavailableBody": "Every request the homeroom teacher approves is sent to your notifications. Open the notification to see the request and issue its letter.",
         "openNotifications": "Open notifications",
         "notFoundTitle": "Request not found",
         "notFoundBody": "This request is no longer available or is not part of your duties.",
         "submit": "Request leave",
-        "emptyTitle": "No requests yet",
-        "emptyBody": "Sick, ceremony or dispensation leave you request shows up here.",
+        "emptyTitle": "No leave requests yet",
+        "emptyBody": "Sick, a religious ceremony or a dispensation? Request leave here and your homeroom teacher reviews it.",
         "detailTitle": "Leave request",
         "mine": {
           "tileTotal": "Total requests",
@@ -1388,7 +1461,7 @@
           "startsOn": "From",
           "endsOn": "To",
           "reason": "Details",
-          "evidence": "Evidence (optional)",
+          "evidence": "Evidence",
           "evidenceAdd": "Take or upload an evidence photo",
           "evidenceRemove": "Remove selected evidence",
           "evidenceCompressed": "Compressed to {size}",
@@ -1397,8 +1470,25 @@
           "requiredError": "Dates and details are required.",
           "rangeError": "End date cannot be before the start date.",
           "submitted": "Request sent to the homeroom teacher",
-          "send": "Send request"
-        }
+          "send": "Send request",
+          "description": "Fill in the dates and details. Evidence can be attached now or later.",
+          "dates": "Leave dates",
+          "datesHint": "Pick one day, or a start date and then an end date.",
+          "datesRequired": "Pick the leave dates.",
+          "reasonRequired": "Write a short explanation.",
+          "reasonPlaceholder": "For example: fever since last night",
+          "evidencePreview": "Evidence photo preview",
+          "stagesHint": "After you send it, your homeroom teacher reviews the request and the counselor issues the leave letter."
+        },
+        "hero": {
+          "eyebrow": "Request in progress",
+          "letterPending": "Waiting for the letter",
+          "detail": "View details"
+        },
+        "days": "{count, plural, one {# day} other {# days}}",
+        "historyTitle": "Request history",
+        "letterNumberShort": "Letter {number}",
+        "opened": "Requested"
       },
       "review": {
         "tabWithCount": "{label} {count}",

@@ -1,14 +1,29 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  Card,
+  DateRangePicker,
+  DialogFooter,
+  Field,
+  FormError,
+  FormSection,
+  IconButton,
+  Select,
+  Textarea,
+  type DateRange,
+  useToast,
+} from "@newsekolah/ui";
 import { Camera, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { compressImage, formatFileSize } from "../../../lib/media/compress-image";
+import { useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import {
   LEAVE_EVIDENCE_MAX_LONG_EDGE,
   type LeaveCategory,
@@ -18,21 +33,45 @@ import {
 
 const CATEGORIES: LeaveCategory[] = ["sick", "religious_ceremony", "dispensation", "other"];
 
-export function SubmitForm({ onDone }: { onDone: (id: string) => void }): ReactElement {
+const EMPTY_RANGE: DateRange = { from: "", to: "" };
+
+/** A preview URL for the picked photo, released when the photo changes or the form closes. */
+function usePreviewUrl(file: File | null): string | null {
+  const url = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  useEffect(
+    () => () => {
+      if (url) URL.revokeObjectURL(url);
+    },
+    [url],
+  );
+  return url;
+}
+
+export function SubmitForm({
+  onDone,
+  onCancel,
+}: {
+  onDone: (id: string) => void;
+  onCancel?: () => void;
+}): ReactElement {
   const t = useTranslations("app.permits.leave");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const { me } = useSession();
   const submit = useSubmitLeaveRequestMutation();
   const upload = useUploadEvidenceMutation();
   const [category, setCategory] = useState<LeaveCategory>("sick");
   const [reason, setReason] = useState("");
-  const [startsOn, setStartsOn] = useState("");
-  const [endsOn, setEndsOn] = useState("");
+  const [range, setRange] = useState<DateRange>(EMPTY_RANGE);
   const [evidence, setEvidence] = useState<File | null>(null);
   const [evidenceWasCompressed, setEvidenceWasCompressed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attempted, setAttempted] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const preview = usePreviewUrl(evidence);
   const sending = submit.isPending || upload.isPending;
+  const startsOn = range.from;
+  const endsOn = range.to || range.from;
 
   async function pickEvidence(file: File | undefined) {
     if (!file) {
@@ -47,10 +86,8 @@ export function SubmitForm({ onDone }: { onDone: (id: string) => void }): ReactE
 
   async function send() {
     setError(null);
-    if (!reason.trim() || !startsOn || !endsOn) {
-      setError(t("form.requiredError"));
-      return;
-    }
+    setAttempted(true);
+    if (!reason.trim() || !startsOn || !endsOn) return;
     if (endsOn < startsOn) {
       setError(t("form.rangeError"));
       return;
@@ -85,115 +122,128 @@ export function SubmitForm({ onDone }: { onDone: (id: string) => void }): ReactE
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         void send();
       }}
     >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-          {error}
-        </p>
-      )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.category")}</span>
-        <Select
-          options={CATEGORIES.map((c) => ({ value: c, label: t(`categories.${c}`) }))}
-          value={category}
-          onValueChange={(v) => {
-            setCategory(v as LeaveCategory);
-          }}
-        />
-      </label>
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("form.startsOn")}</span>
-          <Input
-            type="date"
-            value={startsOn}
-            onChange={(e) => {
-              setStartsOn(e.target.value);
-              if (!endsOn) setEndsOn(e.target.value);
+      {error && <FormError>{error}</FormError>}
+      <FormSection>
+        <Field label={t("form.category")} required>
+          <Select
+            options={CATEGORIES.map((c) => ({ value: c, label: t(`categories.${c}`) }))}
+            value={category}
+            onValueChange={(v) => {
+              setCategory(v as LeaveCategory);
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("form.endsOn")}</span>
-          <Input
-            type="date"
-            value={endsOn}
-            onChange={(e) => {
-              setEndsOn(e.target.value);
-            }}
+        </Field>
+        <Field
+          label={t("form.dates")}
+          hint={t("form.datesHint")}
+          error={attempted && !startsOn ? t("form.datesRequired") : undefined}
+          required
+        >
+          <DateRangePicker
+            value={range}
+            onChange={setRange}
+            today={todayInZone(me?.tenant.timezone)}
           />
-        </label>
-      </div>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.reason")}</span>
-        <Textarea
-          rows={3}
-          value={reason}
-          maxLength={500}
-          onChange={(e) => {
-            setReason(e.target.value);
-          }}
-        />
-      </label>
-      <div className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.evidence")}</span>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/jpeg,image/png"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => {
-            void pickEvidence(e.target.files?.[0]);
-          }}
-        />
-        {evidence ? (
-          <div className="flex items-center justify-between gap-2 rounded-sm border border-border bg-bg px-3 py-2">
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate text-fg">{evidence.name}</span>
-              {evidenceWasCompressed && (
-                <span className="text-[12px] text-fg-muted">
-                  {t("form.evidenceCompressed", { size: formatFileSize(evidence.size) })}
-                </span>
+        </Field>
+        <Field
+          label={t("form.reason")}
+          error={attempted && !reason.trim() ? t("form.reasonRequired") : undefined}
+          required
+          className="col-span-full"
+        >
+          <Textarea
+            rows={3}
+            autoResize
+            value={reason}
+            maxLength={500}
+            onChange={(e) => {
+              setReason(e.target.value);
+            }}
+            placeholder={t("form.reasonPlaceholder")}
+          />
+        </Field>
+        <Field
+          label={t("form.evidence")}
+          hint={t("form.evidenceHint")}
+          optional
+          className="col-span-full"
+        >
+          {(control) => (
+            <div className="flex flex-col gap-2">
+              <input
+                ref={fileRef}
+                id={control.id}
+                type="file"
+                accept="image/jpeg,image/png"
+                capture="environment"
+                className="sr-only"
+                aria-describedby={control["aria-describedby"]}
+                onChange={(e) => {
+                  void pickEvidence(e.target.files?.[0]);
+                }}
+              />
+              {evidence ? (
+                <Card tone="sunken" className="flex items-center gap-3 p-2">
+                  {preview && (
+                    <img
+                      src={preview}
+                      alt={t("form.evidencePreview")}
+                      className="size-16 shrink-0 rounded-md object-cover"
+                    />
+                  )}
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-body text-fg">{evidence.name}</span>
+                    {evidenceWasCompressed && (
+                      <span className="text-caption text-fg-muted">
+                        {t("form.evidenceCompressed", { size: formatFileSize(evidence.size) })}
+                      </span>
+                    )}
+                  </span>
+                  <IconButton
+                    icon={<X />}
+                    aria-label={t("form.evidenceRemove")}
+                    variant="ghost"
+                    size="lg"
+                    onClick={() => {
+                      setEvidence(null);
+                      setEvidenceWasCompressed(false);
+                      if (fileRef.current) fileRef.current.value = "";
+                    }}
+                  />
+                </Card>
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  icon={<Camera />}
+                  onClick={() => fileRef.current?.click()}
+                  className="self-start"
+                >
+                  {t("form.evidenceAdd")}
+                </Button>
               )}
-            </span>
-            <button
-              type="button"
-              aria-label={t("form.evidenceRemove")}
-              className="flex size-8 shrink-0 items-center justify-center rounded-xs text-fg-muted hover:bg-surface hover:text-fg"
-              onClick={() => {
-                setEvidence(null);
-                setEvidenceWasCompressed(false);
-                if (fileRef.current) fileRef.current.value = "";
-              }}
-            >
-              <X className="size-4" aria-hidden="true" />
-            </button>
-          </div>
-        ) : (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            icon={<Camera />}
-            onClick={() => fileRef.current?.click()}
-            className="self-start"
-          >
-            {t("form.evidenceAdd")}
+            </div>
+          )}
+        </Field>
+      </FormSection>
+      <p className="text-body-sm text-fg-muted">{t("form.stagesHint")}</p>
+      <DialogFooter>
+        {onCancel && (
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            {t("cancel")}
           </Button>
         )}
-        <p className="text-fg-muted">{t("form.evidenceHint")}</p>
-      </div>
-      <div className="flex justify-end border-t border-border pt-4">
         <Button type="submit" loading={sending}>
           {t("form.send")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

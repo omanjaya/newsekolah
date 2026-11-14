@@ -387,7 +387,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "leave-requests",
-    labelKey: "nav.permits.items.plannedLeave",
+    labelKey: "app.permits.leave.title",
     tabLabelKey: "nav.compact.permits",
     href: "/leave-requests",
     module: "permits",
@@ -404,7 +404,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "exit-permits",
-    labelKey: "nav.permits.items.exitPermit",
+    labelKey: "app.permits.exit.title",
     href: "/exit-permits",
     module: "permits",
     icon: domainIcons.exitPermit,
@@ -419,7 +419,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "late-arrivals",
-    labelKey: "nav.permits.items.late",
+    labelKey: "app.permits.late.title",
     href: "/late-arrivals",
     module: "permits",
     icon: domainIcons.late,
@@ -436,7 +436,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "duty",
-    labelKey: "app.duty.navLabel",
+    labelKey: "app.duty.title",
     href: "/duty",
     module: "permits",
     icon: domainIcons.qr,

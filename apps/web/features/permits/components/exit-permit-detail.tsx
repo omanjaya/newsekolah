@@ -1,26 +1,36 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import type { Locale } from "@newsekolah/i18n";
+import { formatDateTime, formatTime } from "@newsekolah/i18n";
 import {
-  Alert,
-  type BarcodeScanEvent,
-  BarcodeScannerField,
   Button,
+  Card,
+  DataList,
+  DataListItem,
+  DialogFooter,
+  Field,
+  FormError,
+  FormSection,
+  HeroCard,
   Input,
   QrPanel,
   Select,
   Skeleton,
+  SkeletonDetail,
   useToast,
 } from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
+import { ScanLine } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import { usePeriodsQuery } from "../../reference/api";
 import {
-  decodeScanPayload,
+  type ExitPermitDetail as ExitPermitDetailData,
   encodeScanPayload,
   useCancelExitPermitMutation,
   useCreateExitPermitMutation,
@@ -29,9 +39,16 @@ import {
   useScanExitPermitStageMutation,
 } from "../api";
 
-import { WorkflowStepper } from "./workflow-stepper";
+import { StageScanDialog } from "./stage-scan-dialog";
+import { WorkflowStepper, WorkflowSteps } from "./workflow-stepper";
 
-export function CreateForm({ onDone }: { onDone: (id: string) => void }): ReactElement {
+export function CreateForm({
+  onDone,
+  onCancel,
+}: {
+  onDone: (id: string) => void;
+  onCancel?: () => void;
+}): ReactElement {
   const t = useTranslations("app.permits.exit.form");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -46,13 +63,12 @@ export function CreateForm({ onDone }: { onDone: (id: string) => void }): ReactE
   const [startId, setStartId] = useState("");
   const [endId, setEndId] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [attempted, setAttempted] = useState(false);
 
   async function submit() {
     setError(null);
-    if (!destination.trim() || !startId || !endId) {
-      setError(t("requiredError"));
-      return;
-    }
+    setAttempted(true);
+    if (!destination.trim() || !startId || !endId) return;
     try {
       const detail = await create.mutateAsync({
         destination: destination.trim(),
@@ -66,33 +82,34 @@ export function CreateForm({ onDone }: { onDone: (id: string) => void }): ReactE
     }
   }
 
+  const required = t("required");
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         void submit();
       }}
     >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-          {error}
-        </p>
-      )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("destination")}</span>
-        <Input
-          value={destination}
-          maxLength={500}
-          onChange={(e) => {
-            setDestination(e.target.value);
-          }}
-          placeholder={t("destinationPlaceholder")}
-        />
-      </label>
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("from")}</span>
+      {error && <FormError>{error}</FormError>}
+      <FormSection>
+        <Field
+          label={t("destination")}
+          error={attempted && !destination.trim() ? required : undefined}
+          required
+          className="col-span-full"
+        >
+          <Input
+            value={destination}
+            maxLength={500}
+            onChange={(e) => {
+              setDestination(e.target.value);
+            }}
+            placeholder={t("destinationPlaceholder")}
+          />
+        </Field>
+        <Field label={t("from")} error={attempted && !startId ? required : undefined} required>
           <Select
             options={options}
             value={startId}
@@ -102,117 +119,138 @@ export function CreateForm({ onDone }: { onDone: (id: string) => void }): ReactE
             }}
             placeholder={t("pick")}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("to")}</span>
+        </Field>
+        <Field label={t("to")} error={attempted && !endId ? required : undefined} required>
           <Select
             options={options}
             value={endId}
             onValueChange={setEndId}
             placeholder={t("pick")}
           />
-        </label>
-      </div>
-      <p className="text-[13px] text-fg-muted">{t("stagesHint")}</p>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+        </Field>
+      </FormSection>
+      <p className="text-body-sm text-fg-muted">{t("stagesHint")}</p>
+      <DialogFooter>
+        {onCancel && (
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            {t("cancel")}
+          </Button>
+        )}
         <Button type="submit" loading={create.isPending}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }
 
-export function ExitPermitDetail({ id }: { id: string }): ReactElement {
+/** "Jam 1 sampai Jam 2", from the permit's period ids. */
+function usePeriodRange(detail: ExitPermitDetailData | undefined): string | undefined {
   const t = useTranslations("app.permits.exit");
-  const tQr = useTranslations("app.permits.qr");
-  const tScan = useTranslations("app.permits.scan");
+  const periods = usePeriodsQuery();
+  if (!detail) return undefined;
+  const byId = new Map((periods.data?.data ?? []).map((p) => [p.id, p.name]));
+  const from = byId.get(detail.start_period_id);
+  const to = byId.get(detail.end_period_id);
+  if (!from || !to) return undefined;
+  return from === to ? from : t("periodRange", { from, to });
+}
+
+function useFail(): (error: unknown) => void {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const { data, isLoading, error, refetch } = useExitPermitQuery(id);
-  const scan = useScanExitPermitStageMutation();
-  const cancel = useCancelExitPermitMutation();
-  const gate = useIssueGateTokenMutation();
-
-  if (isLoading) return <Skeleton className="h-64 w-full" aria-busy="true" />;
-  if (error || !data) return <QueryError retry={refetch} />;
-  const inst = data.instance;
-  const fail = (error: unknown) => {
+  return (error: unknown) => {
     toast.error(
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
     );
   };
+}
 
+/**
+ * The student's permit on its way, as the page's status card
+ * (docs/07-ui-ux.md section 4, "Izin keluar"): where to, which lessons,
+ * each stage with when it was done, and one large action for what comes
+ * next: scan the approving teacher's QR, then show the gate QR.
+ */
+export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
+  const t = useTranslations("app.permits.exit");
+  const tWorkflow = useTranslations("app.permits.workflow");
+  const tQr = useTranslations("app.permits.qr");
+  const locale = useLocale() as Locale;
+  const { me } = useSession();
+  const toast = useToast();
+  const fail = useFail();
+  const { data, isLoading, error, refetch } = useExitPermitQuery(id);
+  const cancel = useCancelExitPermitMutation();
+  const gate = useIssueGateTokenMutation();
+  const scan = useScanExitPermitStageMutation();
+  const periodRange = usePeriodRange(data);
+  const [scanning, setScanning] = useState(false);
+
+  if (isLoading) return <Skeleton className="h-64 w-full rounded-xl" />;
+  if (error || !data) return <QueryError retry={refetch} error={error} />;
+  const inst = data.instance;
+  const stage = inst.current_stage;
+  const opened = formatTime(inst.opened_at, { locale, timeZone: me?.tenant.timezone });
+  const meta = [periodRange, t("openedAt", { time: opened })].filter(Boolean).join(" · ");
+
+  if (data.exited_at) {
+    return (
+      <HeroCard
+        tone="neutral"
+        eyebrow={t("hero.exitedEyebrow")}
+        title={data.destination}
+        meta={t("hero.exitedAt", {
+          time: formatTime(data.exited_at, { locale, timeZone: me?.tenant.timezone }),
+        })}
+      />
+    );
+  }
+
+  const approved = inst.status === "approved";
+  const scanStage = inst.status === "in_progress" && stage?.verification === "qr_scan";
   return (
-    <div className="flex flex-col gap-5">
-      <dl className="grid grid-cols-2 gap-2 text-[13px]">
-        <dt className="text-fg-muted">{t("form.destination")}</dt>
-        <dd>{data.destination}</dd>
-        <dt className="text-fg-muted">{t("student")}</dt>
-        <dd>
-          {data.student_name} ({data.class_name})
-        </dd>
-        <dt className="text-fg-muted">{t("code")}</dt>
-        <dd>
-          <code className="text-[12px]">{inst.id}</code>
-        </dd>
-      </dl>
-      <WorkflowStepper instance={inst} />
-
-      {inst.status === "in_progress" && inst.current_stage?.verification === "qr_scan" && (
-        <BarcodeScannerField
-          label={t("scanStageLabel", { stage: inst.current_stage.label })}
-          submitLabel={tScan("submit")}
-          cameraLabel={tScan("cameraLabel")}
-          disabled={scan.isPending}
-          stretch
-          size="large"
-          onScan={(event: BarcodeScanEvent) => {
-            scan.mutate(
-              { id, token: decodeScanPayload(event.code).token },
-              {
-                onError: fail,
-                onSuccess: () => {
-                  toast.success(t("stageDone"));
-                },
-              },
-            );
-          }}
-        />
-      )}
-
-      {inst.status === "approved" &&
-        !data.exited_at &&
-        (gate.data ? (
-          <QrPanel
-            payload={encodeScanPayload("gate", id, gate.data.token)}
-            code={gate.data.token}
-            expiresAt={gate.data.expires_at}
-            onRenew={() => {
-              gate.mutate(id, { onError: fail });
-            }}
-            renewing={gate.isPending}
-            expiredLabel={tQr("expired")}
-            expiresInLabel={(seconds) => tQr("expiresIn", { seconds })}
-            renewLabel={tQr("renew")}
-          />
-        ) : (
+    <HeroCard
+      eyebrow={approved ? t("hero.approvedEyebrow") : t("hero.activeEyebrow")}
+      chip={
+        approved
+          ? tWorkflow("status.approved")
+          : stage
+            ? tWorkflow("waitingFor", { stage: stage.label })
+            : tWorkflow(`status.${inst.status}`)
+      }
+      live={!approved}
+      title={data.destination}
+      meta={meta}
+      action={
+        scanStage ? (
           <Button
+            size="lg"
+            icon={<ScanLine />}
+            className="w-full sm:w-auto"
+            onClick={() => {
+              setScanning(true);
+            }}
+          >
+            {t("hero.scanStage", { stage: stage.label })}
+          </Button>
+        ) : approved && !gate.data ? (
+          <Button
+            size="lg"
+            className="w-full sm:w-auto"
+            loading={gate.isPending}
             onClick={() => {
               gate.mutate(id, { onError: fail });
             }}
-            loading={gate.isPending}
           >
             {t("showGateQr")}
           </Button>
-        ))}
-      {data.exited_at && <Alert variant="info" title={t("exitedTitle")} />}
-
-      {inst.status === "in_progress" && (
-        <div className="flex justify-end border-t border-border pt-4">
+        ) : undefined
+      }
+      secondaryAction={
+        inst.status === "in_progress" ? (
           <Button
             variant="ghost"
-            size="sm"
             loading={cancel.isPending}
             onClick={() => {
               cancel.mutate(id, {
@@ -225,8 +263,86 @@ export function ExitPermitDetail({ id }: { id: string }): ReactElement {
           >
             {t("cancel")}
           </Button>
-        </div>
+        ) : undefined
+      }
+    >
+      <Card padding="sm" className="mt-3 text-fg">
+        <WorkflowSteps instance={inst} />
+        {inst.status === "in_progress" && (
+          <DataList>
+            <DataListItem label={t("code")} hint={t("codeHint")}>
+              <code className="font-mono text-body-sm break-all select-all">{inst.id}</code>
+            </DataListItem>
+          </DataList>
+        )}
+        {inst.status === "in_progress" && stage?.verification === "manual" && (
+          <p className="text-body-sm text-fg-muted">{t("waitManual", { stage: stage.label })}</p>
+        )}
+      </Card>
+      {approved && gate.data && (
+        <QrPanel
+          className="mt-3"
+          size="lg"
+          label={t("gateQrLabel")}
+          payload={encodeScanPayload("gate", id, gate.data.token)}
+          code={gate.data.token}
+          expiresAt={gate.data.expires_at}
+          onRenew={() => {
+            gate.mutate(id, { onError: fail });
+          }}
+          renewing={gate.isPending}
+          expiredLabel={tQr("expired")}
+          expiresInLabel={(seconds) => tQr("expiresIn", { seconds })}
+          renewLabel={tQr("renew")}
+        />
       )}
+      {scanStage && (
+        <StageScanDialog
+          open={scanning}
+          onOpenChange={setScanning}
+          title={t("hero.scanStage", { stage: stage.label })}
+          description={t("hero.scanHint", { stage: stage.label })}
+          manualLabel={t("scanStageLabel", { stage: stage.label })}
+          successMessage={t("stageDone")}
+          pending={scan.isPending}
+          onToken={(token) => scan.mutateAsync({ id, token })}
+        />
+      )}
+    </HeroCard>
+  );
+}
+
+/** A finished permit from the history, read-only. */
+export function ExitPermitDetail({ id }: { id: string }): ReactElement {
+  const t = useTranslations("app.permits.exit");
+  const locale = useLocale() as Locale;
+  const { me } = useSession();
+  const { data, isLoading, error, refetch } = useExitPermitQuery(id);
+  const periodRange = usePeriodRange(data);
+
+  if (isLoading) return <SkeletonDetail rows={3} />;
+  if (error || !data) return <QueryError retry={refetch} error={error} />;
+  const inst = data.instance;
+  const timeZone = me?.tenant.timezone;
+
+  return (
+    <div className="flex flex-col gap-5">
+      <WorkflowStepper instance={inst} />
+      <DataList>
+        <DataListItem label={t("form.destination")}>{data.destination}</DataListItem>
+        <DataListItem label={t("lessons")}>{periodRange}</DataListItem>
+        <DataListItem label={t("student")}>
+          {data.student_name} ({data.class_name})
+        </DataListItem>
+        <DataListItem label={t("opened")}>
+          {formatDateTime(inst.opened_at, { locale, timeZone })}
+        </DataListItem>
+        {data.exited_at && (
+          <DataListItem label={t("exitedTitle")}>
+            {formatDateTime(data.exited_at, { locale, timeZone })}
+          </DataListItem>
+        )}
+      </DataList>
     </div>
   );
 }
