@@ -67,6 +67,7 @@ export function AchievementsView(): ReactElement {
   const tNav = useTranslations("app.activities");
   const tShell = useTranslations("app.shell.nav.items");
   const t = useTranslations("app.activities.achievements");
+  const [search, setSearch] = useState("");
   const canManage = useCan("manage_achievements");
   const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
   const { data, isLoading, error, refetch } = useAchievementsQuery(undefined, classId || undefined);
@@ -169,7 +170,8 @@ export function AchievementsView(): ReactElement {
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
-          globalFilter=""
+          globalFilter={search}
+          onGlobalFilterChange={setSearch}
           filters={filters}
           filtersLabels={{
             reset: t("filters.reset"),

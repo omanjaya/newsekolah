@@ -184,7 +184,7 @@ export function CounselingForm({
           </div>
         </Alert>
       )}
-      <Field label={t("student")}>
+      <Field label={t("student")} required>
         <DirectoryPicker
           profileKind="student"
           value={studentId}
@@ -247,7 +247,7 @@ export function CounselingForm({
           />
         </Field>
       )}
-      <Field label={t("title")}>
+      <Field label={t("title")} required>
         <Input
           value={title}
           onChange={(e) => {
@@ -258,7 +258,7 @@ export function CounselingForm({
           maxLength={200}
         />
       </Field>
-      <Field label={t("content")}>
+      <Field label={t("content")} required>
         <Textarea
           rows={5}
           value={content}

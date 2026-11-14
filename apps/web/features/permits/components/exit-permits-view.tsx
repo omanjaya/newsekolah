@@ -84,9 +84,11 @@ function ExitPermitDesk({
 }): ReactElement {
   const t = useTranslations("app.permits.exit");
   const titles = useExitTitles();
+  // Whoever holds the gate duty works the gate first; approving a stage
+  // is the teachers' everyday task.
   const modes = [
-    ...(canApprove ? [{ value: "approve", label: t("tabApprove") }] : []),
     ...(canGate ? [{ value: "gate", label: t("tabGate") }] : []),
+    ...(canApprove ? [{ value: "approve", label: t("tabApprove") }] : []),
   ];
   const [mode, setMode] = useUrlState<string>(
     "tab",

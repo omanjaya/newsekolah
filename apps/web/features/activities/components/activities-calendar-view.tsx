@@ -39,6 +39,7 @@ export function ActivitiesCalendarView(): ReactElement {
   const tNav = useTranslations("app.activities");
   const tShell = useTranslations("app.shell.nav.items");
   const t = useTranslations("app.activities.events");
+  const [search, setSearch] = useState("");
   const canManage = useCan("manage_activity_events");
   const { data, isLoading, error, refetch } = useActivityEventsQuery();
   const [editing, setEditing] = useState<ActivityEvent | "new" | null>(null);
@@ -136,7 +137,8 @@ export function ActivitiesCalendarView(): ReactElement {
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
-          globalFilter=""
+          globalFilter={search}
+          onGlobalFilterChange={setSearch}
           isLoading={isLoading}
           error={error}
           onRetry={() => void refetch()}

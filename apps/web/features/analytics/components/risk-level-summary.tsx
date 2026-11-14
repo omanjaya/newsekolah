@@ -47,7 +47,7 @@ export function RiskLevelSummary({
           category={LEVEL_STYLE[level].category}
           value={counts[level]}
           label={levelLabel(level)}
-          hint={selected === level ? t("filtering") : t("filterHint")}
+          hint={selected === level ? t("filtering") : undefined}
           onClick={() => {
             onSelect(selected === level ? "" : level);
           }}

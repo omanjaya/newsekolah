@@ -38,6 +38,7 @@ export function ClubsView(): ReactElement {
   const tNav = useTranslations("app.activities");
   const tShell = useTranslations("app.shell.nav.items");
   const t = useTranslations("app.activities.clubs");
+  const [search, setSearch] = useState("");
   const canManage = useCan("manage_extracurriculars");
   const canManagePolicy = useCan("manage_settings");
   const [includeInactiveParam, setIncludeInactiveParam] = useUrlState<"" | "true">(
@@ -193,7 +194,8 @@ export function ClubsView(): ReactElement {
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
-          globalFilter=""
+          globalFilter={search}
+          onGlobalFilterChange={setSearch}
           filters={filters}
           filtersLabels={{
             reset: t("filters.reset"),
