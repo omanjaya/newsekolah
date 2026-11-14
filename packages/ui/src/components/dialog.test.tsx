@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
 import { endExitAnimation, playExitAnimations } from "../test/exit-animation.js";
@@ -196,6 +196,95 @@ describe("Dialog", () => {
     } finally {
       restore();
     }
+  });
+
+  describe("focus on opening", () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    function stubPointer(fine: boolean) {
+      vi.stubGlobal(
+        "matchMedia",
+        vi.fn().mockImplementation((query: string) => ({
+          matches: query === "(pointer: fine)" ? fine : false,
+          media: query,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        })),
+      );
+    }
+
+    it("lands on the first field with a mouse, not the close button", async () => {
+      stubPointer(true);
+      render(<DialogHarness />);
+      await userEvent.click(screen.getByRole("button", { name: "Buka dialog" }));
+      await waitFor(() => {
+        expect(screen.getByRole("textbox", { name: "Tujuan" })).toHaveFocus();
+      });
+    });
+
+    it("lands on the panel on a touch screen, so the on-screen keyboard stays down", async () => {
+      stubPointer(false);
+      render(<DialogHarness />);
+      await userEvent.click(screen.getByRole("button", { name: "Buka dialog" }));
+      await waitFor(() => {
+        expect(screen.getByRole("dialog")).toHaveFocus();
+      });
+      // The close button is the next stop.
+      await userEvent.tab();
+      expect(screen.getByRole("button", { name: "Tutup dialog" })).toHaveFocus();
+    });
+
+    it("lands on the panel when there is no field, and on an element marked data-autofocus", () => {
+      const { unmount } = render(
+        <Dialog open>
+          <DialogContent title="Terbitkan" footer={<Button>Terbitkan</Button>} />
+        </Dialog>,
+      );
+      expect(screen.getByRole("dialog")).toHaveFocus();
+      unmount();
+
+      render(
+        <Dialog open>
+          <DialogContent title="Hapus" footer={<Button data-autofocus="">Batal</Button>}>
+            <input aria-label="Alasan" />
+          </DialogContent>
+        </Dialog>,
+      );
+      expect(screen.getByRole("button", { name: "Batal" })).toHaveFocus();
+    });
+
+    it("skips disabled and read-only fields", () => {
+      render(
+        <Dialog open>
+          <DialogContent title="Ubah">
+            <input aria-label="Kode" disabled />
+            <input aria-label="NIS" readOnly />
+            <input type="checkbox" aria-label="Aktif" />
+            <textarea aria-label="Catatan" />
+          </DialogContent>
+        </Dialog>,
+      );
+      expect(screen.getByRole("textbox", { name: "Catatan" })).toHaveFocus();
+    });
+
+    it("leaves focus to a caller that prevents the default", () => {
+      render(
+        <Dialog open>
+          <DialogContent
+            title="Cari"
+            onOpenAutoFocus={(event) => {
+              event.preventDefault();
+            }}
+          >
+            <input aria-label="Kata kunci" />
+          </DialogContent>
+        </Dialog>,
+      );
+      expect(screen.getByRole("textbox", { name: "Kata kunci" })).not.toHaveFocus();
+      expect(screen.getByRole("dialog")).not.toHaveFocus();
+    });
   });
 
   it("has no accessibility violations", async () => {

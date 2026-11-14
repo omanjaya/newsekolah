@@ -217,6 +217,59 @@ export const DialogFooter = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<
   },
 );
 
+/**
+ * The first field to fill in: a text-like input, a textarea, a select or a
+ * combobox trigger that takes focus. Radix Select's hidden native copy
+ * (`aria-hidden`, `tabindex=-1`) and read-only or disabled fields are skipped.
+ */
+const FIRST_FIELD = [
+  "input:not([type=hidden], [type=checkbox], [type=radio], [type=file], [type=range])",
+  "textarea",
+  "select",
+  "[role=combobox]",
+]
+  .map((field) => `${field}:not(:disabled, [readonly], [aria-disabled=true], [tabindex="-1"])`)
+  .join(", ");
+
+/** A fine primary pointer (a mouse or trackpad); true where `matchMedia` does not exist. */
+function hasFinePointer(): boolean {
+  return typeof window.matchMedia !== "function" || window.matchMedia("(pointer: fine)").matches;
+}
+
+function initialFocusTarget(content: HTMLElement): HTMLElement | null {
+  const marked = content.querySelector<HTMLElement>("[data-autofocus]");
+  if (marked) return marked;
+  if (!hasFinePointer()) return null;
+  const fields = Array.from(content.querySelectorAll<HTMLElement>(FIRST_FIELD));
+  return fields.find((field) => !field.closest("[hidden], [inert], [aria-hidden=true]")) ?? null;
+}
+
+/**
+ * Where focus lands when a dialog or sheet opens, in place of Radix's
+ * first tabbable element (the close button, whose ring would greet every
+ * keyboard open and whose Enter would close the form): an element marked
+ * `data-autofocus`; else, with a fine pointer, the first field to fill in;
+ * else the panel itself, which draws no ring and, on a touch screen, keeps
+ * the on-screen keyboard down until the reader picks a field. The close
+ * button stays one Tab away. A caller's own `onOpenAutoFocus` runs first,
+ * and preventing its default keeps Radix's and this out of the way.
+ */
+export function focusOnOpen(
+  onOpenAutoFocus: ((event: Event) => void) | undefined,
+): (event: Event) => void {
+  return (event) => {
+    onOpenAutoFocus?.(event);
+    if (event.defaultPrevented) return;
+    const content = event.currentTarget;
+    if (!(content instanceof HTMLElement)) return;
+    event.preventDefault();
+    const target = initialFocusTarget(content);
+    target?.focus({ preventScroll: true });
+    // Nothing to focus, or it refused (a disabled button): the panel takes it.
+    if (!target || document.activeElement !== target) content.focus({ preventScroll: true });
+  };
+}
+
 /** Hands `node` to a forwarded ref, whichever kind it is. */
 function assignRef<T>(ref: ForwardedRef<T>, node: T | null) {
   if (typeof ref === "function") ref(node);

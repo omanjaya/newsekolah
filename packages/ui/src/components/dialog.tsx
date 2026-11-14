@@ -8,6 +8,7 @@ import { cn } from "../utils/cn.js";
 
 import {
   DialogFooter,
+  focusOnOpen,
   GrabHandle,
   OverlayBody,
   OverlayFooter,
@@ -71,9 +72,13 @@ export interface DialogContentProps extends ComponentPropsWithoutRef<
  * indicator. In both, the header stays put, the body scrolls, and the
  * footer stays in reach, including a form's own trailing action row (see
  * `dialog-body` in styles.css), so existing dialogs get all of this
- * without changes. On closing, focus goes back to the element that had it
- * when the dialog opened, even when the dialog was opened from state
- * rather than a `DialogTrigger`.
+ * without changes. Footer buttons are `md`, never shorter than the fields
+ * above them (styles.css holds a smaller one to that height). On opening,
+ * focus goes to an element marked `data-autofocus`, else the first field
+ * (with a mouse) or the panel itself (on a touch screen), never the close
+ * button. On closing, focus goes back to the element that had it when the
+ * dialog opened, even when the dialog was opened from state rather than a
+ * `DialogTrigger`.
  */
 export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(function DialogContent(
   {
@@ -94,7 +99,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
   ref,
 ) {
   const labels = useUiLabels();
-  const returnFocus = useReturnFocus(onOpenAutoFocus, onCloseAutoFocus);
+  const returnFocus = useReturnFocus(focusOnOpen(onOpenAutoFocus), onCloseAutoFocus);
   const contentRef = useOverlayContentRef(ref);
   return (
     <DialogPrimitive.Portal>

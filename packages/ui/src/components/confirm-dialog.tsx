@@ -77,7 +77,8 @@ export function ConfirmDialog({
         footer={
           <>
             <DialogClose asChild>
-              <Button variant="secondary" disabled={confirming}>
+              {/* Focus opens on the way out, never on the action that cannot be undone. */}
+              <Button variant="secondary" disabled={confirming} data-autofocus="">
                 {cancelLabel ?? labels.confirmDialogCancel}
               </Button>
             </DialogClose>

@@ -97,6 +97,19 @@ describe("Sheet", () => {
     }
   });
 
+  it("opens a drawer on its first field rather than the close button", () => {
+    render(
+      <Sheet open>
+        <SheetContent title="Catatan konseling" side="right">
+          <form aria-label="Catatan">
+            <textarea aria-label="Ringkasan sesi" />
+          </form>
+        </SheetContent>
+      </Sheet>,
+    );
+    expect(screen.getByRole("textbox", { name: "Ringkasan sesi" })).toHaveFocus();
+  });
+
   it("has no accessibility violations", async () => {
     render(
       <Sheet open>

@@ -8,6 +8,7 @@ import { cn } from "../utils/cn.js";
 
 import {
   DialogFooter,
+  focusOnOpen,
   GrabHandle,
   OverlayBody,
   OverlayFooter,
@@ -86,7 +87,7 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
   ref,
 ) {
   const labels = useUiLabels();
-  const returnFocus = useReturnFocus(onOpenAutoFocus, onCloseAutoFocus);
+  const returnFocus = useReturnFocus(focusOnOpen(onOpenAutoFocus), onCloseAutoFocus);
   const contentRef = useOverlayContentRef(ref);
   const drawer = side === "right";
   return (
