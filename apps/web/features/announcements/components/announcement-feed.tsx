@@ -238,19 +238,19 @@ function AnnouncementCard({
   const excerpt = htmlToExcerpt(item.body_html);
 
   return (
-    <Card className={cn("h-full", !item.is_read && "border-l-2 border-l-accent")}>
+    <Card className="h-full overflow-hidden">
       <button
         type="button"
         aria-expanded={expanded}
         onClick={onToggle}
         data-testid={`announcement-feed-card-${item.id}`}
-        className="flex h-full w-full flex-col gap-2 rounded-lg p-4 text-left hover:bg-bg"
+        className="flex h-full w-full flex-col gap-1.5 p-5 text-left transition-colors hover:bg-state-hover"
       >
         <div className="flex items-start gap-2">
           {item.is_pinned && (
             <Pin className="mt-0.5 size-4 shrink-0 text-accent" aria-label={t("pinned")} />
           )}
-          <span className={cn("flex-1 text-[15px]", !item.is_read && "font-medium text-fg")}>
+          <span className={cn("flex-1 text-heading text-fg", item.is_read && "font-semibold")}>
             {item.title}
           </span>
           {!item.is_read && (
@@ -269,17 +269,17 @@ function AnnouncementCard({
             aria-hidden="true"
           />
         </div>
-        <span className="text-[12px] text-fg-muted">
+        <span className="text-caption text-fg-muted">
           {formatRelative(item.published_at, { locale, timeZone })}
         </span>
         {excerpt && !expanded && (
-          <p className="line-clamp-2 text-[13px] text-fg-muted">{excerpt}</p>
+          <p className="line-clamp-2 text-body-sm text-fg-muted">{excerpt}</p>
         )}
       </button>
       {expanded && (
         <SafeHtml
           html={item.body_html}
-          className="prose-announcement border-t border-border px-4 py-3 text-[14px] text-fg"
+          className="prose-announcement border-t border-line px-5 py-4 text-body text-fg"
         />
       )}
     </Card>

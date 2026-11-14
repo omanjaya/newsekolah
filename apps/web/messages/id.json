@@ -807,9 +807,11 @@
         "previewScheduleAt": "Tampil mulai {date}",
         "previewUntitled": "(Tanpa judul)",
         "previewEmptyBody": "(Isi belum ditulis)",
-        "previewHint": "Begini tampilan pengumuman ini bagi penerimanya."
+        "previewHint": "Begini tampilan pengumuman ini bagi penerimanya.",
+        "audienceLabel": "Ditujukan kepada"
       },
-      "feedEmptyCompact": "Belum ada pengumuman"
+      "feedEmptyCompact": "Belum ada pengumuman",
+      "tabsLabel": "Bagian pengumuman"
     },
     "duty": {
       "navLabel": "Piket",

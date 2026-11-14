@@ -1,40 +1,50 @@
 "use client";
 
-import { Button, PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { Plus } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useCan } from "../../../lib/session/session-provider";
 
 import { AnnouncementFeed } from "./announcement-feed";
 import { AnnouncementsManage } from "./announcements-manage";
 
+type AnnouncementsTab = "feed" | "manage";
+
 /**
- * Readers see their feed; anyone who can author also gets the manage tab.
- * The primary "Buat pengumuman" action lives in the shared `PageHeader` as
- * a pill control (docs/07-ui-ux.md), consistent with every other list
- * screen's header -- not a second button row above the manage table.
+ * Readers see their feed; anyone who can author also gets the manage tab,
+ * kept in the URL. "Buat pengumuman" is the page's primary action from
+ * either tab: from the feed it switches to the manage tab, whose editor is
+ * what opens, so the action is never hidden behind the second tab.
  */
 export function AnnouncementsView(): ReactElement {
   const t = useTranslations("app.announcements");
   const canCreate = useCan("create_announcements");
   const canPublish = useCan("publish_announcements");
   const canManage = canCreate || canPublish;
-  const [tab, setTab] = useState<"feed" | "manage">("feed");
+  const router = useRouter();
+  const pathname = usePathname();
+  const search = useSearchParams();
+  const tab: AnnouncementsTab = canManage && search.get("tab") === "manage" ? "manage" : "feed";
   const [creating, setCreating] = useState(false);
 
-  // An author can start a new announcement from either tab: from the feed
-  // the click switches to the manage tab (whose editor is what opens), so the
-  // action is not hidden until the reader happens to find that tab.
-  const headerActions = canCreate ? (
+  function selectTab(next: string) {
+    const params = new URLSearchParams(search.toString());
+    if (next === "manage") params.set("tab", "manage");
+    else params.delete("tab");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }
+
+  const primaryAction = canCreate ? (
     <Button
-      size="sm"
-      className="rounded-full"
       icon={<Plus />}
       onClick={() => {
-        setTab("manage");
+        selectTab("manage");
         setCreating(true);
       }}
     >
@@ -43,36 +53,23 @@ export function AnnouncementsView(): ReactElement {
   ) : undefined;
 
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the active tab's panel scrolls internally.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={headerActions} />
+    <AppPage nav={false} primaryAction={primaryAction}>
       {canManage ? (
-        <Tabs
-          value={tab}
-          onValueChange={(value) => {
-            setTab(value as "feed" | "manage");
-          }}
-          className="flex flex-col md:min-h-0 md:flex-1"
-        >
-          <TabsList>
+        <Tabs value={tab} onValueChange={selectTab} className="flex flex-col gap-5">
+          <TabsList aria-label={t("tabsLabel")}>
             <TabsTrigger value="feed">{t("tabFeed")}</TabsTrigger>
             <TabsTrigger value="manage">{t("tabManage")}</TabsTrigger>
           </TabsList>
-          <TabsContent value="feed" className="pt-4 md:min-h-0 md:flex-1">
-            <div className="md:h-full md:min-h-0 md:flex-1 md:overflow-y-auto">
-              <AnnouncementFeed />
-            </div>
+          <TabsContent value="feed">
+            <AnnouncementFeed />
           </TabsContent>
-          <TabsContent value="manage" className="pt-4 md:min-h-0 md:flex-1">
+          <TabsContent value="manage">
             <AnnouncementsManage creating={creating} onCreatingChange={setCreating} />
           </TabsContent>
         </Tabs>
       ) : (
-        <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
-          <AnnouncementFeed />
-        </div>
+        <AnnouncementFeed />
       )}
-    </div>
+    </AppPage>
   );
 }

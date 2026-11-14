@@ -807,9 +807,11 @@
         "previewScheduleAt": "Appears starting {date}",
         "previewUntitled": "(No title)",
         "previewEmptyBody": "(Body not written yet)",
-        "previewHint": "This is how this announcement will look to its recipients."
+        "previewHint": "This is how this announcement will look to its recipients.",
+        "audienceLabel": "Addressed to"
       },
-      "feedEmptyCompact": "No announcements yet"
+      "feedEmptyCompact": "No announcements yet",
+      "tabsLabel": "Announcement sections"
     },
     "duty": {
       "navLabel": "Duty desk",
