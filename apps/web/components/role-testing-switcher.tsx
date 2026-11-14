@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Dialog, DialogContent, Input, Select, useToast } from "@newsekolah/ui";
+import { Button, Dialog, DialogContent, IconButton, Input, Select, useToast } from "@newsekolah/ui";
 import { LogOut, UserRoundCog } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -26,9 +26,6 @@ export function RoleTestingSwitcher(): ReactElement | null {
 
   if (!status.data?.available && !status.data?.active) return null;
 
-  const selectedSlug = status.data.selected_role_slug;
-  const selectedRole =
-    status.data.roles.find((role) => role.slug === selectedSlug)?.name ?? selectedSlug ?? "";
   const roleNames = me?.roles.map((role) => role.name).join(", ") ?? "";
 
   async function returnToAdmin() {
@@ -43,45 +40,31 @@ export function RoleTestingSwitcher(): ReactElement | null {
     }
   }
 
+  // A tester's tool, so it stays compact: icon buttons whose names are their
+  // tooltips. Who is being tested shows in the strip under the header, which
+  // also carries the way back on a phone, where this group is hidden.
   return (
-    <div className="flex min-w-0 items-center gap-1" data-testid="role-testing-switcher">
-      {status.data.active && me && (
-        <span
-          className="hidden min-w-0 flex-col text-right text-[11px] leading-tight lg:flex"
-          title={t("actualRoles", { roles: roleNames })}
-        >
-          <span className="max-w-40 truncate font-medium text-fg">{me.name}</span>
-          <span className="max-w-40 truncate text-fg-muted">{selectedRole}</span>
-        </span>
-      )}
-      <Button
-        size="sm"
-        variant="secondary"
+    <div
+      className="hidden min-w-0 items-center gap-1 md:flex"
+      data-testid="role-testing-switcher"
+      title={status.data.active ? t("actualRoles", { roles: roleNames }) : undefined}
+    >
+      <IconButton
         icon={<UserRoundCog />}
         aria-label={t("changeRole")}
-        title={t("changeRole")}
         onClick={() => {
           setOpen(true);
         }}
-        className="px-2 md:px-3"
-      >
-        <span className="hidden sm:inline">{t("changeRole")}</span>
-      </Button>
+      />
       {status.data.active && (
-        <Button
-          size="sm"
-          variant="ghost"
+        <IconButton
           icon={<LogOut />}
           aria-label={t("return")}
-          title={t("return")}
           loading={mutation.isPending}
           onClick={() => {
             void returnToAdmin();
           }}
-          className="px-2 md:px-3"
-        >
-          <span className="hidden xl:inline">{t("return")}</span>
-        </Button>
+        />
       )}
       <RoleTestingDialog open={open} onOpenChange={setOpen} roles={status.data.roles} />
     </div>
@@ -145,13 +128,13 @@ function RoleTestingDialog({
       >
         <div className="flex flex-col gap-4">
           {roles.length === 0 ? (
-            <p className="text-[13px] text-fg-muted">{t("noRoles")}</p>
+            <p className="text-body-sm text-fg-muted">{t("noRoles")}</p>
           ) : (
             <>
               <div>
                 <label
                   id="role-testing-role-label"
-                  className="mb-1 block text-[13px] font-medium text-fg"
+                  className="mb-1 block text-body-sm font-medium text-fg"
                 >
                   {t("role")}
                 </label>
@@ -166,7 +149,7 @@ function RoleTestingDialog({
                   options={roles.map((item) => ({ value: item.slug, label: item.name }))}
                 />
               </div>
-              <label className="text-[13px] font-medium text-fg">
+              <label className="text-body-sm font-medium text-fg">
                 {t("search")}
                 <Input
                   type="search"
@@ -180,12 +163,12 @@ function RoleTestingDialog({
                 />
               </label>
               <div>
-                <p className="mb-2 text-[13px] font-medium text-fg">{t("accounts")}</p>
+                <p className="mb-2 text-body-sm font-medium text-fg">{t("accounts")}</p>
                 {accounts.isPending || accounts.isFetching ? (
-                  <p className="text-[13px] text-fg-muted">{t("loading")}</p>
+                  <p className="text-body-sm text-fg-muted">{t("loading")}</p>
                 ) : null}
                 {accounts.isError && (
-                  <div className="flex items-center gap-2 text-[13px] text-fg-muted">
+                  <div className="flex items-center gap-2 text-body-sm text-fg-muted">
                     <span>{t("loadError")}</span>
                     <Button
                       size="sm"
@@ -199,7 +182,7 @@ function RoleTestingDialog({
                   </div>
                 )}
                 {!accounts.isError && !accounts.isPending && accounts.data.users.length === 0 && (
-                  <p className="text-[13px] text-fg-muted">{t("noUsers")}</p>
+                  <p className="text-body-sm text-fg-muted">{t("noUsers")}</p>
                 )}
                 {!accounts.isError && !accounts.isPending && accounts.data.users.length ? (
                   <div className="max-h-56 overflow-y-auto rounded-sm border border-border">
@@ -222,10 +205,10 @@ function RoleTestingDialog({
                           className="size-4 accent-accent"
                         />
                         <span className="min-w-0 flex flex-col">
-                          <span className="truncate text-[13px] font-medium text-fg">
+                          <span className="truncate text-body-sm font-medium text-fg">
                             {user.name}
                           </span>
-                          <span className="truncate text-[12px] text-fg-muted">
+                          <span className="truncate text-caption text-fg-muted">
                             {user.username}
                           </span>
                         </span>
@@ -259,7 +242,7 @@ function RoleTestingDialog({
                   </Button>
                 </div>
               </div>
-              <p className="text-[12px] text-fg-muted">{t("permissionsNote")}</p>
+              <p className="text-caption text-fg-muted">{t("permissionsNote")}</p>
               <div className="flex justify-end">
                 <Button
                   disabled={!selectedUser || accounts.isFetching}
