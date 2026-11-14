@@ -15,6 +15,9 @@ const session = vi.hoisted(() => ({
 }));
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 vi.mock("next/navigation", () => ({ usePathname: () => session.pathname }));
+// Every offered destination as a link, a lone one included: these tests
+// check access boundaries, not how the strip draws a single item.
+vi.mock("../../../components/workspace-nav", () => import("../../../test/workspace-nav-stub"));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (permission: string) => session.permissions.includes(permission),
   useSession: () => ({ me: { disabled_modules: session.disabled_modules } }),

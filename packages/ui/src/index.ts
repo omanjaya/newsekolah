@@ -351,3 +351,6 @@ export {
 
 // Forms and data review fixes (wave 2).
 export type { BarcodeScannerHandle } from "./hooks/use-barcode-scanner.js";
+
+// Page template (overhaul wave 3, stream A).
+export { PageShell, type PageShellProps, type PageShellVariant } from "./components/page-shell.js";

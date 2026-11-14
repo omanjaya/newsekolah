@@ -6,6 +6,9 @@ import { SupervisionWorkspaceNav } from "./supervision-workspace-nav";
 const session = vi.hoisted(() => ({ profile_kind: "teacher", permissions: [] as string[] }));
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/supervision/cycles/cycle-1/report" }));
+// Every offered destination as a link, a lone one included: these tests
+// check access boundaries, not how the strip draws a single item.
+vi.mock("../../../components/workspace-nav", () => import("../../../test/workspace-nav-stub"));
 vi.mock("../../../lib/session/session-provider", () => ({ useSession: () => ({ me: session }) }));
 
 describe("supervision workspace access", () => {

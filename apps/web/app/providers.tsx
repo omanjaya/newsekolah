@@ -1,6 +1,7 @@
 "use client";
 
-import { Toaster } from "@newsekolah/ui";
+import { Toaster, UiLinkProvider } from "@newsekolah/ui";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 import type { ReactElement, ReactNode } from "react";
@@ -60,16 +61,24 @@ export function AppProviders({
           <SessionProvider>
             <SimulationSync />
             <ThemeProvider>
-              <UiLocaleProvider>
-                {children}
-                {/*
-                  Kept global (rather than scoped to `(app)`, docs/16-audit-performa-web.md
-                  item 8) because `(auth)/change-password` and `(auth)/reset-password`
-                  also call `useToast()` and need a mounted `<Toaster />` to render it.
-                  Inside UiLocaleProvider so its close button and region are translated.
-                */}
-                <Toaster />
-              </UiLocaleProvider>
+              {/*
+                Every internal link a shared component renders (breadcrumbs,
+                TextLink, ListRow, Stat, HeroCard, PageHeader actions) goes
+                through next/link, so it navigates on the client instead of
+                reloading the app (audit shell-auth-public-42).
+              */}
+              <UiLinkProvider component={Link}>
+                <UiLocaleProvider>
+                  {children}
+                  {/*
+                    Kept global (rather than scoped to `(app)`, docs/16-audit-performa-web.md
+                    item 8) because `(auth)/change-password` and `(auth)/reset-password`
+                    also call `useToast()` and need a mounted `<Toaster />` to render it.
+                    Inside UiLocaleProvider so its close button and region are translated.
+                  */}
+                  <Toaster />
+                </UiLocaleProvider>
+              </UiLinkProvider>
             </ThemeProvider>
           </SessionProvider>
         </TenantProvider>

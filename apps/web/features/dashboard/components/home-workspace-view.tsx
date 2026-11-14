@@ -45,18 +45,22 @@ export function HomeWorkspaceView(): ReactElement {
       : []),
   ];
   const actions = allActions.filter((action) => canOpenPath(action.href, access));
+  const shortcuts =
+    actions.length > 0
+      ? actions.map((action) => (
+          <Button key={action.href} asChild variant="secondary" size="sm">
+            <Link href={action.href}>{t(action.label)}</Link>
+          </Button>
+        ))
+      : undefined;
+  // The school home takes the shortcuts under its greeting, as the page
+  // toolbar; the library home keeps them above its own header until it
+  // moves to the page template too.
+  if (!libraryHome) return <DashboardView shortcuts={shortcuts} />;
   return (
     <>
-      {actions.length > 0 && (
-        <div className="flex flex-wrap gap-2 px-4 pt-4 md:px-6">
-          {actions.map((action) => (
-            <Button key={action.href} asChild variant="secondary" size="sm">
-              <Link href={action.href}>{t(action.label)}</Link>
-            </Button>
-          ))}
-        </div>
-      )}
-      {libraryHome ? <LibraryDashboard /> : <DashboardView />}
+      {shortcuts && <div className="flex flex-wrap gap-2 px-4 pt-4 md:px-6">{shortcuts}</div>}
+      <LibraryDashboard />
     </>
   );
 }

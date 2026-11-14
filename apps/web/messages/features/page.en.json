@@ -1,0 +1,22 @@
+{
+  "sections": "{area} sections",
+  "notFound": {
+    "search": "Search pages"
+  },
+  "error": {
+    "title": "This page could not be shown",
+    "body": "The rest of the app still works. Try again, or contact your school admin if it keeps happening.",
+    "retry": "Try again",
+    "home": "Back to home"
+  },
+  "kiosk": {
+    "exit": "Leave kiosk mode",
+    "clock": "School time"
+  },
+  "queryError": {
+    "title": "The data could not be loaded",
+    "offlineTitle": "No connection",
+    "forbiddenTitle": "This data cannot be opened",
+    "code": "Error code: {code}"
+  }
+}

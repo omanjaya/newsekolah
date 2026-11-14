@@ -1,11 +1,12 @@
 "use client";
 
-import { Card, EmptyState, PageHeader, SearchInput } from "@newsekolah/ui";
+import { Card, EmptyState, SearchInput } from "@newsekolah/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { navAccessFromMe } from "../../../lib/navigation-access";
 import { useSession } from "../../../lib/session/session-provider";
 import { buildSettingsHubSections } from "../settings-hub";
@@ -26,8 +27,9 @@ export function SettingsHubView(): ReactElement {
   }, [me, query, t]);
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("app.settingsHub.eyebrow")} title={t("app.settingsHub.title")} />
+    // A narrow column: the hub is read top to bottom, like the settings
+    // pages it leads to. Eyebrow and title come from the navigation registry.
+    <AppPage variant="narrow">
       {all.length === 0 ? (
         <EmptyState
           title={t("app.settingsHub.noAccessTitle")}
@@ -60,7 +62,7 @@ export function SettingsHubView(): ReactElement {
                     {t(`app.settingsHub.sections.${section.key}.description`)}
                   </p>
                 </div>
-                <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <ul className="grid gap-3 sm:grid-cols-2">
                   {section.cards.map((card) => (
                     <li key={card.key}>
                       <Card className="h-full transition-colors focus-within:border-accent hover:border-accent">
@@ -88,6 +90,6 @@ export function SettingsHubView(): ReactElement {
           )}
         </>
       )}
-    </div>
+    </AppPage>
   );
 }

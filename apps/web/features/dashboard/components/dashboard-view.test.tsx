@@ -26,6 +26,7 @@ vi.mock("../home/blocks/leadership", () => ({ useLeadershipBlock: leadershipBloc
 vi.mock("../home/blocks/picket", () => ({ usePicketBlock: picketBlock }));
 vi.mock("../home/blocks/counselor", () => ({ useCounselorBlock: counselorBlock }));
 vi.mock("../home/blocks/librarian", () => ({ useLibrarianBlock: librarianBlock }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("next-intl", () => ({
   useTranslations: () =>
     Object.assign(
