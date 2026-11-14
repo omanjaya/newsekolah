@@ -2,12 +2,21 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import { useRef, type ComponentPropsWithoutRef, type ReactElement, type ReactNode } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useRef,
+  type ComponentPropsWithoutRef,
+  type ForwardedRef,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 
 import { useScrollEdges } from "../hooks/use-scroll-edges.js";
 import { cn } from "../utils/cn.js";
 
 import { IconButton } from "./icon-button.js";
+import { useToastClearance } from "./toast-clearance.js";
 
 /*
  * The parts Dialog and Sheet share, so a dialog on a phone (a bottom
@@ -58,6 +67,8 @@ export interface OverlayHeaderProps {
   /** Shown before the title, e.g. a warning in a soft circle. */
   icon?: ReactNode;
   closeLabel: string;
+  /** Disables the close button while the dialog cannot be dismissed (an action is running). */
+  closeDisabled?: boolean;
   /** Extra top padding when no grab handle sits above the header. */
   className?: string;
 }
@@ -72,6 +83,7 @@ export function OverlayHeader({
   description,
   icon,
   closeLabel,
+  closeDisabled,
   className,
 }: OverlayHeaderProps): ReactElement {
   return (
@@ -99,6 +111,7 @@ export function OverlayHeader({
             aria-label={closeLabel}
             size="sm"
             tooltip={false}
+            disabled={closeDisabled}
             className="text-fg-muted hover:text-fg"
           />
         </DialogPrimitive.Close>
@@ -150,6 +163,8 @@ const FOOTER_LAYOUT =
 export function OverlayFooter({ children }: { children: ReactNode }): ReactElement {
   return (
     <div
+      // Measured so toasts are lifted clear of it (toast-clearance.ts).
+      data-overlay-footer=""
       className={cn(
         FOOTER_LAYOUT,
         "pt-4 pb-[calc(var(--dialog-footer-pb)+var(--dialog-safe-bottom))]",
@@ -169,22 +184,46 @@ export function OverlayFooter({ children }: { children: ReactNode }): ReactEleme
  * a phone its buttons share the width. Outside a form, the `footer` prop
  * of `DialogContent` / `SheetContent` draws the same row.
  */
-export function DialogFooter({
-  className,
-  ...props
-}: ComponentPropsWithoutRef<"div">): ReactElement {
-  return (
-    <div
-      // The body drops its bottom padding while it holds one (styles.css).
-      data-dialog-footer=""
-      className={cn(
-        FOOTER_LAYOUT,
-        "sticky bottom-0 z-[1] -mx-(--dialog-px) bg-surface-overlay",
-        "pt-4 pb-[calc(var(--dialog-footer-pb)+var(--dialog-safe-bottom))]",
-        "[[data-overflow-end]>.dialog-body_&]:border-line",
-        className,
-      )}
-      {...props}
-    />
+export const DialogFooter = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<"div">>(
+  function DialogFooter({ className, ...props }, ref) {
+    return (
+      <div
+        ref={ref}
+        // The body drops its bottom padding while it holds one (styles.css).
+        data-dialog-footer=""
+        data-overlay-footer=""
+        className={cn(
+          FOOTER_LAYOUT,
+          "sticky bottom-0 z-[1] -mx-(--dialog-px) bg-surface-overlay",
+          "pt-4 pb-[calc(var(--dialog-footer-pb)+var(--dialog-safe-bottom))]",
+          "[[data-overflow-end]>.dialog-body_&]:border-line",
+          className,
+        )}
+        {...props}
+      />
+    );
+  },
+);
+
+/** Hands `node` to a forwarded ref, whichever kind it is. */
+function assignRef<T>(ref: ForwardedRef<T>, node: T | null) {
+  if (typeof ref === "function") ref(node);
+  else if (ref) ref.current = node;
+}
+
+/**
+ * The content element's ref: the caller's, plus the toast clearance that
+ * keeps toasts off this overlay's action row while it is open.
+ */
+export function useOverlayContentRef(
+  forwarded: ForwardedRef<HTMLDivElement>,
+): (node: HTMLDivElement | null) => void {
+  const trackClearance = useToastClearance();
+  return useCallback(
+    (node: HTMLDivElement | null) => {
+      trackClearance(node);
+      assignRef(forwarded, node);
+    },
+    [forwarded, trackClearance],
   );
 }

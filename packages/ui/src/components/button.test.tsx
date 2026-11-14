@@ -171,6 +171,8 @@ describe("Button", () => {
     const link = screen.getByRole("button", { name: "Lihat semua" });
     expect(link).toHaveClass("text-accent", "h-auto", "px-0");
     expect(link).not.toHaveClass("motion-press");
+    // 18px label line + 14px above and below: 46px, past the 44px minimum.
+    expect(link).toHaveClass("pointer-coarse:after:-inset-y-3.5");
   });
 
   it("tightens the leading padding next to an icon", () => {

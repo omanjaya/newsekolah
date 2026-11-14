@@ -1,6 +1,12 @@
 "use client";
 
-import { useRef, type ReactElement, type ReactNode } from "react";
+import {
+  forwardRef,
+  useRef,
+  type ComponentPropsWithoutRef,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 
 import { useActiveIndicator } from "../hooks/use-active-indicator.js";
 import { useScrollEdges } from "../hooks/use-scroll-edges.js";
@@ -35,7 +41,11 @@ export interface NavTabsLinkProps {
   children: ReactNode;
 }
 
-export interface NavTabsProps {
+/** Any other `<nav>` attribute (`id`, `data-*`) lands on the landmark, as on `TabsList`. */
+export interface NavTabsProps extends Omit<
+  ComponentPropsWithoutRef<"nav">,
+  "children" | "aria-label"
+> {
   /** Names the navigation landmark, e.g. "Bagian presensi". */
   "aria-label": string;
   items: NavTabsItem[];
@@ -78,28 +88,37 @@ function defaultLink({
  * exist). A single item renders nothing: a lone tab only repeats the
  * page title.
  */
-export function NavTabs(props: NavTabsProps): ReactElement | null {
+export const NavTabs = forwardRef<HTMLElement, NavTabsProps>(function NavTabs(props, ref) {
   if (props.items.length < 2) return null;
-  return <NavTabsStrip {...props} />;
-}
+  return <NavTabsStrip ref={ref} {...props} />;
+});
 
 /** Mounts with its elements, so the scroll and indicator hooks always find them. */
-function NavTabsStrip({
-  "aria-label": ariaLabel,
-  items,
-  renderLink = defaultLink,
-  variant = "pill",
-  size = "md",
-  fullWidth = false,
-  className,
-}: NavTabsProps): ReactElement {
+const NavTabsStrip = forwardRef<HTMLElement, NavTabsProps>(function NavTabsStrip(
+  {
+    "aria-label": ariaLabel,
+    items,
+    renderLink = defaultLink,
+    variant = "pill",
+    size = "md",
+    fullWidth = false,
+    className,
+    ...props
+  },
+  ref,
+): ReactElement {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
   useScrollEdges(scrollerRef, { axis: "x" });
   useActiveIndicator(scrollerRef, indicatorRef, '[aria-current="page"]');
 
   return (
-    <nav aria-label={ariaLabel} className={cn(stripTrackClass(variant, fullWidth), className)}>
+    <nav
+      ref={ref}
+      aria-label={ariaLabel}
+      className={cn(stripTrackClass(variant, fullWidth), className)}
+      {...props}
+    >
       <div ref={scrollerRef} data-strip="" className={stripScrollerClass(variant)}>
         <span ref={indicatorRef} aria-hidden="true" className={stripIndicatorClass(variant)} />
         <ul className={cn("flex", fullWidth && "flex-1", variant === "underline" && "gap-1")}>
@@ -149,4 +168,4 @@ function NavTabsStrip({
       </div>
     </nav>
   );
-}
+});

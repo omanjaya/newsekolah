@@ -1,6 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import { useRef, useState } from "react";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useActiveIndicator } from "./use-active-indicator.js";
 
@@ -82,5 +82,111 @@ describe("useActiveIndicator", () => {
     expect(indicator.style.getPropertyValue("--indicator-w")).toBe("120px");
     expect(indicator.style.getPropertyValue("--indicator-scale")).toBe("1");
     expect(indicator).not.toHaveAttribute("data-instant");
+  });
+});
+
+/** Records what is observed and reports a resize on demand. */
+class FakeResizeObserver {
+  static last: FakeResizeObserver | null = null;
+  observed = new Set<Element>();
+  constructor(private readonly callback: () => void) {
+    FakeResizeObserver.last = this;
+  }
+  observe(element: Element) {
+    this.observed.add(element);
+  }
+  unobserve(element: Element) {
+    this.observed.delete(element);
+  }
+  disconnect() {
+    this.observed.clear();
+  }
+  resize() {
+    this.callback();
+  }
+}
+
+/** Links nested in a list, like NavTabs: the strip's own children are not the items. */
+function NestedStrip({ active }: { active: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const indicatorRef = useRef<HTMLSpanElement>(null);
+  useActiveIndicator(containerRef, indicatorRef, '[aria-current="page"]');
+  return (
+    <div ref={containerRef} data-testid="strip">
+      <span ref={indicatorRef} data-testid="indicator" />
+      <ul>
+        {[
+          { id: "a", left: 4, width: 80 },
+          { id: "b", left: 84, width: 120 },
+        ].map((item) => (
+          <li key={item.id}>
+            <a
+              href={`#${item.id}`}
+              aria-current={item.id === active ? "page" : undefined}
+              data-offsetleft={item.left}
+              data-offsetwidth={item.width}
+              data-offsetheight={32}
+              data-offsettop={4}
+            >
+              {item.id}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+describe("useActiveIndicator size tracking", () => {
+  beforeEach(() => {
+    vi.stubGlobal("ResizeObserver", FakeResizeObserver);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    FakeResizeObserver.last = null;
+  });
+
+  it("watches the active item itself, since the strip's box may not change with it", async () => {
+    const { rerender } = render(<NestedStrip active="a" />);
+    const observer = FakeResizeObserver.last;
+    const first = screen.getByRole("link", { name: "a" });
+    expect(observer?.observed.has(first)).toBe(true);
+    expect(observer?.observed.has(screen.getByTestId("indicator"))).toBe(false);
+
+    // A late font swap widens the label; only the item's own size changes.
+    first.dataset.offsetwidth = "96";
+    act(() => {
+      observer?.resize();
+    });
+    const indicator = screen.getByTestId("indicator");
+    expect(indicator.style.getPropertyValue("--indicator-w")).toBe("96px");
+
+    // A newly active item is watched instead of the old one.
+    await act(async () => {
+      rerender(<NestedStrip active="b" />);
+      await Promise.resolve();
+    });
+    const second = screen.getByRole("link", { name: "b" });
+    expect(observer?.observed.has(second)).toBe(true);
+    expect(observer?.observed.has(first)).toBe(false);
+  });
+
+  it("places the indicator again once web fonts have loaded", async () => {
+    let fontsLoaded: () => void = () => undefined;
+    const ready = new Promise<void>((resolve) => {
+      fontsLoaded = resolve;
+    });
+    Object.defineProperty(document, "fonts", { configurable: true, value: { ready } });
+    try {
+      render(<NestedStrip active="a" />);
+      screen.getByRole("link", { name: "a" }).dataset.offsetwidth = "88";
+      await act(async () => {
+        fontsLoaded();
+        await ready;
+      });
+      expect(screen.getByTestId("indicator").style.getPropertyValue("--indicator-w")).toBe("88px");
+    } finally {
+      Reflect.deleteProperty(document, "fonts");
+    }
   });
 });

@@ -3,6 +3,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
 
+import { useReturnFocus } from "../hooks/use-return-focus.js";
 import { cn } from "../utils/cn.js";
 
 import {
@@ -12,6 +13,7 @@ import {
   OverlayFooter,
   OverlayHeader,
   OverlayScrim,
+  useOverlayContentRef,
 } from "./overlay-parts.js";
 import { useUiLabels } from "./ui-labels.js";
 
@@ -44,6 +46,12 @@ export interface DialogContentProps extends ComponentPropsWithoutRef<
   /** Overrides the close button's label from `UiLabels`. */
   closeLabel?: string;
   /**
+   * Disables the header's close button, for the moment the dialog cannot
+   * be dismissed (its action is running). Escape and the scrim are the
+   * caller's to block, in `onOpenChange`, as `ConfirmDialog` does.
+   */
+  closeDisabled?: boolean;
+  /**
    * Actions under the scrolling body, always visible. For a form whose
    * submit button must stay inside the `<form>`, end the form with
    * `DialogFooter` instead; it draws the same row.
@@ -63,7 +71,9 @@ export interface DialogContentProps extends ComponentPropsWithoutRef<
  * indicator. In both, the header stays put, the body scrolls, and the
  * footer stays in reach, including a form's own trailing action row (see
  * `dialog-body` in styles.css), so existing dialogs get all of this
- * without changes.
+ * without changes. On closing, focus goes back to the element that had it
+ * when the dialog opened, even when the dialog was opened from state
+ * rather than a `DialogTrigger`.
  */
 export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(function DialogContent(
   {
@@ -72,20 +82,25 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
     description,
     hideHeader,
     closeLabel,
+    closeDisabled,
     footer,
     icon,
     size = "md",
+    onOpenAutoFocus,
+    onCloseAutoFocus,
     children,
     ...props
   },
   ref,
 ) {
   const labels = useUiLabels();
+  const returnFocus = useReturnFocus(onOpenAutoFocus, onCloseAutoFocus);
+  const contentRef = useOverlayContentRef(ref);
   return (
     <DialogPrimitive.Portal>
       <OverlayScrim closeAnimation="responsive" />
       <DialogPrimitive.Content
-        ref={ref}
+        ref={contentRef}
         // Without a description there is nothing to point at; saying so
         // keeps Radix from warning about a missing one.
         {...(description ? {} : { "aria-describedby": undefined })}
@@ -104,6 +119,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
           className,
         )}
         {...props}
+        {...returnFocus}
       >
         <GrabHandle className="sm:hidden" />
         {hideHeader ? (
@@ -121,6 +137,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
             description={description}
             icon={icon}
             closeLabel={closeLabel ?? labels.dialogClose}
+            closeDisabled={closeDisabled}
             className="pt-3 sm:pt-6"
           />
         )}

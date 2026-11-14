@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
@@ -59,6 +60,23 @@ describe("NavTabs", () => {
     const scroller = screen.getByRole("navigation").firstElementChild;
     expect(scroller).toHaveClass("overflow-x-auto", "scroll-fade-x");
     expect(scroller?.firstElementChild).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("forwards a ref and other attributes to the landmark, like TabsList", () => {
+    const ref = createRef<HTMLElement>();
+    render(
+      <NavTabs
+        ref={ref}
+        id="bagian-presensi"
+        data-tour="presensi"
+        aria-label="Bagian"
+        items={ITEMS}
+      />,
+    );
+    const nav = screen.getByRole("navigation", { name: "Bagian" });
+    expect(ref.current).toBe(nav);
+    expect(nav).toHaveAttribute("id", "bagian-presensi");
+    expect(nav).toHaveAttribute("data-tour", "presensi");
   });
 
   it("has no accessibility violations", async () => {

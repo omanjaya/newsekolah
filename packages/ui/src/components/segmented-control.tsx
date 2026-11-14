@@ -10,11 +10,18 @@ import {
   type Ref,
 } from "react";
 
+import { revealInStrip } from "../hooks/use-active-indicator.js";
 import { useControllableState } from "../hooks/use-controllable-state.js";
 import { useScrollEdges } from "../hooks/use-scroll-edges.js";
 import { cn } from "../utils/cn.js";
 
-import { StripCount, stripItemClass, type StripSize } from "./tab-styles.js";
+import {
+  StripCount,
+  stripItemClass,
+  stripScrollerClass,
+  stripTrackClass,
+  type StripSize,
+} from "./tab-styles.js";
 
 export interface SegmentedControlOption<T extends string = string> {
   value: T;
@@ -51,26 +58,17 @@ export interface SegmentedControlProps<T extends string = string> {
 const ACTIVE_COUNT =
   "group-data-[state=checked]/tab:bg-accent-soft group-data-[state=checked]/tab:text-accent-soft-fg";
 
-/** Keeps the checked segment inside a scrolled-away overflow, without moving the page. */
-function revealChecked(scroller: HTMLElement | null) {
-  const item = scroller?.querySelector<HTMLElement>("[data-state=checked]");
-  if (!scroller || !item) return;
-  const left = item.offsetLeft;
-  const right = left + item.offsetWidth;
-  if (left < scroller.scrollLeft) scroller.scrollLeft = left - 4;
-  else if (right > scroller.scrollLeft + scroller.clientWidth) {
-    scroller.scrollLeft = right - scroller.clientWidth + 4;
-  }
-}
-
 /**
  * A small set of mutually exclusive modes or filters shown as one pill
- * track ("Semua / Menunggu / Disetujui"), the same track, pill and item
- * sizes as the pill `Tabs`. Radio semantics: arrow keys move and select,
- * Tab enters at the selected segment, and there is no panel to point at,
- * which is why a filter uses this and not `Tabs`. Segments share one
- * width, so the raised pill slides between them by index, transform only.
- * On a phone a track wider than the screen scrolls sideways with fades.
+ * track ("Semua / Menunggu / Disetujui"): the same track, scroller, pill
+ * and item sizes as the pill `Tabs` (tab-styles.tsx). Radio semantics:
+ * arrow keys move and select, Tab enters at the selected segment, and
+ * there is no panel to point at, which is why a filter uses this and not
+ * `Tabs`. Its indicator is the one deliberate difference: segments share
+ * one width (an equal-column grid), so the raised pill slides between them
+ * by index in pure CSS, transform only, with no measuring. On a phone a
+ * track wider than the screen scrolls sideways with fades, and the checked
+ * segment is scrolled into view the way a tab is.
  */
 export function SegmentedControl<T extends string = string>({
   options,
@@ -101,7 +99,9 @@ export function SegmentedControl<T extends string = string>({
   useScrollEdges(scrollerRef, { axis: "x" });
 
   useEffect(() => {
-    revealChecked(scrollerRef.current);
+    const scroller = scrollerRef.current;
+    const checked = scroller?.querySelector<HTMLElement>("[data-state=checked]");
+    if (scroller && checked) revealInStrip(scroller, checked);
   }, [index]);
 
   const trackStyle = {
@@ -111,18 +111,8 @@ export function SegmentedControl<T extends string = string>({
 
   return (
     // The capsule stays crisp while the segments scroll and fade inside it.
-    <div
-      className={cn(
-        "max-w-full overflow-hidden rounded-full bg-surface-sunken",
-        fullWidth ? "flex w-full" : "inline-flex w-fit",
-        disabled && "opacity-50",
-        className,
-      )}
-    >
-      <div
-        ref={scrollerRef}
-        className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain p-1 scrollbar-none scroll-fade-x"
-      >
+    <div className={cn(stripTrackClass("pill", fullWidth), disabled && "opacity-50", className)}>
+      <div ref={scrollerRef} className={stripScrollerClass("pill")}>
         <RadioGroupPrimitive.Root
           ref={ref}
           id={id}
@@ -139,7 +129,9 @@ export function SegmentedControl<T extends string = string>({
           aria-labelledby={ariaLabelledBy}
           style={trackStyle}
           className={cn(
-            "relative grid auto-cols-fr grid-flow-col",
+            // Never squeezed by the scroller's flex row: a track too wide
+            // for the screen scrolls instead.
+            "relative grid shrink-0 auto-cols-fr grid-flow-col",
             fullWidth ? "w-full min-w-max" : "w-max",
           )}
         >

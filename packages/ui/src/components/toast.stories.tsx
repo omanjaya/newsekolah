@@ -2,6 +2,7 @@ import type { Decorator, Meta, StoryObj } from "@storybook/react";
 import { useEffect } from "react";
 
 import { Button } from "./button.js";
+import { Sheet, SheetContent } from "./sheet.js";
 import { Toaster, toast, useToast } from "./toast.js";
 
 /** Open at a 390px viewport to see toasts move to the top of the screen. */
@@ -99,6 +100,39 @@ function SingleToast() {
   );
 }
 
+/**
+ * A toast raised from an open drawer: it stays above the drawer's Save and
+ * Cancel instead of covering them (toast-clearance.ts).
+ */
+function ToastOverDrawer() {
+  useEffect(() => {
+    toast.success("Tagihan diperbarui", { description: "SPP Oktober, Nadia Putri" });
+    return () => {
+      toast.dismiss();
+    };
+  }, []);
+  return (
+    <>
+      <Toaster duration={600_000} />
+      <Sheet open>
+        <SheetContent
+          side="right"
+          title="Rincian tagihan"
+          description="SPP Oktober 2026"
+          footer={
+            <>
+              <Button variant="secondary">Batal</Button>
+              <Button>Simpan</Button>
+            </>
+          }
+        >
+          <p className="text-body text-fg-muted">Nadia Putri, X-A. Jatuh tempo 10 Oktober.</p>
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+}
+
 const meta: Meta = {
   title: "Components/Toast",
   parameters: { layout: "fullscreen" },
@@ -117,3 +151,8 @@ export const Kinds: Story = { render: () => <ToastShowcase /> };
 export const Single: Story = { render: () => <SingleToast /> };
 export const Dark: Story = { globals: { theme: "dark" }, render: () => <ToastShowcase /> };
 export const Phone: Story = { decorators: [phoneFrame], render: () => <SingleToast /> };
+export const OverDrawer: Story = { render: () => <ToastOverDrawer /> };
+export const OverDrawerDark: Story = {
+  globals: { theme: "dark" },
+  render: () => <ToastOverDrawer />,
+};

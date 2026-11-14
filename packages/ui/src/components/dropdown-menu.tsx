@@ -16,12 +16,14 @@ export const DropdownMenuSub = DropdownMenuPrimitive.Sub;
  * 14px text on a touch screen. The radius is the panel's 14px minus its
  * 4px padding, so the highlight sits concentric inside the panel. The
  * pointer gets the soft highlight; keyboard focus also gets an inset ring,
- * since a 5% tint alone is hard to follow.
+ * since a 5% tint alone is hard to follow. A pressed row is always the
+ * highlighted one, so the press layer is keyed to both states: a plain
+ * `active:` rule sorts before the `data-` one and would never show.
  */
 const ITEM_CLASS = cn(
   "relative flex h-9 cursor-pointer items-center gap-2.5 rounded-[calc(var(--radius-md)-4px)] px-2.5 text-body-sm text-fg select-none",
   "pointer-coarse:h-11 pointer-coarse:text-body",
-  "transition-colors data-[highlighted]:bg-state-hover active:bg-state-pressed focus-visible:-outline-offset-2",
+  "transition-colors data-[highlighted]:bg-state-hover data-[highlighted]:active:bg-state-pressed focus-visible:-outline-offset-2",
   "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
   "[&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-fg-muted",
 );
@@ -73,8 +75,9 @@ export interface DropdownMenuItemProps extends ComponentPropsWithoutRef<
   shortcut?: string;
 }
 
+// A pressed danger row keeps its danger tint rather than turning grey.
 const DANGER_ITEM =
-  "text-danger [&>svg]:text-danger data-[highlighted]:bg-danger-soft data-[highlighted]:text-danger-soft-fg data-[highlighted]:[&>svg]:text-danger-soft-fg";
+  "text-danger [&>svg]:text-danger data-[highlighted]:bg-danger-soft data-[highlighted]:active:bg-danger-soft data-[highlighted]:text-danger-soft-fg data-[highlighted]:[&>svg]:text-danger-soft-fg";
 
 export const DropdownMenuItem = forwardRef<HTMLDivElement, DropdownMenuItemProps>(
   function DropdownMenuItem(

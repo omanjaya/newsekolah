@@ -68,6 +68,19 @@ describe("DropdownMenu", () => {
     );
   });
 
+  it("keys the press layer to the highlighted state, so it sorts after the hover tint", async () => {
+    const user = userEvent.setup();
+    render(<Menu />);
+    await user.click(screen.getByRole("button", { name: "Akun" }));
+    const item = await screen.findByRole("menuitem", { name: "Pengaturan" });
+    expect(item).toHaveClass("data-[highlighted]:active:bg-state-pressed");
+    // A bare `active:` rule loses to `data-[highlighted]:` at equal specificity.
+    expect(item).not.toHaveClass("active:bg-state-pressed");
+    const danger = screen.getByRole("menuitem", { name: "Keluar" });
+    expect(danger).toHaveClass("data-[highlighted]:active:bg-danger-soft");
+    expect(danger).not.toHaveClass("data-[highlighted]:active:bg-state-pressed");
+  });
+
   it("has no accessibility violations when open", async () => {
     const user = userEvent.setup();
     render(<Menu />);

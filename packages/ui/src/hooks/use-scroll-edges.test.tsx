@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useRef } from "react";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useScrollEdges } from "./use-scroll-edges.js";
 
@@ -60,5 +60,72 @@ describe("useScrollEdges", () => {
     fireEvent.scroll(strip);
     unmount();
     expect(strip).not.toHaveAttribute("data-overflow-start");
+  });
+});
+
+/** Records what is observed and reports a resize on demand. */
+class FakeResizeObserver {
+  static last: FakeResizeObserver | null = null;
+  observed = new Set<Element>();
+  constructor(private readonly callback: () => void) {
+    FakeResizeObserver.last = this;
+  }
+  observe(element: Element) {
+    this.observed.add(element);
+  }
+  unobserve(element: Element) {
+    this.observed.delete(element);
+  }
+  disconnect() {
+    this.observed.clear();
+  }
+  resize() {
+    this.callback();
+  }
+}
+
+/** A dialog body whose form replaces its skeleton once data arrives. */
+function Body({ loaded }: { loaded: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useScrollEdges(ref, { axis: "y" });
+  return (
+    <div ref={ref} data-testid="body">
+      {loaded ? <form data-testid="form" /> : <div data-testid="skeleton" />}
+    </div>
+  );
+}
+
+describe("useScrollEdges size tracking", () => {
+  beforeEach(() => {
+    vi.stubGlobal("ResizeObserver", FakeResizeObserver);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    FakeResizeObserver.last = null;
+  });
+
+  it("keeps watching content that mounts later, so its growth still moves the divider", async () => {
+    const { rerender } = render(<Body loaded={false} />);
+    const body = screen.getByTestId("body");
+    const observer = FakeResizeObserver.last;
+    expect(observer?.observed.has(screen.getByTestId("skeleton"))).toBe(true);
+
+    await act(async () => {
+      rerender(<Body loaded />);
+      // The mutation observer reports on a microtask.
+      await Promise.resolve();
+    });
+    const form = screen.getByTestId("form");
+    expect(observer?.observed.has(form)).toBe(true);
+    expect(observer?.observed.size).toBe(2);
+    expect(body).not.toHaveAttribute("data-overflow-end");
+
+    // A section inside the form opens: only the form's own size changes.
+    Object.defineProperty(body, "clientHeight", { configurable: true, value: 400 });
+    Object.defineProperty(body, "scrollHeight", { configurable: true, value: 640 });
+    act(() => {
+      observer?.resize();
+    });
+    expect(body).toHaveAttribute("data-overflow-end");
   });
 });

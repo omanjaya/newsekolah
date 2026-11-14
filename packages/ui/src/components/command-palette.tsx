@@ -5,6 +5,7 @@ import { Command as CommandPrimitive } from "cmdk";
 import { ArrowDown, ArrowUp, CornerDownLeft, Search } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { useReturnFocus } from "../hooks/use-return-focus.js";
 import { cn } from "../utils/cn.js";
 
 import { Button } from "./button.js";
@@ -74,11 +75,15 @@ export function CommandPalette({
 }: CommandPaletteProps) {
   const labels = useUiLabels();
   const name = label ?? labels.commandPaletteLabel;
+  // Opened by a shortcut from anywhere, so focus goes back to wherever the
+  // reader was (a field mid-edit), not to the page body.
+  const returnFocus = useReturnFocus(undefined, undefined);
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <OverlayScrim closeAnimation="dialog" />
         <DialogPrimitive.Content
+          {...returnFocus}
           aria-describedby={undefined}
           className={cn(
             "fixed z-modal flex flex-col overflow-hidden bg-surface-overlay text-fg outline-none",
@@ -139,7 +144,9 @@ export function CommandPalette({
                       onSelect={item.onSelect}
                       className={cn(
                         "group/item flex h-11 cursor-pointer items-center gap-3 rounded-[calc(var(--radius-lg)-8px)] px-3 text-body text-fg select-none",
-                        "pointer-coarse:h-12 transition-colors data-[selected=true]:bg-state-hover active:bg-state-pressed",
+                        // The pressed row is the selected one; a plain `active:`
+                        // rule would sort before the `data-` one and never show.
+                        "pointer-coarse:h-12 transition-colors data-[selected=true]:bg-state-hover data-[selected=true]:active:bg-state-pressed",
                         "data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",
                       )}
                     >

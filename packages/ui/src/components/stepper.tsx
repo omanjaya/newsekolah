@@ -214,7 +214,14 @@ export function Stepper({
                 <span className="mt-0.5 text-caption text-fg-muted">
                   {meta.map((part, partIndex) => (
                     <span key={partIndex}>
-                      {partIndex > 0 && <span aria-hidden="true"> · </span>}
+                      {/* The spaces stay outside the hidden dot, so a screen
+                          reader still hears the actor and the time apart. */}
+                      {partIndex > 0 && (
+                        <>
+                          {" "}
+                          <span aria-hidden="true">·</span>{" "}
+                        </>
+                      )}
                       {part}
                     </span>
                   ))}

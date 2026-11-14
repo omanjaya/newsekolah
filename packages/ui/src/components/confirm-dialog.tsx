@@ -60,6 +60,8 @@ export function ConfirmDialog({
     >
       <DialogContent
         size="sm"
+        // Like Cancel, the close button would do nothing while it runs.
+        closeDisabled={confirming}
         title={title}
         description={typeof description === "string" ? description : undefined}
         icon={

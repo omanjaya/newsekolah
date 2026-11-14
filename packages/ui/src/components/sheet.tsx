@@ -3,6 +3,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
 
+import { useReturnFocus } from "../hooks/use-return-focus.js";
 import { cn } from "../utils/cn.js";
 
 import {
@@ -12,6 +13,7 @@ import {
   OverlayFooter,
   OverlayHeader,
   OverlayScrim,
+  useOverlayContentRef,
 } from "./overlay-parts.js";
 import { useUiLabels } from "./ui-labels.js";
 
@@ -40,6 +42,8 @@ export interface SheetContentProps extends ComponentPropsWithoutRef<
   hideHeader?: boolean;
   /** Overrides the close button's label from `UiLabels`. */
   closeLabel?: string;
+  /** Disables the header's close button while the sheet cannot be dismissed. */
+  closeDisabled?: boolean;
   /** Actions under the scrolling body, always visible (or end a form with `SheetFooter`). */
   footer?: ReactNode;
   /** Shown before the title. */
@@ -59,7 +63,8 @@ export interface SheetContentProps extends ComponentPropsWithoutRef<
  * The same layer as `Dialog`'s phone layout (grab handle, title role,
  * scrolling body, sticky footer, safe-area padding), so a sheet and a
  * dialog on a phone are one object. A drawer slides in from the right at
- * the sheet's pace instead.
+ * the sheet's pace instead. Like `Dialog`, it gives focus back to the
+ * element that had it when it opened.
  */
 export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(function SheetContent(
   {
@@ -68,22 +73,27 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
     description,
     hideHeader,
     closeLabel,
+    closeDisabled,
     footer,
     icon,
     side = "bottom",
     size = "md",
+    onOpenAutoFocus,
+    onCloseAutoFocus,
     children,
     ...props
   },
   ref,
 ) {
   const labels = useUiLabels();
+  const returnFocus = useReturnFocus(onOpenAutoFocus, onCloseAutoFocus);
+  const contentRef = useOverlayContentRef(ref);
   const drawer = side === "right";
   return (
     <DialogPrimitive.Portal>
       <OverlayScrim closeAnimation="sheet" />
       <DialogPrimitive.Content
-        ref={ref}
+        ref={contentRef}
         {...(description ? {} : { "aria-describedby": undefined })}
         data-side={side}
         className={cn(
@@ -108,6 +118,7 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
           className,
         )}
         {...props}
+        {...returnFocus}
       >
         <GrabHandle className={drawer ? "sm:hidden" : undefined} />
         {hideHeader ? (
@@ -125,6 +136,7 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
             description={description}
             icon={icon}
             closeLabel={closeLabel ?? labels.sheetClose}
+            closeDisabled={closeDisabled}
             className={drawer ? "pt-3 sm:pt-6" : "pt-3"}
           />
         )}

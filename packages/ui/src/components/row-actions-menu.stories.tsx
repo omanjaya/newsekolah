@@ -1,7 +1,13 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Decorator, Meta, StoryObj } from "@storybook/react";
 import { BookCopy, Pencil, Printer, Trash2 } from "lucide-react";
 
 import { RowActionsMenu } from "./row-actions-menu.js";
+
+const phoneFrame: Decorator = (Story) => (
+  <div className="mx-auto w-[390px] max-w-full">
+    <Story />
+  </div>
+);
 
 const ITEMS = [
   { label: "Ubah", icon: <Pencil />, onClick: () => undefined },
@@ -34,3 +40,12 @@ type Story = StoryObj<typeof RowActionsMenu>;
 /** Click the dots to open; arrow keys move, Escape closes. */
 export const Default: Story = { render: () => <Row /> };
 export const Dark: Story = { globals: { theme: "dark" }, render: () => <Row /> };
+/**
+ * Open at a 390px viewport (the screenshot script does): the dots grow to
+ * a 44px target and the rows to 44px with body text on a touch screen.
+ */
+export const Phone: Story = {
+  parameters: { layout: "fullscreen" },
+  decorators: [phoneFrame],
+  render: () => <Row />,
+};

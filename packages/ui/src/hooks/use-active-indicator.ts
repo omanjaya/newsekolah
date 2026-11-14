@@ -2,6 +2,8 @@
 
 import { useEffect, type RefObject } from "react";
 
+import { createResizeTracker } from "./resize-tracker.js";
+
 interface Box {
   x: number;
   y: number;
@@ -33,11 +35,21 @@ function writeBox(indicator: HTMLElement, size: Box, at: Box, scale: number) {
   indicator.style.setProperty("--indicator-scale", String(scale));
 }
 
-/** Scrolls a strip just enough to show the item, without moving the page. */
-function reveal(container: HTMLElement, item: HTMLElement) {
+/**
+ * Scrolls a sideways strip just enough to show `item` clear of the edge
+ * fade, without moving the page (no scrollIntoView). Measured from the
+ * rendered boxes, so the item may sit at any depth inside the strip.
+ * Shared by every strip: Tabs and NavTabs through useActiveIndicator,
+ * SegmentedControl directly.
+ */
+export function revealInStrip(container: HTMLElement, item: HTMLElement): void {
   if (container.scrollWidth <= container.clientWidth) return;
-  const left = item.offsetLeft - REVEAL_MARGIN;
-  const right = item.offsetLeft + item.offsetWidth + REVEAL_MARGIN;
+  const start =
+    item.getBoundingClientRect().left -
+    container.getBoundingClientRect().left +
+    container.scrollLeft;
+  const left = start - REVEAL_MARGIN;
+  const right = start + item.offsetWidth + REVEAL_MARGIN;
   if (left < container.scrollLeft) container.scrollLeft = Math.max(left, 0);
   else if (right > container.scrollLeft + container.clientWidth) {
     container.scrollLeft = right - container.clientWidth;
@@ -72,6 +84,11 @@ export function useActiveIndicator(
     if (!container || !indicator) return;
 
     let previous: { element: HTMLElement; box: Box } | null = null;
+    let disposed = false;
+    // Declared before `place`, which keeps it pointed at the active item.
+    const sizes = createResizeTracker(() => {
+      place();
+    });
 
     const settle = () => {
       // Reading layout flushes the start position before the transition is
@@ -81,7 +98,13 @@ export function useActiveIndicator(
     };
 
     const place = () => {
+      if (disposed) return;
       const active = container.querySelector<HTMLElement>(activeSelector);
+      // The strip's box often stays put while an item's width changes (an
+      // underline or full-width strip, one capped at the container): watch
+      // the active item, and the strip's own children, whose widths move it.
+      const children = Array.from(container.children).filter((child) => child !== indicator);
+      sizes.track([container, ...children, ...(active ? [active] : [])]);
       const box = active ? boxOf(active) : null;
       if (!active || !box || box.w === 0) {
         container.removeAttribute("data-indicator");
@@ -103,7 +126,7 @@ export function useActiveIndicator(
         container.setAttribute("data-indicator", "ready");
         settle();
       }
-      if (previous?.element !== active) reveal(container, active);
+      if (previous?.element !== active) revealInStrip(container, active);
       previous = { element: active, box };
     };
 
@@ -118,12 +141,15 @@ export function useActiveIndicator(
       attributes: true,
       attributeFilter: ["data-state", "aria-current", "aria-selected", "hidden", "class"],
     });
-    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(place);
-    resizeObserver?.observe(container);
+    // A web font arriving late changes every label's width at once, often
+    // without any element the observers watch changing size first.
+    // (jsdom has no FontFaceSet.)
+    if ("fonts" in document) void document.fonts.ready.then(place);
 
     return () => {
+      disposed = true;
       mutationObserver?.disconnect();
-      resizeObserver?.disconnect();
+      sizes.disconnect();
       container.removeAttribute("data-indicator");
     };
   }, [containerRef, indicatorRef, activeSelector]);

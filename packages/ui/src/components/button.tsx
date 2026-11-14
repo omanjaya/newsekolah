@@ -44,10 +44,11 @@ const buttonVariants = cva(
         danger: "rounded-md motion-press bg-danger text-bg hover:opacity-90 active:opacity-90",
         // An inline action that reads as a link ("Lihat semua"): accent
         // text, underline on hover, no box. On a touch screen its hit area
-        // grows to 44px around the text without moving the layout.
+        // grows past 44px around the text (the 18px label line plus 14px
+        // above and below) without moving the layout.
         link:
           "relative rounded-xs text-accent underline-offset-4 transition-colors hover:underline active:text-accent-strong " +
-          "pointer-coarse:after:absolute pointer-coarse:after:-inset-x-2 pointer-coarse:after:-inset-y-3",
+          "pointer-coarse:after:absolute pointer-coarse:after:-inset-x-2 pointer-coarse:after:-inset-y-3.5",
       },
       size: {
         // Touch screens get at least 44px whatever the window width (a
