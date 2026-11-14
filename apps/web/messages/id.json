@@ -1465,11 +1465,6 @@
         "includeArchived": "Tampilkan yang diarsipkan",
         "emptyTitle": "Belum ada pengguna",
         "emptyBody": "Tambah guru, pegawai, dan siswa satu per satu atau lewat impor.",
-        "loadErrorTitle": "Daftar pengguna tidak bisa dimuat",
-        "loadErrorBody": "Periksa koneksi Anda, lalu coba lagi.",
-        "retry": "Coba lagi",
-        "pagePrev": "Sebelumnya",
-        "pageNext": "Berikutnya",
         "resetTitle": "Tautan atur ulang kata sandi",
         "resetBody": "Bagikan tautan ini ke pengguna. Berlaku sekali dan kedaluwarsa dalam 30 menit.",
         "actions": {
@@ -1483,7 +1478,8 @@
           "restored": "Pengguna dipulihkan",
           "impersonate": "Masuk sebagai pengguna ini",
           "impersonateBody": "Anda akan bertindak sebagai {name} selama maksimal 30 menit. Semua tindakan selama itu dicatat.",
-          "import": "Impor pengguna"
+          "import": "Impor pengguna",
+          "menuFor": "Aksi untuk {name}"
         },
         "form": {
           "createTitle": "Pengguna baru",
@@ -1571,7 +1567,13 @@
           "unchangedLabel": "Tidak berubah",
           "invalidLabel": "Tidak valid",
           "backToUsers": "Kembali ke daftar pengguna"
-        }
+        },
+        "moreRoles": "+{n} peran",
+        "resetConfirmBody": "Buat tautan atur ulang kata sandi untuk {name}? Kata sandi lamanya tetap berlaku sampai tautan dipakai.",
+        "resetCopy": "Salin tautan",
+        "resetCopied": "Tautan disalin",
+        "resetCopyFailed": "Tautan tidak bisa disalin. Pilih teksnya lalu salin manual.",
+        "resetLinkLabel": "Tautan atur ulang"
       },
       "classes": {
         "eyebrow": "Data Sekolah",

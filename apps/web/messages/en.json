@@ -1465,11 +1465,6 @@
         "includeArchived": "Show archived",
         "emptyTitle": "No users yet",
         "emptyBody": "Add teachers, staff and students one by one or through import.",
-        "loadErrorTitle": "The user list could not be loaded",
-        "loadErrorBody": "Check your connection, then try again.",
-        "retry": "Try again",
-        "pagePrev": "Previous",
-        "pageNext": "Next",
         "resetTitle": "Password reset link",
         "resetBody": "Share this link with the user. It works once and expires in 30 minutes.",
         "actions": {
@@ -1483,7 +1478,8 @@
           "restored": "User restored",
           "impersonate": "Sign in as this user",
           "impersonateBody": "You will act as {name} for up to 30 minutes. Everything done during that time is logged.",
-          "import": "Import users"
+          "import": "Import users",
+          "menuFor": "Actions for {name}"
         },
         "form": {
           "createTitle": "New user",
@@ -1571,7 +1567,13 @@
           "unchangedLabel": "Unchanged",
           "invalidLabel": "Invalid",
           "backToUsers": "Back to the user list"
-        }
+        },
+        "moreRoles": "+{n} roles",
+        "resetConfirmBody": "Create a password reset link for {name}? Their current password keeps working until the link is used.",
+        "resetCopy": "Copy link",
+        "resetCopied": "Link copied",
+        "resetCopyFailed": "The link could not be copied. Select the text and copy it yourself.",
+        "resetLinkLabel": "Reset link"
       },
       "classes": {
         "eyebrow": "School Data",
