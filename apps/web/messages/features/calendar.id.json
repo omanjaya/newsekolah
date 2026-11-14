@@ -1,10 +1,6 @@
 {
   "eyebrow": "Akademik",
   "title": "Kalender akademik",
-  "locale": "id-ID",
-  "weekdays": ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"],
-  "previousMonth": "Bulan sebelumnya",
-  "nextMonth": "Bulan berikutnya",
   "addEvent": "Tambah acara",
   "editEvent": "Ubah acara",
   "deleteEvent": "Hapus acara",
@@ -15,22 +11,34 @@
   "emptyTitle": "Belum ada acara di kalender",
   "emptyBody": "Tambahkan hari libur, ujian, atau acara sekolah agar terlihat pada kalender tahun ajaran ini.",
   "emptyBodyReadOnly": "Belum ada hari libur, ujian, atau acara sekolah yang dijadwalkan pada tahun ajaran ini.",
-  "emptyMonth": "Tidak ada acara bulan ini.",
+  "emptyMonth": "Tidak ada acara bulan ini",
   "kind": {
     "holiday": "Libur",
     "exam": "Ujian",
     "event": "Acara",
-    "no_school": "Tidak Ada KBM",
-    "semester_break": "Libur Semester"
+    "no_school": "Tidak ada KBM",
+    "semester_break": "Libur semester"
   },
   "form": {
-    "name": "Nama Acara",
-    "startDate": "Tanggal Mulai",
-    "endDate": "Tanggal Selesai",
+    "name": "Nama acara",
     "kind": "Jenis",
-    "gradeLevels": "Berlaku untuk Kelas",
+    "gradeLevels": "Berlaku untuk tingkat kelas",
     "gradeLevelsHint": "Kosongkan agar berlaku untuk seluruh tingkat kelas.",
     "cancel": "Batal",
-    "save": "Simpan"
+    "save": "Simpan",
+    "nameRequired": "Isi nama acara.",
+    "dates": "Tanggal",
+    "datesHint": "Pilih tanggal mulai, lalu tanggal selesai. Untuk satu hari, pilih tanggal yang sama."
+  },
+  "addShort": "Tambah",
+  "legend": "Keterangan warna jenis acara",
+  "moreEvents": "+{n} lagi",
+  "emptyDay": "Tidak ada acara di tanggal ini.",
+  "monthAgenda": "Acara bulan ini",
+  "detailTitle": "Detail acara",
+  "detail": {
+    "dates": "Tanggal",
+    "appliesTo": "Berlaku untuk",
+    "wholeSchool": "Seluruh tingkat kelas"
   }
 }
