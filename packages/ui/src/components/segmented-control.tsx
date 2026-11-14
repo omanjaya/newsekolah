@@ -33,13 +33,21 @@ export interface SegmentedControlOption<T extends string = string> {
   disabled?: boolean;
 }
 
+/**
+ * "md" (default) for a mode switch, "sm" for a compact filter in a
+ * toolbar, "dense" for many short segments that must share a phone's
+ * width (the seven days of a week: "Sen" to "Min" at 390px). Dense keeps
+ * the md height and the 44px touch area, and trims the side padding.
+ */
+export type SegmentedControlSize = StripSize | "dense";
+
 export interface SegmentedControlProps<T extends string = string> {
   options: SegmentedControlOption<T>[];
   value?: T;
   defaultValue?: T;
   onValueChange?: (value: T) => void;
-  /** "md" (default) for a mode switch, "sm" for a compact filter in a toolbar. */
-  size?: StripSize;
+  /** See `SegmentedControlSize`. */
+  size?: SegmentedControlSize;
   /** Stretch across the container, segments sharing the width equally. */
   fullWidth?: boolean;
   disabled?: boolean;
@@ -57,6 +65,10 @@ export interface SegmentedControlProps<T extends string = string> {
 
 const ACTIVE_COUNT =
   "group-data-[state=checked]/tab:bg-accent-soft group-data-[state=checked]/tab:text-accent-soft-fg";
+
+// 6px a side and a 4px gap: a three-letter day name with a "today" dot
+// stays under 50px, so seven of them fit the 358px of a 390px phone.
+const DENSE_ITEM = "gap-1 px-1.5 pointer-coarse:px-1.5";
 
 /**
  * A small set of mutually exclusive modes or filters shown as one pill
@@ -150,7 +162,8 @@ export function SegmentedControl<T extends string = string>({
               disabled={option.disabled}
               className={cn(
                 "group/tab",
-                stripItemClass("pill", size),
+                stripItemClass("pill", size === "dense" ? "md" : size),
+                size === "dense" && DENSE_ITEM,
                 "min-w-0 data-[state=checked]:text-fg",
                 "data-[state=unchecked]:hover:bg-state-hover data-[state=unchecked]:active:bg-state-pressed",
                 "disabled:cursor-not-allowed",

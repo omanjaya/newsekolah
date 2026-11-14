@@ -115,6 +115,7 @@ export {
   SegmentedControl,
   type SegmentedControlOption,
   type SegmentedControlProps,
+  type SegmentedControlSize,
 } from "./components/segmented-control.js";
 export { Switch, type SwitchProps } from "./components/switch.js";
 export {

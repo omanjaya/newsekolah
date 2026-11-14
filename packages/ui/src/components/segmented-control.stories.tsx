@@ -1,5 +1,5 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/react";
-import { Camera, Keyboard, Monitor, Moon, QrCode, Sun } from "lucide-react";
+import { Camera, Dot, Keyboard, Monitor, Moon, QrCode, Sun } from "lucide-react";
 import { useState } from "react";
 
 import { SegmentedControl } from "./segmented-control.js";
@@ -61,6 +61,28 @@ function Demo() {
           { value: "month", label: "Bulan" },
           { value: "semester", label: "Semester", disabled: true },
         ]}
+      />
+      <WeekStrip />
+    </div>
+  );
+}
+
+/** Seven short day names on a phone's width: the dense size, today marked with a dot. */
+function WeekStrip() {
+  const [day, setDay] = useState("3");
+  return (
+    <div className="w-[358px] max-w-full">
+      <SegmentedControl
+        aria-label="Pilih hari"
+        size="dense"
+        fullWidth
+        value={day}
+        onValueChange={setDay}
+        options={["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((label, index) => ({
+          value: String(index + 1),
+          label,
+          icon: index === 2 ? <Dot className="-mx-1.5 text-accent" /> : undefined,
+        }))}
       />
     </div>
   );
