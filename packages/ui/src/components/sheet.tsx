@@ -11,6 +11,7 @@ import {
   focusOnOpen,
   GrabHandle,
   OverlayBody,
+  OverlayDragDismiss,
   OverlayFooter,
   OverlayHeader,
   OverlayScrim,
@@ -90,8 +91,10 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
 ) {
   const labels = useUiLabels();
   const returnFocus = useReturnFocus(focusOnOpen(onOpenAutoFocus), onCloseAutoFocus);
-  const contentRef = useOverlayContentRef(ref);
   const drawer = side === "right";
+  // Drag down to close wherever it is a bottom sheet (a drawer is one only
+  // below 640px), unless it cannot be dismissed right now.
+  const contentRef = useOverlayContentRef(ref, closeDisabled ? "off" : drawer ? "phone" : "always");
   return (
     <DialogPrimitive.Portal>
       <OverlayScrim closeAnimation="sheet" />
@@ -124,6 +127,7 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
         {...returnFocus}
       >
         <GrabHandle className={drawer ? "sm:hidden" : undefined} />
+        <OverlayDragDismiss />
         {hideHeader ? (
           <>
             <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>

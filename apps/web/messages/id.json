@@ -210,6 +210,21 @@
         "recent": "Terakhir dibuka",
         "favorite": "Favorit: {name}"
       },
+      "tabBar": {
+        "withCount": "{name}, {count} menunggu",
+        "centre": {
+          "scan": { "label": "Pindai", "name": "Pindai QR" },
+          "dutyQr": { "label": "QR piket", "name": "Tampilkan QR piket" },
+          "attendance": { "label": "Presensi", "name": "Isi presensi" },
+          "circulation": { "label": "Sirkulasi", "name": "Meja sirkulasi" },
+          "recordViolation": { "label": "Catat", "name": "Catat pelanggaran" },
+          "inbox": { "label": "Tindakan", "name": "Perlu tindakan" },
+          "checkIn": { "label": "Absen", "name": "Absen masuk atau pulang" },
+          "addVisitor": { "label": "Tamu", "name": "Tambah tamu" },
+          "submitLeave": { "label": "Izin", "name": "Ajukan izin" },
+          "quickActions": { "label": "Aksi cepat", "name": "Aksi cepat" }
+        }
+      },
       "table": {
         "selectedRows": "{count} baris dipilih",
         "selectAllRows": "Pilih semua baris",

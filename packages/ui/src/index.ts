@@ -69,6 +69,12 @@ export {
 } from "./hooks/use-barcode-scanner.js";
 export { createDuplicateScanGuard, type DuplicateScanGuard } from "./hooks/duplicate-scan-guard.js";
 export { useActiveIndicator } from "./hooks/use-active-indicator.js";
+export {
+  collapsedTitleStore,
+  useCollapsedTitle,
+  useCollapsingTitle,
+  type CollapsedTitle,
+} from "./hooks/use-collapsing-title.js";
 export { useCountUp, type UseCountUpOptions } from "./hooks/use-count-up.js";
 export { useHydrated } from "./hooks/use-hydrated.js";
 export { useMediaQuery } from "./hooks/use-media-query.js";

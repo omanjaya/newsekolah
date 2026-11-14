@@ -11,6 +11,7 @@ import {
   focusOnOpen,
   GrabHandle,
   OverlayBody,
+  OverlayDragDismiss,
   OverlayFooter,
   OverlayHeader,
   OverlayScrim,
@@ -69,7 +70,9 @@ export interface DialogContentProps extends ComponentPropsWithoutRef<
  * elevation 3) that fades and scales in; below 640px the same content is a
  * bottom sheet: full width, top radius 24, a grab handle, sliding up at
  * the sheet's pace, at most 90% of the screen tall, clear of the home
- * indicator. In both, the header stays put, the body scrolls, and the
+ * indicator, and dragged down to close from its handle or header (or its
+ * body while scrolled to the top; overlay-drag.ts) unless `closeDisabled`
+ * holds it open. In both, the header stays put, the body scrolls, and the
  * footer stays in reach, including a form's own trailing action row (see
  * `dialog-body` in styles.css), so existing dialogs get all of this
  * without changes. Footer buttons are `md`, never shorter than the fields
@@ -100,7 +103,9 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
 ) {
   const labels = useUiLabels();
   const returnFocus = useReturnFocus(focusOnOpen(onOpenAutoFocus), onCloseAutoFocus);
-  const contentRef = useOverlayContentRef(ref);
+  // A bottom sheet below 640px, which can then be dragged down to close
+  // (not while it cannot be dismissed).
+  const contentRef = useOverlayContentRef(ref, closeDisabled ? "off" : "phone");
   return (
     <DialogPrimitive.Portal>
       <OverlayScrim closeAnimation="responsive" />
@@ -127,6 +132,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
         {...returnFocus}
       >
         <GrabHandle className="sm:hidden" />
+        <OverlayDragDismiss />
         {hideHeader ? (
           <>
             <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>

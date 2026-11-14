@@ -5,75 +5,85 @@ import { Zap } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { QUICK_ACTION_TONE, sortQuickActions } from "../lib/navigation-quick-actions";
-import { quickActionHref } from "../lib/quick-actions";
+import { quickActionHref, type QuickAction } from "../lib/quick-actions";
 import { useQuickActions } from "../lib/use-quick-actions";
 
-/** Room the floating button needs below a page's last row, so it never covers it. */
-const FAB_SPACE = "5rem";
+import { CentreButton } from "./mobile-tab-slot";
 
 /**
- * The quick-action button floating above the tab bar on a phone (not a
- * sixth tab), opening the reader's actions as a two-column grid of tiles in
- * a bottom sheet. Renders nothing for a reader who can perform none. It
- * rides above a StickySaveBar when one is showing, and publishes the space
- * it needs so the shell can pad the page's end clear of it.
+ * The reader's quick actions as tiles in a two-column grid: `tile` (an
+ * icon in a soft circle over the label, the quick-action sheet) or `row`
+ * (icon beside the label, a compact section of the Menu sheet).
  */
-export function MobileQuickActions({ className }: { className?: string }): ReactElement | null {
+export function QuickActionGrid({
+  actions,
+  onNavigate,
+  layout = "tile",
+}: {
+  actions: readonly QuickAction[];
+  onNavigate: () => void;
+  layout?: "tile" | "row";
+}): ReactElement {
+  const t = useTranslations("app.quickActions");
+  const row = layout === "row";
+  return (
+    <ul className={cn("grid grid-cols-2", row ? "gap-2" : "gap-3")}>
+      {actions.map((action) => (
+        <li key={action.id} className="min-w-0">
+          <Link
+            href={quickActionHref(action)}
+            onClick={(event) => {
+              if (!event.defaultPrevented) onNavigate();
+            }}
+            className={cn(
+              "flex h-full rounded-lg bg-surface text-label text-fg ring-1 ring-border outline-none motion-press active:bg-state-pressed",
+              row
+                ? "min-h-14 items-center gap-3 px-3 py-2"
+                : "min-h-24 flex-col items-start gap-3 p-4",
+            )}
+          >
+            <IconCircle tone={QUICK_ACTION_TONE[action.id]} size={row ? "sm" : "md"}>
+              <action.icon />
+            </IconCircle>
+            <span className="min-w-0 break-words">{t(`actions.${action.labelKey}`)}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * The bar's centre action for a reader with several equally likely quick
+ * actions (the school office and the like): the raised button opens all
+ * of them as tiles in a bottom sheet. Renders nothing for a reader who can
+ * perform none. It replaced the floating quick-action button, so nothing
+ * floats over a page's last row any more.
+ */
+export function MobileQuickActions(): ReactElement | null {
   const [open, setOpen] = useState(false);
   const t = useTranslations("app.quickActions");
+  const tBar = useTranslations("app.shell.tabBar.centre.quickActions");
   const tCommon = useTranslations("common");
   const actions = sortQuickActions(useQuickActions());
-  const visible = actions.length > 0;
 
-  useEffect(() => {
-    if (!visible) return;
-    const root = document.documentElement;
-    root.style.setProperty("--shell-fab-space", FAB_SPACE);
-    return () => {
-      root.style.removeProperty("--shell-fab-space");
-    };
-  }, [visible]);
-
-  if (!visible) return null;
+  if (actions.length === 0) return null;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <button
-          type="button"
-          aria-label={t("trigger")}
-          className={cn(
-            "fixed right-4 z-sticky flex size-14 items-center justify-center rounded-full bg-accent text-accent-fg shadow-3 outline-none motion-press",
-            "bottom-[calc(var(--shell-mobile-tab-offset)+var(--sticky-save-bar-height,0px)+1rem)]",
-            "hover:bg-accent-strong active:bg-accent-strong focus-visible:outline-offset-4",
-            className,
-          )}
-        >
-          <Zap className="size-6" aria-hidden="true" />
-        </button>
+        <CentreButton icon={<Zap aria-hidden="true" />} label={tBar("label")} name={t("trigger")} />
       </SheetTrigger>
       <SheetContent title={t("title")} closeLabel={tCommon("actions.close")}>
-        <ul className="grid grid-cols-2 gap-3">
-          {actions.map((action) => (
-            <li key={action.id} className="min-w-0">
-              <Link
-                href={quickActionHref(action)}
-                onClick={(event) => {
-                  if (!event.defaultPrevented) setOpen(false);
-                }}
-                className="flex h-full min-h-24 flex-col items-start gap-3 rounded-lg bg-surface p-4 text-label text-fg ring-1 ring-border outline-none motion-press active:bg-state-pressed"
-              >
-                <IconCircle tone={QUICK_ACTION_TONE[action.id]} size="md">
-                  <action.icon />
-                </IconCircle>
-                <span className="min-w-0 break-words">{t(`actions.${action.labelKey}`)}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <QuickActionGrid
+          actions={actions}
+          onNavigate={() => {
+            setOpen(false);
+          }}
+        />
       </SheetContent>
     </Sheet>
   );

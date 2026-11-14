@@ -8,6 +8,17 @@ body {
   height: 100%;
 }
 
+/*
+ * The viewport covers the whole screen (`viewportFit: "cover"`,
+ * app/layout.tsx), so in landscape the page keeps clear of a notch at the
+ * side. The insets are zero on every screen without one, desktops included.
+ * The header pads its own top and the tab bar its own bottom.
+ */
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
 .skip-link {
   position: absolute;
   top: -100%;
@@ -58,7 +69,25 @@ body {
   --tenant-accent-fg: #ffffff;
   --tenant-accent-dark-fg: #06261d;
   --shell-sidebar-width: 15rem;
-  --shell-mobile-tab-offset: calc(4rem + env(safe-area-inset-bottom));
+  /*
+   * The phone's tab bar (components/mobile-tab-bar.tsx, geometry in
+   * mobile-tab-slot.tsx): a 64px row of slots, padded clear of the home
+   * indicator, with the 56px centre button rising 24px above it, plus its
+   * 4px ring: 28px of overhang, and 4px of air on top of that make the
+   * 32px raise. The offset is everything at the bottom that content keeps
+   * clear of (the page's end, a StickySaveBar, a sticky form row): the
+   * bar, the home indicator and the raise. A bar without a centre action
+   * (`data-centre` absent) raises nothing.
+   */
+  --shell-mobile-tab-bar: 4rem;
+  --shell-mobile-tab-raise: 2rem;
+  --shell-mobile-tab-offset: calc(
+    var(--shell-mobile-tab-bar) + var(--shell-mobile-tab-raise) + env(safe-area-inset-bottom)
+  );
+}
+
+:root:has([data-tab-bar]:not([data-centre])) {
+  --shell-mobile-tab-raise: 0px;
 }
 
 :root:root {
@@ -106,4 +135,135 @@ body {
   .auth-orb-a {
     animation: none;
   }
+}
+
+/*
+ * Phone tab bar (components/mobile-tab-slot.tsx).
+ *
+ * Press feedback: every slot shrinks while held, twice the press token's
+ * dip (0.98, so 0.96) in 80ms, and settles back at the normal 120ms.
+ * Derived from the token, so reduced motion (which sets it to 1) keeps the
+ * slot still.
+ */
+.tab-press {
+  transition-property: color, scale;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-standard);
+}
+
+.tab-press:active {
+  scale: calc(1 - 2 * (1 - var(--motion-scale-press)));
+  transition-duration: var(--duration-instant);
+}
+
+/*
+ * The active tab's icon reads as filled without leaving Lucide: a heavier
+ * stroke and a faint wash of the accent inside its closed shapes (open
+ * strokes, like the menu's lines, enclose nothing and stay as they are).
+ */
+.tab-icon-active > svg {
+  stroke-width: 2.4;
+  fill: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+/*
+ * A form's own sticky action row (FormActions `sticky`) rides above the
+ * phone's tab bar instead of sliding under it. Dialogs and sheets are
+ * portalled outside <main>, so their rows keep the dialog's bottom edge.
+ */
+@media (width < 48rem) {
+  main [data-slot="form-actions"].sticky {
+    bottom: var(--shell-mobile-tab-offset);
+    padding-bottom: var(--space-3);
+  }
+}
+
+/*
+ * Directional page entrances on a phone (components/use-nav-direction.ts
+ * marks <html>). Going deeper, the page's column (its head and content,
+ * never the shell) enters from the right by a short distance with a fade;
+ * going back, from the left; switching bottom tabs, a plain quick fade.
+ * Anything else keeps PageShell's own fade and rise on the content. The
+ * distance is 2.5 rises (20px), so reduced motion, which zeroes the rise,
+ * leaves only the fade. A loading skeleton (`animate={false}`) never moves.
+ */
+@keyframes page-enter-forward {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--motion-rise) * 2.5));
+  }
+}
+
+@keyframes page-enter-back {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--motion-rise) * -2.5));
+  }
+}
+
+@media (width < 48rem) {
+  html[data-nav-direction="forward"] [data-page-shell][data-animate] > [data-slot="page-column"] {
+    animation: page-enter-forward var(--duration-base) var(--ease-enter) backwards;
+  }
+
+  html[data-nav-direction="back"] [data-page-shell][data-animate] > [data-slot="page-column"] {
+    animation: page-enter-back var(--duration-base) var(--ease-enter) backwards;
+  }
+
+  html[data-nav-direction="tab"] [data-page-shell][data-animate] > [data-slot="page-column"] {
+    animation: fade-in var(--duration-fast) var(--ease-standard) backwards;
+  }
+
+  html:is([data-nav-direction="forward"], [data-nav-direction="back"], [data-nav-direction="tab"])
+    [data-page-shell][data-animate]
+    > [data-slot="page-column"]
+    > [data-slot="page-content"] {
+    animation: none;
+  }
+}
+
+/*
+ * Touch behaviour of an installed app: no grey flash on tap, no 300ms
+ * double-tap wait on controls, no text selection or callout on the tab
+ * bar and buttons, the page never rubber-bands the shell away on a phone,
+ * scroll areas keep their momentum, and the text size stays the one the
+ * reader set in the system (not one the browser guesses in landscape).
+ * Selection and overscroll are left alone with a mouse on a wide screen,
+ * so the desktop behaves as it did.
+ */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@media (width < 48rem) {
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+}
+
+:where(a, button, input, select, textarea, label, summary, [role="button"], [role="tab"]) {
+  touch-action: manipulation;
+}
+
+[data-tab-bar] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+@media (pointer: coarse) {
+  :where(button, [role="button"], [role="tab"]) {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+[data-tab-bar] {
+  -webkit-touch-callout: none;
+}
+
+:where(.overflow-auto, .overflow-y-auto, .overflow-x-auto, .overflow-scroll) {
+  -webkit-overflow-scrolling: touch;
 }

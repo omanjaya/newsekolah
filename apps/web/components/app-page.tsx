@@ -175,6 +175,10 @@ export function AppPage({
             actions={actions}
             primaryAction={primaryAction}
             secondaryActions={secondaryActions}
+            // The phone's header names the page once this title scrolls
+            // away; a page that set its own tab name (the home's greeting
+            // is "Beranda" there) is named the same way in both.
+            compactTitle={documentTitle}
           />
         )
       }

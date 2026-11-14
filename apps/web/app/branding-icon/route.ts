@@ -18,10 +18,17 @@ export function GET(request: NextRequest) {
   const requestedColor = searchParams.get("color") ?? "";
   const color = HEX_COLOR.test(requestedColor) ? requestedColor : "#0F7A5F";
   const initials = initialsFor(name);
+  // `maskable=1` (the manifest's maskable entry): the launcher masks the
+  // icon itself, so the colour runs to the edges and the initials shrink
+  // to stay well inside the central safe zone (a circle 80% of the icon
+  // wide, 154px of 192).
+  const maskable = searchParams.get("maskable") === "1";
+  const radius = maskable ? 0 : 24;
+  const fontSize = maskable ? 64 : 76;
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
-  <rect width="192" height="192" rx="24" fill="${color}" />
-  <text x="96" y="96" dy="0.35em" text-anchor="middle" font-family="'Plus Jakarta Sans', Arial, sans-serif" font-size="76" font-weight="500" fill="#FFFFFF">${initials}</text>
+  <rect width="192" height="192" rx="${String(radius)}" fill="${color}" />
+  <text x="96" y="96" dy="0.35em" text-anchor="middle" font-family="'Plus Jakarta Sans', Arial, sans-serif" font-size="${String(fontSize)}" font-weight="500" fill="#FFFFFF">${initials}</text>
 </svg>`;
 
   return new Response(svg, {

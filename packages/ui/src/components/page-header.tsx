@@ -1,8 +1,9 @@
 "use client";
 
 import { Ellipsis } from "lucide-react";
-import { isValidElement, type ComponentPropsWithRef, type ReactNode } from "react";
+import { isValidElement, useRef, type ComponentPropsWithRef, type ReactNode } from "react";
 
+import { useCollapsingTitle } from "../hooks/use-collapsing-title.js";
 import { cn } from "../utils/cn.js";
 
 import { Breadcrumb, type BreadcrumbItem } from "./breadcrumb.js";
@@ -46,6 +47,12 @@ export interface PageHeaderProps extends Omit<ComponentPropsWithRef<"div">, "tit
   secondaryActions?: PageHeaderAction[];
   /** A rule under the header; off by default, as in the artboard (sections are set apart by space). */
   divider?: boolean;
+  /**
+   * The page's name in an app's compact header once the title has
+   * scrolled away under it (`useCollapsedTitle`). Defaults to the title's
+   * text; `false` keeps the compact header as it is.
+   */
+  compactTitle?: string | false;
 }
 
 function SecondaryButtons({ actions }: { actions: PageHeaderAction[] }) {
@@ -112,7 +119,9 @@ function OverflowMenu({ actions, className }: { actions: PageHeaderAction[]; cla
  * muted eyebrow, the title on the display role, an optional description,
  * and the page's actions centred on the title line. When the actions do
  * not fit beside the title they wrap under it, as they do on a phone,
- * where secondary ones also collapse into a menu.
+ * where secondary ones also collapse into a menu. While the title is
+ * scrolled out of view it is offered to the app's compact header
+ * (`compactTitle`).
  */
 export function PageHeader({
   eyebrow,
@@ -123,9 +132,12 @@ export function PageHeader({
   primaryAction,
   secondaryActions = [],
   divider = false,
+  compactTitle,
   className,
   ...props
 }: PageHeaderProps) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useCollapsingTitle(titleRef, compactTitle);
   const crumbs = Array.isArray(breadcrumb) ? (
     <Breadcrumb items={breadcrumb} />
   ) : isValidElement(breadcrumb) ? (
@@ -170,7 +182,9 @@ export function PageHeader({
               description ? "sm:basis-112" : "sm:basis-64",
             )}
           >
-            <h1 className="text-display text-fg">{title}</h1>
+            <h1 ref={titleRef} className="text-display text-fg">
+              {title}
+            </h1>
             {description && (
               <div className="max-w-prose text-body text-fg-muted">{description}</div>
             )}

@@ -16,6 +16,7 @@ import { useScrollEdges } from "../hooks/use-scroll-edges.js";
 import { cn } from "../utils/cn.js";
 
 import { IconButton } from "./icon-button.js";
+import { attachSheetDrag } from "./overlay-drag.js";
 import { useToastClearance } from "./toast-clearance.js";
 
 /*
@@ -45,6 +46,8 @@ export const OverlayScrim = forwardRef<
   return (
     <DialogPrimitive.Overlay
       ref={ref}
+      // Found by a sheet's drag to dismiss, which fades it with the distance.
+      data-overlay-scrim=""
       className={cn(
         "fixed inset-0 z-overlay bg-scrim",
         "data-[state=open]:animate-overlay-in",
@@ -59,14 +62,30 @@ export const OverlayScrim = forwardRef<
   );
 });
 
-/** The pill at the top of a bottom sheet; it tells the eye the panel came up from the edge. */
+/**
+ * The pill at the top of a bottom sheet; it tells the eye the panel came
+ * up from the edge. Visual only for assistive technology; to a finger it
+ * is where the sheet can be dragged down from (with the header below it),
+ * across the panel's full width.
+ */
 export function GrabHandle({ className }: { className?: string }): ReactElement {
   return (
     <div
       aria-hidden="true"
-      className={cn("mx-auto mt-2 h-1 w-9 shrink-0 rounded-full bg-border-strong/40", className)}
-    />
+      data-sheet-drag=""
+      className={cn("flex h-3 w-full shrink-0 items-end justify-center", className)}
+    >
+      <div className="h-1 w-9 rounded-full bg-border-strong/40" />
+    </div>
   );
+}
+
+/**
+ * The close path a drag to dismiss takes: a hidden Radix close button, so
+ * the dialog's `onOpenChange` decides as it does for the visible one.
+ */
+export function OverlayDragDismiss(): ReactElement {
+  return <DialogPrimitive.Close data-overlay-dismiss="" hidden tabIndex={-1} aria-hidden="true" />;
 }
 
 export interface OverlayHeaderProps {
@@ -96,6 +115,8 @@ export function OverlayHeader({
 }: OverlayHeaderProps): ReactElement {
   return (
     <div
+      // On a bottom sheet the header is a drag handle too (overlay-drag.ts).
+      data-sheet-drag=""
       className={cn(
         "flex shrink-0 items-start gap-3 border-b border-transparent px-(--dialog-px) pb-4 transition-colors",
         "[[data-overflow-start]>&]:border-line",
@@ -276,19 +297,41 @@ function assignRef<T>(ref: ForwardedRef<T>, node: T | null) {
   else if (ref) ref.current = node;
 }
 
+/** When the panel is a bottom sheet that can be dragged down: always, only below 640px, or never. */
+export type SheetDragMode = "always" | "phone" | "off";
+
+function sheetLayoutNow(mode: SheetDragMode): boolean {
+  if (mode === "off") return false;
+  if (mode === "always") return true;
+  return typeof window.matchMedia === "function" && window.matchMedia("(width < 40rem)").matches;
+}
+
 /**
  * The content element's ref: the caller's, plus the toast clearance that
- * keeps toasts off this overlay's action row while it is open.
+ * keeps toasts off this overlay's action row while it is open, plus drag
+ * to dismiss (overlay-drag.ts) while it is laid out as a bottom sheet.
  */
 export function useOverlayContentRef(
   forwarded: ForwardedRef<HTMLDivElement>,
+  drag: SheetDragMode = "off",
 ): (node: HTMLDivElement | null) => void {
   const trackClearance = useToastClearance();
+  const detach = useRef<(() => void) | null>(null);
   return useCallback(
     (node: HTMLDivElement | null) => {
       trackClearance(node);
       assignRef(forwarded, node);
+      detach.current?.();
+      detach.current = null;
+      if (node && drag !== "off") {
+        detach.current = attachSheetDrag(node, {
+          enabled: () => sheetLayoutNow(drag),
+          dismiss: () => {
+            node.querySelector<HTMLElement>("[data-overlay-dismiss]")?.click();
+          },
+        });
+      }
     },
-    [forwarded, trackClearance],
+    [forwarded, trackClearance, drag],
   );
 }

@@ -93,6 +93,9 @@ export function PageShell({
     <div
       data-page-shell=""
       data-variant={variant}
+      // Read by an app's own page transitions (a phone's directional
+      // entrance), which skip a shell that plays no entrance.
+      data-animate={animate ? "" : undefined}
       className={cn(
         "flex w-full min-w-0 flex-col px-4 py-4 md:px-6 md:py-6",
         fit && "md:h-[calc(100dvh-var(--page-offset-top,var(--shell-header-height,0px)))]",
@@ -101,6 +104,7 @@ export function PageShell({
       {...props}
     >
       <div
+        data-slot="page-column"
         className={cn(
           "mx-auto flex w-full min-w-0 flex-1 flex-col gap-6",
           WIDTH[variant],
