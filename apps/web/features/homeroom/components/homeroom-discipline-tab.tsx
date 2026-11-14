@@ -48,10 +48,10 @@ export function HomeroomDisciplineTab({ classId }: { classId: string }): ReactEl
               className="flex items-center justify-between gap-2 py-3 hover:text-accent"
             >
               <div className="flex min-w-0 flex-col">
-                <span className="truncate text-[13px] text-fg">
+                <span className="truncate text-body-sm text-fg">
                   {studentMap.get(item.student_user_id)?.name ?? t("unknownStudent")}
                 </span>
-                <span className="truncate text-[12px] text-fg-muted">
+                <span className="truncate text-caption font-normal text-fg-muted">
                   {item.type_name} · {formatDate(item.occurred_on, { locale })}
                 </span>
               </div>

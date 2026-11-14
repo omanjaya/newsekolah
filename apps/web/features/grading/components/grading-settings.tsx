@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Skeleton, useToast } from "@newsekolah/ui";
+import { Button, Input, Skeleton, useToast, Field } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -75,7 +75,7 @@ function ScaleForm(): ReactElement {
   return (
     <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
       {isError && <QueryError retry={() => refetch()} />}
-      <h2 className="text-[16px] font-medium text-fg">{t("scaleTitle")}</h2>
+      <h2 className="text-heading text-fg">{t("scaleTitle")}</h2>
       <form
         className="grid max-w-md grid-cols-1 gap-4 sm:grid-cols-2"
         onSubmit={(e) => {
@@ -83,8 +83,7 @@ function ScaleForm(): ReactElement {
           void save();
         }}
       >
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("scaleMin")}</span>
+        <Field label={t("scaleMin")}>
           <Input
             type="number"
             value={active.min}
@@ -92,9 +91,8 @@ function ScaleForm(): ReactElement {
               setForm({ ...active, min: e.target.value });
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("scaleMax")}</span>
+        </Field>
+        <Field label={t("scaleMax")}>
           <Input
             type="number"
             value={active.max}
@@ -102,9 +100,8 @@ function ScaleForm(): ReactElement {
               setForm({ ...active, max: e.target.value });
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("reportIncreaseMax")}</span>
+        </Field>
+        <Field label={t("reportIncreaseMax")}>
           <Input
             type="number"
             value={active.report_increase_max}
@@ -112,9 +109,8 @@ function ScaleForm(): ReactElement {
               setForm({ ...active, report_increase_max: e.target.value });
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("defaultKktp")}</span>
+        </Field>
+        <Field label={t("defaultKktp")}>
           <Input
             type="number"
             value={active.default_kktp}
@@ -122,9 +118,8 @@ function ScaleForm(): ReactElement {
               setForm({ ...active, default_kktp: e.target.value });
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("roundDecimal")}</span>
+        </Field>
+        <Field label={t("roundDecimal")}>
           <Input
             type="number"
             min={0}
@@ -134,7 +129,7 @@ function ScaleForm(): ReactElement {
               setForm({ ...active, round_decimal: e.target.value });
             }}
           />
-        </label>
+        </Field>
         <div className="flex justify-end sm:col-span-2">
           <Button type="submit" loading={update.isPending}>
             {t("scaleSave")}

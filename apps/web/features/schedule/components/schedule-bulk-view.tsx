@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Button, PageHeader, Textarea, cn, useToast } from "@newsekolah/ui";
+import { Alert, Button, PageHeader, Textarea, cn, useToast, Field } from "@newsekolah/ui";
 import { FileUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ChangeEvent, ReactElement } from "react";
@@ -113,12 +113,12 @@ export function ScheduleBulkView(): ReactElement {
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
 
       <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-        <h2 className="text-[16px] font-medium text-fg">{t("importSection.title")}</h2>
-        <p className="text-[13px] text-fg-muted [overflow-wrap:anywhere]">
+        <h2 className="text-heading text-fg">{t("importSection.title")}</h2>
+        <p className="text-body-sm text-fg-muted [overflow-wrap:anywhere]">
           {t("importSection.body")}
         </p>
 
-        <div className="flex flex-col gap-1 text-[13px]">
+        <div className="flex flex-col gap-1 text-body-sm">
           <span className="font-medium text-fg">{t("importSection.uploadLabel")}</span>
           <input
             id="schedule-bulk-import-file"
@@ -133,7 +133,7 @@ export function ScheduleBulkView(): ReactElement {
           <label
             htmlFor="schedule-bulk-import-file"
             className={cn(
-              "flex h-11 w-fit max-w-full items-center gap-2 rounded-sm border border-border px-3 text-[13px] text-fg peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent md:h-8",
+              "flex h-11 w-fit max-w-full items-center gap-2 rounded-sm border border-border px-3 text-body-sm text-fg peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent md:h-8",
               canManage ? "cursor-pointer hover:bg-bg" : "cursor-not-allowed opacity-60",
             )}
           >
@@ -142,8 +142,7 @@ export function ScheduleBulkView(): ReactElement {
           </label>
         </div>
 
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("importSection.textareaLabel")}</span>
+        <Field label={t("importSection.textareaLabel")}>
           <Textarea
             value={csvText}
             onChange={(e) => {
@@ -152,30 +151,36 @@ export function ScheduleBulkView(): ReactElement {
             }}
             rows={8}
             disabled={!canManage}
-            className="font-mono text-[12px]"
+            className="font-mono text-caption font-normal"
           />
-        </label>
+        </Field>
 
         <div className="flex flex-col gap-3">
-          <h3 className="text-[14px] font-medium text-fg">{t("importSection.previewTitle")}</h3>
+          <h3 className="text-label text-fg">{t("importSection.previewTitle")}</h3>
           {rows.length === 0 ? (
-            <p className="text-[13px] text-fg-muted">{t("importSection.empty")}</p>
+            <p className="text-body-sm text-fg-muted">{t("importSection.empty")}</p>
           ) : (
             <>
-              <p className="text-[13px] text-fg-muted">
+              <p className="text-body-sm text-fg-muted">
                 {t("importSection.previewSummary", {
                   valid: resolvedRows.length,
                   invalid: invalidCount,
                 })}
               </p>
               <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-                <table className="w-full min-w-[560px] text-[13px]">
+                <table className="w-full min-w-[560px] text-body-sm">
                   <thead>
                     <tr className="border-b border-line bg-bg text-left">
-                      <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
+                      <th
+                        scope="col"
+                        className="px-4 py-3 text-caption font-normal font-semibold text-fg-muted"
+                      >
                         {t("importSection.columnLine")}
                       </th>
-                      <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
+                      <th
+                        scope="col"
+                        className="px-4 py-3 text-caption font-normal font-semibold text-fg-muted"
+                      >
                         {t("importSection.columnStatus")}
                       </th>
                     </tr>

@@ -62,7 +62,7 @@ export function MonthlyAttendanceTable({
   return (
     <>
       {report.data && (
-        <dl className="flex flex-wrap gap-4 text-[13px]">
+        <dl className="flex flex-wrap gap-4 text-body-sm">
           {Object.entries(report.data.totals).map(([code, count]) => (
             <div key={code} className="flex items-center gap-1">
               <dt className="text-fg-muted">{t(`codes.${code}`)}</dt>

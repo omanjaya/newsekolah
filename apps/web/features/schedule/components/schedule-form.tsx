@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Select, Skeleton, Textarea, useToast } from "@newsekolah/ui";
+import { Button, Select, Skeleton, Textarea, useToast, Field } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -139,12 +139,7 @@ export function ScheduleForm({
     }
   }
 
-  const field = (label: string, control: ReactElement) => (
-    <label className="flex flex-col gap-1 text-[13px]">
-      <span className="font-medium">{label}</span>
-      {control}
-    </label>
-  );
+  const field = (label: string, control: ReactElement) => <Field label={label}>{control}</Field>;
 
   return (
     <form
@@ -155,7 +150,7 @@ export function ScheduleForm({
       }}
     >
       {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
+        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-body-sm">
           {error}
         </p>
       )}
@@ -207,7 +202,7 @@ export function ScheduleForm({
       {editing && detail.isLoading ? (
         <Skeleton className="h-20 w-full" aria-busy="true" />
       ) : editing && detail.isError ? (
-        <div className="flex flex-col gap-2 rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
+        <div className="flex flex-col gap-2 rounded-xs border border-status-late/40 px-3 py-2 text-body-sm">
           <p role="alert">{t("notesLoadError")}</p>
           <Button type="button" variant="secondary" size="sm" onClick={() => void detail.refetch()}>
             {tCommon("retry")}

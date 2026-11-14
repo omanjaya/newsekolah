@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Dialog, DialogContent, Input, useToast } from "@newsekolah/ui";
+import { Button, Dialog, DialogContent, Input, useToast, Field } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -76,12 +76,11 @@ export function ManualScoreDialog({
           }}
         >
           {computedAverage !== undefined && (
-            <p className="text-[13px] text-fg-muted">
+            <p className="text-body-sm text-fg-muted">
               {t("computedAverage", { score: formatScore(computedAverage, locale) })}
             </p>
           )}
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("score")}</span>
+          <Field label={t("score")}>
             <Input
               type="number"
               step="0.1"
@@ -91,8 +90,8 @@ export function ManualScoreDialog({
                 setValue(e.target.value);
               }}
             />
-          </label>
-          <p className="text-[13px] text-fg-muted">{t("hint")}</p>
+          </Field>
+          <p className="text-body-sm text-fg-muted">{t("hint")}</p>
           <div className="flex justify-end gap-2 border-t border-border pt-4">
             <Button
               type="button"

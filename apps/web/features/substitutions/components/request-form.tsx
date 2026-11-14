@@ -9,6 +9,7 @@ import {
   Textarea,
   useDebouncedCallback,
   useToast,
+  Field,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -105,21 +106,19 @@ export function RequestForm({
       }}
     >
       {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
+        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-body-sm">
           {error}
         </p>
       )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("schedule")}</span>
+      <Field label={t("schedule")}>
         <Select
           options={scheduleOptions}
           value={scheduleId}
           onValueChange={setScheduleId}
           placeholder={t("pick")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("date")}</span>
+      </Field>
+      <Field label={t("date")}>
         <Input
           type="date"
           value={date}
@@ -127,9 +126,8 @@ export function RequestForm({
             setDate(e.target.value);
           }}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("substitute")}</span>
+      </Field>
+      <Field label={t("substitute")}>
         <Combobox
           options={substituteOptions}
           value={substituteId}
@@ -147,9 +145,8 @@ export function RequestForm({
           loading={eligibleSubstitutes.isLoading}
           aria-label={t("substitute")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("note")}</span>
+      </Field>
+      <Field label={t("note")}>
         <Textarea
           rows={2}
           value={note}
@@ -157,7 +154,7 @@ export function RequestForm({
             setNote(e.target.value);
           }}
         />
-      </label>
+      </Field>
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         <Button type="button" variant="secondary" onClick={onDone} disabled={create.isPending}>
           {t("cancel")}

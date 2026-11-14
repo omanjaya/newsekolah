@@ -1,7 +1,16 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Dialog, DialogContent, Input, Textarea, cn, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  Input,
+  Textarea,
+  cn,
+  useToast,
+  Field,
+} from "@newsekolah/ui";
 import { Minus, Plus, Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -78,7 +87,7 @@ export function StarDialog({
             void submit();
           }}
         >
-          <p className="flex items-center gap-1.5 text-[13px] text-fg-muted">
+          <p className="flex items-center gap-1.5 text-body-sm text-fg-muted">
             <Star className="size-4" aria-hidden="true" />
             {t("currentBalance", { count: currentBalance })}
           </p>
@@ -91,7 +100,7 @@ export function StarDialog({
                 setDirection(1);
               }}
               className={cn(
-                "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xs border border-border px-3 py-2 text-[13px] font-medium md:min-h-0",
+                "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xs border border-border px-3 py-2 text-label md:min-h-0",
                 direction === 1 ? "border-accent bg-accent/10 text-accent" : "text-fg hover:bg-bg",
               )}
             >
@@ -106,7 +115,7 @@ export function StarDialog({
                 setDirection(-1);
               }}
               className={cn(
-                "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xs border border-border px-3 py-2 text-[13px] font-medium md:min-h-0",
+                "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xs border border-border px-3 py-2 text-label md:min-h-0",
                 direction === -1
                   ? "border-status-absent bg-status-absent/10 text-status-absent"
                   : "text-fg hover:bg-bg",
@@ -116,8 +125,7 @@ export function StarDialog({
               {t("take")}
             </button>
           </div>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("amount")}</span>
+          <Field label={t("amount")}>
             <Input
               type="number"
               min={1}
@@ -128,10 +136,9 @@ export function StarDialog({
               }}
               className="w-24"
             />
-            <span className="text-[12px] text-fg-muted">{t("amountHint")}</span>
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("note")}</span>
+            <span className="text-caption font-normal text-fg-muted">{t("amountHint")}</span>
+          </Field>
+          <Field label={t("note")}>
             <Textarea
               rows={2}
               value={note}
@@ -141,7 +148,7 @@ export function StarDialog({
                 setNote(e.target.value);
               }}
             />
-          </label>
+          </Field>
           <div className="flex justify-end gap-2 border-t border-border pt-4">
             <Button
               type="button"

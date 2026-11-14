@@ -79,7 +79,7 @@ export function SessionRowActionsMenu({
             <button
               type="button"
               disabled={noteToggleDisabled}
-              className="flex min-h-11 items-center gap-2 rounded-xs px-2 text-left text-[13px] text-fg hover:bg-bg disabled:pointer-events-none disabled:opacity-50"
+              className="flex min-h-11 items-center gap-2 rounded-xs px-2 text-left text-body-sm text-fg hover:bg-bg disabled:pointer-events-none disabled:opacity-50"
               onClick={() => {
                 onToggleNote();
                 setOpen(false);
@@ -91,7 +91,7 @@ export function SessionRowActionsMenu({
             {disciplineOn && (
               <button
                 type="button"
-                className="flex min-h-11 items-center justify-between gap-2 rounded-xs px-2 text-left text-[13px] text-fg hover:bg-bg"
+                className="flex min-h-11 items-center justify-between gap-2 rounded-xs px-2 text-left text-body-sm text-fg hover:bg-bg"
                 onClick={() => {
                   setView("violations");
                 }}
@@ -108,7 +108,7 @@ export function SessionRowActionsMenu({
           <div className="flex flex-col gap-2">
             <button
               type="button"
-              className="flex min-h-8 items-center gap-1 text-[12px] text-fg-muted hover:text-fg"
+              className="flex min-h-8 items-center gap-1 text-caption font-normal text-fg-muted hover:text-fg"
               onClick={() => {
                 setView("menu");
               }}
@@ -116,7 +116,7 @@ export function SessionRowActionsMenu({
               <ChevronLeft className="size-3.5" aria-hidden="true" />
               {t("menuBack")}
             </button>
-            <p className="text-[13px] font-medium text-fg">{t("violations.title")}</p>
+            <p className="text-label text-fg">{t("violations.title")}</p>
             <ViolationChecklist
               selected={violationIds}
               types={violationTypes}

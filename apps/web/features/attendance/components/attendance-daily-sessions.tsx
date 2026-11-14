@@ -30,7 +30,7 @@ export function AttendanceDailySessions({
 
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="text-[14px] font-medium text-fg">{t("sessionsTitle")}</h3>
+      <h3 className="text-label text-fg">{t("sessionsTitle")}</h3>
       <ul className="flex flex-col gap-2">
         {sessions.map((session) => {
           const isOpen = expandedId === session.session_id;
@@ -51,10 +51,10 @@ export function AttendanceDailySessions({
                     <ChevronRight className="size-4 text-fg-muted" aria-hidden="true" />
                   )}
                   <div className="flex flex-col">
-                    <span className="text-[14px] font-medium text-fg">
+                    <span className="text-label text-fg">
                       {session.period_label} &middot; {session.subject_name}
                     </span>
-                    <span className="text-[13px] text-fg-muted">{session.teacher_name}</span>
+                    <span className="text-body-sm text-fg-muted">{session.teacher_name}</span>
                   </div>
                 </div>
                 <Badge variant={session.submitted_at ? "accent" : "neutral"}>
@@ -64,14 +64,16 @@ export function AttendanceDailySessions({
               {isOpen && (
                 <ul className="divide-y divide-border border-t border-border">
                   {session.entries.length === 0 ? (
-                    <li className="px-3 py-3 text-[13px] text-fg-muted">{t("sessionNoEntries")}</li>
+                    <li className="px-3 py-3 text-body-sm text-fg-muted">
+                      {t("sessionNoEntries")}
+                    </li>
                   ) : (
                     session.entries.map((entry) => {
                       const token = statusToken(entry.status_code);
                       return (
                         <li
                           key={entry.student_user_id}
-                          className="flex items-center justify-between gap-3 px-3 py-2 text-[13px]"
+                          className="flex items-center justify-between gap-3 px-3 py-2 text-body-sm"
                         >
                           <span className="text-fg">{entry.name}</span>
                           <div className="flex items-center gap-2">

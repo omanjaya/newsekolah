@@ -47,8 +47,8 @@ export function ClearSchedulesSection({
 
   return (
     <section className="flex flex-col gap-3 rounded-sm border border-status-absent/40 bg-surface p-4">
-      <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-      <p className="text-[13px] text-fg-muted">{t("body", { year: yearLabel })}</p>
+      <h2 className="text-heading text-fg">{t("title")}</h2>
+      <p className="text-body-sm text-fg-muted">{t("body", { year: yearLabel })}</p>
       <div>
         <Button
           variant="danger"
@@ -91,7 +91,7 @@ export function ClearSchedulesSection({
             </>
           }
         >
-          <label className="flex flex-col gap-1 text-[13px]">
+          <label className="flex flex-col gap-1 text-body-sm">
             <span className="font-medium text-fg">
               {t("confirmInputLabel", { year: yearLabel })}
             </span>

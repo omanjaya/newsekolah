@@ -1,6 +1,5 @@
 import { ApiError } from "@newsekolah/api-client";
 import type * as UiModule from "@newsekolah/ui";
-import type { ScannerProps } from "@newsekolah/ui";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
@@ -36,7 +35,7 @@ vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
   return {
     ...actual,
-    Scanner: ({ onScan, result }: ScannerProps) => (
+    Scanner: ({ onScan, result }: UiModule.ScannerProps) => (
       <div>
         <button
           type="button"

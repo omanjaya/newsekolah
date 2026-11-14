@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
   useToast,
+  Field,
 } from "@newsekolah/ui";
 import { Download } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -101,7 +102,7 @@ export function EraporExport(): ReactElement {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
+        <label className="flex w-full flex-col gap-1 text-body-sm md:w-auto">
           <span className="font-medium">{t("pickTerm")}</span>
           <Select
             options={termOptions}
@@ -110,8 +111,7 @@ export function EraporExport(): ReactElement {
             className="w-full md:w-56"
           />
         </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("formatLabel")}</span>
+        <Field label={t("formatLabel")}>
           <Select
             options={formatOptions}
             value={format}
@@ -120,8 +120,8 @@ export function EraporExport(): ReactElement {
             }}
             className="w-40"
           />
-        </label>
-        <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
+        </Field>
+        <label className="flex w-full flex-col gap-1 text-body-sm md:w-auto">
           <span className="font-medium">{t("pickClass")}</span>
           <Select
             options={classOptions}
@@ -155,14 +155,14 @@ export function EraporExport(): ReactElement {
         </Alert>
       ) : (
         <>
-          <p className="text-[13px] text-fg-muted">
+          <p className="text-body-sm text-fg-muted">
             {t("summary", { rows: rows.length, skipped: skipped.length })}
           </p>
 
           <section className="flex flex-col gap-2">
-            <h3 className="text-[14px] font-medium text-fg">{t("rowsTitle")}</h3>
+            <h3 className="text-label text-fg">{t("rowsTitle")}</h3>
             {rows.length === 0 ? (
-              <p className="text-[13px] text-fg-muted">{t("rowsEmpty")}</p>
+              <p className="text-body-sm text-fg-muted">{t("rowsEmpty")}</p>
             ) : (
               <div className="overflow-hidden rounded-lg border border-border">
                 <Table containerClassName="rounded-none border-0">
@@ -186,7 +186,7 @@ export function EraporExport(): ReactElement {
                   </TableBody>
                 </Table>
                 {rows.length > MAX_ROWS_SHOWN && (
-                  <p className="border-t border-border bg-surface px-4 py-2 text-[13px] text-fg-muted">
+                  <p className="border-t border-border bg-surface px-4 py-2 text-body-sm text-fg-muted">
                     {t("rowsMore", { count: rows.length - MAX_ROWS_SHOWN })}
                   </p>
                 )}
@@ -195,15 +195,15 @@ export function EraporExport(): ReactElement {
           </section>
 
           <section className="flex flex-col gap-2">
-            <h3 className="text-[14px] font-medium text-fg">{t("skippedTitle")}</h3>
+            <h3 className="text-label text-fg">{t("skippedTitle")}</h3>
             {skipped.length === 0 ? (
-              <p className="text-[13px] text-fg-muted">{t("skippedEmpty")}</p>
+              <p className="text-body-sm text-fg-muted">{t("skippedEmpty")}</p>
             ) : (
               <ul className="divide-y divide-border rounded-sm border border-border">
                 {skipped.map((skip) => (
                   <li
                     key={`${skip.student_name}-${skip.subject_name}-${skip.reason}`}
-                    className="flex items-center justify-between gap-3 px-3 py-2 text-[13px]"
+                    className="flex items-center justify-between gap-3 px-3 py-2 text-body-sm"
                   >
                     <span className="text-fg">
                       {t("skippedRow", { student: skip.student_name, subject: skip.subject_name })}
@@ -218,10 +218,10 @@ export function EraporExport(): ReactElement {
       )}
 
       <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-        <h3 className="text-[14px] font-medium text-fg">{t("legacyTitle")}</h3>
-        <p className="text-[13px] text-fg-muted">{t("legacyHint")}</p>
+        <h3 className="text-label text-fg">{t("legacyTitle")}</h3>
+        <p className="text-body-sm text-fg-muted">{t("legacyHint")}</p>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
+          <label className="flex w-full flex-col gap-1 text-body-sm md:w-auto">
             <span className="font-medium">{t("legacySubject")}</span>
             <Select
               options={subjectOptions}

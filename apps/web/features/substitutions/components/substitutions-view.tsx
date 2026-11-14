@@ -153,7 +153,7 @@ export function SubstitutionsView(): ReactElement {
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <div className="flex flex-wrap items-center gap-2">
                     {isToday && <Badge variant="accent">{t("todayBadge")}</Badge>}
-                    <span className="text-[15px] font-medium text-fg">
+                    <span className="text-heading text-fg">
                       {formatDate(item.date, { locale, timeZone: me?.tenant.timezone })}
                     </span>
                     <Badge variant={STATUS_VARIANT[item.status]}>
@@ -161,7 +161,7 @@ export function SubstitutionsView(): ReactElement {
                     </Badge>
                   </div>
                   {(className ?? subjectName) && (
-                    <span className="text-[14px] text-fg">
+                    <span className="text-body text-fg">
                       {className}
                       {className && subjectName ? " • " : ""}
                       {subjectName}
@@ -173,15 +173,15 @@ export function SubstitutionsView(): ReactElement {
                       )}
                     </span>
                   )}
-                  <span className="text-[13px] text-fg-muted">
+                  <span className="text-body-sm text-fg-muted">
                     {direction === "incoming" ? t("fromTeacher") : t("toTeacher")}:{" "}
                     {teacherMap.get(other)?.name ?? t("unknownTeacher")}
                   </span>
                   {item.requester_note && (
-                    <span className="text-[13px] text-fg">{item.requester_note}</span>
+                    <span className="text-body-sm text-fg">{item.requester_note}</span>
                   )}
                   {item.response_note && (
-                    <span className="text-[13px] text-fg-muted">
+                    <span className="text-body-sm text-fg-muted">
                       {t("responseNote")}: {item.response_note}
                     </span>
                   )}

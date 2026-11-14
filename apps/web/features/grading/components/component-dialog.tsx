@@ -9,6 +9,7 @@ import {
   Input,
   Select,
   useToast,
+  Field,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -129,8 +130,7 @@ export function ComponentDialog({
               void save();
             }}
           >
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("code")}</span>
+            <Field label={t("code")}>
               <Input
                 value={code}
                 maxLength={32}
@@ -139,9 +139,8 @@ export function ComponentDialog({
                 }}
                 required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("kind")}</span>
+            </Field>
+            <Field label={t("kind")}>
               <Select
                 options={KINDS.map((value) => ({ value, label: tKind(value) }))}
                 value={kind}
@@ -149,10 +148,9 @@ export function ComponentDialog({
                   setKind(value as AssessmentComponentKind);
                 }}
               />
-            </label>
+            </Field>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("weight")}</span>
+              <Field label={t("weight")}>
                 <Input
                   type="number"
                   min={0}
@@ -163,9 +161,8 @@ export function ComponentDialog({
                   }}
                   required
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("sequence")}</span>
+              </Field>
+              <Field label={t("sequence")}>
                 <Input
                   type="number"
                   min={1}
@@ -175,10 +172,9 @@ export function ComponentDialog({
                     setSequence(e.target.value);
                   }}
                 />
-              </label>
+              </Field>
             </div>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("kktp")}</span>
+            <Field label={t("kktp")}>
               <Input
                 type="number"
                 min={0}
@@ -189,7 +185,7 @@ export function ComponentDialog({
                   setKktp(e.target.value);
                 }}
               />
-            </label>
+            </Field>
             <div className="flex items-center justify-between gap-2 border-t border-border pt-4">
               {editing ? (
                 <Button

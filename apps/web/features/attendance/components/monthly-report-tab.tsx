@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, EmptyState, Input, Select } from "@newsekolah/ui";
+import { Button, EmptyState, Input, Select, Field } from "@newsekolah/ui";
 import { Download, FileBarChart } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -70,8 +70,7 @@ export function MonthlyReportTab(): ReactElement {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("class")}</span>
+        <Field label={t("class")}>
           <Select
             options={classOptions(classes.data?.data)}
             value={classId}
@@ -84,9 +83,8 @@ export function MonthlyReportTab(): ReactElement {
             aria-label={t("class")}
             className="w-56"
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("student")}</span>
+        </Field>
+        <Field label={t("student")}>
           <Select
             options={studentOptions}
             value={studentId}
@@ -96,9 +94,8 @@ export function MonthlyReportTab(): ReactElement {
             aria-label={t("student")}
             className="w-56"
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("month")}</span>
+        </Field>
+        <Field label={t("month")}>
           <Input
             type="month"
             value={month}
@@ -108,7 +105,7 @@ export function MonthlyReportTab(): ReactElement {
             aria-label={t("month")}
             className="w-40"
           />
-        </label>
+        </Field>
         <Button
           size="sm"
           variant="secondary"
@@ -143,7 +140,7 @@ export function MonthlyReportTab(): ReactElement {
               gradeLevelPlaceholder={t("gradeLevelPlaceholder")}
             />
             {!scopeIsReady(downloadScope) && (
-              <p className="text-[13px] text-fg-muted">{t("exportScopeHint")}</p>
+              <p className="text-body-sm text-fg-muted">{t("exportScopeHint")}</p>
             )}
           </div>
         }

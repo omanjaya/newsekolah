@@ -27,12 +27,12 @@ export function ViolationChecklist({
 }): ReactElement {
   const t = useTranslations("app.attendance.session.violations");
   if (loading) return <Skeleton className="h-16 w-full" />;
-  if (types.length === 0) return <p className="text-[13px] text-fg-muted">{t("empty")}</p>;
+  if (types.length === 0) return <p className="text-body-sm text-fg-muted">{t("empty")}</p>;
   return (
     <ul className="flex max-h-64 flex-col gap-2 overflow-y-auto">
       {types.map((violationType) => (
         <li key={violationType.id}>
-          <label className="flex items-center gap-2 text-[13px] text-fg">
+          <label className="flex items-center gap-2 text-body-sm text-fg">
             <Checkbox
               checked={selected.includes(violationType.id)}
               disabled={disabled}

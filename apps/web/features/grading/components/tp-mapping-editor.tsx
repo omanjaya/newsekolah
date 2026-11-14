@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
   useToast,
+  Field,
 } from "@newsekolah/ui";
 import { Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -85,20 +86,19 @@ export function TPMappingEditor({
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("pickTerm")}</span>
+      <Field label={t("pickTerm")}>
         <Select
           options={termOptions}
           value={effectiveTermId}
           onValueChange={setTermId}
           className="w-full md:w-56"
         />
-      </label>
+      </Field>
 
       {gradebook.isLoading || mappings.isLoading ? (
         <Skeleton className="h-40 w-full" aria-busy="true" />
       ) : eligibleComponents.length === 0 ? (
-        <p className="text-[13px] text-fg-muted">{t("noComponents")}</p>
+        <p className="text-body-sm text-fg-muted">{t("noComponents")}</p>
       ) : (
         <TPMappingTable
           key={`${classId}-${subjectId}-${effectiveTermId}`}

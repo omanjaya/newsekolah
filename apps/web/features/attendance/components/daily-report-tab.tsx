@@ -1,6 +1,15 @@
 "use client";
 
-import { Button, DataTable, EmptyState, Input, Select, StatusBadge, cn } from "@newsekolah/ui";
+import {
+  Button,
+  DataTable,
+  EmptyState,
+  Input,
+  Select,
+  StatusBadge,
+  cn,
+  Field,
+} from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Download, FileBarChart } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -68,7 +77,10 @@ export function DailyReportTab(): ReactElement {
                 <span className="text-fg-muted">{t(`codes.${code}`)}</span>
               )}
               {row.original.partial_absence && (
-                <span className="text-[12px] text-status-absent" title={t("partialAbsenceHint")}>
+                <span
+                  className="text-caption font-normal text-status-absent"
+                  title={t("partialAbsenceHint")}
+                >
                   {t("partialAbsence")}
                 </span>
               )}
@@ -97,8 +109,7 @@ export function DailyReportTab(): ReactElement {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("class")}</span>
+        <Field label={t("class")}>
           <Select
             options={classOptions(classes.data?.data)}
             value={classId}
@@ -108,9 +119,8 @@ export function DailyReportTab(): ReactElement {
             aria-label={t("class")}
             className="w-56"
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("date")}</span>
+        </Field>
+        <Field label={t("date")}>
           <Input
             type="date"
             value={date}
@@ -120,7 +130,7 @@ export function DailyReportTab(): ReactElement {
             aria-label={t("date")}
             className="w-44"
           />
-        </label>
+        </Field>
         <Button
           size="sm"
           variant="secondary"
@@ -155,7 +165,7 @@ export function DailyReportTab(): ReactElement {
               gradeLevelPlaceholder={t("gradeLevelPlaceholder")}
             />
             {!scopeIsReady(downloadScope) && (
-              <p className="text-[13px] text-fg-muted">{t("exportScopeHint")}</p>
+              <p className="text-body-sm text-fg-muted">{t("exportScopeHint")}</p>
             )}
           </div>
         }
@@ -170,7 +180,7 @@ export function DailyReportTab(): ReactElement {
       ) : (
         <>
           {report.data && (
-            <dl className="flex flex-wrap gap-4 text-[13px]">
+            <dl className="flex flex-wrap gap-4 text-body-sm">
               <div className="flex items-center gap-1">
                 <dt className="text-fg-muted">{t("summarySubmitted")}</dt>
                 <dd className="font-medium text-fg">

@@ -71,7 +71,7 @@ export function ScheduleMobileDayList({
           key={classItem.id}
           className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-3"
         >
-          <h3 className="text-[14px] font-medium text-fg">{classItem.name}</h3>
+          <h3 className="text-label text-fg">{classItem.name}</h3>
           <ul className="flex flex-col gap-2">
             {lessons.map((period) => {
               const block = blocks.get(`${classItem.id}:${period.sequence}`);
@@ -87,10 +87,10 @@ export function ScheduleMobileDayList({
                   )}
                 >
                   <div className="flex flex-col">
-                    <span className={cn("text-[13px]", !tone && "text-fg-muted")}>
+                    <span className={cn("text-body-sm", !tone && "text-fg-muted")}>
                       {period.name}
                     </span>
-                    <span className={cn("text-[12px]", !tone && "text-fg-muted")}>
+                    <span className={cn("text-caption font-normal", !tone && "text-fg-muted")}>
                       {period.starts_at.slice(0, 5)}-{period.ends_at.slice(0, 5)}
                     </span>
                   </div>
@@ -111,7 +111,7 @@ export function ScheduleMobileDayList({
                           </span>
                         )}
                       </span>
-                      <span className="text-[12px]">
+                      <span className="text-caption font-normal">
                         {teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher")}
                       </span>
                       <LessonSubstitutionAction block={block} />
@@ -153,7 +153,7 @@ export function ScheduleMobileDayList({
                           }
                           onAdd(classItem.id, period.sequence);
                         }}
-                        className="mt-1 flex min-h-11 w-full items-center justify-center gap-1 rounded-xs border border-dashed border-border text-[12px] text-fg-muted hover:bg-bg"
+                        className="mt-1 flex min-h-11 w-full items-center justify-center gap-1 rounded-xs border border-dashed border-border text-caption font-normal text-fg-muted hover:bg-bg"
                       >
                         {copied ? (
                           <Copy className="size-3.5" aria-hidden="true" />
@@ -191,7 +191,7 @@ function DayAction({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex min-h-11 items-center gap-1 px-1 text-[12px] text-fg-muted",
+        "flex min-h-11 items-center gap-1 px-1 text-caption font-normal text-fg-muted",
         danger ? "hover:text-status-absent" : "hover:text-fg",
       )}
     >

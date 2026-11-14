@@ -2,7 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import { formatTime, type Locale } from "@newsekolah/i18n";
-import { Alert, Button, Input, Select, useToast } from "@newsekolah/ui";
+import { Alert, Button, Input, Select, useToast, Field } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -207,8 +207,7 @@ export function JournalForm({
           </div>
         </Alert>
       )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("class")}</span>
+      <Field label={t("class")}>
         <Select
           options={classOptions}
           value={effectiveClassId}
@@ -217,9 +216,8 @@ export function JournalForm({
           disabled={classes.isLoading || locked}
           aria-label={t("class")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("subject")}</span>
+      </Field>
+      <Field label={t("subject")}>
         <Select
           options={subjectOptions}
           value={effectiveSubjectId}
@@ -228,9 +226,8 @@ export function JournalForm({
           disabled={subjects.isLoading || effectiveClassId === "" || locked}
           aria-label={t("subject")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("date")}</span>
+      </Field>
+      <Field label={t("date")}>
         <Input
           type="date"
           value={lessonDate}
@@ -240,7 +237,7 @@ export function JournalForm({
           disabled={locked}
           aria-label={t("date")}
         />
-      </label>
+      </Field>
 
       <JournalFields
         topic={topic}

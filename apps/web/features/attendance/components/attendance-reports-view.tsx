@@ -9,6 +9,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
+  Field,
 } from "@newsekolah/ui";
 import { FileBarChart } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -82,8 +83,7 @@ function MineReportTab(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("date")}</span>
+      <Field label={t("date")}>
         <Input
           type="date"
           value={date}
@@ -93,7 +93,7 @@ function MineReportTab(): ReactElement {
           aria-label={t("date")}
           className="w-44"
         />
-      </label>
+      </Field>
 
       {report.isLoading ? (
         <Skeleton className="h-40 w-full" aria-busy="true" />

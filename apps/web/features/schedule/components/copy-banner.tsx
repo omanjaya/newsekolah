@@ -26,7 +26,7 @@ export function CopyBanner({
   if (!copied) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-sm border border-accent/40 bg-accent/10 px-3 py-2 text-[13px] text-fg">
+    <div className="flex flex-wrap items-center gap-2 rounded-sm border border-accent/40 bg-accent/10 px-3 py-2 text-body-sm text-fg">
       <Copy className="size-4 shrink-0 text-accent" aria-hidden="true" />
       <span className="min-w-0 flex-1">
         {t("copyingHint", {
