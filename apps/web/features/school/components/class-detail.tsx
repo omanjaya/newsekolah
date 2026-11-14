@@ -6,6 +6,7 @@ import {
   Badge,
   Button,
   Card,
+  CardTitle,
   ConfirmDialog,
   Dialog,
   DialogContent,
@@ -84,7 +85,9 @@ export function ClassDetail({
       <div className="flex items-start justify-between gap-3 px-5 pt-5">
         <div className="flex min-w-0 flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-title text-fg">{cls.name}</h2>
+            <CardTitle as="h2" className="text-title">
+              {cls.name}
+            </CardTitle>
             {enrollments.data && (
               <Badge tone={full ? "warning" : "neutral"} className="tabular-nums">
                 {cls.capacity

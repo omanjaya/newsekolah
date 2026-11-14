@@ -103,7 +103,7 @@ function AssignmentsEditor({
               <span className="truncate text-body font-medium">
                 {subjectMap.get(pair.subject_id)?.name ?? "-"}
               </span>
-              <Badge variant="neutral">{classMap.get(pair.class_id)?.name ?? "-"}</Badge>
+              <Badge tone="neutral">{classMap.get(pair.class_id)?.name ?? "-"}</Badge>
             </div>
             {canManage && (
               <IconButton

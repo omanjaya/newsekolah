@@ -34,7 +34,7 @@ export function TodayPeriodBanner(): ReactElement | null {
           <span className="text-fg-muted">
             {query.data.starts_at.slice(0, 5)}-{query.data.ends_at.slice(0, 5)}
           </span>
-          {query.data.is_break && <Badge variant="neutral">{t("break")}</Badge>}
+          {query.data.is_break && <Badge tone="neutral">{t("break")}</Badge>}
         </>
       ) : (
         <span className="text-fg-muted">{t("noPeriodNow")}</span>

@@ -154,7 +154,7 @@ export function PeriodTable({ templateId }: { templateId: string }): ReactElemen
         description={pendingDelete ? t("deletePeriodBody", { name: pendingDelete.name }) : ""}
         confirmLabel={t("delete")}
         cancelLabel={t("cancel")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={() => {
           if (!pendingDelete) return;

@@ -221,7 +221,7 @@ export function DutiesView(): ReactElement {
         title={t("remove")}
         description={removing ? t("removeBody", { duty: removing.duty_name }) : ""}
         confirmLabel={t("remove")}
-        destructive
+        tone="danger"
         confirming={end.isPending}
         onConfirm={async () => {
           if (!removing) return;

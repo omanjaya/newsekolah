@@ -233,7 +233,7 @@ export function PeriodsView(): ReactElement {
         title={t("deleteTemplateTitle")}
         description={pendingDelete ? t("deleteTemplateBody", { name: pendingDelete.name }) : ""}
         confirmLabel={t("delete")}
-        destructive
+        tone="danger"
         confirming={deleteTemplate.isPending}
         onConfirm={async () => {
           if (!pendingDelete) return;

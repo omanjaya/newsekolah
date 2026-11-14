@@ -381,7 +381,7 @@ export function UsersView(): ReactElement {
           impersonating ? t("actions.impersonateBody", { name: impersonating.name }) : ""
         }
         confirmLabel={t("actions.impersonate")}
-        destructive
+        tone="danger"
         confirming={impersonate.isPending}
         onConfirm={async () => {
           if (!impersonating) return;

@@ -286,7 +286,7 @@ export function SubjectOfferingsView(): ReactElement {
             : ""
         }
         confirmLabel={t("delete")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={async () => {
           if (!pendingDelete) return;

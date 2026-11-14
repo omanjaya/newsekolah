@@ -5,6 +5,7 @@ import {
   Badge,
   Button,
   Card,
+  CardTitle,
   Checkbox,
   ConfirmDialog,
   Dialog,
@@ -255,7 +256,9 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
   return (
     <Card padding="md" className="gap-6 md:min-h-0 md:overflow-y-auto">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <h2 className="text-title text-fg">{duty.name}</h2>
+        <CardTitle as="h2" className="text-title">
+          {duty.name}
+        </CardTitle>
         {canManage && (
           <Button
             variant="ghost"
@@ -304,7 +307,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
 
       <div className="flex flex-col gap-3 border-t border-border pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-body font-medium text-fg">{t("types.permissionsTitle")}</h3>
+          <CardTitle as="h3">{t("types.permissionsTitle")}</CardTitle>
           {canManage && (
             <Button
               size="sm"
@@ -360,7 +363,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
         title={t("types.delete")}
         description={t("types.deleteBody", { name: duty.name })}
         confirmLabel={t("types.delete")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={async () => {
           try {
