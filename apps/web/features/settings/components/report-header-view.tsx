@@ -3,117 +3,138 @@
 import { ApiError } from "@newsekolah/api-client";
 import {
   Button,
+  Card,
+  Field,
+  FormError,
+  FormSection,
+  IconButton,
   Input,
-  PageHeader,
-  Skeleton,
-  Switch,
-  useMediaQuery,
+  RadioGroup,
+  RadioGroupItem,
+  SkeletonForm,
   useToast,
 } from "@newsekolah/ui";
-import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useTenant } from "../../../lib/tenant/tenant-provider";
 import {
-  fetchReportHeaderPreviewURL,
   useReportHeaderQuery,
   useUpdateReportHeaderMutation,
   type ReportHeaderSettings,
   type ReportHeaderSigner,
 } from "../api";
 
+import { ReportHeaderPreview, type ReportHeaderDraft } from "./report-header-preview";
+import { SettingSwitchRow } from "./setting-switch-row";
+import { SettingsPage } from "./settings-page";
+import { SettingsSaveBar } from "./settings-save-bar";
+
 const MAX_LINES = 5;
 const EMPTY_SIGNER: ReportHeaderSigner = { role_label: "", name: "", id_label: "", id_number: "" };
+const NAV_KEY = "settings-report-header";
+const AUTO = "auto";
 
 /**
  * Tenant-wide "kop laporan" (report header): whether to print the
  * branding logo, up to 5 header lines, the place used in the signature
  * block ("Denpasar, ..."), and default signers (e.g. Kepala Sekolah +
  * NIP). Every report export that shows its letterhead through
- * apps/api/internal/platform/reportdoc reads this setting; the preview
- * pane renders a sample document with the current, unsaved form values
- * are NOT reflected until saved -- the preview always shows the last
- * saved settings, same as branding's logo/favicon preview.
+ * apps/api/internal/platform/reportdoc reads this setting.
  */
 export function ReportHeaderView(): ReactElement {
-  const t = useTranslations("app.settings.reportHeader");
-  const { data, isLoading, isError, refetch } = useReportHeaderQuery();
+  const { data, isLoading, isError, error, refetch } = useReportHeaderQuery();
 
-  if (isError && !data) return <QueryError retry={() => refetch()} className="m-4" />;
+  if (isError && !data) {
+    return (
+      <SettingsPage navKey={NAV_KEY}>
+        <QueryError retry={() => refetch()} error={error} />
+      </SettingsPage>
+    );
+  }
 
   if (isLoading || !data) {
     return (
-      <div className="flex flex-col gap-6 p-4 md:p-6" aria-busy="true">
-        <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <SettingsPage navKey={NAV_KEY} variant="default">
+        <div aria-busy="true" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+          <SkeletonForm fields={5} actions={false} />
+          <SkeletonForm fields={2} actions={false} className="hidden lg:flex" />
+        </div>
+      </SettingsPage>
     );
   }
 
   return <ReportHeaderForm initial={data} />;
 }
 
+function draftOf(settings: ReportHeaderSettings): ReportHeaderDraft {
+  return {
+    showLogo: settings.show_logo,
+    // The editor always shows at least one (possibly empty) line; compare
+    // against that same shape so an untouched form is not reported dirty.
+    lines: settings.lines.length > 0 ? settings.lines : [""],
+    // undefined means "automatic" (reportdoc/school domain's EmphasisAuto):
+    // the server picks the line matching the tenant name, else the
+    // second-to-last line.
+    emphasis: settings.emphasis,
+    place: settings.place,
+    signers: settings.signers.map((signer) => ({
+      role_label: signer.role_label,
+      name: signer.name,
+      id_label: signer.id_label ?? "",
+      id_number: signer.id_number ?? "",
+    })),
+  };
+}
+
+/**
+ * Two panes: the letterhead form on the left, and on the right a sheet
+ * drawn live from the unsaved values (or the server's PDF of the saved
+ * settings), kept in view on a desktop.
+ */
 function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): ReactElement {
   const t = useTranslations("app.settings.reportHeader");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const update = useUpdateReportHeaderMutation();
+  const { branding } = useTenant();
 
-  const [showLogo, setShowLogo] = useState(initial.show_logo);
-  // The editor always shows at least one (possibly empty) line; compare
-  // against that same shape so an untouched form is not reported dirty.
-  const initialLines = initial.lines.length > 0 ? initial.lines : [""];
-  const [lines, setLines] = useState<string[]>(initialLines);
-  // undefined means "automatic" (reportdoc/school domain's EmphasisAuto):
-  // the server picks the line matching the tenant name, else the
-  // second-to-last line.
-  const [emphasis, setEmphasis] = useState<number | undefined>(initial.emphasis);
-  const [place, setPlace] = useState(initial.place);
-  const [signers, setSigners] = useState<ReportHeaderSigner[]>(initial.signers);
+  const saved = draftOf(initial);
+  const [draft, setDraft] = useState<ReportHeaderDraft>(saved);
+  const [savedVersion, setSavedVersion] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const { lines, signers, emphasis } = draft;
 
-  const dirty =
-    showLogo !== initial.show_logo ||
-    JSON.stringify(lines) !== JSON.stringify(initialLines) ||
-    emphasis !== initial.emphasis ||
-    place !== initial.place ||
-    JSON.stringify(signers) !== JSON.stringify(initial.signers);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
 
-  function updateLine(index: number, value: string) {
-    setLines((current) => current.map((line, i) => (i === index ? value : line)));
+  function patch(next: Partial<ReportHeaderDraft>) {
+    setDraft((current) => ({ ...current, ...next }));
   }
 
-  function addLine() {
-    setLines((current) => (current.length >= MAX_LINES ? current : [...current, ""]));
+  function updateLine(index: number, value: string) {
+    patch({ lines: lines.map((line, i) => (i === index ? value : line)) });
   }
 
   function removeLine(index: number) {
-    setLines((current) => (current.length <= 1 ? current : current.filter((_, i) => i !== index)));
+    if (lines.length <= 1) return;
     // Keep the emphasis selection pointing at the same logical line: drop
     // it back to automatic if the removed line was the chosen one, shift
     // it down if a line before it was removed, leave it alone otherwise.
-    setEmphasis((current) => {
-      if (current === undefined) return current;
-      if (current === index) return undefined;
-      if (current > index) return current - 1;
-      return current;
-    });
+    const nextEmphasis =
+      emphasis === undefined || emphasis === index
+        ? undefined
+        : emphasis > index
+          ? emphasis - 1
+          : emphasis;
+    patch({ lines: lines.filter((_, i) => i !== index), emphasis: nextEmphasis });
   }
 
-  function updateSigner(index: number, patch: Partial<ReportHeaderSigner>) {
-    setSigners((current) => current.map((s, i) => (i === index ? { ...s, ...patch } : s)));
-  }
-
-  function addSigner() {
-    setSigners((current) => [...current, { ...EMPTY_SIGNER }]);
-  }
-
-  function removeSigner(index: number) {
-    setSigners((current) => current.filter((_, i) => i !== index));
+  function updateSigner(index: number, value: Partial<ReportHeaderSigner>) {
+    patch({ signers: signers.map((s, i) => (i === index ? { ...s, ...value } : s)) });
   }
 
   function save() {
@@ -129,10 +150,10 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
     const emphasisLine = emphasis !== undefined ? lines[emphasis]?.trim() : undefined;
     const emphasisValue = emphasisLine ? cleanLines.indexOf(emphasisLine) : undefined;
     const body: ReportHeaderSettings = {
-      show_logo: showLogo,
+      show_logo: draft.showLogo,
       lines: cleanLines,
       ...(emphasisValue !== undefined && emphasisValue >= 0 ? { emphasis: emphasisValue } : {}),
-      place: place.trim(),
+      place: draft.place.trim(),
       signers: signers
         .map((s) => ({
           role_label: s.role_label.trim(),
@@ -143,7 +164,9 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
         .filter((s) => s.role_label !== "" || s.name !== ""),
     };
     update.mutate(body, {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        setDraft(draftOf(data));
+        setSavedVersion((version) => version + 1);
         toast.success(t("saved"));
       },
       onError: (err) => {
@@ -153,255 +176,204 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-
-      <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-        {error && (
-          <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-            {error}
-          </p>
-        )}
-
-        <div className="flex items-center justify-between gap-3 text-[13px]">
-          <span className="flex flex-col gap-0.5">
-            <span className="font-medium text-fg">{t("showLogoLabel")}</span>
-            <span className="text-fg-muted">{t("showLogoHint")}</span>
-          </span>
-          <Switch
-            checked={showLogo}
-            onCheckedChange={setShowLogo}
-            aria-label={t("showLogoLabel")}
-          />
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="text-[13px] font-medium text-fg">{t("linesLabel")}</span>
-          {lines.map((line, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <Input
-                value={line}
-                onChange={(e) => {
-                  updateLine(index, e.target.value);
-                }}
-                placeholder={index === 0 ? t("firstLinePlaceholder") : t("linePlaceholder")}
-                aria-label={t("lineLabel", { index: index + 1 })}
-                maxLength={160}
-                className="flex-1"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                type="button"
-                onClick={() => {
-                  removeLine(index);
-                }}
-                disabled={lines.length <= 1}
-                aria-label={t("removeLine", { index: index + 1 })}
-              >
-                <Trash2 className="size-4" aria-hidden="true" />
-              </Button>
-            </div>
-          ))}
-          <Button
-            variant="ghost"
-            size="sm"
-            type="button"
-            onClick={addLine}
-            disabled={lines.length >= MAX_LINES}
-            className="self-start"
-          >
-            <Plus className="size-4" aria-hidden="true" />
-            {t("addLine")}
-          </Button>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="flex flex-col gap-0.5">
-            <span className="text-[13px] font-medium text-fg">{t("emphasisLabel")}</span>
-            <span className="text-[13px] text-fg-muted">{t("emphasisHint")}</span>
-          </span>
-          <div role="radiogroup" aria-label={t("emphasisLabel")} className="flex flex-col gap-1">
-            <label className="flex min-h-11 items-center gap-2 text-[13px]">
-              <input
-                type="radio"
-                name="report-header-emphasis"
-                checked={emphasis === undefined}
-                onChange={() => {
-                  setEmphasis(undefined);
-                }}
-                className="size-4"
-              />
-              {t("emphasisAuto")}
-            </label>
-            {lines.map((line, index) =>
-              line.trim() === "" ? null : (
-                <label key={index} className="flex min-h-11 items-center gap-2 text-[13px]">
-                  <input
-                    type="radio"
-                    name="report-header-emphasis"
-                    checked={emphasis === index}
-                    onChange={() => {
-                      setEmphasis(index);
-                    }}
-                    className="size-4"
-                  />
-                  {t("emphasisLineOption", { index: index + 1, text: line })}
-                </label>
-              ),
-            )}
-          </div>
-        </div>
-
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("placeLabel")}</span>
-          <Input
-            value={place}
-            onChange={(e) => {
-              setPlace(e.target.value);
-            }}
-            placeholder={t("placePlaceholder")}
-            maxLength={80}
-            className="max-w-xs"
-          />
-        </label>
-
-        <div className="flex flex-col gap-3">
-          <span className="text-[13px] font-medium text-fg">{t("signersLabel")}</span>
-          {signers.map((signer, index) => (
-            <div
-              key={index}
-              className="flex flex-col gap-2 rounded-sm border border-border p-3 sm:flex-row sm:flex-wrap sm:items-end"
-            >
-              <label className="flex flex-1 flex-col gap-1 text-[13px]">
-                <span className="text-fg-muted">{t("signerRoleLabel")}</span>
-                <Input
-                  value={signer.role_label}
-                  onChange={(e) => {
-                    updateSigner(index, { role_label: e.target.value });
-                  }}
-                  maxLength={80}
-                />
-              </label>
-              <label className="flex flex-1 flex-col gap-1 text-[13px]">
-                <span className="text-fg-muted">{t("signerNameLabel")}</span>
-                <Input
-                  value={signer.name}
-                  onChange={(e) => {
-                    updateSigner(index, { name: e.target.value });
-                  }}
-                  maxLength={120}
-                />
-              </label>
-              <label className="flex flex-1 flex-col gap-1 text-[13px]">
-                <span className="text-fg-muted">{t("signerIdLabel")}</span>
-                <Input
-                  value={signer.id_label}
-                  onChange={(e) => {
-                    updateSigner(index, { id_label: e.target.value });
-                  }}
-                  placeholder="NIP"
-                  maxLength={40}
-                />
-              </label>
-              <label className="flex flex-1 flex-col gap-1 text-[13px]">
-                <span className="text-fg-muted">{t("signerIdNumberLabel")}</span>
-                <Input
-                  value={signer.id_number}
-                  onChange={(e) => {
-                    updateSigner(index, { id_number: e.target.value });
-                  }}
-                  maxLength={60}
-                />
-              </label>
-              <Button
-                variant="ghost"
-                size="sm"
-                type="button"
-                onClick={() => {
-                  removeSigner(index);
-                }}
-                aria-label={t("removeSigner", { index: index + 1 })}
-              >
-                <Trash2 className="size-4" aria-hidden="true" />
-              </Button>
-            </div>
-          ))}
-          <Button
-            variant="ghost"
-            size="sm"
-            type="button"
-            onClick={addSigner}
-            className="self-start"
-          >
-            <Plus className="size-4" aria-hidden="true" />
-            {t("addSigner")}
-          </Button>
-        </div>
-
-        <div className="flex justify-end border-t border-border pt-4">
-          <Button disabled={!dirty} loading={update.isPending} onClick={save}>
-            {t("save")}
-          </Button>
-        </div>
-      </section>
-
-      <ReportHeaderPreview />
-    </div>
-  );
-}
-
-const PREVIEW_KEY = ["settings", "report-header", "preview"] as const;
-
-function ReportHeaderPreview(): ReactElement {
-  const t = useTranslations("app.settings.reportHeader");
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const {
-    data: previewUrl,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: PREVIEW_KEY,
-    queryFn: () => fetchReportHeaderPreviewURL("pdf"),
-    // A blob object URL is only valid for this tab's lifetime and is
-    // revoked below on cleanup, so it is never worth serving from cache
-    // across mounts.
-    gcTime: 0,
-  });
-
-  // Cleanup only -- releasing the object URL when it is replaced or this
-  // component unmounts is not a state sync, so it stays a plain effect
-  // return rather than a `setState` call inside the effect body.
-  useEffect(() => {
-    return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-  }, [previewUrl]);
-
-  return (
-    <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-      <h2 className="text-[16px] font-medium text-fg">{t("previewTitle")}</h2>
-      {isLoading && <Skeleton className="h-40 w-full" />}
-      {!isLoading && isError && <p className="text-[13px] text-fg-muted">{t("previewError")}</p>}
-      {!isLoading && !isError && previewUrl && isDesktop && (
-        <iframe
-          src={previewUrl}
-          title={t("previewTitle")}
-          className="h-[420px] w-full rounded-xs border border-border"
-        />
-      )}
-      {!isLoading && !isError && previewUrl && !isDesktop && (
-        <Button
-          variant="secondary"
-          size="sm"
-          className="self-start"
-          onClick={() => {
-            window.open(previewUrl, "_blank", "noopener,noreferrer");
+    <SettingsPage
+      navKey={NAV_KEY}
+      variant="default"
+      description={t("description")}
+      floating={
+        <SettingsSaveBar
+          container="default"
+          dirty={dirty}
+          saving={update.isPending}
+          onSave={save}
+          onDiscard={() => {
+            setDraft(saved);
+            setError(null);
           }}
-        >
-          {t("previewOpen")}
-        </Button>
-      )}
-    </section>
+        />
+      }
+    >
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <div className="flex min-w-0 flex-col gap-6">
+          {error && <FormError>{error}</FormError>}
+
+          <FormSection variant="card" columns={1} title={t("headerTitle")}>
+            <SettingSwitchRow
+              label={t("showLogoLabel")}
+              hint={t("showLogoHint")}
+              checked={draft.showLogo}
+              onCheckedChange={(showLogo) => {
+                patch({ showLogo });
+              }}
+            />
+            <Field label={t("linesLabel")} hint={t("linesHint", { max: MAX_LINES })}>
+              {(control) => (
+                <div
+                  role="group"
+                  aria-labelledby={control.labelId}
+                  aria-describedby={control["aria-describedby"]}
+                  className="flex flex-col gap-2"
+                >
+                  {lines.map((line, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        id={index === 0 ? control.id : undefined}
+                        value={line}
+                        onChange={(e) => {
+                          updateLine(index, e.target.value);
+                        }}
+                        placeholder={index === 0 ? t("firstLinePlaceholder") : t("linePlaceholder")}
+                        aria-label={t("lineLabel", { index: index + 1 })}
+                        maxLength={160}
+                        className="flex-1"
+                      />
+                      <IconButton
+                        variant="ghost"
+                        icon={<Trash2 />}
+                        aria-label={t("removeLine", { index: index + 1 })}
+                        disabled={lines.length <= 1}
+                        onClick={() => {
+                          removeLine(index);
+                        }}
+                      />
+                    </div>
+                  ))}
+                  <Button
+                    variant="ghost"
+                    icon={<Plus />}
+                    className="self-start"
+                    disabled={lines.length >= MAX_LINES}
+                    onClick={() => {
+                      patch({ lines: [...lines, ""] });
+                    }}
+                  >
+                    {t("addLine")}
+                  </Button>
+                </div>
+              )}
+            </Field>
+            <Field label={t("emphasisLabel")} hint={t("emphasisHint")}>
+              {(control) => (
+                <RadioGroup
+                  aria-labelledby={control.labelId}
+                  aria-describedby={control["aria-describedby"]}
+                  value={emphasis === undefined ? AUTO : String(emphasis)}
+                  onValueChange={(value) => {
+                    patch({ emphasis: value === AUTO ? undefined : Number(value) });
+                  }}
+                >
+                  <RadioGroupItem value={AUTO} label={t("emphasisAuto")} />
+                  {lines.map((line, index) =>
+                    line.trim() === "" ? null : (
+                      <RadioGroupItem
+                        key={index}
+                        value={String(index)}
+                        label={t("emphasisLineOption", { index: index + 1, text: line })}
+                      />
+                    ),
+                  )}
+                </RadioGroup>
+              )}
+            </Field>
+          </FormSection>
+
+          <FormSection variant="card" columns={1} title={t("placeTitle")}>
+            <Field label={t("placeLabel")} hint={t("placeHint")}>
+              <Input
+                value={draft.place}
+                onChange={(e) => {
+                  patch({ place: e.target.value });
+                }}
+                placeholder={t("placePlaceholder")}
+                maxLength={80}
+                className="sm:max-w-xs"
+              />
+            </Field>
+          </FormSection>
+
+          <FormSection
+            variant="card"
+            columns={1}
+            title={t("signersLabel")}
+            description={t("signersHint")}
+          >
+            {signers.map((signer, index) => (
+              <Card key={index} tone="sunken" padding="sm">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-label text-fg">{t("signerTitle", { index: index + 1 })}</p>
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    icon={<Trash2 />}
+                    aria-label={t("removeSigner", { index: index + 1 })}
+                    onClick={() => {
+                      patch({ signers: signers.filter((_, i) => i !== index) });
+                    }}
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label={t("signerRoleLabel")}>
+                    <Input
+                      value={signer.role_label}
+                      onChange={(e) => {
+                        updateSigner(index, { role_label: e.target.value });
+                      }}
+                      placeholder={t("signerRolePlaceholder")}
+                      maxLength={80}
+                    />
+                  </Field>
+                  <Field label={t("signerNameLabel")}>
+                    <Input
+                      value={signer.name}
+                      onChange={(e) => {
+                        updateSigner(index, { name: e.target.value });
+                      }}
+                      maxLength={120}
+                    />
+                  </Field>
+                  <Field label={t("signerIdLabel")} hint={t("signerIdHint")}>
+                    <Input
+                      value={signer.id_label}
+                      onChange={(e) => {
+                        updateSigner(index, { id_label: e.target.value });
+                      }}
+                      maxLength={40}
+                    />
+                  </Field>
+                  <Field label={t("signerIdNumberLabel")}>
+                    <Input
+                      value={signer.id_number}
+                      onChange={(e) => {
+                        updateSigner(index, { id_number: e.target.value });
+                      }}
+                      inputMode="numeric"
+                      maxLength={60}
+                    />
+                  </Field>
+                </div>
+              </Card>
+            ))}
+            <Button
+              variant="secondary"
+              icon={<Plus />}
+              className="justify-self-start"
+              onClick={() => {
+                patch({ signers: [...signers, { ...EMPTY_SIGNER }] });
+              }}
+            >
+              {t("addSigner")}
+            </Button>
+          </FormSection>
+        </div>
+
+        <div className="lg:sticky lg:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)]">
+          <ReportHeaderPreview
+            draft={draft}
+            logoUrl={branding?.logo_url}
+            savedVersion={savedVersion}
+          />
+        </div>
+      </div>
+    </SettingsPage>
   );
 }
