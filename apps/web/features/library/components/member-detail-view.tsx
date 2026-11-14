@@ -1,33 +1,47 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { formatCurrency, formatDate } from "@newsekolah/i18n";
+import { formatCurrency } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
+  Alert,
+  Avatar,
   Badge,
   Button,
+  Card,
+  ConfirmDialog,
+  DataList,
+  DataListItem,
   Dialog,
   DialogContent,
-  domainIcons,
   EmptyState,
-  PageHeader,
-  SemanticStatusBadge,
-  Skeleton,
+  SkeletonDetail,
+  StatePage,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  domainIcons,
   useToast,
-  type SemanticStatus,
+  type PageHeaderAction,
 } from "@newsekolah/ui";
-import { ArrowLeft, Printer } from "lucide-react";
+import { BadgeCheck, FileText, Pencil, Printer, Scale } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
+import { QueryError } from "../../../components/query-error";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import { useLookup } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { printMemberCard, useMemberLoanHistoryQuery, useMemberReservationsQuery } from "../api";
+import { formatShortDate } from "../lib/short-date";
+import { MEMBER_STATUS_TONE, toneOf } from "../lib/status-tones";
 import {
   printLibraryClearanceLetter,
   useClearLibraryMemberMutation,
@@ -37,22 +51,27 @@ import {
 import { useTenantTimeZone } from "../use-tenant-timezone";
 import { useMemberViolationsQuery } from "../violations-api";
 
-import { LibraryTitleName } from "./library-title-name";
 import { LoanRenewalsDialog } from "./loan-renewals-dialog";
 import { MarkLostDialog } from "./mark-lost-dialog";
+import { MemberFines, MemberPastLoans, MemberReservations } from "./member-detail-sections";
 import { MemberLoanRow, loanRowSortKey } from "./member-loan-row";
 import { MemberProfileForm } from "./member-profile-form";
 import { MemberStatusMenu } from "./member-status-menu";
 
-const LOAN_HISTORY_STATUS: Record<string, SemanticStatus> = {
-  returned: "completed",
-  lost: "overdue",
-};
+const TABS = ["loans", "history", "fines", "reservations"] as const;
+type MemberTab = (typeof TABS)[number];
 
+/**
+ * A library member's own page (docs/07-ui-ux.md "Detail"): who they are
+ * (avatar, number, type, validity and status) under a breadcrumb back to
+ * the member list, then their current loans, history, unpaid fines and
+ * holds as tabs. Editing leads the header; printing the card, the fines
+ * page and library clearance sit beside it. Changing the status or
+ * granting clearance asks first, naming the member and the effect.
+ */
 export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const t = useTranslations("app.library.memberDetail");
   const tHistory = useTranslations("app.library.memberHistory");
-  const tReserve = useTranslations("app.library.me.reserve");
   const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -69,10 +88,11 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const violations = useMemberViolationsQuery(userId);
   const clearMember = useClearLibraryMemberMutation();
 
+  const [tab, setTab] = useUrlState<MemberTab>("tab", TABS, "loans");
   const [editing, setEditing] = useState(false);
+  const [confirmingClearance, setConfirmingClearance] = useState(false);
   const [markingLost, setMarkingLost] = useState<string | null>(null);
   const [viewingRenewals, setViewingRenewals] = useState<string | null>(null);
-  const [clearanceError, setClearanceError] = useState("");
 
   const activeLoans = useMemo(
     () =>
@@ -87,245 +107,227 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   );
   const unpaidViolations = (violations.data?.data ?? []).filter((v) => v.status === "unpaid");
   const unpaidTotal = unpaidViolations.reduce((sum, v) => sum + v.amount, 0);
-  const hasActiveLoan = activeLoans.length > 0;
+  const holds = reservations.data?.data ?? [];
   const userName = directoryMap.get(userId)?.name;
 
   if (member.isLoading) {
     return (
-      <div className="flex flex-col gap-6 p-4 md:p-6">
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <AppPage header={false} nav={false}>
+        <SkeletonDetail />
+      </AppPage>
     );
   }
-
+  if (member.isError) {
+    return (
+      <AppPage title={t("loadErrorTitle")} nav={false}>
+        <QueryError retry={() => member.refetch()} error={member.error} />
+      </AppPage>
+    );
+  }
   if (!member.data) {
     return (
-      <div className="p-4 md:p-6">
-        <EmptyState
-          icon={<domainIcons.users aria-hidden="true" />}
+      <AppPage title={t("notFoundTitle")} nav={false} header={false}>
+        <StatePage
+          kind="not-found"
           title={t("notFoundTitle")}
           description={t("notFoundBody")}
+          action={
+            <Button asChild>
+              <Link href="/library/members">{t("backToList")}</Link>
+            </Button>
+          }
         />
-      </div>
+      </AppPage>
     );
   }
 
   const data = member.data;
+  const name = userName ?? data.member_no;
+  const typeName = memberTypeMap.get(data.member_type_id)?.name;
+  const clearanceBlocked = activeLoans.length > 0 || unpaidViolations.length > 0;
+
+  const secondaryActions: PageHeaderAction[] = [
+    {
+      label: tHistory("printCard"),
+      icon: <Printer />,
+      onSelect: () => {
+        void printMemberCard(userId);
+      },
+    },
+    ...(canCirculate
+      ? [
+          {
+            label: t("finesPage"),
+            icon: <Scale />,
+            href: `/library/violations?member=${encodeURIComponent(userId)}`,
+          },
+        ]
+      : []),
+    ...(canManage && data.status !== "cleared"
+      ? [
+          {
+            label: t("grantClearance"),
+            icon: <BadgeCheck />,
+            disabled: clearanceBlocked || clearMember.isPending,
+            onSelect: () => {
+              setConfirmingClearance(true);
+            },
+          },
+        ]
+      : []),
+    ...(data.status === "cleared"
+      ? [
+          {
+            label: t("printClearanceLetter"),
+            icon: <FileText />,
+            onSelect: () => {
+              void printLibraryClearanceLetter(userId);
+            },
+          },
+        ]
+      : []),
+  ];
 
   return (
-    <div className="flex flex-col gap-5 p-4 md:p-6">
-      <Button asChild variant="secondary" size="sm" className="self-start">
-        <Link href="/library/members">
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          {t("backToList")}
-        </Link>
-      </Button>
-
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={userName ?? data.member_no}
-        actions={
-          <div className="flex gap-2">
-            {canManage && (
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setEditing(true);
-                }}
-              >
-                {t("edit")}
-              </Button>
+    <AppPage
+      title={name}
+      nav={false}
+      primaryAction={
+        canManage ? (
+          <Button
+            icon={<Pencil />}
+            onClick={() => {
+              setEditing(true);
+            }}
+          >
+            {t("edit")}
+          </Button>
+        ) : undefined
+      }
+      secondaryActions={secondaryActions}
+    >
+      <Card padding="md" className="gap-5 sm:flex-row sm:items-start">
+        <Avatar name={name} size={64} decorative />
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <DataList layout="stacked" columns={3}>
+            <DataListItem label={t("memberNo")}>
+              <span className="tabular-nums">{data.member_no}</span>
+            </DataListItem>
+            <DataListItem label={t("memberType")}>{typeName}</DataListItem>
+            <DataListItem label={t("validUntil")}>
+              {data.valid_until ? formatShortDate(data.valid_until, locale, { today }) : undefined}
+            </DataListItem>
+          </DataList>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-label text-fg-muted">{t("statusLabel")}</span>
+            {canManage ? (
+              <MemberStatusMenu userId={userId} status={data.status} memberName={name} />
+            ) : (
+              <Badge tone={toneOf(MEMBER_STATUS_TONE, data.status)}>
+                {t(`status.${data.status}`)}
+              </Badge>
             )}
-            <Button
-              variant="secondary"
-              icon={<Printer />}
-              onClick={() => {
-                void printMemberCard(userId);
-              }}
-            >
-              {tHistory("printCard")}
-            </Button>
+            {canManage && data.status !== "cleared" && clearanceBlocked && (
+              <span className="text-caption text-fg-muted">{t("clearanceBlockedByLoan")}</span>
+            )}
           </div>
-        }
-      />
-
-      <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4 md:flex-row md:flex-wrap md:items-center md:gap-6">
-        <div className="flex flex-col gap-1">
-          <span className="text-[12px] font-medium text-fg-muted">{t("memberNo")}</span>
-          <span className="text-[14px] text-fg">{data.member_no}</span>
         </div>
-        <div className="flex flex-col gap-1">
-          <span className="text-[12px] font-medium text-fg-muted">{t("memberType")}</span>
-          <span className="text-[14px] text-fg">
-            {memberTypeMap.get(data.member_type_id)?.name ?? "-"}
-          </span>
-        </div>
-        <div className="flex flex-col gap-1">
-          <span className="text-[12px] font-medium text-fg-muted">{t("validUntil")}</span>
-          <span className="text-[14px] text-fg">
-            {data.valid_until ? formatDate(data.valid_until, { locale }) : "-"}
-          </span>
-        </div>
-        <div className="flex flex-col gap-1">
-          <span className="text-[12px] font-medium text-fg-muted">{t("statusLabel")}</span>
-          {canManage ? (
-            <MemberStatusMenu userId={userId} status={data.status} />
-          ) : (
-            <Badge variant={data.status === "active" ? "accent" : "neutral"}>
-              {t(`status.${data.status}`)}
-            </Badge>
-          )}
-        </div>
-        {canManage && data.status !== "cleared" && (
-          <div className="flex flex-col gap-1">
-            <span className="text-[12px] font-medium text-fg-muted">{t("clearance")}</span>
-            <Button
-              size="sm"
-              variant="secondary"
-              loading={clearMember.isPending}
-              onClick={() => {
-                setClearanceError("");
-                clearMember.mutate(userId, {
-                  onSuccess: () => {
-                    toast.success(t("cleared"));
-                  },
-                  onError: (error) => {
-                    setClearanceError(
-                      error instanceof ApiError
-                        ? apiErrorMessage(error.code)
-                        : apiErrorMessage("UNKNOWN"),
-                    );
-                  },
-                });
-              }}
-            >
-              {t("grantClearance")}
-            </Button>
-          </div>
-        )}
-        {data.status === "cleared" && (
-          <div className="flex flex-col gap-1">
-            <span className="text-[12px] font-medium text-fg-muted">{t("clearance")}</span>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                void printLibraryClearanceLetter(userId);
-              }}
-            >
-              {t("printClearanceLetter")}
-            </Button>
-          </div>
-        )}
-      </div>
-      {clearanceError && <p className="text-[13px] text-status-absent">{clearanceError}</p>}
-      {hasActiveLoan && data.status !== "cleared" && (
-        <p className="text-[13px] text-fg-muted">{t("clearanceBlockedByLoan")}</p>
-      )}
+      </Card>
 
       {unpaidViolations.length > 0 && (
-        <div className="flex flex-col gap-2 rounded-sm border border-status-late/40 bg-status-late/5 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-[15px] font-semibold text-fg">{tHistory("fines.title")}</h2>
-            <Badge variant="neutral">{formatCurrency(unpaidTotal, "IDR", { locale })}</Badge>
-          </div>
-          <ul className="flex flex-col gap-1">
-            {unpaidViolations.map((violation) => (
-              <li key={violation.id} className="flex items-center justify-between text-[13px]">
-                <span className="text-fg">{tHistory(`fines.kind.${violation.kind}`)}</span>
-                <span className="tabular-nums text-status-late">
-                  {formatCurrency(violation.amount, "IDR", { locale })}
-                </span>
-              </li>
-            ))}
-          </ul>
-          {canCirculate && (
-            <Button asChild variant="secondary" size="sm" className="self-start">
-              <Link href={`/library/violations?member=${encodeURIComponent(userId)}`}>
-                {tHistory("fines.manage")}
-              </Link>
+        <Alert
+          tone="warning"
+          title={t("unpaidAlert", { amount: formatCurrency(unpaidTotal, "IDR", { locale }) })}
+          action={
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setTab("fines");
+              }}
+            >
+              {t("viewFines")}
             </Button>
-          )}
-        </div>
+          }
+        />
       )}
 
-      <div className="flex flex-col gap-3">
-        <h2 className="text-[16px] font-medium text-fg">{tHistory("currentLoans")}</h2>
-        {loans.isLoading ? (
-          <Skeleton className="h-24 w-full" />
-        ) : activeLoans.length === 0 ? (
-          <EmptyState
-            icon={<domainIcons.library aria-hidden="true" />}
-            title={tHistory("emptyTitle")}
-          />
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {activeLoans.map((loan) => (
-              <MemberLoanRow
-                key={loan.id}
-                loan={loan}
-                today={today}
-                locale={locale}
-                canManage={canManage}
-                onViewRenewals={() => {
-                  setViewingRenewals(loan.id);
-                }}
-                onMarkLost={() => {
-                  setMarkingLost(loan.id);
-                }}
+      <Tabs
+        value={tab}
+        onValueChange={(value) => {
+          setTab(value as MemberTab);
+        }}
+      >
+        <TabsList variant="underline" aria-label={t("tabsLabel")}>
+          <TabsTrigger value="loans" count={activeLoans.length || undefined}>
+            {t("tabs.loans")}
+          </TabsTrigger>
+          <TabsTrigger value="history" count={pastLoans.length || undefined}>
+            {t("tabs.history")}
+          </TabsTrigger>
+          <TabsTrigger value="fines" count={unpaidViolations.length || undefined}>
+            {t("tabs.fines")}
+          </TabsTrigger>
+          <TabsTrigger value="reservations" count={holds.length || undefined}>
+            {t("tabs.reservations")}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="loans">
+          {loans.isError ? (
+            <QueryError retry={() => loans.refetch()} error={loans.error} />
+          ) : loans.isLoading ? (
+            <SkeletonDetail />
+          ) : activeLoans.length === 0 ? (
+            <Card>
+              <EmptyState
+                icon={<domainIcons.library aria-hidden="true" />}
+                title={tHistory("emptyTitle")}
               />
-            ))}
-          </ul>
-        )}
-      </div>
+            </Card>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {activeLoans.map((loan) => (
+                <MemberLoanRow
+                  key={loan.id}
+                  loan={loan}
+                  today={today}
+                  locale={locale}
+                  canManage={canManage}
+                  onViewRenewals={() => {
+                    setViewingRenewals(loan.id);
+                  }}
+                  onMarkLost={() => {
+                    setMarkingLost(loan.id);
+                  }}
+                />
+              ))}
+            </ul>
+          )}
+        </TabsContent>
 
-      {pastLoans.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <h2 className="text-[16px] font-medium text-fg">{tHistory("pastLoans")}</h2>
-          <ul className="flex flex-col divide-y divide-border rounded-sm border border-border bg-surface">
-            {pastLoans.map((loan) => (
-              <li
-                key={loan.id}
-                className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-[13px]"
-              >
-                <span className="min-w-0 truncate text-fg">
-                  <LibraryTitleName titleId={loan.title_id} />
-                </span>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className="text-fg-muted">
-                    {loan.returned_at ? formatDate(loan.returned_at, { locale }) : "-"}
-                  </span>
-                  <SemanticStatusBadge
-                    status={LOAN_HISTORY_STATUS[loan.status] ?? "completed"}
-                    label={tHistory(`status.${loan.status}`)}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+        <TabsContent value="history">
+          <MemberPastLoans loans={pastLoans} locale={locale} today={today} />
+        </TabsContent>
 
-      {(reservations.data?.data.length ?? 0) > 0 && (
-        <div className="flex flex-col gap-2">
-          <h2 className="text-[15px] font-semibold text-fg">{tHistory("reservationsHeading")}</h2>
-          <ul className="flex flex-col gap-1 text-[13px]">
-            {reservations.data?.data.map((r) => (
-              <li key={r.id} className="rounded-sm border border-border bg-surface p-2">
-                <LibraryTitleName titleId={r.title_id} />
-                {" - "}
-                {r.status === "waiting" && r.position
-                  ? tReserve("queuePosition", { position: r.position })
-                  : tReserve(`status.${r.status}`)}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+        <TabsContent value="fines">
+          <MemberFines
+            violations={unpaidViolations}
+            total={unpaidTotal}
+            locale={locale}
+            manageHref={
+              canCirculate ? `/library/violations?member=${encodeURIComponent(userId)}` : undefined
+            }
+          />
+        </TabsContent>
+
+        <TabsContent value="reservations">
+          <MemberReservations reservations={holds} />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={editing} onOpenChange={setEditing}>
-        <DialogContent title={t("edit")}>
+        <DialogContent title={t("edit")} size="md">
           {editing && (
             <MemberProfileForm
               member={data}
@@ -336,6 +338,32 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmingClearance}
+        onOpenChange={setConfirmingClearance}
+        title={t("confirmClearance.title")}
+        description={t("confirmClearance.body", { name })}
+        confirmLabel={t("grantClearance")}
+        confirming={clearMember.isPending}
+        onConfirm={() => {
+          clearMember.mutate(userId, {
+            onSuccess: () => {
+              toast.success(t("cleared"));
+            },
+            onError: (error) => {
+              toast.error(
+                error instanceof ApiError
+                  ? apiErrorMessage(error.code)
+                  : apiErrorMessage("UNKNOWN"),
+              );
+            },
+            onSettled: () => {
+              setConfirmingClearance(false);
+            },
+          });
+        }}
+      />
 
       <MarkLostDialog
         loanId={markingLost}
@@ -353,6 +381,6 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
           if (!open) setViewingRenewals(null);
         }}
       />
-    </div>
+    </AppPage>
   );
 }

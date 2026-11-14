@@ -417,7 +417,8 @@
       "close": "Close",
       "empty": "No renewals for this loan yet.",
       "dueChange": "Due date {previous} became {next}"
-    }
+    },
+    "renewBlockedOverdueDays": "Cannot be renewed: {days} days overdue"
   },
   "members": {
     "pagePrev": "Previous",
@@ -562,8 +563,33 @@
     "grantClearance": "Grant clearance",
     "cleared": "Member granted clearance",
     "printClearanceLetter": "Print clearance letter",
-    "clearanceBlockedByLoan": "Clearance cannot be granted while any loan is active or a fine is unpaid.",
-    "edit": "Edit membership"
+    "clearanceBlockedByLoan": "Library clearance can be granted once every book is back and every fine is paid.",
+    "edit": "Edit membership",
+    "loadErrorTitle": "This member could not be loaded",
+    "finesPage": "Fines and sanctions",
+    "unpaidAlert": "Unpaid fines of {amount}",
+    "viewFines": "View fines",
+    "tabsLabel": "Member sections",
+    "tabs": {
+      "loans": "On loan",
+      "history": "History",
+      "fines": "Fines",
+      "reservations": "Holds"
+    },
+    "noHistory": "No past loans yet",
+    "noFinesTitle": "No fines",
+    "noFinesBody": "Every fine of this member is paid.",
+    "finesTotal": "Unpaid: {amount}",
+    "noReservations": "No holds",
+    "confirmStatus": {
+      "title": "Change the membership status?",
+      "body": "{name} will become {status}. The status decides whether the member may borrow.",
+      "confirm": "Change status"
+    },
+    "confirmClearance": {
+      "title": "Grant library clearance?",
+      "body": "{name} will be marked as cleared and can no longer borrow. The clearance letter can be printed afterwards."
+    }
   },
   "violations": {
     "navLabel": "Fines and sanctions",

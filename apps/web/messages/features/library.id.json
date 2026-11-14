@@ -417,7 +417,8 @@
       "close": "Tutup",
       "empty": "Belum ada perpanjangan untuk peminjaman ini.",
       "dueChange": "Jatuh tempo {previous} menjadi {next}"
-    }
+    },
+    "renewBlockedOverdueDays": "Tidak bisa diperpanjang karena sudah terlambat {days} hari"
   },
   "members": {
     "pagePrev": "Sebelumnya",
@@ -562,8 +563,33 @@
     "grantClearance": "Berikan bebas pustaka",
     "cleared": "Anggota diberikan bebas pustaka",
     "printClearanceLetter": "Cetak surat bebas pustaka",
-    "clearanceBlockedByLoan": "Bebas pustaka belum bisa diberikan selama masih ada peminjaman aktif atau denda belum lunas.",
-    "edit": "Ubah keanggotaan"
+    "clearanceBlockedByLoan": "Bebas pustaka bisa diberikan setelah semua buku dikembalikan dan denda dilunasi.",
+    "edit": "Ubah keanggotaan",
+    "loadErrorTitle": "Anggota tidak bisa dimuat",
+    "finesPage": "Denda dan sanksi",
+    "unpaidAlert": "Ada denda belum dibayar sebesar {amount}",
+    "viewFines": "Lihat denda",
+    "tabsLabel": "Bagian anggota",
+    "tabs": {
+      "loans": "Sedang dipinjam",
+      "history": "Riwayat",
+      "fines": "Denda",
+      "reservations": "Pesanan"
+    },
+    "noHistory": "Belum ada riwayat peminjaman",
+    "noFinesTitle": "Tidak ada denda",
+    "noFinesBody": "Semua denda anggota ini sudah lunas.",
+    "finesTotal": "Belum dibayar: {amount}",
+    "noReservations": "Belum ada pesanan buku",
+    "confirmStatus": {
+      "title": "Ubah status keanggotaan?",
+      "body": "Status {name} akan menjadi {status}. Status menentukan apakah anggota boleh meminjam.",
+      "confirm": "Ubah status"
+    },
+    "confirmClearance": {
+      "title": "Berikan bebas pustaka?",
+      "body": "{name} akan ditandai bebas pustaka dan tidak bisa meminjam lagi. Surat bebas pustaka bisa dicetak setelahnya."
+    }
   },
   "violations": {
     "navLabel": "Denda dan sanksi",
