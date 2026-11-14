@@ -33,9 +33,12 @@ describe("MonitorView display", () => {
   it("asks a new device once for the display token", () => {
     localStorage.removeItem("newsekolah.monitor.display-token");
     render(<MonitorView />);
-    expect(screen.getByRole("heading", { name: "gateTitle" })).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "tokenLabel" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "gateTitle" })).toBeInTheDocument();
+    const token = screen.getByRole("textbox", { name: "tokenLabel" });
+    expect(token).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "tokenSubmit" })).toBeDisabled();
+    // Never a GET: a submit before hydration must not put the token in the URL.
+    expect(token.closest("form")).toHaveAttribute("method", "post");
   });
 
   it("leads with the day's counts and lists every class in session", () => {
@@ -62,9 +65,13 @@ describe("MonitorView display", () => {
       },
     };
     render(<MonitorView />);
-    const figures = screen.getAllByRole("definition").map((node) => node.textContent);
+    const figures = screen.getAllByRole("definition");
     // Present first, in roster order, whatever order the API sent.
-    expect(figures).toEqual(["30", "2"]);
+    expect(figures.map((node) => node.textContent)).toEqual(["30", "2"]);
+    // Counts and class names are read from across a room: the kiosk roles.
+    expect(figures[0]).toHaveClass("text-kiosk-display");
+    expect(screen.getByText("X-A")).toHaveClass("text-kiosk-title");
+    expect(screen.getByRole("heading", { level: 2, name: "sessionsTitle" })).toBeInTheDocument();
     const classes = screen.getAllByRole("listitem").map((node) => node.textContent);
     expect(classes[0]).toContain("X-A");
     expect(classes[1]).toContain("X-B");

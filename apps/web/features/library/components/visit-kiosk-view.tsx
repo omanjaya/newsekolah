@@ -83,7 +83,13 @@ export function VisitKioskView(): ReactElement {
   return (
     <div className="flex flex-1 items-center justify-center px-4 py-6 sm:px-8 md:py-10">
       <div className="grid w-full max-w-6xl items-center gap-6 md:gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]">
-        <HeroCard eyebrow={t("eyebrow")} title={t("title")} meta={t("instructions")} titleAs="h1">
+        <HeroCard
+          size="kiosk"
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+          meta={t("instructions")}
+          titleAs="h1"
+        >
           <ol className="mt-4 flex flex-col gap-4">
             {steps.map((step, index) => (
               <li key={step.key} className="flex items-center gap-4">

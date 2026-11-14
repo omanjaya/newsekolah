@@ -171,6 +171,7 @@ export function KioskView(): ReactElement {
       <div className="flex w-full max-w-6xl flex-col gap-6 md:gap-8">
         {active ? (
           <HeroCard
+            size="kiosk"
             eyebrow={t("active.eyebrow")}
             title={t("active.title")}
             meta={
@@ -190,6 +191,7 @@ export function KioskView(): ReactElement {
           />
         ) : (
           <HeroCard
+            size="kiosk"
             eyebrow={t("idle.eyebrow")}
             title={t("idle.title")}
             meta={t("idle.instructions")}
@@ -221,7 +223,7 @@ export function KioskView(): ReactElement {
         <Scanner
           key={active ? "books" : "card"}
           variant="kiosk"
-          className="min-h-0 bg-transparent p-0 sm:p-0 md:p-0"
+          fullScreen={false}
           onScan={active ? handleBookScan : handleCardScan}
           result={result}
           manualLabel={active ? t("active.scanLabel") : t("idle.scanLabel")}

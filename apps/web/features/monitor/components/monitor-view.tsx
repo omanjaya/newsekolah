@@ -6,10 +6,13 @@ import {
   Badge,
   Button,
   Card,
+  CardDescription,
+  CardTitle,
   EmptyState,
   Field,
   IconCircle,
   Input,
+  SectionHeader,
   Skeleton,
   cn,
   type BadgeTone,
@@ -134,11 +137,17 @@ function TokenGate({ onSubmit }: { onSubmit: (token: string) => void }): ReactEl
         <IconCircle tone="green" size="lg">
           <MonitorSmartphone />
         </IconCircle>
+        {/* The gate is the whole screen inside the kiosk frame, so its card holds the h1. */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-title text-fg">{t("gateTitle")}</h1>
-          <p className="text-body-sm text-fg-muted">{t("gateBody")}</p>
+          <CardTitle as="h1" className="text-title">
+            {t("gateTitle")}
+          </CardTitle>
+          <CardDescription>{t("gateBody")}</CardDescription>
         </div>
+        {/* POST, so a submit before the page has hydrated never puts the
+            display token in the address bar as a query string. */}
         <form
+          method="post"
           className="flex flex-col gap-4"
           onSubmit={(event) => {
             event.preventDefault();
@@ -263,7 +272,8 @@ function MonitorDisplay({
                     />
                     {t.has(`codes.${code}`) ? t(`codes.${code}`) : code}
                   </dt>
-                  <dd className="text-display text-fg tabular-nums">{counts[code]}</dd>
+                  {/* Read from across the room: the kiosk display role. */}
+                  <dd className="text-kiosk-display text-fg tabular-nums">{counts[code]}</dd>
                 </Card>
               );
             })}
@@ -277,9 +287,7 @@ function MonitorDisplay({
             />
           ) : (
             <section className="flex flex-col gap-3" aria-labelledby="monitor-sessions-title">
-              <h2 id="monitor-sessions-title" className="text-title text-fg">
-                {t("sessionsTitle")}
-              </h2>
+              <SectionHeader titleId="monitor-sessions-title" title={t("sessionsTitle")} />
               <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {sessions.map((session, index) => (
                   <SessionCard
@@ -326,7 +334,7 @@ function SessionCard({ session }: { session: MonitorSessionCard }): ReactElement
     <li>
       <Card padding="md" className={cn("h-full gap-2", SESSION_EDGE[session.status])}>
         <div className="flex items-start justify-between gap-3">
-          <span className="text-title text-fg">{session.class_name}</span>
+          <span className="text-kiosk-title text-fg">{session.class_name}</span>
           <Badge tone={SESSION_TONE[session.status]} dot>
             {t.has(`sessionStatus.${session.status}`)
               ? t(`sessionStatus.${session.status}`)
