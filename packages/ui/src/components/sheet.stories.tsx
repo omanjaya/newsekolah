@@ -75,9 +75,9 @@ function BillDrawer() {
           </>
         }
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col items-start gap-4">
           <Badge>Belum lunas</Badge>
-          <dl className="divide-y divide-line">
+          <dl className="divide-y divide-line self-stretch">
             <DetailRow label="Nominal" value="Rp350.000" />
             <DetailRow label="Potongan" value="Rp0" />
             <DetailRow label="Jatuh tempo" value="10 November 2026" />

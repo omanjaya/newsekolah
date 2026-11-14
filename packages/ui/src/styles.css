@@ -596,3 +596,33 @@
     min-height: 2.25rem;
   }
 }
+
+/*
+ * A drawer is full height, so a short form would leave its action row
+ * floating in the middle of the panel. From 640px up the body becomes a
+ * column, the form that ends in the row grows to fill it, and the row
+ * takes the slack above itself: the actions sit on the bottom edge, and
+ * still stick there once the form is long enough to scroll. A grid form
+ * keeps its own layout (its rows would stretch apart instead).
+ */
+@media (width >= 40rem) {
+  [data-side="right"] > .dialog-body {
+    display: flex;
+    flex-direction: column;
+  }
+  [data-side="right"]
+    > .dialog-body
+    > :is(form, div):last-child:not(.grid):has(
+      > :is([data-dialog-footer], .border-t.justify-end):last-child
+    ) {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+  }
+  [data-side="right"]
+    > .dialog-body
+    > :is(form, div):last-child:not(.grid)
+    > :is([data-dialog-footer], .border-t.justify-end):last-child {
+    margin-top: auto;
+  }
+}

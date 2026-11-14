@@ -110,6 +110,28 @@ describe("Sheet", () => {
     expect(screen.getByRole("textbox", { name: "Ringkasan sesi" })).toHaveFocus();
   });
 
+  // styles.css pins the action row of a drawer's form to the panel's bottom
+  // edge through this exact shape; the selector here is the CSS one.
+  it("gives a drawer form the shape whose action row styles.css pins to the bottom edge", () => {
+    render(
+      <Sheet open>
+        <SheetContent title="Catatan konseling" side="right">
+          <form aria-label="Catatan" className="flex flex-col gap-4">
+            <textarea aria-label="Ringkasan sesi" />
+            <SheetFooter>
+              <Button type="submit">Simpan</Button>
+            </SheetFooter>
+          </form>
+        </SheetContent>
+      </Sheet>,
+    );
+    const drawer = screen.getByRole("dialog");
+    const row = drawer.querySelector(
+      '[data-side="right"] > .dialog-body > :is(form, div):last-child:not(.grid) > :is([data-dialog-footer], .border-t.justify-end):last-child',
+    );
+    expect(row).toContainElement(screen.getByRole("button", { name: "Simpan" }));
+  });
+
   it("has no accessibility violations", async () => {
     render(
       <Sheet open>

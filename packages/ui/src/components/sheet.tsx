@@ -64,8 +64,10 @@ export interface SheetContentProps extends ComponentPropsWithoutRef<
  * The same layer as `Dialog`'s phone layout (grab handle, title role,
  * scrolling body, sticky footer, safe-area padding), so a sheet and a
  * dialog on a phone are one object. A drawer slides in from the right at
- * the sheet's pace instead. Like `Dialog`, it gives focus back to the
- * element that had it when it opened.
+ * the sheet's pace instead, full height, with a form's action row pinned
+ * to its bottom edge however short the form. Like `Dialog`, it opens on
+ * the first field (or the panel itself on a touch screen), not the close
+ * button, and gives focus back to the element that had it when it opened.
  */
 export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(function SheetContent(
   {
