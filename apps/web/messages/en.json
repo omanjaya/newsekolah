@@ -1249,17 +1249,18 @@
         "navLabel": "Scan classroom entry",
         "eyebrow": "Students",
         "title": "Scan classroom entry",
-        "intro": "Scan the QR your teacher displays at the front of the room to record your attendance for the running session.",
+        "intro": "Point the camera at the QR your teacher shows at the front of the class to record your attendance for the running lesson.",
         "scanLabel": "Classroom entry code",
-        "placeholder": "Paste or type the code under the QR",
+        "placeholder": "The code under the QR",
         "submit": "Submit code",
         "cameraLabel": "Scan with camera",
         "successTitle": "Recorded",
-        "successBody": "You are recorded as present in {teacher}'s class at {time}.",
+        "successBody": "Checked into {teacher}'s class at {time}.",
         "scanAgain": "Scan again",
         "errorTitle": "Scan failed",
         "studentsOnlyTitle": "Students only",
-        "studentsOnlyBody": "Students use this page to scan the classroom-entry QR shown by a teacher. Your account is not a student account."
+        "studentsOnlyBody": "Students use this page to scan the classroom-entry QR shown by a teacher. Your account is not a student account.",
+        "backHome": "Go home"
       },
       "qr": {
         "expiresIn": "Valid for {seconds} more seconds",

@@ -1249,17 +1249,18 @@
         "navLabel": "Pindai masuk kelas",
         "eyebrow": "Kesiswaan",
         "title": "Pindai masuk kelas",
-        "intro": "Pindai QR yang ditampilkan guru di depan kelas untuk mencatat kehadiran Anda pada sesi yang sedang berjalan.",
+        "intro": "Arahkan kamera ke QR yang ditampilkan guru di depan kelas untuk mencatat kehadiran Anda pada pelajaran yang sedang berjalan.",
         "scanLabel": "Kode masuk kelas",
-        "placeholder": "Tempel atau ketik kode di bawah QR",
+        "placeholder": "Kode di bawah QR",
         "submit": "Kirim kode",
         "cameraLabel": "Pindai dengan kamera",
         "successTitle": "Berhasil dicatat",
-        "successBody": "Anda tercatat masuk kelas {teacher} pada {time}.",
+        "successBody": "Tercatat masuk kelas {teacher} pukul {time}.",
         "scanAgain": "Pindai lagi",
         "errorTitle": "Pindai gagal",
         "studentsOnlyTitle": "Khusus siswa",
-        "studentsOnlyBody": "Halaman ini dipakai siswa untuk memindai QR masuk kelas dari guru. Akun Anda bukan akun siswa."
+        "studentsOnlyBody": "Halaman ini dipakai siswa untuk memindai QR masuk kelas dari guru. Akun Anda bukan akun siswa.",
+        "backHome": "Ke beranda"
       },
       "qr": {
         "expiresIn": "Berlaku {seconds} detik lagi",
