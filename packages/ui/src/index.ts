@@ -104,6 +104,7 @@ export {
 export { MonthPicker, type MonthPickerProps } from "./components/month-picker.js";
 export { TimePicker, type TimePickerProps } from "./components/time-picker.js";
 export { DateTimeField, type DateTimeFieldProps } from "./components/date-time-field.js";
+export { FileDropzone, type FileDropzoneProps } from "./components/file-dropzone.js";
 export { NumberInput, type NumberInputProps } from "./components/number-input.js";
 export {
   RadioGroup,
