@@ -177,6 +177,23 @@ describe("Stat", () => {
     expect(screen.getAllByRole("definition")).toHaveLength(3);
   });
 
+  // The hint is smaller than the label, so it must not read heavier: the
+  // caption role's 500 drops to 400, and only the change keeps 600.
+  it("keeps the hint no heavier than the label, the change semibold", () => {
+    render(
+      <Stat
+        value="96%"
+        label="Kehadiran"
+        hint="bulan ini"
+        delta={{ value: "+2%", direction: "up" }}
+      />,
+    );
+    expect(screen.getByText("Kehadiran")).toHaveClass("text-body-sm", "text-fg-muted");
+    const footer = screen.getByText("bulan ini");
+    expect(footer).toHaveClass("text-caption", "font-normal", "text-fg-muted");
+    expect(screen.getByText("+2%")).toHaveClass("font-semibold");
+  });
+
   it("takes `tone` as the name of the icon colour, `category` still honoured", () => {
     const { container } = render(
       <>
