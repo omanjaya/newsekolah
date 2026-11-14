@@ -4,6 +4,7 @@ import * as SelectPrimitive from "@radix-ui/react-select";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { forwardRef, type ReactNode } from "react";
 
+import { useControllableState } from "../hooks/use-controllable-state.js";
 import { cn } from "../utils/cn.js";
 
 import { useFieldControl } from "./field-context.js";
@@ -48,14 +49,27 @@ export interface SelectProps {
 }
 
 /**
+ * Radix keeps the value "" for "nothing chosen", which shows the
+ * placeholder. An option whose own value is "" ("Belum dipilih") travels
+ * under this key inside the dropdown and is handed back as "", so the
+ * field shows that option's label instead of the placeholder.
+ */
+const EMPTY_OPTION_VALUE = "__ui-select-empty-option__";
+
+/**
  * A single-select dropdown for a short, known list. The open list is at
  * least as wide as the field and never taller than the room on screen; it
  * scrolls past 20rem. For a long list or one fetched by search, use
- * `Combobox`.
+ * `Combobox`. An option may have the value "" (an explicit "none"); it is
+ * shown by its own label when chosen.
  */
 export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select(
   {
     options,
+    value: valueProp,
+    defaultValue = "",
+    onValueChange,
+    name,
     placeholder,
     invalid,
     required,
@@ -67,7 +81,6 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
     "aria-labelledby": ariaLabelledBy,
     "aria-describedby": ariaDescribedBy,
     "aria-invalid": ariaInvalid,
-    ...props
   },
   ref,
 ) {
@@ -80,8 +93,21 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
     "aria-describedby": ariaDescribedBy,
     "aria-invalid": ariaInvalid,
   });
+  const [value, setValue] = useControllableState(valueProp, defaultValue, onValueChange);
+  const hasEmptyOption = options.some((option) => option.value === "");
+  const toItemValue = (next: string) => (hasEmptyOption && next === "" ? EMPTY_OPTION_VALUE : next);
   return (
-    <SelectPrimitive.Root {...props} disabled={attributes.disabled} required={required}>
+    <SelectPrimitive.Root
+      value={toItemValue(value)}
+      onValueChange={(next) => {
+        setValue(next === EMPTY_OPTION_VALUE ? "" : next);
+      }}
+      // The native select Radix posts would carry the stand-in key; a
+      // hidden input posts the real "" instead.
+      name={hasEmptyOption ? undefined : name}
+      disabled={attributes.disabled}
+      required={required}
+    >
       <SelectPrimitive.Trigger
         ref={ref}
         id={attributes.id}
@@ -115,6 +141,9 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
           <ChevronDown className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
         </SelectPrimitive.Icon>
       </SelectPrimitive.Trigger>
+      {hasEmptyOption && name !== undefined && (
+        <input type="hidden" name={name} value={value} disabled={attributes.disabled} />
+      )}
       <SelectPrimitive.Portal>
         <SelectPrimitive.Content
           position="popper"
@@ -136,7 +165,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
             {options.map((option) => (
               <SelectItem
                 key={option.value}
-                value={option.value}
+                value={toItemValue(option.value)}
                 disabled={option.disabled}
                 description={option.description}
               >

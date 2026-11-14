@@ -55,6 +55,18 @@ function Gallery() {
       <Select aria-label="Kecil" size="sm" options={CLASSES} defaultValue="c1" />
       <Select aria-label="Tidak valid" options={CLASSES} invalid />
       <Select aria-label="Nonaktif" options={CLASSES} defaultValue="c2" disabled />
+      {/* An explicit "none" option shows its own label, not the placeholder. */}
+      <Select
+        aria-label="Golongan darah"
+        defaultValue=""
+        options={[
+          { value: "", label: "Belum dipilih" },
+          { value: "A", label: "A" },
+          { value: "B", label: "B" },
+          { value: "AB", label: "AB" },
+          { value: "O", label: "O" },
+        ]}
+      />
       <TeacherCombobox />
       <TeacherCombobox loading />
       <TeacherCombobox empty />
