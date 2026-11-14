@@ -6,11 +6,15 @@ import {
   Badge,
   Card,
   CardContent,
+  CardFooter,
   CardHeader,
   CardTitle,
   IconButton,
-  Skeleton,
-  StatTile,
+  List,
+  ListRow,
+  SkeletonCards,
+  Stat,
+  StatGrid,
   StatusBadge,
   cn,
 } from "@newsekolah/ui";
@@ -26,8 +30,8 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { statusToken } from "../../../lib/attendance-status";
-import { tileColumns } from "../../../lib/layout/bento";
 import { useSession } from "../../../lib/session/session-provider";
 import { useSimulation } from "../../../lib/simulation/clock";
 import { todayInZone, useMyCalendarQuery } from "../api";
@@ -51,7 +55,6 @@ const LEGEND_ORDER = ["H", "S", "I", "D", "A", "INCOMPLETE", "MIXED"];
 /** A student's month view: a symmetric bento of month stats, a dot calendar, and a detail card for the selected day. */
 export function AttendanceCalendar(): ReactElement {
   useSimulation();
-  const t = useTranslations("app.attendance");
   const tCal = useTranslations("app.attendance.calendar");
   const tMine = useTranslations("app.attendance.mine");
   const tDays = useTranslations("app.common.weekdaysShort");
@@ -124,102 +127,96 @@ export function AttendanceCalendar(): ReactElement {
   const selectedSessions = selectedIsFuture ? [] : (selectedDay?.sessions ?? []);
   const selectedToken = selectedCode !== "NONE" ? statusToken(selectedCode) : undefined;
 
-  const tileGrid = tileColumns(4);
-  const tiles = [
-    {
-      key: "present",
-      icon: CalendarCheck,
-      tone: "green" as const,
-      value: stats.presentRate !== undefined ? `${stats.presentRate}%` : "-",
-      label: tMine("statPresentLabel"),
-    },
-    {
-      key: "sick",
-      icon: Thermometer,
-      tone: "amber" as const,
-      value: String(stats.counts.S ?? 0),
-      label: tMine("statSickLabel"),
-    },
-    {
-      key: "excused",
-      icon: FileText,
-      tone: "blue" as const,
-      value: String(stats.counts.I ?? 0),
-      label: tMine("statExcusedLabel"),
-    },
-    {
-      key: "absent",
-      icon: UserX,
-      tone: "red" as const,
-      value: String(stats.counts.A ?? 0),
-      label: tMine("statAbsentLabel"),
-    },
-  ];
+  // Codes without a status token (incomplete, mixed) read as a calm neutral
+  // badge everywhere: dot, legend and detail agree.
+  const selectedBadge = selectedToken ? (
+    <StatusBadge status={selectedToken} label={tCal(`codes.${selectedCode}`)} />
+  ) : (
+    <Badge tone="neutral">{tCal(`codes.${selectedCode}`)}</Badge>
+  );
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="mb-1 text-[13px] font-medium text-fg-muted">{t("eyebrow")}</p>
-          <h1 className="font-heading text-[24px] font-bold tracking-tight text-fg">
-            {tMine("title")}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
+    <AppPage
+      title={tMine("title")}
+      navParams={["date"]}
+      actions={
+        <div className="flex items-center gap-1.5">
           <IconButton
             icon={<ChevronLeft />}
-            variant="outline"
-            className="rounded-full"
+            variant="surface"
             aria-label={tCal("prevMonth")}
             onClick={() => {
               shift(-1);
             }}
           />
-          <span className="rounded-full border border-border bg-surface px-4 py-1.5 text-[13px] font-medium text-fg">
+          <span className="min-w-36 text-center text-label text-fg" aria-live="polite">
             {monthLabel}
           </span>
           <IconButton
             icon={<ChevronRight />}
-            variant="outline"
-            className="rounded-full"
+            variant="surface"
             aria-label={tCal("nextMonth")}
             onClick={() => {
               shift(1);
             }}
           />
         </div>
-      </div>
+      }
+    >
+      <StatGrid
+        variant="strip"
+        aria-label={tMine("statsLabel")}
+        data-testid="attendance-mine-tiles"
+      >
+        <Stat
+          icon={<CalendarCheck />}
+          tone="green"
+          value={stats.presentRate !== undefined ? `${String(stats.presentRate)}%` : "-"}
+          label={tMine("statPresentLabel")}
+        />
+        <Stat
+          icon={<Thermometer />}
+          tone="amber"
+          value={stats.counts.S ?? 0}
+          label={tMine("statSickLabel")}
+        />
+        <Stat
+          icon={<FileText />}
+          tone="blue"
+          value={stats.counts.I ?? 0}
+          label={tMine("statExcusedLabel")}
+        />
+        <Stat
+          icon={<UserX />}
+          tone="red"
+          value={stats.counts.A ?? 0}
+          label={tMine("statAbsentLabel")}
+        />
+      </StatGrid>
 
-      <div className={tileGrid.container} data-testid="attendance-mine-tiles">
-        {tiles.map((tile, index) => (
-          <StatTile
-            key={tile.key}
-            className={cn("h-full", index === tiles.length - 1 && tileGrid.lastTileClassName)}
-            icon={tile.icon}
-            tone={tile.tone}
-            value={tile.value}
-            label={tile.label}
-          />
-        ))}
-      </div>
-
-      <div className="grid items-stretch gap-4 lg:grid-cols-[1.6fr_1fr]">
-        <Card className="flex flex-col">
+      <div className="grid items-start gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <Card>
           <CardHeader>
-            <CardTitle>{tMine("calendarTitle")}</CardTitle>
+            <CardTitle as="h2">{tMine("calendarTitle")}</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 pt-0">
+          <CardContent className="pt-0">
             {isLoading ? (
-              <Skeleton className="h-72 w-full" aria-busy="true" />
+              <SkeletonCards count={7} className="grid-cols-7 sm:grid-cols-7" />
             ) : (
-              <div className="grid grid-cols-7 gap-1">
+              <div className="grid grid-cols-7 gap-y-1">
                 {[1, 2, 3, 4, 5, 6, 7].map((d) => (
-                  <div key={d} className="py-1 text-center text-[12px] font-medium text-fg-muted">
+                  <div
+                    key={d}
+                    className={cn(
+                      "py-1 text-center text-caption",
+                      d >= 6 ? "text-fg-muted/70" : "text-fg-muted",
+                    )}
+                  >
                     {tDays(String(d))}
                   </div>
                 ))}
                 {cells.map((date, index) => {
-                  if (!date) return <div key={`empty-${index}`} />;
+                  if (!date) return <div key={`empty-${String(index)}`} />;
                   const day = byDate.get(date);
                   const isToday = date === today;
                   const isSelected = date === effectiveSelected;
@@ -246,115 +243,104 @@ export function AttendanceCalendar(): ReactElement {
                         status: statusLabel,
                       })}
                       className={cn(
-                        "flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-xs border text-[13px]",
-                        "border-border bg-surface transition-colors hover:bg-bg",
-                        "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2",
-                        isToday && "border-accent",
-                        isSelected && "bg-accent-soft",
-                        muted && "text-fg-muted",
+                        "mx-auto flex size-11 flex-col items-center justify-center gap-0.5 rounded-full text-body tabular-nums",
+                        "transition-colors hover:bg-state-hover",
+                        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
+                        isToday && "ring-2 ring-accent",
+                        isSelected && "bg-accent-soft text-accent-soft-fg hover:bg-accent-soft",
+                        muted && !isSelected && "text-fg-muted",
                       )}
                     >
-                      <span className={muted ? "text-fg-muted" : "text-fg"}>
-                        {Number(date.slice(-2))}
-                      </span>
-                      {dotClass && (
-                        <span
-                          aria-hidden="true"
-                          className={cn("size-1.5 shrink-0 rounded-full", dotClass)}
-                        />
-                      )}
+                      <span>{Number(date.slice(-2))}</span>
+                      {/* An empty slot keeps every number on the same line. */}
+                      <span
+                        aria-hidden="true"
+                        className={cn("size-1.5 shrink-0", dotClass && "rounded-full", dotClass)}
+                      />
                     </button>
                   );
                 })}
               </div>
             )}
           </CardContent>
+          {legendEntries.length > 0 && (
+            <CardFooter className="border-t border-line pt-4">
+              <dl
+                className="flex flex-wrap gap-x-4 gap-y-2 text-body-sm"
+                aria-label={tMine("legendLabel")}
+              >
+                {legendEntries.map(([code, count]) => (
+                  <div key={code} className="flex items-center gap-1.5">
+                    <dt className="flex items-center gap-1.5 text-fg-muted">
+                      <span
+                        aria-hidden="true"
+                        className={cn("size-2 shrink-0 rounded-full", STATUS_DOT_CLASS[code])}
+                      />
+                      {tCal(`codes.${code}`)}
+                    </dt>
+                    <dd className="text-label text-fg">{count}</dd>
+                  </div>
+                ))}
+              </dl>
+            </CardFooter>
+          )}
         </Card>
 
-        <Card className="flex flex-col">
-          <CardHeader>
-            <CardTitle>
+        <Card>
+          <CardHeader action={effectiveSelected ? selectedBadge : undefined}>
+            <CardTitle as="h2">
               {effectiveSelected
                 ? formatDate(effectiveSelected, { locale, timeZone })
                 : tMine("detailEmptyTitle")}
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-1 flex-col gap-3 pt-0">
-            {!effectiveSelected ? (
-              <p className="text-[13px] text-fg-muted">{tMine("detailEmptyBody")}</p>
-            ) : (
-              <>
-                {selectedToken ? (
-                  <StatusBadge status={selectedToken} label={tCal(`codes.${selectedCode}`)} />
-                ) : (
-                  <Badge variant="neutral">{tCal(`codes.${selectedCode}`)}</Badge>
-                )}
-                {selectedSessions.length > 0 ? (
-                  <ul className="flex flex-col divide-y divide-border">
-                    {selectedSessions.map((session) => {
-                      const sessionToken = session.status_code
-                        ? statusToken(session.status_code)
-                        : undefined;
-                      return (
-                        <li
-                          key={session.schedule_id}
-                          className="flex flex-col gap-0.5 py-2 text-[13px]"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-medium text-fg">
-                              {session.subject_name ?? tCal("unknownSubject")}
-                            </span>
-                            {sessionToken ? (
-                              <StatusBadge
-                                status={sessionToken}
-                                label={tCal(`codes.${session.status_code}`)}
-                              />
-                            ) : session.status_code ? (
-                              <span className="text-fg-muted">
-                                {tCal(`codes.${session.status_code}`)}
-                              </span>
-                            ) : null}
-                          </div>
-                          <span className="text-fg-muted">
-                            {[session.period_label, session.teacher_name]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </span>
-                          {session.note && <span className="text-fg-muted">{session.note}</span>}
-                          {session.source && session.source !== "teacher" && (
-                            <span className="text-fg-muted">
-                              {tCal(`sessionSource.${session.source}`)}
-                            </span>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  <p className="text-[13px] text-fg-muted">
-                    {tMine("daySentence", { status: tCal(`codes.${selectedCode}`) })}
-                  </p>
-                )}
-              </>
-            )}
-          </CardContent>
+          {!effectiveSelected ? (
+            <CardContent className="pt-0">
+              <p className="text-body-sm text-fg-muted">{tMine("detailEmptyBody")}</p>
+            </CardContent>
+          ) : selectedSessions.length > 0 ? (
+            <List>
+              {selectedSessions.map((session) => {
+                const sessionToken = session.status_code
+                  ? statusToken(session.status_code)
+                  : undefined;
+                const meta = [
+                  [session.period_label, session.teacher_name].filter(Boolean).join(" · "),
+                  session.note,
+                  session.source && session.source !== "teacher"
+                    ? tCal(`sessionSource.${session.source}`)
+                    : undefined,
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
+                return (
+                  <ListRow
+                    key={session.schedule_id}
+                    title={session.subject_name ?? tCal("unknownSubject")}
+                    meta={meta}
+                    trailing={
+                      sessionToken ? (
+                        <StatusBadge
+                          status={sessionToken}
+                          label={tCal(`codes.${session.status_code ?? ""}`)}
+                        />
+                      ) : session.status_code ? (
+                        <Badge tone="neutral">{tCal(`codes.${session.status_code}`)}</Badge>
+                      ) : undefined
+                    }
+                  />
+                );
+              })}
+            </List>
+          ) : (
+            <CardContent className="pt-0">
+              <p className="text-body-sm text-fg-muted">
+                {tMine("daySentence", { status: tCal(`codes.${selectedCode}`) })}
+              </p>
+            </CardContent>
+          )}
         </Card>
       </div>
-
-      <dl className="flex flex-wrap gap-4 text-[13px]" aria-label={tMine("legendLabel")}>
-        {legendEntries.map(([code, count]) => (
-          <div key={code} className="flex items-center gap-1.5">
-            <dt className="flex items-center gap-1.5 text-fg-muted">
-              <span
-                aria-hidden="true"
-                className={cn("size-2.5 shrink-0 rounded-full", STATUS_DOT_CLASS[code])}
-              />
-              {tCal(`codes.${code}`)}
-            </dt>
-            <dd className="font-medium text-fg">{count}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
+    </AppPage>
   );
 }

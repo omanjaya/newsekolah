@@ -41,9 +41,5 @@ export function StudentYearRecap({
         })
       : t("recapAllClear");
 
-  return (
-    <span className="text-[12px] text-fg-muted" title={text}>
-      {text}
-    </span>
-  );
+  return <span title={text}>{text}</span>;
 }

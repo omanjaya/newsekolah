@@ -975,9 +975,9 @@
       "pickTeacherBody": "Anda tidak memiliki jadwal mengajar. Pilih guru di atas untuk mengisi presensi kelasnya, atau buka laporan dan monitor presensi lewat tombol di bagian atas halaman.",
       "openReports": "Buka laporan presensi",
       "myReportLink": "Laporan presensi saya",
-      "openMonitor": "Buka monitor presensi",
+      "openMonitor": "Monitor kehadiran",
       "staffHubTitle": "Presensi kelas diisi oleh guru pengajar",
-      "staffHubBody": "Akun Anda tidak memiliki kehadiran pribadi untuk ditampilkan di sini. Lihat ringkasan kehadiran sekolah lewat tautan di bawah ini bila tersedia untuk peran Anda.",
+      "staffHubBody": "Presensi kelas diisi oleh guru pengajar; dari sini Anda memantau hasilnya.",
       "notSchoolDayTitle": "Bukan hari sekolah",
       "notSchoolDayBody": "Tanggal ini bukan hari sekolah menurut kalender akademik.",
       "noScheduleTitle": "Tidak ada jadwal mengajar",
@@ -1034,7 +1034,7 @@
         "back": "Presensi",
         "backToList": "Kembali ke daftar presensi",
         "correctionMode": "Mode koreksi",
-        "searchPlaceholder": "Cari nama siswa",
+        "searchPlaceholder": "Cari siswa",
         "filterByStatus": "Filter berdasarkan status",
         "blocked": "Terkunci",
         "noMatch": "Tidak ada siswa yang cocok.",
@@ -1046,7 +1046,7 @@
         "menuBack": "Kembali",
         "rowChanged": "Baris ini berubah sejak tersimpan terakhir",
         "markAllPresent": "Tandai semua hadir",
-        "markAllPresentHint": "Status Sakit, Izin, dan Dispensasi tidak ditimpa.",
+        "markAllPresentHint": "Sakit, izin, dan dispensasi tidak diubah.",
         "resetChanges": "Kosongkan perubahan",
         "previousStatus": "Sebelumnya: {status}",
         "source": {
@@ -1073,13 +1073,33 @@
           "menuLabel": "Catat pelanggaran",
           "title": "Pelanggaran",
           "empty": "Tidak ada jenis pelanggaran."
-        }
+        },
+        "tabsLabel": "Bagian sesi",
+        "markedAllPresent": "Semua siswa ditandai hadir",
+        "rosterLabel": "Daftar siswa"
       },
       "editor": {
         "timeRange": "Jam {start}-{end}",
         "saveSummary": "{total} siswa · {changed} diubah dari hadir",
         "recapSummary": "Tahun ini: {summary}",
         "recapAllClear": "Tahun ini: tidak ada catatan."
+      },
+      "daySummary": "{total, plural, other {# sesi}} · {saved} tersimpan · {pending} belum diisi",
+      "otherSessions": "Sesi lainnya",
+      "daySessions": "Sesi mengajar",
+      "heroOngoing": "Pelajaran sekarang",
+      "heroNext": "Pelajaran berikutnya",
+      "viewSaved": "Lihat presensi",
+      "pickTeacherHint": "Untuk mengisi atau mengoreksi presensi sebuah kelas, pilih gurunya di atas.",
+      "schoolToday": {
+        "eyebrow": "Presensi sekolah hari ini",
+        "title": "Pantau presensi sekolah",
+        "body": "Lihat rekap per kelas di laporan, atau kelas yang sedang belajar di monitor.",
+        "progressTitle": "{submitted} dari {total} kelas sudah mengisi",
+        "progressBody": "Kelas yang sedang belajar dan sudah menyimpan presensinya.",
+        "noneRunning": "Belum ada kelas yang sedang belajar saat ini.",
+        "openReports": "Buka laporan presensi",
+        "openMonitor": "Buka monitor"
       }
     },
     "homeroom": {

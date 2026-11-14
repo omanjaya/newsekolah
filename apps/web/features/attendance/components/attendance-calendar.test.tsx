@@ -15,6 +15,8 @@ vi.mock("next-intl", () => ({
     values ? `${key} ${JSON.stringify(values)}` : key,
 }));
 
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+
 vi.mock("@newsekolah/i18n", () => ({
   formatDate: (value: string) => value,
 }));
@@ -84,16 +86,17 @@ describe("AttendanceCalendar", () => {
     calendarData = [day("2026-09-20", "INCOMPLETE"), day("2026-09-28", "INCOMPLETE")];
     render(<AttendanceCalendar />);
 
-    const counts = Array.from(document.querySelectorAll("dd")).map((el) => el.textContent);
+    const legend = screen.getByLabelText("legendLabel");
+    const counts = Array.from(legend.querySelectorAll("dd")).map((el) => el.textContent);
     expect(counts).toEqual(["1"]);
   });
 
-  it("gives today a distinct border without forcing a status", () => {
+  it("rings today without forcing a status", () => {
     calendarData = [];
     render(<AttendanceCalendar />);
 
     const todayCell = dayButton("25");
-    expect(todayCell.className).toContain("border-accent");
+    expect(todayCell.className).toContain("ring-accent");
   });
 
   it("defaults the detail card to today and updates it when another day is selected", () => {

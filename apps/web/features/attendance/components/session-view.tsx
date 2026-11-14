@@ -1,8 +1,9 @@
 "use client";
 
-import { Skeleton } from "@newsekolah/ui";
+import { SkeletonList } from "@newsekolah/ui";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useSessionQuery } from "../api";
 
@@ -31,18 +32,21 @@ export function SessionView({
 }): ReactElement {
   const { data, isLoading, error, isRefetchError, refetch } = useSessionQuery(sessionId);
 
+  // Loading and a failed load keep the page frame and its way back.
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4 p-6" aria-busy="true">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-96 w-full" />
-      </div>
+      <AppPage>
+        <SkeletonList rows={8} />
+      </AppPage>
     );
   }
-  if (error && !isRefetchError) {
-    return <QueryError retry={refetch} className="m-6" />;
+  if ((error && !isRefetchError) || !data) {
+    return (
+      <AppPage>
+        <QueryError retry={refetch} error={error} />
+      </AppPage>
+    );
   }
-  if (!data) return <QueryError retry={refetch} className="m-6" />;
   return (
     <SessionEditor
       key={data.submitted_at ?? "open"}

@@ -8,28 +8,23 @@ import { SessionRosterHeader } from "./session-roster-header";
 
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
-  useTranslations:
-    (namespace: string) => (key: string, params?: Record<string, string | number>) => {
-      if (namespace === "app.attendance.editor" && key === "timeRange") {
-        return `Jam ${params?.start}-${params?.end}`;
-      }
-      const table: Record<string, string> = {
-        backToList: "Kembali ke daftar presensi",
-        back: "Presensi",
-        eyebrow: `Pertemuan ke-${params?.meeting}`,
-        correctionMode: "Mode koreksi",
-        markAllPresent: "Tandai semua hadir",
-        resetChanges: "Kosongkan perubahan",
-        markAllPresentHint: "Status Sakit, Izin, dan Dispensasi tidak ditimpa.",
-        title: "Presensi",
-      };
-      return table[key] ?? key;
-    },
+  useFormatter: () => ({ dateTime: () => "Jum, 25 Sep" }),
+  useTranslations: () => (key: string, params?: Record<string, string | number>) => {
+    const table: Record<string, string> = {
+      backToList: "Kembali ke daftar presensi",
+      back: "Presensi",
+      eyebrow: `Pertemuan ke-${params?.meeting}`,
+      correctionMode: "Mode koreksi",
+      markAllPresent: "Tandai semua hadir",
+      resetChanges: "Kosongkan perubahan",
+      markAllPresentHint: "Status Sakit, Izin, dan Dispensasi tidak ditimpa.",
+      title: "Presensi",
+    };
+    return table[key] ?? key;
+  },
 }));
 
-vi.mock("@newsekolah/i18n", () => ({
-  formatDate: () => "25 September 2026",
-}));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 
 vi.mock("../../reference/api", () => ({
   useAllPeriodsQuery: () => ({
@@ -60,7 +55,7 @@ function session(overrides: Partial<SessionDetail> = {}): SessionDetail {
 }
 
 describe("SessionRosterHeader", () => {
-  it("titles the page 'Subject · Class' and shows the date and time range", () => {
+  it("titles the page 'Subject · Class' and puts the meeting, date and time on one line", () => {
     render(
       <SessionRosterHeader
         session={session()}
@@ -74,14 +69,28 @@ describe("SessionRosterHeader", () => {
       />,
     );
     expect(screen.getByRole("heading", { name: "Matematika · X IPA 1" })).toBeInTheDocument();
-    expect(screen.getByText(/25 September 2026/)).toBeInTheDocument();
-    expect(screen.getByText(/Jam 07:00-08:30/)).toBeInTheDocument();
-    expect(
-      screen.getByText("Status Sakit, Izin, dan Dispensasi tidak ditimpa."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Pertemuan ke-4 · Jum, 25 Sep · 07.00 – 08.30")).toBeInTheDocument();
+    // One way back: the template's breadcrumb, not a second back button.
+    expect(screen.queryByText("Kembali ke daftar presensi")).not.toBeInTheDocument();
   });
 
-  it("triggers mark-all-present and reset from the header's pill buttons", async () => {
+  it("flags a correction in the meta line", () => {
+    render(
+      <SessionRosterHeader
+        session={session()}
+        className="X IPA 1"
+        subjectName="Matematika"
+        isCorrection={true}
+        onMarkAllPresent={() => undefined}
+        onResetChanges={() => undefined}
+        canReset={false}
+        disabled={false}
+      />,
+    );
+    expect(screen.getByText("Mode koreksi")).toBeInTheDocument();
+  });
+
+  it("triggers mark-all-present and reset from the header's secondary actions", async () => {
     const onMarkAllPresent = vi.fn();
     const onResetChanges = vi.fn();
     render(

@@ -1,0 +1,70 @@
+"use client";
+
+import { Button, DatePicker, IconButton } from "@newsekolah/ui";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { ReactElement } from "react";
+
+/** "YYYY-MM-DD" shifted by `delta` days, staying in UTC so DST never skips a day. */
+export function shiftDate(date: string, delta: number): string {
+  const [y, m, d] = date.split("-").map(Number) as [number, number, number];
+  const next = new Date(Date.UTC(y, m - 1, d + delta));
+  return `${String(next.getUTCFullYear())}-${String(next.getUTCMonth() + 1).padStart(2, "0")}-${String(next.getUTCDate()).padStart(2, "0")}`;
+}
+
+export interface DayStepperProps {
+  value: string;
+  onChange: (date: string) => void;
+  /** The school's today, which the picker marks and "Hari ini" returns to. */
+  today: string;
+  labels: { previous: string; next: string; today: string; date: string };
+}
+
+/**
+ * One day at a time: previous, the date (a picker that opens the month),
+ * next, and a way back to today once the reader has moved off it. Shared by
+ * the attendance day list and the homeroom summary.
+ */
+export function DayStepper({ value, onChange, today, labels }: DayStepperProps): ReactElement {
+  return (
+    <div className="flex items-center gap-1.5">
+      <IconButton
+        icon={<ChevronLeft />}
+        aria-label={labels.previous}
+        variant="surface"
+        onClick={() => {
+          onChange(shiftDate(value, -1));
+        }}
+      />
+      <DatePicker
+        value={value}
+        onChange={(next) => {
+          if (next) onChange(next);
+        }}
+        today={today}
+        clearable={false}
+        formatOptions={{ weekday: "short", day: "numeric", month: "short" }}
+        aria-label={labels.date}
+        className="w-40"
+      />
+      <IconButton
+        icon={<ChevronRight />}
+        aria-label={labels.next}
+        variant="surface"
+        onClick={() => {
+          onChange(shiftDate(value, 1));
+        }}
+      />
+      {value !== today && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            onChange(today);
+          }}
+        >
+          {labels.today}
+        </Button>
+      )}
+    </div>
+  );
+}
