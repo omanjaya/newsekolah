@@ -78,10 +78,13 @@
       "subtitle": "Sign in to your school account to continue.",
       "panelHeadline": "One place for the school’s daily operations.",
       "panelTagline": "Attendance, leave, grades, and administration in one tidy, fast system.",
-      "panelFootnote": "School Information System",
+      "panelFootnote": "School information system",
       "featureAttendance": "Fast daily attendance",
       "featureGrades": "Grades and report cards in one place",
-      "featureLibrary": "Library and circulation"
+      "featureLibrary": "Library and circulation",
+      "welcomeTitle": "Welcome",
+      "welcomeBody": "Sign in with the account your school gave you.",
+      "help": "No account yet, or forgot your username? Ask your school's admin."
     },
     "changePassword": {
       "title": "Change password",
@@ -89,7 +92,8 @@
       "newLabel": "New password",
       "confirmLabel": "Confirm new password",
       "submit": "Change password",
-      "success": "Password changed, other sessions were ended"
+      "success": "Password changed, other sessions were ended",
+      "newHint": "At least 8 characters."
     },
     "sessions": {
       "title": "Active sessions",

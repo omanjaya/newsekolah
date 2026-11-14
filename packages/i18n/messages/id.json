@@ -78,10 +78,13 @@
       "subtitle": "Masuk ke akun sekolah Anda untuk melanjutkan.",
       "panelHeadline": "Satu tempat untuk operasional harian sekolah.",
       "panelTagline": "Presensi, izin, nilai, dan administrasi dalam satu sistem yang rapi dan cepat.",
-      "panelFootnote": "Sistem Informasi Sekolah",
+      "panelFootnote": "Sistem informasi sekolah",
       "featureAttendance": "Presensi harian yang cepat",
       "featureGrades": "Nilai dan rapor terpusat",
-      "featureLibrary": "Perpustakaan dan sirkulasi"
+      "featureLibrary": "Perpustakaan dan sirkulasi",
+      "welcomeTitle": "Selamat datang",
+      "welcomeBody": "Masuk dengan akun yang diberikan sekolah.",
+      "help": "Belum punya akun atau lupa nama pengguna? Hubungi admin sekolah."
     },
     "changePassword": {
       "title": "Ubah kata sandi",
@@ -89,7 +92,8 @@
       "newLabel": "Kata sandi baru",
       "confirmLabel": "Konfirmasi kata sandi baru",
       "submit": "Ubah kata sandi",
-      "success": "Kata sandi berhasil diubah, sesi lain diakhiri"
+      "success": "Kata sandi berhasil diubah, sesi lain diakhiri",
+      "newHint": "Minimal 8 karakter."
     },
     "sessions": {
       "title": "Sesi aktif",

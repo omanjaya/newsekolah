@@ -269,7 +269,9 @@
     "changePassword": {
       "forcedTitle": "Change your password to continue",
       "forcedBody": "This password was set by an admin and needs to be changed before you can use the app.",
-      "successRedirect": "Password changed, redirecting to the home page"
+      "successRedirect": "Password changed, redirecting to the home page",
+      "signedInAs": "Signed in as",
+      "notYou": "Not you?"
     },
     "dashboard": {
       "title": "Home",
@@ -499,28 +501,33 @@
       }
     },
     "forbidden": {
-      "title": "Access denied",
-      "body": "This account does not have permission to open this page. Contact the school admin if this access should be available.",
-      "backHome": "Back to home"
+      "title": "You have no access to this page",
+      "body": "Ask the school's admin for access if you need this page.",
+      "backHome": "Back to home",
+      "back": "Previous page"
     },
     "moduleUnavailable": {
-      "title": "Module not available",
-      "body": "This feature is not enabled for your school. Contact the school admin if it should be available.",
-      "backHome": "Back to home"
+      "title": "This feature is not turned on",
+      "body": "Your school has not turned this feature on, so ask the school's admin if you need it.",
+      "backHome": "Back to home",
+      "back": "Previous page"
     },
     "notFound": {
       "title": "Page not found",
-      "body": "The address you requested does not exist or has moved.",
-      "backHome": "Back to home"
+      "body": "The address may be mistyped, or the page has moved.",
+      "backHome": "Back to home",
+      "signIn": "Go to sign in",
+      "back": "Previous page"
     },
     "error": {
-      "title": "Something went wrong",
-      "body": "This page failed to load. Try reloading, or contact support if it keeps happening.",
-      "digestLabel": "Code: {digest}"
+      "title": "This page failed to load",
+      "body": "Reload the page, and if it still fails, give the school's admin the code below.",
+      "digestLabel": "Code: {digest}",
+      "backHome": "Back to home"
     },
     "offlinePage": {
       "title": "No connection",
-      "body": "This page needs an internet connection and has not been saved for offline use.",
+      "body": "Connect this device to the internet, then try again.",
       "retry": "Try again"
     },
     "notifications": {
@@ -726,6 +733,13 @@
         "searchPlaceholder": "Search by name or ID number",
         "empty": "No match",
         "loading": "Loading..."
+      },
+      "publicSite": {
+        "navLabel": "School public pages",
+        "catalogue": "Catalogue",
+        "signIn": "Sign in",
+        "toDashboard": "Go to home",
+        "copyright": "© {year} {school}"
       }
     },
     "schedule": {
@@ -1284,10 +1298,10 @@
     "verify": {
       "title": "Document verification",
       "notFoundTitle": "Unknown code",
-      "notFoundBody": "No document matches this code, or the code is wrong.",
-      "validTitle": "Genuine document issued by the school",
+      "notFoundBody": "Check the code printed on the document, or ask the school directly.",
+      "validTitle": "Genuine document",
       "revokedTitle": "This document has been revoked",
-      "number": "Number",
+      "number": "Document number",
       "kind": "Kind",
       "kinds": {
         "leave_letter": "Leave letter",
@@ -1296,7 +1310,14 @@
       "issuedAt": "Issued",
       "student": "Student",
       "validity": "Valid",
-      "footer": "This page shows only the minimum needed to confirm the document is genuine."
+      "footer": "This page shows only the minimum needed to confirm the document is genuine.",
+      "validBody": "This document was issued by {school} and is on record as valid.",
+      "revokedBody": "{school} has revoked this document, so it is no longer valid.",
+      "code": "Verification code",
+      "checkedAt": "Checked {time}",
+      "errorTitle": "The check could not finish",
+      "errorBody": "Check the internet connection, then try again.",
+      "retry": "Try again"
     },
     "school": {
       "users": {

@@ -269,7 +269,9 @@
     "changePassword": {
       "forcedTitle": "Ubah kata sandi sebelum melanjutkan",
       "forcedBody": "Kata sandi ini dibuat oleh admin dan perlu diganti sebelum mengakses aplikasi.",
-      "successRedirect": "Kata sandi berhasil diubah, mengalihkan ke beranda"
+      "successRedirect": "Kata sandi berhasil diubah, mengalihkan ke beranda",
+      "signedInAs": "Masuk sebagai",
+      "notYou": "Bukan Anda?"
     },
     "dashboard": {
       "title": "Beranda",
@@ -499,28 +501,33 @@
       }
     },
     "forbidden": {
-      "title": "Tidak memiliki akses",
-      "body": "Akun ini tidak memiliki izin untuk membuka halaman ini. Hubungi admin sekolah bila akses ini seharusnya tersedia.",
-      "backHome": "Kembali ke beranda"
+      "title": "Tidak ada akses ke halaman ini",
+      "body": "Minta admin sekolah membuka aksesnya bila Anda memerlukan halaman ini.",
+      "backHome": "Kembali ke beranda",
+      "back": "Halaman sebelumnya"
     },
     "moduleUnavailable": {
-      "title": "Modul tidak tersedia",
-      "body": "Fitur ini tidak diaktifkan untuk sekolah Anda. Hubungi admin sekolah bila fitur ini seharusnya tersedia.",
-      "backHome": "Kembali ke beranda"
+      "title": "Fitur ini belum diaktifkan",
+      "body": "Sekolah Anda belum mengaktifkan fitur ini, jadi hubungi admin sekolah bila Anda memerlukannya.",
+      "backHome": "Kembali ke beranda",
+      "back": "Halaman sebelumnya"
     },
     "notFound": {
       "title": "Halaman tidak ditemukan",
-      "body": "Alamat yang dituju tidak ada atau sudah dipindahkan.",
-      "backHome": "Kembali ke beranda"
+      "body": "Alamatnya mungkin salah ketik, atau halamannya sudah dipindahkan.",
+      "backHome": "Kembali ke beranda",
+      "signIn": "Ke halaman masuk",
+      "back": "Halaman sebelumnya"
     },
     "error": {
-      "title": "Terjadi kesalahan",
-      "body": "Halaman ini gagal dimuat. Coba muat ulang, atau hubungi dukungan bila terus terjadi.",
-      "digestLabel": "Kode: {digest}"
+      "title": "Halaman gagal dimuat",
+      "body": "Muat ulang halaman ini, dan bila tetap gagal, beri tahu admin sekolah kode di bawah.",
+      "digestLabel": "Kode: {digest}",
+      "backHome": "Kembali ke beranda"
     },
     "offlinePage": {
       "title": "Tidak ada koneksi",
-      "body": "Halaman ini butuh koneksi internet dan belum tersimpan untuk dibuka tanpa koneksi.",
+      "body": "Sambungkan perangkat ke internet, lalu coba lagi.",
       "retry": "Coba lagi"
     },
     "notifications": {
@@ -726,6 +733,13 @@
         "searchPlaceholder": "Cari nama atau nomor induk",
         "empty": "Tidak ada yang cocok",
         "loading": "Memuat..."
+      },
+      "publicSite": {
+        "navLabel": "Halaman publik sekolah",
+        "catalogue": "Katalog",
+        "signIn": "Masuk",
+        "toDashboard": "Ke beranda",
+        "copyright": "© {year} {school}"
       }
     },
     "schedule": {
@@ -1284,10 +1298,10 @@
     "verify": {
       "title": "Verifikasi dokumen",
       "notFoundTitle": "Kode tidak dikenal",
-      "notFoundBody": "Dokumen dengan kode ini tidak ditemukan atau kodenya salah.",
-      "validTitle": "Dokumen asli diterbitkan sekolah",
-      "revokedTitle": "Dokumen telah dicabut",
-      "number": "Nomor",
+      "notFoundBody": "Periksa kembali kode yang tertera pada dokumen, atau tanyakan langsung ke sekolah.",
+      "validTitle": "Dokumen asli",
+      "revokedTitle": "Dokumen sudah dicabut",
+      "number": "Nomor dokumen",
       "kind": "Jenis",
       "kinds": {
         "leave_letter": "Surat izin",
@@ -1296,7 +1310,14 @@
       "issuedAt": "Diterbitkan",
       "student": "Siswa",
       "validity": "Berlaku",
-      "footer": "Halaman ini hanya menampilkan data minimal untuk memastikan keaslian dokumen."
+      "footer": "Halaman ini hanya menampilkan data minimal untuk memastikan keaslian dokumen.",
+      "validBody": "Dokumen ini diterbitkan oleh {school} dan tercatat sah.",
+      "revokedBody": "{school} telah mencabut dokumen ini, jadi dokumen ini tidak berlaku lagi.",
+      "code": "Kode verifikasi",
+      "checkedAt": "Diperiksa {time}",
+      "errorTitle": "Pemeriksaan belum selesai",
+      "errorBody": "Periksa koneksi internet, lalu coba lagi.",
+      "retry": "Coba lagi"
     },
     "school": {
       "users": {

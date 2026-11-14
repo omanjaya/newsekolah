@@ -1241,13 +1241,13 @@
       "availability": "Ketersediaan"
     },
     "available": "Tersedia",
-    "unavailable": "Sedang dipinjam semua",
-    "emptyTitle": "Tidak ditemukan",
-    "emptyBody": "Coba kata kunci lain.",
-    "backToSearch": "Kembali ke pencarian",
+    "unavailable": "Dipinjam",
+    "emptyTitle": "Judul tidak ditemukan",
+    "emptyBody": "Coba kata kunci lain, atau periksa ejaannya.",
+    "backToSearch": "Kembali ke katalog",
     "highlights": {
-      "newest": "Terbaru",
-      "mostBorrowed": "Paling banyak dipinjam"
+      "newest": "Baru masuk",
+      "mostBorrowed": "Sering dipinjam"
     },
     "detail": {
       "notFoundTitle": "Judul tidak ditemukan",
@@ -1270,8 +1270,38 @@
         "donated": "Dihibahkan",
         "reserve_stack": "Rak cadangan",
         "unknown": "Tidak diketahui"
+      },
+      "availability": "{available, number} dari {total, number} eksemplar tersedia",
+      "noneAvailable": "Semua eksemplar sedang dipinjam",
+      "noCopiesShort": "Belum ada eksemplar",
+      "howToBorrow": "Pinjam di meja sirkulasi dengan kartu anggota perpustakaan.",
+      "callNumber": "No. panggil",
+      "barcode": "Barcode",
+      "author": "Penulis",
+      "publishYear": "Tahun terbit",
+      "edition": "Edisi",
+      "pages": "Jumlah halaman",
+      "bibliography": "Data bibliografis",
+      "abstract": "Ringkasan",
+      "access": {
+        "read_in_place": "Baca di tempat",
+        "reference": "Referensi"
       }
-    }
+    },
+    "description": "Cari buku menurut judul, penulis, atau ISBN, lalu lihat apakah sedang bisa dipinjam.",
+    "searchLabel": "Cari di katalog",
+    "filterLabel": "Klasifikasi",
+    "filterAll": "Semua",
+    "resultCount": "{count, plural, other {# judul}}",
+    "availableCount": "{available, number} dari {total, number} tersedia",
+    "clearSearch": "Hapus pencarian",
+    "catalogueEmptyTitle": "Katalog masih kosong",
+    "catalogueEmptyBody": "Perpustakaan belum menampilkan judul apa pun di katalog publik.",
+    "errorTitle": "Katalog gagal dimuat",
+    "errorBody": "Periksa koneksi internet, lalu coba lagi.",
+    "retry": "Coba lagi",
+    "loadMore": "Tampilkan lebih banyak",
+    "resultCountFirst": "{count, number} judul pertama"
   },
   "kiosk": {
     "navLabel": "Kios mandiri",
