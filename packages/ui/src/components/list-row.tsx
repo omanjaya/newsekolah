@@ -29,6 +29,21 @@ export interface ListRowProps extends Omit<ComponentPropsWithRef<"li">, "title" 
   disabled?: boolean;
 }
 
+/*
+ * A lone icon button in the action slot (a row menu: an accessible name
+ * and nothing but an icon) is set like the chevron of the rows around it:
+ * pulled right by its own padding, so its 16px glyph is centred where the
+ * chevron's is (8px into a 32px box, 14px into the 44px touch box), and as
+ * muted as the chevron until it is hovered or its menu is open. A button
+ * with text keeps its box on the content edge and its own colour.
+ */
+const ICON_ACTION_CLASS =
+  "[&>button[aria-label]:has(>svg:only-child)]:-mr-2 " +
+  "pointer-coarse:[&>button[aria-label]:has(>svg:only-child)]:-mr-3.5 " +
+  "[&>button[aria-label]:has(>svg:only-child)]:text-fg-muted " +
+  "[&>button[aria-label]:has(>svg:only-child):hover]:text-fg " +
+  "[&>button[aria-label]:has(>svg:only-child)[aria-expanded=true]]:text-fg";
+
 // The target fills the row through its ::after, so a click anywhere opens
 // it, while an `action` (lifted above with `relative z-10`) keeps its own.
 const TARGET_CLASS =
@@ -158,7 +173,14 @@ export function ListRow({
             {trailing}
           </div>
         )}
-        {action && <div className="relative z-10 flex shrink-0 items-center">{action}</div>}
+        {action && (
+          <div
+            data-slot="list-row-action"
+            className={cn("relative z-10 flex shrink-0 items-center", ICON_ACTION_CLASS)}
+          >
+            {action}
+          </div>
+        )}
         {showChevron && (
           <ChevronRight className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
         )}
