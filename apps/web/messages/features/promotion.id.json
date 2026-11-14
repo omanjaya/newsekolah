@@ -10,13 +10,15 @@
   "idleBody": "Pilih tahun ajaran asal dan tujuan, lalu tampilkan rencana untuk mengatur kenaikan kelas setiap siswa.",
   "emptyTitle": "Tidak ada siswa aktif",
   "emptyBody": "Tidak ada siswa dengan status aktif di tahun ajaran asal yang dipilih.",
-  "unresolvedCount": "{n} belum ditentukan kelasnya",
+  "unresolvedCount": "{n} siswa belum punya kelas tujuan",
   "table": {
     "student": "Siswa",
     "fromClass": "Kelas asal",
     "action": "Status",
     "targetClass": "Kelas tujuan",
-    "chooseClass": "Pilih kelas"
+    "chooseClass": "Pilih kelas",
+    "actionFor": "Status {name}",
+    "targetFor": "Kelas tujuan {name}"
   },
   "action": {
     "promote": "Naik kelas",
@@ -29,5 +31,19 @@
   "resolveBeforeCommit": "Tentukan kelas tujuan untuk setiap siswa sebelum menerapkan.",
   "confirmTitle": "Terapkan kenaikan kelas ini?",
   "confirmBody": "{n} siswa akan diproses. Aksi ini akan memindahkan status pendaftaran siswa dan tidak dapat dibatalkan begitu diterapkan.",
-  "committed": "Kenaikan kelas berhasil diterapkan."
+  "committed": "Kenaikan kelas berhasil diterapkan.",
+  "doneTitle": "Kenaikan kelas ke {year} sudah diterapkan",
+  "doneBody": "{applied} siswa diproses, {skipped} dilewati.",
+  "unresolvedLabel": "Belum ada kelas tujuan",
+  "showLabel": "Tampilkan siswa",
+  "showAll": "Semua",
+  "showUnresolved": "Belum ada kelas",
+  "allClasses": "Semua kelas asal",
+  "searchStudent": "Cari nama siswa",
+  "bulkSetAction": "Ubah status",
+  "bulkSetClass": "Atur kelas tujuan",
+  "bulkSetClassBody": "Kelas tujuan untuk {n} siswa terpilih. Siswa yang lulus atau pindah dijadikan naik kelas.",
+  "allResolved": "Semua siswa sudah punya kelas tujuan",
+  "cancel": "Batal",
+  "apply": "Terapkan"
 }

@@ -5,14 +5,21 @@ import {
   Badge,
   Button,
   ConfirmDialog,
+  DateRangePicker,
   Dialog,
   DialogContent,
-  IconButton,
+  DialogFooter,
+  EmptyState,
+  Field,
   Input,
-  Skeleton,
+  List,
+  ListRow,
+  NumberInput,
+  RowActionsMenu,
+  SkeletonList,
   useToast,
 } from "@newsekolah/ui";
-import { CircleCheck, Pencil, Plus, Trash2 } from "lucide-react";
+import { CircleCheck, ListTree, Pencil, Plus, Trash2 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -59,6 +66,7 @@ export function TermsPanel({
   const [editing, setEditing] = useState<Term | "new" | null>(null);
   const [draft, setDraft] = useState<TermDraft>(EMPTY_DRAFT);
   const [pendingDelete, setPendingDelete] = useState<Term | null>(null);
+  const [pendingActivate, setPendingActivate] = useState<Term | null>(null);
   const rows = [...(terms.data?.data ?? [])].sort((a, b) => a.sequence - b.sequence);
 
   const fail = (error: unknown) => {
@@ -112,72 +120,80 @@ export function TermsPanel({
         if (!open) onOpenChange(false);
       }}
     >
-      <DialogContent title={t("title", { year: year?.label ?? "" })}>
-        <div className="flex flex-col gap-3">
-          <div className="flex justify-end">
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={<Plus />}
-              onClick={() => {
-                open("new");
-              }}
-            >
-              {t("add")}
-            </Button>
-          </div>
+      <DialogContent title={t("title", { year: year?.label ?? "" })} size="md">
+        <div className="flex flex-col gap-4">
           {terms.isLoading ? (
-            <Skeleton className="h-32 w-full" />
+            <SkeletonList rows={2} framed />
           ) : rows.length === 0 ? (
-            <p className="text-[13px] text-fg-muted">{t("empty")}</p>
+            <EmptyState
+              variant="inline"
+              icon={<ListTree aria-hidden="true" />}
+              title={t("empty")}
+            />
           ) : (
-            <ul className="divide-y divide-border rounded-xs border border-border text-[14px]">
+            <List framed>
               {rows.map((term) => (
-                <li key={term.id} className="flex items-center justify-between gap-2 px-3 py-2">
-                  <div className="flex min-w-0 flex-col">
-                    <span className="flex items-center gap-2">
-                      <span className="truncate">{term.name}</span>
-                      {term.is_active && <Badge variant="accent">{t("active")}</Badge>}
-                    </span>
-                    <span className="text-[12px] text-fg-muted">
-                      {formatCalendarDate(format, term.starts_on)} -{" "}
-                      {formatCalendarDate(format, term.ends_on)}
-                    </span>
-                  </div>
-                  <div className="flex shrink-0 gap-1">
-                    {!term.is_active && (
-                      <IconButton
-                        icon={<CircleCheck />}
-                        aria-label={t("activate")}
-                        onClick={() => {
-                          activate.mutate(term.id, {
-                            onSuccess: () => {
-                              toast.success(t("activated"));
+                <ListRow
+                  key={term.id}
+                  title={term.name}
+                  meta={`${formatCalendarDate(format, term.starts_on)} - ${formatCalendarDate(format, term.ends_on)}`}
+                  trailing={
+                    term.is_active ? (
+                      <Badge tone="success" dot>
+                        {t("active")}
+                      </Badge>
+                    ) : undefined
+                  }
+                  action={
+                    <div className="flex items-center gap-1">
+                      {!term.is_active && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={<CircleCheck />}
+                          onClick={() => {
+                            setPendingActivate(term);
+                          }}
+                        >
+                          {t("activate")}
+                        </Button>
+                      )}
+                      <RowActionsMenu
+                        ariaLabel={t("rowActions", { name: term.name })}
+                        items={[
+                          {
+                            label: t("edit"),
+                            icon: <Pencil />,
+                            onClick: () => {
+                              open(term);
                             },
-                            onError: fail,
-                          });
-                        }}
+                          },
+                          {
+                            label: t("delete"),
+                            icon: <Trash2 />,
+                            tone: "danger",
+                            onClick: () => {
+                              setPendingDelete(term);
+                            },
+                          },
+                        ]}
                       />
-                    )}
-                    <IconButton
-                      icon={<Pencil />}
-                      aria-label={t("edit")}
-                      onClick={() => {
-                        open(term);
-                      }}
-                    />
-                    <IconButton
-                      icon={<Trash2 />}
-                      aria-label={t("delete")}
-                      onClick={() => {
-                        setPendingDelete(term);
-                      }}
-                    />
-                  </div>
-                </li>
+                    </div>
+                  }
+                />
               ))}
-            </ul>
+            </List>
           )}
+          <Button
+            variant="secondary"
+            icon={<Plus />}
+            className="self-start"
+            onClick={() => {
+              open("new");
+            }}
+          >
+            {t("add")}
+          </Button>
         </div>
       </DialogContent>
 
@@ -187,7 +203,7 @@ export function TermsPanel({
           if (!open) setEditing(null);
         }}
       >
-        <DialogContent title={editing === "new" ? t("add") : t("edit")}>
+        <DialogContent title={editing === "new" ? t("add") : t("edit")} size="md">
           <form
             className="flex flex-col gap-4"
             onSubmit={(e) => {
@@ -195,55 +211,36 @@ export function TermsPanel({
               void save();
             }}
           >
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("form.name")}</span>
+            <Field label={t("form.name")} required>
               <Input
                 value={draft.name}
                 onChange={(e) => {
                   setDraft((d) => ({ ...d, name: e.target.value }));
                 }}
-                required
               />
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("form.startsOn")}</span>
-                <Input
-                  type="date"
-                  value={draft.starts_on}
-                  onChange={(e) => {
-                    setDraft((d) => ({ ...d, starts_on: e.target.value }));
-                  }}
-                  required
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("form.endsOn")}</span>
-                <Input
-                  type="date"
-                  value={draft.ends_on}
-                  onChange={(e) => {
-                    setDraft((d) => ({ ...d, ends_on: e.target.value }));
-                  }}
-                  required
-                />
-              </label>
-            </div>
+            </Field>
+            <Field label={t("form.period")} required>
+              <DateRangePicker
+                value={draft.starts_on ? { from: draft.starts_on, to: draft.ends_on } : null}
+                onChange={(range) => {
+                  setDraft((d) => ({ ...d, starts_on: range.from, ends_on: range.to }));
+                }}
+                min={year?.starts_on}
+                max={year?.ends_on}
+              />
+            </Field>
             {editing === "new" && (
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("form.sequence")}</span>
-                <Input
-                  type="number"
+              <Field label={t("form.sequence")} className="sm:w-40">
+                <NumberInput
                   min={1}
-                  value={draft.sequence}
-                  onChange={(e) => {
-                    setDraft((d) => ({ ...d, sequence: e.target.value }));
+                  value={draft.sequence ? Number(draft.sequence) : null}
+                  onChange={(value) => {
+                    setDraft((d) => ({ ...d, sequence: value === null ? "" : String(value) }));
                   }}
-                  className="w-24"
                 />
-              </label>
+              </Field>
             )}
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <DialogFooter>
               <Button
                 type="button"
                 variant="secondary"
@@ -256,10 +253,32 @@ export function TermsPanel({
               <Button type="submit" loading={create.isPending || update.isPending}>
                 {t("form.save")}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={pendingActivate !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingActivate(null);
+        }}
+        title={t("activateTitle")}
+        description={pendingActivate ? t("activateBody", { name: pendingActivate.name }) : ""}
+        confirmLabel={t("activate")}
+        confirming={activate.isPending}
+        onConfirm={async () => {
+          if (!pendingActivate) return;
+          try {
+            await activate.mutateAsync(pendingActivate.id);
+            toast.success(t("activated"));
+          } catch (error) {
+            fail(error);
+          } finally {
+            setPendingActivate(null);
+          }
+        }}
+      />
 
       <ConfirmDialog
         open={pendingDelete !== null}
@@ -269,7 +288,7 @@ export function TermsPanel({
         title={t("deleteTitle")}
         description={pendingDelete ? t("deleteBody", { name: pendingDelete.name }) : ""}
         confirmLabel={t("delete")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={async () => {
           if (!pendingDelete) return;

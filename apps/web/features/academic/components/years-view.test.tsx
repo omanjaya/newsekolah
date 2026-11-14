@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useAcademicYearsQuery: vi.fn(),
+  canManage: true,
 }));
 
 vi.mock("next-intl", () => ({
@@ -14,7 +15,8 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/academic/years",
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
-vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => false }));
+vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => mocks.canManage }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("./academic-workspace-links", () => ({ AcademicWorkspaceLinks: () => null }));
 vi.mock("./terms-panel", () => ({ TermsPanel: () => null }));
 vi.mock("./year-form-dialog", () => ({ YearFormDialog: () => null }));
@@ -31,6 +33,7 @@ import { YearsView } from "./years-view";
 describe("YearsView filters", () => {
   beforeEach(() => {
     mocks.useAcademicYearsQuery.mockReset();
+    mocks.canManage = true;
     mocks.useAcademicYearsQuery.mockReturnValue({ data: { data: [] }, isLoading: false });
     window.history.replaceState(null, "", "/academic/years");
   });
@@ -72,5 +75,11 @@ describe("YearsView filters", () => {
       expect.objectContaining({ includeArchived: false }),
     );
     expect(new URLSearchParams(window.location.search).get("include_archived")).toBe("");
+  });
+
+  it("leaves the archive filter out for a reader who cannot manage years", () => {
+    mocks.canManage = false;
+    render(<YearsView />);
+    expect(screen.queryByRole("button", { name: "showArchived" })).not.toBeInTheDocument();
   });
 });

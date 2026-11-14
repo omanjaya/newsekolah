@@ -28,7 +28,7 @@
     "edit": "Ubah",
     "activate": "Aktifkan",
     "archive": "Arsipkan",
-    "manageTerms": "Kelola semester",
+    "manageTerms": "Semester",
     "active": "Aktif",
     "archived": "Diarsipkan",
     "showArchived": "Tampilkan yang diarsipkan",
@@ -39,7 +39,8 @@
     "columns": {
       "label": "Nama",
       "period": "Periode",
-      "actions": "Aksi"
+      "actions": "Aksi",
+      "terms": "Semester"
     },
     "emptyTitle": "Belum ada tahun ajaran",
     "emptyBody": "Buat tahun ajaran pertama untuk mulai mengelola data akademik.",
@@ -55,8 +56,12 @@
       "startsOn": "Mulai",
       "endsOn": "Selesai",
       "cancel": "Batal",
-      "save": "Simpan"
-    }
+      "save": "Simpan",
+      "period": "Periode",
+      "periodHint": "Pilih tanggal mulai, lalu tanggal selesai."
+    },
+    "editTitle": "Ubah tahun ajaran",
+    "rowActions": "Aksi lain untuk {label}"
   },
   "terms": {
     "title": "Semester {year}",
@@ -66,7 +71,7 @@
     "activate": "Aktifkan",
     "activated": "Semester diaktifkan",
     "active": "Aktif",
-    "empty": "Belum ada semester untuk tahun ajaran ini.",
+    "empty": "Belum ada semester",
     "saved": "Semester tersimpan",
     "deleted": "Semester dihapus",
     "deleteTitle": "Hapus semester ini?",
@@ -77,8 +82,12 @@
       "endsOn": "Selesai",
       "sequence": "Urutan",
       "cancel": "Batal",
-      "save": "Simpan"
-    }
+      "save": "Simpan",
+      "period": "Periode"
+    },
+    "rowActions": "Aksi lain untuk {name}",
+    "activateTitle": "Aktifkan semester ini?",
+    "activateBody": "\"{name}\" menjadi semester aktif; semester lain di tahun ajaran ini otomatis nonaktif."
   },
   "gradeLevels": {
     "eyebrow": "Data Sekolah",
@@ -229,7 +238,7 @@
   },
   "newYearSetup": {
     "eyebrow": "Data Sekolah",
-    "title": "Persiapan tahun ajaran baru",
+    "title": "Tahun ajaran baru",
     "description": "Salin penawaran mapel dan kelas dari satu tahun ajaran ke tahun ajaran lain yang belum memilikinya.",
     "fromYear": "Dari tahun ajaran",
     "toYear": "Ke tahun ajaran",
@@ -245,10 +254,14 @@
     "noClasses": "Tidak ada kelas di tahun ajaran asal.",
     "alreadyExists": "Sudah ada",
     "willCopy": "Akan disalin",
-    "commit": "Terapkan",
-    "confirmTitle": "Salin data ke tahun ajaran ini?",
+    "commit": "Salin ke tahun tujuan",
+    "confirmTitle": "Salin ke tahun ajaran {year}?",
     "confirmBody": "{offerings} penawaran mapel dan {classes} kelas akan disalin.",
-    "committed": "{offerings} penawaran mapel dan {classes} kelas disalin."
+    "committed": "{offerings} penawaran mapel dan {classes} kelas disalin.",
+    "offeringsLabel": "Mapel akan disalin",
+    "classesLabel": "Kelas akan disalin",
+    "ofTotal": "dari {n} di tahun asal",
+    "doneTitle": "Tahun ajaran {year} siap diisi"
   },
   "today": {
     "noPeriodNow": "Tidak ada jam pelajaran sekarang",
@@ -265,7 +278,7 @@
     "substitutions": "Guru pengganti",
     "pendingSubstitutions": "Permintaan masuk: {count}",
     "years": "Tahun ajaran",
-    "yearList": "Tahun dan semester",
+    "yearList": "Tahun ajaran",
     "setup": "Tahun ajaran baru",
     "promotion": "Kenaikan kelas",
     "yearHelp": "Siapkan kelas dan mata pelajaran tahun tujuan, tinjau kenaikan siswa, lalu aktifkan tahun ajaran ketika sekolah siap. Setiap langkah dapat dibuka kembali secara mandiri.",
@@ -289,5 +302,21 @@
     "periodsTab": "Jam pelajaran",
     "teachingTab": "Pembagian mengajar",
     "dutiesTab": "Tugas tambahan"
+  },
+  "yearFlow": {
+    "fromYear": "Dari tahun ajaran",
+    "fromYearHint": "Biasanya tahun ajaran aktif.",
+    "toYear": "Ke tahun ajaran",
+    "toYearHint": "Tahun ajaran yang akan dibuka.",
+    "pickYear": "Pilih tahun ajaran",
+    "sameYearError": "Tahun ajaran asal dan tujuan harus berbeda.",
+    "needTwoYears": "Buat dulu tahun ajaran tujuan di halaman Tahun ajaran.",
+    "stepYears": "Pilih tahun",
+    "stepReview": "Tinjau rencana",
+    "stepDone": "Selesai",
+    "previewAgain": "Perbarui rencana",
+    "summary": "Ringkasan rencana",
+    "doneEyebrow": "Selesai",
+    "startOver": "Mulai lagi"
   }
 }

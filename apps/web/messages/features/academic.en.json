@@ -28,7 +28,7 @@
     "edit": "Edit",
     "activate": "Activate",
     "archive": "Archive",
-    "manageTerms": "Manage terms",
+    "manageTerms": "Terms",
     "active": "Active",
     "archived": "Archived",
     "showArchived": "Show archived",
@@ -39,7 +39,8 @@
     "columns": {
       "label": "Name",
       "period": "Period",
-      "actions": "Actions"
+      "actions": "Actions",
+      "terms": "Terms"
     },
     "emptyTitle": "No academic years yet",
     "emptyBody": "Create the first academic year to start managing academic data.",
@@ -55,8 +56,12 @@
       "startsOn": "Starts on",
       "endsOn": "Ends on",
       "cancel": "Cancel",
-      "save": "Save"
-    }
+      "save": "Save",
+      "period": "Period",
+      "periodHint": "Pick the first day, then the last."
+    },
+    "editTitle": "Edit academic year",
+    "rowActions": "More actions for {label}"
   },
   "terms": {
     "title": "Terms of {year}",
@@ -66,7 +71,7 @@
     "activate": "Activate",
     "activated": "Term activated",
     "active": "Active",
-    "empty": "No terms for this academic year yet.",
+    "empty": "No terms yet",
     "saved": "Term saved",
     "deleted": "Term deleted",
     "deleteTitle": "Delete this term?",
@@ -77,8 +82,12 @@
       "endsOn": "Ends on",
       "sequence": "Order",
       "cancel": "Cancel",
-      "save": "Save"
-    }
+      "save": "Save",
+      "period": "Period"
+    },
+    "rowActions": "More actions for {name}",
+    "activateTitle": "Activate this term?",
+    "activateBody": "\"{name}\" becomes the active term; the other terms of this year become inactive."
   },
   "gradeLevels": {
     "eyebrow": "School Data",
@@ -229,7 +238,7 @@
   },
   "newYearSetup": {
     "eyebrow": "School Data",
-    "title": "New academic year setup",
+    "title": "New academic year",
     "description": "Copy subject offerings and classes from one academic year into another that does not have them yet.",
     "fromYear": "From academic year",
     "toYear": "To academic year",
@@ -245,10 +254,14 @@
     "noClasses": "No classes in the source academic year.",
     "alreadyExists": "Already exists",
     "willCopy": "Will be copied",
-    "commit": "Apply",
-    "confirmTitle": "Copy this data into the destination year?",
+    "commit": "Copy into the destination year",
+    "confirmTitle": "Copy into {year}?",
     "confirmBody": "{offerings} subject offerings and {classes} classes will be copied.",
-    "committed": "{offerings} subject offerings and {classes} classes copied."
+    "committed": "{offerings} subject offerings and {classes} classes copied.",
+    "offeringsLabel": "Subjects to copy",
+    "classesLabel": "Classes to copy",
+    "ofTotal": "of {n} in the source year",
+    "doneTitle": "{year} is ready to fill"
   },
   "today": {
     "noPeriodNow": "No lesson period right now",
@@ -265,7 +278,7 @@
     "substitutions": "Substitute teachers",
     "pendingSubstitutions": "Incoming requests: {count}",
     "years": "Academic year",
-    "yearList": "Years and terms",
+    "yearList": "Academic years",
     "setup": "New academic year",
     "promotion": "Class promotion",
     "yearHelp": "Prepare classes and subjects for the destination year, review student promotions, then activate the year when the school is ready. Each step remains available independently.",
@@ -289,5 +302,21 @@
     "periodsTab": "Lesson periods",
     "teachingTab": "Teaching assignments",
     "dutiesTab": "Additional duties"
+  },
+  "yearFlow": {
+    "fromYear": "From academic year",
+    "fromYearHint": "Usually the active year.",
+    "toYear": "To academic year",
+    "toYearHint": "The year you are opening.",
+    "pickYear": "Choose a year",
+    "sameYearError": "The source and destination years must differ.",
+    "needTwoYears": "Create the destination year on the Academic years page first.",
+    "stepYears": "Choose years",
+    "stepReview": "Review the plan",
+    "stepDone": "Done",
+    "previewAgain": "Refresh the plan",
+    "summary": "Plan summary",
+    "doneEyebrow": "Done",
+    "startOver": "Start over"
   }
 }

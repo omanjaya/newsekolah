@@ -10,13 +10,15 @@
   "idleBody": "Pick the source and target academic years, then show the plan to set each student's outcome.",
   "emptyTitle": "No active students",
   "emptyBody": "There are no actively enrolled students in the selected source academic year.",
-  "unresolvedCount": "{n} still need a target class",
+  "unresolvedCount": "{n} students have no destination class",
   "table": {
     "student": "Student",
     "fromClass": "Current class",
     "action": "Outcome",
     "targetClass": "Target class",
-    "chooseClass": "Choose a class"
+    "chooseClass": "Choose a class",
+    "actionFor": "Status of {name}",
+    "targetFor": "Destination class of {name}"
   },
   "action": {
     "promote": "Promote",
@@ -29,5 +31,19 @@
   "resolveBeforeCommit": "Choose a target class for every student before applying.",
   "confirmTitle": "Apply this class promotion?",
   "confirmBody": "{n} students will be processed. This moves each student's enrollment status and cannot be undone once applied.",
-  "committed": "Class promotion applied."
+  "committed": "Class promotion applied.",
+  "doneTitle": "Promotion into {year} applied",
+  "doneBody": "{applied} students processed, {skipped} skipped.",
+  "unresolvedLabel": "No destination class",
+  "showLabel": "Show students",
+  "showAll": "All",
+  "showUnresolved": "No class yet",
+  "allClasses": "All source classes",
+  "searchStudent": "Search students",
+  "bulkSetAction": "Change status",
+  "bulkSetClass": "Set destination class",
+  "bulkSetClassBody": "Destination class for {n} selected students. Graduating or leaving students are set to promoted.",
+  "allResolved": "Every student has a destination class",
+  "cancel": "Cancel",
+  "apply": "Apply"
 }
