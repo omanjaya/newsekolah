@@ -92,7 +92,8 @@ function Matrix() {
       </div>
       <div className="flex flex-col gap-2">
         <p className="text-caption text-fg-muted">
-          a long label in a 160px column, and pills around a remove button
+          a long label in a 160px column, pills in a stretching column, and pills around a remove
+          button
         </p>
         <div className="flex flex-wrap items-start gap-6">
           <div className="flex w-40 flex-col items-start gap-2 rounded-md border border-dashed border-border-strong p-2">
@@ -100,6 +101,15 @@ function Matrix() {
             <Badge tone="neutral" dot>
               Bahasa Indonesia Tingkat Lanjut
             </Badge>
+          </div>
+          {/* A column that stretches its children, as a sheet body or a card stack does. */}
+          <div className="flex w-64 flex-col gap-2 rounded-md border border-dashed border-border-strong p-3">
+            <p className="text-heading text-fg">SPP November 2026</p>
+            <Badge tone="neutral">Belum lunas</Badge>
+            <Badge tone="warning" dot>
+              Dibayar sebagian
+            </Badge>
+            <CountBadge count={12} tone="accent" />
           </div>
           <div className="flex max-w-80 flex-wrap items-center gap-2">
             {["kepala.sekolah@sman1.sch.id", "guru.matematika@sman1.sch.id", "tu@sman1.sch.id"].map(

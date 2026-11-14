@@ -76,6 +76,22 @@ describe("Badge", () => {
     expect(screen.getByText("baru").tagName).toBe("STRONG");
   });
 
+  // A flex column (a sheet body, a card stack) stretches an item of auto
+  // width across the row; a fitted width keeps the pill a pill there.
+  it("keeps its own width in a column parent, with a caller's width still winning", () => {
+    render(
+      <div className="flex flex-col">
+        <Badge>Belum lunas</Badge>
+        <Badge className="w-full">Lebar penuh</Badge>
+        <CountBadge count={3} />
+      </div>,
+    );
+    expect(pill("Belum lunas")).toHaveClass("w-fit", "max-w-full", "shrink-0");
+    expect(pill("Lebar penuh")).toHaveClass("w-full");
+    expect(pill("Lebar penuh")).not.toHaveClass("w-fit");
+    expect(screen.getByText("3")).toHaveClass("w-fit");
+  });
+
   // A pill around a control (a removable recipient) grows to hold it
   // instead of letting the button spill above and below a fixed height.
   it("is a minimum height, so a control inside does not overflow it", () => {

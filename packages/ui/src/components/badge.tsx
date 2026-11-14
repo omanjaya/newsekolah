@@ -42,8 +42,12 @@ export function badgeClassName({
   size = "md",
 }: Pick<BadgeProps, "tone" | "appearance" | "size"> = {}): string {
   const colors = TONE_CLASSES[tone];
+  // `w-fit`: a flex column (a sheet body, a card stack) or a grid cell
+  // stretches an item of auto width across the whole row, which turns the
+  // pill into a long bar. A fitted width is never stretched, while a
+  // centring parent still centres it and `max-w-full` still truncates.
   return cn(
-    "inline-flex max-w-full shrink-0 items-center rounded-full text-caption font-semibold whitespace-nowrap",
+    "inline-flex w-fit max-w-full shrink-0 items-center rounded-full text-caption font-semibold whitespace-nowrap",
     SIZE_CLASS[size],
     appearance === "solid" && colors.solid,
     appearance === "soft" && colors.soft,
