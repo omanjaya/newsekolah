@@ -1491,9 +1491,9 @@
       }
     },
     "reserve": {
-      "heading": "Reservations",
-      "emptyBody": "No reservations yet. Search a title below to reserve one.",
-      "emptyBodyDisabled": "No reservations yet.",
+      "heading": "Holds",
+      "emptyBody": "No holds yet. Search a title below to place a hold on a book someone else has out.",
+      "emptyBodyDisabled": "No holds yet.",
       "queuePosition": "Queue position {position}",
       "status": {
         "waiting": "Waiting",
@@ -1503,20 +1503,35 @@
         "expired": "Expired"
       },
       "cancel": "Cancel",
-      "cancelled": "Reservation cancelled",
-      "pickTitle": "Reserve a new title",
+      "cancelled": "Hold cancelled",
+      "pickTitle": "Place a hold",
       "searchPlaceholder": "Search title or author",
       "selectedTitle": "Selected: {title}",
       "submit": "Reserve",
-      "reserved": "Reservation created",
-      "bookingDisabled": "Self-service reservations are turned off right now. Ask a librarian to reserve a title."
+      "reserved": "Hold placed",
+      "bookingDisabled": "Self-service holds are switched off. Ask the librarian to place a hold."
     },
     "dueOn": "Due {date}",
     "overdueSince": "Overdue, was due {date}",
     "renewAction": "Renew",
     "renewed": "Renewed until {date}",
-    "renewBlockedOverdue": "An overdue loan cannot be self-renewed, ask a librarian",
-    "titleUnavailable": "Title unavailable"
+    "renewBlockedOverdue": "This loan is past due and cannot be renewed. Bring the book back to the library.",
+    "titleUnavailable": "Title unavailable",
+    "browseCatalogue": "Browse the catalogue",
+    "unpaidFinesTotal": "Unpaid fines: {amount}",
+    "hero": {
+      "overdueEyebrow": "Please return",
+      "overdueTitle": "{count, plural, one {1 book} other {# books}} {days} days late",
+      "overdueMeta": "{title}. Return it to the library soon so the fine stops growing.",
+      "overdueChip": "Late",
+      "nextDueEyebrow": "Next due date",
+      "nextDueTitle": "Due {date}",
+      "nextDueMeta": "{count, plural, one {1 book} other {# books}} on loan",
+      "readyChip": "{count, plural, one {1 hold} other {# holds}} ready to collect",
+      "idleEyebrow": "Library",
+      "idleTitle": "No books on loan",
+      "idleMeta": "Find a book in the catalogue, then borrow it at the library with your member card."
+    }
   },
   "memberProfile": {
     "memberType": "Member type",

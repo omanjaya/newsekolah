@@ -11,9 +11,7 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
 }));
 
-vi.mock("@newsekolah/i18n", () => ({
-  formatDate: (value: string) => value,
-}));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 
 vi.mock("../use-tenant-timezone", () => ({ useTenantTimeZone: () => "Asia/Jakarta" }));
 
@@ -86,7 +84,7 @@ describe("MyLibraryView", () => {
     ]);
     render(<MyLibraryView />);
 
-    expect(screen.getByText("unpaidFines")).toBeInTheDocument();
+    expect(screen.getByText("unpaidFinesTotal")).toBeInTheDocument();
   });
 
   it("hides the unpaid fines card when the unpaid violation's amount is Rp0", () => {
@@ -103,14 +101,14 @@ describe("MyLibraryView", () => {
     ]);
     render(<MyLibraryView />);
 
-    expect(screen.queryByText("unpaidFines")).not.toBeInTheDocument();
+    expect(screen.queryByText("unpaidFinesTotal")).not.toBeInTheDocument();
   });
 
   it("hides the unpaid fines card when there are no violations at all", () => {
     mocks.data = profile([]);
     render(<MyLibraryView />);
 
-    expect(screen.queryByText("unpaidFines")).not.toBeInTheDocument();
+    expect(screen.queryByText("unpaidFinesTotal")).not.toBeInTheDocument();
   });
 
   it("shows a history row's title text from /v1/library/me, never a raw title id", () => {
@@ -138,48 +136,53 @@ describe("MyLibraryView", () => {
     expect(screen.queryByText("11111111-1111-1111-1111-111111111111")).not.toBeInTheDocument();
   });
 
-  it("shows four equal-width stat tiles for active loans, next due date, overdue, and reservations", () => {
+  it("leads with the next due date when nothing is late", () => {
     mocks.data = {
       ...profile([]),
       active_loans: [
-        loan({ id: "a", due_on: "2026-09-20" }),
-        loan({ id: "b", due_on: "2026-10-05" }),
+        loan({ id: "a", due_on: "2999-09-20" }),
+        loan({ id: "b", due_on: "2999-10-05" }),
       ],
-      reservations: [{ id: "r1", title_id: "t1", member_user_id: "u1", status: "waiting" }],
-    } as unknown as LibraryMyProfile;
-
-    render(<MyLibraryView />);
-
-    const tiles = screen.getByTestId("my-library-tiles");
-    expect(tiles).toHaveClass("lg:grid-cols-4");
-    expect(screen.getByTestId("my-library-tile-activeLoans")).toBeInTheDocument();
-    expect(screen.getByTestId("my-library-tile-nextDue")).toBeInTheDocument();
-    expect(screen.getByTestId("my-library-tile-overdue")).toBeInTheDocument();
-    expect(screen.getByTestId("my-library-tile-reservations")).toBeInTheDocument();
-  });
-
-  it("spans the last loan card full width when the active loan count is odd", () => {
-    mocks.data = {
-      ...profile([]),
-      active_loans: [loan({ id: "a" }), loan({ id: "b" }), loan({ id: "c" })],
     };
 
     render(<MyLibraryView />);
 
-    expect(screen.getByTestId("my-library-loan-cell-a")).not.toHaveClass("lg:col-span-2");
-    expect(screen.getByTestId("my-library-loan-cell-b")).not.toHaveClass("lg:col-span-2");
-    expect(screen.getByTestId("my-library-loan-cell-c")).toHaveClass("lg:col-span-2");
+    expect(screen.getByTestId("my-library-hero")).toHaveTextContent("nextDueTitle");
   });
 
-  it("keeps an even number of loan cards in two equal columns", () => {
+  it("leads with the late book when one is overdue", () => {
     mocks.data = {
       ...profile([]),
-      active_loans: [loan({ id: "a" }), loan({ id: "b" })],
+      active_loans: [loan({ id: "a", due_on: "2000-01-01", title_name: "Biologi" })],
     };
 
     render(<MyLibraryView />);
 
-    expect(screen.getByTestId("my-library-loan-cell-a")).not.toHaveClass("lg:col-span-2");
-    expect(screen.getByTestId("my-library-loan-cell-b")).not.toHaveClass("lg:col-span-2");
+    expect(screen.getByTestId("my-library-hero")).toHaveTextContent("overdueTitle");
+  });
+
+  it("points a reader with no loans at the catalogue", () => {
+    mocks.data = profile([]);
+
+    render(<MyLibraryView />);
+
+    expect(screen.getByTestId("my-library-hero")).toHaveTextContent("idleTitle");
+    expect(screen.getByRole("link", { name: /browseCatalogue/ })).toHaveAttribute("href", "/opac");
+  });
+
+  it("lists every current loan, soonest due first", () => {
+    mocks.data = {
+      ...profile([]),
+      active_loans: [
+        loan({ id: "a", title_name: "Later", due_on: "2999-10-05" }),
+        loan({ id: "b", title_name: "Sooner", due_on: "2999-09-20" }),
+      ],
+    };
+
+    render(<MyLibraryView />);
+
+    const cards = screen.getByTestId("my-library-loan-cards");
+    const text = cards.textContent;
+    expect(text.indexOf("Sooner")).toBeLessThan(text.indexOf("Later"));
   });
 });
