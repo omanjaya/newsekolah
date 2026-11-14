@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
+import { endExitAnimation, playExitAnimations } from "../test/exit-animation.js";
 
 import { Button } from "./button.js";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTrigger } from "./dialog.js";
@@ -167,6 +168,34 @@ describe("Dialog", () => {
     expect(screen.getByRole("dialog")).toHaveAccessibleDescription(
       "Izin berlaku selama jam yang dipilih.",
     );
+  });
+
+  it("fades its scrim out with the panel instead of dropping it on the first frame of closing", () => {
+    const restore = playExitAnimations();
+    try {
+      const dialog = (open: boolean) => (
+        <Dialog open={open}>
+          <DialogContent title="Terbitkan izin">
+            <p>Body</p>
+          </DialogContent>
+        </Dialog>
+      );
+      const { rerender } = render(dialog(true));
+      rerender(dialog(false));
+
+      const scrim = document.querySelector(".bg-scrim");
+      expect(scrim).toHaveAttribute("data-state", "closed");
+      // The dialog's 120ms from 640px up, the bottom sheet's 200ms below.
+      expect(scrim?.className).toMatch(/(^|\s)data-\[state=closed\]:animate-overlay-out(\s|$)/);
+      expect(scrim?.className).toMatch(/max-sm:data-\[state=closed\]:animate-sheet-overlay-out/);
+      // It lets clicks through to the page while it fades.
+      expect(scrim).toHaveClass("data-[state=closed]:pointer-events-none!");
+
+      endExitAnimation(scrim);
+      expect(document.querySelector(".bg-scrim")).toBeNull();
+    } finally {
+      restore();
+    }
   });
 
   it("has no accessibility violations", async () => {

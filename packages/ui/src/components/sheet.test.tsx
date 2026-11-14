@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
+import { endExitAnimation, playExitAnimations } from "../test/exit-animation.js";
 
 import { Button } from "./button.js";
 import { Sheet, SheetContent, SheetFooter, SheetTrigger } from "./sheet.js";
@@ -71,6 +72,29 @@ describe("Sheet", () => {
     const body = screen.getByRole("form", { name: "Catatan" }).parentElement;
     expect(body).not.toContainElement(screen.getByRole("button", { name: "Kembali" }));
     expect(screen.getByRole("button", { name: "Simpan" }).parentElement).toHaveClass("sticky");
+  });
+
+  it("keeps its scrim for the sheet's 200ms exit, then removes it", () => {
+    const restore = playExitAnimations();
+    try {
+      const sheet = (open: boolean) => (
+        <Sheet open={open}>
+          <SheetContent title="Aksi cepat">
+            <p>Isi</p>
+          </SheetContent>
+        </Sheet>
+      );
+      const { rerender } = render(sheet(true));
+      rerender(sheet(false));
+
+      const scrim = document.querySelector(".bg-scrim");
+      expect(scrim).toHaveAttribute("data-state", "closed");
+      expect(scrim).toHaveClass("data-[state=closed]:animate-sheet-overlay-out");
+      endExitAnimation(scrim);
+      expect(document.querySelector(".bg-scrim")).toBeNull();
+    } finally {
+      restore();
+    }
   });
 
   it("has no accessibility violations", async () => {

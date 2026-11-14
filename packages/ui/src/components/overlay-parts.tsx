@@ -28,15 +28,23 @@ import { useToastClearance } from "./toast-clearance.js";
  * home indicator), so the in-body footer can bleed to the edges exactly.
  */
 
-/** The scrim behind a dialog or sheet; it leaves with its layer and stops taking clicks as it fades. */
-export function OverlayScrim({
-  closeAnimation,
-}: {
-  /** The dialog's scrim leaves at 120ms, a sheet's at 200ms. */
-  closeAnimation: "dialog" | "sheet" | "responsive";
-}): ReactElement {
+/**
+ * The scrim behind a dialog or sheet; it leaves with its layer and stops
+ * taking clicks as it fades. It must forward its ref: `DialogPrimitive.Portal`
+ * wraps each child in a Presence that watches that element's exit
+ * animation, and without the element it unmounts the scrim on the first
+ * frame of closing, while the panel above is still fading.
+ */
+export const OverlayScrim = forwardRef<
+  HTMLDivElement,
+  {
+    /** The dialog's scrim leaves at 120ms, a sheet's at 200ms. */
+    closeAnimation: "dialog" | "sheet" | "responsive";
+  }
+>(function OverlayScrim({ closeAnimation }, ref) {
   return (
     <DialogPrimitive.Overlay
+      ref={ref}
       className={cn(
         "fixed inset-0 z-overlay bg-scrim",
         "data-[state=open]:animate-overlay-in",
@@ -49,7 +57,7 @@ export function OverlayScrim({
       )}
     />
   );
-}
+});
 
 /** The pill at the top of a bottom sheet; it tells the eye the panel came up from the edge. */
 export function GrabHandle({ className }: { className?: string }): ReactElement {
