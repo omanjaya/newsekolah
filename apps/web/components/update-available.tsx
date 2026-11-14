@@ -1,9 +1,12 @@
 "use client";
 
 import { Button } from "@newsekolah/ui";
+import { RefreshCw } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
+
+import { ShellStrip } from "./shell-strip";
 
 /**
  * Surfaces a waiting service worker instead of silently taking over
@@ -60,18 +63,23 @@ export function UpdateAvailable(): ReactElement | null {
 
   if (!registration?.waiting) return null;
 
+  // A strip in the header's sticky stack like every other standing state,
+  // rather than a card floating over the page and the phone's tab bar.
   return (
-    <div
-      role="status"
-      className="fixed inset-x-4 bottom-20 z-(--z-toast) mx-auto flex max-w-sm items-center gap-3 rounded-lg border border-border bg-surface p-4 shadow-(--shadow-float) md:bottom-4 md:left-auto md:right-4 md:mx-0"
-    >
-      <div className="flex-1">
-        <p className="text-[13px] font-medium text-fg">{t("title")}</p>
-        <p className="text-[13px] text-fg-muted">{t("body")}</p>
-      </div>
-      <Button size="sm" onClick={() => registration.waiting?.postMessage({ type: "SKIP_WAITING" })}>
-        {t("action")}
-      </Button>
-    </div>
+    <ShellStrip
+      tone="info"
+      icon={<RefreshCw />}
+      title={t("title")}
+      detail={t("body")}
+      action={
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => registration.waiting?.postMessage({ type: "SKIP_WAITING" })}
+        >
+          {t("action")}
+        </Button>
+      }
+    />
   );
 }
