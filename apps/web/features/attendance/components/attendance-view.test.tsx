@@ -24,6 +24,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+vi.mock("../../academic/components/academic-workspace-links", () => ({
+  AcademicWorkspaceLinks: () => null,
+}));
 
 vi.mock("@newsekolah/i18n", () => ({
   formatTime: () => "07:10",

@@ -15,7 +15,7 @@ import {
   type PageHeaderAction,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { BookOpen, Download, FileBarChart, Pencil, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Download, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -36,6 +36,7 @@ import {
 import { useLibraryCatalogueOptionsQuery } from "../master-data-api";
 import { useLibraryErrorMessage } from "../use-library-error-message";
 
+import { LibraryWorkspaceNav } from "./library-workspace-nav";
 import { TitleForm } from "./title-form";
 
 const AVAILABILITY_VALUES = ["", "available"] as const;
@@ -46,11 +47,9 @@ const TITLES_PAGE_SIZE = 50;
 
 export function CatalogueView(): ReactElement {
   const t = useTranslations("app.library.catalogue");
-  const tWorkspace = useTranslations("app.library.workspace");
   const toast = useToast();
   const libraryErrorMessage = useLibraryErrorMessage();
   const canManage = useCan("manage_library_catalog");
-  const canReport = useCan("view_library_reports");
   const [search, setSearch] = useRememberedViewState("catalogue-search", "");
   const [materialTypeId, setMaterialTypeId] = useUrlState<string>("material_type", () => true, "");
   const [ddcClass, setDdcClass] = useUrlState<string>("ddc_class", () => true, "");
@@ -185,37 +184,27 @@ export function CatalogueView(): ReactElement {
     [t, canManage],
   );
 
-  const secondaryActions: PageHeaderAction[] = [
-    ...(canManage
-      ? [
-          {
-            label: t("exportCatalogue"),
-            icon: <Download />,
-            onSelect: () => {
-              void downloadLibraryCatalogueExportXlsx();
-            },
+  const secondaryActions: PageHeaderAction[] = canManage
+    ? [
+        {
+          label: t("exportCatalogue"),
+          icon: <Download />,
+          onSelect: () => {
+            void downloadLibraryCatalogueExportXlsx();
           },
-        ]
-      : []),
-    ...(canReport
-      ? [
-          {
-            label: tWorkspace("report"),
-            icon: <FileBarChart />,
-            href: "/library/reports?tab=accessionRegister",
-          },
-        ]
-      : []),
-  ];
+        },
+      ]
+    : [];
 
   return (
     // Viewport-fit on desktop: the page itself never scrolls; the table
-    // scrolls its rows internally. Eyebrow, title and the area's tabs
-    // (titles, copies, import, catalogue data, stocktake) come from the
-    // navigation registry, so import and catalogue settings are tabs here,
-    // not buttons.
+    // scrolls its rows internally. Eyebrow and title come from the
+    // navigation registry. The tabs are the catalogue area's own strip,
+    // the one the copies, import and stocktake pages show: import is one
+    // of its tabs, and catalogue settings and the report sit at its end.
     <AppPage
       variant="fit"
+      nav={<LibraryWorkspaceNav area="catalogue" />}
       primaryAction={
         canManage ? (
           <Button

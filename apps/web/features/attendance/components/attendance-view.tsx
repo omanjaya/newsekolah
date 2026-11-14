@@ -24,6 +24,7 @@ import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { bentoCells } from "../../../lib/layout/bento";
 import { useCan, useSession } from "../../../lib/session/session-provider";
+import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import {
   useClassesQuery,
   useLookup,
@@ -60,7 +61,7 @@ export function AttendanceView(): ReactElement {
   return (
     // The calendar still renders its own heading and month navigator; the
     // template keeps the frame, the tab title and the area's tabs.
-    <AppPage header={false}>
+    <AppPage header={false} nav={<AcademicWorkspaceLinks area="attendance" />}>
       <AttendanceCalendar />
     </AppPage>
   );
@@ -359,12 +360,13 @@ export function DaySessions(): ReactElement {
 
   return (
     // The day switcher and the report links stay beside the title; the
-    // teacher picker filters the content, so it is the toolbar. The area's
-    // tabs come from the registry and keep the chosen day.
+    // teacher picker filters the content, so it is the toolbar. The tabs
+    // are the area's own strip (shared with the journal and the reports,
+    // and keeping the chosen day), now under the header.
     <AppPage
       title={t("title")}
       actions={headerActions}
-      navParams={["date"]}
+      nav={<AcademicWorkspaceLinks area="attendance" />}
       toolbar={
         showTeacherPicker ? (
           <label className="flex flex-col gap-1 text-[13px]">

@@ -30,6 +30,7 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
+import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import {
   type AdminUser,
   type ProfileKind,
@@ -272,10 +273,11 @@ export function UsersView(): ReactElement {
   return (
     // Viewport-fit on desktop: the page itself never scrolls; the table
     // scrolls its rows internally while the filter row and pagination stay
-    // put. Eyebrow, title and the accounts/roles tabs come from the
-    // navigation registry.
+    // put. Eyebrow and title come from the navigation registry; the tabs
+    // stay the area's own strip, the one the roles page shows too.
     <AppPage
       variant="fit"
+      nav={<AcademicWorkspaceLinks area="users" />}
       primaryAction={
         canCreate ? (
           <Button

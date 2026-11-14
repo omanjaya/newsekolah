@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -112,18 +112,28 @@ describe("CatalogueView filters", () => {
     expect(new URLSearchParams(window.location.search).get("availability")).toBe("");
   });
 
-  it("leads the header with adding a title, with export and the report as secondary actions", () => {
+  it("leads the header with adding a title, and keeps import, settings and the report in the area strip", () => {
     render(<CatalogueView />);
 
     expect(screen.getByRole("button", { name: "addTitle" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "exportCatalogue" })).toBeInTheDocument();
+    const strip = screen.getByRole("navigation", { name: "catalogue" });
+    expect(within(strip).getByRole("link", { name: "titles" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(within(strip).getByRole("link", { name: "importBooks" })).toHaveAttribute(
+      "href",
+      "/library/import",
+    );
+    expect(screen.getByRole("link", { name: "catalogueSettings" })).toHaveAttribute(
+      "href",
+      "/library/master-data",
+    );
     expect(screen.getByRole("link", { name: "report" })).toHaveAttribute(
       "href",
       "/library/reports?tab=accessionRegister",
     );
-    // Import and catalogue settings are tabs of the area (navigation registry), not buttons.
-    expect(screen.queryByRole("link", { name: "importBooks" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "catalogueSettings" })).not.toBeInTheDocument();
   });
 
   it("leaves a catalogue reader without the editing actions", () => {
