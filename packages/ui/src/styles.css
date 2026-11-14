@@ -603,3 +603,28 @@
     --type-body-line-height: calc(var(--text-16) * 1.5);
   }
 }
+
+/*
+ * The band under a table's column headers and its totals row. In light it
+ * is the sunken tint. In dark the sunken surface is darker than the page,
+ * so a band of it read as a black slot across every table card; there it
+ * is the card lifted a few percent toward the text color instead, the way
+ * dark surfaces step up. The two dark selectors are the ones tokens.css
+ * uses. A stand-in for a `surface-header` color token.
+ */
+@layer base {
+  :root {
+    --color-surface-header: var(--color-surface-sunken);
+  }
+  [data-theme="dark"] {
+    --color-surface-header: color-mix(in srgb, var(--color-surface) 96%, var(--color-fg));
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-surface-header: color-mix(in srgb, var(--color-surface) 96%, var(--color-fg));
+    }
+  }
+}
+@utility bg-surface-header {
+  background-color: var(--color-surface-header);
+}
