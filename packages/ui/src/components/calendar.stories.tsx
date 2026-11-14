@@ -59,7 +59,7 @@ const STATUS: Record<string, { dot: string; label: string }> = {
   "2026-11-05": { dot: "bg-status-present", label: "Hadir" },
   "2026-11-06": { dot: "bg-status-excused", label: "Izin" },
   "2026-11-09": { dot: "bg-status-present", label: "Hadir" },
-  "2026-11-10": { dot: "bg-status-absent", label: "Alpa" },
+  "2026-11-10": { dot: "bg-status-absent", label: "Alfa" },
   "2026-11-11": { dot: "bg-status-present", label: "Hadir" },
   "2026-11-12": { dot: "bg-status-present", label: "Hadir" },
   "2026-11-13": { dot: "bg-status-present", label: "Hadir" },
