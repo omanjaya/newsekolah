@@ -50,12 +50,18 @@ const MARKER_CLASS: Record<StepperStepState, string> = {
   current:
     "bg-surface text-accent shadow-[inset_0_0_0_2px_var(--color-accent)] ring-4 ring-accent-soft",
   stopped: "bg-danger-soft text-danger",
-  upcoming: "bg-surface-sunken text-fg-muted",
+  // An outlined disc on the raised surface: it stays visible on a white
+  // card and on the dark page, where a sunken fill all but disappears.
+  upcoming: "border border-border-strong/60 bg-surface-raised text-fg-muted",
 };
 
-/** The line toward the next step is accent once this step is behind the reader. */
-function connectorDone(state: StepperStepState) {
-  return state === "complete";
+/**
+ * The line toward the next step: accent once this step is behind the
+ * reader, otherwise a quiet stroke that still reads in the dark theme
+ * (the `line` hairline is too faint there).
+ */
+function connectorClass(state: StepperStepState) {
+  return state === "complete" ? "bg-accent" : "bg-border-strong/40";
 }
 
 function Marker({
@@ -160,7 +166,7 @@ export function Stepper({
                     ? "top-[9px] right-[calc(50%+14px)]"
                     : "top-[13px] right-[calc(50%+22px)]",
                   !rowAlways && "hidden sm:block",
-                  previousState && connectorDone(previousState) ? "bg-accent" : "bg-line",
+                  connectorClass(previousState ?? "upcoming"),
                 )}
               />
             )}
@@ -171,7 +177,7 @@ export function Stepper({
                   "absolute right-0 h-0.5",
                   compact ? "top-[9px] left-[calc(50%+14px)]" : "top-[13px] left-[calc(50%+22px)]",
                   !rowAlways && "hidden sm:block",
-                  connectorDone(state) ? "bg-accent" : "bg-line",
+                  connectorClass(state),
                 )}
               />
             )}
@@ -182,7 +188,7 @@ export function Stepper({
                 className={cn(
                   "absolute top-8 bottom-1 left-[13px] w-0.5 rounded-full",
                   row && "sm:hidden",
-                  connectorDone(state) ? "bg-accent" : "bg-line",
+                  connectorClass(state),
                 )}
               />
             )}

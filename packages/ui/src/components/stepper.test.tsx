@@ -32,6 +32,19 @@ describe("Stepper", () => {
     expect(screen.getByText("Issued")).toHaveClass("text-fg-muted");
   });
 
+  it("outlines upcoming steps and their connectors strongly enough for the dark theme", () => {
+    render(<Stepper currentIndex={2} steps={WORKFLOW} />);
+    const gate = screen.getByText("Gerbang").closest("li");
+    const marker = gate?.querySelector("[aria-hidden=true].rounded-full");
+    expect(marker).toHaveClass("bg-surface-raised", "border", "border-border-strong/60");
+    expect(marker).not.toHaveClass("bg-surface-sunken");
+    // The line into an upcoming step, and the line between two done ones.
+    expect(gate?.querySelector(".bg-border-strong\\/40")).toBeInTheDocument();
+    const homeroom = screen.getByText("Wali kelas").closest("li");
+    expect(homeroom?.querySelector(".h-0\\.5.bg-accent")).toBeInTheDocument();
+    expect(document.querySelector(".bg-line")).toBeNull();
+  });
+
   it("says who acted and when on each step", () => {
     render(<Stepper steps={WORKFLOW} currentIndex={2} />);
     const homeroom = screen.getByText("Wali kelas").closest("li");
