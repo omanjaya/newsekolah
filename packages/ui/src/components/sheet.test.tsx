@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
+import { endExitAnimation, playExitAnimations } from "../test/exit-animation.js";
 
 import { Button } from "./button.js";
 import { Sheet, SheetContent, SheetFooter, SheetTrigger } from "./sheet.js";
@@ -71,6 +72,64 @@ describe("Sheet", () => {
     const body = screen.getByRole("form", { name: "Catatan" }).parentElement;
     expect(body).not.toContainElement(screen.getByRole("button", { name: "Kembali" }));
     expect(screen.getByRole("button", { name: "Simpan" }).parentElement).toHaveClass("sticky");
+  });
+
+  it("keeps its scrim for the sheet's 200ms exit, then removes it", () => {
+    const restore = playExitAnimations();
+    try {
+      const sheet = (open: boolean) => (
+        <Sheet open={open}>
+          <SheetContent title="Aksi cepat">
+            <p>Isi</p>
+          </SheetContent>
+        </Sheet>
+      );
+      const { rerender } = render(sheet(true));
+      rerender(sheet(false));
+
+      const scrim = document.querySelector(".bg-scrim");
+      expect(scrim).toHaveAttribute("data-state", "closed");
+      expect(scrim).toHaveClass("data-[state=closed]:animate-sheet-overlay-out");
+      endExitAnimation(scrim);
+      expect(document.querySelector(".bg-scrim")).toBeNull();
+    } finally {
+      restore();
+    }
+  });
+
+  it("opens a drawer on its first field rather than the close button", () => {
+    render(
+      <Sheet open>
+        <SheetContent title="Catatan konseling" side="right">
+          <form aria-label="Catatan">
+            <textarea aria-label="Ringkasan sesi" />
+          </form>
+        </SheetContent>
+      </Sheet>,
+    );
+    expect(screen.getByRole("textbox", { name: "Ringkasan sesi" })).toHaveFocus();
+  });
+
+  // styles.css pins the action row of a drawer's form to the panel's bottom
+  // edge through this exact shape; the selector here is the CSS one.
+  it("gives a drawer form the shape whose action row styles.css pins to the bottom edge", () => {
+    render(
+      <Sheet open>
+        <SheetContent title="Catatan konseling" side="right">
+          <form aria-label="Catatan" className="flex flex-col gap-4">
+            <textarea aria-label="Ringkasan sesi" />
+            <SheetFooter>
+              <Button type="submit">Simpan</Button>
+            </SheetFooter>
+          </form>
+        </SheetContent>
+      </Sheet>,
+    );
+    const drawer = screen.getByRole("dialog");
+    const row = drawer.querySelector(
+      '[data-side="right"] > .dialog-body > :is(form, div):last-child:not(.grid) > :is([data-dialog-footer], .border-t.justify-end):last-child',
+    );
+    expect(row).toContainElement(screen.getByRole("button", { name: "Simpan" }));
   });
 
   it("has no accessibility violations", async () => {

@@ -98,6 +98,28 @@ describe("toast", () => {
     expect(item?.querySelector("[data-icon]")).toHaveClass("size-8", "rounded-full");
   });
 
+  // styles.css moves the action under the text when both are there, by
+  // this shape: the description inside the content, the action beside it.
+  it("is 420 wide from 600px up, and gives a description and an action the shape styles.css stacks", async () => {
+    render(<Toaster />);
+    toast.error("Gagal menyimpan presensi", {
+      description: "Periksa koneksi lalu coba lagi.",
+      retry: { label: "Coba lagi", onClick: vi.fn() },
+    });
+    const description = await screen.findByText("Periksa koneksi lalu coba lagi.");
+    expect(description).toHaveClass("text-pretty");
+    const item = description.closest("[data-sonner-toast]");
+    expect(item?.querySelector(":scope > [data-content] > [data-description]")).toBe(description);
+    expect(item?.querySelector(":scope > [data-button]:not([data-cancel])")).toHaveTextContent(
+      "Coba lagi",
+    );
+    expect(
+      document
+        .querySelector<HTMLElement>("[data-sonner-toaster]")
+        ?.style.getPropertyValue("--width"),
+    ).toBe("420px");
+  });
+
   it("names its region and an error's close button from UiLabels", async () => {
     render(
       <UiLabelsProvider labels={{ toastRegion: "Notifications", toastClose: "Close" }}>

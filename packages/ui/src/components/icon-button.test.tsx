@@ -53,6 +53,9 @@ describe("IconButton", () => {
     expect(button).toHaveAttribute("aria-busy", "true");
     await userEvent.click(button);
     expect(onClick).not.toHaveBeenCalled();
+    // Busy, not unavailable: the fill stays.
+    expect(button).toHaveClass("disabled:opacity-100");
+    expect(button).not.toHaveClass("disabled:opacity-50");
   });
 
   it("grows to a 44px target on a touch screen at every size", () => {

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
+import { endExitAnimation, playExitAnimations } from "../test/exit-animation.js";
 
 import { Button } from "./button.js";
 import {
@@ -49,7 +50,7 @@ describe("Tooltip", () => {
     await waitFor(() => expect(screen.queryByRole("tooltip")).not.toBeInTheDocument());
   });
 
-  it("draws the raised surface and never takes the pointer", async () => {
+  it("draws the theme's tooltip colors, fades out as it leaves and never takes the pointer", async () => {
     render(
       <TooltipProvider>
         <Tooltip defaultOpen>
@@ -62,8 +63,35 @@ describe("Tooltip", () => {
     );
     // Radix renders the text twice (visible, and in a hidden live region);
     // the visible one is inside the styled content.
-    const content = (await screen.findAllByText("Teks"))[0]?.closest(".bg-surface-raised");
+    const content = (await screen.findAllByText("Teks"))[0]?.closest(".bg-\\(--tooltip-bg\\)");
     expect(content).toHaveClass("pointer-events-none", "text-caption", "shadow-2", "z-tooltip");
+    // Inverse in the light theme, the raised surface in the dark (styles.css).
+    expect(content).toHaveClass("text-(--tooltip-fg)", "border-(--tooltip-border)");
+    expect(content).toHaveClass("data-[state=closed]:animate-popover-out");
+  });
+
+  it("stays on screen for its exit animation instead of vanishing on leave", () => {
+    const restore = playExitAnimations();
+    try {
+      const tooltip = (open: boolean) => (
+        <TooltipProvider>
+          <Tooltip open={open}>
+            <TooltipTrigger asChild>
+              <Button>Info</Button>
+            </TooltipTrigger>
+            <TooltipContent>Teks</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+      const { rerender } = render(tooltip(true));
+      rerender(tooltip(false));
+      const content = document.querySelector("[data-radix-popper-content-wrapper] > *");
+      expect(content).toHaveAttribute("data-state", "closed");
+      endExitAnimation(content);
+      expect(document.querySelector("[data-radix-popper-content-wrapper]")).toBeNull();
+    } finally {
+      restore();
+    }
   });
 
   describe("EnsureTooltipProvider", () => {

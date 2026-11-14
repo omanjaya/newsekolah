@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
+import { endExitAnimation, playExitAnimations } from "../test/exit-animation.js";
 
 import { CommandPalette, type CommandPaletteGroup } from "./command-palette.js";
 import { UiLabelsProvider } from "./ui-labels.js";
@@ -42,6 +43,23 @@ describe("CommandPalette", () => {
     expect(onSearchChange).toHaveBeenLastCalledWith("perpus");
     expect(screen.queryByRole("option", { name: /Presensi/ })).not.toBeInTheDocument();
     expect(screen.getByRole("option", { name: /Perpustakaan/ })).toBeInTheDocument();
+  });
+
+  it("fades its scrim out with the panel at the dialog's 120ms", () => {
+    const restore = playExitAnimations();
+    try {
+      const { rerender } = render(
+        <CommandPalette open onOpenChange={vi.fn()} groups={groups(vi.fn())} />,
+      );
+      rerender(<CommandPalette open={false} onOpenChange={vi.fn()} groups={groups(vi.fn())} />);
+      const scrim = document.querySelector(".bg-scrim");
+      expect(scrim).toHaveAttribute("data-state", "closed");
+      expect(scrim).toHaveClass("data-[state=closed]:animate-overlay-out");
+      endExitAnimation(scrim);
+      expect(document.querySelector(".bg-scrim")).toBeNull();
+    } finally {
+      restore();
+    }
   });
 
   it("takes its built-in texts from UiLabels", () => {

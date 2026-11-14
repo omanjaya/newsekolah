@@ -576,3 +576,111 @@
     }
   }
 }
+
+/* ========================================================================
+ * Wave 2 review fixes, stream 2: overlays, navigation and feedback.
+ * Owned by Dialog, Sheet, Tooltip and Toast.
+ * ===================================================================== */
+
+/*
+ * The action row of a Dialog or Sheet (the `footer` prop's row,
+ * `DialogFooter`, a form's lifted trailing row): its buttons are never
+ * shorter than the 36px fields above them, whatever size a caller gave
+ * them, so the primary action is never the smallest control in the
+ * dialog. Component layer, so Button's own 44px touch minimum (a
+ * utility) still wins on a phone.
+ */
+@layer components {
+  :is([data-overlay-footer], .dialog-body > :is(form, div) > .border-t.justify-end:last-child)
+    [data-slot="button"] {
+    min-height: 2.25rem;
+  }
+}
+
+/*
+ * A drawer is full height, so a short form would leave its action row
+ * floating in the middle of the panel. From 640px up the body becomes a
+ * column, the form that ends in the row grows to fill it, and the row
+ * takes the slack above itself: the actions sit on the bottom edge, and
+ * still stick there once the form is long enough to scroll. A grid form
+ * keeps its own layout (its rows would stretch apart instead).
+ */
+@media (width >= 40rem) {
+  [data-side="right"] > .dialog-body {
+    display: flex;
+    flex-direction: column;
+  }
+  [data-side="right"]
+    > .dialog-body
+    > :is(form, div):last-child:not(.grid):has(
+      > :is([data-dialog-footer], .border-t.justify-end):last-child
+    ) {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+  }
+  [data-side="right"]
+    > .dialog-body
+    > :is(form, div):last-child:not(.grid)
+    > :is([data-dialog-footer], .border-t.justify-end):last-child {
+    margin-top: auto;
+  }
+}
+
+/*
+ * Tooltip colors. In the light theme an inverse pill (the text color as
+ * its fill), so it never melts into the white card or button it points
+ * at; in the dark theme the raised surface and its hairline, which
+ * already stand apart from every card. The theme selectors are the token
+ * layer's own.
+ */
+:root {
+  --tooltip-bg: var(--color-fg);
+  --tooltip-fg: var(--color-bg);
+  --tooltip-border: transparent;
+}
+[data-theme="dark"] {
+  --tooltip-bg: var(--color-surface-raised);
+  --tooltip-fg: var(--color-fg);
+  --tooltip-border: var(--color-border);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --tooltip-bg: var(--color-surface-raised);
+    --tooltip-fg: var(--color-fg);
+    --tooltip-border: var(--color-border);
+  }
+}
+
+/*
+ * A toast with both a description and an action: the action moves under
+ * the text, its label lined up with it, so the description gets the full
+ * width instead of wrapping a lone word beside the button; the close
+ * button keeps the top right, centred on the title's line (the label
+ * role's 18px). Unlayered, so it overrides the toast's own flex row.
+ */
+[data-sonner-toast]:has(> [data-content] > [data-description]):has(
+    > [data-button]:not([data-cancel])
+  ) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  row-gap: 0;
+  & > [data-icon] {
+    grid-area: 1 / 1;
+  }
+  & > [data-content] {
+    grid-area: 1 / 2;
+  }
+  & > [data-button]:not([data-cancel]) {
+    grid-area: 2 / 2;
+    justify-self: start;
+    /* The label lines up with the text; the pill's own padding is the gap above. */
+    margin: 0 0 calc(var(--space-2) * -1) calc(var(--space-3) * -1);
+  }
+  & > [data-close-button] {
+    grid-area: 1 / 3;
+    align-self: start;
+    margin-top: calc((1.125rem - 2rem) / 2);
+  }
+}

@@ -69,17 +69,15 @@ function BillDrawer() {
         footer={
           <>
             <SheetClose asChild>
-              <Button variant="secondary" size="sm">
-                Tutup
-              </Button>
+              <Button variant="secondary">Tutup</Button>
             </SheetClose>
-            <Button size="sm">Catat pembayaran</Button>
+            <Button>Catat pembayaran</Button>
           </>
         }
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col items-start gap-4">
           <Badge>Belum lunas</Badge>
-          <dl className="divide-y divide-line">
+          <dl className="divide-y divide-line self-stretch">
             <DetailRow label="Nominal" value="Rp350.000" />
             <DetailRow label="Potongan" value="Rp0" />
             <DetailRow label="Jatuh tempo" value="10 November 2026" />
@@ -119,13 +117,9 @@ function NoteSheet() {
           </div>
           <SheetFooter>
             <SheetClose asChild>
-              <Button variant="secondary" size="sm">
-                Batal
-              </Button>
+              <Button variant="secondary">Batal</Button>
             </SheetClose>
-            <Button type="submit" size="sm">
-              Simpan
-            </Button>
+            <Button type="submit">Simpan</Button>
           </SheetFooter>
         </form>
       </SheetContent>

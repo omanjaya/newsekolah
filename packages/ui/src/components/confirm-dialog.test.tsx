@@ -63,6 +63,15 @@ describe("ConfirmDialog", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
+  it("opens with focus on Cancel, and its actions at the fields' md height", async () => {
+    render(<Harness onConfirm={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: "Hapus" }));
+    const cancel = await screen.findByRole("button", { name: "Batal" });
+    await waitFor(() => expect(cancel).toHaveFocus());
+    expect(cancel).toHaveClass("h-9");
+    expect(screen.getByRole("button", { name: "Hapus" })).toHaveClass("h-9");
+  });
+
   it("closes without confirming when cancelled", async () => {
     const onConfirm = vi.fn();
     render(<Harness onConfirm={onConfirm} />);

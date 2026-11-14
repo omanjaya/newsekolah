@@ -40,9 +40,12 @@ export const Tooltip = TooltipPrimitive.Root;
 export const TooltipTrigger = TooltipPrimitive.Trigger;
 
 /**
- * The same raised surface as menus and popovers, compact: caption text,
- * 14px radius (a pill on one line), elevation 2. It fades and moves 4px
- * away from its trigger and never takes the pointer.
+ * Compact: caption text, 14px radius (a pill on one line), elevation 2.
+ * In the light theme it is inverse, a dark pill, so it stands apart from
+ * the white card or button it describes; in the dark theme it is the
+ * raised surface of menus and popovers (`--tooltip-*` in styles.css). It
+ * fades and moves 4px away from its trigger on the way in and back on the
+ * way out, and never takes the pointer.
  */
 export const TooltipContent = forwardRef<
   HTMLDivElement,
@@ -55,7 +58,7 @@ export const TooltipContent = forwardRef<
         sideOffset={sideOffset}
         collisionPadding={collisionPadding}
         className={cn(
-          "z-tooltip max-w-64 rounded-md border border-border bg-surface-raised px-2.5 py-1.5 text-caption text-fg shadow-2",
+          "z-tooltip max-w-64 rounded-md border border-(--tooltip-border) bg-(--tooltip-bg) px-2.5 py-1.5 text-caption text-(--tooltip-fg) shadow-2",
           "pointer-events-none select-none",
           "data-[state=delayed-open]:animate-popover-in data-[state=instant-open]:animate-popover-in data-[state=closed]:animate-popover-out",
           className,
