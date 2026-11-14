@@ -1,23 +1,43 @@
 "use client";
 
 import { type components } from "@newsekolah/api-client";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
 
 export type LibraryOpacTitleDetail = components["schemas"]["LibraryOpacTitleDetail"];
+export type LibraryOpacTitle = components["schemas"]["LibraryTitle"];
+
+export interface OpacTitlesOptions {
+  /** Narrows to titles whose classification starts with this text (see opac-classifications.ts). */
+  classificationPrefix?: string;
+  /** Page size; the API's default is 20. */
+  limit?: number;
+}
 
 /**
  * Public OPAC (catalogue search visible without a session). Split out of
  * api.ts to keep that file under the lint line-count limit -- see its own
- * "Public OPAC" comment for the rest of that history.
+ * "Public OPAC" comment for the rest of that history. The previous result
+ * stays on screen while a new search loads, so the list does not blink
+ * empty between keystrokes.
  */
-export function useOpacTitlesQuery(search: string) {
+export function useOpacTitlesQuery(search: string, options: OpacTitlesOptions = {}) {
   const client = useApiClient();
+  const { classificationPrefix, limit } = options;
   return useQuery({
-    queryKey: ["library", "opac", search] as const,
+    queryKey: ["library", "opac", search, classificationPrefix ?? "", limit ?? 0] as const,
     queryFn: () =>
-      client.GET("/v1/opac/titles", { params: { query: { search: search || undefined } } }),
+      client.GET("/v1/opac/titles", {
+        params: {
+          query: {
+            search: search || undefined,
+            classification_prefix: classificationPrefix === "" ? undefined : classificationPrefix,
+            limit,
+          },
+        },
+      }),
+    placeholderData: keepPreviousData,
   });
 }
 

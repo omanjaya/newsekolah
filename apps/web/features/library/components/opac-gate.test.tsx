@@ -40,7 +40,8 @@ describe("OpacGate", () => {
     expect(screen.queryByText("unavailableTitle")).not.toBeInTheDocument();
   });
 
-  it("shows a branded not-available page instead while library is off", () => {
+  // The school's name is the public frame's job (public-site-frame.test.tsx).
+  it("shows the not-available state instead while library is off", () => {
     mockUseTenant.mockReturnValue({
       branding: { disabled_public_modules: ["library"] },
       displayName: "SMA 1",
@@ -48,8 +49,7 @@ describe("OpacGate", () => {
     });
     renderGate();
     expect(screen.queryByText("catalogue")).not.toBeInTheDocument();
-    expect(screen.getByText("unavailableTitle")).toBeInTheDocument();
-    expect(screen.getByText("SMA 1")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "unavailableTitle" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "signIn" })).toHaveAttribute("href", "/login");
   });
 

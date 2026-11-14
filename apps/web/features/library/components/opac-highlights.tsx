@@ -1,17 +1,20 @@
 "use client";
 
-import { Badge, Skeleton, domainIcons } from "@newsekolah/ui";
-import Link from "next/link";
+import { Card, SectionHeader, Skeleton, UiLink, useScrollEdges } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+import { useId, useRef } from "react";
 
-import { useOpacHighlightsQuery } from "../opac-api";
+import { useOpacHighlightsQuery, type LibraryOpacTitle } from "../opac-api";
+
+import { OpacAvailability } from "./opac-availability";
+import { OpacCover } from "./opac-cover";
 
 /**
- * Newest arrivals and most-borrowed titles on the OPAC landing page
- * (GET /v1/opac/highlights, public). Rendered above the search results so
- * a visitor with no query yet still sees something worth reading, rather
- * than a blank page.
+ * New arrivals and most-borrowed titles on the catalogue's landing page
+ * (GET /v1/opac/highlights, public), each as a shelf of covers that
+ * scrolls sideways. The catalogue only shows it once it holds enough
+ * titles for the shelves to say something the list below does not.
  */
 export function OpacHighlights(): ReactElement | null {
   const t = useTranslations("app.library.opac.highlights");
@@ -19,9 +22,10 @@ export function OpacHighlights(): ReactElement | null {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" aria-busy="true">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
+      <div className="flex gap-4 overflow-hidden" aria-busy="true">
+        {Array.from({ length: 4 }, (_, index) => (
+          <Skeleton key={index} className="aspect-[2/3] w-32 shrink-0 rounded-sm" />
+        ))}
       </div>
     );
   }
@@ -31,44 +35,46 @@ export function OpacHighlights(): ReactElement | null {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {data.newest.length > 0 && <TitleGroup label={t("newest")} titles={data.newest} />}
+    <div className="flex flex-col gap-8">
+      {data.newest.length > 0 && <Shelf label={t("newest")} titles={data.newest} />}
       {data.most_borrowed.length > 0 && (
-        <TitleGroup label={t("mostBorrowed")} titles={data.most_borrowed} />
+        <Shelf label={t("mostBorrowed")} titles={data.most_borrowed} />
       )}
     </div>
   );
 }
 
-function TitleGroup({
-  label,
-  titles,
-}: {
-  label: string;
-  titles: { id: string; title: string; author: string; available_copies: number }[];
-}): ReactElement {
-  const t = useTranslations("app.library.opac");
+function Shelf({ label, titles }: { label: string; titles: LibraryOpacTitle[] }): ReactElement {
+  const titleId = useId();
+  const scrollerRef = useRef<HTMLUListElement>(null);
+  useScrollEdges(scrollerRef, { axis: "x" });
   return (
-    <section className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-4">
-      <h2 className="text-[14px] font-medium text-fg">{label}</h2>
-      <ul className="flex flex-col gap-2">
+    <section aria-labelledby={titleId} className="flex flex-col gap-3">
+      <SectionHeader title={label} titleId={titleId} />
+      {/* Bleeds to the screen edge on a phone; a half-shown cover behind a
+          soft edge fade says there is more to scroll. */}
+      <ul
+        ref={scrollerRef}
+        className="scrollbar-none scroll-fade-x -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 md:-mx-1 md:px-1"
+      >
         {titles.map((title) => (
-          <li key={title.id} className="min-w-0">
-            <Link
-              href={`/opac/${title.id}`}
-              className="-mx-2 flex min-h-11 min-w-0 items-center gap-2 rounded-sm px-2 transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-bg"
-            >
-              <domainIcons.library className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
-              <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-[13px] text-fg">{title.title}</span>
-                <span className="truncate text-[12px] text-fg-muted">{title.author}</span>
-              </div>
-              {/* Same wording as the search results below, so a bare count
-                  never leaves the reader guessing what it counts. */}
-              <Badge variant={title.available_copies > 0 ? "accent" : "neutral"}>
-                {title.available_copies > 0 ? t("available") : t("unavailable")}
-              </Badge>
-            </Link>
+          <li key={title.id} className="w-32 shrink-0 snap-start sm:w-36">
+            <Card asChild interactive className="flex h-full flex-col gap-2.5 p-2.5">
+              <UiLink href={`/opac/${title.id}`}>
+                <OpacCover title={title.title} size="md" />
+                <span className="flex flex-col gap-0.5 px-0.5">
+                  <span className="line-clamp-2 text-label text-fg">{title.title}</span>
+                  <span className="truncate text-caption text-fg-muted">{title.author}</span>
+                </span>
+                <span className="mt-auto px-0.5">
+                  <OpacAvailability
+                    available={title.available_copies}
+                    total={title.total_copies}
+                    compact
+                  />
+                </span>
+              </UiLink>
+            </Card>
           </li>
         ))}
       </ul>
