@@ -153,13 +153,42 @@ describe("PageHeader", () => {
         }
       />,
     );
-    const heading = screen.getByRole("heading", { level: 1, name: "Penilaian" });
-    const row = heading.parentElement;
+    const block = screen.getByRole("heading", { level: 1, name: "Penilaian" }).parentElement;
+    const row = block?.parentElement;
     expect(row).toHaveClass("sm:flex-row", "sm:flex-wrap");
     expect(row?.className).not.toMatch(/grid-cols/);
-    expect(heading).toHaveClass("min-w-0", "sm:basis-64", "sm:grow-999");
+    expect(block).toHaveClass("min-w-0", "sm:basis-64", "sm:grow-999");
     const actions = screen.getByRole("button", { name: "Kelas" }).parentElement;
     expect(actions).toHaveClass("min-w-0", "flex-wrap", "sm:grow");
+  });
+
+  // Wrapped or not, phone or wide, nothing comes between the title and its
+  // description: they are one block, and the actions follow it.
+  it("keeps the description with its title, the actions after both", () => {
+    render(
+      <PageHeader
+        eyebrow="Presensi"
+        title="Jurnal Mengajar"
+        description="Catatan setiap pertemuan."
+        actions={<Button>Ekspor XLSX</Button>}
+      />,
+    );
+    const heading = screen.getByRole("heading", { level: 1, name: "Jurnal Mengajar" });
+    const description = screen.getByText("Catatan setiap pertemuan.");
+    const block = heading.parentElement;
+    expect(block).toHaveAttribute("data-slot", "page-header-heading");
+    expect(description.parentElement).toBe(block);
+    const actions = screen.getByRole("button", { name: "Ekspor XLSX" }).parentElement;
+    expect(actions).toHaveAttribute("data-slot", "page-header-actions");
+    expect(block?.nextElementSibling).toBe(actions);
+    // No reordering anywhere: the source order is the reading order.
+    expect(actions?.className).not.toMatch(/\border-/);
+    // A 40px row lifted 4px, so its controls centre on the 32px title line.
+    expect(actions).toHaveClass("sm:-mt-1", "sm:min-h-10", "items-center");
+    // With a sentence to hold, the block claims 28rem before the actions
+    // may sit beside it, so the description is not squeezed into a column.
+    expect(block).toHaveClass("sm:basis-112");
+    expect(block).not.toHaveClass("sm:basis-64");
   });
 
   it("passes an id, a test id and a ref to its root", () => {

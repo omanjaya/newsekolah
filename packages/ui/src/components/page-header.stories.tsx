@@ -58,7 +58,6 @@ function Gallery() {
       <PageHeader
         eyebrow="Akademik"
         title="Nilai"
-        divider
         actions={
           <Select
             aria-label="Kelas"

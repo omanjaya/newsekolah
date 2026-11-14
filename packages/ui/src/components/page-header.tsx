@@ -149,18 +149,34 @@ export function PageHeader({
       {crumbs}
       <div className="flex flex-col gap-1">
         {eyebrow && <p className="text-body-sm text-fg-muted">{eyebrow}</p>}
-        {/* One column on a phone: title, description, then actions. From
-            640px a wrapping row: the title claims at least 16rem and takes
-            all the spare width, which pushes the actions to the right end;
-            when the actions do not fit beside that, they wrap onto their
-            own line under the title, start-aligned as on a phone, instead
-            of squeezing it. The description always gets a line of its own. */}
-        <div className="flex flex-col gap-y-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6">
-          <h1 className="min-w-0 text-display text-fg sm:grow-999 sm:basis-64">{title}</h1>
+        {/* The title and its description are one block, so nothing ever
+            comes between them. On a phone the actions follow that block.
+            From 640px the two are a wrapping row: the block claims at
+            least 16rem (28rem with a description, room for the sentence
+            to read as a line and a half) and takes all the spare width,
+            which pushes the actions to the right end, centred on the
+            title's first line; when they do not fit beside it, they wrap
+            under the whole block, start-aligned as on a phone, instead of
+            squeezing the title or splitting it from its description. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:gap-x-6 sm:gap-y-4">
+          <div
+            data-slot="page-header-heading"
+            className={cn(
+              "flex min-w-0 flex-col gap-2 sm:grow-999",
+              description ? "sm:basis-112" : "sm:basis-64",
+            )}
+          >
+            <h1 className="text-display text-fg">{title}</h1>
+            {description && (
+              <div className="max-w-prose text-body text-fg-muted">{description}</div>
+            )}
+          </div>
+          {/* A 40px row centred on the 32px title line: 4px above it, so a
+              32, 36 or 40px control all share the title's centre. */}
           {hasActions && (
             <div
               data-slot="page-header-actions"
-              className="order-last flex min-w-0 flex-wrap items-center gap-2 max-sm:mt-1 sm:order-none sm:grow"
+              className="flex min-w-0 flex-wrap items-center gap-2 sm:-mt-1 sm:min-h-10 sm:grow"
             >
               {actions}
               {buttons.length > 0 && <SecondaryButtons actions={buttons} />}
@@ -171,11 +187,6 @@ export function PageHeader({
               {destructive.length > 0 && (
                 <OverflowMenu actions={destructive} className="hidden sm:block" />
               )}
-            </div>
-          )}
-          {description && (
-            <div className="text-body text-fg-muted sm:basis-full">
-              <div className="max-w-prose">{description}</div>
             </div>
           )}
         </div>
