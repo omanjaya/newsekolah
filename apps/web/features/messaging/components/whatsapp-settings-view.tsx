@@ -19,7 +19,9 @@ export function WhatsAppSettingsView(): ReactElement {
   const t = useTranslations("app.messaging");
 
   return (
-    <AppPage variant="default" description={t("description")}>
+    // The settings area draws its own section switch above; this page names
+    // itself after its menu entry rather than the settings hub.
+    <AppPage nav={false} title={t("title")} description={t("description")}>
       <Tabs defaultValue="provider" className="flex flex-col gap-5">
         <TabsList aria-label={t("title")}>
           <TabsTrigger value="provider">{t("tabs.provider")}</TabsTrigger>
