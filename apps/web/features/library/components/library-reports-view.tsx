@@ -24,7 +24,7 @@ import {
 import type { ColumnDef } from "@tanstack/react-table";
 import { Download, FileText } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
@@ -74,14 +74,7 @@ const REPORT_TABS = [
   "accessionRegister",
 ] as const;
 
-type ReportTab =
-  | "loans"
-  | "overdueMembers"
-  | "mostBorrowed"
-  | "summary"
-  | "visits"
-  | "members"
-  | "accessionRegister";
+type ReportTab = (typeof REPORT_TABS)[number];
 
 const TABS_WITHOUT_DATE_RANGE: ReportTab[] = ["overdueMembers", "members"];
 
@@ -114,9 +107,15 @@ const REPORT_EXPORT_COLUMN_KEYS: Record<Exclude<ReportTab, "summary">, readonly 
  * (where it applies) and the XLSX export above the tab's table, and the
  * monthly PDF in its own card. On its own route the page shows the
  * reports area's tabs; inside the reports hub (`tabKey` other than "tab")
- * it is one section of that page.
+ * it is one section of that page. `sectionNav` is the hub's strip of
+ * report sections when the reader has more than one: the page then keeps
+ * the hub's title, as the report centre does, with the strip under it, so
+ * switching sections never swaps the header.
  */
-export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {}): ReactElement {
+export function LibraryReportsView({
+  tabKey = "tab",
+  sectionNav,
+}: { tabKey?: string; sectionNav?: ReactNode } = {}): ReactElement {
   const t = useTranslations("app.library.reports");
   const timeZone = useTenantTimeZone();
   const today = todayInZone(timeZone);
@@ -152,8 +151,9 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
 
   return (
     <AppPage
-      title={embedded ? t("title") : undefined}
-      nav={embedded ? false : undefined}
+      title={embedded && !sectionNav ? t("title") : undefined}
+      documentTitle={embedded ? t("title") : undefined}
+      nav={sectionNav ?? (embedded ? false : undefined)}
       primaryAction={
         <Button
           icon={<Download />}

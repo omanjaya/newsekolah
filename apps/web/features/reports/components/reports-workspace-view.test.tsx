@@ -32,9 +32,13 @@ vi.mock("./reports-view", () => ({
     </div>
   ),
 }));
+// The library reports draw it under their own title too.
 vi.mock("../../library/components/library-reports-view", () => ({
-  LibraryReportsView: ({ tabKey }: { tabKey: string }) => (
-    <p data-testid="library-report">{tabKey}</p>
+  LibraryReportsView: ({ tabKey, sectionNav }: { tabKey: string; sectionNav?: ReactNode }) => (
+    <div data-testid="library-page">
+      {sectionNav}
+      <p data-testid="library-report">{tabKey}</p>
+    </div>
   ),
 }));
 vi.mock("../../visitors/components/visitor-recap-view", () => ({
@@ -44,6 +48,11 @@ vi.mock("../../visitors/components/visitor-recap-view", () => ({
 }));
 
 import { ReportsWorkspaceView } from "./reports-workspace-view";
+
+// Each section tab reads its page's registry label (the mock returns the key).
+const SCHOOL = "app.reports.navLabel";
+const LIBRARY = "app.library.reports.navLabel";
+const VISITORS = "nav.visitors.items.reports";
 
 describe("reports workspace permission isolation", () => {
   beforeEach(() => {
@@ -84,6 +93,21 @@ describe("reports workspace permission isolation", () => {
     expect(controls).toBeTruthy();
     expect(document.getElementById(controls ?? "")).toContainElement(report);
   });
+  it("hands the section strip to the library reports, so one header leads the page", async () => {
+    session.permissions = ["view_reports", "view_library_reports"];
+    window.history.replaceState(null, "", "/reports?section=library");
+    render(
+      <Suspense>
+        <ReportsWorkspaceView />
+      </Suspense>,
+    );
+    const page = await screen.findByTestId("library-page");
+    expect(page).toContainElement(
+      screen.getByRole("tablist", { name: "app.shell.nav.items.reports" }),
+    );
+    expect(screen.getAllByRole("tablist")).toHaveLength(1);
+  });
+
   it("uses independent tab keys and preserves each domain's bookmarked selection", async () => {
     session.permissions = ["view_reports", "view_library_reports", "view_visitor_reports"];
     window.history.replaceState(
@@ -97,12 +121,12 @@ describe("reports workspace permission isolation", () => {
       </Suspense>,
     );
     expect(await screen.findByTestId("school-report")).toHaveTextContent("tab");
-    fireEvent.mouseDown(screen.getByRole("tab", { name: "libraryReports" }), {
+    fireEvent.mouseDown(screen.getByRole("tab", { name: LIBRARY }), {
       button: 0,
       ctrlKey: false,
     });
     expect(await screen.findByTestId("library-report")).toHaveTextContent("libraryTab");
-    fireEvent.mouseDown(screen.getByRole("tab", { name: "visitorReports" }), {
+    fireEvent.mouseDown(screen.getByRole("tab", { name: VISITORS }), {
       button: 0,
       ctrlKey: false,
     });
@@ -134,8 +158,8 @@ describe("reports workspace with switched-off modules", () => {
     renderWorkspace();
     expect(await screen.findByTestId("library-report")).toBeInTheDocument();
     expect(screen.queryByTestId("school-report")).not.toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "schoolReports" })).not.toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "visitorReports" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: SCHOOL })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: VISITORS })).toBeInTheDocument();
   });
 
   it("drops the tabs when a single section is left", async () => {

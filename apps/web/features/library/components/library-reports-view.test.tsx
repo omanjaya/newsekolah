@@ -113,3 +113,22 @@ describe("LibraryReportsView overdue members tab", () => {
     expect(screen.getByText("periodLabel")).toBeInTheDocument();
   });
 });
+
+describe("LibraryReportsView inside the reports hub", () => {
+  beforeEach(() => {
+    mocks.overdue.mockReturnValue({ data: { data: [] }, isLoading: false });
+    window.history.replaceState(null, "", "/reports?section=library");
+  });
+
+  it("keeps the hub's title and draws the section strip it is given under it", () => {
+    render(<LibraryReportsView tabKey="libraryTab" sectionNav={<nav aria-label="sections" />} />);
+    // No title of its own: the template names the page after the hub.
+    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "sections" })).toBeInTheDocument();
+  });
+
+  it("names itself when it is the hub's only section", () => {
+    render(<LibraryReportsView tabKey="libraryTab" />);
+    expect(screen.getByRole("heading", { level: 1, name: "title" })).toBeInTheDocument();
+  });
+});
