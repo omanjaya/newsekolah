@@ -29,6 +29,25 @@ describe("CommandPalette", () => {
     expect(onSelect).toHaveBeenCalledTimes(1);
   });
 
+  it("shows an item's hint dim at the row's end, read after the label", () => {
+    render(
+      <CommandPalette
+        open
+        onOpenChange={vi.fn()}
+        groups={[
+          {
+            heading: "Terakhir dibuka",
+            items: [{ id: "terms", label: "Semester", hint: "Akademik", onSelect: vi.fn() }],
+          },
+        ]}
+      />,
+    );
+    const option = screen.getByRole("option", { name: "Semester Akademik" });
+    const hint = screen.getByText("Akademik");
+    expect(option).toContainElement(hint);
+    expect(hint).toHaveClass("text-caption", "text-fg-muted", "truncate");
+  });
+
   it("filters as the reader types and reports the text to the caller", async () => {
     const onSearchChange = vi.fn();
     render(

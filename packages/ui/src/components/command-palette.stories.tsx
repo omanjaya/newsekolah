@@ -13,16 +13,23 @@ const phoneFrame: Decorator = (Story) => (
 );
 
 function groups(close: () => void): CommandPaletteGroup[] {
-  const item = (id: string, label: string, icon: keyof typeof domainIcons, shortcut?: string) => {
+  const item = (
+    id: string,
+    label: string,
+    icon: keyof typeof domainIcons,
+    shortcut?: string,
+    hint?: string,
+  ) => {
     const Icon = domainIcons[icon];
-    return { id, label, icon: <Icon />, shortcut, onSelect: close };
+    return { id, label, hint, icon: <Icon />, shortcut, onSelect: close };
   };
   return [
     {
+      // Recent pages name their area at the row's end (hint).
       heading: "Terakhir dibuka",
       items: [
-        item("attendance", "Absensi dan jurnal", "attendance"),
-        item("library", "Sirkulasi perpustakaan", "library"),
+        item("attendance", "Absensi dan jurnal", "attendance", undefined, "Pembelajaran"),
+        item("library", "Sirkulasi perpustakaan", "library", undefined, "Perpustakaan"),
       ],
     },
     {

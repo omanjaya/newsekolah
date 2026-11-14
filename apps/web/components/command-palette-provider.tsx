@@ -145,16 +145,19 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
   const activeHref = activeNavHref(pathname, pageItems);
 
   // Item ids only need to be unique; numbers add no searchable letters.
+  // `withArea` names the page's menu group at the row's end, for the
+  // groups whose heading does not (favourites, recent pages).
   const pageItem = useCallback(
-    (page: PageEntry, id: string): CommandPaletteItem => ({
+    (page: PageEntry, id: string, withArea = false): CommandPaletteItem => ({
       id,
       label: page.label,
+      hint: withArea && page.heading !== UNGROUPED ? tNav(page.heading) : undefined,
       icon: <page.item.icon aria-hidden="true" />,
       onSelect: () => {
         go(page.item.href);
       },
     }),
-    [go],
+    [go, tNav],
   );
   const actionItem = useCallback(
     (action: QuickAction, id: string): CommandPaletteItem => ({
@@ -217,12 +220,17 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
           ? [
               {
                 heading: tNav("app.shell.mobileMenu.favorites"),
-                items: favoriteEntries.map((page) => pageItem(page, id())),
+                items: favoriteEntries.map((page) => pageItem(page, id(), true)),
               },
             ]
           : []),
         ...(recentEntries.length
-          ? [{ heading: t("recent"), items: recentEntries.map((page) => pageItem(page, id())) }]
+          ? [
+              {
+                heading: t("recent"),
+                items: recentEntries.map((page) => pageItem(page, id(), true)),
+              },
+            ]
           : []),
         ...(orderedActions.length
           ? [{ heading: tQuick("group"), items: orderedActions.map((a) => actionItem(a, id())) }]
