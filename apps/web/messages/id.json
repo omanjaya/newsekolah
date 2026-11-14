@@ -945,7 +945,12 @@
       "mine": "Jadwal saya",
       "loadError": "Jadwal gagal dimuat.",
       "noClassTitle": "Belum terdaftar di kelas",
-      "noClassBody": "Jadwal tampil setelah Anda ditempatkan di kelas untuk tahun ajaran ini. Hubungi wali kelas atau admin sekolah."
+      "noClassBody": "Jadwal tampil setelah Anda ditempatkan di kelas untuk tahun ajaran ini. Hubungi wali kelas atau admin sekolah.",
+      "viewLabel": "Tampilan jadwal",
+      "noTeachingTitle": "Anda belum punya jadwal mengajar",
+      "noTeachingBody": "Jadwal mengajar muncul di sini setelah dibuat oleh pengelola jadwal. Jadwal kelas tetap bisa dilihat per kelas.",
+      "viewByClass": "Lihat per kelas",
+      "blockActions": "Aksi jadwal"
     },
     "attendance": {
       "eyebrow": "Akademik",

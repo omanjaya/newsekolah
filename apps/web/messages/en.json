@@ -945,7 +945,12 @@
       "mine": "My schedule",
       "loadError": "The schedule could not be loaded.",
       "noClassTitle": "Not placed in a class yet",
-      "noClassBody": "Your timetable appears once you are placed in a class for this academic year. Contact your homeroom teacher or the school admin."
+      "noClassBody": "Your timetable appears once you are placed in a class for this academic year. Contact your homeroom teacher or the school admin.",
+      "viewLabel": "Timetable view",
+      "noTeachingTitle": "You have no teaching timetable yet",
+      "noTeachingBody": "Your lessons appear here once the timetable manager adds them. Class timetables can still be viewed by class.",
+      "viewByClass": "View by class",
+      "blockActions": "Lesson actions"
     },
     "attendance": {
       "eyebrow": "Academic",

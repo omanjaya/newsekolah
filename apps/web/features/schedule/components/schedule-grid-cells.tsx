@@ -95,11 +95,13 @@ export function HeadCell({
       scope="col"
       aria-current={current ? "date" : undefined}
       className={cn(
-        "h-10 truncate border-b-2 border-border px-3 text-left text-[13px] font-medium",
-        !first && "border-l",
-        // "Accent text + soft background" for today's column (docs/07-ui-ux.md,
-        // "Hijau Segar"), the same AA-checked pairing Badge's accent variant uses.
-        current ? "bg-accent-soft text-accent-soft-fg" : "text-fg-muted",
+        "sticky top-0 z-10 h-10 truncate bg-surface-header px-3 text-left text-label",
+        !first && "border-l border-line",
+        // Today's column: accent text over an accent bar, on the opaque
+        // header band so rows never show through it while they scroll.
+        current
+          ? "text-accent shadow-[inset_0_-2px_0_var(--color-accent)]"
+          : "font-medium text-fg-muted shadow-[inset_0_-1px_0_var(--color-line)]",
       )}
     >
       {children}
@@ -129,10 +131,10 @@ export function PeriodCell({
         current && "bg-accent/5 shadow-[inset_2px_0_0_var(--color-accent)]",
       )}
     >
-      <span className={cn("block truncate text-[13px]", current ? "text-accent" : "text-fg")}>
+      <span className={cn("block truncate text-body-sm", current ? "text-accent" : "text-fg")}>
         {period.name}
       </span>
-      <span className="block text-[12px] text-fg-muted tabular-nums">
+      <span className="block text-caption font-normal text-fg-muted tabular-nums">
         {formatPeriodTime(period)}
       </span>
     </th>
@@ -179,7 +181,7 @@ export function EmptySlotCell({
         type="button"
         onClick={onClick}
         className={cn(
-          "flex size-full items-center justify-center gap-1 text-[12px] text-fg-muted",
+          "flex size-full items-center justify-center gap-1 text-caption text-fg-muted",
           "transition-colors hover:bg-accent/10 hover:text-accent",
           "focus-visible:bg-accent/10 focus-visible:text-accent",
           pasting && "border border-dashed border-accent/50 text-accent",
@@ -274,12 +276,12 @@ export function LessonCell({
           SUBJECT_TONE_CLASSES[tone],
         )}
       >
-        <span className="flex items-center gap-1.5 truncate text-[14px] font-medium">
+        <span className="flex items-center gap-1.5 truncate text-label">
           <span className="truncate">{subject}</span>
           {crossesBreak && breakWarningLabel && <BreakWarningBadge label={breakWarningLabel} />}
         </span>
         <div className="flex items-center justify-between gap-1">
-          <span className="truncate text-[12px]">{detail}</span>
+          <span className="truncate text-caption font-normal">{detail}</span>
           <LessonSubstitutionAction block={block} compact />
         </div>
         {canManage && (
