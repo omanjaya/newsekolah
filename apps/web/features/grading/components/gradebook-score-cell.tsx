@@ -143,9 +143,9 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
         aria-describedby={invalid && rangeHint ? hintId : undefined}
         className={cn(
           "w-full",
-          size === "lg" && "h-12 text-center text-[20px] font-medium",
-          changed && "border-accent bg-accent/5",
-          invalid && "text-status-absent",
+          size === "lg" && "h-12 text-center text-title",
+          changed && "border-accent bg-accent-soft/40",
+          invalid && "text-danger",
         )}
         onFocus={() => {
           focusedRef.current = true;
@@ -188,7 +188,7 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
         <p
           id={hintId}
           role="alert"
-          className="absolute inset-x-0 top-full z-10 mt-0.5 text-[11px] leading-tight font-medium text-status-absent"
+          className="absolute inset-x-0 top-full z-10 mt-0.5 text-caption text-danger"
         >
           {rangeHint}
         </p>

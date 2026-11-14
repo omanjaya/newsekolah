@@ -1,6 +1,15 @@
 "use client";
 
-import { cn } from "@newsekolah/ui";
+import {
+  Button,
+  Card,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  List,
+  ListRow,
+} from "@newsekolah/ui";
 import { Star } from "lucide-react";
 import { useLocale, type useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -56,96 +65,105 @@ export function GradebookMobileCards({
   onRegisterRef,
 }: GradebookMobileCardsProps): ReactElement {
   const locale = useLocale();
+  if (students.length === 0) {
+    return <EmptyState variant="compact" title={t("noMatch")} />;
+  }
   return (
     <div className="flex flex-col gap-3">
       {students.map((student, rowIndex) => {
         const live = liveByStudent.get(student.student_user_id);
         const pending = pendingStudentIds.has(student.student_user_id);
+        const reportScore =
+          student.report_score !== undefined ? formatScore(student.report_score, locale) : "-";
         return (
-          <div
-            key={student.student_user_id}
-            className="rounded-sm border border-border bg-surface p-3"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <p className="min-w-0 truncate text-[14px] font-medium text-fg">{student.name}</p>
-              <button
-                type="button"
-                disabled={!canManage}
-                onClick={() => {
-                  onGiveStar(student);
-                }}
-                className="flex min-h-11 shrink-0 items-center gap-1 px-2 text-fg-muted hover:text-fg disabled:hover:text-fg-muted"
-                aria-label={t("starsFor", { name: student.name })}
-              >
-                <Star className="size-3.5" aria-hidden="true" />
-                {starBalances.get(student.student_user_id) ?? 0}
-              </button>
-            </div>
-            <div className="mt-1 flex flex-col divide-y divide-border">
+          <Card key={student.student_user_id}>
+            <CardHeader
+              action={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={!canManage}
+                  onClick={() => {
+                    onGiveStar(student);
+                  }}
+                  className="text-fg-muted tabular-nums disabled:opacity-100"
+                  aria-label={t("starsFor", { name: student.name })}
+                >
+                  <Star aria-hidden="true" />
+                  {starBalances.get(student.student_user_id) ?? 0}
+                </Button>
+              }
+            >
+              <CardTitle className="truncate">{student.name}</CardTitle>
+            </CardHeader>
+            <List>
               {components.map((component) => {
                 const changed = edits[component.id]?.[student.student_user_id] !== undefined;
                 return (
-                  <div key={component.id} className="flex items-center justify-between gap-3 py-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-fg">{component.code}</p>
-                      <p className="truncate text-[12px] text-fg-muted">
-                        {t("weightLabel", { weight: component.weight })}
-                        {component.kktp !== undefined ? ` · KKTP ${component.kktp}` : ""}
-                      </p>
-                    </div>
-                    <GradebookScoreCell
-                      studentId={student.student_user_id}
-                      componentId={component.id}
-                      rowIndex={rowIndex}
-                      value={cellValue(component.id, student)}
-                      disabled={!canManage}
-                      ariaLabel={t("scoreFor", { name: student.name, code: component.code })}
-                      className="w-20 shrink-0 text-right [font-variant-numeric:tabular-nums]"
-                      min={scaleMin}
-                      max={scaleMax}
-                      rangeHint={rangeHint}
-                      changed={changed}
-                      onCommit={onCommit}
-                      onRegisterRef={onRegisterRef}
-                    />
-                  </div>
+                  <ListRow
+                    key={component.id}
+                    title={component.code}
+                    meta={[
+                      t("weightLabel", { weight: component.weight }),
+                      component.kktp !== undefined
+                        ? t("kktpLabel", { kktp: component.kktp })
+                        : undefined,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                    action={
+                      <GradebookScoreCell
+                        studentId={student.student_user_id}
+                        componentId={component.id}
+                        rowIndex={rowIndex}
+                        value={cellValue(component.id, student)}
+                        disabled={!canManage}
+                        ariaLabel={t("scoreFor", { name: student.name, code: component.code })}
+                        className="w-20 shrink-0 text-right tabular-nums"
+                        min={scaleMin}
+                        max={scaleMax}
+                        rangeHint={rangeHint}
+                        changed={changed}
+                        onCommit={onCommit}
+                        onRegisterRef={onRegisterRef}
+                      />
+                    }
+                  />
                 );
               })}
-            </div>
-            <div className="mt-1 flex items-center justify-between border-t border-border pt-2 text-[13px]">
-              <span className="text-fg-muted [font-variant-numeric:tabular-nums]">
+            </List>
+            <CardFooter className="justify-between gap-3 border-t border-line py-2 text-body-sm">
+              <span className="text-fg-muted tabular-nums">
                 {t("averageColumn")}{" "}
                 {live?.average !== undefined ? formatScore(live.average, locale) : "-"}
               </span>
-              <button
-                type="button"
-                disabled={!canManage}
-                onClick={() => {
-                  onManualOverride(student);
-                }}
-                className={cn(
-                  "min-h-11 px-2 font-medium text-fg underline decoration-dotted underline-offset-2",
-                  !canManage && "no-underline",
-                )}
-              >
-                {t("reportScoreColumn")}{" "}
-                {student.report_score !== undefined
-                  ? formatScore(student.report_score, locale)
-                  : "-"}
-                {pending && (
-                  <span
-                    className="ml-1 inline-block size-1.5 rounded-full bg-accent align-middle"
-                    aria-label={t("reportScorePending")}
-                  />
-                )}
-              </button>
-            </div>
-          </div>
+              {canManage ? (
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={() => {
+                    onManualOverride(student);
+                  }}
+                  className="text-fg underline decoration-dotted underline-offset-2"
+                >
+                  {t("reportScoreColumn")} {reportScore}
+                  {pending && (
+                    <span
+                      role="img"
+                      className="ml-1 inline-block size-1.5 rounded-full bg-accent"
+                      aria-label={t("reportScorePending")}
+                    />
+                  )}
+                </Button>
+              ) : (
+                <span className="text-label text-fg">
+                  {t("reportScoreColumn")} {reportScore}
+                </span>
+              )}
+            </CardFooter>
+          </Card>
         );
       })}
-      {students.length === 0 && (
-        <p className="p-6 text-center text-[13px] text-fg-muted">{t("noMatch")}</p>
-      )}
     </div>
   );
 }
