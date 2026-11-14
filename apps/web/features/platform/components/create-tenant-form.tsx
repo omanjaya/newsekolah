@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select } from "@newsekolah/ui";
+import { Button, DialogFooter, Field, FormError, FormSection, Input, Select } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -9,8 +9,19 @@ import { useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { type PlatformTenantCreated, useCreateTenantMutation } from "../api";
 
-const LEVELS = ["sd", "smp", "sma", "smk"] as const;
+import { EDUCATION_LEVELS, SCHOOL_TIME_ZONES } from "./tenant-status";
 
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/** `SMA Negeri 1 Denpasar` becomes `sma-negeri-1-denpasar`. */
+export function tenantSlugFrom(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** The body of the "Tambah sekolah" dialog; its actions sit in the dialog's footer. */
 export function CreateTenantForm({
   onCreated,
   onCancel,
@@ -18,31 +29,53 @@ export function CreateTenantForm({
   onCreated: (result: PlatformTenantCreated) => void;
   onCancel: () => void;
 }): ReactElement {
-  const t = useTranslations("app.platform.tenants.create");
+  const t = useTranslations("app.platform.tenants");
+  const tc = useTranslations("app.platform.tenants.create");
   const apiErrorMessage = useApiErrorMessage();
   const create = useCreateTenantMutation();
   const [error, setError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
-  const [slug, setSlug] = useState("");
   const [name, setName] = useState("");
-  const [level, setLevel] = useState<(typeof LEVELS)[number]>("sma");
-  const [timezone, setTimezone] = useState("Asia/Makassar");
+  const [slug, setSlug] = useState("");
+  // Until the user edits the address themselves it follows the name.
+  const [slugTouched, setSlugTouched] = useState(false);
+  const [level, setLevel] = useState<(typeof EDUCATION_LEVELS)[number]>("sma");
+  const [timezone, setTimezone] = useState<string>("Asia/Makassar");
+  const [adminName, setAdminName] = useState("");
   const [adminUsername, setAdminUsername] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
-  const [adminName, setAdminName] = useState("");
+
+  const required = (value: string) => (submitted && !value.trim() ? tc("required") : undefined);
+  const slugError =
+    required(slug) ??
+    (slug.trim() && !SLUG_PATTERN.test(slug.trim()) ? tc("slugFormat") : undefined);
+  const usernameError =
+    required(adminUsername) ??
+    (submitted && adminUsername.trim().length < 3 ? tc("usernameLength") : undefined);
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-6"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
+        setSubmitted(true);
         setError("");
+        if (
+          !name.trim() ||
+          !SLUG_PATTERN.test(slug.trim()) ||
+          !adminName.trim() ||
+          adminUsername.trim().length < 3
+        ) {
+          return;
+        }
         create.mutate(
           {
             slug: slug.trim(),
             name: name.trim(),
             education_level: level,
-            timezone: timezone.trim(),
+            timezone,
             admin_username: adminUsername.trim(),
             admin_email: adminEmail.trim() || undefined,
             admin_name: adminName.trim(),
@@ -60,77 +93,86 @@ export function CreateTenantForm({
         );
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
-        <Input
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-          }}
+      {error && <FormError>{error}</FormError>}
+      <FormSection title={tc("schoolSectionTitle")}>
+        <Field label={tc("name")} required error={required(name)} className="col-span-full">
+          <Input
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (!slugTouched) setSlug(tenantSlugFrom(e.target.value));
+            }}
+            maxLength={150}
+          />
+        </Field>
+        <Field
+          label={tc("slug")}
           required
-          maxLength={150}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("slug")}</span>
-        <Input
-          value={slug}
-          onChange={(e) => {
-            setSlug(e.target.value);
-          }}
-          required
-          maxLength={64}
-        />
-        <span className="text-[12px] text-fg-muted">{t("slugHint")}</span>
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("level")}</span>
-        <Select
-          options={LEVELS.map((l) => ({ value: l, label: l.toUpperCase() }))}
-          value={level}
-          onValueChange={(v) => {
-            setLevel(v as (typeof LEVELS)[number]);
-          }}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("timezone")}</span>
-        <Input
-          value={timezone}
-          onChange={(e) => {
-            setTimezone(e.target.value);
-          }}
-          required
-        />
-      </label>
+          hint={tc("slugHint")}
+          error={slugError}
+          className="col-span-full"
+        >
+          <Input
+            value={slug}
+            onChange={(e) => {
+              setSlugTouched(true);
+              setSlug(e.target.value);
+            }}
+            maxLength={64}
+            autoCapitalize="none"
+            spellCheck={false}
+            inputClassName="font-mono"
+            className="font-mono"
+          />
+        </Field>
+        <Field label={tc("level")}>
+          <Select
+            options={EDUCATION_LEVELS.map((value) => ({ value, label: t(`level.${value}`) }))}
+            value={level}
+            onValueChange={(value) => {
+              setLevel(value as (typeof EDUCATION_LEVELS)[number]);
+            }}
+          />
+        </Field>
+        <Field label={tc("timezone")}>
+          <Select
+            options={SCHOOL_TIME_ZONES.map((value) => ({
+              value,
+              label: tc(`timezones.${value.replace("/", "_")}`),
+            }))}
+            value={timezone}
+            onValueChange={setTimezone}
+          />
+        </Field>
+      </FormSection>
 
-      <div className="flex flex-col gap-3 border-t border-border pt-4">
-        <span className="text-[13px] font-medium">{t("adminSectionTitle")}</span>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("adminName")}</span>
+      <FormSection title={tc("adminSectionTitle")} description={tc("adminSectionHint")}>
+        <Field
+          label={tc("adminName")}
+          required
+          error={required(adminName)}
+          className="col-span-full"
+        >
           <Input
             value={adminName}
             onChange={(e) => {
               setAdminName(e.target.value);
             }}
-            required
             maxLength={150}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("adminUsername")}</span>
+        </Field>
+        <Field label={tc("adminUsername")} required error={usernameError}>
           <Input
             value={adminUsername}
             onChange={(e) => {
               setAdminUsername(e.target.value);
             }}
-            required
-            minLength={3}
             maxLength={80}
+            autoCapitalize="none"
+            spellCheck={false}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("adminEmail")}</span>
+        </Field>
+        <Field label={tc("adminEmail")} optional>
           <Input
             type="email"
             value={adminEmail}
@@ -138,19 +180,17 @@ export function CreateTenantForm({
               setAdminEmail(e.target.value);
             }}
           />
-        </label>
-      </div>
+        </Field>
+      </FormSection>
 
-      {error && <p className="text-[13px] text-status-absent">{error}</p>}
-
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          {t("cancel")}
+      <DialogFooter>
+        <Button variant="secondary" onClick={onCancel}>
+          {tc("cancel")}
         </Button>
         <Button type="submit" loading={create.isPending}>
-          {t("submit")}
+          {tc("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }
