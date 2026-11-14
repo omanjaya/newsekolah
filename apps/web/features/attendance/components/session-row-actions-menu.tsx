@@ -1,31 +1,34 @@
 "use client";
 
 import {
-  Badge,
+  CountBadge,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
   IconButton,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
   cn,
   domainIcons,
 } from "@newsekolah/ui";
-import { ChevronLeft, MoreHorizontal, StickyNote } from "lucide-react";
+import { MoreHorizontal, StickyNote } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
 
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import type { ViolationType } from "../../discipline/api";
-
-import { ViolationChecklist } from "./violation-checklist";
 
 /**
  * A roster row's secondary actions, collapsed behind one "..." button
  * instead of a note icon plus a violation icon side by side: the two
  * extra 44px targets used to push a phone row onto a second line for
- * every one of 36+ students (docs/07-ui-ux.md's row-height target). Menu
- * items carry full text labels (never bare icons) since they are no
- * longer squeezed for space the way the row itself is.
+ * every one of 36+ students (docs/07-ui-ux.md's row-height target). A real
+ * menu: the note toggle, then the violation types as a submenu of
+ * checkable items, so a teacher ticks several without the menu closing.
  */
 export function SessionRowActionsMenu({
   studentName,
@@ -50,83 +53,76 @@ export function SessionRowActionsMenu({
   onToggleViolation: (violationTypeId: string) => void;
 }): ReactElement {
   const t = useTranslations("app.attendance.session");
-  const [open, setOpen] = useState(false);
-  const [view, setView] = useState<"menu" | "violations">("menu");
+  const tViolations = useTranslations("app.attendance.session.violations");
   // Recording a violation is a discipline action: no entry without the module,
   // and no highlight for violations kept from before it was switched off.
   const disciplineOn = useModuleEnabled("discipline");
   const hasViolations = disciplineOn && violationIds.length > 0;
 
-  function onOpenChange(next: boolean) {
-    setOpen(next);
-    if (!next) setView("menu");
-  }
-
   return (
-    <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
         <IconButton
           icon={<MoreHorizontal />}
           aria-label={t("moreActions", { name: studentName })}
-          variant="outline"
+          variant="surface"
           disabled={disabled}
-          className={cn(noteActive || hasViolations ? "border-accent text-accent" : undefined)}
+          className={cn(
+            "shrink-0",
+            noteActive || hasViolations ? "border-accent text-accent" : undefined,
+          )}
         />
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-60">
-        {view === "menu" ? (
-          <div className="flex flex-col gap-1">
-            <button
-              type="button"
-              disabled={noteToggleDisabled}
-              className="flex min-h-11 items-center gap-2 rounded-xs px-2 text-left text-body-sm text-fg hover:bg-bg disabled:pointer-events-none disabled:opacity-50"
-              onClick={() => {
-                onToggleNote();
-                setOpen(false);
-              }}
-            >
-              <StickyNote className="size-4" aria-hidden="true" />
-              {noteActive ? t("noteMenuHide") : t("noteMenuAdd")}
-            </button>
-            {disciplineOn && (
-              <button
-                type="button"
-                className="flex min-h-11 items-center justify-between gap-2 rounded-xs px-2 text-left text-body-sm text-fg hover:bg-bg"
-                onClick={() => {
-                  setView("violations");
-                }}
-              >
-                <span className="flex items-center gap-2">
-                  <domainIcons.violation className="size-4" aria-hidden="true" />
-                  {t("violations.menuLabel")}
-                </span>
-                {hasViolations && <Badge variant="accent">{violationIds.length}</Badge>}
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              className="flex min-h-8 items-center gap-1 text-caption font-normal text-fg-muted hover:text-fg"
-              onClick={() => {
-                setView("menu");
-              }}
-            >
-              <ChevronLeft className="size-3.5" aria-hidden="true" />
-              {t("menuBack")}
-            </button>
-            <p className="text-label text-fg">{t("violations.title")}</p>
-            <ViolationChecklist
-              selected={violationIds}
-              types={violationTypes}
-              loading={violationTypesLoading}
-              disabled={disabled}
-              onToggle={onToggleViolation}
-            />
-          </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuItem
+          icon={<StickyNote />}
+          disabled={noteToggleDisabled}
+          onSelect={onToggleNote}
+        >
+          {noteActive ? t("noteMenuHide") : t("noteMenuAdd")}
+        </DropdownMenuItem>
+        {disciplineOn && (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <domainIcons.violation className="size-4 text-fg-muted" aria-hidden="true" />
+              <span className="flex-1">{t("violations.menuLabel")}</span>
+              {hasViolations && <CountBadge count={violationIds.length} tone="accent" />}
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="max-h-72 w-64 overflow-y-auto">
+              <DropdownMenuLabel>{t("violations.title")}</DropdownMenuLabel>
+              {violationTypesLoading ? (
+                <DropdownMenuLabel className="font-normal text-fg-muted">
+                  {tViolations("loading")}
+                </DropdownMenuLabel>
+              ) : violationTypes.length === 0 ? (
+                <DropdownMenuLabel className="font-normal text-fg-muted">
+                  {tViolations("empty")}
+                </DropdownMenuLabel>
+              ) : (
+                violationTypes.map((violationType) => (
+                  <DropdownMenuCheckboxItem
+                    key={violationType.id}
+                    checked={violationIds.includes(violationType.id)}
+                    disabled={disabled}
+                    // Ticking one type keeps the list open for the next.
+                    onSelect={(event) => {
+                      event.preventDefault();
+                    }}
+                    onCheckedChange={() => {
+                      onToggleViolation(violationType.id);
+                    }}
+                  >
+                    <span className="flex-1">{violationType.name}</span>
+                    <span className="text-caption text-fg-muted tabular-nums">
+                      {tViolations("points", { points: violationType.points })}
+                    </span>
+                  </DropdownMenuCheckboxItem>
+                ))
+              )}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
         )}
-      </PopoverContent>
-    </Popover>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

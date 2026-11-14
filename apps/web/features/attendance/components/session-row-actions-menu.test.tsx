@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const disabled = vi.hoisted(() => new Set<string>());
@@ -42,5 +43,22 @@ describe("SessionRowActionsMenu with discipline switched off", () => {
   it("does not highlight violations kept from before discipline was switched off", () => {
     disabled.add("discipline");
     expect(renderMenu()).not.toHaveClass("border-accent");
+  });
+
+  it("opens as a menu with the note toggle and the violations submenu", async () => {
+    const user = userEvent.setup();
+    await user.click(renderMenu());
+
+    expect(await screen.findByRole("menuitem", { name: "noteMenuAdd" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /violations\.menuLabel/ })).toBeInTheDocument();
+  });
+
+  it("leaves the violations out of the menu while discipline is off", async () => {
+    disabled.add("discipline");
+    const user = userEvent.setup();
+    await user.click(renderMenu());
+
+    expect(await screen.findByRole("menuitem", { name: "noteMenuAdd" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: /violations\.menuLabel/ })).toBeNull();
   });
 });

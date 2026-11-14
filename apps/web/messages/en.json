@@ -1080,7 +1080,9 @@
         "violations": {
           "menuLabel": "Record a violation",
           "title": "Violations",
-          "empty": "No violation types."
+          "empty": "No violation types.",
+          "loading": "Loading violation types…",
+          "points": "{points} pts"
         },
         "tabsLabel": "Session sections",
         "markedAllPresent": "Everyone marked present",

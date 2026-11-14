@@ -1080,7 +1080,9 @@
         "violations": {
           "menuLabel": "Catat pelanggaran",
           "title": "Pelanggaran",
-          "empty": "Tidak ada jenis pelanggaran."
+          "empty": "Tidak ada jenis pelanggaran.",
+          "loading": "Memuat jenis pelanggaran…",
+          "points": "{points} poin"
         },
         "tabsLabel": "Bagian sesi",
         "markedAllPresent": "Semua siswa ditandai hadir",
