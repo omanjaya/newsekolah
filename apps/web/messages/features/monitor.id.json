@@ -1,11 +1,11 @@
 {
   "navLabel": "Monitor langsung",
-  "eyebrow": "Piket & Gerbang",
+  "eyebrow": "Piket dan gerbang",
   "title": "Monitor presensi",
   "tokenLabel": "Token tampilan",
   "tokenPlaceholder": "Masukkan token monitor sekolah",
-  "tokenHint": "Diminta sekali per perangkat. Minta token ini dari admin sekolah.",
-  "tokenSubmit": "Tampilkan",
+  "tokenHint": "Token tampilan didapat dari admin sekolah.",
+  "tokenSubmit": "Tampilkan monitor",
   "tokenForget": "Ganti token",
   "tokenInvalidTitle": "Token tidak berlaku",
   "tokenInvalidBody": "Token yang dimasukkan tidak cocok dengan pengaturan monitor sekolah ini. Periksa kembali dengan admin sekolah.",
@@ -33,5 +33,9 @@
   },
   "substituteFor": "menggantikan",
   "noSessionsTitle": "Tidak ada sesi yang berlangsung",
-  "noSessionsBody": "Belum ada jam pelajaran yang sedang berjalan saat ini."
+  "noSessionsBody": "Belum ada jam pelajaran yang sedang berjalan saat ini.",
+  "gateTitle": "Hubungkan layar monitor",
+  "gateBody": "Layar ini menampilkan presensi setiap kelas yang sedang belajar dan diperbarui sendiri. Masukkan token tampilan sekali untuk perangkat ini.",
+  "countsLabel": "Presensi siswa hari ini",
+  "sessionsTitle": "Kelas yang sedang belajar"
 }

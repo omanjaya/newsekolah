@@ -55,3 +55,25 @@ export function attendanceRate(
   if (known.length === 0) return undefined;
   return Math.round((known.filter((s) => attended.includes(s)).length / known.length) * 100);
 }
+
+/**
+ * A span of minutes as whole hours and the minutes left over, for the hero
+ * chips ("1 jam 20 menit lagi" instead of "80 menit lagi"); the catalog
+ * owns the wording.
+ */
+export function splitMinutes(total: number): { hours: number; minutes: number } {
+  const safe = Math.max(0, Math.round(total));
+  return { hours: Math.floor(safe / 60), minutes: safe % 60 };
+}
+
+/** A lesson starting this many minutes ahead or sooner is "about to start": scanning in comes first. */
+export const STARTING_SOON_MINUTES = 10;
+
+/** Beyond this many minutes ahead a chip names the start time instead of the wait. */
+export const LONG_WAIT_MINUTES = 180;
+
+/** A wall-clock string ("08:40:00") as a UTC instant, for formatting with `timeZone: "UTC"`. */
+export function clockInstant(value: string): Date {
+  const minutes = parseClock(value);
+  return new Date(Date.UTC(1970, 0, 1, Math.floor(minutes / 60), minutes % 60));
+}

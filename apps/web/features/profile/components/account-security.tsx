@@ -2,7 +2,7 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
-import { Skeleton } from "@newsekolah/ui";
+import { DataList, DataListItem, SkeletonList } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -14,41 +14,45 @@ import { useSessionsQuery } from "../api";
  * Plain-language security summary (docs/08-security.md section 2): active
  * session count, when the current session started (the closest proxy this
  * API exposes to "last login"), and where a password reset link comes from
- * so a user does not mistake a phished link for the real flow.
+ * so a user does not mistake a phished link for the real flow. Meant to sit
+ * straight in a Card, under its header.
  */
 export function AccountSecurity(): ReactElement {
   const t = useTranslations("app.audit");
   const locale = useLocale() as Locale;
   const { me } = useSession();
-  const { data, isLoading, isError, refetch } = useSessionsQuery();
+  const { data, isLoading, isError, error, refetch } = useSessionsQuery();
 
-  if (isError && !data) return <QueryError retry={() => refetch()} className="m-4" />;
+  if (isError && !data) {
+    return (
+      <div className="px-5 pb-5">
+        <QueryError retry={() => refetch()} error={error} />
+      </div>
+    );
+  }
 
   if (isLoading || !data) {
-    return <Skeleton className="h-24 w-full" />;
+    return (
+      <div className="px-5 pb-5">
+        <SkeletonList rows={3} leading={false} framed={false} />
+      </div>
+    );
   }
 
   const sessions = data.data;
   const current = sessions.find((session) => session.is_current);
 
   return (
-    <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-[13px] sm:grid-cols-2">
-      <div>
-        <dt className="text-fg-muted">{t("accountSecurity.activeSessions")}</dt>
-        <dd className="text-fg">{sessions.length}</dd>
-      </div>
-      <div>
-        <dt className="text-fg-muted">{t("accountSecurity.lastLogin")}</dt>
-        <dd className="text-fg">
-          {current
-            ? formatDateTime(current.created_at, { locale, timeZone: me?.tenant.timezone })
-            : t("accountSecurity.lastLoginUnknown")}
-        </dd>
-      </div>
-      <div className="sm:col-span-2">
-        <dt className="text-fg-muted">{t("accountSecurity.resetLinkLabel")}</dt>
-        <dd className="text-fg">{t("accountSecurity.resetLinkBody")}</dd>
-      </div>
-    </dl>
+    <DataList>
+      <DataListItem label={t("accountSecurity.activeSessions")}>{sessions.length}</DataListItem>
+      <DataListItem label={t("accountSecurity.lastLogin")}>
+        {current
+          ? formatDateTime(current.created_at, { locale, timeZone: me?.tenant.timezone })
+          : t("accountSecurity.lastLoginUnknown")}
+      </DataListItem>
+      <DataListItem label={t("accountSecurity.resetLinkLabel")}>
+        {t("accountSecurity.resetLinkBody")}
+      </DataListItem>
+    </DataList>
   );
 }

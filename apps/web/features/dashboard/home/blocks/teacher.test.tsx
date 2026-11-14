@@ -34,6 +34,10 @@ vi.mock("../../../reference/api", async (importOriginal) => {
 
 vi.mock("next-intl", () => ({
   useTranslations: () => Object.assign((key: string) => key, { has: () => true }),
+  useFormatter: () => ({
+    dateTime: (date: Date) =>
+      `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`,
+  }),
 }));
 
 import { useTeacherBlock } from "./teacher";
@@ -105,7 +109,7 @@ describe("useTeacherBlock", () => {
   it("returns EMPTY_BLOCK and disables every query when inactive", () => {
     const { result } = renderHook(() => useTeacherBlock(me, false));
 
-    expect(result.current).toEqual({ tiles: [], left: [], right: [] });
+    expect(result.current).toEqual({ tiles: [], main: [], side: [] });
     expect(sessionsQuery).toHaveBeenCalledWith(expect.anything(), false);
     expect(periodsQuery).toHaveBeenCalledWith(false);
     expect(classesQuery).toHaveBeenCalledWith(false);
@@ -172,7 +176,7 @@ describe("useTeacherBlock", () => {
     expect(result.current.hero?.action?.href).toBe("/attendance/s1");
   });
 
-  it("shows no hero once the running session is submitted and nothing else is upcoming", () => {
+  it("calms the hero once the running session is submitted and nothing else is upcoming", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-26T01:50:00Z")); // 08:50 in Asia/Jakarta
 
@@ -194,7 +198,9 @@ describe("useTeacherBlock", () => {
 
     const { result } = renderHook(() => useTeacherBlock(me, true));
 
-    expect(result.current.hero).toBeUndefined();
+    expect(result.current.hero?.key).toBe("teacher.idle");
+    expect(result.current.hero?.tone).toBe("neutral");
+    expect(result.current.hero?.action?.href).toBe("/journal");
   });
 
   it("falls back to the next unsubmitted session once the running one is submitted", () => {
@@ -320,6 +326,7 @@ describe("useTeacherBlock", () => {
       data: undefined,
       isLoading: false,
       isError: true,
+      error: new Error("failed"),
       isSuccess: false,
       refetch: vi.fn(),
     });
@@ -331,7 +338,7 @@ describe("useTeacherBlock", () => {
     });
 
     const { result } = renderHook(() => useTeacherBlock(me, true));
-    render(<>{result.current.left.map((slot) => slot.node)}</>);
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
 
     expect(screen.getByRole("button")).toBeInTheDocument();
   });
@@ -356,7 +363,7 @@ describe("useTeacherBlock", () => {
     subjectsQuery.mockReturnValue({ data: { data: [{ id: "sub1", name: "Matematika" }] } });
 
     const { result } = renderHook(() => useTeacherBlock(me, true));
-    render(<>{result.current.left.map((slot) => slot.node)}</>);
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
 
     const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
     expect(hrefs).toContain("/attendance/s1");

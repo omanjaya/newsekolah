@@ -1,11 +1,11 @@
 {
   "navLabel": "Live monitor",
-  "eyebrow": "Duty & Gate",
+  "eyebrow": "Duty and gate",
   "title": "Attendance monitor",
   "tokenLabel": "Display token",
   "tokenPlaceholder": "Enter the school's monitor token",
-  "tokenHint": "Asked once per device. Get this token from the school admin.",
-  "tokenSubmit": "Show display",
+  "tokenHint": "The school admin can give you the display token.",
+  "tokenSubmit": "Show monitor",
   "tokenForget": "Change token",
   "tokenInvalidTitle": "Invalid token",
   "tokenInvalidBody": "The token entered does not match this school's monitor setting. Check it with the school admin.",
@@ -33,5 +33,9 @@
   },
   "substituteFor": "covering for",
   "noSessionsTitle": "No sessions running",
-  "noSessionsBody": "No period is currently in progress."
+  "noSessionsBody": "No period is currently in progress.",
+  "gateTitle": "Connect this display",
+  "gateBody": "This screen shows attendance for every class in session and refreshes on its own. Enter the display token once for this device.",
+  "countsLabel": "Student attendance today",
+  "sessionsTitle": "Classes in session"
 }

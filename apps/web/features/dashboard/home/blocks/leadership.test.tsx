@@ -63,7 +63,7 @@ describe("useLeadershipBlock", () => {
   it("returns EMPTY_BLOCK and disables every query when inactive", () => {
     const { result } = renderHook(() => useLeadershipBlock(me, false));
 
-    expect(result.current).toEqual({ tiles: [], left: [], right: [] });
+    expect(result.current).toEqual({ tiles: [], main: [], side: [] });
     expect(dashboardQuery).toHaveBeenCalledWith(false);
     expect(atRiskQuery).toHaveBeenCalledWith(false);
     expect(namesQuery).toHaveBeenCalledWith([], false);
@@ -90,7 +90,7 @@ describe("useLeadershipBlock", () => {
     });
   });
 
-  it("offers no monitor link to a reader without view_monitor_presence", () => {
+  it("offers the monitor with the reports beside it, for the home to guard by access", () => {
     dashboardQuery.mockReturnValue({
       data: { ...baseDashboard, attendance_today: { submitted: 3, total: 5 } },
       isLoading: false,
@@ -100,13 +100,12 @@ describe("useLeadershipBlock", () => {
 
     const { result } = renderHook(() => useLeadershipBlock(me, true));
 
-    expect(result.current.hero?.action).toBeUndefined();
-    expect(
-      result.current.tiles.find((tile) => tile.key === "school.sessions")?.href,
-    ).toBeUndefined();
+    expect(result.current.hero?.action?.href).toBe("/monitor");
+    expect(result.current.hero?.secondaryAction?.href).toBe("/reports");
+    expect(result.current.hero?.progress).toMatchObject({ value: 3, max: 5 });
   });
 
-  it("omits the hero when no class is currently in session", () => {
+  it("opens on a calm hero when no class is in session and nothing waits", () => {
     dashboardQuery.mockReturnValue({
       data: { ...baseDashboard, attendance_today: { submitted: 0, total: 0 } },
       isLoading: false,
@@ -116,7 +115,27 @@ describe("useLeadershipBlock", () => {
 
     const { result } = renderHook(() => useLeadershipBlock(me, true));
 
-    expect(result.current.hero).toBeUndefined();
+    expect(result.current.hero?.key).toBe("school.idle");
+    expect(result.current.hero?.tone).toBe("neutral");
+    expect(result.current.hero?.action?.href).toBe("/reports");
+  });
+
+  it("leads with the waiting requests when no class is in session", () => {
+    dashboardQuery.mockReturnValue({
+      data: {
+        ...baseDashboard,
+        pending: { leave_request: 2, exit_permit: 0, late_arrival: 1 },
+        attendance_today: { submitted: 0, total: 0 },
+      },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useLeadershipBlock(me, true));
+
+    expect(result.current.hero?.key).toBe("school.queue");
+    expect(result.current.hero?.action?.href).toBe("/inbox");
   });
 
   it("sums the three pending queues into one tile", () => {
@@ -151,13 +170,14 @@ describe("useLeadershipBlock", () => {
       data: undefined,
       isLoading: false,
       isError: true,
+      error: new Error("failed"),
       refetch,
     });
 
     const { result } = renderHook(() => useLeadershipBlock(me, true));
 
     expect(result.current.tiles).toEqual([]);
-    const queueSlot = result.current.left.find((slot) => slot.key === "school.queue");
+    const queueSlot = result.current.main.find((slot) => slot.key === "school.queue");
     render(<>{queueSlot?.node}</>);
 
     expect(screen.getByRole("button")).toBeInTheDocument();
@@ -185,7 +205,7 @@ describe("useLeadershipBlock", () => {
     });
 
     const { result } = renderHook(() => useLeadershipBlock(meWithPermission, true));
-    const atRiskSlot = result.current.right.find((slot) => slot.key === "school.atRisk");
+    const atRiskSlot = result.current.side.find((slot) => slot.key === "school.atRisk");
     render(<>{atRiskSlot?.node}</>);
 
     expect(atRiskQuery).toHaveBeenCalledWith(true);
@@ -197,34 +217,33 @@ describe("useLeadershipBlock", () => {
     const { result } = renderHook(() => useLeadershipBlock(me, true));
 
     expect(atRiskQuery).toHaveBeenCalledWith(false);
-    expect(result.current.right.some((slot) => slot.key === "school.atRisk")).toBe(false);
+    expect(result.current.side.some((slot) => slot.key === "school.atRisk")).toBe(false);
   });
 
-  it("adds the presence card only with view_monitor_presence", () => {
+  it("says the attendance progress once, in the hero, not again in a card", () => {
     dashboardQuery.mockReturnValue({
       data: { ...baseDashboard, attendance_today: { submitted: 3, total: 5 } },
       isLoading: false,
       isError: false,
       refetch: vi.fn(),
     });
-    const without = renderHook(() => useLeadershipBlock(me, true));
     const withMonitor = renderHook(() =>
       useLeadershipBlock({ ...me, permissions: ["view_monitor_presence"] }, true),
     );
 
-    expect(without.result.current.left.map((slot) => slot.key)).toEqual(["school.queue"]);
-    expect(withMonitor.result.current.left.map((slot) => slot.key)).toEqual([
-      "school.queue",
-      "school.presence",
-    ]);
-    render(<>{withMonitor.result.current.left[1]?.node}</>);
-    expect(screen.getByText("60%")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "open" })).toHaveAttribute("href", "/monitor");
+    expect(withMonitor.result.current.main.map((slot) => slot.key)).toEqual(["school.queue"]);
+    expect(withMonitor.result.current.side.map((slot) => slot.key)).toEqual(["school.activity"]);
   });
 
   it("links a queue row only to a screen the reader may open", () => {
+    dashboardQuery.mockReturnValue({
+      data: { ...baseDashboard, pending: { leave_request: 1, exit_permit: 2, late_arrival: 0 } },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
     const plain = renderHook(() => useLeadershipBlock(me, true));
-    render(<>{plain.result.current.left[0]?.node}</>);
+    render(<>{plain.result.current.main[0]?.node}</>);
     const plainHrefs = screen.queryAllByRole("link").map((link) => link.getAttribute("href"));
     expect(plainHrefs).not.toContain("/leave-requests");
     expect(plainHrefs).not.toContain("/exit-permits");
@@ -233,7 +252,7 @@ describe("useLeadershipBlock", () => {
       useLeadershipBlock({ ...me, permissions: ["review_leave_requests"] }, true),
     );
     cleanup();
-    render(<>{reviewer.result.current.left[0]?.node}</>);
+    render(<>{reviewer.result.current.main[0]?.node}</>);
     const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
     expect(hrefs).toContain("/leave-requests");
     expect(hrefs).not.toContain("/exit-permits");
@@ -260,7 +279,7 @@ describe("useLeadershipBlock", () => {
     const { result } = renderHook(() =>
       useLeadershipBlock({ ...me, permissions: ["view_early_warning"] }, true),
     );
-    const slot = result.current.right.find((s) => s.key === "school.atRisk");
+    const slot = result.current.side.find((s) => s.key === "school.atRisk");
     render(<>{slot?.node}</>);
     expect(screen.getByText("Siswa Satu")).toBeInTheDocument();
     expect(screen.queryByText("Siswa Aman")).not.toBeInTheDocument();

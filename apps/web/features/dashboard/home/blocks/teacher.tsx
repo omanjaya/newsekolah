@@ -3,17 +3,18 @@
 import type { components } from "@newsekolah/api-client";
 import {
   Badge,
-  Button,
   Card,
-  CardContent,
   CardHeader,
   CardTitle,
-  Skeleton,
+  EmptyState,
+  List,
+  ListRow,
+  SkeletonList,
+  TextLink,
   cn,
 } from "@newsekolah/ui";
-import { Check, ClipboardCheck } from "lucide-react";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { CalendarX2, ClipboardCheck } from "lucide-react";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
@@ -28,7 +29,15 @@ import {
   type PeriodRef,
   type SubjectRef,
 } from "../../../reference/api";
-import { minutesInZone, parseClock, pickCurrentOrNext, type TimeRange } from "../time";
+import {
+  LONG_WAIT_MINUTES,
+  clockInstant,
+  minutesInZone,
+  parseClock,
+  pickCurrentOrNext,
+  splitMinutes,
+  type TimeRange,
+} from "../time";
 import { EMPTY_BLOCK, HERO_PRIORITY, type Me, type PersonaBlock } from "../types";
 
 type Session = components["schemas"]["AttendanceSessionSummary"];
@@ -37,15 +46,31 @@ interface SessionRange extends TimeRange {
   session: Session;
 }
 
+const ATTENDANCE_HREF = "/attendance";
+const SCHEDULE_HREF = "/schedule";
+const JOURNAL_HREF = "/journal";
+
+/** Formats a period's wall-clock start or end the way every other time on screen is written ("08.40"). */
+function useClockLabel(): (value: string | undefined) => string {
+  const format = useFormatter();
+  return (value) =>
+    value
+      ? format.dateTime(clockInstant(value), {
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "UTC",
+        })
+      : "--.--";
+}
+
 /**
  * The teacher's day: which session is running or next (feeds the hero and
  * the "pending" tile) and the full ordered list of today's sessions (the
- * left column card). Mirrors the read `today-sessions-card.tsx` used to do,
- * now folded into one persona block per docs/superpowers/plans/2026-09-26-
- * dashboard-per-peran.md Task 3.
+ * task card). A day with nothing left to ask for still gets a calm hero.
  */
 export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
   const t = useTranslations("app.dashboardTeaching.teacher");
+  const clock = useClockLabel();
   const sessions = useTodaySessionsQuery({ date: todayInZone(me.tenant.timezone) }, active);
   const periods = useAllPeriodsQuery(active);
   const classes = useClassesQuery(active);
@@ -63,21 +88,30 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
     ),
   );
 
-  const block: PersonaBlock = { tiles: [], left: [], right: [] };
+  const block: PersonaBlock = {
+    tiles: [],
+    main: [],
+    side: [],
+    pending: sessions.isLoading || periods.isLoading,
+  };
   let runningId: string | undefined;
 
   if (sessions.isSuccess && periods.isSuccess) {
     const pending = todaySessions.filter((session) => !session.submitted_at);
-    block.tiles.push({
-      key: "teacher.pending",
-      priority: 90,
-      label: t("tiles.pendingLabel"),
-      value: String(pending.length),
-      hint: t("tiles.pendingHint", { total: todaySessions.length }),
-      href: "/attendance",
-      icon: ClipboardCheck,
-      tone: "green",
-    });
+    // A day without sessions has nothing to fill in: a "0 of 0" tile would
+    // only take the place of one that says something.
+    if (todaySessions.length > 0) {
+      block.tiles.push({
+        key: "teacher.pending",
+        priority: 90,
+        label: t("tiles.pendingLabel"),
+        value: String(pending.length),
+        hint: t("tiles.pendingHint", { total: todaySessions.length }),
+        href: ATTENDANCE_HREF,
+        icon: ClipboardCheck,
+        tone: "green",
+      });
+    }
 
     const ranges: SessionRange[] = todaySessions.map((session) => ({
       session,
@@ -100,8 +134,9 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
       const subjectName = subjectMap.get(session.subject_id)?.name ?? "";
       const className = classMap.get(session.class_id)?.name ?? "";
       const title = [subjectName, className].filter(Boolean).join(" · ");
-      const startLabel = periodMap.get(session.start_period_id)?.starts_at ?? "--:--";
-      const endLabel = periodMap.get(session.end_period_id)?.ends_at ?? "--:--";
+      const startLabel = clock(periodMap.get(session.start_period_id)?.starts_at);
+      const endLabel = clock(periodMap.get(session.end_period_id)?.ends_at);
+      const sessionHref = `${ATTENDANCE_HREF}/${session.id}`;
 
       if (picked.state === "now") {
         // `eligible` only keeps a running session here when it is still
@@ -112,37 +147,59 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
           eyebrow: t("hero.nowEyebrow"),
           title,
           meta: t("hero.nowMeta", { start: startLabel, end: endLabel }),
-          chip: t("hero.nowChip", { minutes: Math.max(0, now - start) }),
-          action: { label: t("hero.nowAction"), href: `/attendance/${session.id}` },
+          chip: t("hero.nowChip", splitMinutes(now - start)),
+          live: true,
+          action: { label: t("hero.nowAction"), href: sessionHref },
         };
       } else {
+        const wait = start - now;
         block.hero = {
           key: "teacher.next",
           priority: HERO_PRIORITY.teacherNext,
           eyebrow: t("hero.nextEyebrow"),
           title,
           meta: t("hero.nextMeta", { start: startLabel, end: endLabel }),
-          chip: t("hero.nextChip", { minutes: Math.max(0, start - now) }),
-          action: { label: t("hero.nextAction"), href: "/attendance" },
+          chip:
+            wait > LONG_WAIT_MINUTES
+              ? t("hero.nextChipAt", { start: startLabel })
+              : t("hero.nextChip", splitMinutes(wait)),
+          action: { label: t("hero.nextAction"), href: sessionHref },
+          secondaryAction: { label: t("hero.scheduleAction"), href: SCHEDULE_HREF },
         };
       }
+    } else {
+      const allDone = todaySessions.length > 0;
+      block.hero = {
+        key: "teacher.idle",
+        priority: HERO_PRIORITY.teacherIdle,
+        tone: "neutral",
+        eyebrow: t("hero.idleEyebrow"),
+        title: allDone ? t("hero.doneTitle") : t("hero.freeTitle"),
+        meta: allDone ? t("hero.doneMeta", { total: todaySessions.length }) : t("hero.freeMeta"),
+        action: allDone
+          ? { label: t("hero.journalAction"), href: JOURNAL_HREF }
+          : { label: t("hero.scheduleAction"), href: SCHEDULE_HREF },
+      };
     }
   }
 
-  block.left = [
+  // A day without lessons keeps the card, but as quiet context in the side
+  // column, so another persona's queue leads the main one.
+  const noLessons = sessions.isSuccess && todaySessions.length === 0;
+  block[noLessons ? "side" : "main"] = [
     {
       key: "teacher.today",
       node: (
         <TeacherTodayCard
           isLoading={sessions.isLoading}
-          isError={sessions.isError}
+          error={sessions.isError ? sessions.error : null}
           onRetry={() => void sessions.refetch()}
           sessions={ordered}
           classMap={classMap}
           subjectMap={subjectMap}
           periodMap={periodMap}
           runningId={runningId}
-          t={t}
+          clock={clock}
         />
       ),
     },
@@ -153,86 +210,83 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
 
 function TeacherTodayCard({
   isLoading,
-  isError,
+  error,
   onRetry,
   sessions,
   classMap,
   subjectMap,
   periodMap,
   runningId,
-  t,
+  clock,
 }: {
   isLoading: boolean;
-  isError: boolean;
+  error: unknown;
   onRetry: () => void;
   sessions: Session[];
   classMap: Map<string, ClassRef>;
   subjectMap: Map<string, SubjectRef>;
   periodMap: Map<string, PeriodRef>;
   runningId?: string;
-  t: ReturnType<typeof useTranslations>;
+  clock: (value: string | undefined) => string;
 }): ReactElement {
+  const t = useTranslations("app.dashboardTeaching.teacher");
   return (
-    <Card className="h-full">
-      <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
-        <CardTitle>{t("card.title")}</CardTitle>
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/attendance">{t("card.action")}</Link>
-        </Button>
+    <Card>
+      <CardHeader action={<TextLink href={ATTENDANCE_HREF}>{t("card.action")}</TextLink>}>
+        <CardTitle as="h2">{t("card.title")}</CardTitle>
       </CardHeader>
-      <CardContent className="pt-0">
-        {isLoading ? (
-          <Skeleton className="h-20 w-full" aria-busy="true" />
-        ) : isError ? (
-          <QueryError retry={onRetry} />
-        ) : sessions.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("card.empty")}</p>
-        ) : (
-          <ul className="flex flex-col divide-y divide-border">
-            {sessions.map((session) => {
-              const running = session.id === runningId;
-              return (
-                <li key={session.id}>
-                  <Link
-                    href={`/attendance/${session.id}`}
-                    className="grid min-h-11 grid-cols-[3.25rem_1fr_auto] items-center gap-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                  >
-                    <span
-                      className={cn(
-                        "text-[13px] tabular-nums",
-                        running ? "font-bold text-accent" : "text-fg-muted",
-                      )}
-                    >
-                      {periodMap.get(session.start_period_id)?.starts_at ?? "--:--"}
-                    </span>
-                    <span className="min-w-0">
-                      <span
-                        className={cn(
-                          "block truncate text-[14px]",
-                          running ? "font-bold text-accent" : "text-fg",
-                        )}
-                      >
-                        {classMap.get(session.class_id)?.name ?? "-"}
-                      </span>
-                      <span className="block truncate text-[13px] text-fg-muted">
-                        {subjectMap.get(session.subject_id)?.name ?? ""}
-                      </span>
-                    </span>
-                    {session.submitted_at ? (
-                      <span className="flex items-center gap-1.5 text-[13px] text-fg-muted">
-                        <Check className="size-4" aria-hidden="true" />
-                        {t("card.statusSubmitted")}
-                      </span>
-                    ) : (
-                      <Badge variant="accent">{t("card.statusPending")}</Badge>
+      {isLoading ? (
+        <div className="px-5 pb-5">
+          <SkeletonList rows={3} framed={false} />
+        </div>
+      ) : error ? (
+        <div className="px-5 pb-5">
+          <QueryError retry={onRetry} error={error} />
+        </div>
+      ) : sessions.length === 0 ? (
+        <div className="px-5 pb-5">
+          <EmptyState variant="compact" icon={<CalendarX2 />} title={t("card.empty")} />
+        </div>
+      ) : (
+        <List>
+          {sessions.map((session) => {
+            const running = session.id === runningId;
+            const subject = subjectMap.get(session.subject_id)?.name;
+            return (
+              <ListRow
+                key={session.id}
+                href={`${ATTENDANCE_HREF}/${session.id}`}
+                leading={
+                  <span
+                    className={cn(
+                      "w-12 text-label tabular-nums",
+                      running ? "text-accent" : "text-fg-muted",
                     )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </CardContent>
+                  >
+                    {clock(periodMap.get(session.start_period_id)?.starts_at)}
+                  </span>
+                }
+                title={classMap.get(session.class_id)?.name ?? "-"}
+                meta={
+                  running && subject ? t("card.runningMeta", { subject }) : (subject ?? undefined)
+                }
+                selected={running}
+                trailing={
+                  session.submitted_at ? (
+                    <Badge tone="success" size="sm">
+                      {t("card.statusSubmitted")}
+                    </Badge>
+                  ) : (
+                    <Badge tone="warning" size="sm">
+                      {t("card.statusPending")}
+                    </Badge>
+                  )
+                }
+              />
+            );
+          })}
+        </List>
+      )}
     </Card>
   );
 }

@@ -5,22 +5,34 @@ import type { Locale } from "@newsekolah/i18n";
 import { formatRelative } from "@newsekolah/i18n";
 import {
   Button,
+  Card,
   EmptyState,
-  Input,
-  PageHeader,
+  FilteredEmptyState,
+  IconCircle,
+  List,
+  ListRow,
+  SearchInput,
+  SectionHeader,
+  SegmentedControl,
   Select,
-  Skeleton,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  cn,
+  SkeletonList,
+  type CategoryTone,
 } from "@newsekolah/ui";
-import { Bell, CheckCheck } from "lucide-react";
-import Link from "next/link";
+import {
+  AlarmClock,
+  Bell,
+  CalendarCheck,
+  CheckCheck,
+  ClipboardList,
+  DoorOpen,
+  Megaphone,
+  Repeat,
+  type LucideIcon,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { groupByDay } from "../../../lib/group-by-day";
 import { navAccessFromMe } from "../../../lib/navigation-access";
@@ -39,10 +51,29 @@ import { openableHref } from "../lib/openable-href";
 
 type Notification = components["schemas"]["Notification"];
 
+/** One topic icon per family of notification kinds, the way stat tiles colour theirs. */
+const KIND_ICON: { prefix: string; icon: LucideIcon; tone: CategoryTone }[] = [
+  { prefix: "announcement", icon: Megaphone, tone: "purple" },
+  { prefix: "attendance", icon: CalendarCheck, tone: "green" },
+  { prefix: "substitution", icon: Repeat, tone: "blue" },
+  { prefix: "leave_request", icon: ClipboardList, tone: "amber" },
+  { prefix: "exit_permit", icon: DoorOpen, tone: "blue" },
+  { prefix: "late_arrival", icon: AlarmClock, tone: "red" },
+];
+
+function kindIcon(kind: string): { icon: LucideIcon; tone: CategoryTone } {
+  return KIND_ICON.find((entry) => kind.startsWith(entry.prefix)) ?? { icon: Bell, tone: "green" };
+}
+
+/**
+ * Every notification the reader received, grouped by day on the narrow
+ * reading template: all or unread as a segmented filter, a search and a
+ * kind filter, and each one a row with its topic icon that opens what it
+ * points to (and marks it read).
+ */
 export function NotificationsView(): ReactElement {
   const t = useTranslations("app.notifications");
   const tKinds = useTranslations("app.notifications.kinds");
-  const locale = useLocale() as Locale;
   const { me } = useSession();
   const kinds = useNotificationKinds();
   const [filter, setFilter] = useRememberedViewState<"all" | "unread">(
@@ -51,7 +82,7 @@ export function NotificationsView(): ReactElement {
   );
   const [search, setSearch] = useRememberedViewState("notifications-search", "");
   const [kind, setKind] = useRememberedViewState<NotificationKind | "">("notifications-kind", "");
-  const { data, isLoading, isError, refetch } = useNotificationsQuery({
+  const { data, isLoading, isError, error, refetch } = useNotificationsQuery({
     unreadOnly: filter === "unread",
     q: search.trim() || undefined,
     kind: kind || undefined,
@@ -68,156 +99,167 @@ export function NotificationsView(): ReactElement {
   const dayLabel = useDayLabel();
 
   return (
-    <Tabs
-      value={filter}
-      onValueChange={(value) => {
-        setFilter(value as "all" | "unread");
-      }}
-      className="flex flex-col gap-6 p-4 md:p-6"
-    >
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<CheckCheck />}
-            disabled={!hasUnread || markAllRead.isPending}
-            onClick={() => {
-              markAllRead.mutate();
+    <AppPage
+      variant="narrow"
+      nav={false}
+      actions={
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={<CheckCheck />}
+          disabled={!hasUnread || markAllRead.isPending}
+          onClick={() => {
+            markAllRead.mutate();
+          }}
+        >
+          {t("markAllRead")}
+        </Button>
+      }
+      toolbar={
+        <div className="flex flex-col gap-3">
+          <SegmentedControl
+            aria-label={t("filterLabel")}
+            options={[
+              { value: "all", label: t("filterAll") },
+              { value: "unread", label: t("filterUnread") },
+            ]}
+            value={filter}
+            onValueChange={(value) => {
+              setFilter(value);
             }}
-          >
-            {t("markAllRead")}
-          </Button>
-        }
-      />
-
-      <TabsList className="self-start">
-        <TabsTrigger value="all">{t("filterAll")}</TabsTrigger>
-        <TabsTrigger value="unread">{t("filterUnread")}</TabsTrigger>
-      </TabsList>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Input
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-          }}
-          placeholder={t("searchPlaceholder")}
-          aria-label={t("searchPlaceholder")}
-          className="w-full sm:w-64"
-        />
-        <Select
-          options={[
-            { value: "all", label: t("kindAll") },
-            ...kinds.map((k) => ({ value: k, label: tKinds(k) })),
-          ]}
-          value={kind || "all"}
-          onValueChange={(v) => {
-            setKind(v === "all" ? "" : (v as NotificationKind));
-          }}
-          aria-label={t("kindFilterLabel")}
-          className="w-full sm:w-56"
-        />
-      </div>
-
-      {/* The list is the panel of whichever filter tab is active. */}
-      <TabsContent value={filter} className="pt-0">
-        {isLoading ? (
-          <div className="flex flex-col gap-2" aria-busy="true">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
+          />
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <SearchInput
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
+              onClear={() => {
+                setSearch("");
+              }}
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchPlaceholder")}
+              className="sm:flex-1"
+            />
+            <Select
+              options={[
+                { value: "all", label: t("kindAll") },
+                ...kinds.map((k) => ({ value: k, label: tKinds(k) })),
+              ]}
+              value={kind || "all"}
+              onValueChange={(v) => {
+                setKind(v === "all" ? "" : (v as NotificationKind));
+              }}
+              aria-label={t("kindFilterLabel")}
+              className="sm:w-56"
+            />
           </div>
-        ) : isError ? (
-          <QueryError retry={refetch} />
-        ) : items.length === 0 ? (
-          <EmptyState
-            icon={<Bell aria-hidden="true" />}
-            title={
-              isFiltering
-                ? t("emptyFilteredTitle")
-                : filter === "unread"
-                  ? t("emptyUnreadTitle")
-                  : t("emptyTitle")
-            }
-            description={isFiltering ? t("emptyFilteredBody") : t("emptyBody")}
+        </div>
+      }
+    >
+      {isLoading ? (
+        <SkeletonList rows={5} />
+      ) : isError ? (
+        <QueryError retry={refetch} error={error} />
+      ) : items.length === 0 ? (
+        isFiltering ? (
+          <FilteredEmptyState
+            title={t("emptyFilteredTitle")}
+            description={t("emptyFilteredBody")}
+            onReset={() => {
+              setSearch("");
+              setKind("");
+            }}
           />
         ) : (
-          <div className="flex flex-col gap-4">
-            {dayGroups.map((group) => (
-              <section key={group.dateKey} className="flex flex-col gap-2">
-                <h2 className="px-1 text-[12px] font-medium text-fg-muted">
-                  {dayLabel(group.dateKey)}
-                </h2>
-                <ul className="flex flex-col divide-y divide-border rounded-sm border border-border bg-surface">
+          <EmptyState
+            icon={
+              filter === "unread" ? <CheckCheck aria-hidden="true" /> : <Bell aria-hidden="true" />
+            }
+            title={filter === "unread" ? t("emptyUnreadTitle") : t("emptyTitle")}
+            description={t("emptyBody")}
+            action={
+              filter === "unread" ? (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setFilter("all");
+                  }}
+                >
+                  {t("showAll")}
+                </Button>
+              ) : undefined
+            }
+          />
+        )
+      ) : (
+        <div className="flex flex-col gap-6">
+          {dayGroups.map((group) => (
+            <section
+              key={group.dateKey}
+              className="flex flex-col gap-3"
+              aria-labelledby={`notifications-${group.dateKey}`}
+            >
+              <SectionHeader
+                titleId={`notifications-${group.dateKey}`}
+                title={dayLabel(group.dateKey)}
+              />
+              <Card>
+                <List variant="inset">
                   {group.items.map((item) => (
                     <NotificationRow
                       key={item.id}
                       item={item}
-                      locale={locale}
                       timeZone={me?.tenant.timezone}
                       onOpen={() => {
                         if (!item.read_at) markRead.mutate(item.id);
                       }}
                     />
                   ))}
-                </ul>
-              </section>
-            ))}
-          </div>
-        )}
-      </TabsContent>
-    </Tabs>
+                </List>
+              </Card>
+            </section>
+          ))}
+        </div>
+      )}
+    </AppPage>
   );
 }
 
 function NotificationRow({
   item,
-  locale,
   timeZone,
   onOpen,
 }: {
   item: Notification;
-  locale: Locale;
   timeZone?: string;
   onOpen: () => void;
 }): ReactElement {
   const t = useTranslations("app.notifications");
+  const locale = useLocale() as Locale;
   const { me } = useSession();
   const href = openableHref(item.href, navAccessFromMe(me));
   const unread = !item.read_at;
-  const content = (
-    <div className="flex items-start gap-3 px-4 py-3">
-      <span
-        aria-hidden="true"
-        className={cn("mt-2 size-2 shrink-0 rounded-xs", unread ? "bg-accent" : "bg-transparent")}
-      />
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className={cn("text-[14px]", unread ? "font-medium text-fg" : "text-fg")}>
+  const { icon: Icon, tone } = kindIcon(item.kind);
+  return (
+    <ListRow
+      href={href}
+      onClick={onOpen}
+      chevron={Boolean(href)}
+      selected={unread}
+      leading={
+        <IconCircle tone={unread ? tone : "neutral"} size="md">
+          <Icon />
+        </IconCircle>
+      }
+      title={
+        <span className={unread ? undefined : "font-normal"}>
           {item.title}
-        </span>
-        <span className="text-[13px] text-fg-muted">{item.body}</span>
-        <span className="text-[12px] text-fg-muted">
-          {formatRelative(item.created_at, { locale, timeZone })}
           {unread && <span className="sr-only"> {t("unreadMarker")}</span>}
         </span>
-      </div>
-    </div>
-  );
-
-  return (
-    <li className={cn(unread && "bg-accent/5")}>
-      {href ? (
-        <Link href={href} onClick={onOpen} className="block hover:bg-bg">
-          {content}
-        </Link>
-      ) : (
-        <button type="button" onClick={onOpen} className="block w-full text-left hover:bg-bg">
-          {content}
-        </button>
-      )}
-    </li>
+      }
+      meta={item.body}
+      trailing={formatRelative(item.created_at, { locale, timeZone })}
+    />
   );
 }

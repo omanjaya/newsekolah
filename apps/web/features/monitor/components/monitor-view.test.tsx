@@ -29,6 +29,48 @@ beforeEach(() => {
   localStorage.setItem("newsekolah.monitor.display-token", "tok");
 });
 
+describe("MonitorView display", () => {
+  it("asks a new device once for the display token", () => {
+    localStorage.removeItem("newsekolah.monitor.display-token");
+    render(<MonitorView />);
+    expect(screen.getByRole("heading", { name: "gateTitle" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "tokenLabel" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "tokenSubmit" })).toBeDisabled();
+  });
+
+  it("leads with the day's counts and lists every class in session", () => {
+    snapshot = {
+      isError: false,
+      isLoading: false,
+      error: null,
+      data: {
+        status_counts: { A: 2, H: 30 },
+        sessions: [
+          {
+            class_name: "X-B",
+            subject_name: "IPA",
+            teacher_name: "Bu Rina",
+            status: "submitted",
+          },
+          {
+            class_name: "X-A",
+            subject_name: "Matematika",
+            teacher_name: "Pak Budi",
+            status: "in_progress",
+          },
+        ],
+      },
+    };
+    render(<MonitorView />);
+    const figures = screen.getAllByRole("definition").map((node) => node.textContent);
+    // Present first, in roster order, whatever order the API sent.
+    expect(figures).toEqual(["30", "2"]);
+    const classes = screen.getAllByRole("listitem").map((node) => node.textContent);
+    expect(classes[0]).toContain("X-A");
+    expect(classes[1]).toContain("X-B");
+  });
+});
+
 describe("MonitorView snapshot errors", () => {
   it("blames the token only when the API refused it", () => {
     snapshot = { isError: true, isLoading: false, error: apiError(401), data: undefined };

@@ -389,8 +389,7 @@
     },
     "dashboard": {
       "title": "Home",
-      "greeting": "Welcome, {name}",
-      "noAcademicYear": "No active academic year yet",
+      "greeting": "Hi, {name}",
       "tiles": {
         "notifications": {
           "label": "Notifications",
@@ -398,31 +397,40 @@
         }
       },
       "announcementsTitle": "Latest announcements",
-      "openAnnouncements": "View all"
+      "openAnnouncements": "View all",
+      "statsLabel": "Today at a glance",
+      "fallback": {
+        "eyebrow": "Today",
+        "title": "Nothing urgent right now",
+        "meta": "Your latest notifications and announcements are one tap away.",
+        "action": "Open notifications",
+        "inboxEyebrow": "Needs action",
+        "inboxTitle": "{count, plural, one {# item needs} other {# items need}} your action",
+        "inboxMeta": "Requests waiting on your decision, all in one place.",
+        "inboxAction": "Open needs action"
+      },
+      "shortcuts": {
+        "title": "Shortcuts",
+        "monitor": "Attendance monitor",
+        "setup": "School setup"
+      }
     },
     "profile": {
       "title": "Profile",
-      "identityTitle": "Identity",
       "usernameLabel": "Username",
       "emailLabel": "Email",
-      "emailEmpty": "Not set",
-      "rolesLabel": "Roles",
-      "sessionsColumnDevice": "Device",
-      "sessionsColumnLastSeen": "Last seen",
-      "sessionsColumnActions": "Actions",
       "sessionsEmptyTitle": "No other sessions",
       "sessionsEmptyBody": "Other sessions will show up here after signing in from another device.",
       "revokeSuccess": "Session ended",
       "changePasswordTitle": "Change password",
       "avatar": {
-        "title": "Photo",
         "change": "Change photo",
         "hint": "JPEG, PNG or WebP, up to 2 MB",
         "uploading": "Uploading, {percent, number}%",
         "updated": "Photo updated"
       },
       "edit": {
-        "title": "Edit profile",
+        "title": "Account",
         "nameLabel": "Full name",
         "emailLabel": "Email",
         "phoneLabel": "Phone",
@@ -434,7 +442,9 @@
         "save": "Save changes",
         "saved": "Profile updated",
         "usernameLabel": "Username",
-        "usernameLengthError": "Username must be at least 3 characters."
+        "usernameLengthError": "Username must be at least 3 characters.",
+        "description": "The name and contact details teachers, students and staff see.",
+        "phoneHint": "The saved number is not shown; fill this in to replace it."
       },
       "detail": {
         "title": "Personal details",
@@ -467,8 +477,34 @@
         "employeeNumber": "Employee number",
         "position": "Position",
         "save": "Save personal details",
-        "saved": "Personal details updated"
-      }
+        "saved": "Personal details updated",
+        "unset": "Not set",
+        "institutionalHint": "Filled in and changed by the school admin.",
+        "identitySection": "Identity",
+        "addressSection": "Address",
+        "familySection": "Family and previous school",
+        "educationSection": "Education",
+        "employmentStatuses": {
+          "pns": "Civil servant",
+          "pppk": "Contract civil servant",
+          "tetap": "Permanent",
+          "gty": "Permanent foundation teacher",
+          "gtt": "Non-permanent teacher",
+          "honorer": "Honorary",
+          "kontrak": "Contract"
+        }
+      },
+      "tabsLabel": "Profile sections",
+      "tabs": {
+        "account": "Account",
+        "personal": "Personal data",
+        "security": "Security"
+      },
+      "academicYear": "School year {year}",
+      "noAcademicYear": "No active school year",
+      "unsavedChanges": "You have unsaved changes",
+      "changePasswordHint": "Use a password you do not use anywhere else.",
+      "sessionLastSeen": "Last active {time}"
     },
     "settings": {
       "appearance": {
@@ -675,7 +711,9 @@
       "kindAll": "All kinds",
       "kindFilterLabel": "Notification kind",
       "emptyFilteredTitle": "No notifications match",
-      "emptyFilteredBody": "Try a different search term or kind."
+      "emptyFilteredBody": "Try a different search term or kind.",
+      "filterLabel": "Show notifications",
+      "showAll": "Show all notifications"
     },
     "announcements": {
       "eyebrow": "Communication",
@@ -769,8 +807,11 @@
         "previewScheduleAt": "Appears starting {date}",
         "previewUntitled": "(No title)",
         "previewEmptyBody": "(Body not written yet)",
-        "previewHint": "This is how this announcement will look to its recipients."
-      }
+        "previewHint": "This is how this announcement will look to its recipients.",
+        "audienceLabel": "Addressed to"
+      },
+      "feedEmptyCompact": "No announcements yet",
+      "tabsLabel": "Announcement sections"
     },
     "duty": {
       "navLabel": "Duty desk",

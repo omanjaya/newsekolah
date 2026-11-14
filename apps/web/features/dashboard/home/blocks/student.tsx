@@ -2,31 +2,54 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
-import { Button, Card, CardContent, CardHeader, CardTitle, Skeleton, cn } from "@newsekolah/ui";
-import { BookOpen, CalendarCheck, FileText, GraduationCap } from "lucide-react";
-import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import {
+  Badge,
+  Card,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  List,
+  ListRow,
+  SkeletonList,
+  TextLink,
+  cn,
+} from "@newsekolah/ui";
+import { BookOpen, CalendarCheck, CalendarX2, FileText, GraduationCap } from "lucide-react";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useMemo, type ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
 import { isModuleEnabled } from "../../../../lib/modules/feature-modules";
+import { quickActionHref, quickActions } from "../../../../lib/quick-actions";
 import { businessNow } from "../../../../lib/simulation/clock";
 import { todayInZone, useMyCalendarQuery } from "../../../attendance/api";
 import { useMyGradesQuery } from "../../../grading/api";
 import { useMyLibraryProfileQuery } from "../../../library/me-api";
 import { useMyLeaveRequestsQuery } from "../../../permits/api";
-import { WorkflowStatusBadge } from "../../../permits/components/workflow-stepper";
 import { useAllPeriodsQuery, useLookup, useSubjectsQuery } from "../../../reference/api";
 import { useDirectoryLookup } from "../../../reference/directory-names";
 import { useSchedulesQuery } from "../../../schedule/api";
 import {
+  LONG_WAIT_MINUTES,
+  STARTING_SOON_MINUTES,
   attendanceRate,
+  clockInstant,
   isoWeekdayInZone,
   minutesInZone,
   parseClock,
   pickCurrentOrNext,
+  splitMinutes,
 } from "../time";
-import { EMPTY_BLOCK, HERO_PRIORITY, type PersonaBlock, type Me, type TileSpec } from "../types";
+import {
+  EMPTY_BLOCK,
+  HERO_PRIORITY,
+  type HeroCandidate,
+  type Me,
+  type PersonaBlock,
+  type TileSpec,
+} from "../types";
+
+import { StudentLeaveCard, StudentLibraryCard } from "./student-cards";
 
 interface Lesson {
   key: string;
@@ -38,19 +61,29 @@ interface Lesson {
   teacherUserId: string;
 }
 
+const SCAN_HREF = "/scan";
+const SCHEDULE_HREF = "/schedule";
+const LEAVE_HREF = "/leave-requests";
+const LIBRARY_ME_HREF = "/library/me";
+const SUBMIT_LEAVE = quickActions.find((action) => action.id === "submit-leave");
+const SUBMIT_LEAVE_HREF = SUBMIT_LEAVE ? quickActionHref(SUBMIT_LEAVE) : LEAVE_HREF;
+
 /**
- * The student home block: next/current lesson hero, attendance/leave/loans/grades
- * tiles, today's timetable and own leave requests on the left, active library
- * loans on the right.
+ * The student home block: the lesson running or next as the hero (scan in
+ * first when it is about to start), attendance, leave, loans and grades
+ * tiles, today's timetable and own leave requests as the task cards, and
+ * active library loans beside them.
  */
 export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
   const t = useTranslations("app.dashboardStudent");
-  const tLeave = useTranslations("app.permits.leave");
+  const format = useFormatter();
   const locale = useLocale() as Locale;
   const timeZone = me.tenant.timezone;
   const today = todayInZone(timeZone);
   const nowMinutes = minutesInZone(businessNow(), timeZone);
   const dayOfWeek = isoWeekdayInZone(businessNow(), timeZone);
+  const clock = (value: string) =>
+    format.dateTime(clockInstant(value), { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
 
   const schedules = useSchedulesQuery({
     academicYearId: active ? (me.active_academic_year?.id ?? "") : "",
@@ -93,13 +126,14 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
             key: block.schedule_ids.join("-"),
             start: parseClock(start.starts_at),
             end: parseClock(end.ends_at),
-            startLabel: start.starts_at.slice(0, 5),
-            endLabel: end.ends_at.slice(0, 5),
+            startLabel: start.starts_at,
+            endLabel: end.ends_at,
             subjectId: block.subject_id,
             teacherUserId: block.teacher_user_id,
           };
         })
         .filter((lesson): lesson is Lesson => lesson !== null)
+        .sort((a, b) => a.start - b.start)
     );
   }, [schedules.data, periodsBySequence, dayOfWeek]);
 
@@ -116,7 +150,7 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
   const scheduleLoading =
     schedules.isLoading || periods.isLoading || subjects.isLoading || teachers.isLoading;
   const scheduleError =
-    schedules.isError || periods.isError || subjects.isError || teachers.isError;
+    schedules.error ?? periods.error ?? subjects.error ?? (teachers.isError ? true : null);
   const retrySchedule = () => {
     void schedules.refetch();
     void periods.refetch();
@@ -125,22 +159,47 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
   };
 
   const currentOrNext = scheduleReady ? pickCurrentOrNext(lessons, nowMinutes) : undefined;
-  const hero = currentOrNext
-    ? (() => {
-        const { item, state } = currentOrNext;
-        const subjectName = subjectMap.get(item.subjectId)?.name ?? item.subjectId;
-        const teacherName = teacherMap.get(item.teacherUserId)?.name;
-        return {
-          key: "student.next",
-          priority: HERO_PRIORITY.studentNext,
-          eyebrow: state === "now" ? t("heroNowEyebrow") : t("heroNextEyebrow"),
-          title: subjectName,
-          meta: [`${item.startLabel}-${item.endLabel}`, teacherName].filter(Boolean).join(" · "),
-          chip: state === "next" ? `${item.start - nowMinutes} ${t("heroChipUnit")}` : undefined,
-          action: { label: t("heroAction"), href: "/schedule" },
-        };
-      })()
-    : undefined;
+  let hero: HeroCandidate | undefined;
+  if (currentOrNext) {
+    const { item, state } = currentOrNext;
+    const subjectName = subjectMap.get(item.subjectId)?.name ?? item.subjectId;
+    const teacherName = teacherMap.get(item.teacherUserId)?.name;
+    const wait = item.start - nowMinutes;
+    // Scanning into class is the student's task of the moment: it leads
+    // while a lesson runs or is about to start; further ahead the
+    // timetable does.
+    const scanFirst = state === "now" || wait <= STARTING_SOON_MINUTES;
+    hero = {
+      key: "student.next",
+      priority: HERO_PRIORITY.studentNext,
+      eyebrow: state === "now" ? t("heroNowEyebrow") : t("heroNextEyebrow"),
+      title: subjectName,
+      meta: [`${clock(item.startLabel)}–${clock(item.endLabel)}`, teacherName]
+        .filter(Boolean)
+        .join(" · "),
+      chip:
+        state === "now"
+          ? t("heroNowChip", splitMinutes(nowMinutes - item.start))
+          : wait > LONG_WAIT_MINUTES
+            ? t("heroChipAt", { start: clock(item.startLabel) })
+            : t("heroChip", splitMinutes(wait)),
+      live: state === "now",
+      action: scanFirst
+        ? { label: t("heroScanAction"), href: SCAN_HREF }
+        : { label: t("heroAction"), href: SCHEDULE_HREF },
+      ...(scanFirst ? { secondaryAction: { label: t("heroAction"), href: SCHEDULE_HREF } } : {}),
+    };
+  } else if (scheduleReady) {
+    hero = {
+      key: "student.idle",
+      priority: HERO_PRIORITY.studentIdle,
+      tone: "neutral",
+      eyebrow: t("heroIdleEyebrow"),
+      title: lessons.length > 0 ? t("heroDoneTitle") : t("heroFreeTitle"),
+      meta: lessons.length > 0 ? t("heroDoneMeta") : t("heroFreeMeta"),
+      action: { label: t("heroAction"), href: SCHEDULE_HREF },
+    };
+  }
 
   const tiles: TileSpec[] = [];
 
@@ -158,6 +217,7 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
         hint: t("attendanceHint"),
         icon: CalendarCheck,
         tone: "green",
+        href: "/attendance",
       });
     }
   }
@@ -173,24 +233,28 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
       value: String(pending),
       icon: FileText,
       tone: "amber",
-      href: "/leave-requests",
+      href: LEAVE_HREF,
     });
   }
 
+  const activeLoans = library.data?.active_loans ?? [];
   if (library.isSuccess) {
-    const activeLoans = library.data.active_loans;
+    const overdue = activeLoans.filter((loan) => loan.due_on < today).length;
     const nearestDue = [...activeLoans].map((loan) => loan.due_on).sort()[0];
     tiles.push({
       key: "student.loans",
       priority: 70,
       label: t("loansLabel"),
       value: String(activeLoans.length),
-      hint: nearestDue
-        ? t("loansHint", { date: formatDate(nearestDue, { locale, timeZone }) })
-        : undefined,
+      hint:
+        overdue > 0
+          ? t("loansOverdueHint", { count: overdue })
+          : nearestDue
+            ? t("loansHint", { date: formatDate(nearestDue, { locale, timeZone }) })
+            : undefined,
       icon: BookOpen,
-      tone: "purple",
-      href: "/library/me",
+      tone: overdue > 0 ? "red" : "purple",
+      href: LIBRARY_ME_HREF,
     });
   }
 
@@ -212,141 +276,91 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
     .slice(0, 3);
 
   const scheduleNode: ReactElement = (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle>{t("scheduleTitle")}</CardTitle>
+    <Card>
+      <CardHeader action={<TextLink href={SCHEDULE_HREF}>{t("scheduleAction")}</TextLink>}>
+        <CardTitle as="h2">{t("scheduleTitle")}</CardTitle>
       </CardHeader>
-      <CardContent className="pt-0">
-        {scheduleLoading ? (
-          <Skeleton className="h-20 w-full" aria-busy="true" />
-        ) : scheduleError ? (
-          <QueryError retry={retrySchedule} />
-        ) : lessons.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("scheduleEmpty")}</p>
-        ) : (
-          <ul className="flex flex-col divide-y divide-border">
-            {lessons.map((lesson) => {
-              const state =
-                nowMinutes >= lesson.end ? "past" : nowMinutes >= lesson.start ? "now" : "future";
-              const teacherName = teacherMap.get(lesson.teacherUserId)?.name;
-              return (
-                <li
-                  key={lesson.key}
-                  className="grid grid-cols-[3.25rem_1fr] items-center gap-3 py-2"
-                >
+      {scheduleLoading ? (
+        <div className="px-5 pb-5">
+          <SkeletonList rows={4} framed={false} />
+        </div>
+      ) : scheduleError ? (
+        <div className="px-5 pb-5">
+          <QueryError retry={retrySchedule} error={scheduleError} />
+        </div>
+      ) : lessons.length === 0 ? (
+        <div className="px-5 pb-5">
+          <EmptyState variant="compact" icon={<CalendarX2 />} title={t("scheduleEmpty")} />
+        </div>
+      ) : (
+        <List dense>
+          {lessons.map((lesson) => {
+            const state =
+              nowMinutes >= lesson.end ? "past" : nowMinutes >= lesson.start ? "now" : "future";
+            const teacherName = teacherMap.get(lesson.teacherUserId)?.name;
+            return (
+              <ListRow
+                key={lesson.key}
+                selected={state === "now"}
+                leading={
                   <span
                     className={cn(
-                      "text-[13px] tabular-nums",
-                      state === "now" ? "text-accent font-bold" : "text-fg-muted",
+                      "w-12 text-label tabular-nums",
+                      state === "now" ? "text-accent" : "text-fg-muted",
                     )}
                   >
-                    {lesson.startLabel}
+                    {clock(lesson.startLabel)}
                   </span>
-                  <span
-                    className={cn(
-                      "min-w-0 truncate text-[14px]",
-                      state === "now"
-                        ? "text-accent font-bold"
-                        : state === "past"
-                          ? "text-fg-muted"
-                          : "text-fg",
-                    )}
-                  >
+                }
+                title={
+                  <span className={cn(state === "past" && "text-fg-muted")}>
                     {subjectMap.get(lesson.subjectId)?.name ?? "-"}
-                    {teacherName && <span className="text-fg-muted"> · {teacherName}</span>}
                   </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </CardContent>
+                }
+                meta={teacherName}
+                trailing={
+                  state === "now" ? (
+                    <Badge tone="accent" size="sm" dot dotClassName="bg-current animate-live">
+                      {t("scheduleNow")}
+                    </Badge>
+                  ) : undefined
+                }
+              />
+            );
+          })}
+        </List>
+      )}
     </Card>
   );
 
   const leaveNode: ReactElement = (
-    <Card className="h-full">
-      <CardHeader className="flex-row items-center justify-between gap-2">
-        <CardTitle>{t("leaveTitle")}</CardTitle>
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/leave-requests">{t("leaveAction")}</Link>
-        </Button>
-      </CardHeader>
-      <CardContent className="pt-0">
-        {leaveRequests.isLoading ? (
-          <Skeleton className="h-16 w-full" aria-busy="true" />
-        ) : leaveRequests.isError ? (
-          <QueryError
-            retry={() => {
-              void leaveRequests.refetch();
-            }}
-          />
-        ) : leaveItems.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("leaveEmpty")}</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {leaveItems.map((item) => (
-              <li
-                key={item.instance_id}
-                className="flex items-center justify-between gap-2 text-[13px]"
-              >
-                <span className="min-w-0 truncate text-fg">
-                  {tLeave(`categories.${item.category}`)}
-                </span>
-                <WorkflowStatusBadge status={item.status} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+    <StudentLeaveCard
+      query={leaveRequests}
+      items={leaveItems}
+      timeZone={timeZone}
+      leaveHref={LEAVE_HREF}
+      submitHref={SUBMIT_LEAVE_HREF}
+    />
   );
 
-  const activeLoans = library.data?.active_loans ?? [];
   const libraryNode: ReactElement = (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle>{t("libraryTitle")}</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0">
-        {library.isLoading ? (
-          <Skeleton className="h-16 w-full" aria-busy="true" />
-        ) : library.isError ? (
-          <QueryError
-            retry={() => {
-              void library.refetch();
-            }}
-          />
-        ) : activeLoans.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("libraryEmpty")}</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {activeLoans.map((loan) => {
-              const overdue = loan.due_on < today;
-              return (
-                <li key={loan.id} className="flex items-center justify-between gap-2 text-[13px]">
-                  <span className="min-w-0 truncate text-fg">
-                    {loan.title_name ?? loan.title_id}
-                  </span>
-                  <span className={cn("shrink-0", overdue ? "text-danger" : "text-fg-muted")}>
-                    {formatDate(loan.due_on, { locale, timeZone })}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+    <StudentLibraryCard
+      query={library}
+      loans={activeLoans}
+      today={today}
+      timeZone={timeZone}
+      libraryHref={LIBRARY_ME_HREF}
+    />
   );
 
   return {
     hero,
     tiles,
-    left: [
+    pending: scheduleLoading,
+    main: [
       { key: "student.schedule", node: scheduleNode },
       ...(leaveOn ? [{ key: "student.leave", node: leaveNode }] : []),
     ],
-    right: libraryOn ? [{ key: "student.library", node: libraryNode }] : [],
+    side: libraryOn ? [{ key: "student.library", node: libraryNode }] : [],
   };
 }

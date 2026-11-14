@@ -5,7 +5,7 @@ import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
 import {
   Badge,
-  Button,
+  type BadgeTone,
   ConfirmDialog,
   DataTable,
   Dialog,
@@ -42,10 +42,11 @@ import { isMissedSchedule } from "../lib/missed-schedule";
 
 import { AnnouncementForm } from "./announcement-form";
 
-const STATUS_VARIANT: Record<AnnouncementStatus, "neutral" | "accent"> = {
+/** Each status in its own semantic tone, so a scheduled item never reads as a published one. */
+const STATUS_TONE: Record<AnnouncementStatus, BadgeTone> = {
   draft: "neutral",
-  scheduled: "accent",
-  published: "accent",
+  scheduled: "info",
+  published: "success",
   archived: "neutral",
 };
 
@@ -82,7 +83,7 @@ export function AnnouncementsManage({
   );
   const [cursors, setCursors] = useState<string[]>([""]);
   const cursor = cursors[cursors.length - 1] ?? "";
-  const { data, isLoading } = useAnnouncementsQuery(status, cursor);
+  const { data, isLoading, isError, error, refetch } = useAnnouncementsQuery(status, cursor);
   const transition = useAnnouncementTransitionMutation();
   const remove = useDeleteAnnouncementMutation();
 
@@ -118,7 +119,7 @@ export function AnnouncementsManage({
         cell: ({ row }) => (
           <div className="flex flex-col">
             <span className="font-medium text-fg">{row.original.title}</span>
-            <span className="text-[12px] text-fg-muted">
+            <span className="text-caption text-fg-muted">
               {describeAudience(row.original.audience, t)}
             </span>
           </div>
@@ -130,11 +131,14 @@ export function AnnouncementsManage({
         enableSorting: false,
         cell: ({ row }) => (
           <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant={STATUS_VARIANT[row.original.status]}>
+            <Badge
+              tone={STATUS_TONE[row.original.status]}
+              appearance={row.original.status === "archived" ? "outline" : "soft"}
+            >
               {t(`status.${row.original.status}`)}
             </Badge>
             {isMissedSchedule(row.original, businessNow()) && (
-              <Badge variant="warning" title={t("missedSchedule.hint")}>
+              <Badge tone="warning" title={t("missedSchedule.hint")}>
                 {t("missedSchedule.label")}
               </Badge>
             )}
@@ -241,58 +245,47 @@ export function AnnouncementsManage({
   ];
 
   return (
-    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex flex-col md:min-h-0 md:flex-1">
-        <DataTable
-          stateKey="features/announcements/components/announcements-manage:1"
-          mode="cursor"
-          data={items}
-          columns={columns}
-          rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 20 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
-          filters={filters}
-          filtersLabels={{
-            reset: t("filters.reset"),
-            removeFilter: (label) => t("filters.removeFilter", { label }),
-          }}
-          isLoading={isLoading}
-          getRowId={(a) => a.id}
-          fillHeight
-          emptyState={
-            <EmptyState
-              icon={<domainIcons.announcement aria-hidden="true" />}
-              title={t("manageEmptyTitle")}
-              description={t("manageEmptyBody")}
-            />
-          }
-        />
-      </div>
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={cursors.length <= 1}
-          onClick={() => {
+    <div className="flex flex-col gap-4">
+      <DataTable
+        stateKey="features/announcements/components/announcements-manage:1"
+        mode="cursor"
+        data={items}
+        columns={columns}
+        rowCount={items.length}
+        pagination={{ pageIndex: 0, pageSize: 20 }}
+        onPaginationChange={() => undefined}
+        sorting={[]}
+        onSortingChange={() => undefined}
+        globalFilter=""
+        filters={filters}
+        filtersLabels={{
+          reset: t("filters.reset"),
+          removeFilter: (label) => t("filters.removeFilter", { label }),
+        }}
+        isLoading={isLoading}
+        error={isError ? error : undefined}
+        onRetry={() => void refetch()}
+        cursorPagination={{
+          hasPrevious: cursors.length > 1,
+          hasNext: Boolean(data?.page.next_cursor),
+          onPrevious: () => {
             setCursors((prev) => prev.slice(0, -1));
-          }}
-        >
-          {t("pagePrev")}
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={!data?.page.next_cursor}
-          onClick={() => {
+          },
+          onNext: () => {
             if (data?.page.next_cursor) setCursors((prev) => [...prev, data.page.next_cursor]);
-          }}
-        >
-          {t("pageNext")}
-        </Button>
-      </div>
+          },
+          page: cursors.length,
+          pageSize: 20,
+        }}
+        getRowId={(a) => a.id}
+        emptyState={
+          <EmptyState
+            icon={<domainIcons.announcement aria-hidden="true" />}
+            title={t("manageEmptyTitle")}
+            description={t("manageEmptyBody")}
+          />
+        }
+      />
 
       <Dialog
         open={editing !== null}
@@ -305,7 +298,7 @@ export function AnnouncementsManage({
       >
         <DialogContent
           title={editing === "new" ? t("form.createTitle") : t("form.editTitle")}
-          className="max-w-2xl"
+          size="lg"
         >
           {editing !== null && (
             <AnnouncementForm

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -23,8 +23,14 @@ vi.mock("next/dynamic", async () => {
       lazy(async () => ({ default: await loader() })),
   };
 });
+// The report centre draws the section strip it is given under its own title.
 vi.mock("./reports-view", () => ({
-  ReportsView: ({ tabKey }: { tabKey: string }) => <p data-testid="school-report">{tabKey}</p>,
+  ReportsView: ({ tabKey, sectionNav }: { tabKey: string; sectionNav?: ReactNode }) => (
+    <div>
+      {sectionNav}
+      <p data-testid="school-report">{tabKey}</p>
+    </div>
+  ),
 }));
 vi.mock("../../library/components/library-reports-view", () => ({
   LibraryReportsView: ({ tabKey }: { tabKey: string }) => (

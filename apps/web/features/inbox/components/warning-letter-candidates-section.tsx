@@ -1,8 +1,17 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Badge, Button, Card, Skeleton, useToast } from "@newsekolah/ui";
-import Link from "next/link";
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  List,
+  ListRow,
+  SkeletonList,
+  useToast,
+} from "@newsekolah/ui";
+import { ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -14,11 +23,14 @@ import {
   useSPCandidatesQuery,
 } from "../../discipline/api";
 import { dueLevels } from "../../discipline/lib/sp-due-levels";
-import { StudentLink } from "../../students/components/student-link";
 import { studentProfileHref } from "../../students/href";
 import { INBOX_SP_FILTERS } from "../use-action-inbox-count";
 
-/** Students whose points reached a warning-letter level not yet issued, with the same one-click issue as the at-risk tab. */
+/**
+ * Students whose points reached a warning-letter level not yet issued, as
+ * rows that open the student's discipline tab, with the same one-click
+ * issue as the at-risk tab as each row's own action.
+ */
 export function WarningLetterCandidatesSection(): ReactElement {
   const t = useTranslations("app.inbox.warningLetters");
   const toast = useToast();
@@ -33,7 +45,7 @@ export function WarningLetterCandidatesSection(): ReactElement {
   });
 
   if (candidates.isLoading || policy.isLoading) {
-    return <Skeleton className="h-24 w-full" aria-busy="true" />;
+    return <SkeletonList rows={3} />;
   }
   if (candidates.isError || policy.isError) {
     return (
@@ -42,75 +54,64 @@ export function WarningLetterCandidatesSection(): ReactElement {
           void candidates.refetch();
           void policy.refetch();
         }}
+        error={candidates.error ?? policy.error}
       />
     );
   }
   if (rows.length === 0) {
-    return <p className="py-4 text-center text-sm text-fg-muted">{t("empty")}</p>;
+    return (
+      <Card padding="sm">
+        <EmptyState variant="compact" icon={<ShieldCheck />} title={t("empty")} />
+      </Card>
+    );
   }
 
   return (
-    <ul className="grid gap-4 lg:grid-cols-2">
-      {rows.map(({ candidate, due, next }) => {
-        return (
-          <li key={candidate.student_user_id} className="flex h-full flex-col">
-            <Card className="flex h-full flex-col gap-3 p-4">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="truncate text-[14px] font-medium text-fg">
-                    <StudentLink studentId={candidate.student_user_id} tab="discipline">
-                      {candidate.student_name}
-                    </StudentLink>
-                  </span>
-                  <span className="text-[13px] text-fg-muted">
-                    {candidate.nis} · {candidate.class_name}
-                  </span>
-                  <span className="text-[13px] text-fg">
-                    {t("points", { count: candidate.total_points })}
-                  </span>
-                </div>
-                <div className="flex flex-wrap justify-end gap-1">
-                  {due.map((level) => (
-                    <Badge key={level.level} variant="accent">
-                      {level.label}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="mt-auto flex flex-wrap items-center justify-end gap-1.5">
-                <Button size="sm" variant="secondary" asChild>
-                  <Link href={studentProfileHref(candidate.student_user_id, "discipline")}>
-                    {t("open")}
-                  </Link>
-                </Button>
-                <Button
-                  size="sm"
-                  loading={issue.isPending}
-                  onClick={() => {
-                    issue.mutate(
-                      { student_user_id: candidate.student_user_id, level: next.level },
-                      {
-                        onSuccess: () => {
-                          toast.success(t("issued", { level: next.label }));
-                        },
-                        onError: (error) => {
-                          toast.error(
-                            error instanceof ApiError
-                              ? apiErrorMessage(error.code)
-                              : apiErrorMessage("UNKNOWN"),
-                          );
-                        },
+    <Card>
+      <List>
+        {rows.map(({ candidate, due, next }) => (
+          <ListRow
+            key={candidate.student_user_id}
+            href={studentProfileHref(candidate.student_user_id, "discipline")}
+            title={candidate.student_name}
+            meta={t("meta", {
+              nis: candidate.nis,
+              className: candidate.class_name,
+              points: candidate.total_points,
+            })}
+            trailing={due.map((level) => (
+              <Badge key={level.level} tone="warning" size="sm">
+                {level.label}
+              </Badge>
+            ))}
+            action={
+              <Button
+                size="sm"
+                loading={issue.isPending}
+                onClick={() => {
+                  issue.mutate(
+                    { student_user_id: candidate.student_user_id, level: next.level },
+                    {
+                      onSuccess: () => {
+                        toast.success(t("issued", { level: next.label }));
                       },
-                    );
-                  }}
-                >
-                  {t("issue", { level: next.label })}
-                </Button>
-              </div>
-            </Card>
-          </li>
-        );
-      })}
-    </ul>
+                      onError: (error) => {
+                        toast.error(
+                          error instanceof ApiError
+                            ? apiErrorMessage(error.code)
+                            : apiErrorMessage("UNKNOWN"),
+                        );
+                      },
+                    },
+                  );
+                }}
+              >
+                {t("issue", { level: next.label })}
+              </Button>
+            }
+          />
+        ))}
+      </List>
+    </Card>
   );
 }

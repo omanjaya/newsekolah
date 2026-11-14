@@ -2,8 +2,17 @@ import { render, renderHook, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => Object.assign((key: string) => key, { has: () => true }),
+  useTranslations: () =>
+    Object.assign(
+      (key: string, params?: Record<string, unknown>) =>
+        params ? `${key}:${JSON.stringify(params)}` : key,
+      { has: () => true },
+    ),
   useLocale: () => "id",
+  useFormatter: () => ({
+    dateTime: (date: Date) =>
+      `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`,
+  }),
 }));
 
 vi.mock("@newsekolah/i18n", () => ({
@@ -245,7 +254,10 @@ describe("useStudentBlock", () => {
     const { result } = renderHook(() => useStudentBlock(me(), true));
 
     expect(result.current.hero?.title).toBe("IPA");
-    expect(result.current.hero?.chip).toContain("10");
+    expect(result.current.hero?.chip).toContain('"minutes":10');
+    // Ten minutes before the lesson, scanning into class leads.
+    expect(result.current.hero?.action?.href).toBe("/scan");
+    expect(result.current.hero?.secondaryAction?.href).toBe("/schedule");
   });
 
   it("follows a superadmin's simulated clock, not the real system clock, to pick today's lesson", () => {
@@ -355,7 +367,7 @@ describe("useStudentBlock", () => {
     const { result } = renderHook(() => useStudentBlock(me(), true));
 
     expect(result.current.hero?.title).toBe("IPA");
-    expect(result.current.hero?.chip).toContain("10");
+    expect(result.current.hero?.chip).toContain('"minutes":10');
   });
 
   it("shows only today's lessons and picks the hero from them, ignoring blocks on other weekdays", () => {
@@ -457,7 +469,7 @@ describe("useStudentBlock", () => {
 
     expect(result.current.hero?.title).toBe("IPA");
 
-    render(<>{result.current.left.find((slot) => slot.key === "student.schedule")?.node}</>);
+    render(<>{result.current.main.find((slot) => slot.key === "student.schedule")?.node}</>);
     expect(screen.getByText("IPA")).toBeInTheDocument();
     expect(screen.queryByText("Sejarah")).not.toBeInTheDocument();
   });
@@ -514,7 +526,7 @@ describe("useStudentBlock", () => {
     });
 
     const { result } = renderHook(() => useStudentBlock(me(), true));
-    const libraryNode = result.current.right.find((slot) => slot.key === "student.library")?.node;
+    const libraryNode = result.current.side.find((slot) => slot.key === "student.library")?.node;
     render(<>{libraryNode}</>);
 
     expect(screen.getByText("libraryEmpty")).toBeInTheDocument();
@@ -546,7 +558,7 @@ describe("useStudentBlock", () => {
     });
 
     const { result } = renderHook(() => useStudentBlock(me(), true));
-    const libraryNode = result.current.right.find((slot) => slot.key === "student.library")?.node;
+    const libraryNode = result.current.side.find((slot) => slot.key === "student.library")?.node;
     render(<>{libraryNode}</>);
 
     expect(screen.getByText("Matematika Dasar")).toBeInTheDocument();

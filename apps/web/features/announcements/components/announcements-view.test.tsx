@@ -9,6 +9,34 @@ const mocks = vi.hoisted(() => ({ canCreate: true, canPublish: true }));
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
 }));
+// A tiny URL store: router.replace changes the query and every reader re-renders.
+vi.mock("next/navigation", async () => {
+  const { useSyncExternalStore } = await import("react");
+  let query = "";
+  const listeners = new Set<() => void>();
+  return {
+    usePathname: () => "/announcements",
+    useSearchParams: () =>
+      new URLSearchParams(
+        useSyncExternalStore(
+          (listener) => {
+            listeners.add(listener);
+            return () => listeners.delete(listener);
+          },
+          () => query,
+        ),
+      ),
+    useRouter: () => ({
+      replace: (href: string) => {
+        query = href.split("?")[1] ?? "";
+        listeners.forEach((listener) => {
+          listener();
+        });
+      },
+    }),
+  };
+});
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (permission: string) =>
     permission === "create_announcements" ? mocks.canCreate : mocks.canPublish,

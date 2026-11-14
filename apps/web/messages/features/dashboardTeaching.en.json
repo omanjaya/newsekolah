@@ -5,7 +5,8 @@
       "action": "Open attendance",
       "empty": "No sessions today",
       "statusSubmitted": "Saved",
-      "statusPending": "Not filled in"
+      "statusPending": "Not filled in",
+      "runningMeta": "{subject} · in progress"
     },
     "tiles": {
       "pendingLabel": "Attendance not filled in",
@@ -13,13 +14,21 @@
     },
     "hero": {
       "nowEyebrow": "Now",
-      "nowMeta": "{start}-{end} · attendance not submitted",
-      "nowChip": "running for {minutes} min",
+      "nowMeta": "{start}–{end} · attendance not submitted yet",
+      "nowChip": "running {hours, plural, =0 {{minutes} min} other {{minutes, plural, =0 {{hours} h} other {{hours} h {minutes} min}}}}",
       "nowAction": "Fill in attendance",
       "nextEyebrow": "Next",
-      "nextMeta": "{start}-{end}",
-      "nextChip": "in {minutes} min",
-      "nextAction": "Open attendance"
+      "nextMeta": "{start}–{end}",
+      "nextChip": "in {hours, plural, =0 {{minutes} min} other {{minutes, plural, =0 {{hours} h} other {{hours} h {minutes} min}}}}",
+      "nextAction": "Open attendance",
+      "nextChipAt": "starts {start}",
+      "scheduleAction": "View schedule",
+      "idleEyebrow": "Teaching today",
+      "doneTitle": "All of today's attendance is in",
+      "doneMeta": "{total} sessions taken. Your teaching journal can be completed now.",
+      "freeTitle": "No lessons to teach today",
+      "freeMeta": "This week's timetable is still available.",
+      "journalAction": "Fill in journal"
     }
   },
   "homeroom": {
@@ -29,7 +38,10 @@
       "action": "Review leave requests",
       "empty": "No leave requests waiting",
       "noStatus": "No attendance data yet today",
-      "review": "Review"
+      "review": "Review",
+      "statusTitle": "{className} attendance today",
+      "statusTitleFallback": "Class attendance today",
+      "statusLabel": "Attendance status today"
     },
     "tiles": {
       "leaveLabel": "Class leave requests waiting",
@@ -40,7 +52,8 @@
       "eyebrow": "Homeroom {className}",
       "eyebrowFallback": "Homeroom",
       "title": "{count} leave requests await review",
-      "action": "Review leave requests"
+      "action": "Review leave requests",
+      "meta": "Leave requests from your homeroom class are waiting for you."
     }
   }
 }

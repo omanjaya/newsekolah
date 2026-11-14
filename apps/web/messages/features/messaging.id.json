@@ -86,6 +86,7 @@
     "resend": "Kirim ulang",
     "resent": "Pengiriman ulang dijadwalkan",
     "loadMore": "Muat lebih banyak",
-    "errorLabel": "Alasan gagal"
+    "errorLabel": "Alasan gagal",
+    "filterLabel": "Saring menurut status"
   }
 }

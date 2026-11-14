@@ -389,8 +389,7 @@
     },
     "dashboard": {
       "title": "Beranda",
-      "greeting": "Selamat datang, {name}",
-      "noAcademicYear": "Belum ada tahun ajaran aktif",
+      "greeting": "Halo, {name}",
       "tiles": {
         "notifications": {
           "label": "Notifikasi",
@@ -398,31 +397,40 @@
         }
       },
       "announcementsTitle": "Pengumuman terbaru",
-      "openAnnouncements": "Lihat semua"
+      "openAnnouncements": "Lihat semua",
+      "statsLabel": "Ringkasan hari ini",
+      "fallback": {
+        "eyebrow": "Hari ini",
+        "title": "Tidak ada yang mendesak",
+        "meta": "Notifikasi dan pengumuman terbaru tetap bisa dibuka dari sini.",
+        "action": "Buka notifikasi",
+        "inboxEyebrow": "Perlu tindakan",
+        "inboxTitle": "{count} hal menunggu tindakan Anda",
+        "inboxMeta": "Pengajuan yang menunggu keputusan Anda ada di satu tempat.",
+        "inboxAction": "Buka perlu tindakan"
+      },
+      "shortcuts": {
+        "title": "Pintasan",
+        "monitor": "Monitor presensi",
+        "setup": "Persiapan sekolah"
+      }
     },
     "profile": {
       "title": "Profil",
-      "identityTitle": "Identitas",
       "usernameLabel": "Nama pengguna",
       "emailLabel": "Email",
-      "emailEmpty": "Belum diisi",
-      "rolesLabel": "Peran",
-      "sessionsColumnDevice": "Perangkat",
-      "sessionsColumnLastSeen": "Terakhir aktif",
-      "sessionsColumnActions": "Aksi",
       "sessionsEmptyTitle": "Tidak ada sesi lain",
       "sessionsEmptyBody": "Sesi lain akan tampil di sini setelah masuk dari perangkat lain.",
       "revokeSuccess": "Sesi berhasil diakhiri",
       "changePasswordTitle": "Ubah kata sandi",
       "avatar": {
-        "title": "Foto",
         "change": "Ganti foto",
         "hint": "JPEG, PNG, atau WebP, maksimal 2 MB",
         "uploading": "Mengunggah, {percent, number}%",
         "updated": "Foto diperbarui"
       },
       "edit": {
-        "title": "Ubah profil",
+        "title": "Akun",
         "nameLabel": "Nama lengkap",
         "emailLabel": "Email",
         "phoneLabel": "Telepon",
@@ -434,7 +442,9 @@
         "save": "Simpan perubahan",
         "saved": "Profil diperbarui",
         "usernameLabel": "Nama pengguna",
-        "usernameLengthError": "Nama pengguna minimal 3 karakter."
+        "usernameLengthError": "Nama pengguna minimal 3 karakter.",
+        "description": "Nama dan kontak yang dilihat guru, siswa, dan staf sekolah.",
+        "phoneHint": "Nomor yang tersimpan tidak ditampilkan; isi untuk menggantinya."
       },
       "detail": {
         "title": "Data diri",
@@ -467,8 +477,34 @@
         "employeeNumber": "Nomor induk pegawai",
         "position": "Jabatan",
         "save": "Simpan data diri",
-        "saved": "Data diri diperbarui"
-      }
+        "saved": "Data diri diperbarui",
+        "unset": "Belum dipilih",
+        "institutionalHint": "Diisi dan diubah oleh admin sekolah.",
+        "identitySection": "Identitas",
+        "addressSection": "Alamat",
+        "familySection": "Keluarga dan sekolah asal",
+        "educationSection": "Pendidikan",
+        "employmentStatuses": {
+          "pns": "PNS",
+          "pppk": "PPPK",
+          "tetap": "Pegawai tetap",
+          "gty": "Guru tetap yayasan",
+          "gtt": "Guru tidak tetap",
+          "honorer": "Honorer",
+          "kontrak": "Kontrak"
+        }
+      },
+      "tabsLabel": "Bagian profil",
+      "tabs": {
+        "account": "Akun",
+        "personal": "Data diri",
+        "security": "Keamanan"
+      },
+      "academicYear": "Tahun ajaran {year}",
+      "noAcademicYear": "Belum ada tahun ajaran aktif",
+      "unsavedChanges": "Ada perubahan yang belum disimpan",
+      "changePasswordHint": "Gunakan kata sandi yang tidak dipakai di layanan lain.",
+      "sessionLastSeen": "Terakhir aktif {time}"
     },
     "settings": {
       "appearance": {
@@ -675,7 +711,9 @@
       "kindAll": "Semua jenis",
       "kindFilterLabel": "Jenis notifikasi",
       "emptyFilteredTitle": "Tidak ada notifikasi yang cocok",
-      "emptyFilteredBody": "Coba ubah kata pencarian atau pilih jenis lain."
+      "emptyFilteredBody": "Coba ubah kata pencarian atau pilih jenis lain.",
+      "filterLabel": "Tampilkan notifikasi",
+      "showAll": "Lihat semua notifikasi"
     },
     "announcements": {
       "eyebrow": "Komunikasi",
@@ -769,8 +807,11 @@
         "previewScheduleAt": "Tampil mulai {date}",
         "previewUntitled": "(Tanpa judul)",
         "previewEmptyBody": "(Isi belum ditulis)",
-        "previewHint": "Begini tampilan pengumuman ini bagi penerimanya."
-      }
+        "previewHint": "Begini tampilan pengumuman ini bagi penerimanya.",
+        "audienceLabel": "Ditujukan kepada"
+      },
+      "feedEmptyCompact": "Belum ada pengumuman",
+      "tabsLabel": "Bagian pengumuman"
     },
     "duty": {
       "navLabel": "Piket",

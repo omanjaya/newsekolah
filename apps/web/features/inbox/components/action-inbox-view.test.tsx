@@ -14,8 +14,16 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (code: string) => mocks.permissions.has(code),
-  useSession: () => ({ me: { profile_kind: mocks.profileKind } }),
+  useSession: () => ({
+    me: {
+      profile_kind: mocks.profileKind,
+      permissions: [...mocks.permissions],
+      roles: [],
+      disabled_modules: [],
+    },
+  }),
 }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../use-action-inbox-count", () => ({ useActionInboxSummary: mocks.summary }));
 vi.mock("../../permits/components/permit-unified-queue", () => ({
   PermitUnifiedQueue: () => <div data-testid="permit-queue" />,
@@ -87,6 +95,16 @@ describe("ActionInboxView", () => {
     render(<ActionInboxView />);
     expect(screen.getByText("emptyTitle")).toBeInTheDocument();
     expect(screen.queryByTestId("permit-queue")).not.toBeInTheDocument();
+    // The all-clear state still offers a way on: the history of the queue.
+    expect(screen.getByRole("link", { name: "historyLeave" })).toHaveAttribute(
+      "href",
+      "/leave-requests",
+    );
+  });
+
+  it("offers the way home from the no-access state", () => {
+    render(<ActionInboxView />);
+    expect(screen.getByRole("link", { name: "backHome" })).toHaveAttribute("href", "/dashboard");
   });
 
   it("keeps the sections visible when a queue failed so its retry stays reachable", () => {

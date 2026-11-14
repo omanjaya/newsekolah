@@ -1,7 +1,25 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, ConfirmDialog, Input, Skeleton, Textarea, useToast } from "@newsekolah/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  ConfirmDialog,
+  EmptyState,
+  Field,
+  FormActions,
+  Input,
+  List,
+  ListRow,
+  SkeletonList,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
+import { MessageSquareText, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -116,61 +134,81 @@ export function TemplatesView(): ReactElement {
   const showForm = creating || editingId !== null;
 
   return (
-    <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-          <p className="text-[13px] text-fg-muted">{t("body")}</p>
-        </div>
-        {!showForm && <Button onClick={startCreate}>{t("addNew")}</Button>}
-      </div>
+    <Card>
+      <CardHeader
+        action={
+          showForm ? undefined : (
+            <Button size="sm" icon={<Plus />} onClick={startCreate}>
+              {t("addNew")}
+            </Button>
+          )
+        }
+      >
+        <CardTitle as="h2">{t("title")}</CardTitle>
+        <CardDescription>{t("body")}</CardDescription>
+      </CardHeader>
 
       {list.isLoading ? (
-        <Skeleton className="h-40 w-full" />
+        <div className="px-5 pb-5">
+          <SkeletonList rows={3} framed={false} />
+        </div>
       ) : showForm ? (
-        <TemplateForm
-          form={form}
-          setForm={setForm}
-          placeholders={placeholders}
-          templateId={editingId}
-          onSave={() => void handleSave()}
-          onCancel={cancelEdit}
-          saving={create.isPending || update.isPending}
-        />
+        <div className="px-5 pb-5">
+          <TemplateForm
+            form={form}
+            setForm={setForm}
+            placeholders={placeholders}
+            templateId={editingId}
+            onSave={() => void handleSave()}
+            onCancel={cancelEdit}
+            saving={create.isPending || update.isPending}
+          />
+        </div>
       ) : templates.length === 0 ? (
-        <p className="text-[13px] text-fg-muted">{t("empty")}</p>
+        <div className="px-5 pb-5">
+          <EmptyState
+            variant="compact"
+            icon={<MessageSquareText />}
+            title={t("empty")}
+            action={
+              <Button size="sm" variant="secondary" onClick={startCreate}>
+                {t("addNew")}
+              </Button>
+            }
+          />
+        </div>
       ) : (
-        <ul className="flex flex-col divide-y divide-border">
+        <List>
           {templates.map((template) => (
-            <li
+            <ListRow
               key={template.id}
-              className="flex flex-wrap items-center justify-between gap-4 py-3"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[14px] font-medium text-fg">{template.name}</p>
-                <p className="truncate text-[13px] text-fg-muted">{template.meta_template_name}</p>
-              </div>
-              <div className="flex shrink-0 gap-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    startEdit(template);
-                  }}
-                >
-                  {t("form.edit")}
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setDeleteTarget(template);
-                  }}
-                >
-                  {t("form.delete")}
-                </Button>
-              </div>
-            </li>
+              title={template.name}
+              meta={template.meta_template_name}
+              action={
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      startEdit(template);
+                    }}
+                  >
+                    {t("form.edit")}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setDeleteTarget(template);
+                    }}
+                  >
+                    {t("form.delete")}
+                  </Button>
+                </div>
+              }
+            />
           ))}
-        </ul>
+        </List>
       )}
 
       <ConfirmDialog
@@ -184,7 +222,7 @@ export function TemplatesView(): ReactElement {
         destructive
         onConfirm={handleDelete}
       />
-    </div>
+    </Card>
   );
 }
 
@@ -218,35 +256,31 @@ function TemplateForm({
 
   return (
     <div className="flex flex-col gap-3">
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("form.nameLabel")}</span>
+      <Field label={t("form.nameLabel")}>
         <Input
           value={form.name}
           onChange={(e) => {
             setForm((f) => ({ ...f, name: e.target.value }));
           }}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("form.localeLabel")}</span>
+      </Field>
+      <Field label={t("form.localeLabel")}>
         <Input
           value={form.locale}
           onChange={(e) => {
             setForm((f) => ({ ...f, locale: e.target.value }));
           }}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("form.metaTemplateNameLabel")}</span>
+      </Field>
+      <Field label={t("form.metaTemplateNameLabel")}>
         <Input
           value={form.metaTemplateName}
           onChange={(e) => {
             setForm((f) => ({ ...f, metaTemplateName: e.target.value }));
           }}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("form.bodyLabel")}</span>
+      </Field>
+      <Field label={t("form.bodyLabel")} hint={t("form.bodyHint")}>
         <Textarea
           rows={4}
           value={form.body}
@@ -254,35 +288,31 @@ function TemplateForm({
             setForm((f) => ({ ...f, body: e.target.value }));
           }}
         />
-        <span className="text-fg-muted">{t("form.bodyHint")}</span>
-      </label>
+      </Field>
 
       {placeholders.length > 0 && (
-        <div className="flex flex-col gap-2 rounded-xs border border-border bg-bg p-3">
-          <p className="text-[13px] font-medium text-fg">{t("form.placeholdersLabel")}</p>
-          <div className="flex flex-wrap gap-2 text-[13px]">
+        <div className="flex flex-col gap-3 rounded-md bg-surface-sunken p-4">
+          <p className="text-label text-fg">{t("form.placeholdersLabel")}</p>
+          <div className="flex flex-wrap gap-2">
             {placeholders.map((name) => (
-              <span key={name} className="rounded-xs border border-border bg-surface px-2 py-1">
+              <Badge key={name} appearance="outline">
                 {name}
-              </span>
+              </Badge>
             ))}
           </div>
 
           {templateId && (
-            <div className="flex flex-col gap-2 border-t border-border pt-2">
-              <p className="text-[13px] font-medium text-fg">{t("preview.title")}</p>
+            <div className="flex flex-col gap-3 border-t border-line pt-3">
+              <p className="text-label text-fg">{t("preview.title")}</p>
               {placeholders.map((name) => (
-                <label key={name} className="flex flex-col gap-1 text-[13px]">
-                  <span className="text-fg-muted">
-                    {t("preview.variableValueLabel", { variable: name })}
-                  </span>
+                <Field key={name} label={t("preview.variableValueLabel", { variable: name })}>
                   <Input
                     value={variables[name] ?? ""}
                     onChange={(e) => {
                       setVariables((v) => ({ ...v, [name]: e.target.value }));
                     }}
                   />
-                </label>
+                </Field>
               ))}
               <Button
                 variant="secondary"
@@ -292,9 +322,9 @@ function TemplateForm({
                 {t("preview.title")}
               </Button>
               {preview.data && (
-                <div className="rounded-xs border border-border bg-surface p-2 text-[13px]">
+                <div className="rounded-md bg-surface p-3 text-body-sm">
                   {preview.data.missing_variables && preview.data.missing_variables.length > 0 ? (
-                    <p className="text-status-absent">
+                    <p className="text-danger">
                       {t("preview.missingVariables", {
                         variables: preview.data.missing_variables.join(", "),
                       })}
@@ -309,14 +339,14 @@ function TemplateForm({
         </div>
       )}
 
-      <div className="flex gap-2">
-        <Button onClick={onSave} disabled={saving}>
-          {t("form.save")}
-        </Button>
-        <Button variant="ghost" onClick={onCancel}>
+      <FormActions>
+        <Button variant="secondary" onClick={onCancel}>
           {t("form.cancel")}
         </Button>
-      </div>
+        <Button onClick={onSave} loading={saving}>
+          {t("form.save")}
+        </Button>
+      </FormActions>
     </div>
   );
 }

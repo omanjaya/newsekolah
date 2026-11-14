@@ -43,10 +43,10 @@ export function AnnouncementPanel({ onNavigate }: { onNavigate: () => void }): R
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center gap-2 px-3 py-8 text-center">
           <Megaphone className="size-5 text-fg-muted" aria-hidden="true" />
-          <span className="text-[13px] text-fg-muted">{tBell("announcementsEmpty")}</span>
+          <span className="text-body-sm text-fg-muted">{tBell("announcementsEmpty")}</span>
         </div>
       ) : (
-        <ul className="flex max-h-80 flex-col divide-y divide-border overflow-y-auto">
+        <ul className="flex max-h-80 flex-col divide-y divide-line overflow-y-auto">
           {items.map((item) => (
             <AnnouncementPanelRow
               key={item.id}
@@ -65,7 +65,7 @@ export function AnnouncementPanel({ onNavigate }: { onNavigate: () => void }): R
       <Link
         href="/announcements"
         onClick={onNavigate}
-        className="border-t border-border px-3 py-2 text-center text-[13px] text-accent hover:bg-bg"
+        className="border-t border-line px-3 py-3 text-center text-label text-accent transition-colors hover:bg-state-hover"
       >
         {tBell("announcementsSeeAll")}
       </Link>
@@ -88,12 +88,16 @@ function AnnouncementPanelRow({
   const unread = !item.is_read;
 
   return (
-    <li className={cn(unread && "bg-accent/5")}>
-      <Link href="/announcements" onClick={onOpen} className="block hover:bg-bg">
-        <div className="flex items-start gap-2 px-3 py-2">
+    <li className={cn(unread && "bg-state-selected")}>
+      <Link
+        href="/announcements"
+        onClick={onOpen}
+        className="block transition-colors hover:bg-state-hover"
+      >
+        <div className="flex items-start gap-2 px-3 py-3">
           <span
             className={cn(
-              "mt-1.5 size-2 shrink-0 rounded-xs",
+              "mt-1.5 size-2 shrink-0 rounded-full",
               unread ? "bg-accent" : "bg-transparent",
             )}
             role={unread ? "img" : undefined}
@@ -106,11 +110,11 @@ function AnnouncementPanelRow({
               {item.is_pinned && (
                 <Pin className="size-3.5 shrink-0 text-accent" aria-label={t("pinned")} />
               )}
-              <span className={cn("truncate text-[13px] text-fg", unread && "font-medium")}>
+              <span className={cn("truncate text-body-sm text-fg", unread && "font-semibold")}>
                 {item.title}
               </span>
             </span>
-            <span className="text-[11px] text-fg-muted">
+            <span className="text-caption text-fg-muted">
               {formatRelative(item.published_at, { locale, timeZone })}
             </span>
           </div>

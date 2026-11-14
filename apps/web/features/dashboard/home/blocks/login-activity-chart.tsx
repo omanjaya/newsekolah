@@ -32,7 +32,7 @@ export function LoginActivityChart({ values }: { values: number[] }): ReactEleme
   const total = hours.reduce((sum, value) => sum + value, 0);
 
   if (total === 0) {
-    return <p className="text-[13px] text-fg-muted">{t("empty")}</p>;
+    return <p className="text-body-sm text-fg-muted">{t("empty")}</p>;
   }
 
   const max = Math.max(...hours);
@@ -40,7 +40,7 @@ export function LoginActivityChart({ values }: { values: number[] }): ReactEleme
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-[13px] text-fg-muted">
+      <p className="text-body-sm text-fg-muted">
         {t("peak", { hour: `${pad(peakHour)}:00`, count: format.number(max) })}
       </p>
       <div
@@ -69,7 +69,7 @@ export function LoginActivityChart({ values }: { values: number[] }): ReactEleme
         {hours.map((_, hour) => (
           <span
             key={hour}
-            className="flex-1 text-center text-[12px] whitespace-nowrap tabular-nums text-fg-muted"
+            className="flex-1 text-center text-caption whitespace-nowrap tabular-nums text-fg-muted"
           >
             {hour % 6 === 0 ? pad(hour) : ""}
           </span>

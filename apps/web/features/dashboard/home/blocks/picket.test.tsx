@@ -9,6 +9,14 @@ vi.mock("../../../permits/api", () => ({
   useExitPermitReviewQueueQuery: exitPermitReviewQueueQuery,
 }));
 
+vi.mock("../../../reference/api", () => ({
+  useClassesQuery: () => ({ data: { data: [{ id: "c1", name: "X-A" }] } }),
+  useLookup: (rows: { id: string }[] | undefined) =>
+    new Map((rows ?? []).map((row) => [row.id, row])),
+}));
+vi.mock("../../../reference/directory-names", () => ({
+  useDirectoryNames: (ids: string[]) => new Map(ids.map((id) => [id, { id, name: `Siswa ${id}` }])),
+}));
 vi.mock("next-intl", () => ({
   useTranslations: () =>
     Object.assign(
@@ -46,7 +54,7 @@ describe("usePicketBlock", () => {
     expect(exitPermitReviewQueueQuery).toHaveBeenCalledWith(false);
   });
 
-  it("shows tiles at zero and no hero once an empty late queue has loaded", () => {
+  it("shows tiles at zero and a calm duty hero once both queues have loaded empty", () => {
     lateArrivalQueueQuery.mockReturnValue(refetchable({ data: { data: [] } }));
     exitPermitReviewQueueQuery.mockReturnValue(refetchable({ data: { data: [] } }));
 
@@ -54,12 +62,15 @@ describe("usePicketBlock", () => {
 
     expect(lateArrivalQueueQuery).toHaveBeenCalledWith(true);
     expect(exitPermitReviewQueueQuery).toHaveBeenCalledWith(true);
-    expect(result.current.hero).toBeUndefined();
+    expect(result.current.hero?.key).toBe("picket.idle");
+    expect(result.current.hero?.tone).toBe("neutral");
+    expect(result.current.hero?.action?.href).toBe("/duty");
+    expect(result.current.hero?.secondaryAction?.href).toBe("/scan");
     expect(result.current.tiles.find((t) => t.key === "picket.late")?.value).toBe("0");
     expect(result.current.tiles.find((t) => t.key === "picket.exit")?.value).toBe("0");
   });
 
-  it("raises a hero pointing at the scanner when late arrivals are waiting", () => {
+  it("raises a hero pointing at the late-arrival queue, with the duty QR beside it", () => {
     lateArrivalQueueQuery.mockReturnValue(
       refetchable({
         data: {
@@ -75,7 +86,8 @@ describe("usePicketBlock", () => {
     const { result } = renderHook(() => usePicketBlock(me, true));
 
     expect(result.current.hero?.title).toContain('"count":2');
-    expect(result.current.hero?.action?.href).toBe("/duty");
+    expect(result.current.hero?.action?.href).toBe("/late-arrivals");
+    expect(result.current.hero?.secondaryAction?.href).toBe("/duty");
     expect(result.current.tiles.find((t) => t.key === "picket.late")?.value).toBe("2");
   });
 
@@ -97,7 +109,7 @@ describe("usePicketBlock", () => {
     const { result } = renderHook(() => usePicketBlock(me, true));
 
     expect(result.current.tiles.find((t) => t.key === "picket.late")).toBeUndefined();
-    render(<>{result.current.left.map((slot) => slot.node)}</>);
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
     expect(screen.getByRole("button")).toBeInTheDocument();
   });
 

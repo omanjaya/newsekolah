@@ -44,6 +44,32 @@ describe("resolvePersonas", () => {
     );
     expect([...p].sort()).toEqual(["checkIn", "picket"]);
   });
+  it("gives a vice principal on a teacher account the deputy home, not the leadership snapshot", () => {
+    const p = resolvePersonas(
+      me({
+        profile_kind: "teacher",
+        permissions: ["manage_attendance"],
+        duties: [{ slug: "leadership", scope_kind: "school" }],
+      }),
+    );
+    expect([...p].sort()).toEqual(["checkIn", "deputy", "teacher"]);
+  });
+  it("keeps a principal with the leadership duty on the leadership home only", () => {
+    const p = resolvePersonas(
+      me({
+        roles: [{ id: "r", slug: "principal", name: "Kepala Sekolah", is_primary: true }],
+        duties: [{ slug: "leadership", scope_kind: "school" }],
+      }),
+    );
+    expect(p.has("leadership")).toBe(true);
+    expect(p.has("deputy")).toBe(false);
+  });
+  it("gives the security duty the gate home", () => {
+    const p = resolvePersonas(
+      me({ profile_kind: "staff", duties: [{ slug: "security", scope_kind: "school" }] }),
+    );
+    expect([...p].sort()).toEqual(["checkIn", "gate"]);
+  });
   it("recognises a student", () => {
     expect([...resolvePersonas(me({ profile_kind: "student" }))]).toEqual(["student"]);
   });

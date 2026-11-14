@@ -1,27 +1,35 @@
 {
   "leadership": {
     "hero": {
-      "eyebrow": "Today",
-      "title": "{submitted} of {total} sessions checked in",
-      "meta": "{pending} sessions not yet submitted",
-      "action": "Open monitor"
+      "eyebrow": "Attendance right now",
+      "title": "{submitted} of {total} classes have taken attendance",
+      "meta": "{pending} classes in session have not taken attendance yet",
+      "action": "Open monitor",
+      "metaDone": "Every class in session has taken attendance",
+      "reportsAction": "Open reports",
+      "progressLabel": "Attendance in classes in session",
+      "queueEyebrow": "Needs action",
+      "queueTitle": "{count, plural, one {# request} other {# requests}} awaiting review",
+      "queueMeta": "Leave, exit permits and late arrivals still open.",
+      "queueAction": "Open needs action",
+      "idleTitle": "No class is in session",
+      "idleMeta": "Attendance progress shows while lessons are running."
     },
     "tiles": {
-      "sessions": "Sessions checked in",
+      "sessions": "Classes with attendance",
       "pending": "Awaiting review",
       "users": "Active users",
       "online": "Online now"
     },
     "queue": {
       "title": "School queue",
-      "type": "Request type",
-      "count": "Pending",
-      "open": "Open queue",
       "labels": {
         "leave_request": "Leave request",
         "exit_permit": "Exit permit",
         "late_arrival": "Late arrival"
-      }
+      },
+      "openInbox": "Needs action",
+      "allClear": "Every queue is clear"
     },
     "activity": {
       "title": "Login activity",
@@ -32,8 +40,8 @@
       "onlineTitle": "Online now",
       "onlineEmpty": "Nobody is connected right now.",
       "roleNames": {
-        "super_admin": "Super Admin",
-        "admin": "School Admin",
+        "super_admin": "Super admin",
+        "admin": "School admin",
         "teacher": "Teacher",
         "staff": "Staff",
         "student": "Student",
@@ -47,26 +55,29 @@
       "viewAll": "View all",
       "empty": "No at-risk students right now.",
       "unknownStudent": "Unknown student"
-    },
-    "presence": {
-      "title": "Today's attendance",
-      "summary": "{submitted} of {total} sessions have attendance",
-      "pending": "{pending} sessions not yet filled",
-      "empty": "No attendance sessions today.",
-      "open": "Open monitor"
     }
   },
   "librarian": {
     "hero": {
       "eyebrow": "Circulation desk",
-      "title": "{loans} borrowed · {returns} returned",
-      "meta": "{overdue} overdue",
-      "action": "Open circulation desk"
+      "title": "{loans} borrowed, {returns} returned today",
+      "meta": "{overdue} loans overdue",
+      "action": "Open circulation desk",
+      "metaClear": "No overdue loans",
+      "overviewAction": "Library overview"
     },
     "tile": "Overdue",
     "overdue": {
       "title": "Longest overdue",
-      "empty": "No overdue loans."
+      "empty": "No overdue loans.",
+      "action": "Open desk",
+      "due": "Due {date}",
+      "late": "{days, plural, one {# day} other {# days}} overdue"
+    },
+    "tiles": {
+      "loansToday": "Borrowed today",
+      "returnsToday": "Returned today",
+      "visitsToday": "Visits today"
     }
   }
 }
