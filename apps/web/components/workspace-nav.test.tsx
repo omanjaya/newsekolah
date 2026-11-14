@@ -1,3 +1,4 @@
+import { PageHeader } from "@newsekolah/ui";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -79,11 +80,19 @@ describe("WorkspaceNav", () => {
   });
 
   it("moves itself under a PageHeader that follows it, until the view adopts AppPage", () => {
-    const { container } = render(<WorkspaceNav label="Bagian" items={ITEMS} />);
-    expect(container.firstElementChild).toHaveAttribute("data-slot", "workspace-nav");
-    expect(container.firstElementChild).toHaveClass(
-      "[&:has(+*>div>div>h1)]:order-1",
-      "[&:has(+*>div>div>h1)+*~*]:order-1",
+    const { container } = render(
+      <>
+        <WorkspaceNav label="Bagian" items={ITEMS} />
+        <PageHeader title="Eksemplar" />
+      </>,
     );
+    const strip = container.firstElementChild;
+    expect(strip).toHaveAttribute("data-slot", "workspace-nav");
+    // Keyed to the header's own data-slot, never to its inner DOM.
+    expect(strip).toHaveClass(
+      "[&:has(+[data-slot=page-header])]:order-1",
+      "[&:has(+[data-slot=page-header])+*~*]:order-1",
+    );
+    expect(strip?.nextElementSibling).toHaveAttribute("data-slot", "page-header");
   });
 });
