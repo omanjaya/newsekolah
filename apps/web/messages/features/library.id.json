@@ -1108,7 +1108,8 @@
       },
       "emptyTitle": "Data kelas DDC tidak tersedia",
       "emptyBody": "Hubungi operator platform bila daftar ini seharusnya terisi."
-    }
+    },
+    "tabsLabel": "Jenis data katalog"
   },
   "loanRules": {
     "eyebrow": "Perpustakaan",
@@ -1139,13 +1140,14 @@
       "startsOn": "Mulai",
       "endsOn": "Berakhir",
       "allowLoans": "Peminjaman dibuka pada periode ini",
-      "maxLoanItems": "Maks. eksemplar",
+      "maxLoanItems": "Maksimum eksemplar",
       "maxLoanDays": "Maks. hari pinjam",
-      "keepDefault": "Ikuti jenis anggota",
+      "keepDefault": "Kosongkan untuk mengikuti jenis anggota",
       "notes": "Catatan",
       "cancel": "Batal",
       "save": "Simpan"
-    }
+    },
+    "rowActions": "Aksi aturan"
   },
   "reports": {
     "navLabel": "Laporan perpustakaan",
@@ -1452,7 +1454,12 @@
     "fine_currency_enabled": "Aktifkan denda uang",
     "block_loans_with_unpaid_fines": "Blokir peminjaman jika denda belum dibayar",
     "auto_register_members": "Daftarkan anggota secara otomatis",
-    "numberingHint": "Pola penomoran: YYYY untuk tahun lengkap, YY untuk dua digit tahun, dan 99999 untuk urutan lima digit."
+    "numberingHint": "Pola penomoran: YYYY untuk tahun lengkap, YY untuk dua digit tahun, dan 99999 untuk urutan lima digit.",
+    "sections": {
+      "identity": "Identitas dan penomoran",
+      "limits": "Batas pinjam dan denda",
+      "rules": "Hari layanan dan aturan"
+    }
   },
   "me": {
     "eyebrow": "Perpustakaan",

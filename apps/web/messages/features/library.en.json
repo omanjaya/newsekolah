@@ -1108,7 +1108,8 @@
       },
       "emptyTitle": "DDC class data is unavailable",
       "emptyBody": "Contact the platform operator if this list should be populated."
-    }
+    },
+    "tabsLabel": "Catalogue data lists"
   },
   "loanRules": {
     "eyebrow": "Library",
@@ -1139,13 +1140,14 @@
       "startsOn": "Starts on",
       "endsOn": "Ends on",
       "allowLoans": "Lending is open during this period",
-      "maxLoanItems": "Max copies",
+      "maxLoanItems": "Maximum copies",
       "maxLoanDays": "Max loan days",
-      "keepDefault": "Follows member type",
+      "keepDefault": "Leave empty to follow the member type",
       "notes": "Notes",
       "cancel": "Cancel",
       "save": "Save"
-    }
+    },
+    "rowActions": "Rule actions"
   },
   "reports": {
     "navLabel": "Library reports",
@@ -1452,7 +1454,12 @@
     "fine_currency_enabled": "Enable monetary fines",
     "block_loans_with_unpaid_fines": "Block loans with unpaid fines",
     "auto_register_members": "Automatically register members",
-    "numberingHint": "Numbering patterns: YYYY for the full year, YY for two-digit year, and 99999 for a five-digit sequence."
+    "numberingHint": "Numbering patterns: YYYY for the full year, YY for two-digit year, and 99999 for a five-digit sequence.",
+    "sections": {
+      "identity": "Identity and numbering",
+      "limits": "Loan limits and fines",
+      "rules": "Service days and rules"
+    }
   },
   "me": {
     "eyebrow": "Library",

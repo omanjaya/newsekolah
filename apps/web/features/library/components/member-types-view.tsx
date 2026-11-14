@@ -10,7 +10,6 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
-  PageHeader,
   RowActionsMenu,
   domainIcons,
   useToast,
@@ -31,8 +30,12 @@ import {
 
 import { MemberTypeForm } from "./member-type-form";
 
-/** Manage member types: loan limits, renewal, fine rule, suspension, and validity per type. */
-export function MemberTypesView({ embedded = false }: { embedded?: boolean }): ReactElement {
+/**
+ * Member types, a section of the library settings hub: loan limits,
+ * renewal, fine rule, suspension and validity per type. Adding a type sits
+ * in the table toolbar.
+ */
+export function MemberTypesView(): ReactElement {
   const t = useTranslations("app.library.memberTypes");
   const tRole = useTranslations("app.library.members.roles");
   const locale = useLocale() as Locale;
@@ -40,7 +43,7 @@ export function MemberTypesView({ embedded = false }: { embedded?: boolean }): R
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_library_settings");
 
-  const { data, isLoading } = useLibraryMemberTypesQuery();
+  const { data, isLoading, error, refetch } = useLibraryMemberTypesQuery();
   const deleteType = useDeleteLibraryMemberTypeMutation();
   const [editing, setEditing] = useState<LibraryMemberType | null>(null);
   const [creating, setCreating] = useState(false);
@@ -126,7 +129,6 @@ export function MemberTypesView({ embedded = false }: { embedded?: boolean }): R
 
   const addButton = canManage && (
     <Button
-      size="sm"
       icon={<Plus />}
       onClick={() => {
         setCreating(true);
@@ -137,48 +139,26 @@ export function MemberTypesView({ embedded = false }: { embedded?: boolean }): R
   );
 
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the table scrolls its rows internally. Embedded in
-    // the settings hub the hub owns the page, so the table grows naturally.
-    <div
-      className={
-        embedded
-          ? "flex flex-col gap-6"
-          : "flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6"
-      }
-    >
-      {embedded ? (
-        addButton && <div className="flex justify-end">{addButton}</div>
-      ) : (
-        <>
-          <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={addButton} />
-        </>
-      )}
-
-      <div className={embedded ? "flex flex-col" : "flex flex-col md:min-h-0 md:flex-1"}>
-        <DataTable
-          stateKey="features/library/components/member-types-view:1"
-          mode="local"
-          data={items}
-          columns={columns}
-          rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
-          isLoading={isLoading}
-          getRowId={(item) => item.id}
-          fillHeight={!embedded}
-          emptyState={
-            <EmptyState
-              icon={<domainIcons.users aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
-          }
-        />
-      </div>
+    <>
+      <DataTable
+        stateKey="features/library/components/member-types-view:1"
+        mode="local"
+        data={items}
+        columns={columns}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        getRowId={(item) => item.id}
+        toolbarActions={addButton || undefined}
+        emptyState={
+          <EmptyState
+            icon={<domainIcons.users aria-hidden="true" />}
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+            action={addButton || undefined}
+          />
+        }
+      />
 
       <Dialog
         open={creating}
@@ -186,7 +166,7 @@ export function MemberTypesView({ embedded = false }: { embedded?: boolean }): R
           setCreating(open);
         }}
       >
-        <DialogContent title={t("addType")}>
+        <DialogContent title={t("addType")} size="lg">
           {creating && (
             <MemberTypeForm
               memberType={null}
@@ -204,7 +184,7 @@ export function MemberTypesView({ embedded = false }: { embedded?: boolean }): R
           if (!open) setEditing(null);
         }}
       >
-        <DialogContent title={t("editType")}>
+        <DialogContent title={t("editType")} size="lg">
           {editing && (
             <MemberTypeForm
               memberType={editing}
@@ -223,7 +203,7 @@ export function MemberTypesView({ embedded = false }: { embedded?: boolean }): R
         }}
         title={t("deleteTitle")}
         description={deleting ? t("deleteBody", { name: deleting.name }) : ""}
-        destructive
+        tone="danger"
         confirming={deleteType.isPending}
         onConfirm={async () => {
           if (!deleting) return;
@@ -238,6 +218,6 @@ export function MemberTypesView({ embedded = false }: { embedded?: boolean }): R
           }
         }}
       />
-    </div>
+    </>
   );
 }
