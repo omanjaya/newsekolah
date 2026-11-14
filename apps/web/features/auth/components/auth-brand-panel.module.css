@@ -1,0 +1,58 @@
+/*
+ * The school's brand surface on the sign-in pages: a band above the form on
+ * a phone, the left pane from 1024px. It is a brand surface, not themed UI,
+ * so it is built from the tenant's light accent pair (`--tenant-accent`,
+ * `--tenant-accent-fg`, set by TenantProvider) in both themes. The themed
+ * `--color-accent` would turn it into a bright mint panel with dark text in
+ * the dark theme. Inside, `accent` and `accent-fg` utilities resolve to the
+ * same pair, so the panel's own classes stay token classes.
+ *
+ * In the dark theme the gradient sinks further toward black, so the panel
+ * sits beside the charcoal page instead of glowing next to it.
+ */
+.surface {
+  --color-accent: var(--tenant-accent);
+  --color-accent-fg: var(--tenant-accent-fg);
+  --brand-top: color-mix(in oklab, var(--tenant-accent) 88%, white);
+  --brand-mid: var(--tenant-accent);
+  --brand-bottom: color-mix(in oklab, var(--tenant-accent) 58%, black);
+
+  color: var(--tenant-accent-fg);
+  background-color: var(--brand-mid);
+  background-image: linear-gradient(
+    160deg,
+    var(--brand-top) 0%,
+    var(--brand-mid) 45%,
+    var(--brand-bottom) 100%
+  );
+}
+
+:global(:root[data-theme="dark"]) .surface {
+  --brand-top: color-mix(in oklab, var(--tenant-accent) 80%, black);
+  --brand-mid: color-mix(in oklab, var(--tenant-accent) 66%, black);
+  --brand-bottom: color-mix(in oklab, var(--tenant-accent) 36%, black);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme="light"])) .surface {
+    --brand-top: color-mix(in oklab, var(--tenant-accent) 80%, black);
+    --brand-mid: color-mix(in oklab, var(--tenant-accent) 66%, black);
+    --brand-bottom: color-mix(in oklab, var(--tenant-accent) 36%, black);
+  }
+}
+
+/* A soft light bloom in the upper left, for depth. */
+.bloom {
+  background-image: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--tenant-accent-fg) 22%, transparent),
+    transparent 68%
+  );
+}
+
+/* A fine dot grid that fades out toward the edges. */
+.grain {
+  background-image: radial-gradient(currentColor 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse at 30% 40%, black, transparent 72%);
+}

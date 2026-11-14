@@ -1,12 +1,15 @@
 "use client";
 
-import { Alert, Button, Skeleton, useToast } from "@newsekolah/ui";
+import { Button, SkeletonForm, useToast } from "@newsekolah/ui";
+import { Link2Off } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { Suspense, useState } from "react";
 
+import { AuthCard } from "../../../features/auth/components/auth-card";
+import { BackToLoginLink } from "../../../features/auth/components/back-to-login-link";
 import { ResetPasswordForm } from "../../../features/auth/components/reset-password-form";
 
 /**
@@ -25,19 +28,21 @@ function ResetPasswordContent(): ReactElement {
 
   if (!token || rejected) {
     return (
-      <div className="flex flex-col gap-4">
-        <h1 className="text-center text-[20px] font-medium text-fg">{t("invalidTitle")}</h1>
-        <Alert variant="warning" title={t("invalidBody")} />
-        <Button asChild>
+      <AuthCard
+        status={{ tone: "warning", icon: <Link2Off /> }}
+        title={t("invalidTitle")}
+        description={t("invalidBody")}
+        footer={<BackToLoginLink />}
+      >
+        <Button asChild size="lg" className="w-full">
           <Link href="/forgot-password">{t("requestNew")}</Link>
         </Button>
-      </div>
+      </AuthCard>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-center text-[20px] font-medium text-fg">{t("title")}</h1>
+    <AuthCard title={t("title")} description={t("body")} footer={<BackToLoginLink />}>
       <ResetPasswordForm
         token={token}
         onInvalidToken={() => {
@@ -48,14 +53,14 @@ function ResetPasswordContent(): ReactElement {
           router.replace("/login");
         }}
       />
-    </div>
+    </AuthCard>
   );
 }
 
 export default function ResetPasswordPage(): ReactElement {
   return (
     // ResetPasswordContent reads the `token` query param via useSearchParams, which needs a Suspense boundary.
-    <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+    <Suspense fallback={<SkeletonForm fields={2} />}>
       <ResetPasswordContent />
     </Suspense>
   );
