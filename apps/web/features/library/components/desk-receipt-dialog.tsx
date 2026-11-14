@@ -136,13 +136,13 @@ export function DeskReceiptDialog({
           <div className="flex flex-col gap-4">
             {settled.map((section) => (
               <div key={section.mode} className="flex flex-col gap-1.5">
-                <h3 className="text-[13px] font-semibold text-fg">{section.label}</h3>
+                <h3 className="text-label text-fg">{section.label}</h3>
                 <ul className="flex flex-col gap-1">
                   {section.items.map((item) => (
-                    <li key={item.barcode} className="text-[13px]">
+                    <li key={item.barcode} className="text-body-sm">
                       <span className="text-fg">{item.title}</span>
                       {item.detail && (
-                        <span className="block text-[12px] text-fg-muted">{item.detail}</span>
+                        <span className="block text-caption text-fg-muted">{item.detail}</span>
                       )}
                     </li>
                   ))}
@@ -151,7 +151,7 @@ export function DeskReceiptDialog({
             ))}
           </div>
         ) : (
-          <p className="text-[13px] text-fg-muted">{t("empty")}</p>
+          <p className="text-body-sm text-fg-muted">{t("empty")}</p>
         )}
       </DialogContent>
     </Dialog>

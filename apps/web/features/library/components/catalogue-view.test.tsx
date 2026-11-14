@@ -115,20 +115,20 @@ describe("CatalogueView filters", () => {
   it("leads the header with adding a title, and keeps import, settings and the report in the area strip", () => {
     render(<CatalogueView />);
 
-    expect(screen.getByRole("button", { name: "addTitle" })).toBeInTheDocument();
+    // In the header, and again in the empty catalogue's own call to action.
+    expect(screen.getAllByRole("button", { name: "addTitle" })).toHaveLength(2);
     expect(screen.getByRole("button", { name: "exportCatalogue" })).toBeInTheDocument();
     const strip = screen.getByRole("navigation", { name: "catalogue" });
-    expect(within(strip).getByRole("link", { name: "titles" })).toHaveAttribute(
+    expect(within(strip).getByRole("link", { name: "nav.library.items.catalog" })).toHaveAttribute(
       "aria-current",
       "page",
     );
-    expect(within(strip).getByRole("link", { name: "importBooks" })).toHaveAttribute(
-      "href",
-      "/library/import",
-    );
+    expect(
+      within(strip).getByRole("link", { name: "app.library.import.navLabel" }),
+    ).toHaveAttribute("href", "/library/import");
     expect(screen.getByRole("link", { name: "catalogueSettings" })).toHaveAttribute(
       "href",
-      "/library/master-data",
+      "/library/settings?section=masterData",
     );
     expect(screen.getByRole("link", { name: "report" })).toHaveAttribute(
       "href",
@@ -164,7 +164,7 @@ describe("CatalogueView filters", () => {
     expect(mocks.useLibraryTitlesQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ limit: 50, offset: 0 }),
     );
-    await user.click(screen.getByRole("button", { name: "next" }));
+    await user.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
 
     expect(mocks.useLibraryTitlesQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ limit: 50, offset: 50 }),

@@ -1,68 +1,51 @@
 "use client";
 
-import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import {
-  Skeleton,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@newsekolah/ui";
+import { EmptyState, SkeletonCards, Stat, StatGrid } from "@newsekolah/ui";
+import { DoorOpen } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
+import { formatShortDate } from "../lib/short-date";
 import { useLibraryVisitsReportQuery } from "../reports-api";
+
+import { ReportBreakdown } from "./report-breakdown";
 
 /** Visits in the chosen period, broken down per day and per class. */
 export function ReportVisitsTable({ from, to }: { from: string; to: string }): ReactElement {
   const t = useTranslations("app.library.reports.visits");
   const locale = useLocale() as Locale;
-  const { data, isLoading } = useLibraryVisitsReportQuery(from, to);
+  const { data, isLoading, isError, error, refetch } = useLibraryVisitsReportQuery(from, to);
 
-  if (isLoading) return <Skeleton className="h-64 w-full" aria-busy="true" />;
+  if (isLoading) return <SkeletonCards count={2} />;
+  if (isError) return <QueryError retry={() => refetch()} error={error} />;
   if (!data || data.total === 0) {
-    return <p className="text-[13px] text-fg-muted">{t("emptyTitle")}</p>;
+    return <EmptyState icon={<DoorOpen aria-hidden="true" />} title={t("emptyTitle")} />;
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <p className="text-[13px] text-fg-muted">{t("total", { count: data.total })}</p>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <Table className="min-w-[280px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col">{t("columns.day")}</TableHead>
-              <TableHead scope="col">{t("columns.count")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.per_day.map((row) => (
-              <TableRow key={row.day}>
-                <TableCell>{formatDate(row.day, { locale })}</TableCell>
-                <TableCell className="tabular-nums text-fg-muted">{row.count}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <Table className="min-w-[280px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col">{t("columns.class")}</TableHead>
-              <TableHead scope="col">{t("columns.count")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.per_class.map((row) => (
-              <TableRow key={row.class_name}>
-                <TableCell>{row.class_name}</TableCell>
-                <TableCell className="tabular-nums text-fg-muted">{row.count}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+    <div className="flex flex-col gap-4">
+      <StatGrid variant="strip" aria-label={t("summaryLabel")}>
+        <Stat icon={<DoorOpen />} category="purple" value={data.total} label={t("totalLabel")} />
+      </StatGrid>
+      <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+        <ReportBreakdown
+          title={t("columns.day")}
+          rows={data.per_day.map((row) => ({
+            key: row.day,
+            name: formatShortDate(row.day, locale),
+            count: row.count,
+          }))}
+        />
+        <ReportBreakdown
+          title={t("columns.class")}
+          rows={data.per_class.map((row) => ({
+            key: row.class_name,
+            name: row.class_name,
+            count: row.count,
+          }))}
+        />
       </div>
     </div>
   );

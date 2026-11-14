@@ -2,6 +2,10 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  FormError,
+  DialogFooter,
+  NumberInput,
+  Field,
   Badge,
   Button,
   ConfirmDialog,
@@ -41,6 +45,9 @@ export interface MasterEntryTabProps {
   stateKey: string;
   items: LibraryMasterEntry[];
   isLoading: boolean;
+  /** The list query's error: shown in place of the rows, with a retry. */
+  error?: unknown;
+  onRetry?: () => void;
   create: UseMutationResult<unknown, Error, LibraryMasterEntryWrite>;
   update: UseMutationResult<unknown, Error, LibraryMasterEntryWrite & { id: string }>;
   remove: UseMutationResult<unknown, Error, string>;
@@ -55,6 +62,8 @@ export function MasterEntryTab({
   stateKey,
   items,
   isLoading,
+  error,
+  onRetry,
   create,
   update,
   remove,
@@ -70,8 +79,19 @@ export function MasterEntryTab({
 
   const columns = useMemo<ColumnDef<LibraryMasterEntry>[]>(
     () => [
-      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
-      { accessorKey: "name", header: t("columns.name"), enableSorting: false },
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
+      {
+        accessorKey: "code",
+        header: t("columns.code"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.code}</span>,
+      },
       {
         id: "status",
         header: t("columns.status"),
@@ -120,46 +140,44 @@ export function MasterEntryTab({
     setEditing(null);
   };
 
-  return (
-    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      {canManage && (
-        <div className="flex justify-end">
-          <Button
-            size="sm"
-            icon={<Plus />}
-            onClick={() => {
-              setCreating(true);
-            }}
-          >
-            {t("add")}
-          </Button>
-        </div>
-      )}
+  const addButton = canManage ? (
+    <Button
+      icon={<Plus />}
+      onClick={() => {
+        setCreating(true);
+      }}
+    >
+      {t("add")}
+    </Button>
+  ) : undefined;
 
-      <div className="flex flex-col md:min-h-0 md:flex-1">
-        <DataTable
-          stateKey={stateKey}
-          mode="local"
-          data={items}
-          columns={columns}
-          rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
-          isLoading={isLoading}
-          getRowId={(item) => item.id}
-          fillHeight
-          emptyState={
-            <EmptyState
-              icon={<domainIcons.library aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
-          }
-        />
-      </div>
+  return (
+    <div className="flex flex-col gap-4">
+      <DataTable
+        stateKey={stateKey}
+        mode="local"
+        data={items}
+        columns={columns}
+        rowCount={items.length}
+        pagination={{ pageIndex: 0, pageSize: 50 }}
+        onPaginationChange={() => undefined}
+        sorting={[]}
+        onSortingChange={() => undefined}
+        globalFilter=""
+        isLoading={isLoading}
+        error={error}
+        onRetry={onRetry}
+        toolbarActions={addButton}
+        getRowId={(item) => item.id}
+        emptyState={
+          <EmptyState
+            icon={<domainIcons.library aria-hidden="true" />}
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+            action={addButton}
+          />
+        }
+      />
 
       <Dialog
         open={formOpen}
@@ -262,8 +280,7 @@ function MasterEntryForm({
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.code")}</span>
+      <Field label={t("form.code")}>
         <Input
           value={code}
           onChange={(e) => {
@@ -272,9 +289,8 @@ function MasterEntryForm({
           required
           maxLength={20}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.name")}</span>
+      </Field>
+      <Field label={t("form.name")}>
         <Input
           value={name}
           onChange={(e) => {
@@ -283,35 +299,28 @@ function MasterEntryForm({
           required
           maxLength={100}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.sortOrder")}</span>
-        <Input
-          type="number"
+      </Field>
+      <Field label={t("form.sortOrder")}>
+        <NumberInput
           inputMode="numeric"
-          value={sortOrder}
-          onChange={(e) => {
-            setSortOrder(e.target.value);
+          value={sortOrder === "" ? null : Number(sortOrder)}
+          onChange={(next) => {
+            setSortOrder(next === null ? "" : String(next));
           }}
         />
-      </label>
-      <label className="flex min-h-11 items-center gap-2 text-[13px]">
+      </Field>
+      <Field label={t("form.isActive")} orientation="horizontal">
         <Switch checked={isActive} onCheckedChange={setIsActive} />
-        <span className="font-medium">{t("form.isActive")}</span>
-      </label>
-      {error && (
-        <p role="alert" className="text-[13px] text-status-absent">
-          {error}
-        </p>
-      )}
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      </Field>
+      {error && <FormError>{error}</FormError>}
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("form.cancel")}
         </Button>
         <Button type="submit" loading={pending} disabled={!code.trim() || !name.trim()}>
           {t("form.save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

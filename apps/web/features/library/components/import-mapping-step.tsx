@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Select } from "@newsekolah/ui";
+import { Button, Card, Field, FormActions, FormSection, Select } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -8,7 +8,11 @@ import { IMPORT_FIELDS, type ImportField } from "../import-fields";
 
 const UNMAPPED = "__unmapped__";
 
-/** Step 2: adjust which uploaded column feeds each internal field, defaulted from a best guess. */
+/**
+ * Step 2 of the import: which uploaded column feeds each library field,
+ * filled from a best guess. The title column is required; until it is
+ * mapped the title field says so and the way on stays closed.
+ */
 export function ImportMappingStep({
   headers,
   mapping,
@@ -31,12 +35,15 @@ export function ImportMappingStep({
   ];
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+    <Card padding="md">
+      <FormSection title={t("heading")} description={t("description")}>
         {IMPORT_FIELDS.map((field) => (
-          <label key={field} className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{tFields(field)}</span>
+          <Field
+            key={field}
+            label={tFields(field)}
+            required={field === "title"}
+            error={field === "title" && !mapping.title ? t("titleRequired") : undefined}
+          >
             <Select
               options={headerOptions}
               value={mapping[field] ?? UNMAPPED}
@@ -44,18 +51,17 @@ export function ImportMappingStep({
                 onMappingChange({ ...mapping, [field]: value === UNMAPPED ? undefined : value });
               }}
             />
-          </label>
+          </Field>
         ))}
-      </div>
-      <div className="flex justify-between gap-2 border-t border-border pt-4">
-        <Button type="button" variant="secondary" onClick={onBack}>
+      </FormSection>
+      <FormActions align="between">
+        <Button variant="secondary" onClick={onBack}>
           {t("back")}
         </Button>
-        <Button type="button" onClick={onContinue} disabled={!mapping.title}>
+        <Button onClick={onContinue} disabled={!mapping.title}>
           {t("continue")}
         </Button>
-      </div>
-      {!mapping.title && <p className="text-[13px] text-status-absent">{t("titleRequired")}</p>}
-    </div>
+      </FormActions>
+    </Card>
   );
 }

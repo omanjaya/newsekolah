@@ -1,24 +1,24 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
-  Alert,
   Button,
   ConfirmDialog,
   DataTable,
   EmptyState,
-  domainIcons,
+  RowActionsMenu,
+  SectionHeader,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { BellRing } from "lucide-react";
+import { BellRing, BookCheck, RotateCw, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { todayInZone } from "../../../lib/tenant-date";
 import { StudentLink } from "../../students/components/student-link";
 import { useRenewLoanMutation, useReturnLoanMutation } from "../api";
 import {
@@ -26,19 +26,25 @@ import {
   useOverdueLoansDetailedQuery,
   useSendLibraryDueRemindersMutation,
 } from "../desk-api";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 
-import { DeskOverdueRowActions } from "./desk-overdue-row-actions";
+import { DueBadge } from "./due-badge";
 import { MarkLostDialog } from "./mark-lost-dialog";
 
-/** Overdue loans with class and guardian phone, plus one button to run the due-date reminder pass. */
+/**
+ * The overdue queue under the desk: who has which book, how late, and how
+ * to reach a parent, longest overdue first. Kembalikan (the book is in the
+ * librarian's hand) stays a button and asks first; Perpanjang and Tandai
+ * hilang sit in the row's menu. Sending reminders asks first too.
+ */
 export function DeskOverdueTable(): ReactElement {
   const t = useTranslations("app.library.desk.overdue");
   const locale = useLocale() as Locale;
+  const today = todayInZone(useTenantTimeZone());
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const { data, isLoading, isError, refetch } = useOverdueLoansDetailedQuery();
-  const tCommon = useTranslations("common.actions");
+  const { data, isLoading, isError, error, refetch, isRefetching } = useOverdueLoansDetailedQuery();
   const returnLoan = useReturnLoanMutation();
   const renew = useRenewLoanMutation();
   const sendReminders = useSendLibraryDueRemindersMutation();
@@ -46,7 +52,17 @@ export function DeskOverdueTable(): ReactElement {
   const [confirmingReturn, setConfirmingReturn] = useState<LibraryOverdueLoanDetail | null>(null);
   const [confirmingReminders, setConfirmingReminders] = useState(false);
 
-  const items = data?.data ?? [];
+  // Longest overdue first: the earliest due date leads.
+  const items = useMemo(
+    () => [...(data?.data ?? [])].sort((a, b) => a.loan.due_on.localeCompare(b.loan.due_on)),
+    [data],
+  );
+
+  const showError = (failure: unknown) => {
+    toast.error(
+      failure instanceof ApiError ? apiErrorMessage(failure.code) : apiErrorMessage("UNKNOWN"),
+    );
+  };
 
   const columns = useMemo<ColumnDef<LibraryOverdueLoanDetail>[]>(
     () => [
@@ -55,9 +71,10 @@ export function DeskOverdueTable(): ReactElement {
         header: t("columns.member"),
         enableSorting: false,
         accessorFn: (item) => `${item.member_name} ${item.member_no}`,
+        meta: { card: "title", skeleton: "lines" },
         cell: ({ row }) => (
           <div className="flex min-w-0 flex-col">
-            <span>
+            <span className="font-semibold">
               <StudentLink
                 studentId={row.original.loan.member_user_id}
                 tab="library"
@@ -66,9 +83,9 @@ export function DeskOverdueTable(): ReactElement {
                 {row.original.member_name || t("unknownMember")}
               </StudentLink>
             </span>
-            {row.original.member_no && (
-              <span className="text-[12px] text-fg-muted">{row.original.member_no}</span>
-            )}
+            <span className="text-caption text-fg-muted">
+              {[row.original.member_no, row.original.class_name].filter(Boolean).join(" · ") || "-"}
+            </span>
           </div>
         ),
       },
@@ -77,114 +94,131 @@ export function DeskOverdueTable(): ReactElement {
         header: t("columns.title"),
         accessorFn: (item) => `${item.title} ${item.barcode}`,
         enableSorting: false,
+        meta: { card: "subtitle", skeleton: "lines" },
         cell: ({ row }) => (
           <div className="flex min-w-0 flex-col">
             <span>{row.original.title || t("unknownTitle")}</span>
-            <span className="text-[12px] text-fg-muted">{row.original.barcode}</span>
+            <span className="text-caption text-fg-muted">{row.original.barcode}</span>
           </div>
         ),
-      },
-      { accessorKey: "class_name", header: t("columns.class"), enableSorting: false },
-      {
-        id: "guardianPhone",
-        header: t("columns.guardianPhone"),
-        accessorFn: (item) => item.guardian_phone,
-        enableSorting: false,
-        cell: ({ row }) => row.original.guardian_phone || "-",
       },
       {
         id: "dueOn",
         header: t("columns.dueOn"),
         accessorFn: (item) => item.loan.due_on,
         enableSorting: false,
-        cell: ({ row }) => formatDate(row.original.loan.due_on, { locale }),
+        meta: { card: "meta", skeleton: "badge" },
+        cell: ({ row }) => (
+          <DueBadge dueOn={row.original.loan.due_on} today={today} locale={locale} />
+        ),
+      },
+      {
+        id: "guardianPhone",
+        header: t("columns.guardianPhone"),
+        accessorFn: (item) => item.guardian_phone,
+        enableSorting: false,
+        cell: ({ row }) => (
+          <span className="tabular-nums">{row.original.guardian_phone || "-"}</span>
+        ),
       },
       {
         id: "actions",
         header: t("columns.actions"),
         enableSorting: false,
         cell: ({ row }) => {
-          const loan = row.original.loan;
+          const item = row.original;
+          const loan = item.loan;
           return (
-            <DeskOverdueRowActions
-              returning={returnLoan.isPending && returnLoan.variables.loanId === loan.id}
-              renewing={renew.isPending && renew.variables === loan.id}
-              onRenew={() => {
-                renew.mutate(loan.id, {
-                  onSuccess: () => {
-                    toast.success(t("renewed"));
+            <div className="flex items-center justify-end gap-1">
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<BookCheck />}
+                loading={returnLoan.isPending && returnLoan.variables.loanId === loan.id}
+                onClick={() => {
+                  setConfirmingReturn(item);
+                }}
+              >
+                {t("return")}
+              </Button>
+              <RowActionsMenu
+                ariaLabel={t("moreActions")}
+                items={[
+                  {
+                    label: t("renew"),
+                    icon: <RotateCw className="size-4" aria-hidden="true" />,
+                    disabled: renew.isPending && renew.variables === loan.id,
+                    onClick: () => {
+                      renew.mutate(loan.id, {
+                        onSuccess: () => {
+                          toast.success(t("renewed"));
+                        },
+                        onError: showError,
+                      });
+                    },
                   },
-                  onError: (error) => {
-                    toast.error(
-                      error instanceof ApiError
-                        ? apiErrorMessage(error.code)
-                        : apiErrorMessage("UNKNOWN"),
-                    );
+                  {
+                    label: t("markLost"),
+                    icon: <TriangleAlert className="size-4" aria-hidden="true" />,
+                    tone: "danger",
+                    onClick: () => {
+                      setMarkingLost(loan.id);
+                    },
                   },
-                });
-              }}
-              onReturn={() => {
-                setConfirmingReturn(row.original);
-              }}
-              onMarkLost={() => {
-                setMarkingLost(loan.id);
-              }}
-            />
+                ]}
+              />
+            </div>
           );
         },
       },
     ],
-    [t, locale, renew, returnLoan, toast, apiErrorMessage],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- showError only wraps toast and apiErrorMessage
+    [t, locale, today, renew, returnLoan, toast, apiErrorMessage],
   );
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-[15px] font-semibold text-fg">{t("heading")}</h2>
-        <Button
-          size="sm"
-          variant="secondary"
-          icon={<BellRing />}
-          loading={sendReminders.isPending}
-          disabled={items.length === 0}
-          onClick={() => {
-            setConfirmingReminders(true);
-          }}
-        >
-          {t("sendReminders")}
-        </Button>
-      </div>
-      {isError ? (
-        <Alert variant="warning" title={t("loadError")}>
-          <Button variant="secondary" onClick={() => void refetch()}>
-            {tCommon("retry")}
+    <section id="desk-overdue" className="flex scroll-mt-20 flex-col gap-3">
+      <SectionHeader
+        title={t("heading")}
+        description={t("description")}
+        count={items.length > 0 ? items.length : undefined}
+        action={
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={<BellRing />}
+            loading={sendReminders.isPending}
+            disabled={items.length === 0}
+            onClick={() => {
+              setConfirmingReminders(true);
+            }}
+          >
+            {t("sendReminders")}
           </Button>
-        </Alert>
-      ) : (
-        <DataTable
-          stateKey="features/library/components/desk-overdue-table:1"
-          mode="local"
-          // The overdue queue renders as tall stacked cards on a phone
-          // (packages/ui's DataTableCards), not dense table rows -- the
-          // shared component's 50-row default page is a long scroll there
-          // even on an ordinary day (docs/analysis/ux-audit-2026-09-25.md
-          // finding 8). Every page now holds 10 rows instead of 50;
-          // search/filter and the existing prev/next pagination controls
-          // are otherwise unchanged.
-          defaultPageSize={10}
-          data={items}
-          columns={columns}
-          isLoading={isLoading}
-          getRowId={(item) => item.loan.id}
-          emptyState={
-            <EmptyState
-              icon={<domainIcons.library aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
-          }
-        />
-      )}
+        }
+      />
+      <DataTable
+        stateKey="features/library/components/desk-overdue-table:1"
+        mode="local"
+        // The overdue queue renders as cards on a phone; ten a page keeps it
+        // a short scroll there even on an ordinary day.
+        defaultPageSize={10}
+        data={items}
+        columns={columns}
+        isLoading={isLoading}
+        error={isError ? error : undefined}
+        onRetry={() => void refetch()}
+        retrying={isRefetching}
+        getRowId={(item) => item.loan.id}
+        emptyState={
+          <EmptyState
+            icon={<BookCheck aria-hidden="true" />}
+            tone="success"
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+          />
+        }
+      />
 
       <ConfirmDialog
         open={confirmingReturn !== null}
@@ -210,13 +244,7 @@ export function DeskOverdueTable(): ReactElement {
               onSuccess: () => {
                 toast.success(t("returned"));
               },
-              onError: (error) => {
-                toast.error(
-                  error instanceof ApiError
-                    ? apiErrorMessage(error.code)
-                    : apiErrorMessage("UNKNOWN"),
-                );
-              },
+              onError: showError,
               onSettled: () => {
                 setConfirmingReturn(null);
               },
@@ -237,13 +265,7 @@ export function DeskOverdueTable(): ReactElement {
             onSuccess: (result) => {
               toast.success(t("remindersSent", { count: result.members_notified }));
             },
-            onError: (error) => {
-              toast.error(
-                error instanceof ApiError
-                  ? apiErrorMessage(error.code)
-                  : apiErrorMessage("UNKNOWN"),
-              );
-            },
+            onError: showError,
             onSettled: () => {
               setConfirmingReminders(false);
             },
@@ -260,6 +282,6 @@ export function DeskOverdueTable(): ReactElement {
           setMarkingLost(null);
         }}
       />
-    </div>
+    </section>
   );
 }

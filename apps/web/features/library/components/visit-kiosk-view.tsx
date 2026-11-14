@@ -1,6 +1,7 @@
 "use client";
 
-import { Alert, Button, QrPanel, domainIcons } from "@newsekolah/ui";
+import { Alert, Button, HeroCard, IconCircle, QrPanel, QrPanelSkeleton } from "@newsekolah/ui";
+import { CheckCircle2, RotateCw, ScanLine, Smartphone } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -12,11 +13,14 @@ const MIN_RENEW_DELAY_MS = 5000;
 const RETRY_DELAYS_MS = [5000, 10_000, 30_000];
 
 /**
- * Full-screen kiosk (docs/07-ui-ux.md "Kiosk/monitor"): no navigation, a
- * rotating check-in token the visitor's own device scans and submits to
+ * The visit check-in screen, inside the kiosk frame (no app shell): a
+ * soft accent card says what to do in three steps, beside a large QR the
+ * visitor's own device scans and submits to
  * `POST /v1/library/visits/kiosk-scan`. The kiosk never scans anything
- * itself; it only displays. The QR uses the shared "sion:" payload so the
- * universal scanner (`/scan`) can tell it is a library check-in.
+ * itself. The token renews itself when it expires and retries with a
+ * capped backoff after a failure, so an unattended screen never sits on a
+ * dead code; the QR uses the shared "sion:" payload so the universal
+ * scanner (`/scan`) can tell it is a library check-in.
  */
 export function VisitKioskView(): ReactElement {
   const t = useTranslations("app.library.visitKiosk");
@@ -37,9 +41,9 @@ export function VisitKioskView(): ReactElement {
     if (data) failures.current = 0;
   }, [data]);
 
-  // The kiosk runs unattended: mint the next token as soon as the current one
-  // expires instead of waiting for someone to press "Buat kode baru". The
-  // floor keeps a skewed device clock from minting once per second.
+  // Mint the next token as soon as the current one expires instead of
+  // waiting for someone to press "Buat kode baru". The floor keeps a skewed
+  // device clock from minting once per second.
   const expiresAt = token?.expires_at;
   useEffect(() => {
     if (!expiresAt || isError) return;
@@ -70,39 +74,67 @@ export function VisitKioskView(): ReactElement {
     mutate();
   }
 
+  const steps = [
+    { key: "open", icon: <Smartphone /> },
+    { key: "scan", icon: <ScanLine /> },
+    { key: "done", icon: <CheckCircle2 /> },
+  ] as const;
+
   return (
-    <div className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-6 text-center">
-      <domainIcons.library className="size-10 text-accent" aria-hidden="true" />
-      <h1 className="text-[24px] font-medium text-fg">{t("title")}</h1>
-      <p className="max-w-md text-[14px] text-fg-muted">{t("instructions")}</p>
-      {token ? (
-        <QrPanel
-          payload={encodeScanPayload("library_visit", "", token.token)}
-          code={token.token}
-          expiresAt={token.expires_at}
-          onRenew={renew}
-          renewing={issue.isPending}
-          expiredLabel={t("expired")}
-          expiresInLabel={(seconds) => t("expiresIn", { seconds })}
-          renewLabel={t("renew")}
-        />
-      ) : null}
-      {isError ? (
-        <div className="flex max-w-md flex-col items-center gap-3">
-          <Alert variant="warning" title={t("issueFailedTitle")}>
-            {t("issueFailedBody")}
-          </Alert>
-          <Button type="button" variant="secondary" onClick={renew}>
-            {t("retry")}
-          </Button>
+    <div className="flex flex-1 items-center justify-center px-4 py-6 sm:px-8 md:py-10">
+      <div className="grid w-full max-w-6xl items-center gap-6 md:gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]">
+        <HeroCard eyebrow={t("eyebrow")} title={t("title")} meta={t("instructions")} titleAs="h1">
+          <ol className="mt-4 flex flex-col gap-4">
+            {steps.map((step, index) => (
+              <li key={step.key} className="flex items-center gap-4">
+                <IconCircle tone="accent" size="lg">
+                  {step.icon}
+                </IconCircle>
+                <span className="flex flex-col">
+                  <span className="text-caption text-accent-soft-fg/80">
+                    {t("stepNumber", { number: index + 1 })}
+                  </span>
+                  <span className="text-heading">{t(`steps.${step.key}`)}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </HeroCard>
+
+        <div className="flex flex-col items-center gap-4">
+          {token ? (
+            <QrPanel
+              size="lg"
+              label={t("qrLabel")}
+              payload={encodeScanPayload("library_visit", "", token.token)}
+              code=""
+              expiresAt={token.expires_at}
+              onRenew={renew}
+              renewing={issue.isPending}
+              expiredLabel={t("expired")}
+              expiresInLabel={(seconds) => t("expiresIn", { seconds })}
+              renewLabel={t("renew")}
+              className="w-full"
+            />
+          ) : isError ? null : (
+            <QrPanelSkeleton size="lg" className="w-full" />
+          )}
+          {isError && (
+            <Alert
+              tone="danger"
+              title={t("issueFailedTitle")}
+              className="w-full"
+              action={
+                <Button size="sm" variant="secondary" icon={<RotateCw />} onClick={renew}>
+                  {t("retry")}
+                </Button>
+              }
+            >
+              {t("issueFailedBody")}
+            </Alert>
+          )}
         </div>
-      ) : null}
-      {!token && !isError ? (
-        <div
-          className="h-80 w-80 animate-pulse rounded-sm border border-border bg-surface"
-          aria-busy="true"
-        />
-      ) : null}
+      </div>
     </div>
   );
 }

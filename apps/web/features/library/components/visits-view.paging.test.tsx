@@ -18,6 +18,7 @@ vi.mock("../../../lib/session/session-provider", () => ({
   useCan: () => true,
   useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
 }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/simulation/clock", () => ({
   useSimulation: () => undefined,
   businessNow: () => new Date("2026-09-15T02:00:00Z"),
@@ -64,7 +65,7 @@ describe("VisitsView paging", () => {
       expect.any(String),
       { limit: 50, offset: 0 },
     );
-    await user.click(screen.getByRole("button", { name: "next" }));
+    await user.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
 
     expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
       expect.any(String),
@@ -74,12 +75,12 @@ describe("VisitsView paging", () => {
     expect(new URLSearchParams(window.location.search).get("page")).toBe("2");
   });
 
-  it("disables next on a short page", () => {
+  it("shows the row count instead of a pager on a single short page", () => {
     mocks.useLibraryVisitsQuery.mockReturnValue({ data: { data: visits(3) }, isLoading: false });
     render(<VisitsView />);
 
-    expect(screen.getByRole("button", { name: "next" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "previous" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Ke halaman berikutnya" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ke halaman sebelumnya" })).not.toBeInTheDocument();
   });
 
   it("returns to the first page when the date range changes", async () => {

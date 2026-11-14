@@ -19,6 +19,7 @@ vi.mock("../../../lib/session/session-provider", () => ({
   useCan: () => true,
   useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
 }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/simulation/clock", () => ({
   useSimulation: () => undefined,
   // 2026-09-15T09:00 in Asia/Jakarta (UTC+7).

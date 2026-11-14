@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
-import { MasterDataView } from "../../../../features/library/components/master-data-view";
+import { MasterDataPage } from "../../../../features/library/components/master-data-page";
 
 export default function Page(): ReactElement {
-  return <MasterDataView />;
+  return <MasterDataPage />;
 }

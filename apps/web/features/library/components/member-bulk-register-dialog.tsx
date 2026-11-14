@@ -1,7 +1,16 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Dialog, DialogContent, Select } from "@newsekolah/ui";
+import {
+  Alert,
+  DialogFooter,
+  FormError,
+  Field,
+  Button,
+  Dialog,
+  DialogContent,
+  Select,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -65,25 +74,27 @@ export function MemberBulkRegisterDialog({
         onOpenChange(next);
       }}
     >
-      <DialogContent title={t("title")} description={t("description")}>
+      <DialogContent title={t("title")} description={t("description")} size="md">
         {result ? (
           <div className="flex flex-col gap-4">
-            <p className="text-[13px] text-fg">
-              {t("resultSummary", {
+            <Alert
+              tone={result.failed.length > 0 ? "warning" : "success"}
+              title={t("resultSummary", {
                 registered: result.registered.length,
                 failed: result.failed.length,
               })}
-            </p>
-            {result.failed.length > 0 && (
-              <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto rounded-sm border border-border p-2 text-[13px]">
-                {result.failed.map((f) => (
-                  <li key={f.user_id} className="text-fg-muted">
-                    {f.user_id}: {f.reason}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="flex justify-end border-t border-border pt-4">
+            >
+              {result.failed.length > 0 && (
+                <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto">
+                  {result.failed.map((f) => (
+                    <li key={f.user_id}>
+                      {f.user_id}: {f.reason}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Alert>
+            <DialogFooter>
               <Button
                 onClick={() => {
                   reset();
@@ -92,7 +103,7 @@ export function MemberBulkRegisterDialog({
               >
                 {t("close")}
               </Button>
-            </div>
+            </DialogFooter>
           </div>
         ) : (
           <form
@@ -122,8 +133,7 @@ export function MemberBulkRegisterDialog({
               );
             }}
           >
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("role")}</span>
+            <Field label={t("role")}>
               <Select
                 options={ROLES.map((r) => ({ value: r, label: tRole(r) }))}
                 value={role}
@@ -132,20 +142,18 @@ export function MemberBulkRegisterDialog({
                   setClassId("");
                 }}
               />
-            </label>
+            </Field>
             {role === "student" && canViewClasses && (
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("classOptional")}</span>
+              <Field label={t("classOptional")}>
                 <Select
                   options={classOptions}
                   value={classId}
                   onValueChange={setClassId}
                   placeholder={t("classAll")}
                 />
-              </label>
+              </Field>
             )}
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("memberType")}</span>
+            <Field label={t("memberType")}>
               <Select
                 options={typeOptions}
                 value={memberTypeId}
@@ -153,9 +161,9 @@ export function MemberBulkRegisterDialog({
                 placeholder={t("memberTypePlaceholder")}
                 disabled={memberTypes.isLoading}
               />
-            </label>
-            {error && <p className="text-[13px] text-status-absent">{error}</p>}
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            </Field>
+            {error && <FormError>{error}</FormError>}
+            <DialogFooter>
               <Button
                 type="button"
                 variant="secondary"
@@ -168,7 +176,7 @@ export function MemberBulkRegisterDialog({
               <Button type="submit" loading={bulkRegister.isPending} disabled={!memberTypeId}>
                 {t("submit")}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         )}
       </DialogContent>

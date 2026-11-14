@@ -2,6 +2,10 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  DialogFooter,
+  NumberInput,
+  FormError,
+  Field,
   Badge,
   Button,
   ConfirmDialog,
@@ -39,7 +43,7 @@ export function MaterialTypesTab(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_library_catalog");
 
-  const { data, isLoading } = useLibraryMaterialTypesQuery();
+  const { data, isLoading, error, refetch } = useLibraryMaterialTypesQuery();
   const deleteType = useDeleteLibraryMaterialTypeMutation();
   const [editing, setEditing] = useState<LibraryMaterialType | null>(null);
   const [creating, setCreating] = useState(false);
@@ -49,8 +53,19 @@ export function MaterialTypesTab(): ReactElement {
 
   const columns = useMemo<ColumnDef<LibraryMaterialType>[]>(
     () => [
-      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
-      { accessorKey: "name", header: t("columns.name"), enableSorting: false },
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
+      {
+        accessorKey: "code",
+        header: t("columns.code"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.code}</span>,
+      },
       {
         id: "loanLimit",
         header: t("columns.loanLimit"),
@@ -103,46 +118,44 @@ export function MaterialTypesTab(): ReactElement {
     [t, canManage],
   );
 
-  return (
-    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex justify-end">
-        {canManage && (
-          <Button
-            size="sm"
-            icon={<Plus />}
-            onClick={() => {
-              setCreating(true);
-            }}
-          >
-            {t("add")}
-          </Button>
-        )}
-      </div>
+  const addButton = canManage ? (
+    <Button
+      icon={<Plus />}
+      onClick={() => {
+        setCreating(true);
+      }}
+    >
+      {t("add")}
+    </Button>
+  ) : undefined;
 
-      <div className="flex flex-col md:min-h-0 md:flex-1">
-        <DataTable
-          stateKey="features/library/components/material-types-tab:1"
-          mode="local"
-          data={items}
-          columns={columns}
-          rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
-          isLoading={isLoading}
-          getRowId={(item) => item.id}
-          fillHeight
-          emptyState={
-            <EmptyState
-              icon={<domainIcons.library aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
-          }
-        />
-      </div>
+  return (
+    <div className="flex flex-col gap-4">
+      <DataTable
+        stateKey="features/library/components/material-types-tab:1"
+        mode="local"
+        data={items}
+        columns={columns}
+        rowCount={items.length}
+        pagination={{ pageIndex: 0, pageSize: 50 }}
+        onPaginationChange={() => undefined}
+        sorting={[]}
+        onSortingChange={() => undefined}
+        globalFilter=""
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        toolbarActions={addButton}
+        getRowId={(item) => item.id}
+        emptyState={
+          <EmptyState
+            icon={<domainIcons.library aria-hidden="true" />}
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+            action={addButton}
+          />
+        }
+      />
 
       <Dialog
         open={creating}
@@ -260,8 +273,7 @@ function MaterialTypeForm({
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("code")}</span>
+      <Field label={t("code")}>
         <Input
           value={code}
           onChange={(e) => {
@@ -270,9 +282,8 @@ function MaterialTypeForm({
           required
           maxLength={20}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
+      </Field>
+      <Field label={t("name")}>
         <Input
           value={name}
           onChange={(e) => {
@@ -281,65 +292,56 @@ function MaterialTypeForm({
           required
           maxLength={100}
         />
-      </label>
+      </Field>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("maxLoanItems")}</span>
-          <Input
-            type="number"
+        <Field label={t("maxLoanItems")}>
+          <NumberInput
             min={1}
-            value={maxLoanItems}
-            onChange={(e) => {
-              setMaxLoanItems(e.target.value);
+            value={maxLoanItems === "" ? null : Number(maxLoanItems)}
+            onChange={(next) => {
+              setMaxLoanItems(next === null ? "" : String(next));
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("maxLoanDays")}</span>
-          <Input
-            type="number"
+        </Field>
+        <Field label={t("maxLoanDays")}>
+          <NumberInput
             min={1}
-            value={maxLoanDays}
-            onChange={(e) => {
-              setMaxLoanDays(e.target.value);
+            value={maxLoanDays === "" ? null : Number(maxLoanDays)}
+            onChange={(next) => {
+              setMaxLoanDays(next === null ? "" : String(next));
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("maxRenewals")}</span>
-          <Input
-            type="number"
+        </Field>
+        <Field label={t("maxRenewals")}>
+          <NumberInput
             min={0}
-            value={maxRenewals}
-            onChange={(e) => {
-              setMaxRenewals(e.target.value);
+            value={maxRenewals === "" ? null : Number(maxRenewals)}
+            onChange={(next) => {
+              setMaxRenewals(next === null ? "" : String(next));
             }}
           />
-        </label>
+        </Field>
       </div>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("sortOrder")}</span>
-        <Input
-          type="number"
-          value={sortOrder}
-          onChange={(e) => {
-            setSortOrder(e.target.value);
+      <Field label={t("sortOrder")}>
+        <NumberInput
+          value={sortOrder === "" ? null : Number(sortOrder)}
+          onChange={(next) => {
+            setSortOrder(next === null ? "" : String(next));
           }}
         />
-      </label>
-      <label className="flex items-center gap-2 text-[13px]">
+      </Field>
+      <Field label={t("isActive")} orientation="horizontal">
         <Switch checked={isActive} onCheckedChange={setIsActive} />
-        <span className="font-medium">{t("isActive")}</span>
-      </label>
-      {error && <p className="text-[13px] text-status-absent">{error}</p>}
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      </Field>
+      {error && <FormError>{error}</FormError>}
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={mutation.isPending} disabled={!code.trim() || !name.trim()}>
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

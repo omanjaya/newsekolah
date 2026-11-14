@@ -13,13 +13,15 @@ import { MasterEntryTab } from "./master-entry-tab";
 
 /** Shelf/room locations used on copies to say where a book physically sits. */
 export function LocationsTab(): ReactElement {
-  const { data, isLoading } = useLibraryLocationsQuery();
+  const { data, isLoading, error, refetch } = useLibraryLocationsQuery();
   return (
     <MasterEntryTab
       namespace="app.library.masterData.locations"
       stateKey="features/library/components/locations-tab:1"
       items={data?.data ?? []}
       isLoading={isLoading}
+      error={error}
+      onRetry={() => void refetch()}
       create={useCreateLibraryLocationMutation()}
       update={useUpdateLibraryLocationMutation()}
       remove={useDeleteLibraryLocationMutation()}

@@ -17,6 +17,10 @@ vi.mock("../../../lib/view-state/view-state-provider", () => ({
   useRememberedViewState: () => ["", vi.fn()],
 }));
 vi.mock("../../reference/api", () => ({ useLookup: () => new Map() }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+vi.mock("./library-title-name", () => ({
+  LibraryTitleName: ({ titleId }: { titleId: string }) => titleId,
+}));
 vi.mock("../copies-api", () => ({
   useLibraryCopiesFilteredQuery: mocks.useLibraryCopiesFilteredQuery,
   useCollectionCategoriesQuery: () => ({

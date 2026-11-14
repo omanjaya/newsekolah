@@ -2,6 +2,10 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  DialogFooter,
+  NumberInput,
+  FormError,
+  Field,
   Badge,
   Button,
   ConfirmDialog,
@@ -39,7 +43,7 @@ export function PartnersTab(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_library_catalog");
 
-  const { data, isLoading } = useLibraryPartnersQuery();
+  const { data, isLoading, error, refetch } = useLibraryPartnersQuery();
   const deletePartner = useDeleteLibraryPartnerMutation();
   const [editing, setEditing] = useState<LibraryPartner | null>(null);
   const [creating, setCreating] = useState(false);
@@ -49,8 +53,19 @@ export function PartnersTab(): ReactElement {
 
   const columns = useMemo<ColumnDef<LibraryPartner>[]>(
     () => [
-      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
-      { accessorKey: "name", header: t("columns.name"), enableSorting: false },
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
+      {
+        accessorKey: "code",
+        header: t("columns.code"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.code}</span>,
+      },
       {
         id: "contact",
         header: t("columns.contact"),
@@ -100,46 +115,44 @@ export function PartnersTab(): ReactElement {
     [t, canManage],
   );
 
-  return (
-    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex justify-end">
-        {canManage && (
-          <Button
-            size="sm"
-            icon={<Plus />}
-            onClick={() => {
-              setCreating(true);
-            }}
-          >
-            {t("add")}
-          </Button>
-        )}
-      </div>
+  const addButton = canManage ? (
+    <Button
+      icon={<Plus />}
+      onClick={() => {
+        setCreating(true);
+      }}
+    >
+      {t("add")}
+    </Button>
+  ) : undefined;
 
-      <div className="flex flex-col md:min-h-0 md:flex-1">
-        <DataTable
-          stateKey="features/library/components/partners-tab:1"
-          mode="local"
-          data={items}
-          columns={columns}
-          rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
-          isLoading={isLoading}
-          getRowId={(item) => item.id}
-          fillHeight
-          emptyState={
-            <EmptyState
-              icon={<domainIcons.library aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
-          }
-        />
-      </div>
+  return (
+    <div className="flex flex-col gap-4">
+      <DataTable
+        stateKey="features/library/components/partners-tab:1"
+        mode="local"
+        data={items}
+        columns={columns}
+        rowCount={items.length}
+        pagination={{ pageIndex: 0, pageSize: 50 }}
+        onPaginationChange={() => undefined}
+        sorting={[]}
+        onSortingChange={() => undefined}
+        globalFilter=""
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        toolbarActions={addButton}
+        getRowId={(item) => item.id}
+        emptyState={
+          <EmptyState
+            icon={<domainIcons.library aria-hidden="true" />}
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+            action={addButton}
+          />
+        }
+      />
 
       <Dialog
         open={creating}
@@ -257,8 +270,7 @@ function PartnerForm({
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("code")}</span>
+      <Field label={t("code")}>
         <Input
           value={code}
           onChange={(e) => {
@@ -267,9 +279,8 @@ function PartnerForm({
           required
           maxLength={20}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
+      </Field>
+      <Field label={t("name")}>
         <Input
           value={name}
           onChange={(e) => {
@@ -278,9 +289,8 @@ function PartnerForm({
           required
           maxLength={150}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("contactName")}</span>
+      </Field>
+      <Field label={t("contactName")}>
         <Input
           value={contactName}
           onChange={(e) => {
@@ -288,9 +298,8 @@ function PartnerForm({
           }}
           maxLength={100}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("phone")}</span>
+      </Field>
+      <Field label={t("phone")}>
         <Input
           value={phone}
           onChange={(e) => {
@@ -298,9 +307,8 @@ function PartnerForm({
           }}
           maxLength={30}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("address")}</span>
+      </Field>
+      <Field label={t("address")}>
         <Input
           value={address}
           onChange={(e) => {
@@ -308,30 +316,27 @@ function PartnerForm({
           }}
           maxLength={255}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("sortOrder")}</span>
-        <Input
-          type="number"
-          value={sortOrder}
-          onChange={(e) => {
-            setSortOrder(e.target.value);
+      </Field>
+      <Field label={t("sortOrder")}>
+        <NumberInput
+          value={sortOrder === "" ? null : Number(sortOrder)}
+          onChange={(next) => {
+            setSortOrder(next === null ? "" : String(next));
           }}
         />
-      </label>
-      <label className="flex items-center gap-2 text-[13px]">
+      </Field>
+      <Field label={t("isActive")} orientation="horizontal">
         <Switch checked={isActive} onCheckedChange={setIsActive} />
-        <span className="font-medium">{t("isActive")}</span>
-      </label>
-      {error && <p className="text-[13px] text-status-absent">{error}</p>}
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      </Field>
+      {error && <FormError>{error}</FormError>}
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={mutation.isPending} disabled={!code.trim() || !name.trim()}>
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

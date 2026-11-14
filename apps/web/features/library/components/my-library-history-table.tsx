@@ -1,59 +1,51 @@
 "use client";
 
-import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@newsekolah/ui";
+import { Card, List, ListRow, SectionHeader } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import type { LibraryLoan } from "../api";
+import { formatShortDateRange } from "../lib/short-date";
 
 /**
- * The reader's own closed loans as the shared `Table`
- * (docs/05-shared-components.md: the library module already prefers this
- * hand-rolled primitive over the TanStack `DataTable` for a static list
- * like this one) -- title, borrowed date, and returned date, newest
- * first, capped to the 10 most recent like the row list it replaces.
+ * The reader's own closed loans as a short list, newest first and capped
+ * to the 10 most recent: the title, then the loan's span on one line
+ * ("25 Sep - 2 Okt"). A book still out belongs to "Sedang dipinjam" above,
+ * so it is left out here.
  */
 export function MyLibraryHistoryTable({
   history,
   locale,
+  today,
 }: {
   history: LibraryLoan[];
   locale: Locale;
+  today?: string;
 }): ReactElement {
   const t = useTranslations("app.library.me");
-  const items = history.slice(0, 10);
+  const items = history.filter((loan) => loan.returned_at).slice(0, 10);
 
   return (
-    <div className="flex flex-col gap-3">
-      <h2 className="text-[15px] font-semibold text-fg">{t("history")}</h2>
+    <section className="flex flex-col gap-3">
+      <SectionHeader title={t("history")} />
       {items.length === 0 ? (
-        <p className="text-[13px] text-fg-muted">{t("noHistory")}</p>
+        <p className="text-body-sm text-fg-muted">{t("noHistory")}</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col">{t("historyTable.columns.title")}</TableHead>
-              <TableHead scope="col">{t("historyTable.columns.borrowedOn")}</TableHead>
-              <TableHead scope="col">{t("historyTable.columns.returnedOn")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <Card>
+          <List aria-label={t("history")}>
             {items.map((loan) => (
-              <TableRow key={loan.id}>
-                <TableCell>{loan.title_name ?? t("titleUnavailable")}</TableCell>
-                <TableCell className="text-fg-muted">
-                  {formatDate(loan.borrowed_at, { locale })}
-                </TableCell>
-                <TableCell className="text-fg-muted">
-                  {loan.returned_at ? formatDate(loan.returned_at, { locale }) : "-"}
-                </TableCell>
-              </TableRow>
+              <ListRow
+                key={loan.id}
+                title={loan.title_name ?? t("titleUnavailable")}
+                meta={formatShortDateRange(loan.borrowed_at, loan.returned_at ?? "", locale, {
+                  today,
+                })}
+              />
             ))}
-          </TableBody>
-        </Table>
+          </List>
+        </Card>
       )}
-    </div>
+    </section>
   );
 }

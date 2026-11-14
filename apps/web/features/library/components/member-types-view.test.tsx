@@ -1,7 +1,9 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MemberTypesView } from "./member-types-view";
+
+const access = vi.hoisted(() => ({ canManage: true }));
 
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
@@ -10,27 +12,28 @@ vi.mock("next-intl", () => ({
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
-vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => true }));
+vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => access.canManage }));
 vi.mock("../members-api", () => ({
-  useLibraryMemberTypesQuery: () => ({ data: { data: [] }, isLoading: false }),
+  useLibraryMemberTypesQuery: () => ({ data: { data: [] }, isLoading: false, refetch: vi.fn() }),
   useDeleteLibraryMemberTypeMutation: () => ({ mutate: vi.fn(), isPending: false }),
-}));
-vi.mock("./library-workspace-nav", () => ({
-  LibraryWorkspaceNav: () => <nav data-testid="workspace-nav" />,
 }));
 vi.mock("./member-type-form", () => ({ MemberTypeForm: () => null }));
 
-describe("MemberTypesView chrome", () => {
-  it("renders the page header and workspace nav on its own route", () => {
-    render(<MemberTypesView />);
-    expect(screen.getByRole("heading", { name: "title" })).toBeInTheDocument();
-    expect(screen.getByTestId("workspace-nav")).toBeInTheDocument();
+describe("MemberTypesView, a settings hub section", () => {
+  beforeEach(() => {
+    access.canManage = true;
   });
 
-  it("drops the header and workspace nav when embedded in the settings hub", () => {
-    render(<MemberTypesView embedded />);
-    expect(screen.queryByRole("heading", { name: "title" })).not.toBeInTheDocument();
-    expect(screen.queryByTestId("workspace-nav")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "addType" })).toBeInTheDocument();
+  it("leaves the page heading to the hub and offers adding a type from the table", () => {
+    render(<MemberTypesView />);
+    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
+    // In the table toolbar and again in the empty list's call to action.
+    expect(screen.getAllByRole("button", { name: "addType" })).toHaveLength(2);
+  });
+
+  it("does not offer adding a type to a reader who cannot manage settings", () => {
+    access.canManage = false;
+    render(<MemberTypesView />);
+    expect(screen.queryByRole("button", { name: "addType" })).not.toBeInTheDocument();
   });
 });

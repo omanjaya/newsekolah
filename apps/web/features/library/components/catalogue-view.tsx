@@ -8,21 +8,21 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
+  FilteredEmptyState,
   RowActionsMenu,
+  TextLink,
   domainIcons,
   useToast,
   type DataTableFilterDef,
   type PageHeaderAction,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { BookOpen, Download, Pencil, Plus, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
-import { CursorPagination } from "../../../components/cursor-pagination";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
@@ -36,7 +36,7 @@ import {
 import { useLibraryCatalogueOptionsQuery } from "../master-data-api";
 import { useLibraryErrorMessage } from "../use-library-error-message";
 
-import { LibraryWorkspaceNav } from "./library-workspace-nav";
+import { LibraryWorkspaceNav, useLibraryShortcuts } from "./library-workspace-nav";
 import { TitleForm } from "./title-form";
 
 const AVAILABILITY_VALUES = ["", "available"] as const;
@@ -63,7 +63,7 @@ export function CatalogueView(): ReactElement {
   const [editing, setEditing] = useState<LibraryTitle | null>(null);
   const [deleting, setDeleting] = useState<LibraryTitle | null>(null);
   const paging = useOffsetPage(TITLES_PAGE_SIZE);
-  const { data, isLoading } = useLibraryTitlesQuery({
+  const { data, isLoading, error, refetch, isRefetching } = useLibraryTitlesQuery({
     limit: paging.limit,
     offset: paging.offset,
     search,
@@ -128,8 +128,24 @@ export function CatalogueView(): ReactElement {
 
   const columns = useMemo<ColumnDef<LibraryTitle>[]>(
     () => [
-      { accessorKey: "title", header: t("columns.title"), enableSorting: false },
-      { accessorKey: "author", header: t("columns.author"), enableSorting: false },
+      {
+        accessorKey: "title",
+        header: t("columns.title"),
+        enableSorting: false,
+        meta: { card: "title" },
+        cell: ({ row }) => (
+          <TextLink href={`/library/catalogue/${row.original.id}`} className="font-semibold">
+            {row.original.title}
+          </TextLink>
+        ),
+      },
+      {
+        accessorKey: "author",
+        header: t("columns.author"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        cell: ({ row }) => row.original.author || "-",
+      },
       {
         accessorKey: "classification",
         header: t("columns.classification"),
@@ -140,11 +156,15 @@ export function CatalogueView(): ReactElement {
         id: "copies",
         header: t("columns.copies"),
         enableSorting: false,
+        meta: { card: "meta", skeleton: "badge" },
         cell: ({ row }) => (
           <Badge
-            variant={row.original.available_copies > 0 ? "accent" : "neutral"}
-            className={
-              row.original.available_copies === 0 ? "border-status-late/40 text-status-late" : ""
+            tone={
+              row.original.total_copies === 0
+                ? "neutral"
+                : row.original.available_copies > 0
+                  ? "success"
+                  : "warning"
             }
           >
             {t("copiesAvailable", {
@@ -154,47 +174,46 @@ export function CatalogueView(): ReactElement {
           </Badge>
         ),
       },
-      {
-        id: "actions",
-        header: t("columns.actions"),
-        enableSorting: false,
-        cell: ({ row }) => (
-          <div className="flex items-center gap-1">
-            <Button asChild size="sm" variant="secondary">
-              <Link href={`/library/catalogue/${row.original.id}`}>
-                <BookOpen aria-hidden="true" />
-                {t("viewCopies")}
-              </Link>
-            </Button>
-            {canManage && (
-              <TitleRowActionsMenu
-                title={row.original.title}
-                onEdit={() => {
-                  setEditing(row.original);
-                }}
-                onDelete={() => {
-                  setDeleting(row.original);
-                }}
-              />
-            )}
-          </div>
-        ),
-      },
+      ...(canManage
+        ? [
+            {
+              id: "actions",
+              header: t("columns.actions"),
+              enableSorting: false,
+              cell: ({ row }: { row: { original: LibraryTitle } }) => (
+                <TitleRowActionsMenu
+                  title={row.original.title}
+                  onEdit={() => {
+                    setEditing(row.original);
+                  }}
+                  onDelete={() => {
+                    setDeleting(row.original);
+                  }}
+                />
+              ),
+            } satisfies ColumnDef<LibraryTitle>,
+          ]
+        : []),
     ],
     [t, canManage],
   );
 
-  const secondaryActions: PageHeaderAction[] = canManage
-    ? [
-        {
-          label: t("exportCatalogue"),
-          icon: <Download />,
-          onSelect: () => {
-            void downloadLibraryCatalogueExportXlsx();
+  const shortcuts = useLibraryShortcuts(["catalogueSettings", { report: "accessionRegister" }]);
+  const secondaryActions: PageHeaderAction[] = [
+    ...(canManage
+      ? [
+          {
+            label: t("exportCatalogue"),
+            icon: <Download />,
+            onSelect: () => {
+              void downloadLibraryCatalogueExportXlsx();
+            },
           },
-        },
-      ]
-    : [];
+        ]
+      : []),
+    ...shortcuts,
+  ];
+  const filtered = search !== "" || materialTypeId !== "" || ddcClass !== "" || availability !== "";
 
   return (
     // Viewport-fit on desktop: the page itself never scrolls; the table
@@ -226,8 +245,14 @@ export function CatalogueView(): ReactElement {
           mode="cursor"
           columns={columns}
           rowCount={titles.length}
-          pagination={{ pageIndex: 0, pageSize: TITLES_PAGE_SIZE }}
-          onPaginationChange={() => undefined}
+          cursorPagination={{
+            hasPrevious: paging.hasPrevious,
+            hasNext: paging.hasNextFor(titles.length),
+            onPrevious: paging.goPrevious,
+            onNext: paging.goNext,
+            page: paging.page,
+            pageSize: paging.limit,
+          }}
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter={search}
@@ -239,23 +264,44 @@ export function CatalogueView(): ReactElement {
             removeFilter: (label) => t("filters.removeFilter", { label }),
           }}
           isLoading={isLoading}
+          error={error}
+          onRetry={() => void refetch()}
+          retrying={isRefetching}
           getRowId={(item) => item.id}
           fillHeight
           emptyState={
-            <EmptyState
-              icon={<domainIcons.library aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
+            filtered ? (
+              <FilteredEmptyState
+                onReset={() => {
+                  setSearch("");
+                  setMaterialTypeId("");
+                  setDdcClass("");
+                  setAvailability("");
+                  paging.resetPage();
+                }}
+              />
+            ) : (
+              <EmptyState
+                icon={<domainIcons.library aria-hidden="true" />}
+                title={t("emptyTitle")}
+                description={t("emptyBody")}
+                action={
+                  canManage ? (
+                    <Button
+                      icon={<Plus />}
+                      onClick={() => {
+                        setAdding(true);
+                      }}
+                    >
+                      {t("addTitle")}
+                    </Button>
+                  ) : undefined
+                }
+              />
+            )
           }
         />
       </div>
-      <CursorPagination
-        hasPrevious={paging.hasPrevious}
-        hasNext={paging.hasNextFor(titles.length)}
-        onPrevious={paging.goPrevious}
-        onNext={paging.goNext}
-      />
 
       <Dialog
         open={adding || editing !== null}
@@ -266,7 +312,7 @@ export function CatalogueView(): ReactElement {
           }
         }}
       >
-        <DialogContent title={editing ? t("editTitle") : t("addTitle")}>
+        <DialogContent title={editing ? t("editTitle") : t("addTitle")} size="lg">
           {(adding || editing) && (
             <TitleForm
               key={editing?.id ?? "new"}

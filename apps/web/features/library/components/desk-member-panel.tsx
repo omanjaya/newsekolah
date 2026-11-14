@@ -1,15 +1,12 @@
 "use client";
 
-import { Avatar, Badge, Button } from "@newsekolah/ui";
-import { UserX } from "lucide-react";
-import Link from "next/link";
+import { Avatar, Badge, Button, TextLink } from "@newsekolah/ui";
+import { ReceiptText, UserX } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { StudentLink } from "../../students/components/student-link";
 import type { LibraryMemberStatus } from "../members-api";
-
-import { LibraryLookupField } from "./library-lookup-field";
 
 export interface DeskSelectedMember {
   userId: string;
@@ -19,85 +16,74 @@ export interface DeskSelectedMember {
   username?: string;
 }
 
+/** Statuses that should stop the librarian before lending. */
+const ATTENTION_STATUSES: readonly LibraryMemberStatus[] = [
+  "suspended",
+  "inactive",
+  "pending",
+  "cleared",
+];
+
+export function memberNeedsAttention(status: LibraryMemberStatus | null): boolean {
+  return status !== null && ATTENTION_STATUSES.includes(status);
+}
+
 /**
- * The desk session's first step: pick a borrower by scanning their member
- * card (the same continuous scan input handles this -- see loan-desk-view's
- * `handleScan`) or by typing their name, then keep them visible and easy
- * to swap or clear while books get scanned in whatever mode is active.
+ * Who the desk is serving: avatar, name (to their profile), codes and
+ * membership status, with the session's own actions beside them: their
+ * fines in a new tab, the running receipt, and ending the session.
  */
 export function DeskMemberPanel({
   member,
   memberStatus,
-  onSelectMember,
+  onOpenReceipt,
   onClear,
 }: {
-  member: DeskSelectedMember | null;
+  member: DeskSelectedMember;
   memberStatus: LibraryMemberStatus | null;
-  onSelectMember: (member: DeskSelectedMember) => void;
+  onOpenReceipt: () => void;
   onClear: () => void;
 }): ReactElement {
-  const t = useTranslations("app.library.desk.member");
+  const t = useTranslations("app.library.desk");
   const tStatus = useTranslations("app.library.members.status");
-  const tWorkspace = useTranslations("app.library.workspace");
-
-  if (!member) {
-    return (
-      <div className="flex flex-col gap-2">
-        <LibraryLookupField
-          onSelectMember={(selected) => {
-            onSelectMember({
-              userId: selected.user_id,
-              name: selected.user_name,
-              memberNo: selected.member_no,
-              nis: selected.nis,
-              username: selected.username,
-            });
-          }}
-          placeholder={t("searchPlaceholder")}
-        />
-        <p className="text-[12px] text-fg-muted">{t("scanHint")}</p>
-      </div>
-    );
-  }
-
-  const attentionStatus: LibraryMemberStatus[] = ["suspended", "inactive", "pending", "cleared"];
-  const needsAttention = memberStatus !== null && attentionStatus.includes(memberStatus);
+  const attention = memberNeedsAttention(memberStatus);
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-sm border border-border bg-surface px-3 py-2.5">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-center gap-3">
-        <Avatar name={member.name} size={32} />
-        <div className="flex min-w-0 flex-col">
-          <span className="flex flex-wrap items-center gap-2 text-[14px] font-medium text-fg">
-            <span className="truncate">
+        <Avatar name={member.name} size={48} decorative />
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="truncate text-heading text-fg">
               <StudentLink studentId={member.userId} tab="library" isStudent={Boolean(member.nis)}>
                 {member.name}
               </StudentLink>
             </span>
             {memberStatus && (
-              <Badge variant={needsAttention ? "neutral" : "accent"}>
-                {needsAttention && <UserX className="size-3" aria-hidden="true" />}
+              <Badge tone={attention ? "warning" : "success"} size="sm">
+                {attention && <UserX aria-hidden="true" />}
                 {tStatus(memberStatus)}
               </Badge>
             )}
+          </div>
+          <span className="truncate text-body-sm text-fg-muted">
+            {[member.memberNo, member.nis, member.username].filter(Boolean).join(" · ")}
           </span>
-          <span className="truncate text-[12px] text-fg-muted">
-            {[member.memberNo, member.nis, member.username].filter(Boolean).join(" - ")}
-          </span>
+          <TextLink
+            href={`/library/violations?member=${encodeURIComponent(member.userId)}`}
+            external
+            className="w-fit text-body-sm"
+          >
+            {t("member.sanctions")}
+          </TextLink>
         </div>
       </div>
-      <div className="flex shrink-0 flex-wrap items-center gap-1">
-        <Button asChild variant="secondary" size="sm">
-          <Link
-            href={`/library/violations?member=${encodeURIComponent(member.userId)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {tWorkspace("memberSanctions")}
-          </Link>
+      <div className="flex shrink-0 items-center gap-2">
+        <Button variant="secondary" icon={<ReceiptText />} onClick={onOpenReceipt}>
+          {t("receipt.open")}
         </Button>
-        <Button variant="secondary" size="sm" onClick={onClear}>
-          {t("endSession")}
+        <Button variant="secondary" onClick={onClear}>
+          {t("member.endSession")}
         </Button>
       </div>
     </div>

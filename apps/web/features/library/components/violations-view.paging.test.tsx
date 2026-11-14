@@ -15,6 +15,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => false }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../reference/api", () => ({
   useLookup: () => new Map(),
 }));
@@ -62,7 +63,7 @@ describe("ViolationsView paging", () => {
       expect.objectContaining({ limit: 50, offset: 0 }),
       true,
     );
-    await user.click(screen.getByRole("button", { name: "next" }));
+    await user.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
 
     expect(mocks.useLibraryViolationsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ limit: 50, offset: 50 }),
@@ -89,6 +90,6 @@ describe("ViolationsView paging", () => {
   it("hides the pager for a single member's violations", () => {
     render(<ViolationsView memberUserId="member-1" />);
 
-    expect(screen.queryByRole("button", { name: "next" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ke halaman berikutnya" })).not.toBeInTheDocument();
   });
 });

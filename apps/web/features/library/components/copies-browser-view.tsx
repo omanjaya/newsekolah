@@ -4,18 +4,18 @@ import {
   Badge,
   DataTable,
   EmptyState,
-  PageHeader,
+  FilteredEmptyState,
+  TextLink,
   domainIcons,
   selectionColumn,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 
-import { CursorPagination } from "../../../components/cursor-pagination";
+import { AppPage } from "../../../components/app-page";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
@@ -28,11 +28,13 @@ import {
   useLibraryCopiesFilteredQuery,
   useLibraryLocationsQuery,
 } from "../copies-api";
+import { COPY_STATUS_TONE, toneOf } from "../lib/status-tones";
 import { useOrderedSelection } from "../use-ordered-selection";
 
-import { CopyBulkStatusBar } from "./copy-bulk-status-bar";
-import { CopyLabelPrintBar } from "./copy-label-print-bar";
-import { LibraryWorkspaceNav } from "./library-workspace-nav";
+import { CopyBulkStatusAction } from "./copy-bulk-status-bar";
+import { CopyLabelPrintAction } from "./copy-label-print-bar";
+import { LibraryTitleName } from "./library-title-name";
+import { LibraryWorkspaceNav, useLibraryShortcuts } from "./library-workspace-nav";
 
 const STATUSES: LibraryCopyStatus[] = [
   "available",
@@ -50,7 +52,11 @@ const STATUSES: LibraryCopyStatus[] = [
 /** Rows per page; the copies API pages by offset and reports no total. */
 const COPIES_PAGE_SIZE = 50;
 
-/** Browses every copy in the catalogue, for selecting a batch to label (see title-copies-view for one title's own list). */
+/**
+ * Browses every copy in the catalogue: which book each is (a link to its
+ * title), where it sits and its status, with label printing and a bulk
+ * status change for the selected copies (catalogue managers only).
+ */
 export function CopiesBrowserView(): ReactElement {
   const t = useTranslations("app.library.copiesBrowser");
   const canManage = useCan("manage_library_catalog");
@@ -63,9 +69,10 @@ export function CopiesBrowserView(): ReactElement {
   const [categoryId, setCategoryId] = useUrlState<string>("category_id", () => true, "");
   const [locationId, setLocationId] = useUrlState<string>("location_id", () => true, "");
   const { selection, onSelectionChange, orderedIds, clear } = useOrderedSelection();
+  const shortcuts = useLibraryShortcuts(["catalogueSettings", { report: "accessionRegister" }]);
 
   const paging = useOffsetPage(COPIES_PAGE_SIZE);
-  const { data, isLoading } = useLibraryCopiesFilteredQuery({
+  const { data, isLoading, error, refetch, isRefetching } = useLibraryCopiesFilteredQuery({
     search,
     status,
     categoryId,
@@ -111,17 +118,41 @@ export function CopiesBrowserView(): ReactElement {
   const columns = useMemo<ColumnDef<LibraryCopy>[]>(
     () => [
       ...(canManage ? [selectionColumn<LibraryCopy>()] : []),
-      { accessorKey: "barcode", header: t("columns.barcode"), enableSorting: false },
       {
-        accessorKey: "accession_number",
-        header: t("columns.accessionNumber"),
+        id: "title",
+        header: t("columns.title"),
         enableSorting: false,
+        meta: { card: "title", skeleton: "lines" },
+        cell: ({ row }) => (
+          <div className="flex min-w-0 flex-col">
+            <TextLink
+              href={`/library/catalogue/${row.original.title_id}`}
+              className="font-semibold"
+            >
+              <LibraryTitleName titleId={row.original.title_id} />
+            </TextLink>
+            <span className="text-caption text-fg-muted tabular-nums">
+              {row.original.barcode}
+              {row.original.accession_number &&
+              row.original.accession_number !== row.original.barcode
+                ? ` · ${row.original.accession_number}`
+                : ""}
+            </span>
+          </div>
+        ),
       },
-      { accessorKey: "call_number", header: t("columns.callNumber"), enableSorting: false },
+      {
+        accessorKey: "call_number",
+        header: t("columns.callNumber"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        cell: ({ row }) => row.original.call_number ?? "-",
+      },
       {
         id: "category",
         header: t("columns.category"),
         enableSorting: false,
+        meta: { card: "hidden" },
         cell: ({ row }) =>
           row.original.category_id ? (categoryMap.get(row.original.category_id)?.name ?? "-") : "-",
       },
@@ -136,23 +167,11 @@ export function CopiesBrowserView(): ReactElement {
         id: "status",
         header: t("columns.status"),
         enableSorting: false,
+        meta: { card: "meta", skeleton: "badge" },
         cell: ({ row }) => (
-          <Badge variant={row.original.status === "available" ? "accent" : "neutral"}>
+          <Badge tone={toneOf(COPY_STATUS_TONE, row.original.status)}>
             {t(`status.${row.original.status}`)}
           </Badge>
-        ),
-      },
-      {
-        id: "actions",
-        header: t("columns.actions"),
-        enableSorting: false,
-        cell: ({ row }) => (
-          <Link
-            href={`/library/catalogue/${row.original.title_id}`}
-            className="text-[13px] font-medium text-accent hover:underline"
-          >
-            {t("viewTitle")}
-          </Link>
         ),
       },
     ],
@@ -160,49 +179,75 @@ export function CopiesBrowserView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <LibraryWorkspaceNav area="catalogue" />
-
-      {canManage && <CopyLabelPrintBar selectedIds={orderedIds} onClear={clear} />}
-      {canManage && <CopyBulkStatusBar selectedIds={orderedIds} onDone={clear} />}
-
-      <DataTable
-        stateKey="features/library/components/copies-browser-view:1"
-        data={items}
-        mode="cursor"
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: COPIES_PAGE_SIZE }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter={search}
-        onGlobalFilterChange={paging.resetting(setSearch)}
-        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
-        filters={filters}
-        filtersLabels={{
-          reset: t("filters.clear"),
-          removeFilter: (label) => t("filters.removeFilter", { label }),
-        }}
-        isLoading={isLoading}
-        rowSelection={canManage ? selection : undefined}
-        onRowSelectionChange={canManage ? onSelectionChange : undefined}
-        getRowId={(item) => item.id}
-        emptyState={
-          <EmptyState
-            icon={<domainIcons.library aria-hidden="true" />}
-            title={isFiltered ? t("noMatchTitle") : t("emptyTitle")}
-            description={isFiltered ? t("noMatchBody") : t("emptyBody")}
-          />
-        }
-      />
-      <CursorPagination
-        hasPrevious={paging.hasPrevious}
-        hasNext={paging.hasNextFor(items.length)}
-        onPrevious={paging.goPrevious}
-        onNext={paging.goNext}
-      />
-    </div>
+    <AppPage
+      variant="fit"
+      nav={<LibraryWorkspaceNav area="catalogue" />}
+      secondaryActions={shortcuts}
+    >
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/library/components/copies-browser-view:1"
+          data={items}
+          mode="cursor"
+          columns={columns}
+          rowCount={items.length}
+          cursorPagination={{
+            hasPrevious: paging.hasPrevious,
+            hasNext: paging.hasNextFor(items.length),
+            onPrevious: paging.goPrevious,
+            onNext: paging.goNext,
+            page: paging.page,
+            pageSize: paging.limit,
+          }}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter={search}
+          onGlobalFilterChange={paging.resetting(setSearch)}
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.clear"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
+          }}
+          isLoading={isLoading}
+          error={error}
+          onRetry={() => void refetch()}
+          retrying={isRefetching}
+          rowSelection={canManage ? selection : undefined}
+          onRowSelectionChange={canManage ? onSelectionChange : undefined}
+          bulkActions={
+            canManage ? (
+              <>
+                <CopyLabelPrintAction selectedIds={orderedIds} />
+                <CopyBulkStatusAction selectedIds={orderedIds} onDone={clear} />
+              </>
+            ) : undefined
+          }
+          getRowId={(item) => item.id}
+          fillHeight
+          emptyState={
+            isFiltered ? (
+              <FilteredEmptyState
+                title={t("noMatchTitle")}
+                description={t("noMatchBody")}
+                onReset={() => {
+                  setSearch("");
+                  setStatus("");
+                  setCategoryId("");
+                  setLocationId("");
+                  paging.resetPage();
+                }}
+              />
+            ) : (
+              <EmptyState
+                icon={<domainIcons.library aria-hidden="true" />}
+                title={t("emptyTitle")}
+                description={t("emptyBody")}
+              />
+            )
+          }
+        />
+      </div>
+    </AppPage>
   );
 }

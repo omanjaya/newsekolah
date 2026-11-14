@@ -3,7 +3,7 @@
 import { ApiError } from "@newsekolah/api-client";
 import { formatCurrency } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { ConfirmDialog } from "@newsekolah/ui";
+import { FormError, ConfirmDialog } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -59,9 +59,9 @@ export function ViolationSettleDialog({
       }}
       title={status === "waived" ? t("confirmWaivedTitle") : t("confirmPaidTitle")}
       description={
-        <div className="flex flex-col gap-2 text-[13px] text-fg-muted">
+        <div className="flex flex-col gap-2 text-body-sm text-fg-muted">
           <p>{bodyText}</p>
-          {error && <p className="text-status-absent">{error}</p>}
+          {error && <FormError>{error}</FormError>}
         </div>
       }
       confirmLabel={status === "waived" ? t("waive") : t("markPaid")}

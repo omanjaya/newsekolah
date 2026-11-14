@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button } from "@newsekolah/ui";
+import { FormError, Button, Card } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -39,9 +39,9 @@ export function IsbnLookupPanel({
   const result = lookup.data;
 
   return (
-    <div className="flex flex-col gap-2 rounded-sm border border-border bg-bg p-3">
+    <Card tone="sunken" padding="sm">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[13px] text-fg-muted">{t("hint")}</span>
+        <span className="text-body-sm text-fg-muted">{t("hint")}</span>
         <Button
           type="button"
           size="sm"
@@ -64,9 +64,9 @@ export function IsbnLookupPanel({
         </Button>
       </div>
 
-      {error && <p className="text-[13px] text-status-absent">{error}</p>}
+      {error && <FormError>{error}</FormError>}
 
-      {result && !result.found && <p className="text-[13px] text-fg-muted">{t("notFound")}</p>}
+      {result && !result.found && <p className="text-body-sm text-fg-muted">{t("notFound")}</p>}
 
       {result?.found &&
         result.bibliography &&
@@ -78,12 +78,12 @@ export function IsbnLookupPanel({
                 <img
                   src={bibliography.cover_image_url}
                   alt=""
-                  className="h-24 w-16 shrink-0 rounded-xs border border-border object-cover"
+                  className="h-24 w-16 shrink-0 rounded-sm object-cover shadow-1"
                 />
               )}
               <div className="flex flex-1 flex-col gap-1">
-                <span className="text-[13px] font-medium text-fg">{bibliography.title}</span>
-                <span className="text-[12px] text-fg-muted">
+                <span className="text-label text-fg">{bibliography.title}</span>
+                <span className="text-caption text-fg-muted">
                   {[bibliography.main_author, bibliography.publisher].filter(Boolean).join(" - ")}
                 </span>
                 <div className="mt-1 flex flex-wrap gap-2">
@@ -128,6 +128,6 @@ export function IsbnLookupPanel({
             </div>
           );
         })()}
-    </div>
+    </Card>
   );
 }

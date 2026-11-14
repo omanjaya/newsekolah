@@ -1,18 +1,21 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
   ConfirmDialog,
   DataTable,
+  DatePicker,
   Dialog,
   DialogContent,
+  DialogFooter,
   EmptyState,
-  Input,
-  PageHeader,
+  Field,
+  FormError,
+  NumberInput,
+  RowActionsMenu,
   Select,
   Switch,
   Textarea,
@@ -20,13 +23,14 @@ import {
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { formatShortDateRange } from "../lib/short-date";
 import {
   type LibraryLoanRule,
   type LibraryLoanRuleWrite,
@@ -37,20 +41,20 @@ import {
 import { useLibraryMemberTypesQuery } from "../members-api";
 
 import { LibraryPolicyDialog } from "./library-policy-dialog";
-import { LibraryWorkspaceNav } from "./library-workspace-nav";
 
 /**
- * Dated loan rules per member type: shorten or extend limits, or close lending, for a period.
- * `embedded` drops the page header and workspace nav for use inside the settings hub.
+ * Dated loan rules per member type: shorten or extend limits, or close
+ * lending, for a period. A section of the library settings hub; adding a
+ * rule and the general policy sit in the table's own toolbar.
  */
-export function LoanRulesView({ embedded = false }: { embedded?: boolean }): ReactElement {
+export function LoanRulesView(): ReactElement {
   const t = useTranslations("app.library.loanRules");
   const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_library_settings");
 
-  const { data, isLoading } = useLibraryLoanRulesQuery();
+  const { data, isLoading, error, refetch } = useLibraryLoanRulesQuery();
   const memberTypes = useLibraryMemberTypesQuery();
   const memberTypeMap = useMemo(
     () => new Map((memberTypes.data?.data ?? []).map((mt) => [mt.id, mt.name])),
@@ -69,6 +73,7 @@ export function LoanRulesView({ embedded = false }: { embedded?: boolean }): Rea
         id: "memberType",
         header: t("columns.memberType"),
         enableSorting: false,
+        meta: { card: "title" },
         cell: ({ row }) =>
           row.original.member_type_id
             ? (memberTypeMap.get(row.original.member_type_id) ?? row.original.member_type_id)
@@ -78,15 +83,17 @@ export function LoanRulesView({ embedded = false }: { embedded?: boolean }): Rea
         id: "period",
         header: t("columns.period"),
         enableSorting: false,
+        meta: { card: "subtitle" },
         cell: ({ row }) =>
-          `${formatDate(row.original.starts_on, { locale })} - ${formatDate(row.original.ends_on, { locale })}`,
+          formatShortDateRange(row.original.starts_on, row.original.ends_on, locale),
       },
       {
         id: "allowLoans",
         header: t("columns.allowLoans"),
         enableSorting: false,
+        meta: { card: "meta", skeleton: "badge" },
         cell: ({ row }) => (
-          <Badge variant={row.original.allow_loans ? "accent" : "neutral"}>
+          <Badge tone={row.original.allow_loans ? "success" : "warning"}>
             {row.original.allow_loans ? t("loansOpen") : t("loansClosed")}
           </Badge>
         ),
@@ -103,84 +110,77 @@ export function LoanRulesView({ embedded = false }: { embedded?: boolean }): Rea
               })
             : t("limitsDefault"),
       },
-      {
-        id: "actions",
-        header: t("columns.actions"),
-        enableSorting: false,
-        cell: ({ row }) =>
-          canManage ? (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-status-absent"
-              onClick={() => {
-                setDeleting(row.original);
-              }}
-            >
-              {t("delete")}
-            </Button>
-          ) : null,
-      },
+      ...(canManage
+        ? [
+            {
+              id: "actions",
+              header: t("columns.actions"),
+              enableSorting: false,
+              cell: ({ row }: { row: { original: LibraryLoanRule } }) => (
+                <RowActionsMenu
+                  ariaLabel={t("rowActions")}
+                  items={[
+                    {
+                      label: t("delete"),
+                      icon: <Trash2 className="size-4" aria-hidden="true" />,
+                      tone: "danger",
+                      onClick: () => {
+                        setDeleting(row.original);
+                      },
+                    },
+                  ]}
+                />
+              ),
+            } satisfies ColumnDef<LibraryLoanRule>,
+          ]
+        : []),
     ],
     [t, locale, memberTypeMap, canManage],
   );
 
-  const actionButtons = canManage && (
-    <div className="flex flex-wrap gap-2">
-      <LibraryPolicyDialog />
-      <Button
-        size="sm"
-        icon={<Plus />}
-        onClick={() => {
-          setCreating(true);
-        }}
-      >
-        {t("add")}
-      </Button>
-    </div>
+  const addButton = (
+    <Button
+      icon={<Plus />}
+      onClick={() => {
+        setCreating(true);
+      }}
+    >
+      {t("add")}
+    </Button>
   );
 
   return (
-    <div className={embedded ? "flex flex-col gap-6" : "flex flex-col gap-6 p-4 md:p-6"}>
-      {embedded ? (
-        actionButtons && <div className="flex justify-end">{actionButtons}</div>
-      ) : (
-        <>
-          <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={actionButtons} />
-          <LibraryWorkspaceNav area="settings" />
-        </>
-      )}
-
+    <>
       <DataTable
         stateKey="features/library/components/loan-rules-view:1"
         mode="local"
         searchable={false}
         data={items}
         columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
         isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
         getRowId={(item) => item.id}
+        toolbarActions={
+          canManage ? (
+            <>
+              <LibraryPolicyDialog />
+              {addButton}
+            </>
+          ) : undefined
+        }
         emptyState={
           <EmptyState
             icon={<domainIcons.library aria-hidden="true" />}
             title={t("emptyTitle")}
             description={t("emptyBody")}
+            action={canManage ? addButton : undefined}
           />
         }
       />
 
-      <Dialog
-        open={creating}
-        onOpenChange={(open) => {
-          setCreating(open);
-        }}
-      >
-        <DialogContent title={t("add")}>
+      <Dialog open={creating} onOpenChange={setCreating}>
+        <DialogContent title={t("add")} size="md">
           {creating && (
             <LoanRuleForm
               onDone={() => {
@@ -198,7 +198,7 @@ export function LoanRulesView({ embedded = false }: { embedded?: boolean }): Rea
         }}
         title={t("deleteTitle")}
         description={deleting ? t("deleteBody") : ""}
-        destructive
+        tone="danger"
         confirming={deleteRule.isPending}
         onConfirm={async () => {
           if (!deleting) return;
@@ -206,14 +206,16 @@ export function LoanRulesView({ embedded = false }: { embedded?: boolean }): Rea
             await deleteRule.mutateAsync(deleting.id);
             toast.success(t("deleted"));
             setDeleting(null);
-          } catch (error) {
+          } catch (failure) {
             toast.error(
-              error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+              failure instanceof ApiError
+                ? apiErrorMessage(failure.code)
+                : apiErrorMessage("UNKNOWN"),
             );
           }
         }}
       />
-    </div>
+    </>
   );
 }
 
@@ -227,8 +229,8 @@ function LoanRuleForm({ onDone }: { onDone: () => void }): ReactElement {
   const [startsOn, setStartsOn] = useState("");
   const [endsOn, setEndsOn] = useState("");
   const [allowLoans, setAllowLoans] = useState(true);
-  const [maxLoanItems, setMaxLoanItems] = useState("");
-  const [maxLoanDays, setMaxLoanDays] = useState("");
+  const [maxLoanItems, setMaxLoanItems] = useState<number | null>(null);
+  const [maxLoanDays, setMaxLoanDays] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
 
@@ -243,8 +245,8 @@ function LoanRuleForm({ onDone }: { onDone: () => void }): ReactElement {
           starts_on: startsOn,
           ends_on: endsOn,
           allow_loans: allowLoans,
-          max_loan_items: maxLoanItems ? Number(maxLoanItems) : undefined,
-          max_loan_days: maxLoanDays ? Number(maxLoanDays) : undefined,
+          max_loan_items: maxLoanItems ?? undefined,
+          max_loan_days: maxLoanDays ?? undefined,
           notes: notes.trim() || undefined,
         };
         create.mutate(body, {
@@ -257,74 +259,37 @@ function LoanRuleForm({ onDone }: { onDone: () => void }): ReactElement {
         });
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("memberType")}</span>
+      {error && <FormError>{error}</FormError>}
+      <Field label={t("memberType")}>
         <Select
           options={(memberTypes.data?.data ?? []).map((mt) => ({ value: mt.id, label: mt.name }))}
           value={memberTypeId}
           onValueChange={setMemberTypeId}
           placeholder={t("memberTypeAll")}
         />
-      </label>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("startsOn")}</span>
-          <Input
-            type="date"
-            value={startsOn}
-            onChange={(e) => {
-              setStartsOn(e.target.value);
-            }}
-            required
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("endsOn")}</span>
-          <Input
-            type="date"
-            value={endsOn}
-            onChange={(e) => {
-              setEndsOn(e.target.value);
-            }}
-            required
-            min={startsOn || undefined}
-          />
-        </label>
+      </Field>
+      <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+        <Field label={t("startsOn")} required>
+          <DatePicker value={startsOn} onChange={setStartsOn} required />
+        </Field>
+        <Field label={t("endsOn")} required>
+          <DatePicker value={endsOn} onChange={setEndsOn} min={startsOn || undefined} required />
+        </Field>
       </div>
-      <label className="flex items-center gap-2 text-[13px]">
+      <Field label={t("allowLoans")} orientation="horizontal">
         <Switch checked={allowLoans} onCheckedChange={setAllowLoans} />
-        <span className="font-medium">{t("allowLoans")}</span>
-      </label>
+      </Field>
       {allowLoans && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("maxLoanItems")}</span>
-            <Input
-              type="number"
-              min={0}
-              value={maxLoanItems}
-              onChange={(e) => {
-                setMaxLoanItems(e.target.value);
-              }}
-              placeholder={t("keepDefault")}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("maxLoanDays")}</span>
-            <Input
-              type="number"
-              min={0}
-              value={maxLoanDays}
-              onChange={(e) => {
-                setMaxLoanDays(e.target.value);
-              }}
-              placeholder={t("keepDefault")}
-            />
-          </label>
+        <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+          <Field label={t("maxLoanItems")} hint={t("keepDefault")}>
+            <NumberInput value={maxLoanItems} onChange={setMaxLoanItems} min={0} />
+          </Field>
+          <Field label={t("maxLoanDays")} hint={t("keepDefault")}>
+            <NumberInput value={maxLoanDays} onChange={setMaxLoanDays} min={0} />
+          </Field>
         </div>
       )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("notes")}</span>
+      <Field label={t("notes")}>
         <Textarea
           rows={3}
           value={notes}
@@ -333,16 +298,15 @@ function LoanRuleForm({ onDone }: { onDone: () => void }): ReactElement {
           }}
           maxLength={500}
         />
-      </label>
-      {error && <p className="text-[13px] text-status-absent">{error}</p>}
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
-        <Button type="button" variant="secondary" onClick={onDone}>
+      </Field>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={create.isPending} disabled={!startsOn || !endsOn}>
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

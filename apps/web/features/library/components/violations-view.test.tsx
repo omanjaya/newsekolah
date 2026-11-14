@@ -16,6 +16,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => mocks.canRecord }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../reference/api", () => ({
   useLookup: () => new Map(),
 }));

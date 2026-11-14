@@ -25,6 +25,7 @@ vi.mock("next-intl", () => ({
 const FULL_PAGE_TIMEOUT_MS = 20_000;
 vi.mock("next/navigation", () => ({
   usePathname: () => "/library/members",
+  useRouter: () => ({ push: vi.fn() }),
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
@@ -56,6 +57,7 @@ vi.mock("../members-api", () => ({
 }));
 vi.mock("./member-bulk-register-dialog", () => ({ MemberBulkRegisterDialog: () => null }));
 vi.mock("./member-register-form", () => ({ MemberRegisterForm: () => null }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 
 import { MembersView } from "./members-view";
 
@@ -125,13 +127,13 @@ describe("MembersView filters", () => {
       expect(mocks.useLibraryMembersQuery).toHaveBeenLastCalledWith(
         expect.objectContaining({ limit: 50, offset: 0 }),
       );
-      expect(screen.getByRole("button", { name: "pagePrev" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Ke halaman sebelumnya" })).toBeDisabled();
 
-      await user.click(screen.getByRole("button", { name: "pageNext" }));
+      await user.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
       expect(mocks.useLibraryMembersQuery).toHaveBeenLastCalledWith(
         expect.objectContaining({ limit: 50, offset: 50 }),
       );
-      expect(screen.getByRole("button", { name: "pagePrev" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Ke halaman sebelumnya" })).toBeEnabled();
     },
     FULL_PAGE_TIMEOUT_MS,
   );
@@ -158,16 +160,19 @@ describe("MembersView filters", () => {
     expect(screen.getByRole("button", { name: "printFiltered" })).toBeInTheDocument();
   });
 
-  it("consolidates header actions with a Lainnya menu", async () => {
-    const user = userEvent.setup();
+  it("leads with registering a member and keeps the rest as header actions", () => {
     render(<MembersView />);
 
-    expect(screen.getByRole("button", { name: "register" })).toBeInTheDocument();
+    // In the header, and again in the empty list's call to action.
+    expect(screen.getAllByRole("button", { name: "register" })).toHaveLength(2);
     expect(screen.getByRole("button", { name: "bulkRegister.title" })).toBeInTheDocument();
-    expect(screen.queryByRole("menuitem", { name: "loanSettings" })).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "more" }));
-    expect(screen.getByRole("menuitem", { name: "loanSettings" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "report" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "memberTypes" })).toHaveAttribute(
+      "href",
+      "/library/settings?section=memberTypes",
+    );
+    expect(screen.getByRole("link", { name: "report" })).toHaveAttribute(
+      "href",
+      "/library/reports?tab=members",
+    );
   });
 });
