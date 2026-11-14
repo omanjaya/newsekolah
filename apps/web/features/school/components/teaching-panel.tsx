@@ -1,24 +1,26 @@
 "use client";
 import { ApiError } from "@newsekolah/api-client";
 import {
-  Alert,
   Avatar,
   Badge,
   Button,
   ConfirmDialog,
   EmptyState,
+  Field,
   IconButton,
+  List,
+  ListRow,
   Select,
-  Skeleton,
-  cn,
+  SkeletonList,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { Ban, RotateCcw, Trash2 } from "lucide-react";
+import { Ban, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useLookup, useSubjectsQuery } from "../../reference/api";
@@ -50,7 +52,6 @@ export function TeachingPanel({
   canManage: boolean;
 }): ReactElement {
   const t = useTranslations("app.school.classes");
-  const tApp = useTranslations("app");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const year = useActiveYear();
@@ -81,74 +82,77 @@ export function TeachingPanel({
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
     );
   };
+  const row = (a: TeachingRow, inactive: boolean) => {
+    const teacherName = teacherMap.get(a.teacher_user_id)?.name ?? "-";
+    const pending = setActive.isPending && setActive.variables.id === a.id;
+    return (
+      <ListRow
+        key={a.id}
+        className={inactive ? "opacity-70" : undefined}
+        leading={<Avatar size={32} name={teacherName} decorative />}
+        title={subjectMap.get(a.subject_id)?.name ?? "-"}
+        meta={teacherName}
+        trailing={inactive ? <Badge tone="neutral">{t("teachingInactive")}</Badge> : undefined}
+        action={
+          canManage ? (
+            <div className="flex items-center gap-1">
+              <IconButton
+                size="sm"
+                variant="ghost"
+                icon={inactive ? <RotateCcw /> : <Ban />}
+                aria-label={inactive ? t("reactivateTeaching") : t("deactivateTeaching")}
+                disabled={pending}
+                onClick={() => {
+                  setActive.mutate(
+                    { id: a.id, isActive: inactive },
+                    {
+                      onSuccess: () => {
+                        toast.success(
+                          inactive ? t("teachingReactivated") : t("teachingDeactivated"),
+                        );
+                      },
+                      onError: fail,
+                    },
+                  );
+                }}
+              />
+              <IconButton
+                size="sm"
+                variant="ghost"
+                icon={<Trash2 />}
+                aria-label={t("removeTeaching")}
+                onClick={() => {
+                  setPendingRemove(a);
+                }}
+              />
+            </div>
+          ) : undefined
+        }
+      />
+    );
+  };
   return (
-    <div className="flex flex-col gap-3 md:h-full md:min-h-0">
+    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       {assignments.isLoading ? (
-        <Skeleton className="h-24 w-full" />
+        <SkeletonList rows={3} framed />
       ) : assignments.isError ? (
-        <Alert variant="warning" title={tApp("error.body")}>
-          <Button variant="secondary" onClick={() => void assignments.refetch()}>
-            {tApp("offlinePage.retry")}
-          </Button>
-        </Alert>
+        <QueryError retry={() => void assignments.refetch()} error={assignments.error} />
       ) : rows.length === 0 ? (
         <EmptyState
           icon={<domainIcons.users aria-hidden="true" />}
           title={t("noTeachers")}
-          className="p-6"
+          description={canManage ? t("noTeachersBody") : undefined}
         />
       ) : (
-        <ul className="divide-y divide-border rounded-xs border border-border text-[14px] md:min-h-0 md:flex-1 md:overflow-y-auto">
-          {rows.map((a) => {
-            const teacherName = teacherMap.get(a.teacher_user_id)?.name ?? "-";
-            return (
-              <li key={a.id} className="group flex items-center justify-between px-3 py-2">
-                <div className="flex min-w-0 items-center gap-3">
-                  <Avatar size={32} name={teacherName} />
-                  <div className="min-w-0">
-                    <p className="truncate text-[14px] font-medium">
-                      {subjectMap.get(a.subject_id)?.name ?? "-"}
-                    </p>
-                    <p className="truncate text-[12px] text-fg-muted">{teacherName}</p>
-                  </div>
-                </div>
-                {canManage && (
-                  <div className="flex shrink-0 items-center gap-1 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-within:opacity-100">
-                    <IconButton
-                      icon={<Ban />}
-                      aria-label={t("deactivateTeaching")}
-                      disabled={setActive.isPending && setActive.variables.id === a.id}
-                      onClick={() => {
-                        setActive.mutate(
-                          { id: a.id, isActive: false },
-                          {
-                            onSuccess: () => {
-                              toast.success(t("teachingDeactivated"));
-                            },
-                            onError: fail,
-                          },
-                        );
-                      }}
-                    />
-                    <IconButton
-                      icon={<Trash2 />}
-                      aria-label={t("removeTeaching")}
-                      onClick={() => {
-                        setPendingRemove(a);
-                      }}
-                    />
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <List framed className="md:min-h-0 md:flex-1 md:overflow-y-auto">
+          {rows.map((a) => row(a, false))}
+        </List>
       )}
       {inactiveRows.length > 0 && (
-        <div className="flex flex-col gap-2 border-t border-border pt-3">
-          <button
-            type="button"
-            className="self-start text-[13px] font-medium text-fg-muted hover:text-fg"
+        <div className="flex flex-col gap-2">
+          <Button
+            variant="link"
+            className="self-start"
             onClick={() => {
               setShowInactive((prev) => !prev);
             }}
@@ -156,66 +160,14 @@ export function TeachingPanel({
             {showInactive
               ? t("hideInactiveTeaching")
               : t("showInactiveTeaching", { n: inactiveRows.length })}
-          </button>
-          {showInactive && (
-            <ul className="divide-y divide-border rounded-xs border border-border text-[14px]">
-              {inactiveRows.map((a) => {
-                const teacherName = teacherMap.get(a.teacher_user_id)?.name ?? "-";
-                return (
-                  <li
-                    key={a.id}
-                    className="group flex items-center justify-between px-3 py-2 opacity-70"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <Avatar size={32} name={teacherName} />
-                      <div className="min-w-0">
-                        <p className="truncate text-[14px] font-medium">
-                          {subjectMap.get(a.subject_id)?.name ?? "-"}
-                        </p>
-                        <p className="truncate text-[12px] text-fg-muted">{teacherName}</p>
-                      </div>
-                      <Badge variant="neutral">{t("teachingInactive")}</Badge>
-                    </div>
-                    {canManage && (
-                      <div className="flex shrink-0 items-center gap-1">
-                        <IconButton
-                          icon={<RotateCcw />}
-                          aria-label={t("reactivateTeaching")}
-                          disabled={setActive.isPending && setActive.variables.id === a.id}
-                          onClick={() => {
-                            setActive.mutate(
-                              { id: a.id, isActive: true },
-                              {
-                                onSuccess: () => {
-                                  toast.success(t("teachingReactivated"));
-                                },
-                                onError: fail,
-                              },
-                            );
-                          }}
-                        />
-                        <IconButton
-                          icon={<Trash2 />}
-                          aria-label={t("removeTeaching")}
-                          onClick={() => {
-                            setPendingRemove(a);
-                          }}
-                        />
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          </Button>
+          {showInactive && <List framed>{inactiveRows.map((a) => row(a, true))}</List>}
         </div>
       )}
       {canManage && (
         <form
-          className={cn(
-            "flex flex-col gap-2 md:flex-row md:items-end",
-            rows.length > 0 && "border-t border-border pt-3",
-          )}
+          aria-label={t("addTeachingTitle")}
+          className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end"
           onSubmit={(e) => {
             e.preventDefault();
             if (!subjectId || !teacherId) return;
@@ -237,23 +189,26 @@ export function TeachingPanel({
             );
           }}
         >
-          <Select
-            options={(subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }))}
-            value={subjectId}
-            onValueChange={setSubjectId}
-            placeholder={t("pickSubject")}
-            className="md:w-56"
-          />
-          <DirectoryPicker
-            profileKind="teacher"
-            value={teacherId}
-            onValueChange={setTeacherId}
-            labels={teacherLabels}
-            className="md:w-64"
-          />
+          <Field label={t("subjectLabel")}>
+            <Select
+              options={(subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }))}
+              value={subjectId}
+              onValueChange={setSubjectId}
+              placeholder={t("pickSubject")}
+            />
+          </Field>
+          <Field label={t("teacherLabel")}>
+            <DirectoryPicker
+              profileKind="teacher"
+              value={teacherId}
+              onValueChange={setTeacherId}
+              labels={teacherLabels}
+            />
+          </Field>
           <Button
             type="submit"
-            size="sm"
+            variant="secondary"
+            icon={<Plus />}
             loading={create.isPending}
             disabled={!subjectId || !teacherId}
           >
@@ -276,7 +231,7 @@ export function TeachingPanel({
             : ""
         }
         confirmLabel={t("removeTeaching")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={() => {
           if (!pendingRemove) return;

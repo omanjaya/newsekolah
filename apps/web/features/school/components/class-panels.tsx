@@ -1,40 +1,41 @@
 "use client";
-import { ApiError } from "@newsekolah/api-client";
+
 import {
-  Alert,
   Avatar,
   Button,
-  Checkbox,
-  Dialog,
-  DialogContent,
+  DataTable,
   EmptyState,
-  Input,
-  Select,
-  SearchInput,
-  Skeleton,
+  RowActionsMenu,
   domainIcons,
-  useToast,
+  selectionColumn,
+  type DataTableProps,
 } from "@newsekolah/ui";
-import { Plus } from "lucide-react";
-import { useTranslations } from "next-intl";
+import type { RowSelectionState } from "@tanstack/react-table";
+import { ArrowRightLeft, Plus, UserMinus } from "lucide-react";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
-import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan, useSession } from "../../../lib/session/session-provider";
-import { useMoveStudentMutation, useRemoveStudentMutation } from "../../academic/api-school-extras";
-import { todayInZone } from "../../attendance/api";
-import { useClassesQuery } from "../../reference/api";
+import { useCan } from "../../../lib/session/session-provider";
+import { formatCalendarDate } from "../../academic/lib/format-calendar-date";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { StudentLink } from "../../students/components/student-link";
-import {
-  type Enrollment,
-  useBulkAssignMutation,
-  useEnrollmentsQuery,
-  useUnassignedStudentsQuery,
-} from "../api";
+import { useEnrollmentsQuery } from "../api";
 
-import { EnrollmentRowActionsMenu } from "./enrollment-row-actions-menu";
+import {
+  AssignStudentsDialog,
+  LeaveStudentsDialog,
+  MoveStudentsDialog,
+  type RosterStudent,
+} from "./class-enrollment-dialogs";
+
+type RosterColumns = DataTableProps<RosterStudent>["columns"];
+
+/**
+ * The class roster as a table: number, name (a link to the profile), NIS
+ * and the date the student joined. Rows can be ticked to move or close
+ * several enrollments at once; each row keeps its own menu.
+ */
 export function EnrollmentPanel({
   classId,
   canManage,
@@ -43,355 +44,200 @@ export function EnrollmentPanel({
   canManage: boolean;
 }): ReactElement {
   const t = useTranslations("app.school.classes");
-  const { me } = useSession();
-  const timeZone = me?.tenant.timezone;
-  const tApp = useTranslations("app");
-  const tCommon = useTranslations("common.states");
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
+  const format = useFormatter();
   const enrollments = useEnrollmentsQuery(classId);
-  const [adding, setAdding] = useState(false);
-  const [search, setSearch] = useState("");
-  const [rosterSearch, setRosterSearch] = useState("");
-  const unassigned = useUnassignedStudentsQuery(search, adding);
-  const assign = useBulkAssignMutation(classId);
-  const [picked, setPicked] = useState<string[]>([]);
-  const rows = (enrollments.data?.data ?? []).filter((e) => e.status === "active");
-  const studentMap = useDirectoryNames(
-    rows.filter((e) => !e.student_name).map((e) => e.student_user_id),
-  );
-  const classes = useClassesQuery();
-  const moveTargets = (classes.data?.data ?? []).filter((c) => c.id !== classId);
-  const moveStudent = useMoveStudentMutation(classId);
-  const removeStudent = useRemoveStudentMutation(classId);
   // Moving and leaving both close an enrollment, which the API gates on
   // manage_enrollments rather than the master-data permission behind `canManage`.
   const canManageEnrollments = useCan("manage_enrollments");
   const canChangeEnrollment = canManage && canManageEnrollments;
-  const [moving, setMoving] = useState<Enrollment | null>(null);
-  const [toClassId, setToClassId] = useState("");
-  const [effectiveOn, setEffectiveOn] = useState(() => todayInZone(timeZone));
-  const [leaving, setLeaving] = useState<Enrollment | null>(null);
-  const [leftOn, setLeftOn] = useState(() => todayInZone(timeZone));
-  const filteredRows = useMemo(() => {
-    const query = rosterSearch.trim().toLocaleLowerCase();
-    if (!query) return rows;
-    return rows.filter((e) => {
-      const name = e.student_name ?? studentMap.get(e.student_user_id)?.name ?? e.student_user_id;
-      return name.toLocaleLowerCase().includes(query);
-    });
-  }, [rosterSearch, rows, studentMap]);
-  const fail = (error: unknown) => {
-    toast.error(
-      error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-    );
-  };
+  const [adding, setAdding] = useState(false);
+  const [moving, setMoving] = useState<RosterStudent[]>([]);
+  const [leaving, setLeaving] = useState<RosterStudent[]>([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+  const active = useMemo(
+    () => (enrollments.data?.data ?? []).filter((e) => e.status === "active"),
+    [enrollments.data],
+  );
+  const names = useDirectoryNames(
+    active.filter((e) => !e.student_name).map((e) => e.student_user_id),
+  );
+  const rows = useMemo<RosterStudent[]>(
+    () =>
+      active.map((enrollment) => ({
+        enrollment,
+        name:
+          enrollment.student_name ??
+          names.get(enrollment.student_user_id)?.name ??
+          enrollment.student_user_id,
+      })),
+    [active, names],
+  );
+  const selected = rows.filter((row) => rowSelection[row.enrollment.id]);
+
+  const columns = useMemo<RosterColumns>(() => {
+    const list: RosterColumns = [
+      {
+        id: "number",
+        header: t("columns.number"),
+        enableSorting: false,
+        enableHiding: false,
+        size: 48,
+        meta: { card: "hidden", align: "end" },
+        cell: ({ row }) => <span className="text-fg-muted tabular-nums">{row.index + 1}</span>,
+      },
+      {
+        id: "name",
+        accessorFn: (row) => `${row.name} ${row.enrollment.student_nis ?? ""}`,
+        header: t("columns.name"),
+        meta: { card: "title", skeleton: "avatar", label: t("columns.name") },
+        cell: ({ row }) => (
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar size={32} name={row.original.name} decorative />
+            <span className="truncate font-medium text-fg">
+              <StudentLink studentId={row.original.enrollment.student_user_id}>
+                {row.original.name}
+              </StudentLink>
+            </span>
+          </div>
+        ),
+      },
+      {
+        id: "nis",
+        accessorFn: (row) => row.enrollment.student_nis ?? "",
+        header: t("columns.nis"),
+        meta: { card: "subtitle" },
+        cell: ({ getValue }) => (
+          <span className="tabular-nums">{(getValue() as string) || "-"}</span>
+        ),
+      },
+      {
+        id: "joined",
+        accessorFn: (row) => row.enrollment.joined_on,
+        header: t("columns.joined"),
+        meta: { card: "meta" },
+        cell: ({ row }) => formatCalendarDate(format, row.original.enrollment.joined_on),
+      },
+    ];
+    if (!canChangeEnrollment) return list;
+    return [
+      selectionColumn<RosterStudent>(),
+      ...list,
+      {
+        id: "actions",
+        header: t("columns.actions"),
+        enableSorting: false,
+        cell: ({ row }) => (
+          <RowActionsMenu
+            ariaLabel={t("rowActionsMenu", { name: row.original.name })}
+            items={[
+              {
+                label: t("moveStudent"),
+                icon: <ArrowRightLeft />,
+                onClick: () => {
+                  setMoving([row.original]);
+                },
+              },
+              {
+                label: t("leaveStudent"),
+                icon: <UserMinus />,
+                tone: "danger",
+                onClick: () => {
+                  setLeaving([row.original]);
+                },
+              },
+            ]}
+          />
+        ),
+      },
+    ];
+  }, [canChangeEnrollment, format, t]);
+
+  const assignButton = canManage ? (
+    <Button
+      variant="secondary"
+      icon={<Plus />}
+      onClick={() => {
+        setAdding(true);
+      }}
+    >
+      {t("assignStudents")}
+    </Button>
+  ) : undefined;
+
   return (
-    <div className="flex flex-col gap-3 md:h-full md:min-h-0">
-      <div className="flex items-center justify-between">
-        <span className="text-[13px] text-fg-muted">{t("studentCount", { n: rows.length })}</span>
-        {canManage && (
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={<Plus />}
-            onClick={() => {
-              setAdding(true);
-            }}
-          >
-            {t("assignStudents")}
-          </Button>
-        )}
-      </div>
-      {!enrollments.isLoading && !enrollments.isError && rows.length > 0 && (
-        <SearchInput
-          value={rosterSearch}
-          onChange={(e) => {
-            setRosterSearch(e.target.value);
-          }}
-          placeholder={t("searchStudent")}
-          aria-label={t("searchStudent")}
-        />
-      )}
-      {enrollments.isLoading ? (
-        <Skeleton className="h-32 w-full" />
-      ) : enrollments.isError ? (
-        <Alert variant="warning" title={tApp("error.body")}>
-          <Button variant="secondary" onClick={() => void enrollments.refetch()}>
-            {tApp("offlinePage.retry")}
-          </Button>
-        </Alert>
-      ) : rows.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.users aria-hidden="true" />}
-          title={t("noStudents")}
-          action={
-            canManage && (
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={<Plus />}
-                onClick={() => {
-                  setAdding(true);
-                }}
-              >
-                {t("assignStudents")}
-              </Button>
-            )
-          }
-          className="p-6"
-        />
-      ) : filteredRows.length === 0 ? (
-        <p role="status" className="text-[13px] text-fg-muted">
-          {tCommon("noResults")}
-        </p>
-      ) : (
-        <ol className="min-w-0 divide-y divide-border rounded-xs border border-border text-[14px] md:min-h-0 md:flex-1 md:overflow-y-auto">
-          {filteredRows.map((e, i) => {
-            const name =
-              e.student_name ?? studentMap.get(e.student_user_id)?.name ?? e.student_user_id;
-            return (
-              <li
-                key={e.id}
-                className="group flex min-w-0 items-center gap-2 px-3 py-2 transition-colors hover:bg-bg"
-              >
-                <span className="w-6 shrink-0 text-right text-[12px] tabular-nums text-fg-muted">
-                  {i + 1}
-                </span>
-                <Avatar size={32} name={name} />
-                <div className="min-w-0 flex-1">
-                  <p className="break-words text-[14px] md:truncate" title={name}>
-                    <StudentLink studentId={e.student_user_id}>{name}</StudentLink>
-                  </p>
-                  {e.student_nis && (
-                    <p className="tabular-nums text-[12px] text-fg-muted">{e.student_nis}</p>
-                  )}
-                </div>
-                {canChangeEnrollment && (
-                  <div className="shrink-0 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-within:opacity-100">
-                    <EnrollmentRowActionsMenu
-                      menuLabel={t("rowActionsMenu", { name })}
-                      moveLabel={t("moveStudent")}
-                      leaveLabel={t("leaveStudent")}
-                      onMove={() => {
-                        setMoving(e);
-                        setToClassId("");
-                      }}
-                      onLeave={() => {
-                        setLeaving(e);
-                        setLeftOn(todayInZone(timeZone));
-                      }}
-                    />
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ol>
-      )}
-      <Dialog
-        open={adding}
-        onOpenChange={(o) => {
-          setAdding(o);
-          if (!o) setPicked([]);
-        }}
-      >
-        <DialogContent title={t("assignStudents")}>
-          <div className="flex flex-col gap-3">
-            <SearchInput
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
+    <div className="flex flex-col md:min-h-0 md:flex-1">
+      <DataTable
+        mode="local"
+        stateKey={`features/school/components/class-panels:${classId}`}
+        data={rows}
+        columns={columns}
+        getRowId={(row) => row.enrollment.id}
+        isLoading={enrollments.isLoading}
+        error={enrollments.error ?? enrollments.isError}
+        onRetry={() => void enrollments.refetch()}
+        retrying={enrollments.isRefetching}
+        toolbarLabels={{ searchPlaceholder: t("searchStudent") }}
+        toolbarActions={assignButton}
+        rowSelection={canChangeEnrollment ? rowSelection : undefined}
+        onRowSelectionChange={canChangeEnrollment ? setRowSelection : undefined}
+        bulkActions={
+          <>
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<ArrowRightLeft />}
+              onClick={() => {
+                setMoving(selected);
               }}
-              placeholder={t("searchStudent")}
-              aria-label={t("searchStudent")}
-            />
-            <div className="max-h-72 overflow-y-auto rounded-xs border border-border">
-              {(unassigned.data?.data ?? []).map((s) => (
-                <label
-                  key={s.id}
-                  className="flex items-center gap-2 border-b border-border px-3 py-2 text-[14px] last:border-b-0"
-                >
-                  <Checkbox
-                    checked={picked.includes(s.id)}
-                    onCheckedChange={() => {
-                      setPicked((p) =>
-                        p.includes(s.id) ? p.filter((x) => x !== s.id) : [...p, s.id],
-                      );
-                    }}
-                  />
-                  {s.name} <span className="text-[12px] text-fg-muted">{s.username}</span>
-                </label>
-              ))}
-              {!unassigned.isLoading && (unassigned.data?.data ?? []).length === 0 && (
-                <p className="p-3 text-[13px] text-fg-muted">{t("noUnassigned")}</p>
-              )}
-            </div>
-            <div className="flex justify-end gap-2 border-t border-border pt-3">
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setAdding(false);
-                }}
-              >
-                {t("form.cancel")}
-              </Button>
-              <Button
-                disabled={picked.length === 0}
-                loading={assign.isPending}
-                onClick={() => {
-                  assign.mutate(
-                    { student_user_ids: picked, joined_on: todayInZone(timeZone) },
-                    {
-                      onSuccess: (r) => {
-                        toast.success(t("assigned", { n: r.assigned.length }));
-                        setAdding(false);
-                        setPicked([]);
-                      },
-                      onError: fail,
-                    },
-                  );
-                }}
-              >
-                {t("assignCount", { n: picked.length })}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={moving !== null}
-        onOpenChange={(o) => {
-          if (!o) setMoving(null);
+            >
+              {t("moveSelected")}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<UserMinus />}
+              onClick={() => {
+                setLeaving(selected);
+              }}
+            >
+              {t("leaveSelected")}
+            </Button>
+          </>
+        }
+        fillHeight
+        emptyState={
+          <EmptyState
+            icon={<domainIcons.users aria-hidden="true" />}
+            title={t("noStudents")}
+            description={canManage ? t("noStudentsBody") : undefined}
+            action={assignButton}
+          />
+        }
+      />
+      <AssignStudentsDialog classId={classId} open={adding} onOpenChange={setAdding} />
+      <MoveStudentsDialog
+        classId={classId}
+        students={moving}
+        onClose={() => {
+          setMoving([]);
         }}
-      >
-        <DialogContent title={t("moveStudent")}>
-          <div className="flex flex-col gap-4">
-            <p className="text-[13px] text-fg-muted">
-              {moving
-                ? t("moveBody", {
-                    name:
-                      moving.student_name ??
-                      studentMap.get(moving.student_user_id)?.name ??
-                      moving.student_user_id,
-                  })
-                : ""}
-            </p>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("moveTargetClass")}</span>
-              <Select
-                options={moveTargets.map((c) => ({ value: c.id, label: c.name }))}
-                value={toClassId}
-                onValueChange={setToClassId}
-                placeholder={t("moveTargetPlaceholder")}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("moveEffectiveOn")}</span>
-              <Input
-                type="date"
-                value={effectiveOn}
-                onChange={(e) => {
-                  setEffectiveOn(e.target.value);
-                }}
-              />
-            </label>
-            <div className="flex justify-end gap-2 border-t border-border pt-3">
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setMoving(null);
-                }}
-              >
-                {t("form.cancel")}
-              </Button>
-              <Button
-                disabled={!toClassId}
-                loading={moveStudent.isPending}
-                onClick={() => {
-                  if (!moving) return;
-                  moveStudent.mutate(
-                    {
-                      enrollmentId: moving.id,
-                      body: { to_class_id: toClassId, effective_on: effectiveOn },
-                    },
-                    {
-                      onSuccess: () => {
-                        toast.success(t("moved"));
-                        setMoving(null);
-                      },
-                      onError: fail,
-                    },
-                  );
-                }}
-              >
-                {t("moveSubmit")}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={leaving !== null}
-        onOpenChange={(o) => {
-          if (!o) setLeaving(null);
+        onDone={() => {
+          setMoving([]);
+          setRowSelection({});
         }}
-      >
-        <DialogContent title={t("leaveStudent")}>
-          <div className="flex flex-col gap-4">
-            <p className="text-[13px] text-fg-muted">
-              {leaving
-                ? t("leaveBody", {
-                    name:
-                      leaving.student_name ??
-                      studentMap.get(leaving.student_user_id)?.name ??
-                      leaving.student_user_id,
-                  })
-                : ""}
-            </p>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("leaveOn")}</span>
-              <Input
-                type="date"
-                value={leftOn}
-                onChange={(e) => {
-                  setLeftOn(e.target.value);
-                }}
-              />
-            </label>
-            <div className="flex justify-end gap-2 border-t border-border pt-3">
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setLeaving(null);
-                }}
-              >
-                {t("form.cancel")}
-              </Button>
-              <Button
-                variant="danger"
-                disabled={!leftOn}
-                loading={removeStudent.isPending}
-                onClick={() => {
-                  if (!leaving) return;
-                  removeStudent.mutate(
-                    { enrollmentId: leaving.id, body: { left_on: leftOn } },
-                    {
-                      onSuccess: () => {
-                        toast.success(t("studentLeft"));
-                        setLeaving(null);
-                      },
-                      onError: fail,
-                    },
-                  );
-                }}
-              >
-                {t("leaveSubmit")}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      />
+      <LeaveStudentsDialog
+        classId={classId}
+        students={leaving}
+        onClose={() => {
+          setLeaving([]);
+        }}
+        onDone={() => {
+          setLeaving([]);
+          setRowSelection({});
+        }}
+      />
     </div>
   );
 }
