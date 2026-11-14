@@ -1,3 +1,4 @@
+import type * as UiModule from "@newsekolah/ui";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -14,6 +15,15 @@ const replaceMutate = vi.fn((_vars: unknown, opts?: { onSuccess?: () => void }) 
 
 vi.mock("next-intl", () => ({
   useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
+}));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+vi.mock("../../academic/components/academic-workspace-links", () => ({
+  AcademicWorkspaceLinks: () => null,
+}));
+vi.mock("@newsekolah/ui", async (importOriginal) => ({
+  ...(await importOriginal<typeof UiModule>()),
+  // The desktop layout: groups open, the role list beside the panel.
+  useMediaQuery: () => true,
 }));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => () => "error",
@@ -82,7 +92,7 @@ describe("RolesView", () => {
     await user.click(screen.getByRole("button", { name: "save" }));
     // The roles list still holds the old set, as it does before the refetch lands.
     expect(screen.getByRole("checkbox", { name: /view_y/ })).toBeChecked();
-    expect(screen.queryByText("unsaved")).not.toBeInTheDocument();
+    expect(screen.queryByText("unsavedRole")).not.toBeInTheDocument();
 
     // A toggle right after the save keeps the saved code.
     await user.click(screen.getByRole("checkbox", { name: /view_x/ }));
@@ -91,6 +101,41 @@ describe("RolesView", () => {
       { id: "r1", permissions: ["view_y"] },
       expect.anything(),
     );
+  });
+
+  it("marks the role, its group and the save bar while a change is unsaved", async () => {
+    const user = userEvent.setup();
+    render(<RolesView />);
+    expect(screen.queryByText("unsavedRole")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("checkbox", { name: /view_y/ }));
+    expect(screen.getByText("unsavedRole")).toBeInTheDocument();
+    // The role in the list and the group header both say "changed".
+    expect(screen.getAllByText("changed")).toHaveLength(2);
+
+    // Toggling back to the saved set is no change at all.
+    await user.click(screen.getByRole("checkbox", { name: /view_y/ }));
+    expect(screen.queryByText("unsavedRole")).not.toBeInTheDocument();
+  });
+
+  it("discards the selected role's unsaved change", async () => {
+    const user = userEvent.setup();
+    render(<RolesView />);
+    await user.click(screen.getByRole("checkbox", { name: /view_y/ }));
+    const [discard] = screen.getAllByRole("button", { name: "discard" });
+    if (discard) await user.click(discard);
+    expect(screen.getByRole("checkbox", { name: /view_y/ })).not.toBeChecked();
+    expect(screen.queryByText("unsavedRole")).not.toBeInTheDocument();
+  });
+
+  it("filters permissions by search and grants a whole group at once", async () => {
+    const user = userEvent.setup();
+    render(<RolesView />);
+    await user.type(screen.getByRole("searchbox", { name: "searchLabel" }), "view y");
+    expect(screen.queryByRole("checkbox", { name: /view_x/ })).not.toBeInTheDocument();
+    await user.clear(screen.getByRole("searchbox", { name: "searchLabel" }));
+    await user.click(screen.getByRole("checkbox", { name: "selectAll" }));
+    expect(screen.getByRole("checkbox", { name: /view_x/ })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /view_y/ })).toBeChecked();
   });
 
   it("shows a retryable error instead of an empty grid when roles fail to load", () => {
