@@ -11,6 +11,18 @@ import type { Column, RowData } from "@tanstack/react-table";
  */
 export type DataTableCardRole = "title" | "subtitle" | "meta" | "field" | "hidden";
 
+/**
+ * What a column's cells show while the table loads, shaped like the content
+ * that replaces them, so the rows (and phone cards) keep their height when
+ * the data arrives instead of jumping taller:
+ * - "text" (default): one bar on a line of text.
+ * - "lines": two lines, a name over a code or a username.
+ * - "avatar": a 32px avatar beside two lines (a person).
+ * - "badge": a pill (a status, a role).
+ * The actions column needs none: it keeps its buttons' room by itself.
+ */
+export type DataTableSkeletonShape = "text" | "lines" | "avatar" | "badge";
+
 declare module "@tanstack/react-table" {
   // TanStack's own declaration takes these two parameters; a merge must repeat them.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -21,6 +33,8 @@ declare module "@tanstack/react-table" {
     card?: DataTableCardRole;
     /** "end" right-aligns the header and cells (amounts, counts, actions). */
     align?: "start" | "end";
+    /** See `DataTableSkeletonShape`. */
+    skeleton?: DataTableSkeletonShape;
   }
 }
 
@@ -47,4 +61,8 @@ export function isListedInColumnMenu<TData>(column: Column<TData>): boolean {
 
 export function columnAlign<TData>(column: Column<TData>): "start" | "end" {
   return column.columnDef.meta?.align ?? (isActionsColumn(column) ? "end" : "start");
+}
+
+export function columnSkeleton<TData>(column: Column<TData>): DataTableSkeletonShape {
+  return column.columnDef.meta?.skeleton ?? "text";
 }

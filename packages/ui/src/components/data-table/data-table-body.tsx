@@ -1,9 +1,10 @@
-import { flexRender, type Row } from "@tanstack/react-table";
+import { flexRender, type Column, type Row } from "@tanstack/react-table";
 import type { KeyboardEvent, MouseEvent, ReactElement, RefObject } from "react";
 
 import { cn } from "../../utils/cn.js";
 
-import { columnAlign, isActionsColumn } from "./column-meta.js";
+import { columnAlign, isActionsColumn, SELECT_COLUMN_ID } from "./column-meta.js";
+import { SkeletonCell } from "./data-table-skeleton.js";
 
 // `normal`'s row is a min-height, not a fixed one, so a cell that wraps (a
 // long title, a multi-line badge stack) still grows the row instead of
@@ -35,7 +36,8 @@ const ROW_CONTROL_SELECTOR = [
 
 export interface DataTableBodyProps<TData> {
   rows: Row<TData>[];
-  columnCount: number;
+  /** The visible columns: a loading row draws one placeholder per column, shaped by its meta. */
+  columns: Column<TData>[];
   density: DataTableDensity;
   isLoading?: boolean;
   skeletonRowCount: number;
@@ -54,7 +56,7 @@ export interface DataTableBodyProps<TData> {
  */
 export function DataTableBody<TData>({
   rows,
-  columnCount,
+  columns,
   density,
   isLoading,
   skeletonRowCount,
@@ -65,26 +67,30 @@ export function DataTableBody<TData>({
   onKeyDown,
 }: DataTableBodyProps<TData>): ReactElement {
   if (isLoading) {
+    // The row's name column (after any selection checkbox) gets the longer bar.
+    const leadColumn = columns.find((column) => column.id !== SELECT_COLUMN_ID);
     return (
       <tbody>
         {/* Each placeholder's highlight slides with `transform`, which the
             compositor runs without a repaint per frame, so a wide table's
-            dozens of cells cost the main thread nothing. */}
+            dozens of cells cost the main thread nothing. A placeholder takes
+            the height of what replaces it (a line of text, a pill, an avatar
+            over two lines, the row's buttons), so the rows do not jump. */}
         {Array.from({ length: skeletonRowCount }).map((_, index) => (
           <tr
             key={index}
             className={cn("border-b border-line last:border-b-0", ROW_HEIGHT[density])}
           >
-            {Array.from({ length: columnCount }).map((_column, columnIndex) => (
-              <td key={columnIndex} className={cn(CELL_PADDING[density], "align-middle")}>
-                <div
-                  role="presentation"
-                  data-slot="skeleton"
-                  className={cn(
-                    "skeleton h-3.5 rounded-xs",
-                    columnIndex === 0 ? "w-3/4 max-w-48" : "w-1/2 max-w-28",
-                  )}
-                />
+            {columns.map((column) => (
+              <td
+                key={column.id}
+                className={cn(
+                  CELL_PADDING[density],
+                  "align-middle",
+                  isActionsColumn(column) && "w-px whitespace-nowrap",
+                )}
+              >
+                <SkeletonCell column={column} first={column === leadColumn} />
               </td>
             ))}
           </tr>

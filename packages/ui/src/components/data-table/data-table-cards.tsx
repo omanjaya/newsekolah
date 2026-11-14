@@ -1,14 +1,14 @@
-import type { Cell, Row } from "@tanstack/react-table";
+import type { Cell, Column, Row } from "@tanstack/react-table";
 import { flexRender } from "@tanstack/react-table";
 import { ChevronRight } from "lucide-react";
 import type { ReactElement, ReactNode } from "react";
 
 import { cn } from "../../utils/cn.js";
 import { Checkbox } from "../checkbox.js";
-import { Skeleton } from "../skeleton.js";
 import { useUiLabels } from "../ui-labels.js";
 
 import { isActionsColumn, SELECT_COLUMN_ID, type DataTableCardRole } from "./column-meta.js";
+import { SkeletonCard } from "./data-table-skeleton.js";
 
 export interface DataTableCardsProps<TData> {
   rows: Row<TData>[];
@@ -18,6 +18,8 @@ export interface DataTableCardsProps<TData> {
    * table's own header groups can supply.
    */
   headers: Record<string, ReactNode>;
+  /** The visible columns, so a loading card can take the shape of the cards it stands in for. */
+  columns?: Column<TData>[];
   isLoading?: boolean;
   skeletonRowCount: number;
   onRowActivate?: (row: TData) => void;
@@ -27,36 +29,41 @@ export interface DataTableCardsProps<TData> {
   onToggleAllRowsSelected?: () => void;
 }
 
-interface CardParts<TData> {
-  title?: Cell<TData, unknown>;
-  subtitle: Cell<TData, unknown>[];
-  meta: Cell<TData, unknown>[];
-  fields: Cell<TData, unknown>[];
-  actions?: Cell<TData, unknown>;
+interface CardSlots<T> {
+  title?: T;
+  subtitle: T[];
+  meta: T[];
+  fields: T[];
+  actions?: T;
 }
 
 /**
- * Sorts a row's cells into the card's hierarchy by each column's
- * `meta.card`; columns without one keep the old layout, the first as the
- * title and the rest as labelled fields.
+ * Sorts a row's cells (or, for a loading card, the columns) into the
+ * card's hierarchy by each column's `meta.card`; columns without one keep
+ * the old layout, the first as the title and the rest as labelled fields.
  */
-function cardParts<TData>(row: Row<TData>): CardParts<TData> {
-  const parts: CardParts<TData> = { subtitle: [], meta: [], fields: [] };
-  const cells = row.getVisibleCells().filter((cell) => cell.column.id !== SELECT_COLUMN_ID);
-  parts.actions = cells.find((cell) => isActionsColumn(cell.column));
-  const content = cells.filter((cell) => cell !== parts.actions);
-  const titleCell =
-    content.find((cell) => cell.column.columnDef.meta?.card === "title") ??
-    content.find((cell) => cell.column.columnDef.meta?.card === undefined);
-  parts.title = titleCell;
-  for (const cell of content) {
-    if (cell === titleCell) continue;
-    const role: DataTableCardRole = cell.column.columnDef.meta?.card ?? "field";
-    if (role === "subtitle") parts.subtitle.push(cell);
-    else if (role === "meta") parts.meta.push(cell);
-    else if (role !== "hidden") parts.fields.push(cell);
+function cardSlots<TData, T>(items: T[], columnOf: (item: T) => Column<TData>): CardSlots<T> {
+  const slots: CardSlots<T> = { subtitle: [], meta: [], fields: [] };
+  const shown = items.filter((item) => columnOf(item).id !== SELECT_COLUMN_ID);
+  slots.actions = shown.find((item) => isActionsColumn(columnOf(item)));
+  const content = shown.filter((item) => item !== slots.actions);
+  const roleOf = (item: T) => columnOf(item).columnDef.meta?.card;
+  const title =
+    content.find((item) => roleOf(item) === "title") ??
+    content.find((item) => roleOf(item) === undefined);
+  slots.title = title;
+  for (const item of content) {
+    if (item === title) continue;
+    const role: DataTableCardRole = roleOf(item) ?? "field";
+    if (role === "subtitle") slots.subtitle.push(item);
+    else if (role === "meta") slots.meta.push(item);
+    else if (role !== "hidden") slots.fields.push(item);
   }
-  return parts;
+  return slots;
+}
+
+function cardParts<TData>(row: Row<TData>): CardSlots<Cell<TData, unknown>> {
+  return cardSlots(row.getVisibleCells(), (cell: Cell<TData, unknown>) => cell.column);
 }
 
 function render<TData>(cell: Cell<TData, unknown>): ReactNode {
@@ -82,6 +89,7 @@ const LIFT_CONTROLS =
 export function DataTableCards<TData>({
   rows,
   headers,
+  columns = [],
   isLoading,
   skeletonRowCount,
   onRowActivate,
@@ -92,16 +100,11 @@ export function DataTableCards<TData>({
 }: DataTableCardsProps<TData>): ReactElement {
   const uiLabels = useUiLabels();
   if (isLoading) {
+    const parts = cardSlots(columns, (column: Column<TData>) => column);
     return (
       <div className="flex flex-col gap-2" aria-busy="true">
         {Array.from({ length: skeletonRowCount }).map((_, index) => (
-          <div
-            key={index}
-            className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4"
-          >
-            <Skeleton className="h-4 w-2/3 rounded-sm" />
-            <Skeleton className="h-3 w-1/3 rounded-sm" />
-          </div>
+          <SkeletonCard key={index} parts={parts} />
         ))}
       </div>
     );
@@ -169,7 +172,10 @@ function DataTableCard<TData>({
         "data-[state=selected]:border-accent data-[state=selected]:bg-state-selected",
       )}
     >
-      <div className="flex items-start gap-3 p-4">
+      {/* Dense on purpose: 12px above and below, 6px between the title,
+          the meta row and the fields, and no rule between them, so a
+          three-field card stays about two thirds of its old height. */}
+      <div className="flex items-start gap-3 px-4 py-3">
         {selectionEnabled && row.getCanSelect() && (
           // Level with the title's first 20px line.
           <span className="relative z-10 flex h-5 shrink-0 items-center">
@@ -182,7 +188,7 @@ function DataTableCard<TData>({
             />
           </span>
         )}
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-col gap-0.5">
               {title && (
@@ -212,7 +218,7 @@ function DataTableCard<TData>({
           {meta.length > 0 && (
             <div
               className={cn(
-                "flex flex-wrap items-center gap-x-2 gap-y-1.5 pt-1 text-body-sm text-fg-muted",
+                "flex flex-wrap items-center gap-x-2 gap-y-1.5 text-body-sm text-fg-muted",
                 LIFT_CONTROLS,
               )}
             >
@@ -224,12 +230,23 @@ function DataTableCard<TData>({
             </div>
           )}
           {fields.length > 0 && (
-            <dl className="mt-2 grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] items-baseline gap-x-4 gap-y-2 border-t border-line pt-3">
+            <dl className="flex flex-col gap-1.5">
               {fields.map((cell) => (
-                <div key={cell.id} className="contents">
-                  <dt className="text-caption text-fg-muted">{headers[cell.column.id]}</dt>
-                  <dd className={cn("min-w-0 text-right text-body text-fg", LIFT_CONTROLS)}>
-                    {render(cell)}
+                // Label and value share a baseline. The value sits in a
+                // box pushed to the end that is only as wide as its
+                // content, so a cell that brings its own full-width wrapper
+                // (a list of badges) lines up on the right with plain text.
+                <div key={cell.id} className="flex items-baseline gap-3">
+                  <dt className="max-w-1/2 shrink-0 text-caption text-fg-muted">
+                    {headers[cell.column.id]}
+                  </dt>
+                  <dd
+                    className={cn(
+                      "flex min-w-0 flex-1 justify-end text-body text-fg",
+                      LIFT_CONTROLS,
+                    )}
+                  >
+                    <span className="min-w-0 text-right">{render(cell)}</span>
                   </dd>
                 </div>
               ))}

@@ -280,6 +280,7 @@ export function DataTable<TData>({
   });
 
   const rows = table.getRowModel().rows;
+  const visibleColumns = table.getVisibleLeafColumns();
   const filteredRowCount = table.getFilteredRowModel().rows.length;
   const lastLocalPageIndex = Math.max(
     0,
@@ -427,6 +428,7 @@ export function DataTable<TData>({
               <DataTableCards
                 rows={rows}
                 headers={cardHeaders}
+                columns={visibleColumns}
                 isLoading={isLoading}
                 skeletonRowCount={skeletonRowCount}
                 onRowActivate={onRowActivate}
@@ -448,7 +450,7 @@ export function DataTable<TData>({
                 <DataTableHead table={table} fillHeight={fillHeight} density={density} />
                 <DataTableBody
                   rows={rows}
-                  columnCount={columns.length}
+                  columns={visibleColumns}
                   density={density}
                   isLoading={isLoading}
                   skeletonRowCount={skeletonRowCount}

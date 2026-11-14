@@ -351,3 +351,4 @@ export {
 
 // Forms and data review fixes (wave 2).
 export type { BarcodeScannerHandle } from "./hooks/use-barcode-scanner.js";
+export type { DataTableSkeletonShape } from "./components/data-table/index.js";

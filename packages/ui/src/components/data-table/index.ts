@@ -1,6 +1,6 @@
 export { DataTable, selectionColumn, type DataTableProps } from "./data-table.js";
 export { DataTableStateProvider, type DataTableLocalState } from "./data-table-state.js";
-export type { DataTableCardRole } from "./column-meta.js";
+export type { DataTableCardRole, DataTableSkeletonShape } from "./column-meta.js";
 export {
   DataTableFilters,
   DEFAULT_DATA_TABLE_FILTERS_LABELS,

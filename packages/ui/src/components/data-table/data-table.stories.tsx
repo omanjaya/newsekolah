@@ -60,7 +60,7 @@ const columns: ColumnDef<UserRow>[] = [
   {
     accessorKey: "name",
     header: "Nama",
-    meta: { card: "title" },
+    meta: { card: "title", skeleton: "avatar" },
     cell: ({ row }) => (
       <span className="flex items-center gap-3">
         <Avatar name={row.original.name} size="md" />
@@ -77,13 +77,13 @@ const columns: ColumnDef<UserRow>[] = [
   {
     accessorKey: "role",
     header: "Peran",
-    meta: { card: "meta" },
+    meta: { card: "meta", skeleton: "badge" },
     cell: ({ row }) => <Badge variant="accent">{row.original.role}</Badge>,
   },
   {
     accessorKey: "active",
     header: "Status",
-    meta: { card: "meta" },
+    meta: { card: "meta", skeleton: "badge" },
     cell: ({ row }) =>
       row.original.active ? (
         <Badge variant="success">Aktif</Badge>
@@ -106,6 +106,28 @@ const columns: ColumnDef<UserRow>[] = [
     ),
   },
 ];
+
+/**
+ * The same table with every column but the name left as a labelled field
+ * on the phone card, as a screen that sets no `meta.card` gets it: the
+ * roles cell brings its own wrapping row of badges, which the card still
+ * lines up on the right with the plain-text values.
+ */
+const fieldColumns: ColumnDef<UserRow>[] = columns.map((column) => {
+  if (!("accessorKey" in column) || column.accessorKey === "name") return column;
+  if (column.accessorKey === "role") {
+    return {
+      ...column,
+      meta: { skeleton: "badge" },
+      cell: ({ row }) => (
+        <div className="flex flex-wrap gap-1">
+          <Badge variant="accent">{row.original.role}</Badge>
+        </div>
+      ),
+    };
+  }
+  return { ...column, meta: column.accessorKey === "active" ? { skeleton: "badge" } : {} };
+});
 
 type Scenario =
   "rows" | "loading" | "empty" | "error" | "stale" | "cursor" | "selection" | "no-empty-state";
@@ -150,7 +172,15 @@ function useFilters(): [DataTableFilterDef[], (rows: UserRow[]) => UserRow[]] {
   return [filters, apply];
 }
 
-function DataTableDemo({ scenario = "rows" }: { scenario?: Scenario }) {
+function DataTableDemo({
+  scenario = "rows",
+  cardFields = false,
+}: {
+  scenario?: Scenario;
+  /** Uses `fieldColumns`: no `meta.card`, so the phone card lists labelled fields. */
+  cardFields?: boolean;
+}) {
+  const tableColumns = cardFields ? fieldColumns : columns;
   const [filters, apply] = useFilters();
   const [rowSelection, setRowSelection] = useState<RowSelectionState>(
     scenario === "selection" ? { "1": true, "2": true } : {},
@@ -184,7 +214,7 @@ function DataTableDemo({ scenario = "rows" }: { scenario?: Scenario }) {
       <DataTable
         mode="cursor"
         data={USERS.slice(10, 20)}
-        columns={columns}
+        columns={tableColumns}
         getRowId={(row) => row.id}
         emptyState={emptyState}
         cursorPagination={{
@@ -211,7 +241,9 @@ function DataTableDemo({ scenario = "rows" }: { scenario?: Scenario }) {
           ? []
           : apply(USERS)
       }
-      columns={scenario === "selection" ? [selectionColumn<UserRow>(), ...columns] : columns}
+      columns={
+        scenario === "selection" ? [selectionColumn<UserRow>(), ...tableColumns] : tableColumns
+      }
       getRowId={(row) => row.id}
       defaultPageSize={10}
       isLoading={scenario === "loading"}
@@ -260,7 +292,19 @@ type Story = StoryObj<typeof DataTableDemo>;
 export const Default: Story = {};
 export const Dark: Story = { globals: { theme: "dark" } };
 export const Phone: Story = { parameters: { layout: "fullscreen" }, decorators: [phoneFrame] };
+/** No `meta.card`: every column but the name is a labelled field, values on the right. */
+export const PhoneFields: Story = {
+  args: { cardFields: true },
+  parameters: { layout: "fullscreen" },
+  decorators: [phoneFrame],
+};
 export const Loading: Story = { args: { scenario: "loading" } };
+/** The placeholder cards take the loaded cards' shape and height. */
+export const LoadingPhone: Story = {
+  args: { scenario: "loading" },
+  parameters: { layout: "fullscreen" },
+  decorators: [phoneFrame],
+};
 export const Empty: Story = { args: { scenario: "empty" } };
 export const LoadFailed: Story = { args: { scenario: "error" } };
 /** A failed refetch with rows still loaded: the rows stay under an alert. */
