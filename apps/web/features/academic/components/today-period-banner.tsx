@@ -26,7 +26,7 @@ export function TodayPeriodBanner(): ReactElement | null {
   if (query.isError && !notFound) return null;
 
   return (
-    <div className="flex items-center gap-2 rounded-xs border border-border bg-surface px-3 py-2 text-body-sm">
+    <div className="flex items-center gap-2 rounded-md bg-surface-sunken px-3 py-2 text-body-sm">
       <Clock3 className="size-4 text-fg-muted" aria-hidden="true" />
       {query.data ? (
         <>

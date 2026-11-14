@@ -4,12 +4,14 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Badge,
   Button,
+  Card,
   Checkbox,
   ConfirmDialog,
   Dialog,
   DialogContent,
   DialogFooter,
   Field,
+  FormError,
   Input,
   Select,
   Skeleton,
@@ -155,14 +157,7 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
               submitCreate();
             }}
           >
-            {error && (
-              <p
-                role="alert"
-                className="rounded-xs border border-status-late/40 px-3 py-2 text-body-sm"
-              >
-                {error}
-              </p>
-            )}
+            {error && <FormError>{error}</FormError>}
             <Field label={t("types.name")}>
               <Input
                 value={name}
@@ -258,7 +253,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
   }
 
   return (
-    <section className="flex flex-col gap-6 rounded-sm border border-border bg-surface p-4 md:min-h-0 md:overflow-y-auto">
+    <Card padding="md" className="gap-6 md:min-h-0 md:overflow-y-auto">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <h2 className="text-title text-fg">{duty.name}</h2>
         {canManage && (
@@ -295,10 +290,9 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
             }}
           />
         </Field>
-        <label className="flex items-center gap-2 text-body-sm">
+        <Field label={t("types.active")} orientation="horizontal">
           <Switch checked={isActive} disabled={!canManage} onCheckedChange={setIsActive} />
-          <span className="font-medium">{t("types.active")}</span>
-        </label>
+        </Field>
       </div>
       {canManage && (
         <div className="flex justify-end">
@@ -330,7 +324,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
             {(permissions.data?.groups ?? []).map((group) => (
               <fieldset
                 key={group.name}
-                className="flex flex-col gap-2 rounded-xs border border-border p-3"
+                className="flex flex-col gap-2 rounded-md bg-surface-sunken p-3"
               >
                 <legend className="px-1 text-label text-fg">
                   {tGroups.has(`groups.${group.name}`)
@@ -338,26 +332,21 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
                     : group.name}
                 </legend>
                 {group.permissions.map((p) => (
-                  <div key={p.code} className="flex items-start gap-2 text-body-sm">
-                    <Checkbox
-                      id={`duty-perm-${duty.id}-${p.code}`}
-                      aria-label={p.code}
-                      checked={granted.has(p.code)}
-                      disabled={!canManage}
-                      onCheckedChange={(v) => {
-                        setGranted((prev) => {
-                          const next = new Set(prev);
-                          if (v === true) next.add(p.code);
-                          else next.delete(p.code);
-                          return next;
-                        });
-                      }}
-                    />
-                    <span className="flex flex-col">
-                      <label htmlFor={`duty-perm-${duty.id}-${p.code}`}>{p.code}</label>
-                      <span className="text-caption text-fg-muted">{p.description}</span>
-                    </span>
-                  </div>
+                  <Checkbox
+                    key={p.code}
+                    label={p.code}
+                    description={p.description}
+                    checked={granted.has(p.code)}
+                    disabled={!canManage}
+                    onCheckedChange={(v) => {
+                      setGranted((prev) => {
+                        const next = new Set(prev);
+                        if (v === true) next.add(p.code);
+                        else next.delete(p.code);
+                        return next;
+                      });
+                    }}
+                  />
                 ))}
               </fieldset>
             ))}
@@ -384,6 +373,6 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
           }
         }}
       />
-    </section>
+    </Card>
   );
 }

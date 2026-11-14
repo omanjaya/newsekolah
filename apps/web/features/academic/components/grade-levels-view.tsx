@@ -12,6 +12,7 @@ import {
   Field,
   IconButton,
   Input,
+  NumberInput,
   Select,
   useToast,
 } from "@newsekolah/ui";
@@ -234,12 +235,11 @@ export function GradeLevelsView(): ReactElement {
               />
             </Field>
             <Field label={t("columns.sequence")}>
-              <Input
-                type="number"
+              <NumberInput
                 min={1}
-                value={sequence}
-                onChange={(e) => {
-                  setSequence(e.target.value);
+                value={sequence ? Number(sequence) : null}
+                onChange={(value) => {
+                  setSequence(value === null ? "" : String(value));
                 }}
                 className="w-24"
               />

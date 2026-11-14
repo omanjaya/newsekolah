@@ -4,6 +4,7 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Badge,
   Button,
+  Card,
   DataTable,
   EmptyState,
   Field,
@@ -116,7 +117,7 @@ export function OnboardingWizard(): ReactElement {
   const columns = useDapodikColumns();
 
   return (
-    <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
+    <Card padding="md" className="gap-4">
       <div className="flex flex-col gap-1">
         <h2 className="text-heading text-fg">{t("title")}</h2>
         <p className="text-body-sm text-fg-muted">{t("body")}</p>
@@ -262,7 +263,7 @@ export function OnboardingWizard(): ReactElement {
           <p className="text-body-sm text-fg-muted">{t("doneBody")}</p>
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 

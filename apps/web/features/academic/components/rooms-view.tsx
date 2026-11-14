@@ -12,6 +12,7 @@ import {
   Field,
   IconButton,
   Input,
+  NumberInput,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -214,12 +215,11 @@ export function RoomsView(): ReactElement {
               />
             </Field>
             <Field label={t("columns.capacity")}>
-              <Input
-                type="number"
+              <NumberInput
                 min={1}
-                value={capacity}
-                onChange={(e) => {
-                  setCapacity(e.target.value);
+                value={capacity ? Number(capacity) : null}
+                onChange={(value) => {
+                  setCapacity(value === null ? "" : String(value));
                 }}
                 className="w-32"
               />

@@ -6,7 +6,9 @@ import {
   Button,
   ConfirmDialog,
   EmptyState,
+  Field,
   IconButton,
+  List,
   Select,
   Skeleton,
   useToast,
@@ -91,7 +93,7 @@ function AssignmentsEditor({
 
   return (
     <>
-      <ul className="divide-y divide-border rounded-xs border border-border">
+      <List framed>
         {pairs.map((pair) => (
           <li
             key={pairKey(pair)}
@@ -118,7 +120,7 @@ function AssignmentsEditor({
         {pairs.length === 0 && (
           <li className="px-3 py-6 text-center text-body-sm text-fg-muted">{t("noAssignments")}</li>
         )}
-      </ul>
+      </List>
 
       {canManage && (
         <div className="flex flex-wrap items-end gap-2">
@@ -213,17 +215,15 @@ export function TeachingAssignmentsView(): ReactElement {
       <p className="text-body-sm text-fg-muted">{t("description")}</p>
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex w-full flex-col gap-1 text-body-sm md:w-auto">
-          <span className="font-medium">{t("year")}</span>
+        <Field label={t("year")} className="w-full md:w-auto">
           <Select
             options={(years.data?.data ?? []).map((y) => ({ value: y.id, label: y.label }))}
             value={effectiveYearId}
             onValueChange={setYearId}
             className="w-full md:w-56"
           />
-        </label>
-        <label className="flex w-full flex-col gap-1 text-body-sm md:w-auto">
-          <span className="font-medium">{t("teacher")}</span>
+        </Field>
+        <Field label={t("teacher")} className="w-full md:w-auto">
           <DirectoryPicker
             profileKind="teacher"
             value={teacherId}
@@ -231,7 +231,7 @@ export function TeachingAssignmentsView(): ReactElement {
             labels={teacherLabels}
             className="w-full md:w-64"
           />
-        </label>
+        </Field>
       </div>
 
       {!teacherId ? (

@@ -3,11 +3,11 @@
 import { ApiError } from "@newsekolah/api-client";
 import {
   Button,
+  DatePicker,
   Dialog,
   DialogContent,
   DialogFooter,
   Field,
-  Input,
   useToast,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
@@ -62,14 +62,7 @@ function EndForm({
       <div className="flex flex-col gap-4">
         <p className="text-body-sm text-fg-muted">{t("endBody", { duty: assignment.duty_name })}</p>
         <Field label={t("endsOn")}>
-          <Input
-            type="date"
-            value={endsOn}
-            min={assignment.starts_on}
-            onChange={(e) => {
-              setEndsOn(e.target.value);
-            }}
-          />
+          <DatePicker value={endsOn} min={assignment.starts_on} onChange={setEndsOn} />
         </Field>
         <DialogFooter>
           <Button variant="secondary" onClick={onClose}>

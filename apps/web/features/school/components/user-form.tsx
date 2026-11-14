@@ -1,7 +1,17 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Checkbox, DialogFooter, Field, Input, Select, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  Button,
+  Checkbox,
+  DialogFooter,
+  Field,
+  FormError,
+  Input,
+  Select,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -111,11 +121,7 @@ export function UserForm({
         void submit();
       }}
     >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-body-sm">
-          {error}
-        </p>
-      )}
+      {error && <FormError>{error}</FormError>}
       <div className="grid gap-4 md:grid-cols-2">
         {field(
           t("name"),
@@ -203,11 +209,7 @@ export function UserForm({
           />,
         )}
         <p className="text-fg-muted">{t("primaryRoleHint")}</p>
-        {primaryRole?.slug === "teacher" && (
-          <p className="rounded-xs border border-border bg-bg px-3 py-2 text-fg-muted">
-            {t("teacherLeaveHint")}
-          </p>
-        )}
+        {primaryRole?.slug === "teacher" && <Alert tone="info" title={t("teacherLeaveHint")} />}
 
         <fieldset className="flex flex-col gap-2">
           <legend className="font-medium">{t("additionalRoles")}</legend>
@@ -219,20 +221,16 @@ export function UserForm({
               {customRoles.map((role) => {
                 const checked = additionalRoleIds.includes(role.id);
                 return (
-                  <label
+                  <Checkbox
                     key={role.id}
-                    className="flex items-center gap-2 rounded-xs border border-border px-3 py-2"
-                  >
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={() => {
-                        setAdditionalRoleIds((prev) =>
-                          checked ? prev.filter((id) => id !== role.id) : [...prev, role.id],
-                        );
-                      }}
-                    />
-                    {role.name}
-                  </label>
+                    label={role.name}
+                    checked={checked}
+                    onCheckedChange={() => {
+                      setAdditionalRoleIds((prev) =>
+                        checked ? prev.filter((id) => id !== role.id) : [...prev, role.id],
+                      );
+                    }}
+                  />
                 );
               })}
             </div>

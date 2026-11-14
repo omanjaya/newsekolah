@@ -1,6 +1,14 @@
 "use client";
 
-import { Button, Checkbox, DialogFooter, Field, Input } from "@newsekolah/ui";
+import {
+  Button,
+  Checkbox,
+  DialogFooter,
+  Field,
+  Input,
+  NumberInput,
+  TimePicker,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -59,46 +67,28 @@ export function PeriodForm({
           />
         </Field>
         <Field label={t("sequence")}>
-          <Input
-            type="number"
+          <NumberInput
             min={1}
-            value={sequence}
-            onChange={(e) => {
-              setSequence(e.target.value);
+            value={sequence ? Number(sequence) : null}
+            onChange={(value) => {
+              setSequence(value === null ? "" : String(value));
             }}
-            required
           />
         </Field>
         <Field label={t("start")}>
-          <Input
-            type="time"
-            value={start}
-            onChange={(e) => {
-              setStart(e.target.value);
-            }}
-            required
-          />
+          <TimePicker value={start} onChange={setStart} />
         </Field>
         <Field label={t("end")}>
-          <Input
-            type="time"
-            value={end}
-            onChange={(e) => {
-              setEnd(e.target.value);
-            }}
-            required
-          />
+          <TimePicker value={end} onChange={setEnd} />
         </Field>
       </div>
-      <label className="flex items-center gap-2 text-body-sm">
-        <Checkbox
-          checked={isBreak}
-          onCheckedChange={(v) => {
-            setIsBreak(v === true);
-          }}
-        />
-        {t("break")}
-      </label>
+      <Checkbox
+        checked={isBreak}
+        onCheckedChange={(v) => {
+          setIsBreak(v === true);
+        }}
+        label={t("break")}
+      />
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onCancel}>
           {t("cancel")}

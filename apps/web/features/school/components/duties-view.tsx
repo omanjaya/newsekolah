@@ -9,13 +9,15 @@ import {
   Button,
   Combobox,
   ConfirmDialog,
+  DatePicker,
   Dialog,
   DialogContent,
   DialogFooter,
   EmptyState,
   Field,
+  FormError,
   IconButton,
-  Input,
+  List,
   Select,
   Skeleton,
   Switch,
@@ -83,10 +85,9 @@ export function DutiesView(): ReactElement {
           <p className="text-body-sm text-fg-muted tabular-nums">
             {assignments.data ? t("activeCount", { n: activeRows.length }) : null}
           </p>
-          <label className="flex items-center gap-2 text-body-sm text-fg-muted">
+          <Field label={t("showEnded")} orientation="horizontal">
             <Switch checked={showEnded} onCheckedChange={setShowEnded} />
-            {t("showEnded")}
-          </label>
+          </Field>
         </div>
         <Button
           size="sm"
@@ -108,20 +109,20 @@ export function DutiesView(): ReactElement {
             description={t("emptyBody")}
           />
         ) : (
-          <ul className="divide-y divide-border rounded-sm border border-border bg-surface">
+          <List framed>
             {rows.map((a) => {
               const name = holderMap.get(a.user_id)?.name ?? "-";
               return (
                 <li
                   key={a.id}
-                  className="group flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-bg md:flex-row md:items-center md:justify-between"
+                  className="group flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-state-hover md:flex-row md:items-center md:justify-between"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     {name !== "-" && <Avatar size={32} name={name} />}
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <span className="truncate text-body text-fg">{name}</span>
                       <span className="flex flex-wrap items-center gap-2 text-body-sm text-fg-muted">
-                        <Badge variant={a.is_active ? "accent" : "neutral"}>{a.duty_name}</Badge>
+                        <Badge tone={a.is_active ? "success" : "neutral"}>{a.duty_name}</Badge>
                         {a.scope_class_id && (
                           <span>{classMap.get(a.scope_class_id)?.name ?? "-"}</span>
                         )}
@@ -191,7 +192,7 @@ export function DutiesView(): ReactElement {
                 </li>
               );
             })}
-          </ul>
+          </List>
         )}
       </div>
       <Dialog open={adding} onOpenChange={setAdding}>
@@ -305,11 +306,7 @@ function AssignForm({
         void submit();
       }}
     >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-body-sm">
-          {error}
-        </p>
-      )}
+      {error && <FormError>{error}</FormError>}
       <Field label={t("duty")}>
         <Select
           options={types.filter((x) => x.is_active).map((x) => ({ value: x.id, label: x.name }))}
@@ -346,13 +343,7 @@ function AssignForm({
         </Field>
       )}
       <Field label={t("startsOn")}>
-        <Input
-          type="date"
-          value={startsOn}
-          onChange={(e) => {
-            setStartsOn(e.target.value);
-          }}
-        />
+        <DatePicker value={startsOn} onChange={setStartsOn} />
       </Field>
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>

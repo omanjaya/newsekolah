@@ -11,7 +11,7 @@ import {
   EmptyState,
   Field,
   IconButton,
-  Input,
+  NumberInput,
   Select,
   useToast,
 } from "@newsekolah/ui";
@@ -247,15 +247,13 @@ export function SubjectOfferingsView(): ReactElement {
               />
             </Field>
             <Field label={t("columns.hoursPerWeek")}>
-              <Input
-                type="number"
+              <NumberInput
                 min={1}
-                value={draft.hoursPerWeek}
-                onChange={(e) => {
-                  setDraft((d) => ({ ...d, hoursPerWeek: e.target.value }));
+                value={draft.hoursPerWeek ? Number(draft.hoursPerWeek) : null}
+                onChange={(value) => {
+                  setDraft((d) => ({ ...d, hoursPerWeek: value === null ? "" : String(value) }));
                 }}
                 className="w-24"
-                required
               />
             </Field>
             <DialogFooter>

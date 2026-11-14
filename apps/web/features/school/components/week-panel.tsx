@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Switch, useToast } from "@newsekolah/ui";
+import { Button, Card, Switch, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -21,7 +21,7 @@ export function WeekPanel({ templateId }: { templateId: string }): ReactElement 
   const assigned = new Map((weekdays.data?.data ?? []).map((w) => [w.day_of_week, w.template_id]));
 
   return (
-    <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
+    <Card padding="md" className="gap-3">
       <h2 className="text-heading text-fg">{t("weekTitle")}</h2>
       <p className="text-body-sm text-fg-muted">{t("weekBody")}</p>
       <ul className="flex flex-col divide-y divide-border">
@@ -69,6 +69,6 @@ export function WeekPanel({ templateId }: { templateId: string }): ReactElement 
           );
         })}
       </ul>
-    </section>
+    </Card>
   );
 }
