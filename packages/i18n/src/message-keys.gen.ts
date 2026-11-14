@@ -3,6 +3,7 @@
 export type MessageKey =
   | "auth.changePassword.confirmLabel"
   | "auth.changePassword.currentLabel"
+  | "auth.changePassword.newHint"
   | "auth.changePassword.newLabel"
   | "auth.changePassword.submit"
   | "auth.changePassword.success"
@@ -13,6 +14,7 @@ export type MessageKey =
   | "auth.login.featureLibrary"
   | "auth.login.forgotPasswordLink"
   | "auth.login.googleButton"
+  | "auth.login.help"
   | "auth.login.orDivider"
   | "auth.login.panelFootnote"
   | "auth.login.panelHeadline"
@@ -26,6 +28,8 @@ export type MessageKey =
   | "auth.login.tenantLabel"
   | "auth.login.title"
   | "auth.login.usernameLabel"
+  | "auth.login.welcomeBody"
+  | "auth.login.welcomeTitle"
   | "auth.sessions.currentDevice"
   | "auth.sessions.lastSeen"
   | "auth.sessions.revoke"
@@ -281,6 +285,7 @@ export type MessageKey =
 export const MESSAGE_KEYS: readonly MessageKey[] = [
   "auth.changePassword.confirmLabel",
   "auth.changePassword.currentLabel",
+  "auth.changePassword.newHint",
   "auth.changePassword.newLabel",
   "auth.changePassword.submit",
   "auth.changePassword.success",
@@ -291,6 +296,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "auth.login.featureLibrary",
   "auth.login.forgotPasswordLink",
   "auth.login.googleButton",
+  "auth.login.help",
   "auth.login.orDivider",
   "auth.login.panelFootnote",
   "auth.login.panelHeadline",
@@ -304,6 +310,8 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "auth.login.tenantLabel",
   "auth.login.title",
   "auth.login.usernameLabel",
+  "auth.login.welcomeBody",
+  "auth.login.welcomeTitle",
   "auth.sessions.currentDevice",
   "auth.sessions.lastSeen",
   "auth.sessions.revoke",

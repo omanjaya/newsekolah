@@ -16,8 +16,9 @@
     "confirmLabel": "Konfirmasi kata sandi baru",
     "submit": "Simpan kata sandi baru",
     "success": "Kata sandi diubah, masuk dengan kata sandi baru Anda",
-    "invalidTitle": "Tautan ini sudah tidak berlaku",
+    "invalidTitle": "Tautan tidak berlaku",
     "invalidBody": "Tautan tidak valid, sudah dipakai, atau sudah kedaluwarsa.",
-    "requestNew": "Minta tautan baru"
+    "requestNew": "Minta tautan baru",
+    "newHint": "Minimal 8 karakter."
   }
 }

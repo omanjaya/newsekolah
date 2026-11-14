@@ -1,15 +1,57 @@
 "use client";
 
-import { Alert, Badge, Skeleton } from "@newsekolah/ui";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import {
+  Badge,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  DataList,
+  DataListItem,
+  EmptyState,
+  List,
+  ListRow,
+  SkeletonDetail,
+  TextLink,
+  cn,
+} from "@newsekolah/ui";
+import { ArrowLeft, BookX } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+import { useSyncExternalStore } from "react";
 
-import { useOpacTitleQuery } from "../opac-api";
+import { PUBLIC_CONTAINER } from "../../../components/public-container";
+import { useOpacTitleQuery, type LibraryOpacTitleDetail } from "../opac-api";
+import { OPAC_LAST_SEARCH_KEY } from "../use-opac-search-params";
+
+import { OpacCover } from "./opac-cover";
+
+type Copy = LibraryOpacTitleDetail["copies"][number];
+
+function subscribe(): () => void {
+  return () => undefined;
+}
+
+/** The catalogue as the visitor left it (search and filter), or its start. */
+function useCatalogueHref(): string {
+  return useSyncExternalStore(
+    subscribe,
+    () => {
+      try {
+        return `/opac${window.sessionStorage.getItem(OPAC_LAST_SEARCH_KEY) ?? ""}`;
+      } catch {
+        return "/opac";
+      }
+    },
+    () => "/opac",
+  );
+}
 
 /**
- * Public title detail with its visible copies, no session required.
+ * Public title detail, no session required: the book's identity (stand-in
+ * cover, title, author) with how many copies are in now, then the copies
+ * with the call number to find each on the shelf, then the bibliographic
+ * details.
  *
  * Copy status labels are kept local (`detail.copyStatus.*`) rather than
  * sharing `app.library.copies.status`: this view renders outside
@@ -19,103 +61,137 @@ import { useOpacTitleQuery } from "../opac-api";
  */
 export function OpacTitleView({ titleId }: { titleId: string }): ReactElement {
   const t = useTranslations("app.library.opac");
-  const locale = useLocale();
+  const catalogueHref = useCatalogueHref();
   const { data, isLoading, error } = useOpacTitleQuery(titleId);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-6 p-4 md:p-6">
-      <Link
-        href="/opac"
-        className="inline-flex min-h-11 w-fit items-center gap-1 text-[13px] font-medium text-accent hover:underline"
-      >
-        <ArrowLeft className="size-4" aria-hidden="true" />
+    <div className={cn(PUBLIC_CONTAINER, "flex flex-col gap-6 py-6 md:py-10")}>
+      <TextLink href={catalogueHref} className="inline-flex items-center gap-1.5 self-start">
+        <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
         {t("backToSearch")}
-      </Link>
+      </TextLink>
 
       {isLoading ? (
-        <Skeleton className="h-64 w-full" aria-busy="true" />
+        <SkeletonDetail />
       ) : error || !data ? (
-        <Alert variant="warning" title={t("detail.notFoundTitle")}>
-          {t("detail.notFoundBody")}
-        </Alert>
+        <EmptyState
+          icon={<BookX aria-hidden="true" />}
+          title={t("detail.notFoundTitle")}
+          description={t("detail.notFoundBody")}
+        />
       ) : (
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-[22px] font-semibold text-fg">{data.title.title}</h1>
-            {data.title.subtitle && (
-              <p className="text-[15px] text-fg-muted">{data.title.subtitle}</p>
+        <TitleDetail detail={data} />
+      )}
+    </div>
+  );
+}
+
+function TitleDetail({ detail }: { detail: LibraryOpacTitleDetail }): ReactElement {
+  const t = useTranslations("app.library.opac");
+  const locale = useLocale();
+  const { title, copies } = detail;
+  const total = copies.length;
+  const available = copies.filter((copy) => copy.status === "available").length;
+
+  return (
+    <div className="flex animate-enter flex-col gap-6">
+      <header className="flex items-start gap-5">
+        <OpacCover title={title.title} size="lg" />
+        <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            {title.classification && (
+              <p className="text-body-sm text-fg-muted">{title.classification}</p>
             )}
-            <p className="text-[14px] text-fg-muted">{data.title.author}</p>
+            <h1 className="text-display text-fg [overflow-wrap:anywhere]">{title.title}</h1>
+            {title.subtitle && <p className="text-body text-fg-muted">{title.subtitle}</p>}
+            {title.author && <p className="text-body text-fg">{title.author}</p>}
           </div>
-
-          <dl className="grid grid-cols-1 gap-2 rounded-sm border border-border bg-surface p-4 text-[13px] sm:grid-cols-2">
-            {data.title.publisher && (
-              <div>
-                <dt className="text-fg-muted">{t("detail.publisher")}</dt>
-                <dd className="font-medium text-fg">
-                  {data.title.publisher}
-                  {data.title.publish_year ? ` (${data.title.publish_year})` : ""}
-                </dd>
-              </div>
-            )}
-            {data.title.isbn && (
-              <div>
-                <dt className="text-fg-muted">{t("detail.isbn")}</dt>
-                <dd className="font-medium text-fg">{data.title.isbn}</dd>
-              </div>
-            )}
-            {data.title.classification && (
-              <div>
-                <dt className="text-fg-muted">{t("detail.classification")}</dt>
-                <dd className="font-medium text-fg">{data.title.classification}</dd>
-              </div>
-            )}
-            {data.title.language && (
-              <div>
-                <dt className="text-fg-muted">{t("detail.language")}</dt>
-                <dd className="font-medium text-fg">{languageName(data.title.language, locale)}</dd>
-              </div>
-            )}
-            {data.title.subjects && (
-              <div className="sm:col-span-2">
-                <dt className="text-fg-muted">{t("detail.subjects")}</dt>
-                <dd className="font-medium text-fg">{data.title.subjects}</dd>
-              </div>
-            )}
-          </dl>
-
-          {data.title.abstract && (
-            <p className="text-[14px] leading-relaxed text-fg">{data.title.abstract}</p>
-          )}
-
-          <div className="flex flex-col gap-2">
-            <h2 className="text-[15px] font-semibold text-fg">
-              {t("detail.copiesHeading", { count: data.copies.length })}
-            </h2>
-            {data.copies.length === 0 ? (
-              <p className="text-[13px] text-fg-muted">{t("detail.noCopies")}</p>
+          <div>
+            {total === 0 ? (
+              <Badge tone="neutral">{t("detail.noCopiesShort")}</Badge>
+            ) : available > 0 ? (
+              <Badge tone="success" dot>
+                {t("detail.availability", { available, total })}
+              </Badge>
             ) : (
-              <ul className="flex flex-col gap-2">
-                {data.copies.map((copy) => (
-                  <li
-                    key={copy.barcode}
-                    className="flex items-center justify-between gap-4 rounded-sm border border-border bg-surface p-3"
-                  >
-                    <div className="flex min-w-0 flex-col">
-                      <span className="text-[13px] font-medium text-fg">{copy.call_number}</span>
-                      <span className="text-[12px] text-fg-muted">{copy.barcode}</span>
-                    </div>
-                    <Badge variant={copy.status === "available" ? "accent" : "neutral"}>
-                      {t(`detail.copyStatus.${copy.status}`)}
-                    </Badge>
-                  </li>
-                ))}
-              </ul>
+              <Badge tone="neutral">{t("detail.noneAvailable")}</Badge>
             )}
           </div>
         </div>
-      )}
-    </main>
+      </header>
+
+      {title.abstract && <p className="text-body text-fg">{title.abstract}</p>}
+
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">{t("detail.copiesHeading", { count: total })}</CardTitle>
+          <CardDescription>{t("detail.howToBorrow")}</CardDescription>
+        </CardHeader>
+        {total === 0 ? (
+          <p className="px-5 pb-5 text-body-sm text-fg-muted">{t("detail.noCopies")}</p>
+        ) : (
+          <List>
+            {copies.map((copy) => (
+              <CopyRow key={copy.barcode} copy={copy} />
+            ))}
+          </List>
+        )}
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">{t("detail.bibliography")}</CardTitle>
+        </CardHeader>
+        <DataList>
+          {title.author && <DataListItem label={t("detail.author")}>{title.author}</DataListItem>}
+          <DataListItem label={t("detail.publisher")}>
+            {[title.publisher, title.publish_place].filter(Boolean).join(", ")}
+          </DataListItem>
+          <DataListItem label={t("detail.publishYear")}>{title.publish_year}</DataListItem>
+          {title.edition && (
+            <DataListItem label={t("detail.edition")}>{title.edition}</DataListItem>
+          )}
+          {title.pages && <DataListItem label={t("detail.pages")}>{title.pages}</DataListItem>}
+          <DataListItem label={t("detail.isbn")}>
+            {title.isbn && <span className="tabular-nums">{title.isbn}</span>}
+          </DataListItem>
+          <DataListItem label={t("detail.classification")}>{title.classification}</DataListItem>
+          {title.call_number && (
+            <DataListItem label={t("detail.callNumber")}>{title.call_number}</DataListItem>
+          )}
+          <DataListItem label={t("detail.language")}>
+            {title.language && languageName(title.language, locale)}
+          </DataListItem>
+          {title.subjects && (
+            <DataListItem label={t("detail.subjects")}>{title.subjects}</DataListItem>
+          )}
+        </DataList>
+      </Card>
+    </div>
+  );
+}
+
+/** One copy: its call number (where it sits on the shelf), barcode and status. */
+function CopyRow({ copy }: { copy: Copy }): ReactElement {
+  const t = useTranslations("app.library.opac.detail");
+  const access =
+    copy.access === "read_in_place" || copy.access === "reference"
+      ? t(`access.${copy.access}`)
+      : null;
+  return (
+    <ListRow
+      title={
+        <>
+          <span className="font-normal text-fg-muted">{t("callNumber")}</span> {copy.call_number}
+        </>
+      }
+      meta={[`${t("barcode")} ${copy.barcode}`, access].filter(Boolean).join(" · ")}
+      trailing={
+        <Badge tone={copy.status === "available" ? "success" : "neutral"}>
+          {t(`copyStatus.${copy.status}`)}
+        </Badge>
+      }
+    />
   );
 }
 

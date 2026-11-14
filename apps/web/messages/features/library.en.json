@@ -1241,12 +1241,12 @@
       "availability": "Availability"
     },
     "available": "Available",
-    "unavailable": "All copies out",
-    "emptyTitle": "Nothing found",
-    "emptyBody": "Try a different search term.",
-    "backToSearch": "Back to search",
+    "unavailable": "On loan",
+    "emptyTitle": "No titles found",
+    "emptyBody": "Try another word, or check the spelling.",
+    "backToSearch": "Back to the catalogue",
     "highlights": {
-      "newest": "Newest",
+      "newest": "New arrivals",
       "mostBorrowed": "Most borrowed"
     },
     "detail": {
@@ -1270,8 +1270,38 @@
         "donated": "Donated",
         "reserve_stack": "Reserve stack",
         "unknown": "Unknown"
+      },
+      "availability": "{available, number} of {total, number} copies available",
+      "noneAvailable": "All copies are on loan",
+      "noCopiesShort": "No copies yet",
+      "howToBorrow": "Borrow at the circulation desk with your library card.",
+      "callNumber": "Call number",
+      "barcode": "Barcode",
+      "author": "Author",
+      "publishYear": "Year",
+      "edition": "Edition",
+      "pages": "Pages",
+      "bibliography": "Bibliographic details",
+      "abstract": "Summary",
+      "access": {
+        "read_in_place": "Read in the library",
+        "reference": "Reference only"
       }
-    }
+    },
+    "description": "Search by title, author or ISBN, and see whether a book is in.",
+    "searchLabel": "Search the catalogue",
+    "filterLabel": "Classification",
+    "filterAll": "All",
+    "resultCount": "{count, plural, one {# title} other {# titles}}",
+    "availableCount": "{available, number} of {total, number} available",
+    "clearSearch": "Clear search",
+    "catalogueEmptyTitle": "The catalogue is empty",
+    "catalogueEmptyBody": "The library has not listed any titles in the public catalogue yet.",
+    "errorTitle": "The catalogue could not be loaded",
+    "errorBody": "Check the internet connection, then try again.",
+    "retry": "Try again",
+    "loadMore": "Show more",
+    "resultCountFirst": "First {count, number} titles"
   },
   "kiosk": {
     "navLabel": "Self-service kiosk",

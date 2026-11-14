@@ -1,21 +1,21 @@
 "use client";
 
-import { Button, EmptyState, Skeleton } from "@newsekolah/ui";
-import { PowerOff } from "lucide-react";
+import { Button, Skeleton, StatePage, cn } from "@newsekolah/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
-import { TenantBrand } from "../../../components/tenant-brand";
+import { PUBLIC_CONTAINER } from "../../../components/public-container";
 import { isPublicModuleEnabled } from "../../../lib/modules/feature-modules";
 import { useTenant } from "../../../lib/tenant/tenant-provider";
 
 /**
  * Wraps the public OPAC pages. An anonymous visitor has no session, so the
  * school's public branding (`disabled_public_modules`) decides: while the
- * school has library switched off the visitor gets a branded "not
- * available" page instead of a catalogue whose requests would all be
- * refused. Nothing below mounts, so no OPAC request is made.
+ * school has library switched off the visitor gets the "not available"
+ * state, inside the public frame that already names the school, instead of
+ * a catalogue whose requests would all be refused. Nothing below mounts,
+ * so no OPAC request is made.
  */
 export function OpacGate({ children }: { children: ReactNode }): ReactElement {
   const { branding, isLoading } = useTenant();
@@ -23,27 +23,24 @@ export function OpacGate({ children }: { children: ReactNode }): ReactElement {
 
   if (isLoading) {
     return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-6 p-4 md:p-6">
-        <Skeleton className="h-48 w-full" aria-busy="true" />
-      </main>
+      <div className={cn(PUBLIC_CONTAINER, "flex flex-col gap-3 py-8 md:py-12")} aria-busy="true">
+        <Skeleton className="h-4 w-32 rounded-full" />
+        <Skeleton className="h-8 w-64 max-w-full rounded-full" />
+        <Skeleton className="mt-5 h-12 w-full rounded-lg" />
+      </div>
     );
   }
   if (isPublicModuleEnabled(branding, "library")) return <>{children}</>;
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-6 p-4 md:p-6">
-      <TenantBrand />
-      <div className="flex flex-1 items-center justify-center">
-        <EmptyState
-          icon={<PowerOff aria-hidden="true" />}
-          title={t("unavailableTitle")}
-          description={t("unavailableBody")}
-          action={
-            <Button asChild variant="secondary">
-              <Link href="/login">{t("signIn")}</Link>
-            </Button>
-          }
-        />
-      </div>
-    </main>
+    <StatePage
+      kind="module-unavailable"
+      title={t("unavailableTitle")}
+      description={t("unavailableBody")}
+      action={
+        <Button asChild variant="secondary">
+          <Link href="/login">{t("signIn")}</Link>
+        </Button>
+      }
+    />
   );
 }
