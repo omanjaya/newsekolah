@@ -56,10 +56,10 @@ describe("AppPage", () => {
   it("fills eyebrow, title and the area's tabs from the navigation registry", () => {
     const { container } = renderPage(<AppPage>Isi</AppPage>);
     const heading = screen.getByRole("heading", { level: 1 });
-    expect(heading).toHaveTextContent("Absensi & Jurnal");
+    expect(heading).toHaveTextContent("Presensi dan jurnal");
     expect(screen.getByText("Akademik")).toBeInTheDocument();
 
-    const tabs = screen.getByRole("navigation", { name: "Bagian Absensi & Jurnal" });
+    const tabs = screen.getByRole("navigation", { name: "Bagian Presensi dan jurnal" });
     expect(
       within(tabs)
         .getAllByRole("link")
