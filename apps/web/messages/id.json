@@ -525,7 +525,7 @@
         "eyebrow": "Pengaturan",
         "title": "Preferensi notifikasi",
         "channelsTitle": "Kanal per jenis",
-        "channelsBody": "Pilih lewat mana setiap jenis pemberitahuan dikirim. Kotak masuk aplikasi selalu aktif.",
+        "channelsBody": "Pilih lewat mana setiap jenis pemberitahuan dikirim. Kotak masuk aplikasi selalu menerima semuanya. Setiap perubahan langsung tersimpan.",
         "kindColumn": "Jenis",
         "channels": {
           "inapp": "Aplikasi",
@@ -555,12 +555,15 @@
           "devicesTitle": "Perangkat terdaftar",
           "noDevices": "Belum ada perangkat terdaftar.",
           "removeHint": "Untuk melepas satu perangkat, matikan notifikasi dari perangkat itu sendiri."
-        }
+        },
+        "description": "Kapan dan lewat mana Anda menerima pemberitahuan. Berlaku untuk akun Anda saja.",
+        "loadFailed": "Gagal memuat jenis ini.",
+        "quietUntil": "Sampai"
       },
       "notificationDefaults": {
         "navLabel": "Notifikasi bawaan",
         "eyebrow": "Pengaturan",
-        "title": "Notifikasi bawaan sekolah",
+        "title": "Notifikasi bawaan",
         "body": "Kanal bawaan untuk setiap jenis notifikasi. Pengguna yang belum mengubah preferensinya sendiri memakai pengaturan ini.",
         "kindColumn": "Jenis",
         "channels": {
@@ -570,7 +573,9 @@
           "whatsapp": "WhatsApp"
         },
         "loadFailed": "Gagal memuat pengaturan jenis ini.",
-        "saved": "Bawaan disimpan"
+        "saved": "Bawaan disimpan",
+        "channelsTitle": "Kanal bawaan per jenis",
+        "channelsBody": "Kotak masuk aplikasi selalu menerima semuanya. Setiap perubahan langsung tersimpan."
       },
       "session": {
         "navLabel": "Sesi dan masuk",

@@ -521,11 +521,11 @@
         "appliesNow": "Applies at once, nothing to save."
       },
       "notifications": {
-        "navLabel": "Notifications",
+        "navLabel": "Notification preferences",
         "eyebrow": "Settings",
         "title": "Notification preferences",
         "channelsTitle": "Channels per kind",
-        "channelsBody": "Choose how each kind of notification reaches you. The in-app inbox is always on.",
+        "channelsBody": "Choose how each kind of notification reaches you. The in-app inbox always receives everything. Each change saves at once.",
         "kindColumn": "Kind",
         "channels": {
           "inapp": "In-app",
@@ -555,12 +555,15 @@
           "devicesTitle": "Registered devices",
           "noDevices": "No devices registered yet.",
           "removeHint": "To remove one device, turn notifications off on that device."
-        }
+        },
+        "description": "When and how you are notified. Applies to your account only.",
+        "loadFailed": "Could not load this kind.",
+        "quietUntil": "Until"
       },
       "notificationDefaults": {
-        "navLabel": "Notification defaults",
+        "navLabel": "Default notifications",
         "eyebrow": "Settings",
-        "title": "School notification defaults",
+        "title": "Default notifications",
         "body": "Default channels for each notification kind. Users who have not changed their own preference use this setting.",
         "kindColumn": "Kind",
         "channels": {
@@ -570,7 +573,9 @@
           "whatsapp": "WhatsApp"
         },
         "loadFailed": "Could not load the setting for this kind.",
-        "saved": "Defaults saved"
+        "saved": "Defaults saved",
+        "channelsTitle": "Default channels per kind",
+        "channelsBody": "The in-app inbox always receives everything. Each change saves at once."
       },
       "session": {
         "navLabel": "Sessions and sign-in",
