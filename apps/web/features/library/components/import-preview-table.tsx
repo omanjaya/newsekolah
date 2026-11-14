@@ -1,23 +1,21 @@
 "use client";
 
-import {
-  Badge,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@newsekolah/ui";
+import { Alert, Badge, Button, DataTable, FormActions, Stat, StatGrid } from "@newsekolah/ui";
+import type { ColumnDef } from "@tanstack/react-table";
+import { BookCopy, BookPlus, BookUp, CircleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+import { useMemo } from "react";
 
 import type { LibraryImportPreview } from "../import-api";
 
-import { ReportCard, ReportCardTitle, ReportField } from "./report-mobile-card";
+type PreviewRow = LibraryImportPreview["rows"][number];
 
-/** Step 3: every row's status and message, with an explicit, visible commit decision. */
+/**
+ * Step 3 of the import: the counts as one strip, a warning when rows will
+ * be skipped, every row's status and message in the shared table (cards on
+ * a phone), and the commit decision at the end, never hidden.
+ */
 export function ImportPreviewTable({
   preview,
   onBack,
@@ -33,106 +31,117 @@ export function ImportPreviewTable({
   const errorCount = preview.summary.errors;
   const importableCount = preview.summary.new_titles + preview.summary.existing_titles;
 
+  const columns = useMemo<ColumnDef<PreviewRow>[]>(
+    () => [
+      {
+        accessorKey: "title",
+        header: t("columns.title"),
+        enableSorting: false,
+        meta: { card: "title" },
+        cell: ({ row }) => row.original.title || "-",
+      },
+      {
+        accessorKey: "row_number",
+        header: t("columns.row"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.row_number}</span>,
+      },
+      {
+        accessorKey: "copies",
+        header: t("columns.copies"),
+        enableSorting: false,
+        meta: { align: "end" },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.copies}</span>,
+      },
+      {
+        accessorKey: "status",
+        header: t("columns.status"),
+        enableSorting: false,
+        meta: { card: "meta", skeleton: "badge" },
+        cell: ({ row }) => (
+          <Badge
+            tone={
+              row.original.status === "error"
+                ? "danger"
+                : row.original.status === "new_title"
+                  ? "success"
+                  : "info"
+            }
+          >
+            {t(`status.${row.original.status}`)}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "message",
+        header: t("columns.message"),
+        enableSorting: false,
+        cell: ({ row }) => row.original.message || "-",
+      },
+    ],
+    [t],
+  );
+
   return (
     <div className="flex flex-col gap-4">
-      <dl className="flex flex-wrap gap-4 text-body-sm">
-        <div className="flex items-center gap-1">
-          <dt className="text-fg-muted">{t("summary.newTitles")}</dt>
-          <dd className="font-medium text-fg">{preview.summary.new_titles}</dd>
-        </div>
-        <div className="flex items-center gap-1">
-          <dt className="text-fg-muted">{t("summary.existingTitles")}</dt>
-          <dd className="font-medium text-fg">{preview.summary.existing_titles}</dd>
-        </div>
-        <div className="flex items-center gap-1">
-          <dt className="text-fg-muted">{t("summary.copies")}</dt>
-          <dd className="font-medium text-fg">{preview.summary.copies}</dd>
-        </div>
-        <div className="flex items-center gap-1">
-          <dt className="text-fg-muted">{t("summary.errors")}</dt>
-          <dd className="font-medium text-danger">{preview.summary.errors}</dd>
-        </div>
-      </dl>
+      <StatGrid variant="strip" aria-label={t("summaryLabel")}>
+        <Stat
+          icon={<BookPlus />}
+          category="green"
+          value={preview.summary.new_titles}
+          label={t("summary.newTitles")}
+        />
+        <Stat
+          icon={<BookUp />}
+          category="blue"
+          value={preview.summary.existing_titles}
+          label={t("summary.existingTitles")}
+        />
+        <Stat
+          icon={<BookCopy />}
+          category="purple"
+          value={preview.summary.copies}
+          label={t("summary.copies")}
+        />
+        <Stat
+          icon={<CircleAlert />}
+          category="red"
+          value={preview.summary.errors}
+          label={t("summary.errors")}
+        />
+      </StatGrid>
 
       {errorCount > 0 && (
-        <p className="rounded-sm border border-status-absent/30 bg-status-absent/10 p-3 text-body-sm text-fg">
-          {importableCount > 0
-            ? t("partialWarning", { errors: errorCount, importable: importableCount })
-            : t("allErrorWarning", { errors: errorCount })}
-        </p>
+        <Alert
+          tone={importableCount > 0 ? "warning" : "danger"}
+          title={
+            importableCount > 0
+              ? t("partialWarning", { errors: errorCount, importable: importableCount })
+              : t("allErrorWarning", { errors: errorCount })
+          }
+        />
       )}
 
-      <ul className="flex flex-col gap-2 md:hidden">
-        {preview.rows.map((row) => (
-          <li key={row.row_number}>
-            <ReportCard>
-              <div className="mb-1.5 flex items-center justify-between gap-2">
-                <ReportCardTitle>{row.title || "-"}</ReportCardTitle>
-                <Badge variant={row.status === "error" ? "neutral" : "accent"}>
-                  {t(`status.${row.status}`)}
-                </Badge>
-              </div>
-              <ReportField
-                label={t("columns.row")}
-                value={<span className="tabular-nums">{row.row_number}</span>}
-              />
-              <ReportField
-                label={t("columns.copies")}
-                value={<span className="tabular-nums">{row.copies}</span>}
-              />
-              <ReportField label={t("columns.message")} value={row.message || "-"} />
-            </ReportCard>
-          </li>
-        ))}
-      </ul>
+      <DataTable
+        stateKey="features/library/components/import-preview-table:1"
+        mode="local"
+        data={preview.rows}
+        columns={columns}
+        searchable={preview.rows.length > 10}
+        getRowId={(row) => String(row.row_number)}
+      />
 
-      <div className="hidden md:block">
-        <Table className="min-w-[560px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col">{t("columns.row")}</TableHead>
-              <TableHead scope="col">{t("columns.title")}</TableHead>
-              <TableHead scope="col">{t("columns.copies")}</TableHead>
-              <TableHead scope="col">{t("columns.status")}</TableHead>
-              <TableHead scope="col">{t("columns.message")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {preview.rows.map((row) => (
-              <TableRow
-                key={row.row_number}
-                className={row.status === "error" ? "bg-status-absent/5" : ""}
-              >
-                <TableCell className="tabular-nums text-fg-muted">{row.row_number}</TableCell>
-                <TableCell>{row.title || "-"}</TableCell>
-                <TableCell className="tabular-nums text-fg-muted">{row.copies}</TableCell>
-                <TableCell>
-                  <Badge variant={row.status === "error" ? "neutral" : "accent"}>
-                    {t(`status.${row.status}`)}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-fg-muted">{row.message || "-"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      <div className="flex justify-between gap-2 border-t border-border pt-4">
-        <Button type="button" variant="secondary" onClick={onBack} disabled={committing}>
+      <FormActions align="between">
+        <Button variant="secondary" onClick={onBack} disabled={committing}>
           {t("back")}
         </Button>
-        <Button
-          type="button"
-          onClick={onCommit}
-          loading={committing}
-          disabled={importableCount === 0}
-        >
+        <Button onClick={onCommit} loading={committing} disabled={importableCount === 0}>
           {importableCount > 0 && errorCount > 0
             ? t("commitPartial", { count: importableCount })
             : t("commit")}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }

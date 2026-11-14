@@ -678,7 +678,7 @@
     },
     "uploadDescription": "Download the template, fill it in, then upload the completed file.",
     "downloadTemplate": "Download XLSX template",
-    "uploadLabel": "Completed XLSX file",
+    "uploadLabel": "Upload a collection file",
     "selectedFile": "Selected file: {name}",
     "emptyFile": "The file has no data rows. Check the filled template again.",
     "parseError": "The file could not be read. Make sure it is an XLSX file matching the template.",
@@ -690,7 +690,8 @@
       "unmapped": "Not mapped",
       "back": "Back",
       "continue": "Continue to preview",
-      "titleRequired": "The Title column must be mapped before continuing."
+      "titleRequired": "The Title column must be mapped before continuing.",
+      "heading": "Match the file's columns"
     },
     "fields": {
       "title": "Title",
@@ -736,8 +737,13 @@
       },
       "back": "Back",
       "commit": "Apply import",
-      "commitPartial": "Apply {count} valid rows"
-    }
+      "commitPartial": "Apply {count} valid rows",
+      "summaryLabel": "Import preview summary"
+    },
+    "pickHint": "Choose the filled-in template file.",
+    "formatHint": "XLSX, following the library template.",
+    "pickFile": "Choose file",
+    "pickAnother": "Choose another file"
   },
   "copyLabels": {
     "selectedCount": "{count} copies selected",
@@ -909,18 +915,24 @@
     "downloadReport": "Download report (XLSX)",
     "progress": {
       "heading": "Stocktake progress",
-      "live": "Refreshes every 5 seconds while the session is open."
+      "live": "Refreshes every 5 seconds while the session is open.",
+      "meter": "Scanned of expected",
+      "meterValue": "{scanned} of {expected}",
+      "ratio": "{scanned} of {expected} scanned"
     },
     "scan": {
-      "heading": "Scan barcode",
-      "label": "Barcode",
+      "heading": "Scan copies",
+      "label": "Copy barcode",
       "placeholder": "Scan or type a barcode",
       "submit": "Record",
       "thisDevice": "{count, plural, =0 {No barcodes scanned from this device yet.} one {# barcode scanned from this device.} other {# barcodes scanned from this device.}}",
       "recent": {
         "found": "Found",
-        "rejected": "Code not recognized"
-      }
+        "rejected": "Code not recognized",
+        "heading": "Earlier scans"
+      },
+      "foundDetail": "{barcode} counted in this stocktake",
+      "earlier": "Earlier scans"
     },
     "close": "Close session",
     "result": {
@@ -930,11 +942,23 @@
       "missing": "Missing",
       "unexpected": "Unexpected",
       "misplaced": "Misplaced",
-      "moreInReport": "and {count} more. The full list is in the XLSX report."
+      "moreInReport": "and {count} more. The full list is in the XLSX report.",
+      "none": "No copies in this group.",
+      "bucketsLabel": "Stocktake result groups",
+      "foundAt": "belongs in {expected}, found in {found}",
+      "empty": {
+        "missing": "No copies missing",
+        "unexpected": "No unexpected copies",
+        "misplaced": "No misplaced copies"
+      }
     },
     "viewResult": "View results",
     "closeConfirmTitle": "Close this stocktake session?",
-    "closeConfirmBody": "Once closed, no more barcodes can be scanned and the reconciliation is saved permanently."
+    "closeConfirmBody": "Once closed, no more barcodes can be scanned and the reconciliation is saved permanently.",
+    "emptyBody": "Start a session to match the shelves with the catalogue. Scan every copy, then close the session to see what is missing or misplaced.",
+    "continueScan": "Continue scanning",
+    "loadErrorTitle": "This stocktake could not be loaded",
+    "downloading": "Downloading report"
   },
   "masterData": {
     "eyebrow": "Library",
