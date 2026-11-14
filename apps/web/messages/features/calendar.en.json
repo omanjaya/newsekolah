@@ -1,10 +1,6 @@
 {
   "eyebrow": "Academics",
   "title": "Academic calendar",
-  "locale": "en-US",
-  "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-  "previousMonth": "Previous month",
-  "nextMonth": "Next month",
   "addEvent": "Add event",
   "editEvent": "Edit event",
   "deleteEvent": "Delete event",
@@ -15,22 +11,34 @@
   "emptyTitle": "No calendar events yet",
   "emptyBody": "Add holidays, exams, or school events so they show up on this academic year's calendar.",
   "emptyBodyReadOnly": "No holidays, exams, or school events are scheduled for this academic year yet.",
-  "emptyMonth": "No events this month.",
+  "emptyMonth": "No events this month",
   "kind": {
     "holiday": "Holiday",
     "exam": "Exam",
     "event": "Event",
-    "no_school": "No School",
-    "semester_break": "Semester Break"
+    "no_school": "No lessons",
+    "semester_break": "Semester break"
   },
   "form": {
-    "name": "Event Name",
-    "startDate": "Start Date",
-    "endDate": "End Date",
+    "name": "Event name",
     "kind": "Kind",
-    "gradeLevels": "Applies to Grade Levels",
+    "gradeLevels": "Applies to grade levels",
     "gradeLevelsHint": "Leave empty to apply to every grade level.",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "nameRequired": "Enter the event name.",
+    "dates": "Dates",
+    "datesHint": "Pick the first day, then the last. For one day, pick the same date twice."
+  },
+  "addShort": "Add",
+  "legend": "Event type colours",
+  "moreEvents": "+{n} more",
+  "emptyDay": "No events on this date.",
+  "monthAgenda": "This month",
+  "detailTitle": "Event details",
+  "detail": {
+    "dates": "Dates",
+    "appliesTo": "Applies to",
+    "wholeSchool": "All grade levels"
   }
 }

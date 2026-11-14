@@ -7,17 +7,17 @@ import {
   ConfirmDialog,
   DataTable,
   EmptyState,
-  IconButton,
-  PageHeader,
+  RowActionsMenu,
   useToast,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Archive, CalendarRange, CircleCheck, Pencil, Plus, Rows3 } from "lucide-react";
+import { Archive, CalendarRange, CircleCheck, ListTree, Pencil, Plus } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
@@ -53,7 +53,9 @@ export function YearsView(): ReactElement {
     (typeof ARCHIVED_VALUES)[number]
   >("include_archived", ARCHIVED_VALUES, "");
   const includeArchived = includeArchivedParam === "true";
-  const { data, isLoading } = useAcademicYearsQuery({ includeArchived });
+  const { data, isLoading, error, refetch, isRefetching } = useAcademicYearsQuery({
+    includeArchived,
+  });
   const create = useCreateAcademicYearMutation();
   const update = useUpdateAcademicYearMutation();
   const activate = useActivateAcademicYearMutation();
@@ -65,18 +67,21 @@ export function YearsView(): ReactElement {
 
   const rows = data?.data ?? [];
 
-  const filters: DataTableFilterDef[] = [
-    {
-      id: "includeArchived",
-      label: t("showArchived"),
-      value: includeArchivedParam,
-      onChange: (value) => {
-        setIncludeArchivedParam(value as (typeof ARCHIVED_VALUES)[number]);
-      },
-      type: "boolean",
-      activeValue: "true",
-    },
-  ];
+  // Archived years only matter to whoever can restore or reuse them.
+  const filters: DataTableFilterDef[] = canManage
+    ? [
+        {
+          id: "includeArchived",
+          label: t("showArchived"),
+          value: includeArchivedParam,
+          onChange: (value) => {
+            setIncludeArchivedParam(value as (typeof ARCHIVED_VALUES)[number]);
+          },
+          type: "boolean",
+          activeValue: "true",
+        },
+      ]
+    : [];
 
   const fail = (error: unknown) => {
     toast.error(
@@ -90,11 +95,16 @@ export function YearsView(): ReactElement {
         accessorKey: "label",
         header: t("columns.label"),
         enableSorting: false,
+        meta: { card: "title" },
         cell: ({ row }) => (
-          <span className="flex items-center gap-2">
-            {row.original.label}
-            {row.original.is_active && <Badge variant="accent">{t("active")}</Badge>}
-            {row.original.archived_at && <Badge variant="neutral">{t("archived")}</Badge>}
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-fg">{row.original.label}</span>
+            {row.original.is_active && (
+              <Badge tone="success" dot>
+                {t("active")}
+              </Badge>
+            )}
+            {row.original.archived_at && <Badge tone="neutral">{t("archived")}</Badge>}
           </span>
         ),
       },
@@ -102,11 +112,30 @@ export function YearsView(): ReactElement {
         id: "period",
         header: t("columns.period"),
         enableSorting: false,
+        meta: { card: "subtitle" },
         cell: ({ row }) => (
-          <span className="text-fg-muted">
+          <span className="text-fg-muted tabular-nums">
             {formatCalendarDate(format, row.original.starts_on)} -{" "}
             {formatCalendarDate(format, row.original.ends_on)}
           </span>
+        ),
+      },
+      {
+        id: "terms",
+        header: t("columns.terms"),
+        enableSorting: false,
+        meta: { card: "meta", label: t("columns.terms") },
+        cell: ({ row }) => (
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={<ListTree />}
+            onClick={() => {
+              setManagingTerms(row.original);
+            }}
+          >
+            {t("manageTerms")}
+          </Button>
         ),
       },
       {
@@ -115,44 +144,46 @@ export function YearsView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) => {
           const year = row.original;
+          if (!canManage) return null;
+          const canActivate = !year.is_active && !year.archived_at;
           return (
-            <div className="flex justify-end gap-1">
-              <IconButton
-                icon={<Rows3 />}
-                aria-label={t("manageTerms")}
-                onClick={() => {
-                  setManagingTerms(year);
-                }}
-              />
-              {canManage && (
-                <>
-                  <IconButton
-                    icon={<Pencil />}
-                    aria-label={t("edit")}
-                    onClick={() => {
-                      setEditing(year);
-                    }}
-                  />
-                  {!year.is_active && !year.archived_at && (
-                    <IconButton
-                      icon={<CircleCheck />}
-                      aria-label={t("activate")}
-                      onClick={() => {
-                        setPendingAction({ year, kind: "activate" });
-                      }}
-                    />
-                  )}
-                  {!year.archived_at && !year.is_active && (
-                    <IconButton
-                      icon={<Archive />}
-                      aria-label={t("archive")}
-                      onClick={() => {
-                        setPendingAction({ year, kind: "archive" });
-                      }}
-                    />
-                  )}
-                </>
+            <div className="flex items-center justify-end gap-1">
+              {canActivate && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<CircleCheck />}
+                  onClick={() => {
+                    setPendingAction({ year, kind: "activate" });
+                  }}
+                >
+                  {t("activate")}
+                </Button>
               )}
+              <RowActionsMenu
+                ariaLabel={t("rowActions", { label: year.label })}
+                items={[
+                  {
+                    label: t("edit"),
+                    icon: <Pencil />,
+                    onClick: () => {
+                      setEditing(year);
+                    },
+                  },
+                  ...(canActivate
+                    ? [
+                        {
+                          label: t("archive"),
+                          icon: <Archive />,
+                          tone: "danger" as const,
+                          onClick: () => {
+                            setPendingAction({ year, kind: "archive" });
+                          },
+                        },
+                      ]
+                    : []),
+                ]}
+              />
             </div>
           );
         },
@@ -162,50 +193,56 @@ export function YearsView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <AcademicWorkspaceLinks area="years" />
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          canManage && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                setEditing("new");
-              }}
-            >
-              {t("add")}
-            </Button>
-          )
-        }
-      />
-      {canManage && <p className="text-[13px] text-fg-muted">{tWorkspace("yearHelp")}</p>}
-
+    <AppPage
+      title={tWorkspace("yearList")}
+      description={canManage ? tWorkspace("yearHelp") : undefined}
+      nav={<AcademicWorkspaceLinks area="years" />}
+      primaryAction={
+        canManage ? (
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              setEditing("new");
+            }}
+          >
+            {t("add")}
+          </Button>
+        ) : undefined
+      }
+    >
       <DataTable
         stateKey="features/academic/components/years-view:1"
         mode="local"
         data={rows}
         columns={columns}
-        rowCount={rows.length}
-        pagination={{ pageIndex: 0, pageSize: 100 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
+        searchable={false}
         filters={filters}
         filtersLabels={{
           reset: t("filters.reset"),
           removeFilter: (label) => t("filters.removeFilter", { label }),
         }}
         isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        retrying={isRefetching}
         getRowId={(y) => y.id}
         emptyState={
           <EmptyState
             icon={<CalendarRange aria-hidden="true" />}
             title={t("emptyTitle")}
             description={t("emptyBody")}
+            action={
+              canManage ? (
+                <Button
+                  icon={<Plus />}
+                  onClick={() => {
+                    setEditing("new");
+                  }}
+                >
+                  {t("add")}
+                </Button>
+              ) : undefined
+            }
           />
         }
       />
@@ -251,7 +288,7 @@ export function YearsView(): ReactElement {
             : ""
         }
         confirmLabel={pendingAction?.kind === "activate" ? t("activate") : t("archive")}
-        destructive={pendingAction?.kind === "archive"}
+        tone={pendingAction?.kind === "archive" ? "danger" : "default"}
         confirming={activate.isPending || archive.isPending}
         onConfirm={async () => {
           if (!pendingAction) return;
@@ -270,6 +307,6 @@ export function YearsView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }

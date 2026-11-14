@@ -1,7 +1,17 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Checkbox, Input, Select, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  Button,
+  Checkbox,
+  DialogFooter,
+  Field,
+  FormError,
+  Input,
+  Select,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -101,12 +111,7 @@ export function UserForm({
     }
   }
 
-  const field = (label: string, control: ReactElement) => (
-    <label className="flex flex-col gap-1 text-[13px]">
-      <span className="font-medium">{label}</span>
-      {control}
-    </label>
-  );
+  const field = (label: string, control: ReactElement) => <Field label={label}>{control}</Field>;
 
   return (
     <form
@@ -116,11 +121,7 @@ export function UserForm({
         void submit();
       }}
     >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-          {error}
-        </p>
-      )}
+      {error && <FormError>{error}</FormError>}
       <div className="grid gap-4 md:grid-cols-2">
         {field(
           t("name"),
@@ -195,7 +196,7 @@ export function UserForm({
           )}
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-border pt-4 text-[13px]">
+      <div className="flex flex-col gap-3 border-t border-border pt-4 text-body-sm">
         {field(
           t("primaryRole"),
           <Select
@@ -208,11 +209,7 @@ export function UserForm({
           />,
         )}
         <p className="text-fg-muted">{t("primaryRoleHint")}</p>
-        {primaryRole?.slug === "teacher" && (
-          <p className="rounded-xs border border-border bg-bg px-3 py-2 text-fg-muted">
-            {t("teacherLeaveHint")}
-          </p>
-        )}
+        {primaryRole?.slug === "teacher" && <Alert tone="info" title={t("teacherLeaveHint")} />}
 
         <fieldset className="flex flex-col gap-2">
           <legend className="font-medium">{t("additionalRoles")}</legend>
@@ -224,20 +221,16 @@ export function UserForm({
               {customRoles.map((role) => {
                 const checked = additionalRoleIds.includes(role.id);
                 return (
-                  <label
+                  <Checkbox
                     key={role.id}
-                    className="flex items-center gap-2 rounded-xs border border-border px-3 py-2"
-                  >
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={() => {
-                        setAdditionalRoleIds((prev) =>
-                          checked ? prev.filter((id) => id !== role.id) : [...prev, role.id],
-                        );
-                      }}
-                    />
-                    {role.name}
-                  </label>
+                    label={role.name}
+                    checked={checked}
+                    onCheckedChange={() => {
+                      setAdditionalRoleIds((prev) =>
+                        checked ? prev.filter((id) => id !== role.id) : [...prev, role.id],
+                      );
+                    }}
+                  />
                 );
               })}
             </div>
@@ -245,15 +238,15 @@ export function UserForm({
         </fieldset>
       </div>
 
-      {!initial && <p className="text-[13px] text-fg-muted">{t("passwordHint")}</p>}
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      {!initial && <p className="text-body-sm text-fg-muted">{t("passwordHint")}</p>}
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone} disabled={pending}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={pending}>
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

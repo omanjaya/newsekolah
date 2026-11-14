@@ -1,9 +1,10 @@
 "use client";
 
-import { PageHeader, Skeleton } from "@newsekolah/ui";
+import { HeroCard, Progress, Skeleton } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useSetupChecklistQuery } from "../api";
 
@@ -21,15 +22,15 @@ export function SetupView(): ReactElement {
   const t = useTranslations("app.onboarding");
   const checklist = useSetupChecklistQuery();
   const data = checklist.data;
+  const ready = data?.ready_to_operate ?? false;
+  const profile = <SchoolProfileSection />;
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-
+    <AppPage title={t("title")}>
       {checklist.isError && !data ? (
-        <QueryError retry={() => checklist.refetch()} />
+        <QueryError retry={() => void checklist.refetch()} error={checklist.error} />
       ) : checklist.isLoading || !data ? (
-        <Skeleton className="h-16 w-full" aria-busy="true" />
+        <Skeleton className="h-40 w-full rounded-xl" aria-busy="true" />
       ) : (
         <ProgressSummary
           requiredDone={data.required_done}
@@ -39,12 +40,16 @@ export function SetupView(): ReactElement {
         />
       )}
 
-      <SchoolProfileSection />
+      {/* Until the school is ready the profile is the first step; after
+          that the checklist leads and the profile waits below it. */}
+      {!ready && profile}
 
       {data && !data.ready_to_operate && <OnboardingWizard />}
 
       {!checklist.isError && <ChecklistSection checklist={data} isLoading={checklist.isLoading} />}
-    </div>
+
+      {ready && profile}
+    </AppPage>
   );
 }
 
@@ -62,17 +67,22 @@ function ProgressSummary({
   const t = useTranslations("app.onboarding.progress");
 
   return (
-    <section
-      className="flex flex-col gap-1 rounded-sm border border-border bg-surface p-4"
+    <HeroCard
       role="status"
+      className="animate-enter"
+      tone={readyToOperate ? "accent-soft" : "neutral"}
+      eyebrow={activeYearLabel ? t("activeYear", { label: activeYearLabel }) : undefined}
+      title={t("stepsLabel", { done: requiredDone, total: requiredTotal })}
+      meta={t(readyToOperate ? "ready" : "notReady")}
+      chip={readyToOperate ? t("readyChip") : undefined}
     >
-      <p className="text-[14px] font-medium tabular-nums text-fg">
-        {t("stepsLabel", { done: requiredDone, total: requiredTotal })}
-      </p>
-      <p className="text-[13px] text-fg-muted">{t(readyToOperate ? "ready" : "notReady")}</p>
-      {activeYearLabel && (
-        <p className="text-[13px] text-fg-muted">{t("activeYear", { label: activeYearLabel })}</p>
-      )}
-    </section>
+      <Progress
+        variant="meter"
+        value={requiredDone}
+        max={Math.max(requiredTotal, 1)}
+        label={t("meterLabel")}
+        tone={readyToOperate ? "success" : "accent"}
+      />
+    </HeroCard>
   );
 }

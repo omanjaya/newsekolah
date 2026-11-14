@@ -14,8 +14,17 @@ vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (permission: string) => mocks.permissions.includes(permission),
   useSession: () => ({ me: { permissions: mocks.permissions } }),
 }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../reference/api", () => ({
   useLookup: () => new Map(),
+  useClassesQuery: () => ({ data: { data: [{ id: "class-1", name: "X-A" }] } }),
+}));
+vi.mock("../../analytics/api", () => ({
+  useStudentRiskQuery: () => ({ data: { class_id: "class-1" } }),
+}));
+vi.mock("../../school/components/user-form", () => ({ UserForm: () => null }));
+vi.mock("./student-overview", () => ({
+  StudentOverviewTab: () => <div>panel:overview</div>,
 }));
 vi.mock("../../reference/directory-names", async () => {
   const { directoryNamesStub } = await import("../../../test/directory-names-stub");
@@ -31,7 +40,6 @@ vi.mock("../../discipline/components/student-discipline-view", () => ({
 vi.mock("./student-tab-panels", () => {
   const panel = (name: string) => () => <div>{`panel:${name}`}</div>;
   return {
-    StudentOverviewTab: panel("overview"),
     StudentAttendanceTab: panel("attendance"),
     StudentGradesTab: panel("grades"),
     StudentPermitsTab: panel("permits"),

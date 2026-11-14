@@ -12,7 +12,7 @@
     "discipline": "Kedisiplinan",
     "counseling": "Konseling",
     "library": "Perpustakaan",
-    "guardians": "Orang Tua"
+    "guardians": "Orang tua"
   },
   "noAccessTitle": "Tidak ada data yang bisa Anda lihat",
   "noAccessBody": "Akun Anda belum memiliki akses ke data siswa di halaman ini. Hubungi admin sekolah bila ini keliru.",
@@ -36,8 +36,45 @@
     "motherName": "Nama ibu",
     "guardianName": "Nama wali",
     "guardianPhone": "Telepon wali",
-    "parentOccupation": "Pekerjaan orang tua",
-    "notRecorded": "Belum dicatat",
-    "loadError": "Data orang tua belum bisa dimuat."
+    "parentOccupation": "Pekerjaan orang tua"
+  },
+  "editData": "Ubah data",
+  "overview": {
+    "statsLabel": "Ringkasan siswa",
+    "attendance": "Kehadiran",
+    "absentDays": "{absent} dari {days} hari tidak hadir",
+    "noAttendance": "Belum ada data presensi",
+    "disciplinePoints": "Poin pelanggaran",
+    "activeViolations": "{n} pelanggaran aktif",
+    "warningLetters": "Surat peringatan",
+    "averageGrade": "Rata-rata nilai",
+    "noGrades": "Belum ada nilai terbit",
+    "gradeDelta": "{delta} dari periode lalu",
+    "noRisk": "Tidak ada tanda risiko",
+    "freshness": "Diperbarui {time}"
+  },
+  "biodata": {
+    "title": "Biodata",
+    "nis": "NIS",
+    "nisn": "NISN",
+    "gender": "Jenis kelamin",
+    "genders": {
+      "L": "Laki-laki",
+      "P": "Perempuan"
+    },
+    "birth": "Tempat, tanggal lahir",
+    "religion": "Agama",
+    "entryYear": "Tahun masuk",
+    "previousSchool": "Asal sekolah",
+    "contact": "Kontak",
+    "address": "Alamat"
+  },
+  "history": {
+    "title": "Riwayat terbaru",
+    "seeAll": "Lihat semua",
+    "points": "{n} poin",
+    "counseling": "Konseling",
+    "emptyTitle": "Belum ada catatan",
+    "emptyBody": "Pelanggaran, surat peringatan, dan konseling siswa ini akan muncul di sini."
   }
 }

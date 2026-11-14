@@ -1,9 +1,12 @@
 "use client";
 
-import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
-import { useRouter, useSearchParams } from "next/navigation";
+import { NavTabs, type NavTabsLinkProps } from "@newsekolah/ui";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
+
+import { AppPage } from "../../../components/app-page";
 
 import { GradeLevelsView } from "./grade-levels-view";
 import { RoomsView } from "./rooms-view";
@@ -15,37 +18,42 @@ const sections = [
   { value: "rooms", label: "rooms", View: RoomsView },
 ] as const;
 
+function renderLink({ href, className, children, ...rest }: NavTabsLinkProps): ReactNode {
+  return (
+    <Link href={href} className={className} aria-current={rest["aria-current"]} scroll={false}>
+      {children}
+    </Link>
+  );
+}
+
+/**
+ * Struktur sekolah: grade levels, tracks and rooms, one reference table
+ * per tab. The tab is in the URL (`?tab=`), so old links land on the
+ * right one; each table carries its own search and add button.
+ */
 export function SchoolStructureView(): ReactElement {
   const t = useTranslations("app.academic.structure");
-  const tNav = useTranslations("app.navigation");
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const requested = searchParams.get("tab");
-  const active = sections.find((section) => section.value === requested)?.value ?? "grade-levels";
+  const requested = useSearchParams().get("tab");
+  const active = sections.find((section) => section.value === requested) ?? sections[0];
+  const ActiveView = active.View;
 
   return (
-    <div className="flex min-w-0 flex-col gap-4 p-4 md:p-6">
-      <PageHeader eyebrow={tNav("masterData")} title={t("title")} />
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
-      <Tabs
-        value={active}
-        onValueChange={(value) => {
-          router.push(`/school/structure?tab=${value}`, { scroll: false });
-        }}
-      >
-        <TabsList aria-label={t("title")}>
-          {sections.map(({ value, label }) => (
-            <TabsTrigger key={value} value={value}>
-              {t(label)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        {sections.map(({ value, View }) => (
-          <TabsContent key={value} value={value}>
-            <View />
-          </TabsContent>
-        ))}
-      </Tabs>
-    </div>
+    <AppPage
+      description={t("description")}
+      nav={
+        <NavTabs
+          aria-label={t("title")}
+          variant="underline"
+          items={sections.map(({ value, label }) => ({
+            href: `/school/structure?tab=${value}`,
+            label: t(label),
+            current: value === active.value,
+          }))}
+          renderLink={renderLink}
+        />
+      }
+    >
+      <ActiveView />
+    </AppPage>
   );
 }

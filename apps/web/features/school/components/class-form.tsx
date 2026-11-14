@@ -1,7 +1,16 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  DialogFooter,
+  Field,
+  FormError,
+  Input,
+  NumberInput,
+  Select,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -37,21 +46,23 @@ export function ClassForm({
   const [name, setName] = useState(initial?.name ?? "");
   const [gradeId, setGradeId] = useState(initial?.grade_level_id ?? "");
   const [homeroomId, setHomeroomId] = useState(initial?.homeroom_teacher_id ?? "");
-  const [capacity, setCapacity] = useState(initial?.capacity ? String(initial.capacity) : "");
+  const [capacity, setCapacity] = useState<number | null>(initial?.capacity ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [touched, setTouched] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  // The name says it is missing once the reader has left it; the grade, on save.
+  const missing = submitted || touched;
 
   async function submit() {
     setError(null);
-    if (!name.trim() || !gradeId) {
-      setError(t("requiredError"));
-      return;
-    }
+    setSubmitted(true);
+    if (!name.trim() || !gradeId) return;
     const body = {
       academic_year_id: yearId,
       grade_level_id: gradeId,
       name: name.trim(),
       ...(homeroomId ? { homeroom_teacher_id: homeroomId } : {}),
-      ...(capacity ? { capacity: Number(capacity) } : {}),
+      ...(capacity ? { capacity } : {}),
     };
     try {
       if (initial) await update.mutateAsync({ id: initial.id, body });
@@ -71,59 +82,54 @@ export function ClassForm({
         void submit();
       }}
     >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-          {error}
-        </p>
-      )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
+      {error && <FormError>{error}</FormError>}
+      <Field
+        label={t("name")}
+        required
+        error={missing && !name.trim() ? t("nameRequired") : undefined}
+      >
         <Input
           value={name}
           onChange={(e) => {
             setName(e.target.value);
           }}
+          onBlur={() => {
+            setTouched(true);
+          }}
           placeholder="X-A"
-          required
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("grade")}</span>
+      </Field>
+      <Field
+        label={t("grade")}
+        required
+        error={submitted && !gradeId ? t("gradeRequired") : undefined}
+      >
         <Select
           options={(grades.data?.data ?? []).map((g) => ({ value: g.id, label: g.name }))}
           value={gradeId}
           onValueChange={setGradeId}
           placeholder={t("pick")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("homeroom")}</span>
+      </Field>
+      <Field label={t("homeroom")} optional>
         <DirectoryPicker
           profileKind="teacher"
           value={homeroomId}
           onValueChange={setHomeroomId}
           labels={homeroomLabels}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("capacity")}</span>
-        <Input
-          type="number"
-          min={1}
-          value={capacity}
-          onChange={(e) => {
-            setCapacity(e.target.value);
-          }}
-        />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      </Field>
+      <Field label={t("capacity")} optional hint={t("capacityHint")}>
+        <NumberInput min={1} value={capacity} onChange={setCapacity} suffix={t("capacityUnit")} />
+      </Field>
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={create.isPending || update.isPending}>
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

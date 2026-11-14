@@ -1640,11 +1640,6 @@
         "includeArchived": "Show archived",
         "emptyTitle": "No users yet",
         "emptyBody": "Add teachers, staff and students one by one or through import.",
-        "loadErrorTitle": "The user list could not be loaded",
-        "loadErrorBody": "Check your connection, then try again.",
-        "retry": "Try again",
-        "pagePrev": "Previous",
-        "pageNext": "Next",
         "resetTitle": "Password reset link",
         "resetBody": "Share this link with the user. It works once and expires in 30 minutes.",
         "actions": {
@@ -1658,7 +1653,8 @@
           "restored": "User restored",
           "impersonate": "Sign in as this user",
           "impersonateBody": "You will act as {name} for up to 30 minutes. Everything done during that time is logged.",
-          "import": "Import users"
+          "import": "Import users",
+          "menuFor": "Actions for {name}"
         },
         "form": {
           "createTitle": "New user",
@@ -1688,18 +1684,10 @@
           "noCustomRoles": "No custom roles yet. Create one under Settings > Roles and Access."
         },
         "import": {
-          "eyebrow": "School Data",
           "title": "Import users",
           "description": "Download the template, fill it in outside the system, upload it back, then check the outcome before anything is actually created.",
-          "steps": {
-            "upload": "Upload",
-            "preview": "Preview",
-            "done": "Done"
-          },
-          "step1Title": "1. Download the template",
           "step1Body": "The template includes an example row and a Referensi sheet listing the accepted codes for each column (gender, blood type, role, and so on).",
           "downloadTemplate": "Download XLSX template",
-          "step2Title": "2. Upload the filled-in file",
           "step2Body": "Up to 5000 rows in one file. Blank rows are skipped.",
           "mode": {
             "label": "Import mode",
@@ -1717,12 +1705,6 @@
             "no-sheet": "The file has no data sheet at all.",
             "empty": "No data rows could be read from this file."
           },
-          "step3Title": "3. Preview",
-          "rowCount": "{n} rows",
-          "createCount": "{n} to create",
-          "updateCount": "{n} to update",
-          "unchangedCount": "{n} unchanged",
-          "invalidCount": "{n} invalid rows",
           "blockedTitle": "Not ready to import",
           "blockedBody": "The import runs as one transaction: as long as a single row is invalid, nothing at all will be written. Fix the flagged rows, then upload the file again.",
           "readyTitle": "Ready to import",
@@ -1750,17 +1732,32 @@
               "unchanged": "Unchanged",
               "error": "Invalid"
             }
-          }
-        }
+          },
+          "prepareTitle": "Prepare the file",
+          "fileLabel": "User file",
+          "reviewTitle": "Review the result",
+          "rowsLabel": "Rows",
+          "createLabel": "To create",
+          "updateLabel": "To update",
+          "unchangedLabel": "Unchanged",
+          "invalidLabel": "Invalid",
+          "backToUsers": "Back to the user list"
+        },
+        "moreRoles": "+{n} roles",
+        "resetConfirmBody": "Create a password reset link for {name}? Their current password keeps working until the link is used.",
+        "resetCopy": "Copy link",
+        "resetCopied": "Link copied",
+        "resetCopyFailed": "The link could not be copied. Select the text and copy it yourself.",
+        "resetLinkLabel": "Reset link"
       },
       "classes": {
         "eyebrow": "School Data",
-        "title": "Students & Classes",
+        "title": "Students and classes",
         "addClass": "Add class",
         "editClass": "Edit class",
         "emptyTitle": "No classes yet",
-        "emptyBody": "Create classes for the active year, then place students.",
-        "homeroomLabel": "Homeroom",
+        "emptyBody": "Create classes for the active academic year, then place students.",
+        "homeroomLabel": "Homeroom teacher",
         "noHomeroom": "not set",
         "capacityLabel": "capacity {n}",
         "tabStudents": "Students",
@@ -1768,13 +1765,13 @@
         "studentCount": "{n, plural, one {# student} other {# students}}",
         "rosterOfCapacity": "{n}/{max} students",
         "assignStudents": "Place students",
-        "noStudents": "No students in this class yet.",
+        "noStudents": "No students in this class yet",
         "searchStudent": "Search student",
         "rowActionsMenu": "More actions for {name}",
         "noUnassigned": "Every student already has a class.",
         "assigned": "{n} students placed",
         "assignCount": "Place ({n})",
-        "noTeachers": "No subject teachers yet.",
+        "noTeachers": "No subject teachers yet",
         "removeTeaching": "Remove",
         "removeTeachingTitle": "Remove this teacher assignment?",
         "removeTeachingBody": "{subject} taught by {teacher} will be removed from this class.",
@@ -1791,40 +1788,82 @@
         "pickSubject": "Subject",
         "pickTeacher": "Teacher",
         "moveStudent": "Move student",
-        "moveBody": "Move {name} to a different class. Their enrollment history in this class is kept.",
+        "moveBody": "Move {name} to another class. Their history in this class is kept.",
         "moveTargetClass": "Target class",
         "moveTargetPlaceholder": "Pick a class",
         "moveEffectiveOn": "Effective from",
         "moveSubmit": "Move",
         "moved": "Student moved",
         "leaveStudent": "Student left school",
-        "leaveBody": "Mark {name} as having left the school. Their active enrollment in this class is closed; history is kept.",
+        "leaveBody": "Mark {name} as having left the school. The placement in this class is closed and its history is kept.",
         "leaveOn": "Left on",
         "leaveSubmit": "Mark as left",
         "studentLeft": "Student marked as left",
         "form": {
           "name": "Class name",
-          "grade": "Grade",
+          "grade": "Grade level",
           "homeroom": "Homeroom teacher",
           "capacity": "Capacity",
           "pick": "Pick",
-          "requiredError": "Name and grade are required.",
           "saved": "Class saved",
           "cancel": "Cancel",
-          "save": "Save"
+          "save": "Save",
+          "nameRequired": "Enter the class name.",
+          "gradeRequired": "Choose a grade level.",
+          "capacityHint": "Leave empty for no limit.",
+          "capacityUnit": "students"
         },
-        "searchClasses": "Search classes",
+        "searchClasses": "Search classes or students",
         "allGrades": "All grade levels",
         "deleteClass": "Delete class",
         "deleteClassBody": "Delete class {name}? Classes with students or teaching assignments cannot be deleted. Historical data is retained.",
         "classDeleted": "Class deleted.",
         "rosterExport": {
           "button": "Download roster",
-          "defaultTitle": "Class Roster",
+          "defaultTitle": "Student list",
           "scopeClass": "Class",
           "scopeGradeLevel": "Grade level",
           "scopeClassPlaceholder": "Choose a class",
-          "scopeGradeLevelPlaceholder": "Choose a grade level"
+          "scopeGradeLevelPlaceholder": "Choose a grade level",
+          "scope": "Scope",
+          "columns": {
+            "nis": "NIS",
+            "nisn": "NISN",
+            "name": "Student name",
+            "gender": "Gender",
+            "birth_place": "Place of birth",
+            "birth_date": "Date of birth",
+            "guardian_name": "Guardian name"
+          }
+        },
+        "pickClass": "Choose a class",
+        "studentResults": "Students",
+        "classList": "Classes",
+        "noHomeroomShort": "No homeroom teacher yet",
+        "noHomeroomLine": "No homeroom teacher yet",
+        "classActions": "Actions for class {name}",
+        "detailTabs": "Class contents",
+        "deleteClassTitle": "Delete class {name}?",
+        "emptyBodyReader": "The school office has not created classes for the active year yet.",
+        "noStudentsBody": "Place students who have no class this academic year.",
+        "noTeachersBody": "Pick a subject and a teacher below to add one.",
+        "addTeachingTitle": "Add a subject teacher",
+        "subjectLabel": "Subject",
+        "teacherLabel": "Teacher",
+        "assignBody": "The students you pick join this class from today.",
+        "pickAll": "Select all",
+        "pickedCount": "{n} selected",
+        "selectedStudents": "{n} selected students",
+        "moveSelected": "Move",
+        "leaveSelected": "Mark as left",
+        "movedCount": "{n} students moved",
+        "leftCount": "{n} students marked as left",
+        "columns": {
+          "number": "No.",
+          "name": "Name",
+          "nis": "NIS",
+          "joined": "Joined",
+          "actions": "Actions"
         }
       },
       "subjects": {
@@ -1888,7 +1927,8 @@
         "deleteTemplateBody": "\"{name}\" will be deleted. It cannot be deleted while a school day still uses it.",
         "deletePeriodTitle": "Delete this period?",
         "deletePeriodBody": "\"{name}\" will be removed from this template.",
-        "periodDeleted": "Period deleted"
+        "periodDeleted": "Period deleted",
+        "actions": "Actions"
       },
       "duties": {
         "eyebrow": "School Data",
@@ -1948,6 +1988,18 @@
             "nameTaken": "Another duty type already uses this name. Choose a different name."
           }
         }
+      },
+      "importFlow": {
+        "steps": {
+          "upload": "Upload",
+          "preview": "Review",
+          "done": "Done"
+        },
+        "chooseOther": "Change file",
+        "noFile": "No file yet",
+        "showRows": "Show rows",
+        "allRows": "All rows",
+        "problemRows": "With problems"
       }
     },
     "roles": {

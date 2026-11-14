@@ -1,19 +1,30 @@
 "use client";
 
-import { Button, Checkbox, Dialog, DialogContent, Input, Select } from "@newsekolah/ui";
+import {
+  Button,
+  Checkbox,
+  DateRangePicker,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  Field,
+  Input,
+  Select,
+} from "@newsekolah/ui";
+import { Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import type { GradeLevel } from "../../school/api";
 import type { CalendarEvent, CalendarEventInput, CalendarEventKind } from "../api";
-
-const KINDS: CalendarEventKind[] = ["holiday", "exam", "event", "no_school", "semester_break"];
+import { EVENT_KINDS } from "../lib/event-kinds";
 
 export function EventFormDialog({
   open,
   initial,
   defaultDate,
+  today,
   gradeLevels,
   pending,
   onOpenChange,
@@ -23,6 +34,8 @@ export function EventFormDialog({
   open: boolean;
   initial?: CalendarEvent;
   defaultDate: string;
+  /** The school's today, marked in the date picker. */
+  today?: string;
   gradeLevels: GradeLevel[];
   pending: boolean;
   onOpenChange: (open: boolean) => void;
@@ -32,10 +45,14 @@ export function EventFormDialog({
 }): ReactElement {
   const t = useTranslations("app.calendar");
   const [name, setName] = useState(initial?.name ?? "");
-  const [date, setDate] = useState(initial?.date ?? defaultDate);
-  const [endDate, setEndDate] = useState(initial?.end_date ?? initial?.date ?? defaultDate);
+  const [range, setRange] = useState({
+    from: initial?.date ?? defaultDate,
+    to: initial?.end_date ?? initial?.date ?? defaultDate,
+  });
   const [kind, setKind] = useState<CalendarEventKind>(initial?.kind ?? "event");
   const [gradeLevelIds, setGradeLevelIds] = useState<string[]>(initial?.grade_level_ids ?? []);
+  const [submitted, setSubmitted] = useState(false);
+  const nameMissing = submitted && name.trim() === "";
 
   return (
     <Dialog
@@ -44,82 +61,73 @@ export function EventFormDialog({
         onOpenChange(next);
         if (!next) {
           setName("");
-          setDate(defaultDate);
-          setEndDate(defaultDate);
+          setRange({ from: defaultDate, to: defaultDate });
           setKind("event");
           setGradeLevelIds([]);
+          setSubmitted(false);
         }
       }}
     >
-      <DialogContent title={initial ? t("editEvent") : t("addEvent")}>
+      <DialogContent title={initial ? t("editEvent") : t("addEvent")} size="md">
         <form
           className="flex flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault();
+            setSubmitted(true);
+            if (name.trim() === "" || !range.from) return;
             onSubmit({
               name: name.trim(),
-              date,
-              end_date: endDate,
+              date: range.from,
+              end_date: range.to || range.from,
               kind,
               grade_level_ids: gradeLevelIds.length > 0 ? gradeLevelIds : undefined,
             });
           }}
         >
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("form.name")}</span>
+          <Field
+            label={t("form.name")}
+            required
+            error={nameMissing ? t("form.nameRequired") : undefined}
+          >
             <Input
               value={name}
               onChange={(e) => {
                 setName(e.target.value);
               }}
               maxLength={150}
-              required
             />
-          </label>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("form.startDate")}</span>
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => {
-                  setDate(e.target.value);
-                  if (e.target.value > endDate) setEndDate(e.target.value);
-                }}
-                required
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("form.endDate")}</span>
-              <Input
-                type="date"
-                value={endDate}
-                min={date}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                }}
-                required
-              />
-            </label>
-          </div>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("form.kind")}</span>
+          </Field>
+          <Field label={t("form.dates")} required hint={t("form.datesHint")}>
+            <DateRangePicker
+              value={range}
+              onChange={setRange}
+              today={today}
+              fromName="date"
+              toName="end_date"
+            />
+          </Field>
+          <Field label={t("form.kind")}>
             <Select
-              options={KINDS.map((k) => ({ value: k, label: t(`kind.${k}`) }))}
+              options={EVENT_KINDS.map((k) => ({ value: k, label: t(`kind.${k}`) }))}
               value={kind}
               onValueChange={(v) => {
                 setKind(v as CalendarEventKind);
               }}
             />
-          </label>
+          </Field>
           {gradeLevels.length > 0 && (
-            <fieldset className="flex flex-col gap-2 text-[13px]">
-              <legend className="font-medium">{t("form.gradeLevels")}</legend>
-              <p className="text-fg-muted">{t("form.gradeLevelsHint")}</p>
-              <div className="flex flex-wrap gap-3">
-                {gradeLevels.map((g) => (
-                  <label key={g.id} className="flex items-center gap-2">
+            <Field label={t("form.gradeLevels")} hint={t("form.gradeLevelsHint")} optional>
+              {(control) => (
+                <div
+                  role="group"
+                  aria-labelledby={control.labelId}
+                  aria-describedby={control["aria-describedby"]}
+                  className="flex flex-wrap gap-x-5 gap-y-2"
+                >
+                  {gradeLevels.map((g) => (
                     <Checkbox
+                      key={g.id}
+                      label={g.name}
                       checked={gradeLevelIds.includes(g.id)}
                       onCheckedChange={(checked) => {
                         setGradeLevelIds((prev) =>
@@ -127,17 +135,17 @@ export function EventFormDialog({
                         );
                       }}
                     />
-                    {g.name}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
+                  ))}
+                </div>
+              )}
+            </Field>
           )}
-          <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+          <DialogFooter>
             {initial && onDelete && (
               <Button
                 type="button"
-                variant="secondary"
+                variant="ghost"
+                icon={<Trash2 />}
                 className="mr-auto text-danger"
                 onClick={onDelete}
               >
@@ -156,7 +164,7 @@ export function EventFormDialog({
             <Button type="submit" loading={pending}>
               {t("form.save")}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

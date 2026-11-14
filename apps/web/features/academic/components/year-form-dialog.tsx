@@ -1,6 +1,14 @@
 "use client";
 
-import { Button, Dialog, DialogContent, Input } from "@newsekolah/ui";
+import {
+  Button,
+  DateRangePicker,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  Field,
+  Input,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -37,49 +45,32 @@ function YearForm({
         onSubmit({ label: label.trim(), starts_on: startsOn, ends_on: endsOn });
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.label")}</span>
+      <Field label={t("form.label")} required>
         <Input
           value={label}
           onChange={(e) => {
             setLabel(e.target.value);
           }}
           placeholder={t("form.labelPlaceholder")}
-          required
         />
-      </label>
-      <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("form.startsOn")}</span>
-          <Input
-            type="date"
-            value={startsOn}
-            onChange={(e) => {
-              setStartsOn(e.target.value);
-            }}
-            required
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("form.endsOn")}</span>
-          <Input
-            type="date"
-            value={endsOn}
-            onChange={(e) => {
-              setEndsOn(e.target.value);
-            }}
-            required
-          />
-        </label>
-      </div>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      </Field>
+      <Field label={t("form.period")} required hint={t("form.periodHint")}>
+        <DateRangePicker
+          value={startsOn ? { from: startsOn, to: endsOn } : null}
+          onChange={(range) => {
+            setStartsOn(range.from);
+            setEndsOn(range.to);
+          }}
+        />
+      </Field>
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onCancel}>
           {t("form.cancel")}
         </Button>
         <Button type="submit" loading={pending}>
           {t("form.save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }
@@ -104,7 +95,7 @@ export function YearFormDialog({
         if (!open) onOpenChange(false);
       }}
     >
-      <DialogContent title={target === "new" ? t("add") : t("edit")}>
+      <DialogContent title={target === "new" ? t("add") : t("editTitle")} size="md">
         {target !== null && (
           <YearForm
             key={target === "new" ? "new" : target.id}

@@ -6,9 +6,12 @@ import {
   Button,
   ConfirmDialog,
   EmptyState,
+  Field,
   IconButton,
+  List,
+  ListRow,
   Select,
-  Skeleton,
+  SkeletonList,
   useToast,
 } from "@newsekolah/ui";
 import { Plus, Trash2, UsersRound } from "lucide-react";
@@ -91,34 +94,31 @@ function AssignmentsEditor({
 
   return (
     <>
-      <ul className="divide-y divide-border rounded-xs border border-border">
+      <List framed>
         {pairs.map((pair) => (
-          <li
+          <ListRow
             key={pairKey(pair)}
-            className="group flex items-center justify-between gap-2 px-3 py-2 transition-colors hover:bg-bg"
-          >
-            <div className="flex min-w-0 items-center gap-2">
-              <span className="truncate text-[14px] font-medium">
-                {subjectMap.get(pair.subject_id)?.name ?? "-"}
-              </span>
-              <Badge variant="neutral">{classMap.get(pair.class_id)?.name ?? "-"}</Badge>
-            </div>
-            {canManage && (
-              <IconButton
-                icon={<Trash2 />}
-                aria-label={t("removePair")}
-                className="md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-visible:opacity-100"
-                onClick={() => {
-                  setPairs((prev) => prev.filter((p) => pairKey(p) !== pairKey(pair)));
-                }}
-              />
-            )}
-          </li>
+            title={subjectMap.get(pair.subject_id)?.name ?? "-"}
+            trailing={<Badge tone="neutral">{classMap.get(pair.class_id)?.name ?? "-"}</Badge>}
+            action={
+              canManage ? (
+                <IconButton
+                  size="sm"
+                  variant="ghost"
+                  icon={<Trash2 />}
+                  aria-label={t("removePair")}
+                  onClick={() => {
+                    setPairs((prev) => prev.filter((p) => pairKey(p) !== pairKey(pair)));
+                  }}
+                />
+              ) : undefined
+            }
+          />
         ))}
         {pairs.length === 0 && (
-          <li className="px-3 py-6 text-center text-[13px] text-fg-muted">{t("noAssignments")}</li>
+          <li className="px-4 py-6 text-center text-body-sm text-fg-muted">{t("noAssignments")}</li>
         )}
-      </ul>
+      </List>
 
       {canManage && (
         <div className="flex flex-wrap items-end gap-2">
@@ -210,20 +210,18 @@ export function TeachingAssignmentsView(): ReactElement {
     // md:h-full: fills the tab panel's height; the whole column scrolls
     // since the form and result list together are usually short.
     <div className="flex flex-col gap-4 md:h-full md:min-h-0 md:overflow-y-auto">
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
+      <p className="text-body-sm text-fg-muted">{t("description")}</p>
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
-          <span className="font-medium">{t("year")}</span>
+        <Field label={t("year")} className="w-full md:w-auto">
           <Select
             options={(years.data?.data ?? []).map((y) => ({ value: y.id, label: y.label }))}
             value={effectiveYearId}
             onValueChange={setYearId}
             className="w-full md:w-56"
           />
-        </label>
-        <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
-          <span className="font-medium">{t("teacher")}</span>
+        </Field>
+        <Field label={t("teacher")} className="w-full md:w-auto">
           <DirectoryPicker
             profileKind="teacher"
             value={teacherId}
@@ -231,7 +229,7 @@ export function TeachingAssignmentsView(): ReactElement {
             labels={teacherLabels}
             className="w-full md:w-64"
           />
-        </label>
+        </Field>
       </div>
 
       {!teacherId ? (
@@ -241,7 +239,7 @@ export function TeachingAssignmentsView(): ReactElement {
           description={t("emptyBody")}
         />
       ) : assignments.isLoading ? (
-        <Skeleton className="h-48 w-full" />
+        <SkeletonList rows={4} framed />
       ) : (
         <AssignmentsEditor
           key={`${effectiveYearId}:${teacherId}`}

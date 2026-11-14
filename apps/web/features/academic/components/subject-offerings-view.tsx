@@ -7,9 +7,11 @@ import {
   DataTable,
   Dialog,
   DialogContent,
+  DialogFooter,
   EmptyState,
+  Field,
   IconButton,
-  Input,
+  NumberInput,
   Select,
   useToast,
 } from "@newsekolah/ui";
@@ -160,15 +162,14 @@ export function SubjectOfferingsView(): ReactElement {
     // md:h-full: fills the tab panel's height so only the table rows scroll.
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <label className="flex w-full flex-col md:w-fit gap-1 text-[13px]">
-          <span className="font-medium">{t("year")}</span>
+        <Field label={t("year")}>
           <Select
             options={(years.data?.data ?? []).map((y) => ({ value: y.id, label: y.label }))}
             value={effectiveYearId}
             onValueChange={setYearId}
             className="w-full md:w-64"
           />
-        </label>
+        </Field>
         {canManage && (
           <Button
             size="sm"
@@ -219,8 +220,7 @@ export function SubjectOfferingsView(): ReactElement {
               void save();
             }}
           >
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.subject")}</span>
+            <Field label={t("columns.subject")}>
               <Select
                 options={(subjects.data?.data ?? []).map((s) => ({
                   value: s.id,
@@ -233,9 +233,8 @@ export function SubjectOfferingsView(): ReactElement {
                 disabled={editing !== "new"}
                 placeholder={t("pickSubject")}
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.gradeLevel")}</span>
+            </Field>
+            <Field label={t("columns.gradeLevel")}>
               <Select
                 options={[
                   { value: "", label: t("allGrades") },
@@ -246,21 +245,18 @@ export function SubjectOfferingsView(): ReactElement {
                   setDraft((d) => ({ ...d, gradeLevelId }));
                 }}
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.hoursPerWeek")}</span>
-              <Input
-                type="number"
+            </Field>
+            <Field label={t("columns.hoursPerWeek")}>
+              <NumberInput
                 min={1}
-                value={draft.hoursPerWeek}
-                onChange={(e) => {
-                  setDraft((d) => ({ ...d, hoursPerWeek: e.target.value }));
+                value={draft.hoursPerWeek ? Number(draft.hoursPerWeek) : null}
+                onChange={(value) => {
+                  setDraft((d) => ({ ...d, hoursPerWeek: value === null ? "" : String(value) }));
                 }}
                 className="w-24"
-                required
               />
-            </label>
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            </Field>
+            <DialogFooter>
               <Button
                 type="button"
                 variant="secondary"
@@ -273,7 +269,7 @@ export function SubjectOfferingsView(): ReactElement {
               <Button type="submit" loading={create.isPending || update.isPending}>
                 {t("save")}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -290,7 +286,7 @@ export function SubjectOfferingsView(): ReactElement {
             : ""
         }
         confirmLabel={t("delete")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={async () => {
           if (!pendingDelete) return;

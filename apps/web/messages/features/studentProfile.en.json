@@ -36,8 +36,45 @@
     "motherName": "Mother's name",
     "guardianName": "Guardian's name",
     "guardianPhone": "Guardian's phone",
-    "parentOccupation": "Parents' occupation",
-    "notRecorded": "Not recorded",
-    "loadError": "Parent details could not be loaded."
+    "parentOccupation": "Parents' occupation"
+  },
+  "editData": "Edit details",
+  "overview": {
+    "statsLabel": "Student summary",
+    "attendance": "Attendance",
+    "absentDays": "Absent {absent} of {days} days",
+    "noAttendance": "No attendance data yet",
+    "disciplinePoints": "Violation points",
+    "activeViolations": "{n} active violations",
+    "warningLetters": "Warning letters",
+    "averageGrade": "Average grade",
+    "noGrades": "No published grades yet",
+    "gradeDelta": "{delta} from last period",
+    "noRisk": "No sign of risk",
+    "freshness": "Updated {time}"
+  },
+  "biodata": {
+    "title": "Personal details",
+    "nis": "NIS",
+    "nisn": "NISN",
+    "gender": "Gender",
+    "genders": {
+      "L": "Male",
+      "P": "Female"
+    },
+    "birth": "Place and date of birth",
+    "religion": "Religion",
+    "entryYear": "Entry year",
+    "previousSchool": "Previous school",
+    "contact": "Contact",
+    "address": "Address"
+  },
+  "history": {
+    "title": "Latest history",
+    "seeAll": "See all",
+    "points": "{n} points",
+    "counseling": "Counseling",
+    "emptyTitle": "Nothing recorded yet",
+    "emptyBody": "This student's violations, warning letters and counseling will show here."
   }
 }

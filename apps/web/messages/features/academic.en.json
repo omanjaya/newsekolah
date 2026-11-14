@@ -1,22 +1,22 @@
 {
   "assignments": {
-    "title": "Assignments",
+    "title": "Duty assignments",
     "description": "Manage teaching assignments and additional staff duties.",
     "teaching": "Teaching",
-    "duties": "Additional Duties",
-    "types": "Duty Types"
+    "duties": "Additional duties",
+    "types": "Duty types"
   },
   "learning": {
     "title": "Subjects",
     "description": "Manage subjects, academic-year offerings, and lesson periods.",
     "subjects": "Subjects",
-    "offerings": "Yearly Offerings",
-    "periods": "Lesson Periods"
+    "offerings": "Subjects per academic year",
+    "periods": "Lesson periods"
   },
   "structure": {
-    "title": "School Structure",
+    "title": "School structure",
     "description": "Manage grade levels, tracks, and school rooms.",
-    "gradeLevels": "Grade Levels",
+    "gradeLevels": "Grade levels",
     "tracks": "Tracks",
     "rooms": "Rooms"
   },
@@ -28,7 +28,7 @@
     "edit": "Edit",
     "activate": "Activate",
     "archive": "Archive",
-    "manageTerms": "Manage terms",
+    "manageTerms": "Terms",
     "active": "Active",
     "archived": "Archived",
     "showArchived": "Show archived",
@@ -39,7 +39,8 @@
     "columns": {
       "label": "Name",
       "period": "Period",
-      "actions": "Actions"
+      "actions": "Actions",
+      "terms": "Terms"
     },
     "emptyTitle": "No academic years yet",
     "emptyBody": "Create the first academic year to start managing academic data.",
@@ -55,8 +56,12 @@
       "startsOn": "Starts on",
       "endsOn": "Ends on",
       "cancel": "Cancel",
-      "save": "Save"
-    }
+      "save": "Save",
+      "period": "Period",
+      "periodHint": "Pick the first day, then the last."
+    },
+    "editTitle": "Edit academic year",
+    "rowActions": "More actions for {label}"
   },
   "terms": {
     "title": "Terms of {year}",
@@ -66,7 +71,7 @@
     "activate": "Activate",
     "activated": "Term activated",
     "active": "Active",
-    "empty": "No terms for this academic year yet.",
+    "empty": "No terms yet",
     "saved": "Term saved",
     "deleted": "Term deleted",
     "deleteTitle": "Delete this term?",
@@ -77,8 +82,12 @@
       "endsOn": "Ends on",
       "sequence": "Order",
       "cancel": "Cancel",
-      "save": "Save"
-    }
+      "save": "Save",
+      "period": "Period"
+    },
+    "rowActions": "More actions for {name}",
+    "activateTitle": "Activate this term?",
+    "activateBody": "\"{name}\" becomes the active term; the other terms of this year become inactive."
   },
   "gradeLevels": {
     "eyebrow": "School Data",
@@ -197,20 +206,15 @@
     "emptyBody": "Pick an academic year and a teacher to view and manage their teaching assignments."
   },
   "enrollmentImport": {
-    "eyebrow": "School Data",
     "title": "Class assignment import",
-    "description": "Download the template, fill in student class assignments, then upload it to review before anything is applied.",
+    "description": "Download the template, fill in each student's class, then upload it to review before applying.",
     "year": "Academic year",
     "downloadTemplate": "Download template",
-    "chooseFile": "Choose an xlsx file",
-    "noFileChosen": "No file chosen",
+    "chooseFile": "Choose an XLSX file",
     "moveExisting": "Move students who already have a different class this year",
     "partial": "Apply valid rows even if some rows have errors",
-    "preview": "Preview",
     "commit": "Apply",
-    "committedLabel": "Applied",
     "committed": "Class assignments applied",
-    "rowCount": "{n} rows",
     "errorCount": "{n} need attention",
     "table": {
       "row": "Row",
@@ -225,11 +229,25 @@
       "unchanged": "Unchanged",
       "skipped": "Skipped",
       "error": "Needs attention"
-    }
+    },
+    "prepareTitle": "Prepare the file",
+    "prepareBody": "Choose the academic year, download its template, fill in each student's class and upload it. The file is reviewed first; nothing is saved yet.",
+    "optionsLabel": "Options",
+    "fileLabel": "Placement file",
+    "previewAgain": "Refresh the preview",
+    "reviewTitle": "Review the placement",
+    "rowsLabel": "Rows",
+    "placedLabel": "Placed or moved",
+    "skippedLabel": "Skipped",
+    "errorLabel": "With problems",
+    "partialNote": "Valid rows are applied; rows with problems are skipped.",
+    "blockedNote": "While any row has a problem, nothing is applied. Fix the file, or tick the option to apply only the valid rows.",
+    "startOver": "Start over",
+    "importAnother": "Import another file"
   },
   "newYearSetup": {
     "eyebrow": "School Data",
-    "title": "New academic year setup",
+    "title": "New academic year",
     "description": "Copy subject offerings and classes from one academic year into another that does not have them yet.",
     "fromYear": "From academic year",
     "toYear": "To academic year",
@@ -245,10 +263,14 @@
     "noClasses": "No classes in the source academic year.",
     "alreadyExists": "Already exists",
     "willCopy": "Will be copied",
-    "commit": "Apply",
-    "confirmTitle": "Copy this data into the destination year?",
+    "commit": "Copy into the destination year",
+    "confirmTitle": "Copy into {year}?",
     "confirmBody": "{offerings} subject offerings and {classes} classes will be copied.",
-    "committed": "{offerings} subject offerings and {classes} classes copied."
+    "committed": "{offerings} subject offerings and {classes} classes copied.",
+    "offeringsLabel": "Subjects to copy",
+    "classesLabel": "Classes to copy",
+    "ofTotal": "of {n} in the source year",
+    "doneTitle": "{year} is ready to fill"
   },
   "today": {
     "noPeriodNow": "No lesson period right now",
@@ -256,38 +278,54 @@
   },
   "workspace": {
     "attendance": "Attendance and journal",
-    "sessions": "Attendance",
-    "journal": "Teaching journal",
+    "sessions": "Teaching sessions",
+    "journal": "Journal history",
     "reports": "Attendance reports",
-    "schedule": "Timetable and calendar",
+    "schedule": "Schedule and calendar",
     "timetable": "Timetable",
     "calendar": "Academic calendar",
     "substitutions": "Substitute teachers",
     "pendingSubstitutions": "{count, plural, one {# substitution request} other {# substitution requests}}",
-    "years": "Academic Year",
-    "yearList": "Years & Terms",
-    "setup": "Prepare New Year",
-    "promotion": "Promotion & Placement",
+    "years": "Academic year",
+    "yearList": "Academic years",
+    "setup": "New academic year",
+    "promotion": "Class promotion",
     "yearHelp": "Prepare classes and subjects for the destination year, review student promotions, then activate the year when the school is ready. Each step remains available independently.",
-    "users": "Users & Access",
-    "accounts": "User Accounts",
-    "roles": "Access Settings",
-    "importEnrollment": "Import Placement",
-    "backToClasses": "Back to Students & Classes",
+    "users": "Users and access",
+    "accounts": "User accounts",
+    "roles": "Roles and access",
+    "importEnrollment": "Import placement",
+    "backToClasses": "Back to students and classes",
     "requestSubstitute": "Request a substitute",
     "openAttendance": "Open attendance and journal",
-    "scanEntry": "Scan into class",
-    "personalAttendance": "My Attendance",
-    "journalQuick": "Complete Teaching Journal",
-    "continuePromotion": "Continue to Class Promotion",
+    "scanEntry": "Scan classroom entry",
+    "personalAttendance": "My attendance",
+    "journalQuick": "Complete teaching journal",
+    "continuePromotion": "Continue to class promotion",
     "journalSaved": "Journal saved",
     "journalMissing": "Journal not filled",
     "journalHelp": "Attendance and the journal are saved together for this meeting.",
     "yearScope": "Academic year: {year}",
     "learningNav": "Learning",
     "subjectsTab": "Subjects",
-    "periodsTab": "Lesson Periods",
-    "teachingTab": "Teaching Assignments",
-    "dutiesTab": "Additional Duties"
+    "periodsTab": "Lesson periods",
+    "teachingTab": "Teaching assignments",
+    "dutiesTab": "Additional duties"
+  },
+  "yearFlow": {
+    "fromYear": "From academic year",
+    "fromYearHint": "Usually the active year.",
+    "toYear": "To academic year",
+    "toYearHint": "The year you are opening.",
+    "pickYear": "Choose a year",
+    "sameYearError": "The source and destination years must differ.",
+    "needTwoYears": "Create the destination year on the Academic years page first.",
+    "stepYears": "Choose years",
+    "stepReview": "Review the plan",
+    "stepDone": "Done",
+    "previewAgain": "Refresh the plan",
+    "summary": "Plan summary",
+    "doneEyebrow": "Done",
+    "startOver": "Start over"
   }
 }
