@@ -1,6 +1,6 @@
 {
-  "eyebrow": "Inbox",
-  "title": "Needs Action",
+  "eyebrow": "Needs action",
+  "title": "Needs action",
   "permits": "Permits and late arrivals",
   "emptyTitle": "Nothing needs your action",
   "emptyBody": "All of your requests and tasks are done.",
@@ -12,6 +12,10 @@
     "points": "{count} points",
     "open": "Open student",
     "issue": "Issue {level}",
-    "issued": "{level} issued."
-  }
+    "issued": "{level} issued.",
+    "meta": "{nis} · {className} · {points} pts"
+  },
+  "backHome": "Back to home",
+  "historyLeave": "View leave history",
+  "historyWarningLetters": "View warning letters"
 }

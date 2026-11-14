@@ -1,31 +1,41 @@
 "use client";
 
-import { EmptyState, PageHeader, Skeleton, domainIcons } from "@newsekolah/ui";
-import { CheckCheck } from "lucide-react";
+import { Button, EmptyState, SectionHeader, SkeletonList, domainIcons } from "@newsekolah/ui";
+import { CheckCheck, House } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
+import { AppPage } from "../../../components/app-page";
+import { navAccessFromMe } from "../../../lib/navigation-access";
+import { canOpenPath } from "../../../lib/navigation-permissions";
+import { useSession } from "../../../lib/session/session-provider";
 import { PermitUnifiedQueue } from "../../permits/components/permit-unified-queue";
 import { useInboxAccess } from "../lib/access";
 import { useActionInboxSummary } from "../use-action-inbox-count";
 
 import { WarningLetterCandidatesSection } from "./warning-letter-candidates-section";
 
+/** Where an all-clear reader can still look: the history of the queues they work. */
+const HISTORY_LINKS = [
+  { href: "/leave-requests", label: "historyLeave" },
+  { href: "/discipline/warning-letters", label: "historyWarningLetters" },
+] as const;
+
 function InboxSection({
+  id,
   title,
   count,
   children,
 }: {
+  id: string;
   title: string;
   count: number;
   children: ReactNode;
 }): ReactElement {
   return (
-    <section aria-label={title} className="flex flex-col gap-3">
-      <h2 className="text-base font-semibold text-fg">
-        {title}
-        <span className="ml-2 text-sm font-normal text-fg-muted">{count}</span>
-      </h2>
+    <section aria-labelledby={id} className="flex flex-col gap-3">
+      <SectionHeader titleId={id} title={title} count={count} />
       {children}
     </section>
   );
@@ -38,44 +48,68 @@ function InboxSection({
  */
 export function ActionInboxView(): ReactElement {
   const t = useTranslations("app.inbox");
+  const { me } = useSession();
   const access = useInboxAccess();
   const summary = useActionInboxSummary();
   const showPermits = access.leave || access.exit || access.late;
   const nothingToShow = !showPermits && !access.warningLetters;
   // A failed queue must stay visible with its retry, so only an error-free zero is "all clear".
   const allClear = !summary.isLoading && !summary.isError && summary.total === 0;
+  const navAccess = navAccessFromMe(me);
+  const history = HISTORY_LINKS.find((link) => canOpenPath(link.href, navAccess));
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      {summary.isLoading && !nothingToShow && <Skeleton className="h-24 w-full" aria-busy="true" />}
-      {(nothingToShow || allClear) && (
+    <AppPage nav={false}>
+      {summary.isLoading && !nothingToShow && <SkeletonList rows={3} />}
+      {nothingToShow && (
         <EmptyState
-          icon={
-            nothingToShow ? (
-              <domainIcons.late aria-hidden="true" />
-            ) : (
-              <CheckCheck aria-hidden="true" />
-            )
+          icon={<domainIcons.late aria-hidden="true" />}
+          title={t("noAccessTitle")}
+          description={t("noAccessBody")}
+          action={
+            <Button asChild variant="secondary" icon={<House />}>
+              <Link href="/dashboard">{t("backHome")}</Link>
+            </Button>
           }
-          title={t(nothingToShow ? "noAccessTitle" : "emptyTitle")}
-          description={t(nothingToShow ? "noAccessBody" : "emptyBody")}
+        />
+      )}
+      {!nothingToShow && allClear && (
+        <EmptyState
+          tone="success"
+          icon={<CheckCheck aria-hidden="true" />}
+          title={t("emptyTitle")}
+          description={t("emptyBody")}
+          action={
+            history ? (
+              <Button asChild variant="secondary">
+                <Link href={history.href}>{t(history.label)}</Link>
+              </Button>
+            ) : undefined
+          }
         />
       )}
       {!nothingToShow && !allClear && !summary.isLoading && (
         <>
           {showPermits && (
-            <InboxSection title={t("permits")} count={summary.leave + summary.exit + summary.late}>
+            <InboxSection
+              id="inbox-permits"
+              title={t("permits")}
+              count={summary.leave + summary.exit + summary.late}
+            >
               <PermitUnifiedQueue />
             </InboxSection>
           )}
           {access.warningLetters && (
-            <InboxSection title={t("warningLetters.title")} count={summary.warningLetters}>
+            <InboxSection
+              id="inbox-warning-letters"
+              title={t("warningLetters.title")}
+              count={summary.warningLetters}
+            >
               <WarningLetterCandidatesSection />
             </InboxSection>
           )}
         </>
       )}
-    </div>
+    </AppPage>
   );
 }
