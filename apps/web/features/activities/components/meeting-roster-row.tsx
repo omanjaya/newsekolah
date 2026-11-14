@@ -84,7 +84,7 @@ export const MeetingRosterRow = memo(function MeetingRosterRow({
                 onStatusChange(studentId, code);
               }}
               className={cn(
-                "min-h-11 min-w-11 rounded-xs border px-2.5 py-2 text-label transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                "min-h-11 min-w-11 rounded-md border px-2.5 py-2 text-label transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                 selected ? SELECTED_CLASS[token] : UNSELECTED_CLASS[token],
               )}
             >

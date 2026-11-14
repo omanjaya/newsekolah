@@ -111,15 +111,13 @@ export function ViolationTypeForm({
           maxLength={100}
         />
       </Field>
-      <label className="flex items-center gap-2 text-body-sm">
-        <Checkbox
-          checked={isActive}
-          onCheckedChange={(v) => {
-            setIsActive(v === true);
-          }}
-        />
-        {t("active")}
-      </label>
+      <Checkbox
+        label={t("active")}
+        checked={isActive}
+        onCheckedChange={(v) => {
+          setIsActive(v === true);
+        }}
+      />
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}

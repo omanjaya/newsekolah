@@ -8,7 +8,9 @@ import {
   DialogContent,
   Input,
   Select,
-  Skeleton,
+  EmptyState,
+  SectionHeader,
+  SkeletonList,
   StatTile,
   cn,
   domainIcons,
@@ -287,16 +289,22 @@ export function PermitUnifiedQueue(): ReactElement {
         </div>
       )}
       {errors.map((source, index) => (
-        <section key={`${source.label}-${index}`} aria-label={source.label}>
-          <h2 className="text-label">{source.label}</h2>
+        <section
+          key={`${source.label}-${index}`}
+          aria-label={source.label}
+          className="flex flex-col gap-2"
+        >
+          <SectionHeader title={source.label} as="h3" />
           <QueryError retry={() => source.query.refetch()} />
         </section>
       ))}
-      {loading && <Skeleton className="h-24 w-full" aria-busy="true" />}
+      {loading && <SkeletonList rows={3} leading />}
       {!loading && errors.length === 0 && visible.length === 0 && (
-        <p className="py-6 text-center text-body-sm text-fg-muted">
-          {t(rows.length === 0 ? "queueEmpty" : "queueNoMatch")}
-        </p>
+        <EmptyState
+          variant="compact"
+          icon={<Inbox aria-hidden="true" />}
+          title={t(rows.length === 0 ? "queueEmpty" : "queueNoMatch")}
+        />
       )}
       {!loading && errors.length === 0 && visible.length > 0 && <BulkApproveBar bulk={bulk} />}
       {!loading && errors.length === 0 && visible.length > 0 && (
