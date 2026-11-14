@@ -98,6 +98,11 @@ describe("cn", () => {
     expect(cn("text-neutral-soft-fg", "text-caption")).toBe("text-neutral-soft-fg text-caption");
   });
 
+  it("merges the drawer animations with the other layer animations", () => {
+    expect(cn("animate-sheet-in", "animate-drawer-in")).toBe("animate-drawer-in");
+    expect(cn("animate-drawer-out", "animate-none")).toBe("animate-none");
+  });
+
   it("treats the kiosk and body-lg roles as roles", () => {
     expect(cn("text-display", "text-kiosk-display")).toBe("text-kiosk-display");
     expect(cn("text-kiosk-title", "text-body-lg")).toBe("text-body-lg");

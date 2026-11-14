@@ -32,6 +32,8 @@ export const ANIMATIONS = [
   "dialog-out",
   "sheet-in",
   "sheet-out",
+  "drawer-in",
+  "drawer-out",
   "popover-in",
   "popover-out",
   "rise-in",
