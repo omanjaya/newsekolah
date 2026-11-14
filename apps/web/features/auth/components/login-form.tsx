@@ -13,6 +13,7 @@ import {
   Input,
   PasswordInput,
   TextLink,
+  useHydrated,
 } from "@newsekolah/ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -50,6 +51,10 @@ export function LoginForm(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const googleSSO = useGoogleSSOAvailabilityQuery();
   const passkeySupported = usePasskeySupported();
+  // The form is in the server markup: until React attaches onSubmit, a
+  // press would run the browser's own submit. Form posts (never a GET with
+  // the password in the URL), and the button waits for hydration besides.
+  const hydrated = useHydrated();
 
   // Set once the API rejects a login attempt with MFA_REQUIRED, so the same
   // username and password can be resubmitted with an added `otp` field
@@ -134,7 +139,13 @@ export function LoginForm(): ReactElement {
           />
         </Field>
       )}
-      <Button type="submit" size="lg" loading={loginMutation.isPending} className="mt-1 w-full">
+      <Button
+        type="submit"
+        size="lg"
+        disabled={!hydrated}
+        loading={loginMutation.isPending}
+        className="mt-1 w-full"
+      >
         {loginMutation.isPending
           ? t("submitting")
           : otpRequired

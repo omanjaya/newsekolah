@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { resetPasswordSchema, type ResetPasswordInput } from "@newsekolah/schemas";
-import { Alert, Button, Field, Form, FormField, PasswordInput } from "@newsekolah/ui";
+import { Alert, Button, Field, Form, FormField, PasswordInput, useHydrated } from "@newsekolah/ui";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -39,6 +39,8 @@ export function ResetPasswordForm({
   const locale = useLocale() as Locale;
   const apiErrorMessage = useApiErrorMessage();
   const mutation = useConfirmPasswordResetMutation();
+  // Server-rendered form: the submit waits for the handler (see LoginForm).
+  const hydrated = useHydrated();
 
   const form = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
@@ -109,7 +111,13 @@ export function ResetPasswordForm({
           </Field>
         )}
       />
-      <Button type="submit" size="lg" loading={mutation.isPending} className="mt-1 w-full">
+      <Button
+        type="submit"
+        size="lg"
+        disabled={!hydrated}
+        loading={mutation.isPending}
+        className="mt-1 w-full"
+      >
         {t("submit")}
       </Button>
     </Form>
