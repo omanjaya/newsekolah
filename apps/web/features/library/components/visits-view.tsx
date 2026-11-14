@@ -1,24 +1,24 @@
 "use client";
 
-import { formatDateTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
   DataTable,
   EmptyState,
-  PageHeader,
+  Stat,
+  StatGrid,
+  TextLink,
   domainIcons,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus } from "lucide-react";
-import Link from "next/link";
+import { DoorOpen, Plus, Users, UsersRound } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
-import { CursorPagination } from "../../../components/cursor-pagination";
+import { AppPage } from "../../../components/app-page";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
@@ -32,7 +32,7 @@ import {
   useLibraryVisitsQuery,
 } from "../visits-api";
 
-import { LibraryWorkspaceNav } from "./library-workspace-nav";
+import { LibraryWorkspaceNav, useLibraryShortcuts } from "./library-workspace-nav";
 import { VisitRecordDialog } from "./visit-record-dialog";
 
 /** Rows per page; the visits API pages by offset and reports no total. */
@@ -51,10 +51,15 @@ export function VisitsView(): ReactElement {
   const [recording, setRecording] = useState(false);
 
   const paging = useOffsetPage(VISITS_PAGE_SIZE);
-  const { data, isLoading } = useLibraryVisitsQuery(`${from}T00:00:00Z`, `${to}T23:59:59Z`, {
-    limit: paging.limit,
-    offset: paging.offset,
-  });
+  const shortcuts = useLibraryShortcuts(["visitKiosk", { report: "visits" }]);
+  const { data, isLoading, error, refetch, isRefetching } = useLibraryVisitsQuery(
+    `${from}T00:00:00Z`,
+    `${to}T23:59:59Z`,
+    {
+      limit: paging.limit,
+      offset: paging.offset,
+    },
+  );
   const summary = useLibraryVisitSummaryQuery();
 
   const items = data?.data ?? [];
@@ -82,14 +87,15 @@ export function VisitsView(): ReactElement {
         id: "who",
         header: t("columns.who"),
         enableSorting: false,
+        meta: { card: "title" },
         cell: ({ row }) =>
           row.original.member_user_id ? (
-            <Link
+            <TextLink
               href={`/library/members/${row.original.member_user_id}`}
-              className="inline-flex min-h-11 items-center font-medium text-accent hover:underline md:min-h-0"
+              className="font-semibold"
             >
               {directoryMap.get(row.original.member_user_id)?.name ?? t("unknownMember")}
-            </Link>
+            </TextLink>
           ) : (
             (row.original.visitor_name ?? "-")
           ),
@@ -119,8 +125,9 @@ export function VisitsView(): ReactElement {
         id: "source",
         header: t("columns.source"),
         enableSorting: false,
+        meta: { card: "meta", skeleton: "badge" },
         cell: ({ row }) => (
-          <Badge variant={row.original.source === "manual" ? "neutral" : "accent"}>
+          <Badge tone={row.original.source === "manual" ? "neutral" : "info"}>
             {t(`sources.${row.original.source}`)}
           </Badge>
         ),
@@ -129,47 +136,63 @@ export function VisitsView(): ReactElement {
         id: "visitedAt",
         header: t("columns.visitedAt"),
         enableSorting: false,
-        cell: ({ row }) => formatDateTime(row.original.visited_at, { locale, timeZone }),
+        meta: { card: "subtitle" },
+        cell: ({ row }) => (
+          <time dateTime={row.original.visited_at} className="tabular-nums">
+            {new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "id-ID", {
+              day: "numeric",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone,
+            }).format(new Date(row.original.visited_at))}
+          </time>
+        ),
       },
     ],
     [t, locale, directoryMap, timeZone],
   );
 
-  return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          canRecord && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                setRecording(true);
-              }}
-            >
-              {t("record")}
-            </Button>
-          )
-        }
-      />
-      <LibraryWorkspaceNav area="circulation" />
+  const recordButton = canRecord ? (
+    <Button
+      icon={<Plus />}
+      onClick={() => {
+        setRecording(true);
+      }}
+    >
+      {t("record")}
+    </Button>
+  ) : undefined;
 
-      <dl className="flex flex-wrap gap-6 rounded-sm border border-border bg-surface p-4 text-body-sm">
-        <div className="flex flex-col gap-1">
-          <dt className="text-fg-muted">{t("summary.totalVisits")}</dt>
-          <dd className="text-title tabular-nums text-fg">{summary.data?.total_visits ?? "-"}</dd>
-        </div>
-        <div className="flex flex-col gap-1">
-          <dt className="text-fg-muted">{t("summary.uniqueMembers")}</dt>
-          <dd className="text-title tabular-nums text-fg">{summary.data?.unique_members ?? "-"}</dd>
-        </div>
-        <div className="flex flex-col gap-1">
-          <dt className="text-fg-muted">{t("summary.totalPeople")}</dt>
-          <dd className="text-title tabular-nums text-fg">{summary.data?.total_people ?? "-"}</dd>
-        </div>
-      </dl>
+  return (
+    <AppPage
+      nav={<LibraryWorkspaceNav area="circulation" />}
+      primaryAction={recordButton}
+      secondaryActions={shortcuts}
+    >
+      <StatGrid variant="strip" aria-label={t("summary.heading")} className="animate-enter">
+        <Stat
+          icon={<DoorOpen />}
+          category="purple"
+          value={summary.data?.total_visits ?? "-"}
+          label={t("summary.totalVisits")}
+          loading={summary.isLoading}
+        />
+        <Stat
+          icon={<UsersRound />}
+          category="blue"
+          value={summary.data?.unique_members ?? "-"}
+          label={t("summary.uniqueMembers")}
+          loading={summary.isLoading}
+        />
+        <Stat
+          icon={<Users />}
+          category="green"
+          value={summary.data?.total_people ?? "-"}
+          label={t("summary.totalPeople")}
+          loading={summary.isLoading}
+        />
+      </StatGrid>
 
       <DataTable
         stateKey="features/library/components/visits-view:1"
@@ -178,8 +201,14 @@ export function VisitsView(): ReactElement {
         data={items}
         columns={columns}
         rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: VISITS_PAGE_SIZE }}
-        onPaginationChange={() => undefined}
+        cursorPagination={{
+          hasPrevious: paging.hasPrevious,
+          hasNext: paging.hasNextFor(items.length),
+          onPrevious: paging.goPrevious,
+          onNext: paging.goNext,
+          page: paging.page,
+          pageSize: paging.limit,
+        }}
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
@@ -192,20 +221,18 @@ export function VisitsView(): ReactElement {
           dateRangeInvalid: t("invalidRange"),
         }}
         isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        retrying={isRefetching}
         getRowId={(item) => item.id}
         emptyState={
           <EmptyState
             icon={<domainIcons.users aria-hidden="true" />}
             title={t("emptyTitle")}
             description={t("emptyBody")}
+            action={recordButton}
           />
         }
-      />
-      <CursorPagination
-        hasPrevious={paging.hasPrevious}
-        hasNext={paging.hasNextFor(items.length)}
-        onPrevious={paging.goPrevious}
-        onNext={paging.goNext}
       />
 
       <VisitRecordDialog
@@ -215,6 +242,6 @@ export function VisitsView(): ReactElement {
           setRecording(false);
         }}
       />
-    </div>
+    </AppPage>
   );
 }

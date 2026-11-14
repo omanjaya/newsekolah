@@ -825,9 +825,10 @@
       "visitedAt": "Waktu"
     },
     "summary": {
-      "totalVisits": "Total kunjungan hari ini",
-      "uniqueMembers": "Anggota unik",
-      "totalPeople": "Total orang"
+      "totalVisits": "Kunjungan hari ini",
+      "uniqueMembers": "Anggota berbeda hari ini",
+      "totalPeople": "Orang hari ini",
+      "heading": "Kunjungan hari ini"
     },
     "kinds": {
       "member": "Anggota",

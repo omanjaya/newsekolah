@@ -825,9 +825,10 @@
       "visitedAt": "Time"
     },
     "summary": {
-      "totalVisits": "Total visits today",
-      "uniqueMembers": "Unique members",
-      "totalPeople": "Total people"
+      "totalVisits": "Visits today",
+      "uniqueMembers": "Different members today",
+      "totalPeople": "People today",
+      "heading": "Visits today"
     },
     "kinds": {
       "member": "Member",

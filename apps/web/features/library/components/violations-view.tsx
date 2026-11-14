@@ -1,15 +1,17 @@
 "use client";
 
-import { formatCurrency, formatDate } from "@newsekolah/i18n";
+import { formatCurrency } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
+  Alert,
+  Badge,
   Button,
   DataTable,
-  domainIcons,
   EmptyState,
-  PageHeader,
+  FilteredEmptyState,
   RowActionsMenu,
-  SemanticStatusBadge,
+  TextLink,
+  domainIcons,
   useToast,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
@@ -20,11 +22,13 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
-import { CursorPagination } from "../../../components/cursor-pagination";
+import { AppPage } from "../../../components/app-page";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryNames } from "../../reference/directory-names";
+import { formatShortDate } from "../lib/short-date";
+import { VIOLATION_STATUS_TONE, toneOf } from "../lib/status-tones";
 import {
   type LibraryViolation,
   type LibraryViolationKind,
@@ -68,7 +72,9 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
     !memberUserId,
   );
   const memberViolations = useMemberViolationsQuery(memberUserId ?? "");
-  const { data, isLoading } = memberUserId ? memberViolations : allViolations;
+  const { data, isLoading, error, refetch, isRefetching } = memberUserId
+    ? memberViolations
+    : allViolations;
 
   const rawItems = data?.data ?? [];
   // The all-violations query already filters server-side; the member-scoped
@@ -115,19 +121,21 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         id: "member",
         header: t("columns.member"),
         enableSorting: false,
+        meta: { card: "title" },
         cell: ({ row }) => (
-          <Link
+          <TextLink
             href={`/library/members/${row.original.member_user_id}`}
-            className="font-medium text-accent hover:underline"
+            className="font-semibold"
           >
             {directoryMap.get(row.original.member_user_id)?.name ?? t("unknownMember")}
-          </Link>
+          </TextLink>
         ),
       },
       {
         id: "kind",
         header: t("columns.kind"),
         enableSorting: false,
+        meta: { card: "subtitle" },
         cell: ({ row }) => t(`kinds.${row.original.kind}`),
       },
       {
@@ -155,17 +163,17 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         header: t("columns.createdAt"),
         enableSorting: false,
         cell: ({ row }) =>
-          row.original.created_at ? formatDate(row.original.created_at, { locale }) : "-",
+          row.original.created_at ? formatShortDate(row.original.created_at, locale) : "-",
       },
       {
         id: "status",
         header: t("columns.status"),
         enableSorting: false,
+        meta: { card: "meta", skeleton: "badge" },
         cell: ({ row }) => (
-          <SemanticStatusBadge
-            status={row.original.status}
-            label={t(`status.${row.original.status}`)}
-          />
+          <Badge tone={toneOf(VIOLATION_STATUS_TONE, row.original.status)}>
+            {t(`status.${row.original.status}`)}
+          </Badge>
         ),
       },
       {
@@ -189,36 +197,28 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
     [t, locale, directoryMap, canRecord],
   );
 
-  return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          canRecord && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                setRecording(true);
-              }}
-            >
-              {t("record")}
-            </Button>
-          )
-        }
-      />
-      <LibraryWorkspaceNav area="circulation" />
+  const recordButton = canRecord ? (
+    <Button
+      icon={<Plus />}
+      onClick={() => {
+        setRecording(true);
+      }}
+    >
+      {t("record")}
+    </Button>
+  ) : undefined;
 
+  return (
+    <AppPage nav={<LibraryWorkspaceNav area="circulation" />} primaryAction={recordButton}>
       {memberUserId && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-border bg-surface p-3 text-body-sm">
-          <span>
-            {t("memberScope", { name: directoryMap.get(memberUserId)?.name ?? memberUserId })}
-          </span>
-          <Button asChild variant="secondary" size="sm">
-            <Link href="/library/violations">{t("allMembers")}</Link>
-          </Button>
-        </div>
+        <Alert
+          title={t("memberScope", { name: directoryMap.get(memberUserId)?.name ?? memberUserId })}
+          action={
+            <Button asChild variant="secondary" size="sm">
+              <Link href="/library/violations">{t("allMembers")}</Link>
+            </Button>
+          }
+        />
       )}
 
       <DataTable
@@ -228,8 +228,18 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         data={items}
         columns={columns}
         rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: VIOLATIONS_PAGE_SIZE }}
-        onPaginationChange={() => undefined}
+        cursorPagination={
+          memberUserId
+            ? undefined
+            : {
+                hasPrevious: paging.hasPrevious,
+                hasNext: paging.hasNextFor(items.length),
+                onPrevious: paging.goPrevious,
+                onNext: paging.goNext,
+                page: paging.page,
+                pageSize: paging.limit,
+              }
+        }
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
@@ -239,23 +249,31 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
           removeFilter: (label) => t("filters.removeFilter", { label }),
         }}
         isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        retrying={isRefetching}
         getRowId={(item) => item.id}
         emptyState={
-          <EmptyState
-            icon={<domainIcons.violation aria-hidden="true" />}
-            title={isFiltered ? t("noMatchTitle") : t("emptyTitle")}
-            description={isFiltered ? t("noMatchBody") : t("emptyBody")}
-          />
+          isFiltered ? (
+            <FilteredEmptyState
+              title={t("noMatchTitle")}
+              description={t("noMatchBody")}
+              onReset={() => {
+                setStatus("");
+                setKind("");
+                paging.resetPage();
+              }}
+            />
+          ) : (
+            <EmptyState
+              icon={<domainIcons.violation aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+              action={recordButton}
+            />
+          )
         }
       />
-      {!memberUserId && (
-        <CursorPagination
-          hasPrevious={paging.hasPrevious}
-          hasNext={paging.hasNextFor(items.length)}
-          onPrevious={paging.goPrevious}
-          onNext={paging.goNext}
-        />
-      )}
 
       <ViolationRecordDialog
         key={memberUserId ?? "all"}
@@ -283,7 +301,7 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
           setSettling(null);
         }}
       />
-    </div>
+    </AppPage>
   );
 }
 
