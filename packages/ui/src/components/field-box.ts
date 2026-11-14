@@ -59,5 +59,10 @@ export const FIELD_ICON_FACE =
   "flex size-10 items-center justify-center rounded-full md:pointer-fine:size-full [&>svg]:size-4 " +
   "transition-colors group-hover/icon:bg-state-hover group-hover/icon:text-fg " +
   "group-active/icon:bg-state-pressed " +
-  "group-focus-visible/icon:outline-2 group-focus-visible/icon:outline-offset-2 " +
+  // The ring hugs the face: at the base offset of 2 it ran into the field's
+  // own rounded border and the two read as a double outline. The 40px
+  // touch face fills the field's height, so there the ring is drawn inside
+  // it; the 24px face with a cursor has room for it just outside.
+  "group-focus-visible/icon:outline-2 group-focus-visible/icon:-outline-offset-2 " +
+  "md:pointer-fine:group-focus-visible/icon:outline-offset-0 " +
   "group-focus-visible/icon:outline-focus-ring";
