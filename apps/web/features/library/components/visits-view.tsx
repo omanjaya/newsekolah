@@ -102,7 +102,7 @@ export function VisitsView(): ReactElement {
           <div className="flex flex-col">
             <span>{t(`kinds.${row.original.kind}`)}</span>
             {row.original.kind === "group" && row.original.group_size > 1 && (
-              <span className="text-[12px] text-fg-muted">
+              <span className="text-caption text-fg-muted">
                 {t("groupSizeValue", { count: row.original.group_size })}
               </span>
             )}
@@ -156,24 +156,18 @@ export function VisitsView(): ReactElement {
       />
       <LibraryWorkspaceNav area="circulation" />
 
-      <dl className="flex flex-wrap gap-6 rounded-sm border border-border bg-surface p-4 text-[13px]">
+      <dl className="flex flex-wrap gap-6 rounded-sm border border-border bg-surface p-4 text-body-sm">
         <div className="flex flex-col gap-1">
           <dt className="text-fg-muted">{t("summary.totalVisits")}</dt>
-          <dd className="text-[20px] font-medium tabular-nums text-fg">
-            {summary.data?.total_visits ?? "-"}
-          </dd>
+          <dd className="text-title tabular-nums text-fg">{summary.data?.total_visits ?? "-"}</dd>
         </div>
         <div className="flex flex-col gap-1">
           <dt className="text-fg-muted">{t("summary.uniqueMembers")}</dt>
-          <dd className="text-[20px] font-medium tabular-nums text-fg">
-            {summary.data?.unique_members ?? "-"}
-          </dd>
+          <dd className="text-title tabular-nums text-fg">{summary.data?.unique_members ?? "-"}</dd>
         </div>
         <div className="flex flex-col gap-1">
           <dt className="text-fg-muted">{t("summary.totalPeople")}</dt>
-          <dd className="text-[20px] font-medium tabular-nums text-fg">
-            {summary.data?.total_people ?? "-"}
-          </dd>
+          <dd className="text-title tabular-nums text-fg">{summary.data?.total_people ?? "-"}</dd>
         </div>
       </dl>
 

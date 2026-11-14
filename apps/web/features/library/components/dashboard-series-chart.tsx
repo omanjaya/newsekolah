@@ -25,7 +25,7 @@ export function DashboardSeriesChart({ series }: { series: SeriesPoint[] }): Rea
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-4 text-[12px] text-fg-muted">
+      <div className="flex items-center gap-4 text-caption text-fg-muted">
         <span className="flex items-center gap-1.5">
           <span className="size-2.5 rounded-xs bg-accent" aria-hidden="true" />
           {t("loans", { count: totalLoans })}

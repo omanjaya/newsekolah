@@ -9,7 +9,7 @@ import type { ReactElement, ReactNode } from "react";
  */
 export function ReportCard({ children }: { children: ReactNode }): ReactElement {
   return (
-    <div className="rounded-sm border border-border bg-surface p-3 text-[13px]">{children}</div>
+    <div className="rounded-sm border border-border bg-surface p-3 text-body-sm">{children}</div>
   );
 }
 

@@ -21,19 +21,19 @@ export function ReportMembersTable(): ReactElement {
 
   if (isLoading) return <Skeleton className="h-64 w-full" aria-busy="true" />;
   if (!data || data.total === 0) {
-    return <p className="text-[13px] text-fg-muted">{t("emptyTitle")}</p>;
+    return <p className="text-body-sm text-fg-muted">{t("emptyTitle")}</p>;
   }
 
   return (
     <div className="flex flex-col gap-6">
       <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="flex flex-col">
-          <dt className="text-[12px] text-fg-muted">{t("total")}</dt>
-          <dd className="text-[18px] font-medium tabular-nums text-fg">{data.total}</dd>
+          <dt className="text-caption text-fg-muted">{t("total")}</dt>
+          <dd className="text-title tabular-nums text-fg">{data.total}</dd>
         </div>
         <div className="flex flex-col">
-          <dt className="text-[12px] text-fg-muted">{t("active")}</dt>
-          <dd className="text-[18px] font-medium tabular-nums text-fg">{data.active}</dd>
+          <dt className="text-caption text-fg-muted">{t("active")}</dt>
+          <dd className="text-title tabular-nums text-fg">{data.active}</dd>
         </div>
       </dl>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

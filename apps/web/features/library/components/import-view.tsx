@@ -126,7 +126,7 @@ export function ImportView(): ReactElement {
 
       {step === "upload" && (
         <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-6">
-          <p className="text-[13px] text-fg-muted">{t("uploadDescription")}</p>
+          <p className="text-body-sm text-fg-muted">{t("uploadDescription")}</p>
           <Button
             type="button"
             variant="secondary"
@@ -137,7 +137,7 @@ export function ImportView(): ReactElement {
           >
             {t("downloadTemplate")}
           </Button>
-          <label className="flex flex-col gap-2 text-[13px]">
+          <label className="flex flex-col gap-2 text-body-sm">
             <span className="font-medium text-fg">{t("uploadLabel")}</span>
             <input
               ref={fileInputRef}
@@ -147,7 +147,7 @@ export function ImportView(): ReactElement {
                 const file = e.target.files?.[0];
                 if (file) void handleFile(file);
               }}
-              className="rounded-xs border border-border bg-bg p-2 text-[13px] file:mr-3 file:rounded-xs file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-accent-fg"
+              className="rounded-xs border border-border bg-bg p-2 text-body-sm file:mr-3 file:rounded-xs file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-accent-fg"
             />
             {fileName && (
               <span className="text-fg-muted">{t("selectedFile", { name: fileName })}</span>
@@ -185,7 +185,7 @@ export function ImportView(): ReactElement {
 
       {step === "result" && commitResult && (
         <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-6">
-          <p className="text-[14px] text-fg">
+          <p className="text-body text-fg">
             {t("resultSummary", {
               titles: commitResult.created_titles,
               copies: commitResult.created_copies,

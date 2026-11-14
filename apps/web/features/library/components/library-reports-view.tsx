@@ -3,6 +3,7 @@
 import { formatCurrency, formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
+  Field,
   Button,
   EmptyState,
   Input,
@@ -161,8 +162,7 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
         <div className="flex flex-wrap items-end justify-between gap-3">
           {!TABS_WITHOUT_DATE_RANGE.includes(tab) ? (
             <div className="flex flex-wrap items-end gap-3">
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium text-fg">{t("fromLabel")}</span>
+              <Field label={t("fromLabel")}>
                 <Input
                   type="date"
                   value={from}
@@ -170,9 +170,8 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
                     setFrom(e.target.value);
                   }}
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium text-fg">{t("toLabel")}</span>
+              </Field>
+              <Field label={t("toLabel")}>
                 <Input
                   type="date"
                   value={to}
@@ -180,7 +179,7 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
                     setTo(e.target.value);
                   }}
                 />
-              </label>
+              </Field>
             </div>
           ) : (
             <span />
@@ -219,8 +218,7 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
       </Tabs>
 
       <div className="flex flex-wrap items-end gap-3 border-t border-border pt-6">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("monthly.monthLabel")}</span>
+        <Field label={t("monthly.monthLabel")}>
           <Input
             type="month"
             value={month}
@@ -228,7 +226,7 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
               setMonth(e.target.value);
             }}
           />
-        </label>
+        </Field>
         <Button
           size="sm"
           variant="secondary"

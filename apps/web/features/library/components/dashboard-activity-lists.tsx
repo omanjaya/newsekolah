@@ -25,7 +25,7 @@ function LoanList({
 
   if (loans.length === 0) {
     return (
-      <p className="text-[13px] text-fg-muted">
+      <p className="text-body-sm text-fg-muted">
         {emptyLabel}{" "}
         <Link href="/library/desk" className="text-accent underline underline-offset-2">
           {t("openDesk")}
@@ -37,7 +37,7 @@ function LoanList({
   return (
     <ul className="flex flex-col gap-2">
       {loans.map((loan) => (
-        <li key={loan.id} className="flex items-center justify-between gap-3 text-[13px]">
+        <li key={loan.id} className="flex items-center justify-between gap-3 text-body-sm">
           <span className="truncate text-fg">
             <LibraryTitleName titleId={loan.title_id} />
           </span>
@@ -65,17 +65,17 @@ export function DashboardActivityLists({
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-        <h2 className="text-[15px] font-semibold text-fg">{t("latestLoans")}</h2>
+        <h2 className="text-heading text-fg">{t("latestLoans")}</h2>
         <LoanList loans={latestLoans} emptyLabel={t("noLatestLoans")} showDueOn={false} />
       </div>
 
       <div className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-        <h2 className="text-[15px] font-semibold text-fg">{t("longestOverdue")}</h2>
+        <h2 className="text-heading text-fg">{t("longestOverdue")}</h2>
         <LoanList loans={longestOverdue} emptyLabel={t("noOverdue")} showDueOn />
       </div>
 
       <div className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-        <h2 className="text-[15px] font-semibold text-fg">{t("popularTitles")}</h2>
+        <h2 className="text-heading text-fg">{t("popularTitles")}</h2>
         {popularTitles.length === 0 ? (
           <EmptyState
             icon={<domainIcons.library aria-hidden="true" />}
@@ -86,7 +86,7 @@ export function DashboardActivityLists({
             {popularTitles.map((entry) => (
               <li
                 key={entry.title.id}
-                className="flex items-center justify-between gap-3 text-[13px]"
+                className="flex items-center justify-between gap-3 text-body-sm"
               >
                 <span className="truncate text-fg">{entry.title.title}</span>
                 <span className="shrink-0 tabular-nums text-fg-muted">

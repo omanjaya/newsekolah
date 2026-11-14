@@ -81,7 +81,7 @@ function TodayCard({
         <span
           className={cn(
             "flex size-9 shrink-0 items-center justify-center rounded-sm [&>svg]:size-5",
-            emphasize ? "bg-status-absent/15 text-status-absent" : "bg-accent/10 text-accent",
+            emphasize ? "bg-status-absent/15 text-danger" : "bg-accent/10 text-accent",
           )}
         >
           {icon}
@@ -89,16 +89,16 @@ function TodayCard({
         <div className="flex flex-col">
           <span
             className={cn(
-              "text-[22px] leading-tight font-semibold tabular-nums",
-              emphasize ? "text-status-absent" : "text-fg",
+              "text-title-lg leading-tight tabular-nums",
+              emphasize ? "text-danger" : "text-fg",
             )}
           >
             {value}
           </span>
-          <span className="text-[13px] text-fg-muted">{label}</span>
+          <span className="text-body-sm text-fg-muted">{label}</span>
         </div>
       </div>
-      <span className="flex shrink-0 items-center gap-1 text-[12px] font-medium text-accent">
+      <span className="flex shrink-0 items-center gap-1 text-caption text-accent">
         {actionLabel}
         <ArrowRight className="size-3.5" aria-hidden="true" />
       </span>

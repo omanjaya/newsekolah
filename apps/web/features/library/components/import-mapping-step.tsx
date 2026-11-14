@@ -32,10 +32,10 @@ export function ImportMappingStep({
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
+      <p className="text-body-sm text-fg-muted">{t("description")}</p>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {IMPORT_FIELDS.map((field) => (
-          <label key={field} className="flex flex-col gap-1 text-[13px]">
+          <label key={field} className="flex flex-col gap-1 text-body-sm">
             <span className="font-medium text-fg">{tFields(field)}</span>
             <Select
               options={headerOptions}
@@ -55,7 +55,7 @@ export function ImportMappingStep({
           {t("continue")}
         </Button>
       </div>
-      {!mapping.title && <p className="text-[13px] text-status-absent">{t("titleRequired")}</p>}
+      {!mapping.title && <p className="text-body-sm text-danger">{t("titleRequired")}</p>}
     </div>
   );
 }

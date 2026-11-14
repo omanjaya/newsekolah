@@ -139,7 +139,7 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
       {isOpen && (
         <>
           <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-            <h2 className="text-[15px] font-semibold text-fg">{t("progress.heading")}</h2>
+            <h2 className="text-heading text-fg">{t("progress.heading")}</h2>
             {progress.isLoading ? (
               <Skeleton className="h-16 w-full" aria-busy="true" />
             ) : progress.data ? (
@@ -150,11 +150,11 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
                 <Stat label={t("result.misplaced")} value={num(progress.data.misplaced_count)} />
               </StatGrid>
             ) : null}
-            <p className="text-[12px] text-fg-muted">{t("progress.live")}</p>
+            <p className="text-caption text-fg-muted">{t("progress.live")}</p>
           </section>
 
           <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-            <h2 className="text-[15px] font-semibold text-fg">{t("scan.heading")}</h2>
+            <h2 className="text-heading text-fg">{t("scan.heading")}</h2>
             <BarcodeScannerField
               label={t("scan.label")}
               onScan={handleScan}
@@ -162,7 +162,7 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
               submitLabel={t("scan.submit")}
               disabled={scan.isPending}
             />
-            <p className="text-[13px] text-fg-muted">
+            <p className="text-body-sm text-fg-muted">
               {t("scan.thisDevice", { count: scannedCount })}
             </p>
             <ScanFeedList entries={scanFeed} />
@@ -186,7 +186,7 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
 
       {result && (
         <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-          <h2 className="text-[15px] font-semibold text-fg">{t("result.heading")}</h2>
+          <h2 className="text-heading text-fg">{t("result.heading")}</h2>
           <StatGrid>
             <Stat label={t("result.expected")} value={num(result.expected_count)} />
             <Stat label={t("result.scanned")} value={num(result.scanned_count)} />
@@ -253,24 +253,19 @@ function ScanFeedList({ entries }: { entries: ScanFeedEntry[] }): ReactElement |
           <li
             key={entry.at}
             className={cn(
-              "flex items-center gap-2.5 rounded-sm border px-3 py-2 text-[13px]",
+              "flex items-center gap-2.5 rounded-sm border px-3 py-2 text-body-sm",
               isFound
                 ? "border-status-present/40 bg-status-present/5"
                 : "border-status-absent/40 bg-status-absent/5",
             )}
           >
             {isFound ? (
-              <CheckCircle2 className="size-4 shrink-0 text-status-present" aria-hidden="true" />
+              <CheckCircle2 className="size-4 shrink-0 text-success" aria-hidden="true" />
             ) : (
-              <XCircle className="size-4 shrink-0 text-status-absent" aria-hidden="true" />
+              <XCircle className="size-4 shrink-0 text-danger" aria-hidden="true" />
             )}
             <span className="min-w-0 flex-1 truncate font-mono text-fg">{entry.barcode}</span>
-            <span
-              className={cn(
-                "shrink-0 font-medium",
-                isFound ? "text-status-present" : "text-status-absent",
-              )}
-            >
+            <span className={cn("shrink-0 font-medium", isFound ? "text-success" : "text-danger")}>
               {isFound ? t("found") : t("rejected")}
             </span>
           </li>
@@ -299,19 +294,19 @@ function BarcodeList({
   const rest = barcodes.length - shown.length;
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-[13px] font-medium text-fg">{label}</h3>
+      <h3 className="text-label text-fg">{label}</h3>
       <ul className="flex flex-wrap gap-1">
         {shown.map((barcode) => (
           <li
             key={barcode}
-            className="rounded-xs border border-border bg-bg px-2 py-0.5 font-mono text-[12px] text-fg"
+            className="rounded-xs border border-border bg-bg px-2 py-0.5 font-mono text-caption text-fg"
           >
             {barcode}
           </li>
         ))}
       </ul>
       {rest > 0 && (
-        <p className="text-[12px] text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {t("moreInReport", { count: formatNumber(rest, { locale }) })}
         </p>
       )}

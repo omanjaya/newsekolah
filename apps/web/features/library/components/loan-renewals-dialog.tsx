@@ -38,9 +38,9 @@ export function LoanRenewalsDialog({
         {renewals.isLoading ? (
           <Skeleton className="h-24 w-full" />
         ) : items.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("empty")}</p>
+          <p className="text-body-sm text-fg-muted">{t("empty")}</p>
         ) : (
-          <ul className="flex flex-col gap-2 text-[13px]">
+          <ul className="flex flex-col gap-2 text-body-sm">
             {items.map((renewal) => (
               <li key={renewal.id} className="rounded-sm border border-border bg-surface p-2">
                 <p className="text-fg">

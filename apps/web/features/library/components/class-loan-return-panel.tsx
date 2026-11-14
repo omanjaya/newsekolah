@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Select, useToast } from "@newsekolah/ui";
+import { Field, Button, Select, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -47,12 +47,11 @@ export function ClassLoanReturnPanel(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-      <h2 className="text-[15px] font-semibold text-fg">{t("heading")}</h2>
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
+      <h2 className="text-heading text-fg">{t("heading")}</h2>
+      <p className="text-body-sm text-fg-muted">{t("description")}</p>
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("classLabel")}</span>
+        <Field label={t("classLabel")}>
           <Select
             options={classOptions}
             value={classId}
@@ -64,8 +63,8 @@ export function ClassLoanReturnPanel(): ReactElement {
             disabled={classes.isLoading}
             className="w-56"
           />
-        </label>
-        <div className="flex flex-col gap-1 text-[13px]">
+        </Field>
+        <div className="flex flex-col gap-1 text-body-sm">
           <span className="font-medium text-fg">{t("titleLabel")}</span>
           <ClassTitlePicker
             selected={title}
@@ -91,10 +90,10 @@ export function ClassLoanReturnPanel(): ReactElement {
 
       {result && result.rejected.length > 0 && (
         <div className="flex flex-col gap-1 rounded-xs border border-status-absent/40 bg-status-absent/5 p-3">
-          <span className="text-[13px] font-medium text-status-absent">{t("rejectedTitle")}</span>
+          <span className="text-label text-danger">{t("rejectedTitle")}</span>
           <ul className="flex flex-col gap-1">
             {result.rejected.map((item) => (
-              <li key={item.barcode} className="text-[13px] text-fg">
+              <li key={item.barcode} className="text-body-sm text-fg">
                 {item.barcode}: {item.reason}
               </li>
             ))}

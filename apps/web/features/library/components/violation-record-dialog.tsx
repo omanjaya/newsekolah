@@ -1,7 +1,16 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Dialog, DialogContent, Input, Select, Textarea } from "@newsekolah/ui";
+import {
+  FormError,
+  Field,
+  Button,
+  Dialog,
+  DialogContent,
+  Input,
+  Select,
+  Textarea,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -96,17 +105,15 @@ export function ViolationRecordDialog({
             );
           }}
         >
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("member")}</span>
+          <Field label={t("member")}>
             <DirectoryPicker
               value={memberUserId}
               onValueChange={setMemberUserId}
               labels={memberLabels}
               showUsername
             />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("kind")}</span>
+          </Field>
+          <Field label={t("kind")}>
             <Select
               options={KINDS.map((k) => ({ value: k, label: tViolations(`kinds.${k}`) }))}
               value={kind}
@@ -114,9 +121,8 @@ export function ViolationRecordDialog({
                 setKind(v as LibraryViolationKind);
               }}
             />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("penalty")}</span>
+          </Field>
+          <Field label={t("penalty")}>
             <Select
               options={PENALTIES.map((p) => ({ value: p, label: tViolations(`penalties.${p}`) }))}
               value={penalty}
@@ -124,10 +130,9 @@ export function ViolationRecordDialog({
                 setPenalty(v as LibraryPenalty);
               }}
             />
-          </label>
+          </Field>
           {penalty === "fine" && (
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("amount")}</span>
+            <Field label={t("amount")}>
               <Input
                 type="number"
                 min={0}
@@ -136,11 +141,10 @@ export function ViolationRecordDialog({
                   setAmount(e.target.value);
                 }}
               />
-            </label>
+            </Field>
           )}
           {penalty === "suspend" && (
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("suspendDays")}</span>
+            <Field label={t("suspendDays")}>
               <Input
                 type="number"
                 min={0}
@@ -149,10 +153,9 @@ export function ViolationRecordDialog({
                   setSuspendDays(e.target.value);
                 }}
               />
-            </label>
+            </Field>
           )}
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("notes")}</span>
+          <Field label={t("notes")}>
             <Textarea
               rows={3}
               value={notes}
@@ -161,8 +164,8 @@ export function ViolationRecordDialog({
               }}
               maxLength={500}
             />
-          </label>
-          {error && <p className="text-[13px] text-status-absent">{error}</p>}
+          </Field>
+          {error && <FormError>{error}</FormError>}
           <div className="flex justify-end gap-2 border-t border-border pt-4">
             <Button
               type="button"

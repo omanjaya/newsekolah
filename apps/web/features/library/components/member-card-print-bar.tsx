@@ -33,7 +33,7 @@ export function MemberCardPrintBar({
   const overLimit = selectedIds.length > MAX_BATCH;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-accent/30 bg-accent/5 p-3 text-[13px]">
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-accent/30 bg-accent/5 p-3 text-body-sm">
       <span className="text-fg">
         {overLimit
           ? t("overLimit", { count: selectedIds.length, max: MAX_BATCH })

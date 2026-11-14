@@ -2,6 +2,8 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  FormError,
+  Field,
   Badge,
   Button,
   ConfirmDialog,
@@ -257,8 +259,7 @@ function PartnerForm({
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("code")}</span>
+      <Field label={t("code")}>
         <Input
           value={code}
           onChange={(e) => {
@@ -267,9 +268,8 @@ function PartnerForm({
           required
           maxLength={20}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
+      </Field>
+      <Field label={t("name")}>
         <Input
           value={name}
           onChange={(e) => {
@@ -278,9 +278,8 @@ function PartnerForm({
           required
           maxLength={150}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("contactName")}</span>
+      </Field>
+      <Field label={t("contactName")}>
         <Input
           value={contactName}
           onChange={(e) => {
@@ -288,9 +287,8 @@ function PartnerForm({
           }}
           maxLength={100}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("phone")}</span>
+      </Field>
+      <Field label={t("phone")}>
         <Input
           value={phone}
           onChange={(e) => {
@@ -298,9 +296,8 @@ function PartnerForm({
           }}
           maxLength={30}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("address")}</span>
+      </Field>
+      <Field label={t("address")}>
         <Input
           value={address}
           onChange={(e) => {
@@ -308,9 +305,8 @@ function PartnerForm({
           }}
           maxLength={255}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("sortOrder")}</span>
+      </Field>
+      <Field label={t("sortOrder")}>
         <Input
           type="number"
           value={sortOrder}
@@ -318,12 +314,12 @@ function PartnerForm({
             setSortOrder(e.target.value);
           }}
         />
-      </label>
-      <label className="flex items-center gap-2 text-[13px]">
+      </Field>
+      <label className="flex items-center gap-2 text-body-sm">
         <Switch checked={isActive} onCheckedChange={setIsActive} />
         <span className="font-medium">{t("isActive")}</span>
       </label>
-      {error && <p className="text-[13px] text-status-absent">{error}</p>}
+      {error && <FormError>{error}</FormError>}
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}

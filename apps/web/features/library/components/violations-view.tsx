@@ -138,12 +138,12 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
           <div className="flex flex-col">
             <span>{t(`penalties.${row.original.penalty}`)}</span>
             {row.original.penalty === "fine" && row.original.amount > 0 && (
-              <span className="text-[12px] text-fg-muted">
+              <span className="text-caption text-fg-muted">
                 {formatCurrency(row.original.amount, "IDR", { locale })}
               </span>
             )}
             {row.original.penalty === "suspend" && row.original.suspend_days > 0 && (
-              <span className="text-[12px] text-fg-muted">
+              <span className="text-caption text-fg-muted">
                 {t("suspendDaysValue", { days: row.original.suspend_days })}
               </span>
             )}
@@ -211,7 +211,7 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
       <LibraryWorkspaceNav area="circulation" />
 
       {memberUserId && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-border bg-surface p-3 text-[13px]">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-border bg-surface p-3 text-body-sm">
           <span>
             {t("memberScope", { name: directoryMap.get(memberUserId)?.name ?? memberUserId })}
           </span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select } from "@newsekolah/ui";
+import { FormError, Field, Button, Input, Select } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -85,8 +85,7 @@ export function MemberTypeForm({
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
+      <Field label={t("name")}>
         <Input
           value={name}
           onChange={(e) => {
@@ -95,10 +94,9 @@ export function MemberTypeForm({
           required
           maxLength={100}
         />
-      </label>
+      </Field>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("maxLoanItems")}</span>
+        <Field label={t("maxLoanItems")}>
           <Input
             type="number"
             min={1}
@@ -107,9 +105,8 @@ export function MemberTypeForm({
               setMaxLoanItems(e.target.value);
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("maxLoanDays")}</span>
+        </Field>
+        <Field label={t("maxLoanDays")}>
           <Input
             type="number"
             min={1}
@@ -118,9 +115,8 @@ export function MemberTypeForm({
               setMaxLoanDays(e.target.value);
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("renewalDays")}</span>
+        </Field>
+        <Field label={t("renewalDays")}>
           <Input
             type="number"
             min={1}
@@ -129,9 +125,8 @@ export function MemberTypeForm({
               setRenewalDays(e.target.value);
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("maxRenewals")}</span>
+        </Field>
+        <Field label={t("maxRenewals")}>
           <Input
             type="number"
             min={0}
@@ -140,9 +135,8 @@ export function MemberTypeForm({
               setMaxRenewals(e.target.value);
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("fineType")}</span>
+        </Field>
+        <Field label={t("fineType")}>
           <Select
             options={FINE_TYPES.map((v) => ({ value: v, label: t(`fineTypeOptions.${v}`) }))}
             value={fineType}
@@ -150,9 +144,8 @@ export function MemberTypeForm({
               setFineType(v as LibraryMemberTypeWrite["fine_type"]);
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("finePerTenor")}</span>
+        </Field>
+        <Field label={t("finePerTenor")}>
           <Input
             type="number"
             min={0}
@@ -161,9 +154,8 @@ export function MemberTypeForm({
               setFinePerTenor(e.target.value);
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("tenorDays")}</span>
+        </Field>
+        <Field label={t("tenorDays")}>
           <Input
             type="number"
             min={1}
@@ -172,9 +164,8 @@ export function MemberTypeForm({
               setTenorDays(e.target.value);
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("suspendDays")}</span>
+        </Field>
+        <Field label={t("suspendDays")}>
           <Input
             type="number"
             min={0}
@@ -183,9 +174,8 @@ export function MemberTypeForm({
               setSuspendDays(e.target.value);
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("validityMonths")}</span>
+        </Field>
+        <Field label={t("validityMonths")}>
           <Input
             type="number"
             min={1}
@@ -194,18 +184,17 @@ export function MemberTypeForm({
               setValidityMonths(e.target.value);
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("defaultForRole")}</span>
+        </Field>
+        <Field label={t("defaultForRole")}>
           <Select
             options={ROLES.filter((r) => r !== "").map((r) => ({ value: r, label: tRole(r) }))}
             value={defaultForRole}
             onValueChange={setDefaultForRole}
             placeholder={t("defaultForRoleNone")}
           />
-        </label>
+        </Field>
       </div>
-      {error && <p className="text-[13px] text-status-absent">{error}</p>}
+      {error && <FormError>{error}</FormError>}
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}

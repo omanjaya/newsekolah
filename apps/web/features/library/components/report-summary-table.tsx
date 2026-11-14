@@ -17,13 +17,13 @@ function BreakdownTable({
 }): ReactElement {
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-[13px] font-medium text-fg">{title}</h3>
+      <h3 className="text-label text-fg">{title}</h3>
       {rows.length === 0 ? (
-        <p className="text-[13px] text-fg-muted">-</p>
+        <p className="text-body-sm text-fg-muted">-</p>
       ) : (
         <ul className="flex flex-col gap-1">
           {rows.map((row) => (
-            <li key={row.name} className="flex items-center justify-between text-[13px]">
+            <li key={row.name} className="flex items-center justify-between text-body-sm">
               <span className="text-fg">{row.name}</span>
               <span className="tabular-nums text-fg-muted">{row.count}</span>
             </li>
@@ -41,7 +41,7 @@ export function ReportSummaryTable({ from, to }: { from: string; to: string }): 
   const { data, isLoading } = useLibraryCatalogueSummaryReportQuery(from, to);
 
   if (isLoading) return <Skeleton className="h-64 w-full" aria-busy="true" />;
-  if (!data) return <p className="text-[13px] text-fg-muted">{t("emptyTitle")}</p>;
+  if (!data) return <p className="text-body-sm text-fg-muted">{t("emptyTitle")}</p>;
 
   const stats: { key: string; value: string | number }[] = [
     { key: "studentsTotal", value: data.students_total },
@@ -65,14 +65,14 @@ export function ReportSummaryTable({ from, to }: { from: string; to: string }): 
       <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {stats.map((stat) => (
           <div key={stat.key} className="flex flex-col">
-            <dt className="text-[12px] text-fg-muted">{t(`stats.${stat.key}`)}</dt>
-            <dd className="text-[18px] font-medium tabular-nums text-fg">{stat.value}</dd>
+            <dt className="text-caption text-fg-muted">{t(`stats.${stat.key}`)}</dt>
+            <dd className="text-title tabular-nums text-fg">{stat.value}</dd>
           </div>
         ))}
       </dl>
 
       {data.last_stocktake && (
-        <p className="text-[13px] text-fg-muted">
+        <p className="text-body-sm text-fg-muted">
           {t("lastStocktake", {
             name: data.last_stocktake.name,
             date: formatDate(data.last_stocktake.started_on, { locale }),

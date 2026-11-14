@@ -35,7 +35,7 @@ export function ImportPreviewTable({
 
   return (
     <div className="flex flex-col gap-4">
-      <dl className="flex flex-wrap gap-4 text-[13px]">
+      <dl className="flex flex-wrap gap-4 text-body-sm">
         <div className="flex items-center gap-1">
           <dt className="text-fg-muted">{t("summary.newTitles")}</dt>
           <dd className="font-medium text-fg">{preview.summary.new_titles}</dd>
@@ -50,12 +50,12 @@ export function ImportPreviewTable({
         </div>
         <div className="flex items-center gap-1">
           <dt className="text-fg-muted">{t("summary.errors")}</dt>
-          <dd className="font-medium text-status-absent">{preview.summary.errors}</dd>
+          <dd className="font-medium text-danger">{preview.summary.errors}</dd>
         </div>
       </dl>
 
       {errorCount > 0 && (
-        <p className="rounded-sm border border-status-absent/30 bg-status-absent/10 p-3 text-[13px] text-fg">
+        <p className="rounded-sm border border-status-absent/30 bg-status-absent/10 p-3 text-body-sm text-fg">
           {importableCount > 0
             ? t("partialWarning", { errors: errorCount, importable: importableCount })
             : t("allErrorWarning", { errors: errorCount })}

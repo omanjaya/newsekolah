@@ -2,6 +2,8 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  FormError,
+  Field,
   Badge,
   Button,
   ConfirmDialog,
@@ -260,8 +262,7 @@ function MaterialTypeForm({
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("code")}</span>
+      <Field label={t("code")}>
         <Input
           value={code}
           onChange={(e) => {
@@ -270,9 +271,8 @@ function MaterialTypeForm({
           required
           maxLength={20}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
+      </Field>
+      <Field label={t("name")}>
         <Input
           value={name}
           onChange={(e) => {
@@ -281,10 +281,9 @@ function MaterialTypeForm({
           required
           maxLength={100}
         />
-      </label>
+      </Field>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("maxLoanItems")}</span>
+        <Field label={t("maxLoanItems")}>
           <Input
             type="number"
             min={1}
@@ -293,9 +292,8 @@ function MaterialTypeForm({
               setMaxLoanItems(e.target.value);
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("maxLoanDays")}</span>
+        </Field>
+        <Field label={t("maxLoanDays")}>
           <Input
             type="number"
             min={1}
@@ -304,9 +302,8 @@ function MaterialTypeForm({
               setMaxLoanDays(e.target.value);
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("maxRenewals")}</span>
+        </Field>
+        <Field label={t("maxRenewals")}>
           <Input
             type="number"
             min={0}
@@ -315,10 +312,9 @@ function MaterialTypeForm({
               setMaxRenewals(e.target.value);
             }}
           />
-        </label>
+        </Field>
       </div>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("sortOrder")}</span>
+      <Field label={t("sortOrder")}>
         <Input
           type="number"
           value={sortOrder}
@@ -326,12 +322,12 @@ function MaterialTypeForm({
             setSortOrder(e.target.value);
           }}
         />
-      </label>
-      <label className="flex items-center gap-2 text-[13px]">
+      </Field>
+      <label className="flex items-center gap-2 text-body-sm">
         <Switch checked={isActive} onCheckedChange={setIsActive} />
         <span className="font-medium">{t("isActive")}</span>
       </label>
-      {error && <p className="text-[13px] text-status-absent">{error}</p>}
+      {error && <FormError>{error}</FormError>}
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}

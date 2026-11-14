@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Field,
   Badge,
   Button,
   ConfirmDialog,
@@ -262,8 +263,7 @@ function MasterEntryForm({
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.code")}</span>
+      <Field label={t("form.code")}>
         <Input
           value={code}
           onChange={(e) => {
@@ -272,9 +272,8 @@ function MasterEntryForm({
           required
           maxLength={20}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.name")}</span>
+      </Field>
+      <Field label={t("form.name")}>
         <Input
           value={name}
           onChange={(e) => {
@@ -283,9 +282,8 @@ function MasterEntryForm({
           required
           maxLength={100}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.sortOrder")}</span>
+      </Field>
+      <Field label={t("form.sortOrder")}>
         <Input
           type="number"
           inputMode="numeric"
@@ -294,13 +292,13 @@ function MasterEntryForm({
             setSortOrder(e.target.value);
           }}
         />
-      </label>
-      <label className="flex min-h-11 items-center gap-2 text-[13px]">
+      </Field>
+      <label className="flex min-h-11 items-center gap-2 text-body-sm">
         <Switch checked={isActive} onCheckedChange={setIsActive} />
         <span className="font-medium">{t("form.isActive")}</span>
       </label>
       {error && (
-        <p role="alert" className="text-[13px] text-status-absent">
+        <p role="alert" className="text-body-sm text-danger">
           {error}
         </p>
       )}

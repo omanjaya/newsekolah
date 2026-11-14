@@ -3,6 +3,7 @@
 import { formatDateTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
+  Field,
   Badge,
   Button,
   ConfirmDialog,
@@ -103,13 +104,13 @@ export function CopyDetailSheet({
                 <Badge variant={copy.status === "available" ? "accent" : "neutral"}>
                   {tStatus(copy.status)}
                 </Badge>
-                <span className="text-[13px] text-fg-muted">
+                <span className="text-body-sm text-fg-muted">
                   {t("condition", { condition: tCondition(copy.condition) })}
                 </span>
               </div>
 
               {canManage && copy.status === "on_loan" && (
-                <p className="rounded-sm border border-border bg-surface p-3 text-[13px] text-fg-muted">
+                <p className="rounded-sm border border-border bg-surface p-3 text-body-sm text-fg-muted">
                   {t("statusBlockedByLoan")}
                 </p>
               )}
@@ -136,9 +137,8 @@ export function CopyDetailSheet({
                     );
                   }}
                 >
-                  <h3 className="text-[13px] font-medium text-fg">{t("changeStatus")}</h3>
-                  <label className="flex flex-col gap-1 text-[13px]">
-                    <span className="font-medium">{t("newStatus")}</span>
+                  <h3 className="text-label text-fg">{t("changeStatus")}</h3>
+                  <Field label={t("newStatus")}>
                     <Select
                       options={MANUAL_STATUSES.filter((value) => value !== copy.status).map(
                         (value) => ({ value, label: tStatus(value) }),
@@ -149,9 +149,8 @@ export function CopyDetailSheet({
                       }}
                       placeholder={t("newStatusPlaceholder")}
                     />
-                  </label>
-                  <label className="flex flex-col gap-1 text-[13px]">
-                    <span className="font-medium">{t("note")}</span>
+                  </Field>
+                  <Field label={t("note")}>
                     <Textarea
                       value={note}
                       onChange={(e) => {
@@ -160,7 +159,7 @@ export function CopyDetailSheet({
                       maxLength={500}
                       rows={2}
                     />
-                  </label>
+                  </Field>
                   <Button
                     type="submit"
                     size="sm"
@@ -175,25 +174,25 @@ export function CopyDetailSheet({
               )}
 
               <div className="flex flex-col gap-2">
-                <h3 className="text-[13px] font-medium text-fg">{t("eventsHeading")}</h3>
+                <h3 className="text-label text-fg">{t("eventsHeading")}</h3>
                 {events.isLoading ? (
                   <Skeleton className="h-24 w-full" />
                 ) : (events.data?.data.length ?? 0) === 0 ? (
-                  <p className="text-[13px] text-fg-muted">{t("noEvents")}</p>
+                  <p className="text-body-sm text-fg-muted">{t("noEvents")}</p>
                 ) : (
-                  <ul className="flex flex-col gap-1 text-[13px]">
+                  <ul className="flex flex-col gap-1 text-body-sm">
                     {events.data?.data.map((event) => (
                       <li key={event.id} className="rounded-sm border border-border bg-surface p-2">
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-medium text-fg">
                             {t(`eventType.${event.event_type}`)}
                           </span>
-                          <span className="text-[12px] text-fg-muted">
+                          <span className="text-caption text-fg-muted">
                             {formatDateTime(event.created_at, { locale, timeZone })}
                           </span>
                         </div>
                         {(Boolean(event.from_status) || Boolean(event.to_status)) && (
-                          <p className="text-[12px] text-fg-muted">
+                          <p className="text-caption text-fg-muted">
                             {event.from_status
                               ? t("statusTransition", {
                                   from: statusLabel(event.from_status),
@@ -202,7 +201,7 @@ export function CopyDetailSheet({
                               : statusLabel(event.to_status)}
                           </p>
                         )}
-                        {event.note && <p className="text-[12px] text-fg-muted">{event.note}</p>}
+                        {event.note && <p className="text-caption text-fg-muted">{event.note}</p>}
                       </li>
                     ))}
                   </ul>

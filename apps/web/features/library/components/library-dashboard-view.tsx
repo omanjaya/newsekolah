@@ -61,7 +61,7 @@ export function LibraryDashboardView(): ReactElement {
       {!isLoading && data && (
         <>
           <div className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-            <h2 className="text-[15px] font-semibold text-fg">{t("seriesTitle")}</h2>
+            <h2 className="text-heading text-fg">{t("seriesTitle")}</h2>
             <DashboardSeriesChart series={data.series} />
           </div>
 

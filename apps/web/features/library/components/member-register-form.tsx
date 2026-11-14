@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select } from "@newsekolah/ui";
+import { FormError, Field, Button, Input, Select } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -68,8 +68,7 @@ export function MemberRegisterForm({
         );
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("role")}</span>
+      <Field label={t("role")}>
         <Select
           options={ROLES.map((r) => ({ value: r, label: tRole(r) }))}
           value={role}
@@ -78,9 +77,8 @@ export function MemberRegisterForm({
             setUserId("");
           }}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("user")}</span>
+      </Field>
+      <Field label={t("user")}>
         <DirectoryPicker
           key={role}
           profileKind={role}
@@ -89,9 +87,8 @@ export function MemberRegisterForm({
           labels={userLabels}
           showUsername
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("memberType")}</span>
+      </Field>
+      <Field label={t("memberType")}>
         <Select
           options={typeOptions}
           value={memberTypeId}
@@ -99,9 +96,8 @@ export function MemberRegisterForm({
           placeholder={t("memberTypePlaceholder")}
           disabled={memberTypes.isLoading}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("memberNo")}</span>
+      </Field>
+      <Field label={t("memberNo")}>
         <Input
           value={memberNo}
           onChange={(e) => {
@@ -110,9 +106,8 @@ export function MemberRegisterForm({
           placeholder={t("memberNoPlaceholder")}
           maxLength={40}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("notes")}</span>
+      </Field>
+      <Field label={t("notes")}>
         <Input
           value={notes}
           onChange={(e) => {
@@ -120,8 +115,8 @@ export function MemberRegisterForm({
           }}
           maxLength={500}
         />
-      </label>
-      {error && <p className="text-[13px] text-status-absent">{error}</p>}
+      </Field>
+      {error && <FormError>{error}</FormError>}
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         <Button
           type="button"

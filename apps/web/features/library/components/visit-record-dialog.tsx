@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Dialog, DialogContent, Input, Select } from "@newsekolah/ui";
+import { FormError, Field, Button, Dialog, DialogContent, Input, Select } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -89,8 +89,7 @@ export function VisitRecordDialog({
             );
           }}
         >
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("kind")}</span>
+          <Field label={t("kind")}>
             <Select
               options={KINDS.map((k) => ({ value: k, label: tKind(k) }))}
               value={kind}
@@ -98,19 +97,18 @@ export function VisitRecordDialog({
                 setKind(v as LibraryVisitKind);
               }}
             />
-          </label>
+          </Field>
           {kind === "member" ? (
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("member")}</span>
+            <Field label={t("member")}>
               <DirectoryPicker
                 value={memberUserId}
                 onValueChange={setMemberUserId}
                 labels={memberLabels}
                 showUsername
               />
-            </label>
+            </Field>
           ) : (
-            <label className="flex flex-col gap-1 text-[13px]">
+            <label className="flex flex-col gap-1 text-body-sm">
               <span className="font-medium">
                 {kind === "group" ? t("groupName") : t("visitorName")}
               </span>
@@ -125,8 +123,7 @@ export function VisitRecordDialog({
             </label>
           )}
           {kind === "group" && (
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("groupSize")}</span>
+            <Field label={t("groupSize")}>
               <Input
                 type="number"
                 min={1}
@@ -135,10 +132,9 @@ export function VisitRecordDialog({
                   setGroupSize(e.target.value);
                 }}
               />
-            </label>
+            </Field>
           )}
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("purpose")}</span>
+          <Field label={t("purpose")}>
             <Input
               value={purpose}
               onChange={(e) => {
@@ -147,8 +143,8 @@ export function VisitRecordDialog({
               maxLength={200}
               placeholder={t("purposePlaceholder")}
             />
-          </label>
-          {error && <p className="text-[13px] text-status-absent">{error}</p>}
+          </Field>
+          {error && <FormError>{error}</FormError>}
           <div className="flex justify-end gap-2 border-t border-border pt-4">
             <Button
               type="button"

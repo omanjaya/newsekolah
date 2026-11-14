@@ -4,6 +4,7 @@ import { ApiError } from "@newsekolah/api-client";
 import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
+  Field,
   Button,
   DataTable,
   Dialog,
@@ -67,7 +68,7 @@ export function StocktakeView(): ReactElement {
         cell: ({ row }) => (
           <Link
             href={`/library/stocktake/${row.original.id}`}
-            className="inline-flex min-h-11 items-center text-[13px] font-medium text-accent hover:underline md:min-h-0"
+            className="inline-flex min-h-11 items-center text-label text-accent hover:underline md:min-h-0"
           >
             {row.original.status === "open" ? t("scan.heading") : t("viewResult")}
           </Link>
@@ -160,8 +161,7 @@ function StartStocktakeForm({ onDone }: { onDone: (stocktakeId: string) => void 
         );
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
+      <Field label={t("name")}>
         <Input
           value={name}
           onChange={(e) => {
@@ -170,9 +170,8 @@ function StartStocktakeForm({ onDone }: { onDone: (stocktakeId: string) => void 
           required
           maxLength={160}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("notes")}</span>
+      </Field>
+      <Field label={t("notes")}>
         <Input
           value={notes}
           onChange={(e) => {
@@ -180,7 +179,7 @@ function StartStocktakeForm({ onDone }: { onDone: (stocktakeId: string) => void 
           }}
           maxLength={500}
         />
-      </label>
+      </Field>
       <Button type="submit" loading={start.isPending}>
         {t("start")}
       </Button>

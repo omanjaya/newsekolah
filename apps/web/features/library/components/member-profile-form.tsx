@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import { Field, Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -57,17 +57,15 @@ export function MemberProfileForm({
         );
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span>{t("memberType")}</span>
+      <Field label={t("memberType")}>
         <Select
           value={memberTypeId}
           onValueChange={setMemberTypeId}
           options={(types.data?.data ?? []).map((type) => ({ value: type.id, label: type.name }))}
           disabled={types.isLoading}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span>{t("validUntil")}</span>
+      </Field>
+      <Field label={t("validUntil")}>
         <Input
           type="date"
           value={validUntil}
@@ -76,9 +74,8 @@ export function MemberProfileForm({
           }}
         />
         <span className="text-fg-muted">{t("validUntilHint")}</span>
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span>{t("notes")}</span>
+      </Field>
+      <Field label={t("notes")}>
         <Textarea
           value={notes}
           onChange={(event) => {
@@ -86,7 +83,7 @@ export function MemberProfileForm({
           }}
           maxLength={1000}
         />
-      </label>
+      </Field>
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}

@@ -37,7 +37,7 @@ export function ClassTitlePicker({
 
   if (selected) {
     return (
-      <div className="flex items-center justify-between rounded-xs border border-border bg-bg px-3 py-2 text-[13px]">
+      <div className="flex items-center justify-between rounded-xs border border-border bg-bg px-3 py-2 text-body-sm">
         <span className="font-medium text-fg">{selected.title}</span>
         <button
           type="button"
@@ -81,14 +81,14 @@ export function ClassTitlePicker({
                 type="button"
                 role="option"
                 aria-selected={false}
-                className="flex w-full flex-col rounded-xs px-2 py-2 text-left text-[13px] hover:bg-bg focus-visible:bg-bg"
+                className="flex w-full flex-col rounded-xs px-2 py-2 text-left text-body-sm hover:bg-bg focus-visible:bg-bg"
                 onClick={() => {
                   onSelect(title);
                   setOpen(false);
                 }}
               >
                 <span className="font-medium text-fg">{title.title}</span>
-                <span className="text-[12px] text-fg-muted">
+                <span className="text-caption text-fg-muted">
                   {tCatalogue("copiesAvailable", {
                     available: title.available_copies,
                     total: title.total_copies,

@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import { Field, Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -116,8 +116,7 @@ export function TitleForm({
         else create.mutate(body, callbacks);
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("title")}</span>
+      <Field label={t("title")}>
         <Input
           value={title}
           onChange={(e) => {
@@ -126,9 +125,8 @@ export function TitleForm({
           required
           maxLength={300}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("subtitle")}</span>
+      </Field>
+      <Field label={t("subtitle")}>
         <Input
           value={subtitle}
           onChange={(e) => {
@@ -136,9 +134,8 @@ export function TitleForm({
           }}
           maxLength={300}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("author")}</span>
+      </Field>
+      <Field label={t("author")}>
         <Input
           value={author}
           onChange={(e) => {
@@ -146,9 +143,8 @@ export function TitleForm({
           }}
           maxLength={200}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("publisher")}</span>
+      </Field>
+      <Field label={t("publisher")}>
         <Input
           value={publisher}
           onChange={(e) => {
@@ -156,9 +152,8 @@ export function TitleForm({
           }}
           maxLength={200}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("publishYear")}</span>
+      </Field>
+      <Field label={t("publishYear")}>
         <Input
           type="number"
           value={publishYear}
@@ -168,9 +163,8 @@ export function TitleForm({
           min={1000}
           max={3000}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("isbn")}</span>
+      </Field>
+      <Field label={t("isbn")}>
         <Input
           value={isbn}
           onChange={(e) => {
@@ -178,11 +172,10 @@ export function TitleForm({
           }}
           maxLength={32}
         />
-      </label>
+      </Field>
       {isbn !== initial?.isbn && <DuplicateTitleWarning isbn={isbn} />}
       <IsbnLookupPanel isbn={isbn} onApply={applyLookup} onCoverImported={setCoverAssetId} />
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("classification")}</span>
+      <Field label={t("classification")}>
         <Input
           value={classification}
           onChange={(e) => {
@@ -190,9 +183,8 @@ export function TitleForm({
           }}
           maxLength={60}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("materialType")}</span>
+      </Field>
+      <Field label={t("materialType")}>
         <Select
           options={(options.data?.material_types ?? []).map((mt) => ({
             value: mt.id,
@@ -203,9 +195,8 @@ export function TitleForm({
           placeholder={t("materialTypePlaceholder")}
           disabled={options.isLoading}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("additionalAuthors")}</span>
+      </Field>
+      <Field label={t("additionalAuthors")}>
         <Input
           value={additionalAuthors}
           onChange={(e) => {
@@ -213,9 +204,8 @@ export function TitleForm({
           }}
           maxLength={500}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("publishPlace")}</span>
+      </Field>
+      <Field label={t("publishPlace")}>
         <Input
           value={publishPlace}
           onChange={(e) => {
@@ -223,9 +213,8 @@ export function TitleForm({
           }}
           maxLength={120}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("pages")}</span>
+      </Field>
+      <Field label={t("pages")}>
         <Input
           value={pages}
           onChange={(e) => {
@@ -233,9 +222,8 @@ export function TitleForm({
           }}
           maxLength={60}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("subjects")}</span>
+      </Field>
+      <Field label={t("subjects")}>
         <Input
           value={subjects}
           onChange={(e) => {
@@ -243,9 +231,8 @@ export function TitleForm({
           }}
           maxLength={500}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("language")}</span>
+      </Field>
+      <Field label={t("language")}>
         <Input
           value={language}
           onChange={(e) => {
@@ -253,9 +240,8 @@ export function TitleForm({
           }}
           maxLength={10}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("abstract")}</span>
+      </Field>
+      <Field label={t("abstract")}>
         <Textarea
           value={abstract}
           onChange={(e) => {
@@ -264,7 +250,7 @@ export function TitleForm({
           rows={3}
           maxLength={2000}
         />
-      </label>
+      </Field>
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}

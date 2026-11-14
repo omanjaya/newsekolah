@@ -143,7 +143,9 @@ export function MembersView(): ReactElement {
                     {name}
                   </StudentLink>
                 </span>
-                <span className="truncate text-[12px] text-fg-muted">{row.original.member_no}</span>
+                <span className="truncate text-caption text-fg-muted">
+                  {row.original.member_no}
+                </span>
               </div>
             </div>
           );
@@ -178,7 +180,7 @@ export function MembersView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) =>
           row.original.late_return_count > 0 ? (
-            <Badge variant="neutral" className="border-status-late/40 text-status-late">
+            <Badge variant="neutral" className="border-status-late/40 text-warning">
               {row.original.late_return_count}
             </Badge>
           ) : (
@@ -364,10 +366,7 @@ function MemberRowActionsMenu({
 
   return (
     <div className="flex items-center gap-1">
-      <Link
-        href={`/library/members/${userId}`}
-        className="text-[13px] font-medium text-accent hover:underline"
-      >
+      <Link href={`/library/members/${userId}`} className="text-label text-accent hover:underline">
         {t("viewDetail")}
       </Link>
       <RowActionsMenu

@@ -31,7 +31,7 @@ export function ReportAccessionRegisterTable({
 
   if (isLoading) return <Skeleton className="h-64 w-full" aria-busy="true" />;
   if (copies.length === 0) {
-    return <p className="text-[13px] text-fg-muted">{t("emptyTitle")}</p>;
+    return <p className="text-body-sm text-fg-muted">{t("emptyTitle")}</p>;
   }
 
   return (
