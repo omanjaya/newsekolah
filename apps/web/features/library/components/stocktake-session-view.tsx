@@ -4,25 +4,44 @@ import { ApiError } from "@newsekolah/api-client";
 import { formatNumber } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
-  BarcodeScannerField,
-  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
   ConfirmDialog,
-  PageHeader,
-  Skeleton,
+  IconCircle,
+  List,
+  ListRow,
+  Progress,
+  Scanner,
+  SkeletonDetail,
   Stat,
   StatGrid,
-  cn,
   useScanFeedback,
   useToast,
+  type BarcodeScanEvent,
+  type PageHeaderAction,
+  type ScannerResultValue,
 } from "@newsekolah/ui";
-import type { BarcodeScanEvent } from "@newsekolah/ui";
-import { CheckCircle2, Download, XCircle } from "lucide-react";
+import {
+  BookCheck,
+  BookX,
+  CircleCheck,
+  CircleX,
+  Download,
+  Lock,
+  MapPinned,
+  ScanLine,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { useFindLibraryCopyByCodeMutation, useLibraryTitleNameMutation } from "../desk-api";
 import {
   type LibraryStocktakeResult,
   downloadLibraryStocktakeReportXlsx,
@@ -33,18 +52,27 @@ import {
   useScanStocktakeMutation,
 } from "../stocktake-api";
 
-/** How many barcodes a result list shows before pointing to the XLSX report. */
-const BARCODE_PREVIEW_LIMIT = 30;
+import { StocktakeResults } from "./stocktake-results";
 
-/** How many recent scans the on-screen feed keeps -- a running receipt, not a full log. */
+/** How many recent scans the on-screen feed keeps: a running receipt, not a full log. */
 const SCAN_FEED_LIMIT = 6;
 
 interface ScanFeedEntry {
+  key: number;
   barcode: string;
   outcome: "found" | "rejected";
-  at: number;
+  /** The book's title, once looked up for a copy that was found. */
+  title?: string;
 }
 
+/**
+ * One stocktake session (docs/07-ui-ux.md "Scanner"). While it runs: the
+ * progress against the expected count as a meter and a strip of figures,
+ * then the shared Scanner (camera first, a hardware scanner from anywhere,
+ * typing as the fallback) with the last result large and announced and
+ * the scans before it by book title. Once closed: the reconciliation.
+ * Closing (which asks first) and the XLSX report are header actions.
+ */
 export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): ReactElement {
   const t = useTranslations("app.library.stocktake");
   const locale = useLocale() as Locale;
@@ -54,7 +82,10 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
   const session = useLibraryStocktakeQuery(stocktakeId);
   const scan = useScanStocktakeMutation();
   const close = useCloseStocktakeMutation();
+  const findCopy = useFindLibraryCopyByCodeMutation();
+  const titleName = useLibraryTitleNameMutation();
   const feedback = useScanFeedback();
+  const feedCount = useRef(0);
 
   const [scannedCount, setScannedCount] = useState(0);
   const [scanFeed, setScanFeed] = useState<ScanFeedEntry[]>([]);
@@ -63,15 +94,29 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
   const [confirmingClose, setConfirmingClose] = useState(false);
 
   const isOpen = session.data?.status === "open" && closedResult === null;
-  const isClosed = session.data?.status === "closed";
+  const closedOnServer = session.data?.status === "closed";
 
   const progress = useLibraryStocktakeProgressQuery(stocktakeId, isOpen);
-  const results = useLibraryStocktakeResultsQuery(stocktakeId, isClosed);
-  const result = closedResult ?? (isClosed ? (results.data ?? null) : null);
+  const results = useLibraryStocktakeResultsQuery(stocktakeId, closedOnServer);
+  const result = closedResult ?? (closedOnServer ? (results.data ?? null) : null);
   const num = (value: number) => formatNumber(value, { locale });
 
   const errorMessage = (error: unknown) =>
     error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN");
+
+  // Names a found copy by its book after the fact: the scan itself only
+  // says whether the code belongs to the collection.
+  const nameEntry = (key: number, code: string) => {
+    void findCopy
+      .mutateAsync(code)
+      .then((copy) => titleName.mutateAsync(copy.title_id))
+      .then((title) => {
+        setScanFeed((feed) =>
+          feed.map((entry) => (entry.key === key ? { ...entry, title } : entry)),
+        );
+      })
+      .catch(() => undefined);
+  };
 
   const handleScan = (event: BarcodeScanEvent) => {
     scan.mutate(
@@ -83,13 +128,16 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
           // outcome "rejected" (see scanLibraryStocktake), so success and
           // failure feedback both have to read it, not just the status.
           const outcome = response.data[0]?.outcome ?? "rejected";
+          feedCount.current += 1;
+          const key = feedCount.current;
           setScanFeed((feed) =>
-            [{ barcode: event.code, outcome, at: Date.now() }, ...feed].slice(0, SCAN_FEED_LIMIT),
+            [{ key, barcode: event.code, outcome }, ...feed].slice(0, SCAN_FEED_LIMIT),
           );
           if (outcome === "found") {
             feedback.playSuccess();
             setScannedCount((count) => count + 1);
             void progress.refetch();
+            nameEntry(key, event.code);
           } else {
             feedback.playError();
           }
@@ -113,101 +161,144 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
     }
   }
 
+  if (session.isLoading) {
+    return (
+      <AppPage header={false} nav={false}>
+        <SkeletonDetail />
+      </AppPage>
+    );
+  }
+  if (!session.data) {
+    return (
+      <AppPage title={t("loadErrorTitle")} nav={false}>
+        <QueryError retry={() => session.refetch()} error={session.error} />
+      </AppPage>
+    );
+  }
+
+  const latest = scanFeed[0];
+  const lastResult: ScannerResultValue | null = latest
+    ? {
+        tone: latest.outcome === "found" ? "success" : "danger",
+        title:
+          latest.outcome === "found" ? (latest.title ?? latest.barcode) : t("scan.recent.rejected"),
+        description:
+          latest.outcome === "found"
+            ? t("scan.foundDetail", { barcode: latest.barcode })
+            : latest.barcode,
+        key: `${String(latest.key)}:${latest.title ?? ""}`,
+      }
+    : null;
+
+  const secondaryActions: PageHeaderAction[] = [
+    ...(canViewReports
+      ? [
+          {
+            label: downloading ? t("downloading") : t("downloadReport"),
+            icon: <Download />,
+            disabled: downloading,
+            onSelect: () => {
+              void handleDownloadReport();
+            },
+          },
+        ]
+      : []),
+    ...(isOpen
+      ? [
+          {
+            label: t("close"),
+            icon: <Lock />,
+            onSelect: () => {
+              setConfirmingClose(true);
+            },
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        breadcrumb={[{ label: t("title"), href: "/library/stocktake" }]}
-        title={session.data?.name ?? ""}
-        actions={
-          canViewReports ? (
-            <Button
-              variant="secondary"
-              icon={<Download />}
-              loading={downloading}
-              onClick={() => {
-                void handleDownloadReport();
-              }}
-            >
-              {t("downloadReport")}
-            </Button>
-          ) : undefined
-        }
-      />
-
-      {session.isLoading && <Skeleton className="h-40 w-full" aria-busy="true" />}
-
+    <AppPage title={session.data.name} nav={false} secondaryActions={secondaryActions}>
       {isOpen && (
         <>
-          <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-            <h2 className="text-heading text-fg">{t("progress.heading")}</h2>
-            {progress.isLoading ? (
-              <Skeleton className="h-16 w-full" aria-busy="true" />
-            ) : progress.data ? (
-              <StatGrid>
-                <Stat label={t("result.expected")} value={num(progress.data.expected_count)} />
-                <Stat label={t("result.scanned")} value={num(progress.data.scanned_count)} />
-                <Stat label={t("result.missing")} value={num(progress.data.missing_count)} />
-                <Stat label={t("result.misplaced")} value={num(progress.data.misplaced_count)} />
-              </StatGrid>
-            ) : null}
-            <p className="text-caption text-fg-muted">{t("progress.live")}</p>
-          </section>
+          <Card padding="md">
+            <CardHeader>
+              <CardTitle as="h2">{t("progress.heading")}</CardTitle>
+              <CardDescription>{t("progress.live")}</CardDescription>
+            </CardHeader>
+            {progress.isError ? (
+              <QueryError retry={() => progress.refetch()} error={progress.error} />
+            ) : (
+              <>
+                <Progress
+                  variant="meter"
+                  label={t("progress.meter")}
+                  value={progress.data?.scanned_count ?? 0}
+                  max={Math.max(progress.data?.expected_count ?? 0, 1)}
+                  valueLabel={
+                    progress.data
+                      ? t("progress.ratio", {
+                          scanned: num(progress.data.scanned_count),
+                          expected: num(progress.data.expected_count),
+                        })
+                      : undefined
+                  }
+                />
+                <StatGrid variant="strip" aria-label={t("progress.heading")}>
+                  <Stat
+                    icon={<BookCheck />}
+                    category="blue"
+                    value={progress.data ? num(progress.data.expected_count) : "-"}
+                    label={t("result.expected")}
+                    loading={progress.isLoading}
+                  />
+                  <Stat
+                    icon={<ScanLine />}
+                    category="green"
+                    value={progress.data ? num(progress.data.scanned_count) : "-"}
+                    label={t("result.scanned")}
+                    loading={progress.isLoading}
+                  />
+                  <Stat
+                    icon={<BookX />}
+                    category="red"
+                    value={progress.data ? num(progress.data.missing_count) : "-"}
+                    label={t("result.missing")}
+                    loading={progress.isLoading}
+                  />
+                  <Stat
+                    icon={<MapPinned />}
+                    category="purple"
+                    value={progress.data ? num(progress.data.misplaced_count) : "-"}
+                    label={t("result.misplaced")}
+                    loading={progress.isLoading}
+                  />
+                </StatGrid>
+              </>
+            )}
+          </Card>
 
-          <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-            <h2 className="text-heading text-fg">{t("scan.heading")}</h2>
-            <BarcodeScannerField
-              label={t("scan.label")}
-              onScan={handleScan}
-              placeholder={t("scan.placeholder")}
-              submitLabel={t("scan.submit")}
-              disabled={scan.isPending}
-            />
-            <p className="text-body-sm text-fg-muted">
-              {t("scan.thisDevice", { count: scannedCount })}
-            </p>
-            <ScanFeedList entries={scanFeed} />
-          </section>
-
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setConfirmingClose(true);
-            }}
-            className="self-start"
+          <Scanner
+            variant="action"
+            title={t("scan.heading")}
+            description={t("scan.thisDevice", { count: scannedCount })}
+            onScan={handleScan}
+            result={lastResult}
+            manualEntry="open"
+            manualLabel={t("scan.label")}
+            manualPlaceholder={t("scan.placeholder")}
+            submitLabel={t("scan.submit")}
+            disabled={scan.isPending}
           >
-            {t("close")}
-          </Button>
+            {scanFeed.length > 1 && <ScanFeedList entries={scanFeed.slice(1)} />}
+          </Scanner>
         </>
       )}
 
-      {isClosed && results.isLoading && !result && (
-        <Skeleton className="h-32 w-full" aria-busy="true" />
+      {closedOnServer && results.isError && !closedResult && (
+        <QueryError retry={() => results.refetch()} error={results.error} />
       )}
-
-      {result && (
-        <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-          <h2 className="text-heading text-fg">{t("result.heading")}</h2>
-          <StatGrid>
-            <Stat label={t("result.expected")} value={num(result.expected_count)} />
-            <Stat label={t("result.scanned")} value={num(result.scanned_count)} />
-            <Stat label={t("result.missing")} value={num(result.missing.length)} />
-            <Stat label={t("result.unexpected")} value={num(result.unexpected.length)} />
-            <Stat label={t("result.misplaced")} value={num(result.misplaced.length)} />
-          </StatGrid>
-          <BarcodeList
-            label={t("result.missing")}
-            barcodes={result.missing.map((copy) => copy.barcode)}
-          />
-          <BarcodeList
-            label={t("result.unexpected")}
-            barcodes={result.unexpected.map((copy) => copy.barcode)}
-          />
-          <BarcodeList
-            label={t("result.misplaced")}
-            barcodes={result.misplaced.map((entry) => entry.copy.barcode)}
-          />
-        </section>
-      )}
+      {closedOnServer && results.isLoading && !result && <SkeletonDetail />}
+      {result && <StocktakeResults result={result} />}
 
       <ConfirmDialog
         open={confirmingClose}
@@ -231,85 +322,33 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
           );
         }}
       />
-    </div>
+    </AppPage>
   );
 }
 
-/**
- * The last few scans, most recent first, with the same immediate
- * sound-plus-color feedback as the circulation desk (docs/07-ui-ux.md
- * "Scanner: ... umpan balik getar/bunyi/warna"). `aria-live` carries the
- * result to screen readers since a librarian scanning a shelf is not
- * watching this panel between codes.
- */
-function ScanFeedList({ entries }: { entries: ScanFeedEntry[] }): ReactElement | null {
-  const t = useTranslations("app.library.stocktake.scan.recent");
-  if (entries.length === 0) return null;
+/** The scans before the last one, most recent first, each by its book once known. */
+function ScanFeedList({ entries }: { entries: ScanFeedEntry[] }): ReactElement {
+  const t = useTranslations("app.library.stocktake.scan");
   return (
-    <ul className="flex flex-col gap-1.5" aria-live="polite">
-      {entries.map((entry) => {
-        const isFound = entry.outcome === "found";
-        return (
-          <li
-            key={entry.at}
-            className={cn(
-              "flex items-center gap-2.5 rounded-sm border px-3 py-2 text-body-sm",
-              isFound
-                ? "border-status-present/40 bg-status-present/5"
-                : "border-status-absent/40 bg-status-absent/5",
-            )}
-          >
-            {isFound ? (
-              <CheckCircle2 className="size-4 shrink-0 text-success" aria-hidden="true" />
-            ) : (
-              <XCircle className="size-4 shrink-0 text-danger" aria-hidden="true" />
-            )}
-            <span className="min-w-0 flex-1 truncate font-mono text-fg">{entry.barcode}</span>
-            <span className={cn("shrink-0 font-medium", isFound ? "text-success" : "text-danger")}>
-              {isFound ? t("found") : t("rejected")}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-/**
- * A reconciliation bucket can hold thousands of barcodes (every copy is
- * "missing" until scanned), so only a preview is rendered; the XLSX report
- * carries the full list.
- */
-function BarcodeList({
-  label,
-  barcodes,
-}: {
-  label: string;
-  barcodes: string[];
-}): ReactElement | null {
-  const t = useTranslations("app.library.stocktake.result");
-  const locale = useLocale() as Locale;
-  if (barcodes.length === 0) return null;
-  const shown = barcodes.slice(0, BARCODE_PREVIEW_LIMIT);
-  const rest = barcodes.length - shown.length;
-  return (
-    <div className="flex flex-col gap-2">
-      <h3 className="text-label text-fg">{label}</h3>
-      <ul className="flex flex-wrap gap-1">
-        {shown.map((barcode) => (
-          <li
-            key={barcode}
-            className="rounded-xs border border-border bg-bg px-2 py-0.5 font-mono text-caption text-fg"
-          >
-            {barcode}
-          </li>
-        ))}
-      </ul>
-      {rest > 0 && (
-        <p className="text-caption text-fg-muted">
-          {t("moreInReport", { count: formatNumber(rest, { locale }) })}
-        </p>
-      )}
-    </div>
+    <section className="flex flex-col gap-2">
+      <h3 className="text-label text-fg-muted">{t("earlier")}</h3>
+      <List framed dense aria-label={t("earlier")}>
+        {entries.map((entry) => {
+          const found = entry.outcome === "found";
+          return (
+            <ListRow
+              key={entry.key}
+              leading={
+                <IconCircle tone={found ? "success" : "danger"} size="sm">
+                  {found ? <CircleCheck /> : <CircleX />}
+                </IconCircle>
+              }
+              title={found ? (entry.title ?? entry.barcode) : t("recent.rejected")}
+              meta={entry.barcode}
+            />
+          );
+        })}
+      </List>
+    </section>
   );
 }
