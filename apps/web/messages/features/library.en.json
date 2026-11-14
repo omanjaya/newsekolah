@@ -490,7 +490,8 @@
       "notes": "Notes",
       "cancel": "Cancel",
       "submit": "Register"
-    }
+    },
+    "studentProfile": "Open student profile"
   },
   "memberTypes": {
     "navLabel": "Member types",

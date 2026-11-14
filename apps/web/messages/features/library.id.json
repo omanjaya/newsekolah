@@ -490,7 +490,8 @@
       "notes": "Catatan",
       "cancel": "Batal",
       "submit": "Daftarkan"
-    }
+    },
+    "studentProfile": "Buka profil siswa"
   },
   "memberTypes": {
     "navLabel": "Jenis anggota",
