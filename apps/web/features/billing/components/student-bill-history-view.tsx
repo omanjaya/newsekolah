@@ -100,12 +100,11 @@ export function StudentBillHistoryView({
   const identity = (
     <div className="flex items-center gap-3">
       <Avatar name={studentName} size={48} decorative />
-      <div className="flex min-w-0 flex-col">
-        <h2 className="truncate text-title text-fg">{studentName}</h2>
-        {studentNis && (
-          <p className="text-body-sm text-fg-muted">{t("nis", { nis: studentNis })}</p>
-        )}
-      </div>
+      <SectionHeader
+        className="min-w-0 flex-1"
+        title={studentName}
+        description={studentNis ? t("nis", { nis: studentNis }) : undefined}
+      />
     </div>
   );
 
