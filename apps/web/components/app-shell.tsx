@@ -6,8 +6,9 @@ import { useRef, type ReactElement, type ReactNode } from "react";
 
 import { useActionInboxCount } from "../features/inbox/use-action-inbox-count";
 import { useNotificationsSocket } from "../features/notifications/realtime";
-import { mobileTabLayout } from "../lib/mobile-navigation";
+import { mobileTabLayout, mobileTabRoots } from "../lib/mobile-navigation";
 import { navigation, filterNavigation } from "../lib/navigation";
+import { activeNavHref } from "../lib/navigation/active-href";
 import { navAccessFromMe } from "../lib/navigation-access";
 import { canOpenPath, pathAccess } from "../lib/navigation-permissions";
 import { sortQuickActions } from "../lib/navigation-quick-actions";
@@ -28,6 +29,7 @@ import { OfflineIndicator } from "./offline-indicator";
 import { Sidebar } from "./sidebar";
 import { SimulationControls } from "./simulation-controls";
 import { UpdateAvailable } from "./update-available";
+import { useNavDirection } from "./use-nav-direction";
 import { useShellHeaderHeight } from "./use-shell-header-height";
 
 /**
@@ -102,6 +104,8 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
     teaching && layout.centre
       ? { ...layout, centre: { ...layout.centre, href: sessionHref } }
       : layout;
+  // Which way a phone's page content enters: deeper, back, or across tabs.
+  useNavDirection(pathname, mobileTabRoots(layout), (path) => activeNavHref(path, items));
 
   return (
     <CommandPaletteProvider>

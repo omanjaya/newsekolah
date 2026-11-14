@@ -166,3 +166,47 @@ body {
     padding-bottom: var(--space-3);
   }
 }
+
+/*
+ * Directional page entrances on a phone (components/use-nav-direction.ts
+ * marks <html>). Going deeper, the page's column (its head and content,
+ * never the shell) enters from the right by a short distance with a fade;
+ * going back, from the left; switching bottom tabs, a plain quick fade.
+ * Anything else keeps PageShell's own fade and rise on the content. The
+ * distance is 2.5 rises (20px), so reduced motion, which zeroes the rise,
+ * leaves only the fade. A loading skeleton (`animate={false}`) never moves.
+ */
+@keyframes page-enter-forward {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--motion-rise) * 2.5));
+  }
+}
+
+@keyframes page-enter-back {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--motion-rise) * -2.5));
+  }
+}
+
+@media (width < 48rem) {
+  html[data-nav-direction="forward"] [data-page-shell][data-animate] > [data-slot="page-column"] {
+    animation: page-enter-forward var(--duration-base) var(--ease-enter) backwards;
+  }
+
+  html[data-nav-direction="back"] [data-page-shell][data-animate] > [data-slot="page-column"] {
+    animation: page-enter-back var(--duration-base) var(--ease-enter) backwards;
+  }
+
+  html[data-nav-direction="tab"] [data-page-shell][data-animate] > [data-slot="page-column"] {
+    animation: fade-in var(--duration-fast) var(--ease-standard) backwards;
+  }
+
+  html:is([data-nav-direction="forward"], [data-nav-direction="back"], [data-nav-direction="tab"])
+    [data-page-shell][data-animate]
+    > [data-slot="page-column"]
+    > [data-slot="page-content"] {
+    animation: none;
+  }
+}
