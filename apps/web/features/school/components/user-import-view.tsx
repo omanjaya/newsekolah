@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
   Field,
+  FileDropzone,
   FormActions,
   FormSection,
   SectionHeader,
@@ -43,12 +44,7 @@ import {
 } from "../api";
 import { downloadUserImportTemplate, parseUserImportFile } from "../lib/user-import";
 
-import {
-  ImportFileField,
-  ImportProgress,
-  ImportRowFilter,
-  type ImportStage,
-} from "./import-layout";
+import { ImportProgress, ImportRowFilter, XLSX_ACCEPT, type ImportStage } from "./import-layout";
 import { UserImportPreviewTable } from "./user-import-preview-table";
 
 type Stage = ImportStage;
@@ -62,6 +58,7 @@ type Stage = ImportStage;
  */
 export function UserImportView(): ReactElement {
   const t = useTranslations("app.school.users.import");
+  const tFlow = useTranslations("app.school.importFlow");
   const tNav = useTranslations("app.shell.nav.items");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -227,20 +224,28 @@ export function UserImportView(): ReactElement {
                 <Switch checked={updateRoles} onCheckedChange={handleUpdateRolesChange} />
               </Field>
             )}
-            <Field label={t("fileLabel")} hint={t("step2Body")} className="col-span-full">
-              {() => (
-                <ImportFileField
-                  label={t("chooseFile")}
-                  fileName={parsing ? t("parsing", { file: fileName ?? "" }) : fileName}
-                  loading={parsing}
-                  onFile={(file) => {
-                    void handleFile(file);
-                  }}
-                />
-              )}
+            {/* The file can be dropped as well as picked; a file that cannot
+                be read is said under the zone. */}
+            <Field
+              label={t("fileLabel")}
+              hint={t("step2Body")}
+              error={parseError ?? undefined}
+              className="col-span-full"
+            >
+              <FileDropzone
+                accept={XLSX_ACCEPT}
+                fileName={parsing ? t("parsing", { file: fileName ?? "" }) : fileName}
+                loading={parsing}
+                chooseLabel={t("chooseFile")}
+                replaceLabel={tFlow("chooseOther")}
+                title={tFlow("noFile")}
+                rejectMessage={t("parseError.unreadable")}
+                onFile={(file) => {
+                  void handleFile(file);
+                }}
+              />
             </Field>
           </FormSection>
-          {parseError && <Alert tone="danger" title={parseError} />}
         </Card>
       )}
 

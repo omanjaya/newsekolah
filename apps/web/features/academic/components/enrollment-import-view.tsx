@@ -12,6 +12,7 @@ import {
   Checkbox,
   DataTable,
   Field,
+  FileDropzone,
   FormActions,
   FormSection,
   SectionHeader,
@@ -33,9 +34,9 @@ import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import {
-  ImportFileField,
   ImportProgress,
   ImportRowFilter,
+  XLSX_ACCEPT,
   type ImportStage,
 } from "../../school/components/import-layout";
 import { useAcademicYearsQuery } from "../api";
@@ -59,6 +60,7 @@ export function EnrollmentImportView(): ReactElement {
   const canViewClasses = useCan("view_academic_data");
   const tWorkspace = useTranslations("app.academic.workspace");
   const t = useTranslations("app.academic.enrollmentImport");
+  const tFlow = useTranslations("app.school.importFlow");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const activeYear = useActiveYear();
@@ -217,21 +219,23 @@ export function EnrollmentImportView(): ReactElement {
                 </div>
               )}
             </Field>
-            <Field label={t("fileLabel")} className="col-span-full">
-              {() => (
-                <ImportFileField
-                  label={t("chooseFile")}
-                  fileName={file?.name}
-                  loading={preview.isPending}
-                  disabled={!effectiveYearId}
-                  onFile={(next) => {
-                    setFile(next);
-                    setRows(null);
-                    setCommitted(false);
-                    runPreview(next);
-                  }}
-                />
-              )}
+            {/* The workbook can be dropped as well as picked; the preview
+                says what is wrong with a file that cannot be read. */}
+            <Field label={t("fileLabel")} disabled={!effectiveYearId} className="col-span-full">
+              <FileDropzone
+                accept={XLSX_ACCEPT}
+                fileName={file?.name}
+                loading={preview.isPending}
+                chooseLabel={t("chooseFile")}
+                replaceLabel={tFlow("chooseOther")}
+                title={tFlow("noFile")}
+                onFile={(next) => {
+                  setFile(next);
+                  setRows(null);
+                  setCommitted(false);
+                  runPreview(next);
+                }}
+              />
             </Field>
           </FormSection>
           {file && (
