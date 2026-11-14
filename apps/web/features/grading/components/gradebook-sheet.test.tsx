@@ -80,6 +80,7 @@ describe("GradebookSheet publish controls", () => {
 
     expect(screen.getByText("draftBadge")).toBeInTheDocument();
     expect(screen.getByText("publishToggleLabel")).toBeInTheDocument();
-    expect(screen.getByRole("switch")).toBeInTheDocument();
+    // The Field's label names the switch; there is no native label of its own.
+    expect(screen.getByRole("switch", { name: "publishToggleLabel" })).toBeInTheDocument();
   });
 });

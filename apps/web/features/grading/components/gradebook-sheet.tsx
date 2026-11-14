@@ -7,6 +7,7 @@ import {
   ConfirmDialog,
   domainIcons,
   EmptyState,
+  Field,
   IconButton,
   SearchInput,
   SectionHeader,
@@ -18,7 +19,7 @@ import {
 import { Download, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useId, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   ReportExportDialog,
@@ -79,7 +80,6 @@ export function GradebookSheet({
   const tGrading = useTranslations("app.grading");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const switchId = useId();
   const {
     data: sheet,
     isLoading,
@@ -208,18 +208,14 @@ export function GradebookSheet({
             label={sheet.is_published ? t("publishedBadge") : t("draftBadge")}
           />
           {canManage && (
-            <span className="flex items-center gap-2">
+            <Field label={t("publishToggleLabel")} orientation="inline">
               <Switch
-                id={switchId}
                 checked={sheet.is_published}
                 onCheckedChange={(checked) => {
                   setPendingPublish(checked);
                 }}
               />
-              <label htmlFor={switchId} className="text-label text-fg-muted">
-                {t("publishToggleLabel")}
-              </label>
-            </span>
+            </Field>
           )}
           <Button
             variant="secondary"
