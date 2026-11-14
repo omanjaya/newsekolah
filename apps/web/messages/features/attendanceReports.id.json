@@ -10,7 +10,8 @@
   "mine": {
     "date": "Tanggal",
     "emptyTitle": "Belum ada sesi tersimpan pada tanggal ini",
-    "emptyBody": "Sesi yang sudah diisi presensinya pada tanggal ini akan muncul di sini."
+    "emptyBody": "Sesi yang sudah diisi presensinya pada tanggal ini akan muncul di sini.",
+    "openToday": "Buka sesi hari ini"
   },
   "daily": {
     "class": "Kelas",
@@ -76,5 +77,7 @@
       "MIXED": "Campuran",
       "NONE": "Tidak ada jadwal"
     }
-  }
+  },
+  "mineTitle": "Laporan presensi saya",
+  "tabsLabel": "Jenis laporan"
 }

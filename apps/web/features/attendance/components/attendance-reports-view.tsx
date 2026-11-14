@@ -1,24 +1,26 @@
 "use client";
 
 import {
+  Button,
+  DatePicker,
   EmptyState,
-  Input,
-  PageHeader,
-  Skeleton,
+  Field,
+  SkeletonList,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-  Field,
 } from "@newsekolah/ui";
 import { FileBarChart } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
+import { QueryError } from "../../../components/query-error";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
-import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import { todayInZone, useOwnDailyAttendanceReportQuery } from "../api";
 
 import { AttendanceDailySessions } from "./attendance-daily-sessions";
@@ -40,30 +42,34 @@ export function AttendanceReportsView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <AcademicWorkspaceLinks area="attendance" />
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className={canViewReports ? undefined : "hidden"}>
-          <TabsTrigger value="mine">{t("tabs.mine")}</TabsTrigger>
-          {canViewReports && <TabsTrigger value="daily">{t("tabs.daily")}</TabsTrigger>}
-          {canViewReports && <TabsTrigger value="monthly">{t("tabs.monthly")}</TabsTrigger>}
-        </TabsList>
-        <TabsContent value="mine" className="pt-4">
+    // A teacher without view_reports reaches this page from the day list,
+    // not from the area's tabs, so it names itself; a reader with the
+    // reports tab gets the area's title over it.
+    <AppPage title={canViewReports ? undefined : t("mineTitle")} navParams={["date"]}>
+      <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-4">
+        {/* One report needs no switch. */}
+        {canViewReports && (
+          <TabsList aria-label={t("tabsLabel")} className="self-start">
+            <TabsTrigger value="mine">{t("tabs.mine")}</TabsTrigger>
+            <TabsTrigger value="daily">{t("tabs.daily")}</TabsTrigger>
+            <TabsTrigger value="monthly">{t("tabs.monthly")}</TabsTrigger>
+          </TabsList>
+        )}
+        <TabsContent value="mine" className="pt-0">
           <MineReportTab />
         </TabsContent>
         {canViewReports && (
-          <TabsContent value="daily" className="pt-4">
+          <TabsContent value="daily" className="pt-0">
             <DailyReportTab />
           </TabsContent>
         )}
         {canViewReports && (
-          <TabsContent value="monthly" className="pt-4">
+          <TabsContent value="monthly" className="pt-0">
             <MonthlyReportTab />
           </TabsContent>
         )}
       </Tabs>
-    </div>
+    </AppPage>
   );
 }
 
@@ -84,24 +90,23 @@ function MineReportTab(): ReactElement {
   return (
     <div className="flex flex-col gap-4">
       <Field label={t("date")}>
-        <Input
-          type="date"
-          value={date}
-          onChange={(e) => {
-            setDate(e.target.value);
-          }}
-          aria-label={t("date")}
-          className="w-44"
-        />
+        <DatePicker value={date} onChange={setDate} clearable={false} className="w-full sm:w-44" />
       </Field>
 
       {report.isLoading ? (
-        <Skeleton className="h-40 w-full" aria-busy="true" />
+        <SkeletonList rows={3} />
+      ) : report.isError ? (
+        <QueryError retry={report.refetch} error={report.error} />
       ) : sessions.length === 0 ? (
         <EmptyState
           icon={<FileBarChart aria-hidden="true" />}
           title={t("emptyTitle")}
           description={t("emptyBody")}
+          action={
+            <Button asChild variant="secondary">
+              <Link href="/attendance">{t("openToday")}</Link>
+            </Button>
+          }
         />
       ) : (
         <AttendanceDailySessions sessions={sessions} />

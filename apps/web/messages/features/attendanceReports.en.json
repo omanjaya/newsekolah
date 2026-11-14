@@ -10,7 +10,8 @@
   "mine": {
     "date": "Date",
     "emptyTitle": "No sessions submitted on this date yet",
-    "emptyBody": "Sessions you have filled in attendance for on this date will appear here."
+    "emptyBody": "Sessions you have filled in attendance for on this date will appear here.",
+    "openToday": "Open today's sessions"
   },
   "daily": {
     "class": "Class",
@@ -76,5 +77,7 @@
       "MIXED": "Mixed",
       "NONE": "No schedule"
     }
-  }
+  },
+  "mineTitle": "My attendance report",
+  "tabsLabel": "Report type"
 }

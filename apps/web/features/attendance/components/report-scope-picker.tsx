@@ -68,7 +68,7 @@ export function ReportScopePicker(props: ReportScopePickerProps): ReactElement {
             placeholder={classPlaceholder}
             disabled={classesLoading}
             aria-label={classLabel}
-            className="w-56"
+            className="w-full sm:w-56"
           />
         </Field>
       ) : (
@@ -82,7 +82,7 @@ export function ReportScopePicker(props: ReportScopePickerProps): ReactElement {
             placeholder={gradeLevelPlaceholder}
             disabled={gradeLevelsLoading}
             aria-label={gradeLevelLabel}
-            className="w-56"
+            className="w-full sm:w-56"
           />
         </Field>
       )}

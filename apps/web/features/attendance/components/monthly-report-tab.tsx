@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, EmptyState, Input, Select, Field } from "@newsekolah/ui";
+import { Button, EmptyState, Field, MonthPicker, Select } from "@newsekolah/ui";
 import { Download, FileBarChart } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -81,7 +81,7 @@ export function MonthlyReportTab(): ReactElement {
             placeholder={t("classPlaceholder")}
             disabled={classes.isLoading}
             aria-label={t("class")}
-            className="w-56"
+            className="w-full sm:w-56"
           />
         </Field>
         <Field label={t("student")}>
@@ -92,28 +92,25 @@ export function MonthlyReportTab(): ReactElement {
             placeholder={t("studentPlaceholder")}
             disabled={classId === "" || enrollments.isLoading}
             aria-label={t("student")}
-            className="w-56"
+            className="w-full sm:w-56"
           />
         </Field>
         <Field label={t("month")}>
-          <Input
-            type="month"
+          <MonthPicker
             value={month}
-            onChange={(e) => {
-              setMonth(e.target.value);
-            }}
-            aria-label={t("month")}
-            className="w-40"
+            onChange={setMonth}
+            clearable={false}
+            className="w-full sm:w-44"
           />
         </Field>
         <Button
-          size="sm"
           variant="secondary"
+          icon={<Download />}
+          className="sm:ml-auto"
           onClick={() => {
             setExportOpen(true);
           }}
         >
-          <Download className="size-4" aria-hidden="true" />
           {t("downloadRecap")}
         </Button>
       </div>
