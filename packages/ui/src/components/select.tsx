@@ -151,13 +151,23 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
   );
 });
 
-/** Shown by Radix only while the list overflows in that direction. */
+/**
+ * Shown by Radix only while the list overflows in that direction. An
+ * opaque strip with a hairline on its list side, so an option scrolled
+ * half out of view is cut cleanly at the line rather than sliced under a
+ * floating chevron.
+ */
 function SelectScrollButton({ direction }: { direction: "up" | "down" }) {
   const Button =
     direction === "up" ? SelectPrimitive.ScrollUpButton : SelectPrimitive.ScrollDownButton;
   const Icon = direction === "up" ? ChevronUp : ChevronDown;
   return (
-    <Button className="flex h-6 cursor-default items-center justify-center text-fg-muted">
+    <Button
+      className={cn(
+        "flex h-6 shrink-0 cursor-default items-center justify-center bg-surface-raised text-fg-muted",
+        direction === "up" ? "border-b border-line" : "border-t border-line",
+      )}
+    >
       <Icon className="size-4" aria-hidden="true" />
     </Button>
   );
