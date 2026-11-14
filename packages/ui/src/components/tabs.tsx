@@ -94,8 +94,13 @@ export const TabsList = forwardRef<HTMLDivElement, TabsListProps>(function TabsL
 });
 
 export interface TabsTriggerProps extends ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> {
-  /** A count after the label, e.g. pending items behind this tab. */
+  /**
+   * A count after the label, e.g. pending items behind this tab. A count of
+   * 0 shows nothing, as with CountBadge: an empty tab needs no "0" chip.
+   */
   count?: number;
+  /** Shows a count of 0 too (a tally where zero is news, not absence). */
+  showZero?: boolean;
   /** A Lucide icon before the label, sized for you. */
   icon?: ReactNode;
 }
@@ -104,10 +109,11 @@ const ACTIVE_COUNT =
   "group-data-[state=active]/tab:bg-accent-soft group-data-[state=active]/tab:text-accent-soft-fg";
 
 export const TabsTrigger = forwardRef<HTMLButtonElement, TabsTriggerProps>(function TabsTrigger(
-  { className, count, icon, children, ...props },
+  { className, count, showZero = false, icon, children, ...props },
   ref,
 ) {
   const { variant, size, fullWidth } = useContext(TabsListContext);
+  const showCount = count !== undefined && (count > 0 || showZero);
   return (
     <TabsPrimitive.Trigger
       ref={ref}
@@ -136,8 +142,8 @@ export const TabsTrigger = forwardRef<HTMLButtonElement, TabsTriggerProps>(funct
         </span>
       )}
       {children}
-      {count !== undefined && (
-        <StripCount count={count} variant={variant} activeClassName={ACTIVE_COUNT} />
+      {showCount && (
+        <StripCount count={Math.max(0, count)} variant={variant} activeClassName={ACTIVE_COUNT} />
       )}
     </TabsPrimitive.Trigger>
   );

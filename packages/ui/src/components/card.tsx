@@ -170,7 +170,7 @@ export function CardTitle({ className, as: Heading = "h3", children, ...props }:
 
 export function CardDescription({ className, ...props }: ComponentPropsWithRef<"p">) {
   const card = useCardContext();
-  const muted = card?.tone === "accent-soft" ? "text-accent-soft-fg/80" : "text-fg-muted";
+  const muted = card?.tone === "accent-soft" ? "text-accent-soft-fg-muted" : "text-fg-muted";
   return <p className={cn("text-body-sm", muted, className)} {...props} />;
 }
 

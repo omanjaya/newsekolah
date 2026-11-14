@@ -159,9 +159,10 @@ export function AppPage({
   return (
     <PageShell
       variant={variant}
-      // The template sits under the app's sticky header (h-14), which a
-      // `fit` page subtracts from the viewport. The shell may publish its
-      // measured height, banners included, as --shell-header-height.
+      // The template sits under the app's sticky header, which a `fit`
+      // page subtracts from the viewport. The shell publishes its measured
+      // height, strips included, as --shell-header-height; until the first
+      // measure the bare header's 56px stands in.
       className={cn("[--page-offset-top:var(--shell-header-height,3.5rem)]", className)}
       breadcrumb={resolvedBreadcrumb}
       header={

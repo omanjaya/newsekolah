@@ -1,3 +1,4 @@
+import { colors } from "@newsekolah/ui-tokens/dist/tokens.ts";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
@@ -143,21 +144,16 @@ describe("Table header band", () => {
 
   // The sunken surface is darker than the page in dark, so a band of it
   // read as a black slot across every table card.
-  it("is the sunken tint in light and a step above the card in dark", async () => {
+  it("is the sunken tint in light and a step above the card in dark", () => {
+    expect(colors.light.surfaceHeader).toBe(colors.light.surfaceSunken);
+    const level = (hex: string) =>
+      [1, 3, 5].reduce((sum, i) => sum + Number.parseInt(hex.slice(i, i + 2), 16), 0);
+    expect(level(colors.dark.surfaceHeader)).toBeGreaterThan(level(colors.dark.surface));
+    expect(level(colors.dark.surfaceHeader)).toBeGreaterThan(level(colors.dark.surfaceSunken));
+  });
+
+  it("takes the band from the token, not from a stand-in in the stylesheet", async () => {
     const css = await compiledFormsDataCss(["bg-surface-header"]);
-    expect(css).toContain("background-color: var(--color-surface-header)");
-    expect(css).toMatch(/:root \{\s*--color-surface-header: var\(--color-surface-sunken\);/);
-    // Tailwind puts the plain card colour first for a browser without
-    // color-mix, then the lift; never the sunken surface in dark.
-    const lift =
-      "--color-surface-header: color-mix(in srgb, var(--color-surface) 96%, var(--color-fg))";
-    const darkRule = (start: string) => {
-      const from = css.indexOf(start);
-      return css.slice(from, css.indexOf("}\n  }", from));
-    };
-    for (const selector of ['[data-theme="dark"] {', ':root:not([data-theme="light"]) {']) {
-      expect(darkRule(selector)).toContain(lift);
-      expect(darkRule(selector)).not.toContain("sunken");
-    }
+    expect(css).not.toContain("--color-surface-header:");
   });
 });

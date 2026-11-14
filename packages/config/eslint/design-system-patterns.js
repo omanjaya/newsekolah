@@ -65,5 +65,5 @@ export const colorRestrictions = [
 /** On per package, once clean (packages/ui today). */
 export const fontSizeRestrictions = literalRestrictions(
   ARBITRARY_FONT_SIZE_SOURCE,
-  "Use a typography role (text-display, text-title-lg, text-title, text-heading, text-body, text-body-sm, text-label, text-caption) instead of a literal font size.",
+  "Use a typography role (text-display, text-title-lg, text-title, text-heading, text-body-lg, text-body, text-body-sm, text-label, text-caption; on wall screens text-kiosk-display, text-kiosk-title) instead of a literal font size.",
 );

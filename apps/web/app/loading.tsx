@@ -1,12 +1,13 @@
 /**
- * Route-level fallback while a segment's data is loading: the page's shape
- * (see PageSkeleton), not a spinner, per docs/07 section 5 (skeleton up to
- * a second, then an indicator). It stays a Server Component.
+ * Route-level fallback outside the app shell, while a route group's layout
+ * loads: the school's mark and name, full screen (BrandedLoading). The
+ * shell has its own page-shaped fallback in (app)/loading.tsx. It stays a
+ * Server Component; BrandedLoading is the client part.
  */
 import type { ReactElement } from "react";
 
-import { PageSkeleton } from "../components/page-skeleton";
+import { BrandedLoading } from "../components/branded-loading";
 
 export default function Loading(): ReactElement {
-  return <PageSkeleton />;
+  return <BrandedLoading />;
 }

@@ -24,12 +24,14 @@ function renderNavLink({ href, className, children, ...rest }: NavTabsLinkProps)
 /*
  * Until every view moves to AppPage (which renders this under the header
  * through its `nav` prop), some views still render the strip above their
- * PageHeader. When the very next sibling is a PageHeader (its h1 sits two
- * levels down), the strip and everything after that header move one flex
- * order later, so the page reads title, tabs, content. The DOM order, and
- * with it the focus order, only changes once the view adopts AppPage.
+ * PageHeader. When the very next sibling is a PageHeader (found by its
+ * data-slot, not by its inner DOM), the strip and everything after that
+ * header move one flex order later, so the page reads title, tabs,
+ * content. The DOM order, and with it the focus order, only changes once
+ * the view adopts AppPage.
  */
-const AFTER_HEADER_ORDER = "[&:has(+*>div>div>h1)]:order-1 [&:has(+*>div>div>h1)+*~*]:order-1";
+const AFTER_HEADER_ORDER =
+  "[&:has(+[data-slot=page-header])]:order-1 [&:has(+[data-slot=page-header])+*~*]:order-1";
 
 /**
  * The tabs between the pages of one area (Data Sekolah's accounts and

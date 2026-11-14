@@ -1,3 +1,4 @@
+import { typeRoles } from "@newsekolah/ui-tokens/dist/tokens.ts";
 import { composeStories } from "@storybook/react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -11,7 +12,9 @@ describe("Foundations stories", () => {
     render(<TypeRoles />);
     expect(screen.getByText("Selamat datang, Nadia")).toHaveClass("text-display");
     expect(screen.getByText("Diperbarui 2 jam lalu")).toHaveClass("text-caption");
-    expect(screen.getAllByText(/^text-/)).toHaveLength(8);
+    expect(screen.getByText("07.42")).toHaveClass("text-kiosk-display");
+    expect(screen.getByText("Nadia Putri")).toHaveClass("text-body-lg");
+    expect(screen.getAllByText(/^text-/)).toHaveLength(Object.keys(typeRoles).length);
   });
 
   it("renders the surfaces, elevation levels and control states", () => {

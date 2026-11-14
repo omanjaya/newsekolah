@@ -1,16 +1,13 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
 
 import { Toaster, toast, useToast } from "./toast.js";
 import { UiLabelsProvider } from "./ui-labels.js";
 
-// sonner captures the pointer for its swipe-to-dismiss; jsdom has no pointer capture.
-beforeAll(() => {
-  window.HTMLElement.prototype.setPointerCapture = vi.fn();
-});
+// sonner's pointer capture is stubbed for every test in src/test/setup.ts.
 
 afterEach(() => {
   act(() => {

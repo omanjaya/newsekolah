@@ -30,6 +30,11 @@ describe("PageHeader", () => {
     await expectNoAxeViolations(container);
   });
 
+  it("marks its root with data-slot, a stable hook for layout rules around it", () => {
+    const { container } = render(<PageHeader title="Siswa" />);
+    expect(container.firstElementChild).toHaveAttribute("data-slot", "page-header");
+  });
+
   it("adds a description, a rule on request, and free-form actions", () => {
     const { container } = render(
       <PageHeader

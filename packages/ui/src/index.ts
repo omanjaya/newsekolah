@@ -70,6 +70,7 @@ export {
 export { createDuplicateScanGuard, type DuplicateScanGuard } from "./hooks/duplicate-scan-guard.js";
 export { useActiveIndicator } from "./hooks/use-active-indicator.js";
 export { useCountUp, type UseCountUpOptions } from "./hooks/use-count-up.js";
+export { useHydrated } from "./hooks/use-hydrated.js";
 export { useMediaQuery } from "./hooks/use-media-query.js";
 export { useScanFeedback, type ScanFeedback } from "./hooks/use-scan-feedback.js";
 export { useScrollEdges, type UseScrollEdgesOptions } from "./hooks/use-scroll-edges.js";

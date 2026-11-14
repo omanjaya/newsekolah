@@ -13,7 +13,8 @@ const HOMEROOM = [
   { value: "overview", label: "Ringkasan" },
   { value: "attendance", label: "Presensi kelas", count: 3 },
   { value: "permits", label: "Izin", count: 12 },
-  { value: "discipline", label: "Kedisiplinan" },
+  // A count of 0 shows no chip (pass showZero to keep it).
+  { value: "discipline", label: "Kedisiplinan", count: 0 },
   { value: "parents", label: "Orang tua" },
 ];
 

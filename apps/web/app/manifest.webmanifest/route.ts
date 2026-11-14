@@ -1,5 +1,5 @@
 import { getTenantBrandingServer } from "../../lib/tenant/get-branding.server";
-import { PRODUCT_NAME_FALLBACK } from "../../lib/tenant/tenant-provider";
+import { PRODUCT_NAME_FALLBACK } from "../../lib/tenant/product-name";
 
 /**
  * Route handler (not the static `app/manifest.ts` convention) so the

@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { forgotPasswordSchema, type ForgotPasswordInput } from "@newsekolah/schemas";
-import { Alert, Button, Field, Form, FormField, Input } from "@newsekolah/ui";
+import { Alert, Button, Field, Form, FormField, Input, useHydrated } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useForm } from "react-hook-form";
@@ -24,6 +24,8 @@ export function ForgotPasswordForm({ onSent }: { onSent: () => void }): ReactEle
   const locale = useLocale() as Locale;
   const apiErrorMessage = useApiErrorMessage();
   const mutation = useRequestPasswordResetMutation();
+  // Server-rendered form: the submit waits for the handler (see LoginForm).
+  const hydrated = useHydrated();
 
   const form = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -61,7 +63,13 @@ export function ForgotPasswordForm({ onSent }: { onSent: () => void }): ReactEle
           </Field>
         )}
       />
-      <Button type="submit" size="lg" loading={mutation.isPending} className="mt-1 w-full">
+      <Button
+        type="submit"
+        size="lg"
+        disabled={!hydrated}
+        loading={mutation.isPending}
+        className="mt-1 w-full"
+      >
         {mutation.isPending ? t("submitting") : t("submit")}
       </Button>
     </Form>

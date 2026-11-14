@@ -486,4 +486,24 @@ describe("DataTable", () => {
     expect(screen.getByRole("searchbox", { name: "Cari" })).toHaveValue("");
     vi.useRealTimers();
   });
+
+  it("restores a scope's remembered search when that scope comes back, without remounting", () => {
+    vi.useFakeTimers();
+    const view = render(<AsyncRememberedHarness data={ROWS} isLoading={false} scope="tenant:a" />);
+    const table = screen.getByRole("table");
+    fireEvent.change(screen.getByRole("searchbox", { name: "Cari" }), {
+      target: { value: "Siti" },
+    });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    view.rerender(<AsyncRememberedHarness data={ROWS} isLoading={false} scope="tenant:b" />);
+    expect(screen.getByRole("searchbox", { name: "Cari" })).toHaveValue("");
+    view.rerender(<AsyncRememberedHarness data={ROWS} isLoading={false} scope="tenant:a" />);
+    expect(screen.getByRole("searchbox", { name: "Cari" })).toHaveValue("Siti");
+    // The table element itself survived both scope changes.
+    expect(screen.getByRole("table")).toBe(table);
+    vi.useRealTimers();
+  });
 });

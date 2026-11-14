@@ -136,7 +136,10 @@ describe("PageShell", () => {
       </PageShell>,
     );
     const root = container.firstElementChild as HTMLElement;
-    expect(root).toHaveClass("md:h-[calc(100dvh-var(--page-offset-top,0px))]");
+    // An explicit offset wins; unset, the app shell's measured header height.
+    expect(root).toHaveClass(
+      "md:h-[calc(100dvh-var(--page-offset-top,var(--shell-header-height,0px)))]",
+    );
     expect(slot(container, "page-content")).toHaveClass("md:min-h-0", "md:flex-1");
     expect(slot(container, "page-body")).toHaveClass("md:min-h-0", "md:flex-1");
   });

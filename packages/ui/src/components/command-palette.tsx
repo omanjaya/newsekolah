@@ -16,6 +16,11 @@ import { useUiLabels } from "./ui-labels.js";
 export interface CommandPaletteItem {
   id: string;
   label: string;
+  /**
+   * Dim context at the row's end, such as the area a page belongs to
+   * ("Akademik"). Read after the label and searched with it.
+   */
+  hint?: string;
   icon?: ReactNode;
   shortcut?: string;
   keywords?: string[];
@@ -139,7 +144,7 @@ export function CommandPalette({
                   {group.items.map((item) => (
                     <CommandPrimitive.Item
                       key={item.id}
-                      value={`${item.label} ${group.heading} ${item.id}`}
+                      value={`${item.label} ${item.hint ?? ""} ${group.heading} ${item.id}`}
                       keywords={item.keywords}
                       onSelect={item.onSelect}
                       className={cn(
@@ -162,6 +167,15 @@ export function CommandPalette({
                         </span>
                       )}
                       <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      {item.hint && (
+                        <>
+                          {/* Keeps the label and the hint two words in the option's name. */}{" "}
+                          {/* Gives up its width first: the label is the result. */}
+                          <span className="max-w-[45%] shrink truncate text-caption text-fg-muted">
+                            {item.hint}
+                          </span>
+                        </>
+                      )}
                       {item.shortcut && <Kbd>{item.shortcut}</Kbd>}
                     </CommandPrimitive.Item>
                   ))}

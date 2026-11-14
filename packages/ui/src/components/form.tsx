@@ -5,9 +5,12 @@ import { Slot } from "@radix-ui/react-slot";
 import {
   createContext,
   useContext,
+  useEffect,
   useId,
+  useRef,
   type ComponentPropsWithoutRef,
   type ReactNode,
+  type RefObject,
 } from "react";
 import {
   Controller,
@@ -17,6 +20,7 @@ import {
   type ControllerProps,
   type FieldPath,
   type FieldValues,
+  type PathValue,
   type UseFormReturn,
 } from "react-hook-form";
 
@@ -41,6 +45,49 @@ export interface FormProps<T extends FieldValues> {
   onSubmit?: (values: T) => void | Promise<void>;
   children: ReactNode;
   className?: string;
+  /**
+   * The browser's own submit method, used only when the app's handler is
+   * not attached yet (a press before hydration). Defaults to `post`, so
+   * that a native submit never serialises the fields (a password, a
+   * one-time code) into the address bar, history, server logs or the
+   * Referer header. Pair it with a submit button that stays disabled until
+   * hydration (`useHydrated`) wherever the form is in the server markup.
+   */
+  method?: "post" | "dialog";
+}
+
+/** Field types whose value is free text, kept when typed before hydration. */
+const TEXT_INPUT_TYPES = new Set(["text", "password", "email", "search", "tel", "url"]);
+
+/**
+ * Text typed (or autofilled) into a server-rendered form before React
+ * hydrates lives only in the DOM: hydration keeps it, but the first
+ * re-render of a controlled field writes the form state's empty value
+ * back over it. Hands any such text to the form state, once, on mount.
+ * On a client-only mount every field already shows its state, so this
+ * finds nothing to do. It runs after the fields' own effects (a parent's
+ * effects follow its children's), so their subscriptions see the update.
+ */
+function useAdoptTypedValues<T extends FieldValues>(
+  formElement: RefObject<HTMLFormElement | null>,
+  form: UseFormReturn<T>,
+) {
+  useEffect(() => {
+    const element = formElement.current;
+    if (!element) return;
+    const fields = element.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+      "input[name], textarea[name]",
+    );
+    for (const field of fields) {
+      if (field instanceof HTMLInputElement && !TEXT_INPUT_TYPES.has(field.type)) continue;
+      const name = field.name as FieldPath<T>;
+      const current: unknown = form.getValues(name);
+      if (typeof current !== "string" || field.value === "" || field.value === current) continue;
+      form.setValue(name, field.value as PathValue<T, FieldPath<T>>, { shouldDirty: true });
+    }
+    // On mount (the form instance is stable): later typing reaches the
+    // state through each field's onChange.
+  }, [formElement, form]);
 }
 
 /** Wires react-hook-form's context plus, optionally, an i18n translator for `FormMessage`. */
@@ -50,11 +97,16 @@ export function Form<T extends FieldValues>({
   onSubmit,
   children,
   className,
+  method = "post",
 }: FormProps<T>) {
+  const formElement = useRef<HTMLFormElement>(null);
+  useAdoptTypedValues(formElement, form);
   return (
     <TranslatorContext.Provider value={translate ?? ((key) => key)}>
       <FormProvider {...form}>
         <form
+          ref={formElement}
+          method={method}
           className={className}
           onSubmit={
             onSubmit

@@ -209,6 +209,65 @@ function stateStepChecks(themeName: string, theme: ThemeColors): Check[] {
   );
 }
 
+/**
+ * The table header band carries column names (`fg-muted`) and the totals
+ * row (`fg`); a tinted card's secondary text sits on `accent-soft`.
+ */
+function bandAndTintChecks(themeName: string, theme: ThemeColors): Check[] {
+  return [
+    {
+      label: `${themeName}: fg on surface-header (totals row)`,
+      foreground: theme.fg,
+      background: theme.surfaceHeader,
+      minimum: AA_NORMAL_TEXT,
+    },
+    {
+      label: `${themeName}: fg-muted on surface-header (column names)`,
+      foreground: theme.fgMuted,
+      background: theme.surfaceHeader,
+      minimum: AA_NORMAL_TEXT,
+    },
+    {
+      label: `${themeName}: accent-soft-fg-muted on accent-soft (secondary text on tint)`,
+      foreground: theme.accentSoftFgMuted,
+      background: theme.accentSoft,
+      minimum: AA_NORMAL_TEXT,
+    },
+  ];
+}
+
+/**
+ * The neutral soft fill is translucent: a Badge, CountBadge or IconCircle
+ * can sit on any surface, so the fill is composited over each one, then
+ * its text (itself translucent), a count in `fg` and an icon in
+ * `fg-muted` are measured on the painted fill.
+ */
+function neutralSoftChecks(themeName: string, theme: ThemeColors): Check[] {
+  return surfaces(theme).flatMap(([surfaceName, surface]) => {
+    const fill = composite(theme.neutralSoft, surface);
+    return [
+      {
+        label: `${themeName}: neutral-soft-fg on neutral-soft over ${surfaceName} (badge)`,
+        foreground: composite(theme.neutralSoftFg, fill),
+        background: fill,
+        minimum: AA_NORMAL_TEXT,
+      },
+      {
+        label: `${themeName}: fg on neutral-soft over ${surfaceName} (count)`,
+        foreground: theme.fg,
+        background: fill,
+        minimum: AA_NORMAL_TEXT,
+      },
+      {
+        label: `${themeName}: fg-muted on neutral-soft over ${surfaceName} (icon, non-text)`,
+        foreground: theme.fgMuted,
+        background: fill,
+        minimum: AA_NON_TEXT,
+      },
+    ];
+  });
+}
+
 function categoryChecks(themeName: string, theme: ThemeColors): Check[] {
   return CATEGORY_ORDER.flatMap((name) => {
     const category = theme.category[name];
@@ -295,6 +354,8 @@ function buildChecks(): Check[] {
     ...stateLayerChecks(themeName, theme),
     ...dividerChecks(themeName, theme),
     ...stateStepChecks(themeName, theme),
+    ...bandAndTintChecks(themeName, theme),
+    ...neutralSoftChecks(themeName, theme),
     ...categoryChecks(themeName, theme),
     ...semanticChecks(themeName, theme),
     ...statusChecks(themeName, theme),

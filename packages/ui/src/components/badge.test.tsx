@@ -16,7 +16,7 @@ function pill(label: string): HTMLElement | null {
 describe("Badge", () => {
   it("renders a soft neutral pill by default", async () => {
     const { container } = render(<Badge>Draf</Badge>);
-    expect(pill("Draf")).toHaveClass("rounded-full", "min-h-6", "text-caption", "bg-state-pressed");
+    expect(pill("Draf")).toHaveClass("rounded-full", "min-h-6", "text-caption", "bg-neutral-soft");
     await expectNoAxeViolations(container);
   });
 

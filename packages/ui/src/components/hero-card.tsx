@@ -16,9 +16,8 @@ interface ToneStyle {
 const TONE: Record<HeroCardTone, ToneStyle> = {
   "accent-soft": {
     surface: "bg-accent-soft text-accent-soft-fg",
-    // The artboard's #2D5C4F, which has no token of its own: the soft
-    // text colour at 80% over the tint lands on it.
-    muted: "text-accent-soft-fg/80",
+    // The artboard's #2D5C4F (light), checked against the tint.
+    muted: "text-accent-soft-fg-muted",
     chipTone: "accent",
     chipAppearance: "solid",
   },

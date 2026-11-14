@@ -12,9 +12,18 @@ export interface ListRowProps extends Omit<ComponentPropsWithRef<"li">, "title" 
   /** An Avatar, an IconCircle, or a short fixed-width value such as a time. */
   leading?: ReactNode;
   title: ReactNode;
+  /**
+   * How many lines the title may take before it ends in an ellipsis: 1
+   * (default) for scannable rows, 2 for long names on a phone, such as a
+   * book title.
+   */
+  titleLines?: 1 | 2;
   /** The secondary line under the title, up to two lines. */
   meta?: ReactNode;
-  /** A value, date or Badge at the end of the row. */
+  /**
+   * A value, date or Badge at the end of the row. A child hidden at some
+   * width (`hidden sm:inline`) leaves no gap behind there.
+   */
   trailing?: ReactNode;
   /** A separate control (a menu, a button); it stays its own target above the row's. */
   action?: ReactNode;
@@ -55,9 +64,12 @@ function RowTarget({
   selected,
   disabled,
   describedBy,
+  clamp,
   children,
 }: Pick<ListRowProps, "href" | "onClick" | "selected" | "disabled"> & {
   describedBy: string | undefined;
+  /** Clamps the title inside the target itself (a button is its own box). */
+  clamp: boolean;
   children: ReactNode;
 }) {
   const current = selected ? ("true" as const) : undefined;
@@ -69,7 +81,7 @@ function RowTarget({
         data-list-row-target=""
         aria-current={current}
         aria-describedby={describedBy}
-        className={TARGET_CLASS}
+        className={cn(TARGET_CLASS, clamp && "line-clamp-2")}
       >
         {children}
       </UiLink>
@@ -83,7 +95,7 @@ function RowTarget({
       aria-describedby={describedBy}
       disabled={disabled}
       onClick={onClick}
-      className={cn(TARGET_CLASS, "text-left")}
+      className={cn(TARGET_CLASS, "text-left", clamp && "line-clamp-2")}
     >
       {children}
     </button>
@@ -99,6 +111,7 @@ function RowTarget({
 export function ListRow({
   leading,
   title,
+  titleLines = 1,
   meta,
   trailing,
   action,
@@ -144,7 +157,13 @@ export function ListRow({
         )}
       >
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <p className={cn("truncate text-fg", dense ? "text-label" : "text-body font-semibold")}>
+          <p
+            className={cn(
+              "text-fg",
+              titleLines === 2 ? "line-clamp-2 [overflow-wrap:anywhere]" : "truncate",
+              dense ? "text-label" : "text-body font-semibold",
+            )}
+          >
             {interactive ? (
               <RowTarget
                 href={href}
@@ -152,6 +171,7 @@ export function ListRow({
                 selected={selected}
                 disabled={disabled}
                 describedBy={meta ? metaId : undefined}
+                clamp={titleLines === 2}
               >
                 {title}
               </RowTarget>
@@ -169,7 +189,15 @@ export function ListRow({
           )}
         </div>
         {trailing && (
-          <div className="flex shrink-0 items-center gap-2 text-caption text-fg-muted tabular-nums">
+          // No box of its own (display: contents): each child is an item
+          // of the row, so one hidden at some width (`hidden sm:inline`)
+          // takes the row's gap away with it instead of leaving an empty
+          // 12px box. Text styles still inherit; the children keep their
+          // width and sit 8px apart, as they did inside a box.
+          <div
+            data-slot="list-row-trailing"
+            className="contents text-caption whitespace-nowrap text-fg-muted tabular-nums *:shrink-0 [&>*+*]:-ml-1"
+          >
             {trailing}
           </div>
         )}

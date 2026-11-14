@@ -7,10 +7,13 @@ import { extendTailwindMerge } from "tailwind-merge";
  * family at once, so it is its own class group rather than a font size.
  */
 export const TYPE_ROLES = [
+  "kiosk-display",
+  "kiosk-title",
   "display",
   "title-lg",
   "title",
   "heading",
+  "body-lg",
   "body",
   "body-sm",
   "label",
@@ -29,6 +32,8 @@ export const ANIMATIONS = [
   "dialog-out",
   "sheet-in",
   "sheet-out",
+  "drawer-in",
+  "drawer-out",
   "popover-in",
   "popover-out",
   "rise-in",

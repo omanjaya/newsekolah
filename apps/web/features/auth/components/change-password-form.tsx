@@ -16,6 +16,7 @@ import {
   FormActions,
   FormField,
   PasswordInput,
+  useHydrated,
   useToast,
 } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
@@ -45,6 +46,9 @@ export function ChangePasswordForm({
   const mutation = useChangePasswordMutation();
   const apiErrorMessage = useApiErrorMessage();
   const toast = useToast();
+  // Defence in depth: today the form renders only on the client, after the
+  // session resolves, but a server-rendered copy must not submit natively.
+  const hydrated = useHydrated();
 
   const form = useForm<ChangePasswordInput>({
     resolver: zodResolver(changePasswordSchema),
@@ -70,6 +74,7 @@ export function ChangePasswordForm({
     <Button
       type="submit"
       size={layout === "auth" ? "lg" : "md"}
+      disabled={!hydrated}
       loading={mutation.isPending}
       className={layout === "auth" ? "mt-1 w-full" : undefined}
     >

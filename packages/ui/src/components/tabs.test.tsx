@@ -69,6 +69,23 @@ describe("Tabs", () => {
     expect(screen.getByRole("tab", { name: "Pelanggaran 2" })).toBeInTheDocument();
   });
 
+  it("hides a count of 0 unless asked to show it, as CountBadge does", () => {
+    render(
+      <Tabs defaultValue="unread">
+        <TabsList aria-label="Notifikasi">
+          <TabsTrigger value="unread" count={0}>
+            Belum dibaca
+          </TabsTrigger>
+          <TabsTrigger value="late" count={0} showZero>
+            Terlambat
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>,
+    );
+    expect(screen.getByRole("tab", { name: "Belum dibaca" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Terlambat 0" })).toBeInTheDocument();
+  });
+
   it("has one decorative sliding indicator that stays out of the accessibility tree", () => {
     render(<ManyTabs />);
     const scroller = screen.getByRole("tablist").firstElementChild;

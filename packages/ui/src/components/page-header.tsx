@@ -139,6 +139,10 @@ export function PageHeader({
 
   return (
     <div
+      // A stable hook for layout rules around the header (the app's
+      // WorkspaceNav orders itself after it), so they never depend on the
+      // header's inner DOM.
+      data-slot="page-header"
       className={cn(
         "flex flex-col gap-2",
         divider ? "border-b border-line pb-4" : "pb-2",

@@ -37,16 +37,30 @@ describe("neutral soft tone", () => {
   // A badge is 12px text, so it needs 4.5:1 wherever a neutral chip can sit:
   // the page, a card, a sunken well, an overlay and a raised menu.
   it("keeps its text at 4.5:1 or more on every surface of both themes", () => {
-    const alpha = /\btext-fg\/(\d+)\b/.exec(TONE_CLASSES.neutral.soft)?.[1];
-    expect(TONE_CLASSES.neutral.soft).toContain("bg-state-pressed");
-    expect(alpha).toBeDefined();
+    expect(TONE_CLASSES.neutral.soft.split(" ")).toEqual([
+      "bg-neutral-soft",
+      "text-neutral-soft-fg",
+    ]);
     for (const theme of ["light", "dark"] as const) {
       const palette = colors[theme];
       for (const surface of SURFACES) {
-        const fill = over(parse(palette.statePressed), parse(palette[surface]));
-        const text = over(parse(palette.fg), fill, Number(alpha) / 100);
+        const fill = over(parse(palette.neutralSoft), parse(palette[surface]));
+        const text = over(parse(palette.neutralSoftFg), fill);
         expect(contrast(text, fill), `${theme} ${surface}`).toBeGreaterThanOrEqual(4.5);
       }
     }
+  });
+
+  it("draws its icon circle on the same fill, not on the pressed state layer", () => {
+    expect(TONE_CLASSES.neutral.icon).toContain("bg-neutral-soft");
+    expect(
+      Object.values(TONE_CLASSES)
+        .map((tone) => tone.soft)
+        .join(" "),
+    ).not.toContain("state-pressed");
+  });
+
+  it("uses the muted tint token for secondary text on the accent tint", () => {
+    expect(TONE_CLASSES.accent.softMuted).toBe("text-accent-soft-fg-muted");
   });
 });

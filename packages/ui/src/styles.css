@@ -697,42 +697,18 @@
  * every tap. Wherever a field is a 44px touch target (FIELD_HEIGHT: a
  * coarse or missing pointer, or a screen narrower than md), this raises
  * the body role it reads to 16/24; with a cursor on a wide screen the role
- * stays 14/20. Only the role's own size variables change, so the field
- * keeps its family, weight and tracking, the text inside its shell
- * (adornments, a picker's value, a stepper's input) follows, and a
- * caller's `text-body-sm` still replaces the role outright.
+ * stays 14/20. Only the role's own size variables change, taking the
+ * `body-lg` role's (16/24, packages/ui-tokens), so the field keeps its
+ * family, weight and tracking, the text inside its shell (adornments, a
+ * picker's value, a stepper's input) follows, and a caller's
+ * `text-body-sm` still replaces the role outright.
  *
- * A stand-in for a 16/24 role in packages/ui-tokens; move the values there
- * when the token set takes one.
+ * The table's header band (`bg-surface-header`) is a token color of its
+ * own (tokens.json `surfaceHeader`), registered in the preset.
  */
 @utility field-text-touch {
   @media (width < 48rem), (pointer: coarse), (pointer: none) {
-    --type-body-size: var(--text-16);
-    --type-body-line-height: calc(var(--text-16) * 1.5);
+    --type-body-size: var(--type-body-lg-size);
+    --type-body-line-height: var(--type-body-lg-line-height);
   }
-}
-
-/*
- * The band under a table's column headers and its totals row. In light it
- * is the sunken tint. In dark the sunken surface is darker than the page,
- * so a band of it read as a black slot across every table card; there it
- * is the card lifted a few percent toward the text color instead, the way
- * dark surfaces step up. The two dark selectors are the ones tokens.css
- * uses. A stand-in for a `surface-header` color token.
- */
-@layer base {
-  :root {
-    --color-surface-header: var(--color-surface-sunken);
-  }
-  [data-theme="dark"] {
-    --color-surface-header: color-mix(in srgb, var(--color-surface) 96%, var(--color-fg));
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --color-surface-header: color-mix(in srgb, var(--color-surface) 96%, var(--color-fg));
-    }
-  }
-}
-@utility bg-surface-header {
-  background-color: var(--color-surface-header);
 }

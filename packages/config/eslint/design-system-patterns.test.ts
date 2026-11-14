@@ -92,6 +92,8 @@ describe("design-system lint patterns", () => {
     it.each([
       'const a = <p className="text-caption text-fg-muted" />;',
       'const a = "text-[length:var(--x)] text-[var(--color-fg)]";',
+      'const a = <time className="text-kiosk-display tabular-nums" />;',
+      'const a = "text-kiosk-title text-body-lg";',
     ])("allows roles and non-size arbitrary text values: %s", (code) => {
       expect(flagged(code, withFontSizes)).toBe(false);
     });

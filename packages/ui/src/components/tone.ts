@@ -31,20 +31,21 @@ export interface ToneClasses {
 }
 
 export const TONE_CLASSES: Record<Tone, ToneClasses> = {
-  // Neutral fills are the translucent pressed layer rather than a surface
-  // colour: a sunken fill vanishes on the page background in dark mode and
-  // reads as a hole in a card, while 9% of the text colour shows on every
-  // surface in both themes (no neutral-soft token exists yet). Its text is
-  // the text colour at 70% rather than `fg-muted`: about as quiet in the
+  // The neutral fill is the translucent `neutral-soft` token rather than a
+  // surface colour: a sunken fill vanishes on the page background in dark
+  // mode and reads as a hole in a card, while a tint of the text colour
+  // shows on every surface in both themes. Its text is `neutral-soft-fg`
+  // (the text colour at 70%) rather than `fg-muted`: about as quiet in the
   // light theme, but it keeps 5.3:1 or more on every surface of both
   // themes, where `fg-muted` drops to 4.25:1 on a dark raised surface (a
-  // menu, a popover). tone.test.ts checks it against tokens.json.
+  // menu, a popover). The token contrast check measures both over every
+  // surface; tone.test.ts does too.
   neutral: {
-    soft: "bg-state-pressed text-fg/70",
+    soft: "bg-neutral-soft text-neutral-soft-fg",
     solid: "bg-fg text-bg",
     outline: "text-fg-muted ring-border-strong",
     dot: "bg-fg-muted",
-    icon: "bg-state-pressed text-fg-muted",
+    icon: "bg-neutral-soft text-fg-muted",
     softMuted: "text-fg-muted",
   },
   accent: {
@@ -53,7 +54,7 @@ export const TONE_CLASSES: Record<Tone, ToneClasses> = {
     outline: "text-accent ring-accent",
     dot: "bg-accent",
     icon: "bg-accent-soft text-accent",
-    softMuted: "text-accent-soft-fg/80",
+    softMuted: "text-accent-soft-fg-muted",
   },
   success: {
     soft: "bg-success-soft text-success-soft-fg",
