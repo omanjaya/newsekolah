@@ -1,14 +1,13 @@
 "use client";
 
-import { Button, PageHeader, Skeleton } from "@newsekolah/ui";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Card, CardHeader, CardTitle, SkeletonDetail } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { formatDisplayName } from "../../../lib/text/format-name";
-import { useMentorStudentSnapshotQuery } from "../api";
+import { useMentorGroupQuery, useMentorStudentSnapshotQuery } from "../api";
 
 import { MentorTermSummaryPanel } from "./mentor-term-summary-panel";
 import {
@@ -21,7 +20,8 @@ import {
  * The mentor's per-student view: attendance, discipline, and published
  * grades composed from other modules (docs/03-layered-architecture.md:
  * mentoring reads these through the API, never their own tables), plus the
- * mentor's own term summary for the same student.
+ * mentor's own term summary for the same student. The trail leads back to
+ * the group.
  */
 export function MentorStudentView({
   groupId,
@@ -31,64 +31,50 @@ export function MentorStudentView({
   studentId: string;
 }): ReactElement {
   const t = useTranslations("app.mentoring.studentView");
+  const tMentoring = useTranslations("app.mentoring");
   const snapshot = useMentorStudentSnapshotQuery(studentId);
+  const group = useMentorGroupQuery(groupId);
+  const groupLabel = group.data?.name ?? t("backToGroup");
 
-  if (snapshot.isError && !snapshot.data)
-    return <QueryError retry={() => snapshot.refetch()} className="m-4" />;
+  if (snapshot.isError && !snapshot.data) {
+    return (
+      <AppPage>
+        <QueryError retry={() => snapshot.refetch()} error={snapshot.error} />
+      </AppPage>
+    );
+  }
 
   if (snapshot.isLoading || !snapshot.data) {
     return (
-      <div className="flex flex-col gap-6 p-4 md:p-6" aria-busy="true">
-        <Skeleton className="h-9 w-32" />
-        <div className="flex flex-col gap-1">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-7 w-56" />
-          <Skeleton className="h-4 w-32" />
-        </div>
-        <div className="flex flex-col gap-3">
-          <Skeleton className="h-5 w-40" />
-          <Skeleton className="h-16 w-full" />
-        </div>
-        <div className="flex flex-col gap-3">
-          <Skeleton className="h-5 w-24" />
-          <Skeleton className="h-20 w-full max-w-sm" />
-        </div>
-        <div className="flex flex-col gap-3">
-          <Skeleton className="h-5 w-48" />
-          <Skeleton className="h-28 w-full" />
-        </div>
-      </div>
+      <AppPage>
+        <SkeletonDetail rows={6} />
+      </AppPage>
     );
   }
 
   const data = snapshot.data;
+  const name = formatDisplayName(data.student_name);
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <Button asChild variant="secondary" size="sm" className="self-start">
-        <Link href={`/mentoring/groups/${groupId}`}>
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          {t("backToGroup")}
-        </Link>
-      </Button>
-
-      <div className="flex flex-col gap-1">
-        <PageHeader
-          eyebrow={t("eyebrow")}
-          title={formatDisplayName(data.student_name)}
-          className="border-b-0 pb-0"
-        />
-        <p className="text-[13px] text-fg-muted">{data.class_name}</p>
-      </div>
-
+    <AppPage
+      title={name}
+      description={data.class_name}
+      breadcrumb={[
+        { label: tMentoring("navLabelGroups"), href: "/mentoring/groups" },
+        { label: groupLabel, href: `/mentoring/groups/${groupId}` },
+        { label: name },
+      ]}
+    >
       <SnapshotAttendanceSection snapshot={data} />
       <SnapshotDisciplineSection snapshot={data} />
       <SnapshotGradesSection snapshot={data} />
 
-      <section className="flex flex-col gap-3 border-t border-border pt-4">
-        <h2 className="text-[16px] font-medium text-fg">{t("termSummary.title")}</h2>
+      <Card padding="md">
+        <CardHeader>
+          <CardTitle as="h2">{t("termSummary.title")}</CardTitle>
+        </CardHeader>
         <MentorTermSummaryPanel groupId={groupId} studentId={studentId} />
-      </section>
-    </div>
+      </Card>
+    </AppPage>
   );
 }

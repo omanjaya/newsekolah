@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Select, Skeleton, Textarea, useToast } from "@newsekolah/ui";
+import { Field, Button, Select, Skeleton, Textarea, useToast } from "@newsekolah/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -60,8 +60,7 @@ export function MentorTermSummaryPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex max-w-xs flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("term")}</span>
+      <Field label={t("term")}>
         <Select
           options={termOptions}
           value={termId}
@@ -71,15 +70,15 @@ export function MentorTermSummaryPanel({
           }}
           placeholder={t("termPlaceholder")}
         />
-      </label>
+      </Field>
 
       {termId === "" ? (
-        <p className="text-[13px] text-fg-muted">{t("selectTermFirst")}</p>
+        <p className="text-body-sm text-fg-muted">{t("selectTermFirst")}</p>
       ) : summary.isLoading ? (
         <Skeleton className="h-32 w-full" aria-busy="true" />
       ) : (
         <div className="flex flex-col gap-3">
-          {notFound && !canWrite && <p className="text-[13px] text-fg-muted">{t("empty")}</p>}
+          {notFound && !canWrite && <p className="text-body-sm text-fg-muted">{t("empty")}</p>}
           <Textarea
             rows={6}
             value={text}

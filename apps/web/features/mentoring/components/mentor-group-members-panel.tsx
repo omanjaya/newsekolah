@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  DialogFooter,
   Button,
   ConfirmDialog,
   DataTable,
@@ -121,7 +122,7 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
     <div className="flex flex-col gap-4">
       {canManage && (
         <div className="flex items-center justify-between">
-          <p className="text-[13px] text-fg-muted">
+          <p className="text-body-sm text-fg-muted">
             {limit.data
               ? t("countOfLimit", { count: members.length, limit: limit.data.limit })
               : ""}
@@ -138,7 +139,7 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
           </Button>
         </div>
       )}
-      {canManage && atCapacity && <p className="text-[13px] text-fg-muted">{t("atCapacity")}</p>}
+      {canManage && atCapacity && <p className="text-body-sm text-fg-muted">{t("atCapacity")}</p>}
 
       <DataTable
         stateKey="features/mentoring/components/mentor-group-members-panel:1"
@@ -184,7 +185,7 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
           if (!open) setCandidateId("");
         }}
       >
-        <DialogContent title={t("addTitle")} className="max-w-md">
+        <DialogContent title={t("addTitle")}>
           <div className="flex flex-col gap-4">
             <DirectoryPicker
               profileKind="student"
@@ -193,7 +194,7 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
               labels={candidateLabels}
               className="w-full"
             />
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <DialogFooter>
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -224,7 +225,7 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
               >
                 {t("addConfirm")}
               </Button>
-            </div>
+            </DialogFooter>
           </div>
         </DialogContent>
       </Dialog>

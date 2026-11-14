@@ -147,7 +147,7 @@ export function MentorMeetingNotesPanel({
       >
         <DialogContent
           title={editing === "new" ? t("form.createTitle") : t("form.editTitle")}
-          className="max-w-2xl"
+          size="lg"
         >
           {editing !== null && (
             <MentorMeetingNoteForm

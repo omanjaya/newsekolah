@@ -33,7 +33,10 @@ vi.mock("../api", () => ({
   useMyMentorGroupsQuery: mocks.useMyMentorGroupsQuery,
   useDeleteMentorGroupMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
-vi.mock("./group-size-limit-panel", () => ({ GroupSizeLimitPanel: () => null }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+vi.mock("./group-size-limit-panel", () => ({
+  GroupSizeLimitPanel: () => <div>limit-panel</div>,
+}));
 vi.mock("./mentor-group-form", () => ({ MentorGroupForm: () => null }));
 
 import { MentorGroupsView } from "./mentor-groups-view";
@@ -66,31 +69,28 @@ describe("MentorGroupsView scope", () => {
     expect(mocks.useMentorGroupsQuery).toHaveBeenLastCalledWith(false);
   });
 
-  it("switching to 'all groups' writes scope=all to the URL and enables the all-groups query", async () => {
+  it("shows every group on the all-groups route, with its own title", () => {
+    render(<MentorGroupsView initialScope="all" />);
+
+    expect(mocks.useMentorGroupsQuery).toHaveBeenLastCalledWith(true);
+    expect(mocks.useMyMentorGroupsQuery).toHaveBeenLastCalledWith(false);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("navLabelGroups");
+  });
+
+  it("has no scope tabs without panels: each scope is its own route", () => {
+    render(<MentorGroupsView />);
+
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("navLabelMyGroups");
+  });
+
+  it("opens the group size limit from the header for a manager", async () => {
+    mocks.canManage = true;
     const user = userEvent.setup();
     render(<MentorGroupsView />);
 
-    await user.click(screen.getByRole("tab", { name: "allGroups" }));
-
-    expect(new URLSearchParams(window.location.search).get("scope")).toBe("all");
-    expect(mocks.useMentorGroupsQuery).toHaveBeenLastCalledWith(true);
-    expect(mocks.useMyMentorGroupsQuery).toHaveBeenLastCalledWith(false);
-  });
-
-  it("reads an initial scope=all URL param back into the scope tabs", () => {
-    window.history.replaceState(null, "", "/mentoring/groups?scope=all");
-    render(<MentorGroupsView />);
-
-    expect(mocks.useMentorGroupsQuery).toHaveBeenLastCalledWith(true);
-    expect(screen.getByRole("tab", { name: "allGroups" })).toHaveAttribute("aria-selected", "true");
-  });
-
-  it("gives the active scope tab a panel to control (no dangling aria-controls)", () => {
-    render(<MentorGroupsView />);
-
-    const controls = screen.getByRole("tab", { name: "mine" }).getAttribute("aria-controls");
-    expect(controls).toBeTruthy();
-    expect(document.getElementById(controls ?? "")).toHaveAttribute("role", "tabpanel");
+    await user.click(screen.getByRole("button", { name: "limitAction" }));
+    expect(screen.getByText("limit-panel")).toBeInTheDocument();
   });
 
   it("finds a group by mentor name, even when the name resolves after the search", async () => {
