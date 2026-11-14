@@ -192,6 +192,7 @@ function TitleRow({ title }: { title: LibraryOpacTitle }): ReactElement {
       href={`/opac/${title.id}`}
       leading={<OpacCover title={title.title} />}
       title={title.title}
+      titleLines={2}
       meta={
         <>
           {byline && <span className="block truncate">{byline}</span>}

@@ -187,6 +187,7 @@ export function DutyManualRecordPanel({
                 <ListRow
                   leading={<Avatar size={40} name={selectedStudent.name} decorative />}
                   title={selectedStudent.name}
+                  titleLines={2}
                   selected
                   action={
                     <Button
@@ -226,6 +227,7 @@ export function DutyManualRecordPanel({
                           key={student.id}
                           leading={<Avatar size={32} name={student.name} decorative />}
                           title={student.name}
+                          titleLines={2}
                           chevron={false}
                           onClick={() => {
                             setStudentId(student.id);

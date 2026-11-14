@@ -95,13 +95,15 @@ export function ScheduleMobileAgenda({
 
   return (
     <div className="flex flex-col gap-4 md:hidden">
-      {/* Seven short names share the width, so the whole week fits. */}
+      {/* Seven short names share the width; the dense size lets the whole
+          week fit a 390px phone without scrolling. */}
       <SegmentedControl
         aria-label={t("pickDay")}
         value={String(mobileDay)}
         onValueChange={(value) => {
           onSelectDay(Number(value));
         }}
+        size="dense"
         fullWidth
         options={activeDays.map((day) => ({
           value: String(day),
