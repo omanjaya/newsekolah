@@ -32,7 +32,10 @@ export interface AlertProps extends Omit<ComponentPropsWithRef<"div">, "title"> 
   title?: ReactNode;
   /** Replaces the variant's icon. */
   icon?: ReactNode;
-  /** One button or link, on the right on a wide screen and under the text on a phone. */
+  /**
+   * One `size="sm"` button or a link: on a wide screen it sits on the title
+   * line beside the close button, on a phone under the text.
+   */
   action?: ReactNode;
   /** Shows a close button. */
   onDismiss?: () => void;
@@ -75,36 +78,43 @@ export function Alert({
       className={cn("flex items-start gap-3 rounded-md px-4 py-3", colors.soft, className)}
       {...props}
     >
-      {/* A one-line alert centres its title on the action button from
-          640px up, so the icon follows the title there. */}
-      <span
-        className={cn(
-          "shrink-0 [&>svg]:size-5",
-          ICON_COLOR[tone],
-          !hasDescription && action && "sm:self-center",
-        )}
-        aria-hidden="true"
-      >
+      <span className={cn("shrink-0 [&>svg]:size-5", ICON_COLOR[tone])} aria-hidden="true">
         {icon ?? <Icon />}
       </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           {title !== undefined && <p className="text-body font-semibold">{title}</p>}
           {hasDescription && (
             <div className={cn(DESCRIPTION_CLASS, colors.softMuted)}>{children}</div>
           )}
         </div>
-        {action && <div className="flex shrink-0 items-center gap-2">{action}</div>}
+        {/* The trailing controls (the action from 640px up, and the close
+            button) sit on the first line of text, as the icon does, in
+            every alert: one line or three, titled or not. Each slot is as
+            tall as that line and centres its 32px control on it,
+            overflowing into the padding instead of pushing the text down.
+            On a phone the action drops under the text. */}
+        {action && (
+          <div data-slot="alert-action" className="flex shrink-0 items-center gap-2 sm:h-5">
+            {action}
+          </div>
+        )}
       </div>
       {onDismiss && (
-        <button
-          type="button"
-          onClick={onDismiss}
-          aria-label={dismissLabel ?? labels.alertDismiss}
-          className="-my-1.5 -mr-2 inline-flex size-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-state-hover active:bg-state-pressed pointer-coarse:size-11 pointer-coarse:-my-3 pointer-coarse:-mr-3.5"
+        // Beside an action the two read as one trailing group, 4px apart.
+        <div
+          data-slot="alert-dismiss"
+          className={cn("flex h-5 shrink-0 items-center", action && "sm:-ml-2")}
         >
-          <X className="size-4" aria-hidden="true" />
-        </button>
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label={dismissLabel ?? labels.alertDismiss}
+            className="-mr-2 inline-flex size-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-state-hover active:bg-state-pressed pointer-coarse:size-11 pointer-coarse:-mr-3.5"
+          >
+            <X className="size-4" aria-hidden="true" />
+          </button>
+        </div>
       )}
     </div>
   );
