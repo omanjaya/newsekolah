@@ -280,6 +280,15 @@ export {
   type ProgressTone,
 } from "./components/progress.js";
 export { Kbd } from "./components/kbd.js";
+export {
+  Disclosure,
+  DisclosureContent,
+  DisclosureIndicator,
+  DisclosureTrigger,
+  type DisclosureContentProps,
+  type DisclosureProps,
+  type DisclosureTriggerProps,
+} from "./components/disclosure.js";
 export { StickySaveBar, type StickySaveBarProps } from "./components/sticky-save-bar.js";
 export {
   CommandPalette,
