@@ -20,8 +20,9 @@ describe("field text on touch", () => {
   it("raises the body role to 16/24 where the field is a touch target", async () => {
     const css = await compiledFormsDataCss([FIELD_TOUCH_TEXT]);
     expect(css).toMatch(/@media \(width < 48rem\), \(pointer: coarse\), \(pointer: none\)/);
-    expect(css).toContain("--type-body-size: var(--text-16)");
-    expect(css).toContain("--type-body-line-height: calc(var(--text-16) * 1.5)");
+    // The body-lg role's own values (16/24 in packages/ui-tokens).
+    expect(css).toContain("--type-body-size: var(--type-body-lg-size)");
+    expect(css).toContain("--type-body-line-height: var(--type-body-lg-line-height)");
   });
 
   it("is part of both field sizes", () => {

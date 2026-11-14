@@ -99,6 +99,6 @@ describe("Card", () => {
     );
     expect(screen.getByTestId("card")).toHaveClass("bg-accent-soft", "text-accent-soft-fg");
     expect(screen.getByText("Sekarang")).not.toHaveClass("text-fg");
-    expect(screen.getByText("Matematika")).toHaveClass("text-accent-soft-fg/80");
+    expect(screen.getByText("Matematika")).toHaveClass("text-accent-soft-fg-muted");
   });
 });

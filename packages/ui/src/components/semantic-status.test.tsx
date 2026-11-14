@@ -61,7 +61,11 @@ describe("SemanticStatusBadge", () => {
 
   it("renders the same pill shape, neutral, for quiet states", () => {
     render(<SemanticStatusBadge status="cancelled" label="Dibatalkan" />);
-    expect(pill("Dibatalkan")).toHaveClass("rounded-full", "bg-state-pressed", "text-fg/70");
+    expect(pill("Dibatalkan")).toHaveClass(
+      "rounded-full",
+      "bg-neutral-soft",
+      "text-neutral-soft-fg",
+    );
   });
 });
 
@@ -69,7 +73,7 @@ describe("StatusBadge", () => {
   it("renders an attendance status as a neutral pill with its token dot and default name", async () => {
     const { container } = render(<StatusBadge status="sick" />);
     const badge = pill("Sakit");
-    expect(badge).toHaveClass("rounded-full", "bg-state-pressed", "text-fg");
+    expect(badge).toHaveClass("rounded-full", "bg-neutral-soft", "text-fg");
     expect(badge?.querySelector('[aria-hidden="true"]')).toHaveClass("bg-status-sick");
     await expectNoAxeViolations(container);
   });
@@ -89,7 +93,7 @@ describe("StatusBadge", () => {
       </>,
     );
     for (const label of ["Hadir", "Sakit", "Izin", "Dispensasi"]) {
-      expect(pill(label)).toHaveClass("bg-state-pressed", "text-fg");
+      expect(pill(label)).toHaveClass("bg-neutral-soft", "text-fg");
     }
     const absent = pill("Alfa");
     expect(absent).toHaveClass("bg-danger-soft", "text-danger-soft-fg");

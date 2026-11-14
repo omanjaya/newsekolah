@@ -37,7 +37,7 @@ describe("HeroCard", () => {
     const eyebrow = screen.getByText("Pelajaran berikutnya");
     expect(eyebrow).toHaveClass("text-label");
     expect(eyebrow).not.toHaveClass("uppercase");
-    expect(screen.getByText("Ruang X-A")).toHaveClass("text-accent-soft-fg/80");
+    expect(screen.getByText("Ruang X-A")).toHaveClass("text-accent-soft-fg-muted");
   });
 
   it("offers a neutral and a warning tone, and a live chip", () => {

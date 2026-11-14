@@ -31,11 +31,11 @@ describe("StatePage", () => {
 
   it("colours only a failure as one", () => {
     const tones: Record<StatePageKind, string> = {
-      "not-found": "bg-state-pressed",
+      "not-found": "bg-neutral-soft",
       error: "bg-danger-soft",
       forbidden: "bg-warning-soft",
-      "module-unavailable": "bg-state-pressed",
-      offline: "bg-state-pressed",
+      "module-unavailable": "bg-neutral-soft",
+      offline: "bg-neutral-soft",
     };
     for (const [kind, tone] of Object.entries(tones) as [StatePageKind, string][]) {
       const { container, unmount } = render(<StatePage kind={kind} title={kind} />);

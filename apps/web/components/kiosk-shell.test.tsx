@@ -38,6 +38,13 @@ describe("KioskShell", () => {
     expect(screen.getByRole("main")).toHaveTextContent("Layar");
   });
 
+  it("sets the clock in the kiosk display role, large enough for a wall", () => {
+    renderShell();
+    const clock = screen.getByText("07.42");
+    expect(clock.tagName).toBe("TIME");
+    expect(clock).toHaveClass("text-kiosk-display", "tabular-nums");
+  });
+
   it("offers one quiet way back to where the kiosk was opened", () => {
     renderShell();
     expect(screen.getByRole("link", { name: "Keluar dari mode kios" })).toHaveAttribute(

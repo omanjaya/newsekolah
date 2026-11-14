@@ -4,10 +4,11 @@ import { cn } from "../utils/cn.js";
 
 export type CountBadgeTone = "neutral" | "accent" | "danger";
 
-// `neutral` is a translucent layer rather than a surface colour, so the
-// count still reads inside a sunken tab track and on an active white pill.
+// `neutral` is the translucent neutral soft fill rather than a surface
+// colour, so the count still reads inside a sunken tab track and on an
+// active white pill (`fg` on it is checked over every surface).
 const TONE_CLASS: Record<CountBadgeTone, string> = {
-  neutral: "bg-state-pressed text-fg",
+  neutral: "bg-neutral-soft text-fg",
   accent: "bg-accent text-accent-fg",
   danger: "bg-danger text-bg",
 };

@@ -84,9 +84,10 @@ export function KioskShell({ title, exitHref, timeZone, children }: KioskShellPr
           )}
         </div>
         <div className="flex shrink-0 flex-col items-end" aria-label={t("clock")} role="timer">
-          {/* Reserves the clock's width before the client knows the time. */}
+          {/* Reserves the clock's width before the client knows the time.
+              The kiosk display role: read from across the room. */}
           <time
-            className="min-w-[5ch] text-right text-display tabular-nums"
+            className="min-w-[5ch] text-right text-kiosk-display tabular-nums"
             suppressHydrationWarning
           >
             {time ?? " "}
