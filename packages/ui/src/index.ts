@@ -103,6 +103,7 @@ export {
 } from "./components/date-range-picker.js";
 export { MonthPicker, type MonthPickerProps } from "./components/month-picker.js";
 export { TimePicker, type TimePickerProps } from "./components/time-picker.js";
+export { DateTimeField, type DateTimeFieldProps } from "./components/date-time-field.js";
 export { NumberInput, type NumberInputProps } from "./components/number-input.js";
 export {
   RadioGroup,
