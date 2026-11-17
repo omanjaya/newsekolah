@@ -6,8 +6,6 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
-import { AppPage } from "../../../components/app-page";
-
 import { GradeLevelsView } from "./grade-levels-view";
 import { RoomsView } from "./rooms-view";
 import { TracksView } from "./tracks-view";
@@ -29,7 +27,8 @@ function renderLink({ href, className, children, ...rest }: NavTabsLinkProps): R
 /**
  * Struktur sekolah: grade levels, tracks and rooms, one reference table
  * per tab. The tab is in the URL (`?tab=`), so old links land on the
- * right one; each table carries its own search and add button.
+ * right one. The hub owns the frame (description and tabs); the section
+ * renders the page with its own add button as the header's primary action.
  */
 export function SchoolStructureView(): ReactElement {
   const t = useTranslations("app.academic.structure");
@@ -38,22 +37,22 @@ export function SchoolStructureView(): ReactElement {
   const ActiveView = active.View;
 
   return (
-    <AppPage
-      description={t("description")}
-      nav={
-        <NavTabs
-          aria-label={t("title")}
-          variant="underline"
-          items={sections.map(({ value, label }) => ({
-            href: `/school/structure?tab=${value}`,
-            label: t(label),
-            current: value === active.value,
-          }))}
-          renderLink={renderLink}
-        />
-      }
-    >
-      <ActiveView />
-    </AppPage>
+    <ActiveView
+      page={{
+        description: t("description"),
+        nav: (
+          <NavTabs
+            aria-label={t("title")}
+            variant="underline"
+            items={sections.map(({ value, label }) => ({
+              href: `/school/structure?tab=${value}`,
+              label: t(label),
+              current: value === active.value,
+            }))}
+            renderLink={renderLink}
+          />
+        ),
+      }}
+    />
   );
 }

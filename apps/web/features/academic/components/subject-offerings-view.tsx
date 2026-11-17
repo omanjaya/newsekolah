@@ -10,8 +10,8 @@ import {
   DialogFooter,
   EmptyState,
   Field,
-  IconButton,
   NumberInput,
+  RowActionsMenu,
   Select,
   useToast,
 } from "@newsekolah/ui";
@@ -21,6 +21,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
@@ -35,6 +36,8 @@ import {
   useUpdateSubjectOfferingMutation,
 } from "../api-offerings";
 
+import type { HubPageProps } from "./hub-page";
+
 interface OfferingDraft {
   subjectId: string;
   gradeLevelId: string;
@@ -44,7 +47,7 @@ interface OfferingDraft {
 const EMPTY_DRAFT: OfferingDraft = { subjectId: "", gradeLevelId: "", hoursPerWeek: "2" };
 
 /** Which subjects are taught in an academic year, optionally scoped to one grade level. */
-export function SubjectOfferingsView(): ReactElement {
+export function SubjectOfferingsView({ page }: { page: HubPageProps }): ReactElement {
   const t = useTranslations("app.academic.subjectOfferings");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -136,22 +139,28 @@ export function SubjectOfferingsView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) =>
           canManage ? (
-            <div className="flex justify-end gap-1">
-              <IconButton
-                icon={<Pencil />}
-                aria-label={t("edit")}
-                onClick={() => {
-                  open(row.original);
-                }}
-              />
-              <IconButton
-                icon={<Trash2 />}
-                aria-label={t("delete")}
-                onClick={() => {
-                  setPendingDelete(row.original);
-                }}
-              />
-            </div>
+            <RowActionsMenu
+              ariaLabel={t("rowActions", {
+                name: subjectMap.get(row.original.subject_id)?.name ?? "",
+              })}
+              items={[
+                {
+                  label: t("edit"),
+                  icon: <Pencil />,
+                  onClick: () => {
+                    open(row.original);
+                  },
+                },
+                {
+                  label: t("delete"),
+                  icon: <Trash2 />,
+                  tone: "danger",
+                  onClick: () => {
+                    setPendingDelete(row.original);
+                  },
+                },
+              ]}
+            />
           ) : null,
       },
     ],
@@ -159,20 +168,11 @@ export function SubjectOfferingsView(): ReactElement {
   );
 
   return (
-    // md:h-full: fills the tab panel's height so only the table rows scroll.
-    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <Field label={t("year")}>
-          <Select
-            options={(years.data?.data ?? []).map((y) => ({ value: y.id, label: y.label }))}
-            value={effectiveYearId}
-            onValueChange={setYearId}
-            className="w-full md:w-64"
-          />
-        </Field>
-        {canManage && (
+    <AppPage
+      {...page}
+      primaryAction={
+        canManage ? (
           <Button
-            size="sm"
             icon={<Plus />}
             disabled={!effectiveYearId}
             onClick={() => {
@@ -181,8 +181,16 @@ export function SubjectOfferingsView(): ReactElement {
           >
             {t("add")}
           </Button>
-        )}
-      </div>
+        ) : undefined
+      }
+    >
+      <Field label={t("year")} className="md:w-64">
+        <Select
+          options={(years.data?.data ?? []).map((y) => ({ value: y.id, label: y.label }))}
+          value={effectiveYearId}
+          onValueChange={setYearId}
+        />
+      </Field>
       <DataTable
         stateKey="features/academic/components/subject-offerings-view:1"
         mode="local"
@@ -300,6 +308,6 @@ export function SubjectOfferingsView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }
