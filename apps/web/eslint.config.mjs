@@ -1,3 +1,4 @@
+import { designSystemPlugin, nativeDialogRules } from "@newsekolah/config/eslint/design-system";
 import next from "@newsekolah/config/eslint/next";
 
 /** @type {import("eslint").Linter.Config[]} */
@@ -21,5 +22,53 @@ export default [
       "eslint.config.mjs",
       "postcss.config.mjs",
     ],
+  },
+  // The design system's guard rails (docs/07-ui-ux.md section 0): type
+  // roles instead of literal font sizes, Card instead of the retired
+  // bordered small-radius panel, the shared pickers instead of native
+  // date, time, month and number inputs, and ConfirmDialog or a toast
+  // instead of the browser's own dialogs.
+  {
+    files: ["**/*.{ts,tsx}"],
+    plugins: { "design-system": designSystemPlugin },
+    rules: {
+      "design-system/no-literal-font-size": "error",
+      "design-system/no-panel-radius": "error",
+      "design-system/no-native-pickers": "error",
+      ...nativeDialogRules,
+    },
+  },
+  // Screens build on shared components: no raw headings, buttons, selects,
+  // text areas, tables or labels in routes and features. The shell
+  // (components/) owns its own navigation controls. Tests and stories
+  // render raw elements as fixtures.
+  {
+    files: ["app/**/*.tsx", "features/**/*.tsx"],
+    ignores: ["**/*.test.tsx", "**/*.stories.tsx"],
+    rules: {
+      "design-system/no-raw-elements": "error",
+    },
+  },
+  // Ratchet, 1 violation left: the unsaved-changes guard asks with
+  // window.confirm before a navigation. The file belongs to the navigation
+  // stream (lib/navigation*); it stays a warning until that guard moves to
+  // ConfirmDialog, then this block goes.
+  {
+    files: ["lib/navigation/use-unsaved-changes-protection.ts"],
+    rules: {
+      "no-restricted-properties": [
+        "warn",
+        ...nativeDialogRules["no-restricted-properties"].slice(1),
+      ],
+    },
+  },
+  // The root error boundary replaces the whole document, stylesheet and
+  // providers included, so it draws its title and button in plain HTML
+  // with its own CSS; shared components would render unstyled there.
+  {
+    files: ["app/global-error.tsx"],
+    rules: {
+      "design-system/no-raw-elements": "off",
+    },
   },
 ];
