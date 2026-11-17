@@ -22,6 +22,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   type PlatformTenantCreated,
@@ -34,13 +35,19 @@ import {
 import { CreateTenantForm } from "./create-tenant-form";
 import { TenantDetailPanel } from "./tenant-detail-panel";
 
+/**
+ * The platform console's school list. The API says which tenancy mode the
+ * deployment runs in: with "single" the page manages the one school (its
+ * module switches) and hides provisioning and suspend/resume, which the API
+ * refuses there, and suspending would lock out the only school.
+ */
 export function TenantsView(): ReactElement {
   const t = useTranslations("app.platform.tenants");
   const tCreated = useTranslations("app.platform.tenants.created");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const { data, isLoading } = useTenantsQuery();
+  const { data, isLoading, isError, refetch } = useTenantsQuery();
   const suspend = useSuspendTenantMutation();
   const resume = useResumeTenantMutation();
 
@@ -49,6 +56,9 @@ export function TenantsView(): ReactElement {
   const [detailTenantId, setDetailTenantId] = useState<string | null>(null);
 
   const items = data?.data ?? [];
+  const tenancyMode = data?.tenancy_mode;
+  const singleTenant = tenancyMode === "single";
+  const multiTenant = tenancyMode === "multi";
 
   const onError = (error: unknown) => {
     toast.error(
@@ -110,7 +120,7 @@ export function TenantsView(): ReactElement {
                 >
                   {t("viewDetail")}
                 </DropdownMenuItem>
-                {tenant.status === "suspended" ? (
+                {singleTenant ? null : tenant.status === "suspended" ? (
                   <DropdownMenuItem
                     onSelect={() => {
                       resume.mutate(tenant.id, {
@@ -144,7 +154,7 @@ export function TenantsView(): ReactElement {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t],
+    [t, singleTenant],
   );
 
   return (
@@ -153,46 +163,56 @@ export function TenantsView(): ReactElement {
         eyebrow={t("eyebrow")}
         title={t("title")}
         actions={
-          <Button
-            size="sm"
-            icon={<Plus />}
-            onClick={() => {
-              setCreating(true);
-            }}
-          >
-            {t("add")}
-          </Button>
+          multiTenant ? (
+            <Button
+              size="sm"
+              icon={<Plus />}
+              onClick={() => {
+                setCreating(true);
+              }}
+            >
+              {t("add")}
+            </Button>
+          ) : undefined
         }
       />
-      <p className="text-[13px] text-fg-muted">{t("subtitle")}</p>
+      {tenancyMode && (
+        <p className="text-[13px] text-fg-muted">
+          {singleTenant ? t("subtitleSingle") : t("subtitle")}
+        </p>
+      )}
 
-      <DataTable
-        stateKey="features/platform/components/tenants-view:1"
-        mode="local"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={isLoading}
-        getRowId={(item) => item.id}
-        onRowActivate={(item) => {
-          setDetailTenantId(item.id);
-        }}
-        emptyState={
-          <EmptyState
-            icon={<Building2 aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      {isError && !data ? (
+        <QueryError retry={refetch} />
+      ) : (
+        <DataTable
+          stateKey="features/platform/components/tenants-view:1"
+          mode="local"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={isLoading}
+          getRowId={(item) => item.id}
+          onRowActivate={(item) => {
+            setDetailTenantId(item.id);
+          }}
+          emptyState={
+            <EmptyState
+              icon={<Building2 aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      )}
 
       <Dialog
-        open={creating}
+        open={creating && multiTenant}
         onOpenChange={(open) => {
           setCreating(open);
         }}
@@ -252,7 +272,13 @@ export function TenantsView(): ReactElement {
         }}
       >
         <DialogContent title={t("detail.title")}>
-          {detailTenantId && <TenantDetailPanel tenantId={detailTenantId} />}
+          {detailTenantId && (
+            <TenantDetailPanel
+              key={detailTenantId}
+              tenantId={detailTenantId}
+              multiTenant={!singleTenant}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

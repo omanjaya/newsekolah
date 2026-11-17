@@ -1,6 +1,6 @@
 "use client";
 
-import { type components } from "@newsekolah/api-client";
+import { queryKeys, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
@@ -11,6 +11,7 @@ export type PlatformTenantDetail = components["schemas"]["PlatformTenantDetail"]
 export type PlatformTenantCreate = components["schemas"]["PlatformTenantCreate"];
 export type PlatformTenantCreated = components["schemas"]["PlatformTenantCreated"];
 export type PlatformModule = components["schemas"]["PlatformModule"];
+export type PlatformTenancyMode = components["schemas"]["PlatformTenancyMode"];
 export type PlatformModuleFlag = components["schemas"]["PlatformModuleFlag"];
 export type PlatformExport = components["schemas"]["PlatformExport"];
 export type PlatformEducationLevel = components["schemas"]["PlatformEducationLevel"];
@@ -41,6 +42,11 @@ function useInvalidatePlatform() {
   return () => queryClient.invalidateQueries({ queryKey: ["platform"] });
 }
 
+/**
+ * Every tenant with its health summary, plus `tenancy_mode`: in "single"
+ * mode the API manages the one school's details and module flags but
+ * refuses provisioning, suspend/resume, custom domains and exports.
+ */
 export function useTenantsQuery() {
   const client = useApiClient();
   return useQuery({
@@ -119,9 +125,28 @@ export function useTenantFlagsQuery(tenantId: string) {
   });
 }
 
+/**
+ * The query-key prefix of every `queryKeys.tenantBranding(slug)` entry, so
+ * one invalidation covers the branding of any tenant slug.
+ */
+const TENANT_BRANDING_PREFIX = queryKeys.tenantBranding().slice(0, 2);
+
+/**
+ * Switches one module of one tenant. Use one instance per module row: the
+ * per-call `mutate` callbacks of a shared instance only run for the latest
+ * call, so a second toggle would swallow the first one's result.
+ *
+ * On success it refreshes, besides the console's own queries, the session
+ * (`Me.disabled_modules`, read by the sidebar and the route gate) and the
+ * public branding (`disabled_public_modules`, read by the OPAC gate): in
+ * single-tenant mode the toggled school is always the superadmin's own, and
+ * without this the change only shows after the session goes stale or a
+ * request is refused with MODULE_DISABLED. The mutation stays pending until
+ * those refetches finish, so the switch and the shell settle together.
+ */
 export function useSetTenantFlagMutation() {
   const client = useApiClient();
-  const invalidate = useInvalidatePlatform();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       tenantId,
@@ -136,7 +161,13 @@ export function useSetTenantFlagMutation() {
         params: { path: { tenantId, module } },
         body: { enabled },
       }),
-    onSuccess: invalidate,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["platform"] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.me() }),
+        queryClient.invalidateQueries({ queryKey: TENANT_BRANDING_PREFIX }),
+      ]);
+    },
 
     meta: { errorToast: false },
   });
