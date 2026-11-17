@@ -89,6 +89,17 @@ export interface NewsekolahApiClient {
     url: Path,
     init?: Init & Record<string, unknown>,
   ) => Promise<NonNullable<FetchResponse<paths[Path]["delete"], Init, "application/json">["data"]>>;
+  /**
+   * Forgets every access token this client holds on its own: the one it
+   * kept from its last refresh, and whatever a refresh still on its way
+   * brings back. Call it whenever the app ends a session on purpose
+   * (signing out, ending an impersonation), along with clearing its own
+   * copy: until then a request made while the app has no token still goes
+   * out with the remembered one, which can name a session that is still
+   * alive on the server. A failed refresh forgets on its own. The next
+   * sign-in, and every refresh after it, work as before.
+   */
+  forgetAccessToken: () => void;
 }
 
 function randomUUID(): string {
@@ -155,11 +166,26 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
   // firing its own /v1/auth/refresh request.
   let refreshInFlight: Promise<string | null> | null = null;
   // The most recent token this client refreshed, used when the app's own
-  // getAccessToken has not caught up yet.
+  // getAccessToken has not caught up yet. Dropped by forgetAccessToken()
+  // and by a failed refresh: the session it belongs to has ended.
   let lastRefreshed: string | null = null;
+  // Counts the sessions the app has ended. A refresh that started before
+  // the latest one ended belongs to that session, so its answer is dropped
+  // instead of handing the ended session's token back to the app.
+  let endedSessions = 0;
+
+  function forgetAccessToken(): void {
+    endedSessions += 1;
+    lastRefreshed = null;
+    // The next refresh starts on its own instead of joining one whose
+    // answer will be dropped.
+    refreshInFlight = null;
+  }
 
   async function refreshAccessToken(notifyOnFailure = true): Promise<string | null> {
-    refreshInFlight ??= (async () => {
+    const flight = (refreshInFlight ??= (async () => {
+      const startedIn = endedSessions;
+      const sessionEnded = () => endedSessions !== startedIn;
       const refreshToken = await tokenStore.getRefreshToken();
       const response = await fetch(`${options.baseUrl}/v1/auth/refresh`, {
         method: "POST",
@@ -167,7 +193,11 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
         headers: { "content-type": "application/json" },
         body: refreshToken ? JSON.stringify({ refresh_token: refreshToken }) : undefined,
       });
+      // The app ended the session while this was on its way: nothing about
+      // it is stored, and the app is not told, since it already knows.
+      if (sessionEnded()) return null;
       if (!response.ok) {
+        lastRefreshed = null;
         await tokenStore.clear();
         if (notifyOnFailure) {
           options.onUnauthorized?.();
@@ -175,21 +205,25 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
         return null;
       }
       const data = (await response.json()) as { access_token: string; refresh_token?: string };
+      if (sessionEnded()) return null;
       await tokenStore.setTokens({
         accessToken: data.access_token,
         refreshToken: data.refresh_token,
       });
+      if (sessionEnded()) return null;
       // Remember it here too: the web app keeps the access token in a
       // module variable this package cannot see, so a client that only
       // wrote to the token store would refresh on every single request.
       lastRefreshed = data.access_token;
       options.onAccessToken?.(data.access_token);
       return data.access_token;
-    })();
+    })());
     try {
-      return await refreshInFlight;
+      return await flight;
     } finally {
-      refreshInFlight = null;
+      // Only this flight's own slot: after forgetAccessToken() a newer
+      // refresh may already be running in it.
+      if (refreshInFlight === flight) refreshInFlight = null;
     }
   }
 
@@ -331,5 +365,6 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
     PUT: (url, init) => unwrap(raw.PUT(url, init as never)),
     PATCH: (url, init) => unwrap(raw.PATCH(url, init as never)),
     DELETE: (url, init) => unwrap(raw.DELETE(url, init as never)),
+    forgetAccessToken,
   };
 }

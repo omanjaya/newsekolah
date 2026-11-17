@@ -311,3 +311,157 @@ describe("createApiClient", () => {
     expect(onUnauthorized).toHaveBeenCalledTimes(1);
   });
 });
+
+// The web app hands each refreshed token to its own store (onAccessToken),
+// but the client also keeps the last one and sends it whenever the app has
+// none. After the app ends a session on purpose, that remembered token can
+// still name a live session (an admin's own, after an impersonation), so
+// it must go with it.
+describe("forgetting the remembered access token", () => {
+  /** `/v1/me` answers whoever the bearer token names, and 401 with no token. */
+  function meRecordingAuthorization(seen: (string | null)[]) {
+    return http.get(`${BASE_URL}/v1/me`, ({ request }) => {
+      const authorization = request.headers.get("authorization");
+      seen.push(authorization);
+      return authorization
+        ? HttpResponse.json({ id: authorization.replace("Bearer ", "") })
+        : HttpResponse.json(errorBody("AUTH_UNAUTHENTICATED"), { status: 401 });
+    });
+  }
+
+  it("keeps using the boot refresh's token until the app ends the session, then sends none", async () => {
+    const seen: (string | null)[] = [];
+    let refreshCalls = 0;
+    server.use(
+      meRecordingAuthorization(seen),
+      http.post(`${BASE_URL}/v1/auth/refresh`, () => {
+        refreshCalls += 1;
+        // The first refresh is the page load's; by the second one the
+        // session has been ended on the server.
+        return refreshCalls === 1
+          ? HttpResponse.json({ access_token: "admin-token" })
+          : HttpResponse.json(errorBody("AUTH_INVALID_CREDENTIALS"), { status: 401 });
+      }),
+    );
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      // The app's own store never catches up in this test, so every
+      // authorized request below rides on the remembered token.
+      getAccessToken: () => null,
+      clientHeader: "web/1.0.0",
+    });
+
+    expect(await client.GET("/v1/me")).toEqual({ id: "admin-token" });
+    expect(await client.GET("/v1/me")).toEqual({ id: "admin-token" });
+    client.forgetAccessToken();
+    const error = await client.GET("/v1/me").catch((e: unknown) => e);
+
+    expect(seen).toEqual(["Bearer admin-token", "Bearer admin-token", null]);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).status).toBe(401);
+    // The page load's refresh, then the one the unauthenticated 401 asked for.
+    expect(refreshCalls).toBe(2);
+  });
+
+  it("drops the answer of a refresh that was on its way when the session ended", async () => {
+    const seen: (string | null)[] = [];
+    const onAccessToken = vi.fn();
+    const onUnauthorized = vi.fn();
+    let refreshCalls = 0;
+    let refreshStarted: () => void = () => undefined;
+    const started = new Promise<void>((resolve) => {
+      refreshStarted = resolve;
+    });
+    let answerRefresh: () => void = () => undefined;
+    const answered = new Promise<void>((resolve) => {
+      answerRefresh = resolve;
+    });
+    server.use(
+      meRecordingAuthorization(seen),
+      http.post(`${BASE_URL}/v1/auth/refresh`, async () => {
+        refreshCalls += 1;
+        if (refreshCalls === 1) {
+          refreshStarted();
+          await answered;
+          return HttpResponse.json({ access_token: "ended-session-token" });
+        }
+        return HttpResponse.json(errorBody("AUTH_INVALID_CREDENTIALS"), { status: 401 });
+      }),
+    );
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => null,
+      clientHeader: "web/1.0.0",
+      onAccessToken,
+      onUnauthorized,
+    });
+
+    const request = client.GET("/v1/me").catch((e: unknown) => e);
+    await started;
+    client.forgetAccessToken();
+    answerRefresh();
+    const error = await request;
+
+    expect(onAccessToken).not.toHaveBeenCalled();
+    expect(seen).toEqual([null]);
+    expect(error).toBeInstanceOf(ApiError);
+    // Only the later refresh, which the server refused, reports the
+    // session as gone; the dropped one stays quiet.
+    expect(refreshCalls).toBe(2);
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+  });
+
+  it("forgets the remembered token on its own when a refresh fails", async () => {
+    const seen: (string | null)[] = [];
+    let refreshCalls = 0;
+    server.use(
+      http.get(`${BASE_URL}/v1/me`, ({ request }) => {
+        const authorization = request.headers.get("authorization");
+        seen.push(authorization);
+        // The remembered token has run out; the refresh below then fails.
+        return authorization
+          ? HttpResponse.json(errorBody("AUTH_TOKEN_EXPIRED"), { status: 401 })
+          : HttpResponse.json(errorBody("AUTH_UNAUTHENTICATED"), { status: 401 });
+      }),
+      http.get(`${BASE_URL}/v1/tenant/branding`, () => HttpResponse.json({ name: "School" })),
+      http.post(`${BASE_URL}/v1/auth/refresh`, () => {
+        refreshCalls += 1;
+        return refreshCalls === 1
+          ? HttpResponse.json({ access_token: "earlier-token" })
+          : HttpResponse.json(errorBody("AUTH_INVALID_CREDENTIALS"), { status: 401 });
+      }),
+    );
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => null,
+      clientHeader: "web/1.0.0",
+      onUnauthorized: () => undefined,
+    });
+
+    // The page load's refresh remembers "earlier-token".
+    await client.GET("/v1/tenant/branding");
+    await client.GET("/v1/me").catch(() => undefined);
+    await client.GET("/v1/me").catch(() => undefined);
+
+    expect(seen).toEqual(["Bearer earlier-token", null]);
+  });
+
+  it("uses a new session's token after forgetting the previous one", async () => {
+    const seen: (string | null)[] = [];
+    let appToken: string | null = "first-session";
+    server.use(meRecordingAuthorization(seen));
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => appToken,
+      clientHeader: "web/1.0.0",
+    });
+
+    await client.GET("/v1/me");
+    appToken = null;
+    client.forgetAccessToken();
+    appToken = "second-session";
+    await client.GET("/v1/me");
+
+    expect(seen).toEqual(["Bearer first-session", "Bearer second-session"]);
+  });
+});

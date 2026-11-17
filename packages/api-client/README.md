@@ -19,6 +19,10 @@ Typed API client generated from `openapi/openapi.yaml`.
     other failure, instead of returning `{ data, error }`.
   - `AbortSignal` passes straight through via the standard `init.signal`
     option on any call.
+  - `client.forgetAccessToken()` drops the token the client kept from its
+    last refresh (and the answer of a refresh still on its way). Call it
+    whenever the app ends a session on purpose, with its own copy; a
+    failed refresh does it on its own.
 - `queryKeys` centralizes TanStack Query cache keys so web and mobile
   invalidate the same entries.
 - `@newsekolah/api-client/react` exports `useMe`, `useLogin`, `useLogout`,
