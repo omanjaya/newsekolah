@@ -8,7 +8,7 @@
       "catalog": "Katalog pelanggaran",
       "policy": "Kebijakan SP",
       "atRisk": "Kandidat SP",
-      "letters": "Surat Peringatan"
+      "letters": "Surat peringatan"
     },
     "filters": {
       "class": "Kelas",
@@ -160,7 +160,7 @@
     "tabs": {
       "issued": "Surat terbit",
       "atRisk": "Siswa mendekati ambang",
-      "template": "Template surat"
+      "template": "Templat surat"
     },
     "filters": {
       "class": "Kelas",
@@ -215,8 +215,8 @@
       "previewLabel": "Contoh nomor dengan pola saat ini",
       "openingLabel": "Kalimat pembuka",
       "closingLabel": "Kalimat penutup",
-      "save": "Simpan template",
-      "saved": "Template surat peringatan tersimpan"
+      "save": "Simpan templat",
+      "saved": "Templat surat peringatan tersimpan"
     }
   },
   "counseling": {

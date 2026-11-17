@@ -45,7 +45,7 @@
     },
     "tiles": {
       "leaveLabel": "Izin kelas menunggu",
-      "rateLabel": "Kehadiran kelas",
+      "rateLabel": "Presensi kelas",
       "rateHint": "hadir {className} hari ini"
     },
     "hero": {

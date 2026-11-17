@@ -21,7 +21,7 @@
     "rooms": "Ruang"
   },
   "years": {
-    "eyebrow": "Data Sekolah",
+    "eyebrow": "Data sekolah",
     "title": "Tahun ajaran",
     "description": "Kelola tahun ajaran sekolah: buat, ubah, aktifkan, atau arsipkan.",
     "add": "Tambah tahun ajaran",
@@ -90,7 +90,7 @@
     "activateBody": "\"{name}\" menjadi semester aktif; semester lain di tahun ajaran ini otomatis nonaktif."
   },
   "gradeLevels": {
-    "eyebrow": "Data Sekolah",
+    "eyebrow": "Data sekolah",
     "title": "Tingkat kelas",
     "add": "Tambah tingkat",
     "edit": "Ubah",
@@ -101,7 +101,7 @@
     "deleted": "Tingkat kelas dihapus",
     "deleteTitle": "Hapus tingkat kelas ini?",
     "deleteBody": "\"{name}\" akan dihapus. Tidak bisa dihapus jika masih dipakai kelas.",
-    "applyTemplate": "Pakai template",
+    "applyTemplate": "Pakai templat",
     "applyTemplateBody": "Membuat tingkat kelas standar untuk jenjang yang dipilih. Kode yang sudah ada akan dilewati, tidak digandakan.",
     "apply": "Terapkan",
     "templateApplied": "{n} tingkat kelas dibuat",
@@ -118,10 +118,10 @@
       "actions": "Aksi"
     },
     "emptyTitle": "Belum ada tingkat kelas",
-    "emptyBody": "Tambahkan tingkat kelas satu per satu, atau pakai template jenjang sekolah."
+    "emptyBody": "Tambahkan tingkat kelas satu per satu, atau pakai templat jenjang sekolah."
   },
   "tracks": {
-    "eyebrow": "Data Sekolah",
+    "eyebrow": "Data sekolah",
     "title": "Peminatan",
     "description": "Jurusan atau peminatan siswa, misalnya IPA, IPS, atau Bahasa di SMA.",
     "add": "Tambah peminatan",
@@ -142,7 +142,7 @@
     "emptyBody": "Tambahkan peminatan jika sekolah memiliki jurusan, misalnya IPA atau IPS."
   },
   "rooms": {
-    "eyebrow": "Data Sekolah",
+    "eyebrow": "Data sekolah",
     "title": "Ruang kelas",
     "add": "Tambah ruang",
     "edit": "Ubah",
@@ -163,7 +163,7 @@
     "emptyBody": "Tambahkan ruang kelas untuk dipasangkan ke kelas."
   },
   "subjectOfferings": {
-    "eyebrow": "Data Sekolah",
+    "eyebrow": "Data sekolah",
     "title": "Mapel per tahun ajaran",
     "year": "Tahun ajaran",
     "add": "Tambah penawaran",
@@ -187,7 +187,7 @@
     "emptyBody": "Tambahkan mapel yang diajarkan pada tahun ajaran ini."
   },
   "teachingAssignments": {
-    "eyebrow": "Data Sekolah",
+    "eyebrow": "Data sekolah",
     "title": "Penugasan mengajar",
     "description": "Atur ulang seluruh mapel dan kelas yang diampu satu guru untuk satu tahun ajaran sekaligus.",
     "year": "Tahun ajaran",
@@ -246,7 +246,7 @@
     "importAnother": "Impor berkas lain"
   },
   "newYearSetup": {
-    "eyebrow": "Data Sekolah",
+    "eyebrow": "Data sekolah",
     "title": "Tahun ajaran baru",
     "description": "Salin penawaran mapel dan kelas dari satu tahun ajaran ke tahun ajaran lain yang belum memilikinya.",
     "fromYear": "Dari tahun ajaran",
@@ -299,7 +299,7 @@
     "requestSubstitute": "Ajukan pengganti",
     "openAttendance": "Buka presensi dan jurnal",
     "scanEntry": "Pindai masuk kelas",
-    "personalAttendance": "Kehadiran saya",
+    "personalAttendance": "Presensi saya",
     "journalQuick": "Lengkapi jurnal mengajar",
     "continuePromotion": "Lanjut ke kenaikan kelas",
     "journalSaved": "Jurnal tersimpan",

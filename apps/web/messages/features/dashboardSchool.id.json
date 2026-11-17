@@ -32,11 +32,11 @@
       "allClear": "Semua antrean kosong"
     },
     "activity": {
-      "title": "Aktivitas login",
-      "peak": "Paling ramai pukul {hour} dengan {count} login",
-      "chartLabel": "Grafik batang login per jam. Total {total} login, paling ramai pukul {hour} dengan {count} login.",
-      "barLabel": "Pukul {hour}: {count} login",
-      "empty": "Belum ada login tercatat pada periode ini.",
+      "title": "Aktivitas masuk",
+      "peak": "Paling ramai pukul {hour} dengan {count} kali masuk",
+      "chartLabel": "Grafik batang jumlah masuk per jam. Total {total} kali masuk, paling ramai pukul {hour} dengan {count} kali masuk.",
+      "barLabel": "Pukul {hour}: {count} kali masuk",
+      "empty": "Belum ada aktivitas masuk pada periode ini.",
       "onlineTitle": "Sedang daring",
       "onlineEmpty": "Tidak ada yang sedang terhubung saat ini.",
       "roleNames": {

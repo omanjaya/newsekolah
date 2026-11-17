@@ -2,10 +2,10 @@
   "navLabel": "WhatsApp",
   "eyebrow": "Pengaturan",
   "title": "WhatsApp",
-  "description": "Pilih penyedia pengiriman WhatsApp, kelola template pesan, dan pantau log pengiriman.",
+  "description": "Pilih penyedia pengiriman WhatsApp, kelola templat pesan, dan pantau log pengiriman.",
   "tabs": {
     "provider": "Penyedia",
-    "templates": "Template",
+    "templates": "Templat",
     "deliveries": "Log pengiriman"
   },
   "provider": {
@@ -35,18 +35,18 @@
     "saved": "Konfigurasi WhatsApp disimpan"
   },
   "templates": {
-    "title": "Template pesan",
-    "body": "Setiap template memetakan ke template yang sudah disetujui di WhatsApp Business Manager. Tulis nama variabel di antara dua kurung kurawal ganda untuk membuat placeholder.",
-    "addNew": "Tambah template",
-    "empty": "Belum ada template.",
+    "title": "Templat pesan",
+    "body": "Setiap templat memetakan ke templat yang sudah disetujui di WhatsApp Business Manager. Tulis nama variabel di antara dua kurung kurawal ganda untuk membuat isian.",
+    "addNew": "Tambah templat",
+    "empty": "Belum ada templat.",
     "form": {
-      "nameLabel": "Nama template",
+      "nameLabel": "Nama templat",
       "localeLabel": "Bahasa",
-      "metaTemplateNameLabel": "Nama template di Meta",
+      "metaTemplateNameLabel": "Nama templat di Meta",
       "bodyLabel": "Isi pesan",
       "bodyHint": "Contoh: Halo, nama_ortu, tagihan jumlah jatuh tempo tanggal (masing-masing dibungkus kurung kurawal ganda).",
       "placeholdersLabel": "Variabel terdeteksi",
-      "save": "Simpan template",
+      "save": "Simpan templat",
       "edit": "Ubah",
       "cancel": "Batal",
       "delete": "Hapus"
@@ -57,11 +57,11 @@
       "renderedLabel": "Hasil",
       "missingVariables": "Variabel belum diisi: {variables}"
     },
-    "created": "Template dibuat",
-    "updated": "Template diperbarui",
-    "deleted": "Template dihapus",
-    "confirmDelete": "Hapus template ini?",
-    "confirmDeleteBody": "Template {name} akan dihapus dan tidak bisa dipakai lagi untuk pengiriman WhatsApp."
+    "created": "Templat dibuat",
+    "updated": "Templat diperbarui",
+    "deleted": "Templat dihapus",
+    "confirmDelete": "Hapus templat ini?",
+    "confirmDeleteBody": "Templat {name} akan dihapus dan tidak bisa dipakai lagi untuk pengiriman WhatsApp."
   },
   "deliveries": {
     "title": "Log pengiriman",

@@ -1,11 +1,11 @@
 {
   "app": {
     "navigation": {
-      "students": "Student Affairs",
+      "students": "Student affairs",
       "staff": "Staff",
-      "duty": "Duty & Gate",
+      "duty": "Duty and gate",
       "administration": "Administration",
-      "masterData": "School Data",
+      "masterData": "School data",
       "users": "School users"
     },
     "shell": {
@@ -194,7 +194,7 @@
       },
       "updateAvailable": {
         "title": "New version available",
-        "body": "Reload to use the latest version of the app",
+        "body": "Reload to use the latest version of the app.",
         "action": "Reload"
       },
       "skipToContent": "Skip to main content",
@@ -893,9 +893,9 @@
     },
     "duty": {
       "navLabel": "Today's duty",
-      "eyebrow": "Student Affairs",
+      "eyebrow": "Student affairs",
       "title": "Today's duty",
-      "intro": "Show the QR for each purpose. Every code is single-use and renews itself when it expires. Exit permit approvals live on the Exit Permits page, Approve tab.",
+      "intro": "Show the QR for each purpose. Every code is single-use and renews itself when it expires. Exit permit approvals live on the Exit permits page, Approve tab.",
       "purposes": {
         "classroom_entry": "Class entry",
         "late_arrival": "Late",
@@ -1018,7 +1018,7 @@
       "deleteConfirmTitle": "Delete schedule",
       "deleteConfirmBody": "This block will be removed. Attendance sessions already recorded are kept.",
       "noPeriodsTitle": "Periods not set up yet",
-      "noPeriodsBody": "Set up the period template under School Data before building a timetable.",
+      "noPeriodsBody": "Set up the period template under School data before building a timetable.",
       "unknownTeacher": "Unknown teacher",
       "unknownClass": "Unknown class",
       "unknownSubject": "Unknown subject",
@@ -1401,16 +1401,12 @@
       },
       "classroomEntry": {
         "navLabel": "Scan classroom entry",
-        "eyebrow": "Students",
-        "title": "Scan classroom entry",
         "intro": "Point the camera at the QR your teacher shows at the front of the class to record your attendance for the running lesson.",
         "scanLabel": "Classroom entry code",
         "placeholder": "The code under the QR",
         "submit": "Submit code",
-        "cameraLabel": "Scan with camera",
         "successTitle": "Recorded",
         "successBody": "Checked into {teacher}'s class at {time}.",
-        "scanAgain": "Scan again",
         "errorTitle": "Scan failed",
         "studentsOnlyTitle": "Students only",
         "studentsOnlyBody": "Students use this page to scan the classroom-entry QR shown by a teacher. Your account is not a student account.",
@@ -1422,7 +1418,7 @@
         "renew": "Generate a new code"
       },
       "exit": {
-        "eyebrow": "Student Affairs",
+        "eyebrow": "Student affairs",
         "title": "Exit permits",
         "tabMine": "My permits",
         "tabQueue": "Queue",
@@ -1514,7 +1510,7 @@
         "modeLabel": "Task on this page"
       },
       "late": {
-        "eyebrow": "Student Affairs",
+        "eyebrow": "Student affairs",
         "title": "Late arrivals",
         "tabQueue": "Duty queue",
         "tabMine": "Me",
@@ -1560,7 +1556,7 @@
         }
       },
       "leave": {
-        "eyebrow": "Student Affairs",
+        "eyebrow": "Student affairs",
         "title": "Absence leave",
         "tabQueue": "Queue",
         "tabMine": "My requests",
@@ -1688,7 +1684,7 @@
     },
     "school": {
       "users": {
-        "eyebrow": "School Data",
+        "eyebrow": "School data",
         "title": "Teachers, staff and students",
         "columns": {
           "name": "Name",
@@ -1747,7 +1743,7 @@
           "nip": "Employee number",
           "roles": "Roles",
           "primary": "Primary",
-          "passwordHint": "A random initial password is set. Use Reset password to share a set-password link.",
+          "passwordHint": "A random initial password is set. Use the Reset password button to share a set-password link.",
           "requiredError": "Name and at least one role are required.",
           "created": "User created",
           "updated": "Changes saved",
@@ -1756,10 +1752,10 @@
           "primaryRole": "Primary role",
           "primaryRolePlaceholder": "Choose a primary role",
           "primaryRoleHint": "The primary role sets the user's base access and must be a system role.",
-          "teacherLeaveHint": "Reviewing leave requests and issuing leave letters do not come with the teacher role. Grant them through a duty assignment under School Data > Assignments.",
+          "teacherLeaveHint": "Reviewing leave requests and issuing leave letters do not come with the teacher role. Grant them through a duty assignment under School data > Assignments.",
           "additionalRoles": "Additional roles",
           "additionalRolesHint": "Additional roles can only be custom roles (not system roles).",
-          "noCustomRoles": "No custom roles yet. Create one under Settings > Roles and Access."
+          "noCustomRoles": "No custom roles yet. Create one under Settings > Roles and access."
         },
         "import": {
           "title": "Import users",
@@ -1829,7 +1825,7 @@
         "resetLinkLabel": "Reset link"
       },
       "classes": {
-        "eyebrow": "School Data",
+        "eyebrow": "School data",
         "title": "Students and classes",
         "addClass": "Add class",
         "editClass": "Edit class",
@@ -1945,7 +1941,7 @@
         }
       },
       "subjects": {
-        "eyebrow": "School Data",
+        "eyebrow": "School data",
         "title": "Subjects",
         "add": "Add subject",
         "edit": "Edit",
@@ -1965,7 +1961,7 @@
         "emptyBody": "Add the subjects taught at the school."
       },
       "periods": {
-        "eyebrow": "School Data",
+        "eyebrow": "School data",
         "title": "Periods",
         "template": "Template",
         "default": "default",
@@ -2009,7 +2005,7 @@
         "actions": "Actions"
       },
       "duties": {
-        "eyebrow": "School Data",
+        "eyebrow": "School data",
         "title": "Duties",
         "assign": "Assign duty",
         "activeCount": "{n, plural, one {# active assignment} other {# active assignments}}",
@@ -2129,7 +2125,7 @@
         "grading": "Grading",
         "reporting": "Reporting"
       },
-      "dutyOnlyHint": "Cannot be granted directly to the teacher role. Grant it through a duty assignment under School Data > Assignments.",
+      "dutyOnlyHint": "Cannot be granted directly to the teacher role. Grant it through a duty assignment under School data > Assignments.",
       "permissions": {
         "approve_child_leave_requests": {
           "label": "Approve child's leave",

@@ -23,7 +23,7 @@
     "exportTitle": "Laporan presensi harian",
     "exportScopeHint": "Pilih kelas atau angkatan sebelum mengunduh.",
     "pickClassTitle": "Pilih kelas dan tanggal",
-    "pickClassBody": "Laporan harian menampilkan status kehadiran satu kelas pada satu tanggal.",
+    "pickClassBody": "Laporan harian menampilkan status presensi satu kelas pada satu tanggal.",
     "emptyTitle": "Belum ada siswa pada kelas ini",
     "summarySubmitted": "Sesi tercatat",
     "partialAbsence": "Sebagian alpha",
@@ -60,7 +60,7 @@
     "exportTitle": "Rekap presensi bulanan",
     "exportScopeHint": "Pilih kelas atau angkatan sebelum mengunduh.",
     "pickStudentTitle": "Pilih kelas dan siswa",
-    "pickStudentBody": "Laporan bulanan menampilkan status kehadiran satu siswa selama satu bulan.",
+    "pickStudentBody": "Laporan bulanan menampilkan status presensi satu siswa selama satu bulan.",
     "emptyTitle": "Tidak ada hari sekolah pada bulan ini",
     "columns": {
       "date": "Tanggal",
