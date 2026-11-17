@@ -54,15 +54,20 @@ function Gallery() {
           Lihat judul
         </TextLink>
       </Alert>
-      {/* Block children: text, then a row of buttons 8px under it. */}
-      <Alert tone="warning" title="Draf ditemukan">
-        <p>Ada jurnal yang belum terkirim dari pukul 08.40.</p>
-        <div className="flex gap-2">
-          <Button size="sm">Pulihkan</Button>
-          <Button size="sm" variant="secondary">
-            Buang
-          </Button>
-        </div>
+      {/* Two actions, the main one first: on the title line, under the text on a phone. */}
+      <Alert
+        tone="warning"
+        title="Draf ditemukan"
+        action={
+          <>
+            <Button size="sm">Pulihkan</Button>
+            <Button size="sm" variant="secondary">
+              Buang
+            </Button>
+          </>
+        }
+      >
+        Ada jurnal yang belum terkirim dari pukul 08.40.
       </Alert>
     </div>
   );

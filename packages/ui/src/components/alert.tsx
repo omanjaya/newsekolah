@@ -33,8 +33,10 @@ export interface AlertProps extends Omit<ComponentPropsWithRef<"div">, "title"> 
   /** Replaces the variant's icon. */
   icon?: ReactNode;
   /**
-   * One `size="sm"` button or a link: on a wide screen it sits on the title
-   * line beside the close button, on a phone under the text.
+   * One or two `size="sm"` buttons (the main one first, as a fragment) or a
+   * link: on a wide screen they sit on the title line beside the close
+   * button, on a phone under the text, wrapping if they must. A draft offer
+   * ("Pulihkan", "Buang") is the two-button case.
    */
   action?: ReactNode;
   /** Shows a close button. */
@@ -95,7 +97,10 @@ export function Alert({
             overflowing into the padding instead of pushing the text down.
             On a phone the action drops under the text. */}
         {action && (
-          <div data-slot="alert-action" className="flex shrink-0 items-center gap-2 sm:h-5">
+          <div
+            data-slot="alert-action"
+            className="flex shrink-0 flex-wrap items-center gap-2 sm:h-5 sm:flex-nowrap"
+          >
             {action}
           </div>
         )}
