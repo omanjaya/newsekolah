@@ -14,6 +14,10 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/billing/bills",
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+  useCan: () => true,
+}));
 vi.mock("../../reference/api", () => ({
   useClassesQuery: () => ({
     data: {
@@ -99,5 +103,21 @@ describe("BillsListView filters", () => {
       expect.anything(),
     );
     expect(new URLSearchParams(window.location.search).get("class_id")).toBe("");
+  });
+
+  it("filters by month from the period pill and writes period to the URL", async () => {
+    const user = userEvent.setup();
+    render(<BillsListView />);
+
+    await user.click(screen.getByRole("button", { name: "columns.period" }));
+    await screen.findByRole("grid");
+    await user.keyboard("{Enter}");
+
+    const period = new URLSearchParams(window.location.search).get("period") ?? "";
+    expect(period).toMatch(/^\d{4}-\d{2}$/);
+    expect(mocks.useBillsQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ period }),
+      expect.anything(),
+    );
   });
 });

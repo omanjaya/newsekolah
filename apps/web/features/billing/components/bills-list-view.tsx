@@ -4,7 +4,6 @@ import {
   DataTable,
   EmptyState,
   FilteredEmptyState,
-  MonthPicker,
   domainIcons,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
@@ -16,6 +15,8 @@ import { useMemo, useState } from "react";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import { useClassesQuery } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { type Bill, type BillStatus, useBillsQuery } from "../api";
@@ -36,6 +37,7 @@ const PAGE_SIZE = 50;
  */
 export function BillsListView(): ReactElement {
   const t = useTranslations("app.billing.bills");
+  const { me } = useSession();
   const { money, day } = useBillingFormat();
   const classes = useClassesQuery();
 
@@ -59,6 +61,17 @@ export function BillsListView(): ReactElement {
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
 
   const filters: DataTableFilterDef[] = [
+    {
+      id: "period",
+      label: t("columns.period"),
+      type: "month",
+      value: period,
+      onChange: (value) => {
+        setPeriod(value);
+        paging.resetPage();
+      },
+      today: todayInZone(me?.tenant.timezone),
+    },
     {
       id: "status",
       label: t("statusLabel"),
@@ -155,18 +168,6 @@ export function BillsListView(): ReactElement {
           reset: t("filters.reset"),
           removeFilter: (label) => t("filters.removeFilter", { label }),
         }}
-        toolbarActions={
-          <MonthPicker
-            value={period}
-            onChange={(next) => {
-              setPeriod(next);
-              paging.resetPage();
-            }}
-            placeholder={t("periodPlaceholder")}
-            aria-label={t("columns.period")}
-            className="w-full sm:w-48"
-          />
-        }
         isLoading={isLoading}
         error={isError ? error : undefined}
         onRetry={() => void refetch()}
