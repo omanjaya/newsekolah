@@ -174,8 +174,10 @@ function CheckInCard({
             {done ? (
               <p className="text-body-sm text-fg-muted">{t("done")}</p>
             ) : (
+              // Secondary on the home: the hero holds the page's one primary
+              // action. The /check-in page itself keeps a primary button.
               <Button
-                variant={hasArrival ? "secondary" : "primary"}
+                variant="secondary"
                 className="w-full"
                 icon={hasArrival ? <LogOut /> : <LogIn />}
                 loading={scan.isPending}
