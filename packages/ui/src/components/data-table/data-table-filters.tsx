@@ -125,7 +125,8 @@ export interface DataTableFiltersProps {
   className?: string;
 }
 
-function isFilterActive(filter: DataTableFilterDef): boolean {
+/** Whether the filter narrows the rows (the toolbar's view options read it too). */
+export function isFilterActive(filter: DataTableFilterDef): boolean {
   if (filter.type === "dateRange") return Boolean(filter.from) || Boolean(filter.to);
   return (filter.value ?? "") !== "";
 }

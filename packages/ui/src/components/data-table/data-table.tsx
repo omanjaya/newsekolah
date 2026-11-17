@@ -98,6 +98,14 @@ export interface DataTableProps<TData> {
   /** The table's own actions ("Tambah"), at the end of the toolbar beside the search. */
   toolbarActions?: ReactNode;
   /**
+   * The toolbar's density and column controls (from `md` up; the column
+   * menu also beside the phone's search box). Default true. Pass false for
+   * a short, fixed list where neither choice means anything. Either way
+   * they stay out while the table is empty and no search or filter
+   * emptied it, and the column menu needs two columns to choose between.
+   */
+  viewOptions?: boolean;
+  /**
    * `normal` (default) is a comfortable row: ~52px min height, `px-4 py-3`
    * cells, vertically centered content. `compact` keeps the tighter ~40px
    * row for a screen that genuinely relies on seeing more rows at once;
@@ -172,6 +180,7 @@ export function DataTable<TData>({
   onRowSelectionChange,
   bulkActions,
   toolbarActions,
+  viewOptions = true,
   density: densityProp,
   onDensityChange,
   storageKey,
@@ -414,6 +423,10 @@ export function DataTable<TData>({
         filters={filters}
         filtersLabels={filtersLabels}
         actions={toolbarActions}
+        viewOptions={viewOptions}
+        // Skeleton rows count: the controls are there while rows load, so
+        // the toolbar does not grow a row above them when they arrive.
+        hasRows={isLoading === true || rows.length > 0}
       />
       {staleRows && <DataTableErrorAlert error={error} onRetry={onRetry} retrying={retrying} />}
       {/*

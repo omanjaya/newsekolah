@@ -321,7 +321,17 @@ describe("DataTable", () => {
   });
 
   it("uses column headers in the visibility menu and keeps action columns out", async () => {
-    render(<LocalHarness data={ROWS} />);
+    // The menu needs two columns to choose between.
+    render(
+      <DataTable
+        mode="local"
+        data={ROWS}
+        columns={[
+          ...columns,
+          { id: "code", header: "Kode", accessorFn: (row: Row) => row.id.padStart(3, "0") },
+        ]}
+      />,
+    );
     await userEvent.click(screen.getByRole("button", { name: "Kolom tampil" }));
 
     expect(screen.getByRole("menuitemcheckbox", { name: "Nama" })).toBeInTheDocument();
