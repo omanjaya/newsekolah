@@ -186,7 +186,8 @@ body {
  * Directional page entrances on a phone (components/use-nav-direction.ts
  * marks <html>). Going deeper, the page's column (its head and content,
  * never the shell) enters from the right by a short distance with a fade;
- * going back, from the left; switching bottom tabs, a plain quick fade.
+ * going back, from the left; switching bottom tabs, a quick fade that
+ * starts at half opacity, so the switch never blinks to an empty page.
  * Anything else keeps PageShell's own fade and rise on the content. The
  * distance is 2.5 rises (20px), so reduced motion, which zeroes the rise,
  * leaves only the fade. A loading skeleton (`animate={false}`) never moves.
@@ -202,6 +203,13 @@ body {
   from {
     opacity: 0;
     transform: translateX(calc(var(--motion-rise) * -2.5));
+  }
+}
+
+/* A sibling tab's page is a place the reader already knows: no blank frame. */
+@keyframes page-enter-tab {
+  from {
+    opacity: 0.5;
   }
 }
 
@@ -226,7 +234,7 @@ body {
   }
 
   html[data-nav-direction="tab"] [data-page-shell][data-animate] > [data-slot="page-column"] {
-    animation: fade-in var(--duration-fast) var(--ease-standard) backwards;
+    animation: page-enter-tab var(--duration-fast) var(--ease-standard) backwards;
   }
 
   html:is([data-nav-direction="forward"], [data-nav-direction="back"], [data-nav-direction="tab"])
