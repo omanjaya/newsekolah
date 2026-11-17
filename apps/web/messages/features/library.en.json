@@ -1518,6 +1518,8 @@
     "navLabel": "Book loans",
     "notMemberTitle": "Not registered as a library member yet",
     "notMemberBody": "Ask a librarian to register you before you can borrow or reserve books.",
+    "notMemberBodyStaff": "Register yourself on the Members page to start borrowing and reserving books.",
+    "openMembers": "Open the Members page",
     "unpaidFines": "Unpaid fines",
     "currency": "Rp{amount}",
     "violationKind": {

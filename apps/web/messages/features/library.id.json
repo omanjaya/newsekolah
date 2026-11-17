@@ -1518,6 +1518,8 @@
     "navLabel": "Pinjaman buku",
     "notMemberTitle": "Belum terdaftar sebagai anggota perpustakaan",
     "notMemberBody": "Minta pustakawan mendaftarkan Anda untuk mulai meminjam dan memesan buku.",
+    "notMemberBodyStaff": "Daftarkan diri Anda di halaman Anggota untuk mulai meminjam dan memesan buku.",
+    "openMembers": "Buka halaman Anggota",
     "unpaidFines": "Denda belum dibayar",
     "currency": "Rp{amount}",
     "violationKind": {
