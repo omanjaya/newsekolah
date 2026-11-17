@@ -16,36 +16,51 @@ import { getMessages } from "./get-messages";
  * Izin keluar", "pilih Pindai"); so is anything inside quotation marks.
  */
 
-/** Proper nouns, product names and key names that keep their capitals. */
+/**
+ * Phrases that keep their capitals, each with the reason it may. Checked
+ * before the word list, so the words inside them need no entry of their own.
+ */
 const PROPER_PHRASES = [
+  // Product names of Meta's WhatsApp platform, as Meta writes them.
   "WhatsApp Business Manager",
-  "Google Workspace",
   "Meta Cloud API",
+  // Product name of Google's school suite.
+  "Google Workspace",
+  // The OAuth field name the identity provider's console shows.
   "Client ID",
+  // The key printed on the keyboard.
   "Caps Lock",
+  // The name of the national curriculum.
   "Kurikulum Merdeka",
   // The column of the e-Rapor workbook, quoted as the document names it.
   "Nilai Rapor",
 ];
 
+/** Single words that keep their capital wherever they stand, grouped by reason. */
 const PROPER_WORDS = new Set([
+  // The polite "you" of Indonesian is always capitalised.
   "Anda",
+  // Time zone names (Asia/Jakarta, Asia/Makassar, Asia/Jayapura).
   "Asia",
   "Jakarta",
   "Makassar",
   "Jayapura",
+  // Products and services named as their makers write them.
   "Google",
   "Telegram",
   "BotFather",
   "Dapodik",
   "Excel",
+  // Keys printed on the keyboard.
   "Ctrl",
   "Cmd",
   "Shift",
   "Alt",
   "Enter",
   "Esc",
+  // The currency symbol.
   "Rp",
+  // Day and month names are proper nouns in both languages.
   "Senin",
   "Selasa",
   "Rabu",
@@ -81,9 +96,11 @@ const PROPER_WORDS = new Set([
   "August",
   "October",
   "December",
+  // Country and language names.
   "Indonesia",
   "English",
   "Inggris",
+  // Religions, as the student record lists them.
   "Islam",
   "Kristen",
   "Katolik",
@@ -91,17 +108,6 @@ const PROPER_WORDS = new Set([
   "Buddha",
   "Konghucu",
 ]);
-
-/**
- * Catalogs owned by an area still being reworked in its own stream; drop a
- * namespace from this list once that area's copy has had the same sweep.
- */
-const PENDING_NAMESPACES = [
-  "app.staffAttendance",
-  "app.supervision",
-  "app.billing",
-  "app.visitors",
-];
 
 /**
  * Text that names a document rather than the interface: the default title
@@ -135,9 +141,7 @@ function collectLeaves(value: unknown, path: string[], parents: unknown[], out: 
 function leavesOf(locale: "id" | "en"): Leaf[] {
   const leaves: Leaf[] = [];
   collectLeaves(getMessages(locale), [], [], leaves);
-  return leaves.filter(
-    ({ key }) => !PENDING_NAMESPACES.some((namespace) => key.startsWith(`${namespace}.`)),
-  );
+  return leaves;
 }
 
 function isAllowedWord(word: string): boolean {
