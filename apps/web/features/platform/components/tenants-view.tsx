@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import { formatDateTime, type Locale } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
@@ -18,7 +19,7 @@ import {
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Building2, MoreHorizontal, Plus } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
@@ -46,6 +47,7 @@ export function TenantsView(): ReactElement {
   const tCreated = useTranslations("app.platform.tenants.created");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const locale = useLocale() as Locale;
 
   const { data, isLoading, isError, refetch } = useTenantsQuery();
   const suspend = useSuspendTenantMutation();
@@ -98,7 +100,12 @@ export function TenantsView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) =>
           row.original.last_activity_at
-            ? new Date(row.original.last_activity_at).toLocaleString()
+            ? // In the school's own timezone and the UI locale, not the browser
+              // default (which rendered "11/18/2026, 12:34:06 AM").
+              formatDateTime(row.original.last_activity_at, {
+                locale,
+                timeZone: row.original.timezone,
+              })
             : t("never"),
       },
       {
@@ -154,7 +161,7 @@ export function TenantsView(): ReactElement {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, singleTenant],
+    [t, singleTenant, locale],
   );
 
   return (

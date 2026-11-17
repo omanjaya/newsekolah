@@ -17,7 +17,10 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key,
+  useLocale: () => "id",
+}));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
@@ -129,6 +132,22 @@ describe("TenantsView", () => {
     await user.click(screen.getByRole("menuitem", { name: "viewDetail" }));
 
     expect(await screen.findByTestId("tenant-detail")).toHaveTextContent(`${school.id}:multi`);
+  });
+
+  it("formats last activity in the school's timezone and the UI locale", () => {
+    mocks.queryState = {
+      data: {
+        // 16:34 UTC is 00:34 the next day in Asia/Makassar (UTC+8).
+        data: [{ ...school, last_activity_at: "2026-11-17T16:34:06Z" }],
+        tenancy_mode: "single",
+      },
+      isLoading: false,
+      isError: false,
+    };
+    render(<TenantsView />);
+
+    expect(screen.getAllByText("18 November 2026 pukul 00.34").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/11\/18\/2026/)).not.toBeInTheDocument();
   });
 
   it("still shows the empty state for a list that loaded with no schools", () => {
