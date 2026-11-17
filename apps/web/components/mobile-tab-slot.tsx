@@ -141,12 +141,12 @@ export function TabLink({
 
 /*
  * The centre slot. The focus ring goes round the round button rather than
- * the slot, since the button is what the eye reads as the control.
+ * the slot, since the button is what the eye reads as the control. Its
+ * label is a tab label like the others (muted and medium until current):
+ * the raised accent button already makes the centre the loudest thing in
+ * the bar, and a heavier, darker label read as the selected tab.
  */
-const CENTRE_SLOT = cn(
-  SLOT_BASE,
-  "group justify-end pb-2 font-semibold focus-visible:outline-none",
-);
+const CENTRE_SLOT = cn(SLOT_BASE, "group justify-end pb-2 focus-visible:outline-none");
 
 const CENTRE_BUTTON =
   "absolute -top-6 left-1/2 flex size-14 -translate-x-1/2 items-center justify-center rounded-full bg-accent text-accent-fg shadow-2 ring-4 ring-bg transition-colors group-active:bg-accent-strong group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus-ring [&>svg]:size-6 [&>svg]:shrink-0";
@@ -168,7 +168,7 @@ function CentreFace({
         {icon}
         {badge}
       </span>
-      <span className={current ? "text-accent" : "text-fg"}>{label}</span>
+      <span className={slotState(current)}>{label}</span>
     </>
   );
 }
