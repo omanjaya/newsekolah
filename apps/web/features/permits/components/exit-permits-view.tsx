@@ -43,7 +43,8 @@ function isActive(inst: WorkflowInstance): boolean {
  * Izin keluar. Students request, follow the stages, scan each approving
  * teacher's QR, then show the gate QR. Approving teachers and security get
  * their own scan screen: the shared review queue lives in the Perlu
- * tindakan inbox.
+ * tindakan inbox. The h1 is the area's label and the eyebrow its sidebar
+ * group, from the template, the same on every tab of the area.
  */
 export function ExitPermitsView(): ReactElement {
   const canSubmit = useCanSubmitPermit();
@@ -54,17 +55,10 @@ export function ExitPermitsView(): ReactElement {
   return <NoExitAccess />;
 }
 
-function useExitTitles(): { title: string; eyebrow: string } {
-  const t = useTranslations("app.permits.exit");
-  const tNav = useTranslations("app.shell.nav.items");
-  return { title: t("title"), eyebrow: tNav("permits") };
-}
-
 function NoExitAccess(): ReactElement {
   const t = useTranslations("app.permits.exit");
-  const titles = useExitTitles();
   return (
-    <AppPage {...titles}>
+    <AppPage>
       <EmptyState
         icon={<domainIcons.exitPermit aria-hidden="true" />}
         title={t("noAccessTitle")}
@@ -83,7 +77,6 @@ function ExitPermitDesk({
   canGate: boolean;
 }): ReactElement {
   const t = useTranslations("app.permits.exit");
-  const titles = useExitTitles();
   // Whoever holds the gate duty works the gate first; approving a stage
   // is the teachers' everyday task.
   const modes = [
@@ -98,7 +91,6 @@ function ExitPermitDesk({
 
   return (
     <AppPage
-      {...titles}
       toolbar={
         modes.length > 1 ? (
           <SegmentedControl
@@ -128,12 +120,11 @@ function MyExitPermits(): ReactElement {
   const active = items.find(isActive);
   const history = items.filter((item) => item !== active);
   const timeZone = me?.tenant.timezone;
-  const titles = useExitTitles();
 
   return (
     // No header action: the idle card carries "Ajukan izin keluar", and
     // while a permit is on its way there is nothing new to request.
-    <AppPage {...titles}>
+    <AppPage>
       {isLoading ? (
         <>
           <Skeleton className="h-56 w-full rounded-xl" />
