@@ -43,10 +43,14 @@ export function useLoginMutation() {
  * server-side (not swapped back to the admin's own session -- there is
  * none to swap to, since starting impersonation opened a brand new
  * session), so this always ends in a normal logout: clear the token and
- * let the caller send the admin back to sign in.
+ * the whole cache, as a logout does, and let the caller send the admin
+ * back to sign in. Left cached, the impersonated account's `me` would make
+ * the sign-in screen read the tab as still signed in and send the admin
+ * straight on to the dashboard, with that account's data still on it.
  */
 export function useStopImpersonationMutation() {
   const client = useApiClient();
+  const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: () => client.POST("/v1/auth/impersonation/stop"),
   });
@@ -59,6 +63,7 @@ export function useStopImpersonationMutation() {
       } finally {
         clearSimulation();
         setAccessToken(null);
+        queryClient.clear();
       }
     },
   };
