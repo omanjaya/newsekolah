@@ -69,19 +69,35 @@ describe("MentorGroupsView scope", () => {
     expect(mocks.useMentorGroupsQuery).toHaveBeenLastCalledWith(false);
   });
 
-  it("shows every group on the all-groups route, with its own title", () => {
+  it("shows every group on the all-groups route, under the area's own header", () => {
     render(<MentorGroupsView initialScope="all" />);
 
     expect(mocks.useMentorGroupsQuery).toHaveBeenLastCalledWith(true);
     expect(mocks.useMyMentorGroupsQuery).toHaveBeenLastCalledWith(false);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("navLabelGroups");
+    // The h1 and eyebrow are the area's (AppPage's defaults), the same on every tab.
+    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
   });
 
   it("has no scope tabs without panels: each scope is its own route", () => {
     render(<MentorGroupsView />);
 
     expect(screen.queryByRole("tab")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("navLabelMyGroups");
+  });
+
+  it("keeps one primary create action and no search over an empty list", () => {
+    mocks.canManage = true;
+    const { unmount } = render(<MentorGroupsView initialScope="all" />);
+
+    // The header's primary, and a secondary repeat in the empty list.
+    const creates = screen.getAllByRole("button", { name: "add" });
+    expect(creates).toHaveLength(2);
+    expect(creates.filter((button) => button.classList.contains("bg-accent"))).toHaveLength(1);
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    unmount();
+
+    // One's own groups are not created from their empty list.
+    render(<MentorGroupsView />);
+    expect(screen.getAllByRole("button", { name: "add" })).toHaveLength(1);
   });
 
   it("opens the group size limit from the header for a manager", async () => {

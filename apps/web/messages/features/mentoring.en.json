@@ -36,7 +36,7 @@
     "deleteConfirm": "Delete",
     "deleted": "Mentor group deleted",
     "limitAction": "Set the member limit",
-    "searchPlaceholder": "Search a group or mentor name"
+    "searchPlaceholder": "Search groups or mentors"
   },
   "groupSizeLimit": {
     "label": "Member limit per group",
@@ -51,7 +51,8 @@
       "name": "Group name"
     },
     "emptyTitle": "You are not mentoring any group yet",
-    "emptyBody": "Groups you mentor will show up here."
+    "emptyBody": "Groups you mentor will show up here.",
+    "searchPlaceholder": "Search groups"
   },
   "groupDetail": {
     "eyebrow": "Mentoring",
@@ -64,9 +65,12 @@
   },
   "members": {
     "columns": {
-      "student": "Student"
+      "student": "Student",
+      "actions": "Actions"
     },
     "view": "View student",
+    "viewProfile": "View student profile",
+    "actionsFor": "Actions for {name}",
     "remove": "Remove",
     "add": "Add member",
     "addTitle": "Add a group member",
@@ -92,7 +96,7 @@
       "attendees": "Attendees"
     },
     "emptyTitle": "No meeting notes yet",
-    "emptyBody": "Mentoring meeting notes will show up here. Click a row to open it.",
+    "emptyBody": "Mentoring meeting notes will show up here.",
     "deleteTitle": "Delete meeting note",
     "deleteBody": "This note will be deleted permanently and cannot be undone.",
     "deleteConfirm": "Delete",
@@ -136,6 +140,7 @@
     "attendance": {
       "title": "This month's attendance",
       "empty": "No attendance recorded this month yet.",
+      "days": "{count, plural, one {# day} other {# days}}",
       "codes": {
         "H": "Present",
         "S": "Sick",
@@ -163,6 +168,7 @@
   },
   "termSummary": {
     "term": "Term",
+    "summaryLabel": "Summary",
     "termPlaceholder": "Select a term",
     "selectTermFirst": "Select a term to read or write its summary.",
     "empty": "No term summary has been written for this student yet.",
