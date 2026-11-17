@@ -303,4 +303,65 @@ describe("DataTableFilters", () => {
       await expectNoAxeViolations(container);
     });
   });
+
+  describe("month filter", () => {
+    function periodFilter(overrides: Partial<DataTableFilterDef> = {}): DataTableFilterDef {
+      return {
+        id: "period",
+        label: "Periode",
+        type: "month",
+        value: "",
+        onChange: vi.fn(),
+        today: "2026-11-14",
+        ...overrides,
+      };
+    }
+
+    it("shows only the label while unset, and the month by name once set", () => {
+      const { rerender } = render(<DataTableFilters filters={[periodFilter()]} />);
+      expect(screen.getByRole("button", { name: "Periode" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Hapus filter/ })).not.toBeInTheDocument();
+
+      rerender(<DataTableFilters filters={[periodFilter({ value: "2026-09" })]} />);
+      expect(screen.getByRole("button", { name: "Periode: September 2026" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Hapus filter Periode" })).toBeInTheDocument();
+    });
+
+    it("opens the month grid on the current month and applies a pick by keyboard", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<DataTableFilters filters={[periodFilter({ onChange })]} />);
+
+      await user.click(screen.getByRole("button", { name: "Periode" }));
+      expect(await screen.findByRole("gridcell", { name: "November 2026" })).toHaveFocus();
+      await user.keyboard("{ArrowLeft}{Enter}");
+
+      expect(onChange).toHaveBeenCalledWith("2026-10");
+      await waitFor(() => {
+        expect(screen.queryByRole("grid")).not.toBeInTheDocument();
+      });
+    });
+
+    it("is cleared by its remove control and by the shared Reset filter", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<DataTableFilters filters={[periodFilter({ value: "2026-09", onChange })]} />);
+
+      await user.click(screen.getByRole("button", { name: "Hapus filter Periode" }));
+      expect(onChange).toHaveBeenLastCalledWith("");
+      onChange.mockClear();
+      await user.click(screen.getByRole("button", { name: "Reset filter" }));
+      expect(onChange).toHaveBeenCalledWith("");
+    });
+
+    it("has no accessibility violations with the month grid open", async () => {
+      const user = userEvent.setup();
+      const { container } = render(
+        <DataTableFilters filters={[periodFilter({ value: "2026-09" })]} />,
+      );
+      await user.click(screen.getByRole("button", { name: /^Periode/ }));
+      await screen.findByRole("grid");
+      await expectNoAxeViolations(container);
+    });
+  });
 });
