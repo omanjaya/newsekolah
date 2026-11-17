@@ -169,8 +169,7 @@ export function GateBoardView(): ReactElement {
             aria-label={t("filterLabel")}
             value={status}
             onValueChange={setStatus}
-            fullWidth
-            className="sm:inline-flex sm:w-fit"
+            fullWidth="phone"
             options={[
               { value: "all", label: t("filters.all") },
               {
