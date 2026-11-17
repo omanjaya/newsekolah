@@ -191,6 +191,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   return (
     <AppPage
       title={name}
+      leading={<Avatar name={name} size={64} decorative />}
       nav={false}
       primaryAction={
         canManage ? (
@@ -206,31 +207,30 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
       }
       secondaryActions={secondaryActions}
     >
-      <Card padding="md" className="gap-5 sm:flex-row sm:items-start">
-        <Avatar name={name} size={64} decorative />
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <DataList layout="stacked" columns={3}>
-            <DataListItem label={t("memberNo")}>
-              <span className="tabular-nums">{data.member_no}</span>
-            </DataListItem>
-            <DataListItem label={t("memberType")}>{typeName}</DataListItem>
-            <DataListItem label={t("validUntil")}>
-              {data.valid_until ? formatShortDate(data.valid_until, locale, { today }) : undefined}
-            </DataListItem>
-          </DataList>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-label text-fg-muted">{t("statusLabel")}</span>
-            {canManage ? (
-              <MemberStatusMenu userId={userId} status={data.status} memberName={name} />
-            ) : (
-              <Badge tone={toneOf(MEMBER_STATUS_TONE, data.status)}>
-                {t(`status.${data.status}`)}
-              </Badge>
-            )}
-            {canManage && data.status !== "cleared" && clearanceBlocked && (
-              <span className="text-caption text-fg-muted">{t("clearanceBlockedByLoan")}</span>
-            )}
-          </div>
+      {/* The avatar sits beside the title; the card is the three short
+          facts, two to a row on a phone, and the status. */}
+      <Card padding="md">
+        <DataList layout="stacked" columns={3} className="grid-cols-2">
+          <DataListItem label={t("memberNo")}>
+            <span className="tabular-nums">{data.member_no}</span>
+          </DataListItem>
+          <DataListItem label={t("memberType")}>{typeName}</DataListItem>
+          <DataListItem label={t("validUntil")}>
+            {data.valid_until ? formatShortDate(data.valid_until, locale, { today }) : undefined}
+          </DataListItem>
+        </DataList>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-label text-fg-muted">{t("statusLabel")}</span>
+          {canManage ? (
+            <MemberStatusMenu userId={userId} status={data.status} memberName={name} />
+          ) : (
+            <Badge tone={toneOf(MEMBER_STATUS_TONE, data.status)}>
+              {t(`status.${data.status}`)}
+            </Badge>
+          )}
+          {canManage && data.status !== "cleared" && clearanceBlocked && (
+            <span className="text-caption text-fg-muted">{t("clearanceBlockedByLoan")}</span>
+          )}
         </div>
       </Card>
 
