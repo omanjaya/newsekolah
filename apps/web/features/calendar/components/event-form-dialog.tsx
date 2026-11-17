@@ -3,6 +3,7 @@
 import {
   Button,
   Checkbox,
+  cn,
   DateRangePicker,
   Dialog,
   DialogContent,
@@ -18,7 +19,7 @@ import { useState } from "react";
 
 import type { GradeLevel } from "../../school/api";
 import type { CalendarEvent, CalendarEventInput, CalendarEventKind } from "../api";
-import { EVENT_KINDS } from "../lib/event-kinds";
+import { EVENT_KIND_TONE, EVENT_KINDS, TONE_DOT } from "../lib/event-kinds";
 
 export function EventFormDialog({
   open,
@@ -108,7 +109,14 @@ export function EventFormDialog({
           </Field>
           <Field label={t("form.kind")}>
             <Select
-              options={EVENT_KINDS.map((k) => ({ value: k, label: t(`kind.${k}`) }))}
+              options={EVENT_KINDS.map((k) => ({
+                value: k,
+                label: t(`kind.${k}`),
+                // The kind's colour on the calendar, so the pick matches the legend.
+                icon: (
+                  <span className={cn("size-2.5 rounded-full", TONE_DOT[EVENT_KIND_TONE[k]])} />
+                ),
+              }))}
               value={kind}
               onValueChange={(v) => {
                 setKind(v as CalendarEventKind);
