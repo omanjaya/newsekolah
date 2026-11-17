@@ -46,6 +46,7 @@ import {
   useScheduledObservationsQuery,
   useSupervisionCycleQuery,
 } from "../api";
+import { useCycleTrail } from "../lib/use-cycle-trail";
 
 import { CycleNav } from "./cycle-nav";
 import { ScheduleObservationForm } from "./schedule-observation-form";
@@ -60,6 +61,7 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
   const t = useTranslations("app.supervision.cycleDetail");
   const locale = useLocale() as Locale;
   const canManage = useCan("manage_supervision");
+  const trail = useCycleTrail();
 
   const cycle = useSupervisionCycleQuery(cycleId);
   const scheduled = useScheduledObservationsQuery(cycleId);
@@ -155,6 +157,7 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
         instrument: instrument.name,
         criteria: instrument.criteria.length,
       })}
+      breadcrumb={trail.cycle(cycle.data.name)}
       nav={<CycleNav cycleId={cycleId} current="observations" />}
       primaryAction={
         canManage ? (

@@ -41,8 +41,7 @@ import {
   useTeacherSupervisionReportQuery,
 } from "../api";
 import { averageScore, formatScore } from "../lib/score-format";
-
-import { CycleNav } from "./cycle-nav";
+import { useCycleTrail } from "../lib/use-cycle-trail";
 
 /**
  * The figures of one report: the overall average against the scale, each
@@ -156,7 +155,7 @@ export function TeacherSupervisionReportView({
   toolbar?: ReactNode;
 }): ReactElement {
   const t = useTranslations("app.supervision.teacherReport");
-  const tRoot = useTranslations("app.supervision");
+  const trail = useCycleTrail();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
@@ -244,15 +243,10 @@ export function TeacherSupervisionReportView({
   return (
     <AppPage
       title={data?.teacher_name}
-      breadcrumb={[
-        { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
-        {
-          label: data?.cycle.name ?? tRoot("cycleReport.breadcrumb"),
-          href: `/supervision/cycles/${cycleId}`,
-        },
-        { label: tRoot("cycleReport.breadcrumb"), href: `/supervision/cycles/${cycleId}/report` },
-      ]}
-      nav={<CycleNav cycleId={cycleId} current="report" />}
+      // One teacher's page below the cycle's results: the trail says where
+      // it sits, so it carries none of the cycle's own tabs.
+      breadcrumb={trail.within(cycleId, data?.cycle.name, trail.results(cycleId))}
+      nav={false}
       secondaryActions={
         data ? [{ label: t("export"), icon: <Download />, onSelect: openExport }] : []
       }
