@@ -159,6 +159,8 @@ describe("MyLibraryView", () => {
     render(<MyLibraryView />);
 
     expect(screen.getByTestId("my-library-hero")).toHaveTextContent("overdueTitle");
+    // Returning the book is the one thing to do: no way to the catalogue.
+    expect(screen.queryByRole("link", { name: /browseCatalogue/ })).not.toBeInTheDocument();
   });
 
   it("points a reader with no loans at the catalogue", () => {

@@ -174,6 +174,9 @@ function MyLibraryHero({
   const latest = overdue[0];
   if (latest) {
     return (
+      // No way to the catalogue here: the one thing to do is return the
+      // book. The tone moves to "danger", as the due badges show lateness,
+      // once HeroCard has that tone.
       <HeroCard
         tone="warning"
         eyebrow={t("overdueEyebrow")}
@@ -183,7 +186,6 @@ function MyLibraryHero({
         })}
         meta={t("overdueMeta", { title: latest.title_name ?? tMe("titleUnavailable") })}
         chip={t("overdueChip")}
-        secondaryAction={browse}
         data-testid="my-library-hero"
       />
     );
