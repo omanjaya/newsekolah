@@ -65,7 +65,8 @@ export function AttendanceCalendar(): ReactElement {
   // Keyed by `today` so a simulated clock jump re-anchors the calendar on
   // the new month instead of keeping the month picked before the jump.
   const [selection, setSelection] = useState<{ today: string; month: string } | null>(null);
-  const month = selection?.today === today ? selection.month : today.slice(0, 7);
+  const month =
+    selection !== null && selection.today === today ? selection.month : today.slice(0, 7);
   const { data, isLoading } = useMyCalendarQuery(month);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 

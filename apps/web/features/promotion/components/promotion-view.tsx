@@ -71,18 +71,20 @@ export function PromotionView(): ReactElement {
   const { fromYearId, toYearId, setFromYearId, setToYearId } = useYearPair(yearOptions);
   const yearLabel = (id: string) => yearOptions.find((year) => year.id === id)?.label ?? "";
 
-  const [previewResult, setPreviewResult] = useState<
-    { from: string; to: string; plan: PromotionPlanItem[] } | undefined
-  >(undefined);
+  const [previewResult, setPreviewResult] = useState<{
+    from: string;
+    to: string;
+    plan: PromotionPlanItem[];
+  } | null>(null);
   const plan =
-    previewResult?.from === fromYearId && previewResult.to === toYearId
+    previewResult !== null && previewResult.from === fromYearId && previewResult.to === toYearId
       ? previewResult.plan
       : undefined;
   const [overrides, setOverrides] = useState<Record<string, PromotionOverride>>({});
   const [confirming, setConfirming] = useState(false);
   const [effectiveOn, setEffectiveOn] = useState(today);
   const [done, setDone] = useState<Done | null>(null);
-  const result = done?.from === fromYearId && done.to === toYearId ? done : null;
+  const result = done !== null && done.from === fromYearId && done.to === toYearId ? done : null;
 
   const fromClasses = useClassesForYearQuery(fromYearId);
   const toClasses = useClassesForYearQuery(toYearId);
@@ -302,7 +304,7 @@ export function PromotionView(): ReactElement {
             {
               onSuccess: (response) => {
                 setConfirming(false);
-                setPreviewResult(undefined);
+                setPreviewResult(null);
                 setOverrides({});
                 setDone({
                   from: fromYearId,
