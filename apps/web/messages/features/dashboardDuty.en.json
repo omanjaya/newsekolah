@@ -80,7 +80,6 @@
     "tile": "Needs action",
     "cardTitle": "Decision queue",
     "cardAction": "View all",
-    "empty": "Every queue is clear",
     "queues": {
       "leave": "Leave requests",
       "exit": "Exit permits",

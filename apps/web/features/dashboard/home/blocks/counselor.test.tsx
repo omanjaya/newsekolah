@@ -141,7 +141,11 @@ describe("useCounselorBlock", () => {
 
   it("does not render the SP section, only the leave section, without issue_warning_letters", () => {
     const meWithoutIssue = { permissions: ["review_leave_requests"] } as unknown as Me;
-    leaveReviewQueueQuery.mockReturnValue(refetchable({ data: { data: [] } }));
+    leaveReviewQueueQuery.mockReturnValue(
+      refetchable({
+        data: { data: [{ instance_id: "a", student_name: "Siswa A", class_name: "X-A" }] },
+      }),
+    );
     spCandidatesQuery.mockReturnValue(refetchable({}));
 
     const { result } = renderHook(() => useCounselorBlock(meWithoutIssue, true));
@@ -150,6 +154,25 @@ describe("useCounselorBlock", () => {
     expect(screen.getByText("counselor.leaveSectionTitle")).toBeInTheDocument();
     expect(screen.queryByText("counselor.spSectionTitle")).not.toBeInTheDocument();
     expect(result.current.tiles.find((t) => t.key === "counselor.sp")).toBeUndefined();
+  });
+
+  it("leaves the queue card out once every queue it lists has loaded empty", () => {
+    leaveReviewQueueQuery.mockReturnValue(refetchable({ data: { data: [] } }));
+    spCandidatesQuery.mockReturnValue(refetchable({ data: { data: [] } }));
+
+    const { result } = renderHook(() => useCounselorBlock(counselorWithBothPermissions, true));
+
+    expect(result.current.hero?.key).toBe("counselor.idle");
+    expect(result.current.main.some((slot) => slot.key === "counselor.queue")).toBe(false);
+  });
+
+  it("keeps the queue card while a queue is still loading", () => {
+    leaveReviewQueueQuery.mockReturnValue(refetchable({ isLoading: true }));
+    spCandidatesQuery.mockReturnValue(refetchable({ data: { data: [] } }));
+
+    const { result } = renderHook(() => useCounselorBlock(counselorWithBothPermissions, true));
+
+    expect(result.current.main.some((slot) => slot.key === "counselor.queue")).toBe(true);
   });
 
   it("returns no left slot when neither permission is held", () => {

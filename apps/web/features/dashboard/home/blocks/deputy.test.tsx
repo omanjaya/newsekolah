@@ -52,6 +52,8 @@ describe("useDeputyBlock", () => {
     expect(result.current.hero?.key).toBe("deputy.idle");
     expect(result.current.hero?.tone).toBe("neutral");
     expect(result.current.hero?.action?.href).toBe("/reports");
+    // The calm hero already says every queue is clear: no empty queue card.
+    expect(result.current.main).toEqual([]);
   });
 
   it("stays pending and heroless while the counts load", () => {

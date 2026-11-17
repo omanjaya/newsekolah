@@ -3,9 +3,7 @@
     "hero": {
       "eyebrow": "Presensi saat ini",
       "title": "{submitted} dari {total} kelas sudah dipresensi",
-      "meta": "{pending} kelas yang sedang belajar belum mengisi presensi",
       "action": "Buka monitor",
-      "metaDone": "Semua kelas yang sedang belajar sudah dipresensi",
       "reportsAction": "Buka laporan",
       "progressLabel": "Presensi kelas yang sedang belajar",
       "queueEyebrow": "Perlu tindakan",
@@ -18,8 +16,7 @@
     "tiles": {
       "sessions": "Kelas dipresensi",
       "pending": "Menunggu tinjauan",
-      "users": "Pengguna aktif",
-      "online": "Sedang daring"
+      "users": "Pengguna aktif"
     },
     "queue": {
       "title": "Antrean sekolah",

@@ -105,6 +105,26 @@ describe("useLeadershipBlock", () => {
     expect(result.current.hero?.progress).toMatchObject({ value: 3, max: 5 });
   });
 
+  it("states the attendance figure once: title and meter, no meta, its tile covered", () => {
+    dashboardQuery.mockReturnValue({
+      data: {
+        ...baseDashboard,
+        online_by_role: { admin: 1 },
+        attendance_today: { submitted: 3, total: 5 },
+      },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useLeadershipBlock(me, true));
+
+    expect(result.current.hero?.meta).toBeUndefined();
+    expect(result.current.hero?.coversTiles).toEqual(["school.sessions"]);
+    // Who is online is named in the activity card, not counted again as a tile.
+    expect(result.current.tiles.map((tile) => tile.key)).not.toContain("school.online");
+  });
+
   it("opens on a calm hero when no class is in session and nothing waits", () => {
     dashboardQuery.mockReturnValue({
       data: { ...baseDashboard, attendance_today: { submitted: 0, total: 0 } },

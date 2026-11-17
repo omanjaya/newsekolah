@@ -14,7 +14,7 @@ import {
   SkeletonList,
   TextLink,
 } from "@newsekolah/ui";
-import { Activity, ClipboardCheck, Inbox, ShieldCheck, Users } from "lucide-react";
+import { ClipboardCheck, Inbox, ShieldCheck, Users } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -103,6 +103,8 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   if (ready && data) {
     if (attendanceToday && attendanceToday.total > 0) {
       const waiting = attendanceToday.total - attendanceToday.submitted;
+      // The title and the meter carry the one figure; no meta sentence
+      // restates it, and the stat row leaves out its own copy of it.
       hero = {
         key: "school.summary",
         priority: HERO_PRIORITY.schoolSummary,
@@ -112,7 +114,7 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
           submitted: attendanceToday.submitted,
           total: attendanceToday.total,
         }),
-        meta: waiting > 0 ? t("hero.meta", { pending: waiting }) : t("hero.metaDone"),
+        coversTiles: ["school.sessions"],
         progress: {
           value: attendanceToday.submitted,
           max: attendanceToday.total,
@@ -180,14 +182,7 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
       icon: Users,
       tone: "blue",
     });
-    tiles.push({
-      key: "school.online",
-      priority: 40,
-      label: t("tiles.online"),
-      value: String(Object.values(data.online_by_role).reduce((sum, count) => sum + count, 0)),
-      icon: Activity,
-      tone: "purple",
-    });
+    // Who is online is named, role by role, in the activity card.
   }
 
   // A queue row links only to a screen the reader may open; the principal

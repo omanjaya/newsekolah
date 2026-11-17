@@ -134,20 +134,25 @@ export function usePicketBlock(me: Me, active: boolean): PersonaBlock {
     };
   }
 
-  block.main.push({
-    key: "picket.queue",
-    node: (
-      <PicketQueueCard
-        key="picket.queue"
-        late={late}
-        exit={exit}
-        lateItems={lateItems}
-        exitItems={exitItems}
-        students={students}
-        classMap={classMap}
-      />
-    ),
-  });
+  // The queue card earns its place only while something is loading, failed
+  // or waits: with both queues empty the hero and the tiles already say so.
+  const queuesClear = lateItems?.length === 0 && exitItems?.length === 0;
+  if (!queuesClear) {
+    block.main.push({
+      key: "picket.queue",
+      node: (
+        <PicketQueueCard
+          key="picket.queue"
+          late={late}
+          exit={exit}
+          lateItems={lateItems}
+          exitItems={exitItems}
+          students={students}
+          classMap={classMap}
+        />
+      ),
+    });
+  }
 
   return block;
 }

@@ -39,6 +39,11 @@ export interface HeroCandidate {
   secondaryAction?: HeroLink;
   /** A meter under the meta line (attendance taken so far, for example). */
   progress?: { value: number; max: number; label: string; valueLabel: string };
+  /**
+   * Tile keys whose figure this hero already states. While it is the hero
+   * those tiles are left out of the stat row, so one fact is said once.
+   */
+  coversTiles?: readonly string[];
 }
 
 export interface TileSpec {
