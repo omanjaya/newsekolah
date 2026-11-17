@@ -142,7 +142,9 @@ export function CatalogueView(): ReactElement {
         header: t("columns.author"),
         enableSorting: false,
         meta: { card: "subtitle" },
-        cell: ({ row }) => row.original.author || "-",
+        // A missing author is a dash in the table; the phone card leaves
+        // the line out rather than show a bare dash under the title.
+        cell: ({ row }) => row.original.author || <span className="max-md:hidden">-</span>,
       },
       {
         accessorKey: "classification",
