@@ -1,63 +1,112 @@
 "use client";
 
-import { Button, Dialog, DialogContent, Skeleton } from "@newsekolah/ui";
+import {
+  Avatar,
+  Button,
+  Card,
+  Dialog,
+  DialogContent,
+  EmptyState,
+  List,
+  ListRow,
+  SectionHeader,
+  SkeletonList,
+} from "@newsekolah/ui";
+import { CalendarClock, LogIn } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
+import { useDirectoryNames } from "../../reference/directory-names";
 import { type ExpectedGuest, useExpectedGuestsQuery } from "../api";
+import { matchesSearch } from "../lib/board";
 
 import { CheckInForm } from "./check-in-form";
 
-/** Scheduled visitors can be checked in directly from today's shared visitor desk. */
+/**
+ * Today's scheduled visitors beside the on-site list, so the guard finds a
+ * name instead of typing it: checking one in opens the sign-in form with
+ * their details already filled. Readers without the right only see the list.
+ */
 export function ExpectedTodayPanel({ search }: { search: string }): ReactElement {
   const t = useTranslations("app.visitors.expected");
-  const workspace = useTranslations("app.serviceWorkspace");
   const canManage = useCan("manage_visitors");
   const { me } = useSession();
   const guests = useExpectedGuestsQuery(todayInZone(me?.tenant.timezone));
   const [selected, setSelected] = useState<ExpectedGuest | null>(null);
-  const query = search.trim().toLocaleLowerCase();
-  const items = (guests.data?.data ?? []).filter((guest) =>
-    `${guest.full_name} ${guest.organization}`.toLocaleLowerCase().includes(query),
-  );
+  const titleId = useId();
+  const all = guests.data?.data ?? [];
+  const items = all.filter((guest) => matchesSearch(search, guest.full_name, guest.organization));
+  const hosts = useDirectoryNames(items.map((guest) => guest.host_user_id));
+
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-base font-semibold">{workspace("expectedToday")}</h2>
+    <section aria-labelledby={titleId} className="flex flex-col gap-3">
+      <SectionHeader
+        titleId={titleId}
+        title={t("todayTitle")}
+        count={guests.isLoading ? undefined : all.length}
+      />
       {guests.isLoading ? (
-        <Skeleton className="h-24 w-full" aria-busy="true" />
+        <SkeletonList rows={2} />
       ) : guests.isError ? (
-        <QueryError retry={() => guests.refetch()} />
+        <QueryError retry={() => guests.refetch()} error={guests.error} />
       ) : items.length === 0 ? (
-        <p className="text-sm text-fg-muted">{t("emptyBody")}</p>
-      ) : (
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((guest) => (
-            <li
-              key={guest.id}
-              className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4"
-            >
-              <div>
-                <p className="font-semibold">{guest.full_name}</p>
-                <p className="text-sm text-fg-muted">{guest.organization}</p>
-              </div>
-              <p className="text-sm">{guest.purpose}</p>
-              {canManage && (
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setSelected(guest);
-                  }}
-                >
-                  {t("checkIn")}
+        <Card padding="sm">
+          <EmptyState
+            variant="compact"
+            icon={<CalendarClock />}
+            title={all.length === 0 ? t("todayEmptyTitle") : t("todaySearchEmpty")}
+            description={all.length === 0 ? t("todayEmptyBody") : undefined}
+            action={
+              canManage && all.length === 0 ? (
+                <Button asChild size="sm" variant="secondary">
+                  <Link href="/visitors/expected">{t("scheduleGuest")}</Link>
                 </Button>
-              )}
-            </li>
-          ))}
-        </ul>
+              ) : undefined
+            }
+          />
+        </Card>
+      ) : (
+        <List framed aria-label={t("todayTitle")}>
+          {items.map((guest) => {
+            const host = hosts.get(guest.host_user_id)?.name;
+            const about = [guest.organization, guest.purpose].filter(Boolean).join(" · ");
+            return (
+              <ListRow
+                key={guest.id}
+                leading={<Avatar name={guest.full_name} size={40} decorative />}
+                title={guest.full_name}
+                meta={
+                  <>
+                    {about && <span className="block truncate">{about}</span>}
+                    {host && (
+                      <span className="block truncate">{t("hostLine", { name: host })}</span>
+                    )}
+                  </>
+                }
+                action={
+                  canManage ? (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={<LogIn />}
+                      aria-label={t("checkInFor", { name: guest.full_name })}
+                      onClick={() => {
+                        setSelected(guest);
+                      }}
+                    >
+                      {t("checkInShort")}
+                    </Button>
+                  ) : undefined
+                }
+              />
+            );
+          })}
+        </List>
       )}
       <Dialog
         open={selected !== null}

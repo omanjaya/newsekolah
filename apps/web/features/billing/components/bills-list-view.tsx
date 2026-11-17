@@ -1,19 +1,25 @@
 "use client";
 
-import { type Locale, formatCurrency, formatDate } from "@newsekolah/i18n";
-import { DataTable, EmptyState, Input, domainIcons, type DataTableFilterDef } from "@newsekolah/ui";
+import {
+  DataTable,
+  EmptyState,
+  FilteredEmptyState,
+  MonthPicker,
+  domainIcons,
+  type DataTableFilterDef,
+} from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
-import { CursorPagination } from "../../../components/cursor-pagination";
-import { QueryError } from "../../../components/query-error";
+import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useClassesQuery } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { type Bill, type BillStatus, useBillsQuery } from "../api";
+import { useBillingFormat } from "../lib/use-billing-format";
 
 import { BillDetailSheet } from "./bill-detail-sheet";
 import { BillStatusBadge } from "./bill-status-badge";
@@ -23,17 +29,17 @@ const STATUS_FILTER_VALUES = ["", ...STATUS_VALUES] as const;
 const PAGE_SIZE = 50;
 
 /**
- * Every bill this year, filterable by period, status and class -- the
- * cross-student view the front desk's per-student `PaymentDeskView` does
- * not give. Picking a row opens `BillDetailSheet` for that bill's own
- * fields and payments.
+ * Every bill this year, filterable by month, status and class (all kept
+ * in the URL), the cross-student view the payment desk does not give. A
+ * row opens the bill's detail; amounts and what is left of them line up
+ * on the right in tabular figures.
  */
 export function BillsListView(): ReactElement {
   const t = useTranslations("app.billing.bills");
-  const locale = useLocale() as Locale;
+  const { money, day } = useBillingFormat();
   const classes = useClassesQuery();
 
-  const [period, setPeriod] = useState("");
+  const [period, setPeriod] = useDateFilter("period", "", true);
   const [status, setStatus] = useUrlState<(typeof STATUS_FILTER_VALUES)[number]>(
     "status",
     STATUS_FILTER_VALUES,
@@ -43,13 +49,12 @@ export function BillsListView(): ReactElement {
   const paging = useOffsetPage(PAGE_SIZE);
   const [selectedBillId, setSelectedBillId] = useState<string | null>(null);
 
-  const { data, isLoading, isError, refetch } = useBillsQuery(
+  const { data, isLoading, isError, error, refetch, isRefetching } = useBillsQuery(
     { period, status, classId },
     { limit: paging.limit, offset: paging.offset },
   );
   const rows = data?.data ?? [];
   const studentMap = useDirectoryNames(rows.map((item) => item.student_user_id));
-  const hasNext = paging.hasNextFor(rows.length);
 
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
 
@@ -75,6 +80,7 @@ export function BillsListView(): ReactElement {
       options: classOptions,
     },
   ];
+  const filtered = period !== "" || status !== "" || classId !== "";
 
   const columns = useMemo<ColumnDef<Bill>[]>(
     () => [
@@ -82,35 +88,45 @@ export function BillsListView(): ReactElement {
         id: "student",
         header: t("columns.student"),
         enableSorting: false,
-        // A real button so a mouse can open the detail on desktop, where the
-        // table row itself only activates from the keyboard.
-        cell: ({ row }) => (
-          <button
-            type="button"
-            className="text-left text-fg underline-offset-2 hover:underline focus-visible:underline"
-            onClick={() => {
-              setSelectedBillId(row.original.id);
-            }}
-          >
-            {studentMap.get(row.original.student_user_id)?.name ?? t("unknownStudent")}
-          </button>
-        ),
+        meta: { card: "title" },
+        cell: ({ row }) =>
+          studentMap.get(row.original.student_user_id)?.name ?? t("unknownStudent"),
       },
-      { accessorKey: "fee_type_name", header: t("columns.feeType"), enableSorting: false },
+      {
+        accessorKey: "fee_type_name",
+        header: t("columns.feeType"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+      },
       { accessorKey: "period", header: t("columns.period"), enableSorting: false },
       {
         id: "dueDate",
         header: t("columns.dueDate"),
         enableSorting: false,
-        cell: ({ row }) => formatDate(row.original.due_date, { locale, timeZone: "UTC" }),
+        cell: ({ row }) => day(row.original.due_date),
       },
       {
         id: "amount",
         header: t("columns.amount"),
         enableSorting: false,
+        meta: { align: "end" },
         cell: ({ row }) => (
           <span className="tabular-nums">
-            {formatCurrency(row.original.amount_minor, row.original.currency, { locale })}
+            {money(row.original.amount_minor, row.original.currency)}
+          </span>
+        ),
+      },
+      {
+        id: "remaining",
+        header: t("columns.remaining"),
+        enableSorting: false,
+        meta: { align: "end" },
+        cell: ({ row }) => (
+          <span className="font-semibold tabular-nums">
+            {money(
+              row.original.amount_minor - row.original.paid_amount_minor,
+              row.original.currency,
+            )}
           </span>
         ),
       },
@@ -118,76 +134,75 @@ export function BillsListView(): ReactElement {
         id: "status",
         header: t("columns.status"),
         enableSorting: false,
+        meta: { card: "meta", skeleton: "badge" },
         cell: ({ row }) => <BillStatusBadge bill={row.original} />,
       },
     ],
-    [t, locale, studentMap],
+    [t, money, day, studentMap],
   );
 
   return (
-    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      {/*
-        `period` is a free-form month value, not a select/boolean the shared
-        `DataTableFilters` pill bar can represent (see
-        docs/analysis/table-filters-audit-2026-09-30.md), so it stays its
-        own labeled input, positioned next to the filter pills the table
-        toolbar renders below.
-      */}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("columns.period")}</span>
-        <Input
-          type="month"
-          value={period}
-          onChange={(e) => {
-            setPeriod(e.target.value);
-            paging.resetPage();
-          }}
-          className="w-full sm:w-44"
-          aria-label={t("columns.period")}
-        />
-      </label>
-      {isError ? (
-        <QueryError retry={refetch} />
-      ) : (
-        <div className="flex flex-col md:min-h-0 md:flex-1">
-          <DataTable
-            stateKey="features/billing/components/bills-list-view:1"
-            mode="cursor"
-            data={rows}
-            columns={columns}
-            rowCount={rows.length}
-            searchable={false}
-            filters={filters}
-            filtersLabels={{
-              reset: t("filters.reset"),
-              removeFilter: (label) => t("filters.removeFilter", { label }),
+    <div className="flex flex-col md:min-h-0 md:flex-1">
+      <DataTable
+        stateKey="features/billing/components/bills-list-view:1"
+        mode="cursor"
+        data={rows}
+        columns={columns}
+        rowCount={rows.length}
+        searchable={false}
+        filters={filters}
+        filtersLabels={{
+          reset: t("filters.reset"),
+          removeFilter: (label) => t("filters.removeFilter", { label }),
+        }}
+        toolbarActions={
+          <MonthPicker
+            value={period}
+            onChange={(next) => {
+              setPeriod(next);
+              paging.resetPage();
             }}
-            isLoading={isLoading}
-            getRowId={(item) => item.id}
-            onRowActivate={(row) => {
-              setSelectedBillId(row.id);
-            }}
-            fillHeight
-            emptyState={
-              <EmptyState
-                icon={<domainIcons.billing aria-hidden="true" />}
-                title={t("emptyTitle")}
-                description={t("emptyBody")}
-              />
-            }
+            placeholder={t("periodPlaceholder")}
+            aria-label={t("columns.period")}
+            className="w-full sm:w-48"
           />
-        </div>
-      )}
-      {(paging.hasPrevious || hasNext) && (
-        <CursorPagination
-          hasPrevious={paging.hasPrevious}
-          hasNext={hasNext}
-          previousLabel={t("pagePrev")}
-          nextLabel={t("pageNext")}
-          onPrevious={paging.goPrevious}
-          onNext={paging.goNext}
-        />
-      )}
+        }
+        isLoading={isLoading}
+        error={isError ? error : undefined}
+        onRetry={() => void refetch()}
+        retrying={isRefetching}
+        getRowId={(item) => item.id}
+        onRowActivate={(row) => {
+          setSelectedBillId(row.id);
+        }}
+        fillHeight
+        cursorPagination={{
+          hasPrevious: paging.hasPrevious,
+          hasNext: paging.hasNextFor(rows.length),
+          onPrevious: paging.goPrevious,
+          onNext: paging.goNext,
+          page: paging.page,
+          pageSize: paging.limit,
+        }}
+        emptyState={
+          filtered ? (
+            <FilteredEmptyState
+              onReset={() => {
+                setPeriod("");
+                setStatus("");
+                setClassId("");
+                paging.resetPage();
+              }}
+            />
+          ) : (
+            <EmptyState
+              icon={<domainIcons.billing />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          )
+        }
+      />
       <BillDetailSheet
         billId={selectedBillId}
         onOpenChange={(open) => {

@@ -56,7 +56,8 @@ it("edits percentage basis points without moving the discount or activating an i
       onDone={vi.fn()}
     />,
   );
-  expect(screen.getByRole("spinbutton", { name: "percentage" })).toHaveValue(12.5);
+  // The shared number field writes the school's locale: 12,5 for 12.5%.
+  expect(screen.getByRole("spinbutton", { name: "percentage" })).toHaveValue("12,5");
   const picker = screen.getByRole("combobox", { name: "studentPlaceholder" });
   expect(picker).toBeDisabled();
   expect(picker).toHaveAttribute("data-kind", "student");

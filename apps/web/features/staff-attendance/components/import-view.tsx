@@ -1,15 +1,37 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, EmptyState, Select, Skeleton, useToast } from "@newsekolah/ui";
-import { FileUp, TriangleAlert } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { formatDate, type Locale } from "@newsekolah/i18n";
+import {
+  Alert,
+  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Field,
+  SectionHeader,
+  SkeletonList,
+  Stepper,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  useToast,
+} from "@newsekolah/ui";
+import { FileUp, Upload } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import type { ChangeEvent, ReactElement } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useImportStaffAttendanceMutation, useStaffAttendanceRosterQuery } from "../api";
 import { type ImportProblem, type ParsedImportRow, parseImportCsv } from "../import-csv";
+
+import { EmployeeCombobox } from "./employee-combobox";
 
 interface Resolved {
   row: ParsedImportRow;
@@ -17,18 +39,29 @@ interface Resolved {
   employeeName: string;
 }
 
+/** "07.05" (id) or "07:05" (en) from a device's wall-clock "YYYY-MM-DDTHH:MM:SS". */
+function wallClock(value: string | undefined, locale: Locale): string {
+  if (!value) return "–";
+  const time = value.slice(11, 16);
+  return locale === "id" ? time.replace(":", ".") : time;
+}
+
 /**
- * Loading a day's records off an attendance device. The file is read and
- * matched here, then shown in full before anything is sent: an import
- * that quietly drops rows leaves people marked absent for days they were
- * at work, so every row is either accounted for or listed as a problem.
+ * Loading records off an attendance device, in three visible steps: pick
+ * the file, point any code the roster does not recognise at a person, then
+ * check every row before saving. The file is read and matched here and
+ * shown in full before anything is sent: an import that quietly drops
+ * rows leaves people marked absent for days they were at work, so every
+ * row is either accounted for or listed as a problem.
  */
 export function StaffAttendanceImportView(): ReactElement {
   const t = useTranslations("app.staffAttendance.import");
+  const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const roster = useStaffAttendanceRosterQuery();
   const importRecords = useImportStaffAttendanceMutation();
+  const fileInput = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<ParsedImportRow[]>([]);
   const [problems, setProblems] = useState<ImportProblem[]>([]);
@@ -59,6 +92,7 @@ export function StaffAttendanceImportView(): ReactElement {
   const unmappedKeys = [...new Set(rows.map((row) => row.employeeKey))].filter(
     (key) => !employeeIdFor(key),
   );
+  const step = fileName === null ? 0 : unmappedKeys.length > 0 ? 1 : 2;
 
   async function onFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -88,6 +122,7 @@ export function StaffAttendanceImportView(): ReactElement {
       setMapping({});
       setProblems([]);
       setFileName(null);
+      if (fileInput.current) fileInput.current.value = "";
     } catch (error) {
       toast.error(
         error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
@@ -96,50 +131,54 @@ export function StaffAttendanceImportView(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-        <div>
-          <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-          <p className="text-[13px] text-fg-muted">{t("body")}</p>
-        </div>
-        <p className="text-[12px] text-fg-muted">{t("columns")}</p>
-        <label
-          htmlFor="staff-attendance-import-file"
-          className="flex h-11 w-fit cursor-pointer items-center gap-2 rounded-sm border border-border px-3 text-[13px] text-fg hover:bg-bg md:h-8"
-        >
-          <FileUp className="size-4" aria-hidden="true" />
-          {fileName ?? t("chooseFile")}
-        </label>
+    <>
+      <Stepper
+        variant="compact"
+        currentIndex={step}
+        steps={[
+          { id: "file", label: t("steps.file") },
+          { id: "match", label: t("steps.match") },
+          { id: "review", label: t("steps.review") },
+        ]}
+      />
+      <Card padding="md">
+        <CardHeader>
+          <CardTitle as="h2">{t("title")}</CardTitle>
+          <CardDescription>{t("body")}</CardDescription>
+        </CardHeader>
+        <p className="text-body-sm text-fg-muted">{t("columns")}</p>
         <input
-          id="staff-attendance-import-file"
+          ref={fileInput}
           type="file"
           accept=".csv,text/csv,text/plain"
           className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
           onChange={(event) => {
             void onFile(event);
           }}
         />
-      </section>
+        <Button
+          variant="secondary"
+          icon={<FileUp />}
+          className="w-full sm:w-fit"
+          onClick={() => {
+            fileInput.current?.click();
+          }}
+        >
+          {fileName ?? t("chooseFile")}
+        </Button>
+      </Card>
 
       {roster.isLoading ? (
-        <Skeleton className="h-32 w-full" />
+        <SkeletonList rows={3} leading={false} />
       ) : fileName === null ? (
-        <EmptyState
-          icon={<FileUp aria-hidden="true" />}
-          title={t("emptyTitle")}
-          description={t("emptyBody")}
-        />
+        <EmptyState icon={<FileUp />} title={t("emptyTitle")} description={t("emptyBody")} />
       ) : (
         <>
           {problems.length > 0 && (
-            <section className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-4">
-              <div className="flex items-center gap-2">
-                <TriangleAlert className="size-4 text-fg-muted" aria-hidden="true" />
-                <h3 className="text-[13px] font-medium text-fg">
-                  {t("problemsTitle", { count: problems.length })}
-                </h3>
-              </div>
-              <ul className="flex flex-col gap-1 text-[12px] text-fg-muted">
+            <Alert tone="warning" title={t("problemsTitle", { count: problems.length })}>
+              <ul className="flex flex-col gap-1">
                 {problems.map((problem) => (
                   <li key={`${problem.line}-${problem.reason}`}>
                     {t("problemLine", {
@@ -150,92 +189,77 @@ export function StaffAttendanceImportView(): ReactElement {
                   </li>
                 ))}
               </ul>
-            </section>
+            </Alert>
           )}
 
           {unmappedKeys.length > 0 && (
-            <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-              <div>
-                <h3 className="text-[13px] font-medium text-fg">{t("mappingTitle")}</h3>
-                <p className="text-[12px] text-fg-muted">{t("mappingBody")}</p>
-              </div>
-              <div className="flex flex-col gap-2">
-                {unmappedKeys.map((key) => (
-                  <div key={key} className="flex items-center gap-3">
-                    <span className="w-40 shrink-0 truncate text-[13px] text-fg">{key}</span>
-                    <Select
-                      aria-label={t("mappingSelect", { key })}
-                      value=""
-                      options={[
-                        { value: "", label: t("mappingPlaceholder") },
-                        ...employees.map((employee) => ({
-                          value: employee.id,
-                          label: employee.name,
-                        })),
-                      ]}
-                      onValueChange={(value) => {
-                        setMapping((prev) => ({ ...prev, [key]: value }));
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </section>
+            <Card padding="md">
+              <CardHeader>
+                <CardTitle as="h2">{t("mappingTitle")}</CardTitle>
+                <CardDescription>{t("mappingBody")}</CardDescription>
+              </CardHeader>
+              {unmappedKeys.map((key) => (
+                <Field key={key} label={key} orientation="horizontal">
+                  <EmployeeCombobox
+                    employees={employees}
+                    value=""
+                    onValueChange={(value) => {
+                      setMapping((prev) => ({ ...prev, [key]: value }));
+                    }}
+                  />
+                </Field>
+              ))}
+            </Card>
           )}
 
-          <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-            <h3 className="text-[13px] font-medium text-fg">
-              {t("previewTitle", { count: resolved.length })}
-            </h3>
-            <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-              <table className="w-full min-w-[560px] text-[13px]">
-                <thead>
-                  <tr className="border-b border-line bg-bg text-left">
-                    <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
-                      {t("columnEmployee")}
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
-                      {t("columnDate")}
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
-                      {t("columnArrival")}
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
-                      {t("columnDeparture")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
+          <section className="flex flex-col gap-3">
+            <SectionHeader
+              title={t("previewTitle", { count: resolved.length })}
+              action={
+                <Button
+                  size="sm"
+                  icon={<Upload />}
+                  disabled={resolved.length === 0}
+                  loading={importRecords.isPending}
+                  onClick={() => {
+                    void apply();
+                  }}
+                >
+                  {t("apply", { count: resolved.length })}
+                </Button>
+              }
+            />
+            {resolved.length > 0 && (
+              <Table density="compact">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("columnEmployee")}</TableHead>
+                    <TableHead>{t("columnDate")}</TableHead>
+                    <TableHead className="text-right">{t("columnArrival")}</TableHead>
+                    <TableHead className="text-right">{t("columnDeparture")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {resolved.map((item) => (
-                    <tr
-                      key={`${item.employeeUserId}-${item.row.date}`}
-                      className="border-b border-line last:border-b-0 hover:bg-bg"
-                    >
-                      <td className="px-4 py-3 text-fg">{item.employeeName}</td>
-                      <td className="px-4 py-3 text-fg-muted">{item.row.date}</td>
-                      <td className="px-4 py-3 text-fg-muted">
-                        {item.row.arrivalAt?.slice(11, 16) ?? "-"}
-                      </td>
-                      <td className="px-4 py-3 text-fg-muted">
-                        {item.row.departureAt?.slice(11, 16) ?? "-"}
-                      </td>
-                    </tr>
+                    <TableRow key={`${item.employeeUserId}-${item.row.date}`}>
+                      <TableCell>{item.employeeName}</TableCell>
+                      <TableCell>
+                        {formatDate(`${item.row.date}T12:00:00Z`, { locale, timeZone: "UTC" })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {wallClock(item.row.arrivalAt, locale)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {wallClock(item.row.departureAt, locale)}
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-            </div>
-            <Button
-              className="w-fit"
-              disabled={resolved.length === 0 || importRecords.isPending}
-              onClick={() => {
-                void apply();
-              }}
-            >
-              {t("apply", { count: resolved.length })}
-            </Button>
+                </TableBody>
+              </Table>
+            )}
           </section>
         </>
       )}
-    </div>
+    </>
   );
 }

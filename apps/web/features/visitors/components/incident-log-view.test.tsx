@@ -15,6 +15,7 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/visitors/incidents",
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: () => mocks.canManage,
   useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
@@ -119,5 +120,37 @@ describe("incident severity badges", () => {
       high: "warning",
       critical: "danger",
     });
+  });
+});
+
+describe("IncidentLogView states", () => {
+  beforeEach(() => {
+    mocks.canManage = true;
+    window.history.replaceState(null, "", "/visitors/incidents");
+  });
+
+  it("says a failed load failed, with a retry, instead of 'no incidents'", () => {
+    mocks.useIncidentsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error("boom"),
+      refetch: vi.fn(),
+    });
+    render(<IncidentLogView />);
+    expect(screen.getByRole("button", { name: "Coba lagi" })).toBeInTheDocument();
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+  });
+
+  it("offers to record the first incident when the default window is empty", () => {
+    mocks.useIncidentsQuery.mockReturnValue({
+      data: { data: [] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    render(<IncidentLogView />);
+    expect(screen.getByText("emptyTitle")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "record" }).length).toBeGreaterThan(1);
   });
 });

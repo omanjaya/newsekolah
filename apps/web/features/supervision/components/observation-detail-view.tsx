@@ -3,13 +3,26 @@
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
-import { Button, PageHeader, Skeleton, Textarea, useToast } from "@newsekolah/ui";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Field,
+  FormActions,
+  Progress,
+  SkeletonDetail,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
+import { Pencil } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
@@ -20,15 +33,24 @@ import {
   useScheduledObservationsForTeacherQuery,
   useSupervisionCycleQuery,
 } from "../api";
+import { averageScore, formatScore } from "../lib/score-format";
 import { useLessonContext } from "../lib/use-lesson-context";
 
-import { SupervisionWorkspaceNav } from "./supervision-workspace-nav";
+/** A block of free text, or a quiet line when there is none yet. */
+function Prose({ text, empty }: { text: string; empty: string }): ReactElement {
+  return text ? (
+    <p className="text-body whitespace-pre-wrap text-fg">{text}</p>
+  ) : (
+    <p className="text-body-sm text-fg-muted">{empty}</p>
+  );
+}
 
 /**
- * One observation: the scores, the observer's notes, and the teacher's own
- * response and agreed follow-up. `getObservation` already enforces who may
- * open this (observer, leadership, or the observed teacher); the response
- * form on top of that only appears with `respond_to_supervision`.
+ * One observation: each criterion's score against the scale and the
+ * average, the observer's notes, then the teacher's response and the
+ * agreed follow-up. `getObservation` already enforces who may open this
+ * (observer, leadership, or the observed teacher); the response form on
+ * top of that only appears with `respond_to_supervision`.
  */
 export function ObservationDetailView({ observationId }: { observationId: string }): ReactElement {
   const t = useTranslations("app.supervision.observationDetail");
@@ -63,25 +85,44 @@ export function ObservationDetailView({ observationId }: { observationId: string
   const [agreedFollowUp, setAgreedFollowUp] = useState("");
   const [editingResponse, setEditingResponse] = useState(false);
 
-  if (observation.isError && !observation.data)
-    return <QueryError retry={() => observation.refetch()} className="m-4" />;
-  if (cycle.isError && !cycle.data)
-    return <QueryError retry={() => cycle.refetch()} className="m-4" />;
+  const cyclesCrumb = { label: tRoot("navLabelCycles"), href: "/supervision/cycles" };
+
+  if ((observation.isError && !observation.data) || (cycle.isError && !cycle.data)) {
+    return (
+      <AppPage nav={false} breadcrumb={[cyclesCrumb, { label: t("title") }]} title={t("title")}>
+        <QueryError
+          retry={() => {
+            void observation.refetch();
+            void cycle.refetch();
+          }}
+          error={observation.error ?? cycle.error}
+        />
+      </AppPage>
+    );
+  }
 
   if (observation.isLoading || !observation.data || cycle.isLoading || !cycle.data) {
     return (
-      <div className="flex flex-col gap-4 p-4 md:p-6" aria-busy="true">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-48 w-full" />
-      </div>
+      <AppPage nav={false} breadcrumb={[cyclesCrumb, { label: t("title") }]} title={t("title")}>
+        <SkeletonDetail />
+      </AppPage>
     );
   }
 
   const obs = observation.data;
-  const criteriaByKey = new Map(cycle.data.instrument.criteria.map((c) => [c.key, c.name]));
+  const { instrument } = cycle.data;
+  const criteriaByKey = new Map(instrument.criteria.map((c) => [c.key, c.name]));
+  const span = Math.max(instrument.scale_max - instrument.scale_min, 1);
+  const average = averageScore(obs.scores);
   const teacherName =
     teacherMap.get(obs.teacher_user_id)?.name ?? tRoot("cycleDetail.unknownTeacher");
-  const contextLine = [lesson.subjectName, lesson.className].filter(Boolean).join(" · ");
+  const details = [
+    formatDateTime(obs.observed_at, { locale, timeZone: me?.tenant.timezone }),
+    lesson.subjectName,
+    lesson.className,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   function startEditing() {
     setTeacherResponse(obs.teacher_response);
@@ -90,142 +131,140 @@ export function ObservationDetailView({ observationId }: { observationId: string
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <div className="flex flex-col gap-2">
-        <Button asChild variant="secondary" size="sm" className="self-start">
-          <Link href={`/supervision/cycles/${cycle.data.id}`}>
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            {t("backToCycle")}
-          </Link>
-        </Button>
-        <PageHeader
-          breadcrumb={[
-            { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
-            { label: cycle.data.name, href: `/supervision/cycles/${cycle.data.id}` },
-          ]}
-          eyebrow={cycle.data.name}
-          title={teacherName}
-        />
-        <p className="text-[13px] text-fg-muted">
-          {formatDateTime(obs.observed_at, { locale, timeZone: me?.tenant.timezone })}
-          {contextLine && <> &middot; {contextLine}</>}
-        </p>
-      </div>
-      <SupervisionWorkspaceNav cycleId={cycle.data.id} />
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-[16px] font-medium">{t("scores")}</h2>
-        <ul className="flex max-w-sm flex-col gap-1 text-[13px]">
+    <AppPage
+      title={teacherName}
+      description={details}
+      nav={false}
+      breadcrumb={[
+        cyclesCrumb,
+        { label: cycle.data.name, href: `/supervision/cycles/${cycle.data.id}` },
+        { label: t("title") },
+      ]}
+    >
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">{t("scores")}</CardTitle>
+          <CardDescription>
+            {average === null
+              ? t("scale", { min: instrument.scale_min, max: instrument.scale_max })
+              : t("averageOfScale", {
+                  average: formatScore(average, locale),
+                  min: instrument.scale_min,
+                  max: instrument.scale_max,
+                })}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
           {obs.scores.map((s) => (
-            <li key={s.criterion_key} className="flex justify-between gap-2">
-              <span className="text-fg-muted">
-                {criteriaByKey.get(s.criterion_key) ?? s.criterion_key}
-              </span>
-              <span className="tabular-nums">{s.score}</span>
-            </li>
+            <Progress
+              key={s.criterion_key}
+              variant="meter"
+              label={criteriaByKey.get(s.criterion_key) ?? s.criterion_key}
+              value={s.score - instrument.scale_min}
+              max={span}
+              valueLabel={String(s.score)}
+            />
           ))}
-        </ul>
-      </section>
+        </CardContent>
+      </Card>
 
-      <section className="flex flex-col gap-2 border-t border-border pt-4">
-        <h2 className="text-[16px] font-medium">{t("observerNotes")}</h2>
-        <p className="whitespace-pre-wrap text-[13px] text-fg">{obs.observer_notes}</p>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">{t("observerNotes")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Prose text={obs.observer_notes} empty={t("noNotes")} />
+        </CardContent>
+      </Card>
 
-      <section className="flex flex-col gap-3 border-t border-border pt-4">
-        <h2 className="text-[16px] font-medium">{t("teacherResponse")}</h2>
-        {editingResponse ? (
-          <div className="flex flex-col gap-3">
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("responseLabel")}</span>
-              <Textarea
-                rows={4}
-                value={teacherResponse}
-                onChange={(e) => {
-                  setTeacherResponse(e.target.value);
-                }}
-                placeholder={t("responsePlaceholder")}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("followUpLabel")}</span>
-              <Textarea
-                rows={3}
-                value={agreedFollowUp}
-                onChange={(e) => {
-                  setAgreedFollowUp(e.target.value);
-                }}
-                placeholder={t("followUpPlaceholder")}
-              />
-            </label>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setEditingResponse(false);
-                }}
-              >
-                {t("cancel")}
+      <Card>
+        <CardHeader
+          action={
+            canRespond && !editingResponse ? (
+              <Button size="sm" variant="secondary" icon={<Pencil />} onClick={startEditing}>
+                {obs.teacher_response ? t("editResponse") : t("addResponse")}
               </Button>
-              <Button
-                size="sm"
-                loading={respond.isPending}
-                onClick={() => {
-                  respond.mutate(
-                    {
-                      observationId,
-                      teacher_response: teacherResponse.trim() || undefined,
-                      agreed_follow_up: agreedFollowUp.trim() || undefined,
-                    },
-                    {
-                      onSuccess: () => {
-                        toast.success(t("saved"));
-                        setEditingResponse(false);
-                      },
-                      onError: (error) => {
-                        toast.error(
-                          error instanceof ApiError
-                            ? apiErrorMessage(error.code)
-                            : apiErrorMessage("UNKNOWN"),
-                        );
-                      },
-                    },
-                  );
-                }}
-              >
-                {t("submit")}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {obs.teacher_response ? (
-              <p className="whitespace-pre-wrap text-[13px] text-fg">{obs.teacher_response}</p>
-            ) : (
-              <p className="text-[13px] text-fg-muted">{t("noResponseYet")}</p>
-            )}
-            {canRespond && (
-              <div>
-                <Button size="sm" variant="secondary" onClick={startEditing}>
-                  {obs.teacher_response ? t("editResponse") : t("addResponse")}
+            ) : undefined
+          }
+        >
+          <CardTitle as="h2">{t("teacherResponse")}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-5">
+          {editingResponse ? (
+            <>
+              <Field label={t("responseLabel")}>
+                <Textarea
+                  rows={4}
+                  value={teacherResponse}
+                  onChange={(e) => {
+                    setTeacherResponse(e.target.value);
+                  }}
+                  placeholder={t("responsePlaceholder")}
+                />
+              </Field>
+              <Field label={t("followUpLabel")} optional>
+                <Textarea
+                  rows={3}
+                  value={agreedFollowUp}
+                  onChange={(e) => {
+                    setAgreedFollowUp(e.target.value);
+                  }}
+                />
+              </Field>
+              <FormActions>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setEditingResponse(false);
+                  }}
+                >
+                  {t("cancel")}
                 </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </section>
+                <Button
+                  loading={respond.isPending}
+                  onClick={() => {
+                    respond.mutate(
+                      {
+                        observationId,
+                        teacher_response: teacherResponse.trim() || undefined,
+                        agreed_follow_up: agreedFollowUp.trim() || undefined,
+                      },
+                      {
+                        onSuccess: () => {
+                          toast.success(t("saved"));
+                          setEditingResponse(false);
+                        },
+                        onError: (error) => {
+                          toast.error(
+                            error instanceof ApiError
+                              ? apiErrorMessage(error.code)
+                              : apiErrorMessage("UNKNOWN"),
+                          );
+                        },
+                      },
+                    );
+                  }}
+                >
+                  {t("submit")}
+                </Button>
+              </FormActions>
+            </>
+          ) : (
+            <Prose text={obs.teacher_response} empty={t("noResponseYet")} />
+          )}
+        </CardContent>
+      </Card>
 
       {!editingResponse && (
-        <section className="flex flex-col gap-2 border-t border-border pt-4">
-          <h2 className="text-[16px] font-medium">{t("followUpLabel")}</h2>
-          {obs.agreed_follow_up ? (
-            <p className="whitespace-pre-wrap text-[13px] text-fg">{obs.agreed_follow_up}</p>
-          ) : (
-            <p className="text-[13px] text-fg-muted">{t("noFollowUpYet")}</p>
-          )}
-        </section>
+        <Card>
+          <CardHeader>
+            <CardTitle as="h2">{t("followUpLabel")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Prose text={obs.agreed_follow_up} empty={t("noFollowUpYet")} />
+          </CardContent>
+        </Card>
       )}
-    </div>
+    </AppPage>
   );
 }

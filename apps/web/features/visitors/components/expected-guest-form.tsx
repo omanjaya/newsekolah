@@ -1,7 +1,16 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Textarea, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  DatePicker,
+  DialogFooter,
+  Field,
+  FormSection,
+  Input,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -17,6 +26,7 @@ import { useCreateExpectedGuestMutation } from "../api";
 /** Hosts are teachers or staff; students are never visited. */
 const HOST_KINDS: ProfileKind[] = ["teacher", "staff"];
 
+/** Puts a visitor on the gate's list ahead of time, so the guard finds them by name. */
 export function ExpectedGuestForm({
   defaultDate,
   onDone,
@@ -36,15 +46,24 @@ export function ExpectedGuestForm({
   const [purpose, setPurpose] = useState("");
   const [expectedDate, setExpectedDate] = useState(defaultDate);
   const [notes, setNotes] = useState("");
+  const [attempted, setAttempted] = useState(false);
 
-  const canSubmit = fullName.trim() !== "" && hostUserId !== "" && expectedDate !== "";
+  const errors = {
+    fullName: fullName.trim() === "" ? t("errors.fullName") : undefined,
+    host: hostUserId === "" ? t("errors.host") : undefined,
+    date: expectedDate === "" ? t("errors.date") : undefined,
+  };
+  const valid = Object.values(errors).every((error) => error === undefined);
+  const shown = (error: string | undefined) => (attempted ? error : undefined);
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        if (!canSubmit) return;
+        setAttempted(true);
+        if (!valid || create.isPending) return;
         create.mutate(
           {
             full_name: fullName.trim(),
@@ -70,78 +89,67 @@ export function ExpectedGuestForm({
         );
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("fullName")}</span>
-        <Input
-          value={fullName}
-          onChange={(e) => {
-            setFullName(e.target.value);
-          }}
-          maxLength={160}
-          required
-          autoFocus
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("organization")}</span>
-        <Input
-          value={organization}
-          onChange={(e) => {
-            setOrganization(e.target.value);
-          }}
-          maxLength={160}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("host")}</span>
-        <DirectoryPicker
-          profileKind={HOST_KINDS}
-          value={hostUserId}
-          onValueChange={setHostUserId}
-          labels={hostLabels}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("date")}</span>
-        <Input
-          type="date"
-          value={expectedDate}
-          onChange={(e) => {
-            setExpectedDate(e.target.value);
-          }}
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("purpose")}</span>
-        <Textarea
-          rows={2}
-          value={purpose}
-          onChange={(e) => {
-            setPurpose(e.target.value);
-          }}
-          maxLength={300}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("notes")}</span>
-        <Textarea
-          rows={2}
-          value={notes}
-          onChange={(e) => {
-            setNotes(e.target.value);
-          }}
-          maxLength={500}
-        />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <FormSection columns={1}>
+        <Field label={t("fullName")} required error={shown(errors.fullName)}>
+          <Input
+            value={fullName}
+            onChange={(e) => {
+              setFullName(e.target.value);
+            }}
+            maxLength={160}
+            autoComplete="off"
+          />
+        </Field>
+        <Field label={t("organization")} optional>
+          <Input
+            value={organization}
+            onChange={(e) => {
+              setOrganization(e.target.value);
+            }}
+            maxLength={160}
+            autoComplete="off"
+          />
+        </Field>
+        <Field label={t("host")} required error={shown(errors.host)}>
+          <DirectoryPicker
+            profileKind={HOST_KINDS}
+            value={hostUserId}
+            onValueChange={setHostUserId}
+            labels={hostLabels}
+          />
+        </Field>
+        <Field label={t("date")} required error={shown(errors.date)}>
+          <DatePicker value={expectedDate} onChange={setExpectedDate} required />
+        </Field>
+        <Field label={t("purpose")} optional>
+          <Textarea
+            rows={2}
+            value={purpose}
+            onChange={(e) => {
+              setPurpose(e.target.value);
+            }}
+            maxLength={300}
+          />
+        </Field>
+        <Field label={t("notes")} optional>
+          <Textarea
+            rows={2}
+            value={notes}
+            onChange={(e) => {
+              setNotes(e.target.value);
+            }}
+            maxLength={500}
+          />
+        </Field>
+      </FormSection>
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={create.isPending} disabled={!canSubmit}>
+        <Button type="submit" loading={create.isPending}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

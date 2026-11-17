@@ -1,7 +1,16 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Checkbox, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  Checkbox,
+  DialogFooter,
+  Field,
+  Input,
+  Select,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -16,11 +25,16 @@ import { type CheckInInput, type Visit, useCheckInVisitMutation } from "../api";
 
 type IdType = CheckInInput["id_type"];
 
-const ID_TYPES: IdType[] = ["ktp", "sim", "kartu_pelajar", "kartu_pegawai", "other"];
+const ID_TYPES: Exclude<IdType, "">[] = ["ktp", "sim", "kartu_pelajar", "kartu_pegawai", "other"];
 
 /** Hosts are teachers or staff; students are never visited. */
 const HOST_KINDS: ProfileKind[] = ["teacher", "staff"];
 
+/**
+ * Signs a visitor in at the gate: who, from where, whom they came to see,
+ * why, and whether an ID was looked at (only its kind is kept). Save stays
+ * available; a submit with a gap names the field instead of doing nothing.
+ */
 export function CheckInForm({
   expectedGuestId,
   defaultFullName,
@@ -48,20 +62,24 @@ export function CheckInForm({
   const [purpose, setPurpose] = useState(defaultPurpose ?? "");
   const [idChecked, setIdChecked] = useState(false);
   const [idType, setIdType] = useState<IdType>("");
+  const [attempted, setAttempted] = useState(false);
 
-  const idTypeOptions = ID_TYPES.map((value) => ({
-    value,
-    label: t(`idTypes.${value || "none"}`),
-  }));
-
-  const canSubmit = fullName.trim() !== "" && hostUserId !== "" && (!idChecked || idType !== "");
+  const errors = {
+    fullName: fullName.trim() === "" ? t("errors.fullName") : undefined,
+    host: hostUserId === "" ? t("errors.host") : undefined,
+    idType: idChecked && idType === "" ? t("errors.idType") : undefined,
+  };
+  const valid = Object.values(errors).every((error) => error === undefined);
+  const shown = (error: string | undefined) => (attempted ? error : undefined);
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        if (!canSubmit) return;
+        setAttempted(true);
+        if (!valid || checkIn.isPending) return;
         checkIn.mutate(
           {
             expected_guest_id: expectedGuestId,
@@ -88,8 +106,7 @@ export function CheckInForm({
         );
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("fullName")}</span>
+      <Field label={t("fullName")} required error={shown(errors.fullName)}>
         <Input
           value={fullName}
           onChange={(e) => {
@@ -97,66 +114,61 @@ export function CheckInForm({
           }}
           placeholder={t("fullNamePlaceholder")}
           maxLength={160}
-          autoFocus
-          required
+          autoComplete="off"
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("organization")}</span>
+      </Field>
+      <Field label={t("organization")} optional>
         <Input
           value={organization}
           onChange={(e) => {
             setOrganization(e.target.value);
           }}
-          placeholder={t("organizationPlaceholder")}
           maxLength={160}
+          autoComplete="off"
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("host")}</span>
+      </Field>
+      <Field label={t("host")} required error={shown(errors.host)}>
         <DirectoryPicker
           profileKind={HOST_KINDS}
           value={hostUserId}
           onValueChange={setHostUserId}
           labels={hostLabels}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("purpose")}</span>
+      </Field>
+      <Field label={t("purpose")} optional>
         <Textarea
           rows={2}
           value={purpose}
           onChange={(e) => {
             setPurpose(e.target.value);
           }}
-          placeholder={t("purposePlaceholder")}
           maxLength={300}
         />
-      </label>
-      <div className="flex flex-col gap-2 rounded-md border border-border p-3">
-        <label className="flex items-center gap-2 text-[13px] font-medium">
-          <Checkbox
-            checked={idChecked}
-            onCheckedChange={(v) => {
-              setIdChecked(v === true);
-              if (v !== true) setIdType("");
-            }}
-          />
-          {t("idChecked")}
-        </label>
-        <p className="text-[12px] text-fg-muted">{t("idCheckedHint")}</p>
+      </Field>
+      <div className="flex flex-col gap-4">
+        <Checkbox
+          checked={idChecked}
+          label={t("idChecked")}
+          description={t("idCheckedHint")}
+          onCheckedChange={(v) => {
+            setIdChecked(v === true);
+            if (v !== true) setIdType("");
+          }}
+        />
         {idChecked && (
-          <Select
-            options={idTypeOptions.filter((o) => o.value !== "")}
-            value={idType}
-            onValueChange={(v) => {
-              setIdType(v as IdType);
-            }}
-            placeholder={t("idTypePlaceholder")}
-          />
+          <Field label={t("idType")} required error={shown(errors.idType)}>
+            <Select
+              options={ID_TYPES.map((value) => ({ value, label: t(`idTypes.${value}`) }))}
+              value={idType}
+              onValueChange={(v) => {
+                setIdType(v as IdType);
+              }}
+              placeholder={t("idTypePlaceholder")}
+            />
+          </Field>
         )}
       </div>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button
           type="button"
           variant="secondary"
@@ -166,10 +178,10 @@ export function CheckInForm({
         >
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={checkIn.isPending} disabled={!canSubmit}>
+        <Button type="submit" loading={checkIn.isPending}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }
