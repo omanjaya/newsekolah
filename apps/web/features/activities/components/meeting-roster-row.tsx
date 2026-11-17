@@ -72,6 +72,9 @@ export const MeetingRosterRow = memo(function MeetingRosterRow({
           const selected = status === code;
           const token = meetingStatusToken(code);
           return (
+            // One status of the meeting roster's per-student radio row, in
+            // attendance colours; no shared control draws per-option colours.
+            // eslint-disable-next-line design-system/no-raw-elements -- status segment, see above
             <button
               key={code}
               type="button"

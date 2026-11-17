@@ -177,6 +177,8 @@ export function EmptySlotCell({
 }): ReactElement {
   return (
     <td className={cn(CELL, HOLLOW, today && "bg-accent/5", current && CURRENT_EDGE)}>
+      {/* The whole empty cell of the timetable grid is the add target. */}
+      {/* eslint-disable-next-line design-system/no-raw-elements -- timetable cell target */}
       <button
         type="button"
         onClick={onClick}

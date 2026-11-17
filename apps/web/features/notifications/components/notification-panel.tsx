@@ -133,6 +133,9 @@ function PanelRow({
           {content}
         </Link>
       ) : (
+        // The same row as the Link above for a notification with no target:
+        // opening it only marks it read.
+        // eslint-disable-next-line design-system/no-raw-elements -- bell row, see above
         <button type="button" onClick={onOpen} className={rowClass}>
           {content}
         </button>
