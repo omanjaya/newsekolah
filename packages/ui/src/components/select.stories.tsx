@@ -67,6 +67,28 @@ function Gallery() {
           { value: "O", label: "O" },
         ]}
       />
+      {/* A colour dot per option, shown in the closed field too. */}
+      <Select
+        aria-label="Jenis kegiatan"
+        defaultValue="exam"
+        options={[
+          {
+            value: "holiday",
+            label: "Libur",
+            icon: <span className="size-2.5 rounded-full bg-category-red" />,
+          },
+          {
+            value: "exam",
+            label: "Ujian",
+            icon: <span className="size-2.5 rounded-full bg-category-blue" />,
+          },
+          {
+            value: "event",
+            label: "Kegiatan",
+            icon: <span className="size-2.5 rounded-full bg-category-green" />,
+          },
+        ]}
+      />
       <TeacherCombobox />
       <TeacherCombobox loading />
       <TeacherCombobox empty />

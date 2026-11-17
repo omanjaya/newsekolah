@@ -61,6 +61,27 @@ describe("Select", () => {
     expect(screen.getByText("Wali: Bu Rina")).toBeInTheDocument();
   });
 
+  it("shows an option's leading mark in the list and in the closed field", async () => {
+    render(
+      <Select
+        aria-label="Jenis kegiatan"
+        defaultValue="exam"
+        options={[
+          { value: "holiday", label: "Libur", icon: <span data-testid="dot-holiday" /> },
+          { value: "exam", label: "Ujian", icon: <span data-testid="dot-exam" /> },
+        ]}
+      />,
+    );
+    const trigger = screen.getByRole("combobox", { name: "Jenis kegiatan" });
+    expect(trigger).toHaveTextContent("Ujian");
+    expect(trigger).toContainElement(screen.getByTestId("dot-exam"));
+    // The mark is decorative: the option is named by its label alone.
+    await userEvent.click(trigger);
+    expect(screen.getByRole("option", { name: "Libur" })).toContainElement(
+      screen.getByTestId("dot-holiday"),
+    );
+  });
+
   it("is labelled, described and marked invalid by a surrounding Field", () => {
     render(
       <Field label="Kelas" error="Pilih salah satu">

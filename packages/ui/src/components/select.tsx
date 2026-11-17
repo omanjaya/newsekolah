@@ -23,6 +23,13 @@ export interface SelectOption {
   label: string;
   /** A second, muted line in the open list (not in the closed field). */
   description?: string;
+  /**
+   * A leading mark before the label, in the list and in the closed field:
+   * a Lucide icon (sized 16px for you) or a small colour dot, such as an
+   * event kind's category colour. Decorative; the label carries the
+   * meaning.
+   */
+  icon?: ReactNode;
   disabled?: boolean;
 }
 
@@ -130,7 +137,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
       >
         {/* Left aligned like an input, on one line: a long option is cut
             with an ellipsis rather than wrapping out of a fixed-height box. */}
-        <span className="min-w-0 flex-1 truncate text-left">
+        <span data-slot="select-value" className="min-w-0 flex-1 truncate text-left">
           <SelectPrimitive.Value placeholder={placeholder ?? labels.selectPlaceholder} />
         </span>
         {/* The chevron stays still, as on every dropdown field (Combobox,
@@ -169,7 +176,20 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
                 disabled={option.disabled}
                 description={option.description}
               >
-                {option.label}
+                {option.icon === undefined ? (
+                  option.label
+                ) : (
+                  // ItemText is what the closed field shows, so the mark
+                  // comes along; there the label still ends in an ellipsis.
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span aria-hidden="true" className="flex shrink-0 [&>svg]:size-4">
+                      {option.icon}
+                    </span>
+                    <span className="min-w-0 [[data-slot=select-value]_&]:truncate">
+                      {option.label}
+                    </span>
+                  </span>
+                )}
               </SelectItem>
             ))}
           </SelectPrimitive.Viewport>
