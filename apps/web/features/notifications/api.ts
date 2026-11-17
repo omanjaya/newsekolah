@@ -4,56 +4,20 @@ import { queryKeys } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
-import { isModuleEnabled, type FeatureModule } from "../../lib/modules/feature-modules";
+import { isModuleEnabled } from "../../lib/modules/feature-modules";
 import { useSession } from "../../lib/session/session-provider";
 
-/** Every notification kind the API emits; drives the preferences matrix. */
-export const NOTIFICATION_KINDS = [
-  "announcement_published",
-  "attendance_submitted",
-  "substitution_requested",
-  "substitution_responded",
-  "leave_request_submitted",
-  "leave_request_reviewed",
-  "leave_request_issued",
-  "exit_permit_stage_changed",
-  "exit_permit_issued",
-  "exit_permit_exited",
-  "late_arrival_opened",
-  "late_arrival_updated",
-] as const;
-export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+import { NOTIFICATION_KINDS, availableNotificationKinds, type NotificationKind } from "./kinds";
 
-/**
- * The feature module that emits each kind; `undefined` for an always-on
- * one. A switched-off module sends nothing, so its kinds are left out of
- * the preference, default and filter lists (the stored preferences are
- * kept and listed again once it is back on).
- */
-export const NOTIFICATION_KIND_MODULE: Record<NotificationKind, FeatureModule | undefined> = {
-  announcement_published: "announcements",
-  attendance_submitted: undefined,
-  substitution_requested: undefined,
-  substitution_responded: undefined,
-  leave_request_submitted: "permits",
-  leave_request_reviewed: "permits",
-  leave_request_issued: "permits",
-  exit_permit_stage_changed: "permits",
-  exit_permit_issued: "permits",
-  exit_permit_exited: "permits",
-  late_arrival_opened: "permits",
-  late_arrival_updated: "permits",
-};
-
-/** The kinds of the modules that are on, in list order. */
-export function availableNotificationKinds(
-  isEnabled: (module: FeatureModule) => boolean,
-): NotificationKind[] {
-  return NOTIFICATION_KINDS.filter((kind) => {
-    const module = NOTIFICATION_KIND_MODULE[kind];
-    return !module || isEnabled(module);
-  });
-}
+// The kind list lives in kinds.ts, free of React, so the realtime hooks can
+// share it; re-exported here for the screens that already import from api.
+export {
+  NOTIFICATION_KINDS,
+  NOTIFICATION_KIND_MODULE,
+  availableNotificationKinds,
+  notificationKindsOf,
+  type NotificationKind,
+} from "./kinds";
 
 /** `availableNotificationKinds` for the signed-in reader's school. */
 export function useNotificationKinds(): NotificationKind[] {

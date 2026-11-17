@@ -391,7 +391,11 @@
         "exit_permit_issued": "Exit permit issued",
         "exit_permit_exited": "Student left the gate",
         "late_arrival_opened": "Late arrival recorded",
-        "late_arrival_updated": "Late arrival updated"
+        "late_arrival_updated": "Late arrival updated",
+        "warning_letter_issued": "Warning letter issued",
+        "discipline_threshold_reached": "Discipline threshold reached",
+        "library_reservation_ready": "Book reservation ready for pickup",
+        "library_loan_due_reminder": "Library loan due reminder"
       },
       "seeAll": "See all",
       "searchPlaceholder": "Search notification title or body",

@@ -391,7 +391,11 @@
         "exit_permit_issued": "Izin keluar diterbitkan",
         "exit_permit_exited": "Siswa keluar gerbang",
         "late_arrival_opened": "Keterlambatan tercatat",
-        "late_arrival_updated": "Keterlambatan diperbarui"
+        "late_arrival_updated": "Keterlambatan diperbarui",
+        "warning_letter_issued": "Surat peringatan diterbitkan",
+        "discipline_threshold_reached": "Ambang batas disiplin tercapai",
+        "library_reservation_ready": "Pesanan buku siap diambil",
+        "library_loan_due_reminder": "Pengingat jatuh tempo perpustakaan"
       },
       "seeAll": "Lihat semua",
       "searchPlaceholder": "Cari judul atau isi notifikasi",
