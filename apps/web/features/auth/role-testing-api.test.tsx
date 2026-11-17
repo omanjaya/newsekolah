@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getAccessToken, setAccessToken } from "../../lib/api/access-token";
+import { CLEAR_ACCESS_COOKIE_PATH } from "../../lib/session/clear-server-access-cookie";
 import type { Me } from "../../lib/session/session-provider";
 import {
   clearSimulation,
@@ -53,8 +54,8 @@ describe("role-testing actor transition", () => {
     const calls: string[] = [];
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => {
-        calls.push("clear-sat");
+      vi.fn((url: string) => {
+        calls.push(url === CLEAR_ACCESS_COOKIE_PATH ? "clear-sat" : url);
         return Promise.resolve(new Response(null, { status: 204 }));
       }),
     );

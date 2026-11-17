@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { setAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
 import { useHasAccessToken } from "../../lib/api/use-has-access-token";
+import { clearServerAccessCookie } from "../../lib/session/clear-server-access-cookie";
 import { useSession } from "../../lib/session/session-provider";
 import { suspendSimulation, syncSimulationIdentity } from "../../lib/simulation/clock";
 
@@ -41,17 +42,11 @@ export function useRoleTestingQuery(filter: RoleTestingFilter = {}, enabled = tr
 }
 
 /**
- * `sat` is a separate httpOnly access cookie used by Next server rendering.
- * Remove it before changing actors so a reload cannot prefetch the old `/v1/me`.
+ * Starts testing as another account, or (with `null`) goes back to the
+ * superadmin's own. Removes the server access cookie first, so neither a
+ * reload nor the next server render can load the previous actor's
+ * `/v1/me`; a switch that cannot remove it does not happen.
  */
-async function clearServerAccessCookie(): Promise<void> {
-  const response = await fetch("/api/role-testing/clear-access-cookie", {
-    method: "POST",
-    credentials: "same-origin",
-  });
-  if (!response.ok) throw new Error("Could not clear server access cookie");
-}
-
 export function useRoleTestingSwitchMutation() {
   const client = useApiClient();
   const queryClient = useQueryClient();
