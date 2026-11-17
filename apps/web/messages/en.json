@@ -731,9 +731,11 @@
     },
     "forbidden": {
       "title": "You have no access to this page",
-      "body": "Ask the school's admin for access if you need this page.",
+      "body": "Your account does not have permission for this page. Contact your school admin if you need it.",
       "backHome": "Back to home",
-      "back": "Previous page"
+      "back": "Previous page",
+      "bodyAdmin": "Your account does not have permission for this page.",
+      "platformBody": "This page is for platform operators only."
     },
     "moduleUnavailable": {
       "title": "This feature is not turned on",

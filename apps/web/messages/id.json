@@ -731,9 +731,11 @@
     },
     "forbidden": {
       "title": "Tidak ada akses ke halaman ini",
-      "body": "Minta admin sekolah membuka aksesnya bila Anda memerlukan halaman ini.",
+      "body": "Akun Anda belum punya izin untuk halaman ini. Hubungi admin sekolah bila Anda memerlukannya.",
       "backHome": "Kembali ke beranda",
-      "back": "Halaman sebelumnya"
+      "back": "Halaman sebelumnya",
+      "bodyAdmin": "Akun Anda belum punya izin untuk halaman ini.",
+      "platformBody": "Halaman ini khusus operator platform."
     },
     "moduleUnavailable": {
       "title": "Fitur ini belum diaktifkan",
