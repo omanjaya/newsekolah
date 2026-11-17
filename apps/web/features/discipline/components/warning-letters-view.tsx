@@ -18,7 +18,6 @@ import { WarningLetterTemplateView } from "./warning-letter-template-view";
  */
 export function WarningLettersView(): ReactElement {
   const t = useTranslations("app.discipline.warningLetters");
-  const tNav = useTranslations("app.shell.nav.items");
   const canEditTemplate = useCan("manage_settings");
   const [tab, setTab] = useUrlState<string>(
     "tab",
@@ -27,7 +26,9 @@ export function WarningLettersView(): ReactElement {
   );
 
   return (
-    <AppPage variant="fit" title={t("title")} eyebrow={tNav("discipline")}>
+    // No title or eyebrow of its own: the area's header (h1 "Tata tertib")
+    // stays put between its tabs, and the current tab names this page.
+    <AppPage variant="fit">
       {canEditTemplate ? (
         <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
           <TabsList>

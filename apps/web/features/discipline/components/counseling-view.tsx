@@ -44,7 +44,6 @@ import { CounselingForm } from "./counseling-form";
 const PAGE_SIZE = 50;
 
 export function CounselingView(): ReactElement {
-  const tNav = useTranslations("app.shell.nav.items");
   const t = useTranslations("app.discipline.counseling");
   const locale = useLocale() as Locale;
   const toast = useToast();
@@ -112,10 +111,10 @@ export function CounselingView(): ReactElement {
   );
 
   return (
+    // No title or eyebrow of its own: the area's header (h1 "Konseling BK")
+    // stays put between its tabs, and the current tab names this page.
     <AppPage
       variant="fit"
-      title={t("title")}
-      eyebrow={tNav("counseling")}
       primaryAction={
         canManage ? (
           <Button
@@ -177,9 +176,11 @@ export function CounselingView(): ReactElement {
                     icon={<domainIcons.users aria-hidden="true" />}
                     title={t("emptyTitle")}
                     description={t("emptyBody")}
+                    // The header carries the primary; the empty list repeats it quietly.
                     action={
                       canManage ? (
                         <Button
+                          variant="secondary"
                           icon={<Plus />}
                           onClick={() => {
                             setEditing("new");

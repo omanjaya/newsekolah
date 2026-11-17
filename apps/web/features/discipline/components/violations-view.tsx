@@ -1,7 +1,17 @@
 "use client";
 
-import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
-import { Plus } from "lucide-react";
+import {
+  Button,
+  Sheet,
+  SheetContent,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  domainIcons,
+  type PageHeaderAction,
+} from "@newsekolah/ui";
+import { Plus, Settings2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -16,26 +26,24 @@ import { DisciplinePolicyView } from "./discipline-policy-view";
 import { ViolationCatalogView } from "./violation-catalog-view";
 import { ViolationsLedgerView } from "./violations-ledger-view";
 
+type Editor = "catalog" | "policy";
+
 /**
- * Pelanggaran: the point ledger, the students due a warning letter, and
- * (for whoever manages them) the violation catalog and the letter policy.
- * Issued letters have one home, the Surat peringatan page next door.
+ * Pelanggaran: the point ledger and the students due a warning letter, as
+ * tabs. The settings behind them (the violation catalog and the letter
+ * policy) are header actions for whoever manages them, each opening its
+ * editor in a sheet, so the tabs keep to the data and fit a phone. Issued
+ * letters have one home, the Surat peringatan page next door.
  */
 export function ViolationsView(): ReactElement {
   const t = useTranslations("app.discipline.violations");
-  const tNav = useTranslations("app.shell.nav.items");
   const canViewLetters = useCan("view_discipline");
   const canRecord = useCan("record_violations");
   const canManageCatalog = useCan("manage_discipline_catalog");
   const canManagePolicy = useCan("manage_settings");
   const [tab, setTab] = useUrlState<string>(
     "tab",
-    [
-      "ledger",
-      ...(canViewLetters ? ["atRisk"] : []),
-      ...(canManageCatalog ? ["catalog"] : []),
-      ...(canManagePolicy ? ["policy"] : []),
-    ],
+    ["ledger", ...(canViewLetters ? ["atRisk"] : [])],
     "ledger",
   );
   const [recording, setRecording] = useState(false);
@@ -45,14 +53,46 @@ export function ViolationsView(): ReactElement {
   }
   useQuickAction("record-violation", record, canRecord);
 
-  const showTabs = canViewLetters || canManageCatalog || canManagePolicy;
+  // The sheet keeps its last editor while it closes, so its title and body
+  // do not change under the closing animation.
+  const [editor, setEditor] = useState<Editor>("catalog");
+  const [editorOpen, setEditorOpen] = useState(false);
+  function openEditor(next: Editor) {
+    setEditor(next);
+    setEditorOpen(true);
+  }
+  const secondaryActions: PageHeaderAction[] = [
+    ...(canManageCatalog
+      ? [
+          {
+            label: t("tabs.catalog"),
+            icon: <domainIcons.violation />,
+            onSelect: () => {
+              openEditor("catalog");
+            },
+          },
+        ]
+      : []),
+    ...(canManagePolicy
+      ? [
+          {
+            label: t("tabs.policy"),
+            icon: <Settings2 />,
+            onSelect: () => {
+              openEditor("policy");
+            },
+          },
+        ]
+      : []),
+  ];
+
   const ledger = <ViolationsLedgerView recording={recording} onRecordingChange={setRecording} />;
 
   return (
+    // No title or eyebrow of its own: the area's header (h1 "Tata tertib")
+    // stays put between its tabs, and the current tab names this page.
     <AppPage
       variant="fit"
-      title={t("title")}
-      eyebrow={tNav("discipline")}
       primaryAction={
         canRecord ? (
           <Button icon={<Plus />} onClick={record}>
@@ -60,36 +100,35 @@ export function ViolationsView(): ReactElement {
           </Button>
         ) : undefined
       }
+      secondaryActions={secondaryActions}
     >
-      {showTabs ? (
+      {canViewLetters ? (
         <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
           <TabsList>
             <TabsTrigger value="ledger">{t("tabs.ledger")}</TabsTrigger>
-            {canViewLetters && <TabsTrigger value="atRisk">{t("tabs.atRisk")}</TabsTrigger>}
-            {canManageCatalog && <TabsTrigger value="catalog">{t("tabs.catalog")}</TabsTrigger>}
-            {canManagePolicy && <TabsTrigger value="policy">{t("tabs.policy")}</TabsTrigger>}
+            <TabsTrigger value="atRisk">{t("tabs.atRisk")}</TabsTrigger>
           </TabsList>
           <TabsContent value="ledger" className="pt-4 md:min-h-0 md:flex-1">
             {ledger}
           </TabsContent>
-          {canViewLetters && (
-            <TabsContent value="atRisk" className="pt-4 md:min-h-0 md:flex-1">
-              <AtRiskPanel />
-            </TabsContent>
-          )}
-          {canManageCatalog && (
-            <TabsContent value="catalog" className="pt-4 md:min-h-0 md:flex-1">
-              <ViolationCatalogView />
-            </TabsContent>
-          )}
-          {canManagePolicy && (
-            <TabsContent value="policy" className="pt-4 md:min-h-0 md:flex-1">
-              <DisciplinePolicyView />
-            </TabsContent>
-          )}
+          <TabsContent value="atRisk" className="pt-4 md:min-h-0 md:flex-1">
+            <AtRiskPanel />
+          </TabsContent>
         </Tabs>
       ) : (
         <div className="flex flex-col md:min-h-0 md:flex-1">{ledger}</div>
+      )}
+
+      {secondaryActions.length > 0 && (
+        <Sheet open={editorOpen} onOpenChange={setEditorOpen}>
+          <SheetContent
+            side="right"
+            size={editor === "catalog" ? "lg" : "md"}
+            title={editor === "catalog" ? t("tabs.catalog") : t("tabs.policy")}
+          >
+            {editor === "catalog" ? <ViolationCatalogView /> : <DisciplinePolicyView />}
+          </SheetContent>
+        </Sheet>
       )}
     </AppPage>
   );
