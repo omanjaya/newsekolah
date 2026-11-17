@@ -7,16 +7,14 @@ import {
   DataTable,
   Dialog,
   DialogContent,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   EmptyState,
+  cn,
   useToast,
   type DataTableFilterDef,
+  type PageHeaderAction,
 } from "@newsekolah/ui";
 import type { PaginationState } from "@tanstack/react-table";
-import { Download, FileSpreadsheet, FileText, NotebookPen, Plus } from "lucide-react";
+import { FileSpreadsheet, FileText, NotebookPen, Plus } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -190,28 +188,29 @@ export function JournalView(): ReactElement {
     onDelete: setPendingDelete,
   });
 
-  const downloads = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="secondary" icon={<Download />} loading={downloadingDocx}>
-          {t("download")}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          icon={<FileSpreadsheet />}
-          onSelect={() => {
-            setExportOpen(true);
-          }}
-        >
-          {t("exportXlsx")}
-        </DropdownMenuItem>
-        <DropdownMenuItem icon={<FileText />} onSelect={() => void handleDocxExport()}>
-          {t("exportDocx")}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+  // The downloads are page actions, not table tools: buttons beside the
+  // title from 640px up, folded into the title line's menu on a phone,
+  // instead of a full-width bar above the search.
+  const downloads: PageHeaderAction[] = [
+    {
+      label: t("downloadReport"),
+      icon: <FileSpreadsheet />,
+      onSelect: () => {
+        setExportOpen(true);
+      },
+    },
+    {
+      label: t("downloadDocx"),
+      icon: <FileText />,
+      disabled: downloadingDocx,
+      onSelect: () => void handleDocxExport(),
+    },
+  ];
+
+  // The backlog rail takes its 22rem column only while it shows something
+  // (loading, an error, or the week's lessons); a reader without a
+  // timetable gets the history at the page's full width.
+  const hasRail = todayData.loading || todayData.isError || todayData.groups.length > 0;
 
   return (
     // The history fills the screen on desktop and scrolls inside its table,
@@ -230,6 +229,7 @@ export function JournalView(): ReactElement {
           {t("new")}
         </Button>
       }
+      secondaryActions={downloads}
     >
       <ReportExportDialog
         open={exportOpen}
@@ -240,7 +240,12 @@ export function JournalView(): ReactElement {
         onExport={handleReportExport}
       />
 
-      <div className="flex flex-col gap-6 md:min-h-0 md:flex-1 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:grid-rows-[minmax(0,1fr)]">
+      <div
+        className={cn(
+          "flex flex-col gap-6 md:min-h-0 md:flex-1 lg:grid lg:grid-rows-[minmax(0,1fr)]",
+          hasRail ? "lg:grid-cols-[minmax(0,1fr)_22rem]" : "lg:grid-cols-[minmax(0,1fr)]",
+        )}
+      >
         <JournalTodayPanel className="lg:order-last lg:max-h-full lg:self-start" />
         <div className="flex min-h-96 flex-col md:min-h-0 md:flex-1">
           <DataTable
@@ -267,7 +272,6 @@ export function JournalView(): ReactElement {
               dateRangeInvalid: t("filters.invalidRange"),
             }}
             toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
-            toolbarActions={downloads}
             isLoading={list.isLoading}
             error={list.error ?? list.isError}
             onRetry={() => {
@@ -275,21 +279,13 @@ export function JournalView(): ReactElement {
             }}
             getRowId={(item) => item.id}
             fillHeight
+            // "Jurnal baru" is already the header's one primary action, so
+            // the empty history only explains itself.
             emptyState={
               <EmptyState
                 icon={<NotebookPen aria-hidden="true" />}
                 title={t("emptyTitle")}
                 description={t("emptyBody")}
-                action={
-                  <Button
-                    icon={<Plus />}
-                    onClick={() => {
-                      setEditing("new");
-                    }}
-                  >
-                    {t("new")}
-                  </Button>
-                }
               />
             }
           />
