@@ -22,10 +22,12 @@ test("guru: opens an attendance session and sees the roster", async ({ page }) =
   await expectAreaPage(page, "Presensi dan jurnal", "Presensi");
   await waitForSkeletonsGone(page);
 
-  // "Isi presensi" opens today's not-yet-submitted session, "Buka" an
-  // already-submitted one -- either way this only opens the session, it
-  // never submits/saves it.
-  const openSession = page.getByRole("button", { name: /Isi presensi|Buka/ }).first();
+  // "Isi presensi" opens today's not-yet-saved session, "Lihat presensi" a
+  // saved one, "Buka" a submitted one -- either way this only opens the
+  // session, it never submits/saves it.
+  const openSession = page
+    .getByRole("button", { name: /^(Isi presensi|Lihat presensi|Buka)$/ })
+    .first();
   await expect(openSession).toBeVisible({ timeout: 20_000 });
   await openSession.click();
 

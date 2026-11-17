@@ -12,7 +12,7 @@ import { ACTORS, assertNoNavigation, closeAll, expect, loginAs, test } from "./f
  * cmd/seed gives X-A one schedule block spanning every lesson period of
  * the day, every day of the week (apps/api/cmd/seed/operations.go), so
  * exactly one class is always "in session" here regardless of when this
- * spec runs -- the dashboard hero settles at "1 dari 1 sesi sudah
+ * spec runs -- the dashboard hero settles at "1 dari 1 kelas sudah
  * dipresensi" once saved, which is what this spec waits for rather than a
  * before/after delta: re-running the suite the same day re-opens the same
  * (already submitted) session in correction mode, and a correction save
@@ -43,13 +43,21 @@ test("attendance: teacher saves -> principal dashboard progress live", async ({ 
 
   try {
     await principal.page.goto("/dashboard");
-    await expect(principal.page.getByText("Sesi dipresensi")).toBeVisible({
+    // The home's tile row: "Kelas dipresensi" with the submitted/total count.
+    await expect(principal.page.getByText("Kelas dipresensi", { exact: true })).toBeVisible({
       timeout: 20_000,
     });
 
     await homeroom.page.goto("/attendance");
-    await expect(homeroom.page.getByRole("heading", { level: 1, name: "Presensi" })).toBeVisible();
-    const openSession = homeroom.page.getByRole("button", { name: /Isi presensi|Buka/ }).first();
+    await expect(
+      homeroom.page.getByRole("heading", { level: 1, name: "Presensi dan jurnal" }),
+    ).toBeVisible();
+    // The session card's action: "Isi presensi" before today's save, "Lihat
+    // presensi" after it (a rerun the same day), "Buka" for a submitted one
+    // (features/attendance/components/attendance-session-list.tsx).
+    const openSession = homeroom.page
+      .getByRole("button", { name: /^(Isi presensi|Lihat presensi|Buka)$/ })
+      .first();
     await expect(openSession).toBeVisible({ timeout: 20_000 });
     await openSession.click();
     await homeroom.page.waitForURL(/\/attendance\/[^/?]+/);
@@ -67,7 +75,7 @@ test("attendance: teacher saves -> principal dashboard progress live", async ({ 
     });
 
     await assertNoNavigation(principal.page, async () => {
-      await expect(principal.page.getByText("1 dari 1 sesi sudah dipresensi")).toBeVisible({
+      await expect(principal.page.getByText("1 dari 1 kelas sudah dipresensi")).toBeVisible({
         timeout: 20_000,
       });
     });

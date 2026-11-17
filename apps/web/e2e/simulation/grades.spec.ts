@@ -23,8 +23,10 @@ test("grades: teacher publishes -> student grades page live", async ({ browser }
     // visible *after* this run's own publish, not that it was absent before.
 
     await teacher.page.goto("/grading");
-    await expect(teacher.page.getByLabel("Pilih kelas")).toHaveText(/X-A/);
-    await expect(teacher.page.getByLabel("Pilih mapel")).toHaveText(/Matematika/);
+    // One picker now names the teaching assignment: "X-A · Matematika".
+    const assignment = teacher.page.getByRole("combobox", { name: "Kelas dan mapel" });
+    await expect(assignment).toHaveText(/X-A/);
+    await expect(assignment).toHaveText(/Matematika/);
 
     const scoreCell = teacher.page.getByLabel("Nilai TG1 untuk Siswa Contoh");
     await expect(scoreCell).toBeVisible({ timeout: 20_000 });
@@ -38,7 +40,9 @@ test("grades: teacher publishes -> student grades page live", async ({ browser }
     await scoreCell.fill(nextValue);
     await scoreCell.press("Tab");
 
-    await teacher.page.getByRole("button", { name: "Simpan semua" }).click();
+    // The save bar names the one component edited ("Simpan TG1"); it reads
+    // "Simpan semua" only when edits span several components.
+    await teacher.page.getByRole("button", { name: "Simpan TG1", exact: true }).click();
     await expect(teacher.page.getByText(/Nilai tersimpan pukul/)).toBeVisible({ timeout: 20_000 });
 
     const publishToggle = teacher.page.getByRole("switch", { name: "Terbitkan ke siswa" });
