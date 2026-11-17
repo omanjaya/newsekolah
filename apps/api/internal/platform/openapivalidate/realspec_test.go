@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
+	platformdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
 )
 
 // TestNewMiddleware_RealSpecBuildsAndDecomposesLoginErrors exercises the
@@ -69,5 +70,42 @@ func TestNewMiddleware_RealSpecSkipsUndocumentedAndHealthRoutes(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Errorf("%s: expected 200, got %d: %s", path, rec.Code, rec.Body.String())
 		}
+	}
+}
+
+// TestNewMiddleware_RealSpecAcceptsEveryToggleableModule is the regression
+// test for the console toggle the validator used to reject: a PUT of any
+// module in platform/domain.AllModules (visitors, staff_attendance and the
+// other Fase 6 modules included) must reach the handler in enforce mode,
+// while a name outside the enum is still refused with 400.
+func TestNewMiddleware_RealSpecAcceptsEveryToggleableModule(t *testing.T) {
+	doc, err := api.GetSpec()
+	if err != nil {
+		t.Fatalf("api.GetSpec: %v", err)
+	}
+	mw, err := NewMiddleware(doc, ModeEnforce, discardLogger())
+	if err != nil {
+		t.Fatalf("NewMiddleware over the real spec: %v", err)
+	}
+	put := func(module string) (*httptest.ResponseRecorder, bool) {
+		var reached bool
+		path := "/v1/platform/tenants/7b0c9a52-3c1e-4c55-9d43-2f1f1b6b1a01/flags/" + module
+		req := httptest.NewRequest(http.MethodPut, path, strings.NewReader(`{"enabled":false}`))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		mw(echoNext(&reached)).ServeHTTP(rec, req)
+		return rec, reached
+	}
+
+	for _, m := range platformdomain.AllModules {
+		rec, reached := put(string(m))
+		if !reached || rec.Code != http.StatusOK {
+			t.Errorf("%s: expected the request to reach the handler, got %d: %s", m, rec.Code, rec.Body.String())
+		}
+	}
+
+	rec, reached := put("not_a_module")
+	if reached || rec.Code != http.StatusBadRequest {
+		t.Errorf("not_a_module: expected 400 before the handler, got %d (reached=%v)", rec.Code, reached)
 	}
 }

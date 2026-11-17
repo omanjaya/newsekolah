@@ -87,6 +87,34 @@ func TestEveryToggleableModuleOwnsOperations(t *testing.T) {
 	}
 }
 
+// TestPlatformModuleEnumMatchesAllModules fails when the OpenAPI
+// PlatformModule enum drifts from platform/domain.AllModules: a module
+// missing from the enum makes the request validator reject the console's
+// toggle for it (400 VALIDATION in enforce mode) and keeps the typed web
+// client from naming it at all.
+func TestPlatformModuleEnumMatchesAllModules(t *testing.T) {
+	doc, err := api.GetSpec()
+	require.NoError(t, err)
+	schema, ok := doc.Components.Schemas["PlatformModule"]
+	require.True(t, ok, "components.schemas.PlatformModule is missing")
+
+	enum := make([]string, len(schema.Value.Enum))
+	for i, v := range schema.Value.Enum {
+		s, isString := v.(string)
+		require.True(t, isString, "PlatformModule enum value %v is not a string", v)
+		enum[i] = s
+	}
+	names := make([]string, len(platformdomain.AllModules))
+	for i, m := range platformdomain.AllModules {
+		names[i] = string(m)
+	}
+	require.Equal(t, names, enum, "PlatformModule enum must list AllModules, in the same order")
+
+	for _, m := range platformdomain.AllModules {
+		require.True(t, api.PlatformModule(m).Valid(), "generated api.PlatformModule does not accept %q; regenerate", m)
+	}
+}
+
 type stubFlags struct {
 	enabled bool
 	err     error

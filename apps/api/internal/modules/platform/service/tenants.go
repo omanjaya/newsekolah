@@ -6,10 +6,13 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
 )
 
-// TenantDetail is a tenant's health summary plus its module flags, for the
-// console's per-tenant panel.
+// TenantDetail is a tenant's health summary plus the effective state of
+// every toggleable module (domain.AllModules order, a module without a
+// stored feature_flags row reported as enabled), for the console's
+// per-tenant panel.
 type TenantDetail struct {
 	domain.TenantHealth
 	Flags []domain.ModuleFlag
@@ -25,12 +28,11 @@ type CreateTenantResult struct {
 
 // ListTenants returns every tenant with its health summary: user count,
 // active academic year, last recorded activity, and the storage bucket
-// its documents live in.
+// its documents live in. In single-tenant mode it lists only the
+// deployment's own tenant (the one the request resolved to), or nothing
+// when the context carries no tenant.
 func (s *Service) ListTenants(ctx context.Context) ([]domain.TenantHealth, error) {
-	if err := s.guard(); err != nil {
-		return nil, err
-	}
-	tenants, err := s.repo.ListTenants(ctx)
+	tenants, err := s.tenantsInScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -45,9 +47,30 @@ func (s *Service) ListTenants(ctx context.Context) ([]domain.TenantHealth, error
 	return out, nil
 }
 
-// GetTenantDetail returns one tenant's health summary and module flags.
+// tenantsInScope is every tenant in multi-tenant mode, and only the
+// request's own tenant in single-tenant mode.
+func (s *Service) tenantsInScope(ctx context.Context) ([]domain.Tenant, error) {
+	if s.mode != config.TenancySingle {
+		return s.repo.ListTenants(ctx)
+	}
+	own, ok := requestTenant(ctx)
+	if !ok {
+		return []domain.Tenant{}, nil
+	}
+	t, found, err := s.repo.GetTenant(ctx, own)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return []domain.Tenant{}, nil
+	}
+	return []domain.Tenant{t}, nil
+}
+
+// GetTenantDetail returns one tenant's health summary and the effective
+// state of every module (see TenantDetail).
 func (s *Service) GetTenantDetail(ctx context.Context, id uuid.UUID) (TenantDetail, error) {
-	if err := s.guard(); err != nil {
+	if err := s.scopeSingle(ctx, id); err != nil {
 		return TenantDetail{}, err
 	}
 	t, ok, err := s.repo.GetTenant(ctx, id)
@@ -61,16 +84,16 @@ func (s *Service) GetTenantDetail(ctx context.Context, id uuid.UUID) (TenantDeta
 	if err != nil {
 		return TenantDetail{}, err
 	}
-	var flags []domain.ModuleFlag
+	var stored []domain.ModuleFlag
 	err = s.withTx(ctx, id, func(ctx context.Context) error {
 		var err error
-		flags, err = s.repo.ListFeatureFlags(ctx, id)
+		stored, err = s.repo.ListFeatureFlags(ctx, id)
 		return err
 	})
 	if err != nil {
 		return TenantDetail{}, err
 	}
-	return TenantDetail{TenantHealth: health, Flags: flags}, nil
+	return TenantDetail{TenantHealth: health, Flags: effectiveFlags(stored)}, nil
 }
 
 func (s *Service) health(ctx context.Context, t domain.Tenant) (domain.TenantHealth, error) {
@@ -114,7 +137,7 @@ func (s *Service) health(ctx context.Context, t domain.Tenant) (domain.TenantHea
 // mode (cleanup itself failing and leaving the same half-provisioned
 // tenant behind).
 func (s *Service) CreateTenant(ctx context.Context, in domain.TenantInput) (CreateTenantResult, error) {
-	if err := s.guard(); err != nil {
+	if err := s.guardMulti(); err != nil {
 		return CreateTenantResult{}, err
 	}
 	if err := in.Validate(); err != nil {
@@ -156,7 +179,7 @@ func (s *Service) ResumeTenant(ctx context.Context, id uuid.UUID) (domain.Tenant
 }
 
 func (s *Service) setStatus(ctx context.Context, id uuid.UUID, status domain.TenantStatus) (domain.Tenant, error) {
-	if err := s.guard(); err != nil {
+	if err := s.guardMulti(); err != nil {
 		return domain.Tenant{}, err
 	}
 	t, ok, err := s.repo.UpdateTenantStatus(ctx, id, status)
@@ -173,7 +196,7 @@ func (s *Service) setStatus(ctx context.Context, id uuid.UUID, status domain.Ten
 // verification is a separate concern this console does not implement yet
 // (see the report at the end of this slice).
 func (s *Service) UpdateTenantDomain(ctx context.Context, id uuid.UUID, host string) (domain.Tenant, error) {
-	if err := s.guard(); err != nil {
+	if err := s.guardMulti(); err != nil {
 		return domain.Tenant{}, err
 	}
 	if !domain.ValidHost(host) {

@@ -1,9 +1,9 @@
 // Command modules lists, enables and disables a school's feature modules
 // (the feature_flags table) straight against the database, for the operator
-// of an install without the platform console. Every current deployment runs
-// TENANCY_MODE=single, where the console's flag endpoints refuse but the
-// flags themselves are still enforced, so this is the supported way to
-// switch a module off there; it works the same in multi-tenant mode.
+// of an install over SSH: when no platform superadmin can sign in to the
+// console, or from a deploy script. The console's flag endpoints serve the
+// same flags in both tenancy modes (in TENANCY_MODE=single, scoped to the
+// deployment's own school); this command works the same in either mode.
 //
 //	modules list [--tenant <slug>]
 //	modules enable <module>... [--tenant <slug>]

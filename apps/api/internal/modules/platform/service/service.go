@@ -1,8 +1,15 @@
 // Package service implements the platform console's use cases: listing
 // tenants with a health summary, provisioning a tenant and its first
 // admin, suspend/resume, custom domains, per-tenant module flags, and
-// tenant data exports. Every method refuses outright when the deployment
-// runs in single-tenant mode (docs/12-roadmap.md Fase 3).
+// tenant data exports (docs/12-roadmap.md Fase 3).
+//
+// In single-tenant mode the console still serves the deployment's own
+// school: listing it, reading its detail, and listing and toggling its
+// module flags work, scoped to the tenant the request resolved to (see
+// scopeSingle). The actions that only make sense with several tenants --
+// creating, suspending or resuming a tenant, setting a custom domain, and
+// tenant data exports -- refuse with domain.ErrTenancyDisabled (see
+// guardMulti).
 package service
 
 import (
@@ -122,11 +129,51 @@ func New(pool *pgxpool.Pool, repo Repository, admin IdentityProvisioner, jobs Jo
 	return &Service{pool: pool, repo: repo, admin: admin, jobs: jobs, storage: storage, clock: clk, mode: mode, bucket: bucket, alertsSealer: alertsSealer}
 }
 
-// guard refuses every operation outright in single-tenant mode: one school
-// deployment has exactly one tenant and no console to operate on.
-func (s *Service) guard() error {
+// TenancyMode reports how the deployment runs, so the console can hide the
+// multi-tenant-only actions guardMulti refuses.
+func (s *Service) TenancyMode() config.TenancyMode {
+	return s.mode
+}
+
+// guardMulti refuses, in single-tenant mode, the actions that only make
+// sense with several tenants: creating, suspending or resuming a tenant,
+// setting its custom domain, and exporting its data. A single-school
+// deployment has exactly one tenant, provisioned at install time.
+func (s *Service) guardMulti() error {
 	if s.mode == config.TenancySingle {
 		return domain.ErrTenancyDisabled
+	}
+	return nil
+}
+
+type requestTenantKey struct{}
+
+// WithRequestTenant records the tenant the HTTP request resolved to (the
+// tenant and auth middleware's tenant id), which scopes the console in
+// single-tenant mode. The transport sets it on every console call; the
+// service never reads the HTTP context itself.
+func WithRequestTenant(ctx context.Context, tenantID uuid.UUID) context.Context {
+	return context.WithValue(ctx, requestTenantKey{}, tenantID)
+}
+
+func requestTenant(ctx context.Context) (uuid.UUID, bool) {
+	id, ok := ctx.Value(requestTenantKey{}).(uuid.UUID)
+	return id, ok
+}
+
+// scopeSingle limits a console read or flag change to the deployment's own
+// tenant in single-tenant mode: the tenant the request resolved to (see
+// WithRequestTenant). Any other id, or a context without a request tenant,
+// answers ErrTenantNotFound, the same as an id that does not exist, so the
+// console never reaches a tenant row the deployment does not serve. In
+// multi-tenant mode every tenant is in scope.
+func (s *Service) scopeSingle(ctx context.Context, tenantID uuid.UUID) error {
+	if s.mode != config.TenancySingle {
+		return nil
+	}
+	own, ok := requestTenant(ctx)
+	if !ok || own != tenantID {
+		return domain.ErrTenantNotFound
 	}
 	return nil
 }

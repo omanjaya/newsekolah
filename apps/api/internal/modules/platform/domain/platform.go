@@ -13,9 +13,11 @@ import (
 )
 
 var (
-	// ErrTenancyDisabled is returned by every service method when
-	// config.TenancyMode is single: a single-school deployment has exactly
-	// one tenant and no console to operate on.
+	// ErrTenancyDisabled is returned, when config.TenancyMode is single, by
+	// the console actions that only make sense with several tenants:
+	// creating, suspending or resuming a tenant, setting a custom domain,
+	// and tenant data exports. Listing the deployment's own tenant and
+	// listing or toggling its module flags still work in that mode.
 	ErrTenancyDisabled = errors.New("platform console disabled in single-tenant mode")
 	ErrTenantNotFound  = errors.New("tenant not found")
 	ErrSlugTaken       = errors.New("tenant slug already in use")
