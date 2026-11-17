@@ -97,8 +97,8 @@ export function DeskOverdueTable(): ReactElement {
         meta: { card: "subtitle", skeleton: "lines" },
         cell: ({ row }) => (
           <div className="flex min-w-0 flex-col">
-            <span>{row.original.title || t("unknownTitle")}</span>
-            <span className="text-caption text-fg-muted">{row.original.barcode}</span>
+            <span className="truncate">{row.original.title || t("unknownTitle")}</span>
+            <span className="truncate text-caption text-fg-muted">{row.original.barcode}</span>
           </div>
         ),
       },
@@ -122,25 +122,39 @@ export function DeskOverdueTable(): ReactElement {
         ),
       },
       {
+        // Its own column, not the row's actions: a phone card keeps the
+        // corner beside the name for the one icon menu, and this labelled
+        // button joins the due badge on the meta row instead. The id
+        // "action" keeps it out of the column menu, so it cannot be hidden.
+        id: "action",
+        header: () => <span className="sr-only">{t("return")}</span>,
+        enableSorting: false,
+        meta: { card: "meta", align: "end" },
+        cell: ({ row }) => {
+          const item = row.original;
+          return (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<BookCheck />}
+              loading={returnLoan.isPending && returnLoan.variables.loanId === item.loan.id}
+              onClick={() => {
+                setConfirmingReturn(item);
+              }}
+            >
+              {t("return")}
+            </Button>
+          );
+        },
+      },
+      {
         id: "actions",
         header: t("columns.actions"),
         enableSorting: false,
         cell: ({ row }) => {
-          const item = row.original;
-          const loan = item.loan;
+          const loan = row.original.loan;
           return (
             <div className="flex items-center justify-end gap-1">
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={<BookCheck />}
-                loading={returnLoan.isPending && returnLoan.variables.loanId === loan.id}
-                onClick={() => {
-                  setConfirmingReturn(item);
-                }}
-              >
-                {t("return")}
-              </Button>
               <RowActionsMenu
                 ariaLabel={t("moreActions")}
                 items={[
