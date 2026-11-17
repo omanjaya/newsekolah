@@ -15,14 +15,29 @@ export interface SimulationState {
 
 let active: SimulationState | null = null;
 let identity: { actorId: string; tenantId: string; allowed: boolean } | null = null;
+/** Bumped on every change, for the views that render the simulation. */
 let revision = 0;
+/**
+ * Bumped only when the business clock itself moves: a simulation set,
+ * shifted, reset, restored or suspended, or a running one crossing midnight.
+ * Learning who the reader is does not move it when no simulation applies,
+ * so an ordinary page load keeps its queries (and the server-seeded
+ * branding) instead of refetching all of them (SimulationSync).
+ */
+let clockRevision = 0;
 const listeners = new Set<() => void>();
 
-function emit() {
+function emit(clockChanged: boolean) {
   revision += 1;
+  if (clockChanged) clockRevision += 1;
   listeners.forEach((listener) => {
     listener();
   });
+}
+
+/** The simulation `businessNow()` applies right now, or null for the real clock. */
+function effectiveClock(): string {
+  return active && identity?.allowed ? JSON.stringify(active) : "null";
 }
 
 function readStored(): SimulationState | null {
@@ -82,9 +97,10 @@ export function syncSimulationIdentity(me: Me | undefined): boolean {
   const changed =
     JSON.stringify(active) !== JSON.stringify(nextActive) ||
     JSON.stringify(identity) !== JSON.stringify(nextIdentity);
+  const clockBefore = effectiveClock();
   active = nextActive;
   identity = nextIdentity;
-  if (changed) emit();
+  if (changed) emit(effectiveClock() !== clockBefore);
   return changed;
 }
 
@@ -98,29 +114,31 @@ export function setSimulation(mode: SimulationMode, instant: Date): void {
     startedAt: Date.now(),
   };
   persist(active);
-  emit();
+  emit(true);
 }
 
 export function clearSimulation(): void {
   const changed = active !== null;
+  const clockBefore = effectiveClock();
   active = null;
   persist(null);
-  if (changed) emit();
+  if (changed) emit(effectiveClock() !== clockBefore);
 }
 
 /** Pause requests while an impersonation token replaces the actor; keep the saved clock. */
 export function suspendSimulation(): void {
+  const clockBefore = effectiveClock();
   active = null;
   identity = null;
-  emit();
+  emit(effectiveClock() !== clockBefore);
 }
 
 export function notifySimulationDayChange(): void {
-  if (active?.mode === "running") emit();
+  if (active?.mode === "running") emit(true);
 }
 
 export function simulationSnapshot() {
-  return { active, identity, revision };
+  return { active, identity, revision, clockRevision };
 }
 
 export function businessNow(): Date {
@@ -152,7 +170,7 @@ export function useSimulation() {
     () => revision,
     () => 0,
   );
-  return { active, identity, revision };
+  return { active, identity, revision, clockRevision };
 }
 
 /** Refreshes displayed time every 30 seconds, and immediately for mode changes. */

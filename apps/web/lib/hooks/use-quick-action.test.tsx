@@ -19,6 +19,19 @@ describe("useQuickAction", () => {
     expect(window.location.hash).toBe("#top");
   });
 
+  it("hands the history API a string URL, which a Worker can clone", () => {
+    // See use-url-state.test.tsx: the service worker's navigation cache
+    // posts this argument to a Worker, which cannot clone a URL object.
+    const replace = vi.spyOn(window.history, "replaceState");
+    renderHook(() => {
+      useQuickAction("submit-leave", vi.fn());
+    });
+
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(typeof replace.mock.calls[0]?.[2]).toBe("string");
+    replace.mockRestore();
+  });
+
   it("ignores a different action and leaves the URL alone", () => {
     const start = vi.fn();
     renderHook(() => {

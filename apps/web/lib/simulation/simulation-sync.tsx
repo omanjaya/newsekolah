@@ -16,23 +16,28 @@ import {
 export function SimulationSync(): null {
   const { me, isReady } = useSession();
   const queryClient = useQueryClient();
-  const { active, revision } = useSimulation();
-  const previousRevision = useRef(revision);
+  const { active, clockRevision } = useSimulation();
+  const previousRevision = useRef(clockRevision);
 
   useEffect(() => {
     if (isReady) syncSimulationIdentity(me);
   }, [isReady, me]);
 
+  // Refetch what the page shows only when the business clock moved. Every
+  // page load resolves the reader's identity; with no simulation in play
+  // that changes nothing, and invalidating then cancelled and refetched
+  // every query, the server-seeded branding included (the public branding
+  // endpoint allows 60 requests a minute per IP).
   useEffect(() => {
-    if (revision !== previousRevision.current) {
-      previousRevision.current = revision;
+    if (clockRevision !== previousRevision.current) {
+      previousRevision.current = clockRevision;
       const filter = {
         predicate: (query: { queryKey: readonly unknown[] }) =>
           query.queryKey[0] !== "me" && query.queryKey[0] !== "auth",
       };
       void queryClient.cancelQueries(filter).then(() => queryClient.invalidateQueries(filter));
     }
-  }, [queryClient, revision]);
+  }, [queryClient, clockRevision]);
 
   useEffect(() => {
     if (active?.mode !== "running" || !me?.tenant.timezone) return;

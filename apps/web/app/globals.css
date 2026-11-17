@@ -202,6 +202,17 @@ body {
 }
 
 @media (width < 48rem) {
+  /*
+   * The entering column starts 20px to the right, and a full-bleed row
+   * inside it (a chip strip, a scroller) then reaches past the screen: the
+   * page gained a horizontal scroll for the length of the entrance. Clip
+   * sideways only; `clip`, unlike `hidden`, makes no scroll container, so
+   * sticky bars inside the page keep sticking to the viewport.
+   */
+  [data-page-shell][data-animate] {
+    overflow-x: clip;
+  }
+
   html[data-nav-direction="forward"] [data-page-shell][data-animate] > [data-slot="page-column"] {
     animation: page-enter-forward var(--duration-base) var(--ease-enter) backwards;
   }

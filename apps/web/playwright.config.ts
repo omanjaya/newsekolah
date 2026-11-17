@@ -5,6 +5,11 @@ const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",
+  // e2e/smoke and e2e/simulation are real-stack suites with their own
+  // configs (playwright.smoke.config.ts, playwright.sim.config.ts); they
+  // can never pass against this mocked server, so this config runs only
+  // the specs at the top of e2e/.
+  testIgnore: ["smoke/**", "simulation/**"],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

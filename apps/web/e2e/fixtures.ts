@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
  * Shared mock data and route helpers for the e2e specs. Every spec mocks
@@ -74,4 +74,38 @@ export function mockSession(page: Page, initialMe: ReturnType<typeof buildMe> | 
       current = next;
     },
   };
+}
+
+/**
+ * The signed-in home for `name`: the page's one h1 greets the reader by
+ * first name ("Halo, Budi"), and the header's account menu carries the
+ * full name, so the check still tells apart two accounts that share a
+ * first name.
+ */
+export async function expectHome(page: Page, name: string): Promise<void> {
+  const firstName = name.trim().split(/\s+/)[0] ?? name;
+  await expect(
+    page.getByRole("heading", { level: 1, name: `Halo, ${firstName}`, exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Menu akun", exact: true })).toContainText(name);
+}
+
+/**
+ * Picks `isoDate` ("YYYY-MM-DD") in a DatePicker: opens its calendar,
+ * steps month by month towards the date (the calendar opens on the
+ * field's value, else today), then clicks the day, which closes it.
+ */
+export async function pickDate(page: Page, field: Locator, isoDate: string): Promise<void> {
+  await field.click();
+  const targetDay = page.locator(`[role="gridcell"][data-date="${isoDate}"]`);
+  const shownDay = await page
+    .locator('[role="gridcell"][data-date]')
+    .first()
+    .getAttribute("data-date");
+  const step = (shownDay ?? "") > isoDate ? "Bulan sebelumnya" : "Bulan berikutnya";
+  for (let i = 0; i < 48 && (await targetDay.count()) === 0; i += 1) {
+    await page.getByRole("button", { name: step, exact: true }).click();
+  }
+  await targetDay.first().click();
+  await expect(page.getByRole("grid")).toHaveCount(0);
 }
