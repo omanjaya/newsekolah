@@ -482,6 +482,24 @@ describe("DataTable", () => {
     expect(scroller).toHaveClass("md:min-h-0", "md:overflow-y-auto");
   });
 
+  it("fades a fillHeight body's edges while rows wait past them, below the sticky head", () => {
+    render(<FillHeightHarness data={ROWS} />);
+    const scroller = screen.getByRole("table").parentElement;
+    if (!scroller) throw new Error("Missing table wrapper");
+    expect(scroller).toHaveClass("scroll-fade-y", "[--scroll-fade-inset-start:var(--space-10)]");
+    // jsdom has no layout: give the box more rows than room, then scroll.
+    Object.defineProperty(scroller, "clientHeight", { configurable: true, value: 200 });
+    Object.defineProperty(scroller, "scrollHeight", { configurable: true, value: 600 });
+    fireEvent.scroll(scroller);
+    expect(scroller).toHaveAttribute("data-overflow-end");
+    expect(scroller).not.toHaveAttribute("data-overflow-start");
+  });
+
+  it("leaves an ordinary table's body unmasked", () => {
+    render(<LocalHarness data={ROWS} />);
+    expect(screen.getByRole("table").parentElement).not.toHaveClass("scroll-fade-y");
+  });
+
   it("does not expose remembered state across scopes", () => {
     vi.useFakeTimers();
     const view = render(<AsyncRememberedHarness data={ROWS} isLoading={false} scope="tenant:a" />);

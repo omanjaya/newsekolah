@@ -34,6 +34,7 @@ import {
   type DataTableCursorPagination,
   type DataTablePaginationLabels,
 } from "./data-table-pagination.js";
+import { DataTableScroller } from "./data-table-scroller.js";
 import { useDataTableState } from "./data-table-state.js";
 import {
   DataTableDefaultEmptyState,
@@ -469,12 +470,7 @@ export function DataTable<TData>({
                 }}
               />
             </div>
-            <div
-              className={cn(
-                "hidden overflow-x-auto md:block",
-                fillHeight && "md:min-h-0 md:overflow-y-auto",
-              )}
-            >
+            <DataTableScroller fillHeight={fillHeight}>
               <table className="w-full border-collapse text-body-sm tabular-nums">
                 <DataTableHead table={table} fillHeight={fillHeight} density={density} />
                 <DataTableBody
@@ -490,7 +486,7 @@ export function DataTable<TData>({
                   onKeyDown={handleKeyDown}
                 />
               </table>
-            </div>
+            </DataTableScroller>
           </>
         )}
         {footer && <div className="shrink-0 px-1 md:border-t md:border-line md:px-4">{footer}</div>}

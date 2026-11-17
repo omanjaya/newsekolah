@@ -453,6 +453,35 @@
 }
 
 /*
+ * The same edge fades for a box that scrolls up and down (a fill-height
+ * table's body), so a row cut by the box's bottom reads as "more below",
+ * not as a clipping bug. `--scroll-fade-inset-start` keeps a sticky head
+ * at the top out of the mask: the top fade starts below it.
+ */
+@utility scroll-fade-y {
+  --scroll-fade-top: 0px;
+  --scroll-fade-top-from: #000;
+  --scroll-fade-bottom: 0px;
+  &[data-overflow-start] {
+    --scroll-fade-top: var(--space-6);
+    --scroll-fade-top-from: transparent;
+  }
+  &[data-overflow-end] {
+    --scroll-fade-bottom: var(--space-10);
+  }
+  &:is([data-overflow-start], [data-overflow-end]) {
+    mask-image: linear-gradient(
+      to bottom,
+      #000 var(--scroll-fade-inset-start, 0px),
+      var(--scroll-fade-top-from) var(--scroll-fade-inset-start, 0px),
+      #000 calc(var(--scroll-fade-inset-start, 0px) + var(--scroll-fade-top)),
+      #000 calc(100% - var(--scroll-fade-bottom)),
+      transparent
+    );
+  }
+}
+
+/*
  * The scrolling body of a Dialog or Sheet. Most forms rendered inside one
  * end with their own action row, `<div className="flex justify-end gap-2
  * border-t ...">`, as the last child of the form (about 70 call sites).
