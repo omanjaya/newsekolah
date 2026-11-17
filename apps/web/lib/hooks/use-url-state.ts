@@ -39,7 +39,10 @@ export function useUrlState<T extends string>(
       if (!isValid(next)) return;
       url.searchParams.set(key, next);
       if (url.href === window.location.href) return;
-      window.history[replace ? "replaceState" : "pushState"](null, "", url);
+      // A string, not the URL object: the service worker's navigation
+      // cache (next.config.ts, cacheOnNavigation) wraps the history API
+      // and posts this argument to a Worker, which cannot clone a URL.
+      window.history[replace ? "replaceState" : "pushState"](null, "", url.href);
       refresh((version) => version + 1);
     },
     [key, values, defaultValue],
