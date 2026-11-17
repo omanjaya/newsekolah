@@ -10,15 +10,20 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryNames } from "../../reference/directory-names";
-import { useMentorGroupMembersQuery, useMentorGroupQuery } from "../api";
+import { useGroupSizeLimitQuery, useMentorGroupMembersQuery, useMentorGroupQuery } from "../api";
 
 import { MentorGroupMembersPanel } from "./mentor-group-members-panel";
 import { MentorMeetingNotesPanel } from "./mentor-meeting-notes-panel";
 
-/** One mentoring group: its members, and the meeting notes for whoever keeps them. */
+/**
+ * One mentoring group: its mentor and size against the school's limit in
+ * the header, its members, and the meeting notes for whoever keeps them.
+ */
 export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactElement {
   const t = useTranslations("app.mentoring.groupDetail");
+  const tMembers = useTranslations("app.mentoring.members");
   const canSeeNotes = useCan("manage_mentoring");
+  const limit = useGroupSizeLimitQuery();
   const [tab, setTab] = useUrlState<string>(
     "tab",
     ["members", ...(canSeeNotes ? ["notes"] : [])],
@@ -47,9 +52,16 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
 
   const rawMentorName = teacherMap.get(group.data.mentor_user_id)?.name;
   const mentorName = rawMentorName ? formatDisplayName(rawMentorName) : t("unknownMentor");
+  const size =
+    members.data && limit.data
+      ? tMembers("countOfLimit", { count: members.data.data.length, limit: limit.data.limit })
+      : undefined;
 
   return (
-    <AppPage title={group.data.name} description={t("mentorLabel", { name: mentorName })}>
+    <AppPage
+      title={group.data.name}
+      description={[t("mentorLabel", { name: mentorName }), size].filter(Boolean).join(" · ")}
+    >
       <Tabs value={tab} onValueChange={setTab}>
         {canSeeNotes && (
           <TabsList>
