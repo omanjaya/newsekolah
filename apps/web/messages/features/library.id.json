@@ -1352,6 +1352,7 @@
       }
     },
     "tabsLabel": "Jenis laporan perpustakaan",
+    "typeLabel": "Jenis laporan",
     "periodLabel": "Periode laporan"
   },
   "markLost": {

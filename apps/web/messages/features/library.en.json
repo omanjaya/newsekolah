@@ -1352,6 +1352,7 @@
       }
     },
     "tabsLabel": "Library report types",
+    "typeLabel": "Report type",
     "periodLabel": "Report period"
   },
   "markLost": {
