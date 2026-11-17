@@ -26,6 +26,7 @@
     "emptyTitle": "No templates yet",
     "emptyBody": "Templates you create appear here, grouped by document kind.",
     "edit": "Edit",
+    "rowActions": "Actions for {name}",
     "editor": {
       "createTitle": "New template",
       "editTitle": "Edit template",

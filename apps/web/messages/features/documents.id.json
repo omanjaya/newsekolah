@@ -26,6 +26,7 @@
     "emptyTitle": "Belum ada templat",
     "emptyBody": "Templat yang dibuat muncul di sini, dikelompokkan per jenis dokumen.",
     "edit": "Ubah",
+    "rowActions": "Aksi untuk {name}",
     "editor": {
       "createTitle": "Templat baru",
       "editTitle": "Ubah templat",

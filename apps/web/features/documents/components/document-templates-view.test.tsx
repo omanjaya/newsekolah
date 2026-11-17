@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -6,11 +7,13 @@ import { DocumentTemplatesView } from "./document-templates-view";
 
 const query = vi.fn<() => unknown>();
 const setDefault = vi.fn<() => unknown>();
+const push = vi.fn();
 
 vi.mock("next-intl", () => ({
   useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
   useLocale: () => "id",
 }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("../../settings/components/settings-page", () => ({
   SettingsPage: ({
     children,
@@ -52,13 +55,29 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("DocumentTemplatesView", () => {
-  it("spins only the row whose default is being set", () => {
-    setDefault.mockReturnValue({ mutate: vi.fn(), isPending: true, variables: "a" });
+  it("makes a template the default from its row's menu, not a button that squeezes the name", async () => {
+    const mutate = vi.fn();
+    setDefault.mockReturnValue({ mutate, isPending: false, variables: undefined });
+    const user = userEvent.setup();
     render(<DocumentTemplatesView />);
-    const buttons = screen.getAllByRole("button", { name: "setDefault" });
-    expect(buttons).toHaveLength(2);
-    expect(buttons[0]).toHaveAttribute("aria-busy", "true");
-    expect(buttons[1]).not.toHaveAttribute("aria-busy", "true");
+    expect(screen.queryByRole("button", { name: "setDefault" })).not.toBeInTheDocument();
+
+    const firstMenu = screen.getAllByRole("button", { name: "rowActions" })[0];
+    if (!firstMenu) throw new Error("Missing the first row's menu");
+    await user.click(firstMenu);
+    await user.click(await screen.findByRole("menuitem", { name: "setDefault" }));
+    expect(mutate).toHaveBeenCalledWith("a", expect.any(Object));
+  });
+
+  it("offers only editing in the default template's menu", async () => {
+    const user = userEvent.setup();
+    render(<DocumentTemplatesView />);
+    // Kartu C, the member card's default, is the third row.
+    const defaultMenu = screen.getAllByRole("button", { name: "rowActions" })[2];
+    if (!defaultMenu) throw new Error("Missing the default template's menu");
+    await user.click(defaultMenu);
+    expect(await screen.findByRole("menuitem", { name: "edit" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "setDefault" })).not.toBeInTheDocument();
   });
 
   it("groups templates by kind and links each to its editor page", () => {
@@ -69,8 +88,8 @@ describe("DocumentTemplatesView", () => {
       "href",
       "/settings/document-templates/a",
     );
-    // The default of its kind is marked, not offered as a button.
-    expect(screen.getAllByRole("button", { name: "setDefault" })).toHaveLength(2);
+    // Every row keeps its actions in one menu.
+    expect(screen.getAllByRole("button", { name: "rowActions" })).toHaveLength(3);
   });
 
   it("offers the first template from the empty state", () => {
