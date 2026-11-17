@@ -167,6 +167,16 @@ describe("MobileTabBar", () => {
     );
   });
 
+  it("lights nothing on a page the menu does not list", () => {
+    // /check-in is reached from the account menu and home, never from Menu.
+    expect(teacherItems.find((item) => item.href === "/check-in")?.sidebarPlacement).toBe("hidden");
+    pathname.mockReturnValue("/check-in");
+    const { container } = renderBar(teacherItems, "teacher");
+    expect(container.querySelector("[aria-current='page']")).toBeNull();
+    expect(container.querySelector('[data-tab][data-state="active"]')).toBeNull();
+    expect(pill().parentElement).not.toHaveAttribute("data-indicator");
+  });
+
   it("marks the centre current on its own pages and gives no tab the pill", () => {
     pathname.mockReturnValue("/attendance/session-1");
     renderBar(teacherItems, "teacher");
