@@ -19,7 +19,8 @@ export interface StickySaveBarProps {
    * The page container the bar's content lines up with: "full" (default)
    * spans the content area at the page gutter (16px on a phone, 24px from
    * 768px), the others match `PageShell`'s narrow (720), default (1200)
-   * and wide (1440) containers.
+   * and wide (1440) containers. Like a narrow page's content, "narrow"
+   * sits at the left edge of the default column, not centred.
    */
   container?: "full" | "narrow" | "default" | "wide";
   className?: string;
@@ -27,7 +28,7 @@ export interface StickySaveBarProps {
 
 const CONTAINER_CLASS = {
   full: "",
-  narrow: "mx-auto max-w-narrow",
+  narrow: "max-w-narrow",
   default: "mx-auto max-w-default",
   wide: "mx-auto max-w-wide",
 } as const;
@@ -81,6 +82,22 @@ export function StickySaveBar({
 }: StickySaveBarProps) {
   const ref = useRef<HTMLDivElement>(null);
   usePublishedHeight(ref);
+  const row = (
+    <div
+      className={cn(
+        "flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4",
+        CONTAINER_CLASS[container],
+      )}
+    >
+      {leadingSlot}
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+        {trailingSlot}
+        <Button onClick={onSave} loading={saving} disabled={disabled} className="w-full md:w-auto">
+          {saveLabel}
+        </Button>
+      </div>
+    </div>
+  );
   return (
     <div
       ref={ref}
@@ -91,25 +108,9 @@ export function StickySaveBar({
         className,
       )}
     >
-      <div
-        className={cn(
-          "flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4",
-          CONTAINER_CLASS[container],
-        )}
-      >
-        {leadingSlot}
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-          {trailingSlot}
-          <Button
-            onClick={onSave}
-            loading={saving}
-            disabled={disabled}
-            className="w-full md:w-auto"
-          >
-            {saveLabel}
-          </Button>
-        </div>
-      </div>
+      {/* A narrow page's content sits at the left of the default column
+          (PageShell), so the narrow row does too. */}
+      {container === "narrow" ? <div className="mx-auto max-w-default">{row}</div> : row}
     </div>
   );
 }

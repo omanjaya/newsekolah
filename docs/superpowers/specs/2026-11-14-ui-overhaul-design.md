@@ -151,7 +151,7 @@ Tiap komponen baru atau yang diubah wajib punya story (terang, gelap, lebar HP) 
 **`PageShell`** (di `packages/ui`) adalah satu-satunya akar halaman di route group `(app)`:
 
 - Slot: `breadcrumb`, `header` (`PageHeader`), `nav` (`NavTabs`, selalu di bawah header, tidak tampil bila hanya satu item), `toolbar`, isi.
-- Varian: `default` (kontainer 1200, gulir halaman), `fit` (setinggi viewport, gulir internal untuk tabel dan grid), `narrow` (720, form dan pengaturan), `wide` (dasbor dan grid lebar).
+- Varian: `default` (kontainer 1200, gulir halaman), `fit` (setinggi viewport, gulir internal untuk tabel dan grid), `narrow` (form dan pengaturan: isi 720 rata kiri di bawah kepala selebar `default`, jadi judul dan tab tidak bergeser dari halaman saudaranya), `wide` (dasbor dan grid lebar).
 - Padding halaman: 16 px di HP, 24 px di desktop; jarak antarbagian 24 px.
 - Mengisi judul tab peramban dari judul halaman dan memberi animasi masuk konten.
 

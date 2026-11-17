@@ -46,6 +46,24 @@ describe("StickySaveBar", () => {
     expect(container.firstElementChild?.firstElementChild).toHaveClass("mx-auto", "max-w-default");
   });
 
+  // A narrow page's content starts at the default column's left edge
+  // (PageShell), so a centred narrow bar would sit 240px right of the form.
+  it("lines a narrow bar up with a narrow page's left-aligned content", () => {
+    const { container } = render(
+      <StickySaveBar
+        leadingSlot="3 perubahan"
+        saveLabel="Simpan"
+        saving={false}
+        onSave={vi.fn()}
+        container="narrow"
+      />,
+    );
+    const column = container.firstElementChild?.firstElementChild;
+    expect(column).toHaveClass("mx-auto", "max-w-default");
+    expect(column?.firstElementChild).toHaveClass("max-w-narrow");
+    expect(column?.firstElementChild).not.toHaveClass("mx-auto");
+  });
+
   it("publishes its height for the toasts while it is shown", () => {
     const { unmount } = render(
       <StickySaveBar
