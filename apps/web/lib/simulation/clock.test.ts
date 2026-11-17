@@ -77,6 +77,35 @@ describe("business clock", () => {
     expect(sessionStorage.length).toBe(0);
   });
 
+  it("moves the clock revision only when the business clock itself changes", () => {
+    const clock = () => simulationSnapshot().clockRevision;
+    const start = clock();
+
+    // Every page load learns who the reader is; with no simulation that
+    // re-renders the views but leaves the clock (and the queries) alone.
+    const before = simulationSnapshot().revision;
+    syncSimulationIdentity(user("teacher", "school"));
+    expect(simulationSnapshot().revision).toBeGreaterThan(before);
+    expect(clock()).toBe(start);
+    syncSimulationIdentity(user("admin", "school", true));
+    expect(clock()).toBe(start);
+
+    setSimulation("frozen", new Date("2026-10-01T01:00:00Z"));
+    expect(clock()).toBe(start + 1);
+
+    // A reload restores the saved simulation once the actor is known again.
+    syncSimulationIdentity(undefined);
+    expect(clock()).toBe(start + 2);
+    syncSimulationIdentity(user("admin", "school", true));
+    expect(getSimulationTime()).toBe("2026-10-01T01:00:00.000Z");
+    expect(clock()).toBe(start + 3);
+
+    clearSimulation();
+    expect(clock()).toBe(start + 4);
+    clearSimulation();
+    expect(clock()).toBe(start + 4);
+  });
+
   it("rejects another impersonating admin and invalid school calendar times", () => {
     syncSimulationIdentity(user("admin", "school", true));
     setSimulation("frozen", new Date("2026-10-01T01:00:00Z"));
