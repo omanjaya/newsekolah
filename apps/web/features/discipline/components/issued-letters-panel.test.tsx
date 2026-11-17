@@ -89,3 +89,27 @@ describe("IssuedLettersPanel filters", () => {
     expect(new URLSearchParams(window.location.search).get("class_id")).toBe("");
   });
 });
+
+describe("IssuedLettersPanel empty states", () => {
+  beforeEach(() => {
+    mocks.useWarningLettersQuery.mockReset();
+    mocks.useWarningLettersQuery.mockReturnValue({ data: { data: [] }, isLoading: false });
+    window.history.replaceState(null, "", "/discipline/warning-letters");
+  });
+
+  it("leads an empty list to the students due a letter", () => {
+    render(<IssuedLettersPanel />);
+    expect(screen.getByText("emptyTitle")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "viewCandidates" })).toHaveAttribute(
+      "href",
+      "/discipline/violations?tab=atRisk",
+    );
+  });
+
+  it("says a filtered list is empty because of the filter", () => {
+    window.history.replaceState(null, "", "/discipline/warning-letters?class_id=class-7a");
+    render(<IssuedLettersPanel />);
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "viewCandidates" })).not.toBeInTheDocument();
+  });
+});

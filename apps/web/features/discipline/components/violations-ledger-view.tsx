@@ -28,9 +28,8 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { useClassesQuery } from "../../reference/api";
 import { useDirectoryNamePeek, useDirectoryNames } from "../../reference/directory-names";
-import { StudentLink } from "../../students/components/student-link";
-import { studentProfileHref } from "../../students/href";
 import { type ViolationRecord, useViolationsQuery } from "../api";
+import { studentDisciplineHref } from "../href";
 
 import { ViolationRecordForm } from "./violation-record-form";
 import { type SaveSummary, ViolationSaveSummary } from "./violation-save-summary";
@@ -128,17 +127,15 @@ export function ViolationsLedgerView({
         header: t("columns.student"),
         enableSorting: false,
         meta: { card: "title", label: t("columns.student") },
+        // Plain text: the row opens the student's discipline record, which
+        // links on to the profile, so the row has one destination.
         cell: ({ row }) => {
           const name = studentMap.get(row.original.student_user_id)?.name;
           if (!name) return t("unknownStudent");
           return (
             <div className="flex min-w-0 items-center gap-3">
               <Avatar size={32} name={name} />
-              <span className="truncate">
-                <StudentLink studentId={row.original.student_user_id} tab="discipline">
-                  {name}
-                </StudentLink>
-              </span>
+              <span className="truncate">{name}</span>
             </div>
           );
         },
@@ -257,7 +254,7 @@ export function ViolationsLedgerView({
           isLoading={isLoading}
           getRowId={(item) => item.id}
           onRowActivate={(item) => {
-            router.push(studentProfileHref(item.student_user_id, "discipline"));
+            router.push(studentDisciplineHref(item.student_user_id));
           }}
           fillHeight
           emptyState={
@@ -268,9 +265,11 @@ export function ViolationsLedgerView({
                 icon={<domainIcons.violation aria-hidden="true" />}
                 title={t("emptyTitle")}
                 description={t("emptyBody")}
+                // The header carries the primary; the empty list repeats it quietly.
                 action={
                   canRecord ? (
                     <Button
+                      variant="secondary"
                       icon={<Plus />}
                       onClick={() => {
                         onRecordingChange(true);
