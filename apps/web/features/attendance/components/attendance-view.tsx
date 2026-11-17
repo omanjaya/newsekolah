@@ -255,7 +255,9 @@ export function DaySessions(): ReactElement {
   // The teacher's own report is the area's "Laporan presensi" tab, so the
   // header does not offer it again.
   const secondaryActions: PageHeaderAction[] = [
-    ...(canViewMonitor
+    // With no teacher picked, the school's progress card below offers the
+    // monitor already; the header offers it once a teacher's day is open.
+    ...(canViewMonitor && selectedTeacherId !== ""
       ? [{ label: t("openMonitor"), icon: <MonitorSmartphone />, href: "/monitor" }]
       : []),
   ];

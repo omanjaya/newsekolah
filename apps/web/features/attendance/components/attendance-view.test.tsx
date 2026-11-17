@@ -33,7 +33,7 @@ vi.mock("@newsekolah/i18n", () => ({
 }));
 
 const mePermissions: string[] = ["view_reports", "view_monitor_presence"];
-const meRoleSlug = "teacher";
+let meRoleSlug = "teacher";
 
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({
@@ -181,6 +181,22 @@ describe("DaySessions", () => {
     render(<DaySessions />);
 
     expect(screen.getByText('daySummary:{"total":2,"saved":1,"pending":1}')).toBeInTheDocument();
+  });
+
+  it("offers the monitor once, in the school card, before a teacher is picked", () => {
+    meRoleSlug = "admin";
+    try {
+      render(<DaySessions />);
+      const links = screen.getAllByRole("link", { name: "openMonitor" });
+      expect(links).toHaveLength(1);
+      expect(
+        within(screen.getByTestId("school-attendance-today")).getByRole("link", {
+          name: "openMonitor",
+        }),
+      ).toBe(links[0]);
+    } finally {
+      meRoleSlug = "teacher";
+    }
   });
 
   it("leaves the teacher's own report to the area's tab, not a header link", () => {
