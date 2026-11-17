@@ -59,6 +59,15 @@ describe("AccountMenu", () => {
     expect(within(sheet).getByRole("radiogroup", { name: "theme" })).toBeInTheDocument();
   });
 
+  // A long name and role ("Wakil Kepala Sekolah ...") used to truncate at
+  // 160px with half the header free.
+  it("gives the header's name and role room from lg up", () => {
+    render(<AccountMenu />);
+    const trigger = screen.getByRole("button", { name: "profileMenu.label" });
+    expect(within(trigger).getByText("Admin Contoh")).toHaveClass("truncate", "lg:max-w-64");
+    expect(within(trigger).getByText("Admin Sekolah")).toHaveClass("truncate", "lg:max-w-64");
+  });
+
   it("signs out and returns to the login page", async () => {
     const user = userEvent.setup();
     render(<AccountMenu />);
