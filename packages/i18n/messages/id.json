@@ -295,7 +295,7 @@
     "INCIDENT_ALREADY_CLOSED": "Insiden ini sudah ditutup",
     "INCIDENT_FORBIDDEN": "Anda tidak berwenang membaca insiden ini",
     "VISITORS_MODULE_DISABLED": "Modul kunjungan tamu belum diaktifkan untuk sekolah ini",
-    "BILLING_MODULE_DISABLED": "Modul pembayaran SPP belum diaktifkan untuk sekolah ini",
+    "BILLING_MODULE_DISABLED": "Modul tagihan dan pembayaran belum diaktifkan untuk sekolah ini",
     "FEE_TYPE_NOT_FOUND": "Jenis biaya tidak ditemukan",
     "DISCOUNT_NOT_FOUND": "Potongan tidak ditemukan",
     "BILL_NOT_FOUND": "Tagihan tidak ditemukan",
