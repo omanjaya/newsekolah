@@ -1,5 +1,5 @@
 import type { StatTileTone } from "@newsekolah/ui";
-import { BookCheck, BookPlus, BookX, Users2, type LucideIcon } from "lucide-react";
+import { BookCheck, BookPlus, BookX, DoorOpen, type LucideIcon } from "lucide-react";
 
 /** The subset of `GET /v1/library/dashboard`'s summary this row of stat tiles needs. */
 export interface DeskTodaySummary {
@@ -44,7 +44,8 @@ export function buildDeskTodayTiles(summary: DeskTodaySummary): DeskTodayTile[] 
     { key: "overdue", icon: BookX, tone: "red", value: summary.overdue, labelKey: "overdue" },
     {
       key: "visitsToday",
-      icon: Users2,
+      // The library dashboard's visits icon, so the two pages read alike.
+      icon: DoorOpen,
       tone: "purple",
       value: summary.visits_today,
       labelKey: "visitsToday",

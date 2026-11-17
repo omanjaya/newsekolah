@@ -4,6 +4,7 @@ import {
   Card,
   CardHeader,
   CardTitle,
+  type CategoryTone,
   IconCircle,
   List,
   ListRow,
@@ -26,6 +27,8 @@ interface Shortcut {
   href: string;
   label: string;
   icon: ReactNode;
+  /** A topic hue per shortcut, as the home's shortcuts and the tiles above tint theirs. */
+  tone: CategoryTone;
   /** Kiosks run on their own screen: they open in a new tab. */
   newTab?: boolean;
 }
@@ -53,6 +56,7 @@ export function DeskTodayPanel({ className }: { className?: string }): ReactElem
             href: "/library/kiosk",
             label: t("shortcuts.kiosk"),
             icon: <MonitorSmartphone />,
+            tone: "blue" as const,
             newTab: true,
           },
           {
@@ -60,6 +64,7 @@ export function DeskTodayPanel({ className }: { className?: string }): ReactElem
             href: "/library/visit-kiosk",
             label: t("shortcuts.visitKiosk"),
             icon: <QrCode />,
+            tone: "purple" as const,
             newTab: true,
           },
         ]
@@ -71,6 +76,7 @@ export function DeskTodayPanel({ className }: { className?: string }): ReactElem
             href: "/library/settings?section=loanRules",
             label: t("shortcuts.loanRules"),
             icon: <domainIcons.settings />,
+            tone: "amber" as const,
           },
         ]
       : []),
@@ -81,6 +87,7 @@ export function DeskTodayPanel({ className }: { className?: string }): ReactElem
             href: "/library/reports?tab=loans",
             label: t("shortcuts.report"),
             icon: <FileBarChart />,
+            tone: "green" as const,
           },
         ]
       : []),
@@ -119,7 +126,7 @@ export function DeskTodayPanel({ className }: { className?: string }): ReactElem
               <ListRow
                 key={shortcut.key}
                 leading={
-                  <IconCircle tone="neutral" size="sm">
+                  <IconCircle tone={shortcut.tone} size="sm">
                     {shortcut.icon}
                   </IconCircle>
                 }
