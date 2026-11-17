@@ -75,9 +75,11 @@ export function NewYearSetupView(): ReactElement {
     plan: NewYearSetupPlan;
   } | null>(null);
   const plan =
-    previewResult?.from === fromYearId && previewResult.to === toYearId ? previewResult.plan : null;
+    previewResult !== null && previewResult.from === fromYearId && previewResult.to === toYearId
+      ? previewResult.plan
+      : null;
   const [done, setDone] = useState<Done | null>(null);
-  const result = done?.from === fromYearId && done.to === toYearId ? done : null;
+  const result = done !== null && done.from === fromYearId && done.to === toYearId ? done : null;
   const [confirming, setConfirming] = useState(false);
 
   const preview = usePreviewNewYearSetupMutation();

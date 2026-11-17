@@ -77,8 +77,9 @@ export function WorkflowDefinitionsView(): ReactElement {
   // The draft belongs to one kind and version; a fresh definition (after a
   // save, or another kind) starts from its own stages again.
   const [draft, setDraft] = useState<{ key: string; items: StageItem[] } | null>(null);
-  const items = draft?.key === baseKey ? draft.items : baseItems;
-  const dirty = draft?.key === baseKey && !sameStages(draft.items, baseStages);
+  const liveDraft = draft !== null && draft.key === baseKey ? draft : null;
+  const items = liveDraft ? liveDraft.items : baseItems;
+  const dirty = liveDraft !== null && !sameStages(liveDraft.items, baseStages);
   const [openIds, setOpenIds] = useState<ReadonlySet<string>>(new Set());
   const [pendingKind, setPendingKind] = useState<WorkflowKind | null>(null);
   const [confirmSave, setConfirmSave] = useState(false);

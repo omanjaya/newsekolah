@@ -35,7 +35,10 @@ export function SimulationControls(): ReactElement | null {
   const [modeChoice, setModeChoice] = useState<{ revision: number; mode: SimulationMode } | null>(
     null,
   );
-  const mode = modeChoice?.revision === revision ? modeChoice.mode : (active?.mode ?? "frozen");
+  const mode =
+    modeChoice !== null && modeChoice.revision === revision
+      ? modeChoice.mode
+      : (active?.mode ?? "frozen");
 
   if (!identity?.allowed) return null;
 

@@ -206,14 +206,23 @@ function fromQuickAction(
   };
 }
 
+/**
+ * A centre action that opens a page of the reader's menu. The button leads
+ * to `path` itself (the tab bar turns Isi presensi into the session under
+ * it), so `path` is what the reader must be able to open, not the href of
+ * the menu entry that owns it: a consolidated entry can stay in the menu
+ * on a sibling page alone, as the attendance entry does on the teaching
+ * journal for a teacher who may not take attendance.
+ */
 function fromMenu(
   input: MobileCentreInput,
-  key: string,
+  path: string,
   id: CentreActionId,
 ): MobileCentreAction | undefined {
-  const item = input.items.find((candidate) => candidate.key === key);
-  if (!item || !input.canOpen(pathOf(item.href))) return undefined;
-  return { id, href: item.href, ownerHref: item.href, icon: item.icon };
+  const ownerHref = activeNavHref(path, input.items);
+  const owner = input.items.find((item) => item.href === ownerHref);
+  if (!owner || !input.canOpen(path)) return undefined;
+  return { id, href: path, ownerHref, icon: owner.icon };
 }
 
 /**
@@ -225,7 +234,7 @@ function general(input: MobileCentreInput): MobileCentreAction | undefined {
   const [first, second] = input.quickActions;
   if (second) return { id: "quick-actions", icon: Zap };
   if (first) return fromQuickAction(input, first.id);
-  return fromMenu(input, "inbox", "inbox");
+  return fromMenu(input, "/inbox", "inbox");
 }
 
 /**
@@ -255,13 +264,13 @@ export function mobileCentreAction(input: MobileCentreInput): MobileCentreAction
       case "picket":
         return fromQuickAction(input, "show-duty-qr") ?? fromQuickAction(input, "scan-qr");
       case "teacher":
-        return fromMenu(input, "attendance", "attendance");
+        return fromMenu(input, "/attendance", "attendance");
       case "librarian":
         return fromQuickAction(input, "lend-book");
       case "counselor":
         return fromQuickAction(input, "record-violation");
       case "leadership":
-        return fromMenu(input, "inbox", "inbox");
+        return fromMenu(input, "/inbox", "inbox");
       case "office":
       case "other":
         return undefined;

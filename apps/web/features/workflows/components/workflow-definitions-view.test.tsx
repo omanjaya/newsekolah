@@ -9,7 +9,13 @@ const definitions = vi.fn<() => unknown>();
 const mutateAsync = vi.fn(() => Promise.resolve());
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
+  // Every string reads as its key under app.workflows: a stage row's own
+  // catalog (app.workflows.stage) gives "stage.labelField", as the view's
+  // `t("stage.keyEmpty")` gives "stage.keyEmpty".
+  useTranslations: (namespace?: string) =>
+    Object.assign((key: string) => (namespace === "app.workflows.stage" ? `stage.${key}` : key), {
+      has: () => false,
+    }),
 }));
 vi.mock("../../../lib/hooks/use-url-state", async () => {
   const { useState } = await import("react");
@@ -104,7 +110,9 @@ describe("WorkflowDefinitionsView", () => {
 
     await user.click(screen.getByRole("tab", { name: "kind.leave_request" }));
     expect(screen.getByRole("dialog", { name: "discardTitle" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "kind.exit_permit" })).toHaveAttribute(
+    // The modal hides the page behind it from assistive tech, so the tab is
+    // read past that; the kind has not switched while the question is open.
+    expect(screen.getByRole("tab", { name: "kind.exit_permit", hidden: true })).toHaveAttribute(
       "aria-selected",
       "true",
     );
