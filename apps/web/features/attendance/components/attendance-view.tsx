@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Button,
   EmptyState,
   Field,
   Select,
@@ -11,6 +12,7 @@ import {
   type PageHeaderAction,
 } from "@newsekolah/ui";
 import { MonitorSmartphone } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -90,6 +92,7 @@ export function DaySessions(): ReactElement {
   const canViewMonitor = useCan("view_monitor_presence");
   const canManageSchedules = useCan("manage_schedules");
   const canManageMasterData = useCan("manage_master_data");
+  const canViewSchedules = useCan("view_schedules");
   const canPickAnyTeacher = canManageSchedules || canManageMasterData;
 
   const today = todayInZone(me?.tenant.timezone);
@@ -318,6 +321,14 @@ export function DaySessions(): ReactElement {
               : viewingOther
                 ? t("noScheduleOtherBody", { name: selectedTeacherName ?? "" })
                 : t("noScheduleSelfBody")
+          }
+          // A day with nothing to take still has a way on: the timetable.
+          action={
+            canViewSchedules ? (
+              <Button asChild variant="secondary">
+                <Link href="/schedule">{t("openSchedule")}</Link>
+              </Button>
+            ) : undefined
           }
         />
       ) : (

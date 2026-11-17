@@ -199,6 +199,21 @@ describe("DaySessions", () => {
     }
   });
 
+  it("points a day without lessons to the timetable", () => {
+    todaySessions = [];
+    mePermissions.push("view_schedules");
+    try {
+      render(<DaySessions />);
+      expect(screen.getByText("noScheduleTitle")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "openSchedule" })).toHaveAttribute(
+        "href",
+        "/schedule",
+      );
+    } finally {
+      mePermissions.pop();
+    }
+  });
+
   it("leaves the teacher's own report to the area's tab, not a header link", () => {
     todaySessions = [session({ schedule_id: "s1" })];
     render(<DaySessions />);
