@@ -282,7 +282,10 @@ export function LessonCell({
       >
         <span className="flex items-center gap-1.5 truncate text-label">
           <span className="truncate">{subject}</span>
-          {crossesBreak && breakWarningLabel && <BreakWarningBadge label={breakWarningLabel} />}
+          {/* A setup warning for whoever edits the timetable, not for its readers. */}
+          {canManage && crossesBreak && breakWarningLabel && (
+            <BreakWarningBadge label={breakWarningLabel} />
+          )}
         </span>
         <div className="flex items-center justify-between gap-1">
           <span className="truncate text-caption font-normal">{detail}</span>
