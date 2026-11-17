@@ -5,6 +5,7 @@ import {
   useChangePassword as useChangePasswordBase,
   useLogin as useLoginBase,
   useLogout as useLogoutBase,
+  useStartSession,
 } from "@newsekolah/api-client/react";
 import type { LoginInput } from "@newsekolah/schemas";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,20 +17,33 @@ import { useEndSession, useForgetSession } from "../../lib/session/end-session";
 import { clearSimulation } from "../../lib/simulation/clock";
 import { getPasskey } from "../../lib/webauthn";
 
+/** What a sign-in hands this tab: the new access token, and no simulated clock left from before. */
+function storeSessionTokens(data: components["schemas"]["AuthTokens"]): void {
+  clearSimulation();
+  setAccessToken(data.access_token);
+}
+
 /**
  * Wraps `@newsekolah/api-client/react`'s auth hooks with the side effects
  * specific to the web client: the login/refresh response's access token
  * only ever gets stored in memory (lib/api/access-token.ts), never
  * persisted, and logout always clears it even if the request itself fails
  * (docs/08-security.md section 2).
+ *
+ * Every sign-in (password here, Google and passkey below) does the same
+ * three things: removes the server access cookie right before the request
+ * that creates the session, so the first server render after it cannot
+ * load the previous account's `/v1/me` (a sign-in that cannot remove it
+ * fails before any session exists); hands the tokens to
+ * `storeSessionTokens`; and goes through the package's `useStartSession`
+ * (`useLogin` uses it too), which empties the cache but for the tenant's
+ * branding and seeds `me` from the response.
  */
 export function useLoginMutation() {
   const client = useApiClient();
   const mutation = useLoginBase(client, {
-    onTokens: (data) => {
-      clearSimulation();
-      setAccessToken(data.access_token);
-    },
+    beforeRequest: clearServerAccessCookie,
+    onTokens: storeSessionTokens,
     // login-form.tsx already shows a failure inline (form.setError("root")).
     meta: { errorToast: false },
   });
@@ -96,25 +110,6 @@ export function useLogoutMutation() {
 }
 
 /**
- * What a Google or passkey sign-in does with its tokens, the same as
- * `useLogin` does for a password. No query key names the reader, so what
- * this tab still holds from someone else (a session that ran out, a logout
- * whose request failed) would be shown to the account signing in now, and
- * nothing would read it again: SimulationSync refetches only when the
- * business clock moves. `me` is seeded from the response, so the route
- * guard sees the new account at once instead of whichever `me` was cached.
- */
-function useStartSession(): (data: components["schemas"]["AuthTokens"]) => void {
-  const queryClient = useQueryClient();
-  return (data) => {
-    clearSimulation();
-    setAccessToken(data.access_token);
-    queryClient.clear();
-    queryClient.setQueryData(queryKeys.me(), data.user);
-  };
-}
-
-/**
  * GET /v1/auth/sso/google: whether this tenant has Google sign-in enabled,
  * and the OAuth client id the login screen needs to render the button.
  * Public on purpose (see openapi/modules/identity.yaml) -- called before
@@ -132,10 +127,12 @@ export function useGoogleSSOAvailabilityQuery() {
 /** POST /v1/auth/sso/google: exchanges a verified Google ID token for a session. */
 export function useGoogleLoginMutation() {
   const client = useApiClient();
-  const startSession = useStartSession();
+  const startSession = useStartSession({ onTokens: storeSessionTokens });
   const mutation = useMutation({
-    mutationFn: (idToken: string) =>
-      client.POST("/v1/auth/sso/google", { body: { id_token: idToken, client: "web" } }),
+    mutationFn: async (idToken: string) => {
+      await clearServerAccessCookie();
+      return client.POST("/v1/auth/sso/google", { body: { id_token: idToken, client: "web" } });
+    },
     onSuccess: startSession,
     // google-sign-in-button.tsx's onError prop shows a failure inline.
     meta: { errorToast: false },
@@ -149,17 +146,19 @@ export function useGoogleLoginMutation() {
  * security key, ...), and exchanges the resulting assertion for a
  * session. Kept as one mutation for the same reason as
  * features/security's useRegisterPasskeyMutation: the browser prompt only
- * runs from a user gesture.
+ * runs from a user gesture. The server access cookie is removed after the
+ * prompt, so the prompt still follows the press as closely as before.
  */
 export function usePasskeyLoginMutation() {
   const client = useApiClient();
-  const startSession = useStartSession();
+  const startSession = useStartSession({ onTokens: storeSessionTokens });
   const mutation = useMutation({
     mutationFn: async (username: string) => {
       const options = await client.POST("/v1/auth/passkeys/login/options", {
         body: { username },
       });
       const credential = await getPasskey(options.public_key);
+      await clearServerAccessCookie();
       return client.POST("/v1/auth/passkeys/login", {
         body: { ceremony_id: options.ceremony_id, credential, client: "web" },
       });

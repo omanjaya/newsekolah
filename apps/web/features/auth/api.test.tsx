@@ -15,6 +15,7 @@ import {
 
 import {
   useGoogleLoginMutation,
+  useLoginMutation,
   useLogoutMutation,
   usePasskeyLoginMutation,
   useStopImpersonationMutation,
@@ -177,47 +178,101 @@ describe("useLogoutMutation", () => {
   });
 });
 
+interface SignIn {
+  name: string;
+  /** The request that creates the session. */
+  sessionPath: string;
+  useSignIn: () => () => Promise<unknown>;
+}
+
+const signIns: SignIn[] = [
+  {
+    name: "password",
+    sessionPath: "/v1/auth/login",
+    useSignIn: () => {
+      const mutation = useLoginMutation();
+      return () => mutation.mutateAsync({ username: "next", password: "secret", client: "web" });
+    },
+  },
+  {
+    name: "Google",
+    sessionPath: "/v1/auth/sso/google",
+    useSignIn: () => {
+      const mutation = useGoogleLoginMutation();
+      return () => mutation.mutateAsync("google-id-token");
+    },
+  },
+  {
+    name: "passkey",
+    sessionPath: "/v1/auth/passkeys/login",
+    useSignIn: () => {
+      const mutation = usePasskeyLoginMutation();
+      return () => mutation.mutateAsync("next");
+    },
+  },
+];
+
 // The tab may still hold another account's reads (a session that ran out,
-// a logout whose request failed). A password sign-in drops them (useLogin);
-// Google and passkey sign-ins must too, since nothing reads them again.
-describe("Google and passkey sign-in", () => {
+// a logout whose request failed), and `sat` may still name that account:
+// the first server render after the sign-in would hydrate its `/v1/me`.
+describe("every sign-in", () => {
   const next = person("next");
 
-  it("starts a Google sign-in from an empty cache, with me from the response", async () => {
-    post.mockResolvedValue({ access_token: "next-token", user: next });
-    const { client, result } = setup(() => useGoogleLoginMutation());
-
-    await act(async () => {
-      await result.current.mutateAsync("google-id-token");
-    });
-
-    expect(post).toHaveBeenCalledWith("/v1/auth/sso/google", {
-      body: { id_token: "google-id-token", client: "web" },
-    });
-    expect(getAccessToken()).toBe("next-token");
-    expect(client.getQueryData(["notifications", "unread-count"])).toBeUndefined();
-    expect(client.getQueryData<Me>(["me"])?.id).toBe("next");
-  });
-
-  it("starts a passkey sign-in from an empty cache, with me from the response", async () => {
-    post.mockImplementation((path: string) =>
-      Promise.resolve(
+  beforeEach(() => {
+    post.mockImplementation((path: string) => {
+      calls.push(path);
+      return Promise.resolve(
         path === "/v1/auth/passkeys/login/options"
           ? { ceremony_id: "ceremony", public_key: {} }
           : { access_token: "next-token", user: next },
-      ),
-    );
-    const { client, result } = setup(() => usePasskeyLoginMutation());
+      );
+    });
+  });
+
+  it.each(signIns)(
+    "$name: removes the server access cookie, then starts from an empty cache with me from the response",
+    async ({ sessionPath, useSignIn }) => {
+      const { client, result } = setup(() => useSignIn());
+
+      await act(async () => {
+        await result.current();
+      });
+
+      expect(calls.slice(-2)).toEqual(["clear-sat", sessionPath]);
+      expect(getAccessToken()).toBe("next-token");
+      expect(client.getQueryData(UNREAD_KEY)).toBeUndefined();
+      expect(client.getQueryData<Me>(["me"])?.id).toBe("next");
+      expect(client.getQueryData(BRANDING_KEY)).toEqual({ name: "School" });
+    },
+  );
+
+  it.each(signIns)(
+    "$name: does not sign in when the server access cookie stays",
+    async ({ sessionPath, useSignIn }) => {
+      clearSatStatus = 403;
+      const { client, result } = setup(() => useSignIn());
+
+      await act(async () => {
+        await expect(result.current()).rejects.toThrow();
+      });
+
+      expect(calls).not.toContain(sessionPath);
+      expect(getAccessToken()).toBe("earlier-token");
+      expect(client.getQueryData<Me>(["me"])?.id).toBe("earlier");
+    },
+  );
+
+  it("asks for the passkey before removing the cookie, so the prompt follows the press", async () => {
+    const { result } = setup(() => usePasskeyLoginMutation());
 
     await act(async () => {
       await result.current.mutateAsync("next");
     });
 
-    expect(post).toHaveBeenLastCalledWith("/v1/auth/passkeys/login", {
-      body: { ceremony_id: "ceremony", credential: { id: "credential" }, client: "web" },
-    });
-    expect(getAccessToken()).toBe("next-token");
-    expect(client.getQueryData(["notifications", "unread-count"])).toBeUndefined();
-    expect(client.getQueryData<Me>(["me"])?.id).toBe("next");
+    expect(calls).toEqual([
+      "/v1/auth/passkeys/login/options",
+      "clear-sat",
+      "/v1/auth/passkeys/login",
+    ]);
   });
 });
