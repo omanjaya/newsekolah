@@ -20,7 +20,7 @@ import {
 import { Bell, MonitorPlay, Rocket } from "lucide-react";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
-import type { CSSProperties, ReactElement, ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
@@ -47,6 +47,7 @@ import { usePicketBlock } from "../home/blocks/picket";
 import { useStudentBlock } from "../home/blocks/student";
 import { useTeacherBlock } from "../home/blocks/teacher";
 import { collectBlocks, guardHero, guardTiles } from "../home/compose";
+import { entrance, useFirstEntrance } from "../home/entrance";
 import { resolvePersonas } from "../home/personas";
 import type { HeroCandidate, Me, PersonaBlock, PersonaKey, TileSpec } from "../home/types";
 
@@ -74,11 +75,6 @@ const TILE_COLUMNS: Record<number, string> = {
   3: "sm:grid-cols-3",
   4: "sm:grid-cols-4",
 };
-
-/** One step of the home's first-load stagger (spec section 4, item 3). */
-function stagger(step: number): CSSProperties {
-  return { "--stagger": Math.min(step, 5) } as CSSProperties;
-}
 
 /** A tile's value as a number when it is a plain count, so it can count up. */
 function countable(value: string): number | string {
@@ -127,6 +123,26 @@ export function DashboardView(): ReactElement {
   const inbox = useActionInboxSummary();
   const quickActions = sortQuickActions(useQuickActions());
 
+  // Personal check-in leads the side column: it is the reader's own task
+  // twice a day, ahead of the context cards the personas add.
+  const personaBlocks = [
+    checkIn,
+    teacher,
+    student,
+    leadership,
+    deputy,
+    picket,
+    counselor,
+    homeroom,
+    librarian,
+    gate,
+  ];
+
+  // The stagger and the count-up play on the first visit only.
+  const firstEntrance = useFirstEntrance(
+    Boolean(me) && !personaBlocks.some((block) => block.pending === true),
+  );
+
   if (isError) {
     return (
       <AppPage variant="wide" title={t("title")} nav={false}>
@@ -167,21 +183,7 @@ export function DashboardView(): ReactElement {
     side: [],
   };
 
-  // Personal check-in leads the side column: it is the reader's own task
-  // twice a day, ahead of the context cards the personas add.
-  const collected = collectBlocks([
-    checkIn,
-    teacher,
-    student,
-    leadership,
-    deputy,
-    picket,
-    counselor,
-    homeroom,
-    librarian,
-    gate,
-    notifications,
-  ]);
+  const collected = collectBlocks([...personaBlocks, notifications]);
   const merged = guardTiles(collected.tiles, canOpen);
   const tiles = merged.some((tile) => tile.key !== NOTIFICATIONS_TILE) ? merged : [];
   const fallback: HeroCandidate =
@@ -248,20 +250,20 @@ export function DashboardView(): ReactElement {
             <HomeSkeleton tiles={Math.max(tiles.length, 2)} strip={!isDesktop} />
           ) : (
             <>
-              <HomeHero hero={hero} />
+              <HomeHero hero={hero} enter={firstEntrance} />
               {tiles.length > 0 && (
                 <StatGrid
                   variant={isDesktop ? "tiles" : "strip"}
                   aria-label={t("statsLabel")}
                   className={cn(
-                    "animate-enter",
+                    entrance(firstEntrance, 1).className,
                     isDesktop && TILE_COLUMNS[Math.min(tiles.length, 4)],
                   )}
-                  style={stagger(1)}
+                  style={entrance(firstEntrance, 1).style}
                   data-testid="dashboard-tiles"
                 >
                   {tiles.map((tile) => (
-                    <HomeStat key={tile.key} tile={tile} />
+                    <HomeStat key={tile.key} tile={tile} countUp={firstEntrance} />
                   ))}
                 </StatGrid>
               )}
@@ -271,8 +273,7 @@ export function DashboardView(): ReactElement {
             <div
               key={slot.key}
               data-testid={`dashboard-card-${slot.key}`}
-              className="animate-enter"
-              style={stagger(2 + index)}
+              {...entrance(firstEntrance, 2 + index)}
             >
               {slot.node}
             </div>
@@ -324,11 +325,10 @@ export function DashboardView(): ReactElement {
   );
 }
 
-function HomeHero({ hero }: { hero: HeroCandidate }): ReactElement {
+function HomeHero({ hero, enter }: { hero: HeroCandidate; enter: boolean }): ReactElement {
   return (
     <HeroCard
-      className="animate-enter"
-      style={stagger(0)}
+      {...entrance(enter, 0)}
       data-testid="dashboard-hero"
       tone={hero.tone}
       eyebrow={hero.eyebrow}
@@ -363,7 +363,7 @@ function HomeHero({ hero }: { hero: HeroCandidate }): ReactElement {
   );
 }
 
-function HomeStat({ tile }: { tile: TileSpec }): ReactElement {
+function HomeStat({ tile, countUp }: { tile: TileSpec; countUp: boolean }): ReactElement {
   const Icon = tile.icon;
   return (
     <Stat
@@ -374,15 +374,23 @@ function HomeStat({ tile }: { tile: TileSpec }): ReactElement {
       label={tile.label}
       hint={tile.hint}
       href={tile.href}
-      countUp
+      countUp={countUp}
     />
   );
 }
 
-/** The hero and stat row's place while the personas' first answers load, so nothing jumps. */
+/**
+ * The hero and stat row's place while the personas' first answers load, so
+ * nothing jumps. Like the route's loading screen it stays invisible for the
+ * first 200ms and then fades in, so a short wait never flashes a skeleton.
+ */
 function HomeSkeleton({ tiles = 4, strip = false }: { tiles?: number; strip?: boolean }) {
   return (
-    <div className="flex flex-col gap-4" aria-busy="true" data-testid="dashboard-skeleton">
+    <div
+      className="flex animate-fade-in flex-col gap-4 [animation-delay:var(--duration-base)]"
+      aria-busy="true"
+      data-testid="dashboard-skeleton"
+    >
       <Skeleton className="h-44 w-full rounded-xl" />
       {strip ? (
         <Skeleton className="h-16 w-full rounded-lg" />
