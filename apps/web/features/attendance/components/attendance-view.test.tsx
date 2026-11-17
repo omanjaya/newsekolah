@@ -182,4 +182,11 @@ describe("DaySessions", () => {
 
     expect(screen.getByText('daySummary:{"total":2,"saved":1,"pending":1}')).toBeInTheDocument();
   });
+
+  it("leaves the teacher's own report to the area's tab, not a header link", () => {
+    todaySessions = [session({ schedule_id: "s1" })];
+    render(<DaySessions />);
+
+    expect(screen.queryByRole("link", { name: "myReportLink" })).not.toBeInTheDocument();
+  });
 });

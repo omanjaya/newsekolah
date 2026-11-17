@@ -10,7 +10,7 @@ import {
   useToast,
   type PageHeaderAction,
 } from "@newsekolah/ui";
-import { FileBarChart, MonitorSmartphone } from "lucide-react";
+import { MonitorSmartphone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -20,8 +20,6 @@ import { AppPage } from "../../../components/app-page";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { navAccessFromMe } from "../../../lib/navigation-access";
-import { canOpenPath } from "../../../lib/navigation-permissions";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
   useClassesQuery,
@@ -254,19 +252,9 @@ export function DaySessions(): ReactElement {
   const others = dayItems.filter((item) => item !== hero);
   const savedCount = sortedItems.filter((s) => Boolean(s.submitted_at)).length;
 
-  // A teacher's own report is reachable even when the reports tab is not in
-  // their menu (it needs view_reports there, manage_attendance on the route).
-  const access = navAccessFromMe(me);
+  // The teacher's own report is the area's "Laporan presensi" tab, so the
+  // header does not offer it again.
   const secondaryActions: PageHeaderAction[] = [
-    ...(isTeacher && canOpenPath("/attendance/reports", access)
-      ? [
-          {
-            label: t("myReportLink"),
-            icon: <FileBarChart />,
-            href: "/attendance/reports?tab=mine",
-          },
-        ]
-      : []),
     ...(canViewMonitor
       ? [{ label: t("openMonitor"), icon: <MonitorSmartphone />, href: "/monitor" }]
       : []),

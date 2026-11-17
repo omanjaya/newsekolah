@@ -42,10 +42,9 @@ export function AttendanceReportsView(): ReactElement {
   );
 
   return (
-    // A teacher without view_reports reaches this page from the day list,
-    // not from the area's tabs, so it names itself; a reader with the
-    // reports tab gets the area's title over it.
-    <AppPage title={canViewReports ? undefined : t("mineTitle")} navParams={["date"]}>
+    // Every reader reaches this page from the area's tabs, so it keeps the
+    // area's title like its sibling pages.
+    <AppPage navParams={["date"]}>
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-4">
         {/* One report needs no switch. */}
         {canViewReports && (
