@@ -470,7 +470,7 @@
       "type": "Jenis",
       "status": "Status",
       "validUntil": "Berlaku sampai",
-      "lateReturns": "Keterlambatan",
+      "lateReturns": "Riwayat terlambat",
       "actions": "Aksi"
     },
     "filters": {

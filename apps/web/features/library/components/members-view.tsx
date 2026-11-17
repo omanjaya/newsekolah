@@ -152,11 +152,16 @@ export function MembersView(): ReactElement {
         id: "status",
         header: t("columns.status"),
         enableSorting: false,
-        cell: ({ row }) => (
-          <Badge tone={toneOf(MEMBER_STATUS_TONE, row.original.status)}>
-            {t(`status.${row.original.status}`)}
-          </Badge>
-        ),
+        // The normal state is quiet text, as in the users table; a badge
+        // marks only the exceptions (pending, suspended, cleared...).
+        cell: ({ row }) =>
+          row.original.status === "active" ? (
+            <span className="text-fg-muted">{t("status.active")}</span>
+          ) : (
+            <Badge tone={toneOf(MEMBER_STATUS_TONE, row.original.status)}>
+              {t(`status.${row.original.status}`)}
+            </Badge>
+          ),
       },
       {
         id: "validUntil",
@@ -166,14 +171,16 @@ export function MembersView(): ReactElement {
           row.original.valid_until ? formatShortDate(row.original.valid_until, locale) : "-",
       },
       {
+        // Past loans returned late, not current lateness: a dash for none.
         id: "lateReturns",
         header: t("columns.lateReturns"),
         enableSorting: false,
+        meta: { align: "end" },
         cell: ({ row }) =>
           row.original.late_return_count > 0 ? (
             <Badge tone="warning">{row.original.late_return_count}</Badge>
           ) : (
-            <span className="text-fg-muted">0</span>
+            <span className="text-fg-muted">-</span>
           ),
       },
       {
