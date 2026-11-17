@@ -3,15 +3,16 @@
 import {
   Alert,
   Button,
+  cn,
+  domainIcons,
   EmptyState,
   FilteredEmptyState,
   List,
   ListRow,
+  PageHeader,
   SearchInput,
   SegmentedControl,
   SkeletonList,
-  cn,
-  domainIcons,
   useDebouncedCallback,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
@@ -70,11 +71,14 @@ export function OpacView(): ReactElement {
   return (
     <div className={cn(PUBLIC_CONTAINER, "flex flex-col gap-8 py-8 md:py-12")}>
       <div className="flex animate-enter flex-col gap-5">
-        <div className="flex flex-col gap-2">
-          <p className="min-h-4.5 text-body-sm text-fg-muted">{query.data?.library_name}</p>
-          <h1 className="text-display text-fg">{t("title")}</h1>
-          <p className="text-body text-fg-muted">{t("description")}</p>
-        </div>
+        <PageHeader
+          // Holds the line while the library's name loads, so the title does not jump.
+          eyebrow={<span className="block min-h-4.5">{query.data?.library_name}</span>}
+          title={t("title")}
+          description={t("description")}
+          compactTitle={false}
+          className="pb-0"
+        />
         <div role="search" className="flex flex-col gap-3">
           <SearchInput
             aria-label={t("searchLabel")}

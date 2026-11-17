@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, IconCircle, type Tone } from "@newsekolah/ui";
+import { Card, CardTitle, IconCircle, type Tone } from "@newsekolah/ui";
 import { useId, type ReactElement, type ReactNode } from "react";
 
 export interface AuthCardStatus {
@@ -51,9 +51,9 @@ export function AuthCard({
             </IconCircle>
           )}
           <div className="flex flex-col gap-2">
-            <h1 id={titleId} className="text-display text-fg">
+            <CardTitle as="h1" id={titleId} className="text-display">
               {title}
-            </h1>
+            </CardTitle>
             {description && <p className="text-body text-fg-muted">{description}</p>}
           </div>
           {children}

@@ -2,7 +2,7 @@
 
 import { formatDateTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { Button, Dialog, DialogClose, DialogContent } from "@newsekolah/ui";
+import { Button, CardTitle, Dialog, DialogClose, DialogContent } from "@newsekolah/ui";
 import { Printer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -136,7 +136,9 @@ export function DeskReceiptDialog({
           <div className="flex flex-col gap-4">
             {settled.map((section) => (
               <div key={section.mode} className="flex flex-col gap-1.5">
-                <h3 className="text-label text-fg">{section.label}</h3>
+                <CardTitle as="h3" className="text-label">
+                  {section.label}
+                </CardTitle>
                 <ul className="flex flex-col gap-1">
                   {section.items.map((item) => (
                     <li key={item.barcode} className="text-body-sm">

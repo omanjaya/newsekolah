@@ -6,11 +6,12 @@ import { formatDate, formatDateTime } from "@newsekolah/i18n";
 import {
   Button,
   Card,
+  CardTitle,
+  cn,
   DataList,
   DataListItem,
   IconCircle,
   Skeleton,
-  cn,
   type Tone,
 } from "@newsekolah/ui";
 import { useQuery } from "@tanstack/react-query";
@@ -132,7 +133,9 @@ function Verdict({
         </IconCircle>
         <div className="flex flex-col gap-2">
           <p className="text-body-sm text-fg-muted">{t("title")}</p>
-          <h1 className="text-display text-fg">{title}</h1>
+          <CardTitle as="h1" className="text-display">
+            {title}
+          </CardTitle>
           <p className="text-body text-balance text-fg-muted">{body}</p>
         </div>
         {footer}
