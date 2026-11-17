@@ -157,7 +157,7 @@ Audit menyeluruh alur menyalakan dan mematikan modul (backend, konsol superadmin
 - **Switch konsol.** Saat menyimpan, switch menampilkan status yang diminta, terkunci, dan memberi toast per modul. Switch kini punya nama aksesibel. Field domain terisi dari nilai tersimpan. Semua kode error `PLATFORM_*` sudah diterjemahkan.
 - **Sesi ikut berubah.** Setelah toggle, sesi (`Me.disabled_modules`) dan branding publik dimuat ulang, jadi sidebar dan gerbang rute langsung mengikuti. Respons `MODULE_DISABLED` juga memuat ulang keduanya. Halaman "modul tidak tersedia" punya tombol "Periksa lagi", dan sesi dimuat ulang tiap 60 detik selama ada modul yang mati.
 - **Notifikasi** dari modul yang mati disembunyikan dari inbox, jumlah belum dibaca, digest, dan tandai-semua-dibaca. Tidak ada yang dihapus, jadi notifikasi kembali muncul saat modul dinyalakan lagi.
-- **Lain-lain.** Templat dokumen tidak lagi tertutup hanya karena izin, kesiswaan, atau tamu dimatikan. OPAC menampilkan status "tidak tersedia" alih-alih katalog kosong. Jenis notifikasi kesiswaan dan perpustakaan kini terdaftar di web.
+- **Lain-lain.** Templat dokumen tidak lagi tertutup hanya karena izin, kesiswaan, atau tamu dimatikan. OPAC menampilkan status "tidak tersedia" alih-alih katalog kosong. Jenis notifikasi kesiswaan dan perpustakaan kini terdaftar di web. Kolom "Aktivitas terakhir" di konsol kini memakai format Indonesia dan zona waktu sekolah, bukan format bawaan browser.
 
 ## Yang tersisa
 
