@@ -59,7 +59,9 @@ export function MentorTermSummaryPanel({
   }));
 
   return (
-    <div className="flex flex-col gap-4">
+    // A line of prose is easier to write and read at a measure, not the
+    // full width of a desktop card.
+    <div className="flex max-w-prose flex-col gap-4">
       <Field label={t("term")}>
         <Select
           options={termOptions}
@@ -77,21 +79,22 @@ export function MentorTermSummaryPanel({
       ) : summary.isLoading ? (
         <Skeleton className="h-32 w-full" aria-busy="true" />
       ) : (
-        <div className="flex flex-col gap-3">
-          {notFound && !canWrite && <p className="text-body-sm text-fg-muted">{t("empty")}</p>}
-          <Textarea
-            rows={6}
-            value={text}
-            disabled={!canWrite}
-            onChange={(e) => {
-              setDraft(e.target.value);
-            }}
-            placeholder={canWrite ? t("placeholder") : undefined}
-          />
+        <>
+          <Field label={t("summaryLabel")} hint={notFound && !canWrite ? t("empty") : undefined}>
+            <Textarea
+              rows={6}
+              value={text}
+              disabled={!canWrite}
+              onChange={(e) => {
+                setDraft(e.target.value);
+              }}
+              placeholder={canWrite ? t("placeholder") : undefined}
+            />
+          </Field>
           {canWrite && (
-            <div>
+            <div className="flex justify-end">
               <Button
-                size="sm"
+                className="max-sm:w-full"
                 loading={write.isPending}
                 disabled={text.trim() === "" || text === (summary.data?.summary ?? "")}
                 onClick={() => {
@@ -113,7 +116,7 @@ export function MentorTermSummaryPanel({
               </Button>
             </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );

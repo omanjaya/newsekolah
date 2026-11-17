@@ -82,7 +82,10 @@ export function SnapshotAttendanceSection({
                 ) : (
                   <Badge tone="neutral">{label}</Badge>
                 )}
-                <span className="text-heading tabular-nums text-fg">{count}</span>
+                {/* A count with its unit, never a bare number beside the badge. */}
+                <span className="text-label tabular-nums text-fg">
+                  {t("attendance.days", { count })}
+                </span>
               </div>
             );
           })}
@@ -109,7 +112,8 @@ export function SnapshotDisciplineSection({
       <CardHeader>
         <CardTitle as="h2">{t("discipline.title")}</CardTitle>
       </CardHeader>
-      <StatGrid className="grid-cols-2 sm:max-w-md">
+      {/* Two figures: two columns at every width, not StatGrid's four from sm. */}
+      <StatGrid className="grid-cols-2 sm:max-w-md sm:grid-cols-2">
         <Stat label={t("discipline.points")} value={snapshot.discipline_points} />
         <Stat
           label={t("discipline.active")}
@@ -150,7 +154,7 @@ export function SnapshotGradesSection({
           />
         </CardContent>
       ) : (
-        <List dense>
+        <List>
           {snapshot.published_subjects.map((s) => (
             <ListRow
               key={s.subject_id}
