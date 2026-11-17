@@ -35,11 +35,14 @@ import { MonthlyReportTab } from "./monthly-report-tab";
 export function AttendanceReportsView(): ReactElement {
   const t = useTranslations("app.attendanceReports");
   const canViewReports = useCan("view_reports");
-  const [tab, setTab] = useUrlState<string>(
-    "tab",
-    canViewReports ? ["mine", "daily", "monthly"] : ["mine"],
-    canViewReports ? "daily" : "mine",
-  );
+  const { me } = useSession();
+  // "Presensi saya" lists the sessions the reader taught, so only a teacher
+  // gets it beside the school-wide reports (and a reader with no other
+  // report keeps it as the page's one report).
+  const isTeacher = me?.roles.some((role) => role.slug === "teacher") ?? false;
+  const showMine = isTeacher || !canViewReports;
+  const tabs = [...(showMine ? ["mine"] : []), ...(canViewReports ? ["daily", "monthly"] : [])];
+  const [tab, setTab] = useUrlState<string>("tab", tabs, canViewReports ? "daily" : "mine");
 
   return (
     // Every reader reaches this page from the area's tabs, so it keeps the
@@ -47,16 +50,20 @@ export function AttendanceReportsView(): ReactElement {
     <AppPage navParams={["date"]}>
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-4">
         {/* One report needs no switch. */}
-        {canViewReports && (
+        {tabs.length > 1 && (
           <TabsList aria-label={t("tabsLabel")} className="self-start">
-            <TabsTrigger value="mine">{t("tabs.mine")}</TabsTrigger>
-            <TabsTrigger value="daily">{t("tabs.daily")}</TabsTrigger>
-            <TabsTrigger value="monthly">{t("tabs.monthly")}</TabsTrigger>
+            {tabs.map((id) => (
+              <TabsTrigger key={id} value={id}>
+                {t(`tabs.${id}`)}
+              </TabsTrigger>
+            ))}
           </TabsList>
         )}
-        <TabsContent value="mine" className="pt-0">
-          <MineReportTab />
-        </TabsContent>
+        {showMine && (
+          <TabsContent value="mine" className="pt-0">
+            <MineReportTab />
+          </TabsContent>
+        )}
         {canViewReports && (
           <TabsContent value="daily" className="pt-0">
             <DailyReportTab />
