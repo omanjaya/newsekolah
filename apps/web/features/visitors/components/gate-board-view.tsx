@@ -155,7 +155,10 @@ export function GateBoardView(): ReactElement {
         ) : undefined
       }
       toolbar={
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        // Full width of the toolbar row and allowed to shrink, so the filter
+        // strip scrolls inside the column instead of pushing past it; the
+        // search keeps the data-table toolbar's width.
+        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <SearchInput
             value={search}
             onChange={(event) => {
@@ -163,7 +166,7 @@ export function GateBoardView(): ReactElement {
             }}
             placeholder={t("searchPlaceholder")}
             aria-label={t("searchPlaceholder")}
-            className="sm:max-w-sm sm:flex-1"
+            className="sm:w-72 sm:flex-none lg:w-80"
           />
           <SegmentedControl<BoardFilter>
             aria-label={t("filterLabel")}
