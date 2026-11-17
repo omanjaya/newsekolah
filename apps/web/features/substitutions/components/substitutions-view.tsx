@@ -93,20 +93,17 @@ export function SubstitutionsView(): ReactElement {
     ),
   );
 
-  const requestButton = (
-    <Button
-      icon={<Plus />}
-      onClick={() => {
-        setCreating(true);
-      }}
-    >
-      {t("request")}
-    </Button>
-  );
+  function openRequest() {
+    setCreating(true);
+  }
 
   return (
     <AppPage
-      primaryAction={requestButton}
+      primaryAction={
+        <Button icon={<Plus />} onClick={openRequest}>
+          {t("request")}
+        </Button>
+      }
       toolbar={
         <SegmentedControl<Direction>
           aria-label={t("directionLabel")}
@@ -132,7 +129,16 @@ export function SubstitutionsView(): ReactElement {
           icon={<Repeat aria-hidden="true" />}
           title={t("emptyTitle")}
           description={direction === "incoming" ? t("emptyIncomingBody") : t("emptyOutgoingBody")}
-          action={requestButton}
+          // The header carries the primary request. The empty list of one's
+          // own requests repeats it quietly; the list of requests to this
+          // teacher has nothing to start.
+          action={
+            direction === "outgoing" ? (
+              <Button variant="secondary" icon={<Plus />} onClick={openRequest}>
+                {t("request")}
+              </Button>
+            ) : undefined
+          }
         />
       ) : (
         <div className="flex flex-col gap-3">
