@@ -1,6 +1,6 @@
 "use client";
 
-import { StickySaveBar } from "@newsekolah/ui";
+import { Button, StickySaveBar } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -23,9 +23,10 @@ export function ProfileSaveBar({
   const t = useTranslations("app.profile");
   return (
     <>
-      <button type="submit" className="sr-only" tabIndex={-1} aria-hidden="true">
+      {/* Lets Enter in any field submit the form while the bar is hidden. */}
+      <Button type="submit" className="sr-only" tabIndex={-1} aria-hidden="true">
         {saveLabel}
-      </button>
+      </Button>
       {(dirty || saving) && (
         <StickySaveBar
           container="narrow"

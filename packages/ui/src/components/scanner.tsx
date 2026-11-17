@@ -43,6 +43,14 @@ export interface ScannerProps {
    * length, with large type and high-contrast results.
    */
   variant?: ScannerVariant;
+  /**
+   * Kiosk only. True (default): the scanner is the whole screen, with its
+   * own page background, padding and full height. False: it sits inside a
+   * kiosk frame that already gives the screen its background, gutters and
+   * width (the app's kiosk layout, under a card that says what to do), so
+   * it draws only its own content at the kiosk type scale.
+   */
+  fullScreen?: boolean;
   /** Fires once per accepted scan: camera, hardware scanner or manual entry. `false` marks a failure. */
   onScan: (event: BarcodeScanEvent) => ScanHandlerResult | Promise<ScanHandlerResult>;
   title?: ReactNode;
@@ -94,6 +102,7 @@ function vibrate(pattern: number | number[]): void {
  */
 export function Scanner({
   variant = "action",
+  fullScreen = true,
   onScan,
   title,
   description,
@@ -221,7 +230,7 @@ export function Scanner({
     <div className="flex items-start justify-between gap-4">
       <div className="flex min-w-0 flex-col gap-1">
         {title !== undefined && (
-          <h2 className={kiosk ? "text-display text-fg" : "text-heading text-fg"}>{title}</h2>
+          <h2 className={kiosk ? "text-kiosk-title text-fg" : "text-heading text-fg"}>{title}</h2>
         )}
         {description !== undefined && (
           <p className={cn("text-fg-muted", kiosk ? "text-body" : "text-body-sm")}>{description}</p>
@@ -254,11 +263,12 @@ export function Scanner({
     <section
       data-slot="scanner"
       data-variant={variant}
+      data-full-screen={kiosk && fullScreen ? "" : undefined}
       className={cn(
         "flex flex-col",
-        kiosk
-          ? "min-h-dvh w-full items-center gap-6 bg-bg px-4 py-8 sm:px-8 md:py-12"
-          : "gap-4 rounded-lg border border-border bg-surface p-4 shadow-1 md:p-5",
+        kiosk && "w-full items-center gap-6",
+        kiosk && fullScreen && "min-h-dvh bg-bg px-4 py-8 sm:px-8 md:py-12",
+        !kiosk && "gap-4 rounded-lg border border-border bg-surface p-4 shadow-1 md:p-5",
         className,
       )}
     >

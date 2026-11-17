@@ -22,10 +22,10 @@ function shortDate(value: string, locale: Locale): string {
 
 /**
  * A student's points against the school's warning-letter thresholds: one
- * segment per level (SP 1, SP 2, SP 3), each filling as the total moves
- * through it, amber toward red, with the date a level was first reached.
- * The shared Progress meter draws each segment; the row of them is the
- * scale.
+ * shared meter from zero to the last level, each level (SP 1, SP 2, SP 3)
+ * a marked line on it, the fill amber until the last level is reached and
+ * red from there. Under it, each level's threshold and the date it was
+ * first reached, so the thresholds are said in text as well as drawn.
  */
 export function PointsMeter({
   total,
@@ -41,29 +41,28 @@ export function PointsMeter({
   const t = useTranslations("app.discipline.pointsMeter");
   const locale = useLocale() as Locale;
   const sorted = [...levels].sort((a, b) => a.min_points - b.min_points);
-  if (sorted.length === 0) return null;
+  const last = sorted.at(-1);
+  if (!last) return null;
+
+  // The scale ends at the last threshold, or at the total once it is past it.
+  const scaleMax = Math.max(1, last.min_points, total);
+  const tone: ProgressTone = total >= last.min_points ? "danger" : "warning";
 
   return (
-    <div
-      role="group"
-      aria-label={t("label", { points: total })}
-      className={cn("grid auto-cols-fr grid-flow-col gap-2", className)}
-    >
-      {sorted.map((level, index) => {
-        const from = index === 0 ? 0 : (sorted[index - 1]?.min_points ?? 0);
-        const span = Math.max(1, level.min_points - from);
-        const filled = Math.min(span, Math.max(0, total - from));
-        const crossed = crossings.find((crossing) => crossing.level === level.level);
-        const tone: ProgressTone = index === sorted.length - 1 ? "danger" : "warning";
-        return (
-          <div key={level.level} className="flex min-w-0 flex-col gap-1.5">
-            <Progress
-              value={filled}
-              max={span}
-              tone={tone}
-              aria-label={t("segment", { level: level.label, points: level.min_points })}
-            />
-            <span className="flex flex-col">
+    <div className={cn("flex min-w-0 flex-col gap-3", className)}>
+      <Progress
+        value={total}
+        max={scaleMax}
+        tone={tone}
+        aria-label={t("label", { points: total })}
+        valueLabel={new Intl.NumberFormat(locale === "id" ? "id-ID" : "en-GB").format(total)}
+        markers={sorted.map((level) => ({ value: level.min_points, label: level.label }))}
+      />
+      <ul className="grid auto-cols-fr grid-flow-col gap-2">
+        {sorted.map((level) => {
+          const crossed = crossings.find((crossing) => crossing.level === level.level);
+          return (
+            <li key={level.level} className="flex min-w-0 flex-col">
               <span className="text-caption text-fg">
                 {t("threshold", { level: level.label, points: level.min_points })}
               </span>
@@ -72,10 +71,10 @@ export function PointsMeter({
                   ? t("reachedOn", { date: shortDate(crossed.occurred_on, locale) })
                   : t("notReached")}
               </span>
-            </span>
-          </div>
-        );
-      })}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

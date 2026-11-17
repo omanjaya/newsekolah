@@ -54,6 +54,13 @@ export interface StatProps extends Omit<
   href?: string;
   /** Makes the whole stat a button, or runs before a link's navigation when `href` is set. */
   onClick?: () => void;
+  /**
+   * The stat is a filter and this one is on (a row of tiles that narrow a
+   * list below them). A button stat says so with `aria-pressed`, a link
+   * with `aria-current`; both draw the selected ring. Leave it out for a
+   * stat that is not a toggle, so it is not announced as one.
+   */
+  selected?: boolean;
 }
 
 function hasContent(node: ReactNode): boolean {
@@ -136,9 +143,13 @@ function useDisplayValue(
 function StatTarget({
   href,
   onClick,
+  selected,
   describedBy,
   children,
-}: Pick<StatProps, "href" | "onClick"> & { describedBy: string; children: ReactNode }) {
+}: Pick<StatProps, "href" | "onClick" | "selected"> & {
+  describedBy: string;
+  children: ReactNode;
+}) {
   const className =
     "outline-none after:absolute after:inset-0 after:rounded-[inherit] after:content-['']";
   if (href !== undefined) {
@@ -148,6 +159,7 @@ function StatTarget({
         onClick={onClick}
         data-stat-target=""
         aria-describedby={describedBy}
+        aria-current={selected === true ? "true" : undefined}
         className={className}
       >
         {children}
@@ -159,6 +171,7 @@ function StatTarget({
       type="button"
       data-stat-target=""
       aria-describedby={describedBy}
+      aria-pressed={selected}
       onClick={onClick}
       className={cn(className, "text-left")}
     >
@@ -166,6 +179,16 @@ function StatTarget({
     </button>
   );
 }
+
+// The selected ring follows the accent (the tenant's colour too): a tile
+// doubles its border with a ring, so it reads as chosen at a glance next
+// to its neighbours; a strip cell or a plain figure takes the selected
+// state layer, as a chosen row does.
+const SELECTED_CLASS: Record<StatAppearance, string> = {
+  plain: "bg-state-selected hover:bg-state-selected",
+  tile: "border-accent ring-1 ring-accent hover:border-accent",
+  compact: "bg-state-selected hover:bg-state-selected",
+};
 
 /**
  * One labelled figure: icon in a soft category circle, the value on the
@@ -188,6 +211,7 @@ export function Stat({
   loading = false,
   href,
   onClick,
+  selected,
   className,
   ...props
 }: StatProps) {
@@ -205,6 +229,7 @@ export function Stat({
   return (
     <div
       {...props}
+      data-selected={selected === true ? "" : undefined}
       className={cn(
         ROOT_CLASS[look],
         compact && Boolean(icon) && "pl-15",
@@ -223,6 +248,7 @@ export function Stat({
         interactive &&
           look === "plain" &&
           "-m-2 rounded-md p-2 transition-colors hover:bg-state-hover",
+        selected === true && SELECTED_CLASS[look],
         className,
       )}
     >
@@ -237,6 +263,7 @@ export function Stat({
           <StatTarget
             href={href}
             onClick={onClick}
+            selected={selected}
             describedBy={hasFooter ? `${valueId} ${hintId}` : valueId}
           >
             {label}

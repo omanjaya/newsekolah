@@ -8,14 +8,14 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  IconCircle,
+  FileDropzone,
   Stepper,
   useToast,
 } from "@newsekolah/ui";
 import { Download, FileSpreadsheet, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useId, useRef, useState } from "react";
+import { useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
@@ -46,11 +46,9 @@ type Step = "upload" | "mapping" | "preview" | "result";
  */
 export function ImportView(): ReactElement {
   const t = useTranslations("app.library.import");
-  const fileInputId = useId();
   const shortcuts = useLibraryShortcuts(["catalogueSettings"]);
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const preview = useLibraryImportPreviewMutation();
   const commit = useLibraryImportCommitMutation();
 
@@ -131,14 +129,17 @@ export function ImportView(): ReactElement {
     setPreviewResult(null);
     setCommitResult(null);
     setError("");
-    if (fileInputRef.current) fileInputRef.current.value = "";
   }
+
+  // A file that cannot be read is said under the drop zone; a later step's
+  // failure (preview, commit) above the step it stopped.
+  const uploadError = step === "upload" && error ? error : undefined;
 
   return (
     <AppPage nav={<LibraryWorkspaceNav area="catalogue" />} secondaryActions={shortcuts}>
       <Stepper steps={steps} currentIndex={Math.max(currentIndex, 0)} variant="compact" />
 
-      {error && <Alert tone="danger" title={error} />}
+      {error && !uploadError && <Alert tone="danger" title={error} />}
 
       {step === "upload" && (
         <Card>
@@ -147,38 +148,22 @@ export function ImportView(): ReactElement {
             <CardDescription>{t("uploadDescription")}</CardDescription>
           </CardHeader>
           <div className="flex flex-col gap-4 px-5 pb-5">
-            {/* The native picker's own button speaks the browser's language
-                ("Choose File"), so it stays hidden behind ours. */}
-            <input
-              ref={fileInputRef}
-              id={fileInputId}
-              type="file"
+            {/* The template can be dropped as well as picked; a file that
+                cannot be read or has no rows is said under the zone. */}
+            <FileDropzone
               accept=".xlsx"
-              className="sr-only"
-              tabIndex={-1}
-              aria-hidden="true"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void handleFile(file);
+              fileName={fileName}
+              icon={<FileSpreadsheet />}
+              chooseLabel={t("pickFile")}
+              replaceLabel={t("pickAnother")}
+              title={t("pickHint")}
+              hint={t("formatHint")}
+              error={uploadError}
+              rejectMessage={t("parseError")}
+              onFile={(file) => {
+                void handleFile(file);
               }}
             />
-            <div className="flex flex-col items-center gap-3 rounded-lg bg-surface-sunken px-6 py-8 text-center">
-              <IconCircle tone="accent" size="lg">
-                <FileSpreadsheet />
-              </IconCircle>
-              <p className="text-body text-fg">
-                {fileName ? t("selectedFile", { name: fileName }) : t("pickHint")}
-              </p>
-              <p className="text-caption text-fg-muted">{t("formatHint")}</p>
-              <Button
-                icon={<Upload />}
-                onClick={() => {
-                  fileInputRef.current?.click();
-                }}
-              >
-                {fileName ? t("pickAnother") : t("pickFile")}
-              </Button>
-            </div>
             <Button
               variant="ghost"
               size="sm"

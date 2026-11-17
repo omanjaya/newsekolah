@@ -223,6 +223,7 @@ export function TodayBoardView({
             label={t(`statuses.${item.code}`)}
             value={counts[item.code] ?? 0}
             loading={board.isLoading}
+            selected={status === item.code}
             onClick={() => {
               setStatus((current) => (current === item.code ? "" : item.code));
             }}

@@ -1,19 +1,23 @@
 "use client";
 
 import {
+  Alert,
   Button,
+  Card,
   Checkbox,
   Dialog,
   DialogContent,
+  Field,
   IconButton,
   Input,
+  SegmentedControl,
   Switch,
   useToast,
 } from "@newsekolah/ui";
 import { ChevronDown, ChevronUp, FileSpreadsheet, FileText } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
-import { useId, useState } from "react";
+import { useState } from "react";
 
 /**
  * Shared "download report" dialog: format (Excel/PDF), title, whether to
@@ -213,7 +217,6 @@ function ReportExportForm({
 }: ReportExportDialogProps): ReactElement {
   const t = useTranslations("app.reportExport");
   const toast = useToast();
-  const titleFieldId = useId();
 
   const [stored] = useState(() => readStoredChoice(reportKey));
   const [format, setFormat] = useState<ReportExportFormat>(stored?.format ?? "xlsx");
@@ -308,54 +311,25 @@ function ReportExportForm({
       <div className="flex flex-col gap-5">
         {scopeSlot}
 
-        {error && (
-          <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-            {error}
-          </p>
-        )}
+        {error && <Alert tone="danger">{error}</Alert>}
 
-        <div className="flex flex-col gap-2">
-          <span className="text-[13px] font-medium text-fg">{t("formatLabel")}</span>
-          <div role="radiogroup" aria-label={t("formatLabel")} className="flex gap-2">
-            <button
-              type="button"
-              role="radio"
-              aria-checked={format === "xlsx"}
-              onClick={() => {
-                setFormat("xlsx");
-              }}
-              className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm border px-3 text-[13px] font-medium transition-colors ${
-                format === "xlsx"
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-border text-fg-muted hover:bg-bg"
-              }`}
-            >
-              <FileSpreadsheet className="size-4" aria-hidden="true" />
-              {t("formatExcel")}
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={format === "pdf"}
-              onClick={() => {
-                setFormat("pdf");
-              }}
-              className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm border px-3 text-[13px] font-medium transition-colors ${
-                format === "pdf"
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-border text-fg-muted hover:bg-bg"
-              }`}
-            >
-              <FileText className="size-4" aria-hidden="true" />
-              {t("formatPdf")}
-            </button>
-          </div>
-        </div>
+        <Field label={t("formatLabel")}>
+          {(control) => (
+            <SegmentedControl<ReportExportFormat>
+              aria-labelledby={control.labelId}
+              value={format}
+              onValueChange={setFormat}
+              fullWidth
+              options={[
+                { value: "xlsx", label: t("formatExcel"), icon: <FileSpreadsheet /> },
+                { value: "pdf", label: t("formatPdf"), icon: <FileText /> },
+              ]}
+            />
+          )}
+        </Field>
 
-        <label htmlFor={titleFieldId} className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("titleLabel")}</span>
+        <Field label={t("titleLabel")} required>
           <Input
-            id={titleFieldId}
             value={title}
             onChange={(e) => {
               setTitle(e.target.value);
@@ -363,66 +337,58 @@ function ReportExportForm({
             maxLength={160}
             required
           />
-        </label>
+        </Field>
 
-        <div className="flex items-center justify-between gap-3 text-[13px]">
-          <span className="font-medium text-fg">{t("showLetterheadLabel")}</span>
-          <Switch
-            checked={showLetterhead}
-            onCheckedChange={setShowLetterhead}
-            aria-label={t("showLetterheadLabel")}
-          />
-        </div>
+        <Field label={t("showLetterheadLabel")} orientation="inline">
+          <Switch checked={showLetterhead} onCheckedChange={setShowLetterhead} />
+        </Field>
 
         {columnsCustomizable && (
           <div className="flex flex-col gap-2">
-            <span className="text-[13px] font-medium text-fg">
-              {t("columnsLabel", { count: includedCount })}
-            </span>
-            <ul className="flex flex-col gap-1">
-              {columns.map((column, index) => (
-                <li
-                  key={column.key}
-                  className="flex items-center gap-2 rounded-sm border border-border bg-surface px-2 py-1.5"
-                >
-                  <Checkbox
-                    checked={column.included}
-                    onCheckedChange={(checked) => {
-                      toggle(column.key, checked === true);
-                    }}
-                    aria-label={t("includeColumn", { column: column.defaultLabel })}
-                  />
-                  <Input
-                    value={column.label}
-                    onChange={(e) => {
-                      rename(column.key, e.target.value);
-                    }}
-                    aria-label={t("columnLabel", { column: column.defaultLabel })}
-                    maxLength={60}
-                    className="h-9 flex-1"
-                    disabled={!column.included}
-                  />
-                  <div className="flex shrink-0 gap-0.5">
-                    <IconButton
-                      icon={<ChevronUp aria-hidden="true" />}
-                      aria-label={t("moveUp", { column: column.defaultLabel })}
-                      onClick={() => {
-                        move(index, -1);
+            <p className="text-label text-fg">{t("columnsLabel", { count: includedCount })}</p>
+            <Card padding="none" className="overflow-hidden">
+              <ul className="flex flex-col divide-y divide-line">
+                {columns.map((column, index) => (
+                  <li key={column.key} className="flex items-center gap-2 px-3 py-2">
+                    <Checkbox
+                      checked={column.included}
+                      onCheckedChange={(checked) => {
+                        toggle(column.key, checked === true);
                       }}
-                      disabled={index === 0}
+                      aria-label={t("includeColumn", { column: column.defaultLabel })}
                     />
-                    <IconButton
-                      icon={<ChevronDown aria-hidden="true" />}
-                      aria-label={t("moveDown", { column: column.defaultLabel })}
-                      onClick={() => {
-                        move(index, 1);
+                    <Input
+                      value={column.label}
+                      onChange={(e) => {
+                        rename(column.key, e.target.value);
                       }}
-                      disabled={index === columns.length - 1}
+                      aria-label={t("columnLabel", { column: column.defaultLabel })}
+                      maxLength={60}
+                      className="h-9 flex-1"
+                      disabled={!column.included}
                     />
-                  </div>
-                </li>
-              ))}
-            </ul>
+                    <div className="flex shrink-0 gap-0.5">
+                      <IconButton
+                        icon={<ChevronUp aria-hidden="true" />}
+                        aria-label={t("moveUp", { column: column.defaultLabel })}
+                        onClick={() => {
+                          move(index, -1);
+                        }}
+                        disabled={index === 0}
+                      />
+                      <IconButton
+                        icon={<ChevronDown aria-hidden="true" />}
+                        aria-label={t("moveDown", { column: column.defaultLabel })}
+                        onClick={() => {
+                          move(index, 1);
+                        }}
+                        disabled={index === columns.length - 1}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Card>
           </div>
         )}
       </div>

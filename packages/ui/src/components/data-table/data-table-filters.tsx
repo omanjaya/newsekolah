@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, X } from "lucide-react";
+import { Check } from "lucide-react";
 import { useRef, useState, type ReactElement } from "react";
 
 import { useScrollEdges } from "../../hooks/use-scroll-edges.js";
@@ -9,6 +9,14 @@ import { Field, FieldError } from "../field.js";
 import { Input } from "../input.js";
 import { Popover, PopoverContent, PopoverTrigger } from "../popover.js";
 import { useUiLabels } from "../ui-labels.js";
+
+import {
+  FilterPillShell,
+  PILL_MENU_TRIGGER_CLASS,
+  PILL_TRIGGER_CLASS,
+  PillChevron,
+} from "./data-table-filter-pill.js";
+import { MonthFilterPill } from "./data-table-month-filter.js";
 
 export interface DataTableFilterOption {
   value: string;
@@ -34,11 +42,11 @@ export interface DataTableFilterDef {
   label: string;
   /**
    * "" means "no filter applied". Any other value is considered active.
-   * Used by "select" and "boolean" (the default); ignored for "dateRange",
-   * which reads `from`/`to` instead.
+   * Used by "select", "boolean" (the default) and "month" ("YYYY-MM");
+   * ignored for "dateRange", which reads `from`/`to` instead.
    */
   value?: string;
-  /** Used by "select" and "boolean"; ignored for "dateRange". */
+  /** Used by "select", "boolean" and "month"; ignored for "dateRange". */
   onChange?: (value: string) => void;
   /**
    * "select" (default) opens a popover listing `options`, single-select.
@@ -47,8 +55,11 @@ export interface DataTableFilterDef {
    * "Hanya tersedia").
    * "dateRange" opens a popover with two native date inputs (from/to) plus
    * any `presets`.
+   * "month" opens the month grid of `MonthPicker` (a billing period, a
+   * monthly report) and writes "YYYY-MM"; the chip reads "Periode:
+   * November 2026".
    */
-  type?: "select" | "boolean" | "dateRange";
+  type?: "select" | "boolean" | "dateRange" | "month";
   /** Required for type="select": the choices offered in the popover. */
   options?: DataTableFilterOption[];
   /** type="boolean" only: the value written when the toggle turns on. Defaults to "true". */
@@ -65,6 +76,15 @@ export interface DataTableFilterDef {
   onChangeRange?: (range: { from: string; to: string }) => void;
   /** type="dateRange" only: quick picks shown above the two date inputs. */
   presets?: DataTableDateRangePreset[];
+  /** type="month" only: the earliest month offered, "YYYY-MM". */
+  minMonth?: string;
+  /** type="month" only: the latest month offered, "YYYY-MM". */
+  maxMonth?: string;
+  /**
+   * type="month" only: the school's "today", "YYYY-MM-DD", so the grid
+   * marks the current month from the business clock, not the device's.
+   */
+  today?: string;
 }
 
 export interface DataTableFiltersLabels {
@@ -168,6 +188,13 @@ export function DataTableFilters({
             toLabel={labels.dateRangeTo}
             invalidLabel={labels.dateRangeInvalid}
           />
+        ) : filter.type === "month" ? (
+          <MonthFilterPill
+            key={filter.id}
+            filter={filter}
+            removeLabel={labels.removeFilter(filter.label)}
+            locale={uiLabels.locale}
+          />
         ) : (
           <DataTableFilterPill
             key={filter.id}
@@ -187,64 +214,6 @@ export function DataTableFilters({
           }}
         >
           {labels.reset}
-        </button>
-      )}
-    </div>
-  );
-}
-
-// Each half of a pill is rounded itself, rather than clipped by an
-// `overflow-hidden` shell: clipping would also cut off the keyboard focus
-// ring the base styles draw around whichever half has focus.
-const PILL_TRIGGER_CLASS =
-  "flex h-11 items-center gap-1 rounded-full px-3 text-label whitespace-nowrap transition-colors md:pointer-fine:h-8";
-
-/**
- * A pill that opens a list or a date popover ends in a small chevron, so it
- * reads as a filter to pick from, not as one more action button next to
- * "Tambah"; the chevron side is a little tighter. An on/off pill
- * (`type: "boolean"`) acts at once and has none.
- */
-const PILL_MENU_TRIGGER_CLASS = `${PILL_TRIGGER_CLASS} pr-2.5`;
-
-function PillChevron({ active }: { active: boolean }): ReactElement {
-  return (
-    <ChevronDown
-      className={cn("size-3.5 shrink-0", active ? "opacity-70" : "text-fg-muted")}
-      aria-hidden="true"
-    />
-  );
-}
-
-function FilterPillShell({
-  active,
-  removeLabel,
-  onRemove,
-  trigger,
-}: {
-  active: boolean;
-  removeLabel: string;
-  onRemove: () => void;
-  trigger: ReactElement;
-}): ReactElement {
-  return (
-    <div
-      className={cn(
-        "inline-flex items-center rounded-full border",
-        active
-          ? "border-accent bg-accent-soft text-accent-soft-fg"
-          : "border-border bg-surface text-fg",
-      )}
-    >
-      {trigger}
-      {active && (
-        <button
-          type="button"
-          aria-label={removeLabel}
-          className="-ml-1 flex size-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-state-hover active:bg-state-pressed md:pointer-fine:size-8"
-          onClick={onRemove}
-        >
-          <X className="size-3.5" aria-hidden="true" />
         </button>
       )}
     </div>

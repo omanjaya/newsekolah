@@ -1,5 +1,5 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/react";
-import { Camera, Keyboard, Monitor, Moon, QrCode, Sun } from "lucide-react";
+import { Camera, Dot, Keyboard, Monitor, Moon, QrCode, Sun } from "lucide-react";
 import { useState } from "react";
 
 import { SegmentedControl } from "./segmented-control.js";
@@ -62,6 +62,49 @@ function Demo() {
           { value: "semester", label: "Semester", disabled: true },
         ]}
       />
+      <WeekStrip />
+    </div>
+  );
+}
+
+/** Seven short day names on a phone's width: the dense size, today marked with a dot. */
+function WeekStrip() {
+  const [day, setDay] = useState("3");
+  return (
+    <div className="w-[358px] max-w-full">
+      <SegmentedControl
+        aria-label="Pilih hari"
+        size="dense"
+        fullWidth
+        value={day}
+        onValueChange={setDay}
+        options={["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((label, index) => ({
+          value: String(index + 1),
+          label,
+          icon: index === 2 ? <Dot className="-mx-1.5 text-accent" /> : undefined,
+        }))}
+      />
+    </div>
+  );
+}
+
+/** A filter under a search field: full width on a phone, its own width beside the field from 640px. */
+function ToolbarFilter() {
+  const [value, setValue] = useState("all");
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="h-11 rounded-md bg-surface-sunken sm:max-w-sm sm:flex-1" />
+      <SegmentedControl
+        aria-label="Tampilkan"
+        fullWidth="phone"
+        value={value}
+        onValueChange={setValue}
+        options={[
+          { value: "all", label: "Semua" },
+          { value: "onSite", label: "Di lokasi", count: 4 },
+          { value: "expected", label: "Dijadwalkan", count: 2 },
+        ]}
+      />
     </div>
   );
 }
@@ -74,6 +117,7 @@ export default meta;
 type Story = StoryObj<typeof SegmentedControl>;
 
 export const Default: Story = { render: () => <Demo /> };
+export const PhoneFullWidth: Story = { render: () => <ToolbarFilter /> };
 export const Disabled: Story = {
   render: () => (
     <SegmentedControl

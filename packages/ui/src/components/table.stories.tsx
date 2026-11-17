@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { Card } from "./card.js";
 import {
   Table,
   TableBody,
@@ -183,5 +184,31 @@ export const Compact: Story = {
         ))}
       </TableBody>
     </Table>
+  ),
+};
+
+/** A grid that sits in its own Card and scroll area: the bare table, day headings sticking to the top. */
+export const Unframed: Story = {
+  render: () => (
+    <Card className="max-h-64 overflow-auto p-0">
+      <Table framed={false} density="compact" className="table-fixed">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="sticky top-0 bg-surface">Jam</TableHead>
+            <TableHead className="sticky top-0 bg-surface">Senin</TableHead>
+            <TableHead className="sticky top-0 bg-surface">Selasa</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Array.from({ length: 8 }, (_, index) => (
+            <TableRow key={index}>
+              <TableCell>{`Jam ${String(index + 1)}`}</TableCell>
+              <TableCell>Matematika</TableCell>
+              <TableCell>Biologi</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
   ),
 };

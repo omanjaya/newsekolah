@@ -2,8 +2,20 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatRelative } from "@newsekolah/i18n";
-import { Card, EmptyState, List, SafeHtml, SkeletonList, cn, domainIcons } from "@newsekolah/ui";
-import { ChevronDown, Pin } from "lucide-react";
+import {
+  Card,
+  cn,
+  Disclosure,
+  DisclosureContent,
+  DisclosureIndicator,
+  DisclosureTrigger,
+  domainIcons,
+  EmptyState,
+  List,
+  SafeHtml,
+  SkeletonList,
+} from "@newsekolah/ui";
+import { Pin } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -168,51 +180,45 @@ function AnnouncementRow({
 
   return (
     <li className="border-b border-line last:border-b-0">
-      <button
-        type="button"
-        aria-expanded={expanded}
-        onClick={onToggle}
-        className="flex w-full items-start gap-3 px-(--list-inset) py-3 text-left transition-colors hover:bg-state-hover"
-      >
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="flex items-center gap-2">
-            {item.is_pinned && (
-              <Pin className="size-4 shrink-0 text-accent" aria-label={t("pinned")} />
-            )}
-            <span
-              className={cn(
-                "min-w-0 flex-1 truncate text-body text-fg",
-                !item.is_read && "font-semibold",
+      <Disclosure open={expanded} onOpenChange={onToggle}>
+        <DisclosureTrigger className="flex w-full items-start gap-3 px-(--list-inset) py-3 transition-colors hover:bg-state-hover">
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="flex items-center gap-2">
+              {item.is_pinned && (
+                <Pin className="size-4 shrink-0 text-accent" aria-label={t("pinned")} />
               )}
-            >
-              {item.title}
+              <span
+                className={cn(
+                  "min-w-0 flex-1 truncate text-body text-fg",
+                  !item.is_read && "font-semibold",
+                )}
+              >
+                {item.title}
+              </span>
+            </span>
+            <span className="text-caption text-fg-muted">
+              {formatRelative(item.published_at, { locale, timeZone: me?.tenant.timezone })}
             </span>
           </span>
-          <span className="text-caption text-fg-muted">
-            {formatRelative(item.published_at, { locale, timeZone: me?.tenant.timezone })}
-          </span>
-        </span>
-        {!item.is_read && (
-          <span
-            className="mt-2 size-2 shrink-0 rounded-full bg-accent"
-            role="img"
-            aria-label={t("unread")}
-          />
-        )}
-        <ChevronDown
-          className={cn(
-            "mt-0.5 size-4 shrink-0 text-fg-muted transition-transform",
-            expanded && "rotate-180",
+          {!item.is_read && (
+            <span
+              className="mt-2 size-2 shrink-0 rounded-full bg-accent"
+              role="img"
+              aria-label={t("unread")}
+            />
           )}
-          aria-hidden="true"
-        />
-      </button>
-      {expanded && (
-        <SafeHtml
-          html={item.body_html}
-          className="prose-announcement px-(--list-inset) pb-4 text-body text-fg"
-        />
-      )}
+          <DisclosureIndicator className="mt-0.5" />
+        </DisclosureTrigger>
+        {/* The body mounts once opened; opening is what records the read. */}
+        <DisclosureContent>
+          {expanded && (
+            <SafeHtml
+              html={item.body_html}
+              className="prose-announcement px-(--list-inset) pb-4 text-body text-fg"
+            />
+          )}
+        </DisclosureContent>
+      </Disclosure>
     </li>
   );
 }
@@ -239,49 +245,44 @@ function AnnouncementCard({
 
   return (
     <Card className="h-full overflow-hidden">
-      <button
-        type="button"
-        aria-expanded={expanded}
-        onClick={onToggle}
-        data-testid={`announcement-feed-card-${item.id}`}
-        className="flex h-full w-full flex-col gap-1.5 p-5 text-left transition-colors hover:bg-state-hover"
-      >
-        <div className="flex items-start gap-2">
-          {item.is_pinned && (
-            <Pin className="mt-0.5 size-4 shrink-0 text-accent" aria-label={t("pinned")} />
-          )}
-          <span className={cn("flex-1 text-heading text-fg", item.is_read && "font-semibold")}>
-            {item.title}
+      <Disclosure open={expanded} onOpenChange={onToggle}>
+        <DisclosureTrigger
+          data-testid={`announcement-feed-card-${item.id}`}
+          className="flex h-full w-full flex-col gap-1.5 p-5 transition-colors hover:bg-state-hover"
+        >
+          <div className="flex items-start gap-2">
+            {item.is_pinned && (
+              <Pin className="mt-0.5 size-4 shrink-0 text-accent" aria-label={t("pinned")} />
+            )}
+            <span className={cn("flex-1 text-heading text-fg", item.is_read && "font-semibold")}>
+              {item.title}
+            </span>
+            {!item.is_read && (
+              <span
+                className="mt-1.5 size-2 shrink-0 rounded-full bg-accent"
+                role="img"
+                aria-label={t("unread")}
+                data-testid="announcement-unread-dot"
+              />
+            )}
+            <DisclosureIndicator className="mt-0.5" />
+          </div>
+          <span className="text-caption text-fg-muted">
+            {formatRelative(item.published_at, { locale, timeZone })}
           </span>
-          {!item.is_read && (
-            <span
-              className="mt-1.5 size-2 shrink-0 rounded-full bg-accent"
-              role="img"
-              aria-label={t("unread")}
-              data-testid="announcement-unread-dot"
+          {excerpt && !expanded && (
+            <p className="line-clamp-2 text-body-sm text-fg-muted">{excerpt}</p>
+          )}
+        </DisclosureTrigger>
+        <DisclosureContent>
+          {expanded && (
+            <SafeHtml
+              html={item.body_html}
+              className="prose-announcement border-t border-line px-5 py-4 text-body text-fg"
             />
           )}
-          <ChevronDown
-            className={cn(
-              "mt-0.5 size-4 shrink-0 text-fg-muted transition-transform duration-[var(--duration-fast)]",
-              expanded && "rotate-180",
-            )}
-            aria-hidden="true"
-          />
-        </div>
-        <span className="text-caption text-fg-muted">
-          {formatRelative(item.published_at, { locale, timeZone })}
-        </span>
-        {excerpt && !expanded && (
-          <p className="line-clamp-2 text-body-sm text-fg-muted">{excerpt}</p>
-        )}
-      </button>
-      {expanded && (
-        <SafeHtml
-          html={item.body_html}
-          className="prose-announcement border-t border-line px-5 py-4 text-body text-fg"
-        />
-      )}
+        </DisclosureContent>
+      </Disclosure>
     </Card>
   );
 }

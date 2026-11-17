@@ -1,7 +1,16 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Dialog, DialogContent, IconButton, Input, Select, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  Card,
+  Dialog,
+  DialogContent,
+  IconButton,
+  Input,
+  Select,
+  useToast,
+} from "@newsekolah/ui";
 import { LogOut, UserRoundCog } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -185,13 +194,13 @@ function RoleTestingDialog({
                   <p className="text-body-sm text-fg-muted">{t("noUsers")}</p>
                 )}
                 {!accounts.isError && !accounts.isPending && accounts.data.users.length ? (
-                  <div className="max-h-56 overflow-y-auto rounded-sm border border-border">
+                  <Card padding="none" className="max-h-56 overflow-y-auto">
                     {accounts.data.users.map((user) => (
                       <label
                         key={user.id}
                         htmlFor={`role-testing-user-${user.id}`}
                         aria-label={`${user.name} (${user.username})`}
-                        className="flex cursor-pointer items-center gap-3 border-b border-border px-3 py-2 last:border-b-0 hover:bg-bg"
+                        className="flex cursor-pointer items-center gap-3 border-b border-line px-3 py-2 last:border-b-0 hover:bg-state-hover"
                       >
                         <input
                           id={`role-testing-user-${user.id}`}
@@ -214,7 +223,7 @@ function RoleTestingDialog({
                         </span>
                       </label>
                     ))}
-                  </div>
+                  </Card>
                 ) : null}
                 <div className="mt-2 flex justify-between gap-2">
                   <Button

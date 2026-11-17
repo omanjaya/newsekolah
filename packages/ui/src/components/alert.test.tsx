@@ -79,6 +79,31 @@ describe("Alert", () => {
     expect(action?.parentElement?.className).not.toMatch(/items-center/);
   });
 
+  it("takes two actions, the main one first, in the one action slot", () => {
+    render(
+      <Alert
+        tone="warning"
+        title="Draf ditemukan"
+        action={
+          <>
+            <button type="button">Pulihkan</button>
+            <button type="button">Buang</button>
+          </>
+        }
+      >
+        Ada catatan yang belum terkirim dari pukul 08.40.
+      </Alert>,
+    );
+    const restore = screen.getByRole("button", { name: "Pulihkan" });
+    const discard = screen.getByRole("button", { name: "Buang" });
+    const slot = restore.parentElement;
+    expect(slot).toHaveAttribute("data-slot", "alert-action");
+    expect(discard.parentElement).toBe(slot);
+    expect(slot?.firstElementChild).toBe(restore);
+    // Under the text on a phone they may wrap; on the title line they do not.
+    expect(slot).toHaveClass("flex-wrap", "sm:flex-nowrap", "gap-2");
+  });
+
   // A flex column would make every text run and inline element its own
   // stacked item, putting the link on a line of its own.
   it("keeps a sentence with an inline link in normal flow", () => {

@@ -4,6 +4,7 @@ import { ApiError } from "@newsekolah/api-client";
 import { formatNumber } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
+  type BarcodeScanEvent,
   Card,
   CardDescription,
   CardHeader,
@@ -12,16 +13,15 @@ import {
   IconCircle,
   List,
   ListRow,
+  type PageHeaderAction,
   Progress,
   Scanner,
+  type ScannerResultValue,
   SkeletonDetail,
   Stat,
   StatGrid,
   useScanFeedback,
   useToast,
-  type BarcodeScanEvent,
-  type PageHeaderAction,
-  type ScannerResultValue,
 } from "@newsekolah/ui";
 import {
   BookCheck,
@@ -331,7 +331,9 @@ function ScanFeedList({ entries }: { entries: ScanFeedEntry[] }): ReactElement {
   const t = useTranslations("app.library.stocktake.scan");
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="text-label text-fg-muted">{t("earlier")}</h3>
+      <CardTitle as="h3" className="text-label text-fg-muted">
+        {t("earlier")}
+      </CardTitle>
       <List framed dense aria-label={t("earlier")}>
         {entries.map((entry) => {
           const found = entry.outcome === "found";

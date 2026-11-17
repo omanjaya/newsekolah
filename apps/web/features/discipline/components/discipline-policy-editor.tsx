@@ -104,22 +104,18 @@ export function DisciplinePolicyEditor({
                 className="grid grid-cols-[3rem_1fr_10rem_2.5rem] items-center gap-2"
               >
                 <span className="text-body tabular-nums text-fg">{level.level}</span>
-                <label className="sr-only" htmlFor={`sp-level-label-${index}`}>
-                  {t("columns.label")}
-                </label>
                 <Input
                   id={`sp-level-label-${index}`}
+                  aria-label={t("columns.label")}
                   value={level.label}
                   placeholder={t("levelPlaceholder")}
                   onChange={(e) => {
                     updateLevel(index, { label: e.target.value });
                   }}
                 />
-                <label className="sr-only" htmlFor={`sp-level-points-${index}`}>
-                  {t("columns.minPoints")}
-                </label>
                 <NumberInput
                   id={`sp-level-points-${index}`}
+                  aria-label={t("columns.minPoints")}
                   min={0}
                   value={level.minPoints === "" ? null : Number(level.minPoints)}
                   onChange={(next) => {

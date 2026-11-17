@@ -148,6 +148,20 @@ describe("AppPage", () => {
     ).toBeTruthy();
   });
 
+  it("passes a leading avatar through to the header, beside the title", () => {
+    route.pathname = "/library/catalogue/t-1";
+    renderPage(
+      <AppPage title="Laskar Pelangi" leading={<span data-testid="cover">LP</span>}>
+        Isi
+      </AppPage>,
+    );
+    const leading = screen.getByTestId("cover").parentElement;
+    expect(leading).toHaveAttribute("data-slot", "page-header-leading");
+    expect(leading?.parentElement).toBe(
+      screen.getByRole("heading", { level: 1, name: "Laskar Pelangi" }).parentElement,
+    );
+  });
+
   it("keeps the frame and the tab title when the content still renders its own heading", () => {
     renderPage(
       <AppPage header={false}>

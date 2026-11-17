@@ -2,6 +2,7 @@
 
 import {
   Button,
+  Field,
   Skeleton,
   Switch,
   Table,
@@ -123,14 +124,16 @@ export function NotificationChannelMatrix({
             ) : (
               <div className="grid grid-cols-3 gap-2">
                 {channels.map((channel) => (
-                  // The whole cell is the label, so tapping the channel name toggles too.
-                  <label
+                  // The channel name is the field's label, so tapping it toggles too.
+                  <Field
                     key={channel}
-                    className="flex min-h-11 flex-col items-start justify-center gap-1"
+                    label={
+                      <span className="text-caption text-fg-muted">{channelLabel(channel)}</span>
+                    }
+                    className="min-h-11 justify-center gap-1"
                   >
-                    <span className="text-caption text-fg-muted">{channelLabel(channel)}</span>
                     {control(row, channel)}
-                  </label>
+                  </Field>
                 ))}
               </div>
             )}

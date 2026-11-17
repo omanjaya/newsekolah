@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Avatar,
   Button,
   Dialog,
   DialogContent,
@@ -107,6 +108,7 @@ export function StudentDisciplineView({ studentId }: { studentId: string }): Rea
 
   return (
     <AppPage
+      leading={<Avatar name={studentName} size={48} decorative />}
       title={studentName}
       description={
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">

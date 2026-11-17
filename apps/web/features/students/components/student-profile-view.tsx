@@ -142,12 +142,8 @@ export function StudentProfileView({ studentId }: { studentId: string }): ReactE
       documentTitle={name}
       breadcrumb={breadcrumb.length > 1 ? breadcrumb : false}
       eyebrow={breadcrumb.length > 1 ? undefined : t("eyebrow")}
-      title={
-        <span className="flex min-w-0 items-center gap-4">
-          <Avatar name={name} src={user.data?.avatar_url} size={64} decorative />
-          <span className="min-w-0 break-words">{name}</span>
-        </span>
-      }
+      leading={<Avatar name={name} src={user.data?.avatar_url} size={64} decorative />}
+      title={<span className="break-words">{name}</span>}
       description={
         [className ? t("className", { name: className }) : null, nis ? t("nis", { nis }) : null]
           .filter(Boolean)

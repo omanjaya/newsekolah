@@ -3,6 +3,7 @@ import { Download, Plus, Printer, Trash2 } from "lucide-react";
 
 import { phoneViewport } from "../stories/phone-viewport.js";
 
+import { Avatar } from "./avatar.js";
 import { Badge } from "./badge.js";
 import { Button } from "./button.js";
 import { PageHeader } from "./page-header.js";
@@ -70,6 +71,29 @@ function Gallery() {
             ]}
           />
         }
+      />
+      <Placeholder />
+      {/* An identity header: the avatar beside the name and its line. */}
+      <PageHeader
+        breadcrumb={[{ label: "Siswa", href: "#" }, { label: "Nadia Putri" }]}
+        leading={<Avatar name="Nadia Putri" size={48} decorative />}
+        title="Nadia Putri"
+        description="NIS 22014 · X-A · Wali kelas Bu Rina"
+        secondaryActions={[
+          { label: "Buka profil", href: "#" },
+          { label: "Cetak ringkasan", icon: <Printer />, onSelect: () => undefined },
+        ]}
+      />
+      <Placeholder />
+      {/* Only secondary actions: on a phone the menu ends the title's line. */}
+      <PageHeader
+        breadcrumb={[{ label: "Presensi", href: "#" }, { label: "Pertemuan 2" }]}
+        title="Pertemuan 2"
+        description="X-A · Matematika · Jam 1"
+        secondaryActions={[
+          { label: "Jurnal pertemuan", href: "#" },
+          { label: "Cetak daftar", icon: <Printer />, onSelect: () => undefined },
+        ]}
       />
       <Placeholder />
     </div>

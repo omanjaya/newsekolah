@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  DateTimeField,
   DialogFooter,
   Button,
   Card,
@@ -18,7 +19,6 @@ import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { businessNow } from "../../../lib/simulation/clock";
-import { DateTimeFields } from "../../discipline/components/date-time-fields";
 import {
   type MentorGroupMember,
   type MentorMeetingNote,
@@ -97,7 +97,7 @@ export function MentorMeetingNoteForm({
         }
       }}
     >
-      <DateTimeFields
+      <DateTimeField
         value={metAt}
         onChange={setMetAt}
         dateLabel={t("metDate")}
@@ -117,23 +117,20 @@ export function MentorMeetingNoteForm({
         <legend className="mb-2 text-label text-fg">{t("attendees")}</legend>
         <Card tone="sunken" className="max-h-52 overflow-y-auto p-1">
           {members.map((member) => (
-            <label
+            <Checkbox
               key={member.id}
-              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-3 text-body text-fg transition-colors hover:bg-state-hover"
-            >
-              <Checkbox
-                checked={attendeeIds.has(member.student_user_id)}
-                onCheckedChange={(checked) => {
-                  setAttendeeIds((prev) => {
-                    const next = new Set(prev);
-                    if (checked) next.add(member.student_user_id);
-                    else next.delete(member.student_user_id);
-                    return next;
-                  });
-                }}
-              />
-              {studentNames.get(member.student_user_id) ?? t("unknownStudent")}
-            </label>
+              checked={attendeeIds.has(member.student_user_id)}
+              onCheckedChange={(checked) => {
+                setAttendeeIds((prev) => {
+                  const next = new Set(prev);
+                  if (checked) next.add(member.student_user_id);
+                  else next.delete(member.student_user_id);
+                  return next;
+                });
+              }}
+              containerClassName="min-h-11 items-center rounded-md px-3 py-0 transition-colors hover:bg-state-hover md:pointer-fine:py-0"
+              label={studentNames.get(member.student_user_id) ?? t("unknownStudent")}
+            />
           ))}
         </Card>
         {attendeeIdList.length === 0 && (

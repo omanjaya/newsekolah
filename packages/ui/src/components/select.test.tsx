@@ -61,6 +61,27 @@ describe("Select", () => {
     expect(screen.getByText("Wali: Bu Rina")).toBeInTheDocument();
   });
 
+  it("shows an option's leading mark in the list and in the closed field", async () => {
+    render(
+      <Select
+        aria-label="Jenis kegiatan"
+        defaultValue="exam"
+        options={[
+          { value: "holiday", label: "Libur", icon: <span data-testid="dot-holiday" /> },
+          { value: "exam", label: "Ujian", icon: <span data-testid="dot-exam" /> },
+        ]}
+      />,
+    );
+    const trigger = screen.getByRole("combobox", { name: "Jenis kegiatan" });
+    expect(trigger).toHaveTextContent("Ujian");
+    expect(trigger).toContainElement(screen.getByTestId("dot-exam"));
+    // The mark is decorative: the option is named by its label alone.
+    await userEvent.click(trigger);
+    expect(screen.getByRole("option", { name: "Libur" })).toContainElement(
+      screen.getByTestId("dot-holiday"),
+    );
+  });
+
   it("is labelled, described and marked invalid by a surrounding Field", () => {
     render(
       <Field label="Kelas" error="Pilih salah satu">
@@ -70,6 +91,67 @@ describe("Select", () => {
     const trigger = screen.getByRole("combobox", { name: "Kelas" });
     expect(trigger).toHaveAttribute("aria-invalid", "true");
     expect(trigger).toHaveAccessibleDescription("Pilih salah satu");
+  });
+
+  it("shows an option whose value is empty by its own label, not the placeholder", async () => {
+    const onValueChange = vi.fn();
+    const options = [
+      { value: "", label: "Belum dipilih" },
+      { value: "L", label: "Laki-laki" },
+      { value: "P", label: "Perempuan" },
+    ];
+    const { rerender } = render(
+      <Select
+        aria-label="Jenis kelamin"
+        options={options}
+        value=""
+        onValueChange={onValueChange}
+      />,
+    );
+    const trigger = screen.getByRole("combobox", { name: "Jenis kelamin" });
+    expect(trigger).toHaveTextContent("Belum dipilih");
+    expect(trigger).not.toHaveTextContent("Pilih");
+    expect(trigger).not.toHaveAttribute("data-placeholder");
+
+    rerender(
+      <Select
+        aria-label="Jenis kelamin"
+        options={options}
+        value="P"
+        onValueChange={onValueChange}
+      />,
+    );
+    await userEvent.click(trigger);
+    await userEvent.click(screen.getByRole("option", { name: "Belum dipilih" }));
+    // The caller gets the option's own "" back, never the stand-in key.
+    expect(onValueChange).toHaveBeenLastCalledWith("");
+  });
+
+  it("keeps the placeholder for an empty value when no option is empty", () => {
+    render(<Select aria-label="Kelas" value="" options={[{ value: "x-a", label: "X-A" }]} />);
+    expect(screen.getByRole("combobox", { name: "Kelas" })).toHaveTextContent("Pilih");
+  });
+
+  it("posts the empty option's real value under its name", async () => {
+    render(
+      <form aria-label="Profil">
+        <Select
+          aria-label="Agama"
+          name="religion"
+          defaultValue="Islam"
+          options={[
+            { value: "", label: "Belum dipilih" },
+            { value: "Islam", label: "Islam" },
+          ]}
+        />
+      </form>,
+    );
+    const posted = () =>
+      new FormData(screen.getByRole<HTMLFormElement>("form", { name: "Profil" })).get("religion");
+    expect(posted()).toBe("Islam");
+    await userEvent.click(screen.getByRole("combobox", { name: "Agama" }));
+    await userEvent.click(screen.getByRole("option", { name: "Belum dipilih" }));
+    expect(posted()).toBe("");
   });
 
   it("has no accessibility violations", async () => {

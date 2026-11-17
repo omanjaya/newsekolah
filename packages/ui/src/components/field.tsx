@@ -22,7 +22,7 @@ import {
 } from "./field-context.js";
 import { useUiLabels } from "./ui-labels.js";
 
-export type FieldOrientation = "vertical" | "horizontal";
+export type FieldOrientation = "vertical" | "horizontal" | "inline";
 
 /**
  * What a render-prop child receives: spread it onto a control `Field` does
@@ -52,7 +52,9 @@ export interface FieldProps {
   /**
    * "vertical" (default) puts the label above the control. "horizontal"
    * puts it in a left column from `sm` up, level with the control's first
-   * line, for settings pages; it stacks on a phone.
+   * line, for settings pages; it stacks on a phone. "inline" keeps the
+   * label and a small control (a Switch) on one line at every width, the
+   * control right after the label, for a toggle in a toolbar.
    */
   orientation?: FieldOrientation;
   /** Keeps the label for assistive tech only, e.g. a field inside a table row. */
@@ -171,6 +173,7 @@ export function Field({
   const context = useMemo<FieldContextValue>(
     () => ({
       controlId,
+      labelId,
       describedBy,
       invalid: hasError,
       required,
@@ -182,6 +185,7 @@ export function Field({
     }),
     [
       controlId,
+      labelId,
       describedBy,
       hasError,
       required,
@@ -194,6 +198,7 @@ export function Field({
   );
 
   const horizontal = orientation === "horizontal";
+  const inline = orientation === "inline";
   const control =
     typeof children === "function"
       ? children({
@@ -214,6 +219,7 @@ export function Field({
           "flex min-w-0 flex-col gap-2",
           horizontal &&
             "sm:grid sm:grid-cols-[minmax(8rem,14rem)_minmax(0,1fr)] sm:gap-x-6 sm:gap-y-1",
+          inline && "flex-row flex-wrap items-center gap-x-3 gap-y-1",
           className,
         )}
       >
@@ -253,9 +259,17 @@ export function Field({
             <div className="flex shrink-0 items-center text-body-sm">{labelAside}</div>
           )}
         </div>
-        <div className={cn("min-w-0", horizontal && "sm:col-start-2")}>{control}</div>
+        <div className={cn("min-w-0", horizontal && "sm:col-start-2", inline && "flex")}>
+          {control}
+        </div>
         {(hasHint || hasError) && (
-          <div className={cn("-mt-1 flex flex-col gap-1", horizontal && "sm:col-start-2 sm:mt-0")}>
+          <div
+            className={cn(
+              "-mt-1 flex flex-col gap-1",
+              horizontal && "sm:col-start-2 sm:mt-0",
+              inline && "mt-0 basis-full",
+            )}
+          >
             {hasHint && (
               <p id={hintId} className="text-body-sm text-fg-muted">
                 {hint}

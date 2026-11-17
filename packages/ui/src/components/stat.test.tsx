@@ -218,6 +218,41 @@ describe("Stat", () => {
     expect(window.location.hash).toBe("#permits");
   });
 
+  it("says which filter tile is on with aria-pressed and the selected ring", async () => {
+    const onClick = vi.fn();
+    const { container } = render(
+      <StatGrid variant="tiles" aria-label="Tingkat risiko">
+        <Stat value={2} label="Berisiko" onClick={onClick} selected />
+        <Stat value={5} label="Dipantau" onClick={onClick} selected={false} />
+        <Stat value={9} label="Aman" onClick={onClick} />
+      </StatGrid>,
+    );
+    const on = screen.getByRole("button", { name: "Berisiko" });
+    const off = screen.getByRole("button", { name: "Dipantau" });
+    expect(on).toHaveAttribute("aria-pressed", "true");
+    expect(off).toHaveAttribute("aria-pressed", "false");
+    // A stat that is not a toggle is not announced as one.
+    expect(screen.getByRole("button", { name: "Aman" })).not.toHaveAttribute("aria-pressed");
+    const [first, second] = Array.from(container.querySelectorAll("dl > div"));
+    expect(first).toHaveClass("border-accent", "ring-1", "ring-accent");
+    expect(first).toHaveAttribute("data-selected");
+    expect(second).not.toHaveClass("ring-accent");
+    await userEvent.click(on);
+    expect(onClick).toHaveBeenCalledOnce();
+    await expectNoAxeViolations(container);
+  });
+
+  it("marks a selected link stat as current and a strip cell with the selected layer", () => {
+    render(
+      <StatGrid variant="strip" aria-label="Status">
+        <Stat value={3} label="Menunggu" href="#pending" selected />
+      </StatGrid>,
+    );
+    const link = screen.getByRole("link", { name: "Menunggu" });
+    expect(link).toHaveAttribute("aria-current", "true");
+    expect(link.closest("[data-selected]")).toHaveClass("bg-state-selected");
+  });
+
   it("puts an id, a test id and a ref on its root", () => {
     const ref = createRef<HTMLDivElement>();
     render(<Stat ref={ref} id="total" data-testid="total-stat" value={3} label="Izin" />);

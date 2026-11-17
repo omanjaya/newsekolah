@@ -15,12 +15,18 @@ export type StripSize = "sm" | "md";
 /**
  * The outer track. A pill strip is a sunken capsule as wide as its items;
  * an underline strip has no box, and its base line runs the full width of
- * the container, the way a page-level tab bar does.
+ * the container, the way a page-level tab bar does. `fullWidth="phone"`
+ * stretches a pill strip below 640px only, where it shares a toolbar's
+ * column, and gives it back its own width from `sm` up.
  */
-export function stripTrackClass(variant: StripVariant, fullWidth?: boolean): string {
+export function stripTrackClass(variant: StripVariant, fullWidth?: boolean | "phone"): string {
   return cn(
     "max-w-full min-w-0",
-    fullWidth || variant === "underline" ? "flex w-full" : "inline-flex w-fit",
+    fullWidth === true || variant === "underline"
+      ? "flex w-full"
+      : fullWidth === "phone"
+        ? "flex w-full sm:inline-flex sm:w-fit"
+        : "inline-flex w-fit",
     variant === "pill" && "overflow-hidden rounded-full bg-surface-sunken",
   );
 }

@@ -53,6 +53,12 @@ export interface HeroCardProps extends Omit<ComponentPropsWithRef<"section">, "t
   children?: ReactNode;
   /** `accent-soft` (default) for "now", `neutral` for a calm state, `warning` for something overdue. */
   tone?: HeroCardTone;
+  /**
+   * "md" (default) for a page. "kiosk" for a screen read standing back
+   * from it (a reading-room kiosk): the title on the kiosk title role and
+   * the meta on the large body role.
+   */
+  size?: "md" | "kiosk";
   titleAs?: "h1" | "h2" | "h3";
 }
 
@@ -71,11 +77,13 @@ export function HeroCard({
   secondaryAction,
   children,
   tone = "accent-soft",
+  size = "md",
   titleAs: Title = "h2",
   className,
   ...props
 }: HeroCardProps): ReactElement {
   const style = TONE[tone];
+  const kiosk = size === "kiosk";
   const hasActions = Boolean(action) || Boolean(secondaryAction);
   return (
     <section
@@ -102,8 +110,8 @@ export function HeroCard({
           )}
         </div>
       )}
-      <Title className="text-display">{title}</Title>
-      {meta && <p className={cn("text-body", style.muted)}>{meta}</p>}
+      <Title className={kiosk ? "text-kiosk-title" : "text-display"}>{title}</Title>
+      {meta && <p className={cn(kiosk ? "text-body-lg" : "text-body", style.muted)}>{meta}</p>}
       {children}
       {hasActions && (
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">

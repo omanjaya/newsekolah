@@ -103,6 +103,8 @@ export {
 } from "./components/date-range-picker.js";
 export { MonthPicker, type MonthPickerProps } from "./components/month-picker.js";
 export { TimePicker, type TimePickerProps } from "./components/time-picker.js";
+export { DateTimeField, type DateTimeFieldProps } from "./components/date-time-field.js";
+export { FileDropzone, type FileDropzoneProps } from "./components/file-dropzone.js";
 export { NumberInput, type NumberInputProps } from "./components/number-input.js";
 export {
   RadioGroup,
@@ -115,6 +117,7 @@ export {
   SegmentedControl,
   type SegmentedControlOption,
   type SegmentedControlProps,
+  type SegmentedControlSize,
 } from "./components/segmented-control.js";
 export { Switch, type SwitchProps } from "./components/switch.js";
 export {
@@ -272,8 +275,22 @@ export {
   type RowActionsMenuItem,
   type RowActionsMenuProps,
 } from "./components/row-actions-menu.js";
-export { Progress, type ProgressProps, type ProgressTone } from "./components/progress.js";
+export {
+  Progress,
+  type ProgressMarker,
+  type ProgressProps,
+  type ProgressTone,
+} from "./components/progress.js";
 export { Kbd } from "./components/kbd.js";
+export {
+  Disclosure,
+  DisclosureContent,
+  DisclosureIndicator,
+  DisclosureTrigger,
+  type DisclosureContentProps,
+  type DisclosureProps,
+  type DisclosureTriggerProps,
+} from "./components/disclosure.js";
 export { StickySaveBar, type StickySaveBarProps } from "./components/sticky-save-bar.js";
 export {
   CommandPalette,

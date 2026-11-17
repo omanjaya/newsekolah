@@ -4,6 +4,7 @@ import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatTime } from "@newsekolah/i18n";
 import {
+  DateTimeField,
   DialogFooter,
   Field,
   Alert,
@@ -36,8 +37,6 @@ import {
   loadCounselingDraft,
   saveCounselingDraft,
 } from "../lib/counseling-draft";
-
-import { DateTimeFields } from "./date-time-fields";
 
 const KINDS: CounselingKind[] = ["individual", "group", "parent", "referral"];
 const TOPICS: CounselingTopic[] = ["career", "problem", "personal", "learning", "social", "other"];
@@ -193,7 +192,7 @@ export function CounselingForm({
           disabled={initial !== undefined}
         />
       </Field>
-      <DateTimeFields
+      <DateTimeField
         value={sessionAt}
         onChange={setSessionAt}
         dateLabel={t("sessionDate")}

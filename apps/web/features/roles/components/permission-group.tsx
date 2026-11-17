@@ -1,9 +1,17 @@
 "use client";
 
-import { Badge, Checkbox, cn } from "@newsekolah/ui";
-import { Check, ChevronDown, Minus } from "lucide-react";
+import {
+  Badge,
+  Checkbox,
+  Disclosure,
+  DisclosureContent,
+  DisclosureIndicator,
+  DisclosureTrigger,
+  cn,
+} from "@newsekolah/ui";
+import { Check, Minus } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useId, type ReactElement } from "react";
+import type { ReactElement } from "react";
 
 export interface PermissionRow {
   code: string;
@@ -49,7 +57,6 @@ export function PermissionGroup({
   onToggleAll,
 }: PermissionGroupProps): ReactElement {
   const t = useTranslations("app.roles");
-  const regionId = useId();
   const togglable = codes.filter((code) => !rows.some((row) => row.code === code && row.dutyOnly));
   const grantedCount = codes.filter((code) => granted.has(code)).length;
   const togglableOn = togglable.filter((code) => granted.has(code)).length;
@@ -58,45 +65,55 @@ export function PermissionGroup({
     togglableOn === 0 ? false : togglableOn === togglable.length ? true : "indeterminate";
 
   return (
-    <section className="flex flex-col">
-      <div className="flex items-center gap-3 px-4 md:px-5">
-        {editable && togglable.length > 0 && (
-          <Checkbox
-            checked={allState}
-            aria-label={t("selectAll", { group: label })}
-            onCheckedChange={(value) => {
-              onToggleAll(togglable, value === true);
-            }}
-          />
-        )}
-        <button
-          type="button"
-          aria-expanded={expanded}
-          aria-controls={regionId}
-          onClick={() => {
-            onExpandedChange(!expanded);
-          }}
-          className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-md text-left focus-visible:outline-offset-2"
-        >
-          <span className="min-w-0 flex-1 truncate text-heading text-fg">{label}</span>
-          {groupChanged && (
-            <Badge tone="warning" size="sm" dot>
-              {t("changed")}
-            </Badge>
+    <Disclosure open={expanded} onOpenChange={onExpandedChange}>
+      <section className="flex flex-col">
+        <div className="flex items-center gap-3 px-4 md:px-5">
+          {editable && togglable.length > 0 && (
+            <Checkbox
+              checked={allState}
+              aria-label={t("selectAll", { group: label })}
+              onCheckedChange={(value) => {
+                onToggleAll(togglable, value === true);
+              }}
+            />
           )}
-          <span className="shrink-0 text-body-sm tabular-nums text-fg-muted">
-            {t("permissionCount", { granted: grantedCount, total: codes.length })}
-          </span>
-          <ChevronDown
-            aria-hidden="true"
-            className={cn(
-              "size-4 shrink-0 text-fg-muted transition-transform",
-              expanded && "rotate-180",
+          <DisclosureTrigger className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-md">
+            <span className="min-w-0 flex-1 truncate text-heading text-fg">{label}</span>
+            {groupChanged && (
+              <Badge tone="warning" size="sm" dot>
+                {t("changed")}
+              </Badge>
             )}
-          />
-        </button>
-      </div>
-      <ul id={regionId} hidden={!expanded} className="flex flex-col pb-2">
+            <span className="shrink-0 text-body-sm tabular-nums text-fg-muted">
+              {t("permissionCount", { granted: grantedCount, total: codes.length })}
+            </span>
+            <DisclosureIndicator />
+          </DisclosureTrigger>
+        </div>
+        <PermissionRows
+          rows={rows}
+          granted={granted}
+          changed={changed}
+          editable={editable}
+          onToggle={onToggle}
+        />
+      </section>
+    </Disclosure>
+  );
+}
+
+/** The group's rows, the content its header opens and closes. */
+function PermissionRows({
+  rows,
+  granted,
+  changed,
+  editable,
+  onToggle,
+}: Pick<PermissionGroupProps, "rows" | "granted" | "changed" | "editable" | "onToggle">) {
+  const t = useTranslations("app.roles");
+  return (
+    <DisclosureContent asChild>
+      <ul className="flex flex-col pb-2">
         {rows.map((row) => {
           const on = granted.has(row.code);
           const description = (
@@ -163,6 +180,6 @@ export function PermissionGroup({
           );
         })}
       </ul>
-    </section>
+    </DisclosureContent>
   );
 }

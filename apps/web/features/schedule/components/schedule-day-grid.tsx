@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@newsekolah/ui";
+import { Card, Table } from "@newsekolah/ui";
 import type { ReactElement } from "react";
 
 import type { ScheduleBlock } from "../api";
@@ -68,8 +68,9 @@ export function ScheduleDayGrid({
     // card, under day headings that stay in view.
     <Card className="hidden min-h-0 overflow-hidden p-0 md:flex md:flex-col">
       <div className="min-h-0 overflow-auto">
-        <table
-          className="w-full table-fixed border-collapse text-body-sm"
+        <Table
+          framed={false}
+          className="table-fixed"
           style={{ minWidth: gridMinWidth(classes.length) }}
         >
           <GridColumns columnCount={classes.length} />
@@ -133,7 +134,7 @@ export function ScheduleDayGrid({
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       </div>
     </Card>
   );

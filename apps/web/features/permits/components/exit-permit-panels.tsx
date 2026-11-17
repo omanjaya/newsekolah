@@ -222,6 +222,7 @@ export function GatePanel(): ReactElement {
                 key={entry.key}
                 leading={<Avatar size={40} name={entry.studentName} decorative />}
                 title={formatDisplayName(entry.studentName)}
+                titleLines={2}
                 meta={entry.className}
                 trailing={formatTime(entry.at, { locale, timeZone: me?.tenant.timezone })}
                 action={

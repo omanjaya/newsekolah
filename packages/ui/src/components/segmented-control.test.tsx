@@ -89,6 +89,46 @@ describe("SegmentedControl", () => {
     expect(group).toHaveAccessibleDescription("Pilih status yang ditampilkan");
   });
 
+  it("trims the side padding in the dense size and keeps the touch height", () => {
+    const days = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((label, index) => ({
+      value: String(index + 1),
+      label,
+    }));
+    const { rerender } = render(
+      <SegmentedControl aria-label="Hari" options={days} defaultValue="1" fullWidth />,
+    );
+    expect(screen.getByRole("radio", { name: "Sen" })).toHaveClass("px-4");
+    rerender(
+      <SegmentedControl aria-label="Hari" options={days} defaultValue="1" fullWidth size="dense" />,
+    );
+    const monday = screen.getByRole("radio", { name: "Sen" });
+    expect(monday).toHaveClass("px-1.5", "gap-1", "h-8", "pointer-coarse:h-9");
+    expect(monday).not.toHaveClass("px-4");
+  });
+
+  it("stretches on a phone only when fullWidth is phone", () => {
+    const { container, rerender } = render(
+      <SegmentedControl aria-label="Status izin" options={options} defaultValue="all" />,
+    );
+    const track = (): Element | null => container.firstElementChild;
+    expect(track()).toHaveClass("inline-flex", "w-fit");
+    rerender(
+      <SegmentedControl aria-label="Status izin" options={options} defaultValue="all" fullWidth />,
+    );
+    expect(track()).toHaveClass("flex", "w-full");
+    expect(track()).not.toHaveClass("sm:w-fit");
+    rerender(
+      <SegmentedControl
+        aria-label="Status izin"
+        options={options}
+        defaultValue="all"
+        fullWidth="phone"
+      />,
+    );
+    expect(track()).toHaveClass("flex", "w-full", "sm:inline-flex", "sm:w-fit");
+    expect(screen.getByRole("radiogroup")).toHaveClass("w-full", "min-w-max");
+  });
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <SegmentedControl aria-label="Status izin" options={options} defaultValue="pending" />,

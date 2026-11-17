@@ -6,6 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  cn,
   DataList,
   DataListItem,
   EmptyState,
@@ -13,7 +14,6 @@ import {
   ListRow,
   SkeletonDetail,
   TextLink,
-  cn,
 } from "@newsekolah/ui";
 import { ArrowLeft, BookX } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -102,7 +102,9 @@ function TitleDetail({ detail }: { detail: LibraryOpacTitleDetail }): ReactEleme
             {title.classification && (
               <p className="text-body-sm text-fg-muted">{title.classification}</p>
             )}
-            <h1 className="text-display text-fg [overflow-wrap:anywhere]">{title.title}</h1>
+            <CardTitle as="h1" className="text-display [overflow-wrap:anywhere]">
+              {title.title}
+            </CardTitle>
             {title.subtitle && <p className="text-body text-fg-muted">{title.subtitle}</p>}
             {title.author && <p className="text-body text-fg">{title.author}</p>}
           </div>

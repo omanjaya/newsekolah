@@ -257,15 +257,16 @@
 
 /*
  * 5. Indicators: an element that moves or resizes to follow a state (a tab
- * pill, a progress fill, a switch thumb). They travel and grow through
- * transform only (`translate`, `scale`), never width or position, so a
- * tab pill is placed with a translate and sized with a scale; an
- * indicator's fill may change color on the way.
+ * pill, a progress fill, a switch thumb, a disclosure chevron turning).
+ * They travel, grow and turn through transform only (`translate`, `scale`,
+ * `rotate`), never width or position, so a tab pill is placed with a
+ * translate and sized with a scale; an indicator's fill may change color
+ * on the way.
  * `motion-indicator` is the 200ms pace, `motion-meter` the slower 320ms one
  * for progress and meters.
  */
 @utility motion-indicator {
-  transition-property: transform, translate, scale, opacity, background-color;
+  transition-property: transform, translate, scale, rotate, opacity, background-color;
   transition-duration: var(--duration-base);
   transition-timing-function: var(--ease-standard);
 }

@@ -36,6 +36,12 @@ export interface TableProps extends ComponentPropsWithoutRef<"table"> {
   density?: TableDensity;
   /** className for the rounded, scrollable card wrapping the table. */
   containerClassName?: string;
+  /**
+   * False renders the bare `<table>` with no card around it, for a grid
+   * that already sits in its own `Card` and scroll area (a timetable whose
+   * day headings stick to the top of that scroll area). Default true.
+   */
+  framed?: boolean;
 }
 
 /**
@@ -44,7 +50,22 @@ export interface TableProps extends ComponentPropsWithoutRef<"table"> {
  * search, paging or phone cards (a grade sheet, a report). See
  * docs/05-shared-components.md.
  */
-export function Table({ density = "normal", className, containerClassName, ...props }: TableProps) {
+export function Table({
+  density = "normal",
+  framed = true,
+  className,
+  containerClassName,
+  ...props
+}: TableProps) {
+  const table = (
+    <table
+      className={cn("w-full border-collapse text-body-sm tabular-nums", className)}
+      {...props}
+    />
+  );
+  if (!framed) {
+    return <TableDensityContext.Provider value={density}>{table}</TableDensityContext.Provider>;
+  }
   return (
     <TableDensityContext.Provider value={density}>
       <div
@@ -53,10 +74,7 @@ export function Table({ density = "normal", className, containerClassName, ...pr
           containerClassName,
         )}
       >
-        <table
-          className={cn("w-full border-collapse text-body-sm tabular-nums", className)}
-          {...props}
-        />
+        {table}
       </div>
     </TableDensityContext.Provider>
   );

@@ -227,19 +227,21 @@ export function ViolationRecordForm({
                   const checked = studentIds.includes(student.id);
                   const disabled = !checked && studentIds.length >= MAX_STUDENTS;
                   return (
-                    <label key={student.id} className={PICK_ROW}>
-                      <Checkbox
-                        checked={checked}
-                        disabled={disabled}
-                        onCheckedChange={() => {
-                          toggleStudent(student.id);
-                        }}
-                      />
-                      <Avatar size={32} name={student.name} decorative />
-                      <span className="min-w-0 flex-1 truncate text-body text-fg">
-                        {student.name}
-                      </span>
-                    </label>
+                    <Checkbox
+                      key={student.id}
+                      checked={checked}
+                      disabled={disabled}
+                      onCheckedChange={() => {
+                        toggleStudent(student.id);
+                      }}
+                      containerClassName={PICK_ROW}
+                      label={
+                        <span className="flex min-w-0 items-center gap-3">
+                          <Avatar size={32} name={student.name} decorative />
+                          <span className="min-w-0 flex-1 truncate">{student.name}</span>
+                        </span>
+                      }
+                    />
                   );
                 })
               )}
@@ -286,19 +288,23 @@ export function ViolationRecordForm({
                     const checked = typeIds.includes(type.id);
                     const disabled = !checked && typeIds.length >= MAX_TYPES;
                     return (
-                      <label key={type.id} className={PICK_ROW}>
-                        <Checkbox
-                          checked={checked}
-                          disabled={disabled}
-                          onCheckedChange={() => {
-                            toggleType(type.id);
-                          }}
-                        />
-                        <span className="min-w-0 flex-1 text-body text-fg">{type.name}</span>
-                        <Badge tone={checked ? "warning" : "neutral"} size="sm">
-                          {t("points", { points: type.points })}
-                        </Badge>
-                      </label>
+                      <Checkbox
+                        key={type.id}
+                        checked={checked}
+                        disabled={disabled}
+                        onCheckedChange={() => {
+                          toggleType(type.id);
+                        }}
+                        containerClassName={PICK_ROW}
+                        label={
+                          <span className="flex min-w-0 items-center gap-3">
+                            <span className="min-w-0 flex-1">{type.name}</span>
+                            <Badge tone={checked ? "warning" : "neutral"} size="sm">
+                              {t("points", { points: type.points })}
+                            </Badge>
+                          </span>
+                        }
+                      />
                     );
                   })
                 )}

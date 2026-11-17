@@ -133,3 +133,18 @@ describe("DataTable header band", () => {
     expect(headRow()).toHaveClass("bg-surface-header");
   });
 });
+
+describe("DataTable toolbar on a phone", () => {
+  it("draws no phone row for a table with nothing but the column menu", () => {
+    render(<DataTable mode="local" data={USERS} columns={fieldColumns} searchable={false} />);
+    // The toolbar row: hidden below md, still offering density and columns from md up.
+    const toolbar = screen.getByRole("button", { name: "Kolom tampil" }).closest(".flex-wrap");
+    expect(toolbar).toHaveClass("max-md:hidden");
+  });
+
+  it("keeps the phone row while there is a search to type in", () => {
+    render(<DataTable mode="local" data={USERS} columns={fieldColumns} />);
+    const toolbar = screen.getByRole("searchbox").closest(".flex-wrap");
+    expect(toolbar).not.toHaveClass("max-md:hidden");
+  });
+});

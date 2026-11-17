@@ -231,6 +231,9 @@ export function AttendanceCalendar(): ReactElement {
                   const dotClass = STATUS_DOT_CLASS[code];
                   const statusLabel = tCal(`codes.${code}`);
                   return (
+                    // A day cell of the student's attendance month, with its
+                    // status dot: the shared Calendar has no per-day status.
+                    // eslint-disable-next-line design-system/no-raw-elements -- calendar day cell, see above
                     <button
                       key={date}
                       type="button"

@@ -119,7 +119,19 @@ test("topbar switches roles, survives reload, and returns to superadmin with sim
   await expect(page.getByText(`Selamat datang, ${admin.name}`)).toBeVisible();
   const simulation = page.getByTestId("simulation-controls");
   await simulation.locator("summary").click();
-  await simulation.getByLabel("Tanggal sekolah").fill("2026-09-28");
+  // The date is a DatePicker: open it, step month by month towards
+  // 28 September 2026 (the calendar opens on today), then pick the day.
+  await simulation.getByLabel("Tanggal sekolah").click();
+  const targetDay = page.locator('[role="gridcell"][data-date="2026-09-28"]');
+  const shownDay = await page
+    .locator('[role="gridcell"][data-date]')
+    .first()
+    .getAttribute("data-date");
+  const step = (shownDay ?? "") > "2026-09-28" ? "Bulan sebelumnya" : "Bulan berikutnya";
+  for (let i = 0; i < 48 && (await targetDay.count()) === 0; i += 1) {
+    await page.getByRole("button", { name: step, exact: true }).click();
+  }
+  await targetDay.first().click();
   await simulation.getByLabel("Jam sekolah (Asia/Makassar)").fill("06:45");
   await simulation.getByRole("button", { name: "Terapkan", exact: true }).click();
 

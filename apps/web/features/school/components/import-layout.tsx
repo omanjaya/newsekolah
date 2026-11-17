@@ -8,11 +8,16 @@ import { useId, useRef } from "react";
 
 /**
  * Pieces both import screens (users, class placement) share, so the two
- * read as one flow: the numbered steps, the file field and the "only
- * problem rows" switch above the preview.
+ * read as one flow: the numbered steps, the spreadsheet types their
+ * shared FileDropzone takes, and the "only problem rows" switch above the
+ * preview.
  */
 
 export type ImportStage = "upload" | "preview" | "done";
+
+/** What an import's file picker offers: the XLSX template, by extension and by type. */
+export const XLSX_ACCEPT =
+  ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 export function ImportProgress({ stage }: { stage: ImportStage }): ReactElement {
   const t = useTranslations("app.school.importFlow");
@@ -31,9 +36,10 @@ export function ImportProgress({ stage }: { stage: ImportStage }): ReactElement 
 }
 
 /**
- * A spreadsheet picker: one labelled button (44px under a finger) that
- * opens the file dialog, and the chosen file's name beside it. The input
- * itself stays for keyboard and assistive tech.
+ * A compact file picker: one labelled button (44px under a finger) that
+ * opens the file dialog, and the chosen file's name beside it. The import
+ * screens use the shared FileDropzone; this one-line picker remains for
+ * the onboarding wizard's CSV step.
  */
 export function ImportFileField({
   label,
@@ -41,7 +47,7 @@ export function ImportFileField({
   loading,
   disabled,
   onFile,
-  accept = ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  accept = XLSX_ACCEPT,
   className,
 }: {
   label: string;

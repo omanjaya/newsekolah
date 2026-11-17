@@ -1,6 +1,6 @@
 "use client";
 
-import { Stat, StatGrid, type StatCategory, cn } from "@newsekolah/ui";
+import { Stat, StatGrid, type StatCategory } from "@newsekolah/ui";
 import { CircleCheck, Eye, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
@@ -48,10 +48,10 @@ export function RiskLevelSummary({
           value={counts[level]}
           label={levelLabel(level)}
           hint={selected === level ? t("filtering") : undefined}
+          selected={selected === level}
           onClick={() => {
             onSelect(selected === level ? "" : level);
           }}
-          className={cn(selected === level && "ring-2 ring-accent")}
         />
       ))}
     </StatGrid>

@@ -96,6 +96,7 @@ export function MyDisciplineView(): ReactElement {
                   </IconCircle>
                 }
                 title={letter.level_label}
+                titleLines={2}
                 meta={`${letter.letter_number} · ${formatDate(letter.issued_at, { locale, timeZone })}`}
               />
             ))}
@@ -125,6 +126,7 @@ export function MyDisciplineView(): ReactElement {
                   </IconCircle>
                 }
                 title={record.type_name}
+                titleLines={2}
                 meta={formatDate(record.occurred_on, { locale, timeZone: "UTC" })}
                 trailing={
                   <span className="text-label text-fg tabular-nums">

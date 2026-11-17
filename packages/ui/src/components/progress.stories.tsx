@@ -45,6 +45,29 @@ function Gallery() {
         <Progress variant="meter" value={2} max={3} label="Buku dipinjam" valueLabel="2 dari 3" />
         <Progress variant="meter" value={12} label="Sisa kuota SP" tone="danger" />
       </section>
+      <section className="flex flex-col gap-5 rounded-lg border border-border bg-surface p-5">
+        <h3 className="text-heading text-fg">Penanda ambang</h3>
+        <Progress
+          variant="meter"
+          value={68}
+          label="KKTP 75"
+          valueLabel="Kurang 7"
+          tone="warning"
+          markers={[{ value: 75 }]}
+        />
+        <Progress
+          value={40}
+          max={100}
+          tone="warning"
+          aria-label="40 poin terhadap ambang surat peringatan"
+          valueLabel="40 poin"
+          markers={[
+            { value: 25, label: "SP 1" },
+            { value: 50, label: "SP 2" },
+            { value: 100, label: "SP 3" },
+          ]}
+        />
+      </section>
     </div>
   );
 }

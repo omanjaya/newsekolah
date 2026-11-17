@@ -60,6 +60,9 @@ export function ObservationScoreControl({
       {scores.map((score, index) => {
         const selected = value === score;
         return (
+          // One 44px score of a roving radio group, filled live on a tablet;
+          // SegmentedControl's smaller pill segments are too tight for it.
+          // eslint-disable-next-line design-system/no-raw-elements -- score square, see above
           <button
             key={score}
             ref={(element) => {

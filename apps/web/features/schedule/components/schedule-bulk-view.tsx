@@ -12,6 +12,7 @@ import {
   CardTitle,
   EmptyState,
   Field,
+  FileDropzone,
   SectionHeader,
   Table,
   TableBody,
@@ -22,10 +23,10 @@ import {
   Textarea,
   useToast,
 } from "@newsekolah/ui";
-import { Download, FileUp } from "lucide-react";
+import { Download } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { ChangeEvent, ReactElement } from "react";
-import { useMemo, useRef, useState } from "react";
+import type { ReactElement } from "react";
+import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
@@ -82,7 +83,6 @@ export function ScheduleBulkView(): ReactElement {
   const year = useActiveYear();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [csvText, setCsvText] = useState("");
   const classes = useClassesQuery();
@@ -119,9 +119,7 @@ export function ScheduleBulkView(): ReactElement {
     .filter((resolved): resolved is NonNullable<typeof resolved> => resolved !== undefined);
   const invalidCount = rows.length - resolvedRows.length;
 
-  function handleFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  function handleFile(file: File) {
     setFileName(file.name);
     setImportError(null);
     const reader = new FileReader();
@@ -138,7 +136,6 @@ export function ScheduleBulkView(): ReactElement {
         toast.success(t("importSection.applied", { count: result.data.length }));
         setCsvText("");
         setFileName(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
       },
       onError: (error) => {
         void namedConflict(
@@ -178,29 +175,20 @@ export function ScheduleBulkView(): ReactElement {
             </ul>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              id="schedule-bulk-import-file"
-              ref={fileInputRef}
-              type="file"
+          <div className="flex flex-col gap-2">
+            <FileDropzone
               accept=".csv,text/csv"
-              aria-label={t("importSection.uploadLabel")}
-              onChange={handleFile}
+              fileName={fileName}
+              chooseLabel={t("importSection.uploadLabel")}
               disabled={!canManage}
-              className="peer sr-only"
+              onFile={handleFile}
             />
             <Button
-              asChild
-              variant="secondary"
-              icon={<FileUp />}
-              aria-disabled={!canManage || undefined}
-              className="w-fit max-w-full peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus-ring"
+              variant="ghost"
+              icon={<Download />}
+              onClick={downloadTemplate}
+              className="w-fit"
             >
-              <label htmlFor="schedule-bulk-import-file" className="cursor-pointer">
-                <span className="truncate">{fileName ?? t("importSection.uploadLabel")}</span>
-              </label>
-            </Button>
-            <Button variant="ghost" icon={<Download />} onClick={downloadTemplate}>
               {t("importSection.template")}
             </Button>
           </div>

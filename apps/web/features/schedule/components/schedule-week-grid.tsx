@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, cn } from "@newsekolah/ui";
+import { Card, cn, Table } from "@newsekolah/ui";
 import type { ReactElement } from "react";
 
 import { useSession } from "../../../lib/session/session-provider";
@@ -89,8 +89,9 @@ export function ScheduleWeekGrid({
     // card, under day headings that stay in view.
     <Card className="hidden min-h-0 overflow-hidden p-0 md:flex md:flex-col">
       <div className="min-h-0 overflow-auto">
-        <table
-          className="w-full table-fixed border-collapse text-body-sm"
+        <Table
+          framed={false}
+          className="table-fixed"
           style={{ minWidth: gridMinWidth(activeDays.length) }}
         >
           <GridColumns columnCount={activeDays.length} />
@@ -172,7 +173,7 @@ export function ScheduleWeekGrid({
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       </div>
     </Card>
   );

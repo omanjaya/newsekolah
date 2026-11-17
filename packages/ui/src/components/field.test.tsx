@@ -19,6 +19,7 @@ import { MonthPicker } from "./month-picker.js";
 import { NumberInput } from "./number-input.js";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover.js";
 import { Select } from "./select.js";
+import { Switch } from "./switch.js";
 import { Textarea } from "./textarea.js";
 import { TimePicker } from "./time-picker.js";
 import { UiLabelsProvider } from "./ui-labels.js";
@@ -44,6 +45,20 @@ describe("Field", () => {
     const input = screen.getByLabelText("Email");
     expect(input).toHaveAttribute("aria-invalid", "true");
     expect(input).toHaveAccessibleDescription("Untuk notifikasi. Email sudah dipakai");
+  });
+
+  it("keeps the label and a small control on one line when inline", () => {
+    const { container } = render(
+      <Field label="Terbitkan" orientation="inline" hint="Siswa melihat nilai.">
+        <Switch />
+      </Field>,
+    );
+    expect(container.firstElementChild).toHaveClass("flex-row", "items-center");
+    expect(container.firstElementChild).not.toHaveClass("flex-col");
+    const control = screen.getByRole("switch", { name: "Terbitkan" });
+    expect(control).toHaveAccessibleDescription("Siswa melihat nilai.");
+    // The hint takes the whole next line under the pair.
+    expect(screen.getByText("Siswa melihat nilai.").parentElement).toHaveClass("basis-full");
   });
 
   it("says required to assistive tech without the browser's own validation bubble", () => {

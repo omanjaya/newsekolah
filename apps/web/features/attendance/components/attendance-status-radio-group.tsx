@@ -80,6 +80,10 @@ export function AttendanceStatusRadioGroup({
         const selected = value === status.code;
         const token = statusToken(status.code);
         return (
+          // One segment of a roving radio group in attendance colours (a
+          // tenant's own status in its API colour): no shared control draws
+          // per-option status colours yet.
+          // eslint-disable-next-line design-system/no-raw-elements -- status segment, see above
           <button
             key={status.code}
             ref={(element) => {

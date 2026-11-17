@@ -207,8 +207,11 @@ export function DataTableToolbar<TData>({
   }
 
   const densityLabel = `${labels.density}: ${density === "compact" ? labels.densityCompact : labels.densityNormal}`;
-  // Density is desktop-only (cards have none), so a bare table has no phone toolbar at all.
-  const emptyOnPhone = !showSearch && !hasFilters && actions === undefined && columns.length === 0;
+  // Density is desktop-only (cards have none), and the column menu alone
+  // is not worth a row above the cards: a table with no search, filters or
+  // actions (lesson periods) has no phone toolbar at all; its columns stay
+  // choosable from md up.
+  const emptyOnPhone = !showSearch && !hasFilters && actions === undefined;
   return (
     <div
       className={cn(

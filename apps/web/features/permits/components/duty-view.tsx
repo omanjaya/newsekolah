@@ -255,6 +255,7 @@ function LateQueue({ onReviewed }: { onReviewed: (studentName: string) => void }
               key={item.instance_id}
               leading={<Avatar size={40} name={nameOf(item)} decorative />}
               title={nameOf(item)}
+              titleLines={2}
               meta={[
                 t("occurrence", {
                   n: item.occurrence_number,
@@ -332,6 +333,7 @@ function DeskLog({
               key={entry.key}
               leading={<Avatar size={32} name={entry.studentName} decorative />}
               title={entry.studentName}
+              titleLines={2}
               meta={t(`kinds.${entry.kind}`)}
               trailing={formatTime(entry.at, { locale, timeZone })}
             />
