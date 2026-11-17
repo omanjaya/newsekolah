@@ -33,6 +33,27 @@ describe("StickySaveBar", () => {
     expect(bar?.firstElementChild).not.toHaveClass("max-w-5xl");
   });
 
+  // Anchored at the shell's full offset, the bar floated 32px (the centre
+  // button's rise) above the phone's tab bar with the page showing between.
+  it("docks on the phone's tab bar and pads its rise instead of floating above it", () => {
+    const { container } = render(
+      <StickySaveBar
+        leadingSlot="3 perubahan"
+        saveLabel="Simpan"
+        saving={false}
+        onSave={vi.fn()}
+      />,
+    );
+    const bar = container.firstElementChild;
+    expect(bar).toHaveClass(
+      "bottom-[calc(var(--shell-mobile-tab-bar,0px)+env(safe-area-inset-bottom))]",
+      "pb-[calc(var(--space-3)+var(--shell-mobile-tab-raise,0px))]",
+      "md:bottom-0",
+      "md:pb-3",
+    );
+    expect(bar?.className).not.toContain("--shell-mobile-tab-offset");
+  });
+
   it("can match a PageShell container instead of the full width", () => {
     const { container } = render(
       <StickySaveBar

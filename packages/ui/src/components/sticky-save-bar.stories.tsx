@@ -21,7 +21,7 @@ function Page({ tabBar = false, ...props }: Partial<StickySaveBarProps> & { tabB
         {
           "--shell-sidebar-width": "0px",
           // The shell's phone tab bar is 64px tall; the bar sits on top of it.
-          "--shell-mobile-tab-offset": tabBar ? "4rem" : "0px",
+          "--shell-mobile-tab-bar": tabBar ? "4rem" : "0px",
         } as CSSProperties
       }
     >
