@@ -28,8 +28,16 @@ export interface ComboboxProps {
   options: ComboboxOption[];
   value: string;
   onValueChange: (value: string) => void;
-  search: string;
-  onSearchChange: (search: string) => void;
+  /**
+   * The search text, for a server-side search: the caller refetches
+   * `options` from it. Leave `search` and `onSearchChange` out for a list
+   * that is already loaded (a roster the page holds): the Combobox then
+   * keeps the text itself and narrows `options` by label and description,
+   * ignoring case and accents.
+   */
+  search?: string;
+  /** Called on every keystroke of a server-side search; see `search`. */
+  onSearchChange?: (search: string) => void;
   /** Defaults to `UiLabels.comboboxPlaceholder`. */
   placeholder?: string;
   /** Defaults to `UiLabels.comboboxSearchPlaceholder`. */
@@ -52,21 +60,45 @@ export interface ComboboxProps {
   className?: string;
 }
 
+/** Lower case without accents, so "jose" finds "José" and "ANI" finds "Ani". */
+function foldForSearch(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLocaleLowerCase();
+}
+
+/** The options whose label or description contains every word typed. */
+function filterOptions(options: ComboboxOption[], search: string): ComboboxOption[] {
+  const words = foldForSearch(search).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return options;
+  return options.filter((option) => {
+    const haystack = foldForSearch(`${option.label} ${option.description ?? ""}`);
+    return words.every((word) => haystack.includes(word));
+  });
+}
+
 /**
- * A single-select field backed by server-side search: typing calls
- * `onSearchChange` so the caller can debounce and refetch, and the list
- * renders exactly the `options` given rather than re-filtering them
- * client-side, since the server may match fields the label does not show
- * (e.g. an eligible-substitutes search that also matches a username).
+ * A single-select field with a search box, in one of two modes.
+ *
+ * - Server-side search (`search` and `onSearchChange` given): typing calls
+ *   `onSearchChange` so the caller can debounce and refetch, and the list
+ *   renders exactly the `options` given rather than re-filtering them,
+ *   since the server may match fields the label does not show (e.g. an
+ *   eligible-substitutes search that also matches a username).
+ * - Local filtering (both left out): for a long list already loaded, such
+ *   as a school's eighty staff, the Combobox narrows `options` itself by
+ *   label and description; the text clears when the list closes.
+ *
  * The field and its list are `Select`'s: same height, radius, border,
- * option rows and popover. For a fixed, already-loaded list, use `Select`.
+ * option rows and popover. For a short fixed list, use `Select`.
  */
 export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Combobox(
   {
     options,
     value,
     onValueChange,
-    search,
+    search: searchProp,
     onSearchChange,
     placeholder,
     searchPlaceholder,
@@ -87,6 +119,10 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
 ) {
   const labels = useUiLabels();
   const [open, setOpen] = useState(false);
+  const [localSearch, setLocalSearch] = useState("");
+  const filtersLocally = onSearchChange === undefined;
+  const search = filtersLocally ? localSearch : (searchProp ?? "");
+  const listed = filtersLocally ? filterOptions(options, localSearch) : options;
   const requiredId = useId();
   const selected = options.find((option) => option.value === value);
   const { attributes } = useFieldControl({
@@ -104,10 +140,16 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
   const describedBy =
     [attributes["aria-describedby"], isRequired && requiredId].filter(Boolean).join(" ") ||
     undefined;
-  const showLoadingRow = loading && options.length === 0;
+  const showLoadingRow = loading && listed.length === 0;
 
   return (
-    <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
+    <PopoverPrimitive.Root
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setLocalSearch("");
+      }}
+    >
       <PopoverPrimitive.Trigger
         ref={ref}
         type="button"
@@ -161,7 +203,7 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
               <Search className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
               <CommandPrimitive.Input
                 value={search}
-                onValueChange={onSearchChange}
+                onValueChange={onSearchChange ?? setLocalSearch}
                 placeholder={searchPlaceholder ?? labels.comboboxSearchPlaceholder}
                 className={cn(
                   "h-11 min-w-0 flex-1 bg-transparent text-fg outline-none md:pointer-fine:h-10",
@@ -193,13 +235,14 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
                   {emptyLabel ?? labels.comboboxEmpty}
                 </CommandPrimitive.Empty>
               )}
-              {options.map((option) => (
+              {listed.map((option) => (
                 <CommandPrimitive.Item
                   key={option.value}
                   value={option.value}
                   onSelect={() => {
                     onValueChange(option.value);
                     setOpen(false);
+                    setLocalSearch("");
                   }}
                   className={cn(
                     // Select's option row: same height, radius and highlight.

@@ -154,6 +154,67 @@ describe("Combobox", () => {
     expect(screen.getByText("Required")).not.toBeVisible();
   });
 
+  it("filters an already-loaded list itself when no search handler is given", async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(
+      <Combobox
+        aria-label="Pegawai"
+        options={[
+          { value: "siti", label: "Siti Aminah", description: "Tata usaha" },
+          { value: "budi", label: "Budi Santoso" },
+          { value: "jose", label: "José Ramos" },
+        ]}
+        value=""
+        onValueChange={onValueChange}
+        emptyLabel="Tidak ada pegawai"
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Pegawai" }));
+    expect(screen.getAllByRole("option")).toHaveLength(3);
+
+    await user.type(screen.getByRole("combobox"), "BUDI");
+    expect(screen.getAllByRole("option")).toHaveLength(1);
+    expect(screen.getByRole("option", { name: /Budi Santoso/ })).toBeInTheDocument();
+
+    await user.clear(screen.getByRole("combobox"));
+    await user.type(screen.getByRole("combobox"), "jose");
+    expect(screen.getByRole("option", { name: /José Ramos/ })).toBeInTheDocument();
+
+    await user.clear(screen.getByRole("combobox"));
+    await user.type(screen.getByRole("combobox"), "usaha");
+    expect(screen.getByRole("option", { name: /Siti Aminah/ })).toBeInTheDocument();
+
+    await user.clear(screen.getByRole("combobox"));
+    await user.type(screen.getByRole("combobox"), "zzz");
+    expect(screen.queryByRole("option")).not.toBeInTheDocument();
+    expect(screen.getByText("Tidak ada pegawai")).toBeInTheDocument();
+  });
+
+  it("clears its own search once a pick closes the list", async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(
+      <Combobox
+        aria-label="Pegawai"
+        options={[
+          { value: "siti", label: "Siti Aminah" },
+          { value: "budi", label: "Budi Santoso" },
+        ]}
+        value=""
+        onValueChange={onValueChange}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Pegawai" }));
+    await user.type(screen.getByRole("combobox"), "budi");
+    await user.click(screen.getByRole("option", { name: /Budi Santoso/ }));
+    expect(onValueChange).toHaveBeenCalledWith("budi");
+
+    await user.click(screen.getByRole("button", { name: "Pegawai" }));
+    expect(screen.getByRole("combobox")).toHaveValue("");
+    expect(screen.getAllByRole("option")).toHaveLength(2);
+  });
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <>
