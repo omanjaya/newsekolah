@@ -4,14 +4,16 @@ import { type components } from "@newsekolah/api-client";
 import {
   Badge,
   Card,
+  Disclosure,
+  DisclosureContent,
+  DisclosureIndicator,
+  DisclosureTrigger,
   EmptyState,
   List,
   ListRow,
   SectionHeader,
   StatusBadge,
-  cn,
 } from "@newsekolah/ui";
-import { ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -43,42 +45,32 @@ export function AttendanceDailySessions({
       <div className="flex flex-col gap-2">
         {sessions.map((session) => {
           const isOpen = expandedId === session.session_id;
-          const panelId = `daily-session-${session.session_id}`;
           return (
             <Card key={session.session_id} className="overflow-hidden">
-              {/* The whole header opens the session's entries. */}
-              <button
-                type="button"
-                className="flex min-h-14 w-full items-center justify-between gap-3 px-5 py-3 text-left transition-colors hover:bg-state-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring"
-                onClick={() => {
-                  setExpandedId(isOpen ? null : session.session_id);
+              <Disclosure
+                open={isOpen}
+                onOpenChange={(open) => {
+                  setExpandedId(open ? session.session_id : null);
                 }}
-                aria-expanded={isOpen}
-                aria-controls={panelId}
               >
-                <span className="flex min-w-0 items-center gap-3">
-                  <ChevronDown
-                    className={cn(
-                      "size-4 shrink-0 text-fg-muted transition-transform",
-                      !isOpen && "-rotate-90",
-                    )}
-                    aria-hidden="true"
-                  />
-                  <span className="flex min-w-0 flex-col">
-                    <span className="truncate text-label text-fg">
-                      {session.period_label} · {session.subject_name}
-                    </span>
-                    <span className="truncate text-body-sm text-fg-muted">
-                      {session.teacher_name}
+                {/* The whole header opens the session's entries. */}
+                <DisclosureTrigger className="flex min-h-14 w-full items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-state-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring">
+                  <span className="flex min-w-0 items-center gap-3">
+                    <DisclosureIndicator />
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate text-label text-fg">
+                        {session.period_label} · {session.subject_name}
+                      </span>
+                      <span className="truncate text-body-sm text-fg-muted">
+                        {session.teacher_name}
+                      </span>
                     </span>
                   </span>
-                </span>
-                <Badge tone={session.submitted_at ? "success" : "warning"} size="sm" dot>
-                  {session.submitted_at ? t("sessionSubmitted") : t("sessionPending")}
-                </Badge>
-              </button>
-              {isOpen && (
-                <div id={panelId} className="border-t border-line">
+                  <Badge tone={session.submitted_at ? "success" : "warning"} size="sm" dot>
+                    {session.submitted_at ? t("sessionSubmitted") : t("sessionPending")}
+                  </Badge>
+                </DisclosureTrigger>
+                <DisclosureContent className="border-t border-line">
                   {session.entries.length === 0 ? (
                     <EmptyState variant="compact" title={t("sessionNoEntries")} className="px-5" />
                   ) : (
@@ -108,8 +100,8 @@ export function AttendanceDailySessions({
                       })}
                     </List>
                   )}
-                </div>
-              )}
+                </DisclosureContent>
+              </Disclosure>
             </Card>
           );
         })}

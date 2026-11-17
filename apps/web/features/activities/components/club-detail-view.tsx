@@ -4,13 +4,17 @@ import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
 import {
-  DatePicker,
-  Field,
   Avatar,
   Badge,
   Button,
   Checkbox,
+  DatePicker,
+  Disclosure,
+  DisclosureContent,
+  DisclosureIndicator,
+  DisclosureTrigger,
   EmptyState,
+  Field,
   Input,
   List,
   ListRow,
@@ -260,19 +264,23 @@ function MeetingsPanel({ clubId }: { clubId: string }): ReactElement {
         <ul className="flex flex-col gap-2">
           {meetings.map((m) => (
             <li key={m.id}>
-              <button
-                type="button"
-                aria-expanded={selectedMeeting === m.id}
-                className="flex min-h-11 w-full items-center rounded-md border border-border p-3 text-left text-body-sm hover:bg-state-hover"
-                onClick={() => {
-                  setSelectedMeeting(m.id === selectedMeeting ? null : m.id);
+              <Disclosure
+                open={selectedMeeting === m.id}
+                onOpenChange={(open) => {
+                  setSelectedMeeting(open ? m.id : null);
                 }}
               >
-                {formatDate(m.meeting_date, { locale })}
-              </button>
-              {selectedMeeting === m.id && (
-                <MeetingAttendanceEditor clubId={clubId} meetingId={m.id} />
-              )}
+                <DisclosureTrigger className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md border border-border p-3 text-body-sm transition-colors hover:bg-state-hover">
+                  {formatDate(m.meeting_date, { locale })}
+                  <DisclosureIndicator />
+                </DisclosureTrigger>
+                {/* Only the open meeting loads its roster. */}
+                <DisclosureContent>
+                  {selectedMeeting === m.id && (
+                    <MeetingAttendanceEditor clubId={clubId} meetingId={m.id} />
+                  )}
+                </DisclosureContent>
+              </Disclosure>
             </li>
           ))}
         </ul>

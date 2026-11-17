@@ -4,6 +4,7 @@ import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
 import {
+  Button,
   Card,
   CardHeader,
   CardTitle,
@@ -11,9 +12,9 @@ import {
   DataTable,
   Dialog,
   DialogContent,
+  domainIcons,
   EmptyState,
   Skeleton,
-  domainIcons,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -59,15 +60,15 @@ export function StudentCounselingHistory({ studentId }: { studentId: string }): 
         header: t("columns.title"),
         enableSorting: false,
         cell: ({ row }) => (
-          <button
-            type="button"
-            className="text-left text-fg underline-offset-2 hover:underline focus-visible:underline"
+          <Button
+            variant="link"
+            className="text-left whitespace-normal"
             onClick={() => {
               setViewingId(row.original.id);
             }}
           >
             {row.original.title}
-          </button>
+          </Button>
         ),
       },
       {

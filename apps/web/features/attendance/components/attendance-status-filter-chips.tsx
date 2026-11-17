@@ -1,6 +1,6 @@
 "use client";
 
-import { cn, type StatusName } from "@newsekolah/ui";
+import { Button, cn, type StatusName } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -60,9 +60,9 @@ export function AttendanceStatusFilterChips({
         const token = statusToken(status.code);
         const count = counts[status.code] ?? 0;
         return (
-          <button
+          <Button
             key={status.code}
-            type="button"
+            variant="secondary"
             aria-pressed={selected}
             aria-label={`${status.label} ${String(count)}`}
             title={status.label}
@@ -81,11 +81,8 @@ export function AttendanceStatusFilterChips({
                   : undefined
             }
             className={cn(
-              "flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-md border px-2 text-label motion-press transition-colors",
-              "md:pointer-fine:min-h-9",
-              selected && token
-                ? SELECTED_CLASS[token]
-                : "border-border bg-surface text-fg hover:bg-state-hover",
+              "min-w-0 gap-1.5 px-2",
+              selected && token ? SELECTED_CLASS[token] : undefined,
             )}
           >
             <span
@@ -100,7 +97,7 @@ export function AttendanceStatusFilterChips({
             <span className="hidden truncate text-caption font-medium text-fg-muted sm:inline">
               {status.label}
             </span>
-          </button>
+          </Button>
         );
       })}
     </div>
