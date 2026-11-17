@@ -31,7 +31,31 @@ describe("refreshSessionOnModuleDisabled", () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.me() });
   });
 
-  it("does nothing for any other error, so a plain 403 never touches the session", () => {
+  it("re-reads the public branding too, the only module list an anonymous page has", () => {
+    const client = new QueryClient();
+    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue();
+
+    refreshSessionOnModuleDisabled(client, disabled);
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.tenantBranding() });
+    expect(invalidate).toHaveBeenCalledTimes(2);
+  });
+
+  it("still re-reads the branding while only /v1/me is already being read", () => {
+    const client = new QueryClient();
+    const meKey = JSON.stringify(queryKeys.me());
+    vi.spyOn(client, "isFetching").mockImplementation((filters) =>
+      JSON.stringify(filters?.queryKey) === meKey ? 1 : 0,
+    );
+    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue();
+
+    refreshSessionOnModuleDisabled(client, disabled);
+
+    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.tenantBranding() });
+  });
+
+  it("does nothing for any other error, so a plain 403 touches neither session nor branding", () => {
     const client = new QueryClient();
     const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue();
 
@@ -43,7 +67,7 @@ describe("refreshSessionOnModuleDisabled", () => {
     expect(invalidate).not.toHaveBeenCalled();
   });
 
-  it("does not stack a second refetch while the session is already being read", () => {
+  it("does not stack a second refetch while the session and branding are already being read", () => {
     const client = new QueryClient();
     vi.spyOn(client, "isFetching").mockReturnValue(1);
     const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue();

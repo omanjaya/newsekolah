@@ -1,12 +1,17 @@
 "use client";
 
+import { ApiError } from "@newsekolah/api-client";
 import { Alert, Badge, Skeleton } from "@newsekolah/ui";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
+import { isModuleDisabledError } from "../../../lib/query/module-disabled";
 import { useOpacTitleQuery } from "../opac-api";
+
+import { OpacUnavailable } from "./opac-unavailable";
 
 /**
  * Public title detail with its visible copies, no session required.
@@ -20,7 +25,18 @@ import { useOpacTitleQuery } from "../opac-api";
 export function OpacTitleView({ titleId }: { titleId: string }): ReactElement {
   const t = useTranslations("app.library.opac");
   const locale = useLocale();
-  const { data, isLoading, error } = useOpacTitleQuery(titleId);
+  const { data, isLoading, error, refetch } = useOpacTitleQuery(titleId);
+
+  // Library was switched off after the page loaded; see OpacView.
+  if (isModuleDisabledError(error)) {
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-6 p-4 md:p-6">
+        <OpacUnavailable />
+      </main>
+    );
+  }
+  // Only a 404 means the title is gone; any other failure may pass on retry.
+  const notFound = error instanceof ApiError && error.status === 404;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-6 p-4 md:p-6">
@@ -34,7 +50,9 @@ export function OpacTitleView({ titleId }: { titleId: string }): ReactElement {
 
       {isLoading ? (
         <Skeleton className="h-64 w-full" aria-busy="true" />
-      ) : error || !data ? (
+      ) : error && !notFound ? (
+        <QueryError retry={refetch} />
+      ) : !data ? (
         <Alert variant="warning" title={t("detail.notFoundTitle")}>
           {t("detail.notFoundBody")}
         </Alert>
