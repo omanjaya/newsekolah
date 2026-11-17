@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type RefObject } from "react";
+import { useEffect, useLayoutEffect, type RefObject } from "react";
 
 import { createResizeTracker } from "./resize-tracker.js";
 
@@ -13,6 +13,41 @@ interface Box {
 
 /** Room left beside an item revealed in a scrolled strip: the width of the edge fade. */
 const REVEAL_MARGIN = 24;
+
+/**
+ * How long a strip's last indicator box is worth travelling from: long
+ * enough to span a route change between sibling pages (the old page's
+ * strip unmounts, the new page's mounts), short enough that a strip met
+ * again later just appears in place.
+ */
+const HANDOFF_MS = 2000;
+
+/**
+ * The last box of each named strip that went away, so the same strip on
+ * the next page (an area's tabs, rebuilt by every page under it) slides
+ * from the old tab instead of appearing under the new one.
+ */
+const handoffs = new Map<string, { box: Box; at: number }>();
+
+/**
+ * A strip's identity across pages: its accessible name (on the strip or
+ * its track) and its items' text. Unnamed strips are not remembered.
+ */
+function stripKey(container: HTMLElement): string | null {
+  const label =
+    container.getAttribute("aria-label") ?? container.parentElement?.getAttribute("aria-label");
+  return label ? `${label}\n${container.textContent}` : null;
+}
+
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+/** Placed before the first paint, so a strip never shows its item's own fill and then jumps. */
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 function boxOf(element: HTMLElement): Box {
   return {
@@ -72,19 +107,26 @@ export function revealInStrip(container: HTMLElement, item: HTMLElement): void {
  * marked `data-indicator="ready"` once the indicator is placed, so items
  * can stop painting their own active fill (they do until then: the server
  * render and a no-JS page still show which item is active).
+ *
+ * A named strip that mounts again within moments of going away (the same
+ * area tabs on a sibling route) starts from the box it last had, so the
+ * indicator travels between pages as it does within one.
  */
 export function useActiveIndicator(
   containerRef: RefObject<HTMLElement | null>,
   indicatorRef: RefObject<HTMLElement | null>,
   activeSelector: string,
 ): void {
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const container = containerRef.current;
     const indicator = indicatorRef.current;
     if (!container || !indicator) return;
 
     let previous: { element: HTMLElement; box: Box } | null = null;
     let disposed = false;
+    // Read when the strip is first placed and on every placement after,
+    // while it is still in the document: the cleanup runs after removal.
+    let key: string | null = null;
     // Declared before `place`, which keeps it pointed at the active item.
     const sizes = createResizeTracker(() => {
       place();
@@ -113,10 +155,23 @@ export function useActiveIndicator(
       }
       if (previous?.element === active && sameBox(previous.box, box)) return;
 
-      const moved = previous !== null && previous.element !== active && previous.box.w > 0;
+      key = stripKey(container);
+      // The same strip on the page just left: travel from where it was.
+      const handoff = previous === null && key !== null ? handoffs.get(key) : undefined;
+      if (key !== null) handoffs.delete(key);
+      const from =
+        previous !== null && previous.element !== active
+          ? previous.box
+          : handoff &&
+              performance.now() - handoff.at < HANDOFF_MS &&
+              !sameBox(handoff.box, box) &&
+              !prefersReducedMotion()
+            ? handoff.box
+            : null;
       indicator.setAttribute("data-instant", "");
-      if (moved && previous) {
-        writeBox(indicator, box, previous.box, previous.box.w / box.w);
+      if (from && from.w > 0) {
+        writeBox(indicator, box, from, from.w / box.w);
+        container.setAttribute("data-indicator", "ready");
         settle();
         writeBox(indicator, box, box, 1);
       } else {
@@ -151,6 +206,9 @@ export function useActiveIndicator(
       mutationObserver?.disconnect();
       sizes.disconnect();
       container.removeAttribute("data-indicator");
+      if (key !== null && previous !== null) {
+        handoffs.set(key, { box: previous.box, at: performance.now() });
+      }
     };
   }, [containerRef, indicatorRef, activeSelector]);
 }
