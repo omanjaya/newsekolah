@@ -1451,7 +1451,8 @@
         "books": "Scan the books",
         "done": "Press the Done button"
       },
-      "privacy": "The session ends by itself after 20 seconds without a scan, so the next person never sees your loans."
+      "privacy": "The session ends by itself after 20 seconds without a scan, so the next person never sees your loans.",
+      "cardHint": "Hold your member card up to the camera or the scanner"
     },
     "active": {
       "title": "Scan a book to borrow or return it",

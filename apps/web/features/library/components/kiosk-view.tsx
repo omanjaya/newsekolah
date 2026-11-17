@@ -3,6 +3,7 @@
 import { ApiError } from "@newsekolah/api-client";
 import {
   Button,
+  Card,
   HeroCard,
   IconCircle,
   Scanner,
@@ -61,7 +62,10 @@ function useSecondsLeft(deadline: number | null): number | null {
  * has scanned their card, whose session it is and when it ends by itself;
  * the shared kiosk `Scanner` takes the card and then the books (camera
  * first, a hardware scanner from anywhere, typing as the fallback), with
- * the outcome large and announced; the reader's loans sit under it.
+ * the outcome large and announced; the reader's loans sit under it. While
+ * idle the card field stays open beside the camera, with a line on how to
+ * scan and the privacy note, so the screen fits a landscape kiosk without
+ * a scroll.
  */
 export function KioskView(): ReactElement {
   const t = useTranslations("app.library.kiosk");
@@ -167,7 +171,7 @@ export function KioskView(): ReactElement {
   const active = memberUserId !== null;
 
   return (
-    <div className="flex flex-1 flex-col items-center px-4 py-6 sm:px-8 md:py-10">
+    <div className="flex flex-1 flex-col items-center px-4 py-6 sm:px-8">
       <div className="flex w-full max-w-6xl flex-col gap-6 md:gap-8">
         {active ? (
           <HeroCard
@@ -226,11 +230,12 @@ export function KioskView(): ReactElement {
           fullScreen={false}
           onScan={active ? handleBookScan : handleCardScan}
           result={result}
+          manualEntry={active ? true : "open"}
           manualLabel={active ? t("active.scanLabel") : t("idle.scanLabel")}
           submitLabel={active ? t("active.submit") : t("idle.submit")}
           disabled={borrow.isPending || returnLoan.isPending}
         >
-          {active && (
+          {active ? (
             <KioskMemberPanel
               session={session}
               today={today}
@@ -239,9 +244,18 @@ export function KioskView(): ReactElement {
               overdueLabel={(days) => t("active.overdue", { days })}
               emptyLabel={t("active.empty")}
             />
+          ) : (
+            <Card padding="md" className="flex-row items-start">
+              <IconCircle tone="accent" size="lg">
+                <IdCard />
+              </IconCircle>
+              <div className="flex min-w-0 flex-col gap-1">
+                <p className="text-heading text-fg">{t("idle.cardHint")}</p>
+                <p className="text-body text-fg-muted">{t("idle.privacy")}</p>
+              </div>
+            </Card>
           )}
         </Scanner>
-        {!active && <p className="text-center text-body text-fg-muted">{t("idle.privacy")}</p>}
       </div>
     </div>
   );

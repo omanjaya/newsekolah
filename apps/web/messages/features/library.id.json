@@ -1451,7 +1451,8 @@
         "books": "Pindai bukunya",
         "done": "Tekan tombol Selesai"
       },
-      "privacy": "Sesi berakhir sendiri setelah 20 detik tanpa pindaian, jadi data Anda tidak terlihat orang berikutnya."
+      "privacy": "Sesi berakhir sendiri setelah 20 detik tanpa pindaian, jadi data Anda tidak terlihat orang berikutnya.",
+      "cardHint": "Arahkan kartu anggota ke kamera atau pemindai"
     },
     "active": {
       "title": "Pindai buku untuk dipinjam atau dikembalikan",
