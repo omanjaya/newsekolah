@@ -6,8 +6,9 @@
 // Two groups:
 // - zero-violation rules (palette and arbitrary colors), on for the whole
 //   repo through ./base.js and ./react.js;
-// - ratchet rules (literal font sizes), switched on per package once that
-//   package is clean. packages/ui is; apps/web follows in a later wave.
+// - rules switched on per package: literal font sizes here for packages/ui,
+//   and the same pattern, the panel radius and the element rules as
+//   separate rules in ./design-system-plugin.js, which apps/web uses.
 
 const COLOR_UTILITIES =
   "(?:bg|text|border|ring|outline|fill|stroke|from|via|to|divide|placeholder|caret|accent|decoration|shadow)";
@@ -36,6 +37,15 @@ export const ARBITRARY_COLOR_SOURCE = String.raw`-\[[^\]]*(?:#[0-9a-fA-F]{3,8}\b
  * `text-[var(--color-fg)]` stay allowed.
  */
 export const ARBITRARY_FONT_SIZE_SOURCE = String.raw`\btext-\[(?:length:)?(?:\d*\.?\d+(?:px|rem|em|%|pt)?\]|(?:clamp|calc|min|max)\()`;
+
+/**
+ * A class string that draws a 1px border (`border`, any variant prefix)
+ * and the retired small surface radius (`rounded-sm`, `rounded-xs`): the
+ * hand-made panel the overhaul replaced with `Card` (radius lg), `Alert`
+ * and `List`. Small controls inside packages/ui keep their radius; this
+ * pattern is for screens.
+ */
+export const PANEL_RADIUS_SOURCE = String.raw`^(?=[\s\S]*(?:^|[\s:])border(?:\s|$))(?=[\s\S]*(?:^|[\s:])rounded-(?:xs|sm)(?:\s|$))`;
 
 /**
  * @param {string} source regex source, no forward slashes

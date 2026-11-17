@@ -11,6 +11,7 @@
     "./eslint/react": "./eslint/react.js",
     "./eslint/next": "./eslint/next.js",
     "./eslint/design-system-patterns": "./eslint/design-system-patterns.js",
+    "./eslint/design-system": "./eslint/design-system-plugin.js",
     "./tailwind/preset.css": "./tailwind/preset.css",
     "./prettier": "./prettier.cjs"
   },
