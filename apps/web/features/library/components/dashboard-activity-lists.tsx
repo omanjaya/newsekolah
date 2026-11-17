@@ -15,6 +15,7 @@ import { BookCheck, Flame } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { useCan } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import { useDirectoryNames } from "../../reference/directory-names";
 import type { LibraryLoan, LibraryMostBorrowedTitle } from "../api";
@@ -28,6 +29,9 @@ import { LibraryTitleName } from "./library-title-name";
  * The dashboard's three lists, as cards in the dashboard grid: the most
  * borrowed titles (beside the trend), then the latest loans and the
  * longest overdue, each loan naming its borrower and opening their page.
+ * A borrower's page opens only for whoever manages members, and the desk
+ * links show only to whoever runs circulation; other readers get plain
+ * rows.
  */
 export function DashboardActivityLists({
   latestLoans,
@@ -41,6 +45,10 @@ export function DashboardActivityLists({
   const t = useTranslations("app.library.dashboard");
   const locale = useLocale() as Locale;
   const today = todayInZone(useTenantTimeZone());
+  const canCirculate = useCan("manage_library_circulation");
+  const canViewMembers = useCan("manage_library_members");
+  const memberHref = (loan: LibraryLoan) =>
+    canViewMembers ? `/library/members/${loan.member_user_id}` : undefined;
   const names = useDirectoryNames([
     ...latestLoans.map((loan) => loan.member_user_id),
     ...longestOverdue.map((loan) => loan.member_user_id),
@@ -82,7 +90,9 @@ export function DashboardActivityLists({
           <EmptyState
             icon={<domainIcons.library aria-hidden="true" />}
             title={t("noLatestLoans")}
-            action={<TextLink href="/library/desk">{t("openDesk")}</TextLink>}
+            action={
+              canCirculate ? <TextLink href="/library/desk">{t("openDesk")}</TextLink> : undefined
+            }
           />
         ) : (
           <List>
@@ -91,7 +101,7 @@ export function DashboardActivityLists({
                 key={loan.id}
                 title={<LibraryTitleName titleId={loan.title_id} />}
                 meta={`${borrower(loan)} · ${formatShortDate(loan.borrowed_at, locale, { today })}`}
-                href={`/library/members/${loan.member_user_id}`}
+                href={memberHref(loan)}
               />
             ))}
           </List>
@@ -100,7 +110,11 @@ export function DashboardActivityLists({
 
       <Card className="lg:col-span-2">
         <CardHeader
-          action={<TextLink href="/library/desk#desk-overdue">{t("followUpAll")}</TextLink>}
+          action={
+            canCirculate ? (
+              <TextLink href="/library/desk#desk-overdue">{t("followUpAll")}</TextLink>
+            ) : undefined
+          }
         >
           <CardTitle as="h2">{t("longestOverdue")}</CardTitle>
         </CardHeader>
@@ -117,7 +131,7 @@ export function DashboardActivityLists({
                 key={loan.id}
                 title={<LibraryTitleName titleId={loan.title_id} />}
                 meta={borrower(loan)}
-                href={`/library/members/${loan.member_user_id}`}
+                href={memberHref(loan)}
                 trailing={
                   // A phone row keeps room for the title: the days late
                   // only, the due date from sm up. One wrapper, so the

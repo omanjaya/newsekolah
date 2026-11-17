@@ -17,6 +17,7 @@ import type { ReactElement, ReactNode } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { useCan } from "../../../lib/session/session-provider";
 import { useLibraryDashboardQuery } from "../dashboard-api";
 
 import { DashboardActivityLists } from "./dashboard-activity-lists";
@@ -36,19 +37,24 @@ const COLLECTION_STAT_KEYS = [
  * open the place to act (the desk, its overdue queue, the visits), the
  * collection in one quiet strip, the 30-day trend and the most borrowed
  * titles, then the latest loans and the longest overdue. `toolbar` takes
- * the home page's shortcuts when this is a librarian's home.
+ * the home page's shortcuts when this is a librarian's home. A reader who
+ * oversees the library without running its desk (a headmaster with
+ * view_library_reports) sees the same figures as plain tiles: the desk
+ * and the visits log are not theirs to open.
  */
 export function LibraryDashboardView({ toolbar }: { toolbar?: ReactNode } = {}): ReactElement {
   const t = useTranslations("app.library.dashboard");
   const locale = useLocale() as Locale;
   const { data, isLoading, isError, error, refetch } = useLibraryDashboardQuery();
+  const canCirculate = useCan("manage_library_circulation");
+  const desk = canCirculate ? "/library/desk" : undefined;
 
   return (
     <AppPage
       variant="wide"
       title={t("title")}
       nav={false}
-      actions={<TextLink href="/library/desk">{t("openDesk")}</TextLink>}
+      actions={desk ? <TextLink href={desk}>{t("openDesk")}</TextLink> : undefined}
       toolbar={toolbar}
     >
       {isError && !data ? (
@@ -63,7 +69,7 @@ export function LibraryDashboardView({ toolbar }: { toolbar?: ReactNode } = {}):
               category="blue"
               value={data.summary.loans_today}
               label={t("today.loansToday")}
-              href="/library/desk"
+              href={desk}
               countUp
             />
             <Stat
@@ -71,7 +77,7 @@ export function LibraryDashboardView({ toolbar }: { toolbar?: ReactNode } = {}):
               category="green"
               value={data.summary.returns_today}
               label={t("today.returnsToday")}
-              href="/library/desk"
+              href={desk}
               countUp
             />
             <Stat
@@ -80,7 +86,7 @@ export function LibraryDashboardView({ toolbar }: { toolbar?: ReactNode } = {}):
               value={data.summary.overdue}
               label={t("today.overdue")}
               hint={data.summary.overdue > 0 ? t("today.followUp") : undefined}
-              href="/library/desk#desk-overdue"
+              href={desk && `${desk}#desk-overdue`}
               countUp
             />
             <Stat
@@ -88,7 +94,7 @@ export function LibraryDashboardView({ toolbar }: { toolbar?: ReactNode } = {}):
               category="purple"
               value={data.summary.visits_today}
               label={t("stats.visits_today")}
-              href="/library/visits"
+              href={canCirculate ? "/library/visits" : undefined}
               countUp
             />
           </StatGrid>
