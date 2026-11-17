@@ -11,6 +11,7 @@ import {
   CardTitle,
   DataList,
   DataListItem,
+  EmptyState,
   IconButton,
   List,
   ListRow,
@@ -19,6 +20,7 @@ import {
   Scanner,
   SectionHeader,
   type ScannerResultValue,
+  domainIcons,
   useToast,
 } from "@newsekolah/ui";
 import { Undo2 } from "lucide-react";
@@ -214,7 +216,11 @@ export function GatePanel(): ReactElement {
           count={log.length}
         />
         {log.length === 0 ? (
-          <p className="text-body-sm text-fg-muted">{t("todayListEmpty")}</p>
+          <EmptyState
+            variant="compact"
+            icon={<domainIcons.exitPermit aria-hidden="true" />}
+            title={t("todayListEmpty")}
+          />
         ) : (
           <List framed>
             {log.map((entry, index) => (

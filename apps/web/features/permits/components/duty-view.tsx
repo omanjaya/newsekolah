@@ -25,7 +25,7 @@ import {
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { MonitorPlay } from "lucide-react";
+import { ChevronRight, ClipboardPen, MonitorPlay } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
@@ -49,8 +49,12 @@ import { type ManualRecord, DutyManualRecordPanel } from "./duty-manual-record-p
 import { ApprovePanel } from "./exit-permit-panels";
 import { LateArrivalReviewForm } from "./late-arrivals-view";
 
-const MODES = ["classroom_entry", "late_arrival", "exit", "manual"] as const;
+/** The QR and approval modes of the desk; recording by hand is a task, not a mode. */
+const MODES = ["classroom_entry", "late_arrival", "exit"] as const;
 type DutyMode = (typeof MODES)[number];
+/** `?mode=manual` (the old fourth mode) still opens the manual record. */
+const URL_MODES = [...MODES, "manual"] as const;
+type UrlMode = (typeof URL_MODES)[number];
 
 interface DeskLogEntry {
   key: string;
@@ -64,15 +68,19 @@ interface DeskLogEntry {
  * menu diving. The QR for the chosen mode comes first and large, with its
  * countdown; the late arrivals waiting for review and what was recorded at
  * this desk today sit beside it on a laptop and under it on a phone. Each QR
- * is a single-use token that renews itself when it expires.
+ * is a single-use token that renews itself when it expires. Recording a
+ * student without a phone is the page's primary action, a dialog (a bottom
+ * sheet on a phone), so the three modes fit one row at 390px.
  */
 export function DutyView(): ReactElement {
   const t = useTranslations("app.duty");
-  const tNav = useTranslations("app.shell.nav.items");
   const locale = useLocale() as Locale;
   const { me } = useSession();
   const canMonitor = useCan("view_monitor_presence");
-  const [mode, setMode] = useUrlState<DutyMode>("mode", MODES, "classroom_entry");
+  const [urlMode, setMode] = useUrlState<UrlMode>("mode", URL_MODES, "classroom_entry");
+  const mode: DutyMode = urlMode === "manual" ? "classroom_entry" : urlMode;
+  const [manualRequested, setManualRequested] = useState(false);
+  const manualOpen = manualRequested || urlMode === "manual";
   const [log, setLog] = useState<DeskLogEntry[]>([]);
   const today = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-GB", {
     weekday: "long",
@@ -91,13 +99,29 @@ export function DutyView(): ReactElement {
     );
   }
 
+  function closeManual() {
+    setManualRequested(false);
+    if (urlMode === "manual") setMode("classroom_entry");
+  }
+
   return (
+    // The eyebrow is the sidebar group ("Piket dan gerbang"), not a repeat
+    // of the title.
     <AppPage
       variant="wide"
       title={t("title")}
-      eyebrow={tNav("duty")}
       description={today}
       nav={false}
+      primaryAction={
+        <Button
+          icon={<ClipboardPen />}
+          onClick={() => {
+            setManualRequested(true);
+          }}
+        >
+          {t("purposes.manual")}
+        </Button>
+      }
       secondaryActions={
         canMonitor
           ? [
@@ -117,23 +141,13 @@ export function DutyView(): ReactElement {
           options={MODES.map((value) => ({ value, label: t(`purposes.${value}`) }))}
           value={mode}
           onValueChange={setMode}
-          className="w-full sm:w-auto sm:self-start"
+          fullWidth="phone"
         />
       }
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start">
         <div className="flex min-w-0 flex-col gap-4">
-          {mode === "manual" ? (
-            <DutyManualRecordPanel
-              onRecorded={(record: ManualRecord) => {
-                remember(record.kind, record.studentName);
-              }}
-            />
-          ) : mode === "exit" ? (
-            <ApprovePanel />
-          ) : (
-            <PurposePanel key={mode} purpose={mode} />
-          )}
+          {mode === "exit" ? <ApprovePanel /> : <PurposePanel key={mode} purpose={mode} />}
         </div>
         <div className="flex min-w-0 flex-col gap-6">
           <LateQueue
@@ -144,6 +158,23 @@ export function DutyView(): ReactElement {
           <DeskLog entries={log} locale={locale} timeZone={me?.tenant.timezone} />
         </div>
       </div>
+
+      <Dialog
+        open={manualOpen}
+        onOpenChange={(open) => {
+          if (!open) closeManual();
+        }}
+      >
+        <DialogContent title={t("manualForm.title")} description={t("manualForm.intro")}>
+          <DutyManualRecordPanel
+            layout="dialog"
+            onRecorded={(record: ManualRecord) => {
+              remember(record.kind, record.studentName);
+              closeManual();
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </AppPage>
   );
 }
@@ -222,8 +253,9 @@ function LateQueue({ onReviewed }: { onReviewed: (studentName: string) => void }
     <Card>
       <CardHeader
         action={
-          <TextLink href="/inbox?type=late" tone="muted">
+          <TextLink href="/inbox?type=late" className="inline-flex items-center gap-0.5">
             {t("openInbox")}
+            <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
           </TextLink>
         }
       >
@@ -324,7 +356,11 @@ function DeskLog({
       </CardHeader>
       {entries.length === 0 ? (
         <CardContent>
-          <p className="text-body-sm text-fg-muted">{t("empty")}</p>
+          <EmptyState
+            variant="compact"
+            icon={<domainIcons.document aria-hidden="true" />}
+            title={t("empty")}
+          />
         </CardContent>
       ) : (
         <List dense>
