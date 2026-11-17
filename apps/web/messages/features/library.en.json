@@ -1196,7 +1196,8 @@
     "title": "Library reports",
     "fromLabel": "From date",
     "toLabel": "To date",
-    "exportXlsx": "Export XLSX",
+    "exportXlsx": "Download report",
+    "earlierPeriod": "Show the month before",
     "tabs": {
       "loans": "Loans",
       "overdueMembers": "Overdue members",

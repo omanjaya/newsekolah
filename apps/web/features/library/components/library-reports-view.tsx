@@ -29,7 +29,13 @@ import {
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
-import { startOfIsoMonth, thisMonthInZone, todayInZone } from "../../../lib/tenant-date";
+import {
+  endOfPreviousIsoMonth,
+  startOfIsoMonth,
+  startOfPreviousIsoMonth,
+  thisMonthInZone,
+  todayInZone,
+} from "../../../lib/tenant-date";
 import { downloadMonthlyLibraryReportPdf } from "../api";
 import {
   downloadLibraryAccessionRegisterReportXlsx,
@@ -138,21 +144,35 @@ export function LibraryReportsView({
           label: t(`export.${tab}.columns.${key}`),
         }));
 
+  // An empty period report offers a way on: the month before the one shown.
+  const earlierPeriod = (
+    <Button
+      variant="secondary"
+      onClick={() => {
+        setFrom(startOfPreviousIsoMonth(from));
+        setTo(endOfPreviousIsoMonth(from));
+      }}
+    >
+      {t("earlierPeriod")}
+    </Button>
+  );
+
   return (
     <AppPage
       title={embedded && !sectionNav ? t("title") : undefined}
       documentTitle={embedded ? t("title") : undefined}
       nav={sectionNav ?? (embedded ? false : undefined)}
-      primaryAction={
-        <Button
-          icon={<Download />}
-          onClick={() => {
+      // A secondary "Unduh laporan", as the other report sections have:
+      // the dialog offers XLSX and PDF, and reading is the page's job.
+      secondaryActions={[
+        {
+          label: t("exportXlsx"),
+          icon: <Download />,
+          onSelect: () => {
             setDialogOpen(true);
-          }}
-        >
-          {t("exportXlsx")}
-        </Button>
-      }
+          },
+        },
+      ]}
     >
       <Tabs
         className="flex flex-col gap-4"
@@ -194,25 +214,25 @@ export function LibraryReportsView({
         )}
 
         <TabsContent value="loans">
-          <LoansReportTable from={from} to={to} />
+          <LoansReportTable from={from} to={to} emptyAction={earlierPeriod} />
         </TabsContent>
         <TabsContent value="overdueMembers">
           <OverdueMembersReportTable />
         </TabsContent>
         <TabsContent value="mostBorrowed">
-          <MostBorrowedReportTable from={from} to={to} />
+          <MostBorrowedReportTable from={from} to={to} emptyAction={earlierPeriod} />
         </TabsContent>
         <TabsContent value="summary">
           <ReportSummaryTable from={from} to={to} />
         </TabsContent>
         <TabsContent value="visits">
-          <ReportVisitsTable from={from} to={to} />
+          <ReportVisitsTable from={from} to={to} emptyAction={earlierPeriod} />
         </TabsContent>
         <TabsContent value="members">
           <ReportMembersTable />
         </TabsContent>
         <TabsContent value="accessionRegister">
-          <ReportAccessionRegisterTable from={from} to={to} />
+          <ReportAccessionRegisterTable from={from} to={to} emptyAction={earlierPeriod} />
         </TabsContent>
       </Tabs>
 

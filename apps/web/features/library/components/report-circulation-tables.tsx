@@ -5,7 +5,7 @@ import type { Locale } from "@newsekolah/i18n";
 import { Badge, DataTable, EmptyState, TextLink, domainIcons } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useMemo } from "react";
 
 import { useDirectoryLookup } from "../../reference/directory-names";
@@ -28,7 +28,16 @@ import { LOAN_STATUS_TONE, toneOf } from "../lib/status-tones";
 type LoanReportRow = NonNullable<ReturnType<typeof useLoansReportQuery>["data"]>["data"][number];
 
 /** Loans borrowed in the period, each naming its borrower. */
-export function LoansReportTable({ from, to }: { from: string; to: string }): ReactElement {
+export function LoansReportTable({
+  from,
+  to,
+  emptyAction,
+}: {
+  from: string;
+  to: string;
+  /** The empty state's way on, such as stepping back a month. */
+  emptyAction?: ReactNode;
+}): ReactElement {
   const t = useTranslations("app.library.reports.loans");
   const tStatus = useTranslations("app.library.memberHistory.status");
   const locale = useLocale() as Locale;
@@ -97,7 +106,11 @@ export function LoansReportTable({ from, to }: { from: string; to: string }): Re
       onRetry={() => void refetch()}
       getRowId={(row) => row.loan.id}
       emptyState={
-        <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />
+        <EmptyState
+          icon={<domainIcons.library aria-hidden="true" />}
+          title={t("emptyTitle")}
+          action={emptyAction}
+        />
       }
     />
   );
@@ -168,7 +181,16 @@ export function OverdueMembersReportTable(): ReactElement {
 }
 
 /** The titles borrowed most in the period. */
-export function MostBorrowedReportTable({ from, to }: { from: string; to: string }): ReactElement {
+export function MostBorrowedReportTable({
+  from,
+  to,
+  emptyAction,
+}: {
+  from: string;
+  to: string;
+  /** The empty state's way on, such as stepping back a month. */
+  emptyAction?: ReactNode;
+}): ReactElement {
   const t = useTranslations("app.library.reports.mostBorrowed");
   const { data, isLoading, error, refetch } = useMostBorrowedReportQuery(from, to);
   const titles = data?.data ?? [];
@@ -210,7 +232,11 @@ export function MostBorrowedReportTable({ from, to }: { from: string; to: string
       onRetry={() => void refetch()}
       getRowId={(row) => row.title.id}
       emptyState={
-        <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />
+        <EmptyState
+          icon={<domainIcons.library aria-hidden="true" />}
+          title={t("emptyTitle")}
+          action={emptyAction}
+        />
       }
     />
   );

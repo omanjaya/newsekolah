@@ -1196,7 +1196,8 @@
     "title": "Laporan perpustakaan",
     "fromLabel": "Dari tanggal",
     "toLabel": "Sampai tanggal",
-    "exportXlsx": "Ekspor XLSX",
+    "exportXlsx": "Unduh laporan",
+    "earlierPeriod": "Lihat bulan sebelumnya",
     "tabs": {
       "loans": "Peminjaman",
       "overdueMembers": "Anggota terlambat",
