@@ -47,7 +47,8 @@ function useScrolled(): boolean {
 }
 
 /**
- * The phone header's left side: the school's mark, then its name, which
+ * The phone header's left side: the school's mark, then its name (the
+ * short name when the school set one), which
  * gives way to the page's title once the page's large title has scrolled
  * away under the header (PageHeader publishes that, `useCollapsedTitle`).
  * The two share one grid cell, so the swap never moves anything: the name
@@ -56,7 +57,7 @@ function useScrolled(): boolean {
  * technology.
  */
 function PhoneBrand(): ReactElement {
-  const { displayName, isLoading } = useTenant();
+  const { displayName, shortName, isLoading } = useTenant();
   const { title, collapsed } = useCollapsedTitle();
   const showTitle = collapsed && title !== null;
   const swap = "min-w-0 truncate transition-[opacity,translate] duration-base ease-standard";
@@ -75,7 +76,10 @@ function PhoneBrand(): ReactElement {
               showTitle && "-translate-y-1.5 opacity-0",
             )}
           >
-            {displayName}
+            {/* About 17 characters fit beside the three buttons, so the
+                school's short name goes here when it set one; truncation
+                is the last resort for one that did not. */}
+            {shortName ?? displayName}
           </span>
         )}
         <span
