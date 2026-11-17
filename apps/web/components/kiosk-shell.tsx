@@ -74,20 +74,28 @@ export function KioskShell({ title, exitHref, timeZone, children }: KioskShellPr
   return (
     <div data-kiosk-shell="" className="flex min-h-dvh flex-col bg-bg text-fg">
       <header className="flex items-center gap-4 border-b border-line bg-surface px-4 py-3 md:gap-6 md:px-6 md:py-4">
-        <div className="flex min-w-0 flex-1 items-center gap-3 md:gap-4">
+        {/* From sm up the screen's name follows the school's after a
+            divider. On a phone it sits under the school's name as a
+            caption, indented past the 32px mark and its 10px gap
+            (TenantBrand), so the screen is still named there. */}
+        <div className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-3 md:gap-4">
           <TenantBrand />
           {title && (
             <>
               <span aria-hidden="true" className="hidden h-6 w-px bg-line sm:block" />
-              <p className="hidden truncate text-heading text-fg-muted sm:block">{title}</p>
+              <p className="-mt-1 truncate pl-10.5 text-caption text-fg-muted sm:mt-0 sm:pl-0 sm:text-heading">
+                {title}
+              </p>
             </>
           )}
         </div>
         <div className="flex shrink-0 flex-col items-end" aria-label={t("clock")} role="timer">
           {/* Reserves the clock's width before the client knows the time.
-              The kiosk display role: read from across the room. */}
+              The kiosk display role, read from across the room, from sm
+              up; on a phone held in the hand the title-lg role is plenty
+              and leaves the school and the screen their names. */}
           <time
-            className="min-w-[5ch] text-right text-kiosk-display tabular-nums"
+            className="min-w-[5ch] text-right text-title-lg tabular-nums sm:text-kiosk-display"
             suppressHydrationWarning
           >
             {time ?? " "}
