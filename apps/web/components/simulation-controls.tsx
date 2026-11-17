@@ -1,10 +1,10 @@
 "use client";
 
-import { Button, Input, Select, cn } from "@newsekolah/ui";
+import { Button, DatePicker, Field, Select, TimePicker, cn } from "@newsekolah/ui";
 import { ChevronDown, Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useId, useRef, useState } from "react";
-import type { ReactElement } from "react";
+import { useState } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 import { useSession } from "../lib/session/session-provider";
 import {
@@ -32,31 +32,12 @@ export function SimulationControls(): ReactElement | null {
   const t = useTranslations("app.shell.simulation");
   const tStrip = useTranslations("app.shell.strip");
   const timeZone = me?.tenant.timezone ?? "UTC";
-  const dateInput = useRef<HTMLInputElement>(null);
-  const timeInput = useRef<HTMLInputElement>(null);
-  const dateId = useId();
-  const timeId = useId();
-  const modeId = useId();
   const [modeChoice, setModeChoice] = useState<{ revision: number; mode: SimulationMode } | null>(
     null,
   );
   const mode = modeChoice?.revision === revision ? modeChoice.mode : (active?.mode ?? "frozen");
-  const [invalid, setInvalid] = useState(false);
 
   if (!identity?.allowed) return null;
-
-  function apply() {
-    const instant = instantFromSchoolTime(
-      dateInput.current?.value ?? "",
-      timeInput.current?.value ?? "",
-      timeZone,
-    );
-    if (!instant) {
-      setInvalid(true);
-      return;
-    }
-    setSimulation(mode, instant);
-  }
 
   function shift(milliseconds: number) {
     setSimulation(active?.mode ?? mode, new Date(businessNow().getTime() + milliseconds));
@@ -102,55 +83,25 @@ export function SimulationControls(): ReactElement | null {
         <div key={`${revision}:${timeZone}`} className="flex flex-col gap-3 pt-1 pb-3">
           <p className="text-body-sm">{active ? t("warning") : t("intro")}</p>
           <div className="flex flex-wrap items-end gap-2 rounded-md bg-surface p-3 text-fg ring-1 ring-border">
-            <div className="flex min-w-36 flex-1 flex-col gap-1.5">
-              <label htmlFor={dateId} className="text-label text-fg">
-                {t("date")}
-              </label>
-              <Input
-                id={dateId}
-                ref={dateInput}
-                type="date"
-                defaultValue={defaults.date}
-                invalid={invalid}
-                onChange={() => {
-                  setInvalid(false);
-                }}
-              />
-            </div>
-            <div className="flex min-w-28 flex-1 flex-col gap-1.5">
-              <label htmlFor={timeId} className="text-label text-fg">
-                {t("time", { zone: timeZone })}
-              </label>
-              <Input
-                id={timeId}
-                ref={timeInput}
-                type="time"
-                defaultValue={defaults.time}
-                invalid={invalid}
-                onChange={() => {
-                  setInvalid(false);
-                }}
-              />
-            </div>
-            <div className="flex min-w-32 flex-1 flex-col gap-1.5">
-              <label id={modeId} className="text-label text-fg">
-                {t("mode")}
-              </label>
-              <Select
-                aria-labelledby={modeId}
-                value={mode}
-                onValueChange={(value) => {
-                  setModeChoice({ revision, mode: value as SimulationMode });
-                }}
-                options={[
-                  { value: "frozen", label: t("frozen") },
-                  { value: "running", label: t("running") },
-                ]}
-              />
-            </div>
-            <Button size="sm" onClick={apply}>
-              {t("apply")}
-            </Button>
+            <SimulationMoment
+              defaults={defaults}
+              timeZone={timeZone}
+              mode={mode}
+              modeField={
+                <Field label={t("mode")} className="min-w-32 flex-1">
+                  <Select
+                    value={mode}
+                    onValueChange={(value) => {
+                      setModeChoice({ revision, mode: value as SimulationMode });
+                    }}
+                    options={[
+                      { value: "frozen", label: t("frozen") },
+                      { value: "running", label: t("running") },
+                    ]}
+                  />
+                </Field>
+              }
+            />
             <Button
               size="sm"
               variant="secondary"
@@ -194,5 +145,67 @@ export function SimulationControls(): ReactElement | null {
         </Button>
       )}
     </div>
+  );
+}
+
+/**
+ * The school date and time to jump to, then the mode field and Apply. It
+ * holds the moment the panel showed when it opened: the panel remounts
+ * it for each new simulation and each time zone, so an untouched field
+ * does not tick along with the clock.
+ */
+function SimulationMoment({
+  defaults,
+  timeZone,
+  mode,
+  modeField,
+}: {
+  defaults: { date: string; time: string };
+  timeZone: string;
+  mode: SimulationMode;
+  modeField: ReactNode;
+}): ReactElement {
+  const t = useTranslations("app.shell.simulation");
+  const [date, setDate] = useState(defaults.date);
+  const [time, setTime] = useState(defaults.time);
+  const [invalid, setInvalid] = useState(false);
+
+  function apply() {
+    const instant = instantFromSchoolTime(date, time, timeZone);
+    if (!instant) {
+      setInvalid(true);
+      return;
+    }
+    setSimulation(mode, instant);
+  }
+
+  return (
+    <>
+      <Field label={t("date")} className="min-w-36 flex-1">
+        <DatePicker
+          value={date}
+          today={defaults.date}
+          invalid={invalid}
+          onChange={(next) => {
+            setDate(next);
+            setInvalid(false);
+          }}
+        />
+      </Field>
+      <Field label={t("time", { zone: timeZone })} className="min-w-28 flex-1">
+        <TimePicker
+          value={time}
+          invalid={invalid}
+          onChange={(next) => {
+            setTime(next);
+            setInvalid(false);
+          }}
+        />
+      </Field>
+      {modeField}
+      <Button size="sm" onClick={apply}>
+        {t("apply")}
+      </Button>
+    </>
   );
 }
