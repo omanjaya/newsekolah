@@ -165,7 +165,8 @@ export function LoanRulesView(): ReactElement {
           canManage ? (
             <>
               <LibraryPolicyDialog />
-              {addButton}
+              {/* An empty list offers its own Tambah aturan: one primary at a time. */}
+              {items.length > 0 && addButton}
             </>
           ) : undefined
         }

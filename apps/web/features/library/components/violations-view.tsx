@@ -269,7 +269,21 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
               icon={<domainIcons.violation aria-hidden="true" />}
               title={t("emptyTitle")}
               description={t("emptyBody")}
-              action={recordButton}
+              // The header already carries the primary Catat pelanggaran;
+              // the empty list repeats it quietly, as a secondary.
+              action={
+                canRecord ? (
+                  <Button
+                    variant="secondary"
+                    icon={<Plus />}
+                    onClick={() => {
+                      setRecording(true);
+                    }}
+                  >
+                    {t("record")}
+                  </Button>
+                ) : undefined
+              }
             />
           )
         }
