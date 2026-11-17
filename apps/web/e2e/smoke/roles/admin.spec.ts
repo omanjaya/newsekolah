@@ -5,6 +5,7 @@ import type { Locator, Page } from "@playwright/test";
 import {
   assertNoHorizontalOverflow,
   expect,
+  expectAreaPage,
   forRole,
   registerCommonFlow,
   waitForSkeletonsGone,
@@ -15,23 +16,45 @@ registerCommonFlow({ test, goto }, "admin", ["/school/classes", "/school/users",
 
 test("admin: opens a class roster from the class list", async ({ page }) => {
   await goto(page, "/school/classes");
-  const nav = page.getByRole("navigation", { name: "Kelas dan siswa" });
-  await expect(nav).toBeVisible();
   await waitForSkeletonsGone(page);
 
-  const firstClass = nav.getByRole("button").first();
-  await expect(firstClass).toBeVisible();
-  await firstClass.click();
+  // From the md breakpoint the classes are a searchable list beside the
+  // class; a phone picks the class from one "Pilih kelas" field instead
+  // (features/school/components/class-navigation.tsx).
+  let className: string;
+  if ((page.viewportSize()?.width ?? 0) >= 768) {
+    const nav = page.getByRole("navigation", { name: "Daftar kelas" });
+    await expect(nav).toBeVisible();
+    const classButtons = nav.getByRole("button");
+    await expect(classButtons.first()).toBeVisible();
+    // The first class opens by default; the last one is a real switch
+    // whenever there is more than one.
+    const target = classButtons.last();
+    className = ((await target.textContent()) ?? "").trim();
+    await target.click();
+    await expect(target).toHaveAttribute("aria-current", "true");
+  } else {
+    const picker = page.getByRole("combobox", { name: "Pilih kelas", exact: true });
+    await expect(picker).toBeVisible();
+    await picker.click();
+    await expect(page.getByRole("listbox")).toBeVisible();
+    // Keyboard rather than a click on an option: the list opens scrolled to
+    // the current class and can run past a phone's viewport.
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("listbox")).toHaveCount(0);
+    className = ((await picker.textContent()) ?? "").trim();
+  }
 
+  expect(className).not.toBe("");
+  await expect(page.getByRole("heading", { level: 2, name: className, exact: true })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Siswa" })).toBeVisible();
   await assertNoHorizontalOverflow(page);
 });
 
 test("admin: searches the users list", async ({ page }) => {
   await goto(page, "/school/users");
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Guru, pegawai, dan siswa" }),
-  ).toBeVisible();
+  await expectAreaPage(page, "Pengguna dan akses", "Pengguna sekolah");
   await waitForSkeletonsGone(page);
 
   // No getByRole("table") here: below the "md" breakpoint the shared
@@ -44,14 +67,20 @@ test("admin: searches the users list", async ({ page }) => {
 
 test("admin: settings > Kop laporan loads", async ({ page }) => {
   await goto(page, "/settings/report-header");
-  await expect(page.getByRole("heading", { level: 1, name: "Kop Laporan" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Kop laporan" })).toBeVisible();
   await assertNoHorizontalOverflow(page);
 });
 
 test("admin: library circulation desk loads", async ({ page }) => {
   await goto(page, "/library/desk");
-  await expect(page.getByRole("heading", { level: 1, name: "Meja sirkulasi" })).toBeVisible();
-  await expect(page.getByPlaceholder("Cari nama, NIS, atau nomor anggota")).toBeVisible();
+  await expectAreaPage(page, "Sirkulasi", "Sirkulasi");
+  // The desk starts on the scan field; a member is also found by name
+  // from the "Cari anggota" search (features/library/components/desk-member-search.tsx).
+  await expect(page.getByRole("radiogroup", { name: "Mode sirkulasi" })).toBeVisible();
+  await expect(page.getByLabel("Pindai atau ketik kode kartu anggota")).toBeVisible();
+  await page.getByRole("button", { name: "Cari anggota", exact: true }).click();
+  await expect(page.getByPlaceholder("Nama, NIS, atau nomor anggota")).toBeVisible();
+  await page.keyboard.press("Escape");
   await assertNoHorizontalOverflow(page);
 });
 

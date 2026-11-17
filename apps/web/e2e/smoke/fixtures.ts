@@ -89,6 +89,21 @@ export async function assertNoHorizontalOverflow(page: Page): Promise<void> {
   ).toBeLessThanOrEqual(innerWidth + 1);
 }
 
+/**
+ * The page template (components/app-page.tsx): one h1 naming the area
+ * ("Presensi dan jurnal"), and the area's pages as tabs under it, the one
+ * on screen marked as the current page ("Jurnal mengajar").
+ */
+export async function expectAreaPage(page: Page, area: string, tab?: string): Promise<void> {
+  await expect(page.getByRole("heading", { level: 1, name: area, exact: true })).toBeVisible();
+  if (tab === undefined) return;
+  const current = page
+    .getByRole("main")
+    .getByRole("navigation")
+    .getByRole("link", { name: tab, exact: true });
+  await expect(current).toHaveAttribute("aria-current", "page");
+}
+
 /** Loading placeholders: the shared `Skeleton` and older hand-made pulses. */
 export const SKELETON_SELECTOR = '[data-slot="skeleton"], .animate-pulse';
 
