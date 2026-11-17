@@ -41,7 +41,7 @@
   "editData": "Ubah data",
   "overview": {
     "statsLabel": "Ringkasan siswa",
-    "attendance": "Kehadiran",
+    "attendance": "Presensi",
     "absentDays": "{absent} dari {days} hari tidak hadir",
     "noAttendance": "Belum ada data presensi",
     "disciplinePoints": "Poin pelanggaran",

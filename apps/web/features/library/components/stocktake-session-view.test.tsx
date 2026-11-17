@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -25,8 +25,11 @@ vi.mock("../desk-api", () => ({
   useFindLibraryCopyByCodeMutation: () => ({ mutateAsync: mocks.findCopy }),
   useLibraryTitleNameMutation: () => ({ mutateAsync: mocks.titleName }),
 }));
+// The reconciliation has tests of its own; here it only shows which result it got.
 vi.mock("./stocktake-results", () => ({
-  StocktakeResults: () => <p>results</p>,
+  StocktakeResults: ({ result }: { result: { stocktake_id: string } }) => (
+    <section aria-label="reconciliation">{result.stocktake_id}</section>
+  ),
 }));
 vi.mock("../stocktake-api", () => ({
   downloadLibraryStocktakeReportXlsx: vi.fn(),
@@ -40,8 +43,9 @@ vi.mock("../stocktake-api", () => ({
     isError: false,
     refetch: vi.fn(),
   }),
-  useLibraryStocktakeResultsQuery: () => ({
-    data: undefined,
+  // The server's reconciliation, fetched only once the session is closed.
+  useLibraryStocktakeResultsQuery: (_id: string, enabled: boolean) => ({
+    data: enabled ? { stocktake_id: "st-1" } : undefined,
     isLoading: false,
     isError: false,
     refetch: vi.fn(),
@@ -73,10 +77,13 @@ describe("StocktakeSessionView", () => {
 
     await user.type(screen.getByRole("textbox", { name: "scan.label" }), "2026/00001{Enter}");
 
-    expect(mocks.scan).toHaveBeenCalledWith(
-      { stocktakeId: "st-1", barcode: "2026/00001" },
-      expect.any(Object),
-    );
+    // The scanner hands each code over through its queue, after the keystroke.
+    await waitFor(() => {
+      expect(mocks.scan).toHaveBeenCalledWith(
+        { stocktakeId: "st-1", barcode: "2026/00001" },
+        expect.any(Object),
+      );
+    });
     const live = container.querySelector('[aria-live="polite"]');
     if (!(live instanceof HTMLElement)) throw new Error("result region missing");
     expect(await within(live).findByText("Laskar Pelangi")).toBeInTheDocument();
@@ -97,8 +104,13 @@ describe("StocktakeSessionView", () => {
 
     await user.type(screen.getByRole("textbox", { name: "scan.label" }), "XX-1{Enter}");
 
+    await waitFor(() => {
+      expect(mocks.scan).toHaveBeenCalledTimes(1);
+    });
     const live = container.querySelector('[aria-live="polite"]');
-    expect(live).toHaveTextContent("scan.recent.rejected");
+    await waitFor(() => {
+      expect(live).toHaveTextContent("scan.recent.rejected");
+    });
     expect(mocks.findCopy).not.toHaveBeenCalled();
   });
 
@@ -110,7 +122,13 @@ describe("StocktakeSessionView", () => {
   it("shows the reconciliation and no scanner once the session is closed", () => {
     mocks.status = "closed";
     render(<StocktakeSessionView stocktakeId="st-1" />);
+    expect(screen.getByRole("region", { name: "reconciliation" })).toHaveTextContent("st-1");
     expect(screen.queryByRole("textbox", { name: "scan.label" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "close" })).not.toBeInTheDocument();
+  });
+
+  it("shows no reconciliation while the session still runs", () => {
+    render(<StocktakeSessionView stocktakeId="st-1" />);
+    expect(screen.queryByRole("region", { name: "reconciliation" })).not.toBeInTheDocument();
   });
 });

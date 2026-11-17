@@ -676,7 +676,7 @@
       "submit": "Save"
     },
     "memberScope": "Member: {name}",
-    "allMembers": "View All Members"
+    "allMembers": "View all members"
   },
   "import": {
     "navLabel": "Import collection",
@@ -702,7 +702,7 @@
       "unmapped": "Not mapped",
       "back": "Back",
       "continue": "Continue to preview",
-      "titleRequired": "The Title column must be mapped before continuing.",
+      "titleRequired": "The “Title” column must be mapped before continuing.",
       "heading": "Match the file's columns"
     },
     "fields": {
@@ -1448,7 +1448,7 @@
       "steps": {
         "card": "Scan your member card",
         "books": "Scan the books",
-        "done": "Press Done"
+        "done": "Press the Done button"
       },
       "privacy": "The session ends by itself after 20 seconds without a scan, so the next person never sees your loans."
     },
@@ -1604,23 +1604,23 @@
     "catalogue": "Catalogue pages",
     "circulation": "Circulation pages",
     "members": "Members",
-    "settings": "Loan Settings",
+    "settings": "Loan settings",
     "visits": "Visits",
     "stocktake": "Stocktake",
-    "titles": "Book Titles",
+    "titles": "Book titles",
     "copies": "Copies",
-    "importBooks": "Import Books",
+    "importBooks": "Import books",
     "catalogueSettings": "Catalogue data",
     "individual": "Individual",
     "class": "Class",
-    "sanctions": "Fines & Sanctions",
+    "sanctions": "Fines and sanctions",
     "openKiosk": "Open self-service kiosk",
-    "loanSettings": "Loan Settings",
+    "loanSettings": "Loan settings",
     "memberTypes": "Member types",
-    "periodRules": "Period Rules & Policy",
+    "periodRules": "Period rules and policy",
     "openVisitKiosk": "Open visit kiosk",
     "report": "Report",
-    "memberSanctions": "Member Fines & Sanctions",
+    "memberSanctions": "Member fines and sanctions",
     "loanRules": "Loan rules"
   },
   "titleDetail": {

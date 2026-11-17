@@ -14,7 +14,7 @@
   "errorTitle": "Pindai gagal",
   "historyTitle": "Pindaian sebelumnya",
   "results": {
-    "classroom_entry": "Kehadiran Anda tercatat di kelas {teacher}.",
+    "classroom_entry": "Presensi Anda tercatat di kelas {teacher}.",
     "exit_stage": "Tahap izin keluar {student} dikonfirmasi.",
     "gate_exit": "{student} ({className}) diizinkan keluar.",
     "late_arrival_open": "Keterlambatan dibuka dan menunggu proses berikutnya.",

@@ -167,7 +167,7 @@
   "kinds": {
     "attendance_daily": {
       "label": "Presensi harian",
-      "description": "Rekap kehadiran siswa satu kelas pada tanggal yang dipilih."
+      "description": "Rekap presensi siswa satu kelas pada tanggal yang dipilih."
     },
     "discipline_points": {
       "label": "Poin pelanggaran",

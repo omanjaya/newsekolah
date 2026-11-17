@@ -11,7 +11,7 @@
   "columnLabel": "Label kolom {column}",
   "moveUp": "Naikkan urutan kolom {column}",
   "moveDown": "Turunkan urutan kolom {column}",
-  "restoreDefaults": "Pulihkan default",
+  "restoreDefaults": "Pulihkan bawaan",
   "export": "Unduh",
   "error": "Laporan gagal diunduh. Coba lagi."
 }

@@ -21,7 +21,7 @@
     "rooms": "Rooms"
   },
   "years": {
-    "eyebrow": "School Data",
+    "eyebrow": "School data",
     "title": "Academic years",
     "description": "Manage the school's academic years: create, edit, activate, or archive.",
     "add": "Add academic year",
@@ -90,7 +90,7 @@
     "activateBody": "\"{name}\" becomes the active term; the other terms of this year become inactive."
   },
   "gradeLevels": {
-    "eyebrow": "School Data",
+    "eyebrow": "School data",
     "title": "Grade levels",
     "add": "Add grade level",
     "edit": "Edit",
@@ -121,9 +121,9 @@
     "emptyBody": "Add grade levels one at a time, or apply a template for the school's education level."
   },
   "tracks": {
-    "eyebrow": "School Data",
+    "eyebrow": "School data",
     "title": "Tracks",
-    "description": "Student majors or tracks, for example Science, Social Studies, or Language in senior high.",
+    "description": "Student majors or tracks, for example science, social studies or languages in senior high.",
     "add": "Add track",
     "edit": "Edit",
     "delete": "Delete",
@@ -139,10 +139,10 @@
       "actions": "Actions"
     },
     "emptyTitle": "No tracks yet",
-    "emptyBody": "Add a track if the school offers majors, such as Science or Social Studies."
+    "emptyBody": "Add a track if the school offers majors, such as science or social studies."
   },
   "rooms": {
-    "eyebrow": "School Data",
+    "eyebrow": "School data",
     "title": "Rooms",
     "add": "Add room",
     "edit": "Edit",
@@ -163,7 +163,7 @@
     "emptyBody": "Add rooms so classes can be assigned to one."
   },
   "subjectOfferings": {
-    "eyebrow": "School Data",
+    "eyebrow": "School data",
     "title": "Subject offerings",
     "year": "Academic year",
     "add": "Add offering",
@@ -187,7 +187,7 @@
     "emptyBody": "Add the subjects taught in this academic year."
   },
   "teachingAssignments": {
-    "eyebrow": "School Data",
+    "eyebrow": "School data",
     "title": "Teaching assignments",
     "description": "Replace a teacher's whole subject and class load for one academic year in a single step.",
     "year": "Academic year",
@@ -246,7 +246,7 @@
     "importAnother": "Import another file"
   },
   "newYearSetup": {
-    "eyebrow": "School Data",
+    "eyebrow": "School data",
     "title": "New academic year",
     "description": "Copy subject offerings and classes from one academic year into another that does not have them yet.",
     "fromYear": "From academic year",

@@ -111,7 +111,7 @@ describe("consolidated workspaces", () => {
     );
     expect(activeNavHref("/library/copies", items)).toBe("/library/catalogue");
     expect(activeNavHref("/library/reports", items)).toBe("/reports");
-    expect(activeNavHref("/library", items)).toBe("/library/catalogue");
+    expect(activeNavHref("/library", items)).toBe("/library");
     expect(activeNavHref("/visitors/recap", items)).toBe("/visitors/board");
     expect(activeNavHref("/settings/sso", items)).toBe("/settings");
     expect(activeNavHref("/discipline/warning-letters", items)).toBe("/discipline/violations");
@@ -135,6 +135,25 @@ describe("consolidated workspaces", () => {
     expect(new Set(items.map((item) => item.key)).size).toBe(items.length);
     expect(items.find((item) => item.key === "settings")?.href).toBe("/settings");
     expect(items.find((item) => item.key === "settings")?.sidebarPlacement).toBe("footer");
+  });
+
+  it("gives the library home its own entry, first in the library group, for library staff only", () => {
+    const librarian = menu([
+      "view_library",
+      "manage_library_circulation",
+      "manage_library_catalog",
+      "manage_library_members",
+    ]);
+    const library = librarian.filter((item) => item.group === "nav.library.label");
+    expect(library[0]?.key).toBe("library-dashboard");
+    expect(library[0]?.href).toBe("/library");
+    expect(library[0]?.labelKey).toBe("app.library.dashboard.title");
+    expect(librarian.find((item) => item.key === "dashboard")?.activePaths).toEqual(["/dashboard"]);
+
+    // A teacher browses the catalogue but has no library day to look at.
+    const teacher = menu(["view_library", "view_own_library_loans"], "teacher");
+    expect(teacher.some((item) => item.key === "library-dashboard")).toBe(false);
+    expect(teacher.some((item) => item.key === "library-catalogue")).toBe(true);
   });
 
   it("does not offer an attendance-report fallback that its legacy route guard refuses", () => {

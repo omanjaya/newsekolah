@@ -131,9 +131,13 @@ function RecapBody({
 /**
  * The security office's recap of one day or one month: visits, who is
  * still on site, the average stay, and incidents by severity, exportable as
- * a workbook or PDF. Embedded in the reports hub too, where `sectionNav`
- * (the hub's section tabs) replaces the visitors tabs and `tabKey` names
- * the period's URL parameter.
+ * a workbook or PDF. On its own route the page shows the visitor book's
+ * tabs. Inside the reports hub (`tabKey` other than "tab", which names the
+ * period's URL parameter) it is one section of that page: `sectionNav`, the
+ * hub's strip of report sections, replaces the visitor tabs and the page
+ * keeps the hub's title, so switching sections never swaps the header; a
+ * reader with the recap as the hub's only section gets the recap's own
+ * title and no tabs.
  */
 export function VisitorRecapView({
   tabKey = "tab",
@@ -166,6 +170,8 @@ export function VisitorRecapView({
           timeZone: "UTC",
         }).format(new Date(`${month}-01T12:00:00Z`));
 
+  const embedded = tabKey !== "tab";
+
   async function handleExport(options: ReportExportOptions) {
     if (period === "daily") await exportDaily.mutateAsync({ date, options });
     else await exportMonthly.mutateAsync({ month, options });
@@ -173,7 +179,8 @@ export function VisitorRecapView({
 
   return (
     <AppPage
-      nav={sectionNav ?? <VisitorsWorkspaceNav />}
+      title={embedded && !sectionNav ? t("documentTitle") : undefined}
+      nav={sectionNav ?? (embedded ? false : <VisitorsWorkspaceNav />)}
       documentTitle={t("documentTitle")}
       actions={
         <>

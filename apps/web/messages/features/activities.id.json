@@ -108,7 +108,7 @@
         "unsavedChanges": "{count, plural, other {# perubahan belum disimpan}}",
         "saveHint": "Semua perubahan tersimpan",
         "save": "Simpan presensi",
-        "recorded": "Kehadiran tersimpan",
+        "recorded": "Presensi tersimpan",
         "statuses": {
           "H": "Hadir",
           "I": "Izin",

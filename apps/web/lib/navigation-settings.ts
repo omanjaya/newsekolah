@@ -1,15 +1,22 @@
 import { domainIcons } from "@newsekolah/ui";
 import {
-  Bell,
-  Building2,
+  BellDot,
+  BellRing,
   FileSpreadsheet,
+  History,
   KeyRound,
+  KeySquare,
   ListChecks,
+  LockKeyhole,
   MessageCircle,
   Palette,
   Plug,
+  School,
   Settings,
   ShieldCheck,
+  Signature,
+  Siren,
+  SunMoon,
   UserRound,
 } from "lucide-react";
 
@@ -20,7 +27,9 @@ import { DOCUMENT_TEMPLATE_SECTIONS, REPORT_SECTIONS } from "./navigation-sectio
 /**
  * Settings, reporting and platform entries, split out of `navigation.ts`
  * so that file stays under the 400-line cap (docs/04-clean-code.md).
- * Spread into `navigation.ts` after the school-data group.
+ * Spread into `navigation.ts` after the school-data group. Each entry has
+ * a glyph of its own: the hub, the palette and the section tabs list
+ * them side by side, so the shield is kept for roles and access only.
  */
 export const settingsNavItems: NavItem[] = [
   {
@@ -71,7 +80,7 @@ export const settingsNavItems: NavItem[] = [
     key: "settings-security",
     labelKey: "app.security.navLabel",
     href: "/settings/security",
-    icon: ShieldCheck,
+    icon: LockKeyhole,
     group: NAV_GROUP.settings,
     sidebarPlacement: "hidden",
     accountMenu: true,
@@ -98,7 +107,8 @@ export const settingsNavItems: NavItem[] = [
     key: "settings-report-header",
     labelKey: "app.settings.reportHeader.navLabel",
     href: "/settings/report-header",
-    icon: domainIcons.document,
+    // Not the document templates' page: the letterhead and its signer.
+    icon: Signature,
     permission: "manage_settings",
     group: NAV_GROUP.settings,
     sidebarPlacement: "footer",
@@ -107,7 +117,7 @@ export const settingsNavItems: NavItem[] = [
     key: "settings-sso",
     labelKey: "app.sso.navLabel",
     href: "/settings/sso",
-    icon: ShieldCheck,
+    icon: KeySquare,
     permission: "manage_settings",
     group: NAV_GROUP.settings,
     sidebarPlacement: "footer",
@@ -116,7 +126,7 @@ export const settingsNavItems: NavItem[] = [
     key: "settings-audit",
     labelKey: "app.audit.navLabel",
     href: "/settings/audit-logs",
-    icon: ShieldCheck,
+    icon: History,
     permission: "view_audit_logs",
     group: NAV_GROUP.settings,
     sidebarPlacement: "footer",
@@ -134,7 +144,8 @@ export const settingsNavItems: NavItem[] = [
     key: "settings-notifications",
     labelKey: "app.settings.notifications.navLabel",
     href: "/settings/notifications",
-    icon: Bell,
+    // Not the notification list's bell: this is the reader's own choice of channels.
+    icon: BellRing,
     group: NAV_GROUP.settings,
     sidebarPlacement: "hidden",
     accountMenu: true,
@@ -143,7 +154,7 @@ export const settingsNavItems: NavItem[] = [
     key: "settings-notification-defaults",
     labelKey: "app.settings.notificationDefaults.navLabel",
     href: "/settings/notification-defaults",
-    icon: Bell,
+    icon: BellDot,
     permission: "manage_notification_settings",
     group: NAV_GROUP.settings,
     sidebarPlacement: "footer",
@@ -183,8 +194,9 @@ export const settingsNavItems: NavItem[] = [
     key: "settings-appearance",
     labelKey: "app.shell.appearance",
     href: "/settings/appearance",
-    // Not the gear: that glyph is the school settings entry in the sidebar.
-    icon: Palette,
+    // Neither the gear (the school settings entry) nor the palette (the
+    // school's branding): light and dark is what this page sets.
+    icon: SunMoon,
     group: NAV_GROUP.settings,
     sidebarPlacement: "hidden",
     accountMenu: true,
@@ -205,7 +217,7 @@ export const settingsNavItems: NavItem[] = [
     key: "platform-tenants",
     labelKey: "nav.platform.items.tenants",
     href: "/platform",
-    icon: Building2,
+    icon: School,
     permission: "platform_superadmin",
     group: NAV_GROUP.platform,
     sidebarPlacement: "footer",
@@ -214,7 +226,7 @@ export const settingsNavItems: NavItem[] = [
     key: "platform-operator-alerts",
     labelKey: "nav.platform.items.operatorAlerts",
     href: "/platform/operator-alerts",
-    icon: Bell,
+    icon: Siren,
     permission: "platform_superadmin",
     group: NAV_GROUP.platform,
     sidebarPlacement: "footer",

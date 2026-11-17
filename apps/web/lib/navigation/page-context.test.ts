@@ -40,7 +40,8 @@ describe("resolvePageContext", () => {
   it("takes the area the sidebar highlights, its group and its pages as tabs", () => {
     const context = resolvePageContext("/journal", appNavigationFor(ADMIN));
     expect(context.entry?.key).toBe("attendance");
-    expect(context.groupKey).toBe("nav.academic.label");
+    // The key the sidebar labels the group with, so the two read alike.
+    expect(context.groupKey).toBe("app.shell.nav.groups.academic");
     expect(context.isDetail).toBe(false);
     expect(context.tabs.map((tab) => [tab.href, tab.current])).toEqual([
       ["/attendance", false],
@@ -58,9 +59,34 @@ describe("resolvePageContext", () => {
   });
 
   it("offers only the pages the reader may open", () => {
-    const teacher = reader(["view_attendance", "manage_attendance"], "teacher", ["teacher"]);
-    const context = resolvePageContext("/attendance", appNavigationFor(teacher));
+    // The attendance report opens with manage_attendance; a principal reads
+    // attendance through view_reports on /reports instead.
+    const principal = reader(["view_attendance", "view_academic_data", "view_reports"], "teacher", [
+      "principal",
+    ]);
+    const context = resolvePageContext("/journal", appNavigationFor(principal));
     expect(context.tabs.map((tab) => tab.key)).not.toContain("attendance-reports");
+  });
+
+  it("gives a teacher who takes attendance the report tab its route opens for", () => {
+    const teacher = reader(
+      ["view_attendance", "manage_attendance", "view_academic_data"],
+      "teacher",
+      ["teacher"],
+    );
+    const context = resolvePageContext("/attendance", appNavigationFor(teacher));
+    expect(context.tabs.map((tab) => tab.key)).toEqual([
+      "attendance",
+      "journal",
+      "attendance-reports",
+    ]);
+  });
+
+  it("draws no tab for a route that only redirects", () => {
+    const librarian = reader(["view_library", "manage_library_settings"], "staff", ["librarian"]);
+    const context = resolvePageContext("/library/settings", appNavigationFor(librarian));
+    expect(context.entry?.key).toBe("library-settings");
+    expect(context.tabs).toEqual([]);
   });
 
   it("drops a strip of one page", () => {

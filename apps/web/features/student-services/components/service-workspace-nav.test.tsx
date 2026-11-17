@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ActivitiesWorkspaceNav,
   CounselingWorkspaceNav,
+  DisciplineWorkspaceNav,
   DutyWorkspaceActions,
   VisitorsWorkspaceNav,
 } from "./service-workspace-nav";
@@ -23,6 +24,12 @@ vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { disabled_modules: session.disabled_modules } }),
 }));
 
+// Each page's tab is named by its navigation registry entry (the mock returns the key).
+const EARLY_WARNING = "app.analytics.navLabel";
+const COUNSELING_NOTES = "app.discipline.counseling.title";
+const INCIDENTS = "nav.visitors.items.incidents";
+const CLUBS = "app.activities.navLabelClubs";
+
 beforeEach(() => {
   session.permissions = [];
   session.disabled_modules = [];
@@ -33,24 +40,24 @@ describe("student service workspace boundaries", () => {
   it("does not expose counseling to a monitoring-only reader", () => {
     session.permissions = ["view_early_warning"];
     render(<CounselingWorkspaceNav />);
-    expect(screen.getByRole("link", { name: "monitoring" })).toHaveAttribute("href", "/analytics");
-    expect(screen.queryByRole("link", { name: "sessions" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: EARLY_WARNING })).toHaveAttribute("href", "/analytics");
+    expect(screen.queryByRole("link", { name: COUNSELING_NOTES })).not.toBeInTheDocument();
   });
 
   it("does not imply monitoring access from counseling permission", () => {
     session.permissions = ["manage_counseling"];
     render(<CounselingWorkspaceNav />);
-    expect(screen.getByRole("link", { name: "sessions" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: COUNSELING_NOTES })).toHaveAttribute(
       "href",
       "/discipline/counseling",
     );
-    expect(screen.queryByRole("link", { name: "monitoring" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: EARLY_WARNING })).not.toBeInTheDocument();
   });
 
   it("keeps incident-only visitor access independent of gate operations and reports", () => {
     session.permissions = ["view_visitor_incidents"];
     render(<VisitorsWorkspaceNav />);
-    expect(screen.getByRole("link", { name: "incidents" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: INCIDENTS })).toHaveAttribute(
       "href",
       "/visitors/incidents",
     );
@@ -83,7 +90,7 @@ describe("student service workspace boundaries", () => {
       "aria-current",
       "page",
     );
-    expect(screen.getByRole("link", { name: "clubsTab" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: CLUBS })).not.toHaveAttribute("aria-current");
   });
 
   it("only offers the presence monitor with its own permission", () => {
@@ -117,5 +124,28 @@ describe("student service workspace boundaries", () => {
     session.disabled_modules = ["permits"];
     render(<DutyWorkspaceActions />);
     expect(screen.queryByRole("link", { name: "permits" })).not.toBeInTheDocument();
+  });
+
+  it("names the visitor tabs after their menu entries", () => {
+    session.permissions = ["view_visitors", "view_visitor_incidents", "view_visitor_reports"];
+    render(<VisitorsWorkspaceNav />);
+    expect(screen.getAllByRole("link").map((link) => link.textContent)).toEqual([
+      "nav.visitors.items.board",
+      "nav.visitors.items.expected",
+      INCIDENTS,
+      "nav.visitors.items.reports",
+    ]);
+  });
+
+  it("names the discipline tabs after their menu entries", () => {
+    session.permissions = ["view_discipline"];
+    render(<DisciplineWorkspaceNav />);
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/discipline/violations",
+      "/discipline/warning-letters",
+    ]);
+    expect(
+      screen.getByRole("link", { name: "app.discipline.violations.title" }),
+    ).toBeInTheDocument();
   });
 });

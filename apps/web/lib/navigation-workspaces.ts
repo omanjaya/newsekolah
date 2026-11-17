@@ -11,7 +11,7 @@ interface WorkspaceDefinition {
 
 /** Presentation only: every original route remains in the authorization registry. */
 const WORKSPACES: WorkspaceDefinition[] = [
-  { key: "dashboard", members: ["dashboard", "library-dashboard"] },
+  { key: "dashboard", members: ["dashboard"] },
   { key: "announcements", members: ["announcements"] },
   { key: "reports", members: ["reports", "library-reports", "visitors-recap"], label: "reports" },
   { key: "schedule", members: ["schedule", "school-calendar", "substitutions"], label: "schedule" },
@@ -72,6 +72,8 @@ const WORKSPACES: WorkspaceDefinition[] = [
     group: NAV_GROUP.masterData,
   },
   { key: "school-structure", members: ["school-structure"], label: "structure" },
+  // The library's own home leads the library group, under the page's title.
+  { key: "library-dashboard", members: ["library-dashboard"] },
   {
     key: "library-catalogue",
     members: [
@@ -257,31 +259,6 @@ function releaseClaimedDetailPaths(output: NavItem[], available: NavItem[]): voi
   }
 }
 
-const LIBRARY_WORKSPACES = [
-  "library-catalogue",
-  "library-desk",
-  "library-members",
-  "library-settings",
-  "library-me",
-];
-
-/**
- * The library home is the dashboard of a reader who has no school dashboard.
- * A reader who has both keeps the library home under the library entries, so
- * the page does not light up Beranda while the library group stays closed.
- */
-function moveLibraryHomeToLibrary(output: NavItem[], available: NavItem[]): void {
-  const dashboard = output.find((item) => item.key === "dashboard");
-  const home = available.find((item) => item.key === "library-dashboard");
-  if (!dashboard || !home || !dashboard.aliases?.includes("dashboard")) return;
-  const owner = LIBRARY_WORKSPACES.map((key) => output.find((item) => item.key === key)).find(
-    Boolean,
-  );
-  if (!owner) return;
-  dashboard.activePaths = dashboard.activePaths?.filter((path) => path !== home.href);
-  owner.activePaths = [...(owner.activePaths ?? []), home.href];
-}
-
 /** Merge only the already authorized destinations; custom permission sets get safe fallbacks. */
 export function consolidateNavigation(
   items: NavItem[],
@@ -321,7 +298,6 @@ export function consolidateNavigation(
     ];
   });
   releaseClaimedDetailPaths(output, available);
-  moveLibraryHomeToLibrary(output, available);
   // These remain direct mobile/account actions, not entries in the browsable menu.
   const assigned = new Set(WORKSPACES.flatMap((definition) => definition.members));
   const additional = available.filter(

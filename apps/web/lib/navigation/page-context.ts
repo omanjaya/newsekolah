@@ -1,12 +1,12 @@
-import { navigation, type NavItem } from "../navigation";
+import { navigation, navGroupLabelKey, type NavItem } from "../navigation";
 
 import { activeNavHref, matchesHref } from "./active-href";
 
 /**
  * Menu entries whose members are not sibling pages of one area, so they
- * never become a tab strip: the home of a reader who has the library home
- * as well, and the settings hub, whose sub-pages carry their own section
- * picker (features/settings/components/settings-workspace.tsx).
+ * never become a tab strip: the home, and the settings hub, whose pages
+ * carry the tabs of their own hub section (features/settings/components/
+ * settings-page.tsx, from the taxonomy in features/settings/settings-hub.ts).
  */
 const ENTRIES_WITHOUT_TABS: ReadonlySet<string> = new Set(["dashboard", "settings"]);
 
@@ -23,7 +23,10 @@ export interface PageContext {
   entry?: NavItem;
   /** The registry page the route belongs to (longest href that matches it). */
   page?: NavItem;
-  /** Message key of the sidebar group, the page's eyebrow. */
+  /**
+   * Message key the sidebar labels the page's group with, the page's
+   * eyebrow: the same key, so the eyebrow and the sidebar heading read alike.
+   */
   groupKey?: string;
   /** The area's pages as tabs, in registry order: two or more, only on an area's own pages. */
   tabs: PageTab[];
@@ -50,8 +53,9 @@ function bestMatch(pathname: string, items: readonly NavItem[]): NavItem | undef
  * reader actually has (`entries`: the filtered and consolidated navigation
  * the shell renders, see lib/navigation-workspaces.ts). The area is the
  * entry the sidebar highlights; its members (already filtered to the ones
- * the reader may open) are the tabs; the group is the eyebrow. Pure, so
- * the shell, the page template and tests read the same answer.
+ * the reader may open, less the route-only ones that only redirect) are
+ * the tabs; the group is the eyebrow. Pure, so the shell, the page
+ * template and tests read the same answer.
  */
 export function resolvePageContext(pathname: string, entries: readonly NavItem[]): PageContext {
   const entryHref = activeNavHref(pathname, entries);
@@ -61,14 +65,19 @@ export function resolvePageContext(pathname: string, entries: readonly NavItem[]
     .filter((item): item is NavItem => item !== undefined);
   const page = bestMatch(pathname, members) ?? bestMatch(pathname, navigation);
   const isDetail = page !== undefined && pathname !== pathOf(page.href);
+  const destinations = members.filter((member) => !member.routeOnly);
   const showsTabs =
-    entry !== undefined && !ENTRIES_WITHOUT_TABS.has(entry.key) && members.length >= 2 && !isDetail;
+    entry !== undefined &&
+    !ENTRIES_WITHOUT_TABS.has(entry.key) &&
+    destinations.length >= 2 &&
+    !isDetail;
+  const group = entry?.group ?? page?.group;
   return {
     entry,
     page,
-    groupKey: entry?.group ?? page?.group,
+    groupKey: group === undefined ? undefined : navGroupLabelKey(group),
     tabs: showsTabs
-      ? members.map((member) => ({
+      ? destinations.map((member) => ({
           key: member.key,
           href: member.href,
           labelKey: member.labelKey,

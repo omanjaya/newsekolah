@@ -676,7 +676,7 @@
       "submit": "Simpan"
     },
     "memberScope": "Anggota: {name}",
-    "allMembers": "Lihat Semua Anggota"
+    "allMembers": "Lihat semua anggota"
   },
   "import": {
     "navLabel": "Impor koleksi",
@@ -702,7 +702,7 @@
       "unmapped": "Tidak dipetakan",
       "back": "Kembali",
       "continue": "Lanjut ke pratinjau",
-      "titleRequired": "Kolom Judul wajib dipetakan sebelum melanjutkan.",
+      "titleRequired": "Kolom “Judul” wajib dipetakan sebelum melanjutkan.",
       "heading": "Cocokkan kolom berkas"
     },
     "fields": {
@@ -906,7 +906,7 @@
   },
   "stocktake": {
     "eyebrow": "Perpustakaan",
-    "title": "Opname",
+    "title": "Stok opname",
     "startNew": "Mulai sesi baru",
     "form": {
       "name": "Nama sesi",
@@ -1448,7 +1448,7 @@
       "steps": {
         "card": "Pindai kartu anggota",
         "books": "Pindai bukunya",
-        "done": "Tekan Selesai"
+        "done": "Tekan tombol Selesai"
       },
       "privacy": "Sesi berakhir sendiri setelah 20 detik tanpa pindaian, jadi data Anda tidak terlihat orang berikutnya."
     },
@@ -1481,7 +1481,7 @@
     "cancel": "Batal",
     "save": "Simpan perubahan",
     "name": "Nama perpustakaan",
-    "npp": "Nomor Pokok Perpustakaan (NPP)",
+    "npp": "Nomor pokok perpustakaan (NPP)",
     "accession_format": "Format nomor induk buku",
     "member_no_format": "Format nomor anggota",
     "barcode_source": "Sumber barcode",
@@ -1604,23 +1604,23 @@
     "catalogue": "Halaman katalog",
     "circulation": "Halaman sirkulasi",
     "members": "Anggota",
-    "settings": "Pengaturan Peminjaman",
+    "settings": "Pengaturan peminjaman",
     "visits": "Kunjungan",
-    "stocktake": "Stok Opname",
-    "titles": "Judul Buku",
+    "stocktake": "Stok opname",
+    "titles": "Judul buku",
     "copies": "Eksemplar",
-    "importBooks": "Impor Buku",
+    "importBooks": "Impor buku",
     "catalogueSettings": "Data katalog",
     "individual": "Individu",
     "class": "Kelas",
-    "sanctions": "Denda & Sanksi",
+    "sanctions": "Denda dan sanksi",
     "openKiosk": "Buka kios mandiri",
-    "loanSettings": "Pengaturan Peminjaman",
+    "loanSettings": "Pengaturan peminjaman",
     "memberTypes": "Jenis anggota",
-    "periodRules": "Aturan Periode & Kebijakan",
+    "periodRules": "Aturan periode dan kebijakan",
     "openVisitKiosk": "Buka kios kunjungan",
     "report": "Laporan",
-    "memberSanctions": "Denda & Sanksi Anggota",
+    "memberSanctions": "Denda dan sanksi anggota",
     "loanRules": "Aturan peminjaman"
   },
   "titleDetail": {

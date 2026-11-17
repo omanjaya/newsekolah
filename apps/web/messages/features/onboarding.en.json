@@ -147,7 +147,7 @@
       "error": "Issue"
     },
     "commitAction": "Save student data",
-    "doneTitle": "{count} students saved successfully.",
+    "doneTitle": "{count} students saved successfully",
     "doneBody": "Student data is in. Check the completeness list below for what's next."
   }
 }

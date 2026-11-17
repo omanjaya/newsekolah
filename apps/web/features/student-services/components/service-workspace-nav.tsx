@@ -8,11 +8,17 @@ import type { ReactElement } from "react";
 
 import { WorkspaceNav } from "../../../components/workspace-nav";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
+import { registryLabelKey } from "../../../lib/navigation-labels";
 import { useCan } from "../../../lib/session/session-provider";
 
-/** Student Activities workspace: clubs, events, achievements and mentoring share one strip. */
+/**
+ * Student Activities workspace: clubs, events, achievements and mentoring
+ * share one strip. Each page's tab carries its menu entry's name; the
+ * mentoring tab stands for both mentoring pages, so it keeps a name of its own.
+ */
 export function ActivitiesWorkspaceNav(): ReactElement {
   const t = useTranslations("app.serviceWorkspace");
+  const label = useTranslations();
   const workspace = useTranslations("app.workspace");
   const pathname = usePathname();
   const activitiesOn = useModuleEnabled("activities");
@@ -26,9 +32,12 @@ export function ActivitiesWorkspaceNav(): ReactElement {
       items={[
         ...(canView
           ? [
-              { href: "/activities/clubs", label: t("clubsTab") },
-              { href: "/activities/events", label: t("eventsTab") },
-              { href: "/activities/achievements", label: t("achievementsTab") },
+              { href: "/activities/clubs", label: label(registryLabelKey("activities-clubs")) },
+              { href: "/activities/events", label: label(registryLabelKey("activities-events")) },
+              {
+                href: "/activities/achievements",
+                label: label(registryLabelKey("activities-achievements")),
+              },
             ]
           : []),
         // Both mentoring URLs stay valid; the sidebar already lands on my-groups first.
@@ -40,8 +49,10 @@ export function ActivitiesWorkspaceNav(): ReactElement {
   );
 }
 
+/** The visitor book's pages, each tab named as its menu entry and page title. */
 export function VisitorsWorkspaceNav(): ReactElement {
   const t = useTranslations("app.serviceWorkspace");
+  const label = useTranslations();
   const visitorsOn = useModuleEnabled("visitors");
   const canView = useCan("view_visitors") && visitorsOn;
   const canIncidents = useCan("view_visitor_incidents") && visitorsOn;
@@ -52,19 +63,25 @@ export function VisitorsWorkspaceNav(): ReactElement {
       items={[
         ...(canView
           ? [
-              { href: "/visitors/board", label: t("today") },
-              { href: "/visitors/expected", label: t("expected") },
+              { href: "/visitors/board", label: label(registryLabelKey("visitors-board")) },
+              { href: "/visitors/expected", label: label(registryLabelKey("visitors-expected")) },
             ]
           : []),
-        ...(canIncidents ? [{ href: "/visitors/incidents", label: t("incidents") }] : []),
-        ...(canReports ? [{ href: "/visitors/recap", label: t("recap") }] : []),
+        ...(canIncidents
+          ? [{ href: "/visitors/incidents", label: label(registryLabelKey("visitors-incidents")) }]
+          : []),
+        ...(canReports
+          ? [{ href: "/visitors/recap", label: label(registryLabelKey("visitors-recap")) }]
+          : []),
       ]}
     />
   );
 }
 
+/** Violations and warning letters, each tab named as its menu entry and page title. */
 export function DisciplineWorkspaceNav(): ReactElement {
   const t = useTranslations("app.serviceWorkspace");
+  const label = useTranslations();
   const disciplineOn = useModuleEnabled("discipline");
   const canView = useCan("view_discipline") && disciplineOn;
   return (
@@ -73,8 +90,11 @@ export function DisciplineWorkspaceNav(): ReactElement {
       items={
         canView
           ? [
-              { href: "/discipline/violations", label: t("cases") },
-              { href: "/discipline/warning-letters", label: t("letters") },
+              { href: "/discipline/violations", label: label(registryLabelKey("violations")) },
+              {
+                href: "/discipline/warning-letters",
+                label: label(registryLabelKey("warning-letters")),
+              },
             ]
           : []
       }
@@ -82,8 +102,10 @@ export function DisciplineWorkspaceNav(): ReactElement {
   );
 }
 
+/** Early warning and counseling notes, each tab named as its menu entry and page title. */
 export function CounselingWorkspaceNav(): ReactElement {
   const t = useTranslations("app.serviceWorkspace");
+  const label = useTranslations();
   const disciplineOn = useModuleEnabled("discipline");
   const canCounsel = useCan("manage_counseling") && disciplineOn;
   const canMonitor = useCan("view_early_warning");
@@ -91,8 +113,12 @@ export function CounselingWorkspaceNav(): ReactElement {
     <WorkspaceNav
       label={t("counseling")}
       items={[
-        ...(canMonitor ? [{ href: "/analytics", label: t("monitoring") }] : []),
-        ...(canCounsel ? [{ href: "/discipline/counseling", label: t("sessions") }] : []),
+        ...(canMonitor
+          ? [{ href: "/analytics", label: label(registryLabelKey("analytics")) }]
+          : []),
+        ...(canCounsel
+          ? [{ href: "/discipline/counseling", label: label(registryLabelKey("counseling")) }]
+          : []),
       ]}
     />
   );
