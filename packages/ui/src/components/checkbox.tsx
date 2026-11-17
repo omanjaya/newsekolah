@@ -89,7 +89,9 @@ export const Checkbox = forwardRef<HTMLButtonElement, CheckboxProps>(function Ch
     <div className={cn("flex gap-3 py-2.5 md:pointer-fine:py-1.5", containerClassName)}>
       {/* The 16px box centred on the label's first 20px line. */}
       <span className="flex h-5 shrink-0 items-center">{box}</span>
-      <span className="flex min-w-0 flex-col gap-0.5">
+      {/* The text takes the rest of the row, so in a full-width pick row
+          (a student, a violation type) the whole row's text side toggles. */}
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <label
           htmlFor={id}
           className={cn(

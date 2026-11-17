@@ -128,6 +128,33 @@ describe("Table", () => {
     expect(screen.getByRole("columnheader", { name: "Kolom" })).toHaveAttribute("scope", "col");
   });
 
+  it("wraps the table in its scrollable card by default, and not when unframed", () => {
+    const { container, rerender } = render(
+      <Table>
+        <TableBody>
+          <TableRow>
+            <TableCell>Senin</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    expect(container.firstElementChild).toHaveClass("overflow-x-auto", "rounded-lg", "border");
+    rerender(
+      <Table framed={false} density="compact" className="table-fixed">
+        <TableBody>
+          <TableRow>
+            <TableCell>Senin</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    const table = screen.getByRole("table");
+    expect(container.firstElementChild).toBe(table);
+    expect(table).toHaveClass("w-full", "border-collapse", "table-fixed");
+    // The density still reaches the cells.
+    expect(screen.getByRole("cell", { name: "Senin" }).className).toContain("px-3");
+  });
+
   it("has no axe violations", async () => {
     const { container } = renderTable();
     await expectNoAxeViolations(container);
