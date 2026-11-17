@@ -13,16 +13,23 @@ import (
 )
 
 const countUnreadNotifications = `-- name: CountUnreadNotifications :one
-select count(*) from notifications where tenant_id = $1 and user_id = $2 and read_at is null
+select count(*)
+from notifications
+where tenant_id = $1::uuid
+  and user_id = $2::uuid
+  and read_at is null
+  and kind <> all($3::text[])
 `
 
 type CountUnreadNotificationsParams struct {
-	TenantID uuid.UUID `json:"tenant_id"`
-	UserID   uuid.UUID `json:"user_id"`
+	TenantID    uuid.UUID `json:"tenant_id"`
+	UserID      uuid.UUID `json:"user_id"`
+	HiddenKinds []string  `json:"hidden_kinds"`
 }
 
+// hidden_kinds: see ListNotificationsForUser.
 func (q *Queries) CountUnreadNotifications(ctx context.Context, arg CountUnreadNotificationsParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countUnreadNotifications, arg.TenantID, arg.UserID)
+	row := q.db.QueryRow(ctx, countUnreadNotifications, arg.TenantID, arg.UserID, arg.HiddenKinds)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -138,21 +145,23 @@ select id, tenant_id, user_id, kind, title, body, href, data, announcement_id, r
 from notifications
 where tenant_id = $1::uuid
   and user_id = $2::uuid
-  and ($3::boolean = false or read_at is null)
-  and ($4::text = '' or title ilike '%' || $4 || '%' or body ilike '%' || $4 || '%')
-  and ($5::text = '' or kind = $5::text)
+  and kind <> all($3::text[])
+  and ($4::boolean = false or read_at is null)
+  and ($5::text = '' or title ilike '%' || $5 || '%' or body ilike '%' || $5 || '%')
+  and ($6::text = '' or kind = $6::text)
   and (
-    $6::boolean = false
-    or created_at < $7::timestamptz
-    or (created_at = $7::timestamptz and id < $8::uuid)
+    $7::boolean = false
+    or created_at < $8::timestamptz
+    or (created_at = $8::timestamptz and id < $9::uuid)
   )
 order by created_at desc, id desc
-limit $9::int
+limit $10::int
 `
 
 type ListNotificationsForUserParams struct {
 	TenantID        uuid.UUID          `json:"tenant_id"`
 	UserID          uuid.UUID          `json:"user_id"`
+	HiddenKinds     []string           `json:"hidden_kinds"`
 	UnreadOnly      bool               `json:"unread_only"`
 	Search          string             `json:"search"`
 	Kind            string             `json:"kind"`
@@ -162,10 +171,15 @@ type ListNotificationsForUserParams struct {
 	PageLimit       int32              `json:"page_limit"`
 }
 
+// hidden_kinds are the kinds of every module the tenant switched off
+// (notifications domain.HiddenKinds): those rows stay stored but are left
+// out of the inbox, the unread count and the digest until the module is
+// switched on again. An empty array hides nothing.
 func (q *Queries) ListNotificationsForUser(ctx context.Context, arg ListNotificationsForUserParams) ([]Notification, error) {
 	rows, err := q.db.Query(ctx, listNotificationsForUser,
 		arg.TenantID,
 		arg.UserID,
+		arg.HiddenKinds,
 		arg.UnreadOnly,
 		arg.Search,
 		arg.Kind,
@@ -207,20 +221,31 @@ func (q *Queries) ListNotificationsForUser(ctx context.Context, arg ListNotifica
 const listUnreadNotificationsSince = `-- name: ListUnreadNotificationsSince :many
 select id, tenant_id, user_id, kind, title, body, href, data, announcement_id, read_at, created_at
 from notifications
-where tenant_id = $1 and user_id = $2 and read_at is null and created_at >= $3
+where tenant_id = $1::uuid
+  and user_id = $2::uuid
+  and read_at is null
+  and created_at >= $3::timestamptz
+  and kind <> all($4::text[])
 order by created_at desc
 `
 
 type ListUnreadNotificationsSinceParams struct {
-	TenantID  uuid.UUID          `json:"tenant_id"`
-	UserID    uuid.UUID          `json:"user_id"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	TenantID    uuid.UUID          `json:"tenant_id"`
+	UserID      uuid.UUID          `json:"user_id"`
+	Since       pgtype.Timestamptz `json:"since"`
+	HiddenKinds []string           `json:"hidden_kinds"`
 }
 
 // Feeds the daily digest job: notifications created since the recipient's
-// last digest run, still unread at digest time.
+// last digest run, still unread at digest time. hidden_kinds: see
+// ListNotificationsForUser.
 func (q *Queries) ListUnreadNotificationsSince(ctx context.Context, arg ListUnreadNotificationsSinceParams) ([]Notification, error) {
-	rows, err := q.db.Query(ctx, listUnreadNotificationsSince, arg.TenantID, arg.UserID, arg.CreatedAt)
+	rows, err := q.db.Query(ctx, listUnreadNotificationsSince,
+		arg.TenantID,
+		arg.UserID,
+		arg.Since,
+		arg.HiddenKinds,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -254,16 +279,22 @@ func (q *Queries) ListUnreadNotificationsSince(ctx context.Context, arg ListUnre
 const markAllNotificationsRead = `-- name: MarkAllNotificationsRead :exec
 update notifications
 set read_at = now()
-where tenant_id = $1 and user_id = $2 and read_at is null
+where tenant_id = $1::uuid
+  and user_id = $2::uuid
+  and read_at is null
+  and kind <> all($3::text[])
 `
 
 type MarkAllNotificationsReadParams struct {
-	TenantID uuid.UUID `json:"tenant_id"`
-	UserID   uuid.UUID `json:"user_id"`
+	TenantID    uuid.UUID `json:"tenant_id"`
+	UserID      uuid.UUID `json:"user_id"`
+	HiddenKinds []string  `json:"hidden_kinds"`
 }
 
+// Leaves hidden_kinds unread (see ListNotificationsForUser): the caller only
+// marks what it can see, so a switched-off module's items come back unread.
 func (q *Queries) MarkAllNotificationsRead(ctx context.Context, arg MarkAllNotificationsReadParams) error {
-	_, err := q.db.Exec(ctx, markAllNotificationsRead, arg.TenantID, arg.UserID)
+	_, err := q.db.Exec(ctx, markAllNotificationsRead, arg.TenantID, arg.UserID, arg.HiddenKinds)
 	return err
 }
 

@@ -216,6 +216,7 @@ func run(logger *slog.Logger) error {
 		Push: senders.Push, Email: senders.Email, WhatsApp: senders.WhatsApp,
 		Sealer: sealer, WhatsAppAppSecret: cfg.WhatsAppAppSecret, WhatsAppWebhookVerifyToken: cfg.WhatsAppWebhookVerifyToken,
 		APNSConfigured: cfg.APNSKeyP8 != "", Realtime: hubRealtimePublisher{hub: hub},
+		Flags: moduleFlags,
 	})
 	// Bridges library's LoanDueReminderEvent/ReservationReadyEvent (and
 	// every other module's domain events) into the events.Envelope shape

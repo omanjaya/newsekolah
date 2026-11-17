@@ -49,9 +49,19 @@ func (r *Repository) InsertNotification(ctx context.Context, tenantID, userID uu
 	return toNotification(row)
 }
 
-func (r *Repository) ListNotifications(ctx context.Context, tenantID, userID uuid.UUID, unreadOnly bool, search, kind string, cursor service.Cursor, limit int) ([]domain.Notification, error) {
+// hiddenKindsParam turns a nil hidden-kinds list into an empty array: a SQL
+// NULL there would make "kind <> all(...)" unknown and hide every row.
+func hiddenKindsParam(hiddenKinds []string) []string {
+	if hiddenKinds == nil {
+		return []string{}
+	}
+	return hiddenKinds
+}
+
+func (r *Repository) ListNotifications(ctx context.Context, tenantID, userID uuid.UUID, hiddenKinds []string, unreadOnly bool, search, kind string, cursor service.Cursor, limit int) ([]domain.Notification, error) {
 	rows, err := r.queries(ctx).ListNotificationsForUser(ctx, db.ListNotificationsForUserParams{
-		TenantID: tenantID, UserID: userID, UnreadOnly: unreadOnly, Search: search, Kind: kind,
+		TenantID: tenantID, UserID: userID, HiddenKinds: hiddenKindsParam(hiddenKinds),
+		UnreadOnly: unreadOnly, Search: search, Kind: kind,
 		HasCursor: cursor.Present, CursorCreatedAt: pdatabase.Timestamptz(cursor.CreatedAt), CursorID: cursor.ID,
 		PageLimit: int32(limit), //nolint:gosec // limit is clamped to <=100 by the service before this call
 	})
@@ -73,17 +83,21 @@ func (r *Repository) MarkRead(ctx context.Context, tenantID, userID, id uuid.UUI
 	return r.queries(ctx).MarkNotificationRead(ctx, db.MarkNotificationReadParams{TenantID: tenantID, UserID: userID, ID: id})
 }
 
-func (r *Repository) MarkAllRead(ctx context.Context, tenantID, userID uuid.UUID) error {
-	return r.queries(ctx).MarkAllNotificationsRead(ctx, db.MarkAllNotificationsReadParams{TenantID: tenantID, UserID: userID})
+func (r *Repository) MarkAllRead(ctx context.Context, tenantID, userID uuid.UUID, hiddenKinds []string) error {
+	return r.queries(ctx).MarkAllNotificationsRead(ctx, db.MarkAllNotificationsReadParams{
+		TenantID: tenantID, UserID: userID, HiddenKinds: hiddenKindsParam(hiddenKinds),
+	})
 }
 
-func (r *Repository) CountUnread(ctx context.Context, tenantID, userID uuid.UUID) (int64, error) {
-	return r.queries(ctx).CountUnreadNotifications(ctx, db.CountUnreadNotificationsParams{TenantID: tenantID, UserID: userID})
+func (r *Repository) CountUnread(ctx context.Context, tenantID, userID uuid.UUID, hiddenKinds []string) (int64, error) {
+	return r.queries(ctx).CountUnreadNotifications(ctx, db.CountUnreadNotificationsParams{
+		TenantID: tenantID, UserID: userID, HiddenKinds: hiddenKindsParam(hiddenKinds),
+	})
 }
 
-func (r *Repository) ListUnreadSince(ctx context.Context, tenantID, userID uuid.UUID, since time.Time) ([]domain.Notification, error) {
+func (r *Repository) ListUnreadSince(ctx context.Context, tenantID, userID uuid.UUID, since time.Time, hiddenKinds []string) ([]domain.Notification, error) {
 	rows, err := r.queries(ctx).ListUnreadNotificationsSince(ctx, db.ListUnreadNotificationsSinceParams{
-		TenantID: tenantID, UserID: userID, CreatedAt: pdatabase.Timestamptz(since),
+		TenantID: tenantID, UserID: userID, Since: pdatabase.Timestamptz(since), HiddenKinds: hiddenKindsParam(hiddenKinds),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list unread notifications since: %w", err)

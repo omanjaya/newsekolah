@@ -23,7 +23,8 @@ type DigestBatch struct {
 
 // ComputeDueDigests loops every active tenant (never a cross-tenant query,
 // per docs/08-security.md section 4) looking for users whose configured
-// digest hour matches that tenant's current local hour.
+// digest hour matches that tenant's current local hour. A digest leaves out
+// the notifications of every module the tenant switched off.
 func (s *Service) ComputeDueDigests(ctx context.Context) ([]DigestBatch, error) {
 	tenants, err := s.repo.ListActiveTenants(ctx)
 	if err != nil {
@@ -38,8 +39,14 @@ func (s *Service) ComputeDueDigests(ctx context.Context) ([]DigestBatch, error) 
 		loc := s.tenantLocation(ctx, t.ID)
 		hour := now.In(loc).Hour()
 
+		hidden, err := s.hiddenKinds(ctx, t.ID)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
 		var due []Settings
-		err := s.withTx(ctx, t.ID, func(ctx context.Context) error {
+		err = s.withTx(ctx, t.ID, func(ctx context.Context) error {
 			var err error
 			due, err = s.repo.ListUsersDueForDigest(ctx, t.ID, hour)
 			return err
@@ -50,7 +57,7 @@ func (s *Service) ComputeDueDigests(ctx context.Context) ([]DigestBatch, error) 
 		}
 
 		for _, settings := range due {
-			batch, ok, err := s.buildDigestBatch(ctx, t.ID, settings)
+			batch, ok, err := s.buildDigestBatch(ctx, t.ID, settings, hidden)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -63,7 +70,7 @@ func (s *Service) ComputeDueDigests(ctx context.Context) ([]DigestBatch, error) 
 	return batches, errors.Join(errs...)
 }
 
-func (s *Service) buildDigestBatch(ctx context.Context, tenantID uuid.UUID, settings Settings) (DigestBatch, bool, error) {
+func (s *Service) buildDigestBatch(ctx context.Context, tenantID uuid.UUID, settings Settings, hiddenKinds []string) (DigestBatch, bool, error) {
 	since := settings.LastDigestAt
 	if since == nil {
 		t := s.clock.Now().Add(-24 * time.Hour)
@@ -73,7 +80,7 @@ func (s *Service) buildDigestBatch(ctx context.Context, tenantID uuid.UUID, sett
 	var items []domain.Notification
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		items, err = s.repo.ListUnreadSince(ctx, tenantID, settings.UserID, *since)
+		items, err = s.repo.ListUnreadSince(ctx, tenantID, settings.UserID, *since, hiddenKinds)
 		return err
 	})
 	if err != nil {
