@@ -11,6 +11,10 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/supervision/cycles/cycl
 vi.mock("../../../components/workspace-nav", () => import("../../../test/workspace-nav-stub"));
 vi.mock("../../../lib/session/session-provider", () => ({ useSession: () => ({ me: session }) }));
 
+// Each tab is named by its navigation registry entry (the mock returns the key).
+const MY_SUPERVISION = "app.supervision.navLabelMyReport";
+const CYCLES = "app.supervision.navLabelCycles";
+
 describe("supervision workspace access", () => {
   beforeEach(() => {
     session.profile_kind = "teacher";
@@ -19,18 +23,18 @@ describe("supervision workspace access", () => {
 
   it("keeps personal results and observation cycles available for a teacher", () => {
     render(<SupervisionWorkspaceNav />);
-    expect(screen.getByRole("link", { name: "mySupervision" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: MY_SUPERVISION })).toHaveAttribute(
       "href",
       "/supervision/my-report",
     );
-    expect(screen.getByRole("link", { name: "cycles" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: CYCLES })).toHaveAttribute("aria-current", "page");
   });
 
   it("does not suggest a personal teacher report to a staff administrator", () => {
     session.profile_kind = "staff";
     render(<SupervisionWorkspaceNav />);
-    expect(screen.queryByRole("link", { name: "mySupervision" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "cycles" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: MY_SUPERVISION })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: CYCLES })).toBeInTheDocument();
   });
 
   it("requires supervision permission even for a teacher", () => {

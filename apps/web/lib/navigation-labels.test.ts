@@ -5,6 +5,7 @@ import "../messages/features";
 import { getMessages } from "./i18n/get-messages";
 import { navigation, navGroupLabelKey, type NavProfileKind } from "./navigation";
 import { filterNavigationFixture } from "./navigation-access.fixture";
+import { registryLabelKey } from "./navigation-labels";
 import { consolidateNavigation } from "./navigation-workspaces";
 
 function lookup(messages: unknown, key: string): unknown {
@@ -69,5 +70,16 @@ describe.each(["id", "en"] as const)("shell navigation labels (%s)", (locale) =>
   it("keeps every tab bar label short enough for five slots on a 360px phone", () => {
     const short = lookup(messages, "app.shell.nav.short") as Record<string, string>;
     for (const label of Object.values(short)) expect(label.length).toBeLessThanOrEqual(10);
+  });
+});
+
+describe("registryLabelKey", () => {
+  it("gives an entry's own label key, the one its menu entry and page title read", () => {
+    expect(registryLabelKey("visitors-board")).toBe("nav.visitors.items.board");
+    expect(registryLabelKey("analytics")).toBe("app.analytics.navLabel");
+  });
+
+  it("throws on a key the registry does not have", () => {
+    expect(() => registryLabelKey("no-such-page")).toThrow(/no-such-page/);
   });
 });
