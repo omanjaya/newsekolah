@@ -44,8 +44,10 @@ const STATUS_DOT_CLASS: Record<string, string> = {
   I: "bg-status-excused",
   D: "bg-status-dispensation",
   A: "bg-status-absent",
-  // Not an absence: a neutral dot keeps real statuses (sick, absent) readable.
-  INCOMPLETE: "bg-fg-muted/40",
+  // The late (amber) family, as lib/attendance-status maps INCOMPLETE for
+  // the day's badge and every report: dot, legend and badge agree.
+  INCOMPLETE: "bg-status-late",
+  // No status token: one neutral dot, and a neutral badge in the day card.
   MIXED: "bg-fg-muted",
 };
 
@@ -128,8 +130,8 @@ export function AttendanceCalendar(): ReactElement {
   const selectedSessions = selectedIsFuture ? [] : (selectedDay?.sessions ?? []);
   const selectedToken = selectedCode !== "NONE" ? statusToken(selectedCode) : undefined;
 
-  // Codes without a status token (incomplete, mixed) read as a calm neutral
-  // badge everywhere: dot, legend and detail agree.
+  // A code with a status token (incomplete among them) gets its status
+  // badge; one without (mixed) a calm neutral badge, like its dot.
   const selectedBadge = selectedToken ? (
     <StatusBadge status={selectedToken} label={tCal(`codes.${selectedCode}`)} />
   ) : (
