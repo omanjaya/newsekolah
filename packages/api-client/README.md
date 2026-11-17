@@ -28,8 +28,10 @@ Typed API client generated from `openapi/openapi.yaml`.
 - `@newsekolah/api-client/react` exports `useMe`, `useLogin`, `useLogout`,
   `useSessions`, `useRevokeSession`, `useChangePassword`,
   `useTenantBranding`, `useTenantLookup`, each taking the client instance as
-  its first argument. `@tanstack/react-query` and `react` are peer
-  dependencies.
+  its first argument, plus `useStartSession` (what every sign-in does with
+  its tokens) and `clearReaderCache` (empties the cache when the reader
+  changes, keeping the tenant's branding). `@tanstack/react-query` and
+  `react` are peer dependencies.
 
 ## Scripts
 

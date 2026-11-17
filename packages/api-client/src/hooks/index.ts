@@ -1,6 +1,8 @@
 export { useMe } from "./use-me.js";
 export { useLogin } from "./use-login.js";
 export { useLogout } from "./use-logout.js";
+export { useStartSession, type UseStartSessionOptions } from "./use-start-session.js";
+export { clearReaderCache, isTenantBrandingQuery } from "./reader-cache.js";
 export { useSessions } from "./use-sessions.js";
 export { useRevokeSession } from "./use-revoke-session.js";
 export { useChangePassword, type ChangePasswordBody } from "./use-change-password.js";

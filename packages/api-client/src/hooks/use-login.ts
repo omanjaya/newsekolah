@@ -1,8 +1,9 @@
-import { useMutation, useQueryClient, type MutationMeta } from "@tanstack/react-query";
+import { useMutation, type MutationMeta } from "@tanstack/react-query";
 
 import type { NewsekolahApiClient } from "../client.js";
 import type { components } from "../gen/schema.js";
-import { queryKeys } from "../query-keys.js";
+
+import { useStartSession } from "./use-start-session.js";
 
 type LoginRequest = components["schemas"]["LoginRequest"];
 type LoginResponse = components["schemas"]["AuthTokens"] & { user: components["schemas"]["Me"] };
@@ -14,6 +15,13 @@ export interface UseLoginOptions {
    * unauthenticated and flip the session back to anonymous.
    */
   onTokens?: (data: LoginResponse) => void;
+  /**
+   * Awaited inside the mutation before the credentials are sent; a
+   * rejection fails the sign-in before any session exists. The web app
+   * removes its server-rendering access cookie here, which still names
+   * whoever was signed in before.
+   */
+  beforeRequest?: () => Promise<void>;
   /**
    * Forwarded to `useMutation` as-is. This package has no i18n of its own
    * and cannot know whether the caller's mutation cache should show its
@@ -27,10 +35,11 @@ export interface UseLoginOptions {
 }
 
 /**
- * POST /v1/auth/login. Clears the whole cache first -- the mirror image of
- * `useLogout`'s `queryClient.clear()` -- then seeds `me` from the login
- * payload so route guards never observe an anonymous gap between "logged
- * in" and the refetch landing.
+ * POST /v1/auth/login, then `useStartSession`: clears the cache (all but
+ * the tenant's branding, see `clearReaderCache`) -- the mirror image of
+ * `useLogout` -- and seeds `me` from the login payload so route guards
+ * never observe an anonymous gap between "logged in" and the refetch
+ * landing.
  *
  * Without the clear, every query key in this package and the app's own
  * feature modules (e.g. `["grading","gradebook",classId,subjectId,...]`)
@@ -43,14 +52,14 @@ export interface UseLoginOptions {
  * authenticated user.
  */
 export function useLogin(client: NewsekolahApiClient, options: UseLoginOptions = {}) {
-  const queryClient = useQueryClient();
+  const { beforeRequest } = options;
+  const startSession = useStartSession({ onTokens: options.onTokens });
   return useMutation({
-    mutationFn: (body: LoginRequest) => client.POST("/v1/auth/login", { body }),
-    onSuccess: (data) => {
-      options.onTokens?.(data);
-      queryClient.clear();
-      queryClient.setQueryData(queryKeys.me(), data.user);
+    mutationFn: async (body: LoginRequest) => {
+      await beforeRequest?.();
+      return client.POST("/v1/auth/login", { body });
     },
+    onSuccess: startSession,
     meta: options.meta,
   });
 }
