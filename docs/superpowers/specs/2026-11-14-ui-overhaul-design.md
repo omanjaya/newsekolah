@@ -66,6 +66,8 @@ Ukuran font literal `text-[Npx]` dilarang di `apps/web` dan `packages/ui`. Yang 
 
 Di HP, `display` turun ke 24 / 28. Bila artboard acuan menunjukkan nilai lain untuk komponen tertentu, artboard yang diikuti dan tabel ini diperbarui.
 
+Koreksi dari pembangunan (17 November 2026): tabel di atas tidak lengkap. Token juga memuat `kiosk-display` 56 / 60, -0.03em (HP 40 / 44) untuk jam dan angka di layar dinding, `kiosk-title` 32 / 40, -0.02em (HP 24 / 32), dan `body-lg` 16 / 24 untuk teks yang dibaca dari jarak; dua yang terakhir belum dipakai layar mana pun. Larangan `text-[Npx]` baru dipasang sebagai aturan lint di `packages/ui`; di `apps/web` masih tersisa delapan pemakaian dan aturannya belum aktif (lihat bagian 8). Angka tabular tidak dipakai di semua angka: `Stat` hanya tabular selama hitung naik, lalu kembali ke angka proporsional Manrope, karena "1" tabular membuka celah yang terbaca seperti salah ketik di ukuran besar; kolom tabel, jam, dan tanggal tetap tabular.
+
 Koreksi dari tinjauan gelombang 1: `title` dan `heading` mendapat tracking -0.01em (judul kartu Manrope tebal 16 px tanpa tracking 2,5% lebih lebar dari sebelumnya dan memecah "Absen Masuk / Pulang" di HP); `heading` tidak lagi dibagi seimbang saat terbungkus. Sel tabel desktop memakai `body-sm` demi kepadatan alat admin, sedangkan nilai di kartu tabel HP memakai `body`.
 
 Koreksi dari artboard (gelombang 1): tinggi baris `display` 32 (bukan 34) dan 28 di HP (bukan 30), mengikuti `line-height: 1.1` judul artboard; judul kartu hero di artboard 26 px dengan -0.02em, lebih dekat ke `display` daripada `title-lg` 22, sehingga `title-lg` khusus untuk angka besar (artboard: 22 px, -0.01em, sama persis); eyebrow halaman di artboard 13 px reguler, jadi memakai `body-sm`, bukan `caption`. Tetap seperti tabel walau artboard sedikit berbeda: judul bagian artboard 17 px (`heading` tetap 16 agar tidak menyatu dengan `title` 18), dan sapaan artboard 28 px di HP (langkah turun ke 24 tetap dipakai karena judul halaman nyata jauh lebih panjang, misalnya "Selamat datang, Admin Contoh" sudah dua baris pada 28 px di layar 390 px).
@@ -122,10 +124,10 @@ Tiap komponen baru atau yang diubah wajib punya story (terang, gelap, lebar HP) 
 
 **Permukaan dan konten**
 
-- `Card` diperluas: `padding`, `tone` (default, sunken, accent-soft), `interactive`, header dengan slot aksi.
+- `Card` diperluas: `padding`, `tone` (default, sunken, accent-soft, dan `raised` yang ditambahkan saat pembangunan untuk panel mengambang), `interactive`, header dengan slot aksi.
 - `SectionHeader` (judul bagian, deskripsi, aksi) dan `List` / `ListRow` (avatar atau ikon, judul, meta, aksi) menggantikan `<h2>` mentah dan daftar `divide-y`.
 - `PageHeader`: judul `display`, eyebrow, deskripsi, aksi, breadcrumb; di HP aksi kedua dan seterusnya masuk menu.
-- `HeroCard`, `Stat` dan `StatTile` (digabung jadi satu: ikon dalam lingkaran 38 px berwarna kategori, angka Manrope, label muted, bisa diklik, varian ringkas satu baris), `Avatar` sampai 64 px.
+- `HeroCard`, `Stat` dan `StatTile` (digabung jadi satu; `StatTile` tetap diekspor sebagai `Stat appearance="tile"` untuk pemanggil lama: ikon dalam lingkaran 38 px berwarna kategori, angka Manrope, label muted, bisa diklik, varian ringkas satu baris), `Avatar` sampai 64 px.
 - `Badge` tunggal dengan `tone`, `appearance`, `size`; `StatusBadge` dan `SemanticStatusBadge` merender lewat `Badge`.
 - `EmptyState` varian `inline` dan dua preset (kosong awal dengan aksi tambah, kosong karena filter dengan aksi reset). `Alert` varian `success` dan `danger`. Preset `Skeleton` (daftar, kartu, form, detail).
 - `StatePage` untuk 404, galat, tanpa akses, modul nonaktif, dan offline.
@@ -159,11 +161,15 @@ Tiap komponen baru atau yang diubah wajib punya story (terang, gelap, lebar HP) 
 
 **Kerangka HP** (mengikuti artboard): header ringkas (merek, cari, notifikasi), tab bawah lima slot berlabel pendek dengan Menu di kanan, tombol aksi cepat mengambang di atas bilah, dan notifikasi, pencarian, serta menu akun sebagai lembar bawah. Pilihan tab mengikuti tugas tiap peran.
 
+Koreksi dari pembangunan: tombol mengambang diganti **tombol tengah** di dalam bilah, pilihan pemilik produk. Bilah berisi Beranda, dua tab, tombol bulat yang menonjol di tengah, satu tab, lalu Menu. Tombol tengah adalah satu tugas utama pembaca hari itu: Pindai (siswa, satpam), QR piket (guru piket), Isi presensi (guru dan wali kelas), Sirkulasi (pustakawan), Catat pelanggaran (guru BK), Perlu tindakan (kepala sekolah dan wakil), lembar aksi cepat (TU, admin, dan pembaca lain). Tujuannya tidak pernah halaman yang tertutup bagi pembaca; bila tertutup, tombol jatuh ke pilihan umum, dan pembaca tanpa tombol tengah mendapat tiga tab. Aksi cepat yang bukan tombol tengah pindah ke lembar Menu. Header HP menampilkan nama halaman begitu judul besar tergulir keluar, dan lembar bawah bisa diseret turun untuk menutup. Susunan per peran: `docs/17-penyederhanaan-menu.md`; aturannya: `apps/web/lib/mobile-navigation.ts`.
+
 **Palet perintah.** Pencocokan pada label dan kata kunci dengan peringkat awalan, panel lebih tinggi, layar penuh di HP, "Terakhir dibuka" di keadaan kosong.
 
 **Autentikasi dan publik.** Satu `AuthCard` untuk empat halaman autentikasi dengan logo, nama, dan tagline sekolah; panel masuk tidak berbalik terang di mode gelap. Layout `(public)` bermerek sekolah untuk OPAC dan verifikasi dokumen.
 
-**Kios.** Route group `(kiosk)` tanpa shell untuk monitor kehadiran dan dua kios perpustakaan: huruf besar, kontras tinggi, jam dan merek sekolah.
+**Kios.** Route group `(kiosk)` tanpa shell untuk monitor presensi dan dua kios perpustakaan: huruf besar, kontras tinggi, jam dan merek sekolah. Dibangun sebagai `KioskShell` (`apps/web/components/kiosk-shell.tsx`): merek dan nama layar di kiri, jam sekolah `text-kiosk-display` di kanan, satu jalan keluar ke halaman asal.
+
+**Templat di `apps/web`.** Halaman tidak memakai `PageShell` langsung: `AppPage` (`apps/web/components/app-page.tsx`) membungkusnya dan mengisi judul, eyebrow, breadcrumb, judul tab peramban, dan tab area dari registri navigasi, sehingga menu, judul, breadcrumb, dan tab membaca satu kunci label. Strip tab yang ditulis sendiri oleh sebuah area masuk lewat `nav` dan selalu di bawah header.
 
 ## 7. Layar utama yang didesain ulang
 
@@ -199,6 +205,8 @@ Dikerjakan dengan codemod, satu pola per commit, lalu lint untuk pola itu diakti
 
 Lint yang ditambahkan di `packages/config/eslint`: larangan kelas palet Tailwind dan warna arbitrer (sudah nol pelanggaran), `text-[Npx]`, radius lama pada permukaan, elemen mentah (`button`, `select`, `textarea`, `table`, `label`, `h1`-`h6`) di `apps/web/features` dan `apps/web/app`, `window.confirm`. Aturan yang masih punya pelanggaran dipasang sebagai ratchet (batas maksimum yang diturunkan), lalu jadi error.
 
+Keadaan per 17 November 2026: larangan warna aktif di seluruh repo dan larangan `text-[Npx]` aktif di `packages/ui`. Larangan `text-[Npx]` di `apps/web`, elemen mentah, `window.confirm`, dan radius lama belum menjadi aturan; pelanggarannya sedang dibersihkan di aliran kerja terpisah sebelum aturannya dipasang.
+
 ## 9. Urutan kerja
 
 Coding dikerjakan agen (Opus 5.5 untuk pekerjaan desain, Sonnet untuk migrasi mekanis), paling banyak tiga agen bersamaan. Sesi utama menggabungkan, menjalankan gerbang uji, memotret ulang layar, dan meninjau hasilnya.
@@ -213,6 +221,8 @@ Coding dikerjakan agen (Opus 5.5 untuk pekerjaan desain, Sonnet untuk migrasi me
 | 6         | Potret ulang semua layar, tinjauan visual sebelum dan sesudah, tinjauan kode, perbaikan, gerbang uji penuh, pembaruan `docs/05`, `docs/07`, `docs/15` | bertahap                  |
 
 Tiap gelombang berakhir dengan: gabung ke cabang kerja, `pnpm typecheck && pnpm lint && pnpm test`, potret ulang layar yang terdampak di 1440 px dan 390 px (terang dan gelap), dan perbaikan regresi sebelum gelombang berikutnya.
+
+Koreksi proses (sejak gelombang 5): atas permintaan pemilik produk, semua dikerjakan dulu lalu diuji sekali di akhir. Selama pengerjaan agen tidak menjalankan server dev, Storybook, Docker, Playwright, atau suite Vitest; mereka bekerja dari kode, menulis atau memperbarui uji untuk setiap perilaku dan markup yang diubah, dan hanya menjalankan `typecheck` dan `lint` untuk paket yang disentuh sebelum commit. Integrator menjalankan seluruh suite uji, potret ulang, dan tinjauan visual sekali pada cabang gabungan. Karena itu layar gelombang 5 dan sesudahnya belum diperiksa di peramban sampai tahap akhir itu.
 
 ## 10. Risiko
 
