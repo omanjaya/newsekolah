@@ -1,12 +1,12 @@
 "use client";
 
-import { Button, Sheet, SheetContent, SheetTrigger, cn } from "@newsekolah/ui";
+import { Button, Sheet, SheetContent, SheetTrigger, cn, useScrollEdges } from "@newsekolah/ui";
 import { ChevronRight, Menu, Search, Star } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { splitSidebarGroups } from "../lib/group-navigation";
 import { navGroupIcons, navGroupLabelKey, type NavItem } from "../lib/navigation";
@@ -154,20 +154,7 @@ export function MobileMenu({
               <h2 id="mobile-menu-recent" className="text-label text-fg-muted">
                 {t("app.shell.mobileMenu.recent")}
               </h2>
-              <ul className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 scrollbar-none">
-                {recent.map((item) => (
-                  <li key={item.key} className="shrink-0">
-                    <Link
-                      href={item.href}
-                      onClick={close}
-                      className="flex h-9 items-center gap-2 rounded-full bg-surface px-3.5 text-label text-fg ring-1 ring-border outline-none motion-press active:bg-state-pressed"
-                    >
-                      <item.icon aria-hidden="true" className="size-4 shrink-0 text-fg-muted" />
-                      {t(item.labelKey)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <RecentChips items={recent} onNavigate={close} />
             </section>
           )}
 
@@ -218,6 +205,44 @@ export function MobileMenu({
         </nav>
       </SheetContent>
     </Sheet>
+  );
+}
+
+/**
+ * The last pages visited, as one sideways row of chips running to the
+ * sheet's edges. Its own component, so the edge fade is measured once the
+ * sheet's content has mounted (the sheet portals its content in on open).
+ * 4px above and below keep the chips' borders and focus rings inside the
+ * scroller, and the row fades at whichever edge has more chips past it.
+ */
+function RecentChips({
+  items,
+  onNavigate,
+}: {
+  items: readonly NavItem[];
+  onNavigate: () => void;
+}): ReactElement {
+  const t = useTranslations();
+  const scrollerRef = useRef<HTMLUListElement>(null);
+  useScrollEdges(scrollerRef, { axis: "x" });
+  return (
+    <ul
+      ref={scrollerRef}
+      className="-mx-5 -my-1 flex scroll-fade-x gap-2 overflow-x-auto overscroll-x-contain px-5 py-1 scrollbar-none"
+    >
+      {items.map((item) => (
+        <li key={item.key} className="shrink-0">
+          <Link
+            href={item.href}
+            onClick={onNavigate}
+            className="flex h-11 items-center gap-2 rounded-full border border-border bg-surface px-3.5 text-label text-fg outline-none motion-press active:bg-state-pressed"
+          >
+            <item.icon aria-hidden="true" className="size-4 shrink-0 text-fg-muted" />
+            {t(item.labelKey)}
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }
 
