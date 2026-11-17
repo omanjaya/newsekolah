@@ -11,6 +11,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { setAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
+import { clearServerAccessCookie } from "../../lib/session/clear-server-access-cookie";
+import { useEndSession, useForgetSession } from "../../lib/session/end-session";
 import { clearSimulation } from "../../lib/simulation/clock";
 import { getPasskey } from "../../lib/webauthn";
 
@@ -39,39 +41,47 @@ export function useLoginMutation() {
 }
 
 /**
- * POST /v1/auth/impersonation/stop. The impersonation session is revoked
- * server-side (not swapped back to the admin's own session -- there is
- * none to swap to, since starting impersonation opened a brand new
- * session), so this always ends in a normal logout: clear the token and
- * the whole cache, as a logout does, and let the caller send the admin
- * back to sign in. Left cached, the impersonated account's `me` would make
- * the sign-in screen read the tab as still signed in and send the admin
- * straight on to the dashboard, with that account's data still on it.
+ * POST /v1/auth/impersonation/stop. The server revokes the impersonation
+ * session; there is no admin session to go back to (starting the
+ * impersonation replaced it), so a stop the server confirmed ends like a
+ * sign-out: the server access cookie is removed, then `useEndSession`
+ * drops the tokens (the API client's remembered one too, which may still
+ * be the admin's own and valid) and the cache, and the caller sends the
+ * admin to sign in. The cookie by then names at most the revoked session,
+ * since the start removed the admin's, so failing to remove it does not
+ * stop the sign-out; the next sign-in removes it again before it starts.
+ *
+ * A stop that failed changes nothing here. The impersonation session is
+ * still alive on the server and the browser still holds its refresh
+ * cookie, so the tab really is still impersonating: it keeps its token,
+ * its data and the strip that says so (components/impersonation-banner.tsx),
+ * which shows the error and lets the admin try again. Clearing anything
+ * would not end that session; it only hid the strip while the session
+ * went on.
  */
 export function useStopImpersonationMutation() {
   const client = useApiClient();
-  const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: () => client.POST("/v1/auth/impersonation/stop"),
-  });
-
-  return {
-    ...mutation,
-    mutateAsync: async () => {
-      try {
-        await mutation.mutateAsync();
-      } finally {
-        clearSimulation();
-        setAccessToken(null);
-        queryClient.clear();
-      }
+  const endSession = useEndSession();
+  return useMutation({
+    mutationFn: async () => {
+      await client.POST("/v1/auth/impersonation/stop");
+      await clearServerAccessCookie().catch(() => undefined);
     },
-  };
+    onSuccess: endSession,
+    // The strip shows the failure itself.
+    meta: { errorToast: false },
+  });
 }
 
+/**
+ * POST /v1/auth/logout. The package hook empties the cache once the server
+ * ended the session; this drops the tokens and the simulated clock either
+ * way (useForgetSession).
+ */
 export function useLogoutMutation() {
   const client = useApiClient();
   const mutation = useLogoutBase(client);
+  const forgetSession = useForgetSession();
 
   return {
     ...mutation,
@@ -79,8 +89,7 @@ export function useLogoutMutation() {
       try {
         await mutation.mutateAsync();
       } finally {
-        clearSimulation();
-        setAccessToken(null);
+        forgetSession();
       }
     },
   };
