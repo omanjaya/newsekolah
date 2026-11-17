@@ -1,11 +1,24 @@
 "use client";
 
-import { Alert, Button, Card, Field, Select, Stepper, type StepperStep } from "@newsekolah/ui";
-import { ArrowRight } from "lucide-react";
+import {
+  Alert,
+  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Field,
+  Select,
+  Stepper,
+  type StepperStep,
+} from "@newsekolah/ui";
+import { ArrowRight, Plus } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { useCan } from "../../../lib/session/session-provider";
 import type { AcademicYear } from "../api";
 
 /**
@@ -48,6 +61,8 @@ export function WizardProgress({
 /**
  * Step one of a yearly wizard: the source and destination years side by
  * side (one column on a phone) and the button that builds the preview.
+ * `title` and `description` head the card with what the flow does, the
+ * page's own header being the area's.
  */
 export function YearPairStep({
   years,
@@ -58,6 +73,8 @@ export function YearPairStep({
   onPreview,
   previewing,
   previewLabel,
+  title,
+  description,
   children,
 }: {
   years: readonly AcademicYear[];
@@ -68,14 +85,24 @@ export function YearPairStep({
   onPreview: () => void;
   previewing: boolean;
   previewLabel: string;
+  title?: string;
+  description?: string;
   /** Extra fields of the flow, after the years. */
   children?: ReactNode;
 }): ReactElement {
   const t = useTranslations("app.academic.yearFlow");
+  // The years page's own manage permission: who can add the missing year.
+  const canAddYear = useCan("manage_master_data");
   const options = years.map((year) => ({ value: year.id, label: year.label }));
   const same = fromYearId !== "" && fromYearId === toYearId;
   return (
     <Card padding="md">
+      {title !== undefined && (
+        <CardHeader>
+          <CardTitle as="h2">{title}</CardTitle>
+          {description !== undefined && <CardDescription>{description}</CardDescription>}
+        </CardHeader>
+      )}
       <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-end">
         <Field label={t("fromYear")} hint={t("fromYearHint")}>
           <Select
@@ -103,7 +130,20 @@ export function YearPairStep({
         </Field>
       </div>
       {children}
-      {years.length < 2 && <Alert tone="info" title={t("needTwoYears")} />}
+      {years.length < 2 && (
+        // Says where the missing year is made, and takes a manager there.
+        <Alert
+          tone="info"
+          title={t("needTwoYears")}
+          action={
+            canAddYear ? (
+              <Button asChild size="sm" variant="secondary" icon={<Plus />}>
+                <Link href="/academic/years">{t("addYear")}</Link>
+              </Button>
+            ) : undefined
+          }
+        />
+      )}
       <div className="flex justify-end">
         <Button
           className="max-sm:w-full"

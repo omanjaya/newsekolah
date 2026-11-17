@@ -110,11 +110,9 @@ export function NewYearSetupView(): ReactElement {
   const step = result ? 2 : plan ? 1 : 0;
 
   return (
-    <AppPage
-      title={t("title")}
-      description={t("description")}
-      nav={<AcademicWorkspaceLinks area="years" />}
-    >
+    // The area's header (Tahun ajaran) over its tabs, as on every sibling;
+    // what this flow does heads its first card.
+    <AppPage nav={<AcademicWorkspaceLinks area="years" />}>
       <WizardProgress
         current={step}
         labels={[tFlow("stepYears"), tFlow("stepReview"), tFlow("stepDone")]}
@@ -158,18 +156,16 @@ export function NewYearSetupView(): ReactElement {
           onPreview={runPreview}
           previewing={preview.isPending}
           previewLabel={plan ? tFlow("previewAgain") : t("preview")}
+          title={t("idleTitle")}
+          description={t("description")}
         />
       )}
 
+      {/* Nothing under the year step until a plan exists: the stepper and
+          the step's own card already say what to do. */}
       {result ? null : preview.isPending ? (
         <SkeletonList rows={5} framed />
-      ) : plan === null ? (
-        <EmptyState
-          icon={<CalendarPlus aria-hidden="true" />}
-          title={t("idleTitle")}
-          description={t("idleBody")}
-        />
-      ) : hasNothingToCopy ? (
+      ) : plan === null ? null : hasNothingToCopy ? (
         <EmptyState
           icon={<CalendarPlus aria-hidden="true" />}
           title={t("emptyTitle")}

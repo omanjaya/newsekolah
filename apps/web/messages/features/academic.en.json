@@ -330,6 +330,7 @@
     "pickYear": "Choose a year",
     "sameYearError": "The source and destination years must differ.",
     "needTwoYears": "Create the destination year on the Academic years page first.",
+    "addYear": "Add academic year",
     "stepYears": "Choose years",
     "stepReview": "Review the plan",
     "stepDone": "Done",
