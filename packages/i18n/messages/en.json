@@ -207,7 +207,7 @@
     "visitors": {
       "label": "Visitors and incidents",
       "items": {
-        "board": "Visitor board",
+        "board": "Visitors today",
         "expected": "Expected visitors",
         "incidents": "Incidents",
         "reports": "Visit recap"

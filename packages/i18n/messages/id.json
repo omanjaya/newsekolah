@@ -207,8 +207,8 @@
     "visitors": {
       "label": "Tamu dan insiden",
       "items": {
-        "board": "Papan tamu",
-        "expected": "Tamu dijadwalkan",
+        "board": "Tamu hari ini",
+        "expected": "Tamu terjadwal",
         "incidents": "Insiden",
         "reports": "Rekap kunjungan"
       }
