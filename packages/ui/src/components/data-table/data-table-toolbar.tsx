@@ -270,12 +270,18 @@ export function DataTableToolbar<TData>({
       {/* From md up the pills take the room the search box, the actions and
           the view icons leave (basis 0, at least 12rem) and wrap inside it,
           so a long set of pills never pushes the actions or the icons onto
-          a row of their own. */}
+          a row of their own. Below md the row scrolls sideways and runs out
+          into the 16px page gutter on both sides (32px wider than the
+          column, its first pill where it was), so the next pill peeks in
+          from the screen's edge instead of ending flush with the column. */}
       {hasFilters && (
         <DataTableFilters
           filters={filters}
           labels={filtersLabels}
-          className="order-4 basis-full md:order-2 md:min-w-48 md:flex-1 md:basis-0"
+          className={cn(
+            "order-4 basis-full md:order-2 md:min-w-48 md:flex-1 md:basis-0",
+            "max-md:-mx-4 max-md:basis-[calc(100%+2rem)] max-md:scroll-px-4 max-md:px-4",
+          )}
         />
       )}
       {/* On a phone the table's own actions take the first row, each an equal

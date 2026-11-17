@@ -439,7 +439,8 @@
     --scroll-fade-start: var(--space-6);
   }
   &[data-overflow-end] {
-    --scroll-fade-end: var(--space-6);
+    /* A strip may ask for a longer end fade (an underline tab strip does). */
+    --scroll-fade-end: var(--scroll-fade-end-size, var(--space-6));
   }
   &:is([data-overflow-start], [data-overflow-end]) {
     mask-image: linear-gradient(

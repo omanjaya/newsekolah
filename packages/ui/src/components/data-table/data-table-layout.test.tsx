@@ -164,6 +164,19 @@ describe("DataTable toolbar on a phone", () => {
     expect(screen.queryByRole("button", { name: "Opsi tabel" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Kolom tampil" })).toBeInTheDocument();
   });
+
+  it("runs the pill row into the gutter so the next pill peeks in", () => {
+    render(
+      <DataTable
+        mode="local"
+        data={USERS}
+        columns={fieldColumns}
+        filters={[{ id: "kind", label: "Jenis", value: "", onChange: () => undefined }]}
+      />,
+    );
+    const strip = screen.getByRole("button", { name: "Jenis" }).closest(".scroll-fade-x");
+    expect(strip).toHaveClass("max-md:-mx-4", "max-md:px-4", "max-md:basis-[calc(100%+2rem)]");
+  });
 });
 
 describe("DataTable view options", () => {
