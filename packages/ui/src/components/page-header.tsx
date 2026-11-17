@@ -235,7 +235,7 @@ export function PageHeader({
             {description && (
               <div
                 className={cn(
-                  "max-w-prose text-body text-fg-muted",
+                  "max-w-prose text-body text-pretty text-fg-muted",
                   hasLeading ? "col-[2/-1]" : "col-span-full",
                 )}
               >
@@ -243,13 +243,16 @@ export function PageHeader({
               </div>
             )}
           </div>
-          {/* A 40px row centred on the 32px title line: 4px above it, so a
-              32, 36 or 40px control all share the title's centre. */}
+          {/* A 40px row centred on the 32px title line: 4px above it and
+              4px below, so a 32, 36 or 40px control all share the title's
+              centre and the row's margin box is exactly the title line. A
+              header with an action is then no taller than one without, and
+              the tabs under it do not jump between sibling pages. */}
           {hasActions && (
             <div
               data-slot="page-header-actions"
               className={cn(
-                "min-w-0 flex-wrap items-center gap-2 sm:-mt-1 sm:flex sm:min-h-10 sm:grow",
+                "min-w-0 flex-wrap items-center gap-2 sm:-my-1 sm:flex sm:min-h-10 sm:grow",
                 phoneActions ? "flex" : "hidden",
               )}
             >

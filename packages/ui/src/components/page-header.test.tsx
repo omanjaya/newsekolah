@@ -44,7 +44,11 @@ describe("PageHeader", () => {
         actions={<Button>Ekspor</Button>}
       />,
     );
-    expect(screen.getByText("Nilai per kelas dan mata pelajaran.")).toHaveClass("max-w-prose");
+    // No one-word last line under the title.
+    expect(screen.getByText("Nilai per kelas dan mata pelajaran.")).toHaveClass(
+      "max-w-prose",
+      "text-pretty",
+    );
     expect(container.firstElementChild).toHaveClass("border-b", "border-line");
     expect(screen.getByRole("button", { name: "Ekspor" })).toBeInTheDocument();
   });
@@ -188,8 +192,11 @@ describe("PageHeader", () => {
     expect(block?.nextElementSibling).toBe(actions);
     // No reordering anywhere: the source order is the reading order.
     expect(actions?.className).not.toMatch(/\border-/);
-    // A 40px row lifted 4px, so its controls centre on the 32px title line.
-    expect(actions).toHaveClass("sm:-mt-1", "sm:min-h-10", "items-center");
+    // A 40px row with 4px taken off above and below: its controls centre on
+    // the 32px title line and it adds no height to a header without a
+    // description, so the tabs under it stay put between sibling pages.
+    expect(actions).toHaveClass("sm:-my-1", "sm:min-h-10", "items-center");
+    expect(actions).not.toHaveClass("sm:-mt-1");
     // With a sentence to hold, the block claims 28rem before the actions
     // may sit beside it, so the description is not squeezed into a column.
     expect(block).toHaveClass("sm:basis-112");
