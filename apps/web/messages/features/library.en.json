@@ -6,7 +6,8 @@
   },
   "dueBadge": {
     "dueOn": "Due {date}",
-    "overdue": "{days} days overdue (due {date})"
+    "overdue": "{days} days overdue (due {date})",
+    "overdueShort": "{days} days overdue"
   },
   "dashboard": {
     "eyebrow": "Library",

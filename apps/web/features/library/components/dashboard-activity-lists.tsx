@@ -118,7 +118,26 @@ export function DashboardActivityLists({
                 title={<LibraryTitleName titleId={loan.title_id} />}
                 meta={borrower(loan)}
                 href={`/library/members/${loan.member_user_id}`}
-                trailing={<DueBadge dueOn={loan.due_on} today={today} locale={locale} />}
+                trailing={
+                  // A phone row keeps room for the title: the days late
+                  // only, the due date from sm up. One wrapper, so the
+                  // hidden badge never shifts the shown one.
+                  <span className="contents">
+                    <DueBadge
+                      dueOn={loan.due_on}
+                      today={today}
+                      locale={locale}
+                      compact
+                      className="sm:hidden"
+                    />
+                    <DueBadge
+                      dueOn={loan.due_on}
+                      today={today}
+                      locale={locale}
+                      className="max-sm:hidden"
+                    />
+                  </span>
+                }
               />
             ))}
           </List>

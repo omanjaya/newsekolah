@@ -103,7 +103,11 @@ export function LibraryDashboardView({ toolbar }: { toolbar?: ReactNode } = {}):
             />
           </StatGrid>
 
-          <div className="grid items-start gap-6 lg:grid-cols-3">
+          {/* `grid-cols-1` is minmax(0, 1fr): on a phone the one column
+              is the screen's width, so a long list title truncates
+              inside its card instead of widening the track. Cards in one
+              desktop row stretch to the same height. */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle as="h2">{t("seriesTitle")}</CardTitle>
