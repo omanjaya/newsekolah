@@ -24,8 +24,10 @@ test("a must_change_password account is forced to /change-password before reachi
 
   await page.goto("/login");
   await page.getByLabel("Nama pengguna").fill("guru01");
-  await page.getByLabel("Kata sandi").fill("kata-sandi-sementara");
-  await page.getByRole("button", { name: "Masuk" }).click();
+  // exact: the show-password button is labelled "Tampilkan kata sandi".
+  await page.getByLabel("Kata sandi", { exact: true }).fill("kata-sandi-sementara");
+  // exact: "Masuk dengan passkey" sits under the form.
+  await page.getByRole("button", { name: "Masuk", exact: true }).click();
 
   // RouteGuard redirects any (app) page to /change-password while the flag is set.
   await expect(page).toHaveURL("/change-password");

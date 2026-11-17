@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { branding, buildMe, mockBranding, mockSession } from "./fixtures";
+import { branding, buildMe, expectHome, mockBranding, mockSession } from "./fixtures";
 
 test("login success redirects to the dashboard", async ({ page }) => {
   await mockBranding(page);
@@ -24,11 +24,13 @@ test("login success redirects to the dashboard", async ({ page }) => {
   await expect(page.getByText(branding.name)).toBeVisible();
 
   await page.getByLabel("Nama pengguna").fill("guru01");
-  await page.getByLabel("Kata sandi").fill("kata-sandi-benar");
-  await page.getByRole("button", { name: "Masuk" }).click();
+  // exact: the show-password button is labelled "Tampilkan kata sandi".
+  await page.getByLabel("Kata sandi", { exact: true }).fill("kata-sandi-benar");
+  // exact: "Masuk dengan passkey" sits under the form.
+  await page.getByRole("button", { name: "Masuk", exact: true }).click();
 
   await expect(page).toHaveURL("/dashboard");
-  await expect(page.getByText(`Selamat datang, ${me.name}`)).toBeVisible();
+  await expectHome(page, me.name);
 });
 
 test("login with an invalid password shows the server's error message", async ({ page }) => {
@@ -50,8 +52,8 @@ test("login with an invalid password shows the server's error message", async ({
 
   await page.goto("/login");
   await page.getByLabel("Nama pengguna").fill("guru01");
-  await page.getByLabel("Kata sandi").fill("kata-sandi-salah");
-  await page.getByRole("button", { name: "Masuk" }).click();
+  await page.getByLabel("Kata sandi", { exact: true }).fill("kata-sandi-salah");
+  await page.getByRole("button", { name: "Masuk", exact: true }).click();
 
   await expect(page.getByText("Nama pengguna atau kata sandi salah")).toBeVisible();
   // The failed attempt never navigates away from the login form.
