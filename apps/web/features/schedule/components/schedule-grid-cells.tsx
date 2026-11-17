@@ -2,6 +2,7 @@
 
 import { cn } from "@newsekolah/ui";
 import { AlertTriangle, Copy, Pencil, Plus, Trash2 } from "lucide-react";
+import { useLocale } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
 import type { ScheduleBlock } from "../api";
@@ -123,6 +124,7 @@ export function PeriodCell({
   period: Period;
   current?: boolean;
 }): ReactElement {
+  const locale = useLocale();
   return (
     <th
       scope="row"
@@ -134,8 +136,8 @@ export function PeriodCell({
       <span className={cn("block truncate text-body-sm", current ? "text-accent" : "text-fg")}>
         {period.name}
       </span>
-      <span className="block text-caption font-normal text-fg-muted tabular-nums">
-        {formatPeriodTime(period)}
+      <span className="block whitespace-nowrap text-caption font-normal text-fg-muted tabular-nums">
+        {formatPeriodTime(period, locale)}
       </span>
     </th>
   );

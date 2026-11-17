@@ -1,3 +1,5 @@
+import { clockRange } from "./clock-label";
+
 export interface PeriodTimeLike {
   starts_at: string;
   ends_at: string;
@@ -9,13 +11,13 @@ export interface PeriodRangeLike {
 }
 
 /**
- * "HH:MM-HH:MM" from a period's (or a block's first-to-last period's)
- * "HH:MM:SS" timestamps. Shared by the grid's period column, the mobile
- * agenda/day list, and the compact current-period pill so the time format
- * reads the same everywhere on the schedule screen.
+ * A period's (or a block's first-to-last period's) span as people read it,
+ * "07.00 – 07.45" in Indonesian, through `clockRange`: the grid's period
+ * column and the compact current-period pill write times the same way as
+ * the agenda, the attendance screens and the rest of the app.
  */
-export function formatPeriodTime(period: PeriodTimeLike): string {
-  return `${period.starts_at.slice(0, 5)}-${period.ends_at.slice(0, 5)}`;
+export function formatPeriodTime(period: PeriodTimeLike, locale: string): string {
+  return clockRange(period.starts_at, period.ends_at, locale);
 }
 
 /**
