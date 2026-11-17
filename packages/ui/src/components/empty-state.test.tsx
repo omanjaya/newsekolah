@@ -97,7 +97,7 @@ describe("FilteredEmptyState", () => {
 });
 
 describe("FirstUseEmptyState", () => {
-  it("always offers the add action as the primary button with a plus", async () => {
+  it("always offers the add action, as the outline button with a plus by default", async () => {
     const onAction = vi.fn();
     const { container } = render(
       <FirstUseEmptyState
@@ -108,11 +108,25 @@ describe("FirstUseEmptyState", () => {
       />,
     );
     const button = screen.getByRole("button", { name: "Tambah siswa" });
-    expect(button).toHaveClass("bg-accent");
+    // The page header carries the filled primary for the same action.
+    expect(button).not.toHaveClass("bg-accent");
+    expect(button).toHaveClass("border-border");
     expect(button.querySelector("svg.lucide-plus")).toBeInTheDocument();
     await userEvent.click(button);
     expect(onAction).toHaveBeenCalledOnce();
     await expectNoAxeViolations(container);
+  });
+
+  it("fills the button when it carries the screen's only primary", () => {
+    render(
+      <FirstUseEmptyState
+        emphasis="primary"
+        title="Belum ada siswa"
+        actionLabel="Tambah siswa"
+        onAction={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Tambah siswa" })).toHaveClass("bg-accent");
   });
 
   it("links to a create page instead, with a smaller button in the compact variant", () => {
