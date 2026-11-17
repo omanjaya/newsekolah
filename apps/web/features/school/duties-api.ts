@@ -159,9 +159,10 @@ export function useEndDutyAssignmentMutation() {
 /**
  * POST /v1/users/{userId}/impersonate. Swaps the caller's own session for a
  * fresh 30-minute session as the target user, so the response is handled
- * the same way as a login: store the new access token and seed `me` from
- * the response instead of waiting on a refetch (docs/08-security.md
- * section 2 requires the switch to be immediate and visibly marked).
+ * like a sign-in: store the new access token, drop what was cached for the
+ * admin, and seed `me` from the response instead of waiting on a refetch
+ * (docs/08-security.md section 2 requires the switch to be immediate and
+ * visibly marked).
  */
 export function useImpersonateUserMutation() {
   const client = useApiClient();
@@ -172,9 +173,21 @@ export function useImpersonateUserMutation() {
         params: { path: { userId } },
         body: { client: "web" },
       }),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // A different person reads from here on, and no query key names the
+      // reader: cancel what is still on its way for the admin and drop
+      // everything cached for them but `me`, as the role-testing switch
+      // does. A screen still showing one of those queries (the header's
+      // unread count lives across the navigation that follows) reads it
+      // again, as the impersonated account, once the new `me` re-renders
+      // it. SimulationSync does not: it refetches only when the business
+      // clock moves, not when the reader changes.
+      await queryClient.cancelQueries();
       suspendSimulation();
       setAccessToken(data.access_token);
+      queryClient.removeQueries({
+        predicate: (query) => !(query.queryKey.length === 1 && query.queryKey[0] === "me"),
+      });
       queryClient.setQueryData(queryKeys.me(), data.user);
       void queryClient.invalidateQueries({ queryKey: queryKeys.me() });
     },
