@@ -12,7 +12,6 @@ import {
   EmptyState,
   Field,
   Input,
-  TextLink,
   Textarea,
   domainIcons,
   useToast,
@@ -52,11 +51,9 @@ export function StocktakeView(): ReactElement {
         header: t("columns.name"),
         enableSorting: false,
         meta: { card: "title" },
-        cell: ({ row }) => (
-          <TextLink href={`/library/stocktake/${row.original.id}`} className="font-semibold">
-            {row.original.name}
-          </TextLink>
-        ),
+        // Body text, as in the other areas' tables: the row itself opens
+        // the session (onRowActivate below).
+        cell: ({ row }) => <span className="font-semibold text-fg">{row.original.name}</span>,
       },
       {
         accessorKey: "started_on",
@@ -80,15 +77,17 @@ export function StocktakeView(): ReactElement {
         ),
       },
       {
-        id: "actions",
-        header: t("columns.actions"),
+        // Not the row's actions column, whose phone slot is the card's
+        // corner: on a phone the whole card opens the session, so this
+        // labelled link stays in the desktop table only, as a secondary
+        // beside the page's one primary. The id "action" keeps it out of
+        // the column menu.
+        id: "action",
+        header: () => <span className="sr-only">{t("columns.actions")}</span>,
         enableSorting: false,
+        meta: { card: "hidden", align: "end" },
         cell: ({ row }) => (
-          <Button
-            asChild
-            size="sm"
-            variant={row.original.status === "open" ? "primary" : "secondary"}
-          >
+          <Button asChild size="sm" variant="secondary">
             <Link href={`/library/stocktake/${row.original.id}`}>
               {row.original.status === "open" ? t("continueScan") : t("viewResult")}
             </Link>
@@ -126,6 +125,9 @@ export function StocktakeView(): ReactElement {
         error={error}
         onRetry={() => void refetch()}
         getRowId={(item) => item.id}
+        onRowActivate={(item) => {
+          router.push(`/library/stocktake/${item.id}`);
+        }}
         emptyState={
           <EmptyState
             icon={<domainIcons.library aria-hidden="true" />}
