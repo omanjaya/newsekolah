@@ -62,9 +62,14 @@ const LOADING_ME = { tenant: { timezone: "UTC" }, permissions: [], duties: [] } 
 /** At most this many shortcuts in the side column. */
 const MAX_SHORTCUTS = 5;
 
-/** The desktop tile row spreads as many columns as it has tiles (two at least). */
+/** The notifications count that fills a short stat row (see `notifications` below). */
+const NOTIFICATIONS_TILE = "common.notifications";
+
+/**
+ * The desktop tile row spreads as many columns as it has tiles. A row is
+ * never a single tile: the filler only ever stands beside a persona tile.
+ */
 const TILE_COLUMNS: Record<number, string> = {
-  1: "sm:grid-cols-2",
   2: "sm:grid-cols-2",
   3: "sm:grid-cols-3",
   4: "sm:grid-cols-4",
@@ -142,12 +147,13 @@ export function DashboardView(): ReactElement {
   const access = navAccessFromMe(me);
   const canOpen = (href: string) => canOpenPath(href, access);
 
-  // Notifications never depend on an active persona: it is the guaranteed
-  // filler tile (priority 0) so the stat row is never empty.
+  // Notifications never depend on an active persona: it is the filler tile
+  // (priority 0) that rounds out a short stat row. On its own it would only
+  // repeat the header bell, so a home without persona tiles has no row.
   const notifications: PersonaBlock = {
     tiles: [
       {
-        key: "common.notifications",
+        key: NOTIFICATIONS_TILE,
         priority: 0,
         label: t("tiles.notifications.label"),
         value: String(unread.data?.count ?? 0),
@@ -176,7 +182,8 @@ export function DashboardView(): ReactElement {
     gate,
     notifications,
   ]);
-  const tiles = guardTiles(collected.tiles, canOpen);
+  const merged = guardTiles(collected.tiles, canOpen);
+  const tiles = merged.some((tile) => tile.key !== NOTIFICATIONS_TILE) ? merged : [];
   const fallback: HeroCandidate =
     inbox.total > 0
       ? {
@@ -242,20 +249,22 @@ export function DashboardView(): ReactElement {
           ) : (
             <>
               <HomeHero hero={hero} />
-              <StatGrid
-                variant={isDesktop ? "tiles" : "strip"}
-                aria-label={t("statsLabel")}
-                className={cn(
-                  "animate-enter",
-                  isDesktop && TILE_COLUMNS[Math.min(tiles.length, 4)],
-                )}
-                style={stagger(1)}
-                data-testid="dashboard-tiles"
-              >
-                {tiles.map((tile) => (
-                  <HomeStat key={tile.key} tile={tile} />
-                ))}
-              </StatGrid>
+              {tiles.length > 0 && (
+                <StatGrid
+                  variant={isDesktop ? "tiles" : "strip"}
+                  aria-label={t("statsLabel")}
+                  className={cn(
+                    "animate-enter",
+                    isDesktop && TILE_COLUMNS[Math.min(tiles.length, 4)],
+                  )}
+                  style={stagger(1)}
+                  data-testid="dashboard-tiles"
+                >
+                  {tiles.map((tile) => (
+                    <HomeStat key={tile.key} tile={tile} />
+                  ))}
+                </StatGrid>
+              )}
             </>
           )}
           {collected.main.map((slot, index) => (

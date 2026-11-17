@@ -202,9 +202,18 @@ describe("DashboardView", () => {
     expect(screen.queryByTestId("dashboard-tile-common.notifications")).not.toBeInTheDocument();
   });
 
-  it("keeps the notifications tile as the filler of an otherwise empty stat row", () => {
+  it("rounds out a short stat row with the notifications tile", () => {
+    teacherBlock.mockReturnValue({ ...emptyBlock(), tiles: [tile("t1", 90)] });
     render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-tile-t1")).toBeInTheDocument();
     expect(screen.getByTestId("dashboard-tile-common.notifications")).toBeInTheDocument();
+  });
+
+  it("shows no stat row when the notifications tile would stand alone", () => {
+    // The header bell already carries the count (the gate home has no figures).
+    render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-hero")).toBeInTheDocument();
+    expect(screen.queryByTestId("dashboard-tiles")).not.toBeInTheDocument();
   });
 
   it("puts task cards in the main column and context cards in the side column", () => {
