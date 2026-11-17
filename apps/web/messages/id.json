@@ -349,6 +349,7 @@
     "moduleUnavailable": {
       "title": "Modul tidak tersedia",
       "body": "Fitur ini tidak diaktifkan untuk sekolah Anda. Hubungi admin sekolah bila fitur ini seharusnya tersedia.",
+      "checkAgain": "Periksa lagi",
       "backHome": "Kembali ke beranda"
     },
     "notFound": {

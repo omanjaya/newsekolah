@@ -349,6 +349,7 @@
     "moduleUnavailable": {
       "title": "Module not available",
       "body": "This feature is not enabled for your school. Contact the school admin if it should be available.",
+      "checkAgain": "Check again",
       "backHome": "Back to home"
     },
     "notFound": {
