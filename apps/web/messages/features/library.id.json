@@ -931,7 +931,8 @@
       "live": "Diperbarui otomatis setiap 5 detik selama sesi berjalan.",
       "meter": "Terpindai dari yang diharapkan",
       "meterValue": "{scanned} dari {expected}",
-      "ratio": "{scanned} dari {expected} terpindai"
+      "ratio": "{scanned} dari {expected} terpindai",
+      "remaining": "Belum terpindai"
     },
     "scan": {
       "heading": "Pindai eksemplar",

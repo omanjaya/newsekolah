@@ -131,4 +131,12 @@ describe("StocktakeSessionView", () => {
     render(<StocktakeSessionView stocktakeId="st-1" />);
     expect(screen.queryByRole("region", { name: "reconciliation" })).not.toBeInTheDocument();
   });
+
+  // A copy not scanned yet in a running session is not lost: "Hilang" is
+  // the closed session's verdict.
+  it("calls the live unscanned count not scanned yet, never missing", () => {
+    render(<StocktakeSessionView stocktakeId="st-1" />);
+    expect(screen.getByText("progress.remaining")).toBeInTheDocument();
+    expect(screen.queryByText("result.missing")).not.toBeInTheDocument();
+  });
 });
