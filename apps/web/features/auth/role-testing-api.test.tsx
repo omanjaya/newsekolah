@@ -44,7 +44,7 @@ afterEach(() => {
 });
 
 describe("role-testing actor transition", () => {
-  it("drops old account queries, updates the observed me, and preserves the scoped test clock", async () => {
+  it("drops old account queries but the school's branding, updates the observed me, and preserves the scoped test clock", async () => {
     const root = actor("root");
     const teacher = actor("teacher", "root");
     syncSimulationIdentity(root);
@@ -67,6 +67,7 @@ describe("role-testing actor transition", () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     client.setQueryData(["me"], root);
     client.setQueryData(["attendance", "private"], { secret: "root-only" });
+    client.setQueryData(["tenant", "branding", "default"], { name: "School" });
     const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
@@ -87,6 +88,7 @@ describe("role-testing actor transition", () => {
     });
     expect(calls).toEqual(["clear-sat", "start"]);
     expect(client.getQueryData(["attendance", "private"])).toBeUndefined();
+    expect(client.getQueryData(["tenant", "branding", "default"])).toEqual({ name: "School" });
     expect(getAccessToken()).toBe("teacher-token");
     expect(getSimulationTime()).toBe("2026-09-30T00:00:00.000Z");
   });

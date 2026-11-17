@@ -1,14 +1,12 @@
 "use client";
 
-import { queryKeys } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { setAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
 import { useHasAccessToken } from "../../lib/api/use-has-access-token";
 import { clearServerAccessCookie } from "../../lib/session/clear-server-access-cookie";
 import { useSession } from "../../lib/session/session-provider";
-import { suspendSimulation, syncSimulationIdentity } from "../../lib/simulation/clock";
+import { switchReader } from "../../lib/session/switch-reader";
 
 export interface RoleTestingFilter {
   role?: string;
@@ -59,16 +57,7 @@ export function useRoleTestingSwitchMutation() {
             body: { user_id: target.userId, role: target.role },
           })
         : await client.POST("/v1/auth/role-testing/stop");
-
-      // Prevent in-flight old-actor responses from reintroducing private data.
-      await queryClient.cancelQueries();
-      suspendSimulation();
-      setAccessToken(result.access_token);
-      queryClient.removeQueries({
-        predicate: (query) => !(query.queryKey.length === 1 && query.queryKey[0] === "me"),
-      });
-      queryClient.setQueryData(queryKeys.me(), result.user);
-      syncSimulationIdentity(result.user);
+      await switchReader(queryClient, result);
       return result;
     },
   });
