@@ -14,18 +14,16 @@ import { useSession } from "../../../lib/session/session-provider";
 
 interface SectionViewProps {
   tabKey?: string;
-}
-
-interface SchoolViewProps extends SectionViewProps {
+  /** The hub's strip of report sections, drawn under the section's page header. */
   sectionNav?: ReactNode;
 }
 
 type ReportSectionKey = (typeof REPORT_SECTIONS)[number]["key"];
 
-const SchoolReports: ComponentType<SchoolViewProps> = dynamic(() =>
+const SchoolReports: ComponentType<SectionViewProps> = dynamic(() =>
   import("./reports-view").then((module) => module.ReportsView),
 );
-const LibraryReports: ComponentType<SchoolViewProps> = dynamic(() =>
+const LibraryReports: ComponentType<SectionViewProps> = dynamic(() =>
   import("../../library/components/library-reports-view").then(
     (module) => module.LibraryReportsView,
   ),
@@ -80,10 +78,8 @@ export function ReportsWorkspaceView(): ReactElement {
   const { View } = SECTION_VIEWS[selected.key];
   const tabKey = selected.key === "school" ? "tab" : `${selected.key}Tab`;
   if (sections.length <= 1) return <View tabKey={tabKey} />;
-  // The section strip sits under the page title: the report centre and the
-  // library reports take it into their own page header; the visitor recap
-  // still draws its own header, so for it the strip stays above (a handoff
-  // to the visitors area).
+  // The section strip sits under the page title: every section takes it
+  // into its own page template, so switching sections never swaps the header.
   const strip = (
     <TabsList variant="underline" aria-label={t("app.shell.nav.items.reports")}>
       {sections.map((entry) => (
@@ -95,16 +91,9 @@ export function ReportsWorkspaceView(): ReactElement {
   );
   return (
     <Tabs value={selected.key} onValueChange={setSection}>
-      {selected.key === "visitors" && <div className="px-4 pt-4 md:px-6">{strip}</div>}
       {/* The section view is the panel of whichever section tab is active. */}
       <TabsContent value={selected.key}>
-        {selected.key === "school" ? (
-          <SchoolReports tabKey={tabKey} sectionNav={strip} />
-        ) : selected.key === "library" ? (
-          <LibraryReports tabKey={tabKey} sectionNav={strip} />
-        ) : (
-          <View tabKey={tabKey} />
-        )}
+        <View tabKey={tabKey} sectionNav={strip} />
       </TabsContent>
     </Tabs>
   );

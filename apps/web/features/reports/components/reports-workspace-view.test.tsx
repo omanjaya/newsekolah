@@ -41,9 +41,13 @@ vi.mock("../../library/components/library-reports-view", () => ({
     </div>
   ),
 }));
+// And so does the visitor recap.
 vi.mock("../../visitors/components/visitor-recap-view", () => ({
-  VisitorRecapView: ({ tabKey }: { tabKey: string }) => (
-    <p data-testid="visitor-report">{tabKey}</p>
+  VisitorRecapView: ({ tabKey, sectionNav }: { tabKey: string; sectionNav?: ReactNode }) => (
+    <div data-testid="visitor-page">
+      {sectionNav}
+      <p data-testid="visitor-report">{tabKey}</p>
+    </div>
   ),
 }));
 
@@ -102,6 +106,21 @@ describe("reports workspace permission isolation", () => {
       </Suspense>,
     );
     const page = await screen.findByTestId("library-page");
+    expect(page).toContainElement(
+      screen.getByRole("tablist", { name: "app.shell.nav.items.reports" }),
+    );
+    expect(screen.getAllByRole("tablist")).toHaveLength(1);
+  });
+
+  it("hands the section strip to the visitor recap, so one header leads the page", async () => {
+    session.permissions = ["view_reports", "view_visitor_reports"];
+    window.history.replaceState(null, "", "/reports?section=visitors");
+    render(
+      <Suspense>
+        <ReportsWorkspaceView />
+      </Suspense>,
+    );
+    const page = await screen.findByTestId("visitor-page");
     expect(page).toContainElement(
       screen.getByRole("tablist", { name: "app.shell.nav.items.reports" }),
     );
