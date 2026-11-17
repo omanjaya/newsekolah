@@ -120,9 +120,9 @@
     "permits": {
       "label": "Permits",
       "items": {
-        "plannedLeave": "Planned Leave",
-        "exitPermit": "Exit Permit",
-        "late": "Late Arrival",
+        "plannedLeave": "Absence leave",
+        "exitPermit": "Exit permits",
+        "late": "Late arrivals",
         "gate": "Gate",
         "verification": "Verification"
       }
@@ -131,10 +131,10 @@
       "label": "Discipline",
       "items": {
         "violations": "Violations",
-        "warningLetters": "Warning Letters",
+        "warningLetters": "Warning letters",
         "counseling": "Counseling",
-        "reports": "Discipline Reports",
-        "myDiscipline": "Discipline Points"
+        "reports": "Discipline reports",
+        "myDiscipline": "Discipline points"
       }
     },
     "library": {
@@ -143,7 +143,7 @@
         "circulation": "Circulation",
         "catalog": "Catalog",
         "members": "Members",
-        "stockOpname": "Stock Opname",
+        "stockOpname": "Stocktake",
         "visits": "Visits",
         "reports": "Reports",
         "opac": "OPAC"
@@ -157,7 +157,7 @@
       }
     },
     "schoolData": {
-      "label": "School Data",
+      "label": "School data",
       "items": {
         "academicYear": "Academic year",
         "classesAndStudents": "Classes and students",
@@ -180,12 +180,12 @@
     "settings": {
       "label": "Settings",
       "items": {
-        "schoolProfile": "School Profile",
+        "schoolProfile": "School profile",
         "policies": "Policies",
-        "documentTemplates": "Document Templates",
+        "documentTemplates": "Document templates",
         "rolesAndAccess": "Roles and access",
         "integrations": "Integrations",
-        "sessionsAndSecurity": "Sessions and Security",
+        "sessionsAndSecurity": "Sessions and security",
         "modules": "Modules"
       }
     },
@@ -205,12 +205,12 @@
       "profile": "Profile"
     },
     "visitors": {
-      "label": "Visitors & Incidents",
+      "label": "Visitors and incidents",
       "items": {
-        "board": "Gate Board",
-        "expected": "Expected Guests",
+        "board": "Visitor board",
+        "expected": "Expected visitors",
         "incidents": "Incidents",
-        "reports": "Visitor Recap"
+        "reports": "Visit recap"
       }
     },
     "activities": {

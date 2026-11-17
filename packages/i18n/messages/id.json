@@ -120,9 +120,9 @@
     "permits": {
       "label": "Perizinan",
       "items": {
-        "plannedLeave": "Izin Terencana",
-        "exitPermit": "Izin Keluar",
-        "late": "Terlambat",
+        "plannedLeave": "Izin tidak masuk",
+        "exitPermit": "Izin keluar",
+        "late": "Keterlambatan",
         "gate": "Gerbang",
         "verification": "Verifikasi"
       }
@@ -131,9 +131,9 @@
       "label": "Kesiswaan",
       "items": {
         "violations": "Pelanggaran",
-        "warningLetters": "Surat Peringatan",
+        "warningLetters": "Surat peringatan",
         "counseling": "Konseling",
-        "reports": "Laporan Kesiswaan",
+        "reports": "Laporan kesiswaan",
         "myDiscipline": "Poin kedisiplinan"
       }
     },
@@ -143,7 +143,7 @@
         "circulation": "Sirkulasi",
         "catalog": "Katalog",
         "members": "Anggota",
-        "stockOpname": "Opname",
+        "stockOpname": "Stok opname",
         "visits": "Kunjungan",
         "reports": "Laporan",
         "opac": "OPAC"
@@ -157,7 +157,7 @@
       }
     },
     "schoolData": {
-      "label": "Data Sekolah",
+      "label": "Data sekolah",
       "items": {
         "academicYear": "Tahun ajaran",
         "classesAndStudents": "Kelas dan siswa",
@@ -180,12 +180,12 @@
     "settings": {
       "label": "Pengaturan",
       "items": {
-        "schoolProfile": "Profil Sekolah",
+        "schoolProfile": "Profil sekolah",
         "policies": "Kebijakan",
-        "documentTemplates": "Template Dokumen",
+        "documentTemplates": "Templat dokumen",
         "rolesAndAccess": "Peran dan akses",
         "integrations": "Integrasi",
-        "sessionsAndSecurity": "Sesi dan Keamanan",
+        "sessionsAndSecurity": "Sesi dan keamanan",
         "modules": "Modul"
       }
     },
@@ -205,12 +205,12 @@
       "profile": "Profil"
     },
     "visitors": {
-      "label": "Tamu & insiden",
+      "label": "Tamu dan insiden",
       "items": {
-        "board": "Papan Tamu",
-        "expected": "Tamu Dijadwalkan",
+        "board": "Papan tamu",
+        "expected": "Tamu dijadwalkan",
         "incidents": "Insiden",
-        "reports": "Rekap Kunjungan"
+        "reports": "Rekap kunjungan"
       }
     },
     "activities": {
@@ -220,7 +220,7 @@
       "label": "Keuangan"
     },
     "mentoring": {
-      "label": "Guru Wali"
+      "label": "Guru wali"
     },
     "supervision": {
       "label": "Supervisi"
