@@ -3,6 +3,7 @@ import {
   assertNoNavigation,
   closeAll,
   expect,
+  finishOpenLeaveRequest,
   loginAs,
   test,
   waitForToastsGone,
@@ -29,6 +30,15 @@ test("leave request: submit -> homeroom queue live -> approve -> student status 
   ]);
 
   try {
+    // A request "siswa" still has on its way would make the submit below a
+    // 409 and its own queue row would pass the live check: finish it first.
+    await finishOpenLeaveRequest({
+      student: student.page,
+      homeroom: homeroom.page,
+      counselor: counselor.page,
+      studentName: "Siswa Contoh",
+    });
+
     // Homeroom opens the review queue first, before the student submits --
     // the whole point is to watch it update without a reload. Waiting for
     // the queue's own settled state (not just the heading) matters here:

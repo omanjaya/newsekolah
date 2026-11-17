@@ -132,6 +132,61 @@ export async function waitForToastsGone(page: Page): Promise<void> {
   await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, { timeout: 20_000 });
 }
 
+/**
+ * permits allows one in-progress leave request per student, and a second
+ * `POST /v1/leave-requests` answers 409. A request left on its way (by an
+ * earlier run that failed midway, or by demo data entered on the same
+ * stack) would block the scenario, and its queue row would answer the
+ * scenario's "shows up live" check before the new request exists. Finish
+ * it the way the scenarios finish their own: the homeroom teacher approves
+ * it from the inbox when it still waits on them, then the counselor issues
+ * the letter. Does nothing when the student has no request on its way.
+ */
+export async function finishOpenLeaveRequest(actors: {
+  student: Page;
+  homeroom: Page;
+  counselor: Page;
+  studentName: string;
+}): Promise<void> {
+  const { student, homeroom, counselor, studentName } = actors;
+  await student.goto("/leave-requests");
+  await expect(student.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(student.locator('[data-slot="skeleton"], .animate-pulse')).toHaveCount(0, {
+    timeout: 20_000,
+  });
+  // The status card of the request on its way (my-leave-requests.tsx); the
+  // history rows below it share the test id prefix.
+  const card = student
+    .locator('[data-testid^="leave-mine-card-"]')
+    .filter({ hasText: "Pengajuan berjalan" });
+  if ((await card.count()) === 0) return;
+  const instanceId = ((await card.getAttribute("data-testid")) ?? "").replace(
+    "leave-mine-card-",
+    "",
+  );
+  expect(instanceId).not.toBe("");
+
+  if ((await card.getByText("Menunggu: Wali kelas").count()) > 0) {
+    await homeroom.goto("/inbox");
+    const row = homeroom.getByRole("listitem").filter({ hasText: studentName });
+    await expect(row).toHaveCount(1, { timeout: 20_000 });
+    await waitForToastsGone(homeroom);
+    await row.getByRole("button", { name: "Setujui" }).click();
+    await expect(row).toBeHidden({ timeout: 20_000 });
+  }
+
+  await counselor.goto(`/leave-requests/${instanceId}`);
+  await counselor.getByRole("button", { name: "Terbitkan surat" }).click();
+  await expect(counselor.getByText("Surat izin sudah terbit")).toBeVisible({ timeout: 20_000 });
+
+  await student.reload();
+  await expect(student.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(student.locator('[data-slot="skeleton"], .animate-pulse')).toHaveCount(0, {
+    timeout: 20_000,
+  });
+  await expect(card).toHaveCount(0);
+}
+
 export const test = base.extend<{ baseUrlChecked: boolean }>({
   baseUrlChecked: [
     async ({ baseURL }, use) => {
