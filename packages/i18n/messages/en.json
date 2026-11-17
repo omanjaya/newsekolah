@@ -160,7 +160,7 @@
       "label": "School data",
       "items": {
         "academicYear": "Academic year",
-        "classesAndStudents": "Classes and students",
+        "classesAndStudents": "Students and classes",
         "teachersAndStaff": "Teachers and staff",
         "subjects": "Subjects",
         "rooms": "Rooms",
@@ -174,7 +174,7 @@
         "subjectOfferings": "Subject offerings",
         "teachingAssignments": "Teaching assignments",
         "enrollmentImport": "Class assignment import",
-        "newYearSetup": "New year setup"
+        "newYearSetup": "New academic year"
       }
     },
     "settings": {
