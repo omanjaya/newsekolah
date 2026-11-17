@@ -118,7 +118,8 @@ describe("design-system plugin", () => {
     );
 
     it("allows a local function that happens to be called confirm", () => {
-      const code = 'const confirm = (key: string) => key;\nconfirm("defaultConfirmLabel");';
+      // The harness parses plain JavaScript, so the fixture carries no type annotation.
+      const code = 'const confirm = (key) => key;\nconfirm("defaultConfirmLabel");';
       expect(ruleIds(code, nativeDialogRules)).toEqual([]);
     });
   });
