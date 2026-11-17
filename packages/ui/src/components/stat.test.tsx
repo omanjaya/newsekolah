@@ -233,6 +233,8 @@ describe("Stat", () => {
     expect(off).toHaveAttribute("aria-pressed", "false");
     // A stat that is not a toggle is not announced as one.
     expect(screen.getByRole("button", { name: "Aman" })).not.toHaveAttribute("aria-pressed");
+    // A filter tile opens nothing, so it draws no "go to" chevron.
+    expect(container.querySelector("svg.lucide-chevron-right")).toBeNull();
     const [first, second] = Array.from(container.querySelectorAll("dl > div"));
     expect(first).toHaveClass("border-accent", "ring-1", "ring-accent");
     expect(first).toHaveAttribute("data-selected");

@@ -311,7 +311,10 @@ export function Stat({
             {shown.node}
           </span>
         )}
-        {interactive && look === "tile" && (
+        {/* "Go to" only for a tile that leads somewhere: a button tile is
+            a filter or an action in place, and a chevron would promise a
+            page that never opens. */}
+        {href !== undefined && look === "tile" && (
           <ChevronRight
             className="pointer-events-none absolute top-4 right-4 size-4 text-fg-muted"
             aria-hidden="true"
