@@ -35,17 +35,6 @@ export const INBOX_SECTIONS: readonly NavModuleSection[] = [
   { module: "discipline" },
 ];
 
-/**
- * The modules whose issued documents render through a document template:
- * leave letters (permits), warning letters (discipline) and visitor badges
- * (visitors). The template screen stays open while any of them is on.
- */
-export const DOCUMENT_TEMPLATE_SECTIONS: readonly NavModuleSection[] = [
-  { module: "permits" },
-  { module: "discipline" },
-  { module: "visitors" },
-];
-
 /** The modules of a section list, for tests and lookups. */
 export function sectionModules(sections: readonly NavModuleSection[]): FeatureModule[] {
   return sections.map((section) => section.module);

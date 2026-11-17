@@ -1,11 +1,13 @@
 "use client";
 
-import type { components } from "@newsekolah/api-client";
-import { useMe } from "@newsekolah/api-client/react";
+import { queryKeys, type components } from "@newsekolah/api-client";
+import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useMemo } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { useApiClient } from "../api/client";
+
+import { moduleFlagRefetchInterval } from "./module-flag-refresh";
 
 export type Me = components["schemas"]["Me"];
 
@@ -34,10 +36,20 @@ const SessionContext = createContext<SessionContextValue | null>(null);
  * and seeds this same `me` query straight from the login response, so this
  * flips to "authenticated" on its own with no anonymous gap; no extra
  * wiring needed at the call site.
+ *
+ * The query is `useMe`'s (same key and request) plus a polling backstop
+ * while the school has any module off, so a module switched back on
+ * reappears without a reload (see module-flag-refresh.ts). It never polls
+ * a hidden tab.
  */
 export function SessionProvider({ children }: { children: ReactNode }): ReactElement {
   const client = useApiClient();
-  const { data, isLoading } = useMe(client);
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.me(),
+    queryFn: () => client.GET("/v1/me"),
+    refetchInterval: (query) => moduleFlagRefetchInterval(query.state.data),
+    refetchIntervalInBackground: false,
+  });
 
   const status: SessionStatus = isLoading ? "loading" : data ? "authenticated" : "anonymous";
   const isReady = !isLoading;

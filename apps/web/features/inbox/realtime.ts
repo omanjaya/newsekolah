@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import { useLiveSocketContext } from "../../lib/realtime/live-socket-provider";
 import { useLiveInvalidate } from "../../lib/realtime/use-live-invalidate";
+import { notificationKindsOf } from "../notifications/kinds";
 import {
   EXIT_PERMIT_QUEUE_EVENTS,
   LATE_ARRIVAL_EVENTS,
@@ -20,12 +21,10 @@ import type { InboxAccess } from "./lib/access";
 /**
  * Discipline pushes nothing of its own over /ws/me. Crossing an SP
  * threshold does notify the counselors, though, and that notification is
- * the only live signal that the warning-letter count changed.
+ * the only live signal that the warning-letter count changed. Derived from
+ * the notification kind map so the two lists cannot drift apart.
  */
-const DISCIPLINE_NOTIFICATION_KINDS: readonly string[] = [
-  "discipline_threshold_reached",
-  "warning_letter_issued",
-];
+const DISCIPLINE_NOTIFICATION_KINDS: readonly string[] = notificationKindsOf("discipline");
 
 interface NotificationCreatedPayload {
   kind?: string;

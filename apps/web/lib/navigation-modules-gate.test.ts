@@ -248,15 +248,16 @@ describe("pages made of sections from several modules", () => {
     expect(listed("inbox", all, ["permits", "discipline"])).toBe(false);
   });
 
-  it("keeps document templates while any issuing module is on, workflows with permits only", () => {
+  it("keeps document templates whatever is off, workflows with permits only", () => {
+    // The class journal kind has no owner module, so the screen always has
+    // something to edit; it filters the other kinds itself.
     expect(access("/settings/document-templates", all, ["permits"])).toBe("ok");
     expect(listed("settings-document-templates", all, ["permits"])).toBe(true);
-    expect(access("/settings/document-templates", all, ["permits", "discipline", "visitors"])).toBe(
-      "module-disabled",
-    );
-    expect(listed("settings-document-templates", all, ["permits", "discipline", "visitors"])).toBe(
-      false,
-    );
+    const issuing = ["permits", "discipline", "visitors"];
+    expect(access("/settings/document-templates", all, issuing)).toBe("ok");
+    expect(listed("settings-document-templates", all, issuing)).toBe(true);
+    expect(access("/settings/document-templates", all, [...FEATURE_MODULES])).toBe("ok");
+    expect(listed("settings-document-templates", all, [...FEATURE_MODULES])).toBe(true);
     expect(access("/settings/workflows", all, ["permits"])).toBe("module-disabled");
     expect(listed("settings-workflows", all, ["permits"])).toBe(false);
   });
