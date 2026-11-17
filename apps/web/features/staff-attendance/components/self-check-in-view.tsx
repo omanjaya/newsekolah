@@ -1,22 +1,29 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { formatDate, formatTime, type Locale } from "@newsekolah/i18n";
+import { formatTime, type Locale } from "@newsekolah/i18n";
 import {
   Alert,
+  Badge,
   Button,
-  PageHeader,
-  Skeleton,
+  Card,
+  List,
+  ListRow,
+  SectionHeader,
+  SkeletonList,
+  Stat,
+  StatGrid,
   StatusBadge,
-  cn,
   useToast,
   type StatusName,
 } from "@newsekolah/ui";
-import { CheckCircle2, LogIn, LogOut } from "lucide-react";
+import { LogIn, LogOut } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { useBusinessNow } from "../../../lib/simulation/clock";
@@ -38,14 +45,19 @@ const STATUS_TOKEN: Partial<Record<AttendanceRecord["status_code"], StatusName>>
 
 const WEEK_DAYS = 7;
 
+/** A day's status as one pill: the attendance colours where they apply, quiet otherwise. */
+function DayStatus({ status, label }: { status: AttendanceRecord["status_code"]; label: string }) {
+  const token = STATUS_TOKEN[status];
+  return token ? <StatusBadge status={token} label={label} /> : <Badge>{label}</Badge>;
+}
+
 /**
- * A teacher's or staff member's own arrival and departure, one tap each.
- * "Today" and "this week" both come from `useStaffAttendanceMyHistoryQuery`
- * (self-service, no `view_staff_attendance` permission needed), so unlike
- * before this no longer needs a device-local `localStorage` guess for what
- * was scanned last -- the server is the only source of truth now, the
- * screen just optimistically shows the scan result while the refetch is
- * in flight.
+ * A teacher's or staff member's own arrival and departure, one tap each:
+ * today's date and a large school clock, what is recorded so far, and the
+ * one action, full width and low on a phone screen. "Today" and "this
+ * week" both come from `useStaffAttendanceMyHistoryQuery` (self-service, no
+ * `view_staff_attendance` permission needed); the screen shows the scan
+ * result at once while the refetch is in flight.
  */
 export function SelfCheckInView(): ReactElement {
   const now = useBusinessNow();
@@ -75,8 +87,17 @@ export function SelfCheckInView(): ReactElement {
   const hasArrival = Boolean(record?.arrival_at);
   const done = completeDate === today || Boolean(record?.departure_at);
   const time = (iso: string | null | undefined) =>
-    iso ? formatTime(iso, { locale, timeZone }) : "-";
-  const statusToken = record ? STATUS_TOKEN[record.status_code] : undefined;
+    iso ? formatTime(iso, { locale, timeZone }) : "–";
+  const dayFormat = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
+  const dayLabel = (day: AttendanceRecord) =>
+    day.status_code === "holiday" && day.holiday_name
+      ? t("holidayWithName", { name: day.holiday_name })
+      : tStatus(day.status_code);
   // "unscheduled" (no weekly schedule configured at all) and "holiday" (a
   // genuine day off, named when the calendar says why) look the same --
   // "nothing recorded" -- but must never be presented the same way: one is
@@ -84,12 +105,7 @@ export function SelfCheckInView(): ReactElement {
   // day off the primary action is de-emphasised for. See
   // ComputeLateness's doc comment (apps/api) for why the two are kept
   // distinct all the way from the domain layer up to here.
-  const statusLabel =
-    record?.status_code === "holiday" && record.holiday_name
-      ? t("holidayWithName", { name: record.holiday_name })
-      : record
-        ? tStatus(record.status_code)
-        : "";
+  const holiday = record?.status_code === "holiday";
 
   function handleScan() {
     scan.mutate(undefined, {
@@ -106,64 +122,52 @@ export function SelfCheckInView(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <StaffAttendanceWorkspaceNav />
-
-      <section className="flex w-full max-w-md flex-col gap-5 rounded-sm border border-border bg-surface p-5">
-        <div className="flex flex-col gap-1">
-          <p className="text-[13px] text-fg-muted">{t("today")}</p>
-          <p className="text-[16px] font-medium">{formatDate(now, { locale, timeZone })}</p>
-          <p
-            className="text-[36px] font-semibold leading-none tabular-nums text-fg"
-            aria-live="off"
-          >
-            {formatTime(now, { locale, timeZone })}
-          </p>
+    <AppPage variant="narrow" nav={<StaffAttendanceWorkspaceNav />}>
+      <Card padding="lg">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-col gap-1">
+            <p className="text-body text-fg-muted">{formatDayOf(now, locale, timeZone)}</p>
+            <p className="text-kiosk-display text-fg tabular-nums" aria-live="off">
+              {formatTime(now, { locale, timeZone })}
+            </p>
+          </div>
+          {record && <DayStatus status={record.status_code} label={dayLabel(record)} />}
         </div>
 
-        <dl className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1 rounded-sm bg-bg p-3">
-            <dt className="text-[12px] text-fg-muted">{t("arrival")}</dt>
-            <dd className="text-[22px] font-medium tabular-nums">{time(record?.arrival_at)}</dd>
-          </div>
-          <div className="flex flex-col gap-1 rounded-sm bg-bg p-3">
-            <dt className="text-[12px] text-fg-muted">{t("departure")}</dt>
-            <dd className="text-[22px] font-medium tabular-nums">{time(record?.departure_at)}</dd>
-          </div>
-        </dl>
-
-        {record && (
-          <div className="flex flex-wrap items-center gap-2 text-[13px]">
-            {statusToken ? (
-              <StatusBadge status={statusToken} label={statusLabel} />
-            ) : (
-              <span className="text-fg-muted">{statusLabel}</span>
-            )}
-            {record.late_minutes > 0 && (
-              <span className="text-fg-muted">{t("lateBy", { minutes: record.late_minutes })}</span>
-            )}
-          </div>
-        )}
+        <StatGrid className="grid-cols-2 gap-4">
+          <Stat
+            icon={<LogIn />}
+            tone="green"
+            label={t("arrival")}
+            value={<span className="tabular-nums">{time(record?.arrival_at)}</span>}
+            hint={
+              record && record.late_minutes > 0
+                ? t("lateBy", { minutes: record.late_minutes })
+                : undefined
+            }
+          />
+          <Stat
+            icon={<LogOut />}
+            tone="blue"
+            label={t("departure")}
+            value={<span className="tabular-nums">{time(record?.departure_at)}</span>}
+          />
+        </StatGrid>
 
         {record?.status_code === "unscheduled" && (
-          <p className="text-[13px] text-fg-muted">{t("unscheduledHint")}</p>
+          <Alert tone="warning">{t("unscheduledHint")}</Alert>
         )}
-        {record?.status_code === "holiday" && (
-          <p className="text-[13px] text-fg-muted">{t("holidayHint")}</p>
-        )}
+        {holiday && <Alert tone="info">{t("holidayHint")}</Alert>}
 
         {done ? (
-          <Alert
-            title={t("doneTitle")}
-            icon={<CheckCircle2 className="size-4 text-status-present" />}
-          >
-            <p>{t("doneBody")}</p>
+          <Alert tone="success" title={t("doneTitle")}>
+            {t("doneBody")}
           </Alert>
         ) : (
           <Button
-            className="h-16 w-full text-[16px] font-semibold"
-            variant={record?.status_code === "holiday" ? "secondary" : "primary"}
+            size="lg"
+            className="w-full"
+            variant={holiday ? "secondary" : "primary"}
             icon={hasArrival ? <LogOut /> : <LogIn />}
             loading={scan.isPending}
             onClick={handleScan}
@@ -172,54 +176,49 @@ export function SelfCheckInView(): ReactElement {
           </Button>
         )}
 
-        <p className="text-[13px] text-fg-muted">{t("hint")}</p>
-      </section>
+        <p className="text-body-sm text-fg-muted">{t("hint")}</p>
+      </Card>
 
-      <section className="flex w-full max-w-md flex-col gap-2">
-        <h2 className="text-[13px] font-medium text-fg">{t("thisWeek")}</h2>
+      <section className="flex flex-col gap-3">
+        <SectionHeader title={t("thisWeek")} />
         {week.isLoading ? (
-          <Skeleton className="h-32 w-full" aria-busy="true" />
-        ) : week.isError ? null : weekDays.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("thisWeekEmpty")}</p>
+          <SkeletonList rows={WEEK_DAYS} leading={false} />
+        ) : week.isError ? (
+          <QueryError retry={() => week.refetch()} error={week.error} />
+        ) : weekDays.length === 0 ? (
+          <p className="text-body-sm text-fg-muted">{t("thisWeekEmpty")}</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-border rounded-sm border border-border bg-surface">
-            {weekDays.map((day) => {
-              const token = STATUS_TOKEN[day.status_code];
-              const isToday = day.date === today;
-              const dayLabel =
-                day.status_code === "holiday" && day.holiday_name
-                  ? t("holidayWithName", { name: day.holiday_name })
-                  : tStatus(day.status_code);
-              return (
-                <li
-                  key={day.date}
-                  className={cn(
-                    "flex items-center justify-between gap-3 px-4 py-2.5 text-[13px]",
-                    isToday && "bg-bg",
-                  )}
-                >
-                  <div className="flex flex-col">
-                    <span className={cn("text-fg", isToday && "font-medium")}>
-                      {formatDate(new Date(`${day.date}T00:00:00`), {
-                        locale,
-                        timeZone,
-                      })}
-                    </span>
-                    <span className="text-[12px] text-fg-muted tabular-nums">
-                      {time(day.arrival_at)} - {time(day.departure_at)}
-                    </span>
-                  </div>
-                  {token ? (
-                    <StatusBadge status={token} label={dayLabel} />
-                  ) : (
-                    <span className="text-fg-muted">{dayLabel}</span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          <List framed aria-label={t("thisWeek")}>
+            {weekDays.map((day) => (
+              <ListRow
+                key={day.date}
+                selected={day.date === today}
+                title={dayFormat.format(new Date(`${day.date}T12:00:00Z`))}
+                meta={
+                  <span className="tabular-nums">
+                    {t("hoursRange", {
+                      arrival: time(day.arrival_at),
+                      departure: time(day.departure_at),
+                    })}
+                  </span>
+                }
+                trailing={<DayStatus status={day.status_code} label={dayLabel(day)} />}
+              />
+            ))}
+          </List>
         )}
       </section>
-    </div>
+    </AppPage>
   );
+}
+
+/** "Sabtu, 14 November 2026" on the school's calendar. */
+function formatDayOf(instant: Date, locale: Locale, timeZone?: string): string {
+  return new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone,
+  }).format(instant);
 }

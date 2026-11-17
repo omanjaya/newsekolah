@@ -6,8 +6,8 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
-  IconButton,
-  PageHeader,
+  FirstUseEmptyState,
+  RowActionsMenu,
   domainIcons,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -17,38 +17,69 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
-import { QueryError } from "../../../components/query-error";
+import { AppPage } from "../../../components/app-page";
 import { useCan } from "../../../lib/session/session-provider";
 import { type SupervisionCycle, useSupervisionCyclesQuery } from "../api";
 
 import { SupervisionCycleForm } from "./supervision-cycle-form";
 import { SupervisionWorkspaceNav } from "./supervision-workspace-nav";
 
+/**
+ * The supervision cycles of the school, each with its instrument; a row
+ * opens the cycle, where observations are scheduled, filled in and
+ * reported. Creating and editing a cycle (and its instrument) is for
+ * those who manage supervision.
+ */
 export function SupervisionCyclesView(): ReactElement {
   const t = useTranslations("app.supervision.cycles");
   const router = useRouter();
   const canManage = useCan("manage_supervision");
 
-  const { data, isLoading, isError, refetch } = useSupervisionCyclesQuery();
+  const { data, isLoading, isError, error, refetch, isRefetching } = useSupervisionCyclesQuery();
   const [editing, setEditing] = useState<SupervisionCycle | "new" | null>(null);
 
   const items = data?.data ?? [];
+  const startCreate = () => {
+    setEditing("new");
+  };
 
   const columns = useMemo<ColumnDef<SupervisionCycle>[]>(() => {
     const base: ColumnDef<SupervisionCycle>[] = [
-      { accessorKey: "name", header: t("columns.name"), enableSorting: false },
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
+      {
+        id: "instrument",
+        header: t("columns.instrument"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        cell: ({ row }) => row.original.instrument.name,
+      },
       {
         id: "criteria",
         header: t("columns.criteria"),
         enableSorting: false,
-        cell: ({ row }) => row.original.instrument.criteria.length,
+        meta: { align: "end" },
+        cell: ({ row }) => (
+          <span className="tabular-nums">{row.original.instrument.criteria.length}</span>
+        ),
       },
       {
         id: "scale",
         header: t("columns.scale"),
         enableSorting: false,
-        cell: ({ row }) =>
-          `${row.original.instrument.scale_min}–${row.original.instrument.scale_max}`,
+        meta: { align: "end" },
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {t("scaleRange", {
+              min: row.original.instrument.scale_min,
+              max: row.original.instrument.scale_max,
+            })}
+          </span>
+        ),
       },
     ];
     if (!canManage) return base;
@@ -59,42 +90,41 @@ export function SupervisionCyclesView(): ReactElement {
         header: t("columns.actions"),
         enableSorting: false,
         cell: ({ row }) => (
-          <IconButton
-            icon={<Pencil />}
-            aria-label={t("edit")}
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditing(row.original);
-            }}
+          <RowActionsMenu
+            ariaLabel={t("rowActions", { name: row.original.name })}
+            items={[
+              {
+                label: t("edit"),
+                icon: <Pencil />,
+                onClick: () => {
+                  setEditing(row.original);
+                },
+              },
+            ]}
           />
         ),
       },
     ];
   }, [t, canManage]);
 
-  return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the table scrolls its rows internally.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          canManage && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                setEditing("new");
-              }}
-            >
-              {t("add")}
-            </Button>
-          )
-        }
-      />
-      <SupervisionWorkspaceNav />
+  const empty = {
+    icon: <domainIcons.supervision />,
+    title: t("emptyTitle"),
+    description: canManage ? t("emptyBody") : t("emptyBodyReader"),
+  };
 
+  return (
+    <AppPage
+      variant="fit"
+      nav={<SupervisionWorkspaceNav />}
+      primaryAction={
+        canManage ? (
+          <Button icon={<Plus />} onClick={startCreate}>
+            {t("add")}
+          </Button>
+        ) : undefined
+      }
+    >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/supervision/components/supervision-cycles-view:1"
@@ -102,26 +132,21 @@ export function SupervisionCyclesView(): ReactElement {
           data={items}
           columns={columns}
           rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           isLoading={isLoading}
+          error={isError ? error : undefined}
+          onRetry={() => void refetch()}
+          retrying={isRefetching}
           getRowId={(item) => item.id}
           onRowActivate={(item) => {
             router.push(`/supervision/cycles/${item.id}`);
           }}
           fillHeight
           emptyState={
-            isError ? (
-              <QueryError retry={refetch} />
+            canManage ? (
+              <FirstUseEmptyState {...empty} actionLabel={t("add")} onAction={startCreate} />
             ) : (
-              <EmptyState
-                icon={<domainIcons.supervision aria-hidden="true" />}
-                title={t("emptyTitle")}
-                description={t("emptyBody")}
-              />
+              <EmptyState {...empty} />
             )
           }
         />
@@ -135,7 +160,7 @@ export function SupervisionCyclesView(): ReactElement {
       >
         <DialogContent
           title={editing === "new" ? t("form.createTitle") : t("form.editTitle")}
-          className="max-w-2xl"
+          size="lg"
         >
           {editing !== null && (
             <SupervisionCycleForm
@@ -147,6 +172,6 @@ export function SupervisionCyclesView(): ReactElement {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </AppPage>
   );
 }

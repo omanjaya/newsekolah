@@ -81,7 +81,8 @@ describe("BillsListView paging", () => {
         limit: 50,
         offset: 0,
       });
-      await user.click(screen.getByRole("button", { name: "pageNext" }));
+      // The table's own paging footer (the shared UiLabels default).
+      await user.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
 
       expect(mocks.useBillsQuery).toHaveBeenLastCalledWith(expect.anything(), {
         limit: 50,

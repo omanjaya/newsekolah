@@ -11,7 +11,8 @@ import { useRef } from "react";
  * instrument's own `scale_min..scale_max` (an arbitrary integer range per
  * instrument), unlike `AttendanceStatusRadioGroup`, which is fixed to five
  * named statuses -- this only has numbers, so it is its own small
- * component rather than a copy of that one.
+ * component rather than a copy of that one. A radio group: arrow keys,
+ * Home and End move and choose, Tab enters at the chosen score.
  */
 export function ObservationScoreControl({
   min,
@@ -55,7 +56,7 @@ export function ObservationScoreControl({
   }
 
   return (
-    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1.5">
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
       {scores.map((score, index) => {
         const selected = value === score;
         return (
@@ -77,8 +78,11 @@ export function ObservationScoreControl({
               onKeyDown(event, index);
             }}
             className={cn(
-              "flex min-h-11 min-w-11 items-center justify-center rounded-xs border text-[14px] font-semibold tabular-nums transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-              selected ? "border-accent bg-accent text-bg" : "border-border text-fg hover:bg-bg",
+              "flex size-11 items-center justify-center rounded-md border text-body font-semibold tabular-nums motion-press",
+              "disabled:cursor-not-allowed disabled:opacity-50",
+              selected
+                ? "border-accent bg-accent text-accent-fg"
+                : "border-border-strong bg-surface text-fg state-layer",
             )}
           >
             {score}
