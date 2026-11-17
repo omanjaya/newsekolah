@@ -9,18 +9,19 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
-  IconButton,
+  RowActionsMenu,
   SectionHeader,
   domainIcons,
   useToast,
   type DataTableProps,
 } from "@newsekolah/ui";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { clockRange } from "../../schedule/clock-label";
 import {
   type Period,
   useCreatePeriodMutation,
@@ -31,9 +32,17 @@ import {
 
 import { PeriodForm } from "./period-form";
 
-/** The periods of one template as a table, with add, edit and a confirmed delete. */
+/**
+ * The periods of one template as a table, with add, edit and a confirmed
+ * delete. "Tambah jam" sits on the section's title line, and each row's
+ * edit and delete wait behind one labelled menu, as on the other school
+ * tables.
+ */
 export function PeriodTable({ templateId }: { templateId: string }): ReactElement {
   const t = useTranslations("app.school.periods");
+  // The row menu is named as the user list names its own ("Aksi untuk Jam 1").
+  const tRow = useTranslations("app.school.users.actions");
+  const locale = useLocale();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const periods = useTemplatePeriodsQuery(templateId);
@@ -72,7 +81,7 @@ export function PeriodTable({ templateId }: { templateId: string }): ReactElemen
       meta: { card: "subtitle" },
       cell: ({ row }) => (
         <span className="tabular-nums">
-          {row.original.starts_at.slice(0, 5)}-{row.original.ends_at.slice(0, 5)}
+          {clockRange(row.original.starts_at, row.original.ends_at, locale)}
         </span>
       ),
     },
@@ -93,33 +102,49 @@ export function PeriodTable({ templateId }: { templateId: string }): ReactElemen
       header: t("actions"),
       enableSorting: false,
       cell: ({ row }) => (
-        <div className="flex justify-end gap-1">
-          <IconButton
-            size="sm"
-            variant="ghost"
-            icon={<Pencil />}
-            aria-label={t("edit")}
-            onClick={() => {
-              setEditing(row.original);
-            }}
-          />
-          <IconButton
-            size="sm"
-            variant="ghost"
-            icon={<Trash2 />}
-            aria-label={t("delete")}
-            onClick={() => {
-              setPendingDelete(row.original);
-            }}
-          />
-        </div>
+        <RowActionsMenu
+          ariaLabel={tRow("menuFor", { name: row.original.name })}
+          items={[
+            {
+              label: t("edit"),
+              icon: <Pencil />,
+              onClick: () => {
+                setEditing(row.original);
+              },
+            },
+            {
+              label: t("delete"),
+              icon: <Trash2 />,
+              tone: "danger",
+              onClick: () => {
+                setPendingDelete(row.original);
+              },
+            },
+          ]}
+        />
       ),
     },
   ];
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby="periods-title">
-      <SectionHeader titleId="periods-title" title={t("periodsTitle")} count={rows.length} />
+      <SectionHeader
+        titleId="periods-title"
+        title={t("periodsTitle")}
+        count={rows.length}
+        action={
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={<Plus />}
+            onClick={() => {
+              setEditing("new");
+            }}
+          >
+            {t("addPeriod")}
+          </Button>
+        }
+      />
       <DataTable
         mode="local"
         stateKey="features/school/components/periods-view:periods"
@@ -130,17 +155,6 @@ export function PeriodTable({ templateId }: { templateId: string }): ReactElemen
         error={periods.error}
         onRetry={() => void periods.refetch()}
         getRowId={(period) => period.id}
-        toolbarActions={
-          <Button
-            variant="secondary"
-            icon={<Plus />}
-            onClick={() => {
-              setEditing("new");
-            }}
-          >
-            {t("addPeriod")}
-          </Button>
-        }
         emptyState={
           <EmptyState icon={<domainIcons.schedule aria-hidden="true" />} title={t("noPeriods")} />
         }

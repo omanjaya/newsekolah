@@ -171,13 +171,13 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
             }}
           >
             {error && <FormError>{error}</FormError>}
-            <Field label={t("types.name")}>
+            {/* Marked on the label; submitCreate says what is missing, not the browser. */}
+            <Field label={t("types.name")} required>
               <Input
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
                 }}
-                required
               />
             </Field>
             <Field label={t("types.scope")}>
