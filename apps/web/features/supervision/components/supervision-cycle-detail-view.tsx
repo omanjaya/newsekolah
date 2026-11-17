@@ -164,7 +164,11 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
         ) : undefined
       }
       toolbar={
+        // The toolbar is a wrapping row that sizes each child to its
+        // content; the compact stepper's steps share its width, so give it
+        // a width of its own or the labels collapse onto two lines.
         <Stepper
+          className="w-full max-w-lg"
           variant="compact"
           currentIndex={items.length > 0 ? 2 : 1}
           steps={[
