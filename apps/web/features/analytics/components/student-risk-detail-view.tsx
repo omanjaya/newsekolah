@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, TextLink } from "@newsekolah/ui";
+import { Avatar, Button, TextLink } from "@newsekolah/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -35,6 +35,7 @@ export function StudentRiskDetailView({ studentId }: StudentRiskDetailViewProps)
 
   return (
     <AppPage
+      leading={<Avatar name={studentName} size={48} decorative />}
       title={studentName}
       description={<TextLink href={studentProfileHref(studentId)}>{t("openProfile")}</TextLink>}
       primaryAction={
