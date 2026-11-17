@@ -22,11 +22,13 @@ export interface DayStepperProps {
 /**
  * One day at a time: previous, the date (a picker that opens the month),
  * next, and a way back to today once the reader has moved off it. Shared by
- * the attendance day list and the homeroom summary.
+ * the attendance day list and the homeroom summary. On a phone it spans
+ * its row, the picker taking the width the arrows leave; from 640px it
+ * keeps its own size.
  */
 export function DayStepper({ value, onChange, today, labels }: DayStepperProps): ReactElement {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex w-full items-center gap-1.5 sm:w-auto">
       <IconButton
         icon={<ChevronLeft />}
         aria-label={labels.previous}
@@ -44,7 +46,7 @@ export function DayStepper({ value, onChange, today, labels }: DayStepperProps):
         clearable={false}
         formatOptions={{ weekday: "short", day: "numeric", month: "short" }}
         aria-label={labels.date}
-        className="w-40"
+        className="min-w-0 flex-1 sm:w-40 sm:flex-none"
       />
       <IconButton
         icon={<ChevronRight />}
