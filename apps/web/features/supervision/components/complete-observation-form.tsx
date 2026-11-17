@@ -228,20 +228,23 @@ export function CompleteObservationForm({
     >
       <div className="flex flex-col gap-6 pb-28">
         {draftOffer && (
-          <Alert tone="warning" title={t("draftFoundTitle")}>
-            <p>
-              {t("draftFoundBody", {
-                time: formatTime(draftOffer.savedAt, { locale, timeZone }),
-              })}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={restoreDraft}>
-                {t("draftRestore")}
-              </Button>
-              <Button size="sm" variant="secondary" onClick={dismissDraft}>
-                {t("draftDismiss")}
-              </Button>
-            </div>
+          <Alert
+            tone="warning"
+            title={t("draftFoundTitle")}
+            action={
+              <>
+                <Button size="sm" onClick={restoreDraft}>
+                  {t("draftRestore")}
+                </Button>
+                <Button size="sm" variant="secondary" onClick={dismissDraft}>
+                  {t("draftDismiss")}
+                </Button>
+              </>
+            }
+          >
+            {t("draftFoundBody", {
+              time: formatTime(draftOffer.savedAt, { locale, timeZone }),
+            })}
           </Alert>
         )}
 
