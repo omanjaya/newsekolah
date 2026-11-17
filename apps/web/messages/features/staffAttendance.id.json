@@ -39,6 +39,7 @@
     "hoursRange": "{arrival} – {departure}",
     "emptyTitle": "Belum ada jadwal kerja",
     "emptyBody": "Papan ini menampilkan pegawai yang punya jadwal kerja. Atur jadwalnya lebih dulu.",
+    "emptyBodyReadOnly": "Belum ada pegawai dengan jadwal kerja.",
     "openSchedule": "Atur jadwal kerja",
     "manualEntry": "Entri manual",
     "columns": {
