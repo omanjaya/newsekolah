@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  DateTimeField,
   DialogFooter,
   Button,
   Card,
@@ -18,7 +19,6 @@ import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { businessNow } from "../../../lib/simulation/clock";
-import { DateTimeFields } from "../../discipline/components/date-time-fields";
 import {
   type MentorGroupMember,
   type MentorMeetingNote,
@@ -97,7 +97,7 @@ export function MentorMeetingNoteForm({
         }
       }}
     >
-      <DateTimeFields
+      <DateTimeField
         value={metAt}
         onChange={setMetAt}
         dateLabel={t("metDate")}
