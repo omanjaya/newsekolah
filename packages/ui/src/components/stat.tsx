@@ -69,10 +69,15 @@ function hasContent(node: ReactNode): boolean {
 
 // Tile: the artboard's 16px padding, 104px minimum height and radius 20.
 // Compact: one strip cell, the icon pinned left of a value-over-label pair.
+// A cell is never narrower than its figure and label (it grows from its
+// content, never shrinks below it), so a label cannot cross the divider;
+// figures start at the top, so values line up when only some cells carry
+// a hint.
 const ROOT_CLASS: Record<StatAppearance, string> = {
   plain: "flex flex-col",
   tile: "flex min-h-26 flex-col rounded-lg border border-border bg-surface p-4 shadow-1",
-  compact: "relative flex min-w-36 flex-1 flex-col justify-center py-3 pr-5 pl-4",
+  compact:
+    "relative flex min-w-36 flex-[1_0_auto] snap-start flex-col justify-start py-3 pr-5 pl-4",
 };
 
 const VALUE_CLASS: Record<StatAppearance, string> = {
@@ -224,6 +229,9 @@ export function Stat({
   const shown = useDisplayValue(value, countUp, formatValue);
   const interactive = href !== undefined || onClick !== undefined;
   const compact = look === "compact";
+  // A cell of a short strip sits two to a row on a phone: it takes its
+  // column's width and wraps its label instead of growing to it.
+  const paired = compact && grid.pairsOnPhone;
   const hasFooter = hasContent(hint) || delta !== undefined;
 
   return (
@@ -233,6 +241,7 @@ export function Stat({
       className={cn(
         ROOT_CLASS[look],
         compact && Boolean(icon) && "pl-15",
+        paired && "max-sm:min-w-0 max-sm:pr-3",
         // The stretched target is the only focusable element, so the ring
         // goes on the whole stat instead of on the label text.
         interactive &&
@@ -252,11 +261,14 @@ export function Stat({
         className,
       )}
     >
-      {/* A strip cell grows to its label instead of cutting it: the strip scrolls. */}
+      {/* A strip cell grows to its label instead of cutting it: the strip
+          scrolls. A paired cell on a phone wraps it onto a second line. */}
       <Term
         className={cn(
           "order-2 text-fg-muted",
-          compact ? "text-caption whitespace-nowrap" : "text-body-sm",
+          compact
+            ? cn("text-caption", paired ? "sm:whitespace-nowrap" : "whitespace-nowrap")
+            : "text-body-sm",
         )}
       >
         {interactive ? (
@@ -279,7 +291,11 @@ export function Stat({
             size={compact ? "sm" : "md"}
             className={cn(
               !compact && "size-9.5",
-              compact && "absolute top-1/2 left-4 -translate-y-1/2",
+              // Centred on the value-over-label pair (12px padding, then
+              // 22 + 16px of lines around the 32px circle), so it stays
+              // beside the figure when a hint or a wrapped label makes
+              // the cell taller.
+              compact && "absolute top-3.75 left-4",
               // A positioned circle paints above the stretched target and
               // would swallow the click; let it fall through to the target.
               interactive && "pointer-events-none",

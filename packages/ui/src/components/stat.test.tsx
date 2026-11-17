@@ -44,8 +44,8 @@ describe("Stat in a StatGrid", () => {
         <Stat value={1} label="Izin" />
       </StatGrid>,
     );
-    expect(container.querySelector("dl")).toHaveClass("divide-x");
-    expect(container.querySelector("dl > div")).toHaveClass("min-w-36");
+    expect(container.querySelector("dl")).toHaveClass("sm:divide-x");
+    expect(container.querySelector("dl > div")).toHaveClass("min-w-36", "flex-[1_0_auto]");
   });
 });
 
@@ -274,6 +274,56 @@ describe("StatGrid strip", () => {
     expect(group).not.toHaveAttribute("tabindex");
     expect(group.querySelector("dl")).not.toHaveAttribute("aria-label");
     await expectNoAxeViolations(container);
+  });
+
+  // A phone showed the screen edge landing mid-word on the third or fourth
+  // figure with nothing hinting at more. Up to four figures now sit two
+  // to a row there, labels wrapping; a longer strip scrolls behind a fade.
+  it("sets up to four figures two to a row on a phone, labels wrapping", () => {
+    const { container } = render(
+      <StatGrid variant="strip" aria-label="Opname">
+        <Stat value={4} label="Diharapkan" />
+        <Stat value={2} label="Terpindai" />
+        <Stat value={1} label="Hilang" />
+      </StatGrid>,
+    );
+    const list = container.querySelector("dl");
+    expect(list).toHaveClass(
+      "grid",
+      "grid-cols-2",
+      "sm:flex",
+      "max-sm:[&>*:nth-child(even)]:border-l",
+      "max-sm:[&>*:nth-child(n+3)]:border-t",
+      "max-sm:[&>*:last-child:nth-child(odd)]:col-span-2",
+    );
+    expect(list).not.toHaveClass("divide-x");
+    for (const cell of Array.from(container.querySelectorAll("dl > div"))) {
+      expect(cell).toHaveClass("max-sm:min-w-0");
+    }
+    for (const term of screen.getAllByRole("term")) {
+      expect(term).toHaveClass("sm:whitespace-nowrap");
+      expect(term).not.toHaveClass("whitespace-nowrap");
+    }
+  });
+
+  it("scrolls five figures or more in one row behind an edge fade, on its own surface", () => {
+    const { container } = render(
+      <StatGrid variant="strip" aria-label="Rekap">
+        {["Hadir", "Sakit", "Izin", "Alfa", "Terlambat"].map((label, index) => (
+          <Stat key={label} value={index} label={label} />
+        ))}
+      </StatGrid>,
+    );
+    const group = screen.getByRole("group", { name: "Rekap" });
+    expect(group).toHaveClass("overflow-x-auto", "scroll-fade-x", "snap-x");
+    // The border and corners sit on a box of their own, out of the fade's reach.
+    expect(group).not.toHaveClass("border");
+    expect(group.parentElement).toHaveClass("overflow-hidden", "rounded-lg", "border");
+    expect(container.querySelector("dl")).toHaveClass("flex", "w-max", "divide-x");
+    expect(container.querySelector("dl")).not.toHaveClass("grid-cols-2");
+    for (const term of screen.getAllByRole("term")) {
+      expect(term).toHaveClass("whitespace-nowrap");
+    }
   });
 
   it("becomes a tab stop while figures sit past its edge", () => {
