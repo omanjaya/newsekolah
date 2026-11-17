@@ -1,6 +1,6 @@
 "use client";
 
-import { queryKeys } from "@newsekolah/api-client";
+import { queryKeys, type components } from "@newsekolah/api-client";
 import {
   useChangePassword as useChangePasswordBase,
   useLogin as useLoginBase,
@@ -87,6 +87,25 @@ export function useLogoutMutation() {
 }
 
 /**
+ * What a Google or passkey sign-in does with its tokens, the same as
+ * `useLogin` does for a password. No query key names the reader, so what
+ * this tab still holds from someone else (a session that ran out, a logout
+ * whose request failed) would be shown to the account signing in now, and
+ * nothing would read it again: SimulationSync refetches only when the
+ * business clock moves. `me` is seeded from the response, so the route
+ * guard sees the new account at once instead of whichever `me` was cached.
+ */
+function useStartSession(): (data: components["schemas"]["AuthTokens"]) => void {
+  const queryClient = useQueryClient();
+  return (data) => {
+    clearSimulation();
+    setAccessToken(data.access_token);
+    queryClient.clear();
+    queryClient.setQueryData(queryKeys.me(), data.user);
+  };
+}
+
+/**
  * GET /v1/auth/sso/google: whether this tenant has Google sign-in enabled,
  * and the OAuth client id the login screen needs to render the button.
  * Public on purpose (see openapi/modules/identity.yaml) -- called before
@@ -104,13 +123,11 @@ export function useGoogleSSOAvailabilityQuery() {
 /** POST /v1/auth/sso/google: exchanges a verified Google ID token for a session. */
 export function useGoogleLoginMutation() {
   const client = useApiClient();
+  const startSession = useStartSession();
   const mutation = useMutation({
     mutationFn: (idToken: string) =>
       client.POST("/v1/auth/sso/google", { body: { id_token: idToken, client: "web" } }),
-    onSuccess: (data) => {
-      clearSimulation();
-      setAccessToken(data.access_token);
-    },
+    onSuccess: startSession,
     // google-sign-in-button.tsx's onError prop shows a failure inline.
     meta: { errorToast: false },
   });
@@ -127,6 +144,7 @@ export function useGoogleLoginMutation() {
  */
 export function usePasskeyLoginMutation() {
   const client = useApiClient();
+  const startSession = useStartSession();
   const mutation = useMutation({
     mutationFn: async (username: string) => {
       const options = await client.POST("/v1/auth/passkeys/login/options", {
@@ -137,10 +155,7 @@ export function usePasskeyLoginMutation() {
         body: { ceremony_id: options.ceremony_id, credential, client: "web" },
       });
     },
-    onSuccess: (data) => {
-      clearSimulation();
-      setAccessToken(data.access_token);
-    },
+    onSuccess: startSession,
     // passkey-login-button.tsx's onError prop shows a failure inline.
     meta: { errorToast: false },
   });
