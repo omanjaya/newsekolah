@@ -130,6 +130,11 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
           onRegisterRef(refKey, el);
         }}
         id={cellId}
+        // A cell of the score grid, not a form field: it keeps a text draft
+        // while typing, takes a pasted spreadsheet block and hands the arrow
+        // keys to the grid, none of which NumberInput (a number|null field
+        // with steppers) does.
+        // eslint-disable-next-line design-system/no-native-pickers -- grid cell, see above
         type="number"
         inputMode="decimal"
         step="0.1"
