@@ -25,8 +25,16 @@ import { useStudentDisciplineReportMutation } from "../api";
 import { StudentDisciplinePanel } from "./student-discipline-panel";
 import { ViolationRecordForm } from "./violation-record-form";
 
-/** Opens the printable discipline PDF for one student, through `report`. */
-function useOpenReport(): { open: (studentId: string) => void; pending: boolean } {
+/**
+ * Opens the printable discipline PDF for one student in a new tab, with a
+ * toast on failure. A page header passes it as a secondary action
+ * (`{ label, icon: <Printer />, disabled: pending, onSelect: () => open(id) }`),
+ * so on a phone it joins the header's menu instead of a row of its own.
+ */
+export function useOpenStudentDisciplineReport(): {
+  open: (studentId: string) => void;
+  pending: boolean;
+} {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const report = useStudentDisciplineReportMutation();
@@ -49,16 +57,16 @@ function useOpenReport(): { open: (studentId: string) => void; pending: boolean 
 
 /**
  * Opens the printable discipline PDF for one student (reachable only from
- * a student's detail, per the module brief). The student profile header
- * uses it.
+ * a student's detail, per the module brief), at the header buttons' size.
+ * A page header should rather pass `useOpenStudentDisciplineReport` as a
+ * secondary action, which folds into the phone's menu.
  */
 export function StudentDisciplineReportButton({ studentId }: { studentId: string }): ReactElement {
   const t = useTranslations("app.discipline.studentDetail");
-  const report = useOpenReport();
+  const report = useOpenStudentDisciplineReport();
   return (
     <Button
       variant="secondary"
-      size="sm"
       icon={<Printer />}
       loading={report.pending}
       onClick={() => {
@@ -83,7 +91,7 @@ export function StudentDisciplineView({ studentId }: { studentId: string }): Rea
   const studentMap = useDirectoryNames([studentId]);
   const student = studentMap.get(studentId);
   const studentName = student?.name ?? t("unknownStudent");
-  const report = useOpenReport();
+  const report = useOpenStudentDisciplineReport();
   const [recording, setRecording] = useState(false);
 
   const secondaryActions: PageHeaderAction[] = [
