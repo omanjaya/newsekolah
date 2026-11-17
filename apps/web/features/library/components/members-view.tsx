@@ -12,7 +12,6 @@ import {
   EmptyState,
   FilteredEmptyState,
   RowActionsMenu,
-  TextLink,
   selectionColumn,
   useToast,
   type DataTableFilterDef,
@@ -60,6 +59,7 @@ export function MembersView(): ReactElement {
   const t = useTranslations("app.library.members");
   const tMemberCards = useTranslations("app.library.memberCards");
   const locale = useLocale() as Locale;
+  const router = useRouter();
   const toast = useToast();
   const canManage = useCan("manage_library_members");
   const shortcuts = useLibraryShortcuts(["memberTypes", { report: "members" }]);
@@ -132,12 +132,8 @@ export function MembersView(): ReactElement {
             <div className="flex min-w-0 items-center gap-3">
               <Avatar size={32} name={name} decorative />
               <div className="flex min-w-0 flex-col">
-                <TextLink
-                  href={`/library/members/${row.original.user_id}`}
-                  className="truncate font-semibold"
-                >
-                  {name}
-                </TextLink>
+                {/* Body text, as in the other areas' tables: the row opens the member. */}
+                <span className="truncate font-semibold text-fg">{name}</span>
                 <span className="truncate text-caption text-fg-muted">
                   {row.original.member_no}
                 </span>
@@ -289,6 +285,9 @@ export function MembersView(): ReactElement {
           onRowSelectionChange={onSelectionChange}
           bulkActions={<MemberCardPrintAction selectedIds={orderedIds} />}
           getRowId={(item) => item.user_id}
+          onRowActivate={(item) => {
+            router.push(`/library/members/${item.user_id}`);
+          }}
           fillHeight
           emptyState={
             isFiltered ? (
