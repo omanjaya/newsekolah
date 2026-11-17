@@ -7,7 +7,7 @@ import { useScrollEdges } from "../../hooks/use-scroll-edges.js";
 import { cn } from "../../utils/cn.js";
 import { Field, FieldError } from "../field.js";
 import { Input } from "../input.js";
-import { Popover, PopoverContent, PopoverTrigger } from "../popover.js";
+import { ResponsivePopover } from "../responsive-popover.js";
 import { useUiLabels } from "../ui-labels.js";
 
 import {
@@ -267,8 +267,15 @@ function DataTableFilterPill({
       removeLabel={removeLabel}
       onRemove={() => filter.onChange?.("")}
       trigger={
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
+        // A sheet on a phone: a long list from a pill would otherwise hang
+        // down into the tab bar.
+        <ResponsivePopover
+          open={open}
+          onOpenChange={setOpen}
+          title={filter.label}
+          align="start"
+          className="w-56 p-1"
+          trigger={
             <button
               type="button"
               className={cn(
@@ -281,28 +288,29 @@ function DataTableFilterPill({
               {triggerLabel}
               <PillChevron active={active} />
             </button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-56 p-1">
-            <div className="flex flex-col gap-0.5">
-              {(filter.options ?? []).map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className="flex min-h-11 items-center justify-between gap-2 rounded-sm px-3 text-left text-body text-fg transition-colors hover:bg-state-hover focus-visible:bg-state-hover focus-visible:-outline-offset-2 md:pointer-fine:min-h-9"
-                  onClick={() => {
-                    filter.onChange?.(option.value);
-                    setOpen(false);
-                  }}
-                >
-                  {option.label}
-                  {filter.value === option.value && (
-                    <Check className="size-4 text-accent" aria-hidden="true" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
+          }
+        >
+          {/* In the sheet the rows run out to 8px from its edges, their text
+              lined up with the title's. */}
+          <div className="flex flex-col gap-0.5 max-sm:-mx-3">
+            {(filter.options ?? []).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className="flex min-h-11 items-center justify-between gap-2 rounded-sm px-3 text-left text-body text-fg transition-colors hover:bg-state-hover focus-visible:bg-state-hover focus-visible:-outline-offset-2 md:pointer-fine:min-h-9"
+                onClick={() => {
+                  filter.onChange?.(option.value);
+                  setOpen(false);
+                }}
+              >
+                {option.label}
+                {filter.value === option.value && (
+                  <Check className="size-4 text-accent" aria-hidden="true" />
+                )}
+              </button>
+            ))}
+          </div>
+        </ResponsivePopover>
       }
     />
   );
@@ -391,8 +399,13 @@ function DateRangeFilterPill({
       removeLabel={removeLabel}
       onRemove={() => filter.onChangeRange?.({ from: "", to: "" })}
       trigger={
-        <Popover open={open} onOpenChange={handleOpenChange}>
-          <PopoverTrigger asChild>
+        <ResponsivePopover
+          open={open}
+          onOpenChange={handleOpenChange}
+          title={filter.label}
+          align="start"
+          className="w-80 p-3"
+          trigger={
             <button
               type="button"
               className={cn(
@@ -405,69 +418,68 @@ function DateRangeFilterPill({
               {triggerLabel}
               <PillChevron active={active} />
             </button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-80 p-3">
-            <div className="flex flex-col gap-3">
-              {filter.presets && filter.presets.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {filter.presets.map((preset) => {
-                    const presetActive = preset.from === draftFrom && preset.to === draftTo;
-                    return (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        className={cn(
-                          "flex h-11 items-center gap-1 rounded-full border px-3 text-label md:pointer-fine:h-8",
-                          "transition-[color,background-color,border-color,box-shadow]",
-                          // Its own surface stays under the hover layer (state-layer).
-                          presetActive
-                            ? "border-accent bg-accent-soft text-accent-soft-fg"
-                            : "border-border bg-surface text-fg state-layer",
-                        )}
-                        onClick={() => {
-                          commit(preset.from, preset.to);
-                          setOpen(false);
-                        }}
-                      >
-                        {presetActive && <Check className="size-3.5" aria-hidden="true" />}
-                        {preset.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-2">
-                <Field label={fromLabel}>
-                  <Input
-                    type="date"
-                    size="sm"
-                    value={draftFrom}
-                    invalid={invalid}
-                    onChange={(event) => {
-                      commit(event.target.value, draftTo);
-                    }}
-                  />
-                </Field>
-                <Field label={toLabel}>
-                  <Input
-                    type="date"
-                    size="sm"
-                    value={draftTo}
-                    invalid={invalid}
-                    onChange={(event) => {
-                      commit(draftFrom, event.target.value);
-                    }}
-                  />
-                </Field>
+          }
+        >
+          <div className="flex flex-col gap-3">
+            {filter.presets && filter.presets.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {filter.presets.map((preset) => {
+                  const presetActive = preset.from === draftFrom && preset.to === draftTo;
+                  return (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      className={cn(
+                        "flex h-11 items-center gap-1 rounded-full border px-3 text-label md:pointer-fine:h-8",
+                        "transition-[color,background-color,border-color,box-shadow]",
+                        // Its own surface stays under the hover layer (state-layer).
+                        presetActive
+                          ? "border-accent bg-accent-soft text-accent-soft-fg"
+                          : "border-border bg-surface text-fg state-layer",
+                      )}
+                      onClick={() => {
+                        commit(preset.from, preset.to);
+                        setOpen(false);
+                      }}
+                    >
+                      {presetActive && <Check className="size-3.5" aria-hidden="true" />}
+                      {preset.label}
+                    </button>
+                  );
+                })}
               </div>
-              {invalid && (
-                <div role="alert">
-                  <FieldError>{invalidLabel}</FieldError>
-                </div>
-              )}
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <Field label={fromLabel}>
+                <Input
+                  type="date"
+                  size="sm"
+                  value={draftFrom}
+                  invalid={invalid}
+                  onChange={(event) => {
+                    commit(event.target.value, draftTo);
+                  }}
+                />
+              </Field>
+              <Field label={toLabel}>
+                <Input
+                  type="date"
+                  size="sm"
+                  value={draftTo}
+                  invalid={invalid}
+                  onChange={(event) => {
+                    commit(draftFrom, event.target.value);
+                  }}
+                />
+              </Field>
             </div>
-          </PopoverContent>
-        </Popover>
+            {invalid && (
+              <div role="alert">
+                <FieldError>{invalidLabel}</FieldError>
+              </div>
+            )}
+          </div>
+        </ResponsivePopover>
       }
     />
   );
