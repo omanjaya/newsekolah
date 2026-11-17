@@ -76,6 +76,16 @@ export interface DataTableFilterDef {
   onChangeRange?: (range: { from: string; to: string }) => void;
   /** type="dateRange" only: quick picks shown above the two date inputs. */
   presets?: DataTableDateRangePreset[];
+  /**
+   * type="dateRange" only: the page's own period ("YYYY-MM-DD", or "" for
+   * an open bound), e.g. the month so far. At these bounds the range is
+   * not a filter the reader applied: its pill shows the period in the
+   * neutral style with no remove control, and Reset leaves it alone.
+   * Removing or resetting a changed range comes back to them.
+   */
+  defaultFrom?: string;
+  /** type="dateRange" only: see `defaultFrom`. */
+  defaultTo?: string;
   /** type="month" only: the earliest month offered, "YYYY-MM". */
   minMonth?: string;
   /** type="month" only: the latest month offered, "YYYY-MM". */
@@ -125,15 +135,25 @@ export interface DataTableFiltersProps {
   className?: string;
 }
 
-/** Whether the filter narrows the rows (the toolbar's view options read it too). */
+/**
+ * Whether the reader has narrowed the rows with this filter (the toolbar's
+ * view options read it too). A date range at the page's own default
+ * period is not; without `defaultFrom`/`defaultTo` that is an open range.
+ */
 export function isFilterActive(filter: DataTableFilterDef): boolean {
-  if (filter.type === "dateRange") return Boolean(filter.from) || Boolean(filter.to);
+  if (filter.type === "dateRange") {
+    return (
+      (filter.from ?? "") !== (filter.defaultFrom ?? "") ||
+      (filter.to ?? "") !== (filter.defaultTo ?? "")
+    );
+  }
   return (filter.value ?? "") !== "";
 }
 
+/** Back to unfiltered: no value, or a date range's default period. */
 function clearFilter(filter: DataTableFilterDef): void {
   if (filter.type === "dateRange") {
-    filter.onChangeRange?.({ from: "", to: "" });
+    filter.onChangeRange?.({ from: filter.defaultFrom ?? "", to: filter.defaultTo ?? "" });
   } else {
     filter.onChange?.("");
   }
@@ -380,9 +400,12 @@ function DateRangeFilterPill({
     setOpen(next);
   }
 
-  const active = Boolean(committedFrom) || Boolean(committedTo);
+  // A page's default period still reads out on the pill, in the neutral
+  // style: it says which days are shown without claiming a filter is on.
+  const hasRange = Boolean(committedFrom) || Boolean(committedTo);
+  const active = isFilterActive(filter);
   const invalid = draftFrom !== "" && draftTo !== "" && draftFrom > draftTo;
-  const triggerLabel = active
+  const triggerLabel = hasRange
     ? `${filter.label}: ${formatDateRange(committedFrom, committedTo)}`
     : filter.label;
 
@@ -397,7 +420,9 @@ function DateRangeFilterPill({
     <FilterPillShell
       active={active}
       removeLabel={removeLabel}
-      onRemove={() => filter.onChangeRange?.({ from: "", to: "" })}
+      onRemove={() => {
+        clearFilter(filter);
+      }}
       trigger={
         <ResponsivePopover
           open={open}
