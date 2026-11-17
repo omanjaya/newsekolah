@@ -85,7 +85,9 @@ export function ScheduleView(): ReactElement {
   // always came to look at.
   const [selectedDay, setSelectedDay] = useState<{ revision: number; day: number } | null>(null);
   const dayFilter =
-    selectedDay?.revision === revision ? selectedDay.day : todayOfWeek(me?.tenant.timezone);
+    selectedDay !== null && selectedDay.revision === revision
+      ? selectedDay.day
+      : todayOfWeek(me?.tenant.timezone);
   const setDayFilter = (day: number) => {
     setSelectedDay({ revision, day });
   };

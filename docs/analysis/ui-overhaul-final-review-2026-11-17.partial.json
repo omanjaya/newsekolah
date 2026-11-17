@@ -1,0 +1,2399 @@
+{
+  "capturedAt": "2026-11-17",
+  "commit": "4c5005fe",
+  "note": "Partial result of the final visual review: 5 of 15 reviewers had finished when the work was paused. Shot paths are relative to the capture folder, which is not kept in the repository.",
+  "reviews": [
+    {
+      "unit": "shell-auth-public",
+      "score": 8.5,
+      "verdict": "This area is now among the most finished parts of the app. On desktop the shell is calm and consistent: sentence-case navigation, group icons, a clear active marker, an account menu that shows who is signed in with a theme control, and a command palette with recent pages and relevant results. On a phone the sign-in flow (brand band with the form rising over it as a sheet) feels like a native app. The bottom bar, the Menu sheet and the quick-action sheet look deliberate, and dark mode holds up everywhere, including the deep-green brand panel. The public pages (OPAC, title detail, document check, offline) now share one frame with the school's identity, and all state pages (404, 403, offline, invalid link, unknown code) share one pattern. What keeps it from a 10 is a handful of edge details. The tab bar is see-through enough that page text sits faintly under its labels. Sheets clip the top border of their first row, and the Menu's recent-pages strip is clipped at the top and cut mid-word at the screen edge. The centre label outweighs the active tab. A few sibling screens differ in small ways (the 403 and 404 pages, the stacked button heights on the sign-in form).",
+      "best": [
+        "Phone sign-in, forgot-password and invalid-link screens: compact brand band with the form rising as a sheet, Manrope titles, one primary action, consistent in light and dark",
+        "Desktop account menu: identity block (name, username, role, school, school year), a theme segmented control and Keluar set apart",
+        "Command palette: 'Terakhir dibuka' with each page's group on the right, relevant results for 'pre', keyboard hint footer, and the same look in dark mode",
+        "Public frame shared by OPAC, title detail, verification and offline: school brand, Katalog and Masuk in the header, a footer, one column width; OPAC rows show availability at a glance",
+        "State pages now render inside the shell with one pattern: icon circle, title, one sentence, a primary action and a small error code"
+      ],
+      "worst": [
+        "Phone tab bar is 85% opaque: the 'Datang' and 'Pulang' text of the card scrolling under it shows faintly beneath the tab labels, in light and dark",
+        "Sheets clip the top border of their first row (the quick-action tiles show their top edge missing)",
+        "The Menu sheet's recent-pages chips lose their top outline, and the last chip is cut mid-word ('Pengguna d') at the screen edge with no fade",
+        "The centre label 'Aksi cepat' is bolder and darker than the active tab, so on the 404 and 403 pages it reads as the selected tab"
+      ],
+      "coverage": [
+        {
+          "route": "(404)",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "(forbidden)",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 2
+        },
+        {
+          "route": "(shell)",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 27
+        },
+        {
+          "route": "/change-password",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "/forgot-password",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "/login",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "/offline",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "/opac",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 5
+        },
+        {
+          "route": "/opac/[titleId]",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "/reset-password",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "/verify/[code]",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        }
+      ],
+      "findings": [
+        {
+          "id": "shell-auth-public-f01",
+          "route": "(shell)",
+          "role": "admin",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/admin/mobile-light/shell__tab-bar--state.png",
+          "severity": "minor",
+          "category": "phone",
+          "title": "Page text shows through the bottom tab bar under its labels",
+          "description": "On a phone the bottom bar lets the page scrolling under it stay readable. On the home page the 'Datang' and 'Pulang' labels and the dashes of the Presensi kerja card sit faintly behind 'Beranda', 'Tindakan' and 'Pengguna' (y about 1630 to 1645 in the 2x shot). The same happens in dark mode (mobile-dark/shell__tab-bar--state.png). The labels sit on a noisy ground, which makes the bar look unfinished and costs label contrast on every scrolled page.",
+          "cause": "apps/web/components/mobile-tab-bar.tsx:161 gives the bar 'bg-surface/85 backdrop-blur-xl backdrop-saturate-150'. That is 15% see-through, and the blur does not wipe out body-size text this close under the bar.",
+          "fix": "Make the bar opaque: replace 'bg-surface/85 backdrop-blur-xl backdrop-saturate-150' with 'bg-surface'. The 'border-t border-line' hairline already separates it from the page. Update the comment at lines 60-62. If some translucency is wanted, use at least bg-surface/95.",
+          "files": ["apps/web/components/mobile-tab-bar.tsx"],
+          "alsoOn": ["(404)", "(forbidden)", "every (app) route on a phone"]
+        },
+        {
+          "id": "shell-auth-public-f02",
+          "route": "(shell)",
+          "role": "admin",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/admin/mobile-light/shell__quick-actions--state.png",
+          "severity": "minor",
+          "category": "clipping",
+          "title": "Sheet body clips the top edge of its first row",
+          "description": "In the 'Aksi cepat' sheet, the first row of tiles (Pindai QR, Presensi masuk atau pulang) has rounded top corners but no top border between them: the outline is cut straight off at the top of the scroll area (y about 724 in the 2x shot). Every other tile has its full outline, so the first row looks pasted under the header. The same applies in dark mode, and to the focus ring of any first field or control in a Sheet or Dialog body.",
+          "cause": "packages/ui/src/components/overlay-parts.tsx:175-176: OverlayBody is 'overflow-y-auto' and gets no top padding when a header is present (only 'padTop && pt-(--dialog-px)'). Anything drawn outside the first child's box is therefore clipped by the scroll container: the tiles' 'ring-1 ring-border' (apps/web/components/mobile-quick-actions.tsx:42) and focus outlines.",
+          "fix": "In OverlayBody, add 'pt-1' when padTop is false. Take the same 4px off OverlayHeader's 'pb-4' (overlay-parts.tsx:121, change it to 'pb-3') so the header-to-content gap stays 16px. This fixes every Sheet and Dialog at once. A local alternative is to swap 'ring-1 ring-border' for 'border border-border' in QuickActionGrid.",
+          "files": [
+            "packages/ui/src/components/overlay-parts.tsx",
+            "apps/web/components/mobile-quick-actions.tsx"
+          ],
+          "alsoOn": []
+        },
+        {
+          "id": "shell-auth-public-f03",
+          "route": "(shell)",
+          "role": "admin",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/admin/mobile-light/shell__mobile-menu--state.png",
+          "severity": "minor",
+          "category": "clipping",
+          "title": "Menu sheet's recent-pages chips: top outline clipped, last chip cut mid-word",
+          "description": "Under 'Terakhir dibuka' the chips (Perlu tindakan, Laporan, Pengguna dan akses) are missing the top of their pill outline: only the corners and the bottom edge show. The third chip runs off the right edge of the screen as 'Pengguna d', a hard cut with no fade, so it looks clipped rather than scrollable. This is the same in dark mode.",
+          "cause": "apps/web/components/mobile-menu.tsx:157: the strip is '-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 scrollbar-none'. overflow-x-auto also clips vertically, and the chips draw their outline with 'ring-1 ring-border' (line 163) outside their box, with padding only below (pb-1). The strip does not use the shared edge fade.",
+          "fix": "Change 'pb-1' to 'py-1 -my-1' so the ring has room on both sides. Attach a ref to the ul and call useScrollEdges(ref, { axis: 'x' }) from @newsekolah/ui, then add the shared 'scroll-fade-x' utility (packages/ui/src/styles.css:435), as the tab strips and opac-highlights.tsx already do.",
+          "files": ["apps/web/components/mobile-menu.tsx"],
+          "alsoOn": []
+        },
+        {
+          "id": "shell-auth-public-f04",
+          "route": "(shell)",
+          "role": "admin",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/admin/mobile-light/404--fold.png",
+          "severity": "minor",
+          "category": "hierarchy",
+          "title": "Centre action label outweighs the active tab",
+          "description": "The label under the raised centre button ('Aksi cepat' for admin, 'Pindai' for siswa) is semibold near-black: the heaviest, darkest label in the bar. On the home page it competes with the green active 'Beranda'. On the 404 and 403 pages, where no tab is active, it reads as the selected tab. The raised accent circle already makes the centre the loudest element, so its label does not need extra weight.",
+          "cause": "apps/web/components/mobile-tab-slot.tsx:148: CENTRE_SLOT adds 'font-semibold'. Line 171 renders the label 'text-fg' whenever the centre is not current.",
+          "fix": "Give the centre label the same treatment as an inactive tab: drop 'font-semibold' from CENTRE_SLOT and render the label span with slotState(current), which gives 'font-medium text-fg-muted' when idle and 'font-semibold text-accent' when current.",
+          "files": ["apps/web/components/mobile-tab-slot.tsx"],
+          "alsoOn": ["(forbidden)", "(shell)"]
+        },
+        {
+          "id": "shell-auth-public-f05",
+          "route": "(forbidden)",
+          "role": "siswa",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/siswa/desktop-light/forbidden--fold.png",
+          "severity": "polish",
+          "category": "consistency",
+          "title": "403 and 404 state pages differ in position and button icon",
+          "description": "Both pages use StatePage, but on the 404 the primary 'Kembali ke beranda' has a house icon and the block sits 24px lower (icon top y 230 against 206 on the 403). On a phone the 404 buttons are inset, while the 403 buttons run to the 16px gutters. Shown one after the other, the two exits look like they were built separately.",
+          "cause": "apps/web/app/(app)/not-found.tsx wraps StatePage in PageShell and passes icon={<House />}. apps/web/components/forbidden-page.tsx:22-33 renders StatePage without PageShell, and its Button has no icon.",
+          "fix": "In forbidden-page.tsx, wrap the StatePage in <PageShell> and give the Button icon={<House />}, matching (app)/not-found.tsx. Better still, have both use one small shell state wrapper so they cannot drift again.",
+          "files": ["apps/web/components/forbidden-page.tsx"],
+          "alsoOn": ["(404)"]
+        },
+        {
+          "id": "shell-auth-public-f06",
+          "route": "/login",
+          "role": "anon",
+          "viewport": "desktop",
+          "theme": "both",
+          "shot": "shots/anon/desktop-light/login--fold.png",
+          "severity": "polish",
+          "category": "consistency",
+          "title": "Stacked full-width sign-in buttons have different heights",
+          "description": "In the sign-in card on desktop, 'Masuk' is 48px tall and 'Masuk dengan passkey', also full width, is 36px. The second button looks undersized in a narrow column, and the card's bottom half feels uneven.",
+          "cause": "apps/web/features/auth/components/login-form.tsx:144 sets the submit to size='lg'. apps/web/features/auth/components/passkey-login-button.tsx:53-61 leaves the passkey Button at the default md size.",
+          "fix": "Pass size='lg' to the Button in passkey-login-button.tsx, and to the Google button if it takes a size, so the stacked actions share one height. The variant still keeps the primary dominant.",
+          "files": ["apps/web/features/auth/components/passkey-login-button.tsx"],
+          "alsoOn": []
+        },
+        {
+          "id": "shell-auth-public-f07",
+          "route": "(shell)",
+          "role": "admin",
+          "viewport": "desktop",
+          "theme": "both",
+          "shot": "shots/admin/desktop-light/shell__sidebar-rail--state.png",
+          "severity": "polish",
+          "category": "consistency",
+          "title": "Rail group chevrons touch their icons",
+          "description": "In the collapsed rail, the flyout triggers (Akademik, Kesiswaan, Piket dan gerbang, Kepegawaian, Perpustakaan, Data sekolah) carry a small chevron that overlaps the right edge of the 20px icon, most visibly on Kesiswaan's users icon. Those icons also sit off-centre compared with the direct links above the divider.",
+          "cause": "apps/web/components/sidebar-nav.tsx:309-312: the ChevronRight is 'absolute top-1/2 right-0 size-3' inside a 40px button whose icon spans x 10 to 30, so the chevron (x 28 to 40) overlaps it by 2px.",
+          "fix": "Move the chevron clear of the icon and make it lighter, for example '-right-1 size-2.5'. The rail column has 12px of padding to take it.",
+          "files": ["apps/web/components/sidebar-nav.tsx"],
+          "alsoOn": []
+        }
+      ],
+      "baseline": [
+        {
+          "id": "shell-auth-public-01",
+          "status": "resolved",
+          "note": "The account menu opens below the header with its full rounded top edge and is not covered, in light and dark."
+        },
+        {
+          "id": "shell-auth-public-02",
+          "status": "resolved",
+          "note": "'pre' now returns Presensi dan jurnal, Laporan presensi, Prestasi, Presensi pegawai, Presensi saya and Preferensi notifikasi, grouped by area."
+        },
+        {
+          "id": "shell-auth-public-03",
+          "status": "resolved",
+          "note": "Five slots with full labels and a raised centre action; no truncation for admin or siswa. The new issues there are translucency and centre-label weight (f01, f04)."
+        },
+        {
+          "id": "shell-auth-public-04",
+          "status": "resolved",
+          "note": "The brand panel stays deep green with white text in dark mode on desktop and phone."
+        },
+        {
+          "id": "shell-auth-public-05",
+          "status": "resolved",
+          "note": "Dark primary buttons are a bright mint with dark text and match the mint used for links and chips."
+        },
+        {
+          "id": "shell-auth-public-07",
+          "status": "cannot-tell",
+          "note": "Page-level template use is judged by the area units. In this unit the shell gives one content frame and the in-shell 404 uses PageShell."
+        },
+        {
+          "id": "shell-auth-public-08",
+          "status": "cannot-tell",
+          "note": "No workspace pages with sub-navigation are in this unit's shots."
+        },
+        {
+          "id": "shell-auth-public-09",
+          "status": "resolved",
+          "note": "The shortcut row above the greeting is gone. In rail mode the greeting and cards start on one edge (x 88)."
+        },
+        {
+          "id": "shell-auth-public-10",
+          "status": "resolved",
+          "note": "From code: AppPage and the state pages call useDocumentTitle. Tab titles are not visible in the captures."
+        },
+        {
+          "id": "shell-auth-public-11",
+          "status": "resolved",
+          "note": "A wrong address now shows the 404 inside the shell with sidebar, header, a home button, a search button and the code."
+        },
+        {
+          "id": "shell-auth-public-12",
+          "status": "partly",
+          "note": "All state pages share StatePage now. The 403 and 404 still differ in position and button icon (f05)."
+        },
+        {
+          "id": "shell-auth-public-14",
+          "status": "resolved",
+          "note": "Sidebar groups, the rail and the palette use distinct icons. The tab bar's Pengguna (user-cog) no longer clashes with a Profil tab."
+        },
+        {
+          "id": "shell-auth-public-16",
+          "status": "cannot-tell",
+          "note": "No library route is in this unit's shots. The tab bar resolves the owner across the whole menu (activeNavHref), per mobile-tab-bar.tsx:92."
+        },
+        {
+          "id": "shell-auth-public-18",
+          "status": "resolved",
+          "note": "The account menu shows avatar, name, username, role, school and school year above the links; the avatar is accent-soft."
+        },
+        {
+          "id": "shell-auth-public-19",
+          "status": "resolved",
+          "note": "From code: DropdownMenuItem is pointer-coarse:h-11, and the account menu becomes a Sheet on a phone (account-menu.tsx:198)."
+        },
+        {
+          "id": "shell-auth-public-22",
+          "status": "resolved",
+          "note": "From code: dialog-in and dialog-out now animate scale only, so they no longer fight the translate utilities."
+        },
+        {
+          "id": "shell-auth-public-23",
+          "status": "resolved",
+          "note": "Admin gets Tindakan, and siswa gets Jadwal, Pindai and Izin. From code, satpam gets the gate scanner and pustakawan the circulation desk (lib/mobile-navigation.ts)."
+        },
+        {
+          "id": "shell-auth-public-24",
+          "status": "resolved",
+          "note": "The phone header is the brand plus search, bell and avatar as 44px round buttons; the theme toggle has moved to the account menu."
+        },
+        {
+          "id": "shell-auth-public-25",
+          "status": "resolved",
+          "note": "From code: the bell opens a Sheet on a phone. On desktop, 'Tandai semua dibaca' is hidden when nothing is unread, and the title is not repeated."
+        },
+        {
+          "id": "shell-auth-public-26",
+          "status": "resolved",
+          "note": "The Menu sheet has a search field, recents leave out the current page, and stars only show in 'Atur favorit' mode."
+        },
+        {
+          "id": "shell-auth-public-30",
+          "status": "resolved",
+          "note": "'Selamat datang' in the heading font, no marketing bullets, and the school name on the panel; the word 'Masuk' no longer repeats three times."
+        },
+        {
+          "id": "shell-auth-public-34",
+          "status": "resolved",
+          "note": "From code: a failed sign-in uses Alert tone='danger'. The verification and reset states now use a toned icon circle instead of a grey Alert."
+        },
+        {
+          "id": "shell-auth-public-36",
+          "status": "resolved",
+          "note": "OPAC, title detail, verification and offline share one public frame: brand, Katalog and Masuk, footer, and one container width."
+        },
+        {
+          "id": "shell-auth-public-37",
+          "status": "resolved",
+          "note": "One list with a count ('4 judul'), full titles, author and year, availability badges on their own line on a phone, and classification filters."
+        },
+        {
+          "id": "shell-auth-public-40",
+          "status": "resolved",
+          "note": "The unknown-code state is a centred card with an icon, title, next step and the checked code, under the school's header."
+        },
+        {
+          "id": "shell-auth-public-41",
+          "status": "resolved",
+          "note": "Sidebar, Menu sheet and palette labels are sentence case with 'dan' (Perlu tindakan, Tagihan dan pembayaran, Piket dan gerbang)."
+        }
+      ],
+      "apiNeeded": [
+        "The library policy's default name 'Perpustakaan Sekolah' (apps/api/internal/modules/library/domain/policy.go:56) is Title Case and shows as the OPAC eyebrow. The default, or the seed, should be 'Perpustakaan sekolah'.",
+        "OPAC filter chips are built from free-text classification prefixes, so the seeded 'Non-Fiksi' appears as a filter label. A normalized collection category from the API (or a seed spelled 'Nonfiksi') would give a correct label."
+      ]
+    },
+    {
+      "unit": "cross-phone",
+      "score": 6.5,
+      "verdict": "The phone frame is mostly well designed. The bar matches docs/17 for every role, the centre action fits each role's day, the pill and centre-current logic are right, and counts sit on the tab they belong to. Dialogs open as real bottom sheets with a handle and a footer you can always reach, and every full page ends well clear of the raised button. Three visible problems bring it down from the owner's bar. The bar is so translucent that page text shows through between and behind the labels on almost every screen, worst in dark. The home stat strip (and the same strip on attendance and library pages) ends in a sliver or a word cut mid-way. The attendance save bar floats 32px above the tab bar with a strip of page between them. One blocker: the library dashboard is wider than the screen, so on a phone the tab bar is pushed off screen for admin, kepsek and pustakawan. Smaller blemishes: sheet tiles lose their top edge, Menu lights up for pages it does not list, some pages have no eyebrow, and some page starts spend whole rows on a lone button.",
+      "best": [
+        "The centre action is right for every role and matches docs/17 (Pindai for siswa and satpam, QR piket, Presensi pointed at the running session, Sirkulasi, Catat, Tindakan for pimpinan, Aksi cepat for admin). Quick actions and menu destinations are both checked with canOpenPath, so I found no remaining case where it leads to a closed page.",
+        "Bottom sheets are consistent: grab handle, title on the title role, close button, a scrolling body and a footer that stays in reach, padded for the home indicator, in light and dark (users, years, achievements, visits dialogs).",
+        "Content clearance is structural: main pads by --shell-mobile-tab-offset + 16px, and every full-page shot ends 50px or more above the raised button.",
+        "The compact header is calm and aligned: brand mark and name, 44px round search, bell and avatar. It matches the page colour until content scrolls under it, and the bell badge reads well.",
+        "The active pill, the centre's current state and the per-tab badges are all correct, and drag to dismiss has sensible thresholds (30% capped at 160px, fling 0.5px/ms) with reduced motion handled."
+      ],
+      "worst": [
+        "/library (dashboard) is wider than a phone screen: its cards run off the right edge and the fixed tab bar falls out of the visible screen for admin, kepsek and pustakawan.",
+        "The tab bar at bg-surface/85 lets page text show through between and behind the labels on nearly every first screen, worst in dark (ghost text contrast about 1.56:1).",
+        "The phone stat strip ends in a sliver of a third tile or a label cut mid-word ('Izin keluar menungg', '0 Iz', 'Anggota berbeda h') with no fade.",
+        "The attendance save bar sits 32px above the tab bar, leaving a band of page between two pieces of chrome."
+      ],
+      "coverage": [
+        {
+          "route": "role:admin",
+          "desktop": false,
+          "mobile": true,
+          "shotsViewed": 17
+        },
+        {
+          "route": "role:guru",
+          "desktop": false,
+          "mobile": true,
+          "shotsViewed": 7
+        },
+        {
+          "route": "role:gurubk",
+          "desktop": false,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "role:kepsek",
+          "desktop": false,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "role:wakepsek",
+          "desktop": false,
+          "mobile": true,
+          "shotsViewed": 3
+        },
+        {
+          "route": "role:gurupiket",
+          "desktop": false,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "role:satpam",
+          "desktop": false,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "role:pustakawan",
+          "desktop": false,
+          "mobile": true,
+          "shotsViewed": 6
+        },
+        {
+          "route": "role:siswa",
+          "desktop": false,
+          "mobile": true,
+          "shotsViewed": 8
+        },
+        {
+          "route": "role:anon",
+          "desktop": false,
+          "mobile": true,
+          "shotsViewed": 1
+        }
+      ],
+      "findings": [
+        {
+          "id": "cross-phone-01",
+          "route": "/library",
+          "role": "pustakawan",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/pustakawan/mobile-light/library--fold.png",
+          "severity": "blocker",
+          "category": "clipping",
+          "title": "Library dashboard is wider than a phone screen and pushes the tab bar off screen",
+          "description": "From the 'Peminjaman dan pengembalian, 30 hari terakhir' card down, every card is wider than the 390px viewport. Titles are cut ('terakhi'), the empty-state sentence is cut ('pengemba'), the 'Terlambat 3..' badges hang off the right edge, and the 'Lihat semua' links are gone. On a phone a page this wide makes the browser widen its layout viewport, so the fixed bottom bar (bottom: 0) ends up below the visible screen. These are the only signed-in phone shots in the whole capture with no tab bar; I checked all 327 fold shots for the centre button, and the other three without it (/monitor and the two library kiosks) are kiosk pages that never have one. The capture's overflow check missed it because innerWidth grows along with the page.",
+          "cause": "apps/web/features/library/components/library-dashboard-view.tsx:106 `<div className=\"grid items-start gap-6 lg:grid-cols-3\">` has no column template below lg. Its single implicit `auto` track is sized to the widest child's min-content: ListRow titles that do not wrap ('Sapiens: Riwayat Singkat Umat Manusia' plus a badge, dashboard-activity-lists.tsx:115-119). Nothing in the shell stops a page's overflow from widening the phone viewport.",
+          "fix": "1) library-dashboard-view.tsx:106 becomes `grid grid-cols-1 items-start gap-6 lg:grid-cols-3`. grid-cols-1 is repeat(1, minmax(0,1fr)), which caps the track, so the ListRow titles truncate as designed. 2) Guard the shell so one page can never take the bar away again. In apps/web/app/globals.css add `@media (width < 48rem) { #main-content { overflow-x: clip; } }`. clip creates no scroll container, so sticky rows and the save bar still work.",
+          "files": [
+            "apps/web/features/library/components/library-dashboard-view.tsx",
+            "apps/web/app/globals.css"
+          ],
+          "alsoOn": ["admin /library", "kepsek /library"]
+        },
+        {
+          "id": "cross-phone-02",
+          "route": "(shell)",
+          "role": "all",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/siswa/mobile-light/dashboard--fold.png",
+          "severity": "major",
+          "category": "phone",
+          "title": "Tab bar is so translucent that page text reads through its labels",
+          "description": "Confirmed on almost every first screen. Page text behind the bar stays sharp and legible between and behind the labels: 'Perpustakaan' under Beranda/Jadwal and 'Lihat semua' between Izin and Menu (siswa); 'Presensi kerja' under Tindakan and 'Riwayat' under Menu (guru, light and dark); 'Belum ada pengumuman' under Pindai (satpam); 'Minggu, 15 November' under the check-in bar; 'Pilih tahun ajaran' under Aksi cepat. In the captures the backdrop blur did not apply (the text behind is not blurred at all), so the bar's legibility rests entirely on its 85% opacity. That leaves ghost text at about 1.36:1 against the bar in light and 1.56:1 in dark (green 'Riwayat' at 1.35:1), clearly readable. The opaque top header (bg-bg) and the see-through bottom bar also look like two different materials.",
+          "cause": "apps/web/components/mobile-tab-bar.tsx:161 `bg-surface/85 backdrop-blur-xl backdrop-saturate-150` (color-mix of --color-surface at 85%). The bar depends on backdrop-filter for legibility and has no opaque fallback. Where the filter is not applied (as in this capture), 15% of the page shows through unblurred.",
+          "fix": "Preferred: make the bar opaque, matching the opaque header. mobile-tab-bar.tsx:161 becomes `border-t border-line bg-surface`, dropping backdrop-blur and backdrop-saturate. TabBadge's `ring-surface` and the centre's `ring-bg` collar stay correct. If the frosted look is wanted, use `bg-surface/95 backdrop-blur-xl backdrop-saturate-150 not-supports-[backdrop-filter:blur(1px)]:bg-surface`. At 95% the ghost text drops to 1.10:1 (light) and 1.15:1 (dark) even without blur, and to nothing with the 24px --blur-xl. Do not go below 95%.",
+          "files": ["apps/web/components/mobile-tab-bar.tsx"],
+          "alsoOn": [
+            "admin /dashboard",
+            "guru /dashboard",
+            "gurubk /dashboard",
+            "gurupiket /dashboard",
+            "kepsek /dashboard",
+            "wakepsek /dashboard",
+            "pustakawan /dashboard",
+            "satpam /dashboard",
+            "gurupiket /check-in",
+            "wakepsek /check-in",
+            "admin /academic/new-year-setup"
+          ]
+        },
+        {
+          "id": "cross-phone-03",
+          "route": "/dashboard",
+          "role": "gurupiket",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/gurupiket/mobile-light/dashboard--fold.png",
+          "severity": "major",
+          "category": "clipping",
+          "title": "Phone stat strip ends in a sliver or a label cut mid-word, with no fade",
+          "description": "Confirmed and wider than the home. The bordered strip shows two figures and then either a 4-10px sliver of a third tile (admin, kepsek, guru, pustakawan, siswa homes; on siswa an orange icon edge peeks in) or a label cut mid-word at the card's border: 'Izin keluar menungg' (gurupiket home), '0 Iz' (siswa /attendance), 'Anggota berbeda h' (library visits), 'Tersedia' touching the edge (library dashboard). There is no fade and no deliberate peek, so it looks clipped, not scrollable.",
+          "cause": "packages/ui/src/components/stat-grid.tsx:89. The scroller is also the bordered card (`overflow-x-auto ... rounded-lg border border-border bg-surface`), with no scroll-fade-x and no useScrollEdges, so nothing marks the cut edge. stat.tsx:75 sizes compact items `min-w-36 flex-1`, so at 342px two figures fill the row and the third starts exactly at the edge.",
+          "fix": "Split StatStrip into a border box and an inner scroller. Outer: `<div className=\"overflow-hidden rounded-lg border border-border bg-surface shadow-1\">`. Inner, the role=group scroller with the ref: `scrollbar-none overflow-x-auto overscroll-x-contain scroll-fade-x snap-x snap-proximity focus-visible:-outline-offset-2`. Call `useScrollEdges(scrollerRef, { axis: \"x\" })` (packages/ui/src/hooks/use-scroll-edges.ts), so the existing scroll-fade-x utility (styles.css:435) fades the cut side inside the border, not the border itself. Add `snap-start` to the compact class at stat.tsx:75. For the home only, a 2-column grid on phone (variant 'tiles' below md when there are 4 or fewer tiles, dashboard-view.tsx:245-246) would avoid scrolling altogether.",
+          "files": [
+            "packages/ui/src/components/stat-grid.tsx",
+            "packages/ui/src/components/stat.tsx",
+            "apps/web/features/dashboard/components/dashboard-view.tsx"
+          ],
+          "alsoOn": [
+            "admin /dashboard",
+            "kepsek /dashboard",
+            "guru /dashboard",
+            "siswa /dashboard",
+            "pustakawan /dashboard",
+            "siswa /attendance",
+            "admin /library/visits",
+            "pustakawan /library"
+          ]
+        },
+        {
+          "id": "cross-phone-04",
+          "route": "/attendance/[sessionId]",
+          "role": "guru",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/guru/mobile-light/attendance__sessionId--fold.png",
+          "severity": "major",
+          "category": "phone",
+          "title": "Save bar floats 32px above the tab bar with a band of page between",
+          "description": "On the teacher's most used screen, the 'Simpan presensi' bar ends at about y 748 (pt) and the tab bar starts at 780. That leaves a 32px strip of page background between two pieces of chrome, and on a longer roster the content scrolls through that strip. It reads as a floating slab, not a bar docked to the bottom chrome.",
+          "cause": "packages/ui/src/components/sticky-save-bar.tsx:88 puts the bar at `bottom-[var(--shell-mobile-tab-offset)]`. That offset includes --shell-mobile-tab-raise (32px, the centre button's overhang, globals.css:83-86), which only matters in the middle 56px. A sticky form row does the same: globals.css:174-179 `bottom: var(--shell-mobile-tab-offset)`.",
+          "fix": "Dock the bar on the tab bar and let the raise become its own bottom padding. Then the centre button's overhang lands on the save bar's empty padding, not on the page. StickySaveBar classes: `bottom-[calc(var(--shell-mobile-tab-bar,0px)+env(safe-area-inset-bottom))] pb-[calc(var(--space-3)+var(--shell-mobile-tab-raise,0px))] md:bottom-0 md:pb-3` in place of the current bottom and py-3 bottom. The tab bar comes later in the DOM at the same z-sticky, so the button paints over the padding. Apply the same change to globals.css:176-177: `bottom: calc(var(--shell-mobile-tab-bar) + env(safe-area-inset-bottom)); padding-bottom: calc(var(--space-3) + var(--shell-mobile-tab-raise));`.",
+          "files": ["packages/ui/src/components/sticky-save-bar.tsx", "apps/web/app/globals.css"],
+          "alsoOn": [
+            "settings pages with a save bar",
+            "profile edit",
+            "gradebook (while dirty)",
+            "supervision observation form",
+            "any FormActions sticky on a phone"
+          ]
+        },
+        {
+          "id": "cross-phone-05",
+          "route": "(shell)",
+          "role": "admin",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/admin/mobile-light/shell__quick-actions--state.png",
+          "severity": "minor",
+          "category": "clipping",
+          "title": "Sheet tiles and recent chips lose their top edge; the recent chip row ends mid-word",
+          "description": "In the 'Aksi cepat' sheet the first row of tiles ('Pindai QR', 'Presensi masuk atau pulang') has rounded corners but no top border line, so the tiles look sliced, in light and dark. In the Menu sheet the 'Terakhir dibuka' chips lose their top edge the same way. Their row also ends in 'Pengguna c' at the screen edge with no fade.",
+          "cause": "Both draw their outline as `ring-1 ring-border`, a box-shadow outside the box. Any overflow container clips it. The tiles (apps/web/components/mobile-quick-actions.tsx:43) sit flush at the top of the sheet's `.dialog-body` (overflow-y-auto, overlay-parts.tsx:175, no top padding under a header). The chips (mobile-menu.tsx:163) sit in `ul ... overflow-x-auto` (mobile-menu.tsx:157), which also clips y and has no scroll-fade-x.",
+          "fix": "Swap the outside ring for an inside border: `border border-border` in place of `ring-1 ring-border` on the QuickActionGrid link (mobile-quick-actions.tsx:43) and on the recent chip (mobile-menu.tsx:163). Give the chip row a fade: add `scroll-fade-x` to the ul at mobile-menu.tsx:157 and call `useScrollEdges(ref, { axis: \"x\" })` on it. The -mx-5 px-5 bleed can stay.",
+          "files": [
+            "apps/web/components/mobile-quick-actions.tsx",
+            "apps/web/components/mobile-menu.tsx"
+          ],
+          "alsoOn": ["admin (shell) mobile-menu light and dark", "admin (shell) quick-actions dark"]
+        },
+        {
+          "id": "cross-phone-06",
+          "route": "/check-in",
+          "role": "gurupiket",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/gurupiket/mobile-light/check-in--fold.png",
+          "severity": "minor",
+          "category": "consistency",
+          "title": "Menu lights up on pages the Menu sheet does not list",
+          "description": "On 'Presensi saya' (/check-in, reached from the avatar menu) the Menu tab carries the active pill, but opening Menu shows no 'Presensi saya' entry and nothing highlighted, so the bar claims a location it cannot show. The same happens on the student's 'Pindai masuk kelas' (/classroom-entry): Menu is lit while the centre is 'Pindai'. The home hero sends students to /classroom-entry, but the centre opens /scan, which scan-view.tsx:33 calls 'the one scanner for everyone', so a student gets two scanner pages for one task.",
+          "cause": "apps/web/components/mobile-tab-bar.tsx:96-97 sets `inMenu` for any active entry that is neither a tab nor the centre. That includes items consolidateNavigation marks `sidebarPlacement: \"hidden\"` (account-menu pages and classroom-entry, lib/navigation-workspaces.ts:311-314), which MobileMenu filters out (mobile-menu.tsx:71).",
+          "fix": "Light Menu only for entries Menu actually lists. `const activeItem = items.find((item) => item.href === activeHref); const inMenu = activeItem !== undefined && activeItem.sidebarPlacement !== \"hidden\" && !centreCurrent && !tabs.includes(activeItem);`. Then account pages light nothing, as siswa /announcements already does. For the student, point the hero's 'Pindai masuk kelas' at /scan (the centre's page), or make the centre current on /classroom-entry, so the scanner has one home.",
+          "files": [
+            "apps/web/components/mobile-tab-bar.tsx",
+            "apps/web/features/dashboard/components/dashboard-view.tsx"
+          ],
+          "alsoOn": [
+            "gurubk /check-in",
+            "wakepsek /check-in",
+            "kepsek /check-in",
+            "pustakawan /check-in",
+            "satpam /check-in",
+            "siswa /classroom-entry"
+          ]
+        },
+        {
+          "id": "cross-phone-07",
+          "route": "/announcements",
+          "role": "satpam",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/satpam/mobile-light/announcements--fold.png",
+          "severity": "minor",
+          "category": "consistency",
+          "title": "Pages without a menu group have no eyebrow, so their title sits higher",
+          "description": "'Pengumuman' and 'Perlu tindakan' open with a bare h1 at about y 87 (pt). Every sibling page has an eyebrow ('Akademik', 'Kepegawaian', 'Data sekolah', 'Piket') and its title at about y 108. Moving between Menu pages makes the title jump by one line, and these pages break the template's 'h1 with an eyebrow'.",
+          "cause": "apps/web/components/app-page.tsx:132-135 takes the eyebrow only from `context.groupKey`. lib/navigation/page-context.ts:74 finds no group for entries without one (announcements at lib/navigation.ts:486-491, and the inbox), and neither view passes `eyebrow`.",
+          "fix": "Give the ungrouped daily entries an eyebrow. Either add `group: GROUP.communication` to the announcements registry entry and a group to the inbox entry, if the consolidated menu keeps them in the top list regardless. Or pass `eyebrow={t(\"nav.groups.communication\")}` (and a matching key for the inbox, for example 'Kerja harian') from the two views' AppPage.",
+          "files": [
+            "apps/web/components/app-page.tsx",
+            "apps/web/lib/navigation/page-context.ts",
+            "apps/web/lib/navigation.ts"
+          ],
+          "alsoOn": [
+            "gurubk /announcements",
+            "siswa /announcements",
+            "guru /announcements",
+            "wakepsek /announcements",
+            "gurupiket /announcements",
+            "pustakawan /inbox"
+          ]
+        },
+        {
+          "id": "cross-phone-08",
+          "route": "/academic/years",
+          "role": "admin",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/admin/mobile-light/academic__years--fold.png",
+          "severity": "minor",
+          "category": "hierarchy",
+          "title": "On a phone the table's '...' button takes a whole row of its own when there is no search box",
+          "description": "On Tahun ajaran the toolbar shows a lone '...' at the right of an otherwise empty 44px row, then the filter chip on its own row. With the 4-line description, the primary button row and the tabs, the only card starts at y 460 of 844, more than half the first screen. The library visits page has the same lone '...' row above its date-range filter chip.",
+          "cause": "packages/ui/src/components/data-table/data-table-toolbar.tsx:244-261. Filters are `order-4 basis-full` on a phone, and the view-options group is `order-2 ml-auto`. Without a search box (showSearch false), nothing shares the overflow menu's row.",
+          "fix": "When there is no search box, put the pills beside the overflow menu on a phone. Change the DataTableFilters className at line 248 to `cn(\"order-4 basis-full md:order-2 md:min-w-48 md:flex-1 md:basis-0\", !showSearch && \"max-md:order-1 max-md:min-w-0 max-md:flex-1 max-md:basis-0\")`. The '...' (order-2) then ends the chip row.",
+          "files": ["packages/ui/src/components/data-table/data-table-toolbar.tsx"],
+          "alsoOn": ["admin /library/visits"]
+        },
+        {
+          "id": "cross-phone-09",
+          "route": "/announcements",
+          "role": "gurubk",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/gurubk/mobile-light/announcements--fold.png",
+          "severity": "minor",
+          "category": "hierarchy",
+          "title": "The primary action takes a whole row under the title on a phone",
+          "description": "'Buat pengumuman', 'Tambah tahun ajaran', 'Catat prestasi' and 'Catat kunjungan' each sit alone on a 44px row, half its width, between the title and the tabs. The right half is empty, and the page head grows by about 56px before any content. Meanwhile the secondary '...' already sits neatly at the end of the title line. A phone app puts its one add action in the title line.",
+          "cause": "packages/ui/src/components/page-header.tsx:248-255. On a phone `primaryAction` always goes in the actions row under the heading block (`phoneActions`), while the overflow menu is placed in the heading grid's trailing column (lines 229-234).",
+          "fix": "Add an optional compact form of the primary action to PageHeader and AppPage, for example `primaryActionCompact?: { icon: ReactNode; label: string; onSelect?: () => void; href?: string }`. Below sm, render it in the heading grid's trailing column as a 44px accent IconButton (`aria-label` = label, beside the overflow button). From sm up, keep the full button. When there are no free-form `actions`, the phone actions row then disappears. Adopt it on list pages whose primary is Tambah/Buat/Catat.",
+          "files": [
+            "packages/ui/src/components/page-header.tsx",
+            "apps/web/components/app-page.tsx"
+          ],
+          "alsoOn": [
+            "satpam /announcements",
+            "admin /academic/years",
+            "admin /activities/achievements",
+            "admin /library/visits"
+          ]
+        },
+        {
+          "id": "cross-phone-10",
+          "route": "(shell)",
+          "role": "all",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/admin/mobile-light/shell__mobile-menu--state.png",
+          "severity": "minor",
+          "category": "interaction",
+          "title": "Drag to dismiss can swallow the first upward scroll of a sheet at its top",
+          "description": "This is a risk read from the code; a still image cannot show it. In the long Menu sheet (or any sheet) scrolled to its top, a swipe up that starts with a 0-2px downward jitter can stall, because the first touchmove is cancelled. iOS Safari and Chrome then do not scroll for that touch, and the reader has to swipe again. Thresholds (30% of height capped at 160px, a 0.5px/ms flick after 24px), scroll lock (Radix) and reduced motion (snap back; a dismissed sheet fades where it is) are otherwise sound.",
+          "cause": "packages/ui/src/components/overlay-drag.ts:203-213. While deciding, any touchmove with dy >= 0 and |dx| <= |dy| on a body scrolled to the top calls `event.preventDefault()` (line 212), including dy = 0 and moves still under the 8px slop. Cancelling the first touchmove of a sequence cancels native scrolling for the whole gesture.",
+          "fix": "For touches that start in the body (`start.body` set), do not cancel before the gesture is clearly a downward drag. Return without preventDefault while `dy < SHEET_DRAG.slop` or `dy <= Math.abs(dx)`, and only then claim it (preventDefault and dragging = true). Keep the current early preventDefault only for touches on the handle and header (`start.body === null`). At the top of the body, OverlayBody's `overscroll-contain` already keeps those few pixels from moving the page behind.",
+          "files": ["packages/ui/src/components/overlay-drag.ts"],
+          "alsoOn": ["every Dialog and Sheet on a phone"]
+        },
+        {
+          "id": "cross-phone-11",
+          "route": "(shell)",
+          "role": "all",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/admin/mobile-light/shell__tab-bar--state.png",
+          "severity": "polish",
+          "category": "phone",
+          "title": "A long school name is cut to about 17 characters in the compact header",
+          "description": "The brand cell gets about 160px at 390 wide (130px at 360) beside the three 44px buttons. A real name such as 'SMA Negeri 1 Contoh Kabupaten' becomes 'SMA Negeri 1 Cont…'. The demo name 'SMA Contoh' fits, so the screens do not show it, but most real schools will hit it.",
+          "cause": "apps/web/components/header.tsx:71-79. PhoneBrand shows the full `displayName` (branding.name) on one truncated line. The tenant branding already has a `short_name` (used by the manifest, app/manifest.webmanifest/route.ts:28).",
+          "fix": "In PhoneBrand use the short name on the phone: read `branding?.short_name ?? displayName` from useTenant() (expose `shortName` from tenant-provider.tsx next to displayName), and keep `truncate` as the last resort.",
+          "files": ["apps/web/components/header.tsx", "apps/web/lib/tenant/tenant-provider.tsx"],
+          "alsoOn": []
+        }
+      ],
+      "baseline": [],
+      "apiNeeded": []
+    },
+    {
+      "unit": "akademik",
+      "score": 7,
+      "verdict": "This area improved a lot and now mostly looks like one product. Every route sits on the AppPage template. The session editor is the strongest screen: two-line header, joined H/S/I/D/A control, compact sticky counts, first student at about 335px on a phone. The gradebook now opens with the sheet, the phone schedule is a clean time-led agenda with a real bottom-sheet form, and /my-grades with its KKTP meter is what the bar asks for. Dark mode holds up on attendance, grading and schedule. What drops it from 8 to 7 is one shared regression and a group of hierarchy slips. On a phone, the summary strip (StatGrid strip) cuts its third figure in half at the screen edge on four screens, with no fade, where the old 2x2 tiles showed every figure. The journal leaves an empty 22rem column on desktop for anyone without a backlog, shows a full-width \"Unduh\" bar above search on a phone, and repeats its primary \"Jurnal baru\" inside the empty state (substitutions does the same with \"Minta pengganti\"). The copy is also uneven: times read \"07:00-07:45\" in the grid but \"07.00 – 23.59\" everywhere else, homeroom says \"Alpa\" where the rest of the area says \"Alpha\", and the student calendar's \"Belum lengkap\" dot is grey while its badge is orange.",
+      "best": [
+        "/attendance/[sessionId] on desktop and phone: two-line header, joined status control, compact sticky counts, save bar aligned to the gutter, first student well above the fold",
+        "/my-grades (siswa): large score with a KKTP meter, Indonesian decimal comma, calm card grid",
+        "/schedule on a phone: one-row week picker, time-led lesson cards, the 'Tambah jadwal' form as a proper bottom sheet with its buttons visible",
+        "/grading (guru desktop): sheet first, one summary strip, visible 'Tambah komponen', publish state in one place",
+        "Role-aware empty states on /grading (kepsek, gurupiket) and /schedule (gurubk) that explain and offer a next step"
+      ],
+      "worst": [
+        "Phone summary strips (/attendance siswa, /grading guru, /homeroom guru, /my-grades siswa) cut the third figure in half at the right edge with no fade",
+        "/journal desktop for admin, kepsek, gurubk and gurupiket: the table stops at about 1040px with an empty 22rem rail column beside it",
+        "/journal and /substitutions: the same primary action twice on one screen (header and empty state)",
+        "/journal on a phone: a full-width secondary 'Unduh' bar is the first content under the tabs, and the toolbar takes three rows",
+        "Mixed time formats on one screen in /schedule ('13:45-18:00' pill and grid, '07.00 / 23.59' card, 'Jam 1 (07:00)' form)"
+      ],
+      "coverage": [
+        {
+          "route": "/attendance",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 14
+        },
+        {
+          "route": "/attendance/[sessionId]",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "/attendance/reports",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 6
+        },
+        {
+          "route": "/classroom-entry",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "/grading",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 12
+        },
+        {
+          "route": "/homeroom",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 5
+        },
+        {
+          "route": "/journal",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 8
+        },
+        {
+          "route": "/my-grades",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "/schedule",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 13
+        },
+        {
+          "route": "/schedule/bulk",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 2
+        },
+        {
+          "route": "/substitutions",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        }
+      ],
+      "findings": [
+        {
+          "id": "akademik-01",
+          "route": "/attendance",
+          "role": "siswa",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/siswa/mobile-light/attendance--full.png",
+          "severity": "major",
+          "category": "clipping",
+          "title": "Phone summary strip cuts its third figure in half at the screen edge",
+          "description": "At 390px the StatGrid strip shows two figures and then a third cut mid-word at the card's right edge, with no fade, peek padding or other hint that it scrolls. On /attendance (siswa) the third figure reads '0 Iz'; on /grading (guru) only the third tile's check icon shows; on /homeroom (guru) only the 'Belum lengkap' icon; on /my-grades (siswa) '1 N...'. Before the overhaul these were 2x2 tiles and every figure was visible, so on a phone this is a regression.",
+          "cause": "packages/ui/src/components/stat-grid.tsx:82-93: StatStrip is `scrollbar-none overflow-x-auto` with the border and surface on the scroller itself, and the dl is `flex w-max min-w-full` while each compact Stat has `min-w-36` (stat.tsx:75). Four or five 144px+ items overflow a 358px phone width, and the strip does not use the `scroll-fade-x` + useScrollEdges treatment that tab-styles.tsx:43 uses.",
+          "fix": "Below sm, lay the strip out as a two-column grid so up to four figures all show: dl className `grid grid-cols-2 sm:flex sm:w-max sm:min-w-full sm:divide-x sm:divide-line`, and give compact Stats `max-sm:[&:nth-child(odd)]:border-r max-sm:[&:nth-child(-n+2)]:border-b border-line max-sm:min-w-0`. Keep the sideways scroll from sm up only. If a strip has five or more figures, move the border and surface to an outer div and put `scroll-fade-x` with useScrollEdges on an inner scroller, like the tabs do.",
+          "files": [
+            "packages/ui/src/components/stat-grid.tsx",
+            "packages/ui/src/components/stat.tsx"
+          ],
+          "alsoOn": ["/grading", "/homeroom", "/my-grades"]
+        },
+        {
+          "id": "akademik-02",
+          "route": "/journal",
+          "role": "admin",
+          "viewport": "desktop",
+          "theme": "both",
+          "shot": "shots/admin/desktop-light/journal--fold.png",
+          "severity": "major",
+          "category": "hierarchy",
+          "title": "Journal history stops at 2/3 width with an empty rail column beside it",
+          "description": "For any reader without a 'Perlu diisi' backlog (admin, kepsek, gurubk, gurupiket), the search, filters, Unduh, density and column icons and the table all end at about x=1040. The right 22rem of the page stays blank, so the page looks broken or still loading.",
+          "cause": "apps/web/features/journal/components/journal-view.tsx:243 always applies `lg:grid-cols-[minmax(0,1fr)_22rem]`, but JournalTodayPanel returns null when there is no backlog (journal-today-panel.tsx:189), so the second track is reserved and empty.",
+          "fix": "Reserve the rail only when it renders. Give the panel's Card, Alert and Skeleton a `data-journal-rail` attribute, and change line 243 to `... lg:grid lg:grid-cols-[minmax(0,1fr)] lg:has-[[data-journal-rail]]:grid-cols-[minmax(0,1fr)_22rem] lg:grid-rows-[minmax(0,1fr)]`.",
+          "files": [
+            "apps/web/features/journal/components/journal-view.tsx",
+            "apps/web/features/journal/components/journal-today-panel.tsx"
+          ],
+          "alsoOn": ["/journal (kepsek, gurubk, gurupiket)"]
+        },
+        {
+          "id": "akademik-03",
+          "route": "/journal",
+          "role": "guru",
+          "viewport": "both",
+          "theme": "both",
+          "shot": "shots/guru/desktop-light/journal--fold.png",
+          "severity": "major",
+          "category": "hierarchy",
+          "title": "Two identical primary buttons on one screen (header and empty state)",
+          "description": "/journal shows a filled 'Jurnal baru' in the page header and another filled 'Jurnal baru' in the table's empty state, on desktop and phone, for every role. /substitutions does the same with 'Minta pengganti'. There, the empty-state button also sits under the 'Untuk saya' (incoming) tab, where creating an outgoing request is not the next step.",
+          "cause": "apps/web/features/journal/components/journal-view.tsx:283-292 passes a default (primary) Button as the EmptyState action while lines 223-232 already set the same primaryAction. apps/web/features/substitutions/components/substitutions-view.tsx:131-136 reuses `requestButton`, the header primary from line 109, as the empty-state action for both directions.",
+          "fix": "Keep one primary per screen. In journal-view.tsx drop the EmptyState `action`, or make it `variant=\"secondary\"`. In substitutions-view.tsx pass `action={direction === \"outgoing\" ? <Button variant=\"secondary\" ...>{t(\"request\")}</Button> : undefined}`.",
+          "files": [
+            "apps/web/features/journal/components/journal-view.tsx",
+            "apps/web/features/substitutions/components/substitutions-view.tsx"
+          ],
+          "alsoOn": ["/substitutions"]
+        },
+        {
+          "id": "akademik-04",
+          "route": "/journal",
+          "role": "admin",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/admin/mobile-light/journal--fold.png",
+          "severity": "major",
+          "category": "phone",
+          "title": "Journal phone toolbar leads with a full-width 'Unduh' bar and takes three rows",
+          "description": "Under the tabs, the first content is a full-width outline 'Unduh' button. The search with a '...' button follows on row two and the Kelas/Tanggal pills on row three, about 300px of controls. A secondary download carries more visual weight than search and the data. The header's 'Jurnal baru' also sits on its own row, so on admin, kepsek and gurupiket the empty table starts at about 450px.",
+          "cause": "journal-view.tsx:270 passes the download menu as DataTable `toolbarActions`, and packages/ui/src/components/data-table/data-table-toolbar.tsx:254-258 puts toolbar actions in a full-width first row on phones (`order-0 basis-full [&>*]:flex-1`). That layout is meant for primary table actions, not exports.",
+          "fix": "Move the downloads out of the table toolbar into AppPage `secondaryActions` (the header's overflow menu on a phone, an outline button on desktop), as /attendance does with its secondary links. The phone toolbar is then search + '...' on one row with the filter pills under it.",
+          "files": ["apps/web/features/journal/components/journal-view.tsx"],
+          "alsoOn": ["/journal (guru, gurubk, gurupiket, kepsek on phone)"]
+        },
+        {
+          "id": "akademik-05",
+          "route": "/schedule",
+          "role": "admin",
+          "viewport": "both",
+          "theme": "both",
+          "shot": "shots/admin/mobile-light/schedule--fold.png",
+          "severity": "minor",
+          "category": "copy",
+          "title": "Times written two ways, sometimes on the same screen",
+          "description": "On the phone schedule, the current-period pill reads 'Jam 9 13:45-18:00' (colon, hyphen) while the lesson card below reads '07.00 / 23.59' (dot). The desktop grid's period column uses '07:00-07:45', the 'Tambah jadwal' form shows 'Jam 1 (07:00)', and /attendance and the session header use '07.00 – 23.59' (dot, spaced en dash). The same form also uses a bare 'Pilih' placeholder for Mata pelajaran and Guru.",
+          "cause": "apps/web/features/schedule/period-span.ts:17-19 formatPeriodTime returns `HH:MM-HH:MM`, used by schedule-current-period-pill.tsx:37 and schedule-grid-cells.tsx:138. schedule-form.tsx:104 builds `${p.name} (${p.starts_at.slice(0, 5)})`. Neither goes through clockLabel/clockRange (features/schedule/clock-label.ts), which the rest of the area uses.",
+          "fix": "Make formatPeriodTime take `locale` and return `clockRange(period.starts_at, period.ends_at, locale)`, then pass useLocale() at both call sites. In schedule-form.tsx use `${p.name} (${clockLabel(p.starts_at, locale)})`. Replace the generic `t(\"pick\")` placeholders (schedule-form.tsx:168,177) with 'Pilih mata pelajaran' and 'Pilih guru'.",
+          "files": [
+            "apps/web/features/schedule/period-span.ts",
+            "apps/web/features/schedule/components/schedule-current-period-pill.tsx",
+            "apps/web/features/schedule/components/schedule-grid-cells.tsx",
+            "apps/web/features/schedule/components/schedule-form.tsx"
+          ],
+          "alsoOn": ["/attendance", "/attendance/[sessionId]"]
+        },
+        {
+          "id": "akademik-06",
+          "route": "/homeroom",
+          "role": "guru",
+          "viewport": "both",
+          "theme": "both",
+          "shot": "shots/guru/desktop-light/homeroom--fold.png",
+          "severity": "minor",
+          "category": "copy",
+          "title": "Homeroom says 'Alpa', the rest of the area says 'Alpha'",
+          "description": "The homeroom hero reads '0 alpa · 2 presensi belum lengkap' and its figure strip labels the tile 'Alpa'. The session editor's status control, the student calendar tile, the report tables and the monitor all say 'Alpha'. A homeroom teacher moving between the two tabs sees two spellings of the same status.",
+          "cause": "apps/web/messages/id.json:1281 `app.homeroom.statAbsent: \"Alpa\"` and :1332 `app.homeroom.attentionBreakdown: \"{absent} alpa · ...\"`, against 'Alpha' at id.json:1157/1167/1184/1305 and in attendanceReports.id.json and monitor.id.json.",
+          "fix": "Change the two homeroom strings to 'Alpha' and '{absent} alpha · {incomplete} presensi belum lengkap', and add 'Alpa' to the voice test's banned spellings so it cannot come back.",
+          "files": ["apps/web/messages/id.json", "apps/web/lib/i18n/messages-voice.test.ts"],
+          "alsoOn": []
+        },
+        {
+          "id": "akademik-07",
+          "route": "/attendance",
+          "role": "siswa",
+          "viewport": "both",
+          "theme": "both",
+          "shot": "shots/siswa/desktop-light/attendance--fold.png",
+          "severity": "minor",
+          "category": "consistency",
+          "title": "'Belum lengkap' is a grey dot in the calendar but an orange badge in the day card",
+          "description": "In 'Presensi saya' every past day has a grey dot and the legend reads '● Belum lengkap 17' in grey, while the detail card beside it shows the same status as an orange '● Belum lengkap' badge. Homeroom also shows it orange. This mismatch was already reported before the overhaul (akademik-31) and is still visible.",
+          "cause": "apps/web/features/attendance/components/attendance-calendar.tsx:48 `INCOMPLETE: \"bg-fg-muted/40\"`, while the detail badge goes through statusToken, and apps/web/lib/attendance-status.ts:24 maps INCOMPLETE to \"late\" (amber). The comment at lines 131-132 claims they agree, but they do not.",
+          "fix": "Set `INCOMPLETE: \"bg-status-late\"` in STATUS_DOT_CLASS (line 48) so dot, legend and badge share the amber token, and update the stale comment.",
+          "files": ["apps/web/features/attendance/components/attendance-calendar.tsx"],
+          "alsoOn": []
+        },
+        {
+          "id": "akademik-08",
+          "route": "/attendance/reports",
+          "role": "guru",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/guru/desktop-light/attendance__reports--fold.png",
+          "severity": "minor",
+          "category": "consistency",
+          "title": "Report tab renames the page for teachers, and /attendance duplicates the tab",
+          "description": "A teacher now has the 'Laporan presensi' area tab, but selecting it changes the h1 from 'Presensi dan jurnal' to 'Laporan presensi saya'. Its sibling tabs and the same tab for gurubk and admin keep the area title. On /attendance the header also offers a 'Laporan presensi saya' button that opens the same page as the tab beside it.",
+          "cause": "apps/web/features/attendance/components/attendance-reports-view.tsx:45-48 sets `title={canViewReports ? undefined : t(\"mineTitle\")}`, written when teachers had no tab. apps/web/features/attendance/components/attendance-view.tsx:257-269 adds the 'myReportLink' secondary action for the same reason. The registry now gates the tab on manage_attendance, so both workarounds are redundant.",
+          "fix": "Drop the title override (`<AppPage navParams={[\"date\"]}>`) and remove the `myReportLink` entry from secondaryActions in attendance-view.tsx, along with the now-stale comments.",
+          "files": [
+            "apps/web/features/attendance/components/attendance-reports-view.tsx",
+            "apps/web/features/attendance/components/attendance-view.tsx"
+          ],
+          "alsoOn": ["/attendance"]
+        },
+        {
+          "id": "akademik-09",
+          "route": "/attendance",
+          "role": "admin",
+          "viewport": "both",
+          "theme": "both",
+          "shot": "shots/admin/desktop-light/attendance--fold.png",
+          "severity": "minor",
+          "category": "hierarchy",
+          "title": "Monitor offered twice to admin; principal's card promises a monitor it does not offer",
+          "description": "For admin, the header has 'Monitor presensi' and the school hero directly below has 'Buka monitor': two controls with two labels for one destination. For kepsek, the hero copy says 'Lihat rekap per kelas di laporan, atau kelas yang sedang belajar di monitor.' but shows only 'Buka laporan presensi', and that button goes to the general report centre (/reports), not the attendance report.",
+          "cause": "attendance-view.tsx:270-272 always adds the monitor secondary action, while school-attendance-today.tsx:48-54 adds 'openMonitor' as the hero's secondary action. school-attendance-today.tsx:41 uses `t(\"body\")` whatever `canMonitor` is, and line 29 falls back to '/reports' under the 'openReports' label.",
+          "fix": "In attendance-view.tsx add the monitor action only when `selectedTeacherId !== \"\"` (the hero carries it otherwise). In school-attendance-today.tsx pick a body string without the monitor clause when `!canMonitor` (new key `bodyReportsOnly`), and label the button 'Buka pusat laporan' when reportsHref is '/reports'.",
+          "files": [
+            "apps/web/features/attendance/components/attendance-view.tsx",
+            "apps/web/features/attendance/components/school-attendance-today.tsx",
+            "apps/web/messages/id.json",
+            "apps/web/messages/en.json"
+          ],
+          "alsoOn": ["/attendance (kepsek)"]
+        },
+        {
+          "id": "akademik-10",
+          "route": "/attendance",
+          "role": "gurubk",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/gurubk/mobile-light/attendance--fold.png",
+          "severity": "minor",
+          "category": "state",
+          "title": "Staff without a teaching load land on a dead-end empty state",
+          "description": "Guru BK, guru piket and wakil kepala sekolah open their area's first tab and get only 'Tidak ada jadwal mengajar / Anda tidak memiliki jadwal mengajar pada tanggal ini.' with no action. On /schedule and /grading the same people get a next step ('Lihat per kelas', 'Lihat jadwal').",
+          "cause": "apps/web/features/attendance/components/attendance-view.tsx:321-332 renders EmptyState with no `action` in the no-sessions branch.",
+          "fix": "Add `action={<Button asChild variant=\"secondary\"><Link href=\"/schedule\">{t(\"openSchedule\")}</Link></Button>}`, or for a non-school day a 'Ke hari sekolah berikutnya' button that steps the DayStepper.",
+          "files": [
+            "apps/web/features/attendance/components/attendance-view.tsx",
+            "apps/web/messages/id.json",
+            "apps/web/messages/en.json"
+          ],
+          "alsoOn": []
+        },
+        {
+          "id": "akademik-11",
+          "route": "/attendance/reports",
+          "role": "admin",
+          "viewport": "mobile",
+          "theme": "light",
+          "shot": "shots/admin/mobile-light/attendance__reports--fold.png",
+          "severity": "minor",
+          "category": "phone",
+          "title": "Daily report filters wrap raggedly on a phone; 'Presensi saya' offered to a non-teacher",
+          "description": "On a phone the Kelas select shrinks to its placeholder width ('Pilih kelas', about 120px) beside a wider date picker, and 'Unduh' drops alone onto a third row, so the controls look unaligned. For the teacher the date picker spans the full width. Admin, who does not teach, also gets 'Presensi saya' as the first segment of the report switch.",
+          "cause": "apps/web/features/attendance/components/daily-report-tab.tsx:117-148: the row is `flex flex-wrap items-end gap-3` and the Fields have no grow, so `w-full` on the Select and DatePicker only fills a content-sized Field. attendance-reports-view.tsx:40,53 adds the 'mine' tab whenever view_reports is held.",
+          "fix": "Make the row `grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap` and give the Button `col-span-2 sm:col-span-1 sm:ml-auto`, or move 'Unduh' to AppPage secondaryActions. Include 'mine' only when the user has the teacher role.",
+          "files": [
+            "apps/web/features/attendance/components/daily-report-tab.tsx",
+            "apps/web/features/attendance/components/attendance-reports-view.tsx"
+          ],
+          "alsoOn": []
+        },
+        {
+          "id": "akademik-12",
+          "route": "/attendance/reports",
+          "role": "guru",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/guru/mobile-light/attendance__reports--fold.png",
+          "severity": "minor",
+          "category": "typography",
+          "title": "Empty-state titles and bodies wrap with a single orphan word",
+          "description": "'Belum ada sesi tersimpan pada tanggal' wraps to leave 'ini' alone on the second title line. The /attendance empty body leaves 'ini.' alone, and the gradebook empty body leaves 'mengajar.' or 'lembar ini.' on their own lines. Centred text with one-word last lines looks unset.",
+          "cause": "packages/ui/src/components/empty-state.tsx:87-89: the title and description have no `text-balance` or `text-pretty`.",
+          "fix": "Add `text-balance` to the Title className (line 87) and `text-pretty` to the description paragraph (line 89).",
+          "files": ["packages/ui/src/components/empty-state.tsx"],
+          "alsoOn": ["/attendance", "/grading", "/schedule"]
+        },
+        {
+          "id": "akademik-13",
+          "route": "/grading",
+          "role": "guru",
+          "viewport": "desktop",
+          "theme": "both",
+          "shot": "shots/guru/desktop-light/grading--fold.png",
+          "severity": "minor",
+          "category": "copy",
+          "title": "Gradebook column headers carry unexplained numbers; empty report score is an underlined dash",
+          "description": "Each component header shows a grey pill number ('TG1 1', 'UH1 2', 'PTS 2') with no visible meaning; it is the count of empty cells, said only to screen readers. The phone view says 'Bobot 1 · 1 kosong' instead. In 'Nilai rapor' a missing score is a dotted-underlined '-' link, which reads like a glitch.",
+          "cause": "apps/web/features/grading/components/gradebook-desktop-table.tsx:135-140 renders `<CountBadge aria-hidden>` with only an sr-only label. Lines 216-228 render the report score as a link Button with `underline decoration-dotted` even when `report_score` is undefined.",
+          "fix": "Drop the CountBadge and append the count to the caption line at 142-144: `{weight}{missing > 0 ? ` · ${t(\"missingShort\", { count: missing })}` : \"\"}` (the 'n kosong' string the phone view uses). Render a plain muted '-' when report_score is undefined, and keep the dotted link only for a real score.",
+          "files": ["apps/web/features/grading/components/gradebook-desktop-table.tsx"],
+          "alsoOn": []
+        },
+        {
+          "id": "akademik-14",
+          "route": "/grading",
+          "role": "admin",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/admin/mobile-light/grading--fold.png",
+          "severity": "minor",
+          "category": "phone",
+          "title": "Subject name truncated while the term select takes a whole row",
+          "description": "For admin, kepsek and other school-wide readers on a phone, the scope picker puts 'X-A' and 'Bahasa Indone...' side by side and gives 'Semester aktif' a full-width second row. The longest value is cut while the shortest gets the most room.",
+          "cause": "apps/web/features/grading/components/grading-view.tsx:201-226: `grid grid-cols-2` with class and subject in row 1 and the term wrapper `col-span-2`.",
+          "fix": "Put class and term in row 1 and give the subject select `col-span-2 sm:col-span-1`: move `{termSelect}` before the subject Select and change the wrappers so the subject spans both columns on a phone.",
+          "files": ["apps/web/features/grading/components/grading-view.tsx"],
+          "alsoOn": []
+        },
+        {
+          "id": "akademik-15",
+          "route": "/my-grades",
+          "role": "admin",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/admin/desktop-light/my-grades--fold.png",
+          "severity": "minor",
+          "category": "consistency",
+          "title": "'Nilai' names three different things in the grading area",
+          "description": "On /my-grades, admin sees the h1 'Nilai' with area tabs 'Penilaian' and 'Nilai' (the active tab is the student page). On /grading the h1 is also 'Nilai', its first in-page tab is 'Nilai', and the sidebar item is 'Nilai'. The student's own page is 'Nilai saya' in the student's sidebar but 'Nilai' in the tabs.",
+          "cause": "apps/web/lib/navigation.ts:324-341: the grading entry uses `nav.academic.items.grading` ('Penilaian') and my-grades uses `nav.compact.grades` ('Nilai'), while the workspace title comes from `app.shell.nav.items.grades` ('Nilai'). navigation-workspaces.ts:194 maps my-grades to 'myGrades' only for the workspace title, not for the tab.",
+          "fix": "Point the my-grades registry entry at `app.shell.nav.items.myGrades` ('Nilai saya'). Rename the grading entry's tab label to the area title ('Nilai'), or rename the gradebook's in-page 'Nilai' tab to 'Lembar nilai', so each name is used once.",
+          "files": ["apps/web/lib/navigation.ts", "apps/web/lib/navigation-workspaces.ts"],
+          "alsoOn": ["/grading"]
+        },
+        {
+          "id": "akademik-16",
+          "route": "/schedule",
+          "role": "siswa",
+          "viewport": "both",
+          "theme": "both",
+          "shot": "shots/siswa/mobile-light/schedule--fold.png",
+          "severity": "minor",
+          "category": "interaction",
+          "title": "Timetable-setup warning icon shown to students and read-only viewers",
+          "description": "An orange warning triangle sits beside every 'Matematika' block for siswa, kepsek and guru. It means 'this block crosses a break', a configuration problem only a schedule manager can fix. Students and the principal see an unexplained alarm icon with no tooltip on touch. This is the old akademik-25, still visible.",
+          "cause": "apps/web/features/schedule/components/schedule-grid-cells.tsx:283 renders BreakWarningBadge whenever `crossesBreak`, without checking `canManage`. schedule-mobile-agenda.tsx:215-224 and schedule-mobile-day-list.tsx:~126-133 do the same.",
+          "fix": "Gate the badge on `canManage` at all three sites, e.g. `{crossesBreak && canManage && breakWarningLabel && <BreakWarningBadge .../>}`. For managers, put the label in the shared tooltip or the block's row menu so it is readable on touch.",
+          "files": [
+            "apps/web/features/schedule/components/schedule-grid-cells.tsx",
+            "apps/web/features/schedule/components/schedule-mobile-agenda.tsx",
+            "apps/web/features/schedule/components/schedule-mobile-day-list.tsx"
+          ],
+          "alsoOn": []
+        },
+        {
+          "id": "akademik-17",
+          "route": "/substitutions",
+          "role": "guru",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/guru/desktop-light/substitutions--fold.png",
+          "severity": "minor",
+          "category": "copy",
+          "title": "Incoming-requests empty text says the opposite of the tab",
+          "description": "Under 'Untuk saya' (requests asking me to cover a colleague's lesson), the empty state reads 'Permintaan dari rekan guru untuk menggantikan jadwal Anda tampil di sini.', which reads as colleagues replacing your lessons, the outgoing case.",
+          "cause": "apps/web/messages/id.json:1346 `app.substitutions.emptyIncomingBody`.",
+          "fix": "Reword to 'Permintaan rekan guru agar Anda menggantikan jadwal mereka tampil di sini.' (and the en counterpart).",
+          "files": ["apps/web/messages/id.json", "apps/web/messages/en.json"],
+          "alsoOn": []
+        },
+        {
+          "id": "akademik-18",
+          "route": "/homeroom",
+          "role": "guru",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/guru/desktop-light/homeroom--fold.png",
+          "severity": "polish",
+          "category": "typography",
+          "title": "Homeroom leave dates written in full and wrapping; bare bold empty line",
+          "description": "In 'Izin menunggu persetujuan' the range is '18 November 2026 – 19 November 2026', which wraps to leave '2026' alone even on desktop, beside a header that says 'Sel, 17 Nov'. The empty 'Catatan pelanggaran' card shows a lone bold sentence with no icon, so it reads as a heading rather than a calm 'nothing here'. The bulk import's 'Belum ada data untuk dipratinjau.' looks the same.",
+          "cause": "apps/web/features/homeroom/components/homeroom-dashboard.tsx:111 joins two full formatDate calls. Line 175 uses `<EmptyState variant=\"compact\" title={empty} />` with no icon or tone, which renders as a bare `text-label`.",
+          "fix": "Use `format.dateTimeRange(start, end, { day: \"numeric\", month: \"short\" })` (next-intl), which gives '18–19 Nov'. Give the compact empty states `icon={<CheckCircle2 />} tone=\"success\"` as the journal backlog does (journal-today-panel.tsx:265-270).",
+          "files": [
+            "apps/web/features/homeroom/components/homeroom-dashboard.tsx",
+            "apps/web/features/schedule/components/schedule-bulk-view.tsx"
+          ],
+          "alsoOn": ["/schedule/bulk"]
+        },
+        {
+          "id": "akademik-19",
+          "route": "/attendance/[sessionId]",
+          "role": "guru",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/guru/mobile-light/attendance__sessionId--fold.png",
+          "severity": "polish",
+          "category": "phone",
+          "title": "Save bar floats above the tab bar with a strip of page showing between them",
+          "description": "On a phone the white 'Simpan presensi' bar ends about 32px above the tab bar. The grey page background shows through that gap and the raised centre button sits in it, so the bottom of the screen reads as three loose layers instead of one docked panel.",
+          "cause": "packages/ui/src/components/sticky-save-bar.tsx:88 positions the bar at `bottom-[var(--shell-mobile-tab-offset)]`, and apps/web/app/globals.css:84-86 includes the 2rem centre-button raise in that offset.",
+          "fix": "Dock the bar to the top of the tab bar and pad it instead: `bottom-[calc(var(--shell-mobile-tab-bar)+env(safe-area-inset-bottom))] pb-[var(--shell-mobile-tab-raise)]` below md, so its surface runs down to the bar and the centre button overlaps its padding, not its content.",
+          "files": ["packages/ui/src/components/sticky-save-bar.tsx"],
+          "alsoOn": ["/grading (when edits are pending)"]
+        },
+        {
+          "id": "akademik-20",
+          "route": "/schedule/bulk",
+          "role": "admin",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/admin/desktop-light/schedule__bulk--full.png",
+          "severity": "polish",
+          "category": "consistency",
+          "title": "Bulk page: template link indented off the column edge; preview is the one bare section",
+          "description": "'Unduh templat' starts about 14px right of the card's content edge, because a ghost button's padding offsets its icon. 'Pratinjau' is a loose heading plus a bold sentence on the page background, between two Cards, so the page reads as card / loose text / card.",
+          "cause": "apps/web/features/schedule/components/schedule-bulk-view.tsx:186-193 uses `variant=\"ghost\"` with `w-fit`, and lines 211-242 wrap the preview in a plain `<section>` with SectionHeader instead of a Card.",
+          "fix": "Make the template action `variant=\"link\"` (no inset) or add `-ml-3`. Wrap the preview in `<Card><CardHeader>` with the SectionHeader content as CardTitle/CardDescription/action, so all three steps share one surface style.",
+          "files": ["apps/web/features/schedule/components/schedule-bulk-view.tsx"],
+          "alsoOn": []
+        }
+      ],
+      "baseline": [
+        {
+          "id": "akademik-01",
+          "status": "resolved",
+          "note": "Two-line header; the first student starts at about 335px on a 390px phone, above the save bar."
+        },
+        {
+          "id": "akademik-02",
+          "status": "resolved",
+          "note": "The running lesson is a hero with one full-width 'Isi presensi'; the day totals moved into the description line."
+        },
+        {
+          "id": "akademik-03",
+          "status": "resolved",
+          "note": "The history table has its own column and can no longer collapse; new issue: the rail column stays empty for readers without a backlog (akademik-02 here)."
+        },
+        {
+          "id": "akademik-04",
+          "status": "resolved",
+          "note": "Kepsek gets a monitoring card and admin gets school progress; the principal's numbers still need an API (apiNeeded)."
+        },
+        {
+          "id": "akademik-05",
+          "status": "resolved",
+          "note": "The sheet is the first thing under the tabs, with one summary strip and the table at about y=415 on desktop."
+        },
+        {
+          "id": "akademik-06",
+          "status": "resolved",
+          "note": "Tabs scroll with an edge fade on a phone; 'Orang tua' is reachable and labels no longer wrap."
+        },
+        {
+          "id": "akademik-07",
+          "status": "partly",
+          "note": "First lesson card at about 445px (guru) and 500px (admin, extra 'Tambah jadwal' row), down from 555/625px. Header, primary row, tabs, mode switch, picker and week picker still come first."
+        },
+        {
+          "id": "akademik-08",
+          "status": "resolved",
+          "note": "CSV columns are wrapping chips inside the card on phone and desktop."
+        },
+        {
+          "id": "akademik-09",
+          "status": "resolved",
+          "note": "Hero, icon figure strip, Card sections with List rows, 'Kelas binaan X-A' in the description."
+        },
+        {
+          "id": "akademik-10",
+          "status": "resolved",
+          "note": "Shared Scanner, camera first, target frame and a 'Masukkan kode manual' fallback."
+        },
+        {
+          "id": "akademik-11",
+          "status": "resolved",
+          "note": "The schedule now uses underline area tabs plus SegmentedControl for view and day; the gradebook phone modes use the same SegmentedControl."
+        },
+        {
+          "id": "akademik-12",
+          "status": "resolved",
+          "note": "From code: grading renders real TabsContent panels and substitutions uses SegmentedControl (radiogroup), so no dangling aria-controls. Not run through axe."
+        },
+        {
+          "id": "akademik-14",
+          "status": "resolved",
+          "note": "No save bar on the gradebook without edits (guru desktop and phone)."
+        },
+        {
+          "id": "akademik-15",
+          "status": "resolved",
+          "note": "A sheet without components shows an empty state instead of contradictory tiles; guru's strip (17% terisi, 1 belum dinilai) is consistent."
+        },
+        {
+          "id": "akademik-16",
+          "status": "partly",
+          "note": "Header is two lines, 'Tambah komponen' is visible and inputs fill the columns. The empty-count pill beside each code has no visible meaning (akademik-13 here)."
+        },
+        {
+          "id": "akademik-17",
+          "status": "resolved",
+          "note": "Phone entry uses SegmentedControl modes, a '+' button and one save path; no per-component save button is visible."
+        },
+        {
+          "id": "akademik-18",
+          "status": "resolved",
+          "note": "From code: no window.confirm in grading, and a test asserts the shared confirm dialog."
+        },
+        {
+          "id": "akademik-19",
+          "status": "resolved",
+          "note": "Kepsek gets 'Guru mapel belum menambahkan...' without an action; gurupiket gets 'Belum ada kelas yang Anda ajar' with 'Lihat jadwal' and no empty selects."
+        },
+        {
+          "id": "akademik-20",
+          "status": "resolved",
+          "note": "The seven-day SegmentedControl fits at 390px with a today dot; nothing is cut."
+        },
+        {
+          "id": "akademik-21",
+          "status": "resolved",
+          "note": "Gurubk gets an EmptyState with 'Lihat per kelas' on desktop and phone instead of an empty grid."
+        },
+        {
+          "id": "akademik-22",
+          "status": "resolved",
+          "note": "The view switch and picker form one toolbar row for every role; header actions stay beside the title."
+        },
+        {
+          "id": "akademik-23",
+          "status": "resolved",
+          "note": "Two-column period selects, one control shape and a bottom sheet on a phone. Period labels still use '07:00' (akademik-05 here)."
+        },
+        {
+          "id": "akademik-24",
+          "status": "partly",
+          "note": "Breadcrumb, template download, chips and a danger-zone Card, but no numbered wizard steps or result report."
+        },
+        {
+          "id": "akademik-26",
+          "status": "resolved",
+          "note": "Card radius is consistent across the area's screens."
+        },
+        {
+          "id": "akademik-27",
+          "status": "resolved",
+          "note": "The backlog appears only on /journal, as a list with 'Tulis' actions."
+        },
+        {
+          "id": "akademik-28",
+          "status": "partly",
+          "note": "Downloads are merged into one menu, but on a phone 'Unduh' is now a full-width first row above search and 'Jurnal baru' takes its own header row (akademik-04 here)."
+        },
+        {
+          "id": "akademik-29",
+          "status": "cannot-tell",
+          "note": "No satpam shot for /journal in this unit; the sweep reports the journal is no longer offered to the security duty."
+        },
+        {
+          "id": "akademik-30",
+          "status": "resolved",
+          "note": "The student's /attendance has no one-item section nav."
+        },
+        {
+          "id": "akademik-31",
+          "status": "partly",
+          "note": "Round cells, template header and legend inside the card; 'Belum lengkap' is still grey in the calendar and orange in the badge (akademik-07 here), the '0%' tile still sits beside counts, and there is no Dispensasi tile."
+        },
+        {
+          "id": "akademik-32",
+          "status": "resolved",
+          "note": "Score shown once, large, with a KKTP meter and 'Sudah tuntas'; the badge no longer stretches."
+        },
+        {
+          "id": "akademik-35",
+          "status": "resolved",
+          "note": "Sentence case and 'Presensi' throughout. New inconsistency: 'Alpa' vs 'Alpha' (akademik-06 here)."
+        },
+        {
+          "id": "akademik-37",
+          "status": "resolved",
+          "note": "DatePicker and DayStepper replace native inputs on reports, homeroom and attendance."
+        },
+        {
+          "id": "akademik-38",
+          "status": "resolved",
+          "note": "Joined status control, search with an icon, two-line identity, consistent radii."
+        },
+        {
+          "id": "akademik-39",
+          "status": "cannot-tell",
+          "note": "Only the hero is visible with one seeded lesson (a full-width button on a phone); the other-session rows and the saved state are not captured."
+        },
+        {
+          "id": "akademik-42",
+          "status": "resolved",
+          "note": "The 'Tambah jadwal' dialog is a bottom sheet with its buttons visible on a phone."
+        },
+        {
+          "id": "akademik-43",
+          "status": "resolved",
+          "note": "In dark mode the Switch thumb is visible, the active pill is clear and schedule blocks are a calm dark purple."
+        },
+        {
+          "id": "akademik-25",
+          "status": "not-resolved",
+          "note": "The warning triangle is still unlabeled on touch and now also shown to students and readers (akademik-16 here)."
+        },
+        {
+          "id": "akademik-40",
+          "status": "partly",
+          "note": "The desktop hero and empty cards still span about 1150px with content on the left, but the oversized tiles are gone."
+        },
+        {
+          "id": "akademik-41",
+          "status": "partly",
+          "note": "Cards, empty-state action and pending count are in; no school-wide view for admin or piket (needs API)."
+        },
+        {
+          "id": "akademik-44",
+          "status": "partly",
+          "note": "No single-tab TabsList for teachers; 'Unduh' still opens without a class (scope is chosen in the dialog) and admin is offered 'Presensi saya'."
+        }
+      ],
+      "apiNeeded": [
+        "A school-wide attendance-today summary the principal (kepsek) can read; AdminDashboard.attendance_today is admin-only, so kepsek's /attendance card only links out.",
+        "GET /v1/substitutions for manage_schedules holders: a school-wide list with a date filter, so admin and guru piket can monitor uncovered classes instead of a personal 'Untuk saya / Dari saya' view.",
+        "An endpoint for a student's current lesson, so /classroom-entry can show 'Matematika · Bu Rina · Jam 1' above the camera."
+      ]
+    },
+    {
+      "unit": "kepegawaian-administrasi",
+      "score": 6,
+      "verdict": "This area is far better than before the overhaul. Every page now uses the template, the copy is in sentence case Indonesian, the date and time pickers are real components, dialogs open as proper bottom sheets on a phone, and the desktop list pages (billing desk, staff attendance board, supervision cycles, the visitors board and its sibling tabs) look calm and professional in both themes. The observation form on desktop is the best screen here: a narrow column, a scale legend and a running count in a sticky save bar. The weak spot is the supervision detail screens that nobody had seen before. On the cycle detail the compact stepper is squeezed until its labels run together, and on a phone its summary strip pushes a label across the divider into the next figure and cuts off the third figure at the card edge. On the phone observation form the save bar floats 32px above the tab bar, and the page shows through the gap. The known visitors board defect is not fixed: on a phone the search and the segmented control run to the right screen edge, and on desktop the search shrinks until its placeholder is cut off. Across the visitors pages, the empty states repeat the header's primary button, and on a phone the date controls stack above the tabs, so the tab row jumps between sibling pages. The bones are good, but the phone and detail views still look visibly uneven against the owner's bar.",
+      "best": [
+        "Observation form on desktop: narrow column with breadcrumb, teacher as title, lesson context, a scale legend ('1 terendah, 4 tertinggi'), 44px rounded score buttons, and a sticky save bar with '0 dari 4 kriteria dinilai'",
+        "Staff attendance desktop: one row of tabs, a day stepper and 'Entri manual' in the header, four tinted status tiles that filter the table, and an empty state that links to work schedules",
+        "Visitors board desktop: a two-column board with a live 'Diperbarui 14.04' badge, a segmented filter with counts and a compact 'Terjadwal hari ini' panel. A big step up from the old select-and-dashed-box layout",
+        "Phone dialogs ('Buat siklus supervisi', 'Catat insiden') are real bottom sheets with a grab handle, required markers and Batal/Simpan pinned at the bottom",
+        "Billing desk is clean and consistent in light and dark, with one name ('Tagihan dan pembayaran') in the sidebar and the h1"
+      ],
+      "worst": [
+        "Cycle detail on a phone: the summary strip label 'Observasi terjadwal' crosses the divider into the next cell, and the third and fourth figures are cut at the card edge (shared Stat compact cell)",
+        "Cycle detail: the compact stepper collapses, so 'Instrumen' and 'Jadwalkan' run together and 'Lihat hasil' wraps onto two lines (desktop and phone)",
+        "Observation form on a phone: the sticky save bar floats 32px above the tab bar, and score buttons show through the gap under the raised centre button",
+        "Visitors board: on a phone the search and the segmented control touch the right screen edge (not fixed); on desktop the search collapses and its placeholder reads 'Cari nama atau instans'",
+        "Two identical primary buttons in view on the visitors board, expected visitors and incidents (header plus empty state)"
+      ],
+      "coverage": [
+        {
+          "route": "/billing",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 7
+        },
+        {
+          "route": "/staff-attendance",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "/supervision/cycles",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 6
+        },
+        {
+          "route": "/supervision/cycles/[cycleId]",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 2
+        },
+        {
+          "route": "/supervision/cycles/[cycleId]/observe/[scheduledId]",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 3
+        },
+        {
+          "route": "/supervision/cycles/[cycleId]/report",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 2
+        },
+        {
+          "route": "/supervision/cycles/[cycleId]/teachers/[teacherId]/report",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 2
+        },
+        {
+          "route": "/supervision/my-report",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        },
+        {
+          "route": "/visitors/board",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 7
+        },
+        {
+          "route": "/visitors/expected",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 3
+        },
+        {
+          "route": "/visitors/incidents",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 5
+        },
+        {
+          "route": "/visitors/recap",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 4
+        }
+      ],
+      "findings": [
+        {
+          "id": "kepegawaian-administrasi-101",
+          "route": "/supervision/cycles/[cycleId]",
+          "role": "admin",
+          "viewport": "mobile",
+          "theme": "light",
+          "shot": "shots/admin/mobile-light/supervision__cycles__cycleId--full.png",
+          "severity": "blocker",
+          "category": "clipping",
+          "title": "Summary strip cells do not grow to their labels: text crosses the divider and figures are cut at the card edge",
+          "description": "In the phone summary strip on the cycle detail, the label 'Observasi terjadwal' runs past its cell, across the vertical divider, almost to the 'Guru' icon. The third cell (purple 'Kriteria' icon) is sliced in half by the card's right edge, and the fourth ('Skala') is hidden. Nothing shows that the strip scrolls: no fade, no peek. The component's own comment says 'A strip cell grows to its label instead of cutting it', but it does not. On /homeroom the third strip cell is also cut off by the edge without a fade.",
+          "cause": "packages/ui/src/components/stat.tsx:75 makes the compact cell 'min-w-36 flex-1'. flex-1 means flex-basis 0, and the explicit min-width replaces the content-based minimum, so each cell is held at 144px whatever its nowrap label (stat.tsx:258) needs. The dl's 'w-max min-w-full' (stat-grid.tsx:93) then adds up these too-narrow cells. stat-grid.tsx:89 puts the border and background on the scroller itself and never uses useScrollEdges or scroll-fade-x, so a cut figure gets no fade.",
+          "fix": "In stat.tsx:75 change compact to 'relative flex min-w-36 flex-[1_0_auto] flex-col justify-center py-3 pr-5 pl-4'. With basis auto and no shrink, a cell is at least its icon padding plus its label, and the strip scrolls when the cells do not fit. In stat-grid.tsx, move the border, radius, background and shadow onto an outer wrapper. Give the inner scroller 'scroll-fade-x' and call useScrollEdges(scrollerRef, { axis: 'x' }), as the SegmentedControl and tab strips do, so a figure past the edge fades out instead of being sliced.",
+          "files": [
+            "packages/ui/src/components/stat.tsx",
+            "packages/ui/src/components/stat-grid.tsx"
+          ],
+          "alsoOn": ["/homeroom"]
+        },
+        {
+          "id": "kepegawaian-administrasi-102",
+          "route": "/supervision/cycles/[cycleId]",
+          "role": "admin",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/admin/desktop-light/supervision__cycles__cycleId--fold.png",
+          "severity": "major",
+          "category": "clipping",
+          "title": "Cycle step strip is squeezed to about 230px: labels run together and 'Lihat hasil' wraps",
+          "description": "Under the Observasi tab, the four-step progress strip takes only about 230px of a 1150px column. 'Instrumen' and 'Jadwalkan' sit edge to edge with no gap, reading as one phrase, and 'Lihat hasil' breaks over two lines. The labels are not centred under their markers. The phone version shows the same collision.",
+          "cause": "apps/web/features/supervision/components/supervision-cycle-detail-view.tsx:167 passes <Stepper variant=\"compact\"> as the AppPage toolbar. PageShell renders the toolbar as 'flex min-w-0 flex-wrap items-center gap-2' (packages/ui/src/components/page-shell.tsx:146), so the stepper's ol is a content-sized flex item. Its li are 'flex-1 min-w-0' (stepper.tsx:152), so each collapses below the width of its label.",
+          "fix": "Give the stepper a width: <Stepper variant=\"compact\" className=\"w-full max-w-lg\" ...> in supervision-cycle-detail-view.tsx:167, or render it in the body above the StatGrid instead of in the toolbar. Each step then gets about 120px and the labels sit centred under their markers on one line.",
+          "files": ["apps/web/features/supervision/components/supervision-cycle-detail-view.tsx"],
+          "alsoOn": []
+        },
+        {
+          "id": "kepegawaian-administrasi-103",
+          "route": "/supervision/cycles/[cycleId]/observe/[scheduledId]",
+          "role": "admin",
+          "viewport": "mobile",
+          "theme": "light",
+          "shot": "shots/admin/mobile-light/supervision__cycles__cycleId__observe__scheduledId--fold.png",
+          "severity": "major",
+          "category": "phone",
+          "title": "Sticky save bar floats above the tab bar, and the page shows through the gap",
+          "description": "On a phone, 'Simpan hasil observasi' sits in a white bar that ends about 32px above the bottom tab bar. In that band, the next criterion's score buttons (1 2 3 4) show between the two fixed bars, and the raised 'Aksi cepat' button sits on top of them. Two stacked fixed surfaces with live content between them look broken. The translucent tab bar also shows faint page text through 'Beranda'.",
+          "cause": "packages/ui/src/components/sticky-save-bar.tsx:88 anchors the bar at bottom: var(--shell-mobile-tab-offset). apps/web/app/globals.css:84 defines that offset as bar + raise + safe area, and the 2rem raise is only the centre button's overhang, not a surface. The same offset drives sticky FormActions (globals.css:176), which have the same gap.",
+          "fix": "Anchor the save bar on the tab bar itself and let its surface cover the raise. Use bottom: calc(var(--shell-mobile-tab-bar) + env(safe-area-inset-bottom)) and padding-bottom: calc(var(--space-3) + var(--shell-mobile-tab-raise)) below md, keeping md:bottom-0. The save button stays above the centre button, which now rests on the bar's own surface. Apply the same change to the sticky FormActions rule in globals.css:176.",
+          "files": ["packages/ui/src/components/sticky-save-bar.tsx", "apps/web/app/globals.css"],
+          "alsoOn": []
+        },
+        {
+          "id": "kepegawaian-administrasi-104",
+          "route": "/visitors/board",
+          "role": "satpam",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/satpam/mobile-light/visitors__board--fold.png",
+          "severity": "major",
+          "category": "clipping",
+          "title": "Board toolbar is not constrained: it runs to the phone's edge and truncates the search on desktop (known issue, not fixed)",
+          "description": "On a 390px phone (all roles), the search field and the Semua / Di sekolah / Terjadwal control both end about 1px from the right screen edge. The left side keeps its 16px gutter. On desktop the same toolbar shrinks the search to about 200px, its placeholder is cut mid-word ('Cari nama atau instans'), and 'justify-between' has no effect.",
+          "cause": "apps/web/features/visitors/components/gate-board-view.tsx:158 wraps the toolbar in 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between' without a width. Inside PageShell's 'flex flex-wrap' toolbar row (page-shell.tsx:146), that wrapper is a content-sized flex item with min-width:auto. It takes the min-content width of the SegmentedControl, whose radio group is 'w-full min-w-max' with three equal columns (segmented-control.tsx:151), about 373px, wider than the 358px column. On desktop the search's 'sm:flex-1' inside a content-sized box falls to its minimum.",
+          "fix": "In gate-board-view.tsx:158 add 'w-full min-w-0' to the wrapper: 'flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'. On a phone the segmented track (w-full) then scrolls inside 358px with its own edge fades. On desktop the search takes its max-w-sm and the segmented control sits at the right end.",
+          "files": ["apps/web/features/visitors/components/gate-board-view.tsx"],
+          "alsoOn": []
+        },
+        {
+          "id": "kepegawaian-administrasi-105",
+          "route": "/visitors/board",
+          "role": "admin",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/admin/desktop-light/visitors__board--fold.png",
+          "severity": "major",
+          "category": "hierarchy",
+          "title": "Two identical primary buttons in view: header action repeated in the empty state",
+          "description": "On the gate board, 'Tamu baru' appears as a filled green button in the header and again in the 'Belum ada tamu di sekolah' empty state, 400px apart. The same happens with 'Jadwalkan tamu' on /visitors/expected and 'Catat insiden' on /visitors/incidents, on desktop and phone. On the phone board, the satpam sees three green calls to action at once: the header button, the empty-state button and the raised centre button.",
+          "cause": "packages/ui/src/components/first-use-empty-state.tsx:44-53 always renders its action as a default (primary) Button. gate-board-view.tsx:120, expected-guests-view.tsx:238 and incident-log-view.tsx:229 use it while the same action is already the AppPage primaryAction.",
+          "fix": "In first-use-empty-state.tsx render both Button branches with variant=\"secondary\", keeping the Plus icon, so the header's primary stays the single primary in view and the empty state still offers the way forward. Pages without a header primary keep a clear, if quieter, call to action.",
+          "files": ["packages/ui/src/components/first-use-empty-state.tsx"],
+          "alsoOn": ["/visitors/expected", "/visitors/incidents"]
+        },
+        {
+          "id": "kepegawaian-administrasi-106",
+          "route": "/staff-attendance",
+          "role": "admin",
+          "viewport": "mobile",
+          "theme": "light",
+          "shot": "shots/admin/mobile-light/staff-attendance--full.png",
+          "severity": "major",
+          "category": "phone",
+          "title": "Date controls stack into extra header rows on a phone, and the tab row jumps between sibling pages",
+          "description": "On a phone, the day stepper is a fixed 260px row that neither fills the width nor shares the row. 'Entri manual' drops to a third row alone, so the header is about 230 css px before the tabs. In Buku tamu the tab row sits at about y=216 on 'Tamu hari ini' and 'Insiden' but about y=268 on 'Tamu terjadwal' (stepper plus 'Jadwalkan tamu'). On 'Rekap kunjungan' a SegmentedControl row and a stepper row come first. For the head (kepsek) the tabs move between y=160 and y=216. Switching tabs moves the tabs under the reader's thumb.",
+          "cause": "staff-attendance-view.tsx:69-83, expected-guests-view.tsx:190-202 and visitor-recap-view.tsx:185-215 pass the period controls as AppPage 'actions'. On a phone PageHeader wraps actions in rows under the title, above the nav (packages/ui/src/components/page-header.tsx:248-255). DayStepper's DatePicker is a fixed 'w-40' in a non-stretching row (apps/web/features/attendance/components/day-stepper.tsx:29 and :47).",
+          "fix": "Pass the period controls as AppPage 'toolbar' in these three views; the template defines the toolbar as the slot for 'a date switcher that acts on the content', under the tabs. The header then holds only the title and the primary action, and the tab row stays in the same place on every sibling page. In day-stepper.tsx make the root 'flex w-full items-center gap-1.5 sm:w-auto' and the DatePicker 'min-w-0 flex-1 sm:w-40 sm:flex-none', so on a phone the stepper spans the row.",
+          "files": [
+            "apps/web/features/staff-attendance/components/staff-attendance-view.tsx",
+            "apps/web/features/visitors/components/expected-guests-view.tsx",
+            "apps/web/features/visitors/components/visitor-recap-view.tsx",
+            "apps/web/features/attendance/components/day-stepper.tsx"
+          ],
+          "alsoOn": ["/visitors/expected", "/visitors/recap"]
+        },
+        {
+          "id": "kepegawaian-administrasi-107",
+          "route": "/supervision/cycles/[cycleId]/teachers/[teacherId]/report",
+          "role": "admin",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/admin/desktop-light/supervision__cycles__cycleId__teachers__teacherId__report--full.png",
+          "severity": "major",
+          "category": "consistency",
+          "title": "Supervision trail, title and tabs disagree: a teacher's page carries the cycle's tabs, and the 'Hasil' tab changes the header",
+          "description": "The teacher report is titled 'Guru Contoh', but it shows the cycle's 'Observasi | Hasil' tabs with Hasil active, and its trail ends in 'Hasil'. The page claims to be the cycle's results tab and a teacher's page at the same time. Between the cycle's own tabs, 'Hasil' drops the description line ('Instrumen observasi kelas (contoh) · 4 kriteria') and adds a third trail level ('… > Hasil'), so the tab row jumps 28px up (y=204 to y=176). On a phone the back link on 'Hasil' points to the sibling tab. The trail root reads 'Siklus supervisi', while the list page it opens is titled 'Supervisi'.",
+          "cause": "apps/web/features/supervision/components/teacher-supervision-report-view.tsx:255 passes nav={<CycleNav current=\"report\" />} on a detail page. supervision-cycle-report-view.tsx:101-110 passes an explicit three-level breadcrumb and no description, unlike supervision-cycle-detail-view.tsx:152-158. The trail root uses tRoot('navLabelCycles') while the list's h1 defaults to the 'Supervisi' menu label.",
+          "fix": "In supervision-cycle-report-view.tsx pass the same description as the detail view (t('cycleDetail.summary', ...)) and drop the explicit breadcrumb, so the derived 'Siklus supervisi > {cycle}' trail matches the Observasi tab. Switching tabs then changes only the underline. In teacher-supervision-report-view.tsx:255 set nav={false}; the trail 'Siklus supervisi > {cycle} > Hasil' already says where the page sits. Use one name for the list in both its h1 and the trail root.",
+          "files": [
+            "apps/web/features/supervision/components/teacher-supervision-report-view.tsx",
+            "apps/web/features/supervision/components/supervision-cycle-report-view.tsx"
+          ],
+          "alsoOn": ["/supervision/cycles/[cycleId]/report"]
+        },
+        {
+          "id": "kepegawaian-administrasi-108",
+          "route": "/visitors/expected",
+          "role": "admin",
+          "viewport": "mobile",
+          "theme": "light",
+          "shot": "shots/admin/mobile-light/visitors__expected--fold.png",
+          "severity": "minor",
+          "category": "consistency",
+          "title": "Phone table toolbar without a search leaves the column menu alone on its own row",
+          "description": "On a phone, the toolbar on /visitors/expected and /visitors/incidents is a nearly empty row with only a '...' button at the right. The filter chips ('Hanya yang menunggu', 'Hanya yang terbuka', the date range) start on the row below. It costs about 50px and looks unfinished.",
+          "cause": "packages/ui/src/components/data-table/data-table-toolbar.tsx:248 always gives the filters 'order-4 basis-full' on a phone, and the view menu at :261 is 'order-2 ml-auto'. With showSearch false, nothing shares the menu's first row.",
+          "fix": "In data-table-toolbar.tsx:248, when there is no search box, let the pills share the first row: className={cn('order-4 basis-full md:order-2 md:min-w-48 md:flex-1 md:basis-0', !showSearch && 'order-1 min-w-0 flex-1 basis-0')}. The pills keep scrolling sideways, and the '...' sits at the end of their row.",
+          "files": ["packages/ui/src/components/data-table/data-table-toolbar.tsx"],
+          "alsoOn": ["/visitors/incidents"]
+        },
+        {
+          "id": "kepegawaian-administrasi-109",
+          "route": "/supervision/cycles/[cycleId]/teachers/[teacherId]/report",
+          "role": "kepsek",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/kepsek/mobile-light/supervision__my-report--fold.png",
+          "severity": "minor",
+          "category": "state",
+          "title": "No completed observation, yet the report fills the page with '–' tiles and empty meters before saying so",
+          "description": "With nothing observed, the report shows a '–' average tile, a '0' tile, four empty progress bars each ending in '–', and only then the empty state 'Belum ada observasi selesai'. On a phone the two tiles stack one per row, each about 150px tall, so the whole first screen of 'Supervisi saya' is two near-empty cards under an enabled 'Unduh laporan' button.",
+          "cause": "apps/web/features/supervision/components/teacher-supervision-report-view.tsx:64 forces 'grid-cols-1 sm:grid-cols-2'. Lines 80-99 render the criterion card whatever hasScores is, and the export button at :234 is enabled whenever data exists.",
+          "fix": "In ReportContent, when hasScores is false render only the EmptyState, skipping the StatGrid and the criterion card, and pass disabled to the export button (and drop it from secondaryActions) until there is something to export. Remove 'grid-cols-1' at :64 so the StatGrid's default two columns apply on a phone.",
+          "files": ["apps/web/features/supervision/components/teacher-supervision-report-view.tsx"],
+          "alsoOn": ["/supervision/my-report"]
+        },
+        {
+          "id": "kepegawaian-administrasi-110",
+          "route": "/staff-attendance",
+          "role": "kepsek",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/kepsek/desktop-light/staff-attendance--fold.png",
+          "severity": "minor",
+          "category": "state",
+          "title": "Empty board shows four clickable zero tiles, and read-only readers are told to set up schedules",
+          "description": "When no employee has a work schedule, the board still shows four status tiles reading '0', each with a chevron and clickable, above an empty state that says nobody is on the board. On a phone these take 280px before the explanation. For the head, who cannot manage schedules, the description still ends 'Atur jadwalnya lebih dulu.' and offers no button.",
+          "cause": "apps/web/features/staff-attendance/components/today-board-view.tsx:217-232 renders the StatGrid unconditionally. The EmptyState at :258-268 uses the same t('today.emptyBody') whether or not canSchedule.",
+          "fix": "Render the StatGrid only when the board has scheduled employees (rows.length > 0). Without schedules, show the EmptyState alone. Add a read-only description key, for example 'Belum ada pegawai dengan jadwal kerja.', used when canSchedule is false.",
+          "files": [
+            "apps/web/features/staff-attendance/components/today-board-view.tsx",
+            "apps/web/messages/id.json",
+            "apps/web/messages/en.json"
+          ],
+          "alsoOn": []
+        },
+        {
+          "id": "kepegawaian-administrasi-111",
+          "route": "/billing",
+          "role": "admin",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/admin/mobile-light/billing--fold.png",
+          "severity": "minor",
+          "category": "phone",
+          "title": "Two of five billing tabs are hidden past the edge with almost no sign they exist",
+          "description": "On a phone the billing tabs show 'Loket pembayaran', 'Daftar tagihan' and 'Jenis biaya' as three complete labels. 'Terbitkan tagihan' and 'Tunggakan' (and 'Tunggakan' alone for satpam and kepsek) start beyond the screen edge. The only hint is a faint fade on the last letters of 'biaya', so the row reads as complete. The visitors tabs get a peek ('Rekap k…') by luck of label length; billing does not.",
+          "cause": "billing-view.tsx:58 uses the underline TabsList. Its scroller fades only 24px at the overflowing end (packages/ui/src/styles.css scroll-fade-x, --space-6), and with these label widths the next item starts entirely past the 358px column.",
+          "fix": "Make the overflow visible: widen the end fade for underline strips to var(--space-12), so the last visible label clearly dissolves. On phones, shorten the two longest billing tab labels (for example 'Loket' and 'Terbitkan') so the fourth tab peeks in. Alternatively, have tab-styles show a small trailing chevron while useScrollEdges reports data-overflow-end.",
+          "files": [
+            "packages/ui/src/styles.css",
+            "apps/web/features/billing/components/billing-view.tsx"
+          ],
+          "alsoOn": []
+        },
+        {
+          "id": "kepegawaian-administrasi-112",
+          "route": "/supervision/cycles/[cycleId]",
+          "role": "admin",
+          "viewport": "desktop",
+          "theme": "light",
+          "shot": "shots/admin/desktop-light/supervision__cycles__cycleId--fold.png",
+          "severity": "minor",
+          "category": "hierarchy",
+          "title": "A toolbar row holding only two view icons separates 'Observasi terjadwal' from its table",
+          "description": "Between the section heading 'Observasi terjadwal 2' and the table there is a 40px band holding only the density and column icons at the far right. The instrument card beside it starts at the heading, so the two columns look misaligned. A two-row, three-column table does not need view options.",
+          "cause": "packages/ui/src/components/data-table/data-table-toolbar.tsx:214-224 hides a toolbar with no search, filters or actions only below md (emptyOnPhone && 'max-md:hidden'). supervision-cycle-detail-view.tsx:211 cannot opt out.",
+          "fix": "Add a viewOptions?: boolean prop to DataTable (default true) that DataTableToolbar uses to skip the density and column icons, and hide the toolbar entirely when nothing else is in it. Pass viewOptions={false} in supervision-cycle-detail-view.tsx:211, and on similar small embedded tables.",
+          "files": [
+            "packages/ui/src/components/data-table/data-table.tsx",
+            "packages/ui/src/components/data-table/data-table-toolbar.tsx",
+            "apps/web/features/supervision/components/supervision-cycle-detail-view.tsx"
+          ],
+          "alsoOn": []
+        },
+        {
+          "id": "kepegawaian-administrasi-113",
+          "route": "/visitors/board",
+          "role": "satpam",
+          "viewport": "mobile",
+          "theme": "light",
+          "shot": "shots/satpam/mobile-light/visitors__board--full.png",
+          "severity": "polish",
+          "category": "phone",
+          "title": "Compact empty state squeezes its text into a narrow column beside the button on a phone",
+          "description": "In 'Terjadwal hari ini' on a phone, the title and description wrap over five short lines ('Tidak ada tamu / terjadwal hari ini / Tamu yang dijadwalkan / kantor untuk hari ini / muncul di sini.') because 'Jadwalkan tamu' keeps its place on the same row.",
+          "cause": "packages/ui/src/components/empty-state.tsx:54 makes the compact variant 'flex-row items-center' at every width, and the action wrapper is 'shrink-0' (around :98). Used by apps/web/features/visitors/components/expected-today-panel.tsx:59.",
+          "fix": "In empty-state.tsx make compact 'flex-row flex-wrap items-center gap-3 py-2 text-left', and give its action wrapper 'max-sm:basis-full max-sm:pl-11', so on a phone the button sits under the text, aligned with it.",
+          "files": ["packages/ui/src/components/empty-state.tsx"],
+          "alsoOn": []
+        },
+        {
+          "id": "kepegawaian-administrasi-114",
+          "route": "/billing",
+          "role": "admin",
+          "viewport": "both",
+          "theme": "both",
+          "shot": "shots/admin/desktop-light/billing--fold.png",
+          "severity": "polish",
+          "category": "consistency",
+          "title": "Eyebrow names a sidebar group the reader cannot see",
+          "description": "The billing h1 sits under the eyebrow 'Administrasi', but every role's sidebar lists 'Tagihan dan pembayaran' at the top level with no Administrasi group. For the head, 'Buku tamu' is also a top-level sidebar item, yet the page eyebrow reads 'Piket dan gerbang', a group absent from their sidebar.",
+          "cause": "apps/web/lib/navigation/page-context.ts:74-78 takes the eyebrow from the registry entry's group, regardless of where the reader's own sidebar places the entry.",
+          "fix": "Derive the eyebrow from the group the reader's sidebar actually shows the entry under. When the entry is a top-level item for that reader, return no groupKey, so AppPage omits the eyebrow instead of naming a group the reader has never seen.",
+          "files": ["apps/web/lib/navigation/page-context.ts"],
+          "alsoOn": ["/visitors/board"]
+        },
+        {
+          "id": "kepegawaian-administrasi-115",
+          "route": "/supervision/observations/[observationId]",
+          "role": "admin",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/admin/desktop-light/supervision__cycles__cycleId__observe__scheduledId--full.png",
+          "severity": "minor",
+          "category": "consistency",
+          "title": "Observation detail (code review, not captured): full-width prose cards, raw key fallback, back link skips the teacher",
+          "description": "This review is from code only; the API could not complete an observation, so the page was not captured. The detail page uses the default 1200px width, so the observer's notes, the teacher's response and the follow-up render as prose lines over 1100px wide. Its sibling form uses the 720px narrow column. A score whose criterion is missing from the instrument is labelled with the raw criterion_key, a code-like string. The trail goes 'Siklus supervisi > {cycle} > {title}', so the phone back link returns to the cycle's Observasi tab rather than the teacher report the reader came from.",
+          "cause": "apps/web/features/supervision/components/observation-detail-view.tsx:134 has no variant. Prose at :42 has no measure. :162 falls back to s.criterion_key. :138-142 build the breadcrumb without the Hasil and teacher levels.",
+          "fix": "Pass variant=\"narrow\" to AppPage at :134, matching the form, and add 'max-w-prose' to Prose's paragraph. Fall back to a neutral label such as t('criterionFallback', { n }) instead of the key. Make the breadcrumb 'Siklus supervisi > {cycle} > Hasil > {teacher}', with Hasil linking to /report and the teacher linking to the teacher report, so back returns to the report.",
+          "files": ["apps/web/features/supervision/components/observation-detail-view.tsx"],
+          "alsoOn": []
+        },
+        {
+          "id": "kepegawaian-administrasi-116",
+          "route": "/supervision/cycles/[cycleId]/teachers/[teacherId]/report",
+          "role": "admin",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/admin/desktop-light/supervision__cycles__cycleId__teachers__teacherId__report--full.png",
+          "severity": "polish",
+          "category": "typography",
+          "title": "Criterion numbering is drawn three different ways across the supervision screens",
+          "description": "The instrument card and the observation form number criteria with a muted figure in its own column ('1  Perencanaan pembelajaran'). The teacher report bakes the number into a bold label ('1. Perencanaan pembelajaran'). The observation detail has no number at all. The same list looks different from one screen to the next.",
+          "cause": "teacher-supervision-report-view.tsx:91 builds the label as `${index + 1}. ${criterion.name}`, while supervision-cycle-detail-view.tsx:252 and the observation form use a muted leading number. observation-detail-view.tsx:162 shows none.",
+          "fix": "Use the leading muted number everywhere: give Progress (or the row around it) the same 'w-5 text-right text-label text-fg-muted tabular-nums' number before the criterion name in the teacher report and the observation detail, and drop the '1.' prefix from the label.",
+          "files": [
+            "apps/web/features/supervision/components/teacher-supervision-report-view.tsx",
+            "apps/web/features/supervision/components/observation-detail-view.tsx"
+          ],
+          "alsoOn": ["/supervision/my-report"]
+        }
+      ],
+      "baseline": [
+        {
+          "id": "kepegawaian-administrasi-01",
+          "status": "partly",
+          "note": "Phone chrome before the list shrank (section heading at about y=389 css, was 497). Tabs are one row and the select is gone, but the 'Tamu baru' row, a full-width search and a segmented row still come first, and the toolbar now overflows the right edge (finding 104)."
+        },
+        {
+          "id": "kepegawaian-administrasi-02",
+          "status": "resolved",
+          "note": "No 'bg-bg-raised' is left in the code. Visitor cards could not be seen because the seed has no visitors on site."
+        },
+        {
+          "id": "kepegawaian-administrasi-03",
+          "status": "cannot-tell",
+          "note": "No visitor on site in the capture. on-site-list.tsx now shows host, arrival, length of stay and an overdue warning badge."
+        },
+        {
+          "id": "kepegawaian-administrasi-04",
+          "status": "cannot-tell",
+          "note": "Not captured. The code now asks for confirmation with a ConfirmDialog before checking out and before withdrawing or closing."
+        },
+        {
+          "id": "kepegawaian-administrasi-06",
+          "status": "partly",
+          "note": "The labelled select is replaced by a SegmentedControl with counts on the search row. But on desktop the search collapses to about 200px with its placeholder cut, and on a phone both controls run to the right edge (finding 104)."
+        },
+        {
+          "id": "kepegawaian-administrasi-08",
+          "status": "partly",
+          "note": "On desktop every Buku tamu tab has one primary in the header and the tabs sit at y=176 throughout. On a phone the tab row still jumps between tabs because the date controls stack above it (finding 106)."
+        },
+        {
+          "id": "kepegawaian-administrasi-09",
+          "status": "partly",
+          "note": "The empty copy now names the day and the read-only head gets no action. The Aksi and purpose columns could not be seen (no rows)."
+        },
+        {
+          "id": "kepegawaian-administrasi-10",
+          "status": "cannot-tell",
+          "note": "No incidents in the capture. incident-severity.ts now maps low/medium/high/critical to neutral/info/warning/danger, never accent."
+        },
+        {
+          "id": "kepegawaian-administrasi-12",
+          "status": "resolved",
+          "note": "The recap keeps 'Buku tamu' highlighted in the sidebar, and the satpam's 'Tamu' bottom tab stays active on /visitors/recap."
+        },
+        {
+          "id": "kepegawaian-administrasi-13",
+          "status": "resolved",
+          "note": "The tab is now 'Rekap kunjungan'. An empty period shows 'Tidak ada kunjungan pada 17 November 2026' instead of zero figures. Icon tiles are per code; there was no data to see them."
+        },
+        {
+          "id": "kepegawaian-administrasi-14",
+          "status": "resolved",
+          "note": "The area tabs are one underline row in the template position on every page, scrolling with a fade on a phone."
+        },
+        {
+          "id": "kepegawaian-administrasi-15",
+          "status": "partly",
+          "note": "Staff attendance has one row of underline tabs and billing no longer wraps. But on a phone billing hides two of five tabs with only a faint fade (finding 111)."
+        },
+        {
+          "id": "kepegawaian-administrasi-16",
+          "status": "resolved",
+          "note": "'Buat siklus supervisi' and 'Catat insiden' open as bottom sheets with Batal/Simpan pinned at the bottom."
+        },
+        {
+          "id": "kepegawaian-administrasi-17",
+          "status": "resolved",
+          "note": "The dialogs use Field with required asterisks, helper text and NumberInput steppers."
+        },
+        {
+          "id": "kepegawaian-administrasi-18",
+          "status": "resolved",
+          "note": "DatePicker, TimePicker and the day stepper replace the native inputs on every captured screen."
+        },
+        {
+          "id": "kepegawaian-administrasi-19",
+          "status": "resolved",
+          "note": "The 'Pilih siswa' picker now has the same 14px rounding as the other inputs."
+        },
+        {
+          "id": "kepegawaian-administrasi-21",
+          "status": "resolved",
+          "note": "Empty states have a single frame and carry an action where the reader may create. New side effect: the action duplicates the header primary (finding 105)."
+        },
+        {
+          "id": "kepegawaian-administrasi-22",
+          "status": "partly",
+          "note": "The phone toolbar no longer breaks into four rows, but with no search the '...' menu sits alone on its own row (finding 108)."
+        },
+        {
+          "id": "kepegawaian-administrasi-23",
+          "status": "resolved",
+          "note": "From code: Stat now renders its dt and dd directly inside one grouping div per item, so the dl structure is valid. Not re-run through axe."
+        },
+        {
+          "id": "kepegawaian-administrasi-24",
+          "status": "resolved",
+          "note": "Bottom tab labels 'Tamu' and 'Pengguna' now show in full."
+        },
+        {
+          "id": "kepegawaian-administrasi-25",
+          "status": "resolved",
+          "note": "A single row of tabs; 'Presensi saya' moved to a header button (an overflow item on a phone)."
+        },
+        {
+          "id": "kepegawaian-administrasi-26",
+          "status": "resolved",
+          "note": "Four status tiles (Hadir, Terlambat, Tidak hadir, Cuti atau izin) filter the board. The self check-in is now a secondary link."
+        },
+        {
+          "id": "kepegawaian-administrasi-27",
+          "status": "resolved",
+          "note": "The empty state has a short title, a description and an 'Atur jadwal kerja' button. Read-only copy is still slightly off (finding 110)."
+        },
+        {
+          "id": "kepegawaian-administrasi-28",
+          "status": "cannot-tell",
+          "note": "The schedule tab was not captured. Bulk patterns need the API."
+        },
+        {
+          "id": "kepegawaian-administrasi-29",
+          "status": "cannot-tell",
+          "note": "The recap tab was not captured."
+        },
+        {
+          "id": "kepegawaian-administrasi-30",
+          "status": "cannot-tell",
+          "note": "The manual entry dialog was not captured."
+        },
+        {
+          "id": "kepegawaian-administrasi-32",
+          "status": "resolved",
+          "note": "The sidebar and h1 both read 'Tagihan dan pembayaran'. The eyebrow 'Administrasi' names no visible group (finding 114)."
+        },
+        {
+          "id": "kepegawaian-administrasi-33",
+          "status": "partly",
+          "note": "The first screen is still a student picker and an empty card over a mostly blank viewport. The student is kept in the URL per code; today's receipts need the API."
+        },
+        {
+          "id": "kepegawaian-administrasi-34",
+          "status": "cannot-tell",
+          "note": "No student was selected in the capture."
+        },
+        {
+          "id": "kepegawaian-administrasi-35",
+          "status": "cannot-tell",
+          "note": "Not captured in an error state. student-bill-history-view.tsx and expected-guests-view.tsx now branch to QueryError with retry."
+        },
+        {
+          "id": "kepegawaian-administrasi-36",
+          "status": "cannot-tell",
+          "note": "The payment form was not captured."
+        },
+        {
+          "id": "kepegawaian-administrasi-37",
+          "status": "cannot-tell",
+          "note": "The bills tab was not captured."
+        },
+        {
+          "id": "kepegawaian-administrasi-38",
+          "status": "cannot-tell",
+          "note": "The arrears tab was not captured."
+        },
+        {
+          "id": "kepegawaian-administrasi-42",
+          "status": "partly",
+          "note": "The list now has instrument, criteria and scale columns, search, a row menu and phone cards. Progress and academic year are still missing (API)."
+        },
+        {
+          "id": "kepegawaian-administrasi-43",
+          "status": "resolved",
+          "note": "Numbered criterion rows; the code is filled in from the name with an explanation; NumberInput steppers for the scale; required markers."
+        },
+        {
+          "id": "kepegawaian-administrasi-45",
+          "status": "not-resolved",
+          "note": "The guru still gets 'Tidak ada akses ke halaman ini, Kode 403' on /supervision/my-report (permission and API)."
+        },
+        {
+          "id": "kepegawaian-administrasi-46",
+          "status": "partly",
+          "note": "Instrument card, summary strip, observer column, avatars and a step strip were added. Per-observation status needs the API. The step strip and the phone summary strip are broken (findings 101 and 102)."
+        },
+        {
+          "id": "kepegawaian-administrasi-47",
+          "status": "partly",
+          "note": "Still only a list of teachers with 'n observasi terjadwal'. Aggregates need the API, and the tab changes the header height (finding 107)."
+        },
+        {
+          "id": "kepegawaian-administrasi-48",
+          "status": "resolved",
+          "note": "Clean header (breadcrumb, teacher, lesson context), a scale legend, rounded score buttons and a running count. The phone save bar has a new gap (finding 103)."
+        },
+        {
+          "id": "kepegawaian-administrasi-51",
+          "status": "resolved",
+          "note": "Captured cards use the 20px card radius and the controls are rounded consistently."
+        },
+        {
+          "id": "kepegawaian-administrasi-52",
+          "status": "resolved",
+          "note": "'Presensi pegawai' and 'Presensi saya' are used throughout."
+        },
+        {
+          "id": "kepegawaian-administrasi-53",
+          "status": "resolved",
+          "note": "Sentence case everywhere seen: 'Buku tamu', 'Tamu baru', 'Catat insiden', 'Rekap kunjungan', 'Loket pembayaran'."
+        }
+      ],
+      "apiNeeded": [
+        "Supervision: ScheduledObservation needs a status or observation_id so the cycle detail can mark 'Selesai' and offer 'Lihat hasil' instead of 'Isi hasil' on every row",
+        "Supervision: completing an observation fails, so /supervision/observations/[observationId] could not be captured",
+        "Supervision: a cycle-level aggregate endpoint (per-teacher completed/scheduled counts and averages, per-criterion averages) for the 'Hasil' tab",
+        "Supervision: scheduled and completed counts plus academic year on SupervisionCycle for progress in the cycle list",
+        "Permissions: guru (teacher) gets 403 on /supervision/my-report; the default roles need a read-own supervision grant and respond_to_supervision",
+        "Billing: an endpoint for today's desk receipts and recent payments, so the desk's first screen is not just a picker",
+        "Staff attendance: a bulk work-schedule pattern endpoint (one weekly schedule applied to many employees)"
+      ]
+    },
+    {
+      "unit": "home-personal-1",
+      "score": 7,
+      "verdict": "The home is a real step up. Every role now opens on one hero with one clear action, calm states included. Cards share one radius, one header style and accent text links. Dark mode uses the bright token accent, and on the phone the header, the one-line greeting and the bottom bar finally feel like an app. Two things let it down. First, the phone stat strip ends in a clipped sliver on six of nine homes (cut mid-word for guru piket) and hides half the figures with no hint. Second, the home says the same fact three or four times (hero, tile, queue card), worst on calm days. On desktop, the side check-in card puts a second, louder primary button next to the hero's. The satpam home is a hero plus one half-width notification tile, and the leadership homes are lopsided. /check-in has a sound structure, but its copy is unfinished: \"Jadwal belum diatur\" appears nine times, rows read \"– – –\", and an alert tells the admin to contact the admin. /announcements is clean and consistent, but only its empty state was captured.",
+      "best": [
+        "Every role gets a hero with exactly one primary action, including calm states (piket 'Tidak ada antrean' with Tampilkan QR, satpam 'Siap memindai izin keluar', siswa 'Pindai masuk kelas' while a lesson runs).",
+        "Dark mode on the home is clean: the token accent #2FD6A0 on buttons and chips, readable status badges, no light panels left behind.",
+        "The phone frame works: the greeting fits on one line, the hero starts about 146px from the top, bottom tab labels are no longer truncated, and the last card clears the raised centre button on every full-page shot.",
+        "The card language is consistent across all nine homes: Card radius, CardHeader with accent TextLink actions, ListRows with chevrons, compact EmptyStates instead of dashed boxes."
+      ],
+      "worst": [
+        "The phone stat strip ends in a clipped sliver of the next cell, cut mid-word on guru piket ('Izin keluar menungg'), and hides half the figures with no scroll hint.",
+        "Staff homes show two primary buttons: the hero action plus a full-width 'Catat kedatangan' that is louder than the hero's own button.",
+        "The same fact is repeated three or four times per home (hero title, hero meta, progress label, tile, queue card), worst on calm days.",
+        "The satpam desktop home is a hero plus a single half-width 'Notifikasi' tile beside an empty slot.",
+        "/check-in repeats 'Jadwal belum diatur' nine times, shows '– – –' rows, and tells the admin to contact the admin."
+      ],
+      "coverage": [
+        {
+          "route": "/dashboard",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 27
+        },
+        {
+          "route": "/check-in",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 10
+        },
+        {
+          "route": "/announcements",
+          "desktop": true,
+          "mobile": true,
+          "shotsViewed": 8
+        }
+      ],
+      "findings": [
+        {
+          "id": "home-personal-1-01",
+          "route": "/dashboard",
+          "role": "gurupiket",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/gurupiket/mobile-light/dashboard--full.png",
+          "severity": "major",
+          "category": "clipping",
+          "title": "Phone stat strip ends in a clipped sliver and hides half the figures",
+          "description": "On the phone home the stat strip is one rounded card that scrolls sideways, and its right edge falls wherever the labels happen to end. Admin, kepsek and pustakawan show the second cell's label running to a stray divider with about 7px of a third cell. Siswa shows the edge of a pink icon circle. Guru piket shows the label cut mid-word: 'Izin keluar menungg'. There is no fade, no snap and no peek large enough to read as a card, so this reads as a clipping bug, not a scroll hint. The figures past the edge are effectively invisible: Pengguna aktif and Sedang daring (admin, kepsek), Presensi kelas and Notifikasi (guru), Dikembalikan and Kunjungan (pustakawan), Buku dipinjam and Mapel bernilai (siswa).",
+          "cause": "apps/web/features/dashboard/components/dashboard-view.tsx:245-251 chooses StatGrid variant 'strip' on every phone, whatever the tile count. packages/ui/src/components/stat-grid.tsx:89-92: the scroller is overflow-x-auto inside a rounded border, with `dl` set to `flex w-max min-w-full`, and has no snap, edge padding or fade. packages/ui/src/components/stat.tsx:75 sets compact cells to `min-w-36 flex-1`, and stat.tsx:259 sets their labels to `whitespace-nowrap`, so each cell's width follows its label length and the viewport edge lands at an arbitrary point (on a divider, on an icon or mid-word).",
+          "fix": "For the home (at most 4 figures), lay the phone strip out as a 2x2 compact grid with no scrolling. Add a `wrap` option to StatStrip that renders the `dl` as `grid grid-cols-2` with hairlines (`[&>*:nth-child(even)]:border-l [&>*:nth-child(n+3)]:border-t border-line`) instead of `flex w-max divide-x`, and pass it from dashboard-view.tsx when `!isDesktop && tiles.length <= 4`. That is two rows of about 62px, so every figure is visible. Keep the scroller only for 5 or more figures: add `snap-x snap-mandatory` on the scroller, give cells `snap-start shrink-0 basis-[42%]` so the next cell deliberately peeks by about 40%, and add a trailing mask fade (`[mask-image:linear-gradient(to_right,#000_calc(100%-32px),transparent)]`) while `overflows` is true and the scroller is not at its end.",
+          "files": [
+            "packages/ui/src/components/stat-grid.tsx",
+            "packages/ui/src/components/stat.tsx",
+            "apps/web/features/dashboard/components/dashboard-view.tsx"
+          ],
+          "alsoOn": [
+            "/dashboard admin mobile light and dark",
+            "/dashboard guru mobile light and dark",
+            "/dashboard kepsek mobile",
+            "/dashboard pustakawan mobile",
+            "/dashboard siswa mobile light and dark"
+          ]
+        },
+        {
+          "id": "home-personal-1-02",
+          "route": "/dashboard",
+          "role": "guru",
+          "viewport": "both",
+          "theme": "both",
+          "shot": "shots/guru/desktop-light/dashboard--fold.png",
+          "severity": "major",
+          "category": "hierarchy",
+          "title": "Two primary buttons on every staff home; the side card outshouts the hero",
+          "description": "On desktop the hero's primary button ('Isi presensi', 'Buka monitor', 'Buka konseling', 'Tampilkan QR', 'Buka meja sirkulasi', 'Buka pemindai', 'Buka laporan', about 100px wide) sits beside the 'Presensi kerja' card, whose filled full-width 'Catat kedatangan' (326px) is the loudest element on the screen. On the satpam phone both full-width primaries are on the first screen ('Buka pemindai' at about 310px and 'Catat kedatangan' at about 675px). The home's rule of one primary action is broken for admin, guru, gurubk, gurupiket, kepsek, pustakawan, satpam and wakepsek.",
+          "cause": "apps/web/features/dashboard/home/blocks/check-in.tsx:177-185 renders `variant={hasArrival ? \"secondary\" : \"primary\"}` with `className=\"w-full\"`, so before arrival the card's button is a primary next to the hero's (dashboard-view.tsx:332).",
+          "fix": "On the home card, always use `variant=\"secondary\"` for the check-in button; the /check-in page keeps its primary. If arrival should lead when it is the reader's most urgent task (no arrival yet and no higher-priority hero), have useCheckInBlock return a HeroCandidate for it instead of promoting the card button.",
+          "files": ["apps/web/features/dashboard/home/blocks/check-in.tsx"],
+          "alsoOn": [
+            "/dashboard admin, gurubk, gurupiket, kepsek, pustakawan, satpam, wakepsek desktop",
+            "/dashboard satpam mobile"
+          ]
+        },
+        {
+          "id": "home-personal-1-03",
+          "route": "/dashboard",
+          "role": "gurupiket",
+          "viewport": "both",
+          "theme": "both",
+          "shot": "shots/gurupiket/mobile-light/dashboard--full.png",
+          "severity": "major",
+          "category": "hierarchy",
+          "title": "Each home states the same fact three or four times",
+          "description": "Guru piket: the hero says 'Tidak ada antrean', then the tiles say '0 Terlambat menunggu' and '0 Izin keluar menunggu', then the card 'Antrean piket' repeats both as empty states. On the phone, that is the whole first screen and the personal check-in falls below the fold. Gurubk: 'Antrean BK kosong', then '0 Kandidat SP', then 'Antrean BK / Kandidat SP: Tidak ada kandidat'. Wakepsek: 'Tidak ada yang menunggu keputusan', then '0 Perlu tindakan', then 'Antrean keputusan: Semua antrean kosong'. Admin and kepsek: the hero title '0 dari 1 kelas sudah dipresensi', the meta '1 kelas yang sedang belajar belum mengisi presensi', the progress row 'Presensi kelas yang sedang belajar 0/1', then the tile '0/1 Kelas dipresensi'; the 'Sedang daring' tile is repeated again inside 'Aktivitas masuk'. Pustakawan: the hero '0 dipinjam, 0 dikembalikan hari ini / 2 peminjaman terlambat', then the tiles '2 Terlambat', '0 Dipinjam hari ini' and '0 Dikembalikan hari ini', then the 'Terlambat terlama' card.",
+          "cause": "The blocks add tiles and queue cards regardless of what the hero already says. apps/web/features/dashboard/home/blocks/picket.tsx:137-150 always pushes PicketQueueCard. counselor.tsx:170-184 pushes counselor.queue and deputy.tsx:97-100 pushes deputy.queues even when they are all empty. leadership.tsx:104-126 gives the hero a title, a meta and a progress label with valueLabel for one number, and leadership.tsx:153-163 adds the same figure as the school.sessions tile. librarian.tsx:59-99 states loans, returns and overdue in both the hero and the tiles.",
+          "fix": "(1) When a block's hero is the calm or empty state, do not push its queue card: in picket.tsx:137, push only while loading, on error, or when `lateItems.length + exitItems.length > 0`; apply the same rule to counselor.queue and deputy.queues. (2) Add `coversTiles?: string[]` to HeroCandidate and filter those tiles out in dashboard-view.tsx before rendering: school.summary covers school.sessions, and library.circulation covers library.loansToday and library.returnsToday. (3) In the leadership hero, keep the title and the bar but drop the meta sentence (or the progress label). Drop the 'Sedang daring' tile, since SchoolActivityCard already names who is online.",
+          "files": [
+            "apps/web/features/dashboard/home/blocks/picket.tsx",
+            "apps/web/features/dashboard/home/blocks/counselor.tsx",
+            "apps/web/features/dashboard/home/blocks/deputy.tsx",
+            "apps/web/features/dashboard/home/blocks/leadership.tsx",
+            "apps/web/features/dashboard/home/blocks/librarian.tsx",
+            "apps/web/features/dashboard/home/types.ts",
+            "apps/web/features/dashboard/components/dashboard-view.tsx"
+          ],
+          "alsoOn": [
+            "/dashboard gurubk",
+            "/dashboard wakepsek",
+            "/dashboard admin",
+            "/dashboard kepsek",
+            "/dashboard pustakawan"
+          ]
+        },
+        {
+          "id": "home-personal-1-04",
+          "route": "/dashboard",
+          "role": "satpam",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/satpam/desktop-light/dashboard--fold.png",
+          "severity": "major",
+          "category": "hierarchy",
+          "title": "Satpam home: one half-width notification tile beside an empty slot",
+          "description": "Under the hero, the satpam desktop home shows a single '0 Notifikasi belum dibaca' tile in the left half of a two-column row, with the right half empty. The main column then ends at about y=507, and the rest of the 760px-wide column is blank. On the phone the same lone notification count fills a full-width strip. It looks unfinished, and it repeats the bell in the header.",
+          "cause": "apps/web/features/dashboard/home/blocks/gate.tsx:37 adds no tiles, so only the filler tile from dashboard-view.tsx:147-162 remains. TILE_COLUMNS[1] = 'sm:grid-cols-2' (dashboard-view.tsx:66-67) then leaves a hole beside it.",
+          "fix": "In dashboard-view.tsx, render no stat row when the only tile is the common.notifications filler (`tiles.length === 1 && tiles[0].key === 'common.notifications'`); the header bell already carries the count. Drop TILE_COLUMNS[1]. Gate figures can be added later once a gate summary exists (see apiNeeded).",
+          "files": ["apps/web/features/dashboard/components/dashboard-view.tsx"],
+          "alsoOn": ["/dashboard satpam mobile"]
+        },
+        {
+          "id": "home-personal-1-05",
+          "route": "/dashboard",
+          "role": "admin",
+          "viewport": "desktop",
+          "theme": "both",
+          "shot": "shots/admin/desktop-light/dashboard--full.png",
+          "severity": "minor",
+          "category": "hierarchy",
+          "title": "Leadership and BK homes are lopsided: short main column, long side column",
+          "description": "For admin, the 760px main column ends at about y=735 while the side column runs on to 1280, leaving a 760x545 blank block at the bottom left. Kepsek has the same problem (735 against 1100), and so does gurubk (675 against 1020). The data cards ('Aktivitas masuk', 'Siswa berisiko') sit in the narrow column, while the wide column holds only the queue.",
+          "cause": "apps/web/features/dashboard/home/blocks/leadership.tsx:219-250 puts school.atRisk and school.activity in `side`, and counselor.tsx:186-200 does the same for counselor.atRisk. The side column also always takes check-in, shortcuts and announcements (dashboard-view.tsx:273-311).",
+          "fix": "Move school.activity and school.atRisk into `main` in leadership.tsx, and counselor.atRisk into `main` in counselor.tsx. Keep the side column for the reader's personal items (check-in, shortcuts, announcements).",
+          "files": [
+            "apps/web/features/dashboard/home/blocks/leadership.tsx",
+            "apps/web/features/dashboard/home/blocks/counselor.tsx"
+          ],
+          "alsoOn": [
+            "/dashboard kepsek desktop",
+            "/dashboard gurubk desktop",
+            "/dashboard admin desktop dark"
+          ]
+        },
+        {
+          "id": "home-personal-1-06",
+          "route": "/check-in",
+          "role": "admin",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/admin/desktop-light/check-in--full.png",
+          "severity": "minor",
+          "category": "copy",
+          "title": "Check-in page: 'Jadwal belum diatur' nine times, '– – –' rows, admin told to contact admin",
+          "description": "The today card shows a 'Jadwal belum diatur' badge, then the warning 'Jadwal kerja Anda belum diatur. Hubungi admin untuk mengaturnya.' (also shown to the admin), then every one of the seven rows repeats the same badge. Every row's meta reads '– – –'. The list is titled 'Minggu ini' but runs Wednesday to Tuesday, across last week and the weekend. The home card writes the missing times as '-' (hyphen) while the page uses '–' (en dash).",
+          "cause": "apps/web/features/staff-attendance/components/self-check-in-view.tsx:134 draws the DayStatus badge, and :157-159 adds the unscheduledHint Alert, which states the same fact. :205 puts a trailing DayStatus on every row. :197-203 always renders hoursRange '{arrival} – {departure}' with '–' placeholders. :74 takes the last 7 days, while staffAttendance.id.json titles them 'Minggu ini'. apps/web/features/dashboard/home/blocks/check-in.tsx:121 uses '-' where self-check-in-view.tsx:90 uses '–'.",
+          "fix": "Hide the card's DayStatus when status_code is 'unscheduled', since the Alert already says it. Leave out the trailing badge on 'unscheduled' rows. Render the row meta only when arrival_at or departure_at exists, and otherwise show 'Belum ada catatan'. Rename thisWeek to '7 hari terakhir', or query from Monday. For readers with manage_staff_attendance, swap 'Hubungi admin' for a TextLink to the schedule editor. Use one placeholder ('–') in both views.",
+          "files": [
+            "apps/web/features/staff-attendance/components/self-check-in-view.tsx",
+            "apps/web/features/dashboard/home/blocks/check-in.tsx",
+            "apps/web/messages/features/staffAttendance.id.json",
+            "apps/web/messages/features/staffAttendance.en.json"
+          ],
+          "alsoOn": [
+            "/check-in guru, gurubk, gurupiket, kepsek, pustakawan, satpam, wakepsek desktop and mobile"
+          ]
+        },
+        {
+          "id": "home-personal-1-07",
+          "route": "/dashboard",
+          "role": "guru",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/guru/mobile-light/dashboard--fold.png",
+          "severity": "minor",
+          "category": "phone",
+          "title": "Content shows through the bottom tab bar right under its labels",
+          "description": "Text scrolling under the tab bar stays sharp and readable behind the 12px labels. 'Presensi kerja' sits under Beranda and Tindakan, and 'Riwayat' collides with 'Menu'. On /check-in, 'Senin, 16 November' and 'Jadwal belum diatur' show behind the labels. In dark mode, a green 'Lihat semua' shows behind 'Izin' and 'Menu' on the siswa home.",
+          "cause": "apps/web/components/mobile-tab-bar.tsx:161 uses `bg-surface/85 backdrop-blur-xl`. In these captures the blur does not soften the text, so 15% show-through lands directly under the labels.",
+          "fix": "Make the bar's surface opaque enough to stand on its own: `bg-surface/95`, or plain `bg-surface`, keeping `backdrop-blur-xl` as an extra. Do not rely on the blur to keep labels readable.",
+          "files": ["apps/web/components/mobile-tab-bar.tsx"],
+          "alsoOn": ["/check-in mobile", "/dashboard siswa mobile dark", "/dashboard admin mobile"]
+        },
+        {
+          "id": "home-personal-1-08",
+          "route": "/dashboard",
+          "role": "guru",
+          "viewport": "mobile",
+          "theme": "both",
+          "shot": "shots/guru/mobile-light/dashboard--fold.png",
+          "severity": "minor",
+          "category": "typography",
+          "title": "Strip figures sit at different heights when one cell has a hint",
+          "description": "In the phone strip, a cell with a hint line ('dari 1 sesi hari ini', 'belum dibaca', 'bulan ini') is taller, and the values are vertically centred, so the two numbers side by side sit about 10px apart: guru '1' and '1', gurubk '0' and '2', siswa '0%' and '1', wakepsek '0' and '0'.",
+          "cause": "packages/ui/src/components/stat.tsx:75 sets compact cells to `justify-center`, and the hint at stat.tsx:308-315 adds a third line to only some cells.",
+          "fix": "Use `justify-start` in the compact ROOT_CLASS (the absolutely positioned icon can stay centred), or leave the hint out in the compact appearance and fold it into the label, so values share one baseline.",
+          "files": ["packages/ui/src/components/stat.tsx"],
+          "alsoOn": ["/dashboard gurubk, siswa, wakepsek mobile"]
+        },
+        {
+          "id": "home-personal-1-09",
+          "route": "/dashboard",
+          "role": "gurupiket",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/gurupiket/desktop-light/dashboard--fold.png",
+          "severity": "minor",
+          "category": "hierarchy",
+          "title": "Card title and its inner section headings look identical",
+          "description": "In 'Antrean piket' the card title (h2) and its sections 'Terlambat' and 'Izin keluar' (h3) have the same size and weight, so the card reads as three stacked titles. The same happens with 'Antrean BK' and 'Kandidat SP' for gurubk.",
+          "cause": "apps/web/features/dashboard/home/blocks/picket.tsx:172 and counselor.tsx (QueueSection) use SectionHeader as='h3', which is `text-heading` (packages/ui/src/components/section-header.tsx:43), inside a Card whose CardTitle is also `text-heading` (packages/ui/src/components/card.tsx:167).",
+          "fix": "Inside a card, render the sections one step down: add `size=\"sm\"` to SectionHeader (text-label, text-fg-muted) and use it in the picket and counselor queue sections. Alternatively drop the card title and let the two section headers stand alone.",
+          "files": [
+            "packages/ui/src/components/section-header.tsx",
+            "apps/web/features/dashboard/home/blocks/picket.tsx",
+            "apps/web/features/dashboard/home/blocks/counselor.tsx"
+          ],
+          "alsoOn": ["/dashboard gurubk desktop and mobile", "/dashboard gurupiket mobile"]
+        },
+        {
+          "id": "home-personal-1-10",
+          "route": "/dashboard",
+          "role": "kepsek",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/kepsek/desktop-light/dashboard--full.png",
+          "severity": "minor",
+          "category": "consistency",
+          "title": "Kepsek 'Antrean sekolah' count badges do not line up",
+          "description": "'Izin terencana 1' and 'Izin keluar 0' have no chevron, so their badges sit flush right. 'Keterlambatan 0' has a chevron, which pushes its badge about 32px left. The count column is ragged, and two of the three rows look broken next to the third.",
+          "cause": "apps/web/features/dashboard/home/blocks/leadership.tsx:299 sets `href` only for queues the reader can open, and ListRow draws the chevron only for links.",
+          "fix": "Fall back to the inbox for rows the reader cannot open: `href={linkedQueues.includes(key) ? href : inboxHref}`. Kepsek can open /inbox, so every row opens and aligns. Otherwise reserve the chevron slot (a size-4 spacer in `trailing`) whenever any row in the list is a link.",
+          "files": ["apps/web/features/dashboard/home/blocks/leadership.tsx"],
+          "alsoOn": ["/dashboard kepsek mobile"]
+        },
+        {
+          "id": "home-personal-1-11",
+          "route": "/check-in",
+          "role": "guru",
+          "viewport": "mobile",
+          "theme": "light",
+          "shot": "shots/guru/mobile-light/check-in--full.png",
+          "severity": "minor",
+          "category": "copy",
+          "title": "One feature, two names, and a clash with the 'Presensi' tab",
+          "description": "On the guru phone, the page title 'Presensi saya' sits above a tab bar whose centre button is labelled 'Presensi', which means class attendance and is not active here ('Menu' is). On the home, the card is 'Presensi kerja' and its link 'Riwayat' opens 'Presensi saya'. The admin hero 'Presensi saat ini' means class attendance again. Readers have to guess which 'Presensi' is which.",
+          "cause": "apps/web/messages/features/staffAttendance.id.json self.title is 'Presensi saya', apps/web/messages/id.json:44 myAttendance is 'Presensi saya', and apps/web/messages/features/dashboardDuty.id.json checkIn.title is 'Presensi kerja'.",
+          "fix": "Name the staff check-in 'Presensi kerja' everywhere (self.title, the myAttendance nav and account-menu label, the home card title) and keep the bare 'Presensi' for class attendance. Rename the card link from 'Riwayat' to 'Buka'. Update the en catalogs in step.",
+          "files": [
+            "apps/web/messages/features/staffAttendance.id.json",
+            "apps/web/messages/id.json",
+            "apps/web/messages/features/dashboardDuty.id.json",
+            "apps/web/messages/features/staffAttendance.en.json",
+            "apps/web/messages/en.json",
+            "apps/web/messages/features/dashboardDuty.en.json"
+          ],
+          "alsoOn": ["/dashboard all staff roles"]
+        },
+        {
+          "id": "home-personal-1-12",
+          "route": "/dashboard",
+          "role": "kepsek",
+          "viewport": "both",
+          "theme": "both",
+          "shot": "shots/kepsek/desktop-light/dashboard--full.png",
+          "severity": "polish",
+          "category": "typography",
+          "title": "Login chart writes '13:00' where the app writes '07.00'",
+          "description": "'Paling ramai pukul 13:00 dengan 35 kali masuk' uses a colon, while every other time on the homes and on /check-in uses the Indonesian dot ('07.00', '14.06').",
+          "cause": "apps/web/features/dashboard/home/blocks/login-activity-chart.tsx:44, :51 and :59 build the hour as `${pad(peakHour)}:00` by hand.",
+          "fix": "Format through the locale: `format.dateTime(new Date(Date.UTC(2000, 0, 1, peakHour)), { hour: \"2-digit\", minute: \"2-digit\", timeZone: \"UTC\" })`, which gives '13.00' in id and '13:00' in en.",
+          "files": ["apps/web/features/dashboard/home/blocks/login-activity-chart.tsx"],
+          "alsoOn": ["/dashboard admin desktop and mobile, light and dark"]
+        },
+        {
+          "id": "home-personal-1-13",
+          "route": "/dashboard",
+          "role": "admin",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/admin/desktop-light/dashboard--fold.png",
+          "severity": "polish",
+          "category": "other",
+          "title": "Hero progress track is invisible on the mint hero in light mode",
+          "description": "The meter under 'Presensi kelas yang sedang belajar 0/1' has a track of rgb(241,240,234) on a hero of rgb(221,242,234), about 1.05:1. At 0/1 the meter reads as nothing at all. In dark mode it is visible.",
+          "cause": "packages/ui/src/components/progress.tsx:145 uses `bg-surface-sunken` for the track, which is lighter than the accent-soft HeroCard surface.",
+          "fix": "Give the track a tint that reads on any surface, such as `bg-fg/10`, or add a track token that the accent-soft card context overrides.",
+          "files": ["packages/ui/src/components/progress.tsx"],
+          "alsoOn": ["/dashboard kepsek light", "/dashboard admin mobile light"]
+        },
+        {
+          "id": "home-personal-1-14",
+          "route": "/check-in",
+          "role": "guru",
+          "viewport": "both",
+          "theme": "light",
+          "shot": "shots/guru/desktop-light/check-in--full.png",
+          "severity": "polish",
+          "category": "typography",
+          "title": "Big clock reads '1 4.1 4' from tabular figures",
+          "description": "The kiosk-size clock opens visible gaps around each '1' ('14.14', '14.01'), and its first digit sits indented from the date line above it.",
+          "cause": "apps/web/features/staff-attendance/components/self-check-in-view.tsx:130 sets `tabular-nums` on `text-kiosk-display`. Manrope's tabular '1' leaves wide side bearings, as packages/ui/src/components/stat.tsx:117-120 already notes. The clock changes once a minute, so there is no jitter to prevent.",
+          "fix": "Drop `tabular-nums` from the clock paragraph.",
+          "files": ["apps/web/features/staff-attendance/components/self-check-in-view.tsx"],
+          "alsoOn": ["/check-in all roles, desktop and mobile"]
+        },
+        {
+          "id": "home-personal-1-15",
+          "route": "/dashboard",
+          "role": "guru",
+          "viewport": "both",
+          "theme": "both",
+          "shot": "shots/guru/desktop-light/dashboard--fold.png",
+          "severity": "polish",
+          "category": "copy",
+          "title": "'Tinjau' is a verb dressed as an amber status badge",
+          "description": "In the 'Wali kelas' card, the row 'Siswa Contoh / Sakit' ends in an amber pill reading 'Tinjau', which looks like a button but is a static badge before the real chevron.",
+          "cause": "apps/web/features/dashboard/home/blocks/homeroom.tsx:223-226 uses `trailing={<Badge tone=\"warning\" size=\"sm\">{t(\"card.review\")}</Badge>}`.",
+          "fix": "Use a status noun ('Menunggu tinjauan') or drop the badge, since the row already links and has a chevron.",
+          "files": [
+            "apps/web/features/dashboard/home/blocks/homeroom.tsx",
+            "apps/web/messages/features/dashboardTeaching.id.json"
+          ],
+          "alsoOn": ["/dashboard guru mobile light and dark"]
+        },
+        {
+          "id": "home-personal-1-16",
+          "route": "/dashboard",
+          "role": "wakepsek",
+          "viewport": "desktop",
+          "theme": "light",
+          "shot": "shots/wakepsek/desktop-light/dashboard--fold.png",
+          "severity": "polish",
+          "category": "typography",
+          "title": "Header account name truncated with 450px of free space beside it",
+          "description": "The account button reads 'Wakil Kepala Sekolah C...' although the header is empty between the search box (ending at x=680) and the bell. Real names with titles ('Dra. Hj. ...') will hit this too.",
+          "cause": "apps/web/components/account-menu.tsx:112-113 caps the name and role at `max-w-40` (160px).",
+          "fix": "Raise the cap to `max-w-64` on lg (keep `max-w-40` below lg) so typical full names fit.",
+          "files": ["apps/web/components/account-menu.tsx"],
+          "alsoOn": ["every desktop route for long names"]
+        }
+      ],
+      "baseline": [
+        {
+          "id": "home-personal-01",
+          "status": "resolved",
+          "note": "Piket and BK now open on calm heroes with one action ('Tidak ada antrean' / Tampilkan QR, 'Antrean BK kosong' / Buka konseling) instead of zero tiles."
+        },
+        {
+          "id": "home-personal-02",
+          "status": "partly",
+          "note": "Kepsek's hero now leads to 'Buka laporan' and the 0/1 tile is unlinked (guardHero/guardTiles). Admin's 'Buka monitor' still lands on the token gate, which needs the API change."
+        },
+        {
+          "id": "home-personal-03",
+          "status": "resolved",
+          "note": "Satpam has a gate hero ('Siap memindai izin keluar', Buka pemindai, Catat tamu) and Pindai as the centre tab. The lone notification tile is a new finding (home-personal-1-04)."
+        },
+        {
+          "id": "home-personal-04",
+          "status": "partly",
+          "note": "The hero leads with class attendance progress, but the 'Pengguna aktif' and 'Sedang daring' tiles and the login chart remain, and there is no H/S/I/A breakdown (API)."
+        },
+        {
+          "id": "home-personal-05",
+          "status": "partly",
+          "note": "Wakepsek has a deputy hero and a 'Antrean keputusan' card. The header badge still says 'Guru'."
+        },
+        {
+          "id": "home-personal-06",
+          "status": "partly",
+          "note": "The 'Kehadiran hari ini' card is gone, but admin and kepsek still state 0/1 in the hero title, meta, progress row and a tile, and other roles repeat the hero in tiles and queue cards (home-personal-1-03)."
+        },
+        {
+          "id": "home-personal-08",
+          "status": "resolved",
+          "note": "The phone hero starts about 146px from the top, and 'Halo, {name}' fits on one line with no chip row or badges."
+        },
+        {
+          "id": "home-personal-09",
+          "status": "resolved",
+          "note": "The chip row is gone, and shortcuts are a desktop side card that leaves out duplicates of the hero and the check-in card."
+        },
+        {
+          "id": "home-personal-10",
+          "status": "cannot-tell",
+          "note": "Not captured. From code, HomeSkeleton holds the hero and stat row while any persona is pending (dashboard-view.tsx:240-241)."
+        },
+        {
+          "id": "home-personal-11",
+          "status": "resolved",
+          "note": "The at-risk card filters out level 'none' (leadership.tsx:83) and shows 'Tidak ada siswa berisiko saat ini.'"
+        },
+        {
+          "id": "home-personal-12",
+          "status": "resolved",
+          "note": "The hero 'Isi presensi' and the teaching row (now with a chevron) open /attendance/{sessionId}."
+        },
+        {
+          "id": "home-personal-15",
+          "status": "resolved",
+          "note": "Every card header action is now one accent TextLink style (Riwayat, Lihat semua, Perlu tindakan, Buka presensi, Tinjau izin)."
+        },
+        {
+          "id": "home-personal-16",
+          "status": "resolved",
+          "note": "'Antrean sekolah' is a List of ListRows with count badges and chevrons. Kepsek's mixed chevrons are a new minor finding (home-personal-1-10)."
+        },
+        {
+          "id": "home-personal-17",
+          "status": "resolved",
+          "note": "The librarian uses the same template (hero 'Meja sirkulasi', four tiles, Card lists, check-in and announcements)."
+        },
+        {
+          "id": "home-personal-22",
+          "status": "resolved",
+          "note": "Dark buttons, chips and the FAB use the bright token accent and match the hero title green."
+        },
+        {
+          "id": "home-personal-23",
+          "status": "resolved",
+          "note": "Tab labels are short and whole: Beranda, Tindakan, Aksi cepat, Pengguna, Menu, Tamu, Konseling."
+        },
+        {
+          "id": "home-personal-24",
+          "status": "partly",
+          "note": "No Title Case on these screens, but one feature still has two names ('Presensi kerja' card, 'Presensi saya' page) that clash with the 'Presensi' tab (home-personal-1-11)."
+        },
+        {
+          "id": "home-personal-33",
+          "status": "partly",
+          "note": "'Buat pengumuman' is the header's primary action on both tabs. The draft-first publish flow is not visible in these shots, and the author reports it unchanged."
+        },
+        {
+          "id": "home-personal-34",
+          "status": "cannot-tell",
+          "note": "The composer dialog was not captured in this unit."
+        },
+        {
+          "id": "home-personal-41",
+          "status": "partly",
+          "note": "A failed week query now shows QueryError. The today card still has no loading branch: 'Catat kedatangan' is active, with '–' values, while week.isLoading (self-check-in-view.tsx:162-177). Judged from code."
+        },
+        {
+          "id": "home-personal-43",
+          "status": "partly",
+          "note": "The single-item nav is gone for non-admins, and admin gets underline NavTabs (Presensi saya / Presensi pegawai) under the header. No sidebar item is active on /check-in (account-menu placement by design)."
+        },
+        {
+          "id": "home-personal-42",
+          "status": "not-resolved",
+          "note": "Still plainly visible: 'Jadwal belum diatur' nine times, '– – –' rows, 'Minggu ini' spanning last week and the weekend (home-personal-1-06)."
+        },
+        {
+          "id": "home-personal-07",
+          "status": "partly",
+          "note": "The main/side layout replaced the half-empty hero and paired cards, but admin, kepsek and gurubk have a short main column beside a long side column (home-personal-1-05)."
+        },
+        {
+          "id": "home-personal-14",
+          "status": "partly",
+          "note": "Durations now read 'berjalan 7 jam 15 menit' and times '07.00', but the login chart still writes '13:00' (home-personal-1-12)."
+        }
+      ],
+      "apiNeeded": [
+        "Monitor snapshot and socket should accept a signed-in session holding view_monitor_presence, so the admin hero 'Buka monitor' does not land on the display-token gate.",
+        "School-wide counts of today's student statuses (hadir, sakit, izin, alpa, terlambat) for the principal's attendance dashboard (home-personal-04).",
+        "Optional: a gate summary for the security duty (exit permits scanned today, visitors on site), so the satpam stat row can show real figures instead of only notifications."
+      ]
+    }
+  ]
+}

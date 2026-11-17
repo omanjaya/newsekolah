@@ -81,7 +81,8 @@ export function RolesView(): ReactElement {
 
   const baseOf = (role: AdminRole): string[] => {
     const entry = saved[role.id];
-    return entry?.stale === role.permissions ? entry.permissions : role.permissions;
+    if (!entry) return role.permissions;
+    return entry.stale === role.permissions ? entry.permissions : role.permissions;
   };
   const draftIds = useMemo(
     () => new Set(Object.keys(drafts).filter((id) => list.some((role) => role.id === id))),

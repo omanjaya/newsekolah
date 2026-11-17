@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -60,8 +60,10 @@ describe("AuditLogsView detail", () => {
     });
     const user = userEvent.setup();
     render(<AuditLogsView />);
-    const [row] = screen.getAllByText("actions.role.update");
-    if (row) await user.click(row);
+    // DataTable mounts the phone cards beside the table (CSS shows one of
+    // them). A card opens through its overlay button, not its title text,
+    // so the row is opened from the table, where the whole row is the target.
+    await user.click(within(screen.getByRole("table")).getByText("actions.role.update"));
     const sheet = await screen.findByRole("dialog");
     expect(sheet).toHaveTextContent("Guru mapel");
     // The unchanged field is not listed as a change.

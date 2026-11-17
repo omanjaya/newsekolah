@@ -84,10 +84,11 @@ export function NotificationSettingsView(): ReactElement {
   const prefsFailed = prefs.isError && !prefs.data;
 
   // The timing draft belongs to one read of the settings: a refetch (after
-  // a save) starts again from what the server holds.
+  // a save) starts again from what the server holds. The stamp is compared
+  // only once there is a draft, so a missing stamp never matches no draft.
   const [draft, setDraft] = useState<{ at: number; values: TimingValues } | null>(null);
   const saved = settings.data ? timingOf(settings.data) : undefined;
-  const timing = draft?.at === settings.dataUpdatedAt ? draft.values : saved;
+  const timing = draft !== null && draft.at === settings.dataUpdatedAt ? draft.values : saved;
   const timingDirty =
     timing !== undefined && saved !== undefined && JSON.stringify(timing) !== JSON.stringify(saved);
 

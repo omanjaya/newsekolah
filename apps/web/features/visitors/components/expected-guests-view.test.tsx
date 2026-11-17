@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -91,8 +91,10 @@ describe("ExpectedGuestsView filters", () => {
     const user = userEvent.setup();
     render(<ExpectedGuestsView />);
 
-    // Withdrawing is the row's destructive action, kept in its menu.
-    await user.click(screen.getByRole("button", { name: "rowActions" }));
+    // Withdrawing is the row's destructive action, kept in its menu. The
+    // phone cards are mounted beside the table (CSS shows one of them), so
+    // the row's one menu is read from the table.
+    await user.click(within(screen.getByRole("table")).getByRole("button", { name: "rowActions" }));
     await user.click(screen.getByRole("menuitem", { name: "cancel" }));
     expect(mocks.cancel).not.toHaveBeenCalled();
     expect(await screen.findByText("cancelDialog.body")).toBeInTheDocument();
