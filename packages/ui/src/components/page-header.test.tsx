@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Printer, Trash2 } from "lucide-react";
+import { Plus, Printer, Trash2 } from "lucide-react";
 import { createRef, forwardRef, type AnchorHTMLAttributes } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -240,6 +240,55 @@ describe("PageHeader", () => {
     expect(actions).toHaveAttribute("data-slot", "page-header-actions");
     expect(actions).toHaveClass("flex");
     expect(actions).not.toHaveClass("hidden");
+  });
+
+  // Opt-in: a list page's "Tambah" no longer takes a full row under the
+  // title on a phone; it ends the title's line as an icon button.
+  it("puts a compact primary action on the phone's title line, the full one from 640px", async () => {
+    const onAdd = vi.fn();
+    const { container } = render(
+      <PageHeader
+        title="Pengumuman"
+        primaryAction={<Button>Buat pengumuman</Button>}
+        primaryActionCompact={{ icon: <Plus />, label: "Buat pengumuman", onSelect: onAdd }}
+        secondaryActions={[{ label: "Riwayat", href: "/history" }]}
+      />,
+    );
+    const block = screen.getByRole("heading", { level: 1, name: "Pengumuman" }).parentElement;
+    const [compact, full] = screen.getAllByRole("button", { name: "Buat pengumuman" });
+    if (!compact || !full) throw new Error("expected both forms of the primary action");
+    const trailing = compact.closest("[data-slot=page-header-phone-actions]");
+    expect(trailing?.parentElement).toBe(block);
+    expect(trailing).toHaveClass("sm:hidden", "self-start");
+    expect(compact).toHaveClass("bg-accent", "rounded-full");
+    // The overflow menu stays beside it, after it.
+    expect(within(trailing as HTMLElement).getByRole("button", { name: "Aksi lainnya" })).toBe(
+      trailing?.lastElementChild?.firstElementChild,
+    );
+    expect(block).toHaveClass("grid-cols-[minmax(0,1fr)_auto]");
+    // The full button shows from 640px only, and the row under the title
+    // has nothing left to show on a phone.
+    expect(full.parentElement).toHaveClass("hidden", "sm:contents");
+    expect(full.closest("[data-slot=page-header-actions]")).toHaveClass("hidden", "sm:flex");
+    await userEvent.click(compact);
+    expect(onAdd).toHaveBeenCalledOnce();
+    await expectNoAxeViolations(container);
+  });
+
+  it("links a compact primary action when it has an address", () => {
+    render(
+      <UiLinkProvider component={ClientLink}>
+        <PageHeader
+          title="Pengumuman"
+          primaryAction={<Button>Buat pengumuman</Button>}
+          primaryActionCompact={{ icon: <Plus />, label: "Buat pengumuman", href: "/new" }}
+        />
+      </UiLinkProvider>,
+    );
+    const link = screen.getByRole("link", { name: "Buat pengumuman" });
+    expect(link).toHaveAttribute("href", "/new");
+    expect(link).toHaveAttribute("data-client-link");
+    expect(link.querySelector("svg.lucide-plus")).toBeInTheDocument();
   });
 
   it("sets a leading avatar beside the title and its description", async () => {

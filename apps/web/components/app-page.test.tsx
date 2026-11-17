@@ -168,6 +168,22 @@ describe("AppPage", () => {
     ).toBeTruthy();
   });
 
+  it("passes the phone's compact primary action to the header's title line", () => {
+    renderPage(
+      <AppPage
+        primaryAction={<button type="button">Tambah</button>}
+        primaryActionCompact={{ icon: <span />, label: "Tambah entri", href: "/journal/new" }}
+      >
+        Isi
+      </AppPage>,
+    );
+    const compact = screen.getByRole("link", { name: "Tambah entri" });
+    expect(compact).toHaveAttribute("href", "/journal/new");
+    expect(compact.closest("[data-slot=page-header-heading]")).toContainElement(
+      screen.getByRole("heading", { level: 1 }),
+    );
+  });
+
   it("passes a leading avatar through to the header, beside the title", () => {
     route.pathname = "/library/catalogue/t-1";
     renderPage(

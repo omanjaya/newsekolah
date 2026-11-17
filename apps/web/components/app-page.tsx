@@ -8,6 +8,7 @@ import {
   type BreadcrumbItem,
   type NavTabsLinkProps,
   type PageHeaderAction,
+  type PageHeaderProps,
   type PageShellVariant,
 } from "@newsekolah/ui";
 import Link from "next/link";
@@ -41,6 +42,11 @@ export interface AppPageProps {
   actions?: ReactNode;
   /** The one main action, always visible. */
   primaryAction?: ReactNode;
+  /**
+   * The phone's form of `primaryAction`: an icon button on the title's line
+   * instead of a full row under it (PageHeader's `primaryActionCompact`).
+   */
+  primaryActionCompact?: PageHeaderProps["primaryActionCompact"];
   /** Further actions: buttons from 640px up, one menu on a phone. */
   secondaryActions?: PageHeaderAction[];
   /**
@@ -96,6 +102,7 @@ export function AppPage({
   breadcrumb,
   actions,
   primaryAction,
+  primaryActionCompact,
   secondaryActions,
   header,
   nav,
@@ -192,6 +199,7 @@ export function AppPage({
             description={description}
             actions={actions}
             primaryAction={primaryAction}
+            primaryActionCompact={primaryActionCompact}
             secondaryActions={secondaryActions}
             // The phone's header names the page once this title scrolls
             // away; a page that set its own tab name (the home's greeting

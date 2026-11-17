@@ -31,6 +31,14 @@ export interface PageHeaderAction {
   destructive?: boolean;
 }
 
+/** The main action as an icon button on a phone: the label is its accessible name and tooltip. */
+export interface PageHeaderCompactAction {
+  icon: ReactNode;
+  label: string;
+  onSelect?: () => void;
+  href?: string;
+}
+
 export interface PageHeaderProps extends Omit<ComponentPropsWithRef<"div">, "title" | "children"> {
   /** The section the page belongs to, above the title ("Data Sekolah"). */
   eyebrow?: ReactNode;
@@ -49,6 +57,14 @@ export interface PageHeaderProps extends Omit<ComponentPropsWithRef<"div">, "tit
   actions?: ReactNode;
   /** The page's one main action, always visible, rightmost. */
   primaryAction?: ReactNode;
+  /**
+   * The phone's form of `primaryAction`: below 640px the main action is an
+   * icon button at the end of the title's line (beside the overflow menu)
+   * instead of a full-width row under the title; from 640px up
+   * `primaryAction` shows as usual. Opt-in, for list pages whose action is
+   * clear from its icon ("Tambah" with a plus).
+   */
+  primaryActionCompact?: PageHeaderCompactAction;
   /** Further actions: buttons from 640px up, one overflow menu on a phone. */
   secondaryActions?: PageHeaderAction[];
   /** A rule under the header; off by default, as in the artboard (sections are set apart by space). */
@@ -82,6 +98,22 @@ function SecondaryButtons({ actions }: { actions: PageHeaderAction[] }) {
         ),
       )}
     </div>
+  );
+}
+
+/** The phone's main action at the end of the title's line: an accent icon button, 44px on touch. */
+function CompactPrimary({ action }: { action: PageHeaderCompactAction }) {
+  return action.href ? (
+    <IconButton asChild variant="primary" icon={action.icon} aria-label={action.label}>
+      <UiLink href={action.href} onClick={action.onSelect} />
+    </IconButton>
+  ) : (
+    <IconButton
+      variant="primary"
+      icon={action.icon}
+      aria-label={action.label}
+      onClick={action.onSelect}
+    />
   );
 }
 
@@ -122,16 +154,17 @@ function OverflowMenu({ actions, className }: { actions: PageHeaderAction[]; cla
 
 /*
  * The title block is a grid, so the leading avatar, the title, the phone's
- * overflow button and the description each keep their place without a
+ * trailing buttons (the overflow menu, a compact primary action) and the
+ * description each keep their place without a
  * wrapper between the title and its description. Spelled out per case:
  * Tailwind only sees whole class names.
  */
-function headingColumns(leading: boolean, phoneMenu: boolean): string {
-  if (leading && phoneMenu) {
+function headingColumns(leading: boolean, phoneTrailing: boolean): string {
+  if (leading && phoneTrailing) {
     return "grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)]";
   }
   if (leading) return "grid-cols-[auto_minmax(0,1fr)]";
-  if (phoneMenu) return "grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)]";
+  if (phoneTrailing) return "grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)]";
   return "grid-cols-[minmax(0,1fr)]";
 }
 
@@ -153,6 +186,7 @@ export function PageHeader({
   breadcrumb,
   actions,
   primaryAction,
+  primaryActionCompact,
   secondaryActions = [],
   divider = false,
   compactTitle,
@@ -167,10 +201,12 @@ export function PageHeader({
     breadcrumb
   ) : null;
   const hasActions = Boolean(actions) || Boolean(primaryAction) || secondaryActions.length > 0;
+  const compactPrimary = primaryActionCompact !== undefined;
   // On a phone only the free-form actions and the primary one keep a row
-  // under the title; the overflow menu sits on the title's line.
-  const phoneActions = Boolean(actions) || Boolean(primaryAction);
-  const phoneMenu = secondaryActions.length > 0;
+  // under the title; the overflow menu, and the primary in its compact
+  // form, sit on the title's line.
+  const phoneActions = Boolean(actions) || (Boolean(primaryAction) && !compactPrimary);
+  const phoneTrailing = secondaryActions.length > 0 || compactPrimary;
   const hasLeading = leading !== undefined && leading !== null && leading !== false;
   // A destructive action never sits out as a button: it waits in the menu
   // at every width, where it takes a deliberate second tap.
@@ -207,7 +243,7 @@ export function PageHeader({
             data-slot="page-header-heading"
             className={cn(
               "grid min-w-0 items-start gap-x-3 gap-y-2 sm:grow-999",
-              headingColumns(hasLeading, phoneMenu),
+              headingColumns(hasLeading, phoneTrailing),
               hasLeading && "gap-x-4",
               description ? "sm:basis-112" : "sm:basis-64",
             )}
@@ -225,13 +261,25 @@ export function PageHeader({
             </h1>
             {/* The phone's overflow button ends the title's first line
                 (a 36px button, 44px on touch, centred on the 28px line)
-                instead of taking a row of its own under the description. */}
-            {phoneMenu && (
-              <OverflowMenu
-                actions={secondaryActions}
-                className="-my-1 self-start pointer-coarse:-my-2 sm:hidden"
-              />
-            )}
+                instead of taking a row of its own under the description.
+                A compact primary action stands just before it. */}
+            {phoneTrailing &&
+              (compactPrimary ? (
+                <div
+                  data-slot="page-header-phone-actions"
+                  className="-my-1 flex items-center gap-2 self-start pointer-coarse:-my-2 sm:hidden"
+                >
+                  <CompactPrimary action={primaryActionCompact} />
+                  {secondaryActions.length > 0 && (
+                    <OverflowMenu actions={secondaryActions} className="flex" />
+                  )}
+                </div>
+              ) : (
+                <OverflowMenu
+                  actions={secondaryActions}
+                  className="-my-1 self-start pointer-coarse:-my-2 sm:hidden"
+                />
+              ))}
             {description && (
               <div
                 className={cn(
@@ -258,7 +306,11 @@ export function PageHeader({
             >
               {actions}
               {buttons.length > 0 && <SecondaryButtons actions={buttons} />}
-              {primaryAction}
+              {compactPrimary && primaryAction ? (
+                <div className="hidden sm:contents">{primaryAction}</div>
+              ) : (
+                primaryAction
+              )}
               {destructive.length > 0 && (
                 <OverflowMenu actions={destructive} className="hidden sm:block" />
               )}
