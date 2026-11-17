@@ -48,8 +48,12 @@ export interface SegmentedControlProps<T extends string = string> {
   onValueChange?: (value: T) => void;
   /** See `SegmentedControlSize`. */
   size?: SegmentedControlSize;
-  /** Stretch across the container, segments sharing the width equally. */
-  fullWidth?: boolean;
+  /**
+   * Stretch across the container, segments sharing the width equally.
+   * "phone" does so below 640px only (a filter under a search field on a
+   * phone, beside it from `sm` up) and keeps its own width above.
+   */
+  fullWidth?: boolean | "phone";
   disabled?: boolean;
   /** Posts the value with a native form. */
   name?: string;
@@ -144,7 +148,7 @@ export function SegmentedControl<T extends string = string>({
             // Never squeezed by the scroller's flex row: a track too wide
             // for the screen scrolls instead.
             "relative grid shrink-0 auto-cols-fr grid-flow-col",
-            fullWidth ? "w-full min-w-max" : "w-max",
+            fullWidth === true || fullWidth === "phone" ? "w-full min-w-max" : "w-max",
           )}
         >
           <span

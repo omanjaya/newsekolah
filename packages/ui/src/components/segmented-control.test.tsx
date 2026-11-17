@@ -106,6 +106,29 @@ describe("SegmentedControl", () => {
     expect(monday).not.toHaveClass("px-4");
   });
 
+  it("stretches on a phone only when fullWidth is phone", () => {
+    const { container, rerender } = render(
+      <SegmentedControl aria-label="Status izin" options={options} defaultValue="all" />,
+    );
+    const track = (): Element | null => container.firstElementChild;
+    expect(track()).toHaveClass("inline-flex", "w-fit");
+    rerender(
+      <SegmentedControl aria-label="Status izin" options={options} defaultValue="all" fullWidth />,
+    );
+    expect(track()).toHaveClass("flex", "w-full");
+    expect(track()).not.toHaveClass("sm:w-fit");
+    rerender(
+      <SegmentedControl
+        aria-label="Status izin"
+        options={options}
+        defaultValue="all"
+        fullWidth="phone"
+      />,
+    );
+    expect(track()).toHaveClass("flex", "w-full", "sm:inline-flex", "sm:w-fit");
+    expect(screen.getByRole("radiogroup")).toHaveClass("w-full", "min-w-max");
+  });
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <SegmentedControl aria-label="Status izin" options={options} defaultValue="pending" />,

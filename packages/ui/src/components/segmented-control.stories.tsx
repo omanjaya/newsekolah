@@ -88,6 +88,27 @@ function WeekStrip() {
   );
 }
 
+/** A filter under a search field: full width on a phone, its own width beside the field from 640px. */
+function ToolbarFilter() {
+  const [value, setValue] = useState("all");
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="h-11 rounded-md bg-surface-sunken sm:max-w-sm sm:flex-1" />
+      <SegmentedControl
+        aria-label="Tampilkan"
+        fullWidth="phone"
+        value={value}
+        onValueChange={setValue}
+        options={[
+          { value: "all", label: "Semua" },
+          { value: "onSite", label: "Di lokasi", count: 4 },
+          { value: "expected", label: "Dijadwalkan", count: 2 },
+        ]}
+      />
+    </div>
+  );
+}
+
 const meta: Meta<typeof SegmentedControl> = {
   title: "Components/SegmentedControl",
   component: SegmentedControl,
@@ -96,6 +117,7 @@ export default meta;
 type Story = StoryObj<typeof SegmentedControl>;
 
 export const Default: Story = { render: () => <Demo /> };
+export const PhoneFullWidth: Story = { render: () => <ToolbarFilter /> };
 export const Disabled: Story = {
   render: () => (
     <SegmentedControl
