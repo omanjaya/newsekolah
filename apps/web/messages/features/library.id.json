@@ -113,7 +113,6 @@
       }
     },
     "isbnLookup": {
-      "hint": "Cari data bibliografi dari ISBN di atas.",
       "search": "Cari ISBN",
       "notFound": "Tidak ditemukan data untuk ISBN ini. Isi manual di bawah.",
       "apply": "Isi otomatis",
