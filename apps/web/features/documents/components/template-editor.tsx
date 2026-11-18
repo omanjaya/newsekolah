@@ -44,6 +44,7 @@ import {
   useDocumentTemplatesQuery,
   useUpdateDocumentTemplateMutation,
 } from "../api";
+import { applyTemplateFormat, shortcutFormat, type TemplateFormat } from "../template-format";
 import {
   fixLegacyPlaceholders,
   listBlockToken,
@@ -52,6 +53,7 @@ import {
   scanTemplate,
 } from "../template-syntax";
 
+import { TemplateFormatToolbar } from "./template-format-toolbar";
 import { TemplatePreview } from "./template-preview";
 
 const LIST_HREF = "/settings/document-templates";
@@ -138,8 +140,9 @@ export function TemplateEditorView({ templateId }: { templateId?: string }): Rea
 }
 
 /**
- * Two panes: name, kind and the HTML body on the left, with the kind's
- * values as buttons that insert `{{.name}}` at the cursor; on the right a
+ * Two panes: name, kind and the HTML body on the left, with format
+ * buttons over it (and Ctrl+B, I, U) that wrap the selection in tags, and
+ * the kind's values as buttons that insert `{{.name}}` at the cursor; on the right a
  * preview rendered in an isolated frame, each value shown as its name in
  * square brackets, kept in view. Below `lg` the preview opens in a bottom
  * sheet from the body card instead. Create when `template` is undefined,
@@ -212,6 +215,22 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
     requestAnimationFrame(() => {
       field?.focus();
       field?.setSelectionRange(start + token.length, start + token.length);
+    });
+  }
+
+  /** Wraps the selection in `format`'s tags and keeps it selected. */
+  function formatSelection(format: TemplateFormat) {
+    const field = bodyRef.current;
+    const result = applyTemplateFormat(
+      body,
+      field?.selectionStart ?? body.length,
+      field?.selectionEnd ?? body.length,
+      format,
+    );
+    setBody(result.body);
+    requestAnimationFrame(() => {
+      field?.focus();
+      field?.setSelectionRange(result.selectionStart, result.selectionEnd);
     });
   }
 
@@ -346,16 +365,25 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
               </Alert>
             )}
             <Field label={t("bodyLabel")} required error={bodyError}>
-              <Textarea
-                ref={bodyRef}
-                value={body}
-                onChange={(e) => {
-                  setBody(e.target.value);
-                }}
-                rows={18}
-                spellCheck={false}
-                className="text-body-sm font-mono"
-              />
+              <div className="flex flex-col gap-2">
+                <TemplateFormatToolbar onFormat={formatSelection} />
+                <Textarea
+                  ref={bodyRef}
+                  value={body}
+                  onChange={(e) => {
+                    setBody(e.target.value);
+                  }}
+                  onKeyDown={(e) => {
+                    const format = shortcutFormat(e);
+                    if (!format) return;
+                    e.preventDefault();
+                    formatSelection(format);
+                  }}
+                  rows={18}
+                  spellCheck={false}
+                  className="text-body-sm font-mono"
+                />
+              </div>
             </Field>
             <div className="flex flex-col gap-2">
               <p className="text-label text-fg">{t("insertLabel")}</p>

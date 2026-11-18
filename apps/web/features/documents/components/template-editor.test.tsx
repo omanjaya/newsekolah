@@ -73,6 +73,29 @@ it("inserts a value the way the API reads it, at the cursor, and offers to save"
   );
 });
 
+it("wraps the selected text in tags from the format toolbar and from Ctrl+B", async () => {
+  const user = userEvent.setup();
+  render(<TemplateEditorView templateId="t1" />);
+  const body = screen.getByRole<HTMLTextAreaElement>("textbox", { name: /bodyLabel/ });
+  const toolbar = screen.getByRole("toolbar", { name: "toolbarLabel" });
+
+  // "Halo" is selected.
+  await user.click(body);
+  body.setSelectionRange(3, 7);
+  await user.click(within(toolbar).getByRole("button", { name: "format.bold" }));
+  expect(body).toHaveValue("<p><strong>Halo</strong> </p>");
+
+  body.setSelectionRange(11, 15);
+  await user.keyboard("{Control>}i{/Control}");
+  expect(body).toHaveValue("<p><strong><em>Halo</em></strong> </p>");
+
+  await user.click(screen.getByRole("button", { name: "save" }));
+  expect(update).toHaveBeenCalledWith(
+    expect.objectContaining({ body: "<p><strong><em>Halo</em></strong> </p>" }),
+    expect.anything(),
+  );
+});
+
 it("offers every value the API fills into a leave letter", () => {
   render(<TemplateEditorView templateId="t1" />);
   for (const name of ["nis", "address", "issuer_name", "homeroom_name"]) {

@@ -33,7 +33,7 @@
       "nameLabel": "Nama templat",
       "kindLabel": "Jenis dokumen",
       "bodyLabel": "Teks dokumen (HTML)",
-      "bodyHint": "Pakai tombol Sisipkan data otomatis di bawah untuk bagian yang diisi saat dokumen diterbitkan.",
+      "bodyHint": "Pilih teks lalu pakai tombol format di atas kotak, atau sisipkan data otomatis dari tombol di bawahnya.",
       "placeholdersLabel": "Data otomatis yang dipakai",
       "noPlaceholders": "Templat ini belum memakai data otomatis.",
       "knownPlaceholdersLabel": "Placeholder yang tersedia untuk jenis ini",
@@ -61,7 +61,19 @@
       "legacyBody": "Data otomatis seperti {legacy} ditulis tanpa titik, sehingga dokumen gagal diterbitkan. Perbaiki menjadi {fixed}, lalu simpan templat.",
       "legacyFix": "Perbaiki format",
       "legacyBadge": "{name} (format lama)",
-      "legacyError": "Perbaiki format data otomatis sebelum menyimpan."
+      "legacyError": "Perbaiki format data otomatis sebelum menyimpan.",
+      "toolbarLabel": "Format teks",
+      "format": {
+        "heading": "Judul di tengah",
+        "paragraph": "Paragraf",
+        "center": "Rata tengah",
+        "bold": "Tebal (Ctrl+B)",
+        "italic": "Miring (Ctrl+I)",
+        "underline": "Garis bawah (Ctrl+U)",
+        "bulletList": "Daftar berbutir",
+        "numberedList": "Daftar bernomor",
+        "lineBreak": "Baris baru"
+      }
     },
     "needsFix": "Perlu diperbaiki",
     "description": "Templat yang dipakai saat sekolah menerbitkan surat dan dokumen. Satu templat per jenis menjadi bawaan.",

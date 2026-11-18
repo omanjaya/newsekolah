@@ -33,7 +33,7 @@
       "nameLabel": "Template name",
       "kindLabel": "Document kind",
       "bodyLabel": "Document text (HTML)",
-      "bodyHint": "Use the Insert automatic data buttons below for parts filled in when the document is issued.",
+      "bodyHint": "Select text and use the format buttons above the box, or insert automatic data with the buttons below it.",
       "placeholdersLabel": "Automatic data in use",
       "noPlaceholders": "This template uses no automatic data yet.",
       "knownPlaceholdersLabel": "Placeholders available for this kind",
@@ -61,7 +61,19 @@
       "legacyBody": "Automatic data such as {legacy} is written without a dot, so the document fails to issue. Fix it to {fixed}, then save the template.",
       "legacyFix": "Fix format",
       "legacyBadge": "{name} (old format)",
-      "legacyError": "Fix the automatic data format before saving."
+      "legacyError": "Fix the automatic data format before saving.",
+      "toolbarLabel": "Text format",
+      "format": {
+        "heading": "Centred heading",
+        "paragraph": "Paragraph",
+        "center": "Centre",
+        "bold": "Bold (Ctrl+B)",
+        "italic": "Italic (Ctrl+I)",
+        "underline": "Underline (Ctrl+U)",
+        "bulletList": "Bulleted list",
+        "numberedList": "Numbered list",
+        "lineBreak": "Line break"
+      }
     },
     "needsFix": "Needs fixing",
     "description": "The templates used when the school issues letters and documents. One template per kind is the default.",
