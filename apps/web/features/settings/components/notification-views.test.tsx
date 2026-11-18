@@ -33,7 +33,8 @@ vi.mock("./settings-page", () => ({
 vi.mock("./push-devices-section", () => ({ PushDevicesSection: () => null }));
 vi.mock("../../notifications/api", () => ({
   NOTIFICATION_CHANNELS: ["inapp", "push"],
-  useNotificationKinds: () => ["announcement"],
+  useNotificationKinds: () => ["announcement", "exit_permit_issued"],
+  useOwnNotificationKinds: () => ["announcement"],
   usePreferencesQuery: () => prefsQuery() as never,
   useSetPreferenceMutation: () => ({ mutate: setPreference }),
   useNotificationSettingsQuery: () => settingsQuery() as never,
@@ -84,6 +85,13 @@ describe("NotificationSettingsView", () => {
       { kind: "announcement", channel: "push", enabled: true },
       expect.anything(),
     );
+  });
+
+  it("lists only the kinds the reader can receive", () => {
+    prefsQuery.mockReturnValue({ data: {}, isLoading: false, isError: false });
+    render(<NotificationSettingsView />);
+    expect(screen.getAllByText("announcement").length).toBeGreaterThan(0);
+    expect(screen.queryByText("exit_permit_issued")).not.toBeInTheDocument();
   });
 
   it("offers to save quiet hours only once they change", async () => {

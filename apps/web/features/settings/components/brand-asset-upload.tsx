@@ -134,7 +134,13 @@ export function BrandAssetUpload({
             className="max-w-48"
           />
         ) : (
-          <p className="text-body-sm text-fg-muted">{currentUrl ? t("hint") : t("emptyHint")}</p>
+          <>
+            {/* A phone has no room for the formats and the icon note: only the size limit. */}
+            <p className="text-body-sm text-fg-muted sm:hidden">{t("shortHint")}</p>
+            <p className="hidden text-body-sm text-fg-muted sm:block">
+              {currentUrl ? t("hint") : t("emptyHint")}
+            </p>
+          </>
         )}
       </div>
       <Button

@@ -635,6 +635,7 @@
           "uploading": "Mengunggah... {percent}%",
           "updated": "Logo diperbarui",
           "emptyHint": "Belum ada logo. PNG, WebP, atau SVG, maksimal 2 MB.",
+          "shortHint": "Maksimal 2 MB",
           "upload": "Unggah logo"
         },
         "favicon": {
@@ -646,6 +647,7 @@
           "uploading": "Mengunggah... {percent}%",
           "updated": "Favicon diperbarui",
           "emptyHint": "Belum ada favicon. PNG, WebP, atau SVG, maksimal 512 KB.",
+          "shortHint": "Maksimal 512 KB",
           "upload": "Unggah favicon"
         },
         "description": "Nama, warna, dan logo yang dilihat semua pengguna di aplikasi, halaman masuk, dan tab peramban.",

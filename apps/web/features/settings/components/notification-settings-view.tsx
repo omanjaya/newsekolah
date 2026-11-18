@@ -20,7 +20,7 @@ import { useState } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
-  useNotificationKinds,
+  useOwnNotificationKinds,
   type NotificationChannel,
   type NotificationKind,
   type NotificationSettingsInput,
@@ -74,7 +74,8 @@ export function NotificationSettingsView(): ReactElement {
   const tKinds = useTranslations("app.notifications.kinds");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const kinds = useNotificationKinds();
+  // Only the kinds this reader can be sent; the school defaults page keeps the full list.
+  const kinds = useOwnNotificationKinds();
   const prefs = usePreferencesQuery();
   const setPreference = useSetPreferenceMutation();
   const settings = useNotificationSettingsQuery();
