@@ -1584,6 +1584,7 @@
         "emptyTitle": "No leave requests yet",
         "emptyBody": "Sick, a religious ceremony or a dispensation? Request leave here and your homeroom teacher reviews it.",
         "detailTitle": "Leave request",
+        "pageTitle": "{category, select, sick {Sick leave} religious_ceremony {Religious ceremony leave} dispensation {Dispensation leave} other {Other leave}}",
         "mine": {
           "tileTotal": "Total requests",
           "tileInProgress": "In progress",
@@ -1617,7 +1618,8 @@
         "issueLetter": "Issue letter",
         "issued": "Leave letter issued",
         "issuedTitle": "Leave letter issued",
-        "issuedBody": "Attendance for the leave dates is filled automatically. The letter can be downloaded above.",
+        "issuedBody": "Attendance for the leave dates has been filled automatically.",
+        "letterIssuedStep": "Letter issued",
         "queueEmptyTitle": "No requests waiting",
         "queueEmptyBody": "Requests from your homeroom class, or awaiting letter issuance, show up here.",
         "cancel": "Cancel",

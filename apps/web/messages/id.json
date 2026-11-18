@@ -1584,6 +1584,7 @@
         "emptyTitle": "Belum ada pengajuan izin",
         "emptyBody": "Sakit, upacara keagamaan, atau dispensasi? Ajukan izin dari sini, wali kelas akan meninjaunya.",
         "detailTitle": "Detail izin",
+        "pageTitle": "{category, select, sick {Izin sakit} religious_ceremony {Izin upacara keagamaan} dispensation {Izin dispensasi} other {Izin lainnya}}",
         "mine": {
           "tileTotal": "Total pengajuan",
           "tileInProgress": "Sedang diproses",
@@ -1617,7 +1618,8 @@
         "issueLetter": "Terbitkan surat",
         "issued": "Surat izin diterbitkan",
         "issuedTitle": "Surat izin sudah terbit",
-        "issuedBody": "Presensi pada tanggal izin diisi otomatis. Surat bisa diunduh di atas.",
+        "issuedBody": "Presensi pada tanggal izin sudah diisi otomatis.",
+        "letterIssuedStep": "Surat diterbitkan",
         "queueEmptyTitle": "Tidak ada pengajuan menunggu",
         "queueEmptyBody": "Pengajuan dari kelas binaan Anda, atau yang menunggu penerbitan surat, tampil di sini.",
         "cancel": "Batal",
