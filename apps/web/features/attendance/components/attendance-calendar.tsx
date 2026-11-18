@@ -45,8 +45,9 @@ const STATUS_DOT_CLASS: Record<string, string> = {
   D: "bg-status-dispensation",
   A: "bg-status-absent",
   // The late (amber) family, as lib/attendance-status maps INCOMPLETE for
-  // the day's badge and every report: dot, legend and badge agree.
-  INCOMPLETE: "bg-status-late",
+  // the day's badge and every report. A hollow ring, so the dot reads as
+  // unfinished and stays apart from the solid sick (amber-brown) dot.
+  INCOMPLETE: "bg-transparent ring-[1.5px] ring-inset ring-status-late",
   // No status token: one neutral dot, and a neutral badge in the day card.
   MIXED: "bg-fg-muted",
 };

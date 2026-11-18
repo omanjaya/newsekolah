@@ -78,7 +78,7 @@ describe("AttendanceCalendar", () => {
     const futureCell = dayButton("28");
 
     // Amber, the colour the day card's "Belum lengkap" badge and every report use.
-    expect(pastCell.querySelector("span.rounded-full")?.className).toContain("bg-status-late");
+    expect(pastCell.querySelector("span.rounded-full")?.className).toContain("ring-status-late");
     expect(futureCell.querySelector("span.rounded-full")).toBeNull();
     expect(futureCell).toHaveAttribute("aria-label", expect.stringContaining("codes.NONE"));
   });
