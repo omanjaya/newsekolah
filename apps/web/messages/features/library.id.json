@@ -685,7 +685,7 @@
     "title": "Impor koleksi",
     "steps": {
       "upload": "Unggah",
-      "mapping": "Pemetaan kolom",
+      "mapping": "Pemetaan",
       "preview": "Pratinjau",
       "result": "Hasil"
     },
@@ -775,7 +775,7 @@
     "navLabel": "Eksemplar",
     "eyebrow": "Perpustakaan",
     "title": "Eksemplar",
-    "searchPlaceholder": "Cari barcode, nomor induk, atau RFID",
+    "searchPlaceholder": "Cari barcode atau RFID",
     "viewTitle": "Lihat judul",
     "noMatchTitle": "Tidak ada eksemplar yang cocok",
     "noMatchBody": "Coba ubah filter atau kata kunci pencarian.",
@@ -847,8 +847,8 @@
     },
     "summary": {
       "totalVisits": "Kunjungan hari ini",
-      "uniqueMembers": "Anggota berbeda hari ini",
-      "totalPeople": "Orang hari ini",
+      "uniqueMembers": "Anggota unik hari ini",
+      "totalPeople": "Total pengunjung hari ini",
       "heading": "Kunjungan hari ini"
     },
     "kinds": {

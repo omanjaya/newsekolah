@@ -190,10 +190,9 @@ function MyLibraryHero({
   if (latest) {
     return (
       // No way to the catalogue here: the one thing to do is return the
-      // book. The tone moves to "danger", as the due badges show lateness,
-      // once HeroCard has that tone.
+      // book. The tone is "danger", as the due badges show lateness.
       <HeroCard
-        tone="warning"
+        tone="danger"
         eyebrow={t("overdueEyebrow")}
         title={t("overdueTitle", {
           count: overdue.length,

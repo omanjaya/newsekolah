@@ -685,7 +685,7 @@
     "title": "Import collection",
     "steps": {
       "upload": "Upload",
-      "mapping": "Column mapping",
+      "mapping": "Mapping",
       "preview": "Preview",
       "result": "Result"
     },
@@ -775,7 +775,7 @@
     "navLabel": "Copies",
     "eyebrow": "Library",
     "title": "Copies",
-    "searchPlaceholder": "Search barcode, accession number, or RFID",
+    "searchPlaceholder": "Search barcode or RFID",
     "viewTitle": "View title",
     "noMatchTitle": "No matching copies",
     "noMatchBody": "Try a different filter or search term.",
@@ -847,8 +847,8 @@
     },
     "summary": {
       "totalVisits": "Visits today",
-      "uniqueMembers": "Different members today",
-      "totalPeople": "People today",
+      "uniqueMembers": "Unique members today",
+      "totalPeople": "Total visitors today",
       "heading": "Visits today"
     },
     "kinds": {

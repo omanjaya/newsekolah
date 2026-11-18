@@ -73,6 +73,9 @@ export function VisitsView(): ReactElement {
       type: "dateRange",
       from,
       to,
+      // The month so far is the page's own period, not a filter the reader set.
+      defaultFrom: startOfIsoMonth(today),
+      defaultTo: today,
       onChangeRange: ({ from: nextFrom, to: nextTo }) => {
         setFrom(nextFrom);
         setTo(nextTo);

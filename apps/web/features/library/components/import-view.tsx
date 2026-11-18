@@ -148,6 +148,18 @@ export function ImportView(): ReactElement {
             <CardDescription>{t("uploadDescription")}</CardDescription>
           </CardHeader>
           <div className="flex flex-col gap-4 px-5 pb-5">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Download />}
+              className="self-start"
+              onClick={() => {
+                void downloadLibraryImportTemplate();
+              }}
+            >
+              {t("downloadTemplate")}
+            </Button>
+
             {/* The template can be dropped as well as picked; a file that
                 cannot be read or has no rows is said under the zone. */}
             <FileDropzone
@@ -164,17 +176,6 @@ export function ImportView(): ReactElement {
                 void handleFile(file);
               }}
             />
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={<Download />}
-              className="self-start"
-              onClick={() => {
-                void downloadLibraryImportTemplate();
-              }}
-            >
-              {t("downloadTemplate")}
-            </Button>
           </div>
         </Card>
       )}
