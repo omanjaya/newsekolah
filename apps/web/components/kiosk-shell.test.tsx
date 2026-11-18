@@ -42,7 +42,9 @@ describe("KioskShell", () => {
     renderShell();
     const clock = screen.getByText("07.42");
     expect(clock.tagName).toBe("TIME");
-    expect(clock).toHaveClass("sm:text-kiosk-display", "tabular-nums");
+    expect(clock).toHaveClass("sm:text-kiosk-display");
+    // Tabular figures opened a gap after a "1" ("1 4.07").
+    expect(clock).not.toHaveClass("tabular-nums");
   });
 
   // On a phone the header was a giant clock with the screen's name hidden.

@@ -794,6 +794,7 @@
       "searchPlaceholder": "Cari judul atau isi notifikasi",
       "kindAll": "Semua jenis",
       "kindFilterLabel": "Jenis notifikasi",
+      "kindPill": "Jenis",
       "emptyFilteredTitle": "Tidak ada notifikasi yang cocok",
       "emptyFilteredBody": "Coba ubah kata pencarian atau pilih jenis lain.",
       "filterLabel": "Tampilkan notifikasi",
@@ -955,7 +956,7 @@
       "log": {
         "title": "Dicatat hari ini",
         "description": "Catatan manual dan tinjauan dari layar ini sejak dibuka.",
-        "empty": "Belum ada catatan dari layar ini.",
+        "empty": "Belum ada catatan dari layar ini",
         "kinds": {
           "exit": "Izin keluar dicatat",
           "late": "Keterlambatan dicatat",
@@ -1016,6 +1017,7 @@
       "byTeacher": "Per guru",
       "pickClass": "Pilih kelas",
       "pickTeacher": "Pilih guru",
+      "pickSubject": "Pilih mata pelajaran",
       "periodColumn": "Jam",
       "addBlock": "Tambah jadwal",
       "addHere": "Tambah",
@@ -1400,6 +1402,9 @@
           "qr_scan": "Pindai QR",
           "manual": "Ditinjau langsung",
           "auto": "Otomatis"
+        },
+        "outcome": {
+          "approved": "Disetujui"
         }
       },
       "scan": {
@@ -1573,6 +1578,7 @@
         "noAccessBody": "Peran Anda tidak terlibat dalam alur izin terencana.",
         "issuerQueueUnavailableTitle": "Surat izin diterbitkan dari notifikasi",
         "issuerQueueUnavailableBody": "Setiap pengajuan yang sudah disetujui wali kelas dikirim ke notifikasi Anda. Buka notifikasinya untuk melihat pengajuan dan menerbitkan suratnya.",
+        "issuerQueueInboxBody": "Pengajuan yang sudah disetujui wali kelas menunggu di antrean izin. Buka antreannya untuk meninjau dan menerbitkan suratnya.",
         "openNotifications": "Buka notifikasi",
         "notFoundTitle": "Pengajuan tidak ditemukan",
         "notFoundBody": "Pengajuan ini sudah tidak tersedia atau bukan bagian dari tugas Anda.",
@@ -1580,6 +1586,7 @@
         "emptyTitle": "Belum ada pengajuan izin",
         "emptyBody": "Sakit, upacara keagamaan, atau dispensasi? Ajukan izin dari sini, wali kelas akan meninjaunya.",
         "detailTitle": "Detail izin",
+        "pageTitle": "{category, select, sick {Izin sakit} religious_ceremony {Izin upacara keagamaan} dispensation {Izin dispensasi} other {Izin lainnya}}",
         "mine": {
           "tileTotal": "Total pengajuan",
           "tileInProgress": "Sedang diproses",
@@ -1613,7 +1620,8 @@
         "issueLetter": "Terbitkan surat",
         "issued": "Surat izin diterbitkan",
         "issuedTitle": "Surat izin sudah terbit",
-        "issuedBody": "Presensi pada tanggal izin diisi otomatis. Surat bisa diunduh di atas.",
+        "issuedBody": "Presensi pada tanggal izin sudah diisi otomatis.",
+        "letterIssuedStep": "Surat diterbitkan",
         "queueEmptyTitle": "Tidak ada pengajuan menunggu",
         "queueEmptyBody": "Pengajuan dari kelas binaan Anda, atau yang menunggu penerbitan surat, tampil di sini.",
         "cancel": "Batal",

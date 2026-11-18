@@ -71,8 +71,89 @@ function writeBox(indicator: HTMLElement, size: Box, at: Box, scale: number) {
 }
 
 /**
+ * How much of the first item cut by a strip's edge must show, so it reads
+ * as "more this way" past the edge fade (24px at the start, up to 48px at
+ * an underline strip's end on a phone) instead of a ghost of one letter.
+ */
+const PEEK = 40;
+
+interface Span {
+  start: number;
+  end: number;
+}
+
+/**
+ * The strip's items around `item`, from the first ancestor of it (itself
+ * included) that has siblings: a tab, or the `li` holding a nav link. The
+ * indicator (aria-hidden) is not an item.
+ */
+function stripItems(
+  container: HTMLElement,
+  item: HTMLElement,
+): { own: HTMLElement; all: HTMLElement[] } {
+  let own = item;
+  while (own.parentElement && own.parentElement !== container) {
+    const siblings = Array.from(own.parentElement.children).filter(
+      (child) => child.getAttribute("aria-hidden") !== "true",
+    );
+    if (siblings.length > 1) break;
+    own = own.parentElement;
+  }
+  const parent = own.parentElement ?? container;
+  const all = Array.from(parent.children).filter(
+    (child): child is HTMLElement =>
+      child instanceof HTMLElement && child.getAttribute("aria-hidden") !== "true",
+  );
+  return { own, all };
+}
+
+/**
+ * Nudges a scrolled strip so the first item cut by its end (or, failing
+ * that, its start) shows at least `PEEK` of itself, as long as the active
+ * item stays wholly in view: a strip whose next tab began a few pixels
+ * before the edge, inside the fade, looked complete.
+ */
+function peekPastEdges(container: HTMLElement, item: HTMLElement): void {
+  const { own, all } = stripItems(container, item);
+  if (all.length < 2) return;
+  const origin = container.getBoundingClientRect().left - container.scrollLeft;
+  const span = (element: HTMLElement): Span => {
+    const rect = element.getBoundingClientRect();
+    return { start: rect.left - origin, end: rect.right - origin };
+  };
+  const view: Span = {
+    start: container.scrollLeft,
+    end: container.scrollLeft + container.clientWidth,
+  };
+  const active = span(own);
+  const spans = all.map(span);
+  const maxScroll = container.scrollWidth - container.clientWidth;
+
+  // The first item past or across the end, the last one past or across
+  // the start, and how much of each shows.
+  const cutEnd = spans.find((box) => box.end > view.end + 1);
+  const cutStart = [...spans].reverse().find((box) => box.start < view.start - 1);
+  const endNeed = cutEnd ? PEEK - Math.max(0, view.end - cutEnd.start) : 0;
+  const startNeed = cutStart ? PEEK - Math.max(0, cutStart.end - view.start) : 0;
+
+  // The active item keeps clear of the fade on the side it moves towards;
+  // a strip with no room for that stays where the reveal left it.
+  let delta = 0;
+  if (endNeed > 0) {
+    delta = Math.max(
+      0,
+      Math.min(endNeed, active.start - view.start - REVEAL_MARGIN, maxScroll - view.start),
+    );
+  } else if (startNeed > 0) {
+    delta = -Math.max(0, Math.min(startNeed, view.end - active.end - REVEAL_MARGIN, view.start));
+  }
+  if (Math.abs(delta) >= 1) container.scrollLeft = view.start + delta;
+}
+
+/**
  * Scrolls a sideways strip just enough to show `item` clear of the edge
- * fade, without moving the page (no scrollIntoView). Measured from the
+ * fade, without moving the page (no scrollIntoView), then lets the
+ * neighbour cut by an edge peek in past the fade. Measured from the
  * rendered boxes, so the item may sit at any depth inside the strip.
  * Shared by every strip: Tabs and NavTabs through useActiveIndicator,
  * SegmentedControl directly.
@@ -89,6 +170,7 @@ export function revealInStrip(container: HTMLElement, item: HTMLElement): void {
   else if (right > container.scrollLeft + container.clientWidth) {
     container.scrollLeft = right - container.clientWidth;
   }
+  peekPastEdges(container, item);
 }
 
 /**

@@ -200,6 +200,39 @@ describe("MobileTabBar", () => {
     expect(centre).toHaveTextContent("3");
   });
 
+  // A student's /classroom-entry is a scan the menu hides: the bar lit
+  // nothing there, although a real phone app always keeps one tab current.
+  it("keeps the scan centre current on a scan page the menu hides", () => {
+    const studentCan = () => true;
+    const studentItems = consolidateNavigation(
+      filterNavigationFixture(navigation, studentCan, "student"),
+      { profileKind: "student", can: studentCan },
+    );
+    expect(studentItems.find((item) => item.href === "/classroom-entry")?.sidebarPlacement).toBe(
+      "hidden",
+    );
+    pathname.mockReturnValue("/classroom-entry");
+    const layout = mobileTabLayout({
+      items: studentItems,
+      profile: "student",
+      quickActions: [],
+      canOpen: () => true,
+    });
+    render(
+      <MobileTabBar
+        items={studentItems}
+        layout={{
+          ...layout,
+          centre: { id: "scan", href: "/scan", ownerHref: "/scan", icon: Zap },
+        }}
+      />,
+    );
+    expect(screen.getByRole("link", { name: "app.shell.tabBar.centre.scan.name" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
   it("hands the centre to the quick-action sheet when that is the reader's main act", () => {
     pathname.mockReturnValue("/dashboard");
     const layout = mobileTabLayout({

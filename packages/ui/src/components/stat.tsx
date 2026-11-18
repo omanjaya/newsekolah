@@ -69,15 +69,15 @@ function hasContent(node: ReactNode): boolean {
 
 // Tile: the artboard's 16px padding, 104px minimum height and radius 20.
 // Compact: one strip cell, the icon pinned left of a value-over-label pair.
-// A cell is never narrower than its figure and label (it grows from its
-// content, never shrinks below it), so a label cannot cross the divider;
-// figures start at the top, so values line up when only some cells carry
-// a hint.
+// Cells share the row equally when every figure fits (a zero basis, so
+// the dividers fall evenly whatever the label lengths), and a cell is
+// never narrower than its figure and label (`min-w-max`), so a label
+// cannot cross the divider and a row that does not fit scrolls. Figures
+// start at the top, so values line up when only some cells carry a hint.
 const ROOT_CLASS: Record<StatAppearance, string> = {
   plain: "flex flex-col",
   tile: "flex min-h-26 flex-col rounded-lg border border-border bg-surface p-4 shadow-1",
-  compact:
-    "relative flex min-w-36 flex-[1_0_auto] snap-start flex-col justify-start py-3 pr-5 pl-4",
+  compact: "relative flex min-w-max flex-[1_0_0%] snap-start flex-col justify-start py-3 pr-5 pl-4",
 };
 
 const VALUE_CLASS: Record<StatAppearance, string> = {
@@ -287,6 +287,8 @@ export function Stat({
       <Detail id={valueId} className={cn("order-1 flex flex-col", !compact && "gap-3.5")}>
         {icon && (
           <IconCircle
+            // The strip centres it on a spanning cell's one-line figure.
+            data-stat-icon=""
             tone={tone ?? category ?? "green"}
             size={compact ? "sm" : "md"}
             className={cn(
@@ -323,11 +325,12 @@ export function Stat({
       </Detail>
       {/* The hint is smaller than the label it qualifies, so it is also
           no heavier: the caption role at 400 instead of its 500. Only the
-          change keeps a weight of its own. */}
+          change keeps a weight of its own. Full width, so it keeps a line
+          of its own under a spanning strip cell's one-line figure. */}
       {hasFooter && (
         <Detail
           id={hintId}
-          className="order-3 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-caption font-normal text-fg-muted"
+          className="order-3 mt-0.5 flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 text-caption font-normal text-fg-muted"
         >
           {delta && <DeltaText delta={delta} />}
           {hint}

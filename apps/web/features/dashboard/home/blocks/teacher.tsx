@@ -184,7 +184,9 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
   }
 
   // A day without lessons keeps the card, but as quiet context in the side
-  // column, so another persona's queue leads the main one.
+  // column, so another persona's queue leads the main one. When no queue
+  // card leads it, the home moves the card back to the main column
+  // (dashboard-view.tsx), so the wide column never ends at the tiles.
   const noLessons = sessions.isSuccess && todaySessions.length === 0;
   block[noLessons ? "side" : "main"] = [
     {

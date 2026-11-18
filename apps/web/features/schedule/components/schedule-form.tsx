@@ -176,7 +176,7 @@ export function ScheduleForm({
           options={(subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }))}
           value={subjectId}
           onValueChange={setSubjectId}
-          placeholder={t("pick")}
+          placeholder={tSchedule("pickSubject")}
         />,
       )}
       {field(

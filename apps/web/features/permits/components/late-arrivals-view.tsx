@@ -108,33 +108,35 @@ function LateCheckIn(): ReactElement {
   }
 
   // The camera submits on its first read, so the reason ("Isi sebelum
-  // memindai") comes before the scanner on screen, not after it.
+  // memindai") comes before the camera, inside the card under the heading
+  // that says what the screen is for: title, explanation, reason, camera.
   return (
-    <div className="flex w-full max-w-xl flex-col gap-4">
-      <Field label={t("reasonLabel")} hint={t("reasonHint")} optional>
-        <Textarea
-          rows={2}
-          autoResize
-          value={reason}
-          onChange={(e) => {
-            setReason(e.target.value);
-          }}
-          maxLength={500}
-          placeholder={t("reasonPlaceholder")}
-        />
-      </Field>
-      <Scanner
-        title={t("scanTitle")}
-        description={t("scanBody")}
-        onScan={handleScan}
-        disabled={open.isPending}
-        continuous={false}
-        manualLabel={t("scanDutyLabel")}
-        manualPlaceholder={tScan("placeholder")}
-        submitLabel={tScan("submit")}
-        result={result}
-      />
-    </div>
+    <Scanner
+      className="w-full max-w-xl"
+      title={t("scanTitle")}
+      description={t("scanBody")}
+      lead={
+        <Field label={t("reasonLabel")} hint={t("reasonHint")} optional>
+          <Textarea
+            rows={2}
+            autoResize
+            value={reason}
+            onChange={(e) => {
+              setReason(e.target.value);
+            }}
+            maxLength={500}
+            placeholder={t("reasonPlaceholder")}
+          />
+        </Field>
+      }
+      onScan={handleScan}
+      disabled={open.isPending}
+      continuous={false}
+      manualLabel={t("scanDutyLabel")}
+      manualPlaceholder={tScan("placeholder")}
+      submitLabel={tScan("submit")}
+      result={result}
+    />
   );
 }
 

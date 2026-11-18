@@ -60,6 +60,12 @@ export interface ScannerProps {
    * belongs to the whole scanner, such as a switch between two modes.
    */
   headerEnd?: ReactNode;
+  /**
+   * Between the header and the camera: what the reader fills in before
+   * scanning (a reason the scan sends along), so the panel reads title,
+   * explanation, field, camera instead of a bare field above the card.
+   */
+  lead?: ReactNode;
   /** The outcome of the last scan, shown large under the camera and announced. */
   result?: ScannerResultValue | null;
   /** Offer the camera at all (default true where the browser has one). */
@@ -112,6 +118,7 @@ export function Scanner({
   title,
   description,
   headerEnd,
+  lead,
   result,
   camera = true,
   autoStart = true,
@@ -291,6 +298,7 @@ export function Scanner({
     >
       <div className={cn("flex w-full flex-col", kiosk ? "max-w-6xl gap-8" : "gap-4")}>
         {header}
+        {lead}
         {/* A kiosk screen is landscape more often than not: the camera on the
             left, what happened and the fallback on the right, all above the fold.
             A wide panel does the same, so the field and its button are not

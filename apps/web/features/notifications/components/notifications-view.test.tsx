@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const unread = vi.hoisted(() => ({ count: 0 }));
 const list = vi.hoisted(() => ({ data: [] as unknown[] }));
 const markRead = vi.hoisted(() => vi.fn());
+const viewport = vi.hoisted(() => ({ desktop: false }));
 
 import { NotificationsView } from "./notifications-view";
 
@@ -19,6 +20,9 @@ vi.mock("../../../lib/simulation/clock", () => ({
   businessNow: () => new Date("2026-11-14T05:00:00Z"),
 }));
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+vi.mock("../../../components/use-is-desktop", () => ({
+  useIsDesktop: () => viewport.desktop,
+}));
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({
     me: {
@@ -52,18 +56,30 @@ vi.mock("../api", () => ({
 beforeEach(() => {
   list.data = [];
   unread.count = 0;
+  viewport.desktop = false;
   markRead.mockReset();
 });
 
 describe("NotificationsView", () => {
   it("filters all or unread with a segmented control, not tabs without panels", () => {
+    unread.count = 1;
     render(<NotificationsView />);
     expect(screen.queryByRole("tab")).not.toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "filterAll" })).toBeChecked();
+  });
+
+  // An empty inbox carried a menu whose only item was disabled, the
+  // segmented filter, a search and a kind select above its empty state.
+  it("shows an empty inbox as its empty state alone", () => {
+    render(<NotificationsView />);
     expect(screen.getByText("emptyTitle")).toBeInTheDocument();
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "markAllRead" })).not.toBeInTheDocument();
   });
 
   it("offers every notification again from an empty unread filter", () => {
+    unread.count = 1;
     render(<NotificationsView />);
     fireEvent.click(screen.getByRole("radio", { name: "filterUnread" }));
     expect(screen.getByText("emptyUnreadTitle")).toBeInTheDocument();
@@ -77,9 +93,20 @@ describe("NotificationsView", () => {
     expect(screen.getByRole("button", { name: "markAllRead" })).toBeEnabled();
   });
 
-  it("disables mark-all-read when nothing is unread", () => {
+  it("offers no mark-all-read when nothing is unread", () => {
     render(<NotificationsView />);
-    expect(screen.getByRole("button", { name: "markAllRead" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "markAllRead" })).not.toBeInTheDocument();
+  });
+
+  // On the narrow page the header's action sat at the far edge of the
+  // 1200px column, about 430px right of the list it acts on.
+  it("puts mark-all-read at the end of the filter row from 768px, once", () => {
+    viewport.desktop = true;
+    unread.count = 2;
+    render(<NotificationsView />);
+    const button = screen.getByRole("button", { name: "markAllRead" });
+    expect(button.parentElement).toContainElement(screen.getByRole("radio", { name: "filterAll" }));
+    expect(screen.getAllByRole("button", { name: "markAllRead" })).toHaveLength(1);
   });
 
   it("lists a day's notifications as rows that open their link and mark them read", () => {

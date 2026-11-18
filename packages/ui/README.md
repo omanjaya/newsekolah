@@ -121,7 +121,9 @@ animates.
   `CardDescription`, `CardContent`, `CardFooter`; tones, padding,
   `interactive`), `HeroCard`, `SectionHeader`, `List` and `ListRow`
   (`titleLines` for long titles), `DataList`, `Stat`/`StatGrid` (a
-  `selected` state for tiles that filter a list), `StatTile`, `IconCircle`,
+  `selected` state for tiles that filter a list; a `strip` shares its row
+  equally and pairs on a phone up to four figures, eight without icons),
+  `StatTile`, `IconCircle`,
   `Avatar`, `AvatarGroup`, `Badge`, `CountBadge`, `StatusBadge` (attendance)
   and `SemanticStatusBadge`, `Progress` (meter with threshold `markers`),
   `Stepper`, `Disclosure`, `Alert` (one or two actions), `EmptyState`,
@@ -145,7 +147,8 @@ animates.
   `DropdownMenu`, `Tooltip`, `Tabs` (pill or underline, counts),
   `CommandPalette`, `Toaster` and `toast`.
 - **Scanning and kiosks**: `Scanner` (`action` in a page, `kiosk` on a
-  station, `fullScreen={false}` inside a kiosk frame), `BarcodeScannerField`,
+  station, `fullScreen={false}` inside a kiosk frame; `lead` for a field
+  filled in before scanning, between the header and the camera), `BarcodeScannerField`,
   `ScannerResultBanner`, and the scanner hooks.
 - **Hooks**: `useCountUp`, `useMediaQuery`, `useHydrated`, `useScrollEdges`,
   `useActiveIndicator`, `useCollapsingTitle`, `useScanFeedback`,

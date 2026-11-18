@@ -45,7 +45,22 @@ describe("Stat in a StatGrid", () => {
       </StatGrid>,
     );
     expect(container.querySelector("dl")).toHaveClass("sm:divide-x");
-    expect(container.querySelector("dl > div")).toHaveClass("min-w-36", "flex-[1_0_auto]");
+    expect(container.querySelector("dl > div")).toHaveClass("min-w-max", "flex-[1_0_0%]");
+  });
+
+  // Cells grew from their content width (`flex-[1_0_auto]`), so a strip's
+  // dividers fell unevenly wherever labels differed in length.
+  it("shares a strip's row equally, never narrower than a cell's figure and label", () => {
+    const { container } = render(
+      <StatGrid variant="strip">
+        <Stat value={1} label="Observasi terjadwal" />
+        <Stat value={2} label="Guru" />
+      </StatGrid>,
+    );
+    for (const cell of Array.from(container.querySelectorAll("dl > div"))) {
+      expect(cell).toHaveClass("flex-[1_0_0%]", "min-w-max");
+      expect(cell).not.toHaveClass("flex-[1_0_auto]");
+    }
   });
 });
 
@@ -308,11 +323,53 @@ describe("StatGrid strip", () => {
     }
   });
 
+  // A spanning odd cell kept its value-over-label column at the left, so
+  // the right half of its row read as an empty cell.
+  it("lays a spanning odd cell out on one line, its icon centred", () => {
+    const { container } = render(
+      <StatGrid variant="strip" aria-label="Ringkasan">
+        <Stat icon={<span />} value={0} label="Menunggu" />
+        <Stat icon={<span />} value={10} label="Pengguna aktif" />
+        <Stat icon={<span />} value={2} label="Notifikasi" />
+      </StatGrid>,
+    );
+    expect(container.querySelector("dl")).toHaveClass(
+      "max-sm:[&>*:last-child:nth-child(odd)]:col-span-2",
+      "max-sm:[&>*:last-child:nth-child(odd)]:flex-row",
+      "max-sm:[&>*:last-child:nth-child(odd)]:items-baseline",
+      "max-sm:[&>*:last-child:nth-child(odd)_[data-stat-icon]]:top-1/2",
+    );
+    expect(container.querySelectorAll("[data-stat-icon]")).toHaveLength(3);
+  });
+
+  // Seven icon-less figures scrolled on a phone, the edge cutting the third
+  // label mid-word with four more out of sight.
+  it("pairs up to eight figures on a phone when none has an icon", () => {
+    const labels = ["Judul", "Eksemplar", "Tersedia", "Dipinjam", "Anggota", "Aktif", "Denda"];
+    const { container, rerender } = render(
+      <StatGrid variant="strip" aria-label="Koleksi">
+        {labels.map((label, index) => (
+          <Stat key={label} value={index} label={label} />
+        ))}
+      </StatGrid>,
+    );
+    expect(container.querySelector("dl")).toHaveClass("grid-cols-2");
+
+    rerender(
+      <StatGrid variant="strip" aria-label="Koleksi">
+        {[...labels, "Hilang", "Rusak"].map((label, index) => (
+          <Stat key={label} value={index} label={label} />
+        ))}
+      </StatGrid>,
+    );
+    expect(container.querySelector("dl")).not.toHaveClass("grid-cols-2");
+  });
+
   it("scrolls five figures or more in one row behind an edge fade, on its own surface", () => {
     const { container } = render(
       <StatGrid variant="strip" aria-label="Rekap">
         {["Hadir", "Sakit", "Izin", "Alfa", "Terlambat"].map((label, index) => (
-          <Stat key={label} value={index} label={label} />
+          <Stat key={label} icon={<span />} value={index} label={label} />
         ))}
       </StatGrid>,
     );

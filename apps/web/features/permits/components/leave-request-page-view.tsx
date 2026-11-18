@@ -14,10 +14,12 @@ import { LeaveRequestDetail } from "./leave-request-detail";
 
 /**
  * Full-page variant of the leave request detail, opened from notifications.
- * The header says what the request is: its category as the h1 and the
- * student, class and dates under it, so the card below starts with the
- * request's progress instead of repeating them. The detail shares the
- * query, so this costs no second request.
+ * The header says what the request is: its name as the h1 ("Izin sakit")
+ * and the student, class and dates under it, so the card below starts with
+ * the request's outcome and progress instead of repeating them. A short
+ * record on the narrow column (720), so labels sit near their values and
+ * the stepper's stages near each other. The detail shares the query, so
+ * this costs no second request.
  */
 export function LeaveRequestPageView({ id }: { id: string }): ReactElement {
   const t = useTranslations("app.permits.leave");
@@ -26,7 +28,8 @@ export function LeaveRequestPageView({ id }: { id: string }): ReactElement {
 
   return (
     <AppPage
-      title={data ? t(`categories.${data.category}`) : t("detailTitle")}
+      variant="narrow"
+      title={data ? t("pageTitle", { category: data.category }) : t("detailTitle")}
       documentTitle={t("detailTitle")}
       description={
         data
@@ -38,7 +41,9 @@ export function LeaveRequestPageView({ id }: { id: string }): ReactElement {
           : undefined
       }
     >
-      <Card padding="md">
+      {/* `overflow-clip` (not `hidden`, which would end the sticky) keeps
+          the decision row docked on a phone inside the card's corners. */}
+      <Card padding="md" className="overflow-clip">
         <LeaveRequestDetail id={id} layout="page" />
       </Card>
     </AppPage>

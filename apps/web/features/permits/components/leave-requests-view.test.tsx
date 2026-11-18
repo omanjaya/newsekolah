@@ -53,7 +53,8 @@ describe("LeaveRequestsView", () => {
     canSubmit = false;
     canIssue = true;
     render(<LeaveRequestsView />);
-    expect(screen.getByText("issuerQueueUnavailableTitle")).toBeInTheDocument();
+    expect(screen.getByText("issuerTitle")).toBeInTheDocument();
+    expect(screen.getByText("issuerQueueUnavailableBody")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "submit" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "openNotifications" })).toHaveAttribute(
       "href",
@@ -66,10 +67,13 @@ describe("LeaveRequestsView", () => {
     canIssue = true;
     canReview = true;
     render(<LeaveRequestsView />);
-    expect(screen.getByRole("link", { name: "openInbox" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "issuerOpenInbox" })).toHaveAttribute(
       "href",
       "/inbox?type=leave",
     );
+    // The text points where the main button goes, not to the notifications.
+    expect(screen.getByText("issuerQueueInboxBody")).toBeInTheDocument();
+    expect(screen.queryByText("issuerQueueUnavailableBody")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "openNotifications" })).toHaveAttribute(
       "href",
       "/notifications",

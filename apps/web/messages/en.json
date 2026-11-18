@@ -794,6 +794,7 @@
       "searchPlaceholder": "Search notification title or body",
       "kindAll": "All kinds",
       "kindFilterLabel": "Notification kind",
+      "kindPill": "Kind",
       "emptyFilteredTitle": "No notifications match",
       "emptyFilteredBody": "Try a different search term or kind.",
       "filterLabel": "Show notifications",
@@ -955,7 +956,7 @@
       "log": {
         "title": "Recorded today",
         "description": "Manual records and reviews from this screen since it opened.",
-        "empty": "Nothing recorded from this screen yet.",
+        "empty": "Nothing recorded from this screen yet",
         "kinds": {
           "exit": "Exit permit recorded",
           "late": "Late arrival recorded",
@@ -1016,6 +1017,7 @@
       "byTeacher": "By teacher",
       "pickClass": "Pick a class",
       "pickTeacher": "Pick a teacher",
+      "pickSubject": "Pick a subject",
       "periodColumn": "Period",
       "addBlock": "Add block",
       "addHere": "Add",
@@ -1400,6 +1402,9 @@
           "qr_scan": "QR scan",
           "manual": "Manual review",
           "auto": "Automatic"
+        },
+        "outcome": {
+          "approved": "Approved"
         }
       },
       "scan": {
@@ -1573,6 +1578,7 @@
         "noAccessBody": "Your role is not part of the planned leave flow.",
         "issuerQueueUnavailableTitle": "Leave letters are issued from notifications",
         "issuerQueueUnavailableBody": "Every request the homeroom teacher approves is sent to your notifications. Open the notification to see the request and issue its letter.",
+        "issuerQueueInboxBody": "Requests the homeroom teacher approved wait in the leave queue. Open it to review them and issue their letters.",
         "openNotifications": "Open notifications",
         "notFoundTitle": "Request not found",
         "notFoundBody": "This request is no longer available or is not part of your duties.",
@@ -1580,6 +1586,7 @@
         "emptyTitle": "No leave requests yet",
         "emptyBody": "Sick, a religious ceremony or a dispensation? Request leave here and your homeroom teacher reviews it.",
         "detailTitle": "Leave request",
+        "pageTitle": "{category, select, sick {Sick leave} religious_ceremony {Religious ceremony leave} dispensation {Dispensation leave} other {Other leave}}",
         "mine": {
           "tileTotal": "Total requests",
           "tileInProgress": "In progress",
@@ -1613,7 +1620,8 @@
         "issueLetter": "Issue letter",
         "issued": "Leave letter issued",
         "issuedTitle": "Leave letter issued",
-        "issuedBody": "Attendance for the leave dates is filled automatically. The letter can be downloaded above.",
+        "issuedBody": "Attendance for the leave dates has been filled automatically.",
+        "letterIssuedStep": "Letter issued",
         "queueEmptyTitle": "No requests waiting",
         "queueEmptyBody": "Requests from your homeroom class, or awaiting letter issuance, show up here.",
         "cancel": "Cancel",

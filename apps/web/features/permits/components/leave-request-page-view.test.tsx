@@ -4,7 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 const query = vi.hoisted(() => vi.fn());
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, values?: { category?: string }) =>
+    values?.category ? `${key}:${values.category}` : key,
   useLocale: () => "id",
 }));
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
@@ -18,7 +19,7 @@ vi.mock("./leave-request-detail", () => ({
 import { LeaveRequestPageView } from "./leave-request-page-view";
 
 describe("LeaveRequestPageView", () => {
-  it("names the request in the header: its category, then the student and dates", () => {
+  it("names the request in the header: its kind of leave, then the student and dates", () => {
     query.mockReturnValue({
       data: {
         category: "sick",
@@ -30,7 +31,8 @@ describe("LeaveRequestPageView", () => {
     });
     render(<LeaveRequestPageView id="leave-1" />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "categories.sick" })).toBeInTheDocument();
+    // "Izin sakit", not the bare category the Keterangan row may repeat.
+    expect(screen.getByRole("heading", { level: 1, name: "pageTitle:sick" })).toBeInTheDocument();
     expect(screen.getByText(/^Siswa Contoh \(X-A\) · /)).toBeInTheDocument();
     expect(screen.getByTestId("leave-request-detail")).toHaveAttribute("data-layout", "page");
   });

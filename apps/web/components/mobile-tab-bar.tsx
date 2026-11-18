@@ -32,6 +32,16 @@ const CENTRE_MESSAGES: Record<CentreActionId, string> = {
   "quick-actions": "quickActions",
 };
 
+/**
+ * Pages a centre action owns besides its own entry: scan screens the menu
+ * hides (a student's /classroom-entry is a scan, reached from the schedule
+ * and the home), so the Pindai centre stays current on them instead of
+ * the bar lighting nothing.
+ */
+const CENTRE_PAGES: Partial<Record<CentreActionId, readonly string[]>> = {
+  scan: ["/classroom-entry"],
+};
+
 /** The slot the pill comes to rest on: the active tab (Menu included; the centre never takes it). */
 const ACTIVE_TAB = '[data-tab][data-state="active"]';
 
@@ -90,7 +100,11 @@ export function MobileTabBar({
   // matched against the tabs: otherwise a page that lives in the menu (for
   // example /library/desk) is claimed by whichever tab it merely prefixes.
   const activeHref = activeNavHref(pathname, items);
-  const centreCurrent = centre?.ownerHref !== undefined && centre.ownerHref === activeHref;
+  const centreCurrent =
+    centre !== undefined &&
+    activeHref !== undefined &&
+    ((centre.ownerHref !== undefined && centre.ownerHref === activeHref) ||
+      (CENTRE_PAGES[centre.id]?.includes(activeHref) ?? false));
   // A page reached through Menu lights Menu up, so the bar always says where
   // the reader is, without claiming a tab the page does not belong to. A page
   // the menu does not list (a hidden entry, such as /check-in reached from

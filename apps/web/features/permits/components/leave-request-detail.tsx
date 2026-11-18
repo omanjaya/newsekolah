@@ -98,12 +98,26 @@ export function LeaveRequestDetail({
     }
   }
 
-  // On the page, the decision stays above the phone's tab bar while the
-  // reader scrolls the request, edge to edge across the card's padding.
-  const decisionClass = cn(
-    "flex border-t border-line pt-4",
+  // On the page, a phone keeps the decision's buttons docked on the tab
+  // bar while the reader scrolls the request, as a StickySaveBar docks: at
+  // the bar plus the home indicator, with the centre button's rise as
+  // bottom padding, so that button paints over padding and no strip of
+  // page shows between the two bars. The row spans the card's padding;
+  // the card clips it to its rounded corners at rest.
+  const dockClass =
     layout === "page" &&
-      "max-md:sticky max-md:bottom-[var(--shell-mobile-tab-offset,0px)] max-md:z-sticky max-md:-mx-5 max-md:-mb-5 max-md:rounded-b-lg max-md:bg-surface max-md:px-5 max-md:pb-5",
+    "max-md:sticky max-md:bottom-[calc(var(--shell-mobile-tab-bar,0px)+env(safe-area-inset-bottom))] max-md:z-sticky max-md:-mx-5 max-md:-mb-5 max-md:border-t max-md:border-line max-md:bg-surface max-md:px-5 max-md:pt-3 max-md:pb-[calc(var(--space-3)+var(--shell-mobile-tab-raise,0px))]";
+  const issued = (inst.status === "completed" || inst.status === "approved") && data.has_letter;
+  const letterButton = (size?: "sm") => (
+    <Button
+      variant="secondary"
+      size={size}
+      icon={<Download />}
+      loading={docUrl.isPending && docUrl.variables.kind === "letter"}
+      onClick={() => void openDocument("letter")}
+    >
+      {t("downloadLetter")}
+    </Button>
   );
 
   return (
@@ -118,14 +132,19 @@ export function LeaveRequestDetail({
         </div>
       )}
 
-      {/* The outcome first, once there is one, then how it got there. */}
-      {(inst.status === "completed" || inst.status === "approved") && data.has_letter && (
-        <Alert variant="success" title={t("issuedTitle")}>
+      {/* The outcome first, once there is one, with the letter it produced
+          (beside the title from 640px up, under the text on a phone), then
+          how it got there. */}
+      {issued && (
+        <Alert variant="success" title={t("issuedTitle")} action={letterButton("sm")}>
           {t("issuedBody")}
         </Alert>
       )}
 
-      <WorkflowStepper instance={inst} />
+      <WorkflowStepper
+        instance={inst}
+        finalOutcome={data.has_letter ? t("letterIssuedStep") : undefined}
+      />
 
       <DataList>
         <DataListItem label={t("student")}>
@@ -140,12 +159,12 @@ export function LeaveRequestDetail({
         )}
       </DataList>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 empty:hidden">
         {data.has_evidence ? (
           <Button
             variant="secondary"
             icon={<Download />}
-            loading={docUrl.isPending}
+            loading={docUrl.isPending && docUrl.variables.kind === "evidence"}
             onClick={() => void openDocument("evidence")}
           >
             {t("viewEvidence")}
@@ -186,30 +205,31 @@ export function LeaveRequestDetail({
             </Button>
           </>
         ) : null}
-        {data.has_letter && (
-          <Button
-            variant="secondary"
-            icon={<Download />}
-            loading={docUrl.isPending}
-            onClick={() => void openDocument("letter")}
-          >
-            {t("downloadLetter")}
-          </Button>
-        )}
+        {/* The issued alert carries the letter; this is for a letter
+            without that outcome. */}
+        {data.has_letter && !issued && letterButton()}
       </div>
 
       {canAct && (
-        <div className={cn(decisionClass, "flex-col gap-4")}>
-          <Field label={t("reviewNote")} optional>
-            <Input
-              value={note}
-              onChange={(e) => {
-                setNote(e.target.value);
-              }}
-              maxLength={500}
-            />
-          </Field>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <>
+          {/* The note stays in the flow; only the buttons dock. */}
+          <div className="border-t border-line pt-4">
+            <Field label={t("reviewNote")} optional>
+              <Input
+                value={note}
+                onChange={(e) => {
+                  setNote(e.target.value);
+                }}
+                maxLength={500}
+              />
+            </Field>
+          </div>
+          {/* Side by side on a phone (Tolak, then the main Setujui), a
+              right-aligned row from 640px up. */}
+          <div
+            data-slot="leave-decision"
+            className={cn("grid grid-cols-2 gap-2 sm:flex sm:justify-end", dockClass)}
+          >
             <Button
               variant="secondary"
               loading={review.isPending && !review.variables.approve}
@@ -244,10 +264,16 @@ export function LeaveRequestDetail({
               {t("approve")}
             </Button>
           </div>
-        </div>
+        </>
       )}
       {canIssueNow && (
-        <div className={cn(decisionClass, "flex-col gap-2 sm:flex-row sm:justify-end")}>
+        <div
+          data-slot="leave-decision"
+          className={cn(
+            "flex flex-col gap-2 border-t border-line pt-4 sm:flex-row sm:justify-end",
+            dockClass,
+          )}
+        >
           <Button
             loading={issue.isPending}
             onClick={() => {

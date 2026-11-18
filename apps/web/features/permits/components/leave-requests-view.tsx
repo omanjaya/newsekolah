@@ -93,7 +93,7 @@ function IssuerQueueUnavailable(): ReactElement {
       icon={<BellRing aria-hidden="true" />}
       tone="info"
       title={t("issuerTitle")}
-      description={t("issuerQueueUnavailableBody")}
+      description={t(canReview ? "issuerQueueInboxBody" : "issuerQueueUnavailableBody")}
       action={
         canReview ? (
           <div className="flex flex-col items-center gap-3">

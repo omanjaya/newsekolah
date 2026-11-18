@@ -17,6 +17,7 @@ import type { ReactElement, ReactNode } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { useIsDesktop } from "../../../components/use-is-desktop";
 import { useCan } from "../../../lib/session/session-provider";
 import { useLibraryDashboardQuery } from "../dashboard-api";
 
@@ -33,9 +34,10 @@ const COLLECTION_STAT_KEYS = [
 ] as const;
 
 /**
- * The library's own home: today's circulation as four tiles that each
- * open the place to act (the desk, its overdue queue, the visits), the
- * collection in one quiet strip, the 30-day trend and the most borrowed
+ * The library's own home: today's circulation as four tiles (a compact
+ * strip on a phone) that each open the place to act (the desk, its
+ * overdue queue, the visits), the collection in one quiet strip (two to
+ * a row on a phone), the 30-day trend and the most borrowed
  * titles, then the latest loans and the longest overdue. `toolbar` takes
  * the home page's shortcuts when this is a librarian's home. A reader who
  * oversees the library without running its desk (a headmaster with
@@ -47,6 +49,7 @@ export function LibraryDashboardView({ toolbar }: { toolbar?: ReactNode } = {}):
   const locale = useLocale() as Locale;
   const { data, isLoading, isError, error, refetch } = useLibraryDashboardQuery();
   const canCirculate = useCan("manage_library_circulation");
+  const isDesktop = useIsDesktop();
   const desk = canCirculate ? "/library/desk" : undefined;
 
   return (
@@ -63,7 +66,14 @@ export function LibraryDashboardView({ toolbar }: { toolbar?: ReactNode } = {}):
         <SkeletonCards count={4} />
       ) : (
         <>
-          <StatGrid variant="tiles" className="lg:grid-cols-4" aria-label={t("today.heading")}>
+          {/* Tiles from 768px; on a phone the compact strip, as on the
+              school home, so four mostly-zero figures do not fill the
+              first screen. Each keeps its link and icon. */}
+          <StatGrid
+            variant={isDesktop ? "tiles" : "strip"}
+            className={isDesktop ? "lg:grid-cols-4" : undefined}
+            aria-label={t("today.heading")}
+          >
             <Stat
               icon={<BookPlus />}
               category="blue"

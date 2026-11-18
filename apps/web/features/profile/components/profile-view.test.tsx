@@ -48,6 +48,13 @@ beforeEach(() => {
 });
 
 describe("ProfileView", () => {
+  // The eyebrow named the registry group "Pengaturan", which no menu of
+  // this reader shows; its account-menu siblings say "Akun saya".
+  it("carries the account pages' eyebrow", () => {
+    render(<ProfileView />);
+    expect(screen.getByText("title")).toBeInTheDocument();
+  });
+
   it("opens on the identity header and the account tab", () => {
     render(<ProfileView />);
     expect(screen.getByText("Budi Santoso")).toBeInTheDocument();
