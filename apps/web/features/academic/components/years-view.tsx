@@ -209,6 +209,17 @@ export function YearsView(): ReactElement {
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("add"),
+              onSelect: () => {
+                setEditing("new");
+              },
+            }
+          : undefined
+      }
     >
       {canManage && (
         <p className="max-w-prose text-body-sm text-fg-muted">{tWorkspace("yearHelp")}</p>
