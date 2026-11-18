@@ -6,6 +6,7 @@ import {
   ACCESS_COOKIE_MAX_AGE_SECONDS,
   ACCESS_COOKIE_NAME,
   isProtectedDocumentNavigation,
+  STALE_ACCESS_COOKIE_NAME,
 } from "./lib/session/access-cookie";
 
 const REFRESH_TOKEN_COOKIE_NAME = "refresh_token";
@@ -102,7 +103,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
  * - Only when `sat` is absent. Because `sat`'s own `maxAge` already reserves
  *   `REFRESH_SAFETY_MARGIN_SECONDS` before the access token's real expiry,
  *   "absent" is the single correct trigger -- there is no separate
- *   boundary case to special-case here (see access-cookie.ts).
+ *   boundary case to special-case here (see access-cookie.ts). A `sat` the
+ *   browser marked stale (`STALE_ACCESS_COOKIE_NAME`: it could not remove
+ *   it before a change of identity, so it may name the previous account)
+ *   counts as absent, and the marker goes once `sat` is replaced or removed.
  * - Exactly one refresh attempt, never retried. A second attempt with the
  *   same `refresh_token` cookie value IS the reuse the API's rotation
  *   (docs/08-security.md section 2) treats as theft and would revoke the
@@ -126,7 +130,8 @@ async function maybeRefreshAccessCookie(
     rsc: request.headers.get("rsc"),
   });
   if (!isProtected) return;
-  if (request.cookies.get(ACCESS_COOKIE_NAME)) return;
+  const stale = request.cookies.has(STALE_ACCESS_COOKIE_NAME);
+  if (request.cookies.has(ACCESS_COOKIE_NAME) && !stale) return;
 
   if (!request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)) {
     // No session (or one that outlived its refresh token entirely): let the
@@ -160,6 +165,7 @@ async function maybeRefreshAccessCookie(
 
   if (!refreshResponse.ok) {
     response.cookies.delete(ACCESS_COOKIE_NAME);
+    if (stale) response.cookies.delete(STALE_ACCESS_COOKIE_NAME);
     return;
   }
 
@@ -185,6 +191,7 @@ async function maybeRefreshAccessCookie(
     path: "/",
     maxAge: ACCESS_COOKIE_MAX_AGE_SECONDS,
   });
+  if (stale) response.cookies.delete(STALE_ACCESS_COOKIE_NAME);
 
   relayRotatedRefreshCookie(refreshResponse.headers, response);
 }

@@ -4,6 +4,10 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getAccessToken, setAccessToken } from "../../lib/api/access-token";
+import {
+  CLEAR_ACCESS_COOKIE_PATH,
+  ServerAccessCookieError,
+} from "../../lib/session/clear-server-access-cookie";
 import type { Me } from "../../lib/session/session-provider";
 import {
   clearSimulation,
@@ -15,7 +19,10 @@ import {
 import { useRoleTestingSwitchMutation } from "./role-testing-api";
 
 const post = vi.hoisted(() => vi.fn());
-vi.mock("../../lib/api/client", () => ({ useApiClient: () => ({ POST: post }) }));
+const forgetAccessToken = vi.hoisted(() => vi.fn());
+vi.mock("../../lib/api/client", () => ({
+  useApiClient: () => ({ POST: post, forgetAccessToken }),
+}));
 
 function actor(id: string, actorId?: string): Me {
   return {
@@ -43,7 +50,7 @@ afterEach(() => {
 });
 
 describe("role-testing actor transition", () => {
-  it("drops old account queries, updates the observed me, and preserves the scoped test clock", async () => {
+  it("drops old account queries but the school's branding, updates the observed me, and preserves the scoped test clock", async () => {
     const root = actor("root");
     const teacher = actor("teacher", "root");
     syncSimulationIdentity(root);
@@ -53,8 +60,8 @@ describe("role-testing actor transition", () => {
     const calls: string[] = [];
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => {
-        calls.push("clear-sat");
+      vi.fn((url: string) => {
+        calls.push(url === CLEAR_ACCESS_COOKIE_PATH ? "clear-sat" : url);
         return Promise.resolve(new Response(null, { status: 204 }));
       }),
     );
@@ -63,9 +70,17 @@ describe("role-testing actor transition", () => {
       return Promise.resolve({ access_token: "teacher-token", user: teacher });
     });
 
+    // Records which token the app held when the client was told to drop
+    // the previous actor's refresh: it must come before the new one.
+    let tokenWhenForgotten: string | null = "not called";
+    forgetAccessToken.mockImplementation(() => {
+      tokenWhenForgotten = getAccessToken();
+    });
+
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     client.setQueryData(["me"], root);
     client.setQueryData(["attendance", "private"], { secret: "root-only" });
+    client.setQueryData(["tenant", "branding", "default"], { name: "School" });
     const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
@@ -86,7 +101,10 @@ describe("role-testing actor transition", () => {
     });
     expect(calls).toEqual(["clear-sat", "start"]);
     expect(client.getQueryData(["attendance", "private"])).toBeUndefined();
+    expect(client.getQueryData(["tenant", "branding", "default"])).toEqual({ name: "School" });
     expect(getAccessToken()).toBe("teacher-token");
+    expect(forgetAccessToken).toHaveBeenCalledTimes(1);
+    expect(tokenWhenForgotten).toBe("root-token");
     expect(getSimulationTime()).toBe("2026-09-30T00:00:00.000Z");
   });
 
@@ -102,7 +120,7 @@ describe("role-testing actor transition", () => {
     const view = renderHook(() => useRoleTestingSwitchMutation(), { wrapper });
     await expect(
       view.result.current.mutateAsync({ userId: "teacher", role: "teacher" }),
-    ).rejects.toThrow();
+    ).rejects.toBeInstanceOf(ServerAccessCookieError);
     expect(post).not.toHaveBeenCalled();
   });
 });

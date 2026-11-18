@@ -166,6 +166,7 @@
         "expiresAt": "Sesi uji berakhir {time}",
         "switchFailed": "Gagal beralih akun. Coba lagi.",
         "returnFailed": "Gagal kembali ke superadmin. Coba lagi atau masuk ulang.",
+        "prepareFailed": "Akun tidak diganti: aplikasi web tidak dapat melepas sesi halaman akun saat ini. Coba lagi sebentar lagi.",
         "sessionExpired": "Sesi uji berakhir. Masuk ulang untuk melanjutkan.",
         "signIn": "Masuk ulang"
       },
@@ -1737,6 +1738,7 @@
           "restored": "Pengguna dipulihkan",
           "impersonate": "Masuk sebagai pengguna ini",
           "impersonateBody": "Anda akan bertindak sebagai {name} selama maksimal 30 menit. Semua tindakan selama itu dicatat.",
+          "impersonatePrepareFailed": "Impersonasi tidak dimulai: aplikasi web tidak dapat melepas sesi halaman akun Anda. Coba lagi sebentar lagi.",
           "import": "Impor pengguna",
           "menuFor": "Aksi untuk {name}"
         },

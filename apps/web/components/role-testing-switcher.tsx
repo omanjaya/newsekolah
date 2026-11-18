@@ -22,7 +22,23 @@ import {
   useRoleTestingSwitchMutation,
 } from "../features/auth/role-testing-api";
 import { confirmUnsavedChangesBeforeNavigation } from "../lib/navigation/use-unsaved-changes-protection";
+import { ServerAccessCookieError } from "../lib/session/clear-server-access-cookie";
 import { useSession } from "../lib/session/session-provider";
+
+/**
+ * What a failed switch tells the superadmin: the test session ran out, the
+ * server access cookie could not be removed first (nothing was switched,
+ * see useRoleTestingSwitchMutation), or the switch itself failed.
+ */
+function switchErrorMessage(
+  error: unknown,
+  t: (key: "sessionExpired" | "prepareFailed" | "switchFailed" | "returnFailed") => string,
+  fallback: "switchFailed" | "returnFailed",
+): string {
+  if (error instanceof ApiError && error.status === 401) return t("sessionExpired");
+  if (error instanceof ServerAccessCookieError) return t("prepareFailed");
+  return t(fallback);
+}
 
 export function RoleTestingSwitcher(): ReactElement | null {
   const { me } = useSession();
@@ -43,9 +59,7 @@ export function RoleTestingSwitcher(): ReactElement | null {
       await mutation.mutateAsync(null);
       router.replace("/dashboard");
     } catch (error) {
-      toast.error(
-        error instanceof ApiError && error.status === 401 ? t("sessionExpired") : t("returnFailed"),
-      );
+      toast.error(switchErrorMessage(error, t, "returnFailed"));
     }
   }
 
@@ -121,9 +135,7 @@ function RoleTestingDialog({
       onOpenChange(false);
       router.replace("/dashboard");
     } catch (error) {
-      toast.error(
-        error instanceof ApiError && error.status === 401 ? t("sessionExpired") : t("switchFailed"),
-      );
+      toast.error(switchErrorMessage(error, t, "switchFailed"));
     }
   }
 

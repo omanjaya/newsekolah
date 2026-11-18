@@ -12,6 +12,17 @@
 /** httpOnly cookie middleware mints holding a short-lived API access token. */
 export const ACCESS_COOKIE_NAME = "sat";
 
+/**
+ * Plain cookie the browser sets when it could not remove `sat` before a
+ * change of identity (lib/session/clear-server-access-cookie.ts), so `sat`
+ * may still name the previous account. While it is there the server
+ * render does not use `sat`, and middleware treats `sat` as absent: the
+ * next document navigation into `(app)` mints a new one from the refresh
+ * cookie and removes this marker. It lasts `ACCESS_COOKIE_MAX_AGE_SECONDS`,
+ * as long as any `sat` that existed when it was set.
+ */
+export const STALE_ACCESS_COOKIE_NAME = "sat_stale";
+
 /** Matches the API's default `ACCESS_TOKEN_TTL` (apps/api/internal/platform/config/config.go: "15m"). */
 export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 

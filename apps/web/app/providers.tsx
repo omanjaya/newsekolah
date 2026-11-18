@@ -7,12 +7,13 @@ import { useCallback, useEffect, useRef } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { UiLocaleProvider } from "../components/ui-locale-provider";
-import { ApiClientProvider } from "../lib/api/client";
+import { ApiClientProvider, type ExpiredSession } from "../lib/api/client";
 import { syncCurrentLocale } from "../lib/i18n/current-locale";
 import { QueryProvider } from "../lib/query/query-provider";
 import { isExcludedPath } from "../lib/session/access-cookie";
 import { AccountBoundary } from "../lib/session/account-boundary";
 import { markAuthRedirect } from "../lib/session/auth-redirect-flag";
+import { endSession } from "../lib/session/end-session";
 import { SessionProvider } from "../lib/session/session-provider";
 import { SimulationSync } from "../lib/simulation/simulation-sync";
 import { TenantProvider, type TenantBranding } from "../lib/tenant/tenant-provider";
@@ -46,17 +47,23 @@ export function AppProviders({
   // Stable identity: ApiClientProvider only rebuilds its client when this changes.
   // The boot refresh also fails on the auth pages themselves; redirecting there
   // would remount the login form mid-submit, so only leave protected pages.
-  const handleUnauthorized = useCallback(() => {
-    const current = pathnameRef.current;
-    // Public pages (OPAC, certificate verification, password reset) work
-    // without a session, so a failed boot refresh leaves them where they are.
-    if (isExcludedPath(current)) return;
-    // Marked before the mutations in flight at the moment the session died
-    // reject and hit the mutation cache's default error toast (see
-    // auth-redirect-flag.ts) -- must happen before router.replace, not after.
-    markAuthRedirect();
-    router.replace(`/login?next=${encodeURIComponent(current)}`);
-  }, [router]);
+  const handleUnauthorized = useCallback(
+    ({ client, queryClient }: ExpiredSession) => {
+      const current = pathnameRef.current;
+      // Public pages (OPAC, certificate verification, password reset) work
+      // without a session, so a failed boot refresh leaves them where they are.
+      if (isExcludedPath(current)) return;
+      // Marked before the mutations in flight at the moment the session died
+      // reject and hit the mutation cache's default error toast (see
+      // auth-redirect-flag.ts) -- must happen before router.replace, not after.
+      markAuthRedirect();
+      // The session is over: with its `me` left in the cache the sign-in
+      // page would read the tab as signed in and send it straight back.
+      endSession(client, queryClient);
+      router.replace(`/login?next=${encodeURIComponent(current)}`);
+    },
+    [router],
+  );
 
   return (
     <QueryProvider>
