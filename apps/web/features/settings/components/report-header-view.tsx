@@ -29,6 +29,7 @@ import {
   type ReportHeaderSigner,
 } from "../api";
 
+import { PreviewSheet } from "./preview-sheet";
 import { ReportHeaderPreview, type ReportHeaderDraft } from "./report-header-preview";
 import { SettingSwitchRow } from "./setting-switch-row";
 import { SettingsPage } from "./settings-page";
@@ -196,6 +197,14 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="flex min-w-0 flex-col gap-6">
           {error && <FormError>{error}</FormError>}
+
+          <PreviewSheet label={t("preview.title")}>
+            <ReportHeaderPreview
+              draft={draft}
+              logoUrl={branding?.logo_url}
+              savedVersion={savedVersion}
+            />
+          </PreviewSheet>
 
           <FormSection variant="card" columns={1} title={t("headerTitle")}>
             <SettingSwitchRow
@@ -366,7 +375,7 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
           </FormSection>
         </div>
 
-        <div className="lg:sticky lg:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)]">
+        <div className="max-lg:hidden lg:sticky lg:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)]">
           <ReportHeaderPreview
             draft={draft}
             logoUrl={branding?.logo_url}
