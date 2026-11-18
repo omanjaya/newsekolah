@@ -211,6 +211,27 @@ describe("Scanner", () => {
     expect(control.closest(".justify-between")).toBe(heading.closest(".justify-between"));
   });
 
+  // The late-arrival reason sat above the card as a bare field, before
+  // the heading that says what the screen is for.
+  it("puts the lead between the header and the camera", () => {
+    installCamera(() => Promise.resolve({ getTracks: () => [] }));
+    render(
+      <Scanner
+        title="Pindai QR di meja piket"
+        onScan={vi.fn()}
+        autoStart={false}
+        lead={<textarea aria-label="Alasan" />}
+      />,
+    );
+    const heading = screen.getByRole("heading", { name: "Pindai QR di meja piket" });
+    const field = screen.getByRole("textbox", { name: "Alasan" });
+    const camera = screen.getByRole("button", { name: "Nyalakan kamera" });
+    const scanner = heading.closest('[data-slot="scanner"]');
+    expect(scanner).toContainElement(field);
+    expect(heading.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(field.compareDocumentPosition(camera) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("has no accessibility violations", async () => {
     installCamera(() => Promise.resolve({ getTracks: () => [] }));
     const { container } = render(
