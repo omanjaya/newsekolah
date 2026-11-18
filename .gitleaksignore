@@ -1,0 +1,6 @@
+# Findings gitleaks should skip, one fingerprint per line
+# (commit:file:rule:line). Only add a line after confirming the value is
+# not a real credential.
+
+# Made-up password typed into a mocked form by a unit test.
+610602035fe24d88484193cb6b76067e0e743301:apps/web/features/auth/components/auth-forms-hydration.test.tsx:generic-api-key:68
