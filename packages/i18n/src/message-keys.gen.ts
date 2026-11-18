@@ -180,6 +180,7 @@ export type MessageKey =
   | "errors.SUPERVISION_SCHEDULED_NOT_FOUND"
   | "errors.SUPERVISION_SCORE_COUNT_MISMATCH"
   | "errors.SUPERVISION_SCORE_OUT_OF_RANGE"
+  | "errors.TEMPLATE_INVALID"
   | "errors.TENANT_NOT_FOUND"
   | "errors.TP_EXPORT_CODE_EXISTS"
   | "errors.TP_KIND_NOT_ELIGIBLE"
@@ -462,6 +463,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.SUPERVISION_SCHEDULED_NOT_FOUND",
   "errors.SUPERVISION_SCORE_COUNT_MISMATCH",
   "errors.SUPERVISION_SCORE_OUT_OF_RANGE",
+  "errors.TEMPLATE_INVALID",
   "errors.TENANT_NOT_FOUND",
   "errors.TP_EXPORT_CODE_EXISTS",
   "errors.TP_KIND_NOT_ELIGIBLE",

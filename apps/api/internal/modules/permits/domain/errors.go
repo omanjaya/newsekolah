@@ -35,6 +35,10 @@ var (
 	ErrHomeroomTeacherRequired      = errors.New("the student's class has no active homeroom teacher to review this request")
 
 	ErrTemplateNotFound = errors.New("document template not found")
+	// ErrTemplateInvalid is a template body the renderer could never
+	// render (a syntax error such as an unclosed {{ action), refused when
+	// the template is saved rather than on every later issuance.
+	ErrTemplateInvalid = errors.New("document template body is invalid")
 	// ErrTemplateKindDisabled is what a TemplateKindDisabledError matches.
 	ErrTemplateKindDisabled = errors.New("document template kind belongs to a disabled module")
 	ErrDocumentNotFound     = errors.New("issued document not found")

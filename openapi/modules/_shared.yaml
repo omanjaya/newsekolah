@@ -16,6 +16,11 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    UnprocessableEntity:
+      description: Well-formed request whose content cannot be used (e.g. TEMPLATE_INVALID)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
     Unauthorized:
       description: Missing, expired, or revoked credentials
       content:
