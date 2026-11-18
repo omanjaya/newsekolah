@@ -1,65 +1,96 @@
 {
   "board": {
-    "eyebrow": "Visitors & Incidents",
-    "title": "Visitor board",
-    "count": "{count, plural, one {# visitor on campus} other {# visitors on campus}}",
-    "newVisitor": "New Visitor",
-    "searchPlaceholder": "Search visitor name or organization",
-    "searchEmptyTitle": "No match",
-    "searchEmptyBody": "No visitor on campus matches \"{query}\".",
-    "overdue": "Not Signed Out",
-    "purpose": "Purpose",
-    "noPurpose": "Not recorded",
-    "arrivedAt": "Arrived",
-    "badgeNumber": "Badge No.",
-    "noBadge": "None yet",
-    "checkOut": "Sign Out",
+    "documentTitle": "Visitors today",
+    "newVisitor": "New visitor",
+    "searchPlaceholder": "Search name or organization",
+    "filterLabel": "Show visitors",
+    "filters": {
+      "all": "All",
+      "onSite": "On site",
+      "expected": "Expected"
+    },
+    "onSiteTitle": "On site now",
+    "live": "Updated {time}",
+    "stale": "Update failed, data from {time}",
+    "searchEmptyTitle": "No matching visitors",
+    "searchEmptyBody": "No visitor on site matches \"{query}\".",
+    "clearSearch": "Clear search",
+    "overdue": "Not signed out",
+    "host": "Visiting {name}",
+    "arrived": "In at {time} · {stay}",
+    "stayMinutes": "{minutes} min",
+    "stayHours": "{hours} h {minutes} min",
+    "badgeNumber": "Pass {number}",
+    "checkOut": "Sign out",
+    "checkOutShort": "Sign out",
+    "checkOutFor": "Sign out {name}",
     "signedOut": "{name} has been signed out",
-    "emptyTitle": "No visitors yet",
-    "emptyBody": "Guests signed in at the gate will appear here."
+    "checkOutDialog": {
+      "title": "Sign this visitor out?",
+      "body": "{name} will be recorded as having left and disappears from the on-site list."
+    },
+    "emptyTitle": "No visitors on site",
+    "emptyBody": "Visitors signed in at the gate appear here."
   },
   "checkIn": {
     "fullName": "Full name",
     "fullNamePlaceholder": "Visitor's name",
     "organization": "Organization",
-    "organizationPlaceholder": "Optional",
     "host": "Visiting",
     "hostPlaceholder": "Select a teacher or staff member",
     "purpose": "Purpose",
-    "purposePlaceholder": "Optional",
     "idChecked": "Identification sighted",
-    "idCheckedHint": "Only records the kind of identification, never a photo or its number.",
-    "idTypePlaceholder": "Identification type",
+    "idCheckedHint": "Only the kind of identification is recorded, never a photo or its number.",
+    "idType": "Identification type",
+    "idTypePlaceholder": "Select identification type",
     "idTypes": {
-      "none": "Not selected",
       "ktp": "National ID (KTP)",
-      "sim": "Driver's License",
-      "kartu_pelajar": "Student Card",
-      "kartu_pegawai": "Staff Card",
+      "sim": "Driver's license",
+      "kartu_pelajar": "Student card",
+      "kartu_pegawai": "Staff card",
       "other": "Other"
     },
+    "errors": {
+      "fullName": "Enter the visitor's name.",
+      "host": "Select the teacher or staff member being visited.",
+      "idType": "Select the kind of identification sighted."
+    },
     "cancel": "Cancel",
-    "submit": "Sign In",
+    "submit": "Sign in",
     "signedIn": "Visitor signed in"
   },
   "expected": {
-    "eyebrow": "Visitors & Incidents",
-    "title": "Expected visitors",
+    "documentTitle": "Expected visitors",
     "filters": {
       "date": "Date",
       "onlyPending": "Pending only",
       "reset": "Reset filter",
       "removeFilter": "Remove {label} filter"
     },
-    "add": "Add Guest",
-    "checkIn": "Sign In",
+    "day": {
+      "previous": "Previous day",
+      "next": "Next day",
+      "today": "Today"
+    },
+    "add": "Schedule a visitor",
+    "checkIn": "Sign in",
+    "checkInShort": "Sign in",
+    "checkInFor": "Sign in {name}",
     "cancel": "Withdraw",
-    "cancelled": "Expected guest entry withdrawn",
+    "rowActions": "Actions for {name}",
+    "cancelled": "Expected visitor withdrawn",
     "unknownHost": "Unknown",
+    "hostLine": "Visiting {name}",
+    "todayTitle": "Expected today",
+    "todayEmptyTitle": "No visitors expected today",
+    "todayEmptyBody": "Visitors the office schedules for today appear here.",
+    "todaySearchEmpty": "No matching expected visitors",
+    "scheduleGuest": "Schedule a visitor",
     "columns": {
       "name": "Name",
       "organization": "Organization",
       "host": "Visiting",
+      "purpose": "Purpose",
       "status": "Status",
       "actions": "Actions"
     },
@@ -67,10 +98,15 @@
       "pending": "Pending",
       "arrived": "Arrived",
       "expired": "Expired",
-      "cancelled": "Cancelled"
+      "cancelled": "Withdrawn"
     },
-    "emptyTitle": "No guests expected",
-    "emptyBody": "Add the names of guests expected today.",
+    "emptyTitle": "No visitors expected today",
+    "emptyTitleOther": "No visitors expected on this date",
+    "emptyBody": "Scheduled visitors appear here, ready to sign in when they arrive.",
+    "cancelDialog": {
+      "title": "Withdraw this expected visitor?",
+      "body": "The planned visit by {name} is withdrawn and they can no longer be signed in from the list."
+    },
     "form": {
       "fullName": "Full name",
       "organization": "Organization",
@@ -79,15 +115,19 @@
       "date": "Expected date",
       "purpose": "Purpose",
       "notes": "Notes",
+      "errors": {
+        "fullName": "Enter the visitor's name.",
+        "host": "Select the teacher or staff member they will visit.",
+        "date": "Select the expected date."
+      },
       "cancel": "Cancel",
       "submit": "Save",
-      "added": "Expected guest added"
+      "added": "Visitor scheduled"
     }
   },
   "incidents": {
-    "eyebrow": "Visitors & Incidents",
-    "title": "Incidents",
-    "record": "Record Incident",
+    "documentTitle": "Incidents",
+    "record": "Record incident",
     "open": "Open",
     "filters": {
       "includeClosed": "Show closed incidents",
@@ -97,7 +137,7 @@
       "dateRange": "Date range",
       "from": "From date",
       "to": "To date",
-      "invalidRange": "The from date must be on or before the to date"
+      "invalidRange": "The start date must be on or before the end date"
     },
     "columns": {
       "occurredAt": "Occurred at",
@@ -116,31 +156,38 @@
       "high": "High",
       "critical": "Critical"
     },
-    "emptyTitle": "No incidents yet",
-    "emptyBody": "Incidents recorded in the last 30 days will appear here.",
+    "emptyTitle": "No incidents",
+    "emptyBody": "Recorded incidents appear here.",
+    "emptyRange": "No incidents were recorded in {range}.",
     "detail": {
-      "title": "Incident detail",
-      "loading": "Loading...",
+      "title": "Incident details",
+      "editTitle": "Edit incident",
       "status": {
         "open": "Open",
         "closed": "Closed"
       },
-      "severity": "Severity",
+      "occurredAt": "Occurred at",
       "severities": {
         "low": "Low",
         "medium": "Medium",
         "high": "High",
         "critical": "Critical"
       },
-      "description": "Summary",
-      "personsInvolved": "Persons involved",
+      "description": "What happened",
+      "personsInvolved": "People involved",
       "actionTaken": "Action taken",
       "edit": "Edit",
-      "close": "Close Incident",
-      "closed": "Incident closed"
+      "close": "Close incident",
+      "closed": "Incident closed",
+      "closeDialog": {
+        "title": "Close this incident?",
+        "body": "A closed incident can no longer be edited."
+      }
     },
     "form": {
       "occurredAt": "Occurred at",
+      "date": "Date of incident",
+      "time": "Time of incident",
       "severity": "Severity",
       "severities": {
         "low": "Low",
@@ -148,10 +195,13 @@
         "high": "High",
         "critical": "Critical"
       },
-      "description": "Summary",
-      "personsInvolved": "Persons involved",
-      "personsInvolvedPlaceholder": "Optional",
+      "description": "What happened",
+      "personsInvolved": "People involved",
       "actionTaken": "Action taken",
+      "errors": {
+        "occurredAt": "Enter the date and time of the incident.",
+        "description": "Describe what happened."
+      },
       "cancel": "Cancel",
       "submit": "Save",
       "recorded": "Incident recorded",
@@ -159,21 +209,29 @@
     }
   },
   "recap": {
-    "eyebrow": "Visitors & Incidents",
-    "title": "Visit recap",
+    "documentTitle": "Visit recap",
+    "periodLabel": "Recap period",
     "tabs": {
       "daily": "Daily",
       "monthly": "Monthly"
     },
+    "day": {
+      "previous": "Previous day",
+      "next": "Next day",
+      "today": "Today"
+    },
     "dateLabel": "Date",
     "monthLabel": "Month",
-    "export": "Download",
-    "defaultTitleDaily": "Daily Visit Recap",
-    "defaultTitleMonthly": "Monthly Visit Recap",
+    "export": "Download recap",
+    "defaultTitleDaily": "Daily visit recap",
+    "defaultTitleMonthly": "Monthly visit recap",
+    "visitsTitle": "Visits",
     "totalVisits": "Total visits",
-    "stillOnCampus": "Still on campus",
-    "avgStayMinutes": "Average stay (minutes)",
+    "stillOnCampus": "Still on site",
+    "avgStay": "Average visit length",
     "incidentsBySeverity": "Incidents by severity",
+    "emptyTitle": "No visits on {period}",
+    "emptyBody": "Visits and incidents recorded in this period appear here.",
     "severities": {
       "low": "Low",
       "medium": "Medium",
@@ -181,7 +239,7 @@
       "critical": "Critical"
     },
     "columns": {
-      "label": "Label",
+      "label": "Item",
       "value": "Count"
     }
   }

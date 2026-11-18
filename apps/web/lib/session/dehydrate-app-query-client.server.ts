@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 
 import { API_INTERNAL_URL } from "../env";
 
-import { ACCESS_COOKIE_NAME } from "./access-cookie";
+import { ACCESS_COOKIE_NAME, STALE_ACCESS_COOKIE_NAME } from "./access-cookie";
 
 /**
  * Query key must mirror `packages/api-client/src/query-keys.ts`'s
@@ -56,8 +56,13 @@ export async function dehydrateAppQueryClient(): Promise<DehydratedState> {
     defaultOptions: { queries: { staleTime: ME_STALE_TIME_MS } },
   });
 
-  const accessToken = (await cookies()).get(ACCESS_COOKIE_NAME)?.value;
-  if (accessToken && API_INTERNAL_URL) {
+  const jar = await cookies();
+  const accessToken = jar.get(ACCESS_COOKIE_NAME)?.value;
+  // A `sat` the browser marked stale may still name the account signed in
+  // before (access-cookie.ts, STALE_ACCESS_COOKIE_NAME): not used until
+  // middleware replaces it.
+  const stale = jar.has(STALE_ACCESS_COOKIE_NAME);
+  if (accessToken && !stale && API_INTERNAL_URL) {
     // `query()` (replacing the deprecated `prefetchQuery`) throws on
     // failure, unlike its predecessor -- swallowed here on purpose: a
     // failed `queryFn` still leaves the query in an error state, which

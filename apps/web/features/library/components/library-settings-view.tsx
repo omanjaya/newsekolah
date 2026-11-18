@@ -1,10 +1,13 @@
 "use client";
 
-import { EmptyState, PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { EmptyState, NavTabs, type NavTabsLinkProps } from "@newsekolah/ui";
+import { Settings2 } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useSession } from "../../../lib/session/session-provider";
 import {
@@ -17,11 +20,20 @@ import { LoanRulesView } from "./loan-rules-view";
 import { MasterDataView } from "./master-data-view";
 import { MemberTypesView } from "./member-types-view";
 
+function renderNavLink({ href, className, children, ...rest }: NavTabsLinkProps): ReactNode {
+  return (
+    <Link href={href} className={className} aria-current={rest["aria-current"]}>
+      {children}
+    </Link>
+  );
+}
+
 /**
- * One page for the library configuration screens that used to be separate
- * menu entries. Each tab renders the existing view in `embedded` mode (no second header or nav); the old routes
- * keep working. The tab lives in `?section=` because master data already
- * owns `?tab=` for its own sub-tabs.
+ * The one place for the library's configuration: loan rules, member types
+ * and catalogue data as sections of one page, picked from the tabs under
+ * the header and kept in `?section=` (catalogue data owns `?tab=` for its
+ * own lists). The old addresses of each section redirect here, so every
+ * link and the menu lead to the same page under the same name.
  */
 export function LibrarySettingsView(): ReactElement {
   const t = useTranslations("app.librarySettings");
@@ -31,7 +43,7 @@ export function LibrarySettingsView(): ReactElement {
     () => visibleLibrarySettingsTabs((code) => permissions?.includes(code) ?? false),
     [permissions],
   );
-  const [requested, setTab] = useUrlState<LibrarySettingsTab>(
+  const [requested] = useUrlState<LibrarySettingsTab>(
     "section",
     LIBRARY_SETTINGS_TABS,
     "loanRules",
@@ -40,49 +52,40 @@ export function LibrarySettingsView(): ReactElement {
 
   if (!first) {
     return (
-      <div className="flex flex-col gap-6 p-4 md:p-6">
-        <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-        <EmptyState title={t("noAccessTitle")} description={t("noAccessDescription")} />
-      </div>
+      <AppPage nav={false}>
+        <EmptyState
+          icon={<Settings2 aria-hidden="true" />}
+          title={t("noAccessTitle")}
+          description={t("noAccessDescription")}
+        />
+      </AppPage>
     );
   }
-  const tab = visible.includes(requested) ? requested : first;
+  const section = visible.includes(requested) ? requested : first;
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <Tabs
-        value={tab}
-        onValueChange={(value) => {
-          setTab(value as LibrarySettingsTab);
-        }}
-      >
-        <TabsList
-          aria-label={t("tabsLabel")}
-          className="overflow-x-auto [&>button]:shrink-0 [&>button]:whitespace-nowrap"
-        >
-          {visible.map((key) => (
-            <TabsTrigger key={key} value={key}>
-              {t(`tabs.${key}`)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        {visible.includes("loanRules") && (
-          <TabsContent value="loanRules">
-            <LoanRulesView embedded />
-          </TabsContent>
-        )}
-        {visible.includes("memberTypes") && (
-          <TabsContent value="memberTypes">
-            <MemberTypesView embedded />
-          </TabsContent>
-        )}
-        {visible.includes("masterData") && (
-          <TabsContent value="masterData">
-            <MasterDataView embedded />
-          </TabsContent>
-        )}
-      </Tabs>
-    </div>
+    <AppPage
+      documentTitle={t(`tabs.${section}`)}
+      nav={
+        visible.length > 1 ? (
+          <NavTabs
+            aria-label={t("tabsLabel")}
+            variant="underline"
+            items={visible.map((key) => ({
+              href: `/library/settings?section=${key}`,
+              label: t(`tabs.${key}`),
+              current: key === section,
+            }))}
+            renderLink={renderNavLink}
+          />
+        ) : (
+          false
+        )
+      }
+    >
+      {section === "loanRules" && <LoanRulesView />}
+      {section === "memberTypes" && <MemberTypesView />}
+      {section === "masterData" && <MasterDataView />}
+    </AppPage>
   );
 }

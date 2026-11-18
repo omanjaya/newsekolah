@@ -1,7 +1,17 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Button, Dialog, DialogContent, Input, Skeleton, useToast } from "@newsekolah/ui";
+import {
+  DialogFooter,
+  Field,
+  NumberInput,
+  Alert,
+  Button,
+  Dialog,
+  DialogContent,
+  Skeleton,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import { useState, type ReactElement } from "react";
 
@@ -14,11 +24,7 @@ import {
   useUpdateEarlyWarningPolicyMutation,
 } from "../api";
 
-import {
-  POLICY_FIELDS as fields,
-  type PolicyField as Field,
-  visiblePolicyFields,
-} from "./policy-fields";
+import { POLICY_FIELDS as fields, type PolicyField, visiblePolicyFields } from "./policy-fields";
 
 export function PolicyDialog({
   open,
@@ -77,7 +83,10 @@ function PolicyForm({
   const shown = visiblePolicyFields((module) => isModuleEnabled(me, module));
   const [draft, setDraft] = useState(
     () =>
-      Object.fromEntries(fields.map((key) => [key, String(initial[key])])) as Record<Field, string>,
+      Object.fromEntries(fields.map((key) => [key, String(initial[key])])) as Record<
+        PolicyField,
+        string
+      >,
   );
   const [error, setError] = useState<string | null>(null);
   return (
@@ -111,38 +120,37 @@ function PolicyForm({
         });
       }}
     >
-      <p className="text-sm text-fg-muted">{t("description")}</p>
-      {error && <Alert variant="warning" title={error} />}
+      <p className="text-body-sm text-fg-muted">{t("description")}</p>
+      {error && <Alert variant="danger" title={error} />}
       <div className="grid gap-3 sm:grid-cols-2">
         {shown.map((key) => {
           const rate = key.endsWith("_rate");
           const decimal = rate || key.startsWith("grade_drop_");
           return (
-            <label key={key} className="flex flex-col gap-1 text-sm">
-              <span>{t(`fields.${key}`)}</span>
-              <Input
-                type="number"
+            <Field key={key} label={t(`fields.${key}`)} required>
+              <NumberInput
                 required
                 min={decimal ? 0.01 : 1}
                 max={rate ? 1 : undefined}
                 step={decimal ? 0.01 : 1}
-                value={draft[key]}
-                onChange={(event) => {
-                  setDraft({ ...draft, [key]: event.target.value });
+                precision={decimal ? 2 : 0}
+                value={draft[key] === "" ? null : Number(draft[key])}
+                onChange={(next) => {
+                  setDraft({ ...draft, [key]: next === null ? "" : String(next) });
                 }}
               />
-            </label>
+            </Field>
           );
         })}
       </div>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={update.isPending}>
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

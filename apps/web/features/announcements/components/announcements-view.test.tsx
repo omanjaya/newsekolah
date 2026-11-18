@@ -9,6 +9,34 @@ const mocks = vi.hoisted(() => ({ canCreate: true, canPublish: true }));
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
 }));
+// A tiny URL store: router.replace changes the query and every reader re-renders.
+vi.mock("next/navigation", async () => {
+  const { useSyncExternalStore } = await import("react");
+  let query = "";
+  const listeners = new Set<() => void>();
+  return {
+    usePathname: () => "/announcements",
+    useSearchParams: () =>
+      new URLSearchParams(
+        useSyncExternalStore(
+          (listener) => {
+            listeners.add(listener);
+            return () => listeners.delete(listener);
+          },
+          () => query,
+        ),
+      ),
+    useRouter: () => ({
+      replace: (href: string) => {
+        query = href.split("?")[1] ?? "";
+        listeners.forEach((listener) => {
+          listener();
+        });
+      },
+    }),
+  };
+});
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (permission: string) =>
     permission === "create_announcements" ? mocks.canCreate : mocks.canPublish,
@@ -26,10 +54,13 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-it("keeps the primary create action out of the header while the feed tab is active", () => {
+it("offers the create action from the feed tab and opens the editor on the manage tab", async () => {
+  const user = userEvent.setup();
   render(<AnnouncementsView />);
   expect(screen.getByTestId("feed")).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "actions.create" })).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "actions.create" }));
+  expect(screen.getByTestId("manage")).toHaveTextContent("creating");
 });
 
 it("shows the create pill in the shared header once the manage tab is active, and opens the editor from it", async () => {

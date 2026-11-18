@@ -1,35 +1,42 @@
 import { domainIcons } from "@newsekolah/ui";
 import type { LucideIcon } from "lucide-react";
 import {
+  ArrowBigUpDash,
   Bell,
-  CalendarDays,
+  Blocks,
+  CalendarFold,
   ClipboardList,
+  ClipboardPen,
   FileBarChart,
   Fingerprint,
-  GraduationCap,
-  Home,
+  HeartHandshake,
+  House,
   Inbox,
   LogIn,
-  MonitorSmartphone,
+  MailWarning,
+  MonitorPlay,
   NotebookPen,
+  Radar,
   Repeat,
   ScanLine,
-  ShieldAlert,
-  ShieldCheck,
+  ScanQrCode,
+  UserCog,
   UserRound,
   UsersRound,
 } from "lucide-react";
 
 import type { FeatureModule } from "./modules/feature-modules";
 import { academicNavItems } from "./navigation-academic";
-import { moduleSectionsAccess, type NavAccess, type NavModuleSection } from "./navigation-access";
+import type { NavAudience, NavModuleSection } from "./navigation-access";
 import { NAV_GROUP as GROUP } from "./navigation-groups";
 import { libraryNavItems } from "./navigation-library";
 import { moduleNavItems } from "./navigation-modules";
 import { INBOX_SECTIONS, SCAN_SECTIONS } from "./navigation-sections";
 import { settingsNavItems } from "./navigation-settings";
 
-export { navGroupIcons } from "./navigation-groups";
+export { navGroupIcons, navGroupLabelKey } from "./navigation-groups";
+// The filter lives beside the access rules it applies; this file is at the 400-line cap.
+export { filterNavigation } from "./navigation-access";
 
 /** Profile kinds a nav item can be restricted to, mirroring `Me["profile_kind"]`. */
 export type NavProfileKind = "student" | "teacher" | "staff";
@@ -116,6 +123,14 @@ export interface NavItem {
    * see this particular screen through).
    */
   excludeRoles?: string[];
+  /**
+   * Narrows who is offered the entry in a menu, an area's tabs and the
+   * command palette, without narrowing who may open the route (the checks
+   * above still decide that, so an old link or a notification keeps
+   * working). For a page that opens for a wide audience while only part
+   * of it has a screen of its own there.
+   */
+  offeredTo?: NavAudience;
   /** Shown in the mobile bottom tab bar in addition to the sidebar. */
   showInTabBar?: boolean;
   /**
@@ -124,6 +139,12 @@ export interface NavItem {
    * `labelKey`.
    */
   tabLabelKey?: string;
+  /**
+   * Shorter label for a row shown under its group heading, where the group
+   * already names the context (Perpustakaan > Pengaturan). Falls back to
+   * `labelKey`; the palette and the recent list keep the full label.
+   */
+  groupLabelKey?: string;
   /**
    * Sidebar group, as a message key (e.g. "nav.academic.label"), translated
    * by the sidebar. Omitted items render flat above the groups.
@@ -144,10 +165,18 @@ export interface NavItem {
  * documented information architecture.
  */
 export const navigation: NavItem[] = [
-  { key: "dashboard", labelKey: "nav.home", href: "/dashboard", icon: Home, showInTabBar: true },
+  {
+    key: "dashboard",
+    labelKey: "nav.home",
+    tabLabelKey: "app.shell.nav.short.home",
+    href: "/dashboard",
+    icon: House,
+    showInTabBar: true,
+  },
   {
     key: "inbox",
-    labelKey: "app.inbox.title",
+    labelKey: "app.shell.nav.items.inbox",
+    tabLabelKey: "app.shell.nav.short.inbox",
     href: "/inbox",
     icon: Inbox,
     // Every queue on the page gates itself; late arrivals have no permission
@@ -159,6 +188,7 @@ export const navigation: NavItem[] = [
   {
     key: "scan",
     labelKey: "app.scan.navLabel",
+    tabLabelKey: "app.shell.nav.short.scan",
     href: "/scan",
     icon: ScanLine,
     // Each QR action is authorized by the server on scan; the page itself
@@ -231,10 +261,11 @@ export const navigation: NavItem[] = [
     labelKey: "app.attendanceReports.navLabel",
     href: "/attendance/reports",
     icon: FileBarChart,
-    permission: "view_reports",
-    // The "mine" tab lists a teacher's own sessions; any teacher who takes
-    // attendance may open it without view_reports.
-    routePermission: "manage_attendance",
+    // The permission the route checks: the "mine" tab lists a teacher's own
+    // sessions, so any teacher who takes attendance has a report here and
+    // gets the tab; view_reports only adds the school-wide tabs inside the
+    // page. A reader with view_reports alone reads attendance on /reports.
+    permission: "manage_attendance",
     group: GROUP.academic,
   },
   {
@@ -275,13 +306,16 @@ export const navigation: NavItem[] = [
     // screen away from them. Excluded by role instead -- library staff
     // never write a class journal.
     excludeRoles: ["librarian"],
+    // Gate duty (satpam) is a Pegawai account too, and teaches no class:
+    // the journal is not offered to it, though the page still opens.
+    offeredTo: { excludeDuties: ["security"] },
     group: GROUP.academic,
   },
   {
     key: "monitor",
     labelKey: "app.monitor.navLabel",
     href: "/monitor",
-    icon: MonitorSmartphone,
+    icon: MonitorPlay,
     permission: "view_monitor_presence",
     group: GROUP.academic,
   },
@@ -301,7 +335,9 @@ export const navigation: NavItem[] = [
   },
   {
     key: "my-grades",
-    labelKey: "nav.compact.grades",
+    // "Nilai saya": plain "Nilai" is the grading workspace's own title, so
+    // the tab would repeat the heading above it.
+    labelKey: "app.shell.nav.items.myGrades",
     href: "/my-grades",
     module: "grading",
     icon: domainIcons.grades,
@@ -310,7 +346,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "violations",
-    labelKey: "nav.discipline.items.violations",
+    labelKey: "app.discipline.violations.title",
     href: "/discipline/violations",
     module: "discipline",
     icon: domainIcons.violation,
@@ -319,7 +355,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "my-discipline",
-    labelKey: "nav.discipline.items.myDiscipline",
+    labelKey: "app.shell.nav.items.myDiscipline",
     href: "/my-discipline",
     module: "discipline",
     icon: domainIcons.violation,
@@ -328,25 +364,27 @@ export const navigation: NavItem[] = [
   },
   {
     key: "warning-letters",
-    labelKey: "nav.discipline.items.warningLetters",
+    labelKey: "app.discipline.warningLetters.title",
     href: "/discipline/warning-letters",
     module: "discipline",
-    icon: domainIcons.violation,
+    icon: MailWarning,
     permission: "view_discipline",
     group: GROUP.students,
   },
   {
     key: "counseling",
-    labelKey: "nav.discipline.items.counseling",
+    labelKey: "app.discipline.counseling.title",
     href: "/discipline/counseling",
     module: "discipline",
-    icon: domainIcons.violation,
+    // Not the violation shield: counseling sits next to discipline in the
+    // tab bar and the menu, and two shields read as one destination.
+    icon: HeartHandshake,
     permission: "manage_counseling",
     group: GROUP.students,
   },
   {
     key: "student-discipline",
-    labelKey: "nav.discipline.items.violations",
+    labelKey: "app.discipline.violations.title",
     href: "/discipline/students",
     module: "discipline",
     icon: domainIcons.violation,
@@ -361,13 +399,24 @@ export const navigation: NavItem[] = [
     key: "analytics",
     labelKey: "app.analytics.navLabel",
     href: "/analytics",
-    icon: ShieldAlert,
+    // Not the violation shield: early warning reads every signal, not
+    // only discipline, and sits beside counseling in one area.
+    icon: Radar,
     permission: "view_early_warning",
+    // The teacher and staff roles carry view_early_warning by default, but
+    // the list answers only an overseer role (admin, super admin,
+    // principal) or a counselor, leadership or homeroom duty
+    // (apps/api analytics ListAtRiskStudents). Anyone else would land on
+    // the page's 403 state, so only those are offered the entry.
+    offeredTo: {
+      roles: ["admin", "super_admin", "principal"],
+      duties: ["counselor", "leadership", "homeroom"],
+    },
     group: GROUP.students,
   },
   {
     key: "leave-requests",
-    labelKey: "nav.permits.items.plannedLeave",
+    labelKey: "app.permits.leave.title",
     tabLabelKey: "nav.compact.permits",
     href: "/leave-requests",
     module: "permits",
@@ -384,7 +433,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "exit-permits",
-    labelKey: "nav.permits.items.exitPermit",
+    labelKey: "app.permits.exit.title",
     href: "/exit-permits",
     module: "permits",
     icon: domainIcons.exitPermit,
@@ -399,24 +448,23 @@ export const navigation: NavItem[] = [
   },
   {
     key: "late-arrivals",
-    labelKey: "nav.permits.items.late",
+    labelKey: "app.permits.late.title",
     href: "/late-arrivals",
     module: "permits",
     icon: domainIcons.late,
-    // features/permits/components/late-arrivals-view.tsx deliberately
-    // offers the review queue to every teacher/staff account rather than
-    // gating it on a picket-only permission (reviewing is scoped
-    // server-side to the duty teacher who opened the instance, or a
-    // manage_attendance admin/super admin), and gives everyone else --
-    // students, who scan the duty teacher's QR to self-report -- the
-    // "mine" flow instead. Every remaining profile kind has a use for one
-    // of the two flows, so no `excludeProfileKinds`/`profileKinds` is
-    // needed here.
+    // Only a student has a screen here: they scan the duty teacher's QR to
+    // report themselves late (features/permits/components/
+    // late-arrivals-view.tsx). Every teacher or staff account still opens
+    // the route, which forwards them to the review queue in the Perlu
+    // tindakan inbox (reviewing is scoped server-side to the duty teacher
+    // who opened the instance, or a manage_attendance admin), so old links
+    // keep working; the entry itself is offered to students only.
+    offeredTo: { profileKinds: ["student"] },
     group: GROUP.students,
   },
   {
     key: "duty",
-    labelKey: "app.duty.navLabel",
+    labelKey: "app.duty.title",
     href: "/duty",
     module: "permits",
     icon: domainIcons.qr,
@@ -428,9 +476,12 @@ export const navigation: NavItem[] = [
     labelKey: "app.permits.classroomEntry.navLabel",
     href: "/classroom-entry",
     module: "permits",
-    icon: ScanLine,
+    // Not the universal scanner's glyph: a student has both.
+    icon: ScanQrCode,
     profileKinds: ["student"],
-    group: GROUP.students,
+    // Scanning into a lesson is attendance, reached from the student's
+    // schedule and home, so it sits with the academic pages.
+    group: GROUP.academic,
   },
 
   {
@@ -467,7 +518,8 @@ export const navigation: NavItem[] = [
     key: "school-users",
     labelKey: "app.navigation.users",
     href: "/school/users",
-    icon: UserRound,
+    // Not UserRound: that glyph is the reader's own profile.
+    icon: UserCog,
     permission: "view_users",
     group: GROUP.masterData,
   },
@@ -475,7 +527,7 @@ export const navigation: NavItem[] = [
     key: "school-learning",
     labelKey: "app.academic.learning.title",
     href: "/school/learning",
-    icon: domainIcons.grades,
+    icon: Blocks,
     permission: "manage_master_data",
     group: GROUP.masterData,
   },
@@ -483,7 +535,7 @@ export const navigation: NavItem[] = [
     key: "school-assignments",
     labelKey: "app.academic.assignments.title",
     href: "/school/assignments",
-    icon: ShieldCheck,
+    icon: ClipboardPen,
     permission: "manage_master_data",
     group: GROUP.masterData,
   },
@@ -491,7 +543,8 @@ export const navigation: NavItem[] = [
     key: "school-calendar",
     labelKey: "nav.schoolData.items.academicCalendar",
     href: "/school/calendar",
-    icon: CalendarDays,
+    // Not the timetable's glyph: both sit in the schedule area.
+    icon: CalendarFold,
     permission: "view_academic_data",
     group: GROUP.academic,
   },
@@ -499,7 +552,7 @@ export const navigation: NavItem[] = [
     key: "school-promotion",
     labelKey: "nav.schoolData.items.promotion",
     href: "/school/promotion",
-    icon: GraduationCap,
+    icon: ArrowBigUpDash,
     permission: "manage_enrollments",
     group: GROUP.academic,
   },
@@ -509,30 +562,3 @@ export const navigation: NavItem[] = [
   ...moduleNavItems,
   ...settingsNavItems,
 ];
-
-/**
- * The items a reader may see. `access.disabledModules` is required: an item
- * that belongs to a module the school has switched off is dropped for
- * everyone, whatever their permissions.
- */
-export function filterNavigation(items: NavItem[], access: NavAccess): NavItem[] {
-  const { can, profileKind, roleSlugs, disabledModules } = access;
-  return items.filter((item) => {
-    if (item.module && disabledModules.includes(item.module)) return false;
-    if (item.moduleSections && moduleSectionsAccess(item.moduleSections, access) !== "ok") {
-      return false;
-    }
-    if (item.permission && !can(item.permission)) return false;
-    if (item.anyPermission && !item.anyPermission.some((code) => can(code))) return false;
-    if (item.profileKinds && (!profileKind || !item.profileKinds.includes(profileKind))) {
-      return false;
-    }
-    if (item.excludeProfileKinds && profileKind && item.excludeProfileKinds.includes(profileKind)) {
-      return false;
-    }
-    if (item.excludeRoles?.some((slug) => roleSlugs.includes(slug))) {
-      return false;
-    }
-    return true;
-  });
-}

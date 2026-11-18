@@ -11,13 +11,12 @@ import {
 import {
   Alert,
   Button,
+  Field,
   Form,
-  FormControl,
+  FormActions,
   FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  Input,
+  PasswordInput,
+  useHydrated,
   useToast,
 } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
@@ -28,12 +27,28 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { translateFormMessage } from "../../../lib/i18n/translate-message";
 import { useChangePasswordMutation } from "../api";
 
-export function ChangePasswordForm({ onSuccess }: { onSuccess?: () => void }): ReactElement {
+export interface ChangePasswordFormProps {
+  onSuccess?: () => void;
+  /**
+   * `settings` (default): the submit button ends the form on the right, as
+   * on the profile page. `auth`: one full-width primary button, as on the
+   * other sign-in pages (the forced change after a first sign-in).
+   */
+  layout?: "settings" | "auth";
+}
+
+export function ChangePasswordForm({
+  onSuccess,
+  layout = "settings",
+}: ChangePasswordFormProps): ReactElement {
   const t = useTranslations("auth.changePassword");
   const locale = useLocale() as Locale;
   const mutation = useChangePasswordMutation();
   const apiErrorMessage = useApiErrorMessage();
   const toast = useToast();
+  // Defence in depth: today the form renders only on the client, after the
+  // session resolves, but a server-rendered copy must not submit natively.
+  const hydrated = useHydrated();
 
   const form = useForm<ChangePasswordInput>({
     resolver: zodResolver(changePasswordSchema),
@@ -54,58 +69,55 @@ export function ChangePasswordForm({ onSuccess }: { onSuccess?: () => void }): R
     }
   }
 
+  const rootError = form.formState.errors.root?.message;
+  const submit = (
+    <Button
+      type="submit"
+      size={layout === "auth" ? "lg" : "md"}
+      disabled={!hydrated}
+      loading={mutation.isPending}
+      className={layout === "auth" ? "mt-1 w-full" : undefined}
+    >
+      {t("submit")}
+    </Button>
+  );
+
   return (
     <Form
       form={form}
       translate={translateFormMessage(locale)}
       onSubmit={onSubmit}
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
     >
-      {form.formState.errors.root?.message && (
-        <Alert variant="warning" title={form.formState.errors.root.message} />
-      )}
+      {rootError && <Alert tone="danger" title={rootError} />}
       <FormField
         control={form.control}
         name="current_password"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>{t("currentLabel")}</FormLabel>
-            <FormControl>
-              <Input type="password" autoComplete="current-password" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+          <Field label={t("currentLabel")}>
+            <PasswordInput autoComplete="current-password" {...field} />
+          </Field>
         )}
       />
       <FormField
         control={form.control}
         name="new_password"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>{t("newLabel")}</FormLabel>
-            <FormControl>
-              <Input type="password" autoComplete="new-password" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+          <Field label={t("newLabel")} hint={t("newHint")}>
+            <PasswordInput autoComplete="new-password" {...field} />
+          </Field>
         )}
       />
       <FormField
         control={form.control}
         name="confirm_password"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>{t("confirmLabel")}</FormLabel>
-            <FormControl>
-              <Input type="password" autoComplete="new-password" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+          <Field label={t("confirmLabel")}>
+            <PasswordInput autoComplete="new-password" {...field} />
+          </Field>
         )}
       />
-      <Button type="submit" loading={mutation.isPending} className="mt-2">
-        {t("submit")}
-      </Button>
+      {layout === "auth" ? submit : <FormActions>{submit}</FormActions>}
     </Form>
   );
 }

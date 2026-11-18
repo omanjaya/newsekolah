@@ -29,12 +29,13 @@ export function MfaCodeDialog({
         if (!open) onClose();
       }}
     >
-      <DialogContent title={title} description={description}>
+      <DialogContent title={title} description={description} size="sm">
         <MfaCodeForm
           codeLabel={codeLabel}
           submitLabel={confirmLabel}
           destructive={destructive}
           onSubmit={onConfirm}
+          onCancel={onClose}
         />
       </DialogContent>
     </Dialog>

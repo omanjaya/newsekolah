@@ -1,7 +1,20 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Dialog, DialogClose, DialogContent, Input, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  Field,
+  Input,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -46,13 +59,15 @@ export function ClearSchedulesSection({
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-sm border border-status-absent/40 bg-surface p-4">
-      <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-      <p className="text-[13px] text-fg-muted">{t("body", { year: yearLabel })}</p>
-      <div>
+    // The danger zone: set apart at the end of the page, edged in danger.
+    <Card className="border-danger/40">
+      <CardHeader>
+        <CardTitle as="h2">{t("title")}</CardTitle>
+        <CardDescription>{t("body", { year: yearLabel })}</CardDescription>
+      </CardHeader>
+      <CardFooter>
         <Button
           variant="danger"
-          size="sm"
           disabled={yearLabel === ""}
           onClick={() => {
             setOpen(true);
@@ -60,7 +75,7 @@ export function ClearSchedulesSection({
         >
           {t("button")}
         </Button>
-      </div>
+      </CardFooter>
 
       <Dialog
         open={open}
@@ -75,13 +90,10 @@ export function ClearSchedulesSection({
           footer={
             <>
               <DialogClose asChild>
-                <Button variant="secondary" size="sm">
-                  {t("cancel")}
-                </Button>
+                <Button variant="secondary">{t("cancel")}</Button>
               </DialogClose>
               <Button
                 variant="danger"
-                size="sm"
                 disabled={!canConfirm}
                 loading={clearSchedules.isPending}
                 onClick={handleConfirm}
@@ -91,10 +103,7 @@ export function ClearSchedulesSection({
             </>
           }
         >
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">
-              {t("confirmInputLabel", { year: yearLabel })}
-            </span>
+          <Field label={t("confirmInputLabel", { year: yearLabel })}>
             <Input
               value={confirmText}
               onChange={(e) => {
@@ -102,9 +111,9 @@ export function ClearSchedulesSection({
               }}
               autoComplete="off"
             />
-          </label>
+          </Field>
         </DialogContent>
       </Dialog>
-    </section>
+    </Card>
   );
 }

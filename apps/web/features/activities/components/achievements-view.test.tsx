@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,7 +7,11 @@ const mocks = vi.hoisted(() => ({
   canManage: true,
 }));
 
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+vi.mock("next-intl", () => ({
+  useLocale: () => "id",
+  useTranslations: () => (key: string) => key,
+}));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/activities/achievements",
   useSearchParams: () => new URLSearchParams(window.location.search),
@@ -27,6 +31,9 @@ vi.mock("../../reference/api", () => ({
     isLoading: false,
   }),
   useDirectoryQuery: () => ({ data: { data: [] }, isLoading: false }),
+}));
+vi.mock("../../reference/directory-names", () => ({
+  useDirectoryName: () => ({ id: "student-1", name: "Siswa Contoh" }),
 }));
 vi.mock("../api", () => ({
   useAchievementsQuery: mocks.useAchievementsQuery,
@@ -64,5 +71,30 @@ describe("AchievementsView filters", () => {
     await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
     expect(mocks.useAchievementsQuery).toHaveBeenLastCalledWith(undefined, undefined);
     expect(new URLSearchParams(window.location.search).get("class_id")).toBe("");
+  });
+
+  it("writes the date as a date and keeps edit and delete in the row's menu", () => {
+    mocks.useAchievementsQuery.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: "a1",
+            student_user_id: "student-1",
+            competition_name: "Olimpiade Sains",
+            level: "city",
+            placement: "Juara 1",
+            achieved_on: "2026-11-17",
+          },
+        ],
+      },
+      isLoading: false,
+    });
+    render(<AchievementsView />);
+    const table = within(screen.getByRole("table"));
+
+    expect(table.getByText("17 November 2026")).toBeInTheDocument();
+    expect(table.queryByText("2026-11-17")).not.toBeInTheDocument();
+    expect(table.queryByRole("button", { name: "edit" })).not.toBeInTheDocument();
+    expect(table.getByRole("button", { name: "rowActions" })).toBeInTheDocument();
   });
 });

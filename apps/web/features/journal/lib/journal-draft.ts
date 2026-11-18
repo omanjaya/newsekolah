@@ -4,14 +4,21 @@
  * accidental tab close or a dropped connection -- same rationale as
  * `attendance/lib/attendance-draft.ts`, scoped instead to one class,
  * subject, and lesson date (a journal has no session id of its own).
+ *
+ * Each draft belongs to the account that typed it (`lib/drafts`): schools
+ * share computers, so a draft is stored under its owner and its payload
+ * names that owner, and it is never offered to another teacher who opens
+ * the same lesson in this browser. Without an owner nothing is stored.
  */
+import { readDraft, removeDraft, writeDraft } from "../../../lib/drafts/draft-storage";
 import { businessNow } from "../../../lib/simulation/clock";
 
-const DRAFT_VERSION = 1;
-const KEY_PREFIX = "newsekolah:journal-draft:";
+const DRAFT_VERSION = 2;
 
 export interface JournalDraft {
   version: number;
+  /** Whose draft this is (`lib/drafts/draft-owner.ts`); checked again on every read. */
+  owner: string;
   classId: string;
   subjectId: string;
   lessonDate: string;
@@ -22,57 +29,56 @@ export interface JournalDraft {
   reflection: string;
 }
 
-function storageKey(classId: string, subjectId: string, lessonDate: string): string {
-  return `${KEY_PREFIX}${classId}:${subjectId}:${lessonDate}`;
+function recordKey(classId: string, subjectId: string, lessonDate: string): string {
+  return `${classId}:${subjectId}:${lessonDate}`;
 }
 
-/** No-op (never throws) when storage is unavailable: private browsing, quota, or SSR. */
+/** No-op (never throws) without an owner or when storage is unavailable: private browsing, quota, or SSR. */
 export function saveJournalDraft(
+  owner: string | null,
   classId: string,
   subjectId: string,
   lessonDate: string,
   draft: Pick<JournalDraft, "topic" | "activities" | "reflection">,
 ): void {
+  if (!owner) return;
   try {
     const payload: JournalDraft = {
       ...draft,
       version: DRAFT_VERSION,
+      owner,
       classId,
       subjectId,
       lessonDate,
       savedAt: businessNow().toISOString(),
     };
-    window.localStorage.setItem(
-      storageKey(classId, subjectId, lessonDate),
-      JSON.stringify(payload),
-    );
+    writeDraft(owner, "journal", recordKey(classId, subjectId, lessonDate), payload);
   } catch {
     // The draft is a convenience, never a requirement.
   }
 }
 
-/** Parses and shape-validates the stored draft; a malformed or stale-version entry reads back as none. */
+/** Parses and shape-validates the stored draft; a malformed, stale-version or foreign entry reads back as none. */
 export function loadJournalDraft(
+  owner: string | null,
   classId: string,
   subjectId: string,
   lessonDate: string,
 ): JournalDraft | null {
-  try {
-    const raw = window.localStorage.getItem(storageKey(classId, subjectId, lessonDate));
-    if (!raw) return null;
-    return parseJournalDraft(raw, classId, subjectId, lessonDate);
-  } catch {
-    return null;
-  }
+  const raw = readDraft(owner, "journal", recordKey(classId, subjectId, lessonDate));
+  if (!raw) return null;
+  return parseJournalDraft(owner, raw, classId, subjectId, lessonDate);
 }
 
 /** Pure parse/validate step, split out so it is testable without touching `localStorage`. */
 export function parseJournalDraft(
+  owner: string | null,
   raw: string,
   classId: string,
   subjectId: string,
   lessonDate: string,
 ): JournalDraft | null {
+  if (!owner) return null;
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -83,6 +89,7 @@ export function parseJournalDraft(
   const draft = parsed as Record<string, unknown>;
   if (
     draft.version !== DRAFT_VERSION ||
+    draft.owner !== owner ||
     draft.classId !== classId ||
     draft.subjectId !== subjectId ||
     draft.lessonDate !== lessonDate
@@ -100,10 +107,11 @@ export function parseJournalDraft(
   return draft as unknown as JournalDraft;
 }
 
-export function clearJournalDraft(classId: string, subjectId: string, lessonDate: string): void {
-  try {
-    window.localStorage.removeItem(storageKey(classId, subjectId, lessonDate));
-  } catch {
-    // See saveJournalDraft: best-effort only.
-  }
+export function clearJournalDraft(
+  owner: string | null,
+  classId: string,
+  subjectId: string,
+  lessonDate: string,
+): void {
+  removeDraft(owner, "journal", recordKey(classId, subjectId, lessonDate));
 }

@@ -6,7 +6,9 @@
     "stepsLabel": "{done} of {total} required steps done",
     "ready": "The school is ready for daily operation.",
     "notReady": "The school is not ready yet. Finish the remaining required steps below.",
-    "activeYear": "Active academic year: {label}"
+    "activeYear": "Active academic year: {label}",
+    "readyChip": "Ready to use",
+    "meterLabel": "Required steps done"
   },
   "levels": {
     "sd": "Elementary",
@@ -18,6 +20,11 @@
   "locales": {
     "id": "Indonesian",
     "en": "English"
+  },
+  "timezones": {
+    "wib": "WIB (Western Indonesia Time)",
+    "wita": "WITA (Central Indonesia Time)",
+    "wit": "WIT (Eastern Indonesia Time)"
   },
   "profile": {
     "title": "School profile",
@@ -36,7 +43,9 @@
     "optional": "Optional",
     "done": "Done",
     "notDone": "Not done",
-    "openStep": "Open"
+    "openStep": "Open",
+    "left": "{n} steps left, listed first.",
+    "allDone": "Every step is done. Open any step to change its data."
   },
   "steps": {
     "profile": {
@@ -46,57 +55,57 @@
     "academic_year": {
       "label": "Academic year",
       "description": "The active academic year with its start and end dates.",
-      "count": "{count} academic year"
+      "count": "{count, plural, one {# academic year} other {# academic years}}"
     },
     "grade_levels": {
       "label": "Grade levels",
       "description": "The grade levels (e.g. grade 1 through 6) that classes are grouped under.",
-      "count": "{count} grade levels"
+      "count": "{count, plural, one {# grade level} other {# grade levels}}"
     },
     "classes": {
       "label": "Classes",
       "description": "The class groups students are enrolled in.",
-      "count": "{count} classes"
+      "count": "{count, plural, one {# class} other {# classes}}"
     },
     "periods": {
       "label": "Lesson periods",
       "description": "The daily lesson-period schedule used for timetabling and attendance.",
-      "count": "{count} lesson periods"
+      "count": "{count, plural, one {# lesson period} other {# lesson periods}}"
     },
     "subjects": {
       "label": "Subjects",
       "description": "The subjects taught at the school.",
-      "count": "{count} subjects"
+      "count": "{count, plural, one {# subject} other {# subjects}}"
     },
     "teachers": {
       "label": "Teachers",
       "description": "Teacher accounts that record attendance, grades, and journals.",
-      "count": "{count} teachers"
+      "count": "{count, plural, one {# teacher} other {# teachers}}"
     },
     "students": {
       "label": "Students",
       "description": "Student accounts that take part in attendance and lessons.",
-      "count": "{count} students"
+      "count": "{count, plural, one {# student} other {# students}}"
     },
     "enrollments": {
       "label": "Student enrollment",
       "description": "Students who have been placed in their classes.",
-      "count": "{count} enrollments"
+      "count": "{count, plural, one {# enrollment} other {# enrollments}}"
     },
     "teaching_assignments": {
       "label": "Teaching assignments",
       "description": "Teachers assigned to teach a subject in a class.",
-      "count": "{count} assignments"
+      "count": "{count, plural, one {# assignment} other {# assignments}}"
     },
     "schedules": {
       "label": "Timetable",
       "description": "The weekly timetable that determines each class's attendance sessions.",
-      "count": "{count} timetable entries"
+      "count": "{count, plural, one {# timetable entry} other {# timetable entries}}"
     },
     "duties": {
       "label": "Duty roster",
       "description": "The daily duty-teacher assignments.",
-      "count": "{count} duty assignments"
+      "count": "{count, plural, one {# duty assignment} other {# duty assignments}}"
     }
   },
   "template": {
@@ -143,7 +152,7 @@
       "error": "Issue"
     },
     "commitAction": "Save student data",
-    "doneTitle": "{count} students saved successfully.",
+    "doneTitle": "{count} students saved successfully",
     "doneBody": "Student data is in. Check the completeness list below for what's next."
   }
 }

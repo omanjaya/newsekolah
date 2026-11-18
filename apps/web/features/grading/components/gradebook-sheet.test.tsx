@@ -1,7 +1,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key,
+  useLocale: () => "id",
+}));
 
 vi.mock("../../../components/report-export-dialog", () => ({
   ReportExportDialog: () => <div data-testid="report-export-dialog" />,
@@ -77,6 +80,7 @@ describe("GradebookSheet publish controls", () => {
 
     expect(screen.getByText("draftBadge")).toBeInTheDocument();
     expect(screen.getByText("publishToggleLabel")).toBeInTheDocument();
-    expect(screen.getByRole("switch")).toBeInTheDocument();
+    // The Field's label names the switch; there is no native label of its own.
+    expect(screen.getByRole("switch", { name: "publishToggleLabel" })).toBeInTheDocument();
   });
 });

@@ -1,25 +1,30 @@
 "use client";
 
-import { Alert, Button, EmptyState, PageHeader, domainIcons } from "@newsekolah/ui";
-import { Plus } from "lucide-react";
+import { Button, EmptyState, TextLink, domainIcons } from "@newsekolah/ui";
+import { BellRing, Inbox, Plus } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useQuickAction } from "../../../lib/hooks/use-quick-action";
 import { useCan } from "../../../lib/session/session-provider";
+import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
 
 import { MyLeaveRequests } from "./my-leave-requests";
+import { ReviewInboxBanner } from "./review-inbox-banner";
 
 /**
- * The submitter's request form plus history. Reviewing lives in the Perlu
- * Tindakan inbox, so there is no queue tab here; a counselor who only issues
- * letters is told where their requests arrive.
+ * Izin tidak masuk. A student files and follows their own requests; a
+ * counselor who only issues letters is told where those requests arrive.
+ * Reviewing lives in the Perlu tindakan inbox, so there is no queue here.
+ * The h1 is the area's label and the eyebrow its sidebar group, from the
+ * template, the same on every tab; the tab names the browser tab.
  */
-export function LeaveRequestsView({ embedded = false }: { embedded?: boolean } = {}): ReactElement {
+export function LeaveRequestsView(): ReactElement {
   const t = useTranslations("app.permits.leave");
-  const canSubmit = useCan("submit_leave_requests");
+  const canSubmit = useCanSubmitPermit();
   const canIssueLetter = useCan("issue_leave_letters");
   const [creating, setCreating] = useState(false);
   useQuickAction(
@@ -30,29 +35,46 @@ export function LeaveRequestsView({ embedded = false }: { embedded?: boolean } =
     canSubmit,
   );
 
-  const headerActions = canSubmit ? (
-    <Button
-      size="sm"
-      icon={<Plus />}
-      onClick={() => {
-        setCreating(true);
-      }}
-    >
-      {t("submit")}
-    </Button>
-  ) : undefined;
-
   return (
-    <div className={embedded ? "flex flex-col gap-6" : "flex flex-col gap-6 p-4 md:p-6"}>
-      {embedded ? (
-        headerActions && <div className="flex justify-end">{headerActions}</div>
-      ) : (
-        <PageHeader eyebrow={t("eyebrow")} title={t("title")} actions={headerActions} />
-      )}
+    <AppPage
+      documentTitle={!canSubmit && canIssueLetter ? t("issuerTitle") : undefined}
+      primaryAction={
+        canSubmit ? (
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              setCreating(true);
+            }}
+          >
+            {t("submit")}
+          </Button>
+        ) : undefined
+      }
+      primaryActionCompact={
+        canSubmit
+          ? {
+              icon: <Plus />,
+              label: t("submit"),
+              onSelect: () => {
+                setCreating(true);
+              },
+            }
+          : undefined
+      }
+    >
       {canSubmit ? (
-        <MyLeaveRequests creating={creating} onCreatingChange={setCreating} />
+        <MyLeaveRequests
+          creating={creating}
+          onCreatingChange={setCreating}
+          onCreate={() => {
+            setCreating(true);
+          }}
+        />
       ) : canIssueLetter ? (
-        <IssuerQueueUnavailable />
+        <>
+          <ReviewInboxBanner />
+          <IssuerQueueUnavailable />
+        </>
       ) : (
         <EmptyState
           icon={<domainIcons.exitPermit aria-hidden="true" />}
@@ -60,7 +82,7 @@ export function LeaveRequestsView({ embedded = false }: { embedded?: boolean } =
           description={t("noAccessBody")}
         />
       )}
-    </div>
+    </AppPage>
   );
 }
 
@@ -70,18 +92,35 @@ export function LeaveRequestsView({ embedded = false }: { embedded?: boolean } =
  * queue only authorizes reviewers, so fetching it would just surface a 403.
  * The counselor acts on a request by opening the notification sent when the
  * homeroom teacher approves it, which links to /leave-requests/{instanceId}.
+ * A reader who also reviews (review_leave_requests) has the requests in the
+ * inbox's leave queue: that is the way forward, the notifications a quiet
+ * second link, so the page is never a dead end.
  */
 function IssuerQueueUnavailable(): ReactElement {
   const t = useTranslations("app.permits.leave");
+  const canReview = useCan("review_leave_requests");
   return (
-    <Alert variant="info" title={t("issuerQueueUnavailableTitle")}>
-      <p>{t("issuerQueueUnavailableBody")}</p>
-      <Link
-        href="/notifications"
-        className="mt-2 inline-flex min-h-11 items-center font-medium underline underline-offset-2"
-      >
-        {t("openNotifications")}
-      </Link>
-    </Alert>
+    <EmptyState
+      // The icon of where the main action leads: the inbox's leave queue
+      // (its "Perlu tindakan" nav icon), or the notifications.
+      icon={canReview ? <Inbox aria-hidden="true" /> : <BellRing aria-hidden="true" />}
+      tone="info"
+      title={t("issuerTitle")}
+      description={t(canReview ? "issuerQueueInboxBody" : "issuerQueueUnavailableBody")}
+      action={
+        canReview ? (
+          <div className="flex flex-col items-center gap-3">
+            <Button asChild>
+              <Link href="/inbox?type=leave">{t("issuerOpenInbox")}</Link>
+            </Button>
+            <TextLink href="/notifications">{t("openNotifications")}</TextLink>
+          </div>
+        ) : (
+          <Button asChild>
+            <Link href="/notifications">{t("openNotifications")}</Link>
+          </Button>
+        )
+      }
+    />
   );
 }

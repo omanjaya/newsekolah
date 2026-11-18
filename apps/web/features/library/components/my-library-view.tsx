@@ -1,170 +1,236 @@
 "use client";
 
-import { formatDate } from "@newsekolah/i18n";
+import { formatCurrency } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { EmptyState, PageHeader, Skeleton, StatTile, cn, domainIcons } from "@newsekolah/ui";
-import { Bookmark, BookOpen, CalendarClock } from "lucide-react";
+import {
+  Alert,
+  Button,
+  DataList,
+  DataListItem,
+  EmptyState,
+  HeroCard,
+  SectionHeader,
+  SkeletonDetail,
+  TextLink,
+  domainIcons,
+} from "@newsekolah/ui";
+import { IdCard, Search } from "lucide-react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
-import { bentoCells, tileColumns } from "../../../lib/layout/bento";
-import { businessNow } from "../../../lib/simulation/clock";
-import { useMyLibraryProfileQuery } from "../me-api";
+import { useCan } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
+import type { LibraryLoan } from "../api";
+import { classifyDueDate, overdueDays } from "../lib/due-date";
+import { formatShortDate } from "../lib/short-date";
+import { type LibraryMyProfile, useMyLibraryProfileQuery } from "../me-api";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import { MyLibraryHistoryTable } from "./my-library-history-table";
 import { MyLibraryLoanRow } from "./my-library-loan-row";
 import { MyLibraryReservations } from "./my-library-reservations";
 import { countMyLibraryTiles } from "./my-library-tiles";
 
-function todayIso(): string {
-  return businessNow().toLocaleDateString("en-CA");
-}
+/** The public catalogue, where a reader without the staff catalogue looks books up. */
+const CATALOGUE_HREF = "/opac";
 
 /**
- * A student's own library screen, in the Hijau Segar bento language
- * (docs/07-ui-ux.md section 0): stat tiles for what is borrowed, the
- * soonest due date, how many are overdue, and pending reservations;
- * active loans as bento cards; history as the shared table; and the
- * self-service reservation list/form unchanged below.
+ * A student's own library page, made for a phone (docs/07-ui-ux.md
+ * section 0): a hero card that answers "what do I owe the library" first
+ * (a late book, else the next due date, else a way to the catalogue),
+ * unpaid fines, the books out now with their renew button and the reason
+ * when renewing is refused, the closed loans as a short list, and the
+ * self-service holds. Someone who registers members (a librarian, an
+ * admin) and has no membership of their own is sent to the members page
+ * instead of being told to ask the librarian.
  */
 export function MyLibraryView(): ReactElement {
   const t = useTranslations("app.library.me");
   const locale = useLocale() as Locale;
-  const today = todayIso();
-  const { data, isLoading, isError, refetch } = useMyLibraryProfileQuery();
+  const today = todayInZone(useTenantTimeZone());
+  const { data, isLoading, isError, error, refetch } = useMyLibraryProfileQuery();
+  const canRegister = useCan("manage_library_members");
 
-  if (isError && !data) return <QueryError retry={() => refetch()} className="m-4" />;
+  if (isError && !data) {
+    return (
+      <AppPage variant="narrow">
+        <QueryError retry={() => refetch()} error={error} />
+      </AppPage>
+    );
+  }
 
   if (isLoading || !data) {
     return (
-      <div className="flex flex-col gap-6 p-4 md:p-6">
-        <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-        <Skeleton className="h-64 w-full" aria-busy="true" />
-      </div>
+      <AppPage variant="narrow">
+        <SkeletonDetail aria-busy="true" />
+      </AppPage>
     );
   }
 
   if (!data.member) {
     return (
-      <div className="flex flex-col gap-6 p-4 md:p-6">
-        <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <AppPage variant="narrow">
         <EmptyState
+          variant="framed"
           icon={<domainIcons.library aria-hidden="true" />}
           title={t("notMemberTitle")}
-          description={t("notMemberBody")}
+          description={canRegister ? t("notMemberBodyStaff") : t("notMemberBody")}
+          action={
+            canRegister ? (
+              <Button asChild variant="secondary" icon={<IdCard />}>
+                <Link href="/library/members">{t("openMembers")}</Link>
+              </Button>
+            ) : (
+              <Button asChild variant="secondary" icon={<Search />}>
+                <Link href={CATALOGUE_HREF}>{t("browseCatalogue")}</Link>
+              </Button>
+            )
+          }
+          secondaryAction={
+            canRegister ? (
+              <TextLink href={CATALOGUE_HREF}>{t("browseCatalogue")}</TextLink>
+            ) : undefined
+          }
         />
-      </div>
+      </AppPage>
     );
   }
 
   // A violation can be marked "unpaid" with a Rp0 amount (e.g. a waived
   // fine); only a positive amount is actually owed and worth surfacing.
   const unpaidViolations = data.violations.filter((v) => v.status === "unpaid" && v.amount > 0);
-
+  const unpaidTotal = unpaidViolations.reduce((sum, v) => sum + v.amount, 0);
   const counts = countMyLibraryTiles(data.active_loans, data.reservations, today);
-  const tiles = [
-    {
-      key: "activeLoans",
-      icon: BookOpen,
-      tone: "blue" as const,
-      value: String(counts.activeLoans),
-      label: t("activeLoans"),
-    },
-    {
-      key: "nextDue",
-      icon: CalendarClock,
-      tone: "amber" as const,
-      value: counts.nextDueOn ? formatDate(counts.nextDueOn, { locale }) : "-",
-      label: t("tiles.nextDue"),
-    },
-    {
-      key: "overdue",
-      icon: domainIcons.late,
-      tone: "red" as const,
-      value: String(counts.overdue),
-      label: t("tiles.overdue"),
-    },
-    {
-      key: "reservations",
-      icon: Bookmark,
-      tone: "purple" as const,
-      value: String(counts.reservations),
-      label: t("reserve.heading"),
-    },
-  ];
-  const tileGrid = tileColumns(tiles.length);
-
-  const loanCells = bentoCells(
-    data.active_loans.map((loan) => ({
-      key: loan.id,
-      node: <MyLibraryLoanRow loan={loan} today={today} locale={locale} className="h-full" />,
-    })),
-  );
+  const activeLoans = [...data.active_loans].sort((a, b) => a.due_on.localeCompare(b.due_on));
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+    <AppPage variant="narrow">
+      <MyLibraryHero
+        loans={activeLoans}
+        counts={counts}
+        today={today}
+        locale={locale}
+        reservations={data.reservations}
+      />
 
       {unpaidViolations.length > 0 && (
-        <div className="flex flex-col gap-1 rounded-sm border border-status-late/40 bg-surface p-4">
-          <h2 className="text-[15px] font-semibold text-fg">{t("unpaidFines")}</h2>
-          <ul className="flex flex-col gap-1">
+        <Alert
+          tone="warning"
+          title={t("unpaidFinesTotal", {
+            amount: formatCurrency(unpaidTotal, "IDR", { locale }),
+          })}
+        >
+          <p className="sr-only">{t("unpaidFines")}</p>
+          <DataList>
             {unpaidViolations.map((violation) => (
-              <li key={violation.id} className="flex justify-between text-[13px]">
-                <span className="text-fg">{t(`violationKind.${violation.kind}`)}</span>
-                <span className="tabular-nums text-status-late">
-                  {t("currency", { amount: violation.amount })}
+              <DataListItem key={violation.id} label={t(`violationKind.${violation.kind}`)}>
+                <span className="tabular-nums">
+                  {formatCurrency(violation.amount, "IDR", { locale })}
                 </span>
-              </li>
+              </DataListItem>
             ))}
-          </ul>
-        </div>
+          </DataList>
+        </Alert>
       )}
 
-      <div className={tileGrid.container} data-testid="my-library-tiles">
-        {tiles.map((tile, index) => (
-          <div
-            key={tile.key}
-            data-testid={`my-library-tile-${tile.key}`}
-            className={cn("h-full", index === tiles.length - 1 && tileGrid.lastTileClassName)}
-          >
-            <StatTile
-              className="h-full"
-              icon={tile.icon}
-              tone={tile.tone}
-              value={tile.value}
-              label={tile.label}
-            />
-          </div>
-        ))}
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <h2 className="text-[15px] font-semibold text-fg">{t("activeLoans")}</h2>
-        {data.active_loans.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("noActiveLoans")}</p>
+      <section className="flex flex-col gap-3">
+        <SectionHeader
+          title={t("activeLoans")}
+          count={activeLoans.length > 0 ? activeLoans.length : undefined}
+        />
+        {activeLoans.length === 0 ? (
+          <p className="text-body-sm text-fg-muted">{t("noActiveLoans")}</p>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-2" data-testid="my-library-loan-cards">
-            {loanCells.map((cell) => (
-              <div
-                key={cell.key}
-                data-testid={`my-library-loan-cell-${cell.key}`}
-                className={cn("flex h-full flex-col", cell.span === "full" && "lg:col-span-2")}
-              >
-                <div className="flex-1">{cell.node}</div>
-              </div>
+          <ul className="flex flex-col gap-3" data-testid="my-library-loan-cards">
+            {activeLoans.map((loan) => (
+              <MyLibraryLoanRow key={loan.id} loan={loan} today={today} locale={locale} />
             ))}
-          </div>
+          </ul>
         )}
-      </div>
+      </section>
 
-      <MyLibraryHistoryTable history={data.history} locale={locale} />
+      <MyLibraryHistoryTable history={data.history} locale={locale} today={today} />
 
       <MyLibraryReservations
         reservations={data.reservations}
         bookingEnabled={data.booking_enabled ?? false}
       />
-    </div>
+    </AppPage>
+  );
+}
+
+/**
+ * The first thing a student sees: a late book (warning, with how late and
+ * which), else when the next book is due and how many are out, else a
+ * calm card that points at the catalogue.
+ */
+function MyLibraryHero({
+  loans,
+  counts,
+  today,
+  locale,
+  reservations,
+}: {
+  loans: LibraryLoan[];
+  counts: ReturnType<typeof countMyLibraryTiles>;
+  today: string;
+  locale: Locale;
+  reservations: LibraryMyProfile["reservations"];
+}): ReactElement {
+  const t = useTranslations("app.library.me.hero");
+  const tMe = useTranslations("app.library.me");
+  const browse = <TextLink href={CATALOGUE_HREF}>{tMe("browseCatalogue")}</TextLink>;
+  const ready = reservations.filter((reservation) => reservation.status === "ready").length;
+
+  const overdue = loans.filter((loan) => classifyDueDate(loan.due_on, today) === "overdue");
+  const latest = overdue[0];
+  if (latest) {
+    return (
+      // No way to the catalogue here: the one thing to do is return the
+      // book. The tone is "danger", as the due badges show lateness.
+      <HeroCard
+        tone="danger"
+        eyebrow={t("overdueEyebrow")}
+        title={t("overdueTitle", {
+          count: overdue.length,
+          days: overdueDays(latest.due_on, today),
+        })}
+        meta={t("overdueMeta", { title: latest.title_name ?? tMe("titleUnavailable") })}
+        chip={t("overdueChip")}
+        data-testid="my-library-hero"
+      />
+    );
+  }
+
+  if (counts.nextDueOn) {
+    return (
+      <HeroCard
+        eyebrow={t("nextDueEyebrow")}
+        title={t("nextDueTitle", { date: formatShortDate(counts.nextDueOn, locale, { today }) })}
+        meta={t("nextDueMeta", { count: counts.activeLoans })}
+        chip={ready > 0 ? t("readyChip", { count: ready }) : undefined}
+        secondaryAction={browse}
+        data-testid="my-library-hero"
+      />
+    );
+  }
+
+  return (
+    <HeroCard
+      tone="neutral"
+      eyebrow={t("idleEyebrow")}
+      title={t("idleTitle")}
+      meta={t("idleMeta")}
+      chip={ready > 0 ? t("readyChip", { count: ready }) : undefined}
+      action={
+        <Button asChild icon={<Search />}>
+          <Link href={CATALOGUE_HREF}>{tMe("browseCatalogue")}</Link>
+        </Button>
+      }
+      data-testid="my-library-hero"
+    />
   );
 }

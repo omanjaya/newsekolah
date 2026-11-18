@@ -2,7 +2,7 @@
   "navLabel": "Integrasi",
   "eyebrow": "Pengaturan",
   "title": "Kunci API dan webhook",
-  "description": "Kelola akses mesin ke data sekolah: kunci API untuk memanggil endpoint, dan webhook untuk menerima peristiwa secara otomatis.",
+  "description": "Hubungkan aplikasi lain ke data sekolah: kunci API untuk mengambil data, dan webhook untuk mengirim kabar saat ada kejadian baru.",
   "tabs": {
     "apiKeys": "Kunci API",
     "webhooks": "Webhook",
@@ -16,7 +16,7 @@
     "revokeConfirmTitle": "Cabut kunci API?",
     "revokeConfirmBody": "Kunci \"{name}\" akan berhenti berfungsi seketika. Tindakan ini tidak dapat dibatalkan.",
     "emptyTitle": "Belum ada kunci API",
-    "emptyBody": "Buat kunci untuk memberi akses mesin ke data sekolah ini.",
+    "emptyBody": "Buat kunci untuk memberi aplikasi lain akses ke data sekolah ini.",
     "neverUsed": "Belum pernah dipakai",
     "statusActive": "Aktif",
     "statusRevoked": "Dicabut",
@@ -25,13 +25,14 @@
       "name": "Nama",
       "permissions": "Izin",
       "status": "Status",
+      "actions": "Aksi",
       "lastUsed": "Terakhir dipakai"
     },
     "create": {
       "dialogTitle": "Buat kunci API",
       "dialogBody": "Pilih izin yang diberikan ke kunci ini. Izin tidak bisa melebihi izin akun Anda sendiri.",
       "nameLabel": "Nama kunci",
-      "namePlaceholder": "Contoh: Integrasi absensi CI",
+      "namePlaceholder": "Contoh: Integrasi presensi",
       "permissionsLabel": "Izin",
       "noPermissions": "Akun Anda belum memiliki izin yang bisa diberikan ke kunci.",
       "submit": "Buat kunci",
@@ -41,11 +42,15 @@
       "copyToken": "Salin token",
       "tokenCopied": "Token disalin",
       "copyFailed": "Token tidak dapat disalin otomatis, salin secara manual",
-      "done": "Sudah disimpan"
-    }
+      "done": "Sudah disimpan",
+      "cancel": "Batal",
+      "permissionsHint": "{count} izin dipilih. Hanya izin yang Anda miliki sendiri."
+    },
+    "morePermissions": "+{count} izin",
+    "rowActions": "Aksi untuk kunci {name}"
   },
   "webhooks": {
-    "description": "Endpoint webhook menerima peristiwa lewat permintaan POST bertanda tangan HMAC. Lihat docs/14-public-api.md untuk skema verifikasi.",
+    "description": "Endpoint webhook menerima peristiwa lewat permintaan POST bertanda tangan HMAC.",
     "create": "Tambah endpoint",
     "edit": "Ubah",
     "delete": "Hapus",
@@ -59,6 +64,7 @@
     "statusDisabled": "Dinonaktifkan",
     "columns": {
       "url": "URL",
+      "actions": "Aksi",
       "eventTypes": "Jenis peristiwa",
       "status": "Status"
     },
@@ -67,21 +73,25 @@
       "editTitle": "Ubah endpoint webhook",
       "dialogBody": "URL harus dapat diakses publik; alamat privat atau loopback ditolak.",
       "urlLabel": "URL endpoint",
-      "descriptionLabel": "Deskripsi (opsional)",
+      "descriptionLabel": "Deskripsi",
       "eventTypesLabel": "Jenis peristiwa",
-      "submit": "Simpan",
+      "submit": "Simpan endpoint",
       "created": "Endpoint dibuat",
-      "updated": "Endpoint diperbarui"
-    }
+      "updated": "Endpoint diperbarui",
+      "cancel": "Batal",
+      "eventTypesHint": "{count} peristiwa dipilih."
+    },
+    "moreEvents": "+{count} peristiwa",
+    "rowActions": "Aksi untuk {url}"
   },
   "deliveries": {
     "filterEndpoint": "Endpoint",
     "filterEndpointAll": "Semua endpoint",
     "filters": {
-      "reset": "Reset filter",
+      "reset": "Atur ulang filter",
       "removeFilter": "Hapus filter {label}"
     },
-    "retry": "Coba lagi",
+    "retry": "Kirim ulang",
     "retryEnqueued": "Pengiriman ulang dijadwalkan",
     "emptyTitle": "Belum ada riwayat pengiriman",
     "emptyBody": "Riwayat pengiriman muncul setelah peristiwa pertama terjadi.",
@@ -93,9 +103,11 @@
       "eventType": "Jenis peristiwa",
       "status": "Status",
       "attempts": "Percobaan",
-      "reason": "Alasan"
+      "reason": "Alasan",
+      "actions": "Aksi"
     },
     "pagePrev": "Sebelumnya",
     "pageNext": "Berikutnya"
-  }
+  },
+  "tabsLabel": "Bagian integrasi"
 }

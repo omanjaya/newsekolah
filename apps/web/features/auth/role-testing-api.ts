@@ -1,12 +1,12 @@
 "use client";
 
-import { queryKeys } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { setAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
+import { useHasAccessToken } from "../../lib/api/use-has-access-token";
+import { clearServerAccessCookie } from "../../lib/session/clear-server-access-cookie";
 import { useSession } from "../../lib/session/session-provider";
-import { suspendSimulation, syncSimulationIdentity } from "../../lib/simulation/clock";
+import { switchReader } from "../../lib/session/switch-reader";
 
 export interface RoleTestingFilter {
   role?: string;
@@ -17,6 +17,10 @@ export interface RoleTestingFilter {
 export function useRoleTestingQuery(filter: RoleTestingFilter = {}, enabled = true) {
   const client = useApiClient();
   const { me } = useSession();
+  // `/v1/auth/*` requests skip the api client's boot refresh, so on a cold
+  // load a request made before the browser holds an access token is answered
+  // 401. Every caller (header switcher, impersonation banner) waits here.
+  const hasAccessToken = useHasAccessToken();
   return useQuery({
     queryKey: [
       "auth",
@@ -29,24 +33,21 @@ export function useRoleTestingQuery(filter: RoleTestingFilter = {}, enabled = tr
       filter.cursor ?? "",
     ],
     queryFn: () => client.GET("/v1/auth/role-testing", { params: { query: filter } }),
-    enabled: enabled && Boolean(me),
+    enabled: enabled && Boolean(me) && hasAccessToken,
     retry: false,
     staleTime: 15_000,
   });
 }
 
 /**
- * `sat` is a separate httpOnly access cookie used by Next server rendering.
- * Remove it before changing actors so a reload cannot prefetch the old `/v1/me`.
+ * Starts testing as another account, or (with `null`) goes back to the
+ * superadmin's own. Removes the server access cookie first, so neither a
+ * reload nor the next server render can load the previous actor's
+ * `/v1/me`. A switch that cannot remove it (the route refused, failed or
+ * did not answer in time) does not happen: it fails with
+ * `ServerAccessCookieError`, which the caller shows as such. Showing the
+ * wrong actor matters more here than one more try.
  */
-async function clearServerAccessCookie(): Promise<void> {
-  const response = await fetch("/api/role-testing/clear-access-cookie", {
-    method: "POST",
-    credentials: "same-origin",
-  });
-  if (!response.ok) throw new Error("Could not clear server access cookie");
-}
-
 export function useRoleTestingSwitchMutation() {
   const client = useApiClient();
   const queryClient = useQueryClient();
@@ -59,16 +60,7 @@ export function useRoleTestingSwitchMutation() {
             body: { user_id: target.userId, role: target.role },
           })
         : await client.POST("/v1/auth/role-testing/stop");
-
-      // Prevent in-flight old-actor responses from reintroducing private data.
-      await queryClient.cancelQueries();
-      suspendSimulation();
-      setAccessToken(result.access_token);
-      queryClient.removeQueries({
-        predicate: (query) => !(query.queryKey.length === 1 && query.queryKey[0] === "me"),
-      });
-      queryClient.setQueryData(queryKeys.me(), result.user);
-      syncSimulationIdentity(result.user);
+      await switchReader(queryClient, client, result);
       return result;
     },
   });

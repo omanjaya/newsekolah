@@ -1,20 +1,26 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { Bell } from "lucide-react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const dashboardData = vi.hoisted(() => vi.fn());
 const unreadCount = vi.hoisted(() => vi.fn());
+const inboxSummary = vi.hoisted(() => vi.fn());
+const quickActions = vi.hoisted(() => vi.fn());
 const teacherBlock = vi.hoisted(() => vi.fn());
 const checkInBlock = vi.hoisted(() => vi.fn());
 const homeroomBlock = vi.hoisted(() => vi.fn());
 const studentBlock = vi.hoisted(() => vi.fn());
 const leadershipBlock = vi.hoisted(() => vi.fn());
+const deputyBlock = vi.hoisted(() => vi.fn());
 const picketBlock = vi.hoisted(() => vi.fn());
 const counselorBlock = vi.hoisted(() => vi.fn());
 const librarianBlock = vi.hoisted(() => vi.fn());
+const gateBlock = vi.hoisted(() => vi.fn());
 
 vi.mock("../api", () => ({ useDashboardData: dashboardData }));
 vi.mock("../../notifications/api", () => ({ useUnreadCountQuery: unreadCount }));
+vi.mock("../../inbox/use-action-inbox-count", () => ({ useActionInboxSummary: inboxSummary }));
+vi.mock("../../../lib/use-quick-actions", () => ({ useQuickActions: quickActions }));
 vi.mock("../../announcements/components/announcement-feed", () => ({
   AnnouncementFeed: () => <div data-testid="announcement-feed" />,
 }));
@@ -23,9 +29,18 @@ vi.mock("../home/blocks/check-in", () => ({ useCheckInBlock: checkInBlock }));
 vi.mock("../home/blocks/homeroom", () => ({ useHomeroomBlock: homeroomBlock }));
 vi.mock("../home/blocks/student", () => ({ useStudentBlock: studentBlock }));
 vi.mock("../home/blocks/leadership", () => ({ useLeadershipBlock: leadershipBlock }));
+vi.mock("../home/blocks/deputy", () => ({ useDeputyBlock: deputyBlock }));
 vi.mock("../home/blocks/picket", () => ({ usePicketBlock: picketBlock }));
 vi.mock("../home/blocks/counselor", () => ({ useCounselorBlock: counselorBlock }));
 vi.mock("../home/blocks/librarian", () => ({ useLibrarianBlock: librarianBlock }));
+vi.mock("../home/blocks/gate", () => ({ useGateBlock: gateBlock }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+
+const viewport = vi.hoisted(() => ({ desktop: false, twoColumn: false }));
+vi.mock("../../../components/use-is-desktop", () => ({
+  useIsDesktop: () => viewport.desktop,
+  useIsTwoColumn: () => viewport.twoColumn,
+}));
 vi.mock("next-intl", () => ({
   useTranslations: () =>
     Object.assign(
@@ -36,26 +51,28 @@ vi.mock("next-intl", () => ({
   useFormatter: () => ({ dateTime: () => "Sabtu, 26 September" }),
 }));
 
+import { resetHomeEntranceForTests } from "../home/entrance";
 import type { Me, PersonaBlock } from "../home/types";
 
 import { DashboardView } from "./dashboard-view";
 
 const me = {
   id: "u1",
-  name: "Budi",
+  name: "Budi Santoso",
   roles: [{ id: "r1", slug: "teacher", name: "Guru" }],
-  permissions: [],
+  permissions: ["manage_attendance", "view_attendance", "submit_leave_requests"],
   duties: [],
+  disabled_modules: [],
   profile_kind: "teacher",
   tenant: { timezone: "Asia/Jakarta" },
   active_academic_year: { id: "ay1", label: "2026/2027" },
 } as unknown as Me;
 
 function emptyBlock(): PersonaBlock {
-  return { tiles: [], left: [], right: [] };
+  return { tiles: [], main: [], side: [] };
 }
 
-function tile(key: string, priority: number) {
+function tile(key: string, priority: number, href?: string) {
   return {
     key,
     priority,
@@ -63,28 +80,48 @@ function tile(key: string, priority: number) {
     value: "1",
     icon: Bell,
     tone: "green" as const,
+    ...(href ? { href } : {}),
   };
+}
+
+function slot(key: string, text: string) {
+  return { key, node: <div>{text}</div> };
 }
 
 describe("DashboardView", () => {
   beforeEach(() => {
+    viewport.desktop = true;
+    viewport.twoColumn = true;
     dashboardData
       .mockReset()
       .mockReturnValue({ data: me, isLoading: false, isError: false, refetch: vi.fn() });
     unreadCount
       .mockReset()
       .mockReturnValue({ data: { count: 2 }, isLoading: false, isError: false });
-    teacherBlock.mockReset().mockReturnValue(emptyBlock());
-    checkInBlock.mockReset().mockReturnValue(emptyBlock());
-    homeroomBlock.mockReset().mockReturnValue(emptyBlock());
-    studentBlock.mockReset().mockReturnValue(emptyBlock());
-    leadershipBlock.mockReset().mockReturnValue(emptyBlock());
-    picketBlock.mockReset().mockReturnValue(emptyBlock());
-    counselorBlock.mockReset().mockReturnValue(emptyBlock());
-    librarianBlock.mockReset().mockReturnValue(emptyBlock());
+    inboxSummary.mockReset().mockReturnValue({ total: 0, isLoading: false, isError: false });
+    quickActions.mockReset().mockReturnValue([]);
+    for (const block of [
+      teacherBlock,
+      checkInBlock,
+      homeroomBlock,
+      studentBlock,
+      leadershipBlock,
+      deputyBlock,
+      picketBlock,
+      counselorBlock,
+      librarianBlock,
+      gateBlock,
+    ]) {
+      block.mockReset().mockReturnValue(emptyBlock());
+    }
   });
 
-  it("renders the highest-priority hero as the page heading", () => {
+  it("greets the reader by first name as the page heading", () => {
+    render(<DashboardView />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent('greeting:{"name":"Budi"}');
+  });
+
+  it("renders the highest-priority hero with its one primary action", () => {
     teacherBlock.mockReturnValue({
       ...emptyBlock(),
       hero: {
@@ -97,219 +134,243 @@ describe("DashboardView", () => {
     });
     leadershipBlock.mockReturnValue({
       ...emptyBlock(),
+      hero: { key: "school.summary", priority: 50, eyebrow: "Ringkasan", title: "Sekolah" },
+    });
+
+    render(<DashboardView />);
+
+    const hero = screen.getByTestId("dashboard-hero");
+    expect(within(hero).getByRole("heading", { name: "Matematika · X-A" })).toBeInTheDocument();
+    expect(within(hero).getByRole("link", { name: "Isi presensi" })).toHaveAttribute(
+      "href",
+      "/attendance",
+    );
+    expect(screen.queryByText("Sekolah")).not.toBeInTheDocument();
+  });
+
+  it("never sends a hero action to a page the reader cannot open", () => {
+    leadershipBlock.mockReturnValue({
+      ...emptyBlock(),
       hero: {
         key: "school.summary",
         priority: 50,
-        eyebrow: "Ringkasan",
-        title: "Ringkasan sekolah",
-        action: { label: "Lihat monitor", href: "/monitor" },
+        eyebrow: "Presensi",
+        title: "3 dari 5 kelas",
+        action: { label: "Buka monitor", href: "/monitor" },
+        secondaryAction: { label: "Buka laporan", href: "/reports" },
       },
     });
-
+    // A teacher without view_monitor_presence or view_reports.
     render(<DashboardView />);
 
-    expect(screen.getByRole("heading", { name: "Matematika · X-A" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Ringkasan sekolah" })).not.toBeInTheDocument();
+    const hero = screen.getByTestId("dashboard-hero");
+    expect(within(hero).queryByRole("link", { name: "Buka monitor" })).not.toBeInTheDocument();
   });
 
-  it("shows only four tiles when the active blocks offer six", () => {
+  it("opens on a calm hero when no persona has anything due", () => {
+    render(<DashboardView />);
+    const hero = screen.getByTestId("dashboard-hero");
+    expect(within(hero).getByRole("heading", { name: "fallback.title" })).toBeInTheDocument();
+    expect(within(hero).getByRole("link", { name: "fallback.action" })).toHaveAttribute(
+      "href",
+      "/notifications",
+    );
+  });
+
+  it("points the calm hero at the action inbox when something waits there", () => {
+    inboxSummary.mockReturnValue({ total: 3, isLoading: false, isError: false });
+    render(<DashboardView />);
+    expect(
+      within(screen.getByTestId("dashboard-hero")).getByRole("heading", {
+        name: 'fallback.inboxTitle:{"count":3}',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("holds the hero and stat row as a skeleton while a persona is still loading", () => {
+    teacherBlock.mockReturnValue({ ...emptyBlock(), pending: true });
+    render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-skeleton")).toBeInTheDocument();
+    expect(screen.queryByTestId("dashboard-hero")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dashboard-tiles")).not.toBeInTheDocument();
+  });
+
+  it("plays the staggered entrance on the first visit only", () => {
+    resetHomeEntranceForTests();
+    teacherBlock.mockReturnValue({ ...emptyBlock(), main: [slot("teacher", "Teacher main")] });
+
+    const first = render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-hero")).toHaveClass("animate-enter");
+    expect(screen.getByTestId("dashboard-card-teacher")).toHaveClass("animate-enter");
+    first.unmount();
+
+    // Coming back to the home: only the page template's own entrance plays.
+    render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-hero")).not.toHaveClass("animate-enter");
+    expect(screen.getByTestId("dashboard-card-teacher")).not.toHaveClass("animate-enter");
+  });
+
+  it("keeps the entrance for the first settled visit when the first one never loaded", () => {
+    resetHomeEntranceForTests();
+    teacherBlock.mockReturnValue({ ...emptyBlock(), pending: true });
+    render(<DashboardView />).unmount();
+
+    teacherBlock.mockReturnValue(emptyBlock());
+    render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-hero")).toHaveClass("animate-enter");
+  });
+
+  it("shows only the top four tiles when the active blocks offer six", () => {
     teacherBlock.mockReturnValue({
       ...emptyBlock(),
-      tiles: [tile("t1", 90), tile("t2", 85), tile("t3", 80)],
+      tiles: [tile("t1", 90), tile("t2", 80), tile("t5", 10)],
     });
-    leadershipBlock.mockReturnValue({
-      ...emptyBlock(),
-      tiles: [tile("t4", 75), tile("t5", 70), tile("t6", 65)],
-    });
+    homeroomBlock.mockReturnValue({ ...emptyBlock(), tiles: [tile("t3", 70), tile("t4", 60)] });
 
     render(<DashboardView />);
 
-    expect(screen.getByText("t1")).toBeInTheDocument();
-    expect(screen.getByText("t2")).toBeInTheDocument();
-    expect(screen.getByText("t3")).toBeInTheDocument();
-    expect(screen.getByText("t4")).toBeInTheDocument();
-    expect(screen.queryByText("t5")).not.toBeInTheDocument();
-    expect(screen.queryByText("t6")).not.toBeInTheDocument();
+    for (const key of ["t1", "t2", "t3", "t4"]) {
+      expect(screen.getByTestId(`dashboard-tile-${key}`)).toBeInTheDocument();
+    }
+    expect(screen.queryByTestId("dashboard-tile-t5")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dashboard-tile-common.notifications")).not.toBeInTheDocument();
   });
 
-  it("keeps left slots in block-hook order (teacher, homeroom, student, leadership, picket, counselor, librarian)", () => {
-    const leftSlot = (key: string, text: string) => ({ key, node: <p>{text}</p> });
-    teacherBlock.mockReturnValue({ ...emptyBlock(), left: [leftSlot("teacher", "Teacher left")] });
-    homeroomBlock.mockReturnValue({
+  it("rounds out a short stat row with the notifications tile", () => {
+    teacherBlock.mockReturnValue({ ...emptyBlock(), tiles: [tile("t1", 90)] });
+    render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-tile-t1")).toBeInTheDocument();
+    expect(screen.getByTestId("dashboard-tile-common.notifications")).toBeInTheDocument();
+  });
+
+  // On a phone the strip pairs its figures, so the filler took a row of its
+  // own to repeat the header bell's count.
+  it("leaves the notifications filler out of a phone's strip", () => {
+    viewport.desktop = false;
+    viewport.twoColumn = false;
+    teacherBlock.mockReturnValue({
       ...emptyBlock(),
-      left: [leftSlot("homeroom", "Homeroom left")],
+      tiles: [tile("t1", 90), tile("t2", 80)],
     });
-    studentBlock.mockReturnValue({ ...emptyBlock(), left: [leftSlot("student", "Student left")] });
-    leadershipBlock.mockReturnValue({
-      ...emptyBlock(),
-      left: [leftSlot("leadership", "Leadership left")],
-    });
-    picketBlock.mockReturnValue({ ...emptyBlock(), left: [leftSlot("picket", "Picket left")] });
+    render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-tile-t1")).toBeInTheDocument();
+    expect(screen.getByTestId("dashboard-tile-t2")).toBeInTheDocument();
+    expect(screen.queryByTestId("dashboard-tile-common.notifications")).not.toBeInTheDocument();
+  });
+
+  it("shows no stat row when the notifications tile would stand alone", () => {
+    // The header bell already carries the count (the gate home has no figures).
+    render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-hero")).toBeInTheDocument();
+    expect(screen.queryByTestId("dashboard-tiles")).not.toBeInTheDocument();
+  });
+
+  it("puts task cards in the main column and context cards in the side column", () => {
+    teacherBlock.mockReturnValue({ ...emptyBlock(), main: [slot("teacher", "Teacher main")] });
     counselorBlock.mockReturnValue({
       ...emptyBlock(),
-      left: [leftSlot("counselor", "Counselor left")],
+      main: [slot("counselor", "Counselor main")],
+      side: [slot("counselor.atRisk", "At risk")],
     });
-    librarianBlock.mockReturnValue({
-      ...emptyBlock(),
-      left: [leftSlot("librarian", "Librarian left")],
-    });
+    checkInBlock.mockReturnValue({ ...emptyBlock(), side: [slot("checkIn", "Check in")] });
 
     render(<DashboardView />);
 
-    const bodyText = document.body.textContent;
-    const order = [
-      "Teacher left",
-      "Homeroom left",
-      "Student left",
-      "Leadership left",
-      "Picket left",
-      "Counselor left",
-      "Librarian left",
-    ].map((text) => bodyText.indexOf(text));
-    expect(order.every((index) => index >= 0)).toBe(true);
-    expect(order).toEqual([...order].sort((a, b) => a - b));
+    const main = screen.getByTestId("dashboard-main");
+    const side = screen.getByTestId("dashboard-side");
+    expect(within(main).getByText("Teacher main")).toBeInTheDocument();
+    expect(within(main).getByText("Counselor main")).toBeInTheDocument();
+    expect(within(side).getByText("At risk")).toBeInTheDocument();
+    expect(within(side).getByText("Check in")).toBeInTheDocument();
+    // Announcements close the side column.
+    const sideCards = within(side)
+      .getAllByTestId(/^dashboard-card-/)
+      .map((element) => element.dataset.testid);
+    expect(sideCards.at(-1)).toBe("dashboard-card-announcements");
   });
 
-  it("still shows the greeting, a notification tile and announcements for a parent with no personas", () => {
+  it("keeps main cards in block-hook order", () => {
+    teacherBlock.mockReturnValue({ ...emptyBlock(), main: [slot("teacher", "1")] });
+    studentBlock.mockReturnValue({ ...emptyBlock(), main: [slot("student", "2")] });
+    leadershipBlock.mockReturnValue({ ...emptyBlock(), main: [slot("leadership", "3")] });
+    picketBlock.mockReturnValue({ ...emptyBlock(), main: [slot("picket", "4")] });
+    counselorBlock.mockReturnValue({ ...emptyBlock(), main: [slot("counselor", "5")] });
+    homeroomBlock.mockReturnValue({ ...emptyBlock(), main: [slot("homeroom", "6")] });
+
     render(<DashboardView />);
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent('greeting:{"name":"Budi"}');
-    expect(screen.getByText("tiles.notifications.label")).toBeInTheDocument();
-    expect(screen.getByTestId("announcement-feed")).toBeInTheDocument();
+    const order = within(screen.getByTestId("dashboard-main"))
+      .getAllByTestId(/^dashboard-card-/)
+      .map((element) => element.dataset.testid);
+    expect(order).toEqual([
+      "dashboard-card-teacher",
+      "dashboard-card-student",
+      "dashboard-card-leadership",
+      "dashboard-card-picket",
+      "dashboard-card-counselor",
+      "dashboard-card-homeroom",
+    ]);
   });
 
-  it("hides the announcements widget and its link while the module is off", () => {
+  it("hides the announcements card while the module is off", () => {
     dashboardData.mockReturnValue({
       data: { ...me, disabled_modules: ["announcements"] },
       isLoading: false,
       isError: false,
       refetch: vi.fn(),
     });
-
     render(<DashboardView />);
-
-    expect(screen.queryByTestId("announcement-feed")).not.toBeInTheDocument();
     expect(screen.queryByTestId("dashboard-card-announcements")).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "openAnnouncements" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent('greeting:{"name":"Budi"}');
+    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
   });
 
-  it("keeps the announcements widget when only another module is off", () => {
+  it("keeps the announcements card when only another module is off", () => {
     dashboardData.mockReturnValue({
       data: { ...me, disabled_modules: ["library"] },
       isLoading: false,
       isError: false,
       refetch: vi.fn(),
     });
-
     render(<DashboardView />);
-
     expect(screen.getByTestId("announcement-feed")).toBeInTheDocument();
   });
 
-  it("lays out a single tile (the notifications filler) in one column on lg", () => {
-    render(<DashboardView />);
-
-    expect(screen.getByTestId("dashboard-tiles")).toHaveClass(
-      "grid",
-      "grid-cols-1",
-      "gap-3",
-      "lg:grid-cols-1",
-    );
-  });
-
-  it("lays out n tiles in n equal lg columns", () => {
-    teacherBlock.mockReturnValue({
-      ...emptyBlock(),
-      tiles: [tile("t1", 90), tile("t2", 85)],
-    });
-    leadershipBlock.mockReturnValue({
-      ...emptyBlock(),
-      tiles: [tile("t3", 75)],
-    });
-
-    render(<DashboardView />);
-
-    // t1, t2, t3 plus the notifications filler tile = 4 tiles -> lg:grid-cols-4.
-    expect(screen.getByTestId("dashboard-tiles")).toHaveClass("lg:grid-cols-4");
-  });
-
-  it("spans the last tile full-width on small screens when the tile count is odd", () => {
-    teacherBlock.mockReturnValue({
-      ...emptyBlock(),
-      tiles: [tile("t1", 90), tile("t2", 85)],
-    });
-
-    render(<DashboardView />);
-
-    // t1, t2 plus the notifications filler tile (lowest priority, so it is
-    // last after merging) = 3 tiles (odd).
-    expect(screen.getByTestId("dashboard-tiles")).toHaveClass("lg:grid-cols-3");
-    expect(screen.getByTestId("dashboard-tile-t1")).not.toHaveClass("col-span-2");
-    expect(screen.getByTestId("dashboard-tile-t2")).not.toHaveClass("col-span-2");
-    expect(screen.getByTestId("dashboard-tile-common.notifications")).toHaveClass(
-      "col-span-2",
-      "lg:col-span-1",
-    );
-  });
-
-  it("spans the only card (announcements) full width when no persona block adds a card", () => {
-    render(<DashboardView />);
-
-    expect(screen.getByTestId("dashboard-card-announcements")).toHaveClass("lg:col-span-2");
-  });
-
-  it("pairs two cards half-width with no span override", () => {
-    const leftSlot = (key: string, text: string) => ({ key, node: <p>{text}</p> });
-    teacherBlock.mockReturnValue({ ...emptyBlock(), left: [leftSlot("teacher", "Teacher left")] });
-
-    render(<DashboardView />);
-
-    // teacher.left + announcements = 2 cards (even) -> neither spans both columns.
-    expect(screen.getByTestId("dashboard-card-teacher")).not.toHaveClass("lg:col-span-2");
-    expect(screen.getByTestId("dashboard-card-announcements")).not.toHaveClass("lg:col-span-2");
-  });
-
-  it("spans the last card full-width when the card count is odd", () => {
-    const leftSlot = (key: string, text: string) => ({ key, node: <p>{text}</p> });
-    const rightSlot = (key: string, text: string) => ({ key, node: <p>{text}</p> });
-    teacherBlock.mockReturnValue({ ...emptyBlock(), left: [leftSlot("teacher", "Teacher left")] });
-    homeroomBlock.mockReturnValue({
-      ...emptyBlock(),
-      right: [rightSlot("homeroom", "Homeroom right")],
-    });
-
-    render(<DashboardView />);
-
-    // teacher.left + homeroom.right + announcements = 3 cards (odd) -> the
-    // last one (announcements) spans both columns; the first two stay half.
-    expect(screen.getByTestId("dashboard-card-teacher")).not.toHaveClass("lg:col-span-2");
-    expect(screen.getByTestId("dashboard-card-homeroom")).not.toHaveClass("lg:col-span-2");
-    expect(screen.getByTestId("dashboard-card-announcements")).toHaveClass("lg:col-span-2");
-  });
-
-  it("orders cards as every left slot, then every right slot, then announcements last", () => {
-    const leftSlot = (key: string, text: string) => ({ key, node: <p>{text}</p> });
-    const rightSlot = (key: string, text: string) => ({ key, node: <p>{text}</p> });
-    teacherBlock.mockReturnValue({ ...emptyBlock(), left: [leftSlot("teacher", "Teacher left")] });
-    homeroomBlock.mockReturnValue({
-      ...emptyBlock(),
-      left: [leftSlot("homeroom", "Homeroom left")],
-    });
-    librarianBlock.mockReturnValue({
-      ...emptyBlock(),
-      right: [rightSlot("librarian", "Librarian right")],
-    });
-
-    render(<DashboardView />);
-
-    const cardsGrid = screen.getByTestId("dashboard-cards");
-    const order = [...cardsGrid.children].map((child) => child.getAttribute("data-testid"));
-    expect(order).toEqual([
-      "dashboard-card-teacher",
-      "dashboard-card-homeroom",
-      "dashboard-card-librarian",
-      "dashboard-card-announcements",
+  it("lists shortcuts in the side column, leaving out what the hero or check-in card offer", () => {
+    quickActions.mockReturnValue([
+      { id: "scan-qr", labelKey: "scanQr", icon: Bell, path: "/scan" },
+      { id: "check-in", labelKey: "checkIn", icon: Bell, path: "/check-in" },
+      { id: "submit-leave", labelKey: "submitLeave", icon: Bell, path: "/leave-requests" },
     ]);
+    teacherBlock.mockReturnValue({
+      ...emptyBlock(),
+      hero: {
+        key: "teacher.now",
+        priority: 100,
+        eyebrow: "Sekarang",
+        title: "Matematika",
+        action: { label: "Pindai", href: "/scan" },
+      },
+    });
+    checkInBlock.mockReturnValue({ ...emptyBlock(), side: [slot("checkIn", "Check in")] });
+
+    render(<DashboardView />);
+
+    const card = screen.getByTestId("dashboard-card-shortcuts");
+    const labels = within(card)
+      .getAllByRole("link")
+      .map((link) => link.textContent);
+    expect(labels).toEqual(["actions.submitLeave"]);
+  });
+
+  it("shows an error with retry when the profile fails to load", () => {
+    dashboardData.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error("x"),
+      refetch: vi.fn(),
+    });
+    render(<DashboardView />);
+    expect(screen.getByRole("button")).toBeInTheDocument();
   });
 });

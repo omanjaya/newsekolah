@@ -1,14 +1,15 @@
 "use client";
 
-import { PageHeader, Tabs, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 
 import { ClassLoanBorrowPanel } from "./class-loan-borrow-panel";
 import { ClassLoanReturnPanel } from "./class-loan-return-panel";
-import { LibraryWorkspaceNav } from "./library-workspace-nav";
+import { LibraryWorkspaceNav, useLibraryShortcuts } from "./library-workspace-nav";
 
 type Tab = "borrow" | "returns";
 
@@ -19,25 +20,28 @@ type Tab = "borrow" | "returns";
 export function ClassLoansView(): ReactElement {
   const t = useTranslations("app.library.classLoans");
   const [tab, setTab] = useUrlState<Tab>("tab", ["borrow", "returns"], "borrow");
+  const shortcuts = useLibraryShortcuts([{ report: "loans" }]);
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <LibraryWorkspaceNav area="circulation" />
-
+    <AppPage nav={<LibraryWorkspaceNav area="circulation" />} secondaryActions={shortcuts}>
       <Tabs
+        className="flex flex-col gap-4"
         value={tab}
         onValueChange={(value) => {
           setTab(value as Tab);
         }}
       >
-        <TabsList>
+        <TabsList aria-label={t("tabsLabel")}>
           <TabsTrigger value="borrow">{t("tabs.borrow")}</TabsTrigger>
           <TabsTrigger value="returns">{t("tabs.returns")}</TabsTrigger>
         </TabsList>
+        <TabsContent value="borrow" className="pt-0">
+          <ClassLoanBorrowPanel />
+        </TabsContent>
+        <TabsContent value="returns" className="pt-0">
+          <ClassLoanReturnPanel />
+        </TabsContent>
       </Tabs>
-
-      {tab === "borrow" ? <ClassLoanBorrowPanel /> : <ClassLoanReturnPanel />}
-    </div>
+    </AppPage>
   );
 }

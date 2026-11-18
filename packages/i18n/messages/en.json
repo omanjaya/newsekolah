@@ -78,10 +78,13 @@
       "subtitle": "Sign in to your school account to continue.",
       "panelHeadline": "One place for the school’s daily operations.",
       "panelTagline": "Attendance, leave, grades, and administration in one tidy, fast system.",
-      "panelFootnote": "School Information System",
+      "panelFootnote": "School information system",
       "featureAttendance": "Fast daily attendance",
       "featureGrades": "Grades and report cards in one place",
-      "featureLibrary": "Library and circulation"
+      "featureLibrary": "Library and circulation",
+      "welcomeTitle": "Welcome",
+      "welcomeBody": "Sign in with the account your school gave you.",
+      "help": "No account yet, or forgot your username? Ask your school's admin."
     },
     "changePassword": {
       "title": "Change password",
@@ -89,7 +92,8 @@
       "newLabel": "New password",
       "confirmLabel": "Confirm new password",
       "submit": "Change password",
-      "success": "Password changed, other sessions were ended"
+      "success": "Password changed, other sessions were ended",
+      "newHint": "At least 8 characters."
     },
     "sessions": {
       "title": "Active sessions",
@@ -116,9 +120,9 @@
     "permits": {
       "label": "Permits",
       "items": {
-        "plannedLeave": "Planned Leave",
-        "exitPermit": "Exit Permit",
-        "late": "Late Arrival",
+        "plannedLeave": "Absence leave",
+        "exitPermit": "Exit permits",
+        "late": "Late arrivals",
         "gate": "Gate",
         "verification": "Verification"
       }
@@ -127,10 +131,10 @@
       "label": "Discipline",
       "items": {
         "violations": "Violations",
-        "warningLetters": "Warning Letters",
+        "warningLetters": "Warning letters",
         "counseling": "Counseling",
-        "reports": "Discipline Reports",
-        "myDiscipline": "Discipline Points"
+        "reports": "Discipline reports",
+        "myDiscipline": "Discipline points"
       }
     },
     "library": {
@@ -139,7 +143,7 @@
         "circulation": "Circulation",
         "catalog": "Catalog",
         "members": "Members",
-        "stockOpname": "Stock Opname",
+        "stockOpname": "Stocktake",
         "visits": "Visits",
         "reports": "Reports",
         "opac": "OPAC"
@@ -153,10 +157,10 @@
       }
     },
     "schoolData": {
-      "label": "School Data",
+      "label": "School data",
       "items": {
         "academicYear": "Academic year",
-        "classesAndStudents": "Classes and students",
+        "classesAndStudents": "Students and classes",
         "teachersAndStaff": "Teachers and staff",
         "subjects": "Subjects",
         "rooms": "Rooms",
@@ -170,18 +174,18 @@
         "subjectOfferings": "Subject offerings",
         "teachingAssignments": "Teaching assignments",
         "enrollmentImport": "Class assignment import",
-        "newYearSetup": "New year setup"
+        "newYearSetup": "New academic year"
       }
     },
     "settings": {
       "label": "Settings",
       "items": {
-        "schoolProfile": "School Profile",
+        "schoolProfile": "School profile",
         "policies": "Policies",
-        "documentTemplates": "Document Templates",
-        "rolesAndAccess": "Roles and Access",
+        "documentTemplates": "Document templates",
+        "rolesAndAccess": "Roles and access",
         "integrations": "Integrations",
-        "sessionsAndSecurity": "Sessions and Security",
+        "sessionsAndSecurity": "Sessions and security",
         "modules": "Modules"
       }
     },
@@ -189,7 +193,7 @@
       "label": "Platform",
       "items": {
         "tenants": "Schools",
-        "operatorAlerts": "Operator Alerts"
+        "operatorAlerts": "Operator alerts"
       }
     },
     "compact": {
@@ -201,12 +205,12 @@
       "profile": "Profile"
     },
     "visitors": {
-      "label": "Visitors & Incidents",
+      "label": "Visitors and incidents",
       "items": {
-        "board": "Gate Board",
-        "expected": "Expected Guests",
+        "board": "Visitors today",
+        "expected": "Expected visitors",
         "incidents": "Incidents",
-        "reports": "Visitor Recap"
+        "reports": "Visit recap"
       }
     },
     "activities": {

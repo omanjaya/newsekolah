@@ -1,18 +1,27 @@
 "use client";
 
-import { queryKeys } from "@newsekolah/api-client";
+import { ApiError, queryKeys, type components } from "@newsekolah/api-client";
 import {
   useChangePassword as useChangePasswordBase,
   useLogin as useLoginBase,
   useLogout as useLogoutBase,
+  useStartSession,
 } from "@newsekolah/api-client/react";
 import type { LoginInput } from "@newsekolah/schemas";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { setAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
+import { retireServerAccessCookie } from "../../lib/session/clear-server-access-cookie";
+import { useEndSession, useForgetSession } from "../../lib/session/end-session";
 import { clearSimulation } from "../../lib/simulation/clock";
 import { getPasskey } from "../../lib/webauthn";
+
+/** What a sign-in hands this tab: the new access token, and no simulated clock left from before. */
+function storeSessionTokens(data: components["schemas"]["AuthTokens"]): void {
+  clearSimulation();
+  setAccessToken(data.access_token);
+}
 
 /**
  * Wraps `@newsekolah/api-client/react`'s auth hooks with the side effects
@@ -20,14 +29,23 @@ import { getPasskey } from "../../lib/webauthn";
  * only ever gets stored in memory (lib/api/access-token.ts), never
  * persisted, and logout always clears it even if the request itself fails
  * (docs/08-security.md section 2).
+ *
+ * Every sign-in (password here, Google and passkey below) does the same
+ * three things: sets aside the server access cookie right before the
+ * request that creates the session, so the first server render after it
+ * cannot load the previous account's `/v1/me` (`retireServerAccessCookie`:
+ * removed, or marked stale when the route fails or does not answer in
+ * time, so it can never keep anyone from signing in); hands the tokens to
+ * `storeSessionTokens`; and goes through the package's `useStartSession`
+ * (`useLogin` uses it too), which first drops any refresh still on its way
+ * for the previous identity, then empties the cache but for the tenant's
+ * branding and seeds `me` from the response.
  */
 export function useLoginMutation() {
   const client = useApiClient();
   const mutation = useLoginBase(client, {
-    onTokens: (data) => {
-      clearSimulation();
-      setAccessToken(data.access_token);
-    },
+    beforeRequest: retireServerAccessCookie,
+    onTokens: storeSessionTokens,
     // login-form.tsx already shows a failure inline (form.setError("root")).
     meta: { errorToast: false },
   });
@@ -39,34 +57,82 @@ export function useLoginMutation() {
 }
 
 /**
- * POST /v1/auth/impersonation/stop. The impersonation session is revoked
- * server-side (not swapped back to the admin's own session -- there is
- * none to swap to, since starting impersonation opened a brand new
- * session), so this always ends in a normal logout: clear the token and
- * let the caller send the admin back to sign in.
+ * Whether the API refused a stop because the impersonation is already
+ * over, so that finishing it in this tab is all that is left to do:
+ * - any 401. The stop needs only an authenticated session, and the auth
+ *   middleware answers 401 when there is no live session behind the
+ *   token: AUTH_SESSION_REVOKED once the impersonation reached its fixed
+ *   end or another tab stopped it (platform/auth/middleware.go,
+ *   `!active`), AUTH_TOKEN_INVALID for a token it cannot use
+ *   (platform/authz/identity.go). AUTH_TOKEN_EXPIRED reaches this far only
+ *   after the client's own refresh failed as well, and is also what the
+ *   handler answers when the session row is gone (StopImpersonation's
+ *   ErrSessionNotFound, mapped by mapAuthError).
+ * - 400 NOT_IMPERSONATING. The token names a session that is not an
+ *   impersonation (service/impersonation.go): this tab refreshed into a
+ *   sign-in made in another tab, so the impersonation it shows is gone.
+ * A network error, a 5xx or a 429 says nothing about the session: not
+ * over, and the stop can be tried again.
+ */
+function isImpersonationOver(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    (error.status === 401 || (error.status === 400 && error.code === "NOT_IMPERSONATING"))
+  );
+}
+
+/**
+ * POST /v1/auth/impersonation/stop. The server revokes the impersonation
+ * session; there is no admin session to go back to (starting the
+ * impersonation replaced it), so a stop the server confirmed ends like a
+ * sign-out: the server access cookie is set aside, then `useEndSession`
+ * drops the tokens (the API client's remembered one too, which may still
+ * be the admin's own and valid) and the cache, and the caller sends the
+ * admin to sign in. The cookie by then names at most the revoked session,
+ * since the start removed the admin's, so `retireServerAccessCookie` only
+ * marks it stale when the route cannot remove it, and the sign-out goes
+ * on; the next sign-in sets it aside again before it starts.
+ *
+ * A stop the server refused because the impersonation is already over
+ * (see `isImpersonationOver`) ends the same way: there is nothing left to
+ * stop, and keeping the strip would leave a Stop that can never succeed
+ * over screens that all get 401.
+ *
+ * Any other failed stop changes nothing here. The impersonation session
+ * is still alive on the server and the browser still holds its refresh
+ * cookie, so the tab really is still impersonating: it keeps its token,
+ * its data and the strip that says so (components/impersonation-banner.tsx),
+ * which shows the error and lets the admin try again. Clearing anything
+ * would not end that session; it only hid the strip while the session
+ * went on.
  */
 export function useStopImpersonationMutation() {
   const client = useApiClient();
-  const mutation = useMutation({
-    mutationFn: () => client.POST("/v1/auth/impersonation/stop"),
-  });
-
-  return {
-    ...mutation,
-    mutateAsync: async () => {
+  const endSession = useEndSession();
+  return useMutation({
+    mutationFn: async () => {
       try {
-        await mutation.mutateAsync();
-      } finally {
-        clearSimulation();
-        setAccessToken(null);
+        await client.POST("/v1/auth/impersonation/stop");
+      } catch (error) {
+        if (!isImpersonationOver(error)) throw error;
       }
+      await retireServerAccessCookie();
     },
-  };
+    onSuccess: endSession,
+    // The strip shows the failure itself.
+    meta: { errorToast: false },
+  });
 }
 
+/**
+ * POST /v1/auth/logout. The package hook empties the cache once the server
+ * ended the session; this drops the tokens and the simulated clock either
+ * way (useForgetSession).
+ */
 export function useLogoutMutation() {
   const client = useApiClient();
   const mutation = useLogoutBase(client);
+  const forgetSession = useForgetSession();
 
   return {
     ...mutation,
@@ -74,8 +140,7 @@ export function useLogoutMutation() {
       try {
         await mutation.mutateAsync();
       } finally {
-        clearSimulation();
-        setAccessToken(null);
+        forgetSession();
       }
     },
   };
@@ -99,13 +164,13 @@ export function useGoogleSSOAvailabilityQuery() {
 /** POST /v1/auth/sso/google: exchanges a verified Google ID token for a session. */
 export function useGoogleLoginMutation() {
   const client = useApiClient();
+  const startSession = useStartSession(client, { onTokens: storeSessionTokens });
   const mutation = useMutation({
-    mutationFn: (idToken: string) =>
-      client.POST("/v1/auth/sso/google", { body: { id_token: idToken, client: "web" } }),
-    onSuccess: (data) => {
-      clearSimulation();
-      setAccessToken(data.access_token);
+    mutationFn: async (idToken: string) => {
+      await retireServerAccessCookie();
+      return client.POST("/v1/auth/sso/google", { body: { id_token: idToken, client: "web" } });
     },
+    onSuccess: startSession,
     // google-sign-in-button.tsx's onError prop shows a failure inline.
     meta: { errorToast: false },
   });
@@ -118,24 +183,24 @@ export function useGoogleLoginMutation() {
  * security key, ...), and exchanges the resulting assertion for a
  * session. Kept as one mutation for the same reason as
  * features/security's useRegisterPasskeyMutation: the browser prompt only
- * runs from a user gesture.
+ * runs from a user gesture. The server access cookie is set aside after
+ * the prompt, so the prompt still follows the press as closely as before.
  */
 export function usePasskeyLoginMutation() {
   const client = useApiClient();
+  const startSession = useStartSession(client, { onTokens: storeSessionTokens });
   const mutation = useMutation({
     mutationFn: async (username: string) => {
       const options = await client.POST("/v1/auth/passkeys/login/options", {
         body: { username },
       });
       const credential = await getPasskey(options.public_key);
+      await retireServerAccessCookie();
       return client.POST("/v1/auth/passkeys/login", {
         body: { ceremony_id: options.ceremony_id, credential, client: "web" },
       });
     },
-    onSuccess: (data) => {
-      clearSimulation();
-      setAccessToken(data.access_token);
-    },
+    onSuccess: startSession,
     // passkey-login-button.tsx's onError prop shows a failure inline.
     meta: { errorToast: false },
   });

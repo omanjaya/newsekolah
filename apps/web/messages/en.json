@@ -1,15 +1,129 @@
 {
   "app": {
     "navigation": {
-      "students": "Student Affairs",
+      "students": "Student affairs",
       "staff": "Staff",
-      "duty": "Duty & Gate",
+      "duty": "Duty and gate",
       "administration": "Administration",
-      "masterData": "School Data",
+      "masterData": "School data",
       "users": "School users"
     },
     "shell": {
       "navBadge": "{count} waiting",
+      "nav": {
+        "items": {
+          "inbox": "Action needed",
+          "reports": "Reports",
+          "schedule": "Schedule and calendar",
+          "attendance": "Attendance and journal",
+          "grades": "Grades",
+          "homeroom": "Homeroom",
+          "permits": "Leave and late arrivals",
+          "discipline": "Discipline",
+          "counseling": "Counseling",
+          "activities": "Activities and achievements",
+          "mentoring": "Student mentoring",
+          "studentActivities": "Student activities",
+          "duty": "Duty",
+          "staffAttendance": "Staff attendance",
+          "supervision": "Supervision",
+          "classes": "Students and classes",
+          "users": "Users and access",
+          "learning": "Learning",
+          "years": "Academic years",
+          "structure": "School structure",
+          "catalogue": "Catalogue",
+          "circulation": "Circulation",
+          "members": "Members",
+          "librarySettings": "Library settings",
+          "loans": "Book loans",
+          "visitors": "Visitor book",
+          "billing": "Bills and payments",
+          "settings": "School settings",
+          "platform": "Manage schools",
+          "myAttendance": "My attendance",
+          "myGrades": "My grades",
+          "myDiscipline": "Discipline record",
+          "monitoring": "Early warning"
+        },
+        "inGroup": {
+          "librarySettings": "Settings"
+        },
+        "groups": {
+          "academic": "Academics",
+          "students": "Student affairs",
+          "duty": "Duty and gate",
+          "staff": "Staff",
+          "library": "Library",
+          "administration": "Administration",
+          "masterData": "School data",
+          "settings": "Settings",
+          "platform": "Platform"
+        },
+        "short": {
+          "home": "Home",
+          "inbox": "Actions",
+          "scan": "Scan",
+          "attendance": "Attendance",
+          "schedule": "Schedule",
+          "permits": "Leave",
+          "grades": "Grades",
+          "discipline": "Discipline",
+          "counseling": "Counseling",
+          "duty": "Duty",
+          "visitors": "Visitors",
+          "circulation": "Desk",
+          "catalogue": "Catalogue",
+          "members": "Members",
+          "users": "Users",
+          "classes": "Classes",
+          "reports": "Reports",
+          "monitor": "Monitor",
+          "profile": "Profile",
+          "menu": "Menu"
+        },
+        "groupMenu": "Open the {group} menu",
+        "railHint": "Hover or click to see the pages in {group}"
+      },
+      "account": {
+        "school": "School",
+        "schoolYear": "Academic year {label}",
+        "noSchoolYear": "No active academic year",
+        "className": "Class {name}",
+        "theme": "Theme",
+        "themeLight": "Light",
+        "themeDark": "Dark",
+        "themeSystem": "System",
+        "simulation": "Time simulation",
+        "close": "Close"
+      },
+      "palette": {
+        "placeholder": "Search pages, students or actions",
+        "recent": "Recently visited",
+        "results": "Pages"
+      },
+      "phoneMenu": {
+        "search": "Search pages, students or actions",
+        "edit": "Edit favorites",
+        "done": "Done",
+        "favoriteAdd": "Add {name} to favorites",
+        "favoriteRemove": "Remove {name} from favorites",
+        "editHint": "Tap a star to pin a page to the top of the menu."
+      },
+      "strip": {
+        "roleTesting": "Testing as {name}",
+        "roleTestingReturn": "Return",
+        "roleTestingExpired": "Test session ended",
+        "impersonation": "{adminName} is operating the account of {name}",
+        "impersonationStop": "Stop",
+        "simulation": "Simulated time {time}",
+        "simulationOpen": "Adjust",
+        "offline": "No connection",
+        "offlineDetail": "Changes are kept on this device for now",
+        "update": "A new version is available",
+        "updateDetail": "Reload to use the latest version",
+        "details": "Show details"
+      },
       "appearance": "Appearance",
       "commandPalette": {
         "trigger": "Search pages or actions",
@@ -52,6 +166,7 @@
         "expiresAt": "Test session ends {time}",
         "switchFailed": "Could not switch accounts. Try again.",
         "returnFailed": "Could not return to superadmin. Try again or sign in again.",
+        "prepareFailed": "Account not switched: the web app could not release the current account's page session. Try again in a moment.",
         "sessionExpired": "Test session expired. Sign in again to continue.",
         "signIn": "Sign in again"
       },
@@ -80,7 +195,7 @@
       },
       "updateAvailable": {
         "title": "New version available",
-        "body": "Reload to use the latest version of the app",
+        "body": "Reload to use the latest version of the app.",
         "action": "Reload"
       },
       "skipToContent": "Skip to main content",
@@ -96,10 +211,181 @@
         "recent": "Recently visited",
         "favorite": "Favorite: {name}"
       },
+      "tabBar": {
+        "withCount": "{name}, {count} waiting",
+        "centre": {
+          "scan": { "label": "Scan", "name": "Scan QR" },
+          "dutyQr": { "label": "Duty QR", "name": "Show duty QR" },
+          "attendance": { "label": "Roll call", "name": "Take the roll call" },
+          "circulation": { "label": "Desk", "name": "Circulation desk" },
+          "recordViolation": { "label": "Record", "name": "Record a violation" },
+          "inbox": { "label": "Actions", "name": "Actions needed" },
+          "checkIn": { "label": "Clock in", "name": "Clock in or out" },
+          "addVisitor": { "label": "Visitor", "name": "Add a visitor" },
+          "submitLeave": { "label": "Leave", "name": "Request leave" },
+          "quickActions": { "label": "Shortcuts", "name": "Shortcuts" }
+        }
+      },
       "table": {
         "selectedRows": "{count} rows selected",
         "selectAllRows": "Select all rows",
         "selectRow": "Select row"
+      },
+      "controls": {
+        "field": {
+          "optional": "(optional)",
+          "formErrorTitle": "Please check the following",
+          "required": "Required"
+        },
+        "password": {
+          "show": "Show password",
+          "hide": "Hide password",
+          "capsLock": "Caps Lock is on"
+        },
+        "search": {
+          "clear": "Clear search"
+        },
+        "select": {
+          "placeholder": "Select"
+        },
+        "combobox": {
+          "placeholder": "Select",
+          "searchPlaceholder": "Search",
+          "loading": "Loading options",
+          "empty": "No matching options"
+        },
+        "table": {
+          "searchPlaceholder": "Search",
+          "columns": "Visible columns",
+          "density": "Density",
+          "densityNormal": "Normal",
+          "densityCompact": "Compact",
+          "moreOptions": "Table options",
+          "clearSelection": "Clear selection",
+          "noResultsTitle": "No results",
+          "noResultsDescription": "Try another keyword or clear the search.",
+          "clearSearch": "Clear search",
+          "errorTitle": "Couldn't load the data",
+          "errorDescription": "Check your internet connection, then try again.",
+          "retry": "Try again",
+          "errorCode": "Error code: {code}",
+          "pageOf": "Page {current, number} of {total, number}",
+          "range": "{from, number}–{to, number} of {total, number}",
+          "rangeOpen": "Rows {from, number}–{to, number}",
+          "rowCount": "{count, plural, one {# row} other {# rows}}",
+          "pageSize": "Rows per page",
+          "previous": "Go to previous page",
+          "next": "Go to next page",
+          "filtersReset": "Reset filters",
+          "filterRemove": "Remove filter {label}",
+          "filterDateFrom": "From",
+          "filterDateTo": "To",
+          "filterDateInvalid": "The start date must be on or before the end date",
+          "emptyTitle": "No data yet"
+        },
+        "scanner": {
+          "manualLabel": "Code",
+          "manualPlaceholder": "Type or paste the code",
+          "submit": "Submit",
+          "fieldSubmit": "Record",
+          "camera": "Scan with camera",
+          "cameraStart": "Turn on camera",
+          "cameraStop": "Turn off camera",
+          "cameraClose": "Close camera",
+          "cameraDone": "Done",
+          "cameraStarting": "Turning on the camera",
+          "cameraHint": "Fit the code inside the frame",
+          "cameraIdleHint": "The camera is only on while you scan.",
+          "cameraDeniedTitle": "Camera access was denied",
+          "cameraDeniedDescription": "Allow the camera in your browser settings, then try again. You can also enter the code by hand.",
+          "cameraUnavailableTitle": "No camera available",
+          "cameraUnavailableDescription": "This device has no camera that can be used. Enter the code by hand.",
+          "cameraErrorTitle": "The camera couldn't start",
+          "cameraErrorDescription": "Close other apps using the camera, then try again.",
+          "retry": "Try again",
+          "manualEntry": "Enter code manually",
+          "manualHide": "Hide manual entry",
+          "ready": "Scanner ready"
+        },
+        "qr": {
+          "code": "QR code",
+          "expired": "Code expired",
+          "expiresIn": "Valid for {seconds, plural, one {# more second} other {# more seconds}}",
+          "renew": "New code",
+          "manualCode": "Can't scan? Use this code"
+        },
+        "calendar": {
+          "previousMonth": "Previous month",
+          "nextMonth": "Next month",
+          "previousYear": "Previous year",
+          "nextYear": "Next year",
+          "chooseMonth": "{caption}, choose month and year",
+          "chooseYear": "{year}, choose year",
+          "previousYears": "Previous years",
+          "nextYears": "Next years"
+        },
+        "picker": {
+          "datePlaceholder": "Pick a date",
+          "dateClear": "Clear date",
+          "rangePlaceholder": "Pick a date range",
+          "rangeClear": "Clear date range",
+          "rangePickStart": "Pick the start date",
+          "rangePickEnd": "Pick the end date",
+          "rangePresets": "Quick ranges",
+          "monthPlaceholder": "Pick a month",
+          "monthClear": "Clear month",
+          "timePlaceholder": "Pick a time",
+          "timeShowOptions": "Show time options",
+          "timeOptions": "Time options",
+          "numberIncrement": "Increase",
+          "numberDecrement": "Decrease"
+        },
+        "page": {
+          "breadcrumb": "Breadcrumb",
+          "moreActions": "More actions"
+        },
+        "avatar": {
+          "groupMore": "{count, plural, one {# more person} other {# more people}}"
+        },
+        "dataList": {
+          "noValue": "None"
+        },
+        "empty": {
+          "filteredTitle": "Nothing matches",
+          "filteredDescription": "Try another keyword or clear the active filters.",
+          "filteredReset": "Clear filters"
+        },
+        "statePage": {
+          "code": "Code {code}"
+        },
+        "alert": {
+          "dismiss": "Dismiss message"
+        },
+        "stat": {
+          "deltaUp": "Up",
+          "deltaDown": "Down",
+          "deltaFlat": "No change"
+        },
+        "link": {
+          "opensInNewTab": "(opens in a new tab)"
+        },
+        "toast": {
+          "close": "Close notification",
+          "region": "Notifications"
+        },
+        "commandPalette": {
+          "label": "Global search",
+          "placeholder": "Search pages, students, teachers or actions",
+          "empty": "No matching results",
+          "hintMove": "Move",
+          "hintOpen": "Open",
+          "hintClose": "Close",
+          "cancel": "Cancel"
+        },
+        "stepper": {
+          "complete": "complete",
+          "stopped": "stopped"
+        }
       }
     },
     "login": {
@@ -113,12 +399,13 @@
     "changePassword": {
       "forcedTitle": "Change your password to continue",
       "forcedBody": "This password was set by an admin and needs to be changed before you can use the app.",
-      "successRedirect": "Password changed, redirecting to the home page"
+      "successRedirect": "Password changed, redirecting to the home page",
+      "signedInAs": "Signed in as",
+      "notYou": "Not you?"
     },
     "dashboard": {
       "title": "Home",
-      "greeting": "Welcome, {name}",
-      "noAcademicYear": "No active academic year yet",
+      "greeting": "Hi, {name}",
       "tiles": {
         "notifications": {
           "label": "Notifications",
@@ -126,35 +413,44 @@
         }
       },
       "announcementsTitle": "Latest announcements",
-      "openAnnouncements": "View all"
+      "openAnnouncements": "View all",
+      "statsLabel": "Today at a glance",
+      "fallback": {
+        "eyebrow": "Today",
+        "title": "Nothing urgent right now",
+        "meta": "Your latest notifications and announcements are one tap away.",
+        "action": "Open notifications",
+        "inboxEyebrow": "Needs action",
+        "inboxTitle": "{count, plural, one {# item needs} other {# items need}} your action",
+        "inboxMeta": "Requests waiting on your decision, all in one place.",
+        "inboxAction": "Open needs action"
+      },
+      "shortcuts": {
+        "title": "Shortcuts",
+        "monitor": "Attendance monitor",
+        "setup": "School setup"
+      }
     },
     "profile": {
       "title": "Profile",
-      "identityTitle": "Identity",
       "usernameLabel": "Username",
       "emailLabel": "Email",
-      "emailEmpty": "Not set",
-      "rolesLabel": "Roles",
-      "sessionsColumnDevice": "Device",
-      "sessionsColumnLastSeen": "Last seen",
-      "sessionsColumnActions": "Actions",
       "sessionsEmptyTitle": "No other sessions",
       "sessionsEmptyBody": "Other sessions will show up here after signing in from another device.",
       "revokeSuccess": "Session ended",
       "changePasswordTitle": "Change password",
       "avatar": {
-        "title": "Photo",
         "change": "Change photo",
         "hint": "JPEG, PNG or WebP, up to 2 MB",
         "uploading": "Uploading, {percent, number}%",
         "updated": "Photo updated"
       },
       "edit": {
-        "title": "Edit profile",
+        "title": "Account",
         "nameLabel": "Full name",
         "emailLabel": "Email",
         "phoneLabel": "Phone",
-        "phonePlaceholder": "Not set",
+        "phonePlaceholder": "Enter a new number",
         "localeLabel": "Preferred language",
         "localeId": "Indonesian",
         "localeEn": "English",
@@ -162,7 +458,9 @@
         "save": "Save changes",
         "saved": "Profile updated",
         "usernameLabel": "Username",
-        "usernameLengthError": "Username must be at least 3 characters."
+        "usernameLengthError": "Username must be at least 3 characters.",
+        "description": "The name and contact details teachers, students and staff see.",
+        "phoneHint": "The saved number is not shown; fill this in to replace it."
       },
       "detail": {
         "title": "Personal details",
@@ -195,25 +493,55 @@
         "employeeNumber": "Employee number",
         "position": "Position",
         "save": "Save personal details",
-        "saved": "Personal details updated"
-      }
+        "saved": "Personal details updated",
+        "unset": "Not set",
+        "institutionalHint": "Filled in and changed by the school admin.",
+        "identitySection": "Identity",
+        "addressSection": "Address",
+        "familySection": "Family and previous school",
+        "educationSection": "Education",
+        "employmentStatuses": {
+          "pns": "Civil servant",
+          "pppk": "Contract civil servant",
+          "tetap": "Permanent",
+          "gty": "Permanent foundation teacher",
+          "gtt": "Non-permanent teacher",
+          "honorer": "Honorary",
+          "kontrak": "Contract"
+        }
+      },
+      "tabsLabel": "Profile sections",
+      "tabs": {
+        "account": "Account",
+        "personal": "Personal data",
+        "security": "Security"
+      },
+      "academicYear": "School year {year}",
+      "noAcademicYear": "No active school year",
+      "unsavedChanges": "You have unsaved changes",
+      "changePasswordHint": "Use a password you do not use anywhere else.",
+      "sessionLastSeen": "Last active {time}"
     },
     "settings": {
       "appearance": {
         "eyebrow": "Settings",
         "title": "Appearance",
-        "description": "Set the light or dark theme for this device.",
+        "description": "The app's theme on this device. Other users are not affected.",
         "themeLabel": "Theme",
         "themeSystem": "Follow system",
         "themeLight": "Light",
-        "themeDark": "Dark"
+        "themeDark": "Dark",
+        "themeSystemHint": "Follows the device's light or dark setting.",
+        "themeLightHint": "A light background at all times.",
+        "themeDarkHint": "A dark background, easy in dim rooms.",
+        "appliesNow": "Applies at once, nothing to save."
       },
       "notifications": {
-        "navLabel": "Notifications",
+        "navLabel": "Notification preferences",
         "eyebrow": "Settings",
         "title": "Notification preferences",
         "channelsTitle": "Channels per kind",
-        "channelsBody": "Choose how each kind of notification reaches you. The in-app inbox is always on.",
+        "channelsBody": "Choose how each kind of notification reaches you. The in-app inbox always receives everything. Each change saves at once.",
         "kindColumn": "Kind",
         "channels": {
           "inapp": "In-app",
@@ -243,12 +571,15 @@
           "devicesTitle": "Registered devices",
           "noDevices": "No devices registered yet.",
           "removeHint": "To remove one device, turn notifications off on that device."
-        }
+        },
+        "description": "When and how you are notified. Applies to your account only.",
+        "loadFailed": "Could not load this kind.",
+        "quietUntil": "Until"
       },
       "notificationDefaults": {
-        "navLabel": "Notification defaults",
+        "navLabel": "Default notifications",
         "eyebrow": "Settings",
-        "title": "School notification defaults",
+        "title": "Default notifications",
         "body": "Default channels for each notification kind. Users who have not changed their own preference use this setting.",
         "kindColumn": "Kind",
         "channels": {
@@ -257,26 +588,33 @@
           "email": "Email",
           "whatsapp": "WhatsApp"
         },
-        "saved": "Defaults saved"
+        "loadFailed": "Could not load the setting for this kind.",
+        "saved": "Defaults saved",
+        "channelsTitle": "Default channels per kind",
+        "channelsBody": "The in-app inbox always receives everything. Each change saves at once."
       },
       "session": {
-        "navLabel": "Session & Login",
+        "navLabel": "Sessions and sign-in",
         "eyebrow": "Settings",
-        "title": "Session & Login",
+        "title": "Sessions and sign-in",
         "intro": "Applies to every user of this school, starting with the next session they open.",
-        "daysLabel": "Session length (days)",
+        "daysLabel": "Session length",
         "daysHint": "A user is asked to sign in again after this session ends. Between 1 and 365 days.",
         "daysRangeError": "Session length must be between {min} and {max} days.",
         "singleDeviceLabel": "Single-device login",
         "singleDeviceHint": "Limit every user to one active device at a time.",
         "singleDeviceExplain": "This change does not sign out anyone already signed in on another device right away. The next time any of them signs in anywhere, all of that user's other sessions end.",
         "saved": "Session settings saved",
-        "save": "Save settings"
+        "save": "Save settings",
+        "sessionTitle": "Session length",
+        "daysUnit": "days",
+        "devicesTitle": "Devices",
+        "rulesTitle": "Session rules"
       },
       "branding": {
-        "navLabel": "School Branding",
+        "navLabel": "School brand",
         "eyebrow": "Settings",
-        "title": "School Branding",
+        "title": "School brand",
         "identityTitle": "Identity",
         "nameLabel": "School name",
         "nameRequiredError": "School name is required.",
@@ -294,76 +632,136 @@
           "previewAlt": "School logo",
           "none": "None yet",
           "change": "Change logo",
-          "hint": "PNG, WebP, or SVG, up to 2 MB.",
+          "hint": "PNG, WebP or SVG, up to 2 MB.",
           "uploading": "Uploading... {percent}%",
-          "updated": "Logo updated"
+          "updated": "Logo updated",
+          "emptyHint": "No logo yet. PNG, WebP or SVG, up to 2 MB.",
+          "shortHint": "Up to 2 MB",
+          "upload": "Upload logo"
         },
         "favicon": {
           "title": "Favicon",
           "previewAlt": "School favicon",
           "none": "None yet",
           "change": "Change favicon",
-          "hint": "PNG, WebP, or SVG, up to 512 KB.",
+          "hint": "The small icon in the browser tab. PNG, WebP or SVG, up to 512 KB.",
           "uploading": "Uploading... {percent}%",
-          "updated": "Favicon updated"
+          "updated": "Favicon updated",
+          "emptyHint": "No favicon yet. PNG, WebP or SVG, up to 512 KB.",
+          "shortHint": "Up to 512 KB",
+          "upload": "Upload favicon"
+        },
+        "description": "The name, colour and logo every user sees in the app, on the sign-in page and in the browser tab.",
+        "shortNameHint": "Used where space is tight, such as the browser tab and the phone menu bar.",
+        "taglineHint": "A short line under the school name, for example on the sign-in page.",
+        "colorTitle": "Colour",
+        "accentColorFormat": "A 6-digit hex code, for example #0F7A5F.",
+        "accentColorPicker": "Pick the accent colour",
+        "assetsTitle": "Logo and favicon",
+        "assetsDescription": "Saved as soon as the upload finishes.",
+        "preview": {
+          "title": "Preview",
+          "description": "Changes as you type, before you save.",
+          "namePlaceholder": "School name",
+          "browserTab": "Browser tab",
+          "tabTitle": "{page} · {school}",
+          "homePage": "Home",
+          "app": "Menu and buttons",
+          "announcements": "Announcements",
+          "primaryButton": "Primary button",
+          "link": "Link",
+          "badge": "Active",
+          "signIn": "Sign-in page",
+          "variants": "Colours the app uses",
+          "light": "Light",
+          "dark": "Dark",
+          "adjusted": "The app adjusts the colour's brightness in each theme so text and buttons stay readable."
         }
       },
       "reportHeader": {
-        "navLabel": "Report Header",
+        "navLabel": "Report letterhead",
         "eyebrow": "Settings",
-        "title": "Report Header",
+        "title": "Report letterhead",
         "showLogoLabel": "Show school logo",
-        "showLogoHint": "Uses the same logo as School Branding.",
-        "linesLabel": "Header lines",
+        "showLogoHint": "Uses the logo from the School brand page.",
+        "linesLabel": "Letterhead lines",
         "firstLinePlaceholder": "School name",
         "linePlaceholder": "Header line",
         "lineLabel": "Header line {index}",
         "removeLine": "Remove header line {index}",
         "addLine": "Add line",
         "linesRequiredError": "Enter at least one header line.",
-        "emphasisLabel": "School name line",
-        "emphasisHint": "Which line is rendered bold and larger, like a school letterhead.",
-        "emphasisAuto": "Automatic",
+        "emphasisLabel": "Emphasised line",
+        "emphasisHint": "Printed larger and bold, like a school name on a letterhead.",
+        "emphasisAuto": "Automatic, the line that matches the school name",
         "emphasisLineOption": "Line {index}: {text}",
         "placeLabel": "Place",
         "placePlaceholder": "e.g. Denpasar",
-        "signersLabel": "Default signers",
+        "signersLabel": "Signatures",
         "signerRoleLabel": "Role",
         "signerNameLabel": "Name",
-        "signerIdLabel": "ID label",
+        "signerIdLabel": "Identity number type",
         "signerIdNumberLabel": "ID number",
         "removeSigner": "Remove signer {index}",
         "addSigner": "Add signer",
         "save": "Save changes",
         "saved": "Report header saved",
-        "previewTitle": "Preview",
-        "previewOpen": "View preview",
-        "previewError": "The preview could not be loaded."
+        "previewTitle": "PDF preview",
+        "previewOpen": "Open the PDF in a new tab",
+        "previewError": "The preview could not be loaded.",
+        "description": "The letterhead and signatures printed on every exported report and document.",
+        "headerTitle": "Letterhead",
+        "linesHint": "Up to {max} lines, top to bottom.",
+        "placeTitle": "Place and date",
+        "placeHint": "Written above the signatures, followed by the print date.",
+        "signersHint": "Printed at the bottom of every report, left to right.",
+        "signerTitle": "Signature {index}",
+        "signerRolePlaceholder": "For example: Principal",
+        "signerIdHint": "For example NIP or NUPTK.",
+        "preview": {
+          "title": "Preview",
+          "modeLabel": "Preview type",
+          "live": "Live",
+          "pdf": "Saved PDF",
+          "liveHint": "Changes as you type, before you save.",
+          "pdfHint": "Rendered by the server from the last saved settings.",
+          "noLines": "No letterhead lines yet",
+          "noSigners": "No signatures yet",
+          "rolePlaceholder": "Position",
+          "namePlaceholder": "Name"
+        }
       }
     },
     "forbidden": {
-      "title": "Access denied",
-      "body": "This account does not have permission to open this page. Contact the school admin if this access should be available.",
-      "backHome": "Back to home"
+      "title": "You have no access to this page",
+      "body": "Your account does not have permission for this page. Contact your school admin if you need it.",
+      "backHome": "Back to home",
+      "back": "Previous page",
+      "bodyAdmin": "Your account does not have permission for this page.",
+      "platformBody": "This page is for platform operators only."
     },
     "moduleUnavailable": {
-      "title": "Module not available",
-      "body": "This feature is not enabled for your school. Contact the school admin if it should be available.",
-      "backHome": "Back to home"
+      "title": "This feature is not turned on",
+      "body": "Your school has not turned this feature on, so ask the school's admin if you need it.",
+      "backHome": "Back to home",
+      "back": "Previous page"
     },
     "notFound": {
       "title": "Page not found",
-      "body": "The address you requested does not exist or has moved.",
-      "backHome": "Back to home"
+      "body": "The address may be mistyped, or the page has moved.",
+      "backHome": "Back to home",
+      "signIn": "Go to sign in",
+      "back": "Previous page"
     },
     "error": {
-      "title": "Something went wrong",
-      "body": "This page failed to load. Try reloading, or contact support if it keeps happening.",
-      "digestLabel": "Code: {digest}"
+      "title": "This page failed to load",
+      "body": "Reload the page, and if it still fails, give the school's admin the code below.",
+      "digestLabel": "Code: {digest}",
+      "backHome": "Back to home"
     },
     "offlinePage": {
       "title": "No connection",
-      "body": "This page needs an internet connection and has not been saved for offline use.",
+      "body": "Connect this device to the internet, then try again.",
       "retry": "Try again"
     },
     "notifications": {
@@ -396,8 +794,11 @@
       "searchPlaceholder": "Search notification title or body",
       "kindAll": "All kinds",
       "kindFilterLabel": "Notification kind",
+      "kindPill": "Kind",
       "emptyFilteredTitle": "No notifications match",
-      "emptyFilteredBody": "Try a different search term or kind."
+      "emptyFilteredBody": "Try a different search term or kind.",
+      "filterLabel": "Show notifications",
+      "showAll": "Show all notifications"
     },
     "announcements": {
       "eyebrow": "Communication",
@@ -491,25 +892,29 @@
         "previewScheduleAt": "Appears starting {date}",
         "previewUntitled": "(No title)",
         "previewEmptyBody": "(Body not written yet)",
-        "previewHint": "This is how this announcement will look to its recipients."
-      }
+        "previewHint": "This is how this announcement will look to its recipients.",
+        "audienceLabel": "Addressed to"
+      },
+      "feedEmptyCompact": "No announcements yet",
+      "tabsLabel": "Announcement sections"
     },
     "duty": {
-      "navLabel": "Duty desk",
-      "eyebrow": "Student Affairs",
-      "title": "Duty desk",
-      "intro": "Show the QR for each purpose. Every code is single-use and renews itself when it expires. Exit permit approvals live on the Exit Permits page, Approve tab.",
+      "navLabel": "Today's duty",
+      "eyebrow": "Student affairs",
+      "title": "Today's duty",
+      "intro": "Show the QR for each purpose. Every code is single-use and renews itself when it expires. Exit permit approvals live on the Exit permits page, Approve tab.",
       "purposes": {
-        "classroom_entry": "Classroom entry QR",
-        "late_arrival": "Late arrival QR",
-        "manual": "Manual record"
+        "classroom_entry": "Class entry",
+        "late_arrival": "Late",
+        "manual": "Manual record",
+        "exit": "Exit permit"
       },
       "help": {
-        "classroom_entry": "Students scan this code when entering class to record their own presence for the running session.",
-        "late_arrival": "Students arriving late scan this code. They appear in the review queue on the Late Arrivals page."
+        "classroom_entry": "Students scan this code when entering class to record their presence in the running session. The code renews itself when it runs out.",
+        "late_arrival": "Students who arrive late scan this code. Their names go straight into the late queue on this page."
       },
       "manualForm": {
-        "intro": "For a student with no phone on hand: search for the student, pick an exit permit or a late arrival, and record it directly here.",
+        "intro": "For a student with no phone on hand: pick the kind, find the student, and record it here.",
         "kindExit": "Exit permit",
         "kindLate": "Late arrival",
         "student": "Student",
@@ -525,11 +930,38 @@
         "reason": "Reason for lateness",
         "reasonPlaceholder": "E.g. traffic, overslept",
         "homeroomReported": "Homeroom teacher already notified",
-        "requiredError": "Fill in the required fields.",
+        "requiredError": "Required.",
         "recordedHint": "Recorded as entered by the duty teacher, not the student's own request.",
         "recordedExit": "Exit permit recorded for {student}",
         "recordedLate": "Late arrival recorded for {student}",
-        "submit": "Record"
+        "submit": "Record",
+        "title": "Record without the student's phone",
+        "kindLabel": "Record kind",
+        "studentRequired": "Pick a student first."
+      },
+      "openMonitor": "Open the monitor screen",
+      "modeLabel": "Duty mode",
+      "qrLabel": {
+        "classroom_entry": "Class entry QR code",
+        "late_arrival": "Late arrival QR code"
+      },
+      "queue": {
+        "title": "Late queue",
+        "description": "Students who scanned the late QR and wait for your review.",
+        "openInbox": "View all",
+        "emptyTitle": "Nobody is late yet",
+        "emptyBody": "Students who scan the late QR show up here.",
+        "occurrence": "Late #{n}, {time}"
+      },
+      "log": {
+        "title": "Recorded today",
+        "description": "Manual records and reviews from this screen since it opened.",
+        "empty": "Nothing recorded from this screen yet",
+        "kinds": {
+          "exit": "Exit permit recorded",
+          "late": "Late arrival recorded",
+          "review": "Late arrival reviewed"
+        }
       }
     },
     "common": {
@@ -569,6 +1001,13 @@
         "searchPlaceholder": "Search by name or ID number",
         "empty": "No match",
         "loading": "Loading..."
+      },
+      "publicSite": {
+        "navLabel": "School public pages",
+        "catalogue": "Catalogue",
+        "signIn": "Sign in",
+        "toDashboard": "Go to home",
+        "copyright": "© {year} {school}"
       }
     },
     "schedule": {
@@ -578,6 +1017,7 @@
       "byTeacher": "By teacher",
       "pickClass": "Pick a class",
       "pickTeacher": "Pick a teacher",
+      "pickSubject": "Pick a subject",
       "periodColumn": "Period",
       "addBlock": "Add block",
       "addHere": "Add",
@@ -586,7 +1026,7 @@
       "deleteConfirmTitle": "Delete schedule",
       "deleteConfirmBody": "This block will be removed. Attendance sessions already recorded are kept.",
       "noPeriodsTitle": "Periods not set up yet",
-      "noPeriodsBody": "Set up the period template under School Data before building a timetable.",
+      "noPeriodsBody": "Set up the period template under School data before building a timetable.",
       "unknownTeacher": "Unknown teacher",
       "unknownClass": "Unknown class",
       "unknownSubject": "Unknown subject",
@@ -611,11 +1051,11 @@
       "bulk": {
         "navLink": "Bulk operations",
         "eyebrow": "Academic",
-        "title": "Bulk schedule operations",
+        "title": "Bulk operations",
         "importSection": {
-          "title": "Import from CSV",
+          "title": "Import a timetable from CSV",
           "body": "Paste or upload a CSV with columns class,subject,teacher,day,start_period,end_period,notes. Class, subject, teacher and period names are matched against existing data; day is the ISO weekday, 1 (Monday) to 7 (Sunday).",
-          "uploadLabel": "Upload a CSV file",
+          "uploadLabel": "Choose a CSV file",
           "noFileChosen": "No file chosen",
           "textareaLabel": "Or paste the CSV content here",
           "previewTitle": "Preview",
@@ -627,7 +1067,10 @@
           "apply": "Import {count} schedules",
           "applyErrorTitle": "Nothing was saved; the whole batch is applied together or not at all.",
           "applied": "{count} schedules imported",
-          "empty": "Nothing to preview yet."
+          "empty": "Nothing to preview yet.",
+          "intro": "Upload or paste a CSV file. Class, subject, teacher and period names are matched to existing data; days are written 1 (Monday) to 7 (Sunday).",
+          "columnsLabel": "File columns",
+          "template": "Download the template"
         },
         "clearSection": {
           "title": "Clear every schedule this year",
@@ -660,7 +1103,12 @@
       "mine": "My schedule",
       "loadError": "The schedule could not be loaded.",
       "noClassTitle": "Not placed in a class yet",
-      "noClassBody": "Your timetable appears once you are placed in a class for this academic year. Contact your homeroom teacher or the school admin."
+      "noClassBody": "Your timetable appears once you are placed in a class for this academic year. Contact your homeroom teacher or the school admin.",
+      "viewLabel": "Timetable view",
+      "noTeachingTitle": "You have no teaching timetable yet",
+      "noTeachingBody": "Your lessons appear here once the timetable manager adds them. Class timetables can still be viewed by class.",
+      "viewByClass": "View by class",
+      "blockActions": "Lesson actions"
     },
     "attendance": {
       "eyebrow": "Academic",
@@ -687,10 +1135,12 @@
       "teacherPlaceholder": "Select a teacher",
       "teacherSelf": "{name} (Me)",
       "pickTeacherTitle": "Select a teacher to view their sessions",
-      "pickTeacherBody": "You have no teaching schedule. Select a teacher above to take their class's attendance, or open the attendance reports and monitor below.",
+      "pickTeacherBody": "You have no teaching schedule. Select a teacher above to take their class's attendance, or open the attendance reports and monitor with the buttons at the top of the page.",
       "openReports": "Open attendance reports",
       "myReportLink": "My attendance report",
-      "openMonitor": "Open the attendance monitor",
+      "openMonitor": "Attendance monitor",
+      "staffHubTitle": "Class attendance is taken by the teaching staff",
+      "staffHubBody": "Class attendance is taken by the teaching staff; from here you follow the results.",
       "notSchoolDayTitle": "Not a school day",
       "notSchoolDayBody": "This date is not a school day according to the academic calendar.",
       "noScheduleTitle": "No teaching schedule",
@@ -747,7 +1197,7 @@
         "back": "Attendance",
         "backToList": "Back to attendance list",
         "correctionMode": "Correction mode",
-        "searchPlaceholder": "Search student",
+        "searchPlaceholder": "Search students",
         "filterByStatus": "Filter by status",
         "blocked": "Locked",
         "noMatch": "No matching students.",
@@ -759,7 +1209,7 @@
         "menuBack": "Back",
         "rowChanged": "This row changed since it was last saved",
         "markAllPresent": "Mark everyone present",
-        "markAllPresentHint": "Sick, excused, and dispensation statuses are not overwritten.",
+        "markAllPresentHint": "Sick, excused and dispensation stay as they are.",
         "resetChanges": "Discard changes",
         "previousStatus": "Previously: {status}",
         "source": {
@@ -785,20 +1235,46 @@
         "violations": {
           "menuLabel": "Record a violation",
           "title": "Violations",
-          "empty": "No violation types."
-        }
+          "empty": "No violation types.",
+          "loading": "Loading violation types…",
+          "points": "{points} pts"
+        },
+        "tabsLabel": "Session sections",
+        "markedAllPresent": "Everyone marked present",
+        "rosterLabel": "Students"
       },
       "editor": {
         "timeRange": "Period {start}-{end}",
         "saveSummary": "{total} students · {changed} changed from present",
         "recapSummary": "This year: {summary}",
         "recapAllClear": "This year: nothing to note."
-      }
+      },
+      "daySummary": "{total, plural, one {# session} other {# sessions}} · {saved} saved · {pending} to fill",
+      "otherSessions": "Other sessions",
+      "daySessions": "Teaching sessions",
+      "heroOngoing": "Lesson now",
+      "heroNext": "Next lesson",
+      "viewSaved": "View attendance",
+      "pickTeacherHint": "To fill in or correct a class's attendance, pick its teacher above.",
+      "schoolToday": {
+        "eyebrow": "School attendance today",
+        "title": "Follow the school's attendance",
+        "body": "See each class's record in the reports, or the classes in session on the monitor.",
+        "progressTitle": "{submitted} of {total} classes have filled in",
+        "progressBody": "Classes in session that have saved their attendance.",
+        "noneRunning": "No class is in session right now.",
+        "openReports": "Open attendance reports",
+        "openMonitor": "Open the monitor",
+        "bodyReportsOnly": "See each class's record in the reports.",
+        "openReportsHub": "Open the reports centre"
+      },
+      "openSchedule": "Open schedule",
+      "leaveLetterNote": "Leave letter {number}"
     },
     "homeroom": {
       "eyebrow": "Academic",
       "title": "Homeroom",
-      "titleWithClass": "Homeroom {className}",
+      "titleWithClass": "Homeroom class {className}",
       "dateLabel": "Date",
       "searchPlaceholder": "Search name or NIS",
       "statusFilterLabel": "Status",
@@ -857,17 +1333,30 @@
       "exitPermitsTitle": "Exit permits awaiting approval",
       "exitPermitsEmpty": "No exit permits are waiting.",
       "unknownStudent": "Student",
-      "pointsBadge": "{points} points"
+      "pointsBadge": "{points} points",
+      "tabsLabel": "Homeroom sections",
+      "prevDay": "Previous day",
+      "nextDay": "Next day",
+      "today": "Today",
+      "statsLabel": "Class summary",
+      "attentionCount": "{count, plural, one {# student needs attention} other {# students need attention}}",
+      "attentionNoneTitle": "Every student is accounted for",
+      "attentionBreakdown": "{absent} absent · {incomplete} with attendance still incomplete",
+      "attentionOpen": "Open in class attendance",
+      "attentionListTitle": "To contact",
+      "contactEmpty": "No guardians to contact.",
+      "noHomeroomAdminBody": "This page shows the daily summary of a homeroom class. Homeroom teachers are set in the duty assignments.",
+      "openAssignments": "Open assignments"
     },
     "substitutions": {
       "eyebrow": "Academic",
       "title": "Substitute teachers",
       "request": "Request a substitute",
       "todayBadge": "Today",
-      "incoming": "Incoming",
-      "outgoing": "Outgoing",
+      "incoming": "For me",
+      "outgoing": "From me",
       "emptyTitle": "No requests yet",
-      "emptyIncomingBody": "Requests from colleagues to cover your schedule show up here.",
+      "emptyIncomingBody": "Requests from colleagues asking you to cover their lessons show up here.",
       "emptyOutgoingBody": "Requests you sent to colleagues show up here.",
       "fromTeacher": "From",
       "toTeacher": "To",
@@ -897,7 +1386,8 @@
         "sent": "Request sent",
         "cancel": "Cancel",
         "send": "Send request"
-      }
+      },
+      "directionLabel": "Request direction"
     },
     "permits": {
       "workflow": {
@@ -914,28 +1404,29 @@
           "qr_scan": "QR scan",
           "manual": "Manual review",
           "auto": "Automatic"
+        },
+        "outcome": {
+          "approved": "Approved"
         }
       },
       "scan": {
         "placeholder": "Paste or type the code under the QR",
         "submit": "Submit code",
-        "cameraLabel": "Scan with camera"
+        "cameraLabel": "Scan with camera",
+        "failedTitle": "Code not accepted"
       },
       "classroomEntry": {
         "navLabel": "Scan classroom entry",
-        "eyebrow": "Students",
-        "title": "Scan classroom entry",
-        "intro": "Scan the QR your teacher displays at the front of the room to record your attendance for the running session.",
+        "intro": "Point the camera at the QR your teacher shows at the front of the class to record your attendance for the running lesson.",
         "scanLabel": "Classroom entry code",
-        "placeholder": "Paste or type the code under the QR",
+        "placeholder": "The code under the QR",
         "submit": "Submit code",
-        "cameraLabel": "Scan with camera",
         "successTitle": "Recorded",
-        "successBody": "You are recorded as present in {teacher}'s class at {time}.",
-        "scanAgain": "Scan again",
+        "successBody": "Checked into {teacher}'s class at {time}.",
         "errorTitle": "Scan failed",
         "studentsOnlyTitle": "Students only",
-        "studentsOnlyBody": "Students use this page to scan the classroom-entry QR shown by a teacher. Your account is not a student account."
+        "studentsOnlyBody": "Students use this page to scan the classroom-entry QR shown by a teacher. Your account is not a student account.",
+        "backHome": "Go home"
       },
       "qr": {
         "expiresIn": "Valid for {seconds} more seconds",
@@ -943,7 +1434,7 @@
         "renew": "Generate a new code"
       },
       "exit": {
-        "eyebrow": "Student Affairs",
+        "eyebrow": "Student affairs",
         "title": "Exit permits",
         "tabMine": "My permits",
         "tabQueue": "Queue",
@@ -975,21 +1466,33 @@
           "stagesHint": "After submitting, ask the duty teacher and then your class teacher to scan and approve. The gate QR appears after the last stage.",
           "requiredError": "Destination and period range are required.",
           "created": "Exit permit requested",
-          "submit": "Submit"
+          "submit": "Submit",
+          "required": "Required.",
+          "cancel": "Cancel",
+          "description": "Write where you are going and which periods you will miss."
         },
         "approve": {
-          "hint": "Ask the student for their permit code, then show the approval QR for them to scan.",
+          "hint": "Ask the student for their permit code, type or scan it, then let the student scan the approval QR that appears.",
           "permitCode": "Student's permit code",
-          "showQr": "Show approval QR"
+          "showQr": "Show approval QR",
+          "title": "Approve an exit permit stage",
+          "permitCodePlaceholder": "Type or paste the permit code",
+          "qrLabel": "Exit permit approval QR code",
+          "class": "Class",
+          "destination": "Destination"
         },
         "gate": {
-          "hint": "Scan the gate QR the student shows, or paste its code.",
+          "hint": "Point the camera at the gate QR on the student's phone. The result shows under the camera.",
           "payloadLabel": "Gate QR code",
           "needPayload": "The gate code must come from the student's QR.",
           "passed": "Student cleared to leave",
           "lastTitle": "Last exit",
           "todayListTitle": "Just cleared the gate",
-          "undoLast": "Hide from this list"
+          "undoLast": "Hide from this list",
+          "title": "Scan the gate QR",
+          "refused": "Cannot leave",
+          "todayListHint": "Kept on this screen while the page stays open.",
+          "todayListEmpty": "No student has passed the gate yet."
         },
         "queue": {
           "emptyTitle": "Nothing waiting right now",
@@ -1000,10 +1503,30 @@
           "process": "Process",
           "awaitingGate": "Awaiting gate scan",
           "yearlyReportLink": "Yearly exit-permit report"
-        }
+        },
+        "periodRange": "{from} to {to}",
+        "openedAt": "Requested at {time}",
+        "hero": {
+          "activeEyebrow": "Exit permit in progress",
+          "approvedEyebrow": "Ready for the gate",
+          "exitedEyebrow": "Left school",
+          "exitedAt": "Through the gate at {time}",
+          "scanStage": "Scan the {stage} QR",
+          "scanHint": "Ask the {stage} to show the approval QR, then point the camera at it."
+        },
+        "codeHint": "Show this code to the approving teacher.",
+        "waitManual": "Waiting for {stage} to review.",
+        "gateQrLabel": "Exit permit gate QR code",
+        "lessons": "Periods",
+        "opened": "Requested",
+        "exitedLabel": "Through the gate",
+        "idleTitle": "No exit permit in progress",
+        "idleBody": "Need to leave school during lessons? Request a permit, then ask a teacher to scan at each stage. The gate QR appears after the last stage.",
+        "historyTitle": "Exit permit history",
+        "modeLabel": "Task on this page"
       },
       "late": {
-        "eyebrow": "Student Affairs",
+        "eyebrow": "Student affairs",
         "title": "Late arrivals",
         "tabQueue": "Duty queue",
         "tabMine": "Me",
@@ -1034,24 +1557,38 @@
         "reviewHint": "After review, the student scans the leadership QR to close the flow.",
         "reviewed": "Review saved",
         "cancel": "Cancel",
-        "submitReview": "Save review"
+        "submitReview": "Save review",
+        "noAccessTitle": "For students",
+        "noAccessBody": "Students who arrive late scan the QR at the duty desk from this page. The duty teacher reviews them on the Today's duty page.",
+        "scanTitle": "Scan the QR at the duty desk",
+        "scanBody": "Arrived late? Point the camera at the late-arrival QR at the duty desk. Your name goes straight into the duty teacher's queue.",
+        "reasonHint": "Fill it in before scanning.",
+        "reasonPlaceholder": "For example: flat tyre on the way",
+        "hero": {
+          "eyebrow": "Late arrival #{n}",
+          "title": "Recorded at {time}",
+          "scanStage": "Scan the {stage} QR",
+          "scanHint": "Ask the {stage} to show the QR, then point the camera at it."
+        }
       },
       "leave": {
-        "eyebrow": "Student Affairs",
-        "title": "Planned leave",
+        "eyebrow": "Student affairs",
+        "title": "Absence leave",
         "tabQueue": "Queue",
         "tabMine": "My requests",
         "noAccessTitle": "No access",
         "noAccessBody": "Your role is not part of the planned leave flow.",
-        "issuerQueueUnavailableTitle": "Requests to issue arrive as notifications",
-        "issuerQueueUnavailableBody": "Requests awaiting letter issuance are linked from your notifications. Open the related notification to view and issue the letter.",
+        "issuerQueueUnavailableTitle": "Leave letters are issued from notifications",
+        "issuerQueueUnavailableBody": "Every request the homeroom teacher approves is sent to your notifications. Open the notification to see the request and issue its letter.",
+        "issuerQueueInboxBody": "Requests the homeroom teacher approved wait in the leave queue. Open it to review them and issue their letters.",
         "openNotifications": "Open notifications",
         "notFoundTitle": "Request not found",
         "notFoundBody": "This request is no longer available or is not part of your duties.",
         "submit": "Request leave",
-        "emptyTitle": "No requests yet",
-        "emptyBody": "Sick, ceremony or dispensation leave you request shows up here.",
+        "emptyTitle": "No leave requests yet",
+        "emptyBody": "Sick, a religious ceremony or a dispensation? Request leave here and your homeroom teacher reviews it.",
         "detailTitle": "Leave request",
+        "pageTitle": "{category, select, sick {Sick leave} religious_ceremony {Religious ceremony leave} dispensation {Dispensation leave} other {Other leave}}",
         "mine": {
           "tileTotal": "Total requests",
           "tileInProgress": "In progress",
@@ -1085,7 +1622,8 @@
         "issueLetter": "Issue letter",
         "issued": "Leave letter issued",
         "issuedTitle": "Leave letter issued",
-        "issuedBody": "Attendance for the leave dates is filled automatically. The letter can be downloaded above.",
+        "issuedBody": "Attendance for the leave dates has been filled automatically.",
+        "letterIssuedStep": "Letter issued",
         "queueEmptyTitle": "No requests waiting",
         "queueEmptyBody": "Requests from your homeroom class, or awaiting letter issuance, show up here.",
         "cancel": "Cancel",
@@ -1101,7 +1639,7 @@
           "startsOn": "From",
           "endsOn": "To",
           "reason": "Details",
-          "evidence": "Evidence (optional)",
+          "evidence": "Evidence",
           "evidenceAdd": "Take or upload an evidence photo",
           "evidenceRemove": "Remove selected evidence",
           "evidenceCompressed": "Compressed to {size}",
@@ -1110,8 +1648,27 @@
           "requiredError": "Dates and details are required.",
           "rangeError": "End date cannot be before the start date.",
           "submitted": "Request sent to the homeroom teacher",
-          "send": "Send request"
-        }
+          "send": "Send request",
+          "description": "Fill in the dates and details. Evidence can be attached now or later.",
+          "dates": "Leave dates",
+          "datesHint": "Pick one day, or a start date and then an end date.",
+          "datesRequired": "Pick the leave dates.",
+          "reasonRequired": "Write a short explanation.",
+          "reasonPlaceholder": "For example: fever since last night",
+          "evidencePreview": "Evidence photo preview",
+          "stagesHint": "After you send it, your homeroom teacher reviews the request and the counselor issues the leave letter."
+        },
+        "hero": {
+          "eyebrow": "Request in progress",
+          "letterPending": "Waiting for the letter",
+          "detail": "View details"
+        },
+        "days": "{count, plural, one {# day} other {# days}}",
+        "historyTitle": "Request history",
+        "letterNumberShort": "Letter {number}",
+        "opened": "Requested",
+        "issuerTitle": "Issuing leave letters",
+        "issuerOpenInbox": "Open the leave queue"
       },
       "review": {
         "tabWithCount": "{label} {count}",
@@ -1125,10 +1682,10 @@
     "verify": {
       "title": "Document verification",
       "notFoundTitle": "Unknown code",
-      "notFoundBody": "No document matches this code, or the code is wrong.",
-      "validTitle": "Genuine document issued by the school",
+      "notFoundBody": "Check the code printed on the document, or ask the school directly.",
+      "validTitle": "Genuine document",
       "revokedTitle": "This document has been revoked",
-      "number": "Number",
+      "number": "Document number",
       "kind": "Kind",
       "kinds": {
         "leave_letter": "Leave letter",
@@ -1137,11 +1694,18 @@
       "issuedAt": "Issued",
       "student": "Student",
       "validity": "Valid",
-      "footer": "This page shows only the minimum needed to confirm the document is genuine."
+      "footer": "This page shows only the minimum needed to confirm the document is genuine.",
+      "validBody": "This document was issued by {school} and is on record as valid.",
+      "revokedBody": "{school} has revoked this document, so it is no longer valid.",
+      "code": "Verification code",
+      "checkedAt": "Checked {time}",
+      "errorTitle": "The check could not finish",
+      "errorBody": "Check the internet connection, then try again.",
+      "retry": "Try again"
     },
     "school": {
       "users": {
-        "eyebrow": "School Data",
+        "eyebrow": "School data",
         "title": "Teachers, staff and students",
         "columns": {
           "name": "Name",
@@ -1171,11 +1735,6 @@
         "includeArchived": "Show archived",
         "emptyTitle": "No users yet",
         "emptyBody": "Add teachers, staff and students one by one or through import.",
-        "loadErrorTitle": "The user list could not be loaded",
-        "loadErrorBody": "Check your connection, then try again.",
-        "retry": "Try again",
-        "pagePrev": "Previous",
-        "pageNext": "Next",
         "resetTitle": "Password reset link",
         "resetBody": "Share this link with the user. It works once and expires in 30 minutes.",
         "actions": {
@@ -1189,10 +1748,12 @@
           "restored": "User restored",
           "impersonate": "Sign in as this user",
           "impersonateBody": "You will act as {name} for up to 30 minutes. Everything done during that time is logged.",
-          "import": "Import users"
+          "impersonatePrepareFailed": "Impersonation not started: the web app could not release your account's page session. Try again in a moment.",
+          "import": "Import users",
+          "menuFor": "Actions for {name}"
         },
         "form": {
-          "createTitle": "New user",
+          "createTitle": "Add user",
           "editTitle": "Edit user",
           "name": "Full name",
           "username": "Username",
@@ -1204,7 +1765,7 @@
           "nip": "Employee number",
           "roles": "Roles",
           "primary": "Primary",
-          "passwordHint": "A random initial password is set. Use Reset password to share a set-password link.",
+          "passwordHint": "A random initial password is set. Use the Reset password button to share a set-password link.",
           "requiredError": "Name and at least one role are required.",
           "created": "User created",
           "updated": "Changes saved",
@@ -1213,30 +1774,22 @@
           "primaryRole": "Primary role",
           "primaryRolePlaceholder": "Choose a primary role",
           "primaryRoleHint": "The primary role sets the user's base access and must be a system role.",
-          "teacherLeaveHint": "Reviewing leave requests and issuing leave letters do not come with the teacher role. Grant them through a duty assignment under School Data > Assignments.",
+          "teacherLeaveHint": "Reviewing leave requests and issuing leave letters do not come with the teacher role. Grant them through a duty assignment under School data > Assignments.",
           "additionalRoles": "Additional roles",
           "additionalRolesHint": "Additional roles can only be custom roles (not system roles).",
-          "noCustomRoles": "No custom roles yet. Create one under Settings > Roles and Access."
+          "noCustomRoles": "No custom roles yet. Create one under Settings > Roles and access."
         },
         "import": {
-          "eyebrow": "School Data",
           "title": "Import users",
           "description": "Download the template, fill it in outside the system, upload it back, then check the outcome before anything is actually created.",
-          "steps": {
-            "upload": "Upload",
-            "preview": "Preview",
-            "done": "Done"
-          },
-          "step1Title": "1. Download the template",
           "step1Body": "The template includes an example row and a Referensi sheet listing the accepted codes for each column (gender, blood type, role, and so on).",
           "downloadTemplate": "Download XLSX template",
-          "step2Title": "2. Upload the filled-in file",
           "step2Body": "Up to 5000 rows in one file. Blank rows are skipped.",
           "mode": {
             "label": "Import mode",
             "create": "Create only",
             "upsert": "Create and update",
-            "createBody": "Every row creates a new user. A row whose username is already taken is an error.",
+            "createBody": "Every row creates a new user. A row whose username is already taken is rejected.",
             "upsertBody": "A row whose username matches an existing user updates that user's profile instead of failing; an unmatched row still creates a new user. Username and password are never changed.",
             "updateRolesLabel": "Also update roles",
             "updateRolesBody": "When on, a matched row's role replaces the existing user's role. Requires the manage permissions right; off by default so an import never changes who holds which role."
@@ -1248,12 +1801,6 @@
             "no-sheet": "The file has no data sheet at all.",
             "empty": "No data rows could be read from this file."
           },
-          "step3Title": "3. Preview",
-          "rowCount": "{n} rows",
-          "createCount": "{n} to create",
-          "updateCount": "{n} to update",
-          "unchangedCount": "{n} unchanged",
-          "invalidCount": "{n} invalid rows",
           "blockedTitle": "Not ready to import",
           "blockedBody": "The import runs as one transaction: as long as a single row is invalid, nothing at all will be written. Fix the flagged rows, then upload the file again.",
           "readyTitle": "Ready to import",
@@ -1281,17 +1828,32 @@
               "unchanged": "Unchanged",
               "error": "Invalid"
             }
-          }
-        }
+          },
+          "prepareTitle": "Prepare the file",
+          "fileLabel": "User file",
+          "reviewTitle": "Review the result",
+          "rowsLabel": "Rows",
+          "createLabel": "To create",
+          "updateLabel": "To update",
+          "unchangedLabel": "Unchanged",
+          "invalidLabel": "Invalid",
+          "backToUsers": "Back to the user list"
+        },
+        "moreRoles": "+{n} roles",
+        "resetConfirmBody": "Create a password reset link for {name}? Their current password keeps working until the link is used.",
+        "resetCopy": "Copy link",
+        "resetCopied": "Link copied",
+        "resetCopyFailed": "The link could not be copied. Select the text and copy it yourself.",
+        "resetLinkLabel": "Reset link"
       },
       "classes": {
-        "eyebrow": "School Data",
-        "title": "Students & Classes",
+        "eyebrow": "School data",
+        "title": "Students and classes",
         "addClass": "Add class",
         "editClass": "Edit class",
         "emptyTitle": "No classes yet",
-        "emptyBody": "Create classes for the active year, then place students.",
-        "homeroomLabel": "Homeroom",
+        "emptyBody": "Create classes for the active academic year, then place students.",
+        "homeroomLabel": "Homeroom teacher",
         "noHomeroom": "not set",
         "capacityLabel": "capacity {n}",
         "tabStudents": "Students",
@@ -1299,14 +1861,17 @@
         "studentCount": "{n, plural, one {# student} other {# students}}",
         "rosterOfCapacity": "{n}/{max} students",
         "assignStudents": "Place students",
-        "noStudents": "No students in this class yet.",
+        "noStudents": "No students in this class yet",
         "searchStudent": "Search student",
         "rowActionsMenu": "More actions for {name}",
         "noUnassigned": "Every student already has a class.",
         "assigned": "{n} students placed",
         "assignCount": "Place ({n})",
-        "noTeachers": "No subject teachers yet.",
+        "noTeachers": "No subject teachers yet",
         "removeTeaching": "Remove",
+        "removeTeachingTitle": "Remove this teacher assignment?",
+        "removeTeachingBody": "{subject} taught by {teacher} will be removed from this class.",
+        "teachingRemoved": "Teacher assignment removed",
         "addTeaching": "Add",
         "teachingAdded": "Subject teacher added",
         "deactivateTeaching": "Deactivate",
@@ -1319,44 +1884,86 @@
         "pickSubject": "Subject",
         "pickTeacher": "Teacher",
         "moveStudent": "Move student",
-        "moveBody": "Move {name} to a different class. Their enrollment history in this class is kept.",
+        "moveBody": "Move {name} to another class. Their history in this class is kept.",
         "moveTargetClass": "Target class",
         "moveTargetPlaceholder": "Pick a class",
         "moveEffectiveOn": "Effective from",
         "moveSubmit": "Move",
         "moved": "Student moved",
         "leaveStudent": "Student left school",
-        "leaveBody": "Mark {name} as having left the school. Their active enrollment in this class is closed; history is kept.",
+        "leaveBody": "Mark {name} as having left the school. The placement in this class is closed and its history is kept.",
         "leaveOn": "Left on",
         "leaveSubmit": "Mark as left",
         "studentLeft": "Student marked as left",
         "form": {
           "name": "Class name",
-          "grade": "Grade",
+          "grade": "Grade level",
           "homeroom": "Homeroom teacher",
           "capacity": "Capacity",
           "pick": "Pick",
-          "requiredError": "Name and grade are required.",
           "saved": "Class saved",
           "cancel": "Cancel",
-          "save": "Save"
+          "save": "Save",
+          "nameRequired": "Enter the class name.",
+          "gradeRequired": "Choose a grade level.",
+          "capacityHint": "Leave empty for no limit.",
+          "capacityUnit": "students"
         },
-        "searchClasses": "Search classes",
+        "searchClasses": "Search classes or students",
         "allGrades": "All grade levels",
         "deleteClass": "Delete class",
         "deleteClassBody": "Delete class {name}? Classes with students or teaching assignments cannot be deleted. Historical data is retained.",
         "classDeleted": "Class deleted.",
         "rosterExport": {
           "button": "Download roster",
-          "defaultTitle": "Class Roster",
+          "defaultTitle": "Student list",
           "scopeClass": "Class",
           "scopeGradeLevel": "Grade level",
           "scopeClassPlaceholder": "Choose a class",
-          "scopeGradeLevelPlaceholder": "Choose a grade level"
+          "scopeGradeLevelPlaceholder": "Choose a grade level",
+          "scope": "Scope",
+          "columns": {
+            "nis": "NIS",
+            "nisn": "NISN",
+            "name": "Student name",
+            "gender": "Gender",
+            "birth_place": "Place of birth",
+            "birth_date": "Date of birth",
+            "guardian_name": "Guardian name"
+          }
+        },
+        "pickClass": "Choose a class",
+        "studentResults": "Students",
+        "classList": "Classes",
+        "noHomeroomShort": "No homeroom teacher yet",
+        "noHomeroomLine": "No homeroom teacher yet",
+        "classActions": "Actions for class {name}",
+        "detailTabs": "Class contents",
+        "deleteClassTitle": "Delete class {name}?",
+        "emptyBodyReader": "The school office has not created classes for the active year yet.",
+        "noStudentsBody": "Place students who have no class this academic year.",
+        "noTeachersBody": "Pick a subject and a teacher below to add one.",
+        "addTeachingTitle": "Add a subject teacher",
+        "subjectLabel": "Subject",
+        "teacherLabel": "Teacher",
+        "assignBody": "The students you pick join this class from today.",
+        "pickAll": "Select all",
+        "pickedCount": "{n} selected",
+        "selectedStudents": "{n} selected students",
+        "moveSelected": "Move",
+        "leaveSelected": "Mark as left",
+        "movedCount": "{n} students moved",
+        "leftCount": "{n} students marked as left",
+        "columns": {
+          "number": "No.",
+          "name": "Name",
+          "nis": "NIS",
+          "joined": "Joined",
+          "actions": "Actions"
         }
       },
       "subjects": {
-        "eyebrow": "School Data",
+        "eyebrow": "School data",
         "title": "Subjects",
         "add": "Add subject",
         "edit": "Edit",
@@ -1376,7 +1983,7 @@
         "emptyBody": "Add the subjects taught at the school."
       },
       "periods": {
-        "eyebrow": "School Data",
+        "eyebrow": "School data",
         "title": "Periods",
         "template": "Template",
         "default": "default",
@@ -1413,10 +2020,14 @@
         "templateUpdated": "Template name updated",
         "templateDeleted": "Template deleted",
         "deleteTemplateTitle": "Delete this template?",
-        "deleteTemplateBody": "\"{name}\" will be deleted. It cannot be deleted while a school day still uses it."
+        "deleteTemplateBody": "\"{name}\" will be deleted. It cannot be deleted while a school day still uses it.",
+        "deletePeriodTitle": "Delete this period?",
+        "deletePeriodBody": "\"{name}\" will be removed from this template.",
+        "periodDeleted": "Period deleted",
+        "actions": "Actions"
       },
       "duties": {
-        "eyebrow": "School Data",
+        "eyebrow": "School data",
         "title": "Duties",
         "assign": "Assign duty",
         "activeCount": "{n, plural, one {# active assignment} other {# active assignments}}",
@@ -1473,6 +2084,18 @@
             "nameTaken": "Another duty type already uses this name. Choose a different name."
           }
         }
+      },
+      "importFlow": {
+        "steps": {
+          "upload": "Upload",
+          "preview": "Review",
+          "done": "Done"
+        },
+        "chooseOther": "Change file",
+        "noFile": "No file yet",
+        "showRows": "Show rows",
+        "allRows": "All rows",
+        "problemRows": "With problems"
       }
     },
     "roles": {
@@ -1480,7 +2103,8 @@
       "title": "Roles and access",
       "addRole": "Add role",
       "system": "Built-in",
-      "systemHint": "Built-in roles cannot change. Create a new role for a custom permission set.",
+      "systemHint": "Built-in roles cannot be changed. For another combination of permissions, create a new role.",
+      "systemHintReadOnly": "Built-in role, view only.",
       "deleteRole": "Delete role",
       "deleteBody": "The {name} role will be deleted. Users holding it lose its permissions.",
       "deleted": "Role deleted",
@@ -1523,7 +2147,7 @@
         "grading": "Grading",
         "reporting": "Reporting"
       },
-      "dutyOnlyHint": "Cannot be granted directly to the teacher role. Grant it through a duty assignment under School Data > Assignments.",
+      "dutyOnlyHint": "Cannot be granted directly to the teacher role. Grant it through a duty assignment under School data > Assignments.",
       "permissions": {
         "approve_child_leave_requests": {
           "label": "Approve child's leave",
@@ -1879,7 +2503,29 @@
         }
       },
       "permissionCount": "{granted} of {total} permissions",
-      "unsaved": "You have unsaved changes"
+      "unsaved": "You have unsaved changes",
+      "rolesTitle": "Roles",
+      "custom": "Custom",
+      "roleMetaUsers": "{kind} · {count, plural, one {# user} other {# users}}",
+      "roleTally": "{granted} of {total} permissions granted",
+      "rolePicker": "Role",
+      "roleOptionUnsaved": "{name} (not saved)",
+      "searchLabel": "Search permissions",
+      "searchPlaceholder": "Search permissions",
+      "scopeLabel": "Show permissions",
+      "scopeAll": "All",
+      "scopeGranted": "Granted",
+      "selectAll": "Grant every {group} permission",
+      "changed": "Changed",
+      "grantedState": "(granted)",
+      "notGrantedState": "(not granted)",
+      "unsavedRole": "{count, plural, one {# permission change} other {# permission changes}} to {name} not saved yet",
+      "leaveConfirm": "Unsaved permission changes will be lost. Leave this page anyway?",
+      "nameRequired": "Enter a role name.",
+      "slugRequired": "Enter a role code.",
+      "slugFormat": "Use lowercase letters, digits and underscores only.",
+      "slugHint": "Filled in from the name. Lowercase letters, digits and underscores, e.g. boarding_mentor.",
+      "create": "Create role"
     }
   }
 }

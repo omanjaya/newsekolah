@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Select, Skeleton, Textarea, useToast } from "@newsekolah/ui";
+import { Field, Button, Select, Skeleton, Textarea, useToast } from "@newsekolah/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -59,9 +59,10 @@ export function MentorTermSummaryPanel({
   }));
 
   return (
-    <div className="flex flex-col gap-4">
-      <label className="flex max-w-xs flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("term")}</span>
+    // A line of prose is easier to write and read at a measure, not the
+    // full width of a desktop card.
+    <div className="flex max-w-prose flex-col gap-4">
+      <Field label={t("term")}>
         <Select
           options={termOptions}
           value={termId}
@@ -71,28 +72,29 @@ export function MentorTermSummaryPanel({
           }}
           placeholder={t("termPlaceholder")}
         />
-      </label>
+      </Field>
 
       {termId === "" ? (
-        <p className="text-[13px] text-fg-muted">{t("selectTermFirst")}</p>
+        <p className="text-body-sm text-fg-muted">{t("selectTermFirst")}</p>
       ) : summary.isLoading ? (
         <Skeleton className="h-32 w-full" aria-busy="true" />
       ) : (
-        <div className="flex flex-col gap-3">
-          {notFound && !canWrite && <p className="text-[13px] text-fg-muted">{t("empty")}</p>}
-          <Textarea
-            rows={6}
-            value={text}
-            disabled={!canWrite}
-            onChange={(e) => {
-              setDraft(e.target.value);
-            }}
-            placeholder={canWrite ? t("placeholder") : undefined}
-          />
+        <>
+          <Field label={t("summaryLabel")} hint={notFound && !canWrite ? t("empty") : undefined}>
+            <Textarea
+              rows={6}
+              value={text}
+              disabled={!canWrite}
+              onChange={(e) => {
+                setDraft(e.target.value);
+              }}
+              placeholder={canWrite ? t("placeholder") : undefined}
+            />
+          </Field>
           {canWrite && (
-            <div>
+            <div className="flex justify-end">
               <Button
-                size="sm"
+                className="max-sm:w-full"
                 loading={write.isPending}
                 disabled={text.trim() === "" || text === (summary.data?.summary ?? "")}
                 onClick={() => {
@@ -114,7 +116,7 @@ export function MentorTermSummaryPanel({
               </Button>
             </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );

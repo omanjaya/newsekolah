@@ -1,6 +1,6 @@
 "use client";
 
-import { Input, StickySaveBar } from "@newsekolah/ui";
+import { Button, Input, StickySaveBar } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -36,9 +36,10 @@ export function SessionSaveBar({
 
   return (
     <StickySaveBar
+      container="default"
       leadingSlot={
         <div className="flex flex-col gap-1.5 md:flex-1">
-          <span className="text-[13px] text-fg-muted">
+          <span className="text-body-sm text-fg-muted">
             {tEditor("saveSummary", { total: studentTotal, changed: changedFromDefaultCount })}
           </span>
           {isCorrection && (
@@ -56,11 +57,11 @@ export function SessionSaveBar({
       }
       trailingSlot={
         formError && (
-          <span role="alert" className="flex items-center gap-2 text-[13px] text-status-absent">
+          <span role="alert" className="flex items-center gap-2 text-body-sm text-danger">
             {formError}
-            <button type="button" className="font-medium underline" onClick={onSave}>
+            <Button variant="link" size="sm" onClick={onSave}>
               {t("retry")}
-            </button>
+            </Button>
           </span>
         )
       }

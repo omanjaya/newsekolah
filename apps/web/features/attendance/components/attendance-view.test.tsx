@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type * as ReferenceApiModule from "../../reference/api";
@@ -23,17 +23,25 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+vi.mock("../../dashboard/api", () => ({
+  useAdminDashboardQuery: () => ({ data: undefined }),
+}));
+
 vi.mock("@newsekolah/i18n", () => ({
   formatTime: () => "07:10",
 }));
 
 const mePermissions: string[] = ["view_reports", "view_monitor_presence"];
-const meRoleSlug = "teacher";
+let meRoleSlug = "teacher";
 
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({
     me: {
       id: "me-1",
+      permissions: mePermissions,
+      profile_kind: "teacher",
+      modules: [],
       tenant: { timezone: "Asia/Jakarta" },
       roles: [{ id: "r1", slug: meRoleSlug, name: "Guru" }],
     },
@@ -110,34 +118,7 @@ function session(overrides: Partial<SessionSummary> & { schedule_id: string }): 
 }
 
 describe("DaySessions", () => {
-  it("spans the last card full width for an odd session count", () => {
-    todaySessions = [
-      session({ schedule_id: "s1" }),
-      session({ schedule_id: "s2" }),
-      session({ schedule_id: "s3" }),
-    ];
-    render(<DaySessions />);
-
-    const cells = ["s1", "s2", "s3"].map((id) =>
-      screen.getByTestId(`attendance-session-cell-${id}`),
-    );
-    expect(cells[0]?.className).not.toContain("lg:col-span-2");
-    expect(cells[1]?.className).not.toContain("lg:col-span-2");
-    expect(cells[2]?.className).toContain("lg:col-span-2");
-  });
-
-  it("does not span any card for an even session count", () => {
-    todaySessions = [session({ schedule_id: "s1" }), session({ schedule_id: "s2" })];
-    render(<DaySessions />);
-
-    for (const id of ["s1", "s2"]) {
-      expect(screen.getByTestId(`attendance-session-cell-${id}`).className).not.toContain(
-        "lg:col-span-2",
-      );
-    }
-  });
-
-  it("gives the running session card the accent ring", () => {
+  it("makes the running, unsubmitted session the hero with the fill action", () => {
     todaySessions = [
       // 07:10 falls inside p1 (07:00-07:40): this one is "ongoing".
       session({ schedule_id: "running", start_period_id: "p1", end_period_id: "p1" }),
@@ -146,31 +127,26 @@ describe("DaySessions", () => {
     ];
     render(<DaySessions />);
 
-    const runningCard = screen.getByTestId("attendance-session-card-running");
-    const futureCard = screen.getByTestId("attendance-session-card-future");
-    expect(runningCard.className).toContain("ring-accent");
-    expect(futureCard.className).not.toContain("ring-accent");
-  });
-
-  it("shows the primary fill action for the running, unsubmitted session", () => {
-    todaySessions = [
-      session({ schedule_id: "running", start_period_id: "p1", end_period_id: "p1" }),
-    ];
-    render(<DaySessions />);
-
+    const hero = screen.getByTestId("attendance-session-hero");
+    expect(hero).toHaveTextContent("Matematika · Kelas 10 A");
     expect(screen.getByRole("button", { name: "fillAttendance" })).toBeInTheDocument();
+    // The other session is a row of the list, marked as the next one.
+    const row = screen.getByTestId("attendance-session-row-future");
+    expect(row).toHaveTextContent("nextBadge");
+    expect(screen.queryByTestId("attendance-session-row-running")).not.toBeInTheDocument();
   });
 
-  it("shows the secondary open action for a future, unsubmitted session", () => {
+  it("makes the next session the hero, with the quieter open action, when none is running", () => {
     todaySessions = [
       session({ schedule_id: "future", start_period_id: "p2", end_period_id: "p2" }),
     ];
     render(<DaySessions />);
 
+    expect(screen.getByTestId("attendance-session-hero")).toHaveTextContent("heroNext");
     expect(screen.getByRole("button", { name: "openSubmitted" })).toBeInTheDocument();
   });
 
-  it("shows a clickable saved badge for a submitted session", () => {
+  it("shows a submitted session's saved time and no fill action", () => {
     todaySessions = [
       session({
         schedule_id: "saved",
@@ -182,19 +158,66 @@ describe("DaySessions", () => {
     render(<DaySessions />);
 
     expect(screen.queryByRole("button", { name: "fillAttendance" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "openSubmitted" })).not.toBeInTheDocument();
-    const savedButtons = screen
-      .getAllByRole("button")
-      .filter((b) => b.textContent.includes("statusSavedAt"));
-    expect(savedButtons).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "viewSaved" })).toBeInTheDocument();
+    expect(screen.getByText(/statusSavedAt/)).toBeInTheDocument();
   });
 
-  it("renders exactly three stat tiles for the day", () => {
+  it("opens any listed session from its whole row", () => {
+    todaySessions = [
+      session({ schedule_id: "running", start_period_id: "p1", end_period_id: "p1" }),
+      session({ schedule_id: "future", start_period_id: "p2", end_period_id: "p2" }),
+    ];
+    render(<DaySessions />);
+
+    const row = screen.getByTestId("attendance-session-row-future");
+    expect(within(row).getByRole("button", { name: /Matematika · Kelas 10 A/ })).toBeEnabled();
+  });
+
+  it("sums the day up in one line under the title", () => {
+    todaySessions = [
+      session({ schedule_id: "s1" }),
+      session({ schedule_id: "s2", submitted_at: `${TODAY}T07:10:00Z` }),
+    ];
+    render(<DaySessions />);
+
+    expect(screen.getByText('daySummary:{"total":2,"saved":1,"pending":1}')).toBeInTheDocument();
+  });
+
+  it("offers the monitor once, in the school card, before a teacher is picked", () => {
+    meRoleSlug = "admin";
+    try {
+      render(<DaySessions />);
+      const links = screen.getAllByRole("link", { name: "openMonitor" });
+      expect(links).toHaveLength(1);
+      expect(
+        within(screen.getByTestId("school-attendance-today")).getByRole("link", {
+          name: "openMonitor",
+        }),
+      ).toBe(links[0]);
+    } finally {
+      meRoleSlug = "teacher";
+    }
+  });
+
+  it("points a day without lessons to the timetable", () => {
+    todaySessions = [];
+    mePermissions.push("view_schedules");
+    try {
+      render(<DaySessions />);
+      expect(screen.getByText("noScheduleTitle")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "openSchedule" })).toHaveAttribute(
+        "href",
+        "/schedule",
+      );
+    } finally {
+      mePermissions.pop();
+    }
+  });
+
+  it("leaves the teacher's own report to the area's tab, not a header link", () => {
     todaySessions = [session({ schedule_id: "s1" })];
     render(<DaySessions />);
 
-    expect(screen.getByTestId("attendance-day-tile-total")).toBeInTheDocument();
-    expect(screen.getByTestId("attendance-day-tile-saved")).toBeInTheDocument();
-    expect(screen.getByTestId("attendance-day-tile-pending")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "myReportLink" })).not.toBeInTheDocument();
   });
 });

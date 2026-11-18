@@ -18,6 +18,9 @@ afterEach(() => {
 window.HTMLElement.prototype.hasPointerCapture = () => false;
 window.HTMLElement.prototype.scrollIntoView = vi.fn();
 window.HTMLElement.prototype.releasePointerCapture = vi.fn();
+// sonner captures the pointer on pointerdown for its swipe to dismiss, so
+// any test that clicks a toast would otherwise throw.
+window.HTMLElement.prototype.setPointerCapture = vi.fn();
 window.ResizeObserver = class ResizeObserver {
   observe = vi.fn();
   unobserve = vi.fn();

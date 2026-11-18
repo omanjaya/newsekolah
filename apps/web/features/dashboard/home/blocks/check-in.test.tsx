@@ -58,12 +58,23 @@ describe("useCheckInBlock", () => {
     historyQuery.mockReturnValue(history(undefined));
 
     const { result } = renderHook(() => useCheckInBlock(me, true));
-    expect(result.current.left.map((slot) => slot.key)).toEqual(["checkIn.card"]);
-    render(<>{result.current.left[0]?.node}</>);
+    expect(result.current.side.map((slot) => slot.key)).toEqual(["checkIn.card"]);
+    render(<>{result.current.side[0]?.node}</>);
     fireEvent.click(screen.getByRole("button", { name: "checkIn" }));
 
     expect(mutate).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("link", { name: "openPage" })).toHaveAttribute("href", "/check-in");
+  });
+
+  it("keeps the check-in button secondary, leaving the home's one primary to the hero", () => {
+    historyQuery.mockReturnValue(history(undefined));
+
+    const { result } = renderHook(() => useCheckInBlock(me, true));
+    render(<>{result.current.side[0]?.node}</>);
+
+    const button = screen.getByRole("button", { name: "checkIn" });
+    expect(button).toHaveClass("bg-surface");
+    expect(button).not.toHaveClass("bg-accent");
   });
 
   it("offers check-out once arrival is recorded", () => {
@@ -78,7 +89,7 @@ describe("useCheckInBlock", () => {
     );
 
     const { result } = renderHook(() => useCheckInBlock(me, true));
-    render(<>{result.current.left[0]?.node}</>);
+    render(<>{result.current.side[0]?.node}</>);
 
     expect(screen.getByRole("button", { name: "checkOut" })).toBeInTheDocument();
   });
@@ -95,7 +106,7 @@ describe("useCheckInBlock", () => {
     );
 
     const { result } = renderHook(() => useCheckInBlock(me, true));
-    render(<>{result.current.left[0]?.node}</>);
+    render(<>{result.current.side[0]?.node}</>);
 
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.getByText("done")).toBeInTheDocument();

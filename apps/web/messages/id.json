@@ -3,13 +3,127 @@
     "navigation": {
       "students": "Kesiswaan",
       "staff": "Kepegawaian",
-      "duty": "Piket & Gerbang",
+      "duty": "Piket dan gerbang",
       "administration": "Administrasi",
-      "masterData": "Data Sekolah",
+      "masterData": "Data sekolah",
       "users": "Pengguna sekolah"
     },
     "shell": {
       "navBadge": "{count} menunggu",
+      "nav": {
+        "items": {
+          "inbox": "Perlu tindakan",
+          "reports": "Laporan",
+          "schedule": "Jadwal dan kalender",
+          "attendance": "Presensi dan jurnal",
+          "grades": "Nilai",
+          "homeroom": "Wali kelas",
+          "permits": "Izin dan keterlambatan",
+          "discipline": "Tata tertib",
+          "counseling": "Konseling BK",
+          "activities": "Kegiatan dan prestasi",
+          "mentoring": "Pendampingan siswa",
+          "studentActivities": "Kegiatan siswa",
+          "duty": "Piket",
+          "staffAttendance": "Presensi pegawai",
+          "supervision": "Supervisi",
+          "classes": "Siswa dan kelas",
+          "users": "Pengguna dan akses",
+          "learning": "Pembelajaran",
+          "years": "Tahun ajaran",
+          "structure": "Struktur sekolah",
+          "catalogue": "Katalog",
+          "circulation": "Sirkulasi",
+          "members": "Anggota",
+          "librarySettings": "Pengaturan perpustakaan",
+          "loans": "Pinjaman buku",
+          "visitors": "Buku tamu",
+          "billing": "Tagihan dan pembayaran",
+          "settings": "Pengaturan sekolah",
+          "platform": "Kelola sekolah",
+          "myAttendance": "Presensi saya",
+          "myGrades": "Nilai saya",
+          "myDiscipline": "Catatan tata tertib",
+          "monitoring": "Peringatan dini"
+        },
+        "inGroup": {
+          "librarySettings": "Pengaturan"
+        },
+        "groups": {
+          "academic": "Akademik",
+          "students": "Kesiswaan",
+          "duty": "Piket dan gerbang",
+          "staff": "Kepegawaian",
+          "library": "Perpustakaan",
+          "administration": "Administrasi",
+          "masterData": "Data sekolah",
+          "settings": "Pengaturan",
+          "platform": "Platform"
+        },
+        "short": {
+          "home": "Beranda",
+          "inbox": "Tindakan",
+          "scan": "Pindai",
+          "attendance": "Presensi",
+          "schedule": "Jadwal",
+          "permits": "Izin",
+          "grades": "Nilai",
+          "discipline": "Tatib",
+          "counseling": "Konseling",
+          "duty": "Piket",
+          "visitors": "Tamu",
+          "circulation": "Sirkulasi",
+          "catalogue": "Katalog",
+          "members": "Anggota",
+          "users": "Pengguna",
+          "classes": "Kelas",
+          "reports": "Laporan",
+          "monitor": "Monitor",
+          "profile": "Profil",
+          "menu": "Menu"
+        },
+        "groupMenu": "Buka menu {group}",
+        "railHint": "Arahkan atau klik untuk melihat halaman di {group}"
+      },
+      "account": {
+        "school": "Sekolah",
+        "schoolYear": "Tahun ajaran {label}",
+        "noSchoolYear": "Tahun ajaran belum aktif",
+        "className": "Kelas {name}",
+        "theme": "Tema",
+        "themeLight": "Terang",
+        "themeDark": "Gelap",
+        "themeSystem": "Sistem",
+        "simulation": "Simulasi waktu",
+        "close": "Tutup"
+      },
+      "palette": {
+        "placeholder": "Cari halaman, siswa, atau aksi",
+        "recent": "Terakhir dibuka",
+        "results": "Halaman"
+      },
+      "phoneMenu": {
+        "search": "Cari halaman, siswa, atau aksi",
+        "edit": "Atur favorit",
+        "done": "Selesai",
+        "favoriteAdd": "Tambahkan {name} ke favorit",
+        "favoriteRemove": "Hapus {name} dari favorit",
+        "editHint": "Ketuk bintang untuk menyematkan halaman di bagian atas menu."
+      },
+      "strip": {
+        "roleTesting": "Menguji sebagai {name}",
+        "roleTestingReturn": "Kembali",
+        "roleTestingExpired": "Sesi uji berakhir",
+        "impersonation": "{adminName} mengoperasikan akun {name}",
+        "impersonationStop": "Hentikan",
+        "simulation": "Waktu simulasi {time}",
+        "simulationOpen": "Atur",
+        "offline": "Tidak ada koneksi",
+        "offlineDetail": "Perubahan disimpan sementara di perangkat",
+        "update": "Versi baru tersedia",
+        "updateDetail": "Muat ulang untuk memakai versi terbaru",
+        "details": "Lihat rincian"
+      },
       "appearance": "Tampilan",
       "commandPalette": {
         "trigger": "Cari halaman atau aksi",
@@ -52,6 +166,7 @@
         "expiresAt": "Sesi uji berakhir {time}",
         "switchFailed": "Gagal beralih akun. Coba lagi.",
         "returnFailed": "Gagal kembali ke superadmin. Coba lagi atau masuk ulang.",
+        "prepareFailed": "Akun tidak diganti: aplikasi web tidak dapat melepas sesi halaman akun saat ini. Coba lagi sebentar lagi.",
         "sessionExpired": "Sesi uji berakhir. Masuk ulang untuk melanjutkan.",
         "signIn": "Masuk ulang"
       },
@@ -80,7 +195,7 @@
       },
       "updateAvailable": {
         "title": "Versi baru tersedia",
-        "body": "Muat ulang untuk memakai versi terbaru aplikasi",
+        "body": "Muat ulang untuk memakai versi terbaru aplikasi.",
         "action": "Muat ulang"
       },
       "skipToContent": "Lompat ke konten utama",
@@ -96,10 +211,181 @@
         "recent": "Terakhir dibuka",
         "favorite": "Favorit: {name}"
       },
+      "tabBar": {
+        "withCount": "{name}, {count} menunggu",
+        "centre": {
+          "scan": { "label": "Pindai", "name": "Pindai QR" },
+          "dutyQr": { "label": "QR piket", "name": "Tampilkan QR piket" },
+          "attendance": { "label": "Presensi", "name": "Isi presensi" },
+          "circulation": { "label": "Sirkulasi", "name": "Meja sirkulasi" },
+          "recordViolation": { "label": "Catat", "name": "Catat pelanggaran" },
+          "inbox": { "label": "Tindakan", "name": "Perlu tindakan" },
+          "checkIn": { "label": "Presensi", "name": "Presensi masuk atau pulang" },
+          "addVisitor": { "label": "Tamu", "name": "Tambah tamu" },
+          "submitLeave": { "label": "Izin", "name": "Ajukan izin" },
+          "quickActions": { "label": "Aksi cepat", "name": "Aksi cepat" }
+        }
+      },
       "table": {
         "selectedRows": "{count} baris dipilih",
         "selectAllRows": "Pilih semua baris",
         "selectRow": "Pilih baris"
+      },
+      "controls": {
+        "field": {
+          "optional": "(opsional)",
+          "formErrorTitle": "Periksa kembali isian berikut",
+          "required": "Wajib diisi"
+        },
+        "password": {
+          "show": "Tampilkan kata sandi",
+          "hide": "Sembunyikan kata sandi",
+          "capsLock": "Caps Lock aktif"
+        },
+        "search": {
+          "clear": "Hapus pencarian"
+        },
+        "select": {
+          "placeholder": "Pilih"
+        },
+        "combobox": {
+          "placeholder": "Pilih",
+          "searchPlaceholder": "Cari",
+          "loading": "Memuat pilihan",
+          "empty": "Tidak ada pilihan yang cocok"
+        },
+        "table": {
+          "searchPlaceholder": "Cari",
+          "columns": "Kolom tampil",
+          "density": "Kepadatan",
+          "densityNormal": "Normal",
+          "densityCompact": "Padat",
+          "moreOptions": "Opsi tabel",
+          "clearSelection": "Batalkan pilihan",
+          "noResultsTitle": "Tidak ada hasil",
+          "noResultsDescription": "Coba kata kunci lain atau hapus pencarian.",
+          "clearSearch": "Hapus pencarian",
+          "errorTitle": "Data gagal dimuat",
+          "errorDescription": "Periksa koneksi internet, lalu coba lagi.",
+          "retry": "Coba lagi",
+          "errorCode": "Kode galat: {code}",
+          "pageOf": "Halaman {current, number} dari {total, number}",
+          "range": "{from, number}–{to, number} dari {total, number}",
+          "rangeOpen": "Baris {from, number}–{to, number}",
+          "rowCount": "{count, number} data",
+          "pageSize": "Baris per halaman",
+          "previous": "Ke halaman sebelumnya",
+          "next": "Ke halaman berikutnya",
+          "filtersReset": "Reset filter",
+          "filterRemove": "Hapus filter {label}",
+          "filterDateFrom": "Dari",
+          "filterDateTo": "Sampai",
+          "filterDateInvalid": "Tanggal mulai harus sebelum atau sama dengan tanggal akhir",
+          "emptyTitle": "Belum ada data"
+        },
+        "scanner": {
+          "manualLabel": "Kode",
+          "manualPlaceholder": "Ketik atau tempel kode",
+          "submit": "Kirim",
+          "fieldSubmit": "Catat",
+          "camera": "Pindai dengan kamera",
+          "cameraStart": "Nyalakan kamera",
+          "cameraStop": "Matikan kamera",
+          "cameraClose": "Tutup kamera",
+          "cameraDone": "Selesai",
+          "cameraStarting": "Menyalakan kamera",
+          "cameraHint": "Arahkan kode ke dalam bingkai",
+          "cameraIdleHint": "Kamera hanya menyala selama Anda memindai.",
+          "cameraDeniedTitle": "Akses kamera ditolak",
+          "cameraDeniedDescription": "Izinkan kamera di pengaturan peramban, lalu coba lagi. Kode juga bisa dimasukkan manual.",
+          "cameraUnavailableTitle": "Kamera tidak tersedia",
+          "cameraUnavailableDescription": "Perangkat ini tidak punya kamera yang bisa dipakai. Masukkan kode secara manual.",
+          "cameraErrorTitle": "Kamera tidak bisa dinyalakan",
+          "cameraErrorDescription": "Tutup aplikasi lain yang memakai kamera, lalu coba lagi.",
+          "retry": "Coba lagi",
+          "manualEntry": "Masukkan kode manual",
+          "manualHide": "Tutup input manual",
+          "ready": "Pemindai siap"
+        },
+        "qr": {
+          "code": "Kode QR",
+          "expired": "Kode kedaluwarsa",
+          "expiresIn": "Berlaku {seconds, number} detik lagi",
+          "renew": "Buat kode baru",
+          "manualCode": "Tidak bisa memindai? Pakai kode ini"
+        },
+        "calendar": {
+          "previousMonth": "Bulan sebelumnya",
+          "nextMonth": "Bulan berikutnya",
+          "previousYear": "Tahun sebelumnya",
+          "nextYear": "Tahun berikutnya",
+          "chooseMonth": "{caption}, pilih bulan dan tahun",
+          "chooseYear": "{year}, pilih tahun",
+          "previousYears": "Rentang tahun sebelumnya",
+          "nextYears": "Rentang tahun berikutnya"
+        },
+        "picker": {
+          "datePlaceholder": "Pilih tanggal",
+          "dateClear": "Hapus tanggal",
+          "rangePlaceholder": "Pilih rentang tanggal",
+          "rangeClear": "Hapus rentang tanggal",
+          "rangePickStart": "Pilih tanggal mulai",
+          "rangePickEnd": "Pilih tanggal akhir",
+          "rangePresets": "Rentang cepat",
+          "monthPlaceholder": "Pilih bulan",
+          "monthClear": "Hapus bulan",
+          "timePlaceholder": "Pilih jam",
+          "timeShowOptions": "Tampilkan pilihan jam",
+          "timeOptions": "Pilihan jam",
+          "numberIncrement": "Tambah",
+          "numberDecrement": "Kurangi"
+        },
+        "page": {
+          "breadcrumb": "Navigasi halaman",
+          "moreActions": "Aksi lainnya"
+        },
+        "avatar": {
+          "groupMore": "{count, number} orang lainnya"
+        },
+        "dataList": {
+          "noValue": "Tidak ada"
+        },
+        "empty": {
+          "filteredTitle": "Tidak ada yang cocok",
+          "filteredDescription": "Coba kata kunci lain atau hapus filter yang aktif.",
+          "filteredReset": "Hapus filter"
+        },
+        "statePage": {
+          "code": "Kode {code}"
+        },
+        "alert": {
+          "dismiss": "Tutup pesan"
+        },
+        "stat": {
+          "deltaUp": "Naik",
+          "deltaDown": "Turun",
+          "deltaFlat": "Tetap"
+        },
+        "link": {
+          "opensInNewTab": "(membuka tab baru)"
+        },
+        "toast": {
+          "close": "Tutup notifikasi",
+          "region": "Notifikasi"
+        },
+        "commandPalette": {
+          "label": "Pencarian global",
+          "placeholder": "Cari halaman, siswa, guru, atau aksi",
+          "empty": "Tidak ada hasil yang cocok",
+          "hintMove": "Pindah",
+          "hintOpen": "Buka",
+          "hintClose": "Tutup",
+          "cancel": "Batal"
+        },
+        "stepper": {
+          "complete": "selesai",
+          "stopped": "dihentikan"
+        }
       }
     },
     "login": {
@@ -113,12 +399,13 @@
     "changePassword": {
       "forcedTitle": "Ubah kata sandi sebelum melanjutkan",
       "forcedBody": "Kata sandi ini dibuat oleh admin dan perlu diganti sebelum mengakses aplikasi.",
-      "successRedirect": "Kata sandi berhasil diubah, mengalihkan ke beranda"
+      "successRedirect": "Kata sandi berhasil diubah, mengalihkan ke beranda",
+      "signedInAs": "Masuk sebagai",
+      "notYou": "Bukan Anda?"
     },
     "dashboard": {
       "title": "Beranda",
-      "greeting": "Selamat datang, {name}",
-      "noAcademicYear": "Belum ada tahun ajaran aktif",
+      "greeting": "Halo, {name}",
       "tiles": {
         "notifications": {
           "label": "Notifikasi",
@@ -126,35 +413,44 @@
         }
       },
       "announcementsTitle": "Pengumuman terbaru",
-      "openAnnouncements": "Lihat semua"
+      "openAnnouncements": "Lihat semua",
+      "statsLabel": "Ringkasan hari ini",
+      "fallback": {
+        "eyebrow": "Hari ini",
+        "title": "Tidak ada yang mendesak",
+        "meta": "Notifikasi dan pengumuman terbaru tetap bisa dibuka dari sini.",
+        "action": "Buka notifikasi",
+        "inboxEyebrow": "Perlu tindakan",
+        "inboxTitle": "{count} hal menunggu tindakan Anda",
+        "inboxMeta": "Pengajuan yang menunggu keputusan Anda ada di satu tempat.",
+        "inboxAction": "Buka perlu tindakan"
+      },
+      "shortcuts": {
+        "title": "Pintasan",
+        "monitor": "Monitor presensi",
+        "setup": "Persiapan sekolah"
+      }
     },
     "profile": {
       "title": "Profil",
-      "identityTitle": "Identitas",
       "usernameLabel": "Nama pengguna",
       "emailLabel": "Email",
-      "emailEmpty": "Belum diisi",
-      "rolesLabel": "Peran",
-      "sessionsColumnDevice": "Perangkat",
-      "sessionsColumnLastSeen": "Terakhir aktif",
-      "sessionsColumnActions": "Aksi",
       "sessionsEmptyTitle": "Tidak ada sesi lain",
       "sessionsEmptyBody": "Sesi lain akan tampil di sini setelah masuk dari perangkat lain.",
       "revokeSuccess": "Sesi berhasil diakhiri",
       "changePasswordTitle": "Ubah kata sandi",
       "avatar": {
-        "title": "Foto",
         "change": "Ganti foto",
         "hint": "JPEG, PNG, atau WebP, maksimal 2 MB",
         "uploading": "Mengunggah, {percent, number}%",
         "updated": "Foto diperbarui"
       },
       "edit": {
-        "title": "Ubah profil",
+        "title": "Akun",
         "nameLabel": "Nama lengkap",
         "emailLabel": "Email",
         "phoneLabel": "Telepon",
-        "phonePlaceholder": "Belum diisi",
+        "phonePlaceholder": "Isi nomor baru",
         "localeLabel": "Bahasa pilihan",
         "localeId": "Bahasa Indonesia",
         "localeEn": "Bahasa Inggris",
@@ -162,7 +458,9 @@
         "save": "Simpan perubahan",
         "saved": "Profil diperbarui",
         "usernameLabel": "Nama pengguna",
-        "usernameLengthError": "Nama pengguna minimal 3 karakter."
+        "usernameLengthError": "Nama pengguna minimal 3 karakter.",
+        "description": "Nama dan kontak yang dilihat guru, siswa, dan staf sekolah.",
+        "phoneHint": "Nomor yang tersimpan tidak ditampilkan; isi untuk menggantinya."
       },
       "detail": {
         "title": "Data diri",
@@ -195,25 +493,55 @@
         "employeeNumber": "Nomor induk pegawai",
         "position": "Jabatan",
         "save": "Simpan data diri",
-        "saved": "Data diri diperbarui"
-      }
+        "saved": "Data diri diperbarui",
+        "unset": "Belum dipilih",
+        "institutionalHint": "Diisi dan diubah oleh admin sekolah.",
+        "identitySection": "Identitas",
+        "addressSection": "Alamat",
+        "familySection": "Keluarga dan sekolah asal",
+        "educationSection": "Pendidikan",
+        "employmentStatuses": {
+          "pns": "PNS",
+          "pppk": "PPPK",
+          "tetap": "Pegawai tetap",
+          "gty": "Guru tetap yayasan",
+          "gtt": "Guru tidak tetap",
+          "honorer": "Honorer",
+          "kontrak": "Kontrak"
+        }
+      },
+      "tabsLabel": "Bagian profil",
+      "tabs": {
+        "account": "Akun",
+        "personal": "Data diri",
+        "security": "Keamanan"
+      },
+      "academicYear": "Tahun ajaran {year}",
+      "noAcademicYear": "Belum ada tahun ajaran aktif",
+      "unsavedChanges": "Ada perubahan yang belum disimpan",
+      "changePasswordHint": "Gunakan kata sandi yang tidak dipakai di layanan lain.",
+      "sessionLastSeen": "Terakhir aktif {time}"
     },
     "settings": {
       "appearance": {
         "eyebrow": "Pengaturan",
         "title": "Tampilan",
-        "description": "Atur tema terang atau gelap untuk perangkat ini.",
+        "description": "Tema aplikasi di perangkat ini. Pengguna lain tidak terpengaruh.",
         "themeLabel": "Tema",
         "themeSystem": "Ikuti sistem",
         "themeLight": "Terang",
-        "themeDark": "Gelap"
+        "themeDark": "Gelap",
+        "themeSystemHint": "Mengikuti pengaturan terang atau gelap perangkat.",
+        "themeLightHint": "Latar terang di setiap waktu.",
+        "themeDarkHint": "Latar gelap, nyaman di ruang redup.",
+        "appliesNow": "Langsung berlaku, tanpa perlu disimpan."
       },
       "notifications": {
-        "navLabel": "Notifikasi",
+        "navLabel": "Preferensi notifikasi",
         "eyebrow": "Pengaturan",
         "title": "Preferensi notifikasi",
         "channelsTitle": "Kanal per jenis",
-        "channelsBody": "Pilih lewat mana setiap jenis pemberitahuan dikirim. Kotak masuk aplikasi selalu aktif.",
+        "channelsBody": "Pilih lewat mana setiap jenis pemberitahuan dikirim. Kotak masuk aplikasi selalu menerima semuanya. Setiap perubahan langsung tersimpan.",
         "kindColumn": "Jenis",
         "channels": {
           "inapp": "Aplikasi",
@@ -243,13 +571,16 @@
           "devicesTitle": "Perangkat terdaftar",
           "noDevices": "Belum ada perangkat terdaftar.",
           "removeHint": "Untuk melepas satu perangkat, matikan notifikasi dari perangkat itu sendiri."
-        }
+        },
+        "description": "Kapan dan lewat mana Anda menerima pemberitahuan. Berlaku untuk akun Anda saja.",
+        "loadFailed": "Gagal memuat jenis ini.",
+        "quietUntil": "Sampai"
       },
       "notificationDefaults": {
-        "navLabel": "Default notifikasi",
+        "navLabel": "Notifikasi bawaan",
         "eyebrow": "Pengaturan",
-        "title": "Default notifikasi sekolah",
-        "body": "Kanal default untuk setiap jenis notifikasi. Pengguna yang belum mengubah preferensinya sendiri memakai pengaturan ini.",
+        "title": "Notifikasi bawaan",
+        "body": "Kanal bawaan untuk setiap jenis notifikasi. Pengguna yang belum mengubah preferensinya sendiri memakai pengaturan ini.",
         "kindColumn": "Jenis",
         "channels": {
           "inapp": "Aplikasi",
@@ -257,32 +588,39 @@
           "email": "Email",
           "whatsapp": "WhatsApp"
         },
-        "saved": "Default disimpan"
+        "loadFailed": "Gagal memuat pengaturan jenis ini.",
+        "saved": "Bawaan disimpan",
+        "channelsTitle": "Kanal bawaan per jenis",
+        "channelsBody": "Kotak masuk aplikasi selalu menerima semuanya. Setiap perubahan langsung tersimpan."
       },
       "session": {
-        "navLabel": "Sesi & login",
+        "navLabel": "Sesi dan masuk",
         "eyebrow": "Pengaturan",
-        "title": "Sesi & login",
+        "title": "Sesi dan masuk",
         "intro": "Berlaku untuk semua pengguna sekolah ini, mulai sesi berikutnya yang dibuka.",
-        "daysLabel": "Lama sesi (hari)",
+        "daysLabel": "Lama sesi",
         "daysHint": "Pengguna diminta masuk kembali setelah sesi ini berakhir. Antara 1 dan 365 hari.",
         "daysRangeError": "Lama sesi harus antara {min} dan {max} hari.",
-        "singleDeviceLabel": "Login satu perangkat",
+        "singleDeviceLabel": "Masuk di satu perangkat",
         "singleDeviceHint": "Batasi setiap pengguna hanya aktif di satu perangkat pada satu waktu.",
         "singleDeviceExplain": "Perubahan ini tidak langsung mengeluarkan pengguna yang sedang masuk di perangkat lain. Begitu salah satu dari mereka masuk lagi di perangkat mana pun, semua sesi lain milik pengguna itu akan diakhiri.",
         "saved": "Pengaturan sesi tersimpan",
-        "save": "Simpan pengaturan"
+        "save": "Simpan perubahan",
+        "sessionTitle": "Lama sesi",
+        "daysUnit": "hari",
+        "devicesTitle": "Perangkat",
+        "rulesTitle": "Aturan sesi"
       },
       "branding": {
-        "navLabel": "Merek Sekolah",
+        "navLabel": "Merek sekolah",
         "eyebrow": "Pengaturan",
-        "title": "Merek Sekolah",
+        "title": "Merek sekolah",
         "identityTitle": "Identitas",
         "nameLabel": "Nama sekolah",
         "nameRequiredError": "Nama sekolah wajib diisi.",
         "shortNameLabel": "Nama singkat",
-        "shortNamePlaceholder": "Muncul di ruang sempit seperti tab bar",
-        "taglineLabel": "Tagline",
+        "shortNamePlaceholder": "Muncul di ruang sempit seperti bilah tab",
+        "taglineLabel": "Slogan",
         "taglinePlaceholder": "Kalimat pendek di bawah nama sekolah",
         "accentColorLabel": "Warna aksen",
         "accentColorHint": "Dipakai untuk tombol utama, tautan, dan fokus di seluruh aplikasi.",
@@ -296,74 +634,134 @@
           "change": "Ganti logo",
           "hint": "PNG, WebP, atau SVG, maksimal 2 MB.",
           "uploading": "Mengunggah... {percent}%",
-          "updated": "Logo diperbarui"
+          "updated": "Logo diperbarui",
+          "emptyHint": "Belum ada logo. PNG, WebP, atau SVG, maksimal 2 MB.",
+          "shortHint": "Maksimal 2 MB",
+          "upload": "Unggah logo"
         },
         "favicon": {
           "title": "Favicon",
           "previewAlt": "Favicon sekolah",
           "none": "Belum ada",
           "change": "Ganti favicon",
-          "hint": "PNG, WebP, atau SVG, maksimal 512 KB.",
+          "hint": "Ikon kecil di tab peramban. PNG, WebP, atau SVG, maksimal 512 KB.",
           "uploading": "Mengunggah... {percent}%",
-          "updated": "Favicon diperbarui"
+          "updated": "Favicon diperbarui",
+          "emptyHint": "Belum ada favicon. PNG, WebP, atau SVG, maksimal 512 KB.",
+          "shortHint": "Maksimal 512 KB",
+          "upload": "Unggah favicon"
+        },
+        "description": "Nama, warna, dan logo yang dilihat semua pengguna di aplikasi, halaman masuk, dan tab peramban.",
+        "shortNameHint": "Dipakai di ruang sempit, seperti tab peramban dan bilah menu ponsel.",
+        "taglineHint": "Kalimat pendek di bawah nama sekolah, misalnya di halaman masuk.",
+        "colorTitle": "Warna",
+        "accentColorFormat": "Kode heksadesimal 6 digit, misalnya #0F7A5F.",
+        "accentColorPicker": "Pilih warna aksen",
+        "assetsTitle": "Logo dan favicon",
+        "assetsDescription": "Tersimpan langsung begitu selesai diunggah.",
+        "preview": {
+          "title": "Pratinjau",
+          "description": "Berubah langsung saat Anda mengetik, sebelum disimpan.",
+          "namePlaceholder": "Nama sekolah",
+          "browserTab": "Tab peramban",
+          "tabTitle": "{page} · {school}",
+          "homePage": "Beranda",
+          "app": "Menu dan tombol",
+          "announcements": "Pengumuman",
+          "primaryButton": "Tombol utama",
+          "link": "Tautan",
+          "badge": "Aktif",
+          "signIn": "Halaman masuk",
+          "variants": "Warna yang dipakai aplikasi",
+          "light": "Terang",
+          "dark": "Gelap",
+          "adjusted": "Aplikasi menyesuaikan kecerahan warna di tiap tema agar teks dan tombol tetap terbaca."
         }
       },
       "reportHeader": {
-        "navLabel": "Kop Laporan",
+        "navLabel": "Kop laporan",
         "eyebrow": "Pengaturan",
-        "title": "Kop Laporan",
+        "title": "Kop laporan",
         "showLogoLabel": "Tampilkan logo sekolah",
-        "showLogoHint": "Memakai logo yang sama dengan Merek Sekolah.",
-        "linesLabel": "Baris kop laporan",
+        "showLogoHint": "Memakai logo dari halaman Merek sekolah.",
+        "linesLabel": "Baris kop",
         "firstLinePlaceholder": "Nama sekolah",
         "linePlaceholder": "Baris kop laporan",
         "lineLabel": "Baris kop laporan ke-{index}",
         "removeLine": "Hapus baris kop laporan ke-{index}",
         "addLine": "Tambah baris",
         "linesRequiredError": "Isi minimal satu baris kop laporan.",
-        "emphasisLabel": "Baris nama sekolah",
-        "emphasisHint": "Baris mana yang ditampilkan tebal dan lebih besar, seperti kop surat.",
-        "emphasisAuto": "Otomatis",
+        "emphasisLabel": "Baris yang ditebalkan",
+        "emphasisHint": "Dicetak lebih besar dan tebal, seperti nama sekolah pada kop surat.",
+        "emphasisAuto": "Otomatis, baris yang sama dengan nama sekolah",
         "emphasisLineOption": "Baris {index}: {text}",
         "placeLabel": "Tempat",
         "placePlaceholder": "Contoh: Denpasar",
-        "signersLabel": "Penanda tangan default",
+        "signersLabel": "Penanda tangan",
         "signerRoleLabel": "Jabatan",
         "signerNameLabel": "Nama",
-        "signerIdLabel": "Label nomor identitas",
+        "signerIdLabel": "Jenis nomor identitas",
         "signerIdNumberLabel": "Nomor identitas",
         "removeSigner": "Hapus penanda tangan ke-{index}",
         "addSigner": "Tambah penanda tangan",
         "save": "Simpan perubahan",
         "saved": "Kop laporan tersimpan",
-        "previewTitle": "Pratinjau",
-        "previewOpen": "Lihat pratinjau",
-        "previewError": "Pratinjau gagal dimuat."
+        "previewTitle": "Pratinjau PDF",
+        "previewOpen": "Buka PDF di tab baru",
+        "previewError": "Pratinjau gagal dimuat.",
+        "description": "Kop dan penanda tangan yang dicetak di setiap laporan dan dokumen yang diekspor.",
+        "headerTitle": "Kop",
+        "linesHint": "Paling banyak {max} baris, dari atas ke bawah.",
+        "placeTitle": "Tempat dan tanggal",
+        "placeHint": "Ditulis di atas penanda tangan, diikuti tanggal cetak.",
+        "signersHint": "Dicetak di bawah setiap laporan, dari kiri ke kanan.",
+        "signerTitle": "Penanda tangan {index}",
+        "signerRolePlaceholder": "Contoh: Kepala Sekolah",
+        "signerIdHint": "Misalnya NIP atau NUPTK.",
+        "preview": {
+          "title": "Pratinjau",
+          "modeLabel": "Jenis pratinjau",
+          "live": "Langsung",
+          "pdf": "PDF tersimpan",
+          "liveHint": "Berubah langsung saat Anda mengetik, sebelum disimpan.",
+          "pdfHint": "Dibuat server dari pengaturan yang terakhir disimpan.",
+          "noLines": "Belum ada baris kop",
+          "noSigners": "Belum ada penanda tangan",
+          "rolePlaceholder": "Jabatan",
+          "namePlaceholder": "Nama"
+        }
       }
     },
     "forbidden": {
-      "title": "Tidak memiliki akses",
-      "body": "Akun ini tidak memiliki izin untuk membuka halaman ini. Hubungi admin sekolah bila akses ini seharusnya tersedia.",
-      "backHome": "Kembali ke beranda"
+      "title": "Tidak ada akses ke halaman ini",
+      "body": "Akun Anda belum punya izin untuk halaman ini. Hubungi admin sekolah bila Anda memerlukannya.",
+      "backHome": "Kembali ke beranda",
+      "back": "Halaman sebelumnya",
+      "bodyAdmin": "Akun Anda belum punya izin untuk halaman ini.",
+      "platformBody": "Halaman ini khusus operator platform."
     },
     "moduleUnavailable": {
-      "title": "Modul tidak tersedia",
-      "body": "Fitur ini tidak diaktifkan untuk sekolah Anda. Hubungi admin sekolah bila fitur ini seharusnya tersedia.",
-      "backHome": "Kembali ke beranda"
+      "title": "Fitur ini belum diaktifkan",
+      "body": "Sekolah Anda belum mengaktifkan fitur ini, jadi hubungi admin sekolah bila Anda memerlukannya.",
+      "backHome": "Kembali ke beranda",
+      "back": "Halaman sebelumnya"
     },
     "notFound": {
       "title": "Halaman tidak ditemukan",
-      "body": "Alamat yang dituju tidak ada atau sudah dipindahkan.",
-      "backHome": "Kembali ke beranda"
+      "body": "Alamatnya mungkin salah ketik, atau halamannya sudah dipindahkan.",
+      "backHome": "Kembali ke beranda",
+      "signIn": "Ke halaman masuk",
+      "back": "Halaman sebelumnya"
     },
     "error": {
-      "title": "Terjadi kesalahan",
-      "body": "Halaman ini gagal dimuat. Coba muat ulang, atau hubungi dukungan bila terus terjadi.",
-      "digestLabel": "Kode: {digest}"
+      "title": "Halaman gagal dimuat",
+      "body": "Muat ulang halaman ini, dan bila tetap gagal, beri tahu admin sekolah kode di bawah.",
+      "digestLabel": "Kode: {digest}",
+      "backHome": "Kembali ke beranda"
     },
     "offlinePage": {
       "title": "Tidak ada koneksi",
-      "body": "Halaman ini butuh koneksi internet dan belum tersimpan untuk dibuka tanpa koneksi.",
+      "body": "Sambungkan perangkat ke internet, lalu coba lagi.",
       "retry": "Coba lagi"
     },
     "notifications": {
@@ -382,7 +780,7 @@
         "announcement_published": "Pengumuman baru",
         "attendance_submitted": "Presensi tercatat",
         "substitution_requested": "Permintaan guru pengganti",
-        "substitution_responded": "Respon guru pengganti",
+        "substitution_responded": "Tanggapan guru pengganti",
         "leave_request_submitted": "Pengajuan izin baru",
         "leave_request_reviewed": "Pengajuan izin ditinjau",
         "leave_request_issued": "Surat izin diterbitkan",
@@ -396,8 +794,11 @@
       "searchPlaceholder": "Cari judul atau isi notifikasi",
       "kindAll": "Semua jenis",
       "kindFilterLabel": "Jenis notifikasi",
+      "kindPill": "Jenis",
       "emptyFilteredTitle": "Tidak ada notifikasi yang cocok",
-      "emptyFilteredBody": "Coba ubah kata pencarian atau pilih jenis lain."
+      "emptyFilteredBody": "Coba ubah kata pencarian atau pilih jenis lain.",
+      "filterLabel": "Tampilkan notifikasi",
+      "showAll": "Lihat semua notifikasi"
     },
     "announcements": {
       "eyebrow": "Komunikasi",
@@ -491,25 +892,29 @@
         "previewScheduleAt": "Tampil mulai {date}",
         "previewUntitled": "(Tanpa judul)",
         "previewEmptyBody": "(Isi belum ditulis)",
-        "previewHint": "Begini tampilan pengumuman ini bagi penerimanya."
-      }
+        "previewHint": "Begini tampilan pengumuman ini bagi penerimanya.",
+        "audienceLabel": "Ditujukan kepada"
+      },
+      "feedEmptyCompact": "Belum ada pengumuman",
+      "tabsLabel": "Bagian pengumuman"
     },
     "duty": {
-      "navLabel": "Piket",
+      "navLabel": "Piket hari ini",
       "eyebrow": "Kesiswaan",
-      "title": "Meja piket",
-      "intro": "Tampilkan QR sesuai keperluan. Setiap kode sekali pakai dan diperbarui otomatis saat kedaluwarsa. Persetujuan izin keluar ada di halaman Izin Keluar, tab Setujui.",
+      "title": "Piket hari ini",
+      "intro": "Tampilkan QR sesuai keperluan. Setiap kode sekali pakai dan diperbarui otomatis saat kedaluwarsa. Persetujuan izin keluar ada di halaman Izin keluar, tab Setujui.",
       "purposes": {
-        "classroom_entry": "QR masuk kelas",
-        "late_arrival": "QR terlambat",
-        "manual": "Catat manual"
+        "classroom_entry": "Masuk kelas",
+        "late_arrival": "Terlambat",
+        "manual": "Catat manual",
+        "exit": "Izin keluar"
       },
       "help": {
-        "classroom_entry": "Siswa memindai kode ini saat masuk kelas untuk mencatat kehadiran mandiri pada sesi yang sedang berjalan.",
-        "late_arrival": "Siswa yang datang terlambat memindai kode ini. Namanya masuk ke antrean peninjauan di halaman Terlambat."
+        "classroom_entry": "Siswa memindai kode ini saat masuk kelas untuk mencatat kehadirannya di sesi yang sedang berjalan. Kode diperbarui sendiri saat habis.",
+        "late_arrival": "Siswa yang datang terlambat memindai kode ini. Namanya langsung masuk antrean terlambat di halaman ini."
       },
       "manualForm": {
-        "intro": "Untuk siswa yang tidak membawa HP: cari siswa, pilih izin keluar atau terlambat, lalu catat langsung di sini.",
+        "intro": "Untuk siswa yang tidak membawa HP: pilih jenisnya, cari siswanya, lalu catat langsung di sini.",
         "kindExit": "Izin keluar",
         "kindLate": "Terlambat",
         "student": "Siswa",
@@ -525,11 +930,38 @@
         "reason": "Alasan terlambat",
         "reasonPlaceholder": "Contoh: macet, bangun kesiangan",
         "homeroomReported": "Wali kelas sudah diberi tahu",
-        "requiredError": "Lengkapi data yang wajib diisi.",
+        "requiredError": "Wajib diisi.",
         "recordedHint": "Tercatat sebagai dicatat oleh guru piket, bukan permintaan mandiri siswa.",
         "recordedExit": "Izin keluar tercatat untuk {student}",
         "recordedLate": "Keterlambatan tercatat untuk {student}",
-        "submit": "Catat"
+        "submit": "Catat",
+        "title": "Catat tanpa HP siswa",
+        "kindLabel": "Jenis catatan",
+        "studentRequired": "Pilih siswa dulu."
+      },
+      "openMonitor": "Buka layar monitor",
+      "modeLabel": "Mode piket",
+      "qrLabel": {
+        "classroom_entry": "Kode QR masuk kelas",
+        "late_arrival": "Kode QR terlambat"
+      },
+      "queue": {
+        "title": "Antrean terlambat",
+        "description": "Siswa yang memindai QR terlambat dan menunggu tinjauan Anda.",
+        "openInbox": "Lihat semua",
+        "emptyTitle": "Belum ada yang terlambat",
+        "emptyBody": "Siswa yang memindai QR terlambat muncul di sini.",
+        "occurrence": "Terlambat ke-{n}, {time}"
+      },
+      "log": {
+        "title": "Dicatat hari ini",
+        "description": "Catatan manual dan tinjauan dari layar ini sejak dibuka.",
+        "empty": "Belum ada catatan dari layar ini",
+        "kinds": {
+          "exit": "Izin keluar dicatat",
+          "late": "Keterlambatan dicatat",
+          "review": "Keterlambatan ditinjau"
+        }
       }
     },
     "common": {
@@ -569,6 +1001,13 @@
         "searchPlaceholder": "Cari nama atau nomor induk",
         "empty": "Tidak ada yang cocok",
         "loading": "Memuat..."
+      },
+      "publicSite": {
+        "navLabel": "Halaman publik sekolah",
+        "catalogue": "Katalog",
+        "signIn": "Masuk",
+        "toDashboard": "Ke beranda",
+        "copyright": "© {year} {school}"
       }
     },
     "schedule": {
@@ -578,6 +1017,7 @@
       "byTeacher": "Per guru",
       "pickClass": "Pilih kelas",
       "pickTeacher": "Pilih guru",
+      "pickSubject": "Pilih mata pelajaran",
       "periodColumn": "Jam",
       "addBlock": "Tambah jadwal",
       "addHere": "Tambah",
@@ -586,7 +1026,7 @@
       "deleteConfirmTitle": "Hapus jadwal",
       "deleteConfirmBody": "Blok jadwal ini akan dihapus. Sesi presensi yang sudah tercatat tetap tersimpan.",
       "noPeriodsTitle": "Jam pelajaran belum diatur",
-      "noPeriodsBody": "Atur template jam pelajaran di Data Sekolah sebelum menyusun jadwal.",
+      "noPeriodsBody": "Atur templat jam pelajaran di Data sekolah sebelum menyusun jadwal.",
       "unknownTeacher": "Guru tidak dikenal",
       "unknownClass": "Kelas tidak dikenal",
       "unknownSubject": "Mapel tidak dikenal",
@@ -611,11 +1051,11 @@
       "bulk": {
         "navLink": "Operasi massal",
         "eyebrow": "Akademik",
-        "title": "Operasi jadwal massal",
+        "title": "Operasi massal",
         "importSection": {
-          "title": "Impor dari CSV",
+          "title": "Impor jadwal dari CSV",
           "body": "Tempel atau unggah berkas CSV dengan kolom class,subject,teacher,day,start_period,end_period,notes. Nama kelas, mata pelajaran, guru, dan jam pelajaran dicocokkan dengan data yang sudah ada; hari memakai angka 1 (Senin) sampai 7 (Minggu).",
-          "uploadLabel": "Unggah berkas CSV",
+          "uploadLabel": "Pilih berkas CSV",
           "noFileChosen": "Belum ada berkas dipilih",
           "textareaLabel": "Atau tempel isi CSV di sini",
           "previewTitle": "Pratinjau",
@@ -627,7 +1067,10 @@
           "apply": "Impor {count} jadwal",
           "applyErrorTitle": "Tidak ada jadwal yang disimpan; impor bersifat sekali jalan untuk semua baris.",
           "applied": "{count} jadwal berhasil diimpor",
-          "empty": "Belum ada data untuk dipratinjau."
+          "empty": "Belum ada data untuk dipratinjau.",
+          "intro": "Unggah atau tempel berkas CSV. Nama kelas, mata pelajaran, guru, dan jam pelajaran dicocokkan dengan data yang ada; hari ditulis 1 (Senin) sampai 7 (Minggu).",
+          "columnsLabel": "Kolom berkas",
+          "template": "Unduh templat"
         },
         "clearSection": {
           "title": "Hapus semua jadwal tahun ajaran ini",
@@ -660,7 +1103,12 @@
       "mine": "Jadwal saya",
       "loadError": "Jadwal gagal dimuat.",
       "noClassTitle": "Belum terdaftar di kelas",
-      "noClassBody": "Jadwal tampil setelah Anda ditempatkan di kelas untuk tahun ajaran ini. Hubungi wali kelas atau admin sekolah."
+      "noClassBody": "Jadwal tampil setelah Anda ditempatkan di kelas untuk tahun ajaran ini. Hubungi wali kelas atau admin sekolah.",
+      "viewLabel": "Tampilan jadwal",
+      "noTeachingTitle": "Anda belum punya jadwal mengajar",
+      "noTeachingBody": "Jadwal mengajar muncul di sini setelah dibuat oleh pengelola jadwal. Jadwal kelas tetap bisa dilihat per kelas.",
+      "viewByClass": "Lihat per kelas",
+      "blockActions": "Aksi jadwal"
     },
     "attendance": {
       "eyebrow": "Akademik",
@@ -687,10 +1135,12 @@
       "teacherPlaceholder": "Pilih guru",
       "teacherSelf": "{name} (Saya)",
       "pickTeacherTitle": "Pilih guru untuk melihat sesinya",
-      "pickTeacherBody": "Anda tidak memiliki jadwal mengajar. Pilih guru di atas untuk mengisi presensi kelasnya, atau buka laporan dan monitor presensi di bawah.",
+      "pickTeacherBody": "Anda tidak memiliki jadwal mengajar. Pilih guru di atas untuk mengisi presensi kelasnya, atau buka laporan dan monitor presensi lewat tombol di bagian atas halaman.",
       "openReports": "Buka laporan presensi",
       "myReportLink": "Laporan presensi saya",
-      "openMonitor": "Buka monitor presensi",
+      "openMonitor": "Monitor presensi",
+      "staffHubTitle": "Presensi kelas diisi oleh guru pengajar",
+      "staffHubBody": "Presensi kelas diisi oleh guru pengajar; dari sini Anda memantau hasilnya.",
       "notSchoolDayTitle": "Bukan hari sekolah",
       "notSchoolDayBody": "Tanggal ini bukan hari sekolah menurut kalender akademik.",
       "noScheduleTitle": "Tidak ada jadwal mengajar",
@@ -747,7 +1197,7 @@
         "back": "Presensi",
         "backToList": "Kembali ke daftar presensi",
         "correctionMode": "Mode koreksi",
-        "searchPlaceholder": "Cari nama siswa",
+        "searchPlaceholder": "Cari siswa",
         "filterByStatus": "Filter berdasarkan status",
         "blocked": "Terkunci",
         "noMatch": "Tidak ada siswa yang cocok.",
@@ -759,7 +1209,7 @@
         "menuBack": "Kembali",
         "rowChanged": "Baris ini berubah sejak tersimpan terakhir",
         "markAllPresent": "Tandai semua hadir",
-        "markAllPresentHint": "Status Sakit, Izin, dan Dispensasi tidak ditimpa.",
+        "markAllPresentHint": "Sakit, izin, dan dispensasi tidak diubah.",
         "resetChanges": "Kosongkan perubahan",
         "previousStatus": "Sebelumnya: {status}",
         "source": {
@@ -785,19 +1235,45 @@
         "violations": {
           "menuLabel": "Catat pelanggaran",
           "title": "Pelanggaran",
-          "empty": "Tidak ada jenis pelanggaran."
-        }
+          "empty": "Tidak ada jenis pelanggaran.",
+          "loading": "Memuat jenis pelanggaran…",
+          "points": "{points} poin"
+        },
+        "tabsLabel": "Bagian sesi",
+        "markedAllPresent": "Semua siswa ditandai hadir",
+        "rosterLabel": "Daftar siswa"
       },
       "editor": {
         "timeRange": "Jam {start}-{end}",
         "saveSummary": "{total} siswa · {changed} diubah dari hadir",
         "recapSummary": "Tahun ini: {summary}",
         "recapAllClear": "Tahun ini: tidak ada catatan."
-      }
+      },
+      "daySummary": "{total, plural, other {# sesi}} · {saved} tersimpan · {pending} belum diisi",
+      "otherSessions": "Sesi lainnya",
+      "daySessions": "Sesi mengajar",
+      "heroOngoing": "Pelajaran sekarang",
+      "heroNext": "Pelajaran berikutnya",
+      "viewSaved": "Lihat presensi",
+      "pickTeacherHint": "Untuk mengisi atau mengoreksi presensi sebuah kelas, pilih gurunya di atas.",
+      "schoolToday": {
+        "eyebrow": "Presensi sekolah hari ini",
+        "title": "Pantau presensi sekolah",
+        "body": "Lihat rekap per kelas di laporan, atau kelas yang sedang belajar di monitor.",
+        "progressTitle": "{submitted} dari {total} kelas sudah mengisi",
+        "progressBody": "Kelas yang sedang belajar dan sudah menyimpan presensinya.",
+        "noneRunning": "Belum ada kelas yang sedang belajar saat ini.",
+        "openReports": "Buka laporan presensi",
+        "openMonitor": "Buka monitor",
+        "bodyReportsOnly": "Lihat rekap per kelas di laporan.",
+        "openReportsHub": "Buka pusat laporan"
+      },
+      "openSchedule": "Buka jadwal",
+      "leaveLetterNote": "Surat izin {number}"
     },
     "homeroom": {
       "eyebrow": "Akademik",
-      "title": "Wali Kelas",
+      "title": "Wali kelas",
       "titleWithClass": "Kelas binaan {className}",
       "dateLabel": "Tanggal",
       "searchPlaceholder": "Cari nama atau NIS",
@@ -857,17 +1333,30 @@
       "exitPermitsTitle": "Izin keluar menunggu",
       "exitPermitsEmpty": "Tidak ada izin keluar yang menunggu.",
       "unknownStudent": "Siswa",
-      "pointsBadge": "{points} poin"
+      "pointsBadge": "{points} poin",
+      "tabsLabel": "Bagian wali kelas",
+      "prevDay": "Hari sebelumnya",
+      "nextDay": "Hari berikutnya",
+      "today": "Hari ini",
+      "statsLabel": "Ringkasan kelas",
+      "attentionCount": "{count, plural, other {# siswa perlu perhatian}}",
+      "attentionNoneTitle": "Semua siswa tercatat",
+      "attentionBreakdown": "{absent} alpha · {incomplete} presensi belum lengkap",
+      "attentionOpen": "Lihat di presensi kelas",
+      "attentionListTitle": "Perlu dihubungi",
+      "contactEmpty": "Tidak ada wali yang perlu dihubungi.",
+      "noHomeroomAdminBody": "Halaman ini menampilkan rekap harian kelas binaan. Wali kelas diatur di penugasan.",
+      "openAssignments": "Buka penugasan"
     },
     "substitutions": {
       "eyebrow": "Akademik",
       "title": "Guru pengganti",
       "request": "Minta pengganti",
       "todayBadge": "Hari ini",
-      "incoming": "Masuk",
-      "outgoing": "Keluar",
+      "incoming": "Untuk saya",
+      "outgoing": "Dari saya",
       "emptyTitle": "Belum ada permintaan",
-      "emptyIncomingBody": "Permintaan dari rekan guru untuk menggantikan jadwal Anda tampil di sini.",
+      "emptyIncomingBody": "Permintaan rekan guru agar Anda menggantikan jadwal mereka tampil di sini.",
       "emptyOutgoingBody": "Permintaan yang Anda kirim ke rekan guru tampil di sini.",
       "fromTeacher": "Dari",
       "toTeacher": "Kepada",
@@ -897,7 +1386,8 @@
         "sent": "Permintaan terkirim",
         "cancel": "Batal",
         "send": "Kirim permintaan"
-      }
+      },
+      "directionLabel": "Arah permintaan"
     },
     "permits": {
       "workflow": {
@@ -914,28 +1404,29 @@
           "qr_scan": "Pindai QR",
           "manual": "Ditinjau langsung",
           "auto": "Otomatis"
+        },
+        "outcome": {
+          "approved": "Disetujui"
         }
       },
       "scan": {
         "placeholder": "Tempel atau ketik kode di bawah QR",
         "submit": "Kirim kode",
-        "cameraLabel": "Pindai dengan kamera"
+        "cameraLabel": "Pindai dengan kamera",
+        "failedTitle": "Kode tidak diterima"
       },
       "classroomEntry": {
         "navLabel": "Pindai masuk kelas",
-        "eyebrow": "Kesiswaan",
-        "title": "Pindai masuk kelas",
-        "intro": "Pindai QR yang ditampilkan guru di depan kelas untuk mencatat kehadiran Anda pada sesi yang sedang berjalan.",
+        "intro": "Arahkan kamera ke QR yang ditampilkan guru di depan kelas untuk mencatat kehadiran Anda pada pelajaran yang sedang berjalan.",
         "scanLabel": "Kode masuk kelas",
-        "placeholder": "Tempel atau ketik kode di bawah QR",
+        "placeholder": "Kode di bawah QR",
         "submit": "Kirim kode",
-        "cameraLabel": "Pindai dengan kamera",
         "successTitle": "Berhasil dicatat",
-        "successBody": "Anda tercatat masuk kelas {teacher} pada {time}.",
-        "scanAgain": "Pindai lagi",
+        "successBody": "Tercatat masuk kelas {teacher} pukul {time}.",
         "errorTitle": "Pindai gagal",
         "studentsOnlyTitle": "Khusus siswa",
-        "studentsOnlyBody": "Halaman ini dipakai siswa untuk memindai QR masuk kelas dari guru. Akun Anda bukan akun siswa."
+        "studentsOnlyBody": "Halaman ini dipakai siswa untuk memindai QR masuk kelas dari guru. Akun Anda bukan akun siswa.",
+        "backHome": "Ke beranda"
       },
       "qr": {
         "expiresIn": "Berlaku {seconds} detik lagi",
@@ -975,21 +1466,33 @@
           "stagesHint": "Setelah diajukan, minta guru piket lalu guru kelas memindai untuk menyetujui. QR gerbang muncul setelah tahap terakhir.",
           "requiredError": "Tujuan dan rentang jam wajib diisi.",
           "created": "Izin keluar diajukan",
-          "submit": "Ajukan"
+          "submit": "Ajukan",
+          "required": "Wajib diisi.",
+          "cancel": "Batal",
+          "description": "Tulis tujuan dan jam pelajaran yang akan ditinggalkan."
         },
         "approve": {
-          "hint": "Minta siswa menunjukkan kode izinnya, lalu tampilkan QR persetujuan agar dipindai siswa.",
+          "hint": "Minta siswa menunjukkan kode izinnya, ketik atau pindai kodenya, lalu biarkan siswa memindai QR persetujuan yang muncul.",
           "permitCode": "Kode izin siswa",
-          "showQr": "Tampilkan QR persetujuan"
+          "showQr": "Tampilkan QR persetujuan",
+          "title": "Setujui tahap izin keluar",
+          "permitCodePlaceholder": "Ketik atau tempel kode izin",
+          "qrLabel": "Kode QR persetujuan izin keluar",
+          "class": "Kelas",
+          "destination": "Tujuan"
         },
         "gate": {
-          "hint": "Pindai QR gerbang yang ditunjukkan siswa atau tempel kodenya.",
+          "hint": "Arahkan kamera ke QR gerbang di HP siswa. Hasilnya muncul di bawah kamera.",
           "payloadLabel": "Kode QR gerbang",
           "needPayload": "Kode gerbang harus berasal dari QR siswa.",
           "passed": "Siswa diizinkan keluar",
           "lastTitle": "Terakhir keluar",
           "todayListTitle": "Baru saja keluar",
-          "undoLast": "Sembunyikan dari daftar ini"
+          "undoLast": "Sembunyikan dari daftar ini",
+          "title": "Pindai QR gerbang",
+          "refused": "Tidak bisa keluar",
+          "todayListHint": "Tersimpan di layar ini selama halaman terbuka.",
+          "todayListEmpty": "Belum ada siswa yang lewat gerbang."
         },
         "queue": {
           "emptyTitle": "Belum ada yang menunggu",
@@ -1000,11 +1503,31 @@
           "process": "Proses",
           "awaitingGate": "Menunggu pindai gerbang",
           "yearlyReportLink": "Laporan tahunan izin keluar"
-        }
+        },
+        "periodRange": "{from} sampai {to}",
+        "openedAt": "Diajukan pukul {time}",
+        "hero": {
+          "activeEyebrow": "Izin keluar berjalan",
+          "approvedEyebrow": "Siap keluar gerbang",
+          "exitedEyebrow": "Sudah keluar",
+          "exitedAt": "Keluar gerbang pukul {time}",
+          "scanStage": "Pindai QR {stage}",
+          "scanHint": "Minta {stage} menampilkan QR persetujuan, lalu arahkan kamera ke kode itu."
+        },
+        "codeHint": "Tunjukkan kode ini ke guru yang menyetujui.",
+        "waitManual": "Menunggu {stage} meninjau.",
+        "gateQrLabel": "Kode QR gerbang izin keluar",
+        "lessons": "Jam pelajaran",
+        "opened": "Diajukan",
+        "exitedLabel": "Keluar gerbang",
+        "idleTitle": "Tidak ada izin keluar berjalan",
+        "idleBody": "Perlu keluar sekolah di jam pelajaran? Ajukan izin, lalu minta guru memindai di setiap tahap. QR gerbang muncul setelah tahap terakhir.",
+        "historyTitle": "Riwayat izin keluar",
+        "modeLabel": "Tugas di halaman ini"
       },
       "late": {
         "eyebrow": "Kesiswaan",
-        "title": "Terlambat",
+        "title": "Keterlambatan",
         "tabQueue": "Antrean piket",
         "tabMine": "Saya",
         "noneTitle": "Tidak ada catatan keterlambatan aktif",
@@ -1034,24 +1557,38 @@
         "reviewHint": "Setelah ditinjau, siswa memindai QR pimpinan untuk menutup alur.",
         "reviewed": "Peninjauan tersimpan",
         "cancel": "Batal",
-        "submitReview": "Simpan peninjauan"
+        "submitReview": "Simpan peninjauan",
+        "noAccessTitle": "Khusus siswa",
+        "noAccessBody": "Siswa yang terlambat memindai QR di meja piket dari halaman ini. Guru piket meninjaunya di halaman Piket hari ini.",
+        "scanTitle": "Pindai QR di meja piket",
+        "scanBody": "Datang terlambat? Arahkan kamera ke QR terlambat di meja piket. Namamu langsung masuk antrean guru piket.",
+        "reasonHint": "Isi sebelum memindai.",
+        "reasonPlaceholder": "Contoh: ban bocor di jalan",
+        "hero": {
+          "eyebrow": "Keterlambatan ke-{n}",
+          "title": "Tercatat pukul {time}",
+          "scanStage": "Pindai QR {stage}",
+          "scanHint": "Minta {stage} menampilkan QR, lalu arahkan kamera ke kode itu."
+        }
       },
       "leave": {
         "eyebrow": "Kesiswaan",
-        "title": "Izin terencana",
+        "title": "Izin tidak masuk",
         "tabQueue": "Antrean",
         "tabMine": "Pengajuan saya",
         "noAccessTitle": "Tidak ada akses",
         "noAccessBody": "Peran Anda tidak terlibat dalam alur izin terencana.",
-        "issuerQueueUnavailableTitle": "Pengajuan untuk diterbitkan ada di notifikasi",
-        "issuerQueueUnavailableBody": "Pengajuan yang menunggu penerbitan surat akan tertaut dari notifikasi Anda. Buka notifikasi terkait untuk melihat dan menerbitkan suratnya.",
+        "issuerQueueUnavailableTitle": "Surat izin diterbitkan dari notifikasi",
+        "issuerQueueUnavailableBody": "Setiap pengajuan yang sudah disetujui wali kelas dikirim ke notifikasi Anda. Buka notifikasinya untuk melihat pengajuan dan menerbitkan suratnya.",
+        "issuerQueueInboxBody": "Pengajuan yang sudah disetujui wali kelas menunggu di antrean izin. Buka antreannya untuk meninjau dan menerbitkan suratnya.",
         "openNotifications": "Buka notifikasi",
         "notFoundTitle": "Pengajuan tidak ditemukan",
         "notFoundBody": "Pengajuan ini sudah tidak tersedia atau bukan bagian dari tugas Anda.",
         "submit": "Ajukan izin",
-        "emptyTitle": "Belum ada pengajuan",
-        "emptyBody": "Izin sakit, upacara, atau dispensasi yang Anda ajukan tampil di sini.",
+        "emptyTitle": "Belum ada pengajuan izin",
+        "emptyBody": "Sakit, upacara keagamaan, atau dispensasi? Ajukan izin dari sini, wali kelas akan meninjaunya.",
         "detailTitle": "Detail izin",
+        "pageTitle": "{category, select, sick {Izin sakit} religious_ceremony {Izin upacara keagamaan} dispensation {Izin dispensasi} other {Izin lainnya}}",
         "mine": {
           "tileTotal": "Total pengajuan",
           "tileInProgress": "Sedang diproses",
@@ -1085,7 +1622,8 @@
         "issueLetter": "Terbitkan surat",
         "issued": "Surat izin diterbitkan",
         "issuedTitle": "Surat izin sudah terbit",
-        "issuedBody": "Presensi pada tanggal izin diisi otomatis. Surat bisa diunduh di atas.",
+        "issuedBody": "Presensi pada tanggal izin sudah diisi otomatis.",
+        "letterIssuedStep": "Surat diterbitkan",
         "queueEmptyTitle": "Tidak ada pengajuan menunggu",
         "queueEmptyBody": "Pengajuan dari kelas binaan Anda, atau yang menunggu penerbitan surat, tampil di sini.",
         "cancel": "Batal",
@@ -1101,7 +1639,7 @@
           "startsOn": "Mulai",
           "endsOn": "Sampai",
           "reason": "Keterangan",
-          "evidence": "Bukti (opsional)",
+          "evidence": "Bukti",
           "evidenceAdd": "Ambil atau unggah foto bukti",
           "evidenceRemove": "Hapus bukti terpilih",
           "evidenceCompressed": "Dikompres menjadi {size}",
@@ -1110,8 +1648,27 @@
           "requiredError": "Tanggal dan keterangan wajib diisi.",
           "rangeError": "Tanggal selesai tidak boleh sebelum tanggal mulai.",
           "submitted": "Pengajuan terkirim ke wali kelas",
-          "send": "Kirim pengajuan"
-        }
+          "send": "Kirim pengajuan",
+          "description": "Isi tanggal dan keterangan. Bukti bisa dilampirkan sekarang atau nanti.",
+          "dates": "Tanggal izin",
+          "datesHint": "Pilih satu hari, atau tanggal mulai lalu tanggal selesai.",
+          "datesRequired": "Pilih tanggal izin.",
+          "reasonRequired": "Tulis keterangan singkat.",
+          "reasonPlaceholder": "Contoh: demam sejak semalam",
+          "evidencePreview": "Pratinjau foto bukti",
+          "stagesHint": "Setelah dikirim, wali kelas meninjau pengajuan, lalu guru BK menerbitkan surat izin."
+        },
+        "hero": {
+          "eyebrow": "Pengajuan berjalan",
+          "letterPending": "Menunggu surat",
+          "detail": "Lihat detail"
+        },
+        "days": "{count, plural, other {# hari}}",
+        "historyTitle": "Riwayat pengajuan",
+        "letterNumberShort": "Surat {number}",
+        "opened": "Diajukan",
+        "issuerTitle": "Penerbitan surat izin",
+        "issuerOpenInbox": "Buka antrean izin"
       },
       "review": {
         "tabWithCount": "{label} {count}",
@@ -1125,10 +1682,10 @@
     "verify": {
       "title": "Verifikasi dokumen",
       "notFoundTitle": "Kode tidak dikenal",
-      "notFoundBody": "Dokumen dengan kode ini tidak ditemukan atau kodenya salah.",
-      "validTitle": "Dokumen asli diterbitkan sekolah",
-      "revokedTitle": "Dokumen telah dicabut",
-      "number": "Nomor",
+      "notFoundBody": "Periksa kembali kode yang tertera pada dokumen, atau tanyakan langsung ke sekolah.",
+      "validTitle": "Dokumen asli",
+      "revokedTitle": "Dokumen sudah dicabut",
+      "number": "Nomor dokumen",
       "kind": "Jenis",
       "kinds": {
         "leave_letter": "Surat izin",
@@ -1137,11 +1694,18 @@
       "issuedAt": "Diterbitkan",
       "student": "Siswa",
       "validity": "Berlaku",
-      "footer": "Halaman ini hanya menampilkan data minimal untuk memastikan keaslian dokumen."
+      "footer": "Halaman ini hanya menampilkan data minimal untuk memastikan keaslian dokumen.",
+      "validBody": "Dokumen ini diterbitkan oleh {school} dan tercatat sah.",
+      "revokedBody": "{school} telah mencabut dokumen ini, jadi dokumen ini tidak berlaku lagi.",
+      "code": "Kode verifikasi",
+      "checkedAt": "Diperiksa {time}",
+      "errorTitle": "Pemeriksaan belum selesai",
+      "errorBody": "Periksa koneksi internet, lalu coba lagi.",
+      "retry": "Coba lagi"
     },
     "school": {
       "users": {
-        "eyebrow": "Data Sekolah",
+        "eyebrow": "Data sekolah",
         "title": "Guru, pegawai, dan siswa",
         "columns": {
           "name": "Nama",
@@ -1171,11 +1735,6 @@
         "includeArchived": "Tampilkan yang diarsipkan",
         "emptyTitle": "Belum ada pengguna",
         "emptyBody": "Tambah guru, pegawai, dan siswa satu per satu atau lewat impor.",
-        "loadErrorTitle": "Daftar pengguna tidak bisa dimuat",
-        "loadErrorBody": "Periksa koneksi Anda, lalu coba lagi.",
-        "retry": "Coba lagi",
-        "pagePrev": "Sebelumnya",
-        "pageNext": "Berikutnya",
         "resetTitle": "Tautan atur ulang kata sandi",
         "resetBody": "Bagikan tautan ini ke pengguna. Berlaku sekali dan kedaluwarsa dalam 30 menit.",
         "actions": {
@@ -1189,10 +1748,12 @@
           "restored": "Pengguna dipulihkan",
           "impersonate": "Masuk sebagai pengguna ini",
           "impersonateBody": "Anda akan bertindak sebagai {name} selama maksimal 30 menit. Semua tindakan selama itu dicatat.",
-          "import": "Impor pengguna"
+          "impersonatePrepareFailed": "Impersonasi tidak dimulai: aplikasi web tidak dapat melepas sesi halaman akun Anda. Coba lagi sebentar lagi.",
+          "import": "Impor pengguna",
+          "menuFor": "Aksi untuk {name}"
         },
         "form": {
-          "createTitle": "Pengguna baru",
+          "createTitle": "Tambah pengguna",
           "editTitle": "Ubah pengguna",
           "name": "Nama lengkap",
           "username": "Nama pengguna",
@@ -1204,7 +1765,7 @@
           "nip": "NIP",
           "roles": "Peran",
           "primary": "Utama",
-          "passwordHint": "Kata sandi awal dibuat acak. Gunakan Atur ulang kata sandi untuk membagikan tautan pengaturan.",
+          "passwordHint": "Kata sandi awal dibuat acak. Pakai tombol Atur ulang kata sandi untuk membagikan tautan pengaturan.",
           "requiredError": "Nama dan minimal satu peran wajib diisi.",
           "created": "Pengguna dibuat",
           "updated": "Perubahan tersimpan",
@@ -1213,33 +1774,25 @@
           "primaryRole": "Peran utama",
           "primaryRolePlaceholder": "Pilih peran utama",
           "primaryRoleHint": "Peran utama menentukan hak akses dasar pengguna dan harus salah satu peran sistem.",
-          "teacherLeaveHint": "Meninjau izin dan menerbitkan surat izin tidak ikut peran guru. Berikan lewat penugasan tugas di Data Sekolah > Penugasan.",
+          "teacherLeaveHint": "Meninjau izin dan menerbitkan surat izin tidak ikut peran guru. Berikan lewat penugasan tugas di Data sekolah > Pembagian tugas.",
           "additionalRoles": "Peran tambahan",
           "additionalRolesHint": "Peran tambahan hanya bisa peran khusus (bukan peran sistem).",
-          "noCustomRoles": "Belum ada peran khusus. Buat di Pengaturan > Peran dan Akses."
+          "noCustomRoles": "Belum ada peran khusus. Buat di Pengaturan > Peran dan akses."
         },
         "import": {
-          "eyebrow": "Data Sekolah",
           "title": "Impor pengguna",
           "description": "Unduh templat, isi di luar sistem, unggah kembali, lalu periksa hasilnya sebelum benar-benar dibuat.",
-          "steps": {
-            "upload": "Unggah",
-            "preview": "Pratinjau",
-            "done": "Selesai"
-          },
-          "step1Title": "1. Unduh templat",
-          "step1Body": "Templat berisi contoh baris dan sheet Referensi berisi kode yang diterima untuk setiap kolom (jenis kelamin, golongan darah, peran, dan sejenisnya).",
+          "step1Body": "Templat berisi contoh baris dan lembar Referensi berisi kode yang diterima untuk setiap kolom (jenis kelamin, golongan darah, peran, dan sejenisnya).",
           "downloadTemplate": "Unduh templat XLSX",
-          "step2Title": "2. Unggah berkas yang sudah diisi",
           "step2Body": "Maksimal 5000 baris dalam satu berkas. Baris kosong dilewati.",
           "mode": {
             "label": "Mode impor",
             "create": "Hanya buat baru",
             "upsert": "Buat dan perbarui",
-            "createBody": "Setiap baris membuat pengguna baru. Baris dengan nama pengguna yang sudah dipakai dianggap error.",
+            "createBody": "Setiap baris membuat pengguna baru. Baris dengan nama pengguna yang sudah dipakai ditolak.",
             "upsertBody": "Baris dengan nama pengguna yang cocok dengan pengguna yang sudah ada akan memperbarui profil pengguna itu, bukan gagal; baris yang tidak cocok tetap membuat pengguna baru. Nama pengguna dan kata sandi tidak pernah diubah.",
             "updateRolesLabel": "Perbarui peran juga",
-            "updateRolesBody": "Jika aktif, peran pada baris yang cocok akan menggantikan peran pengguna yang sudah ada. Memerlukan hak kelola izin; nonaktif secara default agar impor tidak pernah mengubah siapa memegang peran apa."
+            "updateRolesBody": "Jika aktif, peran pada baris yang cocok akan menggantikan peran pengguna yang sudah ada. Memerlukan hak kelola izin; bawaannya nonaktif agar impor tidak pernah mengubah siapa memegang peran apa."
           },
           "chooseFile": "Pilih berkas",
           "parsing": "Membaca {file}...",
@@ -1248,12 +1801,6 @@
             "no-sheet": "Berkas tidak memiliki sheet data sama sekali.",
             "empty": "Tidak ada baris data yang terbaca dari berkas ini."
           },
-          "step3Title": "3. Pratinjau",
-          "rowCount": "{n} baris",
-          "createCount": "{n} akan dibuat",
-          "updateCount": "{n} akan diperbarui",
-          "unchangedCount": "{n} tidak berubah",
-          "invalidCount": "{n} baris tidak valid",
           "blockedTitle": "Belum bisa diimpor",
           "blockedBody": "Impor berjalan dalam satu transaksi: selama masih ada satu baris tidak valid, tidak ada apa pun yang akan disimpan. Perbaiki baris yang ditandai, lalu unggah ulang berkasnya.",
           "readyTitle": "Siap diimpor",
@@ -1281,12 +1828,27 @@
               "unchanged": "Tidak berubah",
               "error": "Tidak valid"
             }
-          }
-        }
+          },
+          "prepareTitle": "Siapkan berkas",
+          "fileLabel": "Berkas pengguna",
+          "reviewTitle": "Tinjau hasil",
+          "rowsLabel": "Baris",
+          "createLabel": "Akan dibuat",
+          "updateLabel": "Akan diperbarui",
+          "unchangedLabel": "Tidak berubah",
+          "invalidLabel": "Tidak valid",
+          "backToUsers": "Kembali ke daftar pengguna"
+        },
+        "moreRoles": "+{n} peran",
+        "resetConfirmBody": "Buat tautan atur ulang kata sandi untuk {name}? Kata sandi lamanya tetap berlaku sampai tautan dipakai.",
+        "resetCopy": "Salin tautan",
+        "resetCopied": "Tautan disalin",
+        "resetCopyFailed": "Tautan tidak bisa disalin. Pilih teksnya lalu salin manual.",
+        "resetLinkLabel": "Tautan atur ulang"
       },
       "classes": {
-        "eyebrow": "Data Sekolah",
-        "title": "Siswa & Kelas",
+        "eyebrow": "Data sekolah",
+        "title": "Siswa dan kelas",
         "addClass": "Tambah kelas",
         "editClass": "Ubah kelas",
         "emptyTitle": "Belum ada kelas",
@@ -1299,14 +1861,17 @@
         "studentCount": "{n, plural, one {# siswa} other {# siswa}}",
         "rosterOfCapacity": "{n}/{max} siswa",
         "assignStudents": "Tempatkan siswa",
-        "noStudents": "Belum ada siswa di kelas ini.",
+        "noStudents": "Belum ada siswa di kelas ini",
         "searchStudent": "Cari nama siswa",
         "rowActionsMenu": "Aksi lain untuk {name}",
         "noUnassigned": "Semua siswa sudah punya kelas.",
         "assigned": "{n} siswa ditempatkan",
         "assignCount": "Tempatkan ({n})",
-        "noTeachers": "Belum ada guru pengampu.",
+        "noTeachers": "Belum ada guru pengampu",
         "removeTeaching": "Hapus",
+        "removeTeachingTitle": "Hapus guru pengampu ini?",
+        "removeTeachingBody": "{subject} oleh {teacher} akan dihapus dari kelas ini.",
+        "teachingRemoved": "Guru pengampu dihapus",
         "addTeaching": "Tambah",
         "teachingAdded": "Guru pengampu ditambahkan",
         "deactivateTeaching": "Nonaktifkan",
@@ -1319,44 +1884,86 @@
         "pickSubject": "Mapel",
         "pickTeacher": "Guru",
         "moveStudent": "Pindahkan siswa",
-        "moveBody": "Pindahkan {name} ke kelas lain. Riwayat pendaftaran di kelas ini tetap tersimpan.",
+        "moveBody": "Pindahkan {name} ke kelas lain. Riwayat di kelas ini tetap tersimpan.",
         "moveTargetClass": "Kelas tujuan",
         "moveTargetPlaceholder": "Pilih kelas",
         "moveEffectiveOn": "Berlaku mulai",
         "moveSubmit": "Pindahkan",
         "moved": "Siswa dipindahkan",
         "leaveStudent": "Siswa keluar sekolah",
-        "leaveBody": "Tandai {name} keluar dari sekolah. Pendaftaran aktif di kelas ini akan ditutup dan riwayatnya tetap tersimpan.",
+        "leaveBody": "Tandai {name} keluar dari sekolah. Penempatan di kelas ini ditutup dan riwayatnya tetap tersimpan.",
         "leaveOn": "Tanggal keluar",
         "leaveSubmit": "Tandai keluar",
         "studentLeft": "Siswa ditandai keluar",
         "form": {
           "name": "Nama kelas",
-          "grade": "Tingkat",
+          "grade": "Tingkat kelas",
           "homeroom": "Wali kelas",
           "capacity": "Kapasitas",
           "pick": "Pilih",
-          "requiredError": "Nama dan tingkat wajib diisi.",
           "saved": "Kelas tersimpan",
           "cancel": "Batal",
-          "save": "Simpan"
+          "save": "Simpan",
+          "nameRequired": "Isi nama kelas.",
+          "gradeRequired": "Pilih tingkat kelas.",
+          "capacityHint": "Kosongkan bila tidak dibatasi.",
+          "capacityUnit": "siswa"
         },
-        "searchClasses": "Cari kelas",
+        "searchClasses": "Cari kelas atau siswa",
         "allGrades": "Semua tingkat",
         "deleteClass": "Hapus kelas",
         "deleteClassBody": "Hapus kelas {name}? Kelas yang masih memiliki siswa atau penugasan mengajar tidak dapat dihapus. Riwayat data tetap disimpan.",
         "classDeleted": "Kelas berhasil dihapus.",
         "rosterExport": {
           "button": "Unduh daftar siswa",
-          "defaultTitle": "Daftar Siswa",
+          "defaultTitle": "Daftar siswa",
           "scopeClass": "Kelas",
           "scopeGradeLevel": "Angkatan",
           "scopeClassPlaceholder": "Pilih kelas",
-          "scopeGradeLevelPlaceholder": "Pilih angkatan"
+          "scopeGradeLevelPlaceholder": "Pilih angkatan",
+          "scope": "Cakupan",
+          "columns": {
+            "nis": "NIS",
+            "nisn": "NISN",
+            "name": "Nama siswa",
+            "gender": "Jenis kelamin",
+            "birth_place": "Tempat lahir",
+            "birth_date": "Tanggal lahir",
+            "guardian_name": "Nama wali"
+          }
+        },
+        "pickClass": "Pilih kelas",
+        "studentResults": "Siswa",
+        "classList": "Daftar kelas",
+        "noHomeroomShort": "Wali kelas belum ditetapkan",
+        "noHomeroomLine": "Wali kelas belum ditetapkan",
+        "classActions": "Aksi untuk kelas {name}",
+        "detailTabs": "Isi kelas",
+        "deleteClassTitle": "Hapus kelas {name}?",
+        "emptyBodyReader": "Kelas tahun ajaran aktif belum dibuat oleh operator sekolah.",
+        "noStudentsBody": "Tempatkan siswa yang belum punya kelas di tahun ajaran ini.",
+        "noTeachersBody": "Pilih mapel dan guru di bawah untuk menambah guru pengampu.",
+        "addTeachingTitle": "Tambah guru pengampu",
+        "subjectLabel": "Mapel",
+        "teacherLabel": "Guru",
+        "assignBody": "Siswa yang dipilih ditempatkan di kelas ini mulai hari ini.",
+        "pickAll": "Pilih semua",
+        "pickedCount": "{n} dipilih",
+        "selectedStudents": "{n} siswa terpilih",
+        "moveSelected": "Pindahkan",
+        "leaveSelected": "Tandai keluar",
+        "movedCount": "{n} siswa dipindahkan",
+        "leftCount": "{n} siswa ditandai keluar",
+        "columns": {
+          "number": "No.",
+          "name": "Nama",
+          "nis": "NIS",
+          "joined": "Bergabung",
+          "actions": "Aksi"
         }
       },
       "subjects": {
-        "eyebrow": "Data Sekolah",
+        "eyebrow": "Data sekolah",
         "title": "Mata pelajaran",
         "add": "Tambah mapel",
         "edit": "Ubah",
@@ -1376,17 +1983,17 @@
         "emptyBody": "Tambahkan mata pelajaran yang diajarkan di sekolah."
       },
       "periods": {
-        "eyebrow": "Data Sekolah",
+        "eyebrow": "Data sekolah",
         "title": "Jam pelajaran",
-        "template": "Template",
+        "template": "Templat",
         "default": "utama",
-        "noTemplate": "Belum ada template",
-        "newTemplate": "Template baru",
+        "noTemplate": "Belum ada templat",
+        "newTemplate": "Templat baru",
         "newTemplatePlaceholder": "Contoh: Reguler, Jumat",
-        "addTemplate": "Tambah template",
-        "templateCreated": "Template dibuat",
-        "emptyTitle": "Belum ada template jam",
-        "emptyBody": "Buat template, isi jam pelajarannya, lalu pasang ke hari sekolah.",
+        "addTemplate": "Tambah templat",
+        "templateCreated": "Templat dibuat",
+        "emptyTitle": "Belum ada templat jam",
+        "emptyBody": "Buat templat, isi jam pelajarannya, lalu pasang ke hari sekolah.",
         "periodsTitle": "Daftar jam",
         "addPeriod": "Tambah jam",
         "edit": "Ubah",
@@ -1402,21 +2009,25 @@
         "lessonPrefix": "Jam",
         "start": "Mulai",
         "end": "Selesai",
-        "noPeriods": "Belum ada jam pada template ini.",
+        "noPeriods": "Belum ada jam pada templat ini",
         "weekTitle": "Hari sekolah",
-        "weekBody": "Aktifkan hari sekolah dan pilih template yang dipakai tiap hari.",
-        "usesTemplate": "Memakai template ini",
-        "useTemplate": "Pakai template ini",
+        "weekBody": "Aktifkan hari sekolah dan pilih templat yang dipakai tiap hari.",
+        "usesTemplate": "Memakai templat ini",
+        "useTemplate": "Pakai templat ini",
         "sequence": "Urutan",
-        "renameTemplate": "Ubah nama template",
-        "deleteTemplate": "Hapus template",
-        "templateUpdated": "Nama template diperbarui",
-        "templateDeleted": "Template dihapus",
-        "deleteTemplateTitle": "Hapus template ini?",
-        "deleteTemplateBody": "\"{name}\" akan dihapus. Tidak bisa dihapus jika masih dipakai hari sekolah."
+        "renameTemplate": "Ubah nama templat",
+        "deleteTemplate": "Hapus templat",
+        "templateUpdated": "Nama templat diperbarui",
+        "templateDeleted": "Templat dihapus",
+        "deleteTemplateTitle": "Hapus templat ini?",
+        "deleteTemplateBody": "\"{name}\" akan dihapus. Templat yang masih dipakai hari sekolah tidak bisa dihapus.",
+        "deletePeriodTitle": "Hapus jam ini?",
+        "deletePeriodBody": "\"{name}\" akan dihapus dari templat ini.",
+        "periodDeleted": "Jam dihapus",
+        "actions": "Aksi"
       },
       "duties": {
-        "eyebrow": "Data Sekolah",
+        "eyebrow": "Data sekolah",
         "title": "Tugas tambahan",
         "assign": "Beri tugas",
         "activeCount": "{n, plural, other {# penugasan aktif}}",
@@ -1473,6 +2084,18 @@
             "nameTaken": "Nama ini sudah dipakai jenis tugas lain. Pilih nama yang berbeda."
           }
         }
+      },
+      "importFlow": {
+        "steps": {
+          "upload": "Unggah",
+          "preview": "Tinjau",
+          "done": "Selesai"
+        },
+        "chooseOther": "Ganti berkas",
+        "noFile": "Belum ada berkas",
+        "showRows": "Tampilkan baris",
+        "allRows": "Semua baris",
+        "problemRows": "Bermasalah"
       }
     },
     "roles": {
@@ -1480,7 +2103,8 @@
       "title": "Peran dan akses",
       "addRole": "Tambah peran",
       "system": "Bawaan",
-      "systemHint": "Peran bawaan tidak bisa diubah. Buat peran baru untuk kombinasi izin khusus.",
+      "systemHint": "Peran bawaan tidak bisa diubah. Untuk kombinasi izin lain, buat peran baru.",
+      "systemHintReadOnly": "Peran bawaan, hanya bisa dilihat.",
       "deleteRole": "Hapus peran",
       "deleteBody": "Peran {name} akan dihapus. Pengguna yang memilikinya kehilangan izin dari peran ini.",
       "deleted": "Peran dihapus",
@@ -1516,14 +2140,14 @@
         "parent": "Orang tua",
         "platform": "Platform",
         "supervision": "Supervisi",
-        "visitors": "Tamu & insiden",
+        "visitors": "Tamu dan insiden",
         "scheduling": "Penjadwalan",
         "staff_attendance": "Presensi pegawai",
         "general": "Umum",
         "grading": "Nilai",
         "reporting": "Pelaporan"
       },
-      "dutyOnlyHint": "Tidak bisa diberikan langsung ke peran guru. Berikan lewat penugasan tugas di Data Sekolah > Penugasan.",
+      "dutyOnlyHint": "Tidak bisa diberikan langsung ke peran guru. Berikan lewat penugasan tugas di Data sekolah > Pembagian tugas.",
       "permissions": {
         "approve_child_leave_requests": {
           "label": "Setujui izin anak",
@@ -1599,7 +2223,7 @@
         },
         "manage_attendance": {
           "label": "Catat presensi",
-          "description": "Mencatat kehadiran siswa"
+          "description": "Mencatat presensi siswa"
         },
         "manage_counseling": {
           "label": "Kelola catatan konseling",
@@ -1662,8 +2286,8 @@
           "description": "Tulis catatan pertemuan dan ringkasan semester"
         },
         "manage_notification_settings": {
-          "label": "Kelola default notifikasi",
-          "description": "Atur kanal notifikasi default sekolah"
+          "label": "Kelola notifikasi bawaan",
+          "description": "Atur kanal notifikasi bawaan sekolah"
         },
         "manage_permissions": {
           "label": "Kelola peran dan izin",
@@ -1707,7 +2331,7 @@
         },
         "manage_whatsapp": {
           "label": "Kelola WhatsApp",
-          "description": "Atur gateway, template, dan log WhatsApp"
+          "description": "Atur gateway, templat, dan log WhatsApp"
         },
         "manage_workflows": {
           "label": "Kelola alur persetujuan",
@@ -1763,7 +2387,7 @@
         },
         "view_attendance": {
           "label": "Lihat presensi",
-          "description": "Lihat rekap kehadiran"
+          "description": "Lihat rekap presensi"
         },
         "view_audit_logs": {
           "label": "Lihat jejak audit",
@@ -1775,7 +2399,7 @@
         },
         "view_child_attendance": {
           "label": "Lihat presensi anak",
-          "description": "Lihat kehadiran anak"
+          "description": "Lihat presensi anak"
         },
         "view_child_billing": {
           "label": "Lihat tagihan anak",
@@ -1851,7 +2475,7 @@
         },
         "view_staff_attendance": {
           "label": "Lihat presensi pegawai",
-          "description": "Lihat rekap kehadiran pegawai"
+          "description": "Lihat rekap presensi pegawai"
         },
         "view_supervision": {
           "label": "Lihat supervisi",
@@ -1879,7 +2503,29 @@
         }
       },
       "permissionCount": "{granted} dari {total} izin",
-      "unsaved": "Ada perubahan yang belum disimpan"
+      "unsaved": "Ada perubahan yang belum disimpan",
+      "rolesTitle": "Peran",
+      "custom": "Khusus",
+      "roleMetaUsers": "{kind} · {count} pengguna",
+      "roleTally": "{granted} dari {total} izin diberikan",
+      "rolePicker": "Peran",
+      "roleOptionUnsaved": "{name} (belum disimpan)",
+      "searchLabel": "Cari izin",
+      "searchPlaceholder": "Cari izin",
+      "scopeLabel": "Tampilkan izin",
+      "scopeAll": "Semua",
+      "scopeGranted": "Diberikan",
+      "selectAll": "Berikan semua izin {group}",
+      "changed": "Diubah",
+      "grantedState": "(diberikan)",
+      "notGrantedState": "(tidak diberikan)",
+      "unsavedRole": "{count} perubahan izin {name} belum disimpan",
+      "leaveConfirm": "Perubahan izin yang belum disimpan akan hilang. Tetap tinggalkan halaman ini?",
+      "nameRequired": "Nama peran wajib diisi.",
+      "slugRequired": "Kode peran wajib diisi.",
+      "slugFormat": "Pakai huruf kecil, angka, dan garis bawah saja.",
+      "slugHint": "Terisi dari nama. Huruf kecil, angka, dan garis bawah, misalnya wali_asrama.",
+      "create": "Buat peran"
     }
   }
 }

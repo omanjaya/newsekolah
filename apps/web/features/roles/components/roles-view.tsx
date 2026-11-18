@@ -4,14 +4,15 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Badge,
   Button,
-  Checkbox,
+  Card,
+  CardHeader,
+  CardTitle,
   ConfirmDialog,
   Dialog,
   DialogContent,
-  Input,
-  PageHeader,
-  Skeleton,
-  cn,
+  List,
+  ListRow,
+  SkeletonList,
   useToast,
 } from "@newsekolah/ui";
 import { Plus } from "lucide-react";
@@ -19,116 +20,115 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useUnsavedChangesProtection } from "../../../lib/navigation/use-unsaved-changes-protection";
 import { useCan } from "../../../lib/session/session-provider";
+import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
+import { SettingsSaveBar } from "../../settings/components/settings-save-bar";
 import {
   type AdminRole,
-  useCreateRoleMutation,
   useDeleteRoleMutation,
-  usePermissionsQuery,
   useReplaceRolePermissionsMutation,
   useRolesQuery,
 } from "../api";
 
-/**
- * identity/domain/errors.go's ErrLeavePermissionDirect: these two codes
- * cannot be granted to the teacher system role directly, only through a
- * duty assignment, so the matrix disables them there instead of letting an
- * admin check a box the server will reject on save.
- */
-const DUTY_ONLY_PERMISSIONS = new Set(["review_leave_requests", "issue_leave_letters"]);
+import { CreateRoleForm } from "./create-role-form";
+import { RolePermissionsPanel } from "./role-permissions-panel";
 
-/** Roles on the left, the permission matrix of the selected role on the right. */
-export function RolesView(): ReactElement {
-  const t = useTranslations("app.roles");
-  const canManage = useCan("manage_permissions");
-  const roles = useRolesQuery();
-  const [selectedId, setSelectedId] = useState("");
-  const [creating, setCreating] = useState(false);
-  const list = roles.data?.data ?? [];
-  const selected = list.find((r) => r.id === selectedId) ?? list[0];
-
-  return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          canManage && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                setCreating(true);
-              }}
-            >
-              {t("addRole")}
-            </Button>
-          )
-        }
-      />
-      {roles.isLoading ? (
-        <Skeleton className="h-96 w-full" />
-      ) : (
-        <div className="grid gap-4 md:grid-cols-[240px_1fr]">
-          <nav aria-label={t("title")} className="flex flex-row gap-1 overflow-x-auto md:flex-col">
-            {list.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                aria-current={selected?.id === r.id ? "true" : undefined}
-                onClick={() => {
-                  setSelectedId(r.id);
-                }}
-                className={`flex min-h-11 shrink-0 items-center justify-between gap-3 whitespace-nowrap rounded-xs px-3 py-2 text-left text-[14px] ${selected?.id === r.id ? "bg-accent/10 text-accent" : "text-fg hover:bg-bg"}`}
-              >
-                <span>{r.name}</span>
-                {r.user_count !== undefined && (
-                  <span className="text-[12px] text-fg-muted">{r.user_count}</span>
-                )}
-              </button>
-            ))}
-          </nav>
-          {selected && <RoleMatrix key={selected.id} role={selected} canManage={canManage} />}
-        </div>
-      )}
-      <Dialog open={creating} onOpenChange={setCreating}>
-        <DialogContent title={t("addRole")}>
-          {creating && (
-            <CreateRoleForm
-              onDone={() => {
-                setCreating(false);
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+/** Codes in one set and not the other: what an unsaved edit changes. */
+function difference(a: readonly string[], b: readonly string[]): Set<string> {
+  const left = new Set(a);
+  const right = new Set(b);
+  const out = new Set<string>();
+  for (const code of left) if (!right.has(code)) out.add(code);
+  for (const code of right) if (!left.has(code)) out.add(code);
+  return out;
 }
 
-function RoleMatrix({ role, canManage }: { role: AdminRole; canManage: boolean }): ReactElement {
+/**
+ * Roles and access: the roles on the left (a picker in the panel's header
+ * on a phone), the selected role's permissions on the right. Unsaved
+ * changes are kept per role, marked on the role, its groups and its rows,
+ * and saved from one bar at the bottom edge; leaving the page with any
+ * role still changed asks first. Shares Data Sekolah's users area tabs,
+ * the area the sidebar highlights for this route.
+ */
+export function RolesView(): ReactElement {
   const t = useTranslations("app.roles");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const permissions = usePermissionsQuery();
+  const canManage = useCan("manage_permissions");
+  const roles = useRolesQuery();
   const replace = useReplaceRolePermissionsMutation();
   const remove = useDeleteRoleMutation();
-  const [granted, setGranted] = useState<Set<string>>(() => new Set(role.permissions));
+  const [selectedId, setSelectedId] = useState("");
+  const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const dirty = useMemo(() => {
-    const original = new Set(role.permissions);
-    if (original.size !== granted.size) return true;
-    for (const code of granted) if (!original.has(code)) return true;
-    return false;
-  }, [role.permissions, granted]);
-  const editable = canManage && !role.is_system;
+  // Unsaved checkbox edits are kept per role, so switching roles never
+  // silently throws a half-finished edit away.
+  const [drafts, setDrafts] = useState<Record<string, string[]>>({});
+  // Permissions just saved but not yet reflected by the refetched roles
+  // list. Without this the boxes would snap back to the old set until the
+  // refetch lands, and a toggle in that window would build on the stale
+  // set. Only trusted while the list still holds the array it held at save time.
+  const [saved, setSaved] = useState<Record<string, { permissions: string[]; stale: string[] }>>(
+    {},
+  );
+  const list = useMemo(() => roles.data?.data ?? [], [roles.data]);
+  const selected = list.find((role) => role.id === selectedId) ?? list[0];
+
+  const baseOf = (role: AdminRole): string[] => {
+    const entry = saved[role.id];
+    if (!entry) return role.permissions;
+    return entry.stale === role.permissions ? entry.permissions : role.permissions;
+  };
+  const draftIds = useMemo(
+    () => new Set(Object.keys(drafts).filter((id) => list.some((role) => role.id === id))),
+    [drafts, list],
+  );
+  useUnsavedChangesProtection(draftIds.size > 0, t("leaveConfirm"));
+
+  const savedEntry = selected ? saved[selected.id] : undefined;
+  const selectedBase = useMemo(() => {
+    if (!selected) return [];
+    return savedEntry?.stale === selected.permissions
+      ? savedEntry.permissions
+      : selected.permissions;
+  }, [selected, savedEntry]);
+  const selectedDraft = selected ? drafts[selected.id] : undefined;
+  const granted = useMemo(
+    () => new Set(selectedDraft ?? selectedBase),
+    [selectedDraft, selectedBase],
+  );
+  const changed = useMemo(
+    () => (selectedDraft ? difference(selectedDraft, selectedBase) : new Set<string>()),
+    [selectedDraft, selectedBase],
+  );
+
+  function setDraft(role: AdminRole, permissions: string[] | undefined) {
+    setDrafts((current) => {
+      const { [role.id]: _discarded, ...rest } = current;
+      // Toggling back to the saved set is no change at all.
+      if (!permissions || difference(permissions, baseOf(role)).size === 0) return rest;
+      return { ...rest, [role.id]: permissions };
+    });
+  }
 
   function save() {
+    if (!selected || !selectedDraft) return;
+    const role = selected;
+    const permissions = [...selectedDraft];
     replace.mutate(
-      { id: role.id, permissions: [...granted] },
+      { id: role.id, permissions },
       {
         onSuccess: () => {
+          setSaved((current) => ({
+            ...current,
+            [role.id]: { permissions, stale: role.permissions },
+          }));
+          setDraft(role, undefined);
           toast.success(t("saved"));
         },
         onError: (error) => {
@@ -140,232 +140,149 @@ function RoleMatrix({ role, canManage }: { role: AdminRole; canManage: boolean }
     );
   }
 
-  function permissionText(code: string, fallback: string): { label: string; description: string } {
-    return t.has(`permissions.${code}.label`)
-      ? {
-          label: t(`permissions.${code}.label`),
-          description: t(`permissions.${code}.description`),
-        }
-      : { label: code, description: fallback };
-  }
-
   return (
-    <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex flex-col gap-1">
-          <h2 className="flex items-center gap-2 text-[18px] font-medium text-fg">
-            {role.name} {role.is_system && <Badge>{t("system")}</Badge>}
-          </h2>
-          <span className="text-[13px] text-fg-muted">{role.description ?? role.slug}</span>
-        </div>
-        {editable && (
+    <AppPage
+      nav={<AcademicWorkspaceLinks area="users" />}
+      primaryAction={
+        canManage ? (
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<Plus />}
             onClick={() => {
-              setConfirmDelete(true);
+              setCreating(true);
             }}
           >
-            {t("deleteRole")}
+            {t("addRole")}
           </Button>
-        )}
-      </div>
-      {role.is_system && <p className="text-[13px] text-fg-muted">{t("systemHint")}</p>}
-      {permissions.isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {(permissions.data?.groups ?? []).map((group) => {
-            const grantedInGroup = group.permissions.filter((p) => granted.has(p.code)).length;
-            return (
-              <fieldset
-                key={group.name}
-                className="flex min-w-0 flex-col rounded-xs border border-border p-3 pt-1"
-              >
-                <legend className="flex items-center gap-2 px-1 text-[13px] font-medium text-fg">
-                  {t.has(`groups.${group.name}`) ? t(`groups.${group.name}`) : group.name}
-                  <span className="text-[12px] font-normal text-fg-muted">
-                    {t("permissionCount", {
-                      granted: grantedInGroup,
-                      total: group.permissions.length,
-                    })}
-                  </span>
-                </legend>
-                {group.permissions.map((p) => {
-                  const dutyOnly = role.slug === "teacher" && DUTY_ONLY_PERMISSIONS.has(p.code);
-                  const text = permissionText(p.code, p.description);
-                  const disabled = !editable || dutyOnly;
-                  return (
-                    // The whole row is the label, so a thumb anywhere on
-                    // it toggles the permission, not only the 16px box.
-                    <label
-                      key={p.code}
-                      htmlFor={`perm-${p.code}`}
-                      className={cn(
-                        "-mx-1 flex items-start gap-3 rounded-xs px-1 py-2 text-[13px]",
-                        !disabled && "cursor-pointer hover:bg-bg",
-                      )}
-                    >
-                      <Checkbox
-                        id={`perm-${p.code}`}
-                        className="mt-0.5"
-                        checked={granted.has(p.code)}
-                        disabled={disabled}
-                        onCheckedChange={(v) => {
-                          setGranted((prev) => {
-                            const next = new Set(prev);
-                            if (v === true) next.add(p.code);
-                            else next.delete(p.code);
-                            return next;
-                          });
-                        }}
-                      />
-                      <span className="flex min-w-0 flex-col gap-0.5">
-                        <span className="font-medium text-fg">{text.label}</span>
-                        <span className="text-[12px] text-fg-muted">{text.description}</span>
-                        <span className="break-all font-mono text-[11px] text-fg-muted">
-                          {p.code}
-                        </span>
-                        {dutyOnly && (
-                          <span className="text-[12px] text-fg-muted">{t("dutyOnlyHint")}</span>
-                        )}
-                      </span>
-                    </label>
-                  );
-                })}
-              </fieldset>
-            );
-          })}
-        </div>
-      )}
-      {editable && dirty && (
-        // Sticky so a long matrix never hides the save button: on a phone
-        // it rides just above the tab bar.
-        <div className="sticky bottom-[calc(var(--shell-mobile-tab-offset)+0.5rem)] z-10 flex flex-wrap items-center justify-between gap-2 rounded-sm border border-border bg-surface p-3 shadow-(--shadow-float) md:bottom-4">
-          <span className="text-[13px] text-fg">{t("unsaved")}</span>
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                setGranted(new Set(role.permissions));
-              }}
-            >
-              {t("cancel")}
-            </Button>
-            <Button size="sm" loading={replace.isPending} onClick={save}>
-              {t("save")}
-            </Button>
-          </div>
-        </div>
-      )}
-      <ConfirmDialog
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
-        title={t("deleteRole")}
-        description={t("deleteBody", { name: role.name })}
-        confirmLabel={t("deleteRole")}
-        destructive
-        confirming={remove.isPending}
-        onConfirm={async () => {
-          try {
-            await remove.mutateAsync(role.id);
-            toast.success(t("deleted"));
-          } catch (error) {
-            toast.error(
-              error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-            );
-          } finally {
-            setConfirmDelete(false);
-          }
-        }}
-      />
-    </section>
-  );
-}
-
-function CreateRoleForm({ onDone }: { onDone: () => void }): ReactElement {
-  const t = useTranslations("app.roles");
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
-  const create = useCreateRoleMutation();
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [description, setDescription] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  return (
-    <form
-      className="flex flex-col gap-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (!name.trim() || !slug.trim()) {
-          setError(t("requiredError"));
-          return;
-        }
-        create.mutate(
-          {
-            name: name.trim(),
-            slug: slug.trim(),
-            ...(description.trim() ? { description: description.trim() } : {}),
-          },
-          {
-            onSuccess: () => {
-              toast.success(t("created"));
-              onDone();
-            },
-            onError: (err) => {
-              setError(
-                err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"),
-              );
-            },
-          },
-        );
-      }}
+        ) : undefined
+      }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("addRole"),
+              onSelect: () => {
+                setCreating(true);
+              },
+            }
+          : undefined
+      }
+      floating={
+        selected && (
+          <SettingsSaveBar
+            container="default"
+            protect={false}
+            dirty={changed.size > 0}
+            saving={replace.isPending}
+            message={t("unsavedRole", { count: changed.size, name: selected.name })}
+            saveLabel={t("save")}
+            onSave={save}
+            onDiscard={() => {
+              setDraft(selected, undefined);
+            }}
+          />
+        )
+      }
     >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-          {error}
-        </p>
+      {roles.isLoading ? (
+        <SkeletonList rows={6} framed />
+      ) : roles.isError && !roles.data ? (
+        <QueryError retry={() => roles.refetch()} error={roles.error} />
+      ) : (
+        <div className="grid items-start gap-6 md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]">
+          <Card className="hidden md:sticky md:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)] md:block">
+            <CardHeader>
+              <CardTitle as="h2">{t("rolesTitle")}</CardTitle>
+            </CardHeader>
+            <List aria-label={t("rolesTitle")}>
+              {list.map((role) => (
+                <ListRow
+                  key={role.id}
+                  title={role.name}
+                  selected={role.id === selected?.id}
+                  chevron={false}
+                  meta={
+                    role.user_count !== undefined
+                      ? t("roleMetaUsers", {
+                          kind: role.is_system ? t("system") : t("custom"),
+                          count: role.user_count,
+                        })
+                      : role.is_system
+                        ? t("system")
+                        : t("custom")
+                  }
+                  trailing={
+                    draftIds.has(role.id) ? (
+                      <Badge tone="warning" size="sm" dot>
+                        {t("changed")}
+                      </Badge>
+                    ) : undefined
+                  }
+                  onClick={() => {
+                    setSelectedId(role.id);
+                  }}
+                />
+              ))}
+            </List>
+          </Card>
+          {selected && (
+            <RolePermissionsPanel
+              role={selected}
+              roles={list}
+              onSelectRole={setSelectedId}
+              draftRoleIds={draftIds}
+              granted={granted}
+              changed={changed}
+              canManage={canManage}
+              onChange={(permissions) => {
+                setDraft(selected, permissions);
+              }}
+              onDelete={() => {
+                setConfirmDelete(true);
+              }}
+            />
+          )}
+        </div>
       )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
-        <Input
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            if (!slug) setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "_"));
+
+      <Dialog open={creating} onOpenChange={setCreating}>
+        <DialogContent title={t("addRole")} size="md">
+          {creating && (
+            <CreateRoleForm
+              onDone={() => {
+                setCreating(false);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {selected && (
+        <ConfirmDialog
+          open={confirmDelete}
+          onOpenChange={setConfirmDelete}
+          title={t("deleteRole")}
+          description={t("deleteBody", { name: selected.name })}
+          confirmLabel={t("deleteRole")}
+          tone="danger"
+          confirming={remove.isPending}
+          onConfirm={async () => {
+            const role = selected;
+            try {
+              await remove.mutateAsync(role.id);
+              setDraft(role, undefined);
+              toast.success(t("deleted"));
+            } catch (error) {
+              toast.error(
+                error instanceof ApiError
+                  ? apiErrorMessage(error.code)
+                  : apiErrorMessage("UNKNOWN"),
+              );
+            } finally {
+              setConfirmDelete(false);
+            }
           }}
-          required
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("slug")}</span>
-        <Input
-          value={slug}
-          onChange={(e) => {
-            setSlug(e.target.value);
-          }}
-          pattern="[a-z0-9_]+"
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("description")}</span>
-        <Input
-          value={description}
-          onChange={(e) => {
-            setDescription(e.target.value);
-          }}
-        />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
-        <Button type="button" variant="secondary" onClick={onDone}>
-          {t("cancel")}
-        </Button>
-        <Button type="submit" loading={create.isPending}>
-          {t("save")}
-        </Button>
-      </div>
-    </form>
+      )}
+    </AppPage>
   );
 }

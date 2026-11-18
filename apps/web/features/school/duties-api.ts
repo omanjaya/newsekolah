@@ -3,10 +3,10 @@
 import { queryKeys, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { setAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
 import { useActiveYear } from "../../lib/hooks/use-active-year";
-import { suspendSimulation } from "../../lib/simulation/clock";
+import { clearServerAccessCookie } from "../../lib/session/clear-server-access-cookie";
+import { switchReader } from "../../lib/session/switch-reader";
 
 import { useInvalidate } from "./api";
 
@@ -158,24 +158,31 @@ export function useEndDutyAssignmentMutation() {
 
 /**
  * POST /v1/users/{userId}/impersonate. Swaps the caller's own session for a
- * fresh 30-minute session as the target user, so the response is handled
- * the same way as a login: store the new access token and seed `me` from
- * the response instead of waiting on a refetch (docs/08-security.md
- * section 2 requires the switch to be immediate and visibly marked).
+ * fresh 30-minute session as the target user (docs/08-security.md section
+ * 2 requires the switch to be immediate and visibly marked), handled the
+ * way the role-testing switch handles its own: the server access cookie
+ * is removed before the request, so a reload cannot render the admin's
+ * `/v1/me` over the impersonated account (an impersonation that cannot
+ * remove it does not start, and fails with `ServerAccessCookieError`,
+ * which the caller shows as such), and the response goes through
+ * `switchReader`.
+ * SimulationSync would not drop the admin's reads: it refetches only when
+ * the business clock moves, not when the reader changes.
  */
 export function useImpersonateUserMutation() {
   const client = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (userId: string) =>
-      client.POST("/v1/users/{userId}/impersonate", {
+    mutationFn: async (userId: string) => {
+      await clearServerAccessCookie();
+      return client.POST("/v1/users/{userId}/impersonate", {
         params: { path: { userId } },
         body: { client: "web" },
-      }),
-    onSuccess: (data) => {
-      suspendSimulation();
-      setAccessToken(data.access_token);
-      queryClient.setQueryData(queryKeys.me(), data.user);
+      });
+    },
+    onSuccess: async (data) => {
+      await switchReader(queryClient, client, data);
+      // Seeded from the response above; read once more from the server too.
       void queryClient.invalidateQueries({ queryKey: queryKeys.me() });
     },
 

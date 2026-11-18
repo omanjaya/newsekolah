@@ -1,193 +1,120 @@
 "use client";
 
-import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, Skeleton, Switch, useToast } from "@newsekolah/ui";
+import { Field, FormSection, Input, PasswordInput, Select, SkeletonForm } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
 
-import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import {
-  useSetWhatsAppProviderConfigMutation,
-  useWhatsAppProviderConfigQuery,
-  type WhatsAppProviderKind,
-  type WhatsAppProviderStatus,
-} from "../api";
+import { QueryError } from "../../../components/query-error";
+import { SettingSwitchRow } from "../../settings/components/setting-switch-row";
+import type { WhatsAppProviderKind } from "../api";
 
-interface FormState {
-  provider: WhatsAppProviderKind;
-  phoneNumberId: string;
-  accessToken: string;
-  gatewayUrl: string;
-  gatewayHeaderName: string;
-  gatewayHeaderValue: string;
-  isActive: boolean;
-}
+import type { ProviderConfigForm } from "./use-provider-config-form";
 
-const EMPTY_FORM: FormState = {
-  provider: "meta",
-  phoneNumberId: "",
-  accessToken: "",
-  gatewayUrl: "",
-  gatewayHeaderName: "",
-  gatewayHeaderValue: "",
-  isActive: false,
-};
-
-export function ProviderConfigView(): ReactElement {
+/**
+ * The WhatsApp delivery provider: Meta Cloud API or the school's own
+ * gateway, its credentials, and the switch that turns delivery on. The
+ * page owns the form state (`useProviderConfigForm`) and saves it from the
+ * settings save bar; the tab already names the panel, so the card only
+ * explains it. Tokens are write-only, as on the SSO page: once saved the
+ * field reads "Tidak diubah" and a blank value keeps what is stored.
+ */
+export function ProviderConfigView({
+  controller,
+}: {
+  controller: ProviderConfigForm;
+}): ReactElement {
   const t = useTranslations("app.messaging.provider");
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
-  const query = useWhatsAppProviderConfigQuery();
-  const save = useSetWhatsAppProviderConfigMutation();
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  // Tracks which loaded status the form was last initialized from, so a
-  // fresh GET result (e.g. after a save) re-seeds the form exactly once,
-  // set during render rather than in an effect (React's recommended
-  // pattern for state derived from a prop/query, per react-hooks/set-state-in-effect).
-  const [seededFrom, setSeededFrom] = useState<WhatsAppProviderStatus | undefined>(undefined);
+  const { query, form, update } = controller;
 
+  if (query.isError && !query.data) {
+    return <QueryError retry={() => query.refetch()} error={query.error} />;
+  }
+  if (query.isLoading || !query.data) {
+    return <SkeletonForm fields={4} actions={false} />;
+  }
   const status = query.data;
-  if (status && status !== seededFrom) {
-    setSeededFrom(status);
-    setForm({
-      provider: status.provider,
-      phoneNumberId: status.phone_number_id ?? "",
-      accessToken: "",
-      gatewayUrl: status.gateway_url ?? "",
-      gatewayHeaderName: status.gateway_header_name ?? "",
-      gatewayHeaderValue: "",
-      isActive: status.is_active,
-    });
-  }
-
-  if (query.isLoading) {
-    return <Skeleton className="h-64 w-full" />;
-  }
-
-  async function handleSave() {
-    try {
-      await save.mutateAsync({
-        provider: form.provider,
-        phone_number_id: form.phoneNumberId || undefined,
-        access_token: form.accessToken || undefined,
-        gateway_url: form.gatewayUrl || undefined,
-        gateway_header_name: form.gatewayHeaderName || undefined,
-        gateway_header_value: form.gatewayHeaderValue || undefined,
-        is_active: form.isActive,
-      });
-      toast.success(t("saved"));
-    } catch (error) {
-      toast.error(
-        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-      );
-    }
-  }
 
   return (
-    <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-      <div>
-        <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-        <p className="text-[13px] text-fg-muted">{t("body")}</p>
-      </div>
-
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("providerLabel")}</span>
+    <FormSection variant="card" columns={1} description={t("body")}>
+      <Field label={t("providerLabel")}>
         <Select
           value={form.provider}
           onValueChange={(value) => {
-            setForm((f) => ({ ...f, provider: value as WhatsAppProviderKind }));
+            update({ provider: value as WhatsAppProviderKind });
           }}
           options={[
             { value: "meta", label: t("providerMeta") },
             { value: "gateway", label: t("providerGateway") },
           ]}
         />
-      </label>
+      </Field>
 
       {form.provider === "meta" ? (
-        <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("meta.phoneNumberIdLabel")}</span>
+        <>
+          <Field label={t("meta.phoneNumberIdLabel")} hint={t("meta.phoneNumberIdHint")}>
             <Input
               value={form.phoneNumberId}
               onChange={(e) => {
-                setForm((f) => ({ ...f, phoneNumberId: e.target.value }));
+                update({ phoneNumberId: e.target.value });
               }}
             />
-            <span className="text-fg-muted">{t("meta.phoneNumberIdHint")}</span>
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("meta.accessTokenLabel")}</span>
-            <Input
-              type="password"
+          </Field>
+          <Field
+            label={t("meta.accessTokenLabel")}
+            hint={status.has_access_token ? t("meta.accessTokenKeepHint") : undefined}
+          >
+            <PasswordInput
               value={form.accessToken}
+              autoComplete="off"
+              placeholder={status.has_access_token ? t("unchangedPlaceholder") : ""}
               onChange={(e) => {
-                setForm((f) => ({ ...f, accessToken: e.target.value }));
+                update({ accessToken: e.target.value });
               }}
-              placeholder={
-                status?.has_access_token
-                  ? t("meta.accessTokenPlaceholderSet")
-                  : t("meta.accessTokenPlaceholderUnset")
-              }
             />
-          </label>
-        </div>
+          </Field>
+        </>
       ) : (
-        <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("gateway.urlLabel")}</span>
+        <>
+          <Field label={t("gateway.urlLabel")} hint={t("gateway.urlHint")}>
             <Input
               value={form.gatewayUrl}
               onChange={(e) => {
-                setForm((f) => ({ ...f, gatewayUrl: e.target.value }));
+                update({ gatewayUrl: e.target.value });
               }}
             />
-            <span className="text-fg-muted">{t("gateway.urlHint")}</span>
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("gateway.headerNameLabel")}</span>
+          </Field>
+          <Field label={t("gateway.headerNameLabel")}>
             <Input
               value={form.gatewayHeaderName}
               onChange={(e) => {
-                setForm((f) => ({ ...f, gatewayHeaderName: e.target.value }));
+                update({ gatewayHeaderName: e.target.value });
               }}
             />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("gateway.headerValueLabel")}</span>
-            <Input
-              type="password"
+          </Field>
+          <Field
+            label={t("gateway.headerValueLabel")}
+            hint={status.has_gateway_header ? t("gateway.headerValueKeepHint") : undefined}
+          >
+            <PasswordInput
               value={form.gatewayHeaderValue}
+              autoComplete="off"
+              placeholder={status.has_gateway_header ? t("unchangedPlaceholder") : ""}
               onChange={(e) => {
-                setForm((f) => ({ ...f, gatewayHeaderValue: e.target.value }));
+                update({ gatewayHeaderValue: e.target.value });
               }}
-              placeholder={
-                status?.has_gateway_header
-                  ? t("gateway.headerValuePlaceholderSet")
-                  : t("gateway.headerValuePlaceholderUnset")
-              }
             />
-          </label>
-        </div>
+          </Field>
+        </>
       )}
 
-      <label className="flex items-center gap-2 text-[13px]">
-        <Switch
-          checked={form.isActive}
-          onCheckedChange={(checked) => {
-            setForm((f) => ({ ...f, isActive: checked }));
-          }}
-        />
-        <span className="font-medium text-fg">{t("activeLabel")}</span>
-      </label>
-      <p className="text-[13px] text-fg-muted">{t("activeHint")}</p>
-
-      <div>
-        <Button onClick={() => void handleSave()} disabled={save.isPending}>
-          {t("save")}
-        </Button>
-      </div>
-    </div>
+      <SettingSwitchRow
+        label={t("activeLabel")}
+        hint={t("activeHint")}
+        checked={form.isActive}
+        onCheckedChange={(isActive) => {
+          update({ isActive });
+        }}
+      />
+    </FormSection>
   );
 }

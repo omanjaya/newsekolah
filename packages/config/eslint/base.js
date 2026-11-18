@@ -5,6 +5,7 @@ import js from "@eslint/js";
 import importPlugin from "eslint-plugin-import";
 import tseslint from "typescript-eslint";
 
+import { colorRestrictions } from "./design-system-patterns.js";
 import { EMOJI_SOURCE } from "./emoji-pattern.js";
 
 const emojiRestrictions = [
@@ -18,7 +19,13 @@ const emojiRestrictions = [
   },
 ];
 
-export const emojiNoRestrictedSyntax = emojiRestrictions;
+/**
+ * Every no-restricted-syntax entry a plain TypeScript file gets. A config
+ * that sets no-restricted-syntax again replaces this list rather than
+ * adding to it, so anything extending it (./react.js, packages/ui) spreads
+ * this list into its own.
+ */
+export const baseNoRestrictedSyntax = [...emojiRestrictions, ...colorRestrictions];
 
 /** @type {import("eslint").Linter.Config[]} */
 export const base = [
@@ -52,7 +59,7 @@ export const base = [
     },
     rules: {
       "max-lines": ["error", { max: 400, skipBlankLines: true, skipComments: true }],
-      "no-restricted-syntax": ["error", ...emojiRestrictions],
+      "no-restricted-syntax": ["error", ...baseNoRestrictedSyntax],
       "import/order": [
         "error",
         {

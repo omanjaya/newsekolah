@@ -4,17 +4,25 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Badge,
   Button,
+  Card,
+  CardTitle,
   Checkbox,
   ConfirmDialog,
   Dialog,
   DialogContent,
+  DialogFooter,
+  EmptyState,
+  Field,
+  FormError,
   Input,
+  List,
+  ListRow,
   Select,
-  Skeleton,
+  SkeletonList,
   Switch,
   useToast,
 } from "@newsekolah/ui";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -58,7 +66,7 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
   const selected = list.find((d) => d.id === selectedId) ?? list[0];
 
   if (types.isLoading) {
-    return <Skeleton className="h-64 w-full" />;
+    return <SkeletonList rows={5} framed />;
   }
 
   function resetCreateForm() {
@@ -113,30 +121,39 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
             {t("types.add")}
           </Button>
         )}
-        <nav
+        {/* A phone picks the type here; the list below is for a wide screen. */}
+        <Select
+          className="md:hidden"
           aria-label={t("types.title")}
-          className="flex flex-row gap-1 overflow-x-auto md:min-h-0 md:flex-col md:overflow-y-auto"
-        >
-          {list.map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              aria-current={selected?.id === d.id ? "true" : undefined}
-              onClick={() => {
-                setSelectedId(d.id);
-              }}
-              className={`flex min-h-11 items-center justify-between rounded-xs px-3 py-2 text-left text-[14px] ${selected?.id === d.id ? "bg-accent/10 text-accent" : "text-fg hover:bg-bg"}`}
-            >
-              <span>{d.name}</span>
-              {!d.is_active && <Badge>{t("types.inactive")}</Badge>}
-            </button>
-          ))}
-        </nav>
+          options={list.map((d) => ({ value: d.id, label: d.name }))}
+          value={selected?.id}
+          onValueChange={setSelectedId}
+        />
+        <Card className="max-md:hidden md:min-h-0 md:overflow-y-auto">
+          <nav aria-label={t("types.title")}>
+            <List dense variant="plain">
+              {list.map((d) => (
+                <ListRow
+                  key={d.id}
+                  title={d.name}
+                  selected={selected?.id === d.id}
+                  chevron={false}
+                  trailing={
+                    d.is_active ? undefined : <Badge tone="neutral">{t("types.inactive")}</Badge>
+                  }
+                  onClick={() => {
+                    setSelectedId(d.id);
+                  }}
+                />
+              ))}
+            </List>
+          </nav>
+        </Card>
       </div>
       {selected ? (
         <DutyTypeDetail key={selected.id} duty={selected} canManage={canManage} />
       ) : (
-        <p className="text-[13px] text-fg-muted">{t("types.empty")}</p>
+        <EmptyState icon={<ShieldCheck aria-hidden="true" />} title={t("types.empty")} />
       )}
       <Dialog
         open={creating}
@@ -153,26 +170,17 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
               submitCreate();
             }}
           >
-            {error && (
-              <p
-                role="alert"
-                className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]"
-              >
-                {error}
-              </p>
-            )}
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("types.name")}</span>
+            {error && <FormError>{error}</FormError>}
+            {/* Marked on the label; submitCreate says what is missing, not the browser. */}
+            <Field label={t("types.name")} required>
               <Input
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
                 }}
-                required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("types.scope")}</span>
+            </Field>
+            <Field label={t("types.scope")}>
               <Select
                 options={SCOPE_KINDS.map((s) => ({ value: s, label: t(`types.scopeKinds.${s}`) }))}
                 value={scopeKind}
@@ -180,8 +188,8 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
                   setScopeKind(v as DutyType["scope_kind"]);
                 }}
               />
-            </label>
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            </Field>
+            <DialogFooter>
               <Button
                 type="button"
                 variant="secondary"
@@ -194,7 +202,7 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
               <Button type="submit" loading={create.isPending}>
                 {t("types.save")}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -258,9 +266,11 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
   }
 
   return (
-    <section className="flex flex-col gap-6 rounded-sm border border-border bg-surface p-4 md:min-h-0 md:overflow-y-auto">
+    <Card padding="md" className="gap-6 md:min-h-0 md:overflow-y-auto">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <h2 className="text-[18px] font-medium text-fg">{duty.name}</h2>
+        <CardTitle as="h2" className="text-title">
+          {duty.name}
+        </CardTitle>
         {canManage && (
           <Button
             variant="ghost"
@@ -276,8 +286,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("types.name")}</span>
+        <Field label={t("types.name")}>
           <Input
             value={name}
             disabled={!canManage}
@@ -285,9 +294,8 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
               setName(e.target.value);
             }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("types.scope")}</span>
+        </Field>
+        <Field label={t("types.scope")}>
           <Select
             options={SCOPE_KINDS.map((s) => ({ value: s, label: t(`types.scopeKinds.${s}`) }))}
             value={scopeKind}
@@ -296,11 +304,10 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
               setScopeKind(v as DutyType["scope_kind"]);
             }}
           />
-        </label>
-        <label className="flex items-center gap-2 text-[13px]">
+        </Field>
+        <Field label={t("types.active")} orientation="horizontal">
           <Switch checked={isActive} disabled={!canManage} onCheckedChange={setIsActive} />
-          <span className="font-medium">{t("types.active")}</span>
-        </label>
+        </Field>
       </div>
       {canManage && (
         <div className="flex justify-end">
@@ -312,7 +319,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
 
       <div className="flex flex-col gap-3 border-t border-border pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-[14px] font-medium text-fg">{t("types.permissionsTitle")}</h3>
+          <CardTitle as="h3">{t("types.permissionsTitle")}</CardTitle>
           {canManage && (
             <Button
               size="sm"
@@ -324,42 +331,37 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
             </Button>
           )}
         </div>
-        <p className="text-[13px] text-fg-muted">{t("types.permissionsBody")}</p>
+        <p className="text-body-sm text-fg-muted">{t("types.permissionsBody")}</p>
         {permissions.isLoading ? (
-          <Skeleton className="h-48 w-full" />
+          <SkeletonList rows={4} />
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {(permissions.data?.groups ?? []).map((group) => (
               <fieldset
                 key={group.name}
-                className="flex flex-col gap-2 rounded-xs border border-border p-3"
+                className="flex flex-col gap-2 rounded-md bg-surface-sunken p-3"
               >
-                <legend className="px-1 text-[13px] font-medium text-fg">
+                <legend className="px-1 text-label text-fg">
                   {tGroups.has(`groups.${group.name}`)
                     ? tGroups(`groups.${group.name}`)
                     : group.name}
                 </legend>
                 {group.permissions.map((p) => (
-                  <div key={p.code} className="flex items-start gap-2 text-[13px]">
-                    <Checkbox
-                      id={`duty-perm-${duty.id}-${p.code}`}
-                      aria-label={p.code}
-                      checked={granted.has(p.code)}
-                      disabled={!canManage}
-                      onCheckedChange={(v) => {
-                        setGranted((prev) => {
-                          const next = new Set(prev);
-                          if (v === true) next.add(p.code);
-                          else next.delete(p.code);
-                          return next;
-                        });
-                      }}
-                    />
-                    <span className="flex flex-col">
-                      <label htmlFor={`duty-perm-${duty.id}-${p.code}`}>{p.code}</label>
-                      <span className="text-[12px] text-fg-muted">{p.description}</span>
-                    </span>
-                  </div>
+                  <Checkbox
+                    key={p.code}
+                    label={p.code}
+                    description={p.description}
+                    checked={granted.has(p.code)}
+                    disabled={!canManage}
+                    onCheckedChange={(v) => {
+                      setGranted((prev) => {
+                        const next = new Set(prev);
+                        if (v === true) next.add(p.code);
+                        else next.delete(p.code);
+                        return next;
+                      });
+                    }}
+                  />
                 ))}
               </fieldset>
             ))}
@@ -373,7 +375,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
         title={t("types.delete")}
         description={t("types.deleteBody", { name: duty.name })}
         confirmLabel={t("types.delete")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={async () => {
           try {
@@ -386,6 +388,6 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
           }
         }}
       />
-    </section>
+    </Card>
   );
 }

@@ -16,7 +16,7 @@ describe("HeroCard", () => {
         action={<a href="/attendance">Isi presensi</a>}
       />,
     );
-    expect(screen.getByRole("heading", { name: "Matematika · X-A" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Matematika · X-A" })).toHaveClass("text-display");
     expect(screen.getByText("Sekarang")).toBeInTheDocument();
     expect(screen.getByText("08.40-10.00")).toBeInTheDocument();
     expect(screen.getByText("12 menit lagi")).toBeInTheDocument();
@@ -27,5 +27,60 @@ describe("HeroCard", () => {
   it("omits optional parts", () => {
     render(<HeroCard eyebrow="Hari ini" title="Tidak ada jadwal" />);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("follows the artboard: radius 24, a sentence-case 13/600 eyebrow, muted meta", () => {
+    const { container } = render(
+      <HeroCard eyebrow="Pelajaran berikutnya" title="Matematika" meta="Ruang X-A" />,
+    );
+    expect(container.firstElementChild).toHaveClass("rounded-xl", "bg-accent-soft", "py-4.5");
+    const eyebrow = screen.getByText("Pelajaran berikutnya");
+    expect(eyebrow).toHaveClass("text-label");
+    expect(eyebrow).not.toHaveClass("uppercase");
+    expect(screen.getByText("Ruang X-A")).toHaveClass("text-accent-soft-fg-muted");
+  });
+
+  it("sets a kiosk card on the kiosk title role and the large body role", () => {
+    render(
+      <HeroCard
+        size="kiosk"
+        titleAs="h1"
+        eyebrow="Kios perpustakaan"
+        title="Pinjam dan kembalikan buku"
+        meta="Pindai kartu anggota untuk mulai."
+      />,
+    );
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Pinjam dan kembalikan buku" }),
+    ).toHaveClass("text-kiosk-title");
+    expect(screen.getByText("Pindai kartu anggota untuk mulai.")).toHaveClass("text-body-lg");
+  });
+
+  it("offers a neutral and a warning tone, and a live chip", () => {
+    const { container, rerender } = render(
+      <HeroCard tone="neutral" title="Tidak ada jadwal lagi" chip="Selesai" />,
+    );
+    expect(container.firstElementChild).toHaveClass("bg-surface", "border-border");
+    rerender(<HeroCard tone="warning" title="3 jurnal belum diisi" chip="Lewat 2 hari" live />);
+    expect(container.firstElementChild).toHaveClass("bg-warning-soft");
+    const chip = screen.getByText("Lewat 2 hari").closest('[data-slot="badge"]');
+    expect(chip?.querySelector(".animate-live")).toBeInTheDocument();
+  });
+
+  // An overdue loan's hero was warning amber beside a red "Terlambat" badge.
+  it("offers a danger tone whose chip matches the danger badges", () => {
+    const { container } = render(
+      <HeroCard
+        tone="danger"
+        eyebrow="Perlu dikembalikan"
+        title="1 buku terlambat 42 hari"
+        meta="Laskar Pelangi"
+        chip="Terlambat"
+      />,
+    );
+    expect(container.firstElementChild).toHaveClass("bg-danger-soft", "text-danger-soft-fg");
+    expect(screen.getByText("Laskar Pelangi")).toHaveClass("text-danger-soft-fg/80");
+    const chip = screen.getByText("Terlambat").closest('[data-slot="badge"]');
+    expect(chip?.className).toMatch(/danger/);
   });
 });

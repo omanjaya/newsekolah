@@ -1,13 +1,13 @@
 {
   "navLabel": "Early warning",
   "list": {
-    "eyebrow": "Student Affairs",
+    "eyebrow": "Student affairs",
     "title": "Early warning",
     "description": "Students to check on, ranked by score.",
     "columns": {
       "student": "Student",
       "class": "Class",
-      "level": "Status",
+      "level": "Level",
       "score": "Score",
       "computedAt": "Updated"
     },
@@ -16,8 +16,21 @@
     "emptyBody": "No student in this class has reached the watch or at-risk threshold yet.",
     "policy": "Configure policy",
     "summary": {
-      "chartLabel": "Of {total} students: {none} none, {watch} watch, {at_risk} at risk."
-    }
+      "chartLabel": "Of {total} students: {none} none, {watch} watch, {at_risk} at risk.",
+      "label": "Students per level",
+      "filtering": "Filtering the list",
+      "filterHint": "Tap to filter"
+    },
+    "searchPlaceholder": "Search student name or class",
+    "notAssignedTitle": "No class to monitor yet",
+    "notAssignedBody": "This list is available to homeroom teachers, counselors, or school leadership with an active assignment.",
+    "backHome": "Back to home",
+    "filters": {
+      "class": "Class"
+    },
+    "computedAt": "Data computed {time}",
+    "sortedHint": "Highest score first",
+    "scoreValue": "Score {score}"
   },
   "level": {
     "none": "None",
@@ -28,6 +41,7 @@
     "eyebrow": "Early warning",
     "back": "Back",
     "unknownStudent": "Unknown student",
+    "nis": "NIS {nis}",
     "freshness": "Computed {time}",
     "score": "Score {score}",
     "reasonsTitle": "Reasons",
@@ -47,7 +61,11 @@
       "gradeTrendValue": "Report-score average from {previous} to {current}",
       "gradeTrendPrevious": "Previous",
       "gradeTrendCurrent": "Current",
-      "noData": "No data yet"
+      "noData": "No data yet",
+      "absentUnit": "of {considered} days absent",
+      "disciplineUnit": "active points",
+      "warningLettersUnit": "{count, plural, one {letter} other {letters}}",
+      "gradeTrendUnit": "report average, previously {previous}"
     },
     "reasons": {
       "attendance_absence_watch": "Absent {absent_days} of the last {considered_days} school days",
@@ -59,7 +77,8 @@
       "grade_drop_watch": "Report-score average dropped from {previous_average} to {current_average}",
       "grade_drop_at_risk": "Report-score average dropped from {previous_average} to {current_average}",
       "unknown": "Unknown signal"
-    }
+    },
+    "openProfile": "Open the student profile"
   },
   "policy": {
     "title": "Early-warning policy",

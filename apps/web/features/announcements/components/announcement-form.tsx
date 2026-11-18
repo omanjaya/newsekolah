@@ -6,10 +6,12 @@ import {
   Badge,
   Button,
   Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   Checkbox,
+  DatePicker,
+  DialogFooter,
+  Field,
+  FormError,
+  FormSection,
   Input,
   SafeHtml,
   Select,
@@ -19,6 +21,7 @@ import {
   TabsList,
   TabsTrigger,
   Textarea,
+  TimePicker,
   useToast,
 } from "@newsekolah/ui";
 import { Pin } from "lucide-react";
@@ -151,155 +154,121 @@ export function AnnouncementForm({
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
+      noValidate
       onSubmit={(event) => {
         event.preventDefault();
         void submit();
       }}
     >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-          {error}
-        </p>
-      )}
+      {error && <FormError>{error}</FormError>}
 
       <Tabs
         value={activeTab}
         onValueChange={(v) => {
           setActiveTab(v as "compose" | "preview");
         }}
+        className="flex flex-col gap-5"
       >
-        <TabsList>
+        <TabsList variant="underline">
           <TabsTrigger value="compose">{t("tabCompose")}</TabsTrigger>
           <TabsTrigger value="preview">{t("tabPreview")}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="compose" className="flex flex-col gap-4 pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("sectionContent")}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4 pt-0">
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("title")}</span>
-                <Input
-                  value={title}
-                  maxLength={180}
-                  onChange={(e) => {
-                    setTitle(e.target.value);
-                  }}
-                  required
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("body")}</span>
-                <Textarea
-                  value={body}
-                  rows={8}
-                  onChange={(e) => {
-                    setBody(e.target.value);
-                  }}
-                  required
-                />
-                <span className="text-fg-muted">{t("bodyHint")}</span>
-              </label>
-            </CardContent>
-          </Card>
+        <TabsContent value="compose" className="flex flex-col gap-6">
+          <FormSection title={t("sectionContent")} columns={1}>
+            <Field label={t("title")} required>
+              <Input
+                value={title}
+                maxLength={180}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                }}
+              />
+            </Field>
+            <Field label={t("body")} hint={t("bodyHint")} required>
+              <Textarea
+                value={body}
+                rows={8}
+                onChange={(e) => {
+                  setBody(e.target.value);
+                }}
+              />
+            </Field>
+          </FormSection>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("sectionAudience")}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2 pt-0 text-[13px]">
+          <FormSection title={t("sectionAudience")} columns={1}>
+            <Field label={t("audienceLabel")}>
               <Select
                 options={audienceOptions}
                 value={audienceType}
                 onValueChange={(value) => {
                   setAudienceType(value as AudienceType);
                 }}
-                className="w-full md:w-64"
               />
-              {audienceType === "roles" && (
-                <div className="flex flex-wrap gap-4">
+            </Field>
+            {audienceType === "roles" && (
+              <fieldset className="flex flex-col gap-3">
+                <legend className="mb-2 text-label text-fg">{t("audienceRoles")}</legend>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {ROLE_SLUGS.map((slug) => (
-                    <label key={slug} className="flex items-center gap-2">
-                      <Checkbox
-                        checked={roleSlugs.includes(slug)}
-                        onCheckedChange={() => {
-                          toggle(roleSlugs, slug, setRoleSlugs);
-                        }}
-                      />
-                      {tRoles(slug)}
-                    </label>
+                    <Checkbox
+                      key={slug}
+                      label={tRoles(slug)}
+                      checked={roleSlugs.includes(slug)}
+                      onCheckedChange={() => {
+                        toggle(roleSlugs, slug, setRoleSlugs);
+                      }}
+                    />
                   ))}
                 </div>
-              )}
-              {audienceType === "classes" && (
-                <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto rounded-xs border border-border p-3 md:grid-cols-3">
+              </fieldset>
+            )}
+            {audienceType === "classes" && (
+              <fieldset className="flex flex-col gap-3">
+                <legend className="mb-2 text-label text-fg">{t("audienceClasses")}</legend>
+                <div className="grid max-h-48 grid-cols-2 gap-3 overflow-y-auto rounded-md bg-surface-sunken p-3 sm:grid-cols-3">
                   {(classes.data?.data ?? []).map((cls) => (
-                    <label key={cls.id} className="flex items-center gap-2">
-                      <Checkbox
-                        checked={classIds.includes(cls.id)}
-                        onCheckedChange={() => {
-                          toggle(classIds, cls.id, setClassIds);
-                        }}
-                      />
-                      {cls.name}
-                    </label>
+                    <Checkbox
+                      key={cls.id}
+                      label={cls.name}
+                      checked={classIds.includes(cls.id)}
+                      onCheckedChange={() => {
+                        toggle(classIds, cls.id, setClassIds);
+                      }}
+                    />
                   ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </fieldset>
+            )}
+          </FormSection>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("sectionSchedule")}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4 pt-0">
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="flex flex-col gap-1 text-[13px]">
-                  <span className="font-medium">{t("startsAt")}</span>
-                  <Input
-                    type="datetime-local"
-                    value={startsAt}
-                    onChange={(e) => {
-                      setStartsAt(e.target.value);
-                    }}
-                  />
-                  <span className="text-fg-muted">{t("startsAtHint")}</span>
-                </label>
-                <label className="flex flex-col gap-1 text-[13px]">
-                  <span className="font-medium">{t("endsAt")}</span>
-                  <Input
-                    type="datetime-local"
-                    value={endsAt}
-                    onChange={(e) => {
-                      setEndsAt(e.target.value);
-                    }}
-                  />
-                </label>
-              </div>
-              <label className="flex items-center gap-3 text-[13px]">
-                <Switch checked={pinned} onCheckedChange={setPinned} />
-                <span>{t("pinned")}</span>
-              </label>
-            </CardContent>
-          </Card>
+          <FormSection title={t("sectionSchedule")}>
+            <DateTimeField
+              label={t("startsAt")}
+              hint={t("startsAtHint")}
+              value={startsAt}
+              onChange={setStartsAt}
+            />
+            <DateTimeField label={t("endsAt")} value={endsAt} onChange={setEndsAt} />
+            <Field label={t("pinned")} orientation="horizontal" className="col-span-full">
+              <Switch checked={pinned} onCheckedChange={setPinned} />
+            </Field>
+          </FormSection>
         </TabsContent>
 
-        <TabsContent value="preview" className="flex flex-col gap-3 pt-4">
-          <p className="text-[12px] text-fg-muted">{t("previewHint")}</p>
-          <div className="rounded-sm border border-border bg-surface">
-            <div className="flex flex-col gap-1 px-4 py-3">
+        <TabsContent value="preview" className="flex flex-col gap-3">
+          <p className="text-body-sm text-fg-muted">{t("previewHint")}</p>
+          <Card>
+            <div className="flex flex-col gap-1 p-5">
               <span className="flex items-center gap-2">
                 {pinned && <Pin className="size-4 shrink-0 text-accent" aria-hidden="true" />}
-                <span className="flex-1 text-[15px] font-medium text-fg">
+                <span className="flex-1 text-heading text-fg">
                   {title.trim() || t("previewUntitled")}
                 </span>
-                {pinned && <Badge variant="accent">{t("pinned")}</Badge>}
+                {pinned && <Badge tone="accent">{t("pinned")}</Badge>}
               </span>
-              <span className="text-[12px] text-fg-muted">
+              <span className="text-caption text-fg-muted">
                 {startsAt
                   ? t("previewScheduleAt", {
                       date: formatDateTime(new Date(startsAt).toISOString(), {
@@ -309,7 +278,7 @@ export function AnnouncementForm({
                     })
                   : t("previewScheduleImmediate")}
               </span>
-              <span className="text-[12px] text-fg-muted">
+              <span className="text-caption text-fg-muted">
                 {t("previewAudienceLabel")}:{" "}
                 {describeAudience(
                   {
@@ -324,35 +293,70 @@ export function AnnouncementForm({
             {body.trim() ? (
               <SafeHtml
                 html={textToHtml(body)}
-                className="prose-announcement border-t border-border px-4 py-3 text-[14px] text-fg"
+                className="prose-announcement border-t border-line px-5 py-4 text-body text-fg"
               />
             ) : (
-              <p className="border-t border-border px-4 py-3 text-[13px] text-fg-muted">
+              <p className="border-t border-line px-5 py-4 text-body-sm text-fg-muted">
                 {t("previewEmptyBody")}
               </p>
             )}
-          </div>
+          </Card>
         </TabsContent>
       </Tabs>
 
-      {/*
-        A sticky save bar for a form that lives inside a Dialog, not a
-        full page: packages/ui's StickySaveBar pins to the viewport and
-        the shell's sidebar offset, which only makes sense for a full-page
-        editor (the attendance session editor). Here "sticky" instead
-        means pinned to the bottom of the dialog's own scroll area --
-        `sticky bottom-0`, offsetting DialogContent's own padding so the
-        bar reaches the dialog's edges -- so Cancel/Save stay in reach
-        while a long compose form scrolls past them.
-      */}
-      <div className="sticky -mx-4 -mb-4 bottom-0 z-10 flex justify-end gap-2 border-t border-border bg-surface px-4 py-4 md:-mx-6 md:-mb-6 md:px-6">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onCancel} disabled={pending}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={pending}>
           {initial ? t("saveChanges") : t("saveDraft")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
+  );
+}
+
+/**
+ * A date and a time picked side by side, kept as the "YYYY-MM-DDTHH:mm"
+ * local string the form already works with. A date without a time starts
+ * at the beginning of the day; clearing the date clears both.
+ */
+function DateTimeField({
+  label,
+  hint,
+  value,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  value: string;
+  onChange: (value: string) => void;
+}): ReactElement {
+  const [date = "", time = ""] = value.split("T");
+  return (
+    <Field label={label} hint={hint}>
+      {(control) => (
+        <div
+          className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-2"
+          role="group"
+          aria-labelledby={control.labelId}
+          aria-describedby={control["aria-describedby"]}
+        >
+          <DatePicker
+            value={date === "" ? null : date}
+            onChange={(next) => {
+              onChange(next ? `${next}T${time || "00:00"}` : "");
+            }}
+          />
+          <TimePicker
+            value={time === "" ? null : time}
+            disabled={date === ""}
+            onChange={(next) => {
+              if (date) onChange(`${date}T${next}`);
+            }}
+          />
+        </div>
+      )}
+    </Field>
   );
 }

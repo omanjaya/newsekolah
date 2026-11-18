@@ -5,7 +5,8 @@
       "action": "Buka presensi",
       "empty": "Tidak ada sesi hari ini",
       "statusSubmitted": "Tersimpan",
-      "statusPending": "Belum diisi"
+      "statusPending": "Belum diisi",
+      "runningMeta": "{subject} · sedang berlangsung"
     },
     "tiles": {
       "pendingLabel": "Presensi belum diisi",
@@ -13,13 +14,21 @@
     },
     "hero": {
       "nowEyebrow": "Sekarang",
-      "nowMeta": "{start}-{end} · presensi belum dikirim",
-      "nowChip": "berjalan {minutes} menit",
+      "nowMeta": "{start}–{end} · presensi belum dikirim",
+      "nowChip": "berjalan {hours, plural, =0 {{minutes} menit} other {{minutes, plural, =0 {{hours} jam} other {{hours} jam {minutes} menit}}}}",
       "nowAction": "Isi presensi",
       "nextEyebrow": "Berikutnya",
-      "nextMeta": "{start}-{end}",
-      "nextChip": "{minutes} menit lagi",
-      "nextAction": "Buka presensi"
+      "nextMeta": "{start}–{end}",
+      "nextChip": "{hours, plural, =0 {{minutes} menit} other {{minutes, plural, =0 {{hours} jam} other {{hours} jam {minutes} menit}}}} lagi",
+      "nextAction": "Buka presensi",
+      "nextChipAt": "mulai {start}",
+      "scheduleAction": "Lihat jadwal",
+      "idleEyebrow": "Mengajar hari ini",
+      "doneTitle": "Semua presensi hari ini sudah diisi",
+      "doneMeta": "{total} sesi selesai dipresensi. Jurnal mengajar bisa dilengkapi sekarang.",
+      "freeTitle": "Tidak ada jadwal mengajar hari ini",
+      "freeMeta": "Jadwal minggu ini tetap bisa dilihat.",
+      "journalAction": "Isi jurnal"
     }
   },
   "homeroom": {
@@ -29,18 +38,21 @@
       "action": "Tinjau izin",
       "empty": "Tidak ada izin menunggu",
       "noStatus": "Belum ada data presensi hari ini",
-      "review": "Tinjau"
+      "statusTitle": "Presensi {className} hari ini",
+      "statusTitleFallback": "Presensi kelas hari ini",
+      "statusLabel": "Status presensi hari ini"
     },
     "tiles": {
       "leaveLabel": "Izin kelas menunggu",
-      "rateLabel": "Kehadiran kelas",
+      "rateLabel": "Presensi kelas",
       "rateHint": "hadir {className} hari ini"
     },
     "hero": {
       "eyebrow": "Wali kelas {className}",
       "eyebrowFallback": "Wali kelas",
       "title": "{count} izin menunggu tinjauan",
-      "action": "Tinjau izin"
+      "action": "Tinjau izin",
+      "meta": "Izin siswa kelas binaan menunggu persetujuan Anda."
     }
   }
 }

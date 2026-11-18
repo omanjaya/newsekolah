@@ -2,11 +2,12 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import { formatTime, type Locale } from "@newsekolah/i18n";
-import { Alert, Button, Input, Select, useToast } from "@newsekolah/ui";
+import { Alert, Button, DatePicker, DialogFooter, Field, Select, useToast } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { useDraftOwner } from "../../../lib/drafts/draft-owner";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
@@ -44,6 +45,7 @@ export function JournalForm({
   const apiErrorMessage = useApiErrorMessage();
   const locale = useLocale() as Locale;
   const { me } = useSession();
+  const draftOwner = useDraftOwner();
   const { revision } = useSimulation();
   const year = useActiveYear();
   const upsert = useUpsertJournalMutation();
@@ -116,34 +118,38 @@ export function JournalForm({
     topic.trim() !== "" &&
     activities.trim() !== "";
 
-  // Offers a local draft once per resolved class/subject/date -- a
-  // from-scratch entry only knows its key once the pickers settle, while a
-  // prefilled or existing entry knows it immediately.
+  // Offers a local draft once per owner and resolved class/subject/date --
+  // a from-scratch entry only knows its key once the pickers settle, while
+  // a prefilled or existing entry knows it immediately, and the owner may
+  // only become known after the first render. Once the lesson is resolved,
+  // finding no draft of this owner's (or no owner) withdraws any earlier
+  // offer, since a draft is only ever offered to the account that wrote it.
+  // An effect because localStorage is only reachable client-side, so this
+  // cannot be a lazy useState initializer.
   const checkedKey = useRef<string | null>(null);
   useEffect(() => {
     if (effectiveClassId === "" || effectiveSubjectId === "" || lessonDate === "") return;
-    const key = `${effectiveClassId}:${effectiveSubjectId}:${lessonDate}`;
+    const key = `${draftOwner ?? ""}|${effectiveClassId}:${effectiveSubjectId}:${lessonDate}`;
     if (checkedKey.current === key) return;
     checkedKey.current = key;
-    const draft = loadJournalDraft(effectiveClassId, effectiveSubjectId, lessonDate);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only reachable client-side, so this cannot be a lazy useState initializer.
-    if (draft) setDraftOffer({ savedAt: draft.savedAt });
-  }, [effectiveClassId, effectiveSubjectId, lessonDate]);
+    const draft = loadJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate);
+    setDraftOffer(draft ? { savedAt: draft.savedAt } : null);
+  }, [draftOwner, effectiveClassId, effectiveSubjectId, lessonDate]);
 
   // Mirrors every edit to localStorage so a dropped connection or an
   // accidental tab close does not throw away a quick entry in progress.
   useEffect(() => {
     if (effectiveClassId === "" || effectiveSubjectId === "" || lessonDate === "") return;
     if (topic.trim() === "" && activities.trim() === "" && reflection.trim() === "") return;
-    saveJournalDraft(effectiveClassId, effectiveSubjectId, lessonDate, {
+    saveJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate, {
       topic,
       activities,
       reflection,
     });
-  }, [effectiveClassId, effectiveSubjectId, lessonDate, topic, activities, reflection]);
+  }, [draftOwner, effectiveClassId, effectiveSubjectId, lessonDate, topic, activities, reflection]);
 
   function restoreDraft() {
-    const draft = loadJournalDraft(effectiveClassId, effectiveSubjectId, lessonDate);
+    const draft = loadJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate);
     if (!draft) return;
     setTopic(draft.topic);
     setActivities(draft.activities);
@@ -152,7 +158,7 @@ export function JournalForm({
   }
 
   function dismissDraft() {
-    clearJournalDraft(effectiveClassId, effectiveSubjectId, lessonDate);
+    clearJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate);
     setDraftOffer(null);
   }
 
@@ -169,7 +175,7 @@ export function JournalForm({
       },
       {
         onSuccess: () => {
-          clearJournalDraft(effectiveClassId, effectiveSubjectId, lessonDate);
+          clearJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate);
           toast.success(t("saved"));
           onDone();
         },
@@ -191,24 +197,26 @@ export function JournalForm({
       }}
     >
       {draftOffer && (
-        <Alert variant="warning" title={t("draftFoundTitle")}>
-          <p>
-            {t("draftFoundBody", {
-              time: formatTime(draftOffer.savedAt, { locale, timeZone: me?.tenant.timezone }),
-            })}
-          </p>
-          <div className="mt-2 flex gap-2">
-            <Button type="button" size="sm" onClick={restoreDraft}>
-              {t("draftRestore")}
-            </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={dismissDraft}>
-              {t("draftDismiss")}
-            </Button>
-          </div>
+        <Alert
+          variant="warning"
+          title={t("draftFoundTitle")}
+          action={
+            <div className="flex gap-2">
+              <Button type="button" size="sm" variant="secondary" onClick={dismissDraft}>
+                {t("draftDismiss")}
+              </Button>
+              <Button type="button" size="sm" onClick={restoreDraft}>
+                {t("draftRestore")}
+              </Button>
+            </div>
+          }
+        >
+          {t("draftFoundBody", {
+            time: formatTime(draftOffer.savedAt, { locale, timeZone: me?.tenant.timezone }),
+          })}
         </Alert>
       )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("class")}</span>
+      <Field label={t("class")}>
         <Select
           options={classOptions}
           value={effectiveClassId}
@@ -217,9 +225,8 @@ export function JournalForm({
           disabled={classes.isLoading || locked}
           aria-label={t("class")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("subject")}</span>
+      </Field>
+      <Field label={t("subject")}>
         <Select
           options={subjectOptions}
           value={effectiveSubjectId}
@@ -228,19 +235,15 @@ export function JournalForm({
           disabled={subjects.isLoading || effectiveClassId === "" || locked}
           aria-label={t("subject")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("date")}</span>
-        <Input
-          type="date"
+      </Field>
+      <Field label={t("date")}>
+        <DatePicker
           value={lessonDate}
-          onChange={(e) => {
-            setLessonDate(e.target.value);
-          }}
+          onChange={setLessonDate}
+          clearable={false}
           disabled={locked}
-          aria-label={t("date")}
         />
-      </label>
+      </Field>
 
       <JournalFields
         topic={topic}
@@ -252,14 +255,14 @@ export function JournalForm({
         onReflectionChange={setReflection}
       />
 
-      <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={upsert.isPending} disabled={!canSubmit}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-import { branding, buildMe, mockBranding, mockSession } from "./fixtures";
+import { branding, buildMe, expectHome, mockBranding, mockSession, pickDate } from "./fixtures";
+
+// Keep API fixtures in Playwright's routing layer after a document reload:
+// the service worker the first load registers controls the reloaded page,
+// and page.route does not see the requests it forwards.
+test.use({ serviceWorkers: "block" });
 
 test("superadmin can freeze, advance and reset school time in one browser session", async ({
   page,
@@ -24,23 +29,26 @@ test("superadmin can freeze, advance and reset school time in one browser sessio
   const controls = page.getByTestId("simulation-controls");
   await expect(controls).toBeVisible();
   await controls.locator("summary").click();
-  await controls.getByLabel("Tanggal sekolah").fill("2026-09-28");
+  await pickDate(page, controls.getByLabel("Tanggal sekolah"), "2026-09-28");
   await controls.getByLabel("Jam sekolah (Asia/Makassar)").fill("06:45");
   await controls.getByRole("button", { name: "Terapkan", exact: true }).click();
-  await expect(controls).toContainText("Senin");
+  await expect(controls).toContainText("Waktu simulasi Senin, 28 Sep 2026, 06.45");
   await expect.poll(() => receivedTimes.at(-1)).toBe("2026-09-27T22:45:00.000Z");
 
   await controls.getByRole("button", { name: "+1 hari", exact: true }).click();
-  await expect(controls).toContainText("Selasa");
+  await expect(controls).toContainText("Waktu simulasi Selasa, 29 Sep 2026, 06.45");
   await expect.poll(() => receivedTimes.at(-1)).toBe("2026-09-28T22:45:00.000Z");
   await controls.getByRole("button", { name: "+15 menit", exact: true }).click();
   await expect.poll(() => receivedTimes.at(-1)).toBe("2026-09-28T23:00:00.000Z");
 
   await page.reload();
-  await expect(controls).toContainText("Waktu simulasi aktif");
-  await expect(controls).toContainText("Selasa");
+  // The strip names the simulated moment while one is set ("Waktu simulasi
+  // Selasa, 29 Sep 2026, 07.00") and its plain title once it is reset.
+  await expect(controls).toContainText("Waktu simulasi Selasa, 29 Sep 2026, 07.00");
   await controls.getByRole("button", { name: "Atur ulang", exact: true }).click();
-  await expect(controls).not.toContainText("Waktu simulasi aktif");
+  await expect(controls).not.toContainText("Waktu simulasi");
+  await expect(controls).toContainText("Simulasi waktu untuk pengujian");
+  await expect(controls.getByRole("button", { name: "Atur ulang", exact: true })).toHaveCount(0);
   await expect.poll(() => receivedTimes.at(-1)).toBeUndefined();
 });
 
@@ -53,6 +61,6 @@ test("ordinary accounts do not see simulation controls", async ({ page }) => {
     route.fulfill({ json: { count: 0 } }),
   );
   await page.goto("/dashboard");
-  await expect(page.getByText(`Selamat datang, ${me.name}`)).toBeVisible();
+  await expectHome(page, me.name);
   await expect(page.getByTestId("simulation-controls")).toHaveCount(0);
 });

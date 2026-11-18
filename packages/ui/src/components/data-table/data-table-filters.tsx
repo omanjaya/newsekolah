@@ -1,11 +1,22 @@
 "use client";
 
-import { Check, X } from "lucide-react";
-import { useState, type ReactElement } from "react";
+import { Check } from "lucide-react";
+import { useRef, useState, type ReactElement } from "react";
 
+import { useScrollEdges } from "../../hooks/use-scroll-edges.js";
 import { cn } from "../../utils/cn.js";
+import { Field, FieldError } from "../field.js";
 import { Input } from "../input.js";
-import { Popover, PopoverContent, PopoverTrigger } from "../popover.js";
+import { ResponsivePopover } from "../responsive-popover.js";
+import { useUiLabels } from "../ui-labels.js";
+
+import {
+  FilterPillShell,
+  PILL_MENU_TRIGGER_CLASS,
+  PILL_TRIGGER_CLASS,
+  PillChevron,
+} from "./data-table-filter-pill.js";
+import { MonthFilterPill } from "./data-table-month-filter.js";
 
 export interface DataTableFilterOption {
   value: string;
@@ -31,11 +42,11 @@ export interface DataTableFilterDef {
   label: string;
   /**
    * "" means "no filter applied". Any other value is considered active.
-   * Used by "select" and "boolean" (the default); ignored for "dateRange",
-   * which reads `from`/`to` instead.
+   * Used by "select", "boolean" (the default) and "month" ("YYYY-MM");
+   * ignored for "dateRange", which reads `from`/`to` instead.
    */
   value?: string;
-  /** Used by "select" and "boolean"; ignored for "dateRange". */
+  /** Used by "select", "boolean" and "month"; ignored for "dateRange". */
   onChange?: (value: string) => void;
   /**
    * "select" (default) opens a popover listing `options`, single-select.
@@ -44,8 +55,11 @@ export interface DataTableFilterDef {
    * "Hanya tersedia").
    * "dateRange" opens a popover with two native date inputs (from/to) plus
    * any `presets`.
+   * "month" opens the month grid of `MonthPicker` (a billing period, a
+   * monthly report) and writes "YYYY-MM"; the chip reads "Periode:
+   * November 2026".
    */
-  type?: "select" | "boolean" | "dateRange";
+  type?: "select" | "boolean" | "dateRange" | "month";
   /** Required for type="select": the choices offered in the popover. */
   options?: DataTableFilterOption[];
   /** type="boolean" only: the value written when the toggle turns on. Defaults to "true". */
@@ -62,6 +76,25 @@ export interface DataTableFilterDef {
   onChangeRange?: (range: { from: string; to: string }) => void;
   /** type="dateRange" only: quick picks shown above the two date inputs. */
   presets?: DataTableDateRangePreset[];
+  /**
+   * type="dateRange" only: the page's own period ("YYYY-MM-DD", or "" for
+   * an open bound), e.g. the month so far. At these bounds the range is
+   * not a filter the reader applied: its pill shows the period in the
+   * neutral style with no remove control, and Reset leaves it alone.
+   * Removing or resetting a changed range comes back to them.
+   */
+  defaultFrom?: string;
+  /** type="dateRange" only: see `defaultFrom`. */
+  defaultTo?: string;
+  /** type="month" only: the earliest month offered, "YYYY-MM". */
+  minMonth?: string;
+  /** type="month" only: the latest month offered, "YYYY-MM". */
+  maxMonth?: string;
+  /**
+   * type="month" only: the school's "today", "YYYY-MM-DD", so the grid
+   * marks the current month from the business clock, not the device's.
+   */
+  today?: string;
 }
 
 export interface DataTableFiltersLabels {
@@ -77,6 +110,17 @@ export interface DataTableFiltersLabels {
   dateRangeInvalid: string;
 }
 
+/**
+ * Legacy: the defaults now come from `UiLabels` (`tableFiltersReset`,
+ * `tableFilterRemove`...), so a locale provider translates them; this
+ * constant only keeps the package's old public export working, and
+ * nothing in the package or apps/web reads it.
+ *
+ * Deprecated: use `UiLabelsProvider` (or the `labels` prop) instead. To be
+ * removed with the next breaking release of the package, by 2027-01-31.
+ * (Not tagged `@deprecated`: the package index still re-exports it, which
+ * the lint rule against deprecated symbols would refuse.)
+ */
 export const DEFAULT_DATA_TABLE_FILTERS_LABELS: DataTableFiltersLabels = {
   reset: "Reset filter",
   removeFilter: (label) => `Hapus filter ${label}`,
@@ -91,14 +135,25 @@ export interface DataTableFiltersProps {
   className?: string;
 }
 
-function isFilterActive(filter: DataTableFilterDef): boolean {
-  if (filter.type === "dateRange") return Boolean(filter.from) || Boolean(filter.to);
+/**
+ * Whether the reader has narrowed the rows with this filter (the toolbar's
+ * view options read it too). A date range at the page's own default
+ * period is not; without `defaultFrom`/`defaultTo` that is an open range.
+ */
+export function isFilterActive(filter: DataTableFilterDef): boolean {
+  if (filter.type === "dateRange") {
+    return (
+      (filter.from ?? "") !== (filter.defaultFrom ?? "") ||
+      (filter.to ?? "") !== (filter.defaultTo ?? "")
+    );
+  }
   return (filter.value ?? "") !== "";
 }
 
+/** Back to unfiltered: no value, or a date range's default period. */
 function clearFilter(filter: DataTableFilterDef): void {
   if (filter.type === "dateRange") {
-    filter.onChangeRange?.({ from: "", to: "" });
+    filter.onChangeRange?.({ from: filter.defaultFrom ?? "", to: filter.defaultTo ?? "" });
   } else {
     filter.onChange?.("");
   }
@@ -116,11 +171,34 @@ export function DataTableFilters({
   labels: labelsOverride,
   className,
 }: DataTableFiltersProps): ReactElement {
-  const labels = { ...DEFAULT_DATA_TABLE_FILTERS_LABELS, ...labelsOverride };
+  const uiLabels = useUiLabels();
+  const labels: DataTableFiltersLabels = {
+    reset: uiLabels.tableFiltersReset,
+    removeFilter: uiLabels.tableFilterRemove,
+    dateRangeFrom: uiLabels.tableFilterDateFrom,
+    dateRangeTo: uiLabels.tableFilterDateTo,
+    dateRangeInvalid: uiLabels.tableFilterDateInvalid,
+    ...labelsOverride,
+  };
   const hasActiveFilter = filters.some(isFilterActive);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  useScrollEdges(scrollerRef, { axis: "x" });
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
+    // One row that scrolls sideways on a phone (wrapped pills would push the
+    // list below the fold), wrapping from `md` up. The 4px vertical padding
+    // keeps the pills' focus rings inside the scroller's clip.
+    <div
+      ref={scrollerRef}
+      className={cn(
+        "-my-1 flex scrollbar-none items-center gap-1.5 overflow-x-auto py-1 [&>*]:shrink-0",
+        // An edge with more pills past it fades out, as a tab strip's does,
+        // so a pill cut by the edge reads as "more this way"; a row that
+        // fits (and the wrapped row from md up) has no fade at all.
+        "scroll-fade-x md:flex-wrap md:overflow-visible",
+        className,
+      )}
+    >
       {filters.map((filter) =>
         filter.type === "dateRange" ? (
           <DateRangeFilterPill
@@ -130,6 +208,13 @@ export function DataTableFilters({
             fromLabel={labels.dateRangeFrom}
             toLabel={labels.dateRangeTo}
             invalidLabel={labels.dateRangeInvalid}
+          />
+        ) : filter.type === "month" ? (
+          <MonthFilterPill
+            key={filter.id}
+            filter={filter}
+            removeLabel={labels.removeFilter(filter.label)}
+            locale={uiLabels.locale}
           />
         ) : (
           <DataTableFilterPill
@@ -142,7 +227,7 @@ export function DataTableFilters({
       {hasActiveFilter && (
         <button
           type="button"
-          className="h-8 shrink-0 rounded-full px-2 text-[13px] font-medium text-accent hover:underline"
+          className="h-11 shrink-0 rounded-full px-3 text-label text-accent transition-colors hover:bg-state-hover md:pointer-fine:h-8"
           onClick={() => {
             for (const filter of filters) {
               if (isFilterActive(filter)) clearFilter(filter);
@@ -150,44 +235,6 @@ export function DataTableFilters({
           }}
         >
           {labels.reset}
-        </button>
-      )}
-    </div>
-  );
-}
-
-const PILL_TRIGGER_CLASS =
-  "flex h-11 md:h-8 items-center gap-1 px-3 text-[13px] font-medium outline-none";
-
-function FilterPillShell({
-  active,
-  removeLabel,
-  onRemove,
-  trigger,
-}: {
-  active: boolean;
-  removeLabel: string;
-  onRemove: () => void;
-  trigger: ReactElement;
-}): ReactElement {
-  return (
-    <div
-      className={cn(
-        "inline-flex items-center overflow-hidden rounded-full border",
-        active
-          ? "border-accent bg-accent-soft text-accent-soft-fg"
-          : "border-border bg-surface text-fg",
-      )}
-    >
-      {trigger}
-      {active && (
-        <button
-          type="button"
-          aria-label={removeLabel}
-          className="flex h-11 w-11 shrink-0 items-center justify-center md:h-8 md:w-8"
-          onClick={onRemove}
-        >
-          <X className="size-3.5" aria-hidden="true" />
         </button>
       )}
     </div>
@@ -221,7 +268,7 @@ function DataTableFilterPill({
             aria-pressed={active}
             className={cn(
               PILL_TRIGGER_CLASS,
-              active ? "text-accent-soft-fg" : "text-fg hover:bg-bg",
+              active ? "text-accent-soft-fg hover:bg-state-hover" : "text-fg hover:bg-state-hover",
             )}
             onClick={() => {
               filter.onChange?.(active ? "" : activeValue);
@@ -240,39 +287,50 @@ function DataTableFilterPill({
       removeLabel={removeLabel}
       onRemove={() => filter.onChange?.("")}
       trigger={
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
+        // A sheet on a phone: a long list from a pill would otherwise hang
+        // down into the tab bar.
+        <ResponsivePopover
+          open={open}
+          onOpenChange={setOpen}
+          title={filter.label}
+          align="start"
+          className="w-56 p-1"
+          trigger={
             <button
               type="button"
               className={cn(
-                PILL_TRIGGER_CLASS,
-                active ? "text-accent-soft-fg" : "text-fg hover:bg-bg",
+                PILL_MENU_TRIGGER_CLASS,
+                active
+                  ? "text-accent-soft-fg hover:bg-state-hover"
+                  : "text-fg hover:bg-state-hover",
               )}
             >
               {triggerLabel}
+              <PillChevron active={active} />
             </button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-56 p-1">
-            <div className="flex flex-col gap-0.5">
-              {(filter.options ?? []).map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className="flex h-11 md:h-9 items-center justify-between rounded-xs px-2 text-left text-[13px] text-fg outline-none hover:bg-bg"
-                  onClick={() => {
-                    filter.onChange?.(option.value);
-                    setOpen(false);
-                  }}
-                >
-                  {option.label}
-                  {filter.value === option.value && (
-                    <Check className="size-4 text-accent" aria-hidden="true" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
+          }
+        >
+          {/* In the sheet the rows run out to 8px from its edges, their text
+              lined up with the title's. */}
+          <div className="flex flex-col gap-0.5 max-sm:-mx-3">
+            {(filter.options ?? []).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className="flex min-h-11 items-center justify-between gap-2 rounded-sm px-3 text-left text-body text-fg transition-colors hover:bg-state-hover focus-visible:bg-state-hover focus-visible:-outline-offset-2 md:pointer-fine:min-h-9"
+                onClick={() => {
+                  filter.onChange?.(option.value);
+                  setOpen(false);
+                }}
+              >
+                {option.label}
+                {filter.value === option.value && (
+                  <Check className="size-4 text-accent" aria-hidden="true" />
+                )}
+              </button>
+            ))}
+          </div>
+        </ResponsivePopover>
       }
     />
   );
@@ -342,9 +400,12 @@ function DateRangeFilterPill({
     setOpen(next);
   }
 
-  const active = Boolean(committedFrom) || Boolean(committedTo);
+  // A page's default period still reads out on the pill, in the neutral
+  // style: it says which days are shown without claiming a filter is on.
+  const hasRange = Boolean(committedFrom) || Boolean(committedTo);
+  const active = isFilterActive(filter);
   const invalid = draftFrom !== "" && draftTo !== "" && draftFrom > draftTo;
-  const triggerLabel = active
+  const triggerLabel = hasRange
     ? `${filter.label}: ${formatDateRange(committedFrom, committedTo)}`
     : filter.label;
 
@@ -359,82 +420,91 @@ function DateRangeFilterPill({
     <FilterPillShell
       active={active}
       removeLabel={removeLabel}
-      onRemove={() => filter.onChangeRange?.({ from: "", to: "" })}
+      onRemove={() => {
+        clearFilter(filter);
+      }}
       trigger={
-        <Popover open={open} onOpenChange={handleOpenChange}>
-          <PopoverTrigger asChild>
+        <ResponsivePopover
+          open={open}
+          onOpenChange={handleOpenChange}
+          title={filter.label}
+          align="start"
+          className="w-80 p-3"
+          trigger={
             <button
               type="button"
               className={cn(
-                PILL_TRIGGER_CLASS,
-                active ? "text-accent-soft-fg" : "text-fg hover:bg-bg",
+                PILL_MENU_TRIGGER_CLASS,
+                active
+                  ? "text-accent-soft-fg hover:bg-state-hover"
+                  : "text-fg hover:bg-state-hover",
               )}
             >
               {triggerLabel}
+              <PillChevron active={active} />
             </button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-80 p-3">
-            <div className="flex flex-col gap-3">
-              {filter.presets && filter.presets.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {filter.presets.map((preset) => {
-                    const presetActive = preset.from === draftFrom && preset.to === draftTo;
-                    return (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        className={cn(
-                          "flex h-9 items-center gap-1 rounded-full border px-3 text-[13px] font-medium outline-none",
-                          presetActive
-                            ? "border-accent bg-accent-soft text-accent-soft-fg"
-                            : "border-border bg-surface text-fg hover:bg-bg",
-                        )}
-                        onClick={() => {
-                          commit(preset.from, preset.to);
-                          setOpen(false);
-                        }}
-                      >
-                        {presetActive && <Check className="size-3.5" aria-hidden="true" />}
-                        {preset.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              <div className="flex items-end gap-2">
-                <label className="flex min-w-0 flex-1 flex-col gap-1 text-[13px]">
-                  <span className="font-medium text-fg">{fromLabel}</span>
-                  <Input
-                    type="date"
-                    className="w-full min-w-0"
-                    value={draftFrom}
-                    invalid={invalid}
-                    onChange={(event) => {
-                      commit(event.target.value, draftTo);
-                    }}
-                  />
-                </label>
-                <label className="flex min-w-0 flex-1 flex-col gap-1 text-[13px]">
-                  <span className="font-medium text-fg">{toLabel}</span>
-                  <Input
-                    type="date"
-                    className="w-full min-w-0"
-                    value={draftTo}
-                    invalid={invalid}
-                    onChange={(event) => {
-                      commit(draftFrom, event.target.value);
-                    }}
-                  />
-                </label>
+          }
+        >
+          <div className="flex flex-col gap-3">
+            {filter.presets && filter.presets.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {filter.presets.map((preset) => {
+                  const presetActive = preset.from === draftFrom && preset.to === draftTo;
+                  return (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      className={cn(
+                        "flex h-11 items-center gap-1 rounded-full border px-3 text-label md:pointer-fine:h-8",
+                        "transition-[color,background-color,border-color,box-shadow]",
+                        // Its own surface stays under the hover layer (state-layer).
+                        presetActive
+                          ? "border-accent bg-accent-soft text-accent-soft-fg"
+                          : "border-border bg-surface text-fg state-layer",
+                      )}
+                      onClick={() => {
+                        commit(preset.from, preset.to);
+                        setOpen(false);
+                      }}
+                    >
+                      {presetActive && <Check className="size-3.5" aria-hidden="true" />}
+                      {preset.label}
+                    </button>
+                  );
+                })}
               </div>
-              {invalid && (
-                <p role="alert" className="text-[12px] text-danger">
-                  {invalidLabel}
-                </p>
-              )}
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <Field label={fromLabel}>
+                <Input
+                  type="date"
+                  size="sm"
+                  value={draftFrom}
+                  invalid={invalid}
+                  onChange={(event) => {
+                    commit(event.target.value, draftTo);
+                  }}
+                />
+              </Field>
+              <Field label={toLabel}>
+                <Input
+                  type="date"
+                  size="sm"
+                  value={draftTo}
+                  invalid={invalid}
+                  onChange={(event) => {
+                    commit(draftFrom, event.target.value);
+                  }}
+                />
+              </Field>
             </div>
-          </PopoverContent>
-        </Popover>
+            {invalid && (
+              <div role="alert">
+                <FieldError>{invalidLabel}</FieldError>
+              </div>
+            )}
+          </div>
+        </ResponsivePopover>
       }
     />
   );

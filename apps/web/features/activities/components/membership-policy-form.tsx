@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, useToast } from "@newsekolah/ui";
+import { Alert, Button, DialogFooter, Field, NumberInput, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import { useState, type ReactElement } from "react";
 
@@ -34,30 +34,33 @@ export function MembershipPolicyForm({ onDone }: { onDone: () => void }): ReactE
         });
       }}
     >
-      <p className="text-sm text-muted-foreground">{t("description")}</p>
-      {policy.isError && <p role="alert">{t("loadError")}</p>}
-      <label className="flex flex-col gap-1 text-sm">
-        {t("limit")}
-        <Input
-          type="number"
+      <p className="text-body-sm text-fg-muted">{t("description")}</p>
+      {policy.isError && <Alert variant="danger" title={t("loadError")} />}
+      <Field label={t("limit")} required>
+        <NumberInput
           min={0}
-          step={1}
           required
-          value={limit ?? policy.data?.max_clubs_per_student ?? ""}
-          onChange={(event) => {
-            setLimit(event.target.value);
-          }}
+          value={
+            limit !== null
+              ? limit === ""
+                ? null
+                : Number(limit)
+              : (policy.data?.max_clubs_per_student ?? null)
+          }
           disabled={!policy.data}
+          onChange={(next) => {
+            setLimit(next === null ? "" : String(next));
+          }}
         />
-      </label>
-      <div className="flex justify-end gap-2">
+      </Field>
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" disabled={!policy.data} loading={update.isPending}>
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

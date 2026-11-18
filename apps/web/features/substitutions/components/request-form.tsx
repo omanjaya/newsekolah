@@ -2,9 +2,12 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Alert,
   Button,
   Combobox,
-  Input,
+  DatePicker,
+  DialogFooter,
+  Field,
   Select,
   Textarea,
   useDebouncedCallback,
@@ -104,32 +107,19 @@ export function RequestForm({
         void submit();
       }}
     >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-          {error}
-        </p>
-      )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("schedule")}</span>
+      {error && <Alert variant="danger">{error}</Alert>}
+      <Field label={t("schedule")}>
         <Select
           options={scheduleOptions}
           value={scheduleId}
           onValueChange={setScheduleId}
           placeholder={t("pick")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("date")}</span>
-        <Input
-          type="date"
-          value={date}
-          onChange={(e) => {
-            setDate(e.target.value);
-          }}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("substitute")}</span>
+      </Field>
+      <Field label={t("date")}>
+        <DatePicker value={date} onChange={setDate} clearable={false} />
+      </Field>
+      <Field label={t("substitute")}>
         <Combobox
           options={substituteOptions}
           value={substituteId}
@@ -147,9 +137,8 @@ export function RequestForm({
           loading={eligibleSubstitutes.isLoading}
           aria-label={t("substitute")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("note")}</span>
+      </Field>
+      <Field label={t("note")}>
         <Textarea
           rows={2}
           value={note}
@@ -157,15 +146,15 @@ export function RequestForm({
             setNote(e.target.value);
           }}
         />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      </Field>
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone} disabled={create.isPending}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={create.isPending}>
           {t("send")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

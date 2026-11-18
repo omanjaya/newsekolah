@@ -16,7 +16,9 @@
  * broader set rather than risk a missing string.
  */
 
+import { navigation } from "../navigation";
 import { libraryNavItems } from "../navigation-library";
+import { WORKSPACE_MEMBER_KEYS } from "../navigation-workspaces";
 
 /** The shared `@newsekolah/i18n` catalog, always carried whole: small (see
  * `packages/i18n/messages/*.json`) and read from `(auth)`, `(public)`, and
@@ -45,6 +47,9 @@ const ROOT_APP_NAMESPACES = [
   "app.verify",
   "app.account",
   "app.security",
+  // The page template, the state pages and the kiosk frame: read by every
+  // `(app)` screen, the library screens under their own provider, and `(kiosk)`.
+  "app.page",
 ] as const;
 
 /**
@@ -138,11 +143,12 @@ const APP_BASE_NAMESPACES = [
  * provider on every page and label the library nav entries from the
  * library catalog, so those exact leaf keys ride along with `(app)` even
  * though the catalog itself stays scoped to `/library/*`. Derived from the
- * registry so a new library screen can't silently lose its nav label.
+ * registry so a new library screen can't silently lose its nav label, the
+ * shorter one under the group heading included.
  */
 const LIBRARY_NAV_LABEL_KEYS = libraryNavItems
-  .map((item) => item.labelKey)
-  .filter((labelKey) => labelKey.startsWith("app.library."));
+  .flatMap((item) => [item.labelKey, item.groupLabelKey])
+  .filter((labelKey): labelKey is string => labelKey?.startsWith("app.library.") ?? false);
 
 /**
  * The student profile's library tab (`/students/[studentId]`) reuses the
@@ -180,13 +186,62 @@ export const APP_NAMESPACES: readonly string[] = [
  * `QueryError`/`common`/`errors`), plus the *full* `library` catalog in
  * place of the `app.library.opac` sliver the root carries for `/opac`.
  * Deliberately does not include `APP_FEATURE_NAMESPACES`/`APP_BASE_NAMESPACES`:
- * that's the ~102 kB raw this split exists to keep off `/library/*`.
+ * that's the ~102 kB raw this split exists to keep off `/library/*`; only
+ * the labels of the tabs a library screen shares a strip with ride along
+ * (`LIBRARY_STRIP_LABEL_KEYS` below).
  */
-export const LIBRARY_NAMESPACES: readonly string[] = [
+const LIBRARY_BASE_NAMESPACES: readonly string[] = [
   "app.workspace",
   ...SHARED_NAMESPACES,
   ...ROOT_APP_NAMESPACES,
   "app.library",
   "app.reportExport",
   "app.librarySettings",
+];
+
+/** Whether `key` already rides along with one of `namespaces` (itself or a parent). */
+function coveredBy(namespaces: readonly string[], key: string): boolean {
+  return namespaces.some((namespace) => key === namespace || key.startsWith(`${namespace}.`));
+}
+
+const LIBRARY_ITEM_KEYS: ReadonlySet<string> = new Set(libraryNavItems.map((item) => item.key));
+
+/**
+ * A library screen can sit in a tab strip with pages from other areas (the
+ * reports hub puts the library report beside the school's and the visitors'
+ * recap), and the page template labels every tab of that strip. Those
+ * sibling labels ride along here, derived from the workspace registry so a
+ * new mixed strip cannot silently show a raw key on its library tab.
+ */
+const LIBRARY_STRIP_LABEL_KEYS = WORKSPACE_MEMBER_KEYS.filter((members) =>
+  members.some((key) => LIBRARY_ITEM_KEYS.has(key)),
+)
+  .flat()
+  .map((key) => navigation.find((item) => item.key === key)?.labelKey)
+  .filter(
+    (labelKey): labelKey is string =>
+      labelKey !== undefined && !coveredBy(LIBRARY_BASE_NAMESPACES, labelKey),
+  );
+
+/** `(app)/library/layout.tsx`'s provider (see `LIBRARY_BASE_NAMESPACES`). */
+export const LIBRARY_NAMESPACES: readonly string[] = [
+  ...LIBRARY_BASE_NAMESPACES,
+  ...new Set(LIBRARY_STRIP_LABEL_KEYS),
+];
+
+/**
+ * `(kiosk)/layout.tsx`'s provider: the wall monitor and the two library
+ * kiosks, which render without the app shell. The shared catalog and the
+ * root-level `app.*` namespaces (the frame reads `app.page`, the screens
+ * `QueryError`), the three screens' own slices, and the access states the
+ * frame shows in place of a screen the reader may not open.
+ */
+export const KIOSK_NAMESPACES: readonly string[] = [
+  ...SHARED_NAMESPACES,
+  ...ROOT_APP_NAMESPACES,
+  "app.forbidden",
+  "app.moduleUnavailable",
+  "app.monitor",
+  "app.library.kiosk",
+  "app.library.visitKiosk",
 ];

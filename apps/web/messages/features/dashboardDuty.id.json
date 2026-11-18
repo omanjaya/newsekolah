@@ -2,21 +2,31 @@
   "picket": {
     "heroEyebrow": "Piket hari ini",
     "heroTitle": "{count} siswa terlambat menunggu",
-    "heroAction": "Buka pemindai",
-    "cardTitle": "Piket",
+    "heroAction": "Tinjau keterlambatan",
+    "cardTitle": "Antrean piket",
     "tileLateLabel": "Terlambat menunggu",
     "tileExitLabel": "Izin keluar menunggu",
     "lateSectionTitle": "Terlambat",
     "lateEmpty": "Tidak ada siswa terlambat hari ini.",
     "exitSectionTitle": "Izin keluar",
     "exitEmpty": "Tidak ada izin keluar menunggu.",
-    "seeAll": "Lihat semua"
+    "seeAll": "Lihat semua",
+    "heroMeta": "Tinjau alasannya dan tetapkan tindak lanjut.",
+    "qrAction": "Tampilkan QR",
+    "scanAction": "Buka pemindai",
+    "idleTitle": "Tidak ada antrean",
+    "idleMeta": "Tampilkan QR piket untuk siswa yang datang terlambat atau izin keluar.",
+    "exitTitle": "{count} izin keluar menunggu",
+    "exitMeta": "Siswa menunggu persetujuan piket untuk keluar sekolah.",
+    "exitAction": "Tinjau izin keluar",
+    "unknownStudent": "Siswa",
+    "occurrence": "ke-{count}"
   },
   "counselor": {
     "heroEyebrow": "BK",
     "heroTitle": "{count} izin menunggu tahap BK",
     "heroAction": "Tinjau izin",
-    "cardTitle": "BK",
+    "cardTitle": "Antrean BK",
     "tileLeaveLabel": "Izin tahap BK",
     "tileSpLabel": "Kandidat SP",
     "leaveSectionTitle": "Izin",
@@ -31,14 +41,50 @@
       "empty": "Tidak ada siswa berisiko saat ini.",
       "unknownStudent": "Siswa tidak dikenal",
       "viewAll": "Lihat analitik"
-    }
+    },
+    "heroMeta": "Izin siswa menunggu pertimbangan BK.",
+    "idleTitle": "Antrean BK kosong",
+    "idleMeta": "Tidak ada izin yang menunggu tahap BK.",
+    "idleMetaSp": "Tidak ada izin menunggu. {count} siswa menjadi kandidat surat peringatan.",
+    "idleAction": "Buka konseling",
+    "spAction": "Tinjau kandidat SP",
+    "points": "{points} poin"
   },
   "checkIn": {
-    "title": "Absen Masuk / Pulang",
-    "openPage": "Buka halaman absensi",
+    "title": "Presensi kerja",
+    "openPage": "Buka",
     "notYet": "Belum ada catatan hari ini",
-    "done": "Presensi hari ini sudah lengkap.",
-    "checkIn": "Absen Masuk",
-    "checkOut": "Absen Pulang"
+    "done": "Presensi kerja hari ini sudah lengkap.",
+    "checkIn": "Catat kedatangan",
+    "checkOut": "Catat kepulangan"
+  },
+  "gate": {
+    "eyebrow": "Gerbang",
+    "title": "Siap memindai izin keluar",
+    "meta": "Pindai QR izin keluar siswa sebelum mereka melewati gerbang.",
+    "titleVisitors": "Buku tamu gerbang",
+    "metaVisitors": "Catat tamu yang datang dan pulang.",
+    "scanAction": "Buka pemindai",
+    "visitorAction": "Catat tamu"
+  },
+  "deputy": {
+    "eyebrow": "Perlu tindakan",
+    "title": "{count} pengajuan menunggu keputusan",
+    "meta": "Izin, keterlambatan, dan surat peringatan yang menunggu Anda.",
+    "action": "Buka perlu tindakan",
+    "reportsAction": "Buka laporan",
+    "idleTitle": "Tidak ada yang menunggu keputusan",
+    "idleMeta": "Laporan sekolah bisa dibuka kapan saja.",
+    "reportsTitle": "Laporan sekolah",
+    "reportsMeta": "Rekap presensi, perizinan, dan kedisiplinan.",
+    "tile": "Perlu tindakan",
+    "cardTitle": "Antrean keputusan",
+    "cardAction": "Lihat semua",
+    "queues": {
+      "leave": "Izin terencana",
+      "exit": "Izin keluar",
+      "late": "Keterlambatan",
+      "warningLetters": "Surat peringatan"
+    }
   }
 }

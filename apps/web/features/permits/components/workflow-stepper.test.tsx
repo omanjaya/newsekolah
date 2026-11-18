@@ -1,68 +1,119 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { WorkflowMineStageTrack } from "./workflow-stepper";
+import type { WorkflowInstance } from "../api";
+
+import { WorkflowMineStageTrack, WorkflowSteps } from "./workflow-stepper";
 
 vi.mock("next-intl", () => ({
+  useLocale: () => "id",
   useTranslations: () => (key: string) => key,
 }));
 
+vi.mock("../../../lib/session/session-provider", () => ({
+  useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+}));
+
+/** The track's steps in order, as `[label, state]` read from the shared Stepper's markup. */
+function steps(): [string, string][] {
+  return screen.getAllByRole("listitem").map((node) => {
+    // The marker's step number comes first in the text.
+    const label = node.textContent.replace(/^\d+/, "");
+    if (node.getAttribute("aria-current") === "step") return [label, "current"];
+    // The Stepper says finished and stopped steps out loud after a comma.
+    if (label.includes(", ")) return [label.split(", ")[0] ?? label, "said"];
+    return [label, "upcoming"];
+  });
+}
+
 describe("WorkflowMineStageTrack", () => {
-  it("renders the four nodes: submitted, homeroom, counselor, done", () => {
+  it("renders the four steps: submitted, homeroom, counselor, done", () => {
     render(<WorkflowMineStageTrack status="in_progress" currentStageIndex={0} />);
-    expect(screen.getByTestId("mine-stage-track-node-submitted")).toBeInTheDocument();
-    expect(screen.getByTestId("mine-stage-track-node-homeroom")).toBeInTheDocument();
-    expect(screen.getByTestId("mine-stage-track-node-counselor")).toBeInTheDocument();
-    expect(screen.getByTestId("mine-stage-track-node-done")).toBeInTheDocument();
+    expect(steps().map(([label]) => label.replace(/, .*/, ""))).toEqual([
+      "stageSubmitted",
+      "stageHomeroom",
+      "stageCounselor",
+      "stageDone",
+    ]);
   });
 
   it("marks the current stage for an in-progress request at stage 0", () => {
     render(<WorkflowMineStageTrack status="in_progress" currentStageIndex={0} />);
-    expect(screen.getByTestId("mine-stage-track-node-homeroom")).toHaveAttribute(
-      "data-state",
-      "current",
-    );
-    expect(screen.getByTestId("mine-stage-track-node-counselor")).toHaveAttribute(
-      "data-state",
-      "upcoming",
-    );
+    const states = steps();
+    expect(states[1]).toEqual(["stageHomeroom", "current"]);
+    expect(states[2]).toEqual(["stageCounselor", "upcoming"]);
   });
 
   it("marks every stage complete once approved, but done stays upcoming", () => {
     render(<WorkflowMineStageTrack status="approved" currentStageIndex={1} />);
-    expect(screen.getByTestId("mine-stage-track-node-homeroom")).toHaveAttribute(
-      "data-state",
-      "complete",
-    );
-    expect(screen.getByTestId("mine-stage-track-node-counselor")).toHaveAttribute(
-      "data-state",
-      "complete",
-    );
-    expect(screen.getByTestId("mine-stage-track-node-done")).toHaveAttribute(
-      "data-state",
-      "upcoming",
-    );
+    const states = steps();
+    expect(states[1]?.[1]).toBe("said");
+    expect(states[2]?.[1]).toBe("said");
+    expect(states[3]).toEqual(["stageDone", "upcoming"]);
   });
 
-  it("marks everything complete, including done, once completed", () => {
+  it("names the track for screen readers", () => {
     render(<WorkflowMineStageTrack status="completed" currentStageIndex={1} />);
-    for (const id of ["submitted", "homeroom", "counselor", "done"]) {
-      expect(screen.getByTestId(`mine-stage-track-node-${id}`)).toHaveAttribute(
-        "data-state",
-        "complete",
-      );
-    }
+    expect(screen.getByRole("group", { name: "stageTrackLabel" })).toBeInTheDocument();
+  });
+});
+
+describe("WorkflowSteps", () => {
+  const instance: WorkflowInstance = {
+    id: "i1",
+    kind: "exit_permit",
+    status: "in_progress",
+    current_stage_index: 1,
+    subject_user_id: "s1",
+    opened_at: "2026-11-14T02:10:00Z",
+    stages: [
+      { key: "duty", label: "Guru piket", approver_rule: "duty:picket", verification: "qr_scan" },
+      { key: "bk", label: "Guru BK", approver_rule: "duty:counselor", verification: "qr_scan" },
+    ],
+    events: [
+      {
+        id: "e1",
+        stage_key: "duty",
+        to_status: "in_progress",
+        verification: "qr_scan",
+        occurred_at: "2026-11-14T02:14:00Z",
+      },
+    ],
+  };
+
+  it("says when a finished stage was done, in the school's time zone", () => {
+    render(<WorkflowSteps instance={instance} />);
+    const [first, second] = screen.getAllByRole("listitem");
+    expect(first).toHaveTextContent("09.14");
+    expect(second).toHaveAttribute("aria-current", "step");
+    expect(second).not.toHaveTextContent("09.14");
   });
 
-  it("stops the current stage when the request is rejected", () => {
-    render(<WorkflowMineStageTrack status="rejected" currentStageIndex={0} />);
-    expect(screen.getByTestId("mine-stage-track-node-homeroom")).toHaveAttribute(
-      "data-state",
-      "stopped",
+  // A finished stage read "Ditinjau langsung", how it is verified, instead
+  // of what happened; only a stage still ahead says how it is verified.
+  it("says what came of a finished stage and how a stage ahead is verified", () => {
+    render(<WorkflowSteps instance={instance} />);
+    const [first, second] = screen.getAllByRole("listitem");
+    expect(first).toHaveTextContent("outcome.approved");
+    expect(first).not.toHaveTextContent("verification.qr_scan");
+    expect(second).toHaveTextContent("verification.qr_scan");
+  });
+
+  it("gives the last stage its own outcome once the request is done", () => {
+    render(
+      <WorkflowSteps
+        instance={{ ...instance, status: "completed" }}
+        finalOutcome="Surat diterbitkan"
+      />,
     );
-    expect(screen.getByTestId("mine-stage-track-node-counselor")).toHaveAttribute(
-      "data-state",
-      "upcoming",
-    );
+    const [first, second] = screen.getAllByRole("listitem");
+    expect(first).toHaveTextContent("outcome.approved");
+    expect(second).toHaveTextContent("Surat diterbitkan");
+  });
+
+  it("says how the request ended at the stage where it stopped", () => {
+    render(<WorkflowSteps instance={{ ...instance, status: "rejected" }} />);
+    const [, second] = screen.getAllByRole("listitem");
+    expect(second).toHaveTextContent("status.rejected");
   });
 });

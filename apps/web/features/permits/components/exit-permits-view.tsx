@@ -1,18 +1,19 @@
 "use client";
 
 import type { Locale } from "@newsekolah/i18n";
-import { formatDateTime } from "@newsekolah/i18n";
+import { formatTime } from "@newsekolah/i18n";
 import {
   Button,
-  Card,
   Dialog,
   DialogContent,
-  PageHeader,
+  EmptyState,
+  IconCircle,
+  List,
+  ListRow,
+  SectionHeader,
+  SegmentedControl,
   Skeleton,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  SkeletonList,
   domainIcons,
 } from "@newsekolah/ui";
 import { Plus } from "lucide-react";
@@ -20,96 +21,98 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
+import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { type WorkflowInstance, useMyExitPermitsQuery } from "../api";
+import { formatShortDate } from "../lib/permit-dates";
+import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
 
-import { CreateForm, ExitPermitDetail } from "./exit-permit-detail";
+import { ActiveExitPermitCard, CreateForm, ExitPermitDetail } from "./exit-permit-detail";
 import { ApprovePanel, GatePanel } from "./exit-permit-panels";
+import { ReviewInboxBanner } from "./review-inbox-banner";
 import { WorkflowStatusBadge } from "./workflow-stepper";
 
+/** A permit still on its way, or approved and not yet through the gate. */
+function isActive(inst: WorkflowInstance): boolean {
+  return inst.status === "in_progress" || inst.status === "approved";
+}
+
 /**
- * Students: request, follow the stages, scan the approving teacher's QR,
- * then show the gate QR. Approvers and security: a shared queue of what is
- * waiting for them, then the existing approve/gate panels to act on it.
+ * Izin keluar. Students request, follow the stages, scan each approving
+ * teacher's QR, then show the gate QR. Approving teachers and security get
+ * their own scan screen: the shared review queue lives in the Perlu
+ * tindakan inbox. The h1 is the area's label and the eyebrow its sidebar
+ * group, from the template, the same on every tab of the area.
  */
-export function ExitPermitsView({ embedded = false }: { embedded?: boolean } = {}): ReactElement {
-  const t = useTranslations("app.permits.exit");
-  const canSubmit = useCan("submit_leave_requests");
+export function ExitPermitsView(): ReactElement {
+  const canSubmit = useCanSubmitPermit();
   const canApprove = useCan("issue_scan_tokens");
   const canGate = useCan("scan_exit_permits");
+  if (canSubmit) return <MyExitPermits />;
+  if (canApprove || canGate) return <ExitPermitDesk canApprove={canApprove} canGate={canGate} />;
+  return <NoExitAccess />;
+}
 
-  // The shared review queue lives in the Perlu Tindakan inbox; this view keeps
-  // the submitter's own history plus the approve (scan) and gate lookups.
-  const tabs = [
-    ...(canSubmit ? [{ value: "mine", label: t("tabMine") }] : []),
-    ...(canApprove ? [{ value: "approve", label: t("tabApprove") }] : []),
+function NoExitAccess(): ReactElement {
+  const t = useTranslations("app.permits.exit");
+  return (
+    <AppPage>
+      <EmptyState
+        icon={<domainIcons.exitPermit aria-hidden="true" />}
+        title={t("noAccessTitle")}
+        description={t("noAccessBody")}
+      />
+    </AppPage>
+  );
+}
+
+/** Teachers approve a stage by showing a QR; security scans the gate QR. */
+function ExitPermitDesk({
+  canApprove,
+  canGate,
+}: {
+  canApprove: boolean;
+  canGate: boolean;
+}): ReactElement {
+  const t = useTranslations("app.permits.exit");
+  // Whoever holds the gate duty works the gate first; approving a stage
+  // is the teachers' everyday task.
+  const modes = [
     ...(canGate ? [{ value: "gate", label: t("tabGate") }] : []),
+    ...(canApprove ? [{ value: "approve", label: t("tabApprove") }] : []),
   ];
-  const [tab, setTab] = useUrlState<string>(
+  const [mode, setMode] = useUrlState<string>(
     "tab",
-    tabs.map((item) => item.value),
-    tabs[0]?.value ?? "mine",
+    modes.map((item) => item.value),
+    modes[0]?.value ?? "approve",
   );
 
-  if (tabs.length === 0) {
-    return (
-      <div className="flex flex-col gap-6 p-4 md:p-6">
-        {!embedded && <PageHeader eyebrow={t("eyebrow")} title={t("title")} />}
-        <p className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-3 text-[13px] text-fg-muted">
-          <domainIcons.exitPermit className="size-4 shrink-0" aria-hidden="true" />
-          {t("noAccessBody")}
-        </p>
-      </div>
-    );
-  }
+  // One row of navigation: the switch sits in the scanner's own header
+  // instead of a second strip under the area's tabs.
+  const modeSwitch =
+    modes.length > 1 ? (
+      <SegmentedControl
+        aria-label={t("modeLabel")}
+        options={modes}
+        value={mode}
+        onValueChange={setMode}
+        size="sm"
+      />
+    ) : undefined;
 
   return (
-    <div className={embedded ? "flex flex-col gap-6" : "flex flex-col gap-6 p-4 md:p-6"}>
-      <Tabs value={tab} onValueChange={setTab}>
-        {!embedded && (
-          <PageHeader
-            eyebrow={t("eyebrow")}
-            title={t("title")}
-            actions={
-              tabs.length > 1 ? (
-                <TabsList>
-                  {tabs.map((item) => (
-                    <TabsTrigger key={item.value} value={item.value}>
-                      {item.label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              ) : undefined
-            }
-          />
-        )}
-        {embedded && tabs.length > 1 && (
-          <TabsList>
-            {tabs.map((item) => (
-              <TabsTrigger key={item.value} value={item.value}>
-                {item.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        )}
-        {canSubmit && (
-          <TabsContent value="mine" className="pt-4">
-            <MyExitPermits />
-          </TabsContent>
-        )}
-        {canApprove && (
-          <TabsContent value="approve" className="pt-4">
-            <ApprovePanel />
-          </TabsContent>
-        )}
-        {canGate && (
-          <TabsContent value="gate" className="pt-4">
-            <GatePanel />
-          </TabsContent>
-        )}
-      </Tabs>
-    </div>
+    <AppPage>
+      <ReviewInboxBanner />
+      {mode === "gate" && canGate ? (
+        <GatePanel modeSwitch={modeSwitch} />
+      ) : canApprove ? (
+        <ApprovePanel modeSwitch={modeSwitch} />
+      ) : (
+        <GatePanel modeSwitch={modeSwitch} />
+      )}
+    </AppPage>
   );
 }
 
@@ -117,71 +120,99 @@ function MyExitPermits(): ReactElement {
   const t = useTranslations("app.permits.exit");
   const locale = useLocale() as Locale;
   const { me } = useSession();
-  const { data, isLoading } = useMyExitPermitsQuery();
+  const { data, isLoading, isError, refetch } = useMyExitPermitsQuery();
   const [creating, setCreating] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const items = data?.data ?? [];
-  const active = items.find((i) => i.status === "in_progress" || i.status === "approved");
+  const active = items.find(isActive);
+  // The permit the status card showed last. The gate scan completes it,
+  // so it is no longer active; the card stays on it so that its exited
+  // state ("Sudah keluar", with the time) answers the scan, instead of the
+  // page dropping back to the idle prompt under the student's eyes. A
+  // cancelled permit still leaves the card, and a fresh visit starts idle.
+  const [cardId, setCardId] = useState<string | null>(null);
+  if (active && active.id !== cardId) setCardId(active.id);
+  const exited = active
+    ? undefined
+    : items.find((item) => item.id === cardId && item.status === "completed");
+  const onCard = active ?? exited;
+  const history = items.filter((item) => item !== onCard);
+  const timeZone = me?.tenant.timezone;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <Button
-          size="sm"
-          icon={<Plus />}
-          disabled={Boolean(active)}
-          onClick={() => {
-            setCreating(true);
-          }}
-        >
-          {t("request")}
-        </Button>
-      </div>
-      {active && <p className="text-[13px] text-fg-muted">{t("activeHint")}</p>}
+    // No header action: the idle card carries "Ajukan izin keluar", and
+    // while a permit is on its way there is nothing new to request.
+    <AppPage>
       {isLoading ? (
-        <Skeleton className="h-40 w-full" aria-busy="true" />
-      ) : items.length === 0 ? (
-        <p className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-3 text-[13px] text-fg-muted">
-          <domainIcons.exitPermit className="size-4 shrink-0" aria-hidden="true" />
-          {t("emptyBody")}
-        </p>
+        <>
+          <Skeleton className="h-56 w-full rounded-xl" />
+          <SkeletonList rows={3} leading framed />
+        </>
+      ) : isError && !data ? (
+        <QueryError retry={() => refetch()} />
       ) : (
-        <ul className="flex flex-col gap-2">
-          {items.map((inst: WorkflowInstance) => (
-            <li key={inst.id}>
-              <button
-                type="button"
-                onClick={() => {
-                  setOpenId(inst.id);
-                }}
-                className="block w-full text-left"
-              >
-                <Card className="flex w-full items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-bg">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[14px] text-fg">
-                      {formatDateTime(inst.opened_at, { locale, timeZone: me?.tenant.timezone })}
-                    </span>
-                    <span className="text-[13px] text-fg-muted">
-                      {inst.current_stage
-                        ? t("stageLabel", { stage: inst.current_stage.label })
-                        : t("finished")}
-                    </span>
-                  </div>
-                  <WorkflowStatusBadge status={inst.status} />
-                </Card>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          {onCard ? (
+            <ActiveExitPermitCard id={onCard.id} />
+          ) : (
+            <EmptyState
+              icon={<domainIcons.exitPermit aria-hidden="true" />}
+              title={t("idleTitle")}
+              description={t("idleBody")}
+              action={
+                <Button
+                  size="lg"
+                  icon={<Plus />}
+                  onClick={() => {
+                    setCreating(true);
+                  }}
+                >
+                  {t("request")}
+                </Button>
+              }
+            />
+          )}
+          {history.length > 0 && (
+            <section className="flex flex-col gap-3" aria-labelledby="exit-history-title">
+              <SectionHeader
+                titleId="exit-history-title"
+                title={t("historyTitle")}
+                count={history.length}
+              />
+              <List framed>
+                {history.map((inst) => (
+                  <ListRow
+                    key={inst.id}
+                    leading={
+                      <IconCircle tone="neutral">
+                        <domainIcons.exitPermit />
+                      </IconCircle>
+                    }
+                    title={formatShortDate(inst.opened_at, locale, timeZone)}
+                    meta={t("openedAt", {
+                      time: formatTime(inst.opened_at, { locale, timeZone }),
+                    })}
+                    trailing={<WorkflowStatusBadge status={inst.status} />}
+                    onClick={() => {
+                      setOpenId(inst.id);
+                    }}
+                  />
+                ))}
+              </List>
+            </section>
+          )}
+        </>
       )}
 
       <Dialog open={creating} onOpenChange={setCreating}>
-        <DialogContent title={t("request")}>
+        <DialogContent title={t("request")} description={t("form.description")}>
           {creating && (
             <CreateForm
-              onDone={(id) => {
+              onCancel={() => {
                 setCreating(false);
-                setOpenId(id);
+              }}
+              onDone={() => {
+                setCreating(false);
               }}
             />
           )}
@@ -193,10 +224,10 @@ function MyExitPermits(): ReactElement {
           if (!open) setOpenId(null);
         }}
       >
-        <DialogContent title={t("detailTitle")} className="max-w-xl">
+        <DialogContent title={t("detailTitle")} size="lg">
           {openId && <ExitPermitDetail id={openId} />}
         </DialogContent>
       </Dialog>
-    </div>
+    </AppPage>
   );
 }

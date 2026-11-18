@@ -1,82 +1,89 @@
 "use client";
 
-import {
-  Skeleton,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { Locale } from "@newsekolah/i18n";
+import { DataTable, EmptyState, TextLink, domainIcons } from "@newsekolah/ui";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useLocale, useTranslations } from "next-intl";
+import type { ReactElement, ReactNode } from "react";
+import { useMemo } from "react";
 
+import type { LibraryCopy } from "../api";
+import { formatShortDate } from "../lib/short-date";
 import { useLibraryAccessionRegisterReportQuery } from "../reports-api";
 
 import { LibraryTitleName } from "./library-title-name";
-import { ReportCard, ReportCardTitle, ReportField } from "./report-mobile-card";
 
 /** Copies acquired in the period, in acquisition order (Buku Induk). */
 export function ReportAccessionRegisterTable({
   from,
   to,
+  emptyAction,
 }: {
   from: string;
   to: string;
+  /** The empty state's way on, such as stepping back a month. */
+  emptyAction?: ReactNode;
 }): ReactElement {
   const t = useTranslations("app.library.reports.accessionRegister");
-  const { data, isLoading } = useLibraryAccessionRegisterReportQuery(from, to);
+  const locale = useLocale() as Locale;
+  const { data, isLoading, error, refetch } = useLibraryAccessionRegisterReportQuery(from, to);
   const copies = data?.data ?? [];
 
-  if (isLoading) return <Skeleton className="h-64 w-full" aria-busy="true" />;
-  if (copies.length === 0) {
-    return <p className="text-[13px] text-fg-muted">{t("emptyTitle")}</p>;
-  }
+  const columns = useMemo<ColumnDef<LibraryCopy>[]>(
+    () => [
+      {
+        id: "title",
+        header: t("columns.title"),
+        enableSorting: false,
+        meta: { card: "title" },
+        cell: ({ row }) => (
+          <TextLink href={`/library/catalogue/${row.original.title_id}`}>
+            <LibraryTitleName titleId={row.original.title_id} />
+          </TextLink>
+        ),
+      },
+      {
+        accessorKey: "accession_number",
+        header: t("columns.accessionNumber"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.accession_number}</span>,
+      },
+      {
+        accessorKey: "barcode",
+        header: t("columns.barcode"),
+        enableSorting: false,
+        cell: ({ row }) => <span className="tabular-nums">{row.original.barcode}</span>,
+      },
+      {
+        accessorKey: "acquired_on",
+        header: t("columns.acquiredOn"),
+        enableSorting: false,
+        cell: ({ row }) =>
+          row.original.acquired_on ? formatShortDate(row.original.acquired_on, locale) : "-",
+      },
+    ],
+    [t, locale],
+  );
 
   return (
-    <>
-      <ul className="flex flex-col gap-2 md:hidden">
-        {copies.map((copy) => (
-          <li key={copy.id}>
-            <ReportCard>
-              <ReportCardTitle>
-                <LibraryTitleName titleId={copy.title_id} />
-              </ReportCardTitle>
-              <ReportField
-                label={t("columns.accessionNumber")}
-                value={<span className="tabular-nums">{copy.accession_number}</span>}
-              />
-              <ReportField label={t("columns.barcode")} value={copy.barcode} />
-              <ReportField label={t("columns.acquiredOn")} value={copy.acquired_on ?? "-"} />
-            </ReportCard>
-          </li>
-        ))}
-      </ul>
-      <div className="hidden md:block">
-        <Table className="min-w-[560px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col">{t("columns.accessionNumber")}</TableHead>
-              <TableHead scope="col">{t("columns.title")}</TableHead>
-              <TableHead scope="col">{t("columns.barcode")}</TableHead>
-              <TableHead scope="col">{t("columns.acquiredOn")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {copies.map((copy) => (
-              <TableRow key={copy.id}>
-                <TableCell className="tabular-nums">{copy.accession_number}</TableCell>
-                <TableCell>
-                  <LibraryTitleName titleId={copy.title_id} />
-                </TableCell>
-                <TableCell className="text-fg-muted">{copy.barcode}</TableCell>
-                <TableCell className="text-fg-muted">{copy.acquired_on ?? "-"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </>
+    <DataTable
+      stateKey="features/library/components/report-accession-register-table:1"
+      mode="local"
+      data={copies}
+      columns={columns}
+      searchable={copies.length > 10}
+      isLoading={isLoading}
+      error={error}
+      onRetry={() => void refetch()}
+      getRowId={(copy) => copy.id}
+      emptyState={
+        <EmptyState
+          icon={<domainIcons.library aria-hidden="true" />}
+          title={t("emptyTitle")}
+          action={emptyAction}
+        />
+      }
+    />
   );
 }

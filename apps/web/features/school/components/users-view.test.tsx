@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -23,6 +23,7 @@ vi.mock("../../../lib/view-state/view-state-provider", () => ({
 vi.mock("../../academic/components/academic-workspace-links", () => ({
   AcademicWorkspaceLinks: () => null,
 }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../api", () => ({
   useUsersQuery: mocks.useUsersQuery,
   useArchiveUserMutation: () => ({ mutate: vi.fn(), isPending: false }),
@@ -40,6 +41,8 @@ vi.mock("../api", () => ({
 vi.mock("../duties-api", () => ({
   useImpersonateUserMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
+
+import type { AdminUser } from "../api";
 
 import { UsersView } from "./users-view";
 
@@ -131,5 +134,49 @@ describe("UsersView filters", () => {
       expect.objectContaining({ profile_kind: undefined }),
     );
     expect(new URLSearchParams(window.location.search).get("kind")).toBe("");
+  });
+});
+
+describe("UsersView density", () => {
+  // The toolbar leaves density out over an empty, unfiltered list (f7a9488e:
+  // nothing to arrange), so the list holds one account.
+  const account: AdminUser = {
+    id: "user-1",
+    username: "siti",
+    name: "Siti Rahma",
+    status: "active",
+    profile_kind: "teacher",
+    must_change_password: false,
+    created_at: "2026-07-01T00:00:00Z",
+    roles: [{ id: "role-teacher", slug: "teacher", name: "Guru", is_primary: true }],
+  };
+
+  beforeEach(() => {
+    mocks.canCreate = true;
+    mocks.useUsersQuery.mockReset();
+    mocks.useUsersQuery.mockReturnValue({
+      data: { data: [account] },
+      isError: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+    window.history.replaceState(null, "", "/school/users");
+  });
+
+  it("starts the long list compact and still lets the toolbar open it up", async () => {
+    const user = userEvent.setup();
+    render(<UsersView />);
+
+    // The compact 40px row puts the name and the username on one line.
+    const nameLine = () => within(screen.getByRole("table")).getByText("Siti Rahma").parentElement;
+    const toggle = screen.getByRole("button", { name: /^Kepadatan/ });
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(nameLine()).toHaveClass("md:flex-row");
+    await user.click(toggle);
+    expect(screen.getByRole("button", { name: /^Kepadatan/ })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(nameLine()).not.toHaveClass("md:flex-row");
   });
 });

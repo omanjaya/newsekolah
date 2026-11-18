@@ -1,22 +1,32 @@
 {
   "picket": {
     "heroEyebrow": "Duty today",
-    "heroTitle": "{count} late-arriving students waiting",
-    "heroAction": "Open scanner",
-    "cardTitle": "Duty",
+    "heroTitle": "{count} late arrivals waiting",
+    "heroAction": "Review late arrivals",
+    "cardTitle": "Duty queue",
     "tileLateLabel": "Late arrivals waiting",
     "tileExitLabel": "Exit permits waiting",
     "lateSectionTitle": "Late arrivals",
     "lateEmpty": "No late arrivals today.",
     "exitSectionTitle": "Exit permits",
     "exitEmpty": "No exit permits waiting.",
-    "seeAll": "See all"
+    "seeAll": "See all",
+    "heroMeta": "Review the reasons and decide the follow-up.",
+    "qrAction": "Show QR",
+    "scanAction": "Open scanner",
+    "idleTitle": "Nothing in the queue",
+    "idleMeta": "Show the duty QR to students who arrive late or leave early.",
+    "exitTitle": "{count} exit permits waiting",
+    "exitMeta": "Students are waiting for the duty teacher's approval to leave.",
+    "exitAction": "Review exit permits",
+    "unknownStudent": "Student",
+    "occurrence": "#{count}"
   },
   "counselor": {
     "heroEyebrow": "Counseling",
     "heroTitle": "{count} leave requests waiting at the counseling stage",
     "heroAction": "Review requests",
-    "cardTitle": "Counseling",
+    "cardTitle": "Counseling queue",
     "tileLeaveLabel": "Requests at the counseling stage",
     "tileSpLabel": "Warning letter candidates",
     "leaveSectionTitle": "Leave requests",
@@ -31,14 +41,50 @@
       "empty": "No at-risk students right now.",
       "unknownStudent": "Unknown student",
       "viewAll": "View analytics"
-    }
+    },
+    "heroMeta": "Leave requests waiting for the counselor's review.",
+    "idleTitle": "The counseling queue is empty",
+    "idleMeta": "No leave request is waiting at the counseling stage.",
+    "idleMetaSp": "No leave requests waiting. {count} students are warning-letter candidates.",
+    "idleAction": "Open counseling",
+    "spAction": "Review candidates",
+    "points": "{points} pts"
   },
   "checkIn": {
-    "title": "Check In / Out",
-    "openPage": "Open check-in page",
+    "title": "Work attendance",
+    "openPage": "Open",
     "notYet": "Nothing recorded today",
-    "done": "Today's attendance is complete.",
-    "checkIn": "Check In",
-    "checkOut": "Check Out"
+    "done": "Today's work attendance is complete.",
+    "checkIn": "Record arrival",
+    "checkOut": "Record departure"
+  },
+  "gate": {
+    "eyebrow": "Gate",
+    "title": "Ready to scan exit permits",
+    "meta": "Scan a student's exit permit QR before they pass the gate.",
+    "titleVisitors": "Gate visitor book",
+    "metaVisitors": "Record visitors as they arrive and leave.",
+    "scanAction": "Open scanner",
+    "visitorAction": "Record a visitor"
+  },
+  "deputy": {
+    "eyebrow": "Needs action",
+    "title": "{count, plural, one {# request} other {# requests}} awaiting a decision",
+    "meta": "Leave, late arrivals and warning letters waiting on you.",
+    "action": "Open needs action",
+    "reportsAction": "Open reports",
+    "idleTitle": "Nothing awaits a decision",
+    "idleMeta": "School reports are available any time.",
+    "reportsTitle": "School reports",
+    "reportsMeta": "Attendance, permits and discipline summaries.",
+    "tile": "Needs action",
+    "cardTitle": "Decision queue",
+    "cardAction": "View all",
+    "queues": {
+      "leave": "Leave requests",
+      "exit": "Exit permits",
+      "late": "Late arrivals",
+      "warningLetters": "Warning letters"
+    }
   }
 }

@@ -2,10 +2,10 @@
   "navLabel": "WhatsApp",
   "eyebrow": "Pengaturan",
   "title": "WhatsApp",
-  "description": "Pilih penyedia pengiriman WhatsApp, kelola template pesan, dan pantau log pengiriman.",
+  "description": "Pilih penyedia pengiriman WhatsApp, kelola templat pesan, dan pantau log pengiriman.",
   "tabs": {
     "provider": "Penyedia",
-    "templates": "Template",
+    "templates": "Templat",
     "deliveries": "Log pengiriman"
   },
   "provider": {
@@ -16,50 +16,51 @@
     "providerGateway": "Gateway lokal",
     "activeLabel": "Aktifkan pengiriman WhatsApp",
     "activeHint": "Saat nonaktif, notifikasi WhatsApp jatuh kembali ke pengaturan bawaan server.",
+    "unchangedPlaceholder": "Tidak diubah",
     "meta": {
-      "phoneNumberIdLabel": "Phone number ID",
+      "phoneNumberIdLabel": "ID nomor telepon",
       "phoneNumberIdHint": "Dari WhatsApp Business Manager.",
-      "accessTokenLabel": "Access token",
-      "accessTokenPlaceholderSet": "Tersimpan — kosongkan untuk tetap memakai token ini",
-      "accessTokenPlaceholderUnset": "Belum diisi"
+      "accessTokenLabel": "Token akses",
+      "accessTokenKeepHint": "Kosongkan untuk mempertahankan token yang sudah tersimpan."
     },
     "gateway": {
       "urlLabel": "URL gateway",
       "urlHint": "Endpoint gateway WhatsApp milik sekolah.",
       "headerNameLabel": "Nama header otentikasi",
       "headerValueLabel": "Nilai header otentikasi",
-      "headerValuePlaceholderSet": "Tersimpan — kosongkan untuk tetap memakai nilai ini",
-      "headerValuePlaceholderUnset": "Belum diisi"
+      "headerValueKeepHint": "Kosongkan untuk mempertahankan nilai yang sudah tersimpan."
     },
     "save": "Simpan",
     "saved": "Konfigurasi WhatsApp disimpan"
   },
   "templates": {
-    "title": "Template pesan",
-    "body": "Setiap template memetakan ke template yang sudah disetujui di WhatsApp Business Manager. Tulis nama variabel di antara dua kurung kurawal ganda untuk membuat placeholder.",
-    "addNew": "Tambah template",
-    "empty": "Belum ada template.",
+    "title": "Templat pesan",
+    "body": "Setiap templat memetakan ke templat yang sudah disetujui di WhatsApp Business Manager. Tulis nama variabel di antara dua kurung kurawal ganda untuk membuat isian.",
+    "addNew": "Tambah templat",
+    "empty": "Belum ada templat.",
     "form": {
-      "nameLabel": "Nama template",
-      "localeLabel": "Locale",
-      "metaTemplateNameLabel": "Nama template di Meta",
+      "nameLabel": "Nama templat",
+      "localeLabel": "Bahasa",
+      "metaTemplateNameLabel": "Nama templat di Meta",
       "bodyLabel": "Isi pesan",
       "bodyHint": "Contoh: Halo, nama_ortu, tagihan jumlah jatuh tempo tanggal (masing-masing dibungkus kurung kurawal ganda).",
       "placeholdersLabel": "Variabel terdeteksi",
-      "save": "Simpan template",
+      "save": "Simpan templat",
+      "edit": "Ubah",
       "cancel": "Batal",
       "delete": "Hapus"
     },
     "preview": {
       "title": "Pratinjau",
-      "variableValueLabel": "Nilai untuk {{variable}}",
+      "variableValueLabel": "Nilai untuk {variable}",
       "renderedLabel": "Hasil",
-      "missingVariables": "Variabel belum diisi: {{variables}}"
+      "missingVariables": "Variabel belum diisi: {variables}"
     },
-    "created": "Template dibuat",
-    "updated": "Template diperbarui",
-    "deleted": "Template dihapus",
-    "confirmDelete": "Hapus template ini?"
+    "created": "Templat dibuat",
+    "updated": "Templat diperbarui",
+    "deleted": "Templat dihapus",
+    "confirmDelete": "Hapus templat ini?",
+    "confirmDeleteBody": "Templat {name} akan dihapus dan tidak bisa dipakai lagi untuk pengiriman WhatsApp."
   },
   "deliveries": {
     "title": "Log pengiriman",
@@ -84,6 +85,7 @@
     "resend": "Kirim ulang",
     "resent": "Pengiriman ulang dijadwalkan",
     "loadMore": "Muat lebih banyak",
-    "errorLabel": "Alasan gagal"
+    "errorLabel": "Alasan gagal",
+    "filterLabel": "Saring menurut status"
   }
 }

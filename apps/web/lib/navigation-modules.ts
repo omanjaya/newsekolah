@@ -1,5 +1,5 @@
 import { domainIcons } from "@newsekolah/ui";
-import { CalendarRange, FileBarChart, Trophy, UsersRound } from "lucide-react";
+import { CalendarClock, CalendarRange, FileChartLine, Trophy, Volleyball } from "lucide-react";
 
 import type { NavItem } from "./navigation";
 import { NAV_GROUP } from "./navigation-groups";
@@ -25,7 +25,8 @@ export const moduleNavItems: NavItem[] = [
     labelKey: "nav.visitors.items.expected",
     href: "/visitors/expected",
     module: "visitors",
-    icon: domainIcons.visitor,
+    // Not the visitor board's glyph: these guests are booked, not on site.
+    icon: CalendarClock,
     permission: "view_visitors",
     group: NAV_GROUP.administration,
   },
@@ -43,7 +44,7 @@ export const moduleNavItems: NavItem[] = [
     labelKey: "nav.visitors.items.reports",
     href: "/visitors/recap",
     module: "visitors",
-    icon: FileBarChart,
+    icon: FileChartLine,
     permission: "view_visitor_reports",
     group: NAV_GROUP.administration,
   },
@@ -52,7 +53,8 @@ export const moduleNavItems: NavItem[] = [
     labelKey: "app.activities.navLabelClubs",
     href: "/activities/clubs",
     module: "activities",
-    icon: UsersRound,
+    // Not the homeroom's people glyph.
+    icon: Volleyball,
     permission: "view_activities",
     group: NAV_GROUP.students,
   },

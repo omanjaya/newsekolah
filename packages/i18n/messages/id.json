@@ -78,10 +78,13 @@
       "subtitle": "Masuk ke akun sekolah Anda untuk melanjutkan.",
       "panelHeadline": "Satu tempat untuk operasional harian sekolah.",
       "panelTagline": "Presensi, izin, nilai, dan administrasi dalam satu sistem yang rapi dan cepat.",
-      "panelFootnote": "Sistem Informasi Sekolah",
+      "panelFootnote": "Sistem informasi sekolah",
       "featureAttendance": "Presensi harian yang cepat",
       "featureGrades": "Nilai dan rapor terpusat",
-      "featureLibrary": "Perpustakaan dan sirkulasi"
+      "featureLibrary": "Perpustakaan dan sirkulasi",
+      "welcomeTitle": "Selamat datang",
+      "welcomeBody": "Masuk dengan akun yang diberikan sekolah.",
+      "help": "Belum punya akun atau lupa nama pengguna? Hubungi admin sekolah."
     },
     "changePassword": {
       "title": "Ubah kata sandi",
@@ -89,7 +92,8 @@
       "newLabel": "Kata sandi baru",
       "confirmLabel": "Konfirmasi kata sandi baru",
       "submit": "Ubah kata sandi",
-      "success": "Kata sandi berhasil diubah, sesi lain diakhiri"
+      "success": "Kata sandi berhasil diubah, sesi lain diakhiri",
+      "newHint": "Minimal 8 karakter."
     },
     "sessions": {
       "title": "Sesi aktif",
@@ -116,9 +120,9 @@
     "permits": {
       "label": "Perizinan",
       "items": {
-        "plannedLeave": "Izin Terencana",
-        "exitPermit": "Izin Keluar",
-        "late": "Terlambat",
+        "plannedLeave": "Izin tidak masuk",
+        "exitPermit": "Izin keluar",
+        "late": "Keterlambatan",
         "gate": "Gerbang",
         "verification": "Verifikasi"
       }
@@ -127,9 +131,9 @@
       "label": "Kesiswaan",
       "items": {
         "violations": "Pelanggaran",
-        "warningLetters": "Surat Peringatan",
+        "warningLetters": "Surat peringatan",
         "counseling": "Konseling",
-        "reports": "Laporan Kesiswaan",
+        "reports": "Laporan kesiswaan",
         "myDiscipline": "Poin kedisiplinan"
       }
     },
@@ -139,7 +143,7 @@
         "circulation": "Sirkulasi",
         "catalog": "Katalog",
         "members": "Anggota",
-        "stockOpname": "Opname",
+        "stockOpname": "Stok opname",
         "visits": "Kunjungan",
         "reports": "Laporan",
         "opac": "OPAC"
@@ -153,10 +157,10 @@
       }
     },
     "schoolData": {
-      "label": "Data Sekolah",
+      "label": "Data sekolah",
       "items": {
         "academicYear": "Tahun ajaran",
-        "classesAndStudents": "Kelas dan siswa",
+        "classesAndStudents": "Siswa dan kelas",
         "teachersAndStaff": "Guru dan pegawai",
         "subjects": "Mapel",
         "rooms": "Ruang",
@@ -170,18 +174,18 @@
         "subjectOfferings": "Mapel per tahun ajaran",
         "teachingAssignments": "Penugasan mengajar",
         "enrollmentImport": "Impor penempatan kelas",
-        "newYearSetup": "Persiapan tahun ajaran baru"
+        "newYearSetup": "Tahun ajaran baru"
       }
     },
     "settings": {
       "label": "Pengaturan",
       "items": {
-        "schoolProfile": "Profil Sekolah",
+        "schoolProfile": "Profil sekolah",
         "policies": "Kebijakan",
-        "documentTemplates": "Template Dokumen",
-        "rolesAndAccess": "Peran dan Akses",
+        "documentTemplates": "Templat dokumen",
+        "rolesAndAccess": "Peran dan akses",
         "integrations": "Integrasi",
-        "sessionsAndSecurity": "Sesi dan Keamanan",
+        "sessionsAndSecurity": "Sesi dan keamanan",
         "modules": "Modul"
       }
     },
@@ -189,7 +193,7 @@
       "label": "Platform",
       "items": {
         "tenants": "Sekolah",
-        "operatorAlerts": "Notifikasi Operator"
+        "operatorAlerts": "Notifikasi operator"
       }
     },
     "compact": {
@@ -201,12 +205,12 @@
       "profile": "Profil"
     },
     "visitors": {
-      "label": "Tamu & insiden",
+      "label": "Tamu dan insiden",
       "items": {
-        "board": "Papan Tamu",
-        "expected": "Tamu Dijadwalkan",
+        "board": "Tamu hari ini",
+        "expected": "Tamu terjadwal",
         "incidents": "Insiden",
-        "reports": "Rekap Kunjungan"
+        "reports": "Rekap kunjungan"
       }
     },
     "activities": {
@@ -216,7 +220,7 @@
       "label": "Keuangan"
     },
     "mentoring": {
-      "label": "Guru Wali"
+      "label": "Guru wali"
     },
     "supervision": {
       "label": "Supervisi"
@@ -291,7 +295,7 @@
     "INCIDENT_ALREADY_CLOSED": "Insiden ini sudah ditutup",
     "INCIDENT_FORBIDDEN": "Anda tidak berwenang membaca insiden ini",
     "VISITORS_MODULE_DISABLED": "Modul kunjungan tamu belum diaktifkan untuk sekolah ini",
-    "BILLING_MODULE_DISABLED": "Modul pembayaran SPP belum diaktifkan untuk sekolah ini",
+    "BILLING_MODULE_DISABLED": "Modul tagihan dan pembayaran belum diaktifkan untuk sekolah ini",
     "FEE_TYPE_NOT_FOUND": "Jenis biaya tidak ditemukan",
     "DISCOUNT_NOT_FOUND": "Potongan tidak ditemukan",
     "BILL_NOT_FOUND": "Tagihan tidak ditemukan",

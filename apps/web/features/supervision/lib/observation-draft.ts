@@ -6,14 +6,22 @@
  * half-matching data back to a newer form. Mirrors
  * `features/attendance/lib/attendance-draft.ts`'s shape and guarantees
  * (never throws, cleared on a successful save).
+ *
+ * Each draft belongs to the account that typed it (`lib/drafts`): an
+ * observation draft is an assessment of a named teacher and schools share
+ * devices, so the draft is stored under its owner, its payload names that
+ * owner, and it is never offered to anyone else who opens the same
+ * observation in this browser. Without an owner nothing is stored.
  */
+import { readDraft, removeDraft, writeDraft } from "../../../lib/drafts/draft-storage";
 import { businessNow } from "../../../lib/simulation/clock";
 
-const DRAFT_VERSION = 1;
-const KEY_PREFIX = "newsekolah:supervision-observation-draft:";
+const DRAFT_VERSION = 2;
 
 export interface ObservationDraft {
   version: number;
+  /** Whose draft this is (`lib/drafts/draft-owner.ts`); checked again on every read. */
+  owner: string;
   scheduledId: string;
   /** ISO timestamp of when the draft was last written, for the restore prompt. */
   savedAt: string;
@@ -22,43 +30,45 @@ export interface ObservationDraft {
   observedAt: string;
 }
 
-function storageKey(scheduledId: string): string {
-  return `${KEY_PREFIX}${scheduledId}`;
-}
-
-/** No-op (never throws) when storage is unavailable: private browsing, quota, or SSR. */
+/** No-op (never throws) without an owner or when storage is unavailable: private browsing, quota, or SSR. */
 export function saveObservationDraft(
+  owner: string | null,
   scheduledId: string,
-  draft: Omit<ObservationDraft, "version" | "scheduledId" | "savedAt">,
+  draft: Omit<ObservationDraft, "version" | "owner" | "scheduledId" | "savedAt">,
 ): void {
+  if (!owner) return;
   try {
     const payload: ObservationDraft = {
       ...draft,
       version: DRAFT_VERSION,
+      owner,
       scheduledId,
       savedAt: businessNow().toISOString(),
     };
-    window.localStorage.setItem(storageKey(scheduledId), JSON.stringify(payload));
+    writeDraft(owner, "observation", scheduledId, payload);
   } catch {
-    // The draft is a convenience, never a requirement: a write failure
-    // (storage disabled, quota exceeded) is silently ignored rather than
-    // surfaced to an observer mid-lesson.
+    // The draft is a convenience, never a requirement: a failure is
+    // silently ignored rather than surfaced to an observer mid-lesson.
   }
 }
 
-/** Parses and shape-validates the stored draft; a malformed or stale-version entry reads back as none. */
-export function loadObservationDraft(scheduledId: string): ObservationDraft | null {
-  try {
-    const raw = window.localStorage.getItem(storageKey(scheduledId));
-    if (!raw) return null;
-    return parseObservationDraft(raw, scheduledId);
-  } catch {
-    return null;
-  }
+/** Parses and shape-validates the stored draft; a malformed, stale-version or foreign entry reads back as none. */
+export function loadObservationDraft(
+  owner: string | null,
+  scheduledId: string,
+): ObservationDraft | null {
+  const raw = readDraft(owner, "observation", scheduledId);
+  if (!raw) return null;
+  return parseObservationDraft(owner, raw, scheduledId);
 }
 
 /** Pure parse/validate step, split out from `loadObservationDraft` so it is testable without touching `localStorage`. */
-export function parseObservationDraft(raw: string, scheduledId: string): ObservationDraft | null {
+export function parseObservationDraft(
+  owner: string | null,
+  raw: string,
+  scheduledId: string,
+): ObservationDraft | null {
+  if (!owner) return null;
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -72,7 +82,13 @@ export function parseObservationDraft(raw: string, scheduledId: string): Observa
   // treat these checks as already-proven instead of the runtime
   // validation they actually are.
   const draft = parsed as Record<string, unknown>;
-  if (draft.version !== DRAFT_VERSION || draft.scheduledId !== scheduledId) return null;
+  if (
+    draft.version !== DRAFT_VERSION ||
+    draft.owner !== owner ||
+    draft.scheduledId !== scheduledId
+  ) {
+    return null;
+  }
   if (
     typeof draft.savedAt !== "string" ||
     typeof draft.scores !== "object" ||
@@ -85,10 +101,6 @@ export function parseObservationDraft(raw: string, scheduledId: string): Observa
   return draft as unknown as ObservationDraft;
 }
 
-export function clearObservationDraft(scheduledId: string): void {
-  try {
-    window.localStorage.removeItem(storageKey(scheduledId));
-  } catch {
-    // See saveObservationDraft: best-effort only.
-  }
+export function clearObservationDraft(owner: string | null, scheduledId: string): void {
+  removeDraft(owner, "observation", scheduledId);
 }

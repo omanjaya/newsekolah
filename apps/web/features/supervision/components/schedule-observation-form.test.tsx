@@ -12,6 +12,10 @@ vi.mock("../../../lib/hooks/use-active-year", () => ({
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+  useCan: () => true,
+}));
 vi.mock("../../reference/components/directory-picker", async () => {
   const { directoryPickerStubModule } = await import("../../../test/directory-picker-stub");
   return directoryPickerStubModule;

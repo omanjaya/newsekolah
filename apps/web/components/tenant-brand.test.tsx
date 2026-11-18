@@ -6,7 +6,7 @@ import { initialsFor } from "../lib/tenant/initials";
 import { TenantBrand } from "./tenant-brand";
 
 interface TenantHookResult {
-  branding: { logo_url?: string } | undefined;
+  branding: { logo_url?: string; accent_color?: string } | undefined;
   displayName: string;
   isLoading: boolean;
 }
@@ -26,7 +26,7 @@ describe("TenantBrand", () => {
     // No product-name text, no tenant name text, no logo image — just placeholders.
     expect(screen.queryByText("SION")).not.toBeInTheDocument();
     expect(container.querySelector("img")).not.toBeInTheDocument();
-    expect(container.querySelectorAll(".animate-pulse")).toHaveLength(2);
+    expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(2);
   });
 
   it("shows only the mark skeleton in mark mode while loading, no name placeholder", () => {
@@ -34,7 +34,7 @@ describe("TenantBrand", () => {
 
     const { container } = render(<TenantBrand mark />);
 
-    expect(container.querySelectorAll(".animate-pulse")).toHaveLength(1);
+    expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(1);
   });
 
   it("renders the tenant's logo and name once branding has loaded", () => {
@@ -67,6 +67,25 @@ describe("TenantBrand", () => {
     expect(screen.getByText(initialsFor(displayName))).toBeInTheDocument();
     expect(screen.getByText(displayName)).toBeInTheDocument();
     expect(screen.queryByText("SION")).not.toBeInTheDocument();
+  });
+
+  it("writes the initials in the colour chosen for the mark's own fill, not the themed accent label", () => {
+    mockUseTenant.mockReturnValue({
+      branding: { logo_url: undefined, accent_color: "#0F7A5F" },
+      displayName: "SMA Contoh",
+      isLoading: false,
+    });
+
+    render(<TenantBrand mark />);
+
+    // The school's colour and the label colour TenantProvider computed for
+    // that fill, the same in both themes (white on the deep green, 5.3:1),
+    // where the dark theme's accent label colour gave 3.05:1. Token
+    // classes, not an inline style: the shared SchoolMark at 32px.
+    const mark = screen.getByText(initialsFor("SMA Contoh"));
+    expect(mark).toHaveClass("bg-(--tenant-accent)", "text-(--tenant-accent-fg)", "size-8");
+    expect(mark).not.toHaveClass("text-accent-fg");
+    expect(mark).not.toHaveAttribute("style");
   });
 
   it("omits the name and keeps only the mark for the collapsed sidebar rail", () => {

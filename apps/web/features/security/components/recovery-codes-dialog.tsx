@@ -1,6 +1,7 @@
 "use client";
 
-import { Alert, Button, Dialog, DialogContent, useToast } from "@newsekolah/ui";
+import { Alert, Button, Card, Dialog, DialogContent, useToast } from "@newsekolah/ui";
+import { Copy } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -39,24 +40,25 @@ export function RecoveryCodesDialog({
     >
       <DialogContent
         title={t("dialogTitle")}
+        size="md"
         footer={
           <>
-            <Button variant="secondary" size="sm" onClick={() => void copyAll()}>
+            <Button variant="secondary" icon={<Copy />} onClick={() => void copyAll()}>
               {t("copyAll")}
             </Button>
-            <Button size="sm" onClick={onClose}>
-              {t("done")}
-            </Button>
+            <Button onClick={onClose}>{t("done")}</Button>
           </>
         }
       >
         <div className="flex flex-col gap-4">
-          <Alert variant="warning" title={t("dialogBody")} />
-          <ul className="grid grid-cols-2 gap-2 rounded-sm border border-border bg-bg p-3 font-mono text-[13px] tracking-wide text-fg">
-            {codes.map((code) => (
-              <li key={code}>{code}</li>
-            ))}
-          </ul>
+          <Alert tone="warning" title={t("dialogBody")} />
+          <Card tone="sunken" padding="sm">
+            <ul className="grid grid-cols-2 gap-x-4 gap-y-2 font-mono text-body tracking-wide text-fg select-all">
+              {codes.map((code) => (
+                <li key={code}>{code}</li>
+              ))}
+            </ul>
+          </Card>
         </div>
       </DialogContent>
     </Dialog>

@@ -1,26 +1,51 @@
 "use client";
 
-import { Card, CardContent, PageHeader } from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
+import type { Locale } from "@newsekolah/i18n";
+import { Card } from "@newsekolah/ui";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+
+import { AppPage } from "../../../components/app-page";
+import { formatDisplayName } from "../../../lib/text/format-name";
+import { useLeaveRequestQuery } from "../api";
+import { formatDayRange } from "../lib/permit-dates";
 
 import { LeaveRequestDetail } from "./leave-request-detail";
 
-/** Full-page variant of the leave request detail, opened from notifications. */
+/**
+ * Full-page variant of the leave request detail, opened from notifications.
+ * The header says what the request is: its name as the h1 ("Izin sakit")
+ * and the student, class and dates under it, so the card below starts with
+ * the request's outcome and progress instead of repeating them. A short
+ * record on the narrow column (720), so labels sit near their values and
+ * the stepper's stages near each other. The detail shares the query, so
+ * this costs no second request.
+ */
 export function LeaveRequestPageView({ id }: { id: string }): ReactElement {
   const t = useTranslations("app.permits.leave");
+  const locale = useLocale() as Locale;
+  const { data } = useLeaveRequestQuery(id);
+
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("detailTitle")}
-        breadcrumb={[{ label: t("title"), href: "/leave-requests" }, { label: t("detailTitle") }]}
-      />
-      <Card className="max-w-2xl">
-        <CardContent className="p-4 md:p-6">
-          <LeaveRequestDetail id={id} />
-        </CardContent>
+    <AppPage
+      variant="narrow"
+      title={data ? t("pageTitle", { category: data.category }) : t("detailTitle")}
+      documentTitle={t("detailTitle")}
+      description={
+        data
+          ? `${formatDisplayName(data.student_name)} (${data.class_name}) · ${formatDayRange(
+              data.starts_on,
+              data.ends_on,
+              locale,
+            )}`
+          : undefined
+      }
+    >
+      {/* `overflow-clip` (not `hidden`, which would end the sticky) keeps
+          the decision row docked on a phone inside the card's corners. */}
+      <Card padding="md" className="overflow-clip">
+        <LeaveRequestDetail id={id} layout="page" />
       </Card>
-    </div>
+    </AppPage>
   );
 }

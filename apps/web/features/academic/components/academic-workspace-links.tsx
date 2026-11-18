@@ -1,93 +1,59 @@
 "use client";
 
-import { Button } from "@newsekolah/ui";
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { WorkspaceNav } from "../../../components/workspace-nav";
+import { navigation } from "../../../lib/navigation";
 import { navAccessFromMe } from "../../../lib/navigation-access";
 import { canOpenPath } from "../../../lib/navigation-permissions";
 import { useSession } from "../../../lib/session/session-provider";
-import { useSubstitutionsQuery } from "../../substitutions/api";
 
-const DESTINATIONS = {
-  attendance: [
-    ["/attendance", "sessions"],
-    ["/journal", "journal"],
-    ["/attendance/reports", "reports"],
-  ],
-  schedule: [
-    ["/schedule", "timetable"],
-    ["/school/calendar", "calendar"],
-    ["/substitutions", "substitutions"],
-  ],
-  years: [
-    ["/academic/years", "yearList"],
-    ["/academic/new-year-setup", "setup"],
-    ["/school/promotion", "promotion"],
-  ],
-  users: [
-    ["/school/users", "accounts"],
-    ["/settings/roles", "roles"],
-  ],
+/**
+ * The pages of each area, as navigation registry keys: a tab's address,
+ * label and access are the registry's, so the tab, the menu entry, the
+ * page title and the breadcrumb share one name. `label` is the area's
+ * menu entry (app.shell.nav.items), the strip's accessible name.
+ */
+const AREAS = {
+  attendance: { label: "attendance", pages: ["attendance", "journal", "attendance-reports"] },
+  schedule: { label: "schedule", pages: ["schedule", "school-calendar", "substitutions"] },
+  years: {
+    label: "years",
+    pages: ["academic-years", "academic-new-year-setup", "school-promotion"],
+  },
+  users: { label: "users", pages: ["school-users", "settings-roles"] },
 } as const;
 
-export function AcademicWorkspaceLinks({
-  area,
-}: {
-  area: keyof typeof DESTINATIONS;
-}): ReactElement {
-  const t = useTranslations("app.academic.workspace");
+export type AcademicArea = keyof typeof AREAS;
+
+/**
+ * The tabs between the pages of one academic or school-data area, for the
+ * views that pass their own `nav` to the page template. The same pages,
+ * labels and order as the template's default tabs, plus the query the
+ * steps share (the year flow's source and destination years, the
+ * attendance date). A strip of one page is not drawn.
+ */
+export function AcademicWorkspaceLinks({ area }: { area: AcademicArea }): ReactElement | null {
+  const t = useTranslations();
   const { me } = useSession();
   const pathname = usePathname();
   const search = useSearchParams();
   const access = navAccessFromMe(me);
-  const canOpen = (href: string) => canOpenPath(href, access);
   const context = new URLSearchParams();
   for (const key of area === "years" ? ["fromYear", "toYear"] : ["date"]) {
     const value = search.get(key);
     if (value) context.set(key, value);
   }
   const suffix = context.size ? `?${context.toString()}` : "";
-  const items = DESTINATIONS[area]
-    .filter(([href]) => canOpen(href))
-    .map(([href, key]) => ({ href: `${href}${suffix}`, label: t(key), active: pathname === href }));
-  return (
-    <WorkspaceNav
-      label={t(area)}
-      items={items}
-      actions={
-        area === "schedule" ? (
-          <>
-            {canOpen("/substitutions") && <SubstitutionInboxLink />}
-            {me?.profile_kind === "student" && canOpen("/classroom-entry") && (
-              <Button asChild size="sm">
-                <Link href="/classroom-entry">{t("scanEntry")}</Link>
-              </Button>
-            )}
-            {canOpen("/attendance") && (
-              <Button asChild size="sm" variant="secondary">
-                <Link href="/attendance">{t("openAttendance")}</Link>
-              </Button>
-            )}
-          </>
-        ) : undefined
-      }
-    />
-  );
-}
-
-/** Fetch the inbox only for users allowed to open substitution requests. */
-function SubstitutionInboxLink(): ReactElement | null {
-  const t = useTranslations("app.academic.workspace");
-  const requests = useSubstitutionsQuery("incoming");
-  const count = requests.data?.data.filter((request) => request.status === "pending").length ?? 0;
-  if (count === 0) return null;
-  return (
-    <Button asChild size="sm">
-      <Link href="/substitutions">{t("pendingSubstitutions", { count })}</Link>
-    </Button>
-  );
+  const items = AREAS[area].pages.flatMap((key) => {
+    const page = navigation.find((item) => item.key === key);
+    if (!page || !canOpenPath(page.href, access)) return [];
+    return [
+      { href: `${page.href}${suffix}`, label: t(page.labelKey), active: pathname === page.href },
+    ];
+  });
+  if (items.length < 2) return null;
+  return <WorkspaceNav label={t(`app.shell.nav.items.${AREAS[area].label}`)} items={items} />;
 }

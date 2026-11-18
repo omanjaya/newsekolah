@@ -1,7 +1,18 @@
 "use client";
 
 import { ApiError, type components } from "@newsekolah/api-client";
-import { Button, PageHeader, Select, Skeleton, Switch, useToast } from "@newsekolah/ui";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Field,
+  FormSection,
+  Select,
+  SkeletonForm,
+  SkeletonList,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -9,8 +20,7 @@ import { useState } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
-  NOTIFICATION_CHANNELS,
-  useNotificationKinds,
+  useOwnNotificationKinds,
   type NotificationChannel,
   type NotificationKind,
   type NotificationSettingsInput,
@@ -20,28 +30,95 @@ import {
   useUpdateNotificationSettingsMutation,
 } from "../../notifications/api";
 
+import { NotificationChannelMatrix } from "./notification-channel-matrix";
 import { PushDevicesSection } from "./push-devices-section";
+import { SettingSwitchRow } from "./setting-switch-row";
+import { SettingsPage } from "./settings-page";
+import { SettingsSaveBar } from "./settings-save-bar";
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => ({
   value: String(hour),
   label: `${String(hour).padStart(2, "0")}.00`,
 }));
 
+type Settings = components["schemas"]["NotificationSettings"];
+
+interface TimingValues {
+  digestEnabled: boolean;
+  digestHour: string;
+  quietEnabled: boolean;
+  quietStart: string;
+  quietEnd: string;
+}
+
+function timingOf(settings: Settings): TimingValues {
+  return {
+    digestEnabled: settings.digest_enabled,
+    digestHour: String(settings.digest_hour),
+    quietEnabled:
+      settings.quiet_hours_start !== undefined && settings.quiet_hours_end !== undefined,
+    quietStart: String(settings.quiet_hours_start ?? 21),
+    quietEnd: String(settings.quiet_hours_end ?? 6),
+  };
+}
+
 /**
- * Per-kind channel matrix plus quiet hours and the daily digest, per
- * docs/07-ui-ux.md section 5 ("preferensi per kategori dan kanal;
- * ringkasan harian sebagai opsi agar tidak membanjiri guru").
+ * The reader's own notification preferences, per docs/07-ui-ux.md section
+ * 5 ("preferensi per kategori dan kanal; ringkasan harian sebagai opsi agar
+ * tidak membanjiri guru"): when the reader is notified (quiet hours and
+ * the daily digest, saved from the bar), each kind against its channels
+ * (saved per switch), and the browser's push devices.
  */
 export function NotificationSettingsView(): ReactElement {
   const t = useTranslations("app.settings.notifications");
   const tKinds = useTranslations("app.notifications.kinds");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const kinds = useNotificationKinds();
+  // Only the kinds this reader can be sent; the school defaults page keeps the full list.
+  const kinds = useOwnNotificationKinds();
   const prefs = usePreferencesQuery();
   const setPreference = useSetPreferenceMutation();
   const settings = useNotificationSettingsQuery();
   const updateSettings = useUpdateNotificationSettingsMutation();
+
+  // A failed read must not render every switch as off, as if that were the saved state.
+  const prefsFailed = prefs.isError && !prefs.data;
+
+  // The timing draft belongs to one read of the settings: a refetch (after
+  // a save) starts again from what the server holds. The stamp is compared
+  // only once there is a draft, so a missing stamp never matches no draft.
+  const [draft, setDraft] = useState<{ at: number; values: TimingValues } | null>(null);
+  const saved = settings.data ? timingOf(settings.data) : undefined;
+  const timing = draft !== null && draft.at === settings.dataUpdatedAt ? draft.values : saved;
+  const timingDirty =
+    timing !== undefined && saved !== undefined && JSON.stringify(timing) !== JSON.stringify(saved);
+
+  function patchTiming(next: Partial<TimingValues>) {
+    if (!timing) return;
+    setDraft({ at: settings.dataUpdatedAt, values: { ...timing, ...next } });
+  }
+
+  async function saveTiming() {
+    if (!timing) return;
+    const input: NotificationSettingsInput = {
+      digest_enabled: timing.digestEnabled,
+      digest_hour: Number(timing.digestHour),
+      ...(timing.quietEnabled
+        ? {
+            quiet_hours_start: Number(timing.quietStart),
+            quiet_hours_end: Number(timing.quietEnd),
+          }
+        : {}),
+    };
+    try {
+      await updateSettings.mutateAsync(input);
+      toast.success(t("saved"));
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+      );
+    }
+  }
 
   function toggle(kind: NotificationKind, channel: NotificationChannel, enabled: boolean) {
     setPreference.mutate(
@@ -56,225 +133,106 @@ export function NotificationSettingsView(): ReactElement {
     );
   }
 
-  async function saveSettings(input: NotificationSettingsInput) {
-    try {
-      await updateSettings.mutateAsync(input);
-      toast.success(t("saved"));
-    } catch (error) {
-      toast.error(
-        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-      );
-    }
-  }
-
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+    <SettingsPage
+      navKey="settings-notifications"
+      description={t("description")}
+      floating={
+        <SettingsSaveBar
+          dirty={timingDirty}
+          saving={updateSettings.isPending}
+          onSave={() => void saveTiming()}
+          onDiscard={() => {
+            setDraft(null);
+          }}
+        />
+      }
+    >
+      {settings.isError && !settings.data ? (
+        <QueryError retry={() => settings.refetch()} error={settings.error} />
+      ) : !timing ? (
+        <SkeletonForm fields={2} actions={false} />
+      ) : (
+        <FormSection variant="card" columns={1} title={t("timingTitle")}>
+          <SettingSwitchRow
+            label={t("quietHoursLabel")}
+            hint={t("quietHoursBody")}
+            checked={timing.quietEnabled}
+            onCheckedChange={(quietEnabled) => {
+              patchTiming({ quietEnabled });
+            }}
+          />
+          {timing.quietEnabled && (
+            <div className="grid grid-cols-2 gap-4 sm:max-w-sm">
+              <Field label={t("quietFrom")}>
+                <Select
+                  options={HOURS}
+                  value={timing.quietStart}
+                  onValueChange={(quietStart) => {
+                    patchTiming({ quietStart });
+                  }}
+                />
+              </Field>
+              <Field label={t("quietUntil")}>
+                <Select
+                  options={HOURS}
+                  value={timing.quietEnd}
+                  onValueChange={(quietEnd) => {
+                    patchTiming({ quietEnd });
+                  }}
+                />
+              </Field>
+            </div>
+          )}
+          <SettingSwitchRow
+            label={t("digestLabel")}
+            hint={t("digestBody")}
+            checked={timing.digestEnabled}
+            onCheckedChange={(digestEnabled) => {
+              patchTiming({ digestEnabled });
+            }}
+          />
+          {timing.digestEnabled && (
+            <Field label={t("digestHour")} className="sm:max-w-44">
+              <Select
+                options={HOURS}
+                value={timing.digestHour}
+                onValueChange={(digestHour) => {
+                  patchTiming({ digestHour });
+                }}
+              />
+            </Field>
+          )}
+        </FormSection>
+      )}
 
-      <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-        <h2 className="text-[16px] font-medium text-fg">{t("channelsTitle")}</h2>
-        <p className="text-[13px] text-fg-muted">{t("channelsBody")}</p>
-        {prefs.isLoading ? (
-          <Skeleton className="h-64 w-full" />
-        ) : (
-          <div className="hidden overflow-x-auto rounded-lg border border-border bg-surface md:block">
-            <table className="w-full min-w-[560px] text-[13px]">
-              <thead>
-                <tr className="border-b border-line bg-bg text-left">
-                  <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
-                    {t("kindColumn")}
-                  </th>
-                  {NOTIFICATION_CHANNELS.map((channel) => (
-                    <th
-                      key={channel}
-                      scope="col"
-                      className="px-4 py-3 text-center text-[12px] font-semibold text-fg-muted"
-                    >
-                      {t(`channels.${channel}`)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {kinds.map((kind) => {
-                  const row = prefs.data?.[kind] ?? {};
-                  return (
-                    <tr key={kind} className="border-b border-line last:border-b-0 hover:bg-bg">
-                      <th scope="row" className="px-4 py-3 text-left font-normal text-fg">
-                        {tKinds(kind)}
-                      </th>
-                      {NOTIFICATION_CHANNELS.map((channel) => (
-                        <td key={channel} className="px-4 py-3 text-center">
-                          <Switch
-                            checked={row[channel] ?? false}
-                            disabled={channel === "inapp"}
-                            aria-label={`${tKinds(kind)}: ${t(`channels.${channel}`)}`}
-                            onCheckedChange={(checked) => {
-                              toggle(kind, channel, checked);
-                            }}
-                          />
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">{t("channelsTitle")}</CardTitle>
+          <CardDescription>{t("channelsBody")}</CardDescription>
+        </CardHeader>
+        {prefsFailed ? (
+          <div className="px-5 pb-5">
+            <QueryError retry={() => prefs.refetch()} error={prefs.error} />
           </div>
+        ) : prefs.isLoading ? (
+          <SkeletonList rows={4} leading={false} framed={false} className="px-5 pb-5" />
+        ) : (
+          <NotificationChannelMatrix
+            kindLabel={t("kindColumn")}
+            channelLabel={(channel) => t(`channels.${channel}`)}
+            failedLabel={t("loadFailed")}
+            onToggle={toggle}
+            rows={kinds.map((kind) => ({
+              kind,
+              label: tKinds(kind),
+              values: prefs.data?.[kind],
+            }))}
+          />
         )}
-        {!prefs.isLoading && (
-          // A four-column matrix on a phone shows one column and hides the
-          // rest behind a sideways scroll nothing announces. Stacked per
-          // kind, every channel for that kind is on screen at once.
-          <ul className="flex flex-col gap-3 md:hidden">
-            {kinds.map((kind) => {
-              const row = prefs.data?.[kind] ?? {};
-              return (
-                <li key={kind} className="flex flex-col gap-2 rounded-sm border border-border p-3">
-                  <span className="text-[13px] font-medium text-fg">{tKinds(kind)}</span>
-                  {/*
-                    Rows are 44px tall, the height of the switch's touch
-                    target, so neighbouring targets never overlap; the whole
-                    row is a label, so tapping the channel name toggles too.
-                  */}
-                  <div className="grid grid-cols-2 gap-x-6">
-                    {NOTIFICATION_CHANNELS.map((channel) => (
-                      <label
-                        key={channel}
-                        className="flex min-h-11 items-center justify-between gap-3"
-                      >
-                        <span className="text-[13px] text-fg-muted">
-                          {t(`channels.${channel}`)}
-                        </span>
-                        <Switch
-                          checked={row[channel] ?? false}
-                          disabled={channel === "inapp"}
-                          aria-label={`${tKinds(kind)}: ${t(`channels.${channel}`)}`}
-                          onCheckedChange={(checked) => {
-                            toggle(kind, channel, checked);
-                          }}
-                        />
-                      </label>
-                    ))}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+      </Card>
 
       <PushDevicesSection />
-
-      <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-        <h2 className="text-[16px] font-medium text-fg">{t("timingTitle")}</h2>
-        {settings.isError && !settings.data ? (
-          <QueryError retry={() => settings.refetch()} />
-        ) : settings.isLoading || !settings.data ? (
-          <Skeleton className="h-32 w-full" />
-        ) : (
-          <TimingForm
-            key={settings.dataUpdatedAt}
-            initial={settings.data}
-            saving={updateSettings.isPending}
-            onSave={saveSettings}
-          />
-        )}
-      </section>
-    </div>
-  );
-}
-
-type Settings = components["schemas"]["NotificationSettings"];
-
-/** Keyed on the query's update time so a refetch resets the local edits. */
-function TimingForm({
-  initial,
-  saving,
-  onSave,
-}: {
-  initial: Settings;
-  saving: boolean;
-  onSave: (input: NotificationSettingsInput) => Promise<void>;
-}): ReactElement {
-  const t = useTranslations("app.settings.notifications");
-  const hasQuiet = initial.quiet_hours_start !== undefined && initial.quiet_hours_end !== undefined;
-  const [digestEnabled, setDigestEnabled] = useState(initial.digest_enabled);
-  const [digestHour, setDigestHour] = useState(String(initial.digest_hour));
-  const [quietEnabled, setQuietEnabled] = useState(hasQuiet);
-  const [quietStart, setQuietStart] = useState(String(initial.quiet_hours_start ?? 21));
-  const [quietEnd, setQuietEnd] = useState(String(initial.quiet_hours_end ?? 6));
-
-  return (
-    <>
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-col">
-          <span className="text-[14px] text-fg">{t("quietHoursLabel")}</span>
-          <span className="text-[13px] text-fg-muted">{t("quietHoursBody")}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Switch
-            checked={quietEnabled}
-            onCheckedChange={setQuietEnabled}
-            aria-label={t("quietHoursLabel")}
-          />
-          <Select
-            options={HOURS}
-            value={quietStart}
-            onValueChange={setQuietStart}
-            disabled={!quietEnabled}
-            aria-label={t("quietFrom")}
-            className="w-28"
-          />
-          <span className="text-[13px] text-fg-muted">{t("quietTo")}</span>
-          <Select
-            options={HOURS}
-            value={quietEnd}
-            onValueChange={setQuietEnd}
-            disabled={!quietEnabled}
-            aria-label={t("quietTo")}
-            className="w-28"
-          />
-        </div>
-      </div>
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-col">
-          <span className="text-[14px] text-fg">{t("digestLabel")}</span>
-          <span className="text-[13px] text-fg-muted">{t("digestBody")}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Switch
-            checked={digestEnabled}
-            onCheckedChange={setDigestEnabled}
-            aria-label={t("digestLabel")}
-          />
-          <Select
-            options={HOURS}
-            value={digestHour}
-            onValueChange={setDigestHour}
-            disabled={!digestEnabled}
-            aria-label={t("digestHour")}
-            className="w-28"
-          />
-        </div>
-      </div>
-      <div>
-        <Button
-          size="sm"
-          loading={saving}
-          onClick={() =>
-            void onSave({
-              digest_enabled: digestEnabled,
-              digest_hour: Number(digestHour),
-              ...(quietEnabled
-                ? { quiet_hours_start: Number(quietStart), quiet_hours_end: Number(quietEnd) }
-                : {}),
-            })
-          }
-        >
-          {t("save")}
-        </Button>
-      </div>
-    </>
+    </SettingsPage>
   );
 }

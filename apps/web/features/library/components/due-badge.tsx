@@ -1,52 +1,54 @@
 "use client";
 
-import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { cn } from "@newsekolah/ui";
+import { Badge, type BadgeTone } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
-import { classifyDueDate, overdueDays } from "../lib/due-date";
+import { classifyDueDate, overdueDays, type DueUrgency } from "../lib/due-date";
+import { formatShortDate } from "../lib/short-date";
 
-const URGENCY_CLASS: Record<"ok" | "dueSoon" | "overdue", string> = {
-  ok: "border-border bg-bg text-fg-muted",
-  dueSoon: "border-status-late/40 bg-status-late/10 text-status-late",
-  overdue: "border-status-absent/40 bg-status-absent/10 text-status-absent",
+const URGENCY_TONE: Record<DueUrgency, BadgeTone> = {
+  ok: "neutral",
+  dueSoon: "warning",
+  overdue: "danger",
 };
 
 /**
- * A loan's due date with urgency color (never color alone -- the text
- * always spells out "terlambat N hari"), shared by the desk overdue
- * table, member detail's current loans, and a student's own loans.
+ * A loan's due date in the shared Badge, coloured by urgency, and never
+ * colour alone: the text always says "Terlambat N hari" or the due date.
+ * Shared by the desk's overdue queue, a member's loans, a student's own
+ * loans and the kiosk. `compact` drops the due date from an overdue
+ * label ("Terlambat 33 hari"), for a narrow row whose heading already says
+ * why the loan is listed.
  */
 export function DueBadge({
   dueOn,
   today,
   locale,
+  compact = false,
   className,
 }: {
   dueOn: string;
   today: string;
   locale: Locale;
+  compact?: boolean;
   className?: string;
 }): ReactElement {
   const t = useTranslations("app.library.dueBadge");
   const urgency = classifyDueDate(dueOn, today);
-  const date = formatDate(dueOn, { locale });
+  const date = formatShortDate(dueOn, locale, { today });
+  const days = overdueDays(dueOn, today);
   const label =
-    urgency === "overdue"
-      ? t("overdue", { days: overdueDays(dueOn, today), date })
-      : t("dueOn", { date });
+    urgency !== "overdue"
+      ? t("dueOn", { date })
+      : compact
+        ? t("overdueShort", { days })
+        : t("overdue", { days, date });
 
   return (
-    <span
-      className={cn(
-        "inline-flex w-fit items-center gap-1 rounded-xs border px-2 py-0.5 text-[12px] font-medium",
-        URGENCY_CLASS[urgency],
-        className,
-      )}
-    >
+    <Badge tone={URGENCY_TONE[urgency]} className={className}>
       {label}
-    </span>
+    </Badge>
   );
 }

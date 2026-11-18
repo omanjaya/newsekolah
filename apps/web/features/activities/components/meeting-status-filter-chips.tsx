@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@newsekolah/ui";
+import { Button, cn } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -44,21 +44,22 @@ export function MeetingStatusFilterChips({
         const selected = active.has(code);
         const token = meetingStatusToken(code);
         return (
-          <button
+          <Button
             key={code}
-            type="button"
+            variant="secondary"
+            size="sm"
             aria-pressed={selected}
             onClick={() => {
               onToggle(code);
             }}
             className={cn(
-              "flex min-h-8 shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] font-medium transition-colors",
-              selected ? CHIP_ACTIVE_CLASS[token] : "border-border text-fg-muted hover:bg-bg",
+              "shrink-0 snap-start gap-1.5 rounded-full",
+              selected ? CHIP_ACTIVE_CLASS[token] : "text-fg-muted",
             )}
           >
             <span>{t(`statuses.${code}`)}</span>
             <span className="tabular-nums">{counts[code]}</span>
-          </button>
+          </Button>
         );
       })}
     </div>

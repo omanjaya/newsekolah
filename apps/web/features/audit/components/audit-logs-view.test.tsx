@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -28,8 +29,47 @@ vi.mock("../../reference/directory-names", async () => {
 vi.mock("../api", () => ({
   useAuditLogsQuery: mocks.useAuditLogsQuery,
 }));
+vi.mock("../../settings/components/settings-page", () => ({
+  SettingsPage: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+}));
 
 import { AuditLogsView } from "./audit-logs-view";
+
+describe("AuditLogsView detail", () => {
+  beforeEach(() => {
+    window.history.replaceState(null, "", "/audit");
+  });
+
+  it("opens a row in a sheet that lists only the fields that changed", async () => {
+    mocks.useAuditLogsQuery.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: "log-1",
+            occurred_at: "2026-09-01T02:00:00Z",
+            actor_user_id: "user-1",
+            action: "role.update",
+            entity_type: "role",
+            entity_id: "role-1",
+            before: { name: "Guru", slug: "teacher" },
+            after: { name: "Guru mapel", slug: "teacher" },
+          },
+        ],
+      },
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<AuditLogsView />);
+    // DataTable mounts the phone cards beside the table (CSS shows one of
+    // them). A card opens through its overlay button, not its title text,
+    // so the row is opened from the table, where the whole row is the target.
+    await user.click(within(screen.getByRole("table")).getByText("actions.role.update"));
+    const sheet = await screen.findByRole("dialog");
+    expect(sheet).toHaveTextContent("Guru mapel");
+    // The unchanged field is not listed as a change.
+    expect(sheet).not.toHaveTextContent("slug");
+  });
+});
 
 describe("AuditLogsView filters", () => {
   beforeEach(() => {
@@ -106,5 +146,20 @@ describe("AuditLogsView filters", () => {
     expect(mocks.useAuditLogsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ from: undefined, to: undefined }),
     );
+  });
+
+  it("shows a retry control instead of an empty log when the request fails", () => {
+    mocks.useAuditLogsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch: vi.fn(),
+    });
+    render(<AuditLogsView />);
+    // The table's own error state, with its retry (UiLabels.tableRetry).
+    expect(screen.getAllByRole("button", { name: "Coba lagi" }).length).toBeGreaterThan(0);
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+    // The filter bar stays so a failing filter can still be changed or reset.
+    expect(screen.getAllByRole("button", { name: /filters\./ }).length).toBeGreaterThan(0);
   });
 });

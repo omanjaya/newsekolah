@@ -21,7 +21,9 @@ export function useQuickAction(action: string, start: () => void, enabled = true
     const url = new URL(window.location.href);
     if (url.searchParams.get(QUICK_ACTION_PARAM) !== action) return;
     url.searchParams.delete(QUICK_ACTION_PARAM);
-    window.history.replaceState(null, "", url);
+    // A string, not the URL object: a wrapped history API may post this
+    // argument to a Worker, which cannot clone a URL (see use-url-state.ts).
+    window.history.replaceState(null, "", url.href);
     startRef.current();
   }, [action, enabled]);
 }

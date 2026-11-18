@@ -1,9 +1,17 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Badge, Button, ConfirmDialog, DataTable, EmptyState, useToast } from "@newsekolah/ui";
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  DataTable,
+  EmptyState,
+  RowActionsMenu,
+  useToast,
+} from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus, Webhook } from "lucide-react";
+import { History, Pencil, Plus, Trash2, Webhook } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -17,6 +25,10 @@ import {
 
 import { WebhookEndpointDialog } from "./webhook-endpoint-dialog";
 
+/** Event badges shown in a row before the rest collapse into "+N". */
+const SHOWN_EVENTS = 2;
+
+/** The school's webhook endpoints: the URL, what it listens to, its state, and a row menu. */
 export function WebhookEndpointsPanel({
   onSelectEndpoint,
 }: {
@@ -27,7 +39,7 @@ export function WebhookEndpointsPanel({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const { data, isLoading } = useWebhookEndpointsQuery();
+  const { data, isLoading, isError, error, refetch, isRefetching } = useWebhookEndpointsQuery();
   const deleteEndpoint = useDeleteWebhookEndpointMutation();
 
   const [dialogTarget, setDialogTarget] = useState<"create" | WebhookEndpoint | null>(null);
@@ -39,115 +51,134 @@ export function WebhookEndpointsPanel({
       await deleteEndpoint.mutateAsync(deleting.id);
       toast.success(t("deleted"));
       setDeleting(null);
-    } catch (error) {
-      toast.error(
-        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-      );
+    } catch (err) {
+      toast.error(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
     }
   }
 
   const columns: ColumnDef<WebhookEndpoint>[] = [
-    { accessorKey: "url", header: t("columns.url") },
+    {
+      accessorKey: "url",
+      header: t("columns.url"),
+      meta: { card: "title" },
+      cell: ({ row }) => (
+        <span className="break-all font-mono text-body-sm text-fg">{row.original.url}</span>
+      ),
+    },
     {
       id: "eventTypes",
       header: t("columns.eventTypes"),
-      cell: ({ row }) => (
-        <div className="flex flex-wrap gap-1">
-          {row.original.event_types.map((eventType) => (
-            <Badge key={eventType} variant="neutral">
-              {eventType}
-            </Badge>
-          ))}
-        </div>
-      ),
+      meta: { card: "subtitle", label: t("columns.eventTypes") },
+      cell: ({ row }) => {
+        const events = row.original.event_types;
+        const rest = events.length - SHOWN_EVENTS;
+        return (
+          <span className="flex flex-wrap items-center gap-1" title={events.join(", ")}>
+            {events.slice(0, SHOWN_EVENTS).map((eventType) => (
+              <Badge key={eventType} size="sm" className="font-mono">
+                {eventType}
+              </Badge>
+            ))}
+            {rest > 0 && (
+              <Badge size="sm" appearance="outline">
+                {t("moreEvents", { count: rest })}
+              </Badge>
+            )}
+          </span>
+        );
+      },
     },
     {
       id: "status",
       header: t("columns.status"),
+      meta: { card: "meta", skeleton: "badge" },
       cell: ({ row }) => {
         const endpoint = row.original;
         return endpoint.status === "disabled" ? (
-          <span className="text-status-absent" title={endpoint.disabled_reason}>
+          <Badge size="sm" tone="danger" title={endpoint.disabled_reason}>
             {t("statusDisabled")}
-          </span>
+          </Badge>
         ) : (
-          <span className="text-status-present">{t("statusActive")}</span>
+          <Badge size="sm" tone="success">
+            {t("statusActive")}
+          </Badge>
         );
       },
     },
     {
       id: "actions",
-      header: "",
+      header: t("columns.actions"),
       cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              onSelectEndpoint(row.original.id);
-            }}
-          >
-            {t("viewDeliveries")}
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              setDialogTarget(row.original);
-            }}
-          >
-            {t("edit")}
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={() => {
-              setDeleting(row.original);
-            }}
-          >
-            {t("delete")}
-          </Button>
-        </div>
+        <RowActionsMenu
+          ariaLabel={t("rowActions", { url: row.original.url })}
+          items={[
+            {
+              label: t("viewDeliveries"),
+              icon: <History />,
+              onClick: () => {
+                onSelectEndpoint(row.original.id);
+              },
+            },
+            {
+              label: t("edit"),
+              icon: <Pencil />,
+              onClick: () => {
+                setDialogTarget(row.original);
+              },
+            },
+            {
+              label: t("delete"),
+              icon: <Trash2 />,
+              tone: "danger",
+              onClick: () => {
+                setDeleting(row.original);
+              },
+            },
+          ]}
+        />
       ),
     },
   ];
 
   const items = data?.data ?? [];
+  // A failed read with no error object still counts as failed.
+  const failure: unknown = error;
+  const loadError = isError && !data ? (failure ?? true) : undefined;
+  const createButton = (
+    <Button
+      icon={<Plus />}
+      onClick={() => {
+        setDialogTarget("create");
+      }}
+    >
+      {t("create")}
+    </Button>
+  );
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-[13px] text-fg-muted">{t("description")}</p>
-        <Button
-          size="sm"
-          className="shrink-0 self-start sm:self-auto"
-          icon={<Plus />}
-          onClick={() => {
-            setDialogTarget("create");
-          }}
-        >
-          {t("create")}
-        </Button>
-      </div>
-
+      <p className="max-w-prose text-body-sm text-fg-muted">{t("description")}</p>
       <DataTable
-        stateKey="features/integrations/components/webhook-endpoints-panel:1"
+        stateKey="features/integrations/components/webhook-endpoints-panel:2"
         mode="local"
         data={items}
         columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 100 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
+        searchable={false}
         isLoading={isLoading}
+        error={loadError}
+        onRetry={() => void refetch()}
+        retrying={isRefetching}
         getRowId={(endpoint) => endpoint.id}
+        onRowActivate={(endpoint) => {
+          setDialogTarget(endpoint);
+        }}
+        toolbarActions={items.length > 0 ? createButton : undefined}
         emptyState={
           <EmptyState
             icon={<Webhook aria-hidden="true" />}
             title={t("emptyTitle")}
             description={t("emptyBody")}
+            action={createButton}
           />
         }
       />
@@ -171,7 +202,7 @@ export function WebhookEndpointsPanel({
         title={t("deleteConfirmTitle")}
         description={deleting ? t("deleteConfirmBody", { url: deleting.url }) : ""}
         confirmLabel={t("delete")}
-        destructive
+        tone="danger"
         confirming={deleteEndpoint.isPending}
         onConfirm={confirmDelete}
       />

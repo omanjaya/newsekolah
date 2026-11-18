@@ -1,7 +1,15 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Dialog, DialogClose, DialogContent, Input, useToast } from "@newsekolah/ui";
+import {
+  NumberInput,
+  Field,
+  Button,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -77,18 +85,16 @@ export function MarkLostDialog({
           </>
         }
       >
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("replacementCostLabel")}</span>
-          <Input
-            type="number"
+        <Field label={t("replacementCostLabel")}>
+          <NumberInput
             min={0}
-            step="1000"
-            value={replacementCost}
-            onChange={(e) => {
-              setReplacementCost(e.target.value);
+            step={1000}
+            value={replacementCost === "" ? null : Number(replacementCost)}
+            onChange={(next) => {
+              setReplacementCost(next === null ? "" : String(next));
             }}
           />
-        </label>
+        </Field>
       </DialogContent>
     </Dialog>
   );

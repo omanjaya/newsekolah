@@ -23,7 +23,12 @@ import type { Me } from "../types";
 
 import { useLibrarianBlock } from "./librarian";
 
-const me = { permissions: [], roles: [], duties: [] } as unknown as Me;
+const me = {
+  permissions: [],
+  roles: [],
+  duties: [],
+  tenant: { timezone: "Asia/Jakarta" },
+} as unknown as Me;
 
 const baseData = {
   summary: {
@@ -69,7 +74,7 @@ describe("useLibrarianBlock", () => {
   it("returns EMPTY_BLOCK and disables the query when inactive", () => {
     const { result } = renderHook(() => useLibrarianBlock(me, false));
 
-    expect(result.current).toEqual({ tiles: [], left: [], right: [] });
+    expect(result.current).toEqual({ tiles: [], main: [], side: [] });
     expect(libraryDashboardQuery).toHaveBeenCalledWith(false);
   });
 
@@ -78,11 +83,17 @@ describe("useLibrarianBlock", () => {
 
     expect(result.current.hero?.title).toContain('"loans":4');
     expect(result.current.hero?.title).toContain('"returns":3');
-    expect(result.current.hero?.meta).toContain('"overdue":2');
+    // Overdue loans are counted by the overdue tile and card, not repeated here.
+    expect(result.current.hero?.meta).toBeUndefined();
     expect(result.current.hero?.action).toEqual({
       label: "hero.action",
       href: "/library/desk",
     });
+    // The title counts loans and returns, so the stat row leaves those tiles out.
+    expect(result.current.hero?.coversTiles).toEqual([
+      "library.loansToday",
+      "library.returnsToday",
+    ]);
   });
 
   it("keeps the overdue tile in sync with the summary", () => {
@@ -108,11 +119,12 @@ describe("useLibrarianBlock", () => {
       data: undefined,
       isLoading: false,
       isError: true,
+      error: new Error("failed"),
       refetch,
     });
 
     const { result } = renderHook(() => useLibrarianBlock(me, true));
-    const overdueSlot = result.current.right.find((slot) => slot.key === "library.overdue");
+    const overdueSlot = result.current.main.find((slot) => slot.key === "library.overdue");
     render(<>{overdueSlot?.node}</>);
 
     expect(screen.getByRole("button")).toBeInTheDocument();
@@ -142,7 +154,7 @@ describe("useLibrarianBlock", () => {
     });
 
     const { result } = renderHook(() => useLibrarianBlock(me, true));
-    const overdueSlot = result.current.right.find((slot) => slot.key === "library.overdue");
+    const overdueSlot = result.current.main.find((slot) => slot.key === "library.overdue");
     render(<>{overdueSlot?.node}</>);
 
     expect(screen.getByText("Judul Buku")).toBeInTheDocument();
@@ -153,7 +165,7 @@ describe("useLibrarianBlock", () => {
 
     const { result } = renderHook(() => useLibrarianBlock(libraryOff, true));
 
-    expect(result.current).toEqual({ tiles: [], left: [], right: [] });
+    expect(result.current).toEqual({ tiles: [], main: [], side: [] });
     expect(libraryDashboardQuery).toHaveBeenCalledWith(false);
   });
 });

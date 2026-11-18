@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   remove: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/activities/events" }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
   useTranslations: () => (key: string) => key,
@@ -60,12 +61,23 @@ beforeEach(() => {
 });
 
 describe("ActivitiesCalendarView", () => {
+  it("writes an event's dates as dates, not ISO strings", () => {
+    render(<ActivitiesCalendarView />);
+    const table = within(screen.getByRole("table"));
+    expect(table.queryByText(/2026-09-20/)).not.toBeInTheDocument();
+    expect(table.getByText(/Sep 2026/)).toBeInTheDocument();
+  });
+
   it("edits an existing event without clearing its organiser or creating a duplicate", async () => {
     const user = userEvent.setup();
     render(<ActivitiesCalendarView />);
-    await user.click(within(screen.getByRole("table")).getByRole("button", { name: "edit" }));
+    await user.click(within(screen.getByRole("table")).getByRole("button", { name: "rowActions" }));
+    await user.click(await screen.findByRole("menuitem", { name: "edit" }));
     const dialog = within(screen.getByRole("dialog"));
-    const input = dialog.getByLabelText("name");
+    // By its accessible name: the required mark after the label is
+    // aria-hidden, so the field is still read as "name".
+    const input = dialog.getByRole("textbox", { name: "name" });
+    expect(input).toBeRequired();
     await user.clear(input);
     await user.type(input, "Science exhibition");
     await user.click(dialog.getByRole("button", { name: "submit" }));
@@ -85,7 +97,8 @@ describe("ActivitiesCalendarView", () => {
   it("requires explicit confirmation before deleting", async () => {
     const user = userEvent.setup();
     render(<ActivitiesCalendarView />);
-    await user.click(within(screen.getByRole("table")).getByRole("button", { name: "delete" }));
+    await user.click(within(screen.getByRole("table")).getByRole("button", { name: "rowActions" }));
+    await user.click(await screen.findByRole("menuitem", { name: "delete" }));
     expect(mocks.remove).not.toHaveBeenCalled();
     await user.click(
       within(screen.getByRole("dialog", { name: "deleteTitle" })).getByRole("button", {
@@ -98,9 +111,23 @@ describe("ActivitiesCalendarView", () => {
   it("hides all write controls from read-only users", () => {
     mocks.canManage = false;
     render(<ActivitiesCalendarView />);
+    expect(screen.queryByRole("button", { name: "rowActions" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "edit" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "delete" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "add" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "participants.title" })).not.toBeInTheDocument();
+  });
+
+  it("names a missing title under its field instead of disabling Simpan", async () => {
+    const user = userEvent.setup();
+    render(<ActivitiesCalendarView />);
+    await user.click(screen.getByRole("button", { name: "add" }));
+    const dialog = within(screen.getByRole("dialog"));
+    const submit = dialog.getByRole("button", { name: "submit" });
+    expect(submit).toBeEnabled();
+    await user.click(submit);
+    expect(dialog.getByText("errors.name")).toBeInTheDocument();
+    expect(dialog.getByText("errors.dates")).toBeInTheDocument();
+    expect(mocks.create).not.toHaveBeenCalled();
   });
 });

@@ -9,10 +9,6 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
 }));
 
-vi.mock("@newsekolah/i18n", () => ({
-  formatDate: (value: string) => value,
-}));
-
 function loan(patch: Partial<LibraryLoan> = {}): LibraryLoan {
   return {
     id: "loan1",
@@ -47,7 +43,7 @@ describe("MyLibraryHistoryTable", () => {
     expect(screen.queryByText("11111111-1111-1111-1111-111111111111")).not.toBeInTheDocument();
   });
 
-  it("shows a dash for the returned date on a loan that was not returned yet", () => {
+  it("leaves a loan that is still out to the current loans, not the history", () => {
     render(
       <MyLibraryHistoryTable
         history={[loan({ title_name: "Fisika", returned_at: undefined })]}
@@ -55,13 +51,25 @@ describe("MyLibraryHistoryTable", () => {
       />,
     );
 
-    const row = screen.getByText("Fisika").closest("tr");
-    expect(row?.textContent).toContain("-");
+    expect(screen.queryByText("Fisika")).not.toBeInTheDocument();
+    expect(screen.getByText("noHistory")).toBeInTheDocument();
+  });
+
+  it("writes the loan's span as one short line", () => {
+    render(
+      <MyLibraryHistoryTable
+        history={[loan({ title_name: "Kimia", returned_at: "2026-09-10T00:00:00Z" })]}
+        locale="id"
+        today="2026-11-14"
+      />,
+    );
+
+    expect(screen.getByText("1 Sep - 10 Sep")).toBeInTheDocument();
   });
 
   it("caps the table to the 10 most recent loans", () => {
     const items = Array.from({ length: 12 }, (_, i) =>
-      loan({ id: `loan-${i}`, title_name: `Judul ${i}` }),
+      loan({ id: `loan-${i}`, title_name: `Judul ${i}`, returned_at: "2026-09-10T00:00:00Z" }),
     );
     render(<MyLibraryHistoryTable history={items} locale="id" />);
 

@@ -1,77 +1,145 @@
 "use client";
 
-import { PageHeader, Skeleton, Stat, StatGrid } from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import { formatCurrency } from "@newsekolah/i18n";
+import type { Locale } from "@newsekolah/i18n";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  SkeletonCards,
+  Stat,
+  StatGrid,
+  TextLink,
+} from "@newsekolah/ui";
+import { BookCheck, BookPlus, BookX, DoorOpen } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import type { ReactElement, ReactNode } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { useIsDesktop } from "../../../components/use-is-desktop";
+import { useCan } from "../../../lib/session/session-provider";
 import { useLibraryDashboardQuery } from "../dashboard-api";
 
 import { DashboardActivityLists } from "./dashboard-activity-lists";
 import { DashboardSeriesChart } from "./dashboard-series-chart";
-import { DashboardTodayCards } from "./dashboard-today-cards";
 
-const SECONDARY_STAT_KEYS = [
+const COLLECTION_STAT_KEYS = [
   "titles",
   "copies",
   "available",
   "on_loan",
   "members",
   "active_members",
-  "visits_today",
-  "unpaid_fines_total",
 ] as const;
 
-/** The library module's landing page: today's counts (as one-tap links to act), recent activity, and a 30-day trend. */
-export function LibraryDashboardView(): ReactElement {
+/**
+ * The library's own home: today's circulation as four tiles (a compact
+ * strip on a phone) that each open the place to act (the desk, its
+ * overdue queue, the visits), the collection in one quiet strip (two to
+ * a row on a phone), the 30-day trend and the most borrowed
+ * titles, then the latest loans and the longest overdue. `toolbar` takes
+ * the home page's shortcuts when this is a librarian's home. A reader who
+ * oversees the library without running its desk (a headmaster with
+ * view_library_reports) sees the same figures as plain tiles: the desk
+ * and the visits log are not theirs to open.
+ */
+export function LibraryDashboardView({ toolbar }: { toolbar?: ReactNode } = {}): ReactElement {
   const t = useTranslations("app.library.dashboard");
-  const { data, isLoading, isError, refetch } = useLibraryDashboardQuery();
+  const locale = useLocale() as Locale;
+  const { data, isLoading, isError, error, refetch } = useLibraryDashboardQuery();
+  const canCirculate = useCan("manage_library_circulation");
+  const isDesktop = useIsDesktop();
+  const desk = canCirculate ? "/library/desk" : undefined;
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-
+    <AppPage
+      variant="wide"
+      title={t("title")}
+      nav={false}
+      actions={desk ? <TextLink href={desk}>{t("openDesk")}</TextLink> : undefined}
+      toolbar={toolbar}
+    >
       {isError && !data ? (
-        <QueryError retry={refetch} />
+        <QueryError retry={refetch} error={error} />
       ) : isLoading || !data ? (
-        <Skeleton className="h-32 w-full" aria-busy="true" />
+        <SkeletonCards count={4} />
       ) : (
         <>
-          <DashboardTodayCards
-            loansToday={data.summary.loans_today}
-            returnsToday={data.summary.returns_today}
-            overdue={data.summary.overdue}
-          />
-          <StatGrid className="rounded-sm border border-border bg-surface p-4 lg:grid-cols-4">
-            {SECONDARY_STAT_KEYS.map((key) => (
-              <Stat
-                key={key}
-                label={t(`stats.${key}`)}
-                value={
-                  key === "unpaid_fines_total"
-                    ? t("currency", { amount: data.summary[key] })
-                    : data.summary[key]
-                }
-              />
-            ))}
+          {/* Tiles from 768px; on a phone the compact strip, as on the
+              school home, so four mostly-zero figures do not fill the
+              first screen. Each keeps its link and icon. */}
+          <StatGrid
+            variant={isDesktop ? "tiles" : "strip"}
+            className={isDesktop ? "lg:grid-cols-4" : undefined}
+            aria-label={t("today.heading")}
+          >
+            <Stat
+              icon={<BookPlus />}
+              category="blue"
+              value={data.summary.loans_today}
+              label={t("today.loansToday")}
+              href={desk}
+              countUp
+            />
+            <Stat
+              icon={<BookCheck />}
+              category="green"
+              value={data.summary.returns_today}
+              label={t("today.returnsToday")}
+              href={desk}
+              countUp
+            />
+            <Stat
+              icon={<BookX />}
+              category="red"
+              value={data.summary.overdue}
+              label={t("today.overdue")}
+              hint={data.summary.overdue > 0 ? t("today.followUp") : undefined}
+              href={desk && `${desk}#desk-overdue`}
+              countUp
+            />
+            <Stat
+              icon={<DoorOpen />}
+              category="purple"
+              value={data.summary.visits_today}
+              label={t("stats.visits_today")}
+              href={canCirculate ? "/library/visits" : undefined}
+              countUp
+            />
           </StatGrid>
-        </>
-      )}
 
-      {!isLoading && data && (
-        <>
-          <div className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-            <h2 className="text-[15px] font-semibold text-fg">{t("seriesTitle")}</h2>
-            <DashboardSeriesChart series={data.series} />
+          <StatGrid variant="strip" aria-label={t("collectionHeading")}>
+            {COLLECTION_STAT_KEYS.map((key) => (
+              <Stat key={key} label={t(`stats.${key}`)} value={data.summary[key]} />
+            ))}
+            <Stat
+              label={t("stats.unpaid_fines_total")}
+              value={formatCurrency(data.summary.unpaid_fines_total, "IDR", { locale })}
+            />
+          </StatGrid>
+
+          {/* `grid-cols-1` is minmax(0, 1fr): on a phone the one column
+              is the screen's width, so a long list title truncates
+              inside its card instead of widening the track. Cards in one
+              desktop row stretch to the same height. */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle as="h2">{t("seriesTitle")}</CardTitle>
+              </CardHeader>
+              <div className="px-5 pb-5">
+                <DashboardSeriesChart series={data.series} />
+              </div>
+            </Card>
+            <DashboardActivityLists
+              latestLoans={data.latest_loans}
+              longestOverdue={data.longest_overdue}
+              popularTitles={data.popular_titles}
+            />
           </div>
-
-          <DashboardActivityLists
-            latestLoans={data.latest_loans}
-            longestOverdue={data.longest_overdue}
-            popularTitles={data.popular_titles}
-          />
         </>
       )}
-    </div>
+    </AppPage>
   );
 }

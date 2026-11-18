@@ -1,7 +1,22 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, useToast } from "@newsekolah/ui";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  DataList,
+  DataListItem,
+  DatePicker,
+  Field,
+  FormError,
+  FormSection,
+  Input,
+  Select,
+  useToast,
+  type SelectOption,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -10,12 +25,58 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { type UserProfileFields, useUpdateProfileMutation } from "../api";
 
+import { ProfileSaveBar } from "./profile-save-bar";
+
+type Kind = "student" | "teacher" | "staff";
+
+/** Fields the school keeps for the reader: shown, never edited here, and sent back unchanged. */
+const INSTITUTIONAL: Record<Kind, (keyof UserProfileFields)[]> = {
+  student: ["nis", "nisn"],
+  teacher: ["nip", "nuptk", "employee_number", "employment_status", "position"],
+  staff: ["nip", "nuptk", "employee_number", "employment_status", "position"],
+};
+
+/** Fields the reader keeps up to date themselves, per profile kind. */
+const PERSONAL: (keyof UserProfileFields)[] = [
+  "nik",
+  "gender",
+  "birth_place",
+  "birth_date",
+  "religion",
+  "blood_type",
+  "city",
+  "district",
+  "address",
+];
+const OWN: Record<Kind, (keyof UserProfileFields)[]> = {
+  student: [
+    ...PERSONAL,
+    "previous_school",
+    "father_name",
+    "mother_name",
+    "guardian_name",
+    "guardian_phone",
+  ],
+  teacher: [...PERSONAL, "last_education", "specialization"],
+  staff: [...PERSONAL, "last_education", "specialization"],
+};
+
+const RELIGIONS = ["Islam", "Kristen", "Katolik", "Hindu", "Buddha", "Konghucu"];
+const BLOOD_TYPES = ["A", "B", "AB", "O"];
+
+type Values = Record<string, string>;
+
+function toValues(initial: UserProfileFields, keys: (keyof UserProfileFields)[]): Values {
+  return Object.fromEntries(keys.map((key) => [key, String(initial[key] ?? "")]));
+}
+
 /**
- * The student/teacher/staff detail record GET /v1/me now returns as
- * `detail` (docs item 5): common identity fields for everyone with a
- * profile, plus a field group specific to the profile kind. A reader with
- * no profile row at all (e.g. a bootstrap super admin) has no such
- * record, so this form only renders for student/teacher/staff.
+ * The student/teacher/staff detail record GET /v1/me returns as `detail`:
+ * the fields the school keeps (student numbers, employment) read-only,
+ * then the reader's own identity, address and family or education fields
+ * in titled groups. A reader with no profile row at all (e.g. a bootstrap
+ * super admin) has no such record, so this form only renders for
+ * student/teacher/staff.
  */
 export function EditDetailForm(): ReactElement | null {
   const { me } = useSession();
@@ -28,347 +89,188 @@ export function EditDetailForm(): ReactElement | null {
   return <DetailForm kind={me.profile_kind} initial={me.detail ?? {}} />;
 }
 
-function field(label: string, control: ReactElement) {
-  return (
-    <label className="flex flex-col gap-1 text-[13px]">
-      <span className="font-medium">{label}</span>
-      {control}
-    </label>
-  );
-}
-
-function DetailForm({
-  kind,
-  initial,
-}: {
-  kind: "student" | "teacher" | "staff";
-  initial: UserProfileFields;
-}): ReactElement {
+function DetailForm({ kind, initial }: { kind: Kind; initial: UserProfileFields }): ReactElement {
   const t = useTranslations("app.profile.detail");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const update = useUpdateProfileMutation();
-
-  const [nik, setNik] = useState(initial.nik ?? "");
-  const [gender, setGender] = useState(initial.gender ?? "");
-  const [birthPlace, setBirthPlace] = useState(initial.birth_place ?? "");
-  const [birthDate, setBirthDate] = useState(initial.birth_date ?? "");
-  const [religion, setReligion] = useState(initial.religion ?? "");
-  const [address, setAddress] = useState(initial.address ?? "");
-  const [district, setDistrict] = useState(initial.district ?? "");
-  const [city, setCity] = useState(initial.city ?? "");
-  const [bloodType, setBloodType] = useState(initial.blood_type ?? "");
-
-  const [nis, setNis] = useState(initial.nis ?? "");
-  const [nisn, setNisn] = useState(initial.nisn ?? "");
-  const [previousSchool, setPreviousSchool] = useState(initial.previous_school ?? "");
-  const [fatherName, setFatherName] = useState(initial.father_name ?? "");
-  const [motherName, setMotherName] = useState(initial.mother_name ?? "");
-  const [guardianName, setGuardianName] = useState(initial.guardian_name ?? "");
-  const [guardianPhone, setGuardianPhone] = useState(initial.guardian_phone ?? "");
-
-  const [nip, setNip] = useState(initial.nip ?? "");
-  const [nuptk, setNuptk] = useState(initial.nuptk ?? "");
-  const [employmentStatus, setEmploymentStatus] = useState(initial.employment_status ?? "");
-  const [lastEducation, setLastEducation] = useState(initial.last_education ?? "");
-  const [specialization, setSpecialization] = useState(initial.specialization ?? "");
-  const [employeeNumber, setEmployeeNumber] = useState(initial.employee_number ?? "");
-  const [position, setPosition] = useState(initial.position ?? "");
-
+  const [saved, setSaved] = useState(() => toValues(initial, OWN[kind]));
+  const [values, setValues] = useState(saved);
   const [error, setError] = useState<string | null>(null);
+
+  const dirty = OWN[kind].some((key) => values[key] !== saved[key]);
+  const set = (key: keyof UserProfileFields) => (value: string) => {
+    setValues((current) => ({ ...current, [key]: value }));
+  };
+  const text = (key: keyof UserProfileFields) => ({
+    value: values[key] ?? "",
+    onChange: (event: { target: { value: string } }) => {
+      set(key)(event.target.value);
+    },
+  });
+  const withCurrent = (options: string[], current: string): SelectOption[] => [
+    { value: "", label: t("unset") },
+    ...(current && !options.includes(current) ? [current] : []).map((value) => ({
+      value,
+      label: value,
+    })),
+    ...options.map((value) => ({ value, label: value })),
+  ];
 
   async function submit() {
     setError(null);
-    const detail: UserProfileFields = {
-      ...(nik.trim() ? { nik: nik.trim() } : {}),
-      ...(gender ? { gender } : {}),
-      ...(birthPlace.trim() ? { birth_place: birthPlace.trim() } : {}),
-      ...(birthDate ? { birth_date: birthDate } : {}),
-      ...(religion.trim() ? { religion: religion.trim() } : {}),
-      ...(address.trim() ? { address: address.trim() } : {}),
-      ...(district.trim() ? { district: district.trim() } : {}),
-      ...(city.trim() ? { city: city.trim() } : {}),
-      ...(bloodType.trim() ? { blood_type: bloodType.trim() } : {}),
-      ...(kind === "student"
-        ? {
-            ...(nis.trim() ? { nis: nis.trim() } : {}),
-            ...(nisn.trim() ? { nisn: nisn.trim() } : {}),
-            ...(previousSchool.trim() ? { previous_school: previousSchool.trim() } : {}),
-            ...(fatherName.trim() ? { father_name: fatherName.trim() } : {}),
-            ...(motherName.trim() ? { mother_name: motherName.trim() } : {}),
-            ...(guardianName.trim() ? { guardian_name: guardianName.trim() } : {}),
-            ...(guardianPhone.trim() ? { guardian_phone: guardianPhone.trim() } : {}),
-          }
-        : {
-            ...(nip.trim() ? { nip: nip.trim() } : {}),
-            ...(nuptk.trim() ? { nuptk: nuptk.trim() } : {}),
-            ...(employmentStatus.trim() ? { employment_status: employmentStatus.trim() } : {}),
-            ...(lastEducation.trim() ? { last_education: lastEducation.trim() } : {}),
-            ...(specialization.trim() ? { specialization: specialization.trim() } : {}),
-            ...(employeeNumber.trim() ? { employee_number: employeeNumber.trim() } : {}),
-            ...(position.trim() ? { position: position.trim() } : {}),
-          }),
-    };
+    // Institutional fields go back exactly as the school stored them.
+    const kept = Object.fromEntries(
+      INSTITUTIONAL[kind].flatMap((key) => (initial[key] ? [[key, initial[key]]] : [])),
+    );
+    const own = Object.fromEntries(
+      OWN[kind].flatMap((key) => {
+        const value = (values[key] ?? "").trim();
+        return value ? [[key, value]] : [];
+      }),
+    );
     try {
-      await update.mutateAsync({ detail });
+      await update.mutateAsync({ detail: { ...kept, ...own } });
+      setSaved(values);
       toast.success(t("saved"));
     } catch (err) {
       setError(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
     }
   }
 
+  const employment = initial.employment_status;
+  const institutionalValue = (key: keyof UserProfileFields) => {
+    const value = initial[key];
+    if (key === "employment_status" && employment) {
+      return t.has(`employmentStatuses.${employment}`)
+        ? t(`employmentStatuses.${employment}`)
+        : employment;
+    }
+    return value ? String(value) : undefined;
+  };
+
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         void submit();
       }}
     >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-          {error}
-        </p>
-      )}
-      <div className="grid gap-4 md:grid-cols-2">
-        {field(
-          t("nik"),
-          <Input
-            value={nik}
-            maxLength={16}
-            onChange={(e) => {
-              setNik(e.target.value);
-            }}
-          />,
-        )}
-        {field(
-          t("gender"),
+      {error && <FormError>{error}</FormError>}
+
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">
+            {kind === "student" ? t("studentSection") : t("employmentSection")}
+          </CardTitle>
+          <CardDescription>{t("institutionalHint")}</CardDescription>
+        </CardHeader>
+        <DataList>
+          {INSTITUTIONAL[kind].map((key) => (
+            <DataListItem
+              key={key}
+              label={t(key === "employment_status" ? "employmentStatus" : camel(key))}
+            >
+              {institutionalValue(key)}
+            </DataListItem>
+          ))}
+        </DataList>
+      </Card>
+
+      <FormSection variant="card" title={t("identitySection")}>
+        <Field label={t("nik")}>
+          <Input inputMode="numeric" maxLength={16} {...text("nik")} />
+        </Field>
+        <Field label={t("gender")}>
           <Select
             options={[
               { value: "", label: t("genderUnset") },
               { value: "L", label: t("genderMale") },
               { value: "P", label: t("genderFemale") },
             ]}
-            value={gender}
-            onValueChange={(v) => {
-              setGender(v as "" | "L" | "P");
-            }}
-          />,
-        )}
-        {field(
-          t("birthPlace"),
-          <Input
-            value={birthPlace}
-            onChange={(e) => {
-              setBirthPlace(e.target.value);
-            }}
-          />,
-        )}
-        {field(
-          t("birthDate"),
-          <Input
-            type="date"
-            value={birthDate}
-            onChange={(e) => {
-              setBirthDate(e.target.value);
-            }}
-          />,
-        )}
-        {field(
-          t("religion"),
-          <Input
-            value={religion}
-            onChange={(e) => {
-              setReligion(e.target.value);
-            }}
-          />,
-        )}
-        {field(
-          t("bloodType"),
-          <Input
-            value={bloodType}
-            maxLength={3}
-            placeholder="O+"
-            onChange={(e) => {
-              setBloodType(e.target.value);
-            }}
-          />,
-        )}
-        {field(
-          t("city"),
-          <Input
-            value={city}
-            onChange={(e) => {
-              setCity(e.target.value);
-            }}
-          />,
-        )}
-        {field(
-          t("district"),
-          <Input
-            value={district}
-            onChange={(e) => {
-              setDistrict(e.target.value);
-            }}
-          />,
-        )}
-        {field(
-          t("address"),
-          <Input
-            value={address}
-            onChange={(e) => {
-              setAddress(e.target.value);
-            }}
-          />,
-        )}
-      </div>
+            value={values.gender ?? ""}
+            onValueChange={set("gender")}
+          />
+        </Field>
+        <Field label={t("birthPlace")}>
+          <Input {...text("birth_place")} />
+        </Field>
+        <Field label={t("birthDate")}>
+          <DatePicker
+            value={values.birth_date === "" ? null : (values.birth_date ?? null)}
+            onChange={set("birth_date")}
+          />
+        </Field>
+        <Field label={t("religion")}>
+          <Select
+            options={withCurrent(RELIGIONS, values.religion ?? "")}
+            value={values.religion ?? ""}
+            onValueChange={set("religion")}
+          />
+        </Field>
+        <Field label={t("bloodType")}>
+          <Select
+            options={withCurrent(BLOOD_TYPES, values.blood_type ?? "")}
+            value={values.blood_type ?? ""}
+            onValueChange={set("blood_type")}
+          />
+        </Field>
+      </FormSection>
+
+      <FormSection variant="card" title={t("addressSection")}>
+        <Field label={t("address")} className="col-span-full">
+          <Input autoComplete="street-address" {...text("address")} />
+        </Field>
+        <Field label={t("district")}>
+          <Input {...text("district")} />
+        </Field>
+        <Field label={t("city")}>
+          <Input autoComplete="address-level2" {...text("city")} />
+        </Field>
+      </FormSection>
 
       {kind === "student" ? (
-        <fieldset className="flex flex-col gap-4">
-          <legend className="text-[13px] font-medium text-fg">{t("studentSection")}</legend>
-          <div className="grid gap-4 md:grid-cols-2">
-            {field(
-              t("nis"),
-              <Input
-                value={nis}
-                onChange={(e) => {
-                  setNis(e.target.value);
-                }}
-              />,
-            )}
-            {field(
-              t("nisn"),
-              <Input
-                value={nisn}
-                onChange={(e) => {
-                  setNisn(e.target.value);
-                }}
-              />,
-            )}
-            {field(
-              t("previousSchool"),
-              <Input
-                value={previousSchool}
-                onChange={(e) => {
-                  setPreviousSchool(e.target.value);
-                }}
-              />,
-            )}
-            {field(
-              t("fatherName"),
-              <Input
-                value={fatherName}
-                onChange={(e) => {
-                  setFatherName(e.target.value);
-                }}
-              />,
-            )}
-            {field(
-              t("motherName"),
-              <Input
-                value={motherName}
-                onChange={(e) => {
-                  setMotherName(e.target.value);
-                }}
-              />,
-            )}
-            {field(
-              t("guardianName"),
-              <Input
-                value={guardianName}
-                onChange={(e) => {
-                  setGuardianName(e.target.value);
-                }}
-              />,
-            )}
-            {field(
-              t("guardianPhone"),
-              <Input
-                type="tel"
-                value={guardianPhone}
-                onChange={(e) => {
-                  setGuardianPhone(e.target.value);
-                }}
-              />,
-            )}
-          </div>
-        </fieldset>
+        <FormSection variant="card" title={t("familySection")}>
+          <Field label={t("previousSchool")} className="col-span-full">
+            <Input {...text("previous_school")} />
+          </Field>
+          <Field label={t("fatherName")}>
+            <Input {...text("father_name")} />
+          </Field>
+          <Field label={t("motherName")}>
+            <Input {...text("mother_name")} />
+          </Field>
+          <Field label={t("guardianName")}>
+            <Input {...text("guardian_name")} />
+          </Field>
+          <Field label={t("guardianPhone")}>
+            <Input type="tel" {...text("guardian_phone")} />
+          </Field>
+        </FormSection>
       ) : (
-        <fieldset className="flex flex-col gap-4">
-          <legend className="text-[13px] font-medium text-fg">{t("employmentSection")}</legend>
-          <div className="grid gap-4 md:grid-cols-2">
-            {field(
-              t("nip"),
-              <Input
-                value={nip}
-                onChange={(e) => {
-                  setNip(e.target.value);
-                }}
-              />,
-            )}
-            {field(
-              t("nuptk"),
-              <Input
-                value={nuptk}
-                onChange={(e) => {
-                  setNuptk(e.target.value);
-                }}
-              />,
-            )}
-            {field(
-              t("employmentStatus"),
-              <Input
-                value={employmentStatus}
-                onChange={(e) => {
-                  setEmploymentStatus(e.target.value);
-                }}
-              />,
-            )}
-            {field(
-              t("lastEducation"),
-              <Input
-                value={lastEducation}
-                onChange={(e) => {
-                  setLastEducation(e.target.value);
-                }}
-              />,
-            )}
-            {field(
-              t("specialization"),
-              <Input
-                value={specialization}
-                onChange={(e) => {
-                  setSpecialization(e.target.value);
-                }}
-              />,
-            )}
-            {field(
-              t("employeeNumber"),
-              <Input
-                value={employeeNumber}
-                onChange={(e) => {
-                  setEmployeeNumber(e.target.value);
-                }}
-              />,
-            )}
-            {field(
-              t("position"),
-              <Input
-                value={position}
-                onChange={(e) => {
-                  setPosition(e.target.value);
-                }}
-              />,
-            )}
-          </div>
-        </fieldset>
+        <FormSection variant="card" title={t("educationSection")}>
+          <Field label={t("lastEducation")}>
+            <Input {...text("last_education")} />
+          </Field>
+          <Field label={t("specialization")}>
+            <Input {...text("specialization")} />
+          </Field>
+        </FormSection>
       )}
 
-      <div className="flex justify-end border-t border-border pt-4">
-        <Button type="submit" size="sm" loading={update.isPending}>
-          {t("save")}
-        </Button>
-      </div>
+      <ProfileSaveBar
+        dirty={dirty}
+        saving={update.isPending}
+        saveLabel={t("save")}
+        onSave={() => void submit()}
+      />
     </form>
   );
+}
+
+/** `employee_number` -> `employeeNumber`, the catalog's key for a field label. */
+function camel(key: string): string {
+  return key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
 }

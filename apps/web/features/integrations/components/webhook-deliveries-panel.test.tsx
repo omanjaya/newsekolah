@@ -66,4 +66,17 @@ describe("WebhookDeliveriesPanel filters", () => {
     await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
     expect(onEndpointChange).toHaveBeenCalledWith("");
   });
+
+  it("shows a retry control, not the empty state, when the request fails", () => {
+    mocks.useWebhookDeliveriesQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch: vi.fn(),
+    });
+    render(<WebhookDeliveriesPanel endpointId="" onEndpointChange={vi.fn()} />);
+    // The table's own error state, with its retry (UiLabels.tableRetry).
+    expect(screen.getAllByRole("button", { name: "Coba lagi" }).length).toBeGreaterThan(0);
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+  });
 });

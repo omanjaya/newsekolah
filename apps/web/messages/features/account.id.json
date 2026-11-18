@@ -1,8 +1,8 @@
 {
   "forgotPassword": {
     "title": "Lupa kata sandi",
-    "body": "Masukkan username atau email Anda. Jika akunnya ada, kami akan mengirim tautan reset.",
-    "usernameOrEmailLabel": "Username atau email",
+    "body": "Masukkan nama pengguna atau email Anda. Jika akunnya ada, kami akan mengirim tautan reset.",
+    "usernameOrEmailLabel": "Nama pengguna atau email",
     "submit": "Kirim tautan reset",
     "submitting": "Mengirim",
     "successTitle": "Periksa kotak masuk Anda",
@@ -16,8 +16,9 @@
     "confirmLabel": "Konfirmasi kata sandi baru",
     "submit": "Simpan kata sandi baru",
     "success": "Kata sandi diubah, masuk dengan kata sandi baru Anda",
-    "invalidTitle": "Tautan ini sudah tidak berlaku",
-    "invalidBody": "Tautan tidak valid, sudah dipakai, atau sudah kedaluwarsa. Minta tautan baru.",
-    "requestNew": "Minta tautan baru"
+    "invalidTitle": "Tautan tidak berlaku",
+    "invalidBody": "Tautan tidak valid, sudah dipakai, atau sudah kedaluwarsa.",
+    "requestNew": "Minta tautan baru",
+    "newHint": "Minimal 8 karakter."
   }
 }

@@ -57,6 +57,8 @@ import monitorEn from "./monitor.en.json";
 import monitorId from "./monitor.id.json";
 import onboardingEn from "./onboarding.en.json";
 import onboardingId from "./onboarding.id.json";
+import pageEn from "./page.en.json";
+import pageId from "./page.id.json";
 import platformEn from "./platform.en.json";
 import platformId from "./platform.id.json";
 import promotionEn from "./promotion.en.json";
@@ -169,3 +171,5 @@ registerFeatureMessages({
   id: librarySettingsId,
   en: librarySettingsEn,
 });
+// Page template, state pages and the kiosk frame (overhaul wave 3).
+registerFeatureMessages({ namespace: "page", id: pageId, en: pageEn });

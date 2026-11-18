@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Dialog, DialogContent, Textarea, useToast } from "@newsekolah/ui";
+import { Field, Button, Dialog, DialogContent, Textarea, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -78,11 +78,10 @@ export function ViolationVoidDialog({
       >
         {record && (
           <div className="flex flex-col gap-4">
-            <p className="text-[13px] text-fg-muted">
+            <p className="text-body-sm text-fg-muted">
               {t("voidDialog.body", { student: studentName, points: record.points })}
             </p>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("voidDialog.reason")}</span>
+            <Field label={t("voidDialog.reason")}>
               <Textarea
                 rows={3}
                 value={reason}
@@ -91,7 +90,7 @@ export function ViolationVoidDialog({
                 }}
                 maxLength={500}
               />
-            </label>
+            </Field>
           </div>
         )}
       </DialogContent>

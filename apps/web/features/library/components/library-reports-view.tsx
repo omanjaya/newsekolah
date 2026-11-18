@@ -1,43 +1,42 @@
 "use client";
 
-import { formatDate } from "@newsekolah/i18n";
-import type { Locale } from "@newsekolah/i18n";
 import {
   Button,
-  EmptyState,
-  Input,
-  PageHeader,
-  Skeleton,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  DateRangePicker,
+  Field,
+  MonthPicker,
+  Select,
   Tabs,
+  TabsContent,
   TabsList,
   TabsTrigger,
-  domainIcons,
 } from "@newsekolah/ui";
-import { Download } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import { Download, FileText } from "lucide-react";
+import { useTranslations } from "next-intl";
+import type { ReactElement, ReactNode } from "react";
 import { useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import {
   ReportExportDialog,
   type ReportExportColumn,
   type ReportExportOptions,
 } from "../../../components/report-export-dialog";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
-import { businessNow } from "../../../lib/simulation/clock";
 import {
-  downloadMonthlyLibraryReportPdf,
-  useLoansReportQuery,
-  useMostBorrowedReportQuery,
-  useOverdueMembersReportQuery,
-} from "../api";
+  endOfPreviousIsoMonth,
+  startOfIsoMonth,
+  startOfPreviousIsoMonth,
+  thisMonthInZone,
+  todayInZone,
+} from "../../../lib/tenant-date";
+import { downloadMonthlyLibraryReportPdf } from "../api";
 import {
   downloadLibraryAccessionRegisterReportXlsx,
   downloadLibraryMembersReportXlsx,
@@ -47,21 +46,29 @@ import {
   downloadMostBorrowedReportXlsx,
   downloadOverdueMembersReportXlsx,
 } from "../reports-api";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import { ReportAccessionRegisterTable } from "./report-accession-register-table";
+import {
+  LoansReportTable,
+  MostBorrowedReportTable,
+  OverdueMembersReportTable,
+} from "./report-circulation-tables";
 import { ReportMembersTable } from "./report-members-table";
-import { ReportCard, ReportCardTitle, ReportField } from "./report-mobile-card";
 import { ReportSummaryTable } from "./report-summary-table";
 import { ReportVisitsTable } from "./report-visits-table";
 
-type ReportTab =
-  | "loans"
-  | "overdueMembers"
-  | "mostBorrowed"
-  | "summary"
-  | "visits"
-  | "members"
-  | "accessionRegister";
+const REPORT_TABS = [
+  "loans",
+  "overdueMembers",
+  "mostBorrowed",
+  "summary",
+  "visits",
+  "members",
+  "accessionRegister",
+] as const;
+
+type ReportTab = (typeof REPORT_TABS)[number];
 
 const TABS_WITHOUT_DATE_RANGE: ReportTab[] = ["overdueMembers", "members"];
 
@@ -89,38 +96,31 @@ const REPORT_EXPORT_COLUMN_KEYS: Record<Exclude<ReportTab, "summary">, readonly 
   ],
 };
 
-function todayIso(): string {
-  return businessNow().toISOString().slice(0, 10);
-}
-
-function firstOfMonthIso(): string {
-  const now = businessNow();
-  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-}
-
-function monthIso(): string {
-  return businessNow().toISOString().slice(0, 7);
-}
-
-export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {}): ReactElement {
+/**
+ * The library's reports: one pill tab per report, the period they cover
+ * (where it applies) and the XLSX export above the tab's table, and the
+ * monthly PDF in its own card. On its own route the page shows the
+ * reports area's tabs; inside the reports hub (`tabKey` other than "tab")
+ * it is one section of that page. `sectionNav` is the hub's strip of
+ * report sections when the reader has more than one: the page then keeps
+ * the hub's title, as the report centre does, with the strip under it, so
+ * switching sections never swaps the header. Below md the seven reports
+ * are a Select instead of a second scrolling tab row under the page's own.
+ */
+export function LibraryReportsView({
+  tabKey = "tab",
+  sectionNav,
+}: { tabKey?: string; sectionNav?: ReactNode } = {}): ReactElement {
   const t = useTranslations("app.library.reports");
-  const [tab, setTab] = useUrlState<ReportTab>(
-    tabKey,
-    [
-      "loans",
-      "overdueMembers",
-      "mostBorrowed",
-      "summary",
-      "visits",
-      "members",
-      "accessionRegister",
-    ],
-    "loans",
-  );
-  const [from, setFrom] = useDateFilter("from", firstOfMonthIso());
-  const [to, setTo] = useDateFilter("to", todayIso());
-  const [month, setMonth] = useDateFilter("month", monthIso(), true);
+  const timeZone = useTenantTimeZone();
+  const today = todayInZone(timeZone);
+  const presets = useDateRangePresets();
+  const [tab, setTab] = useUrlState<ReportTab>(tabKey, REPORT_TABS, "loans");
+  const [from, setFrom] = useDateFilter("from", startOfIsoMonth(today));
+  const [to, setTo] = useDateFilter("to", today);
+  const [month, setMonth] = useDateFilter("month", thisMonthInZone(timeZone), true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const embedded = tabKey !== "tab";
 
   const exportOptions: Record<ReportTab, (options: ReportExportOptions) => Promise<void>> = {
     loans: (options) => downloadLoansReportXlsx(from, to, options),
@@ -144,65 +144,97 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
           label: t(`export.${tab}.columns.${key}`),
         }));
 
-  return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+  // An empty period report offers a way on: the month before the one shown.
+  const earlierPeriod = (
+    <Button
+      variant="secondary"
+      onClick={() => {
+        setFrom(startOfPreviousIsoMonth(from));
+        setTo(endOfPreviousIsoMonth(from));
+      }}
+    >
+      {t("earlierPeriod")}
+    </Button>
+  );
 
+  return (
+    <AppPage
+      title={embedded && !sectionNav ? t("title") : undefined}
+      documentTitle={embedded ? t("title") : undefined}
+      nav={sectionNav ?? (embedded ? false : undefined)}
+      // A secondary "Unduh laporan", as the other report sections have:
+      // the dialog offers XLSX and PDF, and reading is the page's job.
+      secondaryActions={[
+        {
+          label: t("exportXlsx"),
+          icon: <Download />,
+          onSelect: () => {
+            setDialogOpen(true);
+          },
+        },
+      ]}
+    >
       <Tabs
+        className="flex flex-col gap-4"
         value={tab}
         onValueChange={(value) => {
           setTab(value as ReportTab);
         }}
       >
-        <TabsList className="overflow-x-auto [&>button]:shrink-0 [&>button]:whitespace-nowrap">
-          <TabsTrigger value="loans">{t("tabs.loans")}</TabsTrigger>
-          <TabsTrigger value="overdueMembers">{t("tabs.overdueMembers")}</TabsTrigger>
-          <TabsTrigger value="mostBorrowed">{t("tabs.mostBorrowed")}</TabsTrigger>
-          <TabsTrigger value="summary">{t("tabs.summary")}</TabsTrigger>
-          <TabsTrigger value="visits">{t("tabs.visits")}</TabsTrigger>
-          <TabsTrigger value="members">{t("tabs.members")}</TabsTrigger>
-          <TabsTrigger value="accessionRegister">{t("tabs.accessionRegister")}</TabsTrigger>
+        <TabsList aria-label={t("tabsLabel")} className="max-md:hidden">
+          {REPORT_TABS.map((key) => (
+            <TabsTrigger key={key} value={key}>
+              {t(`tabs.${key}`)}
+            </TabsTrigger>
+          ))}
         </TabsList>
-      </Tabs>
+        <Field label={t("typeLabel")} className="sm:max-w-xs md:hidden">
+          <Select
+            options={REPORT_TABS.map((key) => ({ value: key, label: t(`tabs.${key}`) }))}
+            value={tab}
+            onValueChange={(value) => {
+              setTab(value as ReportTab);
+            }}
+          />
+        </Field>
 
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        {!TABS_WITHOUT_DATE_RANGE.includes(tab) ? (
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium text-fg">{t("fromLabel")}</span>
-              <Input
-                type="date"
-                value={from}
-                onChange={(e) => {
-                  setFrom(e.target.value);
-                }}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium text-fg">{t("toLabel")}</span>
-              <Input
-                type="date"
-                value={to}
-                onChange={(e) => {
-                  setTo(e.target.value);
-                }}
-              />
-            </label>
-          </div>
-        ) : (
-          <span />
+        {!TABS_WITHOUT_DATE_RANGE.includes(tab) && (
+          <Field label={t("periodLabel")} className="sm:max-w-xs">
+            <DateRangePicker
+              value={{ from, to }}
+              onChange={(range) => {
+                if (!range.from || !range.to) return;
+                setFrom(range.from);
+                setTo(range.to);
+              }}
+              presets={presets}
+              today={today}
+            />
+          </Field>
         )}
-        <Button
-          size="sm"
-          variant="secondary"
-          icon={<Download />}
-          onClick={() => {
-            setDialogOpen(true);
-          }}
-        >
-          {t("exportXlsx")}
-        </Button>
-      </div>
+
+        <TabsContent value="loans">
+          <LoansReportTable from={from} to={to} emptyAction={earlierPeriod} />
+        </TabsContent>
+        <TabsContent value="overdueMembers">
+          <OverdueMembersReportTable />
+        </TabsContent>
+        <TabsContent value="mostBorrowed">
+          <MostBorrowedReportTable from={from} to={to} emptyAction={earlierPeriod} />
+        </TabsContent>
+        <TabsContent value="summary">
+          <ReportSummaryTable from={from} to={to} />
+        </TabsContent>
+        <TabsContent value="visits">
+          <ReportVisitsTable from={from} to={to} emptyAction={earlierPeriod} />
+        </TabsContent>
+        <TabsContent value="members">
+          <ReportMembersTable />
+        </TabsContent>
+        <TabsContent value="accessionRegister">
+          <ReportAccessionRegisterTable from={from} to={to} emptyAction={earlierPeriod} />
+        </TabsContent>
+      </Tabs>
 
       <ReportExportDialog
         open={dialogOpen}
@@ -214,188 +246,26 @@ export function LibraryReportsView({ tabKey = "tab" }: { tabKey?: string } = {})
         onExport={handleExport}
       />
 
-      {tab === "loans" && <LoansReportTable from={from} to={to} />}
-      {tab === "overdueMembers" && <OverdueMembersReportTable />}
-      {tab === "mostBorrowed" && <MostBorrowedReportTable from={from} to={to} />}
-      {tab === "summary" && <ReportSummaryTable from={from} to={to} />}
-      {tab === "visits" && <ReportVisitsTable from={from} to={to} />}
-      {tab === "members" && <ReportMembersTable />}
-      {tab === "accessionRegister" && <ReportAccessionRegisterTable from={from} to={to} />}
-
-      <div className="flex flex-wrap items-end gap-3 border-t border-border pt-6">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("monthly.monthLabel")}</span>
-          <Input
-            type="month"
-            value={month}
-            onChange={(e) => {
-              setMonth(e.target.value);
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">{t("monthly.heading")}</CardTitle>
+          <CardDescription>{t("monthly.description")}</CardDescription>
+        </CardHeader>
+        <div className="flex flex-col gap-3 px-5 pb-5 sm:flex-row sm:items-end">
+          <Field label={t("monthly.monthLabel")} className="sm:w-56">
+            <MonthPicker value={month} onChange={setMonth} />
+          </Field>
+          <Button
+            variant="secondary"
+            icon={<FileText />}
+            onClick={() => {
+              void downloadMonthlyLibraryReportPdf(month);
             }}
-          />
-        </label>
-        <Button
-          size="sm"
-          variant="secondary"
-          icon={<Download />}
-          onClick={() => {
-            void downloadMonthlyLibraryReportPdf(month);
-          }}
-        >
-          {t("monthly.download")}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function LoansReportTable({ from, to }: { from: string; to: string }): ReactElement {
-  const t = useTranslations("app.library.reports.loans");
-  const tStatus = useTranslations("app.library.memberHistory.status");
-  const locale = useLocale() as Locale;
-  const { data, isLoading } = useLoansReportQuery(from, to);
-  const loans = data?.data ?? [];
-
-  if (isLoading) return <Skeleton className="h-64 w-full" />;
-  if (loans.length === 0) {
-    return <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />;
-  }
-
-  const statusLabel = (status: string) => (tStatus.has(status) ? tStatus(status) : status);
-
-  return (
-    <>
-      <ul className="flex flex-col gap-2 md:hidden">
-        {loans.map((row) => (
-          <li key={row.loan.id}>
-            <ReportCard>
-              <ReportCardTitle>{row.title}</ReportCardTitle>
-              <ReportField label={t("columns.member")} value={row.member_name} />
-              <ReportField
-                label={t("columns.borrowedAt")}
-                value={formatDate(row.loan.borrowed_at, { locale })}
-              />
-              <ReportField
-                label={t("columns.dueOn")}
-                value={formatDate(row.loan.due_on, { locale })}
-              />
-              <ReportField label={t("columns.status")} value={statusLabel(row.loan.status)} />
-            </ReportCard>
-          </li>
-        ))}
-      </ul>
-      <div className="hidden md:block">
-        <Table className="min-w-[560px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col">{t("columns.copy")}</TableHead>
-              <TableHead scope="col">{t("columns.member")}</TableHead>
-              <TableHead scope="col">{t("columns.borrowedAt")}</TableHead>
-              <TableHead scope="col">{t("columns.dueOn")}</TableHead>
-              <TableHead scope="col">{t("columns.status")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loans.map((row) => (
-              <TableRow key={row.loan.id}>
-                <TableCell>{row.title}</TableCell>
-                <TableCell>{row.member_name}</TableCell>
-                <TableCell className="text-fg-muted">
-                  {formatDate(row.loan.borrowed_at, { locale })}
-                </TableCell>
-                <TableCell className="text-fg-muted">
-                  {formatDate(row.loan.due_on, { locale })}
-                </TableCell>
-                <TableCell className="text-fg-muted">{statusLabel(row.loan.status)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </>
-  );
-}
-
-function OverdueMembersReportTable(): ReactElement {
-  const t = useTranslations("app.library.reports.overdueMembers");
-  const { data, isLoading } = useOverdueMembersReportQuery();
-  const members = data?.data ?? [];
-
-  if (isLoading) return <Skeleton className="h-64 w-full" />;
-
-  return (
-    <>
-      <ul className="flex flex-col gap-2 md:hidden">
-        {members.map((member) => (
-          <li key={member.member_user_id}>
-            <ReportCard>
-              <ReportCardTitle>{member.member_user_id}</ReportCardTitle>
-              <ReportField label={t("columns.loanCount")} value={member.loan_count} />
-              <ReportField label={t("columns.fine")} value={member.total_fine} />
-            </ReportCard>
-          </li>
-        ))}
-      </ul>
-      <div className="hidden md:block">
-        <Table className="min-w-[480px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col">{t("columns.member")}</TableHead>
-              <TableHead scope="col">{t("columns.loanCount")}</TableHead>
-              <TableHead scope="col">{t("columns.fine")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {members.map((member) => (
-              <TableRow key={member.member_user_id}>
-                <TableCell>{member.member_user_id}</TableCell>
-                <TableCell className="text-fg-muted">{member.loan_count}</TableCell>
-                <TableCell className="text-fg-muted">{member.total_fine}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </>
-  );
-}
-
-function MostBorrowedReportTable({ from, to }: { from: string; to: string }): ReactElement {
-  const t = useTranslations("app.library.reports.mostBorrowed");
-  const { data, isLoading } = useMostBorrowedReportQuery(from, to);
-  const titles = data?.data ?? [];
-
-  if (isLoading) return <Skeleton className="h-64 w-full" />;
-
-  return (
-    <>
-      <ul className="flex flex-col gap-2 md:hidden">
-        {titles.map((entry) => (
-          <li key={entry.title.id}>
-            <ReportCard>
-              <ReportCardTitle>{entry.title.title}</ReportCardTitle>
-              <ReportField label={t("columns.loanCount")} value={entry.loan_count} />
-            </ReportCard>
-          </li>
-        ))}
-      </ul>
-      <div className="hidden md:block">
-        <Table className="min-w-[480px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col">{t("columns.title")}</TableHead>
-              <TableHead scope="col">{t("columns.loanCount")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {titles.map((entry) => (
-              <TableRow key={entry.title.id}>
-                <TableCell>{entry.title.title}</TableCell>
-                <TableCell className="text-fg-muted">{entry.loan_count}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </>
+          >
+            {t("monthly.download")}
+          </Button>
+        </div>
+      </Card>
+    </AppPage>
   );
 }

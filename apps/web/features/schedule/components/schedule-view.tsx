@@ -2,29 +2,26 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
-  Alert,
   Button,
   ConfirmDialog,
   EmptyState,
-  PageHeader,
-  Skeleton,
+  SkeletonList,
   domainIcons,
   useMediaQuery,
   useToast,
 } from "@newsekolah/ui";
-import { Plus } from "lucide-react";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
+import { QueryError } from "../../../components/query-error";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useSimulation } from "../../../lib/simulation/clock";
 import { todayInZone } from "../../../lib/tenant-date";
 import { usePeriodTodayQuery } from "../../academic/api-enrollment";
-import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import {
   useClassesQuery,
   useLookup,
@@ -42,13 +39,13 @@ import {
 import { useNamedConflict } from "../use-named-conflict";
 
 import { CopyBanner } from "./copy-banner";
-import { ScheduleCurrentPeriodPill } from "./schedule-current-period-pill";
 import { ScheduleDayGrid } from "./schedule-day-grid";
 import { ScheduleDialogs } from "./schedule-dialogs";
 import { ScheduleMobileAgenda } from "./schedule-mobile-agenda";
 import { ScheduleMobileDayList } from "./schedule-mobile-day-list";
 import { type ScheduleMode, ScheduleScopeBar } from "./schedule-scope-bar";
 import { ScheduleWeekGrid } from "./schedule-week-grid";
+import { useScheduleHeader } from "./use-schedule-header";
 
 type Mode = ScheduleMode;
 
@@ -66,10 +63,8 @@ function todayOfWeek(timeZone?: string): number {
  * teachers land on their own timetable.
  */
 export function ScheduleView(): ReactElement {
-  const tWorkspace = useTranslations("app.academic.workspace");
   const t = useTranslations("app.schedule");
   const tDays = useTranslations("app.common.weekdays");
-  const tApp = useTranslations("app");
   const { me } = useSession();
   const { revision } = useSimulation();
   const year = useActiveYear();
@@ -90,7 +85,9 @@ export function ScheduleView(): ReactElement {
   // always came to look at.
   const [selectedDay, setSelectedDay] = useState<{ revision: number; day: number } | null>(null);
   const dayFilter =
-    selectedDay?.revision === revision ? selectedDay.day : todayOfWeek(me?.tenant.timezone);
+    selectedDay !== null && selectedDay.revision === revision
+      ? selectedDay.day
+      : todayOfWeek(me?.tenant.timezone);
   const setDayFilter = (day: number) => {
     setSelectedDay({ revision, day });
   };
@@ -269,54 +266,50 @@ export function ScheduleView(): ReactElement {
     }
   }
 
-  const headerActions = (
-    <>
-      <ScheduleScopeBar
-        mode={mode}
-        onModeChange={setMode}
-        isStudent={isStudent}
-        ownTimetableOnly={isTeacher && !canViewAll}
-        canViewAll={canViewAll}
-        activeDays={activeDays}
-        dayFilter={dayFilter}
-        onDayFilterChange={setDayFilter}
-        classOptions={classOptions}
-        classId={effectiveClassId}
-        className={classMap.get(effectiveClassId)?.name ?? ""}
-        onClassChange={setClassId}
-        teacherId={effectiveTeacherId}
-        onTeacherChange={setTeacherId}
-        yearLabel={year.label}
-      />
-      <ScheduleCurrentPeriodPill />
-      {canManage && (
-        <>
-          <Button asChild variant="secondary" size="sm" className="rounded-full">
-            <Link href="/schedule/bulk">{t("bulk.navLink")}</Link>
-          </Button>
-          <Button
-            size="sm"
-            className="rounded-full"
-            icon={<Plus />}
-            onClick={() => {
-              setCreating({
-                day: activeDays[0] ?? 1,
-                startSeq: lessonPeriods[0]?.sequence ?? 1,
-              });
-            }}
-          >
-            {t("addBlock")}
-          </Button>
-        </>
-      )}
-    </>
-  );
+  const { primaryAction, primaryActionCompact, secondaryActions, description } = useScheduleHeader({
+    canManage,
+    isStudent,
+    className: classMap.get(effectiveClassId)?.name,
+    yearLabel: year.label,
+    onAdd: () => {
+      setCreating({ day: activeDays[0] ?? 1, startSeq: lessonPeriods[0]?.sequence ?? 1 });
+    },
+  });
+
+  const ownEmptyWeek =
+    !canManage &&
+    mode === "teacher" &&
+    effectiveTeacherId === me?.id &&
+    !schedules.isLoading &&
+    (schedules.data?.data.length ?? 0) === 0;
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <AcademicWorkspaceLinks area="schedule" />
-      <PageHeader eyebrow={t("eyebrow")} title={tWorkspace("schedule")} actions={headerActions} />
-
+    <AppPage
+      // The week grid fills the screen on desktop and scrolls under its
+      // day headings; a phone scrolls the agenda as a page.
+      variant="fit"
+      description={description}
+      primaryAction={primaryAction}
+      primaryActionCompact={primaryActionCompact}
+      secondaryActions={secondaryActions}
+      toolbar={
+        <ScheduleScopeBar
+          mode={mode}
+          onModeChange={setMode}
+          isStudent={isStudent}
+          ownTimetableOnly={isTeacher && !canViewAll}
+          canViewAll={canViewAll}
+          activeDays={activeDays}
+          dayFilter={dayFilter}
+          onDayFilterChange={setDayFilter}
+          classOptions={classOptions}
+          classId={effectiveClassId}
+          onClassChange={setClassId}
+          teacherId={effectiveTeacherId}
+          onTeacherChange={setTeacherId}
+        />
+      }
+    >
       <CopyBanner
         copied={copied}
         subjectMap={subjectMap}
@@ -328,22 +321,9 @@ export function ScheduleView(): ReactElement {
       />
 
       {loading ? (
-        <Skeleton className="h-96 w-full" aria-busy="true" />
+        <SkeletonList rows={6} />
       ) : schedules.isError ? (
-        <Alert variant="warning" title={t("loadError")}>
-          <div className="flex flex-col items-start gap-2">
-            {schedules.error instanceof ApiError && <p>{apiErrorMessage(schedules.error.code)}</p>}
-            <Button
-              variant="secondary"
-              loading={schedules.isRefetching}
-              onClick={() => {
-                void schedules.refetch();
-              }}
-            >
-              {tApp("offlinePage.retry")}
-            </Button>
-          </div>
-        </Alert>
+        <QueryError retry={schedules.refetch} error={schedules.error} />
       ) : isStudent && !effectiveClassId ? (
         <EmptyState
           icon={<domainIcons.schedule aria-hidden="true" />}
@@ -355,6 +335,24 @@ export function ScheduleView(): ReactElement {
           icon={<domainIcons.schedule aria-hidden="true" />}
           title={t("noPeriodsTitle")}
           description={t("noPeriodsBody")}
+        />
+      ) : ownEmptyWeek ? (
+        // A week of empty cells says nothing; say whose week it is and
+        // where the timetables are instead.
+        <EmptyState
+          icon={<domainIcons.schedule aria-hidden="true" />}
+          title={t("noTeachingTitle")}
+          description={t("noTeachingBody")}
+          action={
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setMode("class");
+              }}
+            >
+              {t("viewByClass")}
+            </Button>
+          }
         />
       ) : /* Below md, a 7-column-by-N-row grid has no honest reflow: it either
              collapses columns to slivers or forces sideways scroll through the
@@ -468,10 +466,10 @@ export function ScheduleView(): ReactElement {
         title={t("deleteConfirmTitle")}
         description={t("deleteConfirmBody")}
         confirmLabel={t("deleteBlock")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={confirmDelete}
       />
-    </div>
+    </AppPage>
   );
 }

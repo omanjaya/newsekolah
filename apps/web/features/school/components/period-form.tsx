@@ -1,6 +1,14 @@
 "use client";
 
-import { Button, Checkbox, Input } from "@newsekolah/ui";
+import {
+  Button,
+  Checkbox,
+  DialogFooter,
+  Field,
+  Input,
+  NumberInput,
+  TimePicker,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -34,11 +42,17 @@ export function PeriodForm({
   const [start, setStart] = useState(initial?.starts_at.slice(0, 5) ?? lastEnd);
   const [end, setEnd] = useState(initial?.ends_at.slice(0, 5) ?? addMinutes(lastEnd, 45));
   const [isBreak, setIsBreak] = useState(initial?.is_break ?? false);
+  const [submitted, setSubmitted] = useState(false);
+  const tValidation = useTranslations("validation");
   return (
     <form
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
+        // The name is required: marked on its label and said under it on
+        // save, never left to the browser's own bubble.
+        setSubmitted(true);
+        if (!name.trim()) return;
         void onSubmit({
           name: name.trim(),
           sequence: Number(sequence),
@@ -49,68 +63,49 @@ export function PeriodForm({
       }}
     >
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("name")}</span>
+        <Field
+          label={t("name")}
+          required
+          error={submitted && !name.trim() ? tValidation("required") : undefined}
+        >
           <Input
             value={name}
             onChange={(e) => {
               setName(e.target.value);
             }}
-            required
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("sequence")}</span>
-          <Input
-            type="number"
+        </Field>
+        <Field label={t("sequence")}>
+          <NumberInput
             min={1}
-            value={sequence}
-            onChange={(e) => {
-              setSequence(e.target.value);
+            value={sequence ? Number(sequence) : null}
+            onChange={(value) => {
+              setSequence(value === null ? "" : String(value));
             }}
-            required
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("start")}</span>
-          <Input
-            type="time"
-            value={start}
-            onChange={(e) => {
-              setStart(e.target.value);
-            }}
-            required
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("end")}</span>
-          <Input
-            type="time"
-            value={end}
-            onChange={(e) => {
-              setEnd(e.target.value);
-            }}
-            required
-          />
-        </label>
+        </Field>
+        <Field label={t("start")}>
+          <TimePicker value={start} onChange={setStart} />
+        </Field>
+        <Field label={t("end")}>
+          <TimePicker value={end} onChange={setEnd} />
+        </Field>
       </div>
-      <label className="flex items-center gap-2 text-[13px]">
-        <Checkbox
-          checked={isBreak}
-          onCheckedChange={(v) => {
-            setIsBreak(v === true);
-          }}
-        />
-        {t("break")}
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <Checkbox
+        checked={isBreak}
+        onCheckedChange={(v) => {
+          setIsBreak(v === true);
+        }}
+        label={t("break")}
+      />
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onCancel}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={pending}>
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

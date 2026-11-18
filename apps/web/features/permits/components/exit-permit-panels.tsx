@@ -4,16 +4,28 @@ import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatTime } from "@newsekolah/i18n";
 import {
+  Avatar,
   type BarcodeScanEvent,
-  BarcodeScannerField,
   Card,
+  CardHeader,
+  CardTitle,
+  DataList,
+  DataListItem,
+  EmptyState,
   IconButton,
+  List,
+  ListRow,
   QrPanel,
+  QrPanelSkeleton,
+  Scanner,
+  SectionHeader,
+  type ScannerResultValue,
+  domainIcons,
   useToast,
 } from "@newsekolah/ui";
 import { Undo2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
@@ -28,7 +40,7 @@ import {
   useScanGateMutation,
 } from "../api";
 
-import { WorkflowStepper } from "./workflow-stepper";
+import { WorkflowSteps } from "./workflow-stepper";
 
 /**
  * Teacher: mint an approve-stage QR for the permit code the student shows.
@@ -38,10 +50,16 @@ import { WorkflowStepper } from "./workflow-stepper";
  * `prefillId` so a new value remounts it with a fresh initial state instead
  * of needing an effect to resynchronize local state from a prop.
  */
-export function ApprovePanel({ prefillId }: { prefillId?: string } = {}): ReactElement {
+export function ApprovePanel({
+  prefillId,
+  modeSwitch,
+}: {
+  prefillId?: string;
+  /** The desk's gate and approve switch, drawn at the end of the scanner's header. */
+  modeSwitch?: ReactNode;
+} = {}): ReactElement {
   const t = useTranslations("app.permits.exit.approve");
   const tQr = useTranslations("app.permits.qr");
-  const tScan = useTranslations("app.permits.scan");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const issue = useIssueScanTokenMutation();
@@ -71,23 +89,28 @@ export function ApprovePanel({ prefillId }: { prefillId?: string } = {}): ReactE
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-[13px] text-fg-muted">{t("hint")}</p>
-      {/* The same scanner the piket desk and the library circulation desk
-          use elsewhere: hardware scanner, camera, and manual entry all
-          funnel through one `onScan` handler. */}
-      <BarcodeScannerField
-        label={t("permitCode")}
+    <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+      {/* The permit code is typed (or read by a hardware scanner); the
+          student has no QR of their own to show, so no camera here. */}
+      <Scanner
+        title={t("title")}
+        description={t("hint")}
+        headerEnd={modeSwitch}
+        camera={false}
+        manualEntry="open"
+        manualLabel={t("permitCode")}
+        manualPlaceholder={t("permitCodePlaceholder")}
         submitLabel={t("showQr")}
-        cameraLabel={tScan("cameraLabel")}
         onScan={handleScan}
         disabled={issue.isPending}
-        stretch
-        size="large"
       />
-      {issue.data && (
-        <div className="grid gap-4 md:grid-cols-2">
+      {issue.isPending ? (
+        <QrPanelSkeleton size="lg" />
+      ) : issue.data ? (
+        <div className="flex flex-col gap-4">
           <QrPanel
+            size="lg"
+            label={t("qrLabel")}
             payload={encodeScanPayload("approve", issue.data.context_id ?? "", issue.data.token)}
             code={issue.data.token}
             expiresAt={issue.data.expires_at}
@@ -100,16 +123,19 @@ export function ApprovePanel({ prefillId }: { prefillId?: string } = {}): ReactE
             renewLabel={tQr("renew")}
           />
           {detail.data && (
-            <Card className="flex flex-col gap-3 p-4 text-[13px]">
-              <span className="text-[15px] font-medium text-fg">
-                {formatDisplayName(detail.data.student_name)} ({detail.data.class_name})
-              </span>
-              <span>{detail.data.destination}</span>
-              <WorkflowStepper instance={detail.data.instance} />
+            <Card padding="md">
+              <CardHeader>
+                <CardTitle>{formatDisplayName(detail.data.student_name)}</CardTitle>
+              </CardHeader>
+              <DataList>
+                <DataListItem label={t("class")}>{detail.data.class_name}</DataListItem>
+                <DataListItem label={t("destination")}>{detail.data.destination}</DataListItem>
+              </DataList>
+              <WorkflowSteps instance={detail.data.instance} orientation="vertical" />
             </Card>
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -128,7 +154,7 @@ interface GateLogEntry {
  * list lives only in this tab's memory, not the server, so "undo" only
  * hides an entry here; it does not reverse the recorded gate scan.
  */
-export function GatePanel(): ReactElement {
+export function GatePanel({ modeSwitch }: { modeSwitch?: ReactNode } = {}): ReactElement {
   const t = useTranslations("app.permits.exit.gate");
   const tScan = useTranslations("app.permits.scan");
   const locale = useLocale() as Locale;
@@ -137,84 +163,101 @@ export function GatePanel(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const scan = useScanGateMutation();
   const [log, setLog] = useState<GateLogEntry[]>([]);
+  const [result, setResult] = useState<ScannerResultValue | null>(null);
 
-  function handleScan(event: BarcodeScanEvent) {
+  async function handleScan(event: BarcodeScanEvent): Promise<boolean> {
     const { instanceId, token } = decodeScanPayload(event.code);
     if (!instanceId) {
-      toast.error(t("needPayload"));
-      return;
+      setResult({ tone: "danger", title: t("needPayload"), key: Date.now() });
+      return false;
     }
-    scan.mutate(
-      { id: instanceId, token },
-      {
-        onSuccess: (result) => {
-          setLog((prev) =>
-            [
-              {
-                key: `${instanceId}:${Date.now()}`,
-                studentName: result.student_name,
-                className: result.class_name,
-                at: businessNow().toISOString(),
-              },
-              ...prev,
-            ].slice(0, 20),
-          );
-          toast.success(t("passed"));
-        },
-        onError: (error) => {
-          toast.error(
-            error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-          );
-        },
-      },
-    );
+    try {
+      const passed = await scan.mutateAsync({ id: instanceId, token });
+      setLog((prev) =>
+        [
+          {
+            key: `${instanceId}:${Date.now()}`,
+            studentName: passed.student_name,
+            className: passed.class_name,
+            at: businessNow().toISOString(),
+          },
+          ...prev,
+        ].slice(0, 20),
+      );
+      setResult({
+        tone: "success",
+        title: t("passed"),
+        description: `${formatDisplayName(passed.student_name)} (${passed.class_name})`,
+        key: Date.now(),
+      });
+      toast.success(t("passed"));
+      return true;
+    } catch (error) {
+      setResult({
+        tone: "danger",
+        title: t("refused"),
+        description:
+          error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+        key: Date.now(),
+      });
+      return false;
+    }
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-[13px] text-fg-muted">{t("hint")}</p>
-      <BarcodeScannerField
-        label={t("payloadLabel")}
-        submitLabel={tScan("submit")}
-        cameraLabel={tScan("cameraLabel")}
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+      <Scanner
+        title={t("title")}
+        description={t("hint")}
+        headerEnd={modeSwitch}
         onScan={handleScan}
         disabled={scan.isPending}
-        stretch
-        size="large"
-        autoFocus
+        manualLabel={t("payloadLabel")}
+        manualPlaceholder={tScan("placeholder")}
+        submitLabel={tScan("submit")}
+        result={result}
       />
-      {log.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <h2 className="text-[13px] font-medium text-fg">{t("todayListTitle")}</h2>
-          <ul className="flex flex-col gap-1.5">
+      <section className="flex flex-col gap-3" aria-labelledby="gate-log-title">
+        <SectionHeader
+          titleId="gate-log-title"
+          title={t("todayListTitle")}
+          description={t("todayListHint")}
+          count={log.length}
+        />
+        {log.length === 0 ? (
+          <EmptyState
+            variant="compact"
+            icon={<domainIcons.exitPermit aria-hidden="true" />}
+            title={t("todayListEmpty")}
+          />
+        ) : (
+          <List framed>
             {log.map((entry, index) => (
-              <li key={entry.key}>
-                <Card className="flex items-center justify-between gap-2 px-3 py-2">
-                  <div className="flex min-w-0 flex-col">
-                    <span className="truncate text-[14px] text-fg">
-                      {formatDisplayName(entry.studentName)}{" "}
-                      <span className="text-[12px] text-fg-muted">({entry.className})</span>
-                    </span>
-                    <span className="text-[12px] text-fg-muted">
-                      {formatTime(entry.at, { locale, timeZone: me?.tenant.timezone })}
-                    </span>
-                  </div>
-                  {index === 0 && (
+              <ListRow
+                key={entry.key}
+                leading={<Avatar size={40} name={entry.studentName} decorative />}
+                title={formatDisplayName(entry.studentName)}
+                titleLines={2}
+                meta={entry.className}
+                trailing={formatTime(entry.at, { locale, timeZone: me?.tenant.timezone })}
+                action={
+                  index === 0 ? (
                     <IconButton
                       icon={<Undo2 />}
                       aria-label={t("undoLast")}
                       variant="ghost"
+                      size="sm"
                       onClick={() => {
                         setLog((prev) => prev.slice(1));
                       }}
                     />
-                  )}
-                </Card>
-              </li>
+                  ) : undefined
+                }
+              />
             ))}
-          </ul>
-        </div>
-      )}
+          </List>
+        )}
+      </section>
     </div>
   );
 }

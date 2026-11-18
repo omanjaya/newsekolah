@@ -1,31 +1,18 @@
 "use client";
 
-import {
-  Avatar,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  IconButton,
-} from "@newsekolah/ui";
-import { LogOut, Search } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { IconButton, Kbd, Skeleton, cn, useCollapsedTitle } from "@newsekolah/ui";
+import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
-import { useLogoutMutation } from "../features/auth/api";
 import { NotificationBell } from "../features/notifications/components/notification-bell";
-import { filterNavigation, navigation } from "../lib/navigation";
-import { navAccessFromMe } from "../lib/navigation-access";
-import { useSession } from "../lib/session/session-provider";
+import { useTenant } from "../lib/tenant/tenant-provider";
 
+import { AccountMenu } from "./account-menu";
 import { useCommandPalette } from "./command-palette-provider";
 import { RoleTestingSwitcher } from "./role-testing-switcher";
-import { TenantBrand } from "./tenant-brand";
-import { ThemeToggle } from "./theme-toggle";
+import { SchoolMark } from "./school-mark";
 
 /**
  * The command palette answers to a keyboard shortcut that the trigger
@@ -35,105 +22,148 @@ import { ThemeToggle } from "./theme-toggle";
  */
 const NO_SHORTCUT_SUBSCRIBE = () => () => undefined;
 
-function readShortcutHint(): string {
-  return /Mac|iPhone|iPad/.test(navigator.userAgent) ? "\u2318K" : "Ctrl K";
+function readModifierKey(): string {
+  return /Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘" : "Ctrl";
 }
 
-function useShortcutHint(): string | null {
-  // The server has no platform to read, so it renders nothing and the
-  // client fills it in on its first paint. useSyncExternalStore is how
-  // React wants that told apart, rather than correcting state in an
-  // effect after the fact.
-  return useSyncExternalStore(NO_SHORTCUT_SUBSCRIBE, readShortcutHint, () => null);
+function useModifierKey(): string | null {
+  return useSyncExternalStore(NO_SHORTCUT_SUBSCRIBE, readModifierKey, () => null);
 }
 
-export function Header(): ReactElement {
-  const { me } = useSession();
-  const t = useTranslations("app.shell");
-  const tNav = useTranslations();
-  const accountItems = filterNavigation(navigation, navAccessFromMe(me)).filter(
-    (item) => item.accountMenu,
-  );
-  const tPalette = useTranslations("app.shell.commandPalette");
-  const commandPalette = useCommandPalette();
-  const shortcutHint = useShortcutHint();
-  const logoutMutation = useLogoutMutation();
-  const router = useRouter();
+/** True once the page has scrolled under the header, so a phone header can show its edge only then. */
+function useScrolled(): boolean {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const update = () => {
+      setScrolled(window.scrollY > 4);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", update);
+    };
+  }, []);
+  return scrolled;
+}
 
-  async function handleLogout() {
-    await logoutMutation.mutateAsync();
-    router.replace("/login");
-  }
+/**
+ * The phone header's left side: the school's mark, then its name (the
+ * short name when the school set one), which
+ * gives way to the page's title once the page's large title has scrolled
+ * away under the header (PageHeader publishes that, `useCollapsedTitle`).
+ * The two share one grid cell, so the swap never moves anything: the name
+ * slides up and fades out as the title slides up and fades in, 200ms.
+ * The title repeats the page's h1, so it is hidden from assistive
+ * technology.
+ */
+function PhoneBrand(): ReactElement {
+  const { displayName, shortName, isLoading } = useTenant();
+  const { title, collapsed } = useCollapsedTitle();
+  const showTitle = collapsed && title !== null;
+  const swap = "min-w-0 truncate transition-[opacity,translate] duration-base ease-standard";
 
   return (
-    <header className="flex h-14 items-center gap-2 border-b border-line bg-surface px-4 md:gap-4 md:px-6">
-      <div className="flex min-w-0 flex-1 items-center gap-3 md:hidden">
-        <TenantBrand size="sm" />
+    <div className="flex min-w-0 flex-1 items-center gap-2.5 md:hidden">
+      <SchoolMark size={32} />
+      <div className="grid min-w-0 flex-1 items-center *:col-start-1 *:row-start-1">
+        {isLoading ? (
+          <Skeleton className="h-4 w-24" />
+        ) : (
+          <span
+            className={cn(
+              swap,
+              "font-heading text-body font-bold tracking-tight text-fg",
+              showTitle && "-translate-y-1.5 opacity-0",
+            )}
+          >
+            {/* About 17 characters fit beside the three buttons, so the
+                school's short name goes here when it set one; truncation
+                is the last resort for one that did not. */}
+            {shortName ?? displayName}
+          </span>
+        )}
+        <span
+          aria-hidden="true"
+          data-compact-title=""
+          className={cn(
+            swap,
+            "text-heading text-fg",
+            showTitle
+              ? "translate-y-0 opacity-100"
+              : "pointer-events-none translate-y-1.5 opacity-0",
+          )}
+        >
+          {title}
+        </span>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The bar above every screen. Desktop: a search field that opens the
+ * command palette (with its shortcut), then the tester tools when they
+ * apply, notifications, and the account menu. Phone (after the artboard):
+ * the school's mark and name, then search, notifications and the account
+ * as 44px round buttons; the bar takes the page colour and shows its edge
+ * only once content scrolls under it, and the page's title takes the
+ * school name's place once the page's own title has scrolled away. In an
+ * installed app the bar reaches up under the status bar (safe-area inset).
+ * Theme moved into the account menu.
+ */
+export function Header(): ReactElement {
+  const tPalette = useTranslations("app.shell.palette");
+  const commandPalette = useCommandPalette();
+  const modifier = useModifierKey();
+  const scrolled = useScrolled();
+
+  return (
+    <header
+      className={cn(
+        "flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center gap-2 border-b px-4 pt-[env(safe-area-inset-top)] transition-colors md:gap-4 md:px-6",
+        "bg-bg md:border-line md:bg-surface",
+        scrolled ? "border-line" : "border-transparent",
+      )}
+    >
+      <PhoneBrand />
       {/*
-        Grows with the window instead of sitting at a fixed width with a
-        gulf of empty bar beside it, and carries its own keyboard shortcut
-        so the palette is findable without being told about it.
+        Reads as a field rather than a button: a sunken box with the
+        placeholder and the shortcut, growing with the window up to a
+        comfortable measure.
       */}
       <button
         type="button"
         onClick={commandPalette.open}
         aria-keyshortcuts="Meta+K Control+K"
-        className="hidden h-9 w-full max-w-md items-center gap-2 rounded-full border border-border bg-bg px-4 text-[13px] text-fg-muted transition-colors hover:border-fg-muted/40 md:flex"
+        className={cn(
+          "hidden h-9 w-full max-w-[26rem] items-center gap-2.5 rounded-md border border-border bg-surface-sunken pr-1.5 pl-3 md:flex",
+          "text-body-sm text-fg-muted outline-none transition-colors hover:border-border-strong hover:text-fg",
+        )}
       >
         <Search className="size-4 shrink-0" aria-hidden="true" />
-        <span className="truncate">{tPalette("trigger")}</span>
-        {shortcutHint && (
-          <kbd className="ml-auto shrink-0 rounded-xs border border-border px-1.5 py-0.5 text-[11px] font-medium text-fg-muted">
-            {shortcutHint}
-          </kbd>
+        <span className="min-w-0 flex-1 truncate text-left">{tPalette("placeholder")}</span>
+        {modifier && (
+          <span aria-hidden="true" className="flex shrink-0 items-center gap-0.5">
+            <Kbd>{modifier}</Kbd>
+            <Kbd>K</Kbd>
+          </span>
         )}
       </button>
       <div className="hidden flex-1 md:block" />
-      <IconButton
-        icon={<Search />}
-        aria-label={tPalette("trigger")}
-        onClick={commandPalette.open}
-        className="md:hidden"
-      />
-      {/*
-        A thin rule separates the two tools from the account: three
-        unlabelled circles in a row read as one control otherwise.
-      */}
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="flex shrink-0 items-center gap-2 md:gap-1">
         <RoleTestingSwitcher />
-        <ThemeToggle />
+        <IconButton
+          icon={<Search />}
+          aria-label={tPalette("placeholder")}
+          tooltip={false}
+          variant="surface"
+          size="lg"
+          onClick={commandPalette.open}
+          className="md:hidden"
+        />
         <NotificationBell />
-        <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-line md:block" />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              aria-label={t("profileMenu.label")}
-              className="flex size-11 items-center justify-center rounded-full transition-colors hover:bg-bg md:size-8"
-            >
-              <Avatar name={me?.name ?? "?"} src={me?.avatar_url} size="sm" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {accountItems.map((item) => (
-              <DropdownMenuItem key={item.key} asChild>
-                <Link href={item.href} className="flex items-center gap-2">
-                  <item.icon className="size-4" aria-hidden="true" />
-                  {tNav(item.labelKey)}
-                </Link>
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={() => void handleLogout()}
-              className="flex items-center gap-2"
-            >
-              <LogOut className="size-4" aria-hidden="true" />
-              {t("profileMenu.logout")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <span aria-hidden="true" className="mx-2 hidden h-6 w-px bg-line md:block" />
+        <AccountMenu />
       </div>
     </header>
   );

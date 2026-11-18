@@ -1,25 +1,30 @@
 "use client";
 
 import {
+  Button,
   IconButton,
   Popover,
   PopoverContent,
   PopoverTrigger,
+  Sheet,
+  SheetContent,
+  SheetTrigger,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@newsekolah/ui";
-import { Bell } from "lucide-react";
+import { Bell, CheckCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useIsDesktop } from "../../../components/use-is-desktop";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useSession } from "../../../lib/session/session-provider";
 import { useMyAnnouncementsQuery } from "../../announcements/api";
 import { AnnouncementPanel } from "../../announcements/components/announcement-panel";
-import { useUnreadCountQuery } from "../api";
+import { useMarkAllReadMutation, useUnreadCountQuery } from "../api";
 
 import { NotificationPanel } from "./notification-panel";
 
@@ -28,9 +33,10 @@ type BellTab = "notifications" | "announcements";
 /**
  * Header bell: one badge for everything the reader has yet to read, opening
  * the recent notifications and announcements in place. Both are reading
- * surfaces rather than work areas, so they share a popover instead of each
+ * surfaces rather than work areas, so they share one panel instead of each
  * taking a sidebar entry. Glancing at what arrived should not cost the
- * reader the screen they were on, so only following one navigates.
+ * reader the screen they were on, so only following one navigates. A
+ * popover from the `md` breakpoint, a bottom sheet on a phone.
  *
  * The badge adds the unread announcements (the API exposes `is_read` per
  * announcement) to the inbox count.
@@ -41,8 +47,10 @@ export function NotificationBell(): ReactElement {
   const { status } = useSession();
   const authenticated = status === "authenticated";
   const announcementsOn = useModuleEnabled("announcements");
+  const desktop = useIsDesktop();
   const { data } = useUnreadCountQuery(authenticated);
   const { data: announcements } = useMyAnnouncementsQuery();
+  const markAllRead = useMarkAllReadMutation();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<BellTab>("notifications");
   const unreadAnnouncements =
@@ -52,76 +60,96 @@ export function NotificationBell(): ReactElement {
   const unreadNotifications = data?.count ?? 0;
   const count = unreadNotifications + unreadAnnouncements;
   const label = count > 0 ? tBell("unreadTotal", { count }) : t("bellLabel");
+  const close = () => {
+    setOpen(false);
+  };
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <span className="relative inline-flex">
-        <PopoverTrigger asChild>
-          <IconButton icon={<Bell />} aria-label={label} title={label} />
-        </PopoverTrigger>
-        {count > 0 && (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-accent-fg"
-          >
-            {count > 99 ? "99+" : count}
-          </span>
-        )}
-      </span>
-      {/*
-        The width belongs on the popover itself. Setting it on the content
-        inside made it wider than the box it sits in, so the text spilled
-        past the panel's own background and onto the page behind it.
-      */}
-      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-2rem)] p-0">
-        <Tabs
-          value={tab}
-          onValueChange={(value) => {
-            setTab(value as BellTab);
-          }}
-        >
-          <TabsList aria-label={tBell("tabsLabel")} className="m-2 mb-0 w-[calc(100%-1rem)]">
-            <TabsTrigger value="notifications" className="flex-1 gap-1.5">
-              {tBell("tabNotifications")}
-              <TabCount count={unreadNotifications} />
-            </TabsTrigger>
-            {announcementsOn && (
-              <TabsTrigger value="announcements" className="flex-1 gap-1.5">
-                {tBell("tabAnnouncements")}
-                <TabCount count={unreadAnnouncements} />
-              </TabsTrigger>
-            )}
-          </TabsList>
-          <TabsContent value="notifications" className="pt-2">
-            <NotificationPanel
-              onNavigate={() => {
-                setOpen(false);
-              }}
-            />
-          </TabsContent>
-          {announcementsOn && (
-            <TabsContent value="announcements" className="pt-2">
-              <AnnouncementPanel
-                onNavigate={() => {
-                  setOpen(false);
-                }}
-              />
-            </TabsContent>
-          )}
-        </Tabs>
-      </PopoverContent>
-    </Popover>
+  const button = (
+    <IconButton
+      icon={<Bell />}
+      aria-label={label}
+      tooltip={desktop}
+      variant="surface"
+      size="lg"
+      className="md:size-9 md:border-transparent md:bg-transparent md:[&>svg]:size-[18px]"
+    />
   );
-}
+  const badge =
+    count > 0 ? (
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-accent px-1 text-caption font-bold text-accent-fg tabular-nums ring-2 ring-bg md:ring-surface"
+      >
+        {count > 99 ? "99+" : count}
+      </span>
+    ) : null;
 
-function TabCount({ count }: { count: number }): ReactElement | null {
-  if (count === 0) return null;
-  return (
-    <span
-      aria-hidden="true"
-      className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-accent-fg"
+  const body = (
+    <Tabs
+      value={tab}
+      onValueChange={(value) => {
+        setTab(value as BellTab);
+      }}
+      className="flex min-h-0 flex-col"
     >
-      {count > 99 ? "99+" : count}
-    </span>
+      <div className="flex items-center gap-2 pb-2 md:px-3 md:pt-3">
+        <TabsList aria-label={tBell("tabsLabel")} size="sm" className="min-w-0">
+          <TabsTrigger value="notifications" count={unreadNotifications || undefined}>
+            {tBell("tabNotifications")}
+          </TabsTrigger>
+          {announcementsOn && (
+            <TabsTrigger value="announcements" count={unreadAnnouncements || undefined}>
+              {tBell("tabAnnouncements")}
+            </TabsTrigger>
+          )}
+        </TabsList>
+        {tab === "notifications" && unreadNotifications > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<CheckCheck />}
+            disabled={markAllRead.isPending}
+            onClick={() => {
+              markAllRead.mutate();
+            }}
+            className="ml-auto shrink-0"
+          >
+            {t("markAllRead")}
+          </Button>
+        )}
+      </div>
+      <TabsContent value="notifications" className="mt-0">
+        <NotificationPanel onNavigate={close} />
+      </TabsContent>
+      {announcementsOn && (
+        <TabsContent value="announcements" className="mt-0">
+          <AnnouncementPanel onNavigate={close} />
+        </TabsContent>
+      )}
+    </Tabs>
+  );
+
+  if (desktop) {
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <span className="relative inline-flex">
+          <PopoverTrigger asChild>{button}</PopoverTrigger>
+          {badge}
+        </span>
+        <PopoverContent align="end" sideOffset={8} className="w-[24rem] p-0">
+          {body}
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <span className="relative inline-flex">
+        <SheetTrigger asChild>{button}</SheetTrigger>
+        {badge}
+      </span>
+      <SheetContent title={announcementsOn ? tBell("tabsLabel") : t("title")}>{body}</SheetContent>
+    </Sheet>
   );
 }

@@ -27,11 +27,12 @@ const SessionContext = createContext<SessionContextValue | null>(null);
  * (none, on a fresh load); `@newsekolah/api-client`'s own middleware treats
  * that 401 as "try `/v1/auth/refresh` once, then retry" (see its README),
  * which is exactly the boot-refresh behavior this provider needs — no
- * separate manual refresh call required. After a successful login,
- * `useLogin`'s `onSuccess` clears the whole query cache (so a previous
- * account's data, or a previous account's cached *error* on some other
- * query, never leaks into the new session -- see that hook's doc comment)
- * and seeds this same `me` query straight from the login response, so this
+ * separate manual refresh call required. After a successful sign-in,
+ * `useStartSession` (which `useLogin` uses) empties the query cache but for
+ * the tenant's branding (so a previous account's data, or a previous
+ * account's cached *error* on some other query, never leaks into the new
+ * session -- see `useLogin`'s doc comment) and seeds this same `me` query
+ * straight from the sign-in response, so this
  * flips to "authenticated" on its own with no anonymous gap; no extra
  * wiring needed at the call site.
  */

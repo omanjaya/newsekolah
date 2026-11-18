@@ -2,22 +2,29 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Alert,
   Avatar,
   Badge,
   Button,
+  Card,
   Checkbox,
-  Input,
+  CountBadge,
+  DatePicker,
+  DialogFooter,
+  Field,
+  SearchInput,
   Textarea,
   useDebouncedCallback,
   useToast,
 } from "@newsekolah/ui";
-import { TriangleAlert } from "lucide-react";
+import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { businessNow } from "../../../lib/simulation/clock";
+import { useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import { useDirectoryNames, useDirectorySearch } from "../../reference/directory-names";
 import {
   type ViolationRecordResult,
@@ -32,9 +39,9 @@ const MAX_STUDENTS = 50;
 const STUDENT_RESULTS = 30;
 const SEARCH_DEBOUNCE_MS = 300;
 
-function today(): string {
-  return businessNow().toISOString().slice(0, 10);
-}
+/** A row of a pick list: a 44px target with its checkbox, on the sunken well. */
+const PICK_ROW =
+  "flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-3 py-1.5 transition-colors hover:bg-state-hover";
 
 /**
  * Records one or several violation types for one or several students in a
@@ -43,11 +50,16 @@ function today(): string {
  * submission loops the same mutation once per selected student and
  * collects every `ViolationRecordResult` -- the caller shows a per-student
  * summary (points and any warning-letter level newly due) from that list.
+ * Before saving, it previews each student's new total and any warning
+ * letter that total would cross.
  */
 export function ViolationRecordForm({
   onDone,
+  initialStudentIds = [],
 }: {
   onDone: (results?: ViolationRecordResult[]) => void;
+  /** Students already picked, when the form opens from one student's record. */
+  initialStudentIds?: string[];
 }): ReactElement {
   const t = useTranslations("app.discipline.violations.form");
   const toast = useToast();
@@ -58,12 +70,16 @@ export function ViolationRecordForm({
   const [studentSearch, setStudentSearch] = useState("");
   const [studentQuery, setStudentQuery] = useState("");
   const debounceStudentQuery = useDebouncedCallback(setStudentQuery, SEARCH_DEBOUNCE_MS);
-  const [studentIds, setStudentIds] = useState<string[]>([]);
+  const [studentIds, setStudentIds] = useState<string[]>(initialStudentIds);
   const [typeSearch, setTypeSearch] = useState("");
   const [typeIds, setTypeIds] = useState<string[]>([]);
-  const [occurredOn, setOccurredOn] = useState(today());
+  // "Today" is the school's calendar day, not the UTC one.
+  const { me } = useSession();
+  const today = todayInZone(me?.tenant.timezone);
+  const [occurredOn, setOccurredOn] = useState(today);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [attempted, setAttempted] = useState(false);
 
   const preview = usePointsPreviewQuery(studentIds);
 
@@ -100,6 +116,7 @@ export function ViolationRecordForm({
     [preview.data, pointsPerStudent],
   );
   const showPreview = studentIds.length > 0 && typeIds.length > 0;
+  const crossesLevel = previewRows.some((row) => row.crossedLevels.length > 0);
 
   function toggleStudent(id: string) {
     setStudentIds((current) => {
@@ -118,7 +135,8 @@ export function ViolationRecordForm({
   }
 
   async function submit() {
-    if (studentIds.length === 0 || typeIds.length === 0) return;
+    setAttempted(true);
+    if (studentIds.length === 0 || typeIds.length === 0 || !occurredOn) return;
     setSubmitting(true);
     try {
       const results: ViolationRecordResult[] = [];
@@ -147,194 +165,218 @@ export function ViolationRecordForm({
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         void submit();
       }}
     >
-      <div className="flex flex-col gap-1 text-[13px]">
-        <div className="flex items-center justify-between">
-          <span className="font-medium">{t("student")}</span>
-          {studentIds.length > 0 && (
-            <span className="text-fg-muted">
+      <Field
+        label={t("student")}
+        required
+        error={attempted && studentIds.length === 0 ? t("studentRequired") : undefined}
+        labelAside={
+          studentIds.length > 0 ? (
+            <span className="text-caption text-fg-muted">
               {t("studentsSelected", { count: studentIds.length })}
             </span>
-          )}
-        </div>
-        {studentIds.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {studentIds.map((id) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => {
-                  toggleStudent(id);
-                }}
-                className="flex min-h-7 items-center gap-1 rounded-full border border-accent bg-accent/10 px-2.5 text-[12px] font-medium text-accent"
-              >
-                {studentMap.get(id)?.name ?? t("unknownStudent")}
-                <span aria-hidden="true">×</span>
-              </button>
-            ))}
+          ) : undefined
+        }
+      >
+        {(control) => (
+          <div className="flex flex-col gap-2">
+            {studentIds.length > 0 && (
+              <ul className="flex flex-wrap gap-2" aria-label={t("selectedStudents")}>
+                {studentIds.map((id) => {
+                  const name = studentMap.get(id)?.name ?? t("unknownStudent");
+                  return (
+                    <li key={id}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={<X />}
+                        aria-label={t("removeStudent", { name })}
+                        onClick={() => {
+                          toggleStudent(id);
+                        }}
+                      >
+                        {name}
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <SearchInput
+              id={control.id}
+              aria-describedby={control["aria-describedby"]}
+              value={studentSearch}
+              onChange={(e) => {
+                setStudentSearch(e.target.value);
+                debounceStudentQuery(e.target.value.trim());
+              }}
+              placeholder={t("studentSearchPlaceholder")}
+              aria-label={t("studentSearchPlaceholder")}
+            />
+            <Card tone="sunken" className="max-h-52 overflow-y-auto p-1">
+              {visibleStudents.length === 0 ? (
+                <p className="px-3 py-2.5 text-body-sm text-fg-muted">{t("noStudents")}</p>
+              ) : (
+                visibleStudents.map((student) => {
+                  const checked = studentIds.includes(student.id);
+                  const disabled = !checked && studentIds.length >= MAX_STUDENTS;
+                  return (
+                    <Checkbox
+                      key={student.id}
+                      checked={checked}
+                      disabled={disabled}
+                      onCheckedChange={() => {
+                        toggleStudent(student.id);
+                      }}
+                      containerClassName={PICK_ROW}
+                      label={
+                        <span className="flex min-w-0 items-center gap-3">
+                          <Avatar size={32} name={student.name} decorative />
+                          <span className="min-w-0 flex-1 truncate">{student.name}</span>
+                        </span>
+                      }
+                    />
+                  );
+                })
+              )}
+            </Card>
+            {studentIds.length >= MAX_STUDENTS && (
+              <p className="text-caption text-fg-muted">{t("maxStudentsReached")}</p>
+            )}
           </div>
         )}
-        <Input
-          value={studentSearch}
-          onChange={(e) => {
-            setStudentSearch(e.target.value);
-            debounceStudentQuery(e.target.value.trim());
-          }}
-          placeholder={t("studentSearchPlaceholder")}
-          aria-label={t("studentSearchPlaceholder")}
-        />
-        <div className="flex max-h-48 flex-col gap-0.5 overflow-y-auto rounded-sm border border-border p-1">
-          {visibleStudents.length === 0 ? (
-            <p className="px-2 py-2 text-fg-muted">{t("noStudents")}</p>
-          ) : (
-            visibleStudents.map((student) => {
-              const checked = studentIds.includes(student.id);
-              const disabled = !checked && studentIds.length >= MAX_STUDENTS;
-              return (
-                <label
-                  key={student.id}
-                  className="flex min-h-10 items-center gap-2 rounded-xs px-1.5 py-1 hover:bg-bg"
-                >
-                  <Checkbox
-                    checked={checked}
-                    disabled={disabled}
-                    onCheckedChange={() => {
-                      toggleStudent(student.id);
-                    }}
-                  />
-                  <Avatar size="sm" name={student.name} />
-                  <span className="flex-1 truncate text-fg">{student.name}</span>
-                </label>
-              );
-            })
-          )}
-        </div>
-        {studentIds.length >= MAX_STUDENTS && (
-          <p className="text-fg-muted">{t("maxStudentsReached")}</p>
-        )}
-      </div>
+      </Field>
 
-      <div className="flex flex-col gap-1 text-[13px]">
-        <div className="flex items-center justify-between">
-          <span className="font-medium">{t("type")}</span>
-          {typeIds.length > 0 && (
-            <span className="text-fg-muted">
+      <Field
+        label={t("type")}
+        required
+        error={attempted && typeIds.length === 0 ? t("typeRequired") : undefined}
+        labelAside={
+          typeIds.length > 0 ? (
+            <span className="text-caption text-fg-muted">
               {t("selectedTotal", { points: pointsPerStudent })}
             </span>
-          )}
-        </div>
-        {activeTypes.length === 0 ? (
-          <p className="text-fg-muted">{t("noTypes")}</p>
-        ) : (
-          <>
-            <Input
-              value={typeSearch}
-              onChange={(e) => {
-                setTypeSearch(e.target.value);
-              }}
-              placeholder={t("typeSearchPlaceholder")}
-              aria-label={t("typeSearchPlaceholder")}
-            />
-            <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto rounded-sm border border-border p-2">
-              {visibleTypes.length === 0 ? (
-                <p className="px-1.5 py-2 text-fg-muted">{t("noMatch")}</p>
-              ) : (
-                visibleTypes.map((type) => {
-                  const checked = typeIds.includes(type.id);
-                  const disabled = !checked && typeIds.length >= MAX_TYPES;
-                  return (
-                    <label
-                      key={type.id}
-                      className="flex min-h-9 items-center gap-2 rounded-xs px-1.5 py-1 hover:bg-bg"
-                    >
+          ) : undefined
+        }
+      >
+        {(control) =>
+          activeTypes.length === 0 ? (
+            <p className="text-body-sm text-fg-muted">{t("noTypes")}</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <SearchInput
+                id={control.id}
+                aria-describedby={control["aria-describedby"]}
+                value={typeSearch}
+                onChange={(e) => {
+                  setTypeSearch(e.target.value);
+                }}
+                placeholder={t("typeSearchPlaceholder")}
+                aria-label={t("typeSearchPlaceholder")}
+              />
+              <Card tone="sunken" className="max-h-56 overflow-y-auto p-1">
+                {visibleTypes.length === 0 ? (
+                  <p className="px-3 py-2.5 text-body-sm text-fg-muted">{t("noMatch")}</p>
+                ) : (
+                  visibleTypes.map((type) => {
+                    const checked = typeIds.includes(type.id);
+                    const disabled = !checked && typeIds.length >= MAX_TYPES;
+                    return (
                       <Checkbox
+                        key={type.id}
                         checked={checked}
                         disabled={disabled}
                         onCheckedChange={() => {
                           toggleType(type.id);
                         }}
+                        containerClassName={PICK_ROW}
+                        label={
+                          <span className="flex min-w-0 items-center gap-3">
+                            <span className="min-w-0 flex-1">{type.name}</span>
+                            <Badge tone={checked ? "warning" : "neutral"} size="sm">
+                              {t("points", { points: type.points })}
+                            </Badge>
+                          </span>
+                        }
                       />
-                      <span className="flex-1 text-fg">{type.name}</span>
-                      <span className="text-fg-muted [font-variant-numeric:tabular-nums]">
-                        {type.points}
-                      </span>
-                    </label>
-                  );
-                })
+                    );
+                  })
+                )}
+              </Card>
+              {typeIds.length >= MAX_TYPES && (
+                <p className="text-caption text-fg-muted">{t("maxTypesReached")}</p>
               )}
             </div>
-          </>
-        )}
-        {typeIds.length >= MAX_TYPES && <p className="text-fg-muted">{t("maxTypesReached")}</p>}
+          )
+        }
+      </Field>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Field label={t("date")} required>
+          <DatePicker
+            name="occurred_on"
+            value={occurredOn}
+            onChange={setOccurredOn}
+            max={today}
+            today={today}
+          />
+        </Field>
+        <Field label={t("notes")} optional className="sm:col-span-2">
+          <Textarea
+            rows={2}
+            autoResize
+            value={notes}
+            onChange={(e) => {
+              setNotes(e.target.value);
+            }}
+            placeholder={t("notesPlaceholder")}
+            maxLength={1000}
+          />
+        </Field>
       </div>
 
       {showPreview && (
-        <div className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-3 text-[13px]">
-          <span className="font-medium text-fg">{t("preview.title")}</span>
+        <Alert variant={crossesLevel ? "warning" : "info"} title={t("preview.title")}>
           {preview.isPending ? (
-            <p className="text-fg-muted">{t("preview.loading")}</p>
+            <p>{t("preview.loading")}</p>
           ) : preview.isError ? (
-            <p className="text-fg-muted">{t("preview.error")}</p>
+            <p>{t("preview.error")}</p>
           ) : (
-            <ul className="flex flex-col gap-2">
+            <ul className="mt-1 flex flex-col gap-1.5">
               {previewRows.map((row) => {
                 const name = studentMap.get(row.studentUserId)?.name ?? t("unknownStudent");
                 return (
-                  <li key={row.studentUserId} className="flex flex-col gap-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="min-w-0 truncate text-fg">{name}</span>
-                      <span className="shrink-0 text-fg-muted [font-variant-numeric:tabular-nums]">
+                  <li key={row.studentUserId} className="flex flex-col">
+                    <span className="flex items-center justify-between gap-3">
+                      <span className="min-w-0 truncate">{name}</span>
+                      <span className="shrink-0 tabular-nums">
                         {t("preview.totals", {
                           current: row.currentPoints,
                           added: row.addedPoints,
                           next: row.newPoints,
                         })}
                       </span>
-                    </div>
+                    </span>
                     {row.crossedLevels.map((level) => (
-                      <div key={level.level} className="flex items-center gap-1.5 text-status-late">
-                        <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
-                        <span>{t("preview.crosses", { level: level.label })}</span>
-                      </div>
+                      <span key={level.level} className="font-semibold">
+                        {t("preview.crosses", { level: level.label })}
+                      </span>
                     ))}
                   </li>
                 );
               })}
             </ul>
           )}
-        </div>
+        </Alert>
       )}
 
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("date")}</span>
-        <Input
-          type="date"
-          value={occurredOn}
-          onChange={(e) => {
-            setOccurredOn(e.target.value);
-          }}
-          max={today()}
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("notes")}</span>
-        <Textarea
-          rows={3}
-          value={notes}
-          onChange={(e) => {
-            setNotes(e.target.value);
-          }}
-          placeholder={t("notesPlaceholder")}
-          maxLength={1000}
-        />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button
           type="button"
           variant="secondary"
@@ -344,15 +386,11 @@ export function ViolationRecordForm({
         >
           {t("cancel")}
         </Button>
-        <Button
-          type="submit"
-          loading={submitting}
-          disabled={studentIds.length === 0 || typeIds.length === 0}
-        >
+        <Button type="submit" loading={submitting}>
           {t("submit")}
-          {studentIds.length > 1 && <Badge variant="neutral">{studentIds.length}</Badge>}
+          {studentIds.length > 1 && <CountBadge count={studentIds.length} tone="neutral" />}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

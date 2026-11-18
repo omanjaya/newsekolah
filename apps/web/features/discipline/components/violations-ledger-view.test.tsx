@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useViolationsQuery: vi.fn(),
   canRecord: true,
+  push: vi.fn(),
 }));
 
 vi.mock("next-intl", () => ({
@@ -14,7 +15,7 @@ vi.mock("next-intl", () => ({
 vi.mock("next/navigation", () => ({
   usePathname: () => "/discipline/violations",
   useSearchParams: () => new URLSearchParams(window.location.search),
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push: mocks.push, replace: vi.fn() }),
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: () => mocks.canRecord,
@@ -54,7 +55,7 @@ describe("ViolationsLedgerView filters", () => {
 
   it("passes the chosen class to the violations query and writes it to the URL", async () => {
     const user = userEvent.setup();
-    render(<ViolationsLedgerView />);
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "filters.class" }));
     await user.click(await screen.findByRole("button", { name: "7B" }));
@@ -68,7 +69,7 @@ describe("ViolationsLedgerView filters", () => {
 
   it("toggles the include-voided filter directly and writes include_voided=true to the URL", async () => {
     const user = userEvent.setup();
-    render(<ViolationsLedgerView />);
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
     const toggle = screen.getByRole("button", { name: "filters.includeVoided" });
     expect(toggle).toHaveAttribute("aria-pressed", "false");
@@ -83,7 +84,7 @@ describe("ViolationsLedgerView filters", () => {
 
   it("reads an initial class_id URL param back into the filter bar", () => {
     window.history.replaceState(null, "", "/discipline/violations?class_id=class-7a");
-    render(<ViolationsLedgerView />);
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ classId: "class-7a" }),
@@ -95,7 +96,7 @@ describe("ViolationsLedgerView filters", () => {
   it("clears an active filter from its chip's remove control", async () => {
     window.history.replaceState(null, "", "/discipline/violations?include_voided=true");
     const user = userEvent.setup();
-    render(<ViolationsLedgerView />);
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(
@@ -107,7 +108,7 @@ describe("ViolationsLedgerView filters", () => {
 
   it("sets a date range from the two native date inputs and writes both bounds to the URL", async () => {
     const user = userEvent.setup();
-    render(<ViolationsLedgerView />);
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "filters.dateRange" }));
     fireEvent.change(screen.getByLabelText("filters.from"), {
@@ -121,5 +122,47 @@ describe("ViolationsLedgerView filters", () => {
     );
     expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-09-01");
     expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-09-15");
+  });
+});
+
+describe("ViolationsLedgerView rows and empty state", () => {
+  beforeEach(() => {
+    mocks.canRecord = true;
+    mocks.push.mockReset();
+    mocks.useViolationsQuery.mockReset();
+    window.history.replaceState(null, "", "/discipline/violations");
+  });
+
+  it("opens a row on the student's discipline record, the page whose trail leads back here", async () => {
+    mocks.useViolationsQuery.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: "record-1",
+            student_user_id: "student-1",
+            type_name: "Late",
+            points: 5,
+            occurred_on: "2026-09-10",
+            is_voided: false,
+          },
+        ],
+      },
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
+
+    // The phone card's tap target, named after the row's title cell.
+    await user.click(screen.getByRole("button", { name: "unknownStudent" }));
+    expect(mocks.push).toHaveBeenCalledWith("/discipline/students/student-1");
+  });
+
+  it("repeats the header's record action as a secondary button on the empty list", () => {
+    mocks.useViolationsQuery.mockReturnValue({ data: { data: [] }, isLoading: false });
+    render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
+    // Secondary: the surface fill, not the accent of the header's primary.
+    const button = screen.getByRole("button", { name: "record" });
+    expect(button).toHaveClass("bg-surface");
+    expect(button).not.toHaveClass("bg-accent");
   });
 });

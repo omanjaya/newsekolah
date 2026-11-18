@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Input, Select, useToast } from "@newsekolah/ui";
+import { NumberInput, FormError, Field, Button, Select, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -71,21 +71,18 @@ export function CopiesBatchForm({
         );
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("count")}</span>
-        <Input
-          type="number"
+      <Field label={t("count")}>
+        <NumberInput
           min={1}
           max={200}
-          value={count}
-          onChange={(e) => {
-            setCount(e.target.value);
+          value={count === "" ? null : Number(count)}
+          onChange={(next) => {
+            setCount(next === null ? "" : String(next));
           }}
           required
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{tCopies("form.condition")}</span>
+      </Field>
+      <Field label={tCopies("form.condition")}>
         <Select
           value={condition}
           onValueChange={(value) => {
@@ -96,10 +93,9 @@ export function CopiesBatchForm({
             label: tCondition(value as string),
           }))}
         />
-      </label>
+      </Field>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{tCopies("form.category")}</span>
+        <Field label={tCopies("form.category")}>
           <Select
             options={(options.data?.collection_categories ?? []).map((c) => ({
               value: c.id,
@@ -110,9 +106,8 @@ export function CopiesBatchForm({
             placeholder={tCopies("form.categoryPlaceholder")}
             disabled={options.isLoading}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{tCopies("form.location")}</span>
+        </Field>
+        <Field label={tCopies("form.location")}>
           <Select
             options={(options.data?.locations ?? []).map((l) => ({ value: l.id, label: l.name }))}
             value={locationId}
@@ -120,9 +115,8 @@ export function CopiesBatchForm({
             placeholder={tCopies("form.locationPlaceholder")}
             disabled={options.isLoading}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{tCopies("form.source")}</span>
+        </Field>
+        <Field label={tCopies("form.source")}>
           <Select
             options={(options.data?.acquisition_sources ?? []).map((s) => ({
               value: s.id,
@@ -133,9 +127,8 @@ export function CopiesBatchForm({
             placeholder={tCopies("form.sourcePlaceholder")}
             disabled={options.isLoading}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{tCopies("form.partner")}</span>
+        </Field>
+        <Field label={tCopies("form.partner")}>
           <Select
             options={(options.data?.partners ?? []).map((p) => ({ value: p.id, label: p.name }))}
             value={partnerId}
@@ -143,9 +136,9 @@ export function CopiesBatchForm({
             placeholder={tCopies("form.partnerPlaceholder")}
             disabled={options.isLoading}
           />
-        </label>
+        </Field>
       </div>
-      {error && <p className="text-[13px] text-status-absent">{error}</p>}
+      {error && <FormError>{error}</FormError>}
       <Button type="submit" loading={createBatch.isPending} disabled={!canSubmit}>
         {t("save")}
       </Button>

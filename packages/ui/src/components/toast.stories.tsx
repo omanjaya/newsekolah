@@ -1,41 +1,158 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Decorator, Meta, StoryObj } from "@storybook/react";
+import { useEffect } from "react";
 
 import { Button } from "./button.js";
-import { Toaster, useToast } from "./toast.js";
+import { Sheet, SheetContent } from "./sheet.js";
+import { Toaster, toast, useToast } from "./toast.js";
 
-function ToastDemo() {
-  const toast = useToast();
+/** Open at a 390px viewport to see toasts move to the top of the screen. */
+const phoneFrame: Decorator = (Story) => (
+  <div className="mx-auto w-[390px] max-w-full">
+    <Story />
+  </div>
+);
+
+function ToastButtons() {
+  const notify = useToast();
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        onClick={() => {
+          notify.success("Izin berhasil dikirim", {
+            description: "Wali kelas akan meninjau hari ini",
+          });
+        }}
+      >
+        Sukses
+      </Button>
+      <Button
+        variant="secondary"
+        onClick={() => {
+          notify.info("Presensi tersimpan di perangkat", {
+            description: "Dikirim otomatis saat koneksi kembali",
+          });
+        }}
+      >
+        Info
+      </Button>
+      <Button
+        variant="secondary"
+        onClick={() => {
+          notify.warning("Jadwal bentrok dengan Fisika");
+        }}
+      >
+        Peringatan
+      </Button>
+      <Button
+        variant="danger"
+        onClick={() => {
+          notify.error("Gagal menyimpan presensi", {
+            description: "Periksa koneksi lalu coba lagi.",
+            retry: { label: "Coba lagi", onClick: () => undefined },
+          });
+        }}
+      >
+        Gagal
+      </Button>
+    </div>
+  );
+}
+
+/** Shows one toast of each kind as the story opens, for review and screenshots. */
+function ToastShowcase() {
+  useEffect(() => {
+    toast.success("Izin berhasil dikirim", {
+      description: "Wali kelas akan meninjau hari ini",
+    });
+    toast.error("Gagal menyimpan presensi", {
+      description: "Periksa koneksi lalu coba lagi.",
+      retry: { label: "Coba lagi", onClick: () => undefined },
+    });
+    toast.success("Buku dikembalikan", {
+      action: { label: "Urungkan", onClick: () => undefined },
+    });
+    return () => {
+      toast.dismiss();
+    };
+  }, []);
   return (
     <>
-      <Toaster />
-      <div className="flex gap-2">
-        <Button
-          onClick={() => {
-            toast.success("Presensi tersimpan");
-          }}
-        >
-          Sukses
-        </Button>
-        <Button
-          variant="danger"
-          onClick={() => {
-            toast.error("Gagal menyimpan presensi", {
-              retry: { label: "Coba lagi", onClick: () => undefined },
-            });
-          }}
-        >
-          Gagal
-        </Button>
-      </div>
+      <Toaster expand duration={600_000} />
+      <ToastButtons />
     </>
   );
 }
 
-const meta: Meta<typeof ToastDemo> = {
+function SingleToast() {
+  useEffect(() => {
+    toast.success("Izin berhasil dikirim", {
+      description: "Wali kelas akan meninjau hari ini",
+    });
+    return () => {
+      toast.dismiss();
+    };
+  }, []);
+  return (
+    <>
+      <Toaster duration={600_000} />
+      <ToastButtons />
+    </>
+  );
+}
+
+/**
+ * A toast raised from an open drawer: it stays above the drawer's Save and
+ * Cancel instead of covering them (toast-clearance.ts).
+ */
+function ToastOverDrawer() {
+  useEffect(() => {
+    toast.success("Tagihan diperbarui", { description: "SPP Oktober, Nadia Putri" });
+    return () => {
+      toast.dismiss();
+    };
+  }, []);
+  return (
+    <>
+      <Toaster duration={600_000} />
+      <Sheet open>
+        <SheetContent
+          side="right"
+          title="Rincian tagihan"
+          description="SPP Oktober 2026"
+          footer={
+            <>
+              <Button variant="secondary">Batal</Button>
+              <Button>Simpan</Button>
+            </>
+          }
+        >
+          <p className="text-body text-fg-muted">Nadia Putri, X-A. Jatuh tempo 10 Oktober.</p>
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+}
+
+const meta: Meta = {
   title: "Components/Toast",
-  component: ToastDemo,
+  parameters: { layout: "fullscreen" },
+  decorators: [
+    (Story) => (
+      <div className="min-h-dvh">
+        <Story />
+      </div>
+    ),
+  ],
 };
 export default meta;
-type Story = StoryObj<typeof ToastDemo>;
+type Story = StoryObj;
 
-export const Default: Story = {};
+export const Kinds: Story = { render: () => <ToastShowcase /> };
+export const Single: Story = { render: () => <SingleToast /> };
+export const Dark: Story = { globals: { theme: "dark" }, render: () => <ToastShowcase /> };
+export const Phone: Story = { decorators: [phoneFrame], render: () => <SingleToast /> };
+export const OverDrawer: Story = { render: () => <ToastOverDrawer /> };
+export const OverDrawerDark: Story = {
+  globals: { theme: "dark" },
+  render: () => <ToastOverDrawer />,
+};

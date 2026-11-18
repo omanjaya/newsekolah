@@ -7,9 +7,11 @@ import {
   DataTable,
   Dialog,
   DialogContent,
+  DialogFooter,
   EmptyState,
-  IconButton,
+  Field,
   Input,
+  RowActionsMenu,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
@@ -28,30 +30,43 @@ import {
   useUpdateSubjectMutation,
 } from "../api";
 
-export function SubjectsView(): ReactElement {
+export interface SubjectsViewProps {
+  /**
+   * Whether the "new subject" dialog is open, for a hub that renders
+   * "Tambah mapel" (`app.school.subjects.add`) as its page's primary
+   * action. Leave `onAddingChange` unset and the view keeps its own add
+   * button above the table.
+   */
+  adding?: boolean;
+  onAddingChange?: (adding: boolean) => void;
+}
+
+/** The school's subjects: a searchable table, an add and edit dialog, and a confirmed delete. */
+export function SubjectsView({ adding, onAddingChange }: SubjectsViewProps = {}): ReactElement {
   const t = useTranslations("app.school.subjects");
+  // The row menu is named as the user list names its own ("Aksi untuk Biologi").
+  const tRow = useTranslations("app.school.users.actions");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const { data, isLoading } = useSubjectsQuery();
-  const create = useCreateSubjectMutation();
-  const update = useUpdateSubjectMutation();
+  const { data, isLoading, error, refetch, isRefetching } = useSubjectsQuery();
   const remove = useDeleteSubjectMutation();
-  const [editing, setEditing] = useState<Subject | "new" | null>(null);
+  const [editing, setEditing] = useState<Subject | null>(null);
+  const [localAdding, setLocalAdding] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Subject | null>(null);
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
   const [filter, setFilter] = useState("");
 
-  const fail = (error: unknown) => {
-    toast.error(
-      error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-    );
+  const controlled = onAddingChange !== undefined;
+  const isAdding = controlled ? (adding ?? false) : localAdding;
+  const setAdding = onAddingChange ?? setLocalAdding;
+  const target: Subject | "new" | null = editing ?? (isAdding ? "new" : null);
+
+  const fail = (err: unknown) => {
+    toast.error(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
   };
 
-  function open(target: Subject | "new") {
-    setEditing(target);
-    setCode(target === "new" ? "" : target.code);
-    setName(target === "new" ? "" : target.name);
+  function closeDialog() {
+    setEditing(null);
+    if (isAdding) setAdding(false);
   }
 
   const items = useMemo(() => {
@@ -64,67 +79,65 @@ export function SubjectsView(): ReactElement {
 
   const columns = useMemo<ColumnDef<Subject>[]>(
     () => [
-      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
-      { accessorKey: "name", header: t("columns.name"), enableSorting: false },
+      {
+        accessorKey: "code",
+        header: t("columns.code"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+      },
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
       {
         id: "actions",
         header: t("columns.actions"),
         enableSorting: false,
         cell: ({ row }) => (
-          <div className="flex gap-1">
-            <IconButton
-              icon={<Pencil />}
-              aria-label={t("edit")}
-              onClick={() => {
-                open(row.original);
-              }}
-            />
-            <IconButton
-              icon={<Trash2 />}
-              aria-label={t("delete")}
-              onClick={() => {
-                setPendingDelete(row.original);
-              }}
-            />
-          </div>
+          <RowActionsMenu
+            ariaLabel={tRow("menuFor", { name: row.original.name })}
+            items={[
+              {
+                label: t("edit"),
+                icon: <Pencil />,
+                onClick: () => {
+                  setEditing(row.original);
+                },
+              },
+              {
+                label: t("delete"),
+                icon: <Trash2 />,
+                tone: "danger",
+                onClick: () => {
+                  setPendingDelete(row.original);
+                },
+              },
+            ]}
+          />
         ),
       },
     ],
-    [t],
+    [t, tRow],
   );
-
-  async function save() {
-    if (!code.trim() || !name.trim()) return;
-    try {
-      if (editing === "new")
-        await create.mutateAsync({ code: code.trim().toUpperCase(), name: name.trim() });
-      else if (editing)
-        await update.mutateAsync({
-          id: editing.id,
-          body: { code: code.trim().toUpperCase(), name: name.trim() },
-        });
-      toast.success(t("saved"));
-      setEditing(null);
-    } catch (error) {
-      fail(error);
-    }
-  }
 
   return (
     // md:h-full: fills the tab panel's height so only the table rows scroll.
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex justify-end">
-        <Button
-          size="sm"
-          icon={<Plus />}
-          onClick={() => {
-            open("new");
-          }}
-        >
-          {t("add")}
-        </Button>
-      </div>
       <DataTable
+        toolbarActions={
+          controlled ? undefined : (
+            <Button
+              icon={<Plus />}
+              onClick={() => {
+                setAdding(true);
+              }}
+            >
+              {t("add")}
+            </Button>
+          )
+        }
         stateKey="features/school/components/subjects-view:1"
         data={items}
         columns={columns}
@@ -136,8 +149,13 @@ export function SubjectsView(): ReactElement {
         globalFilter={filter}
         onGlobalFilterChange={setFilter}
         isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        retrying={isRefetching}
         getRowId={(s) => s.id}
         fillHeight
+        // "Tambah mapel" is always on screen already, so the empty table
+        // only explains itself.
         emptyState={
           <EmptyState
             icon={<domainIcons.grades aria-hidden="true" />}
@@ -147,55 +165,19 @@ export function SubjectsView(): ReactElement {
         }
       />
       <Dialog
-        open={editing !== null}
+        open={target !== null}
         onOpenChange={(o) => {
-          if (!o) setEditing(null);
+          if (!o) closeDialog();
         }}
       >
-        <DialogContent title={editing === "new" ? t("add") : t("edit")}>
-          <form
-            className="flex flex-col gap-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void save();
-            }}
-          >
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.code")}</span>
-              <Input
-                value={code}
-                maxLength={16}
-                onChange={(e) => {
-                  setCode(e.target.value);
-                }}
-                required
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.name")}</span>
-              <Input
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                }}
-                required
-              />
-            </label>
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  setEditing(null);
-                }}
-              >
-                {t("cancel")}
-              </Button>
-              <Button type="submit" loading={create.isPending || update.isPending}>
-                {t("save")}
-              </Button>
-            </div>
-          </form>
+        <DialogContent title={target === "new" ? t("add") : t("edit")}>
+          {target !== null && (
+            <SubjectForm
+              initial={target === "new" ? undefined : target}
+              onDone={closeDialog}
+              onError={fail}
+            />
+          )}
         </DialogContent>
       </Dialog>
       <ConfirmDialog
@@ -206,20 +188,103 @@ export function SubjectsView(): ReactElement {
         title={t("deleteTitle")}
         description={pendingDelete ? t("deleteBody", { name: pendingDelete.name }) : ""}
         confirmLabel={t("delete")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={async () => {
           if (!pendingDelete) return;
           try {
             await remove.mutateAsync(pendingDelete.id);
             toast.success(t("deleted"));
-          } catch (error) {
-            fail(error);
+          } catch (err) {
+            fail(err);
           } finally {
             setPendingDelete(null);
           }
         }}
       />
     </div>
+  );
+}
+
+/**
+ * The code and name of one subject. Both are required: marked on their
+ * labels and said under the field on save, as the class form does, never
+ * left to the browser's own bubble.
+ */
+function SubjectForm({
+  initial,
+  onDone,
+  onError,
+}: {
+  initial?: Subject;
+  onDone: () => void;
+  onError: (error: unknown) => void;
+}): ReactElement {
+  const t = useTranslations("app.school.subjects");
+  const tValidation = useTranslations("validation");
+  const toast = useToast();
+  const create = useCreateSubjectMutation();
+  const update = useUpdateSubjectMutation();
+  const [code, setCode] = useState(initial?.code ?? "");
+  const [name, setName] = useState(initial?.name ?? "");
+  const [submitted, setSubmitted] = useState(false);
+
+  async function save() {
+    setSubmitted(true);
+    if (!code.trim() || !name.trim()) return;
+    const body = { code: code.trim().toUpperCase(), name: name.trim() };
+    try {
+      if (initial) await update.mutateAsync({ id: initial.id, body });
+      else await create.mutateAsync(body);
+      toast.success(t("saved"));
+      onDone();
+    } catch (err) {
+      onError(err);
+    }
+  }
+
+  return (
+    <form
+      className="flex flex-col gap-4"
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        void save();
+      }}
+    >
+      <Field
+        label={t("columns.code")}
+        required
+        error={submitted && !code.trim() ? tValidation("required") : undefined}
+      >
+        <Input
+          value={code}
+          maxLength={16}
+          onChange={(e) => {
+            setCode(e.target.value);
+          }}
+        />
+      </Field>
+      <Field
+        label={t("columns.name")}
+        required
+        error={submitted && !name.trim() ? tValidation("required") : undefined}
+      >
+        <Input
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+          }}
+        />
+      </Field>
+      <DialogFooter>
+        <Button type="button" variant="secondary" onClick={onDone}>
+          {t("cancel")}
+        </Button>
+        <Button type="submit" loading={create.isPending || update.isPending}>
+          {t("save")}
+        </Button>
+      </DialogFooter>
+    </form>
   );
 }

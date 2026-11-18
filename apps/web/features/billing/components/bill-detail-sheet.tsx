@@ -1,50 +1,41 @@
 "use client";
 
-import { ApiError } from "@newsekolah/api-client";
-import { type Locale, formatCurrency, formatDate } from "@newsekolah/i18n";
 import {
   Button,
-  Dialog,
-  DialogContent,
+  DataList,
+  DataListItem,
+  EmptyState,
+  Progress,
+  SectionHeader,
   Sheet,
   SheetContent,
-  Skeleton,
-  useToast,
+  SkeletonDetail,
 } from "@newsekolah/ui";
-import { Share2 } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { Banknote, ReceiptText, Store } from "lucide-react";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
-import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryNames } from "../../reference/directory-names";
-import {
-  type Payment,
-  useBillQuery,
-  usePaymentReceiptUrlMutation,
-  useStudentBillHistoryQuery,
-} from "../api";
-import { openOrShareReceipt } from "../lib/receipt";
+import { type Payment, useBillQuery, useStudentBillHistoryQuery } from "../api";
+import { useBillingFormat } from "../lib/use-billing-format";
 
+import { BillPaymentsList } from "./bill-payments-list";
 import { BillStatusBadge } from "./bill-status-badge";
-import { PaymentForm } from "./payment-form";
+import { PaymentFlow } from "./payment-flow";
 import { VoidPaymentDialog } from "./void-payment-dialog";
 
-const METHOD_KEY: Record<Payment["method"], string> = {
-  cash: "cash",
-  bank_transfer: "bankTransfer",
-  other: "other",
-};
-
 /**
- * One bill's detail, reached from the bills list: the bill's own fields
- * plus the payments recorded against it. The API has no
- * "payments for this bill" endpoint, so payments come from the same
- * student's bill history (`StudentBillHistoryEntry`) and are filtered down
- * to this bill's id -- the same data `StudentBillHistoryView` already
- * fetches for the front desk, just scoped to a single bill here.
+ * One bill's detail, reached from the bills list, as a drawer beside the
+ * table on a desktop and a bottom sheet on a phone: what is left to pay
+ * as its figure, how the amount was built (discounts included), and the
+ * payments made against it. Paying happens in the same sheet, not in a
+ * second layer on top of it. The API has no "payments for this bill"
+ * endpoint, so payments come from the student's bill history, narrowed to
+ * this bill.
  */
 export function BillDetailSheet({
   billId,
@@ -55,16 +46,13 @@ export function BillDetailSheet({
 }): ReactElement {
   const t = useTranslations("app.billing.bills");
   const tDesk = useTranslations("app.billing.paymentDesk");
-  const locale = useLocale() as Locale;
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
   const canRecord = useCan("record_payments");
   const canVoid = useCan("void_payments");
+  const { money, day } = useBillingFormat();
 
-  const { data: bill, isLoading, isError, refetch } = useBillQuery(billId);
+  const { data: bill, isLoading, isError, error, refetch } = useBillQuery(billId);
   const studentMap = useDirectoryNames([bill?.student_user_id]);
   const history = useStudentBillHistoryQuery(bill?.student_user_id ?? "", !!bill);
-  const receiptUrl = usePaymentReceiptUrlMutation();
 
   const [paying, setPaying] = useState(false);
   const [voiding, setVoiding] = useState<Payment | null>(null);
@@ -72,22 +60,92 @@ export function BillDetailSheet({
   const payments = history.data?.data.find((entry) => entry.bill.id === billId)?.payments ?? [];
   const outstanding = bill ? bill.amount_minor - bill.paid_amount_minor : 0;
   const studentName = bill
-    ? (studentMap.get(bill.student_user_id)?.name ?? bill.student_user_id)
+    ? (studentMap.get(bill.student_user_id)?.name ?? t("unknownStudent"))
     : "";
 
-  function downloadReceipt(paymentId: string) {
-    receiptUrl.mutate(paymentId, {
-      onSuccess: (result) => {
-        void openOrShareReceipt(result.url, tDesk("paymentForm.title"));
-      },
-      onError: (error) => {
-        toast.error(
-          error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-        );
-      },
-    });
+  let body: ReactElement;
+  if (isError && !bill) {
+    body = <QueryError retry={() => refetch()} error={error} />;
+  } else if (isLoading || !bill) {
+    body = <SkeletonDetail rows={5} />;
+  } else if (paying) {
+    body = (
+      <PaymentFlow
+        bill={bill}
+        onClose={() => {
+          setPaying(false);
+        }}
+      />
+    );
+  } else {
+    body = (
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-col gap-1">
+              <p className="text-heading text-fg">{bill.fee_type_name}</p>
+              <p className="text-body-sm text-fg-muted">
+                {studentName} · {bill.period}
+              </p>
+            </div>
+            <BillStatusBadge bill={bill} />
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-body-sm text-fg-muted">
+              {outstanding > 0 ? tDesk("remaining") : t("billAmount")}
+            </span>
+            <span className="text-title-lg text-fg tabular-nums">
+              {money(outstanding > 0 ? outstanding : bill.amount_minor, bill.currency)}
+            </span>
+          </div>
+          {bill.paid_amount_minor > 0 && outstanding > 0 && (
+            <Progress
+              value={bill.paid_amount_minor}
+              max={bill.amount_minor}
+              tone="success"
+              aria-label={tDesk("paidShare", {
+                amount: money(bill.paid_amount_minor, bill.currency),
+              })}
+            />
+          )}
+        </div>
+        <DataList>
+          <DataListItem label={t("columns.dueDate")}>{day(bill.due_date)}</DataListItem>
+          <DataListItem label={t("originalAmount")}>
+            <span className="tabular-nums">{money(bill.original_amount_minor, bill.currency)}</span>
+          </DataListItem>
+          <DataListItem label={t("discountAmount")}>
+            <span className="tabular-nums">{money(bill.discount_amount_minor, bill.currency)}</span>
+          </DataListItem>
+          <DataListItem label={t("billAmount")}>
+            <span className="font-semibold tabular-nums">
+              {money(bill.amount_minor, bill.currency)}
+            </span>
+          </DataListItem>
+          <DataListItem label={t("paidAmount")}>
+            <span className="tabular-nums">{money(bill.paid_amount_minor, bill.currency)}</span>
+          </DataListItem>
+        </DataList>
+        <section className="flex flex-col gap-3">
+          <SectionHeader as="h3" title={t("paymentsTitle")} count={payments.length} />
+          {history.isLoading ? (
+            <SkeletonDetail rows={2} />
+          ) : payments.length === 0 ? (
+            <EmptyState variant="compact" icon={<ReceiptText />} title={t("noPayments")} />
+          ) : (
+            <BillPaymentsList
+              payments={payments}
+              currency={bill.currency}
+              canVoid={canVoid}
+              onVoid={setVoiding}
+            />
+          )}
+        </section>
+      </div>
+    );
   }
 
+  const showFooter = bill !== undefined && !paying;
   return (
     <Sheet
       open={billId !== null}
@@ -96,128 +154,33 @@ export function BillDetailSheet({
         onOpenChange(open);
       }}
     >
-      <SheetContent title={t("detailTitle")} className="md:mx-auto md:w-[28rem]">
-        {isError ? (
-          <QueryError retry={refetch} />
-        ) : isLoading || !bill ? (
-          <Skeleton className="h-40 w-full" />
-        ) : (
-          <div className="flex flex-col gap-4 pb-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-[15px] font-medium text-fg">{bill.fee_type_name}</span>
-              <span className="text-[13px] text-fg-muted">{studentName}</span>
-            </div>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
-              <dt className="text-fg-muted">{t("columns.period")}</dt>
-              <dd className="text-fg">{bill.period}</dd>
-              <dt className="text-fg-muted">{t("columns.dueDate")}</dt>
-              <dd className="text-fg">{formatDate(bill.due_date, { locale })}</dd>
-              <dt className="text-fg-muted">{t("status.label")}</dt>
-              <dd>
-                <BillStatusBadge bill={bill} />
-              </dd>
-              <dt className="text-fg-muted">{t("originalAmount")}</dt>
-              <dd className="tabular-nums text-fg">
-                {formatCurrency(bill.original_amount_minor, bill.currency, { locale })}
-              </dd>
-              <dt className="text-fg-muted">{t("discountAmount")}</dt>
-              <dd className="tabular-nums text-fg">
-                {formatCurrency(bill.discount_amount_minor, bill.currency, { locale })}
-              </dd>
-              <dt className="text-fg-muted">{t("billAmount")}</dt>
-              <dd className="tabular-nums font-medium text-fg">
-                {formatCurrency(bill.amount_minor, bill.currency, { locale })}
-              </dd>
-              <dt className="text-fg-muted">{t("paidAmount")}</dt>
-              <dd className="tabular-nums text-fg">
-                {formatCurrency(bill.paid_amount_minor, bill.currency, { locale })}
-              </dd>
-            </dl>
-
-            {canRecord && outstanding > 0 && (
-              <Button
-                size="sm"
-                onClick={() => {
-                  setPaying(true);
-                }}
-              >
-                {tDesk("pay")}
+      <SheetContent
+        side="right"
+        title={paying ? tDesk("paymentForm.title") : t("detailTitle")}
+        footer={
+          showFooter ? (
+            <>
+              <Button asChild variant="secondary" icon={<Store />}>
+                <Link href={`/billing?tab=desk&student=${bill.student_user_id}`}>
+                  {t("openAtDesk")}
+                </Link>
               </Button>
-            )}
-
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <h3 className="text-[13px] font-medium text-fg">{t("paymentsTitle")}</h3>
-              {history.isLoading ? (
-                <Skeleton className="h-16 w-full" />
-              ) : payments.length === 0 ? (
-                <p className="text-[13px] text-fg-muted">{t("noPayments")}</p>
-              ) : (
-                <ul className="flex flex-col gap-2">
-                  {payments.map((payment) => (
-                    <li
-                      key={payment.id}
-                      className="flex flex-col gap-1 rounded-xs border border-border p-2 text-[13px]"
-                    >
-                      <span
-                        className={payment.is_voided ? "text-fg-muted line-through" : "text-fg"}
-                      >
-                        {formatCurrency(payment.amount_minor, bill.currency, { locale })} ·{" "}
-                        {tDesk(`method.${METHOD_KEY[payment.method]}`)} ·{" "}
-                        {formatDate(payment.paid_on, { locale })}
-                        {payment.reference ? ` · ${payment.reference}` : ""}
-                      </span>
-                      <span className="flex items-center gap-2">
-                        {payment.is_voided ? (
-                          <span className="text-fg-muted">{tDesk("voidedLabel")}</span>
-                        ) : (
-                          <>
-                            {payment.has_receipt && (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                icon={<Share2 />}
-                                onClick={() => {
-                                  downloadReceipt(payment.id);
-                                }}
-                              >
-                                {tDesk("receipt")}
-                              </Button>
-                            )}
-                            {canVoid && (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => {
-                                  setVoiding(payment);
-                                }}
-                              >
-                                {tDesk("void")}
-                              </Button>
-                            )}
-                          </>
-                        )}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+              {canRecord && outstanding > 0 && (
+                <Button
+                  icon={<Banknote />}
+                  onClick={() => {
+                    setPaying(true);
+                  }}
+                >
+                  {tDesk("pay")}
+                </Button>
               )}
-            </div>
-          </div>
-        )}
+            </>
+          ) : undefined
+        }
+      >
+        {body}
       </SheetContent>
-
-      {bill && (
-        <Dialog open={paying} onOpenChange={setPaying}>
-          <DialogContent title={tDesk("paymentForm.title")}>
-            <PaymentForm
-              bill={bill}
-              onDone={() => {
-                setPaying(false);
-              }}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
 
       <VoidPaymentDialog
         payment={voiding}

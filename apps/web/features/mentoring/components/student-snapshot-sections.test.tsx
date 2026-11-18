@@ -3,7 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const disabled = vi.hoisted(() => new Set<string>());
 
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("next-intl", () => ({
+  useTranslations: () =>
+    Object.assign(
+      (key: string, values?: Record<string, unknown>) =>
+        values ? `${key} ${JSON.stringify(values)}` : key,
+      { has: () => false },
+    ),
+}));
 vi.mock("../../../lib/modules/use-module-enabled", () => ({
   useModuleEnabled: (module: string) => !disabled.has(module),
 }));
@@ -14,7 +21,11 @@ vi.mock("../../reference/api", () => ({
 
 import type { MentorStudentSnapshot } from "../api";
 
-import { SnapshotDisciplineSection, SnapshotGradesSection } from "./student-snapshot-sections";
+import {
+  SnapshotAttendanceSection,
+  SnapshotDisciplineSection,
+  SnapshotGradesSection,
+} from "./student-snapshot-sections";
 
 const snapshot = {
   discipline_points: 0,
@@ -49,5 +60,17 @@ describe("mentor snapshot sections with switched-off modules", () => {
     disabled.add("grading");
     render(<SnapshotGradesSection snapshot={snapshot} />);
     expect(screen.queryByText("grades.title")).not.toBeInTheDocument();
+  });
+});
+
+describe("mentor snapshot attendance", () => {
+  it("gives each status count its unit instead of a bare number", () => {
+    render(
+      <SnapshotAttendanceSection
+        snapshot={{ ...snapshot, attendance_by_status: { H: 18, INCOMPLETE: 2 } }}
+      />,
+    );
+    expect(screen.getByText('attendance.days {"count":18}')).toBeInTheDocument();
+    expect(screen.getByText('attendance.days {"count":2}')).toBeInTheDocument();
   });
 });

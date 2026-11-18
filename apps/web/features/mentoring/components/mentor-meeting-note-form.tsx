@@ -1,7 +1,18 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Checkbox, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import {
+  DateTimeField,
+  DialogFooter,
+  Button,
+  Card,
+  Checkbox,
+  Field,
+  Input,
+  Select,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -86,19 +97,14 @@ export function MentorMeetingNoteForm({
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("metAt")}</span>
-        <Input
-          type="datetime-local"
-          value={metAt}
-          onChange={(e) => {
-            setMetAt(e.target.value);
-          }}
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("kind")}</span>
+      <DateTimeField
+        value={metAt}
+        onChange={setMetAt}
+        dateLabel={t("metDate")}
+        timeLabel={t("metTime")}
+        required
+      />
+      <Field label={t("kind")}>
         <Select
           options={KINDS.map((k) => ({ value: k, label: t(`kindOptions.${k}`) }))}
           value={kind}
@@ -106,36 +112,32 @@ export function MentorMeetingNoteForm({
             setKind(v as (typeof KINDS)[number]);
           }}
         />
-      </label>
-      <fieldset className="flex flex-col gap-2 text-[13px]">
-        <legend className="font-medium">{t("attendees")}</legend>
-        <div className="flex max-h-52 flex-col overflow-y-auto rounded-sm border border-border">
+      </Field>
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-2 text-label text-fg">{t("attendees")}</legend>
+        <Card tone="sunken" className="max-h-52 overflow-y-auto p-1">
           {members.map((member) => (
-            <label
+            <Checkbox
               key={member.id}
-              className="flex min-h-11 cursor-pointer items-center gap-2 border-b border-border px-2 last:border-b-0 hover:bg-bg"
-            >
-              <Checkbox
-                checked={attendeeIds.has(member.student_user_id)}
-                onCheckedChange={(checked) => {
-                  setAttendeeIds((prev) => {
-                    const next = new Set(prev);
-                    if (checked) next.add(member.student_user_id);
-                    else next.delete(member.student_user_id);
-                    return next;
-                  });
-                }}
-              />
-              {studentNames.get(member.student_user_id) ?? t("unknownStudent")}
-            </label>
+              checked={attendeeIds.has(member.student_user_id)}
+              onCheckedChange={(checked) => {
+                setAttendeeIds((prev) => {
+                  const next = new Set(prev);
+                  if (checked) next.add(member.student_user_id);
+                  else next.delete(member.student_user_id);
+                  return next;
+                });
+              }}
+              containerClassName="min-h-11 items-center rounded-md px-3 py-0 transition-colors hover:bg-state-hover md:pointer-fine:py-0"
+              label={studentNames.get(member.student_user_id) ?? t("unknownStudent")}
+            />
           ))}
-        </div>
+        </Card>
         {attendeeIdList.length === 0 && (
-          <span className="text-[12px] text-fg-muted">{t("attendeesRequired")}</span>
+          <span className="text-caption text-fg-muted">{t("attendeesRequired")}</span>
         )}
       </fieldset>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("topic")}</span>
+      <Field label={t("topic")}>
         <Input
           value={topic}
           onChange={(e) => {
@@ -145,9 +147,8 @@ export function MentorMeetingNoteForm({
           required
           maxLength={200}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("content")}</span>
+      </Field>
+      <Field label={t("content")}>
         <Textarea
           rows={5}
           value={content}
@@ -157,9 +158,8 @@ export function MentorMeetingNoteForm({
           placeholder={t("contentPlaceholder")}
           required
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("agreedActions")}</span>
+      </Field>
+      <Field label={t("agreedActions")}>
         <Textarea
           rows={2}
           value={agreedActions}
@@ -168,15 +168,15 @@ export function MentorMeetingNoteForm({
           }}
           placeholder={t("agreedActionsPlaceholder")}
         />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      </Field>
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={pending} disabled={attendeeIdList.length === 0}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

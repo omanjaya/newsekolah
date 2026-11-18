@@ -27,23 +27,22 @@ export function GradeTrendBars({ previous, current }: GradeTrendBarsProps): Reac
     current: current.toFixed(1),
   });
 
+  // Under the signal's figure (student-risk-panel.tsx), which states the
+  // averages; the sentence is the bars' accessible name.
   return (
-    <div className="flex flex-col gap-1.5">
-      <p className="text-[13px] text-fg">{label}</p>
-      <div role="img" aria-label={label} className="flex flex-col gap-1">
-        <GradeBar
-          labelText={t("gradeTrendPrevious")}
-          value={previous}
-          max={max}
-          colorClass="bg-fg-muted"
-        />
-        <GradeBar
-          labelText={t("gradeTrendCurrent")}
-          value={current}
-          max={max}
-          colorClass={dropped ? "bg-status-absent" : "bg-status-present"}
-        />
-      </div>
+    <div role="img" aria-label={label} className="flex flex-col gap-1">
+      <GradeBar
+        labelText={t("gradeTrendPrevious")}
+        value={previous}
+        max={max}
+        colorClass="bg-fg-muted"
+      />
+      <GradeBar
+        labelText={t("gradeTrendCurrent")}
+        value={current}
+        max={max}
+        colorClass={dropped ? "bg-danger" : "bg-success"}
+      />
     </div>
   );
 }
@@ -61,14 +60,14 @@ function GradeBar({
 }): ReactElement {
   return (
     <div className="flex items-center gap-2">
-      <span className="w-20 shrink-0 text-[12px] text-fg-muted">{labelText}</span>
-      <div className="h-2.5 flex-1 overflow-hidden rounded-xs bg-bg">
+      <span className="w-20 shrink-0 text-caption text-fg-muted">{labelText}</span>
+      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-sunken">
         <div
-          className={cn("h-full rounded-xs", colorClass)}
+          className={cn("h-full rounded-full", colorClass)}
           style={{ width: `${(value / max) * 100}%` }}
         />
       </div>
-      <span className="w-10 shrink-0 text-right text-[12px] tabular-nums text-fg">
+      <span className="w-10 shrink-0 text-right text-caption tabular-nums text-fg">
         {value.toFixed(1)}
       </span>
     </div>

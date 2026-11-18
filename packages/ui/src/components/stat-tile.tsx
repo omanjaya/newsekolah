@@ -1,53 +1,24 @@
+"use client";
+
 import type { LucideIcon } from "lucide-react";
-import type { ReactElement, ReactNode } from "react";
+import type { ReactElement } from "react";
 
-import { cn } from "../utils/cn.js";
+import { Stat, type StatProps } from "./stat.js";
+import type { CategoryTone } from "./tone.js";
 
-export type StatTileTone = "green" | "amber" | "purple" | "blue" | "red";
-export interface StatTileProps {
+export type StatTileTone = CategoryTone;
+
+export interface StatTileProps extends Omit<StatProps, "icon" | "category" | "appearance"> {
   icon: LucideIcon;
   tone: StatTileTone;
-  value: ReactNode;
-  label: string;
-  hint?: string;
-  className?: string;
 }
 
-// Full class names so Tailwind's scanner generates them.
-const TONE: Record<StatTileTone, string> = {
-  green: "bg-category-green-soft text-category-green-soft-fg",
-  amber: "bg-category-amber-soft text-category-amber-soft-fg",
-  purple: "bg-category-purple-soft text-category-purple-soft-fg",
-  blue: "bg-category-blue-soft text-category-blue-soft-fg",
-  red: "bg-category-red-soft text-category-red-soft-fg",
-};
-
-/** One number on a home screen: topic icon in a soft circle, Manrope value, label. */
-export function StatTile({
-  icon: Icon,
-  tone,
-  value,
-  label,
-  hint,
-  className,
-}: StatTileProps): ReactElement {
-  return (
-    <div
-      className={cn(
-        "flex min-h-[104px] flex-col gap-3 rounded-lg border border-border bg-surface p-4",
-        className,
-      )}
-    >
-      <span className={cn("flex size-9 items-center justify-center rounded-full", TONE[tone])}>
-        <Icon className="size-5" aria-hidden="true" />
-      </span>
-      <div className="flex flex-col">
-        <span className="font-heading text-[22px] leading-tight font-bold tabular-nums text-fg">
-          {value}
-        </span>
-        <span className="text-[13px] text-fg">{label}</span>
-        {hint && <span className="text-[12px] text-fg-muted">{hint}</span>}
-      </div>
-    </div>
-  );
+/**
+ * The home-screen tile: `Stat` with the `tile` appearance, taking a Lucide
+ * component instead of an icon element. Kept as its own name for the call
+ * sites that already use it; new code can use
+ * `<Stat appearance="tile" icon={<Icon />} tone="green" />` directly.
+ */
+export function StatTile({ icon: Icon, ...props }: StatTileProps): ReactElement {
+  return <Stat {...props} appearance="tile" icon={<Icon />} />;
 }

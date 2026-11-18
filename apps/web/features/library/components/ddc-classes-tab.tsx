@@ -1,57 +1,58 @@
 "use client";
 
-import {
-  EmptyState,
-  Skeleton,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  domainIcons,
-} from "@newsekolah/ui";
+import { DataTable, EmptyState, domainIcons } from "@newsekolah/ui";
+import type { ColumnDef } from "@tanstack/react-table";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+import { useMemo } from "react";
 
 import { useLibraryDdcClassesQuery } from "../master-data-api";
 
-/** The ten top-level Dewey Decimal classes; read-only reference for cataloguing. */
+type DdcClass = NonNullable<ReturnType<typeof useLibraryDdcClassesQuery>["data"]>["data"][number];
+
+/** The ten top-level Dewey Decimal classes; a read-only reference for cataloguing. */
 export function DdcClassesTab(): ReactElement {
   const t = useTranslations("app.library.masterData.ddcClasses");
-  const { data, isLoading } = useLibraryDdcClassesQuery();
+  const { data, isLoading, error, refetch } = useLibraryDdcClassesQuery();
   const items = data?.data ?? [];
 
-  if (isLoading) return <Skeleton className="h-64 w-full" aria-busy="true" />;
-
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={<domainIcons.library aria-hidden="true" />}
-        title={t("emptyTitle")}
-        description={t("emptyBody")}
-      />
-    );
-  }
+  const columns = useMemo<ColumnDef<DdcClass>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
+      {
+        accessorKey: "code",
+        header: t("columns.code"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.code}</span>,
+      },
+    ],
+    [t],
+  );
 
   return (
-    <Table containerClassName="md:h-full md:min-h-0 md:overflow-y-auto">
-      <TableHeader>
-        <TableRow>
-          <TableHead scope="col" className="w-24">
-            {t("columns.code")}
-          </TableHead>
-          <TableHead scope="col">{t("columns.name")}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {items.map((item) => (
-          <TableRow key={item.code}>
-            <TableCell className="font-medium tabular-nums">{item.code}</TableCell>
-            <TableCell>{item.name}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <DataTable
+      stateKey="features/library/components/ddc-classes-tab:1"
+      mode="local"
+      data={items}
+      columns={columns}
+      searchable={false}
+      isLoading={isLoading}
+      error={error}
+      onRetry={() => void refetch()}
+      getRowId={(item) => item.code}
+      emptyState={
+        <EmptyState
+          icon={<domainIcons.library aria-hidden="true" />}
+          title={t("emptyTitle")}
+          description={t("emptyBody")}
+        />
+      }
+    />
   );
 }

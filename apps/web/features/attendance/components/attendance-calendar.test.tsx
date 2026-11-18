@@ -15,6 +15,8 @@ vi.mock("next-intl", () => ({
     values ? `${key} ${JSON.stringify(values)}` : key,
 }));
 
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+
 vi.mock("@newsekolah/i18n", () => ({
   formatDate: (value: string) => value,
 }));
@@ -75,7 +77,8 @@ describe("AttendanceCalendar", () => {
     const pastCell = dayButton("20");
     const futureCell = dayButton("28");
 
-    expect(pastCell.querySelector("span.rounded-full")?.className).toContain("bg-fg-muted/40");
+    // Amber, the colour the day card's "Belum lengkap" badge and every report use.
+    expect(pastCell.querySelector("span.rounded-full")?.className).toContain("ring-status-late");
     expect(futureCell.querySelector("span.rounded-full")).toBeNull();
     expect(futureCell).toHaveAttribute("aria-label", expect.stringContaining("codes.NONE"));
   });
@@ -84,16 +87,17 @@ describe("AttendanceCalendar", () => {
     calendarData = [day("2026-09-20", "INCOMPLETE"), day("2026-09-28", "INCOMPLETE")];
     render(<AttendanceCalendar />);
 
-    const counts = Array.from(document.querySelectorAll("dd")).map((el) => el.textContent);
+    const legend = screen.getByLabelText("legendLabel");
+    const counts = Array.from(legend.querySelectorAll("dd")).map((el) => el.textContent);
     expect(counts).toEqual(["1"]);
   });
 
-  it("gives today a distinct border without forcing a status", () => {
+  it("rings today without forcing a status", () => {
     calendarData = [];
     render(<AttendanceCalendar />);
 
     const todayCell = dayButton("25");
-    expect(todayCell.className).toContain("border-accent");
+    expect(todayCell.className).toContain("ring-accent");
   });
 
   it("defaults the detail card to today and updates it when another day is selected", () => {
@@ -120,6 +124,42 @@ describe("AttendanceCalendar", () => {
 
     expect(screen.getByText("2026-09-20")).toBeInTheDocument();
     expect(screen.getByText("Matematika")).toBeInTheDocument();
+  });
+
+  it("shows a leave letter's number in a localized phrase, not the API's English note", () => {
+    calendarData = [
+      day("2026-09-20", "S", [
+        {
+          schedule_id: "sch-1",
+          subject_id: "subj-1",
+          subject_name: "Matematika",
+          status_code: "S",
+          period_label: "1-2",
+          teacher_name: "Bu Sari",
+          note: "leave letter 21/IZIN/XI/2026",
+          source: "leave",
+        },
+        {
+          schedule_id: "sch-2",
+          subject_id: "subj-2",
+          subject_name: "Biologi",
+          status_code: "S",
+          period_label: "3",
+          teacher_name: "Pak Budi",
+          note: "Surat dari dokter",
+          source: "leave",
+        },
+      ]),
+    ];
+    render(<AttendanceCalendar />);
+
+    fireEvent.click(dayButton("20"));
+
+    const letterRow = screen.getByText("Matematika").closest("li");
+    expect(letterRow).toHaveTextContent('leaveLetterNote {"number":"21/IZIN/XI/2026"}');
+    expect(letterRow).not.toHaveTextContent("leave letter");
+    // A note without the API's prefix is shown as written.
+    expect(screen.getByText("Biologi").closest("li")).toHaveTextContent("Surat dari dokter");
   });
 
   it("shows a short sentence in the detail card when the selected day has no per-session data", () => {

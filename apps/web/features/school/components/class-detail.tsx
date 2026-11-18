@@ -5,16 +5,20 @@ import {
   Avatar,
   Badge,
   Button,
+  Card,
+  CardTitle,
   ConfirmDialog,
   Dialog,
   DialogContent,
+  IconButton,
+  RowActionsMenu,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
   useToast,
 } from "@newsekolah/ui";
-import { Pencil, Trash2 } from "lucide-react";
+import { Download, Pencil, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -32,7 +36,12 @@ import { TeachingPanel } from "./teaching-panel";
 
 export const CLASS_TABS = ["students", "teachers"] as const;
 
-/** The selected class's header (name, roster count, homeroom, actions) and its students/teachers tabs. */
+/**
+ * The selected class: its name with the roster against capacity, the
+ * homeroom teacher, the download and a menu for edit and delete, then the
+ * students and teachers tabs. One count per thing: the badge says how full
+ * the class is, the tabs say how many rows each holds.
+ */
 export function ClassDetail({
   cls,
   canManage,
@@ -45,10 +54,12 @@ export function ClassDetail({
   onTabChange: (tab: (typeof CLASS_TABS)[number]) => void;
 }): ReactElement {
   const t = useTranslations("app.school.classes");
+  const tExport = useTranslations("app.school.classes.rosterExport");
   const year = useActiveYear();
   const teacherMap = useDirectoryNames([cls.homeroom_teacher_id]);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const remove = useDeleteClassMutation();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -67,57 +78,80 @@ export function ClassDetail({
   const homeroomTeacher = cls.homeroom_teacher_id
     ? teacherMap.get(cls.homeroom_teacher_id)
     : undefined;
+  const full = cls.capacity !== undefined && activeEnrollmentCount >= cls.capacity;
+
   return (
-    <section className="flex min-w-0 flex-col gap-4 rounded-sm border border-border bg-surface p-4 md:min-h-0">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex flex-col gap-1">
+    <Card className="flex min-w-0 flex-col md:min-h-0">
+      <div className="flex items-start justify-between gap-3 px-5 pt-5">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-[18px] font-medium text-fg">{cls.name}</h2>
+            <CardTitle as="h2" className="text-title">
+              {cls.name}
+            </CardTitle>
             {enrollments.data && (
-              <Badge variant="neutral" className="tabular-nums">
+              <Badge tone={full ? "warning" : "neutral"} className="tabular-nums">
                 {cls.capacity
                   ? t("rosterOfCapacity", { n: activeEnrollmentCount, max: cls.capacity })
                   : t("studentCount", { n: activeEnrollmentCount })}
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-2 text-[13px] text-fg-muted">
-            <span>{t("homeroomLabel")}:</span>
+          <div className="flex min-w-0 items-center gap-2 text-body-sm text-fg-muted">
             {homeroomTeacher ? (
-              <span className="flex items-center gap-2">
-                <Avatar size="sm" name={homeroomTeacher.name} />
-                {homeroomTeacher.name}
-              </span>
+              <>
+                <Avatar size={24} name={homeroomTeacher.name} decorative />
+                <span className="truncate">
+                  {t("homeroomLabel")}{" "}
+                  <span className="font-medium text-fg">{homeroomTeacher.name}</span>
+                </span>
+              </>
             ) : (
-              <span>{t("noHomeroom")}</span>
+              <span>{t("noHomeroomLine")}</span>
             )}
           </div>
         </div>
-        <div className="flex gap-2">
-          <ClassRosterExport classId={cls.id} />
+        <div className="flex shrink-0 items-center gap-1">
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Download />}
+            className="max-sm:hidden"
+            onClick={() => {
+              setExporting(true);
+            }}
+          >
+            {tExport("button")}
+          </Button>
+          <IconButton
+            icon={<Download />}
+            aria-label={tExport("button")}
+            variant="ghost"
+            className="sm:hidden"
+            onClick={() => {
+              setExporting(true);
+            }}
+          />
           {canManage && (
-            <>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<Pencil />}
-                onClick={() => {
-                  setEditing(true);
-                }}
-              >
-                {t("editClass")}
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<Trash2 />}
-                onClick={() => {
-                  setDeleting(true);
-                }}
-              >
-                {t("deleteClass")}
-              </Button>
-            </>
+            <RowActionsMenu
+              ariaLabel={t("classActions", { name: cls.name })}
+              items={[
+                {
+                  label: t("editClass"),
+                  icon: <Pencil />,
+                  onClick: () => {
+                    setEditing(true);
+                  },
+                },
+                {
+                  label: t("deleteClass"),
+                  icon: <Trash2 />,
+                  tone: "danger",
+                  onClick: () => {
+                    setDeleting(true);
+                  },
+                },
+              ]}
+            />
           )}
         </div>
       </div>
@@ -126,36 +160,37 @@ export function ClassDetail({
         onValueChange={(value) => {
           onTabChange(value as (typeof CLASS_TABS)[number]);
         }}
-        className="flex flex-col md:min-h-0 md:flex-1"
+        className="flex flex-col pt-3 md:min-h-0 md:flex-1"
       >
-        <TabsList>
-          <TabsTrigger value="students">
+        <TabsList variant="underline" className="px-5" aria-label={t("detailTabs")}>
+          <TabsTrigger
+            value="students"
+            count={enrollments.data ? activeEnrollmentCount : undefined}
+          >
             {t("tabStudents")}
-            {enrollments.data && (
-              <span className="ml-1 tabular-nums text-fg-muted">({activeEnrollmentCount})</span>
-            )}
           </TabsTrigger>
-          <TabsTrigger value="teachers">
+          <TabsTrigger
+            value="teachers"
+            count={teachingAssignments.data ? activeTeachingCount : undefined}
+          >
             {t("tabTeachers")}
-            {teachingAssignments.data && (
-              <span className="ml-1 tabular-nums text-fg-muted">({activeTeachingCount})</span>
-            )}
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="students" className="pt-3 md:min-h-0 md:flex-1">
+        <TabsContent value="students" className="flex flex-col p-4 md:min-h-0 md:flex-1 md:p-5">
           <EnrollmentPanel classId={cls.id} canManage={canManage} />
         </TabsContent>
-        <TabsContent value="teachers" className="pt-3 md:min-h-0 md:flex-1">
+        <TabsContent value="teachers" className="flex flex-col p-4 md:min-h-0 md:flex-1 md:p-5">
           <TeachingPanel classId={cls.id} canManage={canManage} />
         </TabsContent>
       </Tabs>
+      <ClassRosterExport classId={cls.id} open={exporting} onOpenChange={setExporting} />
       <ConfirmDialog
         open={deleting}
         onOpenChange={setDeleting}
-        title={t("deleteClass")}
+        title={t("deleteClassTitle", { name: cls.name })}
         description={t("deleteClassBody", { name: cls.name })}
         confirmLabel={t("deleteClass")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={async () => {
           try {
@@ -170,7 +205,7 @@ export function ClassDetail({
         }}
       />
       <Dialog open={editing} onOpenChange={setEditing}>
-        <DialogContent title={t("editClass")}>
+        <DialogContent title={t("editClass")} size="md">
           {editing && (
             <ClassForm
               yearId={year.id}
@@ -182,6 +217,6 @@ export function ClassDetail({
           )}
         </DialogContent>
       </Dialog>
-    </section>
+    </Card>
   );
 }

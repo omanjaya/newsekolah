@@ -1,12 +1,14 @@
 {
-  "navLabel": "Onboarding",
+  "navLabel": "Penyiapan sekolah",
   "eyebrow": "Pengaturan sekolah",
-  "title": "Onboarding sekolah",
+  "title": "Penyiapan sekolah",
   "progress": {
     "stepsLabel": "{done} dari {total} langkah wajib selesai",
     "ready": "Sekolah siap dipakai untuk operasional harian.",
     "notReady": "Sekolah belum siap dipakai. Selesaikan langkah wajib yang tersisa di bawah.",
-    "activeYear": "Tahun ajaran aktif: {label}"
+    "activeYear": "Tahun ajaran aktif: {label}",
+    "readyChip": "Siap dipakai",
+    "meterLabel": "Langkah wajib selesai"
   },
   "levels": {
     "sd": "SD",
@@ -19,13 +21,18 @@
     "id": "Bahasa Indonesia",
     "en": "English"
   },
+  "timezones": {
+    "wib": "WIB (Waktu Indonesia Barat)",
+    "wita": "WITA (Waktu Indonesia Tengah)",
+    "wit": "WIT (Waktu Indonesia Timur)"
+  },
   "profile": {
     "title": "Profil sekolah",
-    "body": "Nama, jenjang, zona waktu, dan bahasa default sekolah.",
+    "body": "Nama, jenjang, zona waktu, dan bahasa bawaan sekolah.",
     "name": "Nama sekolah",
     "educationLevel": "Jenjang",
     "timezone": "Zona waktu",
-    "language": "Bahasa default",
+    "language": "Bahasa bawaan",
     "pick": "Pilih",
     "requiredError": "Nama sekolah dan jenjang wajib diisi.",
     "save": "Simpan profil",
@@ -36,12 +43,14 @@
     "optional": "Opsional",
     "done": "Selesai",
     "notDone": "Belum",
-    "openStep": "Buka"
+    "openStep": "Buka",
+    "left": "{n} langkah belum selesai, ditampilkan paling atas.",
+    "allDone": "Semua langkah sudah selesai. Buka langkah mana pun untuk mengubah datanya."
   },
   "steps": {
     "profile": {
       "label": "Profil sekolah",
-      "description": "Nama, jenjang, zona waktu, dan bahasa default sekolah."
+      "description": "Nama, jenjang, zona waktu, dan bahasa bawaan sekolah."
     },
     "academic_year": {
       "label": "Tahun ajaran",
@@ -49,9 +58,9 @@
       "count": "{count} tahun ajaran"
     },
     "grade_levels": {
-      "label": "Jenjang kelas",
-      "description": "Daftar jenjang (misalnya kelas 1 sampai 6) yang menjadi dasar pembagian kelas.",
-      "count": "{count} jenjang"
+      "label": "Tingkat kelas",
+      "description": "Daftar tingkat kelas (misalnya kelas 1 sampai 6) yang menjadi dasar pembagian kelas.",
+      "count": "{count} tingkat"
     },
     "classes": {
       "label": "Kelas",
@@ -79,7 +88,7 @@
       "count": "{count} siswa"
     },
     "enrollments": {
-      "label": "Pendaftaran siswa ke kelas",
+      "label": "Penempatan siswa ke kelas",
       "description": "Siswa yang sudah ditempatkan ke kelasnya masing-masing.",
       "count": "{count} pendaftaran"
     },
@@ -100,20 +109,20 @@
     }
   },
   "template": {
-    "title": "Gunakan template jenjang",
+    "title": "Gunakan templat jenjang",
     "body": "Membuat jenjang kelas standar untuk tingkat yang dipilih. Jenjang yang sudah ada tidak diduplikasi.",
     "templateLabel": "Jenjang",
-    "action": "Gunakan template jenjang",
-    "confirmTitle": "Gunakan template jenjang",
+    "action": "Gunakan templat jenjang",
+    "confirmTitle": "Gunakan templat jenjang",
     "confirmBody": "Ini membuat jenjang kelas standar untuk tingkat yang dipilih. Jenjang yang sudah ada tidak diduplikasi.",
-    "confirm": "Gunakan template",
-    "success": "Jenjang kelas dari template tersimpan."
+    "confirm": "Gunakan templat",
+    "success": "Jenjang kelas dari templat tersimpan."
   },
   "wizard": {
     "title": "Wizard onboarding",
     "body": "Siapkan jenjang, mata pelajaran, dan jam pelajaran, lalu impor data siswa dari Dapodik.",
     "steps": {
-      "template": "Template jenjang",
+      "template": "Templat jenjang",
       "upload": "Unggah Dapodik",
       "review": "Tinjau",
       "done": "Selesai"
@@ -121,8 +130,8 @@
     "templateBody": "Pilih jenjang sekolah untuk membuat daftar kelas, mata pelajaran, dan jam pelajaran standar. Data yang sudah ada tidak diduplikasi.",
     "templateLabel": "Jenjang",
     "templatePick": "Pilih jenjang",
-    "templateApply": "Terapkan template",
-    "templateApplied": "Template jenjang diterapkan.",
+    "templateApply": "Terapkan templat",
+    "templateApplied": "Templat jenjang diterapkan.",
     "skip": "Lewati langkah ini",
     "uploadBody": "Unggah berkas CSV ekspor Dapodik (kolom nama, nisn, nipd, jenis_kelamin, tempat_lahir, tanggal_lahir, rombel saat ini).",
     "uploadLabel": "Berkas CSV Dapodik",
@@ -143,7 +152,7 @@
       "error": "Bermasalah"
     },
     "commitAction": "Simpan data siswa",
-    "doneTitle": "{count} siswa berhasil disimpan.",
+    "doneTitle": "{count} siswa berhasil disimpan",
     "doneBody": "Data siswa sudah masuk. Lihat kelengkapan data di bawah untuk langkah berikutnya."
   }
 }

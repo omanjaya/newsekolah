@@ -9,8 +9,10 @@ import "./globals.css";
 import { ALLOW_INDEXING } from "../lib/env";
 import { getMessagesForNamespaces } from "../lib/i18n/get-messages";
 import { ROOT_NAMESPACES } from "../lib/i18n/namespace-sets";
+import { TITLE_SEPARATOR } from "../lib/page-title-format";
 import { getTenantBrandingServer } from "../lib/tenant/get-branding.server";
-import { PRODUCT_NAME_FALLBACK } from "../lib/tenant/tenant-provider";
+import { PRODUCT_NAME_FALLBACK } from "../lib/tenant/product-name";
+import { THEME_COLOR } from "../lib/theme/theme-color";
 import { getThemeBootstrapScript } from "../lib/theme/theme-script";
 
 import { manrope, plusJakartaSans } from "./fonts";
@@ -20,7 +22,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const branding = await getTenantBrandingServer();
   const name = branding?.name ?? PRODUCT_NAME_FALLBACK;
   return {
-    title: { default: name, template: `%s - ${name}` },
+    // Same "<page> · <school>" shape the client keeps up to date (lib/page-title.ts).
+    title: { default: name, template: `%s${TITLE_SEPARATOR}${name}` },
     description: branding?.tagline ?? "Sistem informasi sekolah",
     manifest: "/manifest.webmanifest",
     // Test period (docs/15-paritas-sion.md): stays out of search engines
@@ -33,11 +36,22 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+/**
+ * `viewportFit: "cover"` lets an installed app reach under the status bar
+ * and the home indicator; the shell pads itself clear of both with the
+ * safe-area insets (the header's top, the tab bar's bottom, the body's
+ * sides). The theme colour is the page colour the phone's header takes in
+ * each theme (lib/theme/theme-color.ts pins it when the theme is forced).
+ */
 export function generateViewport(): Viewport {
   return {
     width: "device-width",
     initialScale: 1,
-    themeColor: "#F7F6F2",
+    viewportFit: "cover",
+    themeColor: [
+      { media: "(prefers-color-scheme: light)", color: THEME_COLOR.light },
+      { media: "(prefers-color-scheme: dark)", color: THEME_COLOR.dark },
+    ],
   };
 }
 
@@ -75,7 +89,9 @@ export default async function RootLayout({
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <AppProviders locale={locale}>{children}</AppProviders>
+          <AppProviders locale={locale} initialBranding={branding}>
+            {children}
+          </AppProviders>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -4,21 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { forgotPasswordSchema, type ForgotPasswordInput } from "@newsekolah/schemas";
-import {
-  Alert,
-  Button,
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  Input,
-} from "@newsekolah/ui";
-import Link from "next/link";
+import { Alert, Button, Field, Form, FormField, Input, useHydrated } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
@@ -27,16 +15,17 @@ import { useRequestPasswordResetMutation } from "../api";
 
 /**
  * The API always answers 202 whether or not the address exists (see
- * useRequestPasswordResetMutation), so this form shows the same success
- * state on every accepted submission and never tries to distinguish a
- * known account from an unknown one.
+ * useRequestPasswordResetMutation), so every accepted submission calls
+ * `onSent` alike and the page shows the same "check your inbox" state; the
+ * form never tries to tell a known account from an unknown one.
  */
-export function ForgotPasswordForm(): ReactElement {
+export function ForgotPasswordForm({ onSent }: { onSent: () => void }): ReactElement {
   const t = useTranslations("app.account.forgotPassword");
   const locale = useLocale() as Locale;
   const apiErrorMessage = useApiErrorMessage();
   const mutation = useRequestPasswordResetMutation();
-  const [sent, setSent] = useState(false);
+  // Server-rendered form: the submit waits for the handler (see LoginForm).
+  const hydrated = useHydrated();
 
   const form = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -47,7 +36,7 @@ export function ForgotPasswordForm(): ReactElement {
     form.clearErrors("root");
     try {
       await mutation.mutateAsync(values.username_or_email);
-      setSent(true);
+      onSent();
     } catch (error) {
       const message =
         error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN");
@@ -55,47 +44,34 @@ export function ForgotPasswordForm(): ReactElement {
     }
   }
 
-  if (sent) {
-    return (
-      <div className="flex flex-col gap-4">
-        <Alert title={t("successTitle")}>{t("successBody")}</Alert>
-        <Link href="/login" className="text-center text-[13px] text-accent hover:underline">
-          {t("backToLogin")}
-        </Link>
-      </div>
-    );
-  }
+  const rootError = form.formState.errors.root?.message;
 
   return (
     <Form
       form={form}
       translate={translateFormMessage(locale)}
       onSubmit={onSubmit}
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
     >
-      <p className="text-[13px] text-fg-muted">{t("body")}</p>
-      {form.formState.errors.root?.message && (
-        <Alert variant="warning" title={form.formState.errors.root.message} />
-      )}
+      {rootError && <Alert tone="danger" title={rootError} />}
       <FormField
         control={form.control}
         name="username_or_email"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>{t("usernameOrEmailLabel")}</FormLabel>
-            <FormControl>
-              <Input autoComplete="username" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+          <Field label={t("usernameOrEmailLabel")}>
+            <Input autoComplete="username" autoCapitalize="none" spellCheck={false} {...field} />
+          </Field>
         )}
       />
-      <Button type="submit" loading={mutation.isPending} className="mt-2">
+      <Button
+        type="submit"
+        size="lg"
+        disabled={!hydrated}
+        loading={mutation.isPending}
+        className="mt-1 w-full"
+      >
         {mutation.isPending ? t("submitting") : t("submit")}
       </Button>
-      <Link href="/login" className="text-center text-[13px] text-accent hover:underline">
-        {t("backToLogin")}
-      </Link>
     </Form>
   );
 }

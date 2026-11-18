@@ -7,6 +7,7 @@ import { SelfCheckInView } from "./self-check-in-view";
 const weekQuery = vi.hoisted(() => vi.fn());
 const scanMutation = vi.hoisted(() => vi.fn());
 const clockDay = vi.hoisted(() => ({ value: "2026-09-24" }));
+const session = vi.hoisted(() => ({ permissions: [] as string[] }));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, vars?: Record<string, unknown>) =>
@@ -15,10 +16,16 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({
-    me: { profile_kind: "teacher", permissions: [], tenant: { timezone: "Asia/Jakarta" } },
+    me: {
+      profile_kind: "teacher",
+      permissions: session.permissions,
+      tenant: { timezone: "Asia/Jakarta" },
+    },
   }),
+  useCan: (permission: string) => session.permissions.includes(permission),
 }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/check-in" }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (key: string) => key,
 }));
@@ -36,6 +43,7 @@ vi.mock("@newsekolah/ui", async () => {
 afterEach(() => {
   cleanup();
   clockDay.value = "2026-09-24";
+  session.permissions = [];
   scanMutation.mockReset();
   weekQuery.mockReset();
 });
@@ -92,12 +100,33 @@ describe("SelfCheckInView -- unscheduled vs. holiday", () => {
 
     // The regression this guards: an employee with no schedule configured
     // must never see "Libur" (holiday) next to an active check-in button.
-    // The "this week" list repeats today's own row, so these labels
-    // legitimately appear more than once -- assert presence, not count.
     expect(screen.queryByText("holiday")).not.toBeInTheDocument();
-    expect(screen.getAllByText("unscheduled").length).toBeGreaterThan(0);
-    expect(screen.getByText("unscheduledHint")).toBeInTheDocument();
     expect(screen.queryByText("holidayHint")).not.toBeInTheDocument();
+    // The warning states the unscheduled day once (FA-47, f6595bc5): no
+    // status pill in the card and no badge on the day's row, which reads
+    // that nothing was recorded instead of an empty time range.
+    expect(screen.getAllByText("unscheduledHint")).toHaveLength(1);
+    expect(screen.queryByText("unscheduled")).not.toBeInTheDocument();
+    expect(screen.getByText("noRecord")).toBeInTheDocument();
+    expect(screen.queryByText("unscheduledHintManage")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "recordArrival" })).toBeEnabled();
+  });
+
+  it("points a schedule manager at the schedule editor on an unscheduled day", () => {
+    session.permissions = ["manage_staff_attendance_schedules"];
+    weekQuery.mockReturnValue({
+      data: { data: [record({ status_code: "unscheduled" })] },
+      isLoading: false,
+      isError: false,
+    });
+    render(<SelfCheckInView />);
+
+    expect(screen.getByText(/unscheduledHintManage/)).toBeInTheDocument();
+    expect(screen.queryByText("unscheduledHint")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "openSchedule" })).toHaveAttribute(
+      "href",
+      "/staff-attendance?tab=schedule",
+    );
     expect(screen.getByRole("button", { name: "recordArrival" })).toBeEnabled();
   });
 
@@ -129,5 +158,39 @@ describe("SelfCheckInView -- unscheduled vs. holiday", () => {
 
     expect(screen.getAllByText("holiday").length).toBeGreaterThan(0);
     expect(screen.queryByText(/holidayWithName/)).not.toBeInTheDocument();
+  });
+});
+
+describe("SelfCheckInView -- after arriving", () => {
+  it("offers the departure next and says how late the arrival was", () => {
+    weekQuery.mockReturnValue({
+      data: {
+        data: [
+          record({ status_code: "late", arrival_at: "2026-09-24T00:20:00Z", late_minutes: 20 }),
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    });
+    render(<SelfCheckInView />);
+
+    // 00.20 UTC is 07.20 on the school's clock in Asia/Jakarta.
+    expect(screen.getAllByText("07.20").length).toBeGreaterThan(0);
+    expect(screen.getByText("lateBy:20")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "recordDeparture" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "recordArrival" })).not.toBeInTheDocument();
+  });
+
+  it("says a failed week did not load instead of showing an empty week", () => {
+    weekQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error("boom"),
+      refetch: vi.fn(),
+    });
+    render(<SelfCheckInView />);
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByText("thisWeekEmpty")).not.toBeInTheDocument();
   });
 });

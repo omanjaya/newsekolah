@@ -1,3 +1,4 @@
+import { ApiError } from "@newsekolah/api-client";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -6,13 +7,24 @@ import { JournalTodayPanel } from "./journal-today-panel";
 
 const schedulesData = vi.hoisted(() => ({ value: [] as unknown[] }));
 const journalsData = vi.hoisted(() => ({ value: [] as unknown[] }));
+const canViewSchedules = vi.hoisted(() => ({ value: true }));
+const scheduleQuery = vi.hoisted(() => {
+  const state: { error: Error | null; isError: boolean; lastFilter: unknown } = {
+    error: null,
+    isError: false,
+    lastFilter: undefined,
+  };
+  return state;
+});
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => "id",
+  useFormatter: () => ({ dateTime: (value: Date) => value.toISOString().slice(0, 10) }),
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+  useCan: () => canViewSchedules.value,
 }));
 vi.mock("../../../lib/simulation/clock", () => ({
   useSimulation: () => ({ revision: 0 }),
@@ -52,7 +64,16 @@ vi.mock("../../reference/api", () => ({
     new Map((items ?? []).map((item) => [item.id, item])),
 }));
 vi.mock("../../schedule/api", () => ({
-  useSchedulesQuery: () => ({ data: { data: schedulesData.value }, isLoading: false }),
+  useSchedulesQuery: (filter: unknown) => {
+    scheduleQuery.lastFilter = filter;
+    return {
+      data: { data: schedulesData.value },
+      isLoading: false,
+      isError: scheduleQuery.isError,
+      error: scheduleQuery.error,
+      refetch: vi.fn(),
+    };
+  },
 }));
 vi.mock("../api", () => ({
   useJournalsQuery: () => ({ data: { data: journalsData.value }, isLoading: false }),
@@ -67,6 +88,9 @@ vi.mock("./journal-form", () => ({
 const WEDNESDAY = 3;
 
 beforeEach(() => {
+  canViewSchedules.value = true;
+  scheduleQuery.error = null;
+  scheduleQuery.isError = false;
   schedulesData.value = [];
   journalsData.value = [];
 });
@@ -77,25 +101,7 @@ it("renders nothing when there is no recent lesson at all", () => {
   expect(container).toBeEmptyDOMElement();
 });
 
-it("shows today's lessons as bento cards, the odd one spanning the full row", () => {
-  schedulesData.value = [
-    { schedule_ids: ["s1"], class_id: "class-1", subject_id: "subject-1", day_of_week: WEDNESDAY },
-    { schedule_ids: ["s2"], class_id: "class-2", subject_id: "subject-2", day_of_week: WEDNESDAY },
-    { schedule_ids: ["s3"], class_id: "class-3", subject_id: "subject-3", day_of_week: WEDNESDAY },
-  ];
-  render(<JournalTodayPanel />);
-
-  const grid = screen.getByTestId("journal-today-cards");
-  expect(grid).toBeInTheDocument();
-
-  const cells = screen.getAllByTestId(/^journal-today-cell-/);
-  expect(cells).toHaveLength(3);
-  // Three cards: the last one is the odd one out and spans the full row.
-  expect(cells[2]?.className).toContain("lg:col-span-2");
-  expect(cells[0]?.className).not.toContain("lg:col-span-2");
-});
-
-it("gives an unfilled lesson a primary 'write journal' action and a filled one a secondary 'view' action", async () => {
+it("lists only the lessons still missing a journal, each with one write action", async () => {
   schedulesData.value = [
     { schedule_ids: ["s1"], class_id: "class-1", subject_id: "subject-1", day_of_week: WEDNESDAY },
     { schedule_ids: ["s2"], class_id: "class-2", subject_id: "subject-2", day_of_week: WEDNESDAY },
@@ -112,13 +118,45 @@ it("gives an unfilled lesson a primary 'write journal' action and a filled one a
   const user = userEvent.setup();
   render(<JournalTodayPanel />);
 
-  const unfilledCard = screen.getByTestId("journal-today-card-s1");
-  const filledCard = screen.getByTestId("journal-today-card-s2");
-  const writeButton = within(unfilledCard).getByRole("button", { name: "writePrimary" });
-  const viewButton = within(filledCard).getByRole("button", { name: "editAction" });
-  expect(writeButton).toBeInTheDocument();
-  expect(viewButton).toBeInTheDocument();
+  const backlog = screen.getByTestId("journal-backlog");
+  // The written lesson lives in the history table, not in the backlog.
+  expect(within(backlog).queryByTestId(/class-2/)).not.toBeInTheDocument();
+  const row = within(backlog).getByTestId(/^journal-backlog-class-1/);
+  const write = within(row).getByRole("button", { name: "writeFor" });
 
-  await user.click(writeButton);
+  await user.click(write);
   expect(await screen.findByTestId("journal-form")).toHaveTextContent("class-1");
+});
+
+it("says so calmly once every recent lesson has its journal", () => {
+  schedulesData.value = [
+    { schedule_ids: ["s2"], class_id: "class-2", subject_id: "subject-2", day_of_week: WEDNESDAY },
+  ];
+  journalsData.value = [
+    {
+      id: "journal-1",
+      class_id: "class-2",
+      subject_id: "subject-2",
+      lesson_date: "2026-09-23",
+      topic: "Sudah ditulis",
+    },
+  ];
+  render(<JournalTodayPanel />);
+
+  expect(screen.getByText("allWrittenTitle")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "writeFor" })).not.toBeInTheDocument();
+});
+
+it("does not request schedules for a viewer without schedule access", () => {
+  canViewSchedules.value = false;
+  const { container } = render(<JournalTodayPanel />);
+  expect(scheduleQuery.lastFilter).toMatchObject({ enabled: false });
+  expect(container).toBeEmptyDOMElement();
+});
+
+it("treats a 403 from the schedule request as not applicable, not as a load failure", () => {
+  scheduleQuery.isError = true;
+  scheduleQuery.error = new ApiError({ status: 403, code: "FORBIDDEN", message: "forbidden" });
+  const { container } = render(<JournalTodayPanel />);
+  expect(container).toBeEmptyDOMElement();
 });

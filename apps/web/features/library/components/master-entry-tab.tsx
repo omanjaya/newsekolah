@@ -2,6 +2,10 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  FormError,
+  DialogFooter,
+  NumberInput,
+  Field,
   Badge,
   Button,
   ConfirmDialog,
@@ -26,6 +30,8 @@ import { useCan } from "../../../lib/session/session-provider";
 import type { LibraryMasterEntry, LibraryMasterEntryWrite } from "../master-data-api";
 import { useLibraryErrorMessage } from "../use-library-error-message";
 
+import { MasterListHeader } from "./master-list-header";
+
 /**
  * The i18n namespaces of the simple code/name master lists. They all share
  * one key shape (add, columns.*, form.*, stillInUse, ...), which is what
@@ -36,11 +42,21 @@ export type MasterEntryNamespace =
   | "app.library.masterData.collectionCategories"
   | "app.library.masterData.locations";
 
+/** Each list's tab key, whose label also heads the list. */
+const LIST_KEY = {
+  "app.library.masterData.acquisitionSources": "acquisitionSources",
+  "app.library.masterData.collectionCategories": "collectionCategories",
+  "app.library.masterData.locations": "locations",
+} as const satisfies Record<MasterEntryNamespace, string>;
+
 export interface MasterEntryTabProps {
   namespace: MasterEntryNamespace;
   stateKey: string;
   items: LibraryMasterEntry[];
   isLoading: boolean;
+  /** The list query's error: shown in place of the rows, with a retry. */
+  error?: unknown;
+  onRetry?: () => void;
   create: UseMutationResult<unknown, Error, LibraryMasterEntryWrite>;
   update: UseMutationResult<unknown, Error, LibraryMasterEntryWrite & { id: string }>;
   remove: UseMutationResult<unknown, Error, string>;
@@ -55,11 +71,14 @@ export function MasterEntryTab({
   stateKey,
   items,
   isLoading,
+  error,
+  onRetry,
   create,
   update,
   remove,
 }: MasterEntryTabProps): ReactElement {
   const t = useTranslations(namespace);
+  const tMasterData = useTranslations("app.library.masterData");
   const toast = useToast();
   const libraryErrorMessage = useLibraryErrorMessage();
   const canManage = useCan("manage_library_catalog");
@@ -70,8 +89,19 @@ export function MasterEntryTab({
 
   const columns = useMemo<ColumnDef<LibraryMasterEntry>[]>(
     () => [
-      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
-      { accessorKey: "name", header: t("columns.name"), enableSorting: false },
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
+      {
+        accessorKey: "code",
+        header: t("columns.code"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.code}</span>,
+      },
       {
         id: "status",
         header: t("columns.status"),
@@ -120,46 +150,52 @@ export function MasterEntryTab({
     setEditing(null);
   };
 
-  return (
-    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      {canManage && (
-        <div className="flex justify-end">
-          <Button
-            size="sm"
-            icon={<Plus />}
-            onClick={() => {
-              setCreating(true);
-            }}
-          >
-            {t("add")}
-          </Button>
-        </div>
-      )}
+  const addButton = canManage ? (
+    <Button
+      icon={<Plus />}
+      onClick={() => {
+        setCreating(true);
+      }}
+    >
+      {t("add")}
+    </Button>
+  ) : undefined;
 
-      <div className="flex flex-col md:min-h-0 md:flex-1">
-        <DataTable
-          stateKey={stateKey}
-          mode="local"
-          data={items}
-          columns={columns}
-          rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
-          isLoading={isLoading}
-          getRowId={(item) => item.id}
-          fillHeight
-          emptyState={
-            <EmptyState
-              icon={<domainIcons.library aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
-          }
-        />
-      </div>
+  return (
+    <div className="flex flex-col gap-3">
+      <MasterListHeader
+        title={tMasterData(`tabs.${LIST_KEY[namespace]}`)}
+        count={items.length}
+        addLabel={t("add")}
+        showAdd={canManage && (isLoading || items.length > 0)}
+        onAdd={() => {
+          setCreating(true);
+        }}
+      />
+      <DataTable
+        stateKey={stateKey}
+        mode="local"
+        data={items}
+        columns={columns}
+        rowCount={items.length}
+        pagination={{ pageIndex: 0, pageSize: 50 }}
+        onPaginationChange={() => undefined}
+        sorting={[]}
+        onSortingChange={() => undefined}
+        globalFilter=""
+        isLoading={isLoading}
+        error={error}
+        onRetry={onRetry}
+        getRowId={(item) => item.id}
+        emptyState={
+          <EmptyState
+            icon={<domainIcons.library aria-hidden="true" />}
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+            action={addButton}
+          />
+        }
+      />
 
       <Dialog
         open={formOpen}
@@ -262,8 +298,7 @@ function MasterEntryForm({
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.code")}</span>
+      <Field label={t("form.code")}>
         <Input
           value={code}
           onChange={(e) => {
@@ -272,9 +307,8 @@ function MasterEntryForm({
           required
           maxLength={20}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.name")}</span>
+      </Field>
+      <Field label={t("form.name")}>
         <Input
           value={name}
           onChange={(e) => {
@@ -283,35 +317,28 @@ function MasterEntryForm({
           required
           maxLength={100}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.sortOrder")}</span>
-        <Input
-          type="number"
+      </Field>
+      <Field label={t("form.sortOrder")}>
+        <NumberInput
           inputMode="numeric"
-          value={sortOrder}
-          onChange={(e) => {
-            setSortOrder(e.target.value);
+          value={sortOrder === "" ? null : Number(sortOrder)}
+          onChange={(next) => {
+            setSortOrder(next === null ? "" : String(next));
           }}
         />
-      </label>
-      <label className="flex min-h-11 items-center gap-2 text-[13px]">
+      </Field>
+      <Field label={t("form.isActive")} orientation="horizontal">
         <Switch checked={isActive} onCheckedChange={setIsActive} />
-        <span className="font-medium">{t("form.isActive")}</span>
-      </label>
-      {error && (
-        <p role="alert" className="text-[13px] text-status-absent">
-          {error}
-        </p>
-      )}
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      </Field>
+      {error && <FormError>{error}</FormError>}
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("form.cancel")}
         </Button>
         <Button type="submit" loading={pending} disabled={!code.trim() || !name.trim()}>
           {t("form.save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

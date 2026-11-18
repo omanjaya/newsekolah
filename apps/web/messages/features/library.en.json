@@ -6,7 +6,8 @@
   },
   "dueBadge": {
     "dueOn": "Due {date}",
-    "overdue": "{days} days overdue (due {date})"
+    "overdue": "{days} days overdue (due {date})",
+    "overdueShort": "{days} days overdue"
   },
   "dashboard": {
     "eyebrow": "Library",
@@ -14,11 +15,12 @@
     "navLabel": "Dashboard",
     "currency": "Rp{amount}",
     "today": {
-      "loansToday": "Loans today",
-      "returnsToday": "Returns today",
+      "loansToday": "Borrowed today",
+      "returnsToday": "Returned today",
       "overdue": "Overdue",
       "openDesk": "Open loan desk",
-      "followUp": "Follow up"
+      "followUp": "Needs follow-up",
+      "heading": "Circulation today"
     },
     "stats": {
       "titles": "Titles",
@@ -38,7 +40,9 @@
       "loans": "{count} loans",
       "returns": "{count} returns",
       "chartLabel": "30-day chart: {loans} loans, {returns} returns",
-      "dayTooltip": "{day}: {loans} loans, {returns} returns"
+      "dayTooltip": "{day}: {loans} loans, {returns} returns",
+      "emptyTitle": "No loans in the last 30 days",
+      "emptyBody": "The chart appears once books are lent or returned at the circulation desk."
     },
     "latestLoans": "Latest loans",
     "longestOverdue": "Longest overdue",
@@ -47,7 +51,10 @@
     "noOverdue": "Nothing is overdue right now.",
     "noPopularTitles": "Not enough loan history yet for a ranking.",
     "openDesk": "Open the loan desk",
-    "loanCount": "borrowed {count} times"
+    "loanCount": "borrowed {count} times",
+    "collectionHeading": "Collection and members",
+    "unknownMember": "Member",
+    "followUpAll": "Follow up at circulation"
   },
   "catalogue": {
     "eyebrow": "Library",
@@ -97,10 +104,15 @@
       "materialTypePlaceholder": "Pick a material type",
       "save": "Save",
       "saved": "Title saved",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "sections": {
+        "lookup": "Fill in from the ISBN",
+        "identity": "The book",
+        "publication": "Publication",
+        "classification": "Classification and summary"
+      }
     },
     "isbnLookup": {
-      "hint": "Look up bibliographic data from the ISBN above.",
       "search": "Search ISBN",
       "notFound": "No data found for this ISBN. Fill it in manually below.",
       "apply": "Autofill",
@@ -122,7 +134,7 @@
     "title": "Copies",
     "addCopy": "Add copy",
     "addCopiesBatch": "Add several copies",
-    "viewDetail": "Detail",
+    "viewDetail": "View copy details",
     "rowActions": "Actions for {barcode}",
     "columns": {
       "barcode": "Barcode",
@@ -198,7 +210,7 @@
   },
   "desk": {
     "eyebrow": "Library",
-    "title": "Loan desk",
+    "title": "Circulation",
     "scanSubmit": "Record",
     "tiles": {
       "loansToday": "Borrowed today",
@@ -214,12 +226,15 @@
     },
     "member": {
       "searchPlaceholder": "Search by name, student ID, or member number",
+      "scanLabel": "Scan or type a member card code",
       "scanHint": "Or scan a member card to start.",
       "endSession": "Done",
-      "hintTitle": "Pick a member first",
-      "hintBody": "Search a name above or scan a member card to start lending, returning, or renewing books.",
+      "hintTitle": "No member is being served",
+      "hintBody": "Scan a member card in the field above, or search for their name, to start lending, returning or renewing books.",
       "notFound": "Card or code \"{code}\" was not recognized",
-      "lookupFailed": "Member lookup failed, try again"
+      "ambiguous": "Code \"{code}\" matches more than one member. Pick from the search.",
+      "lookupFailed": "Member lookup failed, try again",
+      "sanctions": "Member fines and sanctions"
     },
     "modes": {
       "borrow": "Borrow",
@@ -230,7 +245,8 @@
         "borrow": "Scan or type the barcode of the book being borrowed",
         "return": "Scan or type the barcode of the book being returned",
         "renew": "Scan or type the barcode of the book being renewed"
-      }
+      },
+      "label": "Circulation mode"
     },
     "basket": {
       "emptyTitle": {
@@ -239,9 +255,9 @@
         "renew": "No books renewed yet"
       },
       "emptyBody": {
-        "borrow": "Scan a book's barcode to add it to the loan list.",
-        "return": "Scan a book's barcode to return it right away.",
-        "renew": "Scan a book's barcode to renew it right away."
+        "borrow": "Scan a book barcode to add it to the loan list.",
+        "return": "Scan a book barcode to record its return right away.",
+        "renew": "Scan a book barcode to renew its loan right away."
       },
       "removeFromList": "Remove {barcode} from the list",
       "confirmBorrow": "Lend {count} copies",
@@ -252,7 +268,18 @@
       "borrowedDue": "Borrowed, due {date}",
       "returnedOnTime": "Returned on time",
       "returnedLate": "{days} days late, fine Rp{amount}",
-      "renewedUntil": "Renewed until {date}"
+      "renewedUntil": "Renewed until {date}",
+      "heading": {
+        "borrow": "Books to lend",
+        "return": "Returned this session",
+        "renew": "Renewed this session"
+      },
+      "state": {
+        "pending": "Added to the loan list",
+        "blocked": "Cannot be lent",
+        "done": "Done",
+        "failed": "Failed"
+      }
     },
     "borrow": {
       "codeNotFound": "Code {code} was not found"
@@ -270,7 +297,7 @@
       "columns": {
         "member": "Member",
         "class": "Class",
-        "guardianPhone": "Guardian phone",
+        "guardianPhone": "Parent or guardian phone",
         "dueOn": "Due on",
         "actions": "Actions",
         "title": "Book and copy"
@@ -287,12 +314,56 @@
       "emptyBody": "Every active loan is still within its due date.",
       "unknownMember": "Member identity unavailable",
       "unknownTitle": "Title unavailable",
-      "loadError": "Overdue loans could not be loaded. Try again."
+      "dueDate": "Due {date}",
+      "loadError": "Overdue loans could not be loaded. Try again.",
+      "confirmReturn": {
+        "title": "Record this return?",
+        "body": "{title} from {member} will be recorded as returned."
+      },
+      "confirmReminders": {
+        "title": "Send reminders?",
+        "body": "Reminders go to members whose loans are due soon. Loans that are already overdue are not included."
+      },
+      "description": "Longest overdue first."
+    },
+    "bar": {
+      "placeholder": {
+        "member": "Scan a member card",
+        "borrow": "Scan the barcode of a book to lend",
+        "return": "Scan the barcode of a returned book",
+        "renew": "Scan the barcode of a book to renew"
+      },
+      "camera": "Scan with camera",
+      "searchMember": "Find a member",
+      "searchMemberPlaceholder": "Name, student number or member number",
+      "searchEmpty": "No matching member",
+      "idleHint": "The scanner works anywhere on this page. You can also type a code and press Enter.",
+      "shortcutsHint": "Shortcuts: Alt+1 Lend, Alt+2 Return, Alt+3 Renew, Alt+Z undo the last scan."
+    },
+    "result": {
+      "memberTitle": "Serving {name}",
+      "memberAttention": "Membership is {status}. Check before lending.",
+      "memberNext": {
+        "borrow": "Scan the books to lend.",
+        "return": "Scan the books being returned.",
+        "renew": "Scan the books to renew."
+      }
+    },
+    "today": {
+      "heading": "Today"
+    },
+    "shortcuts": {
+      "heading": "Shortcuts",
+      "kiosk": "Self-service kiosk",
+      "visitKiosk": "Visit kiosk",
+      "loanRules": "Loan rules",
+      "report": "Circulation report",
+      "newTab": "Opens in a new tab"
     }
   },
   "classLoans": {
     "eyebrow": "Library",
-    "title": "Class textbook loans",
+    "title": "Class loans",
     "navLabel": "Class loans",
     "changeTitle": "Change title",
     "titleSearchPlaceholder": "Search a textbook title",
@@ -309,11 +380,13 @@
       "classesUnavailable": "The class list is not available to your account",
       "titleLabel": "Title",
       "preview": "Preview pairing",
+      "previewNeeds": "Choose a class and a title to preview",
       "previewEmptyTitle": "No pairs could be made",
       "previewEmptyBody": "This title does not have enough copies for the class, or every student already has one on loan.",
       "rejectedTitle": "Could not be lent",
       "commit": "Lend {count} copies",
-      "committed": "{count} class loans recorded"
+      "committed": "{count} class loans recorded",
+      "pairsLabel": "Student and copy pairs"
     },
     "returns": {
       "heading": "Return from one class",
@@ -325,7 +398,8 @@
       "submit": "Return all",
       "success": "{count} class returns recorded",
       "rejectedTitle": "Could not be returned"
-    }
+    },
+    "tabsLabel": "Class loan kinds"
   },
   "memberHistory": {
     "currentLoans": "Currently borrowed",
@@ -359,12 +433,13 @@
       "close": "Close",
       "empty": "No renewals for this loan yet.",
       "dueChange": "Due date {previous} became {next}"
-    }
+    },
+    "renewBlockedOverdueDays": "Cannot be renewed: {days} days overdue"
   },
   "members": {
     "pagePrev": "Previous",
     "pageNext": "Next",
-    "navLabel": "Library members",
+    "navLabel": "Members",
     "eyebrow": "Library",
     "title": "Members",
     "register": "Register member",
@@ -431,7 +506,8 @@
       "notes": "Notes",
       "cancel": "Cancel",
       "submit": "Register"
-    }
+    },
+    "studentProfile": "Open student profile"
   },
   "memberTypes": {
     "navLabel": "Member types",
@@ -504,13 +580,38 @@
     "grantClearance": "Grant clearance",
     "cleared": "Member granted clearance",
     "printClearanceLetter": "Print clearance letter",
-    "clearanceBlockedByLoan": "Clearance cannot be granted while any loan is active or a fine is unpaid.",
-    "edit": "Edit membership"
+    "clearanceBlockedByLoan": "Library clearance can be granted once every book is back and every fine is paid.",
+    "edit": "Edit membership",
+    "loadErrorTitle": "This member could not be loaded",
+    "finesPage": "Fines and sanctions",
+    "unpaidAlert": "Unpaid fines of {amount}",
+    "viewFines": "View fines",
+    "tabsLabel": "Member sections",
+    "tabs": {
+      "loans": "On loan",
+      "history": "History",
+      "fines": "Fines",
+      "reservations": "Holds"
+    },
+    "noHistory": "No past loans yet",
+    "noFinesTitle": "No fines",
+    "noFinesBody": "Every fine of this member is paid.",
+    "finesTotal": "Unpaid: {amount}",
+    "noReservations": "No holds",
+    "confirmStatus": {
+      "title": "Change the membership status?",
+      "body": "{name} will become {status}. The status decides whether the member may borrow.",
+      "confirm": "Change status"
+    },
+    "confirmClearance": {
+      "title": "Grant library clearance?",
+      "body": "{name} will be marked as cleared and can no longer borrow. The clearance letter can be printed afterwards."
+    }
   },
   "violations": {
-    "navLabel": "Fines & Sanctions",
+    "navLabel": "Fines and sanctions",
     "eyebrow": "Library",
-    "title": "Fines & Sanctions",
+    "title": "Fines and sanctions",
     "record": "Record violation",
     "rowActions": "Actions for {member}",
     "settle": {
@@ -577,7 +678,7 @@
       "submit": "Save"
     },
     "memberScope": "Member: {name}",
-    "allMembers": "View All Members"
+    "allMembers": "View all members"
   },
   "import": {
     "navLabel": "Import collection",
@@ -585,13 +686,13 @@
     "title": "Import collection",
     "steps": {
       "upload": "Upload",
-      "mapping": "Column mapping",
+      "mapping": "Mapping",
       "preview": "Preview",
       "result": "Result"
     },
     "uploadDescription": "Download the template, fill it in, then upload the completed file.",
     "downloadTemplate": "Download XLSX template",
-    "uploadLabel": "Completed XLSX file",
+    "uploadLabel": "Upload a collection file",
     "selectedFile": "Selected file: {name}",
     "emptyFile": "The file has no data rows. Check the filled template again.",
     "parseError": "The file could not be read. Make sure it is an XLSX file matching the template.",
@@ -603,7 +704,8 @@
       "unmapped": "Not mapped",
       "back": "Back",
       "continue": "Continue to preview",
-      "titleRequired": "The Title column must be mapped before continuing."
+      "titleRequired": "The “Title” column must be mapped before continuing.",
+      "heading": "Match the file's columns"
     },
     "fields": {
       "title": "Title",
@@ -649,8 +751,13 @@
       },
       "back": "Back",
       "commit": "Apply import",
-      "commitPartial": "Apply {count} valid rows"
-    }
+      "commitPartial": "Apply {count} valid rows",
+      "summaryLabel": "Import preview summary"
+    },
+    "pickHint": "Choose the filled-in template file.",
+    "formatHint": "XLSX, following the library template.",
+    "pickFile": "Choose file",
+    "pickAnother": "Choose another file"
   },
   "copyLabels": {
     "selectedCount": "{count} copies selected",
@@ -669,7 +776,7 @@
     "navLabel": "Copies",
     "eyebrow": "Library",
     "title": "Copies",
-    "searchPlaceholder": "Search barcode, accession number, or RFID",
+    "searchPlaceholder": "Search barcode or RFID",
     "viewTitle": "View title",
     "noMatchTitle": "No matching copies",
     "noMatchBody": "Try a different filter or search term.",
@@ -682,7 +789,8 @@
       "category": "Category",
       "location": "Location",
       "status": "Status",
-      "actions": "Actions"
+      "actions": "Actions",
+      "title": "Title and barcode"
     },
     "filters": {
       "status": "Status",
@@ -739,9 +847,10 @@
       "visitedAt": "Time"
     },
     "summary": {
-      "totalVisits": "Total visits today",
-      "uniqueMembers": "Unique members",
-      "totalPeople": "Total people"
+      "totalVisits": "Visits today",
+      "uniqueMembers": "Unique members today",
+      "totalPeople": "Total visitors today",
+      "heading": "Visits today"
     },
     "kinds": {
       "member": "Member",
@@ -769,11 +878,22 @@
   },
   "visitKiosk": {
     "navLabel": "Visit kiosk",
-    "title": "Library visit kiosk",
-    "instructions": "Scan this code with the school app to log a visit.",
-    "expired": "Code has expired",
+    "title": "Check in your visit",
+    "instructions": "Scan the QR code on this screen with the school app on your phone.",
+    "expired": "This code has expired",
     "expiresIn": "Valid for {seconds} more seconds",
-    "renew": "Get a new code"
+    "renew": "New code",
+    "issueFailedTitle": "The code could not be created",
+    "issueFailedBody": "This screen keeps trying by itself. If it keeps failing, check its internet connection.",
+    "retry": "Try again",
+    "eyebrow": "Library visit kiosk",
+    "qrLabel": "Library visit QR code",
+    "stepNumber": "Step {number}",
+    "steps": {
+      "open": "Open the school app and choose Scan",
+      "scan": "Point the camera at the QR code",
+      "done": "Your visit shows on your phone"
+    }
   },
   "readInPlace": {
     "title": "Read in place",
@@ -809,18 +929,25 @@
     "downloadReport": "Download report (XLSX)",
     "progress": {
       "heading": "Stocktake progress",
-      "live": "Refreshes every 5 seconds while the session is open."
+      "live": "Refreshes every 5 seconds while the session is open.",
+      "meter": "Scanned of expected",
+      "meterValue": "{scanned} of {expected}",
+      "ratio": "{scanned} of {expected} scanned",
+      "remaining": "Not scanned yet"
     },
     "scan": {
-      "heading": "Scan barcode",
-      "label": "Barcode",
+      "heading": "Scan copies",
+      "label": "Copy barcode",
       "placeholder": "Scan or type a barcode",
       "submit": "Record",
       "thisDevice": "{count, plural, =0 {No barcodes scanned from this device yet.} one {# barcode scanned from this device.} other {# barcodes scanned from this device.}}",
       "recent": {
         "found": "Found",
-        "rejected": "Code not recognized"
-      }
+        "rejected": "Code not recognized",
+        "heading": "Earlier scans"
+      },
+      "foundDetail": "{barcode} counted in this stocktake",
+      "earlier": "Earlier scans"
     },
     "close": "Close session",
     "result": {
@@ -830,16 +957,28 @@
       "missing": "Missing",
       "unexpected": "Unexpected",
       "misplaced": "Misplaced",
-      "moreInReport": "and {count} more. The full list is in the XLSX report."
+      "moreInReport": "and {count} more. The full list is in the XLSX report.",
+      "none": "No copies in this group.",
+      "bucketsLabel": "Stocktake result groups",
+      "foundAt": "belongs in {expected}, found in {found}",
+      "empty": {
+        "missing": "No copies missing",
+        "unexpected": "No unexpected copies",
+        "misplaced": "No misplaced copies"
+      }
     },
     "viewResult": "View results",
     "closeConfirmTitle": "Close this stocktake session?",
-    "closeConfirmBody": "Once closed, no more barcodes can be scanned and the reconciliation is saved permanently."
+    "closeConfirmBody": "Once closed, no more barcodes can be scanned and the reconciliation is saved permanently.",
+    "emptyBody": "Start a session to match the shelves with the catalogue. Scan every copy, then close the session to see what is missing or misplaced.",
+    "continueScan": "Continue scanning",
+    "loadErrorTitle": "This stocktake could not be loaded",
+    "downloading": "Downloading report"
   },
   "masterData": {
     "eyebrow": "Library",
-    "title": "Catalogue Settings",
-    "navLabel": "Master data",
+    "title": "Catalogue data",
+    "navLabel": "Catalogue data",
     "tabs": {
       "materialTypes": "Material types",
       "acquisitionSources": "Acquisition sources",
@@ -1012,7 +1151,9 @@
       },
       "emptyTitle": "DDC class data is unavailable",
       "emptyBody": "Contact the platform operator if this list should be populated."
-    }
+    },
+    "tabsLabel": "Catalogue data lists",
+    "typeLabel": "Catalogue data"
   },
   "loanRules": {
     "eyebrow": "Library",
@@ -1043,13 +1184,14 @@
       "startsOn": "Starts on",
       "endsOn": "Ends on",
       "allowLoans": "Lending is open during this period",
-      "maxLoanItems": "Max copies",
+      "maxLoanItems": "Maximum copies",
       "maxLoanDays": "Max loan days",
-      "keepDefault": "Follows member type",
+      "keepDefault": "Leave empty to follow the member type",
       "notes": "Notes",
       "cancel": "Cancel",
       "save": "Save"
-    }
+    },
+    "rowActions": "Rule actions"
   },
   "reports": {
     "navLabel": "Library reports",
@@ -1057,7 +1199,8 @@
     "title": "Library reports",
     "fromLabel": "From date",
     "toLabel": "To date",
-    "exportXlsx": "Export XLSX",
+    "exportXlsx": "Download report",
+    "earlierPeriod": "Show the month before",
     "tabs": {
       "loans": "Loans",
       "overdueMembers": "Overdue members",
@@ -1068,8 +1211,10 @@
       "accessionRegister": "Accession register"
     },
     "monthly": {
-      "monthLabel": "Monthly report",
-      "download": "Download monthly PDF"
+      "monthLabel": "Month",
+      "download": "Download monthly PDF",
+      "heading": "Monthly report",
+      "description": "One month in one PDF, ready to print or send to the principal."
     },
     "loans": {
       "title": "Loans within the date range",
@@ -1084,6 +1229,8 @@
     },
     "overdueMembers": {
       "title": "Overdue members",
+      "unknownMember": "Unknown member",
+      "emptyTitle": "No overdue members",
       "columns": {
         "member": "Member",
         "loanCount": "Loan count",
@@ -1092,6 +1239,7 @@
     },
     "mostBorrowed": {
       "title": "Most-borrowed titles",
+      "emptyTitle": "No loans in this range yet",
       "columns": {
         "title": "Title",
         "loanCount": "Loans"
@@ -1122,20 +1270,23 @@
       "emptyTitle": "No visits in this range",
       "total": "{count} visits",
       "columns": {
-        "day": "Date",
-        "class": "Class",
+        "day": "By date",
+        "class": "By class",
         "count": "Count"
-      }
+      },
+      "summaryLabel": "Visit summary",
+      "totalLabel": "Visits in this period"
     },
     "members": {
       "emptyTitle": "No members yet",
       "total": "Total members",
       "active": "Active members",
       "columns": {
-        "type": "Member type",
-        "class": "Class",
+        "type": "By member type",
+        "class": "By class",
         "count": "Count"
-      }
+      },
+      "summaryLabel": "Member summary"
     },
     "accessionRegister": {
       "emptyTitle": "No additions in this range",
@@ -1203,7 +1354,10 @@
           "acquired_on": "Acquired On"
         }
       }
-    }
+    },
+    "tabsLabel": "Library report types",
+    "typeLabel": "Report type",
+    "periodLabel": "Report period"
   },
   "markLost": {
     "title": "Mark copy lost",
@@ -1225,12 +1379,12 @@
       "availability": "Availability"
     },
     "available": "Available",
-    "unavailable": "All copies out",
-    "emptyTitle": "Nothing found",
-    "emptyBody": "Try a different search term.",
-    "backToSearch": "Back to search",
+    "unavailable": "On loan",
+    "emptyTitle": "No titles found",
+    "emptyBody": "Try another word, or check the spelling.",
+    "backToSearch": "Back to the catalogue",
     "highlights": {
-      "newest": "Newest",
+      "newest": "New arrivals",
       "mostBorrowed": "Most borrowed"
     },
     "detail": {
@@ -1254,26 +1408,69 @@
         "donated": "Donated",
         "reserve_stack": "Reserve stack",
         "unknown": "Unknown"
+      },
+      "availability": "{available, number} of {total, number} copies available",
+      "noneAvailable": "All copies are on loan",
+      "noCopiesShort": "No copies yet",
+      "howToBorrow": "Borrow at the circulation desk with your library card.",
+      "callNumber": "Call number",
+      "barcode": "Barcode",
+      "author": "Author",
+      "publishYear": "Year",
+      "edition": "Edition",
+      "pages": "Pages",
+      "bibliography": "Bibliographic details",
+      "abstract": "Summary",
+      "access": {
+        "read_in_place": "Read in the library",
+        "reference": "Reference only"
       }
-    }
+    },
+    "description": "Search by title, author or ISBN, and see whether a book is in.",
+    "searchLabel": "Search the catalogue",
+    "filterLabel": "Classification",
+    "filterAll": "All",
+    "resultCount": "{count, plural, one {# title} other {# titles}}",
+    "availableCount": "{available, number} of {total, number} available",
+    "clearSearch": "Clear search",
+    "catalogueEmptyTitle": "The catalogue is empty",
+    "catalogueEmptyBody": "The library has not listed any titles in the public catalogue yet.",
+    "errorTitle": "The catalogue could not be loaded",
+    "errorBody": "Check the internet connection, then try again.",
+    "retry": "Try again",
+    "loadMore": "Show more",
+    "resultCountFirst": "First {count, number} titles"
   },
   "kiosk": {
     "navLabel": "Self-service kiosk",
     "eyebrow": "Library",
     "idle": {
-      "title": "Library kiosk",
-      "instructions": "Tap or scan your member card to begin",
-      "scanLabel": "Member card",
-      "submit": "Start"
+      "title": "Borrow and return books yourself",
+      "instructions": "Scan your member card to start, then scan the books you borrow or return.",
+      "scanLabel": "Member card code",
+      "submit": "Start",
+      "eyebrow": "Library self-service kiosk",
+      "stepNumber": "Step {number}",
+      "steps": {
+        "card": "Scan your member card",
+        "books": "Scan the books",
+        "done": "Press the Done button"
+      },
+      "privacy": "The session ends by itself after 20 seconds without a scan, so the next person never sees your loans.",
+      "cardHint": "Hold your member card up to the camera or the scanner"
     },
     "active": {
       "title": "Scan a book to borrow or return it",
       "done": "Done",
-      "dueOn": "Due on",
-      "limit": "{count} of {max} loan slots used",
-      "empty": "No books on loan right now",
+      "dueOn": "Due {date}",
+      "limit": "{count} of {max} loans used",
+      "empty": "You have no books out.",
       "scanLabel": "Book barcode",
-      "submit": "Record"
+      "submit": "Record",
+      "eyebrow": "Your session",
+      "resetsIn": "Ends in {seconds} seconds",
+      "loansHeading": "Books you have out",
+      "overdue": "{days} days late"
     },
     "feedback": {
       "unknownCard": "Member card not recognized",
@@ -1311,14 +1508,21 @@
     "fine_currency_enabled": "Enable monetary fines",
     "block_loans_with_unpaid_fines": "Block loans with unpaid fines",
     "auto_register_members": "Automatically register members",
-    "numberingHint": "Numbering patterns: YYYY for the full year, YY for two-digit year, and 99999 for a five-digit sequence."
+    "numberingHint": "Numbering patterns: YYYY for the full year, YY for two-digit year, and 99999 for a five-digit sequence.",
+    "sections": {
+      "identity": "Identity and numbering",
+      "limits": "Loan limits and fines",
+      "rules": "Service days and rules"
+    }
   },
   "me": {
     "eyebrow": "Library",
-    "title": "My loans",
-    "navLabel": "My loans",
+    "title": "Book loans",
+    "navLabel": "Book loans",
     "notMemberTitle": "Not registered as a library member yet",
     "notMemberBody": "Ask a librarian to register you before you can borrow or reserve books.",
+    "notMemberBodyStaff": "Register yourself on the Members page to start borrowing and reserving books.",
+    "openMembers": "Open the Members page",
     "unpaidFines": "Unpaid fines",
     "currency": "Rp{amount}",
     "violationKind": {
@@ -1343,9 +1547,9 @@
       }
     },
     "reserve": {
-      "heading": "Reservations",
-      "emptyBody": "No reservations yet. Search a title below to reserve one.",
-      "emptyBodyDisabled": "No reservations yet.",
+      "heading": "Holds",
+      "emptyBody": "No holds yet. Search a title below to place a hold on a book someone else has out.",
+      "emptyBodyDisabled": "No holds yet.",
       "queuePosition": "Queue position {position}",
       "status": {
         "waiting": "Waiting",
@@ -1355,20 +1559,35 @@
         "expired": "Expired"
       },
       "cancel": "Cancel",
-      "cancelled": "Reservation cancelled",
-      "pickTitle": "Reserve a new title",
+      "cancelled": "Hold cancelled",
+      "pickTitle": "Place a hold",
       "searchPlaceholder": "Search title or author",
       "selectedTitle": "Selected: {title}",
       "submit": "Reserve",
-      "reserved": "Reservation created",
-      "bookingDisabled": "Self-service reservations are turned off right now. Ask a librarian to reserve a title."
+      "reserved": "Hold placed",
+      "bookingDisabled": "Self-service holds are switched off. Ask the librarian to place a hold."
     },
     "dueOn": "Due {date}",
     "overdueSince": "Overdue, was due {date}",
     "renewAction": "Renew",
     "renewed": "Renewed until {date}",
-    "renewBlockedOverdue": "An overdue loan cannot be self-renewed, ask a librarian",
-    "titleUnavailable": "Title unavailable"
+    "renewBlockedOverdue": "This loan is past due and cannot be renewed. Bring the book back to the library.",
+    "titleUnavailable": "Title unavailable",
+    "browseCatalogue": "Browse the catalogue",
+    "unpaidFinesTotal": "Unpaid fines: {amount}",
+    "hero": {
+      "overdueEyebrow": "Please return",
+      "overdueTitle": "{count, plural, one {1 book} other {# books}} {days} days late",
+      "overdueMeta": "{title}. Return it to the library soon so the fine stops growing.",
+      "overdueChip": "Late",
+      "nextDueEyebrow": "Next due date",
+      "nextDueTitle": "Due {date}",
+      "nextDueMeta": "{count, plural, one {1 book} other {# books}} on loan",
+      "readyChip": "{count, plural, one {1 hold} other {# holds}} ready to collect",
+      "idleEyebrow": "Library",
+      "idleTitle": "No books on loan",
+      "idleMeta": "Find a book in the catalogue, then borrow it at the library with your member card."
+    }
   },
   "memberProfile": {
     "memberType": "Member type",
@@ -1391,25 +1610,58 @@
     "LIBRARY_MODULE_DISABLED": "The library module is not enabled for this school."
   },
   "workspace": {
-    "catalogue": "Catalogue",
-    "circulation": "Loans & Returns",
+    "catalogue": "Catalogue pages",
+    "circulation": "Circulation pages",
     "members": "Members",
-    "settings": "Loan Settings",
+    "settings": "Loan settings",
     "visits": "Visits",
     "stocktake": "Stocktake",
-    "titles": "Book Titles",
+    "titles": "Book titles",
     "copies": "Copies",
-    "importBooks": "Import Books",
-    "catalogueSettings": "Catalogue Settings",
+    "importBooks": "Import books",
+    "catalogueSettings": "Catalogue data",
     "individual": "Individual",
     "class": "Class",
-    "sanctions": "Fines & Sanctions",
-    "openKiosk": "Open Self-service Kiosk",
-    "loanSettings": "Loan Settings",
-    "memberTypes": "Member Types & Loan Limits",
-    "periodRules": "Period Rules & Policy",
-    "openVisitKiosk": "Open Visit Kiosk",
-    "report": "Reports",
-    "memberSanctions": "Member Fines & Sanctions"
+    "sanctions": "Fines and sanctions",
+    "openKiosk": "Open self-service kiosk",
+    "loanSettings": "Loan settings",
+    "memberTypes": "Member types",
+    "periodRules": "Period rules and policy",
+    "openVisitKiosk": "Open visit kiosk",
+    "report": "Report",
+    "memberSanctions": "Member fines and sanctions",
+    "loanRules": "Loan rules"
+  },
+  "titleDetail": {
+    "notFoundTitle": "This title cannot be opened",
+    "tabsLabel": "Title sections",
+    "tabs": {
+      "copies": "Copies",
+      "reservations": "Hold queue",
+      "details": "Bibliographic record"
+    },
+    "availability": "{available} of {total} copies available",
+    "noneAvailable": "Every copy is out on loan",
+    "noCopies": "No copies yet",
+    "opacShown": "Shown in the public catalogue",
+    "opacHidden": "Hidden from the public catalogue",
+    "noReservationsTitle": "Nobody has placed a hold",
+    "noReservationsBody": "Members who place a hold while every copy is out appear here, in order.",
+    "unknownMember": "Member",
+    "requestedOn": "Held {date}",
+    "fields": {
+      "author": "Author",
+      "additionalAuthors": "Additional authors",
+      "publisher": "Publisher",
+      "publishYear": "Year published",
+      "edition": "Edition",
+      "pages": "Pages",
+      "isbn": "ISBN",
+      "classification": "Classification",
+      "callNumber": "Call number",
+      "language": "Language",
+      "subjects": "Subjects",
+      "abstract": "Summary"
+    }
   }
 }

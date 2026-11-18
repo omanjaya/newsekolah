@@ -119,49 +119,46 @@ export function ViolationCatalogView(): ReactElement {
     [t],
   );
 
+  // It opens in a sheet over the Pelanggaran page (violations-view.tsx),
+  // whose body scrolls, so the table takes its natural height.
   return (
-    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <Button
-          size="sm"
-          icon={<Plus />}
-          onClick={() => {
-            setEditing("new");
-          }}
-        >
-          {t("add")}
-        </Button>
-      </div>
-
-      <div className="flex flex-col md:min-h-0 md:flex-1">
-        <DataTable
-          stateKey="features/discipline/components/violation-catalog-view:1"
-          mode="local"
-          data={items}
-          columns={columns}
-          rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
-          filters={filters}
-          filtersLabels={{
-            reset: t("filters.reset"),
-            removeFilter: (label) => t("filters.removeFilter", { label }),
-          }}
-          isLoading={isLoading}
-          getRowId={(item) => item.id}
-          fillHeight
-          emptyState={
-            <EmptyState
-              icon={<domainIcons.violation aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
-          }
-        />
-      </div>
+    <>
+      <DataTable
+        stateKey="features/discipline/components/violation-catalog-view:1"
+        mode="local"
+        data={items}
+        columns={columns}
+        rowCount={items.length}
+        pagination={{ pageIndex: 0, pageSize: 50 }}
+        onPaginationChange={() => undefined}
+        sorting={[]}
+        onSortingChange={() => undefined}
+        globalFilter=""
+        filters={filters}
+        filtersLabels={{
+          reset: t("filters.reset"),
+          removeFilter: (label) => t("filters.removeFilter", { label }),
+        }}
+        toolbarActions={
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              setEditing("new");
+            }}
+          >
+            {t("add")}
+          </Button>
+        }
+        isLoading={isLoading}
+        getRowId={(item) => item.id}
+        emptyState={
+          <EmptyState
+            icon={<domainIcons.violation aria-hidden="true" />}
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+          />
+        }
+      />
 
       <Dialog
         open={editing !== null}
@@ -205,6 +202,6 @@ export function ViolationCatalogView(): ReactElement {
           }
         }}
       />
-    </div>
+    </>
   );
 }

@@ -7,9 +7,12 @@ import {
   DataTable,
   Dialog,
   DialogContent,
+  DialogFooter,
   EmptyState,
-  IconButton,
+  Field,
   Input,
+  NumberInput,
+  RowActionsMenu,
   Select,
   useToast,
 } from "@newsekolah/ui";
@@ -19,6 +22,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useCallback, useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import {
@@ -30,15 +34,18 @@ import {
   useGradeLevelsQuery,
   useUpdateGradeLevelMutation,
 } from "../api-master-data";
+import { codeRepeatsName } from "../lib/grade-level-code";
+
+import type { HubPageProps } from "./hub-page";
 
 const TEMPLATES: GradeLevelTemplate[] = ["sd", "smp", "sma", "smk"];
 
-export function GradeLevelsView(): ReactElement {
+export function GradeLevelsView({ page }: { page: HubPageProps }): ReactElement {
   const t = useTranslations("app.academic.gradeLevels");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_master_data");
-  const { data, isLoading } = useGradeLevelsQuery();
+  const { data, isLoading, error, refetch, isRefetching } = useGradeLevelsQuery();
   const create = useCreateGradeLevelMutation();
   const update = useUpdateGradeLevelMutation();
   const remove = useDeleteGradeLevelMutation();
@@ -48,6 +55,7 @@ export function GradeLevelsView(): ReactElement {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [sequence, setSequence] = useState("1");
+  const [submitted, setSubmitted] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<GradeLevel | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
   const [template, setTemplate] = useState<GradeLevelTemplate>("sd");
@@ -66,11 +74,13 @@ export function GradeLevelsView(): ReactElement {
       setCode(target === "new" ? "" : target.code);
       setName(target === "new" ? "" : target.name);
       setSequence(target === "new" ? String(rows.length + 1) : String(target.sequence));
+      setSubmitted(false);
     },
     [rows.length],
   );
 
   async function save() {
+    setSubmitted(true);
     if (!code.trim() || !name.trim()) return;
     const body = {
       code: code.trim().toUpperCase(),
@@ -90,31 +100,62 @@ export function GradeLevelsView(): ReactElement {
   const columns = useMemo<ColumnDef<GradeLevel>[]>(
     () => [
       // Name leads because the phone card uses the first column as its title.
-      { accessorKey: "name", header: t("columns.name"), enableSorting: false },
-      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
-      { accessorKey: "sequence", header: t("columns.sequence"), enableSorting: false },
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
+      {
+        accessorKey: "code",
+        header: t("columns.code"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        // Cards only show below md: there a code that repeats the name
+        // ("X" under "Kelas X") is left out; the table keeps every code.
+        cell: ({ row }) => (
+          <span
+            className={
+              codeRepeatsName(row.original.code, row.original.name) ? "max-md:hidden" : undefined
+            }
+          >
+            {row.original.code}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "sequence",
+        header: t("columns.sequence"),
+        enableSorting: false,
+        // A labelled "Urutan 1" row on the card, not a bare number.
+        meta: { card: "field", align: "end" },
+      },
       {
         id: "actions",
         header: t("columns.actions"),
         enableSorting: false,
         cell: ({ row }) =>
           canManage ? (
-            <div className="flex justify-end gap-1">
-              <IconButton
-                icon={<Pencil />}
-                aria-label={t("edit")}
-                onClick={() => {
-                  open(row.original);
-                }}
-              />
-              <IconButton
-                icon={<Trash2 />}
-                aria-label={t("delete")}
-                onClick={() => {
-                  setPendingDelete(row.original);
-                }}
-              />
-            </div>
+            <RowActionsMenu
+              ariaLabel={t("rowActions", { name: row.original.name })}
+              items={[
+                {
+                  label: t("edit"),
+                  icon: <Pencil />,
+                  onClick: () => {
+                    open(row.original);
+                  },
+                },
+                {
+                  label: t("delete"),
+                  icon: <Trash2 />,
+                  tone: "danger",
+                  onClick: () => {
+                    setPendingDelete(row.original);
+                  },
+                },
+              ]}
+            />
           ) : null,
       },
     ],
@@ -122,33 +163,45 @@ export function GradeLevelsView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
-        {canManage && (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={<Wand2 />}
-              onClick={() => {
-                setTemplateOpen(true);
-              }}
-            >
-              {t("applyTemplate")}
-            </Button>
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
+    <AppPage
+      {...page}
+      primaryAction={
+        canManage ? (
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              open("new");
+            }}
+          >
+            {t("add")}
+          </Button>
+        ) : undefined
+      }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("add"),
+              onSelect: () => {
                 open("new");
-              }}
-            >
-              {t("add")}
-            </Button>
-          </div>
-        )}
-      </div>
+              },
+            }
+          : undefined
+      }
+      secondaryActions={
+        canManage
+          ? [
+              {
+                label: t("applyTemplate"),
+                icon: <Wand2 />,
+                onSelect: () => {
+                  setTemplateOpen(true);
+                },
+              },
+            ]
+          : undefined
+      }
+    >
       <DataTable
         stateKey="features/academic/components/grade-levels-view:1"
         mode="local"
@@ -161,12 +214,27 @@ export function GradeLevelsView(): ReactElement {
         onSortingChange={() => undefined}
         globalFilter=""
         isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        retrying={isRefetching}
         getRowId={(g) => g.id}
         emptyState={
           <EmptyState
             icon={<GraduationCap aria-hidden="true" />}
             title={t("emptyTitle")}
             description={t("emptyBody")}
+            action={
+              canManage ? (
+                <Button
+                  icon={<Plus />}
+                  onClick={() => {
+                    open("new");
+                  }}
+                >
+                  {t("add")}
+                </Button>
+              ) : undefined
+            }
           />
         }
       />
@@ -180,45 +248,48 @@ export function GradeLevelsView(): ReactElement {
         <DialogContent title={editing === "new" ? t("add") : t("edit")}>
           <form
             className="flex flex-col gap-4"
+            noValidate
             onSubmit={(e) => {
               e.preventDefault();
               void save();
             }}
           >
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.code")}</span>
+            <Field
+              label={t("columns.code")}
+              required
+              error={submitted && !code.trim() ? t("codeRequired") : undefined}
+            >
               <Input
                 value={code}
                 maxLength={8}
                 onChange={(e) => {
                   setCode(e.target.value);
                 }}
-                required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.name")}</span>
+            </Field>
+            <Field
+              label={t("columns.name")}
+              required
+              error={submitted && !name.trim() ? t("nameRequired") : undefined}
+            >
               <Input
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
                 }}
-                required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("columns.sequence")}</span>
-              <Input
-                type="number"
+            </Field>
+            <Field label={t("columns.sequence")}>
+              <NumberInput
                 min={1}
-                value={sequence}
-                onChange={(e) => {
-                  setSequence(e.target.value);
+                value={sequence ? Number(sequence) : null}
+                onChange={(value) => {
+                  setSequence(value === null ? "" : String(value));
                 }}
                 className="w-24"
               />
-            </label>
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            </Field>
+            <DialogFooter>
               <Button
                 type="button"
                 variant="secondary"
@@ -231,7 +302,7 @@ export function GradeLevelsView(): ReactElement {
               <Button type="submit" loading={create.isPending || update.isPending}>
                 {t("save")}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -239,7 +310,7 @@ export function GradeLevelsView(): ReactElement {
       <Dialog open={templateOpen} onOpenChange={setTemplateOpen}>
         <DialogContent title={t("applyTemplate")}>
           <div className="flex flex-col gap-4">
-            <p className="text-[13px] text-fg-muted">{t("applyTemplateBody")}</p>
+            <p className="text-body-sm text-fg-muted">{t("applyTemplateBody")}</p>
             <Select
               options={TEMPLATES.map((value) => ({ value, label: t(`template.${value}`) }))}
               value={template}
@@ -247,7 +318,7 @@ export function GradeLevelsView(): ReactElement {
                 setTemplate(value as GradeLevelTemplate);
               }}
             />
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <DialogFooter>
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -270,7 +341,7 @@ export function GradeLevelsView(): ReactElement {
               >
                 {t("apply")}
               </Button>
-            </div>
+            </DialogFooter>
           </div>
         </DialogContent>
       </Dialog>
@@ -283,7 +354,7 @@ export function GradeLevelsView(): ReactElement {
         title={t("deleteTitle")}
         description={pendingDelete ? t("deleteBody", { name: pendingDelete.name }) : ""}
         confirmLabel={t("delete")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={async () => {
           if (!pendingDelete) return;
@@ -297,6 +368,6 @@ export function GradeLevelsView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }

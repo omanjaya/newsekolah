@@ -1,19 +1,28 @@
 "use client";
 
-import { Badge, Dialog, DialogContent, EmptyState, Skeleton } from "@newsekolah/ui";
+import { formatDateTime, type Locale } from "@newsekolah/i18n";
+import {
+  Badge,
+  Dialog,
+  DialogContent,
+  EmptyState,
+  List,
+  ListRow,
+  SkeletonList,
+  type BadgeTone,
+} from "@newsekolah/ui";
 import { History } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { useSession } from "../../../lib/session/session-provider";
 import { useReportScheduleRunsQuery } from "../api";
 
-const STATUS_VARIANT: Record<string, "accent" | "neutral"> = {
-  success: "accent",
-  failed: "neutral",
+const STATUS_TONE: Record<string, BadgeTone> = {
+  success: "success",
+  failed: "danger",
   pending: "neutral",
 };
-
-const FAILED_CLASS = "border-status-absent/30 bg-status-absent/10 text-status-absent";
 
 export function ScheduleRunHistoryDialog({
   scheduleId,
@@ -23,6 +32,8 @@ export function ScheduleRunHistoryDialog({
   onClose: () => void;
 }): ReactElement {
   const t = useTranslations("app.reports.schedules.runs");
+  const locale = useLocale() as Locale;
+  const timeZone = useSession().me?.tenant.timezone;
   const runs = useReportScheduleRunsQuery(scheduleId);
   const items = runs.data?.data ?? [];
 
@@ -35,7 +46,7 @@ export function ScheduleRunHistoryDialog({
     >
       <DialogContent title={t("title")}>
         {runs.isLoading ? (
-          <Skeleton className="h-40 w-full" aria-busy="true" />
+          <SkeletonList rows={4} leading={false} framed={false} />
         ) : items.length === 0 ? (
           <EmptyState
             icon={<History aria-hidden="true" />}
@@ -43,24 +54,20 @@ export function ScheduleRunHistoryDialog({
             description={t("emptyBody")}
           />
         ) : (
-          <ul className="flex max-h-96 flex-col divide-y divide-border overflow-y-auto">
+          <List dense className="max-h-96 overflow-y-auto [--list-inset:0px]">
             {items.map((run) => (
-              <li key={run.id} className="flex items-center justify-between gap-3 py-2 text-[13px]">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-fg">{new Date(run.due_at).toLocaleString()}</span>
-                  {run.status === "failed" && run.error_message && (
-                    <span className="text-[12px] text-fg-muted">{run.error_message}</span>
-                  )}
-                </div>
-                <Badge
-                  variant={STATUS_VARIANT[run.status] ?? "neutral"}
-                  className={run.status === "failed" ? FAILED_CLASS : undefined}
-                >
-                  {t(`status.${run.status}`)}
-                </Badge>
-              </li>
+              <ListRow
+                key={run.id}
+                title={formatDateTime(run.due_at, { locale, timeZone })}
+                meta={run.status === "failed" ? run.error_message : undefined}
+                trailing={
+                  <Badge tone={STATUS_TONE[run.status] ?? "neutral"} size="sm">
+                    {t(`status.${run.status}`)}
+                  </Badge>
+                }
+              />
             ))}
-          </ul>
+          </List>
         )}
       </DialogContent>
     </Dialog>

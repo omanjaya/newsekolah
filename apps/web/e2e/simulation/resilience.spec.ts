@@ -3,6 +3,7 @@ import {
   assertNoNavigation,
   closeAll,
   expect,
+  finishOpenLeaveRequest,
   loginAs,
   test,
   waitForToastsGone,
@@ -34,6 +35,15 @@ test("resilience: homeroom offline -> student submits -> resync on reconnect", a
   ]);
 
   try {
+    // A request "siswa2" still has on its way would make the submit below
+    // a 409: finish it first (see finishOpenLeaveRequest).
+    await finishOpenLeaveRequest({
+      student: student2.page,
+      homeroom: homeroom.page,
+      counselor: counselor.page,
+      studentName: "Siswa Dua Contoh",
+    });
+
     // See leave-request.spec.ts's comment on why this waits for the
     // queue's settled empty state (not just the heading) before anyone
     // acts: the realtime topic subscribe only fires once `me.duties`
@@ -41,20 +51,26 @@ test("resilience: homeroom offline -> student submits -> resync on reconnect", a
     await homeroom.page.goto("/inbox");
     // Waits for the query to settle, not specifically an empty queue --
     // see leave-request.spec.ts's identical comment.
-    await expect(homeroom.page.locator(".animate-pulse")).toHaveCount(0, { timeout: 20_000 });
+    await expect(homeroom.page.locator('[data-slot="skeleton"], .animate-pulse')).toHaveCount(0, {
+      timeout: 20_000,
+    });
     await homeroom.page.waitForTimeout(1_000);
 
     await homeroom.context.setOffline(true);
 
     await student2.page.goto("/leave-requests");
     await expect(student2.page.getByRole("heading", { level: 1 })).toBeVisible();
-    await student2.page.getByRole("button", { name: "Ajukan izin" }).click();
+    // A student with no request yet sees the action twice: in the header and
+    // in the empty state (see leave-request.spec.ts).
+    await student2.page.getByRole("button", { name: "Ajukan izin", exact: true }).first().click();
     const dialog = student2.page.getByRole("dialog");
     await expect(dialog).toBeVisible();
 
-    const today = new Date().toISOString().slice(0, 10);
-    await dialog.getByLabel("Mulai").fill(today);
-    await dialog.getByLabel("Sampai").fill(today);
+    // The dates are one DateRangePicker that opens on today; Enter twice
+    // picks today as a one-day range and closes it.
+    await dialog.getByLabel("Tanggal izin").click();
+    await student2.page.keyboard.press("Enter");
+    await student2.page.keyboard.press("Enter");
     await dialog.getByLabel("Keterangan").fill("Simulasi otomatis: uji ketahanan koneksi");
 
     const submitResponse = student2.page.waitForResponse(

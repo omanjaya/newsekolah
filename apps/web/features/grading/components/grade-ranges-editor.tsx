@@ -1,7 +1,21 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Button, IconButton, Input, Select, Skeleton, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Field,
+  IconButton,
+  NumberInput,
+  Select,
+  SkeletonList,
+  useToast,
+} from "@newsekolah/ui";
 import { Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -64,67 +78,67 @@ export function GradeRangesEditor({
   );
 
   return (
-    <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-      <h2 className="text-[16px] font-medium text-fg">{t("rangesTitle")}</h2>
-      <p className="text-[13px] text-fg-muted">{t("rangesHint")}</p>
-
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("rangeSubject")}</span>
-          <Select
-            options={subjectOptions}
-            value={subjectId}
-            onValueChange={setSubjectId}
-            placeholder={t("rangeSubjectPlaceholder")}
-            className="w-56"
-          />
-        </label>
-        {canManageSettings ? (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("rangeScope")}</span>
+    <Card>
+      <CardHeader>
+        <CardTitle as="h2">{t("rangesTitle")}</CardTitle>
+        <CardDescription>{t("rangesHint")}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4 pt-0">
+        <div className="flex flex-wrap items-end gap-3">
+          <Field label={t("rangeSubject")}>
             <Select
-              options={teacherOptions}
-              value={teacherScope}
-              onValueChange={setTeacherScope}
-              className="w-56"
+              options={subjectOptions}
+              value={subjectId}
+              onValueChange={setSubjectId}
+              placeholder={t("rangeSubjectPlaceholder")}
+              className="w-full sm:w-56"
             />
-          </label>
-        ) : (
-          <p className="pb-2 text-[13px] text-fg-muted">{t("rangeYourOwnHint")}</p>
-        )}
-        {canManageSettings && teacherScope === SPECIFIC_TEACHER && (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("rangeTeacher")}</span>
-            <DirectoryPicker
-              profileKind="teacher"
-              value={pickedTeacherId}
-              onValueChange={setPickedTeacherId}
-              labels={teacherLabels}
-              className="w-56"
-            />
-          </label>
-        )}
-      </div>
+          </Field>
+          {canManageSettings ? (
+            <Field label={t("rangeScope")}>
+              <Select
+                options={teacherOptions}
+                value={teacherScope}
+                onValueChange={setTeacherScope}
+                className="w-full sm:w-56"
+              />
+            </Field>
+          ) : (
+            <p className="pb-2 text-body-sm text-fg-muted">{t("rangeYourOwnHint")}</p>
+          )}
+          {canManageSettings && teacherScope === SPECIFIC_TEACHER && (
+            <Field label={t("rangeTeacher")}>
+              <DirectoryPicker
+                profileKind="teacher"
+                value={pickedTeacherId}
+                onValueChange={setPickedTeacherId}
+                labels={teacherLabels}
+                className="w-full sm:w-56"
+              />
+            </Field>
+          )}
+        </div>
 
-      {!subjectId ? (
-        <p className="text-[13px] text-fg-muted">{t("rangePickSubjectFirst")}</p>
-      ) : teacherScope === SPECIFIC_TEACHER && !pickedTeacherId ? (
-        <p className="text-[13px] text-fg-muted">{t("rangePickTeacherFirst")}</p>
-      ) : allRanges.isLoading ? (
-        <Skeleton className="h-24 w-full" aria-busy="true" />
-      ) : (
-        <RangeRowsEditor
-          key={`${subjectId}-${teacherUserId ?? "school"}`}
-          subjectId={subjectId}
-          teacherUserId={teacherUserId}
-          initialRows={scopeRanges.map((r) => ({
-            min_score: r.min_score,
-            max_score: r.max_score,
-            increase_amount: r.increase_amount,
-          }))}
-        />
-      )}
-    </section>
+        {!subjectId ? (
+          <p className="text-body-sm text-fg-muted">{t("rangePickSubjectFirst")}</p>
+        ) : teacherScope === SPECIFIC_TEACHER && !pickedTeacherId ? (
+          <p className="text-body-sm text-fg-muted">{t("rangePickTeacherFirst")}</p>
+        ) : allRanges.isLoading ? (
+          <SkeletonList rows={3} leading={false} />
+        ) : (
+          <RangeRowsEditor
+            key={`${subjectId}-${teacherUserId ?? "school"}`}
+            subjectId={subjectId}
+            teacherUserId={teacherUserId}
+            initialRows={scopeRanges.map((r) => ({
+              min_score: r.min_score,
+              max_score: r.max_score,
+              increase_amount: r.increase_amount,
+            }))}
+          />
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -191,44 +205,38 @@ function RangeRowsEditor({
       )}
 
       {rows.length === 0 ? (
-        <p className="text-[13px] text-fg-muted">{t("rangesEmptyBody")}</p>
+        <p className="text-body-sm text-fg-muted">{t("rangesEmptyBody")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {rows.map((row, index) => (
             <li key={index} className="flex flex-wrap items-end gap-2">
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("rangeMin")}</span>
-                <Input
-                  type="number"
+              <Field label={t("rangeMin")}>
+                <NumberInput
                   className="w-24"
                   value={row.min_score}
-                  onChange={(e) => {
-                    updateRow(index, { min_score: Number(e.target.value) });
+                  onChange={(value) => {
+                    updateRow(index, { min_score: value ?? 0 });
                   }}
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("rangeMax")}</span>
-                <Input
-                  type="number"
+              </Field>
+              <Field label={t("rangeMax")}>
+                <NumberInput
                   className="w-24"
                   value={row.max_score}
-                  onChange={(e) => {
-                    updateRow(index, { max_score: Number(e.target.value) });
+                  onChange={(value) => {
+                    updateRow(index, { max_score: value ?? 0 });
                   }}
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("rangeIncrease")}</span>
-                <Input
-                  type="number"
+              </Field>
+              <Field label={t("rangeIncrease")}>
+                <NumberInput
                   className="w-24"
                   value={row.increase_amount}
-                  onChange={(e) => {
-                    updateRow(index, { increase_amount: Number(e.target.value) });
+                  onChange={(value) => {
+                    updateRow(index, { increase_amount: value ?? 0 });
                   }}
                 />
-              </label>
+              </Field>
               <IconButton
                 icon={<Trash2 />}
                 aria-label={t("rangeRemoveRow")}

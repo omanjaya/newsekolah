@@ -51,7 +51,10 @@ those seeded actors in at once, in real browser contexts, and proves a
 cross-role flow (a leave request, an exit permit, attendance, grades, a
 library reservation, and a reconnect after going offline) shows up live
 on another actor's already-open screen -- never against a mocked API,
-always a real running stack.
+always a real running stack. A student may take one exit permit per day,
+so the exit permit scenario enrolls a student of its own in X-A for each
+run (through the admin API) and takes them out of the class and archives
+the account afterwards.
 
 ```bash
 pnpm dev:docker        # start the stack (first run: wait for it to be healthy)

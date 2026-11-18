@@ -10,6 +10,7 @@ import { formatDisplayName } from "../../../lib/text/format-name";
 import type { ViolationType } from "../../discipline/api";
 import { StudentLink } from "../../students/components/student-link";
 import type { RosterItem, SessionDetail } from "../api";
+import { sourceNoteText } from "../lib/source-note";
 
 import { AttendanceStatusRadioGroup } from "./attendance-status-radio-group";
 import { SessionRowActionsMenu } from "./session-row-actions-menu";
@@ -62,11 +63,17 @@ export const SessionRosterRow = memo(function SessionRosterRow({
   onToggleViolation: (studentId: string, violationTypeId: string) => void;
 }): ReactElement {
   const t = useTranslations("app.attendance.session");
+  const tAttendance = useTranslations("app.attendance");
   // Local draft so typing paints instantly in this row; the value is
   // still committed to the parent on every change (cheap now that only
   // this row re-renders), which keeps the pending-changes count and the
-  // submit payload exactly as they were before this split.
-  const [draftNote, setDraftNote] = useState(note);
+  // submit payload exactly as they were before this split. A row filled
+  // in from a permit starts from its localized note ("Surat izin 21/...")
+  // instead of the API's English machine text; the parent keeps the
+  // stored note, so it is saved unchanged unless the teacher edits it.
+  const [draftNote, setDraftNote] = useState(() =>
+    sourceNoteText(note, item.source, (number) => tAttendance("leaveLetterNote", { number })),
+  );
   // The previous session's recorded status ("PS" in the old SION roster,
   // reference/sion-rebuild-go/frontend/app/attendance/page.tsx's
   // `attendance-ps` column), shown only when it was an exception worth a
@@ -77,48 +84,58 @@ export const SessionRosterRow = memo(function SessionRosterRow({
   // A not-present status always needs its note visible; a present student
   // keeps the field collapsed behind the actions menu until asked for, so
   // 36 rows of "Hadir" do not each carry an empty text box.
-  const [noteExpanded, setNoteExpanded] = useState(!isPresent || note !== "");
+  const [noteExpanded, setNoteExpanded] = useState(!isPresent || draftNote !== "");
   const noteVisible = !isPresent || noteExpanded;
 
   return (
-    <li className="flex flex-col gap-1.5 px-4 py-2.5" data-changed={changed || undefined}>
-      <div className="flex flex-col gap-1.5 md:flex-row md:items-center md:justify-between">
+    <li
+      className="flex flex-col gap-2 border-b border-line px-4 py-3 last:border-b-0"
+      data-changed={changed || undefined}
+    >
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <Avatar name={item.name} size="sm" />
+          <Avatar name={item.name} size={32} decorative />
           <div className="flex min-w-0 flex-col">
-            <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[14px] text-fg">
-              <span className="truncate">
+            <span className="flex min-w-0 items-center gap-1.5 text-body text-fg">
+              <span className="truncate font-medium">
                 <StudentLink studentId={item.student_user_id}>
                   {formatDisplayName(item.name)}
                 </StudentLink>
               </span>
-              {item.nis && <span className="text-[12px] text-fg-muted">{item.nis}</span>}
-              <StudentYearRecap statuses={statuses} yearCounts={item.year_counts} />
               {changed && (
                 <span
+                  role="img"
                   className="size-1.5 shrink-0 rounded-full bg-accent"
                   aria-label={t("rowChanged")}
                   title={t("rowChanged")}
                 />
               )}
             </span>
+            {/* Secondary facts on one dim line, separated by a middle dot. */}
+            <span className="flex flex-wrap items-center gap-x-1.5 text-caption font-normal text-fg-muted">
+              {item.nis && <span>{item.nis}</span>}
+              {item.nis && item.year_counts && <span aria-hidden="true">·</span>}
+              <StudentYearRecap statuses={statuses} yearCounts={item.year_counts} />
+            </span>
             {previousStatusNote && (
-              <span className="text-[12px] text-fg-muted">
+              <span className="text-caption font-normal text-fg-muted">
                 {t("previousStatus", { status: previousStatusNote })}
               </span>
             )}
             {item.blocked && (
-              <span className="flex items-center gap-1 text-[12px] text-fg-muted">
+              <span className="flex items-center gap-1 text-caption font-normal text-fg-muted">
                 <Lock className="size-3" aria-hidden="true" />
                 {item.blocked_reason ?? t("blocked")}
               </span>
             )}
             {!item.blocked && item.source && item.source !== "teacher" && (
-              <span className="text-[12px] text-fg-muted">{t(`source.${item.source}`)}</span>
+              <span className="text-caption font-normal text-fg-muted">
+                {t(`source.${item.source}`)}
+              </span>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <AttendanceStatusRadioGroup
             statuses={statuses}
             value={currentStatus}

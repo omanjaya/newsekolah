@@ -1,17 +1,18 @@
 "use client";
 
 import type { Locale } from "@newsekolah/i18n";
-import { formatDateTime } from "@newsekolah/i18n";
+import { formatDateTime, formatRelative } from "@newsekolah/i18n";
 import {
+  Alert,
   Badge,
   Button,
   DataTable,
   EmptyState,
-  PageHeader,
+  FilteredEmptyState,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { History } from "lucide-react";
+import { History, X } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -26,13 +27,21 @@ import {
   useDirectoryPickerLabels,
 } from "../../reference/components/directory-picker";
 import { useDirectoryNames } from "../../reference/directory-names";
+import { SettingsPage } from "../../settings/components/settings-page";
 import { type AuditLogEntry, useAuditLogsQuery } from "../api";
 
-import { AuditLogDetailDialog } from "./audit-log-detail-dialog";
+import { AuditLogDetailSheet } from "./audit-log-detail-dialog";
 import { AUDIT_ENTITY_TYPES, shortId, useAuditLabels } from "./use-audit-labels";
 
-const SYSTEM_ACTOR = "system";
+const PAGE_SIZE = 50;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * The audit trail: one dense, filterable table, newest first. Actions and
+ * entities read as words, the time is relative within a day (the exact
+ * time on hover), and a row opens the change in a side sheet. Filters live
+ * in the URL; paging follows the API's cursor.
+ */
 export function AuditLogsView(): ReactElement {
   const t = useTranslations("app.audit");
   const locale = useLocale() as Locale;
@@ -55,7 +64,7 @@ export function AuditLogsView(): ReactElement {
   const actorLabels = useDirectoryPickerLabels(t("filters.actorAll"));
   const labels = useAuditLabels();
 
-  const { data, isLoading } = useAuditLogsQuery({
+  const { data, isLoading, isError, error, refetch, isRefetching } = useAuditLogsQuery({
     actorUserId: actorUserId || undefined,
     entityType: entityType || undefined,
     from: from || undefined,
@@ -76,6 +85,16 @@ export function AuditLogsView(): ReactElement {
     setCursors([""]);
   }
 
+  const filtering = actorUserId !== "" || entityType !== "" || from !== "" || to !== "";
+
+  function clearFilters() {
+    setActorUserId("");
+    setEntityType("");
+    setFrom("");
+    setTo("");
+    resetPaging();
+  }
+
   const filters: DataTableFilterDef[] = [
     {
       id: "entityType",
@@ -85,7 +104,9 @@ export function AuditLogsView(): ReactElement {
         setEntityType(value);
         resetPaging();
       },
-      options: AUDIT_ENTITY_TYPES.map((type) => ({ value: type, label: labels.entityType(type) })),
+      options: AUDIT_ENTITY_TYPES.map((type) => ({ value: type, label: labels.entityType(type) }))
+        .slice()
+        .sort((a, b) => a.label.localeCompare(b.label)),
     },
     {
       id: "period",
@@ -102,42 +123,45 @@ export function AuditLogsView(): ReactElement {
     },
   ];
 
-  function actorName(id: string | undefined): string {
-    if (!id) return t(SYSTEM_ACTOR);
-    return actorMap.get(id)?.name ?? id;
+  function actorName(id: string | undefined): string | undefined {
+    if (!id) return undefined;
+    return actorMap.get(id)?.name ?? shortId(id);
   }
 
   const columns = useMemo<ColumnDef<AuditLogEntry>[]>(
     () => [
       {
-        accessorKey: "occurred_at",
-        header: t("columns.when"),
+        accessorKey: "action",
+        header: t("columns.action"),
         enableSorting: false,
-        cell: ({ row }) => formatDateTime(row.original.occurred_at, { locale, timeZone }),
+        meta: { card: "title" },
+        cell: ({ row }) => (
+          <span className="font-medium text-fg">{labels.action(row.original.action)}</span>
+        ),
       },
       {
         id: "actor",
         header: t("columns.actor"),
         enableSorting: false,
+        meta: { card: "subtitle", skeleton: "lines" },
         cell: ({ row }) => {
           const entry = row.original;
+          const name = actorName(entry.actor_user_id);
           return (
-            <div className="flex items-center gap-2">
-              <span className="text-fg">{actorName(entry.actor_user_id)}</span>
+            <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+              {name ? (
+                <span className="text-fg">{name}</span>
+              ) : (
+                <Badge size="sm">{t("system")}</Badge>
+              )}
               {entry.acting_as_user_id && (
-                <Badge variant="neutral">
-                  {t("actingAs", { name: actorName(entry.acting_as_user_id) })}
+                <Badge size="sm" tone="warning">
+                  {t("actingAs", { name: actorName(entry.acting_as_user_id) ?? "" })}
                 </Badge>
               )}
-            </div>
+            </span>
           );
         },
-      },
-      {
-        accessorKey: "action",
-        header: t("columns.action"),
-        enableSorting: false,
-        cell: ({ row }) => labels.action(row.original.action),
       },
       {
         id: "entity",
@@ -147,7 +171,7 @@ export function AuditLogsView(): ReactElement {
           const { entity_type: type, entity_id: id } = row.original;
           // A user entity resolves to a name through the same directory as
           // the actor column; anything else shows a short id tail, and the
-          // full id stays in the detail dialog.
+          // full id stays in the detail sheet.
           const target = id ? (type === "user" ? actorMap.get(id)?.name : undefined) : undefined;
           return (
             <span className="text-fg-muted">
@@ -158,121 +182,140 @@ export function AuditLogsView(): ReactElement {
         },
       },
       {
+        accessorKey: "occurred_at",
+        header: t("columns.when"),
+        enableSorting: false,
+        meta: { card: "meta" },
+        cell: ({ row }) => {
+          const at = row.original.occurred_at;
+          const exact = formatDateTime(at, { locale, timeZone });
+          const recent = Date.now() - new Date(at).getTime() < DAY_MS;
+          return (
+            <time dateTime={at} title={exact} className="whitespace-nowrap text-fg-muted">
+              {recent ? formatRelative(at, { locale, timeZone }) : exact}
+            </time>
+          );
+        },
+      },
+      {
         accessorKey: "ip",
         header: t("columns.ip"),
         enableSorting: false,
-        cell: ({ row }) => row.original.ip ?? "-",
+        meta: { card: "hidden" },
+        cell: ({ row }) => (
+          <span className="font-mono text-fg-muted">{row.original.ip ?? "-"}</span>
+        ),
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- actorName closes over actorMap
-    [t, locale, timeZone, actorMap],
+    [t, locale, timeZone, actorMap, labels],
   );
 
   const items = data?.data ?? [];
+  // A failed read with no error object still counts as failed.
+  const loadError: unknown = isError && !data ? error : undefined;
   const isImpersonating = Boolean(me?.impersonated_by);
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
-
+    <SettingsPage navKey="settings-audit" variant="fit" description={t("description")}>
       {isImpersonating && (
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-sm border border-border bg-surface p-4 text-[13px]">
-          <span className="min-w-0 text-fg">{t("impersonationNote")}</span>
-          <Button asChild variant="secondary" size="sm">
-            <Link href="/profile">{t("impersonationLink")}</Link>
-          </Button>
-        </div>
+        <Alert
+          variant="info"
+          title={t("impersonationNote")}
+          action={
+            <Button asChild variant="secondary" size="sm">
+              <Link href="/profile">{t("impersonationLink")}</Link>
+            </Button>
+          }
+        />
       )}
-
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("filters.actor")}</span>
-          <DirectoryPicker
-            value={actorUserId}
-            onValueChange={(id) => {
-              setActorUserId(id);
-              resetPaging();
-            }}
-            labels={actorLabels}
-            className="w-64"
-          />
-        </label>
-        {actorUserId !== "" && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setActorUserId("");
-              resetPaging();
-            }}
-          >
-            {t("filters.clearActor")}
-          </Button>
-        )}
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/audit/components/audit-logs-view:2"
+          mode="cursor"
+          fillHeight
+          density="compact"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          searchable={false}
+          filters={filters}
+          filtersLabels={{
+            reset: t("filters.reset"),
+            removeFilter: (label) => t("filters.removeFilter", { label }),
+            dateRangeFrom: t("filters.from"),
+            dateRangeTo: t("filters.to"),
+            dateRangeInvalid: t("filters.invalidRange"),
+          }}
+          toolbarActions={
+            <div className="flex items-center gap-1">
+              <DirectoryPicker
+                value={actorUserId}
+                onValueChange={(id) => {
+                  setActorUserId(id);
+                  resetPaging();
+                }}
+                labels={actorLabels}
+                // A filter among the filter pills, so it takes their shape
+                // and their compact height where the pointer is fine.
+                className="w-full sm:w-56 sm:rounded-full md:pointer-fine:h-8 md:pointer-fine:text-body-sm"
+              />
+              {actorUserId !== "" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<X />}
+                  onClick={() => {
+                    setActorUserId("");
+                    resetPaging();
+                  }}
+                >
+                  <span className="sr-only">{t("filters.clearActor")}</span>
+                </Button>
+              )}
+            </div>
+          }
+          isLoading={isLoading}
+          // A failed read keeps the filter bar, so a bad filter can still be changed.
+          error={isError && !data ? (loadError ?? true) : undefined}
+          onRetry={() => void refetch()}
+          retrying={isRefetching}
+          getRowId={(entry) => entry.id}
+          onRowActivate={setSelected}
+          cursorPagination={{
+            hasPrevious: cursors.length > 1,
+            hasNext: Boolean(data?.next_cursor),
+            onPrevious: () => {
+              setCursors((p) => p.slice(0, -1));
+            },
+            onNext: () => {
+              const next = data?.next_cursor;
+              if (next) setCursors((p) => [...p, next]);
+            },
+            page: cursors.length,
+            pageSize: PAGE_SIZE,
+          }}
+          emptyState={
+            filtering ? (
+              <FilteredEmptyState onReset={clearFilters} />
+            ) : (
+              <EmptyState
+                icon={<History aria-hidden="true" />}
+                title={t("emptyTitle")}
+                description={t("emptyBody")}
+              />
+            )
+          }
+        />
       </div>
 
-      <DataTable
-        stateKey="features/audit/components/audit-logs-view:1"
-        mode="cursor"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        filters={filters}
-        filtersLabels={{
-          reset: t("filters.reset"),
-          removeFilter: (label) => t("filters.removeFilter", { label }),
-          dateRangeFrom: t("filters.from"),
-          dateRangeTo: t("filters.to"),
-          dateRangeInvalid: t("filters.invalidRange"),
-        }}
-        isLoading={isLoading}
-        getRowId={(entry) => entry.id}
-        onRowActivate={setSelected}
-        emptyState={
-          <EmptyState
-            icon={<History aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
-
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={cursors.length <= 1}
-          onClick={() => {
-            setCursors((p) => p.slice(0, -1));
-          }}
-        >
-          {t("pagePrev")}
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={!data?.next_cursor}
-          onClick={() => {
-            const next = data?.next_cursor;
-            if (next) setCursors((p) => [...p, next]);
-          }}
-        >
-          {t("pageNext")}
-        </Button>
-      </div>
-
-      <AuditLogDetailDialog
+      <AuditLogDetailSheet
         entry={selected}
+        actorName={actorName}
         onOpenChange={(open) => {
           if (!open) setSelected(null);
         }}
       />
-    </div>
+    </SettingsPage>
   );
 }

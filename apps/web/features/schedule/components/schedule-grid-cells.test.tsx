@@ -83,12 +83,26 @@ describe("LessonCell", () => {
       span: 1,
       subject: "Matematika",
       detail: "Budi",
-      canManage: false,
+      canManage: true,
       crossesBreak: true,
       breakWarningLabel: "crossesBreakWarning",
     });
 
     expect(screen.getByRole("img", { name: "crossesBreakWarning" })).toBeInTheDocument();
+  });
+
+  it("keeps the break-crossing warning from readers who cannot edit the timetable", () => {
+    renderCell({
+      block: block(),
+      span: 1,
+      subject: "Matematika",
+      detail: "Budi",
+      canManage: false,
+      crossesBreak: true,
+      breakWarningLabel: "crossesBreakWarning",
+    });
+
+    expect(screen.queryByRole("img", { name: "crossesBreakWarning" })).not.toBeInTheDocument();
   });
 
   it("paints the same subject id with the same soft-category tone every render", () => {

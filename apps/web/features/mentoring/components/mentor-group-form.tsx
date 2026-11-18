@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, useToast } from "@newsekolah/ui";
+import { DialogFooter, Field, Button, Input, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -59,17 +59,15 @@ export function MentorGroupForm({
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("mentor")}</span>
+      <Field label={t("mentor")}>
         <DirectoryPicker
           profileKind="teacher"
           value={mentorUserId}
           onValueChange={setMentorUserId}
           labels={mentorLabels}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
+      </Field>
+      <Field label={t("name")}>
         <Input
           value={name}
           onChange={(e) => {
@@ -79,15 +77,15 @@ export function MentorGroupForm({
           required
           maxLength={100}
         />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      </Field>
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={pending} disabled={!mentorUserId || !name.trim()}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

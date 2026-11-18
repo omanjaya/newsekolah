@@ -55,8 +55,8 @@ export const MeetingRosterRow = memo(function MeetingRosterRow({
       data-changed={changed || undefined}
     >
       <div className="flex min-w-0 items-center gap-3">
-        <Avatar name={name} size="sm" />
-        <span className="flex min-w-0 items-center gap-1.5 text-[14px] text-fg">
+        <Avatar name={name} size={32} />
+        <span className="flex min-w-0 items-center gap-1.5 text-body text-fg">
           <span className="truncate">{formatDisplayName(name)}</span>
           {changed && (
             <span
@@ -72,6 +72,9 @@ export const MeetingRosterRow = memo(function MeetingRosterRow({
           const selected = status === code;
           const token = meetingStatusToken(code);
           return (
+            // One status of the meeting roster's per-student radio row, in
+            // attendance colours; no shared control draws per-option colours.
+            // eslint-disable-next-line design-system/no-raw-elements -- status segment, see above
             <button
               key={code}
               type="button"
@@ -84,7 +87,7 @@ export const MeetingRosterRow = memo(function MeetingRosterRow({
                 onStatusChange(studentId, code);
               }}
               className={cn(
-                "min-h-11 min-w-11 rounded-xs border px-2.5 py-2 text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                "min-h-11 min-w-11 rounded-md border px-2.5 py-2 text-label transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                 selected ? SELECTED_CLASS[token] : UNSELECTED_CLASS[token],
               )}
             >

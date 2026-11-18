@@ -1,6 +1,6 @@
 "use client";
 
-import { DataTable, EmptyState, StatusBadge, cn } from "@newsekolah/ui";
+import { Badge, DataTable, EmptyState, StatusBadge, cn } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { FileBarChart } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -39,7 +39,7 @@ export function MonthlyAttendanceTable({
           return token ? (
             <StatusBadge status={token} label={t(`codes.${code}`)} />
           ) : (
-            <span className="text-fg-muted">{t(`codes.${code}`)}</span>
+            <Badge tone="neutral">{t(`codes.${code}`)}</Badge>
           );
         },
       },
@@ -48,7 +48,7 @@ export function MonthlyAttendanceTable({
         header: t("columns.sessions"),
         enableSorting: false,
         cell: ({ row }) => (
-          <span className={cn(!row.original.complete && "text-status-late")}>
+          <span className={cn(!row.original.complete && "text-warning")}>
             {row.original.submitted_sessions}/{row.original.expected_sessions}
           </span>
         ),
@@ -62,14 +62,13 @@ export function MonthlyAttendanceTable({
   return (
     <>
       {report.data && (
-        <dl className="flex flex-wrap gap-4 text-[13px]">
+        <div className="flex flex-wrap items-center gap-2">
           {Object.entries(report.data.totals).map(([code, count]) => (
-            <div key={code} className="flex items-center gap-1">
-              <dt className="text-fg-muted">{t(`codes.${code}`)}</dt>
-              <dd className="font-medium text-fg">{count}</dd>
-            </div>
+            <Badge key={code} tone="neutral">
+              {t(`codes.${code}`)} {count}
+            </Badge>
           ))}
-        </dl>
+        </div>
       )}
       <DataTable
         stateKey="features/attendance/components/monthly-report-tab:1"
@@ -83,6 +82,10 @@ export function MonthlyAttendanceTable({
         onSortingChange={() => undefined}
         globalFilter=""
         isLoading={report.isLoading}
+        error={report.isError ? report.error : undefined}
+        onRetry={() => {
+          void report.refetch();
+        }}
         getRowId={(r) => r.date}
         emptyState={
           <EmptyState icon={<FileBarChart aria-hidden="true" />} title={t("emptyTitle")} />

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { buildMe, mockBranding, mockSession } from "./fixtures";
+import { buildMe, expectHome, mockBranding, mockSession } from "./fixtures";
 
 test("logout from the header clears the session and returns to /login", async ({ page }) => {
   await mockBranding(page);
@@ -14,10 +14,10 @@ test("logout from the header clears the session and returns to /login", async ({
   });
 
   await page.goto("/dashboard");
-  await expect(page.getByText(`Selamat datang, ${me.name}`)).toBeVisible();
+  await expectHome(page, me.name);
 
-  await page.getByRole("button", { name: "Menu akun" }).click();
-  await page.getByText("Keluar").click();
+  await page.getByRole("button", { name: "Menu akun", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Keluar", exact: true }).click();
 
   await expect(page).toHaveURL(/\/login/);
 });

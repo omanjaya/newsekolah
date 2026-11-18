@@ -1,10 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useExpectedGuestsQuery: vi.fn(),
   canManage: true,
+  cancel: vi.fn(),
 }));
 
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
@@ -12,6 +13,7 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/visitors/expected",
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: () => mocks.canManage,
   useSession: () => ({ me: undefined }),
@@ -25,7 +27,7 @@ vi.mock("../../reference/directory-names", async () => {
 });
 vi.mock("../api", () => ({
   useExpectedGuestsQuery: mocks.useExpectedGuestsQuery,
-  useCancelExpectedGuestMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useCancelExpectedGuestMutation: () => ({ mutate: mocks.cancel, isPending: false }),
 }));
 
 import { ExpectedGuestsView } from "./expected-guests-view";
@@ -69,5 +71,65 @@ describe("ExpectedGuestsView filters", () => {
     await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
     expect(mocks.useExpectedGuestsQuery).toHaveBeenLastCalledWith(expect.any(String), true);
     expect(new URLSearchParams(window.location.search).get("only_pending")).toBe("");
+  });
+
+  const pendingGuest = {
+    id: "g1",
+    full_name: "Pak Made",
+    organization: "Dinas",
+    host_user_id: "u1",
+    status: "pending",
+    purpose: "Rapat",
+  };
+
+  it("confirms before cancelling an expected guest and names the guest", async () => {
+    mocks.cancel.mockReset();
+    mocks.useExpectedGuestsQuery.mockReturnValue({
+      data: { data: [pendingGuest] },
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<ExpectedGuestsView />);
+
+    // Withdrawing is the row's destructive action, kept in its menu. The
+    // phone cards are mounted beside the table (CSS shows one of them), so
+    // the row's one menu is read from the table.
+    await user.click(within(screen.getByRole("table")).getByRole("button", { name: "rowActions" }));
+    await user.click(screen.getByRole("menuitem", { name: "cancel" }));
+    expect(mocks.cancel).not.toHaveBeenCalled();
+    expect(await screen.findByText("cancelDialog.body")).toBeInTheDocument();
+  });
+
+  it("shows the visit's purpose so the guard knows why the guest came", () => {
+    mocks.useExpectedGuestsQuery.mockReturnValue({
+      data: { data: [pendingGuest] },
+      isLoading: false,
+    });
+    render(<ExpectedGuestsView />);
+    expect(screen.getAllByText("Rapat").length).toBeGreaterThan(0);
+  });
+
+  it("hides the empty actions column from a read-only reader", () => {
+    mocks.canManage = false;
+    mocks.useExpectedGuestsQuery.mockReturnValue({
+      data: { data: [pendingGuest] },
+      isLoading: false,
+    });
+    render(<ExpectedGuestsView />);
+    expect(screen.queryByRole("columnheader", { name: "columns.actions" })).not.toBeInTheDocument();
+  });
+
+  it("shows a retry control instead of the empty state when loading fails", () => {
+    mocks.useExpectedGuestsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error("boom"),
+      refetch: vi.fn(),
+    });
+    render(<ExpectedGuestsView />);
+    // The table's own error state, with its retry, stands in for the rows.
+    expect(screen.getByRole("button", { name: "Coba lagi" })).toBeInTheDocument();
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
   });
 });

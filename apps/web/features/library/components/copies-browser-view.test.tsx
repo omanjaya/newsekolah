@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/library/copies",
+  useRouter: () => ({ push: vi.fn() }),
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => mocks.canManage }));
@@ -17,6 +18,10 @@ vi.mock("../../../lib/view-state/view-state-provider", () => ({
   useRememberedViewState: () => ["", vi.fn()],
 }));
 vi.mock("../../reference/api", () => ({ useLookup: () => new Map() }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+vi.mock("./library-title-name", () => ({
+  LibraryTitleName: ({ titleId }: { titleId: string }) => titleId,
+}));
 vi.mock("../copies-api", () => ({
   useLibraryCopiesFilteredQuery: mocks.useLibraryCopiesFilteredQuery,
   useCollectionCategoriesQuery: () => ({
@@ -107,5 +112,27 @@ describe("CopiesBrowserView filters", () => {
       expect.objectContaining({ categoryId: "" }),
     );
     expect(new URLSearchParams(window.location.search).get("category_id")).toBe("");
+  });
+
+  it("hides row selection and the label print bar from roles that cannot manage the catalogue", () => {
+    mocks.canManage = false;
+    mocks.useLibraryCopiesFilteredQuery.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: "c1",
+            title_id: "t1",
+            barcode: "B-1",
+            accession_number: "A-1",
+            call_number: "C-1",
+            status: "available",
+          },
+        ],
+      },
+      isLoading: false,
+    });
+    render(<CopiesBrowserView />);
+
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
   });
 });

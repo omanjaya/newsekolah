@@ -1,33 +1,32 @@
 "use client";
 
 import {
+  Button,
+  ConfirmDialog,
   EmptyState,
-  PageHeader,
   Select,
-  Skeleton,
+  SkeletonList,
   Tabs,
+  TabsContent,
   TabsList,
   TabsTrigger,
-  cn,
   domainIcons,
 } from "@newsekolah/ui";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
-import { bentoCells } from "../../../lib/layout/bento";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useTeachingAssignmentsForTeacherQuery } from "../../academic/api-offerings";
 import { useClassesQuery, useSubjectsQuery } from "../../reference/api";
-import { useGradebookQuery, useTermsQuery } from "../api";
-import { gradebookFillPercentage } from "../lib/gradebook-stats";
+import { useTermsQuery } from "../api";
 
 import { EraporExport } from "./erapor-export";
 import { GradebookSheet } from "./gradebook-sheet";
-import { GradingAssignmentCard } from "./grading-assignment-card";
-import { GradingEntryTiles } from "./grading-entry-tiles";
 import { GradingSettings } from "./grading-settings";
 import { TPMappingEditor } from "./tp-mapping-editor";
 
@@ -43,10 +42,14 @@ interface AssignmentPair {
   subjectId: string;
 }
 
+const pairKey = (pair: AssignmentPair) => `${pair.classId}:${pair.subjectId}`;
+
 /**
- * The teacher's gradebook screen: pick a class and subject, then work in
- * either the score sheet or (for staff with manage_settings) the shared
- * grading scale and report-score increase ranges.
+ * The grading workspace: the score sheet of one class and subject is the
+ * first thing on the page, under one scope bar (a teacher picks one of
+ * their teaching assignments, a school-wide reader a class and a subject)
+ * and the term. The TP mapping, the e-Rapor export and the grading
+ * settings are panels of the same page.
  */
 export function GradingView(): ReactElement {
   const t = useTranslations("app.grading");
@@ -89,19 +92,18 @@ export function GradingView(): ReactElement {
     return all.filter((c) => taught.has(c.id));
   }, [canOpenAny, classes.data, activeAssignments]);
 
-  // Every distinct (class, subject) this teacher teaches, independent of
-  // which class/subject the pickers currently point at -- the entry
-  // page's bento cards (docs/07-ui-ux.md): one per teaching assignment,
-  // not one per term it happens to span.
+  // Every distinct (class, subject) this teacher teaches, one per teaching
+  // assignment rather than one per term it happens to span: a teacher's
+  // whole scope fits one picker.
   const assignmentPairs = useMemo<AssignmentPair[]>(() => {
     if (canOpenAny) return [];
     const seen = new Set<string>();
     const pairs: AssignmentPair[] = [];
     for (const a of activeAssignments) {
-      const key = `${a.class_id}:${a.subject_id}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      pairs.push({ classId: a.class_id, subjectId: a.subject_id });
+      const pair = { classId: a.class_id, subjectId: a.subject_id };
+      if (seen.has(pairKey(pair))) continue;
+      seen.add(pairKey(pair));
+      pairs.push(pair);
     }
     return pairs;
   }, [canOpenAny, activeAssignments]);
@@ -144,12 +146,6 @@ export function GradingView(): ReactElement {
   );
   const [pendingChanges, setPendingChanges] = useState(0);
 
-  const classOptions = classList.map((c) => ({ value: c.id, label: c.name }));
-  const subjectOptions = subjectList.map((s) => ({ value: s.id, label: s.name }));
-  const termOptions = [
-    { value: ALL_TERMS, label: t("allTerms") },
-    ...(terms.data?.data ?? []).map((term) => ({ value: term.id, label: term.name })),
-  ];
   // A subject picked for one class may not be taught in the next, so the
   // sheet falls back to the first subject this class offers.
   const effectiveSubjectId =
@@ -160,183 +156,213 @@ export function GradingView(): ReactElement {
     classes.isLoading || subjects.isLoading || (!canOpenAny && assignments.isLoading);
   const noAssignments = !canOpenAny && !scopeLoading && classList.length === 0;
 
+  // A scope change (class, subject, term, tab) would drop unsaved scores, so
+  // it waits behind a confirmation when there are any.
+  const [pendingScopeChange, setPendingScopeChange] = useState<(() => void) | null>(null);
+
   function changeScope(change: () => void) {
-    if (pendingChanges > 0 && !window.confirm(t("table.discardChanges"))) return;
-    setPendingChanges(0);
+    if (pendingChanges > 0) {
+      setPendingScopeChange(() => change);
+      return;
+    }
     change();
   }
 
-  function openAssignment(pair: AssignmentPair) {
-    changeScope(() => {
-      setClassId(pair.classId);
-      setSubjectId(pair.subjectId);
-    });
-  }
+  const classNameOf = (id: string) => classes.data?.data.find((c) => c.id === id)?.name ?? "";
+  const subjectNameOf = (id: string) => subjects.data?.data.find((s) => s.id === id)?.name ?? "";
 
-  // Shared with GradebookSheet's own identical call (same query key once
-  // termId's "" normalizes to undefined the same way there): TanStack
-  // Query dedupes them into one request, so the entry tiles cost nothing
-  // extra over opening the sheet by itself.
-  const overviewSheet = useGradebookQuery({
-    classId: effectiveClassId,
-    subjectId: effectiveSubjectId,
-    termId: termId || undefined,
-  });
+  const showTpTab = canManageGrades && !noAssignments;
+  const showEraporTab = canManageGrades || canViewGrades;
+  const showSettingsTab = canManageSettings || canManageGrades;
+  // The sheet panel is always there (it explains when there is no sheet).
+  const tabCount = 1 + [showTpTab, showEraporTab, showSettingsTab].filter(Boolean).length;
+  // The class and subject only steer the sheet and the TP mapping; the
+  // e-Rapor export and the settings have scopes of their own.
+  const showScope = !noAssignments && (tab === "gradebook" || tab === "tp");
 
-  const showEntryOverview =
-    tab === "gradebook" &&
-    !scopeLoading &&
-    !noAssignments &&
-    effectiveClassId &&
-    effectiveSubjectId;
-
-  const assignmentCells = bentoCells(
-    assignmentPairs.map((pair) => ({
-      key: `${pair.classId}:${pair.subjectId}`,
-      node: (
-        <GradingAssignmentCard
-          classId={pair.classId}
-          subjectId={pair.subjectId}
-          termId={termId || undefined}
-          className={classList.find((c) => c.id === pair.classId)?.name ?? ""}
-          subjectName={subjectList.find((s) => s.id === pair.subjectId)?.name ?? ""}
-          active={pair.classId === effectiveClassId && pair.subjectId === effectiveSubjectId}
-          onOpen={() => {
-            openAssignment(pair);
-          }}
-        />
-      ),
-    })),
+  const termSelect = (
+    <Select
+      options={[
+        { value: ALL_TERMS, label: t("allTerms") },
+        ...(terms.data?.data ?? []).map((term) => ({ value: term.id, label: term.name })),
+      ]}
+      value={termId || ALL_TERMS}
+      onValueChange={(value) => {
+        changeScope(() => {
+          setTermId(value === ALL_TERMS ? "" : value);
+        });
+      }}
+      aria-label={t("pickTerm")}
+      className="w-full sm:w-44"
+    />
   );
 
-  return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          <>
-            <Select
-              options={classOptions}
-              value={effectiveClassId}
-              onValueChange={(value) => {
-                changeScope(() => {
-                  setClassId(value);
-                });
-              }}
-              placeholder={t("pickClass")}
-              aria-label={t("pickClass")}
-              className="w-full rounded-full md:w-48"
-            />
-            <Select
-              options={subjectOptions}
-              value={effectiveSubjectId}
-              onValueChange={(value) => {
-                changeScope(() => {
-                  setSubjectId(value);
-                });
-              }}
-              placeholder={t("pickSubject")}
-              aria-label={t("pickSubject")}
-              className="w-full rounded-full md:w-48"
-            />
-            <Select
-              options={termOptions}
-              value={termId || ALL_TERMS}
-              onValueChange={(value) => {
-                changeScope(() => {
-                  setTermId(value === ALL_TERMS ? "" : value);
-                });
-              }}
-              aria-label={t("pickTerm")}
-              className="w-full rounded-full md:w-40"
-            />
-          </>
-        }
+  const scope = !showScope ? undefined : canOpenAny ? (
+    // On a phone the class and the term share the first row and the
+    // subject, the longest name, takes the second whole; from sm one row
+    // in reading order.
+    <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+      <Select
+        options={classList.map((c) => ({ value: c.id, label: c.name }))}
+        value={effectiveClassId}
+        onValueChange={(value) => {
+          changeScope(() => {
+            setClassId(value);
+          });
+        }}
+        placeholder={t("pickClass")}
+        aria-label={t("pickClass")}
+        className="w-full sm:w-40"
       />
-
-      {(canManageSettings || canManageGrades || canViewGrades) && (
-        <Tabs
-          value={tab}
+      <div className="col-span-2 max-sm:order-last sm:col-span-1">
+        <Select
+          options={subjectList.map((s) => ({ value: s.id, label: s.name }))}
+          value={effectiveSubjectId}
           onValueChange={(value) => {
             changeScope(() => {
-              setTab(value as Tab);
+              setSubjectId(value);
             });
           }}
-        >
-          <TabsList>
-            <TabsTrigger value="gradebook">{t("tabGradebook")}</TabsTrigger>
-            {canManageGrades && <TabsTrigger value="tp">{t("tabTpMapping")}</TabsTrigger>}
-            {(canManageGrades || canViewGrades) && (
-              <TabsTrigger value="erapor">{t("tabErapor")}</TabsTrigger>
-            )}
-            {(canManageSettings || canManageGrades) && (
-              <TabsTrigger value="settings">{t("tabSettings")}</TabsTrigger>
-            )}
-          </TabsList>
-        </Tabs>
-      )}
-
-      {tab === "settings" && (canManageSettings || canManageGrades) ? (
-        <GradingSettings canManageSettings={canManageSettings} />
-      ) : tab === "erapor" && (canManageGrades || canViewGrades) ? (
-        <EraporExport />
-      ) : tab === "tp" && canManageGrades && effectiveClassId && effectiveSubjectId ? (
-        <TPMappingEditor
-          key={`tp-${effectiveClassId}-${effectiveSubjectId}`}
-          classId={effectiveClassId}
-          subjectId={effectiveSubjectId}
+          placeholder={t("pickSubject")}
+          aria-label={t("pickSubject")}
+          className="w-full sm:w-48"
         />
-      ) : scopeLoading ? (
-        <Skeleton className="h-96 w-full" aria-busy="true" />
-      ) : noAssignments ? (
-        <EmptyState
-          icon={<domainIcons.grades aria-hidden="true" />}
-          title={t("noAssignmentsTitle")}
-          description={t("noAssignmentsBody")}
-        />
-      ) : effectiveClassId && effectiveSubjectId ? (
-        <div className="flex flex-col gap-6">
-          {showEntryOverview && overviewSheet.data && (
-            <GradingEntryTiles
-              studentCount={overviewSheet.data.students.length}
-              componentCount={overviewSheet.data.components.length}
-              fillPercent={gradebookFillPercentage(
-                overviewSheet.data.students,
-                overviewSheet.data.components.length,
-              )}
-              isPublished={overviewSheet.data.is_published}
-            />
-          )}
-
-          {assignmentPairs.length > 0 && (
-            <div className="grid gap-4 lg:grid-cols-2" data-testid="grading-assignment-cards">
-              {assignmentCells.map((cell) => (
-                <div
-                  key={cell.key}
-                  data-testid={`grading-assignment-cell-${cell.key}`}
-                  className={cn("flex h-full flex-col", cell.span === "full" && "lg:col-span-2")}
-                >
-                  <div className="flex-1">{cell.node}</div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <GradebookSheet
-            key={`${effectiveClassId}-${effectiveSubjectId}`}
-            classId={effectiveClassId}
-            subjectId={effectiveSubjectId}
-            termId={termId || undefined}
-            className={classList.find((c) => c.id === effectiveClassId)?.name ?? ""}
-            subjectName={subjectList.find((s) => s.id === effectiveSubjectId)?.name ?? ""}
-            canManage={canManageGrades}
-            onPendingChangesChange={setPendingChanges}
-          />
-        </div>
-      ) : (
-        <p className="text-[13px] text-fg-muted">{t("pickBoth")}</p>
-      )}
+      </div>
+      <div className="min-w-0">{termSelect}</div>
     </div>
+  ) : (
+    <div className="grid w-full grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-2 sm:flex sm:w-auto">
+      <Select
+        options={assignmentPairs.map((pair) => ({
+          value: pairKey(pair),
+          label: [classNameOf(pair.classId), subjectNameOf(pair.subjectId)]
+            .filter(Boolean)
+            .join(" · "),
+        }))}
+        value={pairKey({ classId: effectiveClassId, subjectId: effectiveSubjectId })}
+        onValueChange={(value) => {
+          const pair = assignmentPairs.find((candidate) => pairKey(candidate) === value);
+          if (!pair) return;
+          changeScope(() => {
+            setClassId(pair.classId);
+            setSubjectId(pair.subjectId);
+          });
+        }}
+        placeholder={t("pickAssignment")}
+        aria-label={t("pickAssignment")}
+        className="w-full sm:w-60"
+      />
+      <div className="min-w-0 sm:w-auto">{termSelect}</div>
+    </div>
+  );
+
+  const gradebookPanel = scopeLoading ? (
+    <SkeletonList rows={6} leading={false} />
+  ) : noAssignments ? (
+    <EmptyState
+      icon={<domainIcons.grades aria-hidden="true" />}
+      title={t("noAssignmentsTitle")}
+      description={t("noAssignmentsBody")}
+      action={
+        <Button asChild variant="secondary">
+          <Link href="/schedule">{t("openSchedule")}</Link>
+        </Button>
+      }
+    />
+  ) : effectiveClassId && effectiveSubjectId ? (
+    <GradebookSheet
+      key={`${effectiveClassId}-${effectiveSubjectId}`}
+      classId={effectiveClassId}
+      subjectId={effectiveSubjectId}
+      termId={termId || undefined}
+      className={classNameOf(effectiveClassId)}
+      subjectName={subjectNameOf(effectiveSubjectId)}
+      canManage={canManageGrades}
+      onPendingChangesChange={setPendingChanges}
+    />
+  ) : (
+    <EmptyState
+      icon={<domainIcons.grades aria-hidden="true" />}
+      title={t("pickBothTitle")}
+      description={t("pickBoth")}
+    />
+  );
+
+  // The sheet fills the screen's height on desktop so its table scrolls
+  // under a header that stays put; the other panels scroll as a page.
+  const fillsScreen = tab === "gradebook" && !noAssignments && !scopeLoading;
+
+  return (
+    <Tabs
+      value={tab}
+      onValueChange={(value) => {
+        changeScope(() => {
+          setTab(value as Tab);
+        });
+      }}
+      className="contents"
+    >
+      <AppPage
+        variant={fillsScreen ? "fit" : "wide"}
+        actions={scope}
+        nav={
+          tabCount > 1 ? (
+            <TabsList variant="underline" aria-label={t("tabsLabel")}>
+              <TabsTrigger value="gradebook">{t("tabGradebook")}</TabsTrigger>
+              {showTpTab && <TabsTrigger value="tp">{t("tabTpMapping")}</TabsTrigger>}
+              {showEraporTab && <TabsTrigger value="erapor">{t("tabErapor")}</TabsTrigger>}
+              {showSettingsTab && <TabsTrigger value="settings">{t("tabSettings")}</TabsTrigger>}
+            </TabsList>
+          ) : (
+            false
+          )
+        }
+      >
+        <TabsContent value="gradebook" className="flex flex-col pt-0 md:min-h-0 md:flex-1">
+          {gradebookPanel}
+        </TabsContent>
+        {showTpTab && (
+          <TabsContent value="tp" className="pt-0">
+            {effectiveClassId && effectiveSubjectId ? (
+              <TPMappingEditor
+                key={`tp-${effectiveClassId}-${effectiveSubjectId}`}
+                classId={effectiveClassId}
+                subjectId={effectiveSubjectId}
+              />
+            ) : (
+              gradebookPanel
+            )}
+          </TabsContent>
+        )}
+        {showEraporTab && (
+          <TabsContent value="erapor" className="pt-0">
+            <EraporExport />
+          </TabsContent>
+        )}
+        {showSettingsTab && (
+          <TabsContent value="settings" className="pt-0">
+            <GradingSettings canManageSettings={canManageSettings} />
+          </TabsContent>
+        )}
+      </AppPage>
+
+      <ConfirmDialog
+        open={pendingScopeChange !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingScopeChange(null);
+        }}
+        title={t("table.discardChangesTitle")}
+        description={t("table.discardChangesBody", { count: pendingChanges })}
+        confirmLabel={t("table.discardChangesConfirm")}
+        cancelLabel={t("table.discardChangesCancel")}
+        tone="danger"
+        onConfirm={() => {
+          const change = pendingScopeChange;
+          setPendingScopeChange(null);
+          setPendingChanges(0);
+          change?.();
+        }}
+      />
+    </Tabs>
   );
 }

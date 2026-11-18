@@ -28,12 +28,13 @@ describe("MobileQuickActions", () => {
     fireEvent.click(screen.getByRole("button", { name: "trigger" }));
 
     const links = screen.getAllByRole("link");
+    // Most frequent first: scanning, clocking in, then the occasional request.
     expect(links.map((link) => link.textContent)).toEqual([
-      "actions.submitLeave",
-      "actions.checkIn",
       "actions.scanQr",
+      "actions.checkIn",
+      "actions.submitLeave",
     ]);
-    expect(links[0]).toHaveAttribute(
+    expect(links[2]).toHaveAttribute(
       "href",
       "/leave-requests?type=leave&tab=mine&quick=submit-leave",
     );
@@ -46,6 +47,16 @@ describe("MobileQuickActions", () => {
     fireEvent.click(screen.getByRole("link", { name: "actions.scanQr" }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("sits in the tab bar as the raised centre button, with a short label under it", () => {
+    render(<MobileQuickActions />);
+
+    const trigger = screen.getByRole("button", { name: "trigger" });
+    // No longer a floating button over the page: it lives in the bar's slot.
+    expect(trigger).not.toHaveClass("fixed");
+    expect(trigger).toHaveTextContent("label");
+    expect(trigger.querySelector("[data-tab-centre]")).toBeInTheDocument();
   });
 
   it("renders no button when the reader has no quick action", () => {

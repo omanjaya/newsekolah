@@ -4,20 +4,26 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Badge,
   Button,
+  Card,
+  CardHeader,
+  CardTitle,
   ConfirmDialog,
   EmptyState,
-  PageHeader,
-  Select,
-  Skeleton,
+  HeroCard,
+  List,
+  ListRow,
+  SkeletonList,
+  Stat,
+  StatGrid,
   useToast,
 } from "@newsekolah/ui";
-import { CalendarPlus } from "lucide-react";
+import { BookOpen, CalendarPlus, School } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
-import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { AppPage } from "../../../components/app-page";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useLookup, useSubjectsQuery } from "../../reference/api";
@@ -30,17 +36,27 @@ import {
 import { useGradeLevelsQuery } from "../api-master-data";
 
 import { AcademicWorkspaceLinks } from "./academic-workspace-links";
+import { WizardProgress, YearPairStep, useYearPair } from "./year-pair-step";
+
+interface Done {
+  from: string;
+  to: string;
+  offerings: number;
+  classes: number;
+}
 
 /**
  * Copies subject offerings and classes from one academic year into another
  * that does not have them yet -- the usual first step when opening a new
- * school year. Nothing is written until the plan is reviewed and confirmed.
+ * school year. A wizard: choose the years, review what would be copied,
+ * then a result report that stays until the years change. Nothing is
+ * written until the plan is reviewed and confirmed.
  */
 export function NewYearSetupView(): ReactElement {
   const canPromote = useCan("manage_enrollments");
   const tWorkspace = useTranslations("app.academic.workspace");
-  const [completedYears, setCompletedYears] = useState<{ from: string; to: string } | null>(null);
   const t = useTranslations("app.academic.newYearSetup");
+  const tFlow = useTranslations("app.academic.yearFlow");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
@@ -50,24 +66,20 @@ export function NewYearSetupView(): ReactElement {
   const subjectMap = useLookup(subjects.data?.data);
   const gradeLevels = useGradeLevelsQuery();
   const gradeLevelMap = useLookup(gradeLevels.data?.data);
+  const { fromYearId, toYearId, setFromYearId, setToYearId } = useYearPair(yearOptions);
+  const yearLabel = (id: string) => yearOptions.find((year) => year.id === id)?.label ?? "";
 
-  const [fromYearId, setFromYearId] = useUrlState(
-    "fromYear",
-    yearOptions.map((year) => year.id),
-    "",
-  );
-  const [toYearId, setToYearId] = useUrlState(
-    "toYear",
-    yearOptions.map((year) => year.id),
-    "",
-  );
   const [previewResult, setPreviewResult] = useState<{
     from: string;
     to: string;
     plan: NewYearSetupPlan;
   } | null>(null);
   const plan =
-    previewResult?.from === fromYearId && previewResult.to === toYearId ? previewResult.plan : null;
+    previewResult !== null && previewResult.from === fromYearId && previewResult.to === toYearId
+      ? previewResult.plan
+      : null;
+  const [done, setDone] = useState<Done | null>(null);
+  const result = done !== null && done.from === fromYearId && done.to === toYearId ? done : null;
   const [confirming, setConfirming] = useState(false);
 
   const preview = usePreviewNewYearSetupMutation();
@@ -84,8 +96,8 @@ export function NewYearSetupView(): ReactElement {
     preview.mutate(
       { from_year_id: fromYearId, to_year_id: toYearId },
       {
-        onSuccess: (result) => {
-          setPreviewResult({ from: fromYearId, to: toYearId, plan: result });
+        onSuccess: (response) => {
+          setPreviewResult({ from: fromYearId, to: toYearId, plan: response });
         },
         onError: fail,
       },
@@ -95,63 +107,65 @@ export function NewYearSetupView(): ReactElement {
   const newOfferings = (plan?.subject_offerings ?? []).filter((o) => !o.already_exists);
   const newClasses = (plan?.classes ?? []).filter((c) => !c.already_exists);
   const hasNothingToCopy = plan !== null && newOfferings.length === 0 && newClasses.length === 0;
+  const step = result ? 2 : plan ? 1 : 0;
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <AcademicWorkspaceLinks area="years" />
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
-      {canPromote && completedYears?.from === fromYearId && completedYears.to === toYearId && (
-        <Button asChild className="self-start">
-          <Link
-            href={`/school/promotion?${new URLSearchParams({ fromYear: completedYears.from, toYear: completedYears.to }).toString()}`}
-          >
-            {tWorkspace("continuePromotion")}
-          </Link>
-        </Button>
-      )}
+    // The area's header (Tahun ajaran) over its tabs, as on every sibling;
+    // what this flow does heads its first card.
+    <AppPage nav={<AcademicWorkspaceLinks area="years" />}>
+      <WizardProgress
+        current={step}
+        labels={[tFlow("stepYears"), tFlow("stepReview"), tFlow("stepDone")]}
+      />
 
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("fromYear")}</span>
-          <Select
-            options={yearOptions.map((y) => ({ value: y.id, label: y.label }))}
-            value={fromYearId}
-            onValueChange={setFromYearId}
-            className="w-full md:w-56"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("toYear")}</span>
-          <Select
-            options={yearOptions.map((y) => ({ value: y.id, label: y.label }))}
-            value={toYearId}
-            onValueChange={setToYearId}
-            className="w-full md:w-56"
-          />
-        </label>
-        <Button
-          onClick={runPreview}
-          loading={preview.isPending}
-          disabled={!fromYearId || !toYearId || fromYearId === toYearId}
-        >
-          {t("preview")}
-        </Button>
-      </div>
-
-      {fromYearId && fromYearId === toYearId && (
-        <p className="text-[13px] text-status-absent">{t("sameYearError")}</p>
-      )}
-
-      {preview.isPending ? (
-        <Skeleton className="h-64 w-full" aria-busy="true" />
-      ) : plan === null ? (
-        <EmptyState
-          icon={<CalendarPlus aria-hidden="true" />}
-          title={t("idleTitle")}
-          description={t("idleBody")}
+      {result ? (
+        <HeroCard
+          tone="accent-soft"
+          eyebrow={tFlow("doneEyebrow")}
+          title={t("doneTitle", { year: yearLabel(result.to) })}
+          meta={t("committed", { offerings: result.offerings, classes: result.classes })}
+          action={
+            canPromote ? (
+              <Button asChild>
+                <Link
+                  href={`/school/promotion?${new URLSearchParams({ fromYear: result.from, toYear: result.to }).toString()}`}
+                >
+                  {tWorkspace("continuePromotion")}
+                </Link>
+              </Button>
+            ) : undefined
+          }
+          secondaryAction={
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setDone(null);
+              }}
+            >
+              {tFlow("startOver")}
+            </Button>
+          }
         />
-      ) : hasNothingToCopy ? (
+      ) : (
+        <YearPairStep
+          years={yearOptions}
+          fromYearId={fromYearId}
+          toYearId={toYearId}
+          onFromChange={setFromYearId}
+          onToChange={setToYearId}
+          onPreview={runPreview}
+          previewing={preview.isPending}
+          previewLabel={plan ? tFlow("previewAgain") : t("preview")}
+          title={t("idleTitle")}
+          description={t("description")}
+        />
+      )}
+
+      {/* Nothing under the year step until a plan exists: the stepper and
+          the step's own card already say what to do. */}
+      {result ? null : preview.isPending ? (
+        <SkeletonList rows={5} framed />
+      ) : plan === null ? null : hasNothingToCopy ? (
         <EmptyState
           icon={<CalendarPlus aria-hidden="true" />}
           title={t("emptyTitle")}
@@ -159,67 +173,71 @@ export function NewYearSetupView(): ReactElement {
         />
       ) : (
         <>
-          <section className="flex flex-col gap-2">
-            <h2 className="text-[16px] font-medium text-fg">
-              {t("offeringsTitle", { n: newOfferings.length })}
-            </h2>
-            <ul className="divide-y divide-border rounded-xs border border-border text-[13px]">
-              {plan.subject_offerings.map((offering, i) => (
-                <li
-                  key={`${offering.subject_id}-${offering.grade_level_id ?? "all"}-${i}`}
-                  className="flex items-center justify-between gap-2 px-3 py-2"
-                >
-                  <span className="min-w-0 truncate">
-                    {subjectMap.get(offering.subject_id)?.name ?? offering.subject_id}
-                    {offering.grade_level_id && (
-                      <span className="text-fg-muted">
-                        {" "}
-                        · {gradeLevelMap.get(offering.grade_level_id)?.name ?? "-"}
-                      </span>
-                    )}
-                  </span>
-                  <Badge
-                    className="shrink-0"
-                    variant={offering.already_exists ? "neutral" : "accent"}
-                  >
-                    {offering.already_exists ? t("alreadyExists") : t("willCopy")}
-                  </Badge>
-                </li>
-              ))}
-              {plan.subject_offerings.length === 0 && (
-                <li className="px-3 py-4 text-center text-fg-muted">{t("noOfferings")}</li>
+          <StatGrid variant="strip" aria-label={tFlow("summary")}>
+            <Stat
+              icon={<BookOpen />}
+              tone="blue"
+              label={t("offeringsLabel")}
+              value={newOfferings.length}
+              hint={t("ofTotal", { n: plan.subject_offerings.length })}
+            />
+            <Stat
+              icon={<School />}
+              tone="green"
+              label={t("classesLabel")}
+              value={newClasses.length}
+              hint={t("ofTotal", { n: plan.classes.length })}
+            />
+          </StatGrid>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle as="h2">{t("offeringsTitle", { n: newOfferings.length })}</CardTitle>
+              </CardHeader>
+              {plan.subject_offerings.length === 0 ? (
+                <p className="px-5 pb-5 text-body-sm text-fg-muted">{t("noOfferings")}</p>
+              ) : (
+                <List dense className="max-h-96 overflow-y-auto">
+                  {plan.subject_offerings.map((offering, i) => (
+                    <ListRow
+                      key={`${offering.subject_id}-${offering.grade_level_id ?? "all"}-${i}`}
+                      title={subjectMap.get(offering.subject_id)?.name ?? offering.subject_id}
+                      meta={
+                        offering.grade_level_id
+                          ? gradeLevelMap.get(offering.grade_level_id)?.name
+                          : undefined
+                      }
+                      trailing={<CopyBadge exists={offering.already_exists} />}
+                    />
+                  ))}
+                </List>
               )}
-            </ul>
-          </section>
-
-          <section className="flex flex-col gap-2">
-            <h2 className="text-[16px] font-medium text-fg">
-              {t("classesTitle", { n: newClasses.length })}
-            </h2>
-            <ul className="divide-y divide-border rounded-xs border border-border text-[13px]">
-              {plan.classes.map((cls, i) => (
-                <li
-                  key={`${cls.name}-${i}`}
-                  className="flex items-center justify-between gap-2 px-3 py-2"
-                >
-                  <span className="min-w-0 truncate">{cls.name}</span>
-                  <Badge className="shrink-0" variant={cls.already_exists ? "neutral" : "accent"}>
-                    {cls.already_exists ? t("alreadyExists") : t("willCopy")}
-                  </Badge>
-                </li>
-              ))}
-              {plan.classes.length === 0 && (
-                <li className="px-3 py-4 text-center text-fg-muted">{t("noClasses")}</li>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle as="h2">{t("classesTitle", { n: newClasses.length })}</CardTitle>
+              </CardHeader>
+              {plan.classes.length === 0 ? (
+                <p className="px-5 pb-5 text-body-sm text-fg-muted">{t("noClasses")}</p>
+              ) : (
+                <List dense className="max-h-96 overflow-y-auto">
+                  {plan.classes.map((cls, i) => (
+                    <ListRow
+                      key={`${cls.name}-${i}`}
+                      title={cls.name}
+                      trailing={<CopyBadge exists={cls.already_exists} />}
+                    />
+                  ))}
+                </List>
               )}
-            </ul>
-          </section>
-
-          <div className="flex justify-end border-t border-border pt-4">
+            </Card>
+          </div>
+          <div className="flex justify-end">
             <Button
+              className="max-sm:w-full"
               onClick={() => {
                 setConfirming(true);
               }}
-              disabled={hasNothingToCopy}
             >
               {t("commit")}
             </Button>
@@ -230,26 +248,32 @@ export function NewYearSetupView(): ReactElement {
       <ConfirmDialog
         open={confirming && plan !== null}
         onOpenChange={setConfirming}
-        title={t("confirmTitle")}
+        title={t("confirmTitle", { year: yearLabel(toYearId) })}
         description={t("confirmBody", {
           offerings: newOfferings.length,
           classes: newClasses.length,
         })}
+        confirmLabel={t("commit")}
         confirming={commit.isPending}
         onConfirm={async () => {
           if (!plan) return;
           try {
-            const result = await commit.mutateAsync({
+            const response = await commit.mutateAsync({
               from_year_id: fromYearId,
               to_year_id: toYearId,
             });
             setPreviewResult(null);
-            setCompletedYears({ from: fromYearId, to: toYearId });
+            setDone({
+              from: fromYearId,
+              to: toYearId,
+              offerings: response.subject_offerings_copied,
+              classes: response.classes_copied,
+            });
             setConfirming(false);
             toast.success(
               t("committed", {
-                offerings: result.subject_offerings_copied,
-                classes: result.classes_copied,
+                offerings: response.subject_offerings_copied,
+                classes: response.classes_copied,
               }),
             );
           } catch (error) {
@@ -257,6 +281,17 @@ export function NewYearSetupView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
+  );
+}
+
+function CopyBadge({ exists }: { exists: boolean }): ReactElement {
+  const t = useTranslations("app.academic.newYearSetup");
+  return exists ? (
+    <Badge tone="neutral">{t("alreadyExists")}</Badge>
+  ) : (
+    <Badge tone="success" dot>
+      {t("willCopy")}
+    </Badge>
   );
 }

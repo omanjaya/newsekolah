@@ -4,8 +4,13 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Badge,
   Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
   DataTable,
   EmptyState,
+  Field,
   Progress,
   Select,
   Stepper,
@@ -18,6 +23,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { ImportFileField } from "../../school/components/import-layout";
 import {
   type DapodikImportReport,
   type DapodikImportRow,
@@ -115,23 +121,23 @@ export function OnboardingWizard(): ReactElement {
   const columns = useDapodikColumns();
 
   return (
-    <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-        <p className="text-[13px] text-fg-muted">{t("body")}</p>
-      </div>
+    <Card padding="md" className="gap-4">
+      <CardHeader>
+        <CardTitle as="h2">{t("title")}</CardTitle>
+        <CardDescription>{t("body")}</CardDescription>
+      </CardHeader>
 
       <Stepper
+        variant="compact"
         currentIndex={STEP_ORDER.indexOf(step)}
         steps={STEP_ORDER.map((key) => ({ id: key, label: t(`steps.${key}`) }))}
       />
 
       {step === "template" && (
         <div className="flex flex-col gap-3">
-          <p className="text-[13px] text-fg-muted">{t("templateBody")}</p>
+          <p className="text-body-sm text-fg-muted">{t("templateBody")}</p>
           <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("templateLabel")}</span>
+            <Field label={t("templateLabel")}>
               <Select
                 options={(templates.data?.data ?? []).map((tpl) => ({
                   value: tpl.key,
@@ -145,7 +151,7 @@ export function OnboardingWizard(): ReactElement {
                 disabled={templates.isLoading}
                 className="w-56"
               />
-            </label>
+            </Field>
             <Button
               size="sm"
               icon={<Layers />}
@@ -172,15 +178,12 @@ export function OnboardingWizard(): ReactElement {
 
       {step === "upload" && (
         <div className="flex flex-col gap-3">
-          <p className="text-[13px] text-fg-muted">{t("uploadBody")}</p>
-          <input
-            type="file"
+          <p className="text-body-sm text-fg-muted">{t("uploadBody")}</p>
+          <ImportFileField
+            label={t("uploadLabel")}
             accept=".csv,text/csv"
-            aria-label={t("uploadLabel")}
-            onChange={(e) => {
-              setFile(e.target.files?.[0] ?? null);
-            }}
-            className="text-[13px] text-fg file:mr-3 file:rounded-xs file:border file:border-border file:bg-surface file:px-3 file:py-1.5 file:text-[13px] file:font-medium"
+            fileName={file?.name}
+            onFile={setFile}
           />
           {isUploading && (
             <Progress value={uploadPercent} label={t("uploading", { percent: uploadPercent })} />
@@ -203,7 +206,7 @@ export function OnboardingWizard(): ReactElement {
 
       {step === "review" && report && (
         <div className="flex flex-col gap-3">
-          <p className="text-[13px] text-fg-muted">
+          <p className="text-body-sm text-fg-muted">
             {t("reviewSummary", {
               create: report.data.filter((r) => r.action === "create").length,
               update: report.data.filter((r) => r.action === "update").length,
@@ -257,12 +260,12 @@ export function OnboardingWizard(): ReactElement {
         <div className="flex flex-col items-start gap-3">
           <div className="flex items-center gap-2 text-fg">
             <CheckCircle2 className="size-5 text-accent" aria-hidden="true" />
-            <p className="text-[14px] font-medium">{t("doneTitle", { count: committedCount })}</p>
+            <p className="text-body font-medium">{t("doneTitle", { count: committedCount })}</p>
           </div>
-          <p className="text-[13px] text-fg-muted">{t("doneBody")}</p>
+          <p className="text-body-sm text-fg-muted">{t("doneBody")}</p>
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -279,7 +282,7 @@ function useDapodikColumns(): ColumnDef<DapodikImportRow>[] {
         header: t("columnAction"),
         enableSorting: false,
         cell: ({ row }) => (
-          <Badge variant={row.original.action === "error" ? "neutral" : "accent"}>
+          <Badge tone={row.original.action === "error" ? "danger" : "success"}>
             {t(`action.${row.original.action}`)}
           </Badge>
         ),

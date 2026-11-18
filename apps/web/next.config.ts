@@ -1,6 +1,10 @@
+import { randomUUID } from "node:crypto";
+
 import withSerwistInit from "@serwist/next";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+
+import { isExcludedFromPrecache } from "./lib/pwa/precache-exclude";
 
 /**
  * Next vendors webpack internally rather than depending on the public
@@ -23,13 +27,22 @@ const withSerwist = withSerwistInit({
   swSrc: "app/sw.ts",
   swDest: "public/sw.js",
   disable: process.env.NODE_ENV === "development",
-  cacheOnNavigation: true,
+  // Off: it has the page fetch every client-side navigation with the
+  // signed-in cookies and store the HTML in Cache Storage by URL, where it
+  // was served to whoever used the computer next (lib/pwa/cache-policy.ts).
+  cacheOnNavigation: false,
   reloadOnOnline: true,
-  // Per-route app chunks change on every deploy and are only ever needed for
-  // the route the visitor is already on (fetched normally, no offline value
-  // from precaching every other route's chunk). The shared app shell, CSS,
-  // and offline page keep being precached as before.
-  exclude: [/\/chunks\/app\//],
+  // The offline page the worker falls back to must be in the precache, or
+  // the fallback finds nothing. Its HTML names this build's chunk hashes, so
+  // the revision changes on every build and each new worker fetches it
+  // again. Setting this replaces Serwist's default of precaching every file
+  // in public/, which holds only the generated worker today.
+  additionalPrecacheEntries: [{ url: "/offline", revision: randomUUID() }],
+  // Per-route chunks stay out of the precache, except the ones the offline
+  // page loads (lib/pwa/precache-exclude.ts). Serwist calls a function
+  // condition with the webpack asset; the parameter is typed here because
+  // webpack's own types do not resolve from this package.
+  exclude: [({ asset }: { asset: { name: string } }) => isExcludedFromPrecache(asset.name)],
   // Keeps oversized on-demand chunks out of the precache no matter what
   // webpack names them: the exceljs vendor chunk (~912 kB raw, import
   // screens only, docs/16-audit-performa-web.md item 9) gets a hashed id

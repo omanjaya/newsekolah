@@ -1,7 +1,18 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Button, Checkbox, Dialog, DialogContent, Input, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  Button,
+  Card,
+  Checkbox,
+  Dialog,
+  DialogContent,
+  Field,
+  Input,
+  useToast,
+} from "@newsekolah/ui";
+import { Copy } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -9,6 +20,7 @@ import { useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { type APIKeyCreated, useCreateAPIKeyMutation } from "../api";
+import { usePermissionLabel } from "../lib/use-permission-label";
 
 /**
  * The checkbox list only offers permissions the signed-in admin holds
@@ -34,13 +46,21 @@ export function CreateAPIKeyDialog({
   const [created, setCreated] = useState<APIKeyCreated | null>(null);
   const [copyFailed, setCopyFailed] = useState(false);
 
-  const ownPermissions = me?.permissions ?? [];
+  const permissionLabel = usePermissionLabel();
+  const ownPermissions = [...(me?.permissions ?? [])].sort((a, b) =>
+    permissionLabel(a).localeCompare(permissionLabel(b)),
+  );
 
   function reset() {
     setName("");
     setSelected(new Set());
     setCreated(null);
     setCopyFailed(false);
+  }
+
+  function close() {
+    reset();
+    onOpenChange(false);
   }
 
   async function handleCreate() {
@@ -79,50 +99,53 @@ export function CreateAPIKeyDialog({
       {created ? (
         <DialogContent
           title={t("createdTitle")}
+          size="md"
           footer={
-            <Button
-              size="sm"
-              onClick={() => {
-                reset();
-                onOpenChange(false);
-              }}
-            >
-              {t("done")}
-            </Button>
+            <>
+              <Button
+                variant="secondary"
+                icon={<Copy />}
+                onClick={() => void copyToken(created.token)}
+              >
+                {t("copyToken")}
+              </Button>
+              <Button onClick={close}>{t("done")}</Button>
+            </>
           }
         >
           <div className="flex flex-col gap-4">
-            <Alert variant="warning" title={t("shownOnceWarning")} />
-            <div className="flex flex-col gap-1">
-              <span className="text-[13px] text-fg-muted">{t("tokenLabel")}</span>
-              <code className="break-all rounded-xs bg-bg px-2 py-2 font-mono text-[13px] tracking-wide text-fg">
+            <Alert tone="warning" title={t("shownOnceWarning")} />
+            <div className="flex flex-col gap-1.5">
+              <p className="text-label text-fg">{t("tokenLabel")}</p>
+              <code className="break-all rounded-md bg-surface-sunken px-3 py-2 font-mono text-body-sm tracking-wide text-fg select-all">
                 {created.token}
               </code>
             </div>
-            <Button variant="secondary" size="sm" onClick={() => void copyToken(created.token)}>
-              {t("copyToken")}
-            </Button>
-            {copyFailed && <p className="text-[13px] text-status-absent">{t("copyFailed")}</p>}
+            {copyFailed && <Alert tone="danger" title={t("copyFailed")} />}
           </div>
         </DialogContent>
       ) : (
         <DialogContent
           title={t("dialogTitle")}
           description={t("dialogBody")}
+          size="md"
           footer={
-            <Button
-              size="sm"
-              disabled={!canSubmit}
-              loading={createKey.isPending}
-              onClick={() => void handleCreate()}
-            >
-              {t("submit")}
-            </Button>
+            <>
+              <Button variant="secondary" onClick={close}>
+                {t("cancel")}
+              </Button>
+              <Button
+                disabled={!canSubmit}
+                loading={createKey.isPending}
+                onClick={() => void handleCreate()}
+              >
+                {t("submit")}
+              </Button>
+            </>
           }
         >
-          <div className="flex flex-col gap-4">
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium text-fg">{t("nameLabel")}</span>
+          <div className="flex flex-col gap-5">
+            <Field label={t("nameLabel")} required>
               <Input
                 value={name}
                 maxLength={120}
@@ -131,31 +154,42 @@ export function CreateAPIKeyDialog({
                 }}
                 placeholder={t("namePlaceholder")}
               />
-            </label>
-            <div className="flex flex-col gap-2">
-              <span className="text-[13px] font-medium text-fg">{t("permissionsLabel")}</span>
-              <div className="flex max-h-56 flex-col gap-2 overflow-y-auto rounded-sm border border-border p-3">
-                {ownPermissions.length === 0 && (
-                  <p className="text-[13px] text-fg-muted">{t("noPermissions")}</p>
-                )}
-                {ownPermissions.map((code) => (
-                  <label key={code} className="flex items-center gap-2 text-[13px] text-fg">
-                    <Checkbox
-                      checked={selected.has(code)}
-                      onCheckedChange={(checked) => {
-                        setSelected((prev) => {
-                          const next = new Set(prev);
-                          if (checked === true) next.add(code);
-                          else next.delete(code);
-                          return next;
-                        });
-                      }}
-                    />
-                    {code}
-                  </label>
-                ))}
-              </div>
-            </div>
+            </Field>
+            <Field
+              label={t("permissionsLabel")}
+              required
+              hint={t("permissionsHint", { count: selected.size })}
+            >
+              {(control) => (
+                <Card
+                  tone="sunken"
+                  role="group"
+                  aria-labelledby={control.labelId}
+                  aria-describedby={control["aria-describedby"]}
+                  className="max-h-64 overflow-y-auto px-4 py-1"
+                >
+                  {ownPermissions.length === 0 ? (
+                    <p className="py-3 text-body-sm text-fg-muted">{t("noPermissions")}</p>
+                  ) : (
+                    ownPermissions.map((code) => (
+                      <Checkbox
+                        key={code}
+                        label={permissionLabel(code)}
+                        checked={selected.has(code)}
+                        onCheckedChange={(checked) => {
+                          setSelected((prev) => {
+                            const next = new Set(prev);
+                            if (checked === true) next.add(code);
+                            else next.delete(code);
+                            return next;
+                          });
+                        }}
+                      />
+                    ))
+                  )}
+                </Card>
+              )}
+            </Field>
           </div>
         </DialogContent>
       )}

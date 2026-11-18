@@ -1,34 +1,34 @@
 {
   "assignments": {
-    "title": "Pembagian Tugas",
+    "title": "Pembagian tugas",
     "description": "Kelola pembagian mengajar dan tugas tambahan warga sekolah.",
     "teaching": "Mengajar",
-    "duties": "Tugas Tambahan",
-    "types": "Jenis Tugas"
+    "duties": "Tugas tambahan",
+    "types": "Jenis tugas"
   },
   "learning": {
-    "title": "Mata Pelajaran",
+    "title": "Mata pelajaran",
     "description": "Kelola mata pelajaran, alokasi per tahun ajaran, dan jam pelajaran.",
     "subjects": "Mapel",
-    "offerings": "Mapel per Tahun Ajaran",
-    "periods": "Jam Pelajaran"
+    "offerings": "Mapel per tahun ajaran",
+    "periods": "Jam pelajaran"
   },
   "structure": {
-    "title": "Struktur Sekolah",
+    "title": "Struktur sekolah",
     "description": "Kelola tingkat kelas, peminatan, dan ruang sekolah.",
-    "gradeLevels": "Tingkat Kelas",
+    "gradeLevels": "Tingkat kelas",
     "tracks": "Peminatan",
     "rooms": "Ruang"
   },
   "years": {
-    "eyebrow": "Data Sekolah",
+    "eyebrow": "Data sekolah",
     "title": "Tahun ajaran",
     "description": "Kelola tahun ajaran sekolah: buat, ubah, aktifkan, atau arsipkan.",
     "add": "Tambah tahun ajaran",
     "edit": "Ubah",
     "activate": "Aktifkan",
     "archive": "Arsipkan",
-    "manageTerms": "Kelola semester",
+    "manageTerms": "Semester",
     "active": "Aktif",
     "archived": "Diarsipkan",
     "showArchived": "Tampilkan yang diarsipkan",
@@ -39,7 +39,8 @@
     "columns": {
       "label": "Nama",
       "period": "Periode",
-      "actions": "Aksi"
+      "actions": "Aksi",
+      "terms": "Semester"
     },
     "emptyTitle": "Belum ada tahun ajaran",
     "emptyBody": "Buat tahun ajaran pertama untuk mulai mengelola data akademik.",
@@ -55,8 +56,12 @@
       "startsOn": "Mulai",
       "endsOn": "Selesai",
       "cancel": "Batal",
-      "save": "Simpan"
-    }
+      "save": "Simpan",
+      "period": "Periode",
+      "periodHint": "Pilih tanggal mulai, lalu tanggal selesai."
+    },
+    "editTitle": "Ubah tahun ajaran",
+    "rowActions": "Aksi lain untuk {label}"
   },
   "terms": {
     "title": "Semester {year}",
@@ -64,8 +69,9 @@
     "edit": "Ubah",
     "delete": "Hapus",
     "activate": "Aktifkan",
+    "activated": "Semester diaktifkan",
     "active": "Aktif",
-    "empty": "Belum ada semester untuk tahun ajaran ini.",
+    "empty": "Belum ada semester",
     "saved": "Semester tersimpan",
     "deleted": "Semester dihapus",
     "deleteTitle": "Hapus semester ini?",
@@ -76,11 +82,15 @@
       "endsOn": "Selesai",
       "sequence": "Urutan",
       "cancel": "Batal",
-      "save": "Simpan"
-    }
+      "save": "Simpan",
+      "period": "Periode"
+    },
+    "rowActions": "Aksi lain untuk {name}",
+    "activateTitle": "Aktifkan semester ini?",
+    "activateBody": "\"{name}\" menjadi semester aktif; semester lain di tahun ajaran ini otomatis nonaktif."
   },
   "gradeLevels": {
-    "eyebrow": "Data Sekolah",
+    "eyebrow": "Data sekolah",
     "title": "Tingkat kelas",
     "add": "Tambah tingkat",
     "edit": "Ubah",
@@ -89,9 +99,12 @@
     "save": "Simpan",
     "saved": "Tingkat kelas tersimpan",
     "deleted": "Tingkat kelas dihapus",
+    "rowActions": "Aksi lain untuk {name}",
+    "codeRequired": "Isi kode tingkat, misalnya X.",
+    "nameRequired": "Isi nama tingkat, misalnya Kelas X.",
     "deleteTitle": "Hapus tingkat kelas ini?",
     "deleteBody": "\"{name}\" akan dihapus. Tidak bisa dihapus jika masih dipakai kelas.",
-    "applyTemplate": "Pakai template",
+    "applyTemplate": "Pakai templat",
     "applyTemplateBody": "Membuat tingkat kelas standar untuk jenjang yang dipilih. Kode yang sudah ada akan dilewati, tidak digandakan.",
     "apply": "Terapkan",
     "templateApplied": "{n} tingkat kelas dibuat",
@@ -108,10 +121,10 @@
       "actions": "Aksi"
     },
     "emptyTitle": "Belum ada tingkat kelas",
-    "emptyBody": "Tambahkan tingkat kelas satu per satu, atau pakai template jenjang sekolah."
+    "emptyBody": "Tambahkan tingkat kelas satu per satu, atau pakai templat jenjang sekolah."
   },
   "tracks": {
-    "eyebrow": "Data Sekolah",
+    "eyebrow": "Data sekolah",
     "title": "Peminatan",
     "description": "Jurusan atau peminatan siswa, misalnya IPA, IPS, atau Bahasa di SMA.",
     "add": "Tambah peminatan",
@@ -121,6 +134,9 @@
     "save": "Simpan",
     "saved": "Peminatan tersimpan",
     "deleted": "Peminatan dihapus",
+    "rowActions": "Aksi lain untuk {name}",
+    "codeRequired": "Isi kode peminatan, misalnya IPA.",
+    "nameRequired": "Isi nama peminatan.",
     "deleteTitle": "Hapus peminatan ini?",
     "deleteBody": "\"{name}\" akan dihapus. Tidak bisa dihapus jika masih dipakai kelas.",
     "columns": {
@@ -132,7 +148,7 @@
     "emptyBody": "Tambahkan peminatan jika sekolah memiliki jurusan, misalnya IPA atau IPS."
   },
   "rooms": {
-    "eyebrow": "Data Sekolah",
+    "eyebrow": "Data sekolah",
     "title": "Ruang kelas",
     "add": "Tambah ruang",
     "edit": "Ubah",
@@ -141,6 +157,9 @@
     "save": "Simpan",
     "saved": "Ruang tersimpan",
     "deleted": "Ruang dihapus",
+    "rowActions": "Aksi lain untuk {name}",
+    "codeRequired": "Isi kode ruang.",
+    "nameRequired": "Isi nama ruang.",
     "deleteTitle": "Hapus ruang ini?",
     "deleteBody": "\"{name}\" akan dihapus. Tidak bisa dihapus jika masih dipakai kelas.",
     "columns": {
@@ -153,7 +172,7 @@
     "emptyBody": "Tambahkan ruang kelas untuk dipasangkan ke kelas."
   },
   "subjectOfferings": {
-    "eyebrow": "Data Sekolah",
+    "eyebrow": "Data sekolah",
     "title": "Mapel per tahun ajaran",
     "year": "Tahun ajaran",
     "add": "Tambah penawaran",
@@ -163,6 +182,7 @@
     "save": "Simpan",
     "saved": "Penawaran mapel tersimpan",
     "deleted": "Penawaran mapel dihapus",
+    "rowActions": "Aksi lain untuk {name}",
     "deleteTitle": "Hapus penawaran mapel ini?",
     "deleteBody": "Penawaran mapel \"{name}\" akan dihapus.",
     "pickSubject": "Pilih mapel",
@@ -177,7 +197,7 @@
     "emptyBody": "Tambahkan mapel yang diajarkan pada tahun ajaran ini."
   },
   "teachingAssignments": {
-    "eyebrow": "Data Sekolah",
+    "eyebrow": "Data sekolah",
     "title": "Penugasan mengajar",
     "description": "Atur ulang seluruh mapel dan kelas yang diampu satu guru untuk satu tahun ajaran sekaligus.",
     "year": "Tahun ajaran",
@@ -196,20 +216,15 @@
     "emptyBody": "Pilih tahun ajaran dan guru untuk melihat dan mengatur penugasan mengajarnya."
   },
   "enrollmentImport": {
-    "eyebrow": "Data Sekolah",
     "title": "Impor penempatan kelas",
-    "description": "Unduh templatenya, isi penempatan siswa ke kelas, lalu unggah untuk ditinjau sebelum diterapkan.",
+    "description": "Unduh templat, isi penempatan siswa ke kelas, lalu unggah untuk ditinjau sebelum diterapkan.",
     "year": "Tahun ajaran",
-    "downloadTemplate": "Unduh template",
-    "chooseFile": "Pilih berkas xlsx",
-    "noFileChosen": "Belum ada berkas dipilih",
+    "downloadTemplate": "Unduh templat",
+    "chooseFile": "Pilih berkas XLSX",
     "moveExisting": "Pindahkan siswa yang sudah punya kelas lain tahun ini",
     "partial": "Tetap terapkan baris yang valid meski ada baris bermasalah",
-    "preview": "Tinjau",
     "commit": "Terapkan",
-    "committedLabel": "Sudah diterapkan",
     "committed": "Penempatan kelas diterapkan",
-    "rowCount": "{n} baris",
     "errorCount": "{n} bermasalah",
     "table": {
       "row": "Baris",
@@ -224,11 +239,25 @@
       "unchanged": "Tidak berubah",
       "skipped": "Dilewati",
       "error": "Bermasalah"
-    }
+    },
+    "prepareTitle": "Siapkan berkas",
+    "prepareBody": "Pilih tahun ajaran, unduh templatnya, isi kelas tiap siswa, lalu unggah kembali. Berkas langsung ditinjau tanpa disimpan.",
+    "optionsLabel": "Pilihan",
+    "fileLabel": "Berkas penempatan",
+    "previewAgain": "Perbarui pratinjau",
+    "reviewTitle": "Tinjau penempatan",
+    "rowsLabel": "Baris",
+    "placedLabel": "Ditempatkan atau dipindah",
+    "skippedLabel": "Dilewati",
+    "errorLabel": "Bermasalah",
+    "partialNote": "Baris yang valid tetap diterapkan; baris bermasalah dilewati.",
+    "blockedNote": "Selama ada baris bermasalah, tidak ada yang diterapkan. Perbaiki berkasnya atau centang pilihan untuk menerapkan baris yang valid saja.",
+    "startOver": "Mulai ulang",
+    "importAnother": "Impor berkas lain"
   },
   "newYearSetup": {
-    "eyebrow": "Data Sekolah",
-    "title": "Persiapan tahun ajaran baru",
+    "eyebrow": "Data sekolah",
+    "title": "Tahun ajaran baru",
     "description": "Salin penawaran mapel dan kelas dari satu tahun ajaran ke tahun ajaran lain yang belum memilikinya.",
     "fromYear": "Dari tahun ajaran",
     "toYear": "Ke tahun ajaran",
@@ -244,49 +273,70 @@
     "noClasses": "Tidak ada kelas di tahun ajaran asal.",
     "alreadyExists": "Sudah ada",
     "willCopy": "Akan disalin",
-    "commit": "Terapkan",
-    "confirmTitle": "Salin data ke tahun ajaran ini?",
+    "commit": "Salin ke tahun tujuan",
+    "confirmTitle": "Salin ke tahun ajaran {year}?",
     "confirmBody": "{offerings} penawaran mapel dan {classes} kelas akan disalin.",
-    "committed": "{offerings} penawaran mapel dan {classes} kelas disalin."
+    "committed": "{offerings} penawaran mapel dan {classes} kelas disalin.",
+    "offeringsLabel": "Mapel akan disalin",
+    "classesLabel": "Kelas akan disalin",
+    "ofTotal": "dari {n} di tahun asal",
+    "doneTitle": "Tahun ajaran {year} siap diisi"
   },
   "today": {
     "noPeriodNow": "Tidak ada jam pelajaran sekarang",
     "break": "Istirahat"
   },
   "workspace": {
-    "attendance": "Absensi & Jurnal",
-    "sessions": "Sesi Mengajar",
-    "journal": "Riwayat Jurnal",
-    "reports": "Rekap Absensi",
-    "schedule": "Jadwal & Kalender",
-    "timetable": "Jadwal Pelajaran",
-    "calendar": "Kalender Akademik",
-    "substitutions": "Guru Pengganti",
-    "pendingSubstitutions": "Permintaan masuk: {count}",
-    "years": "Tahun Ajaran",
-    "yearList": "Tahun & Semester",
-    "setup": "Siapkan Tahun Baru",
-    "promotion": "Kenaikan & Penempatan",
+    "attendance": "Presensi dan jurnal",
+    "sessions": "Presensi",
+    "journal": "Jurnal mengajar",
+    "reports": "Laporan presensi",
+    "schedule": "Jadwal dan kalender",
+    "timetable": "Jadwal",
+    "calendar": "Kalender akademik",
+    "substitutions": "Guru pengganti",
+    "pendingSubstitutions": "{count, plural, other {# permintaan pengganti}}",
+    "years": "Tahun ajaran",
+    "yearList": "Tahun ajaran",
+    "setup": "Tahun ajaran baru",
+    "promotion": "Kenaikan kelas",
     "yearHelp": "Siapkan kelas dan mata pelajaran tahun tujuan, tinjau kenaikan siswa, lalu aktifkan tahun ajaran ketika sekolah siap. Setiap langkah dapat dibuka kembali secara mandiri.",
-    "users": "Pengguna & Akses",
-    "accounts": "Akun Pengguna",
-    "roles": "Pengaturan Akses",
-    "importEnrollment": "Impor Penempatan",
-    "backToClasses": "Kembali ke Siswa & Kelas",
-    "requestSubstitute": "Ajukan Pengganti",
-    "openAttendance": "Buka Absensi & Jurnal",
-    "scanEntry": "Pindai Masuk Kelas",
-    "personalAttendance": "Kehadiran Saya",
-    "journalQuick": "Lengkapi Jurnal Mengajar",
-    "continuePromotion": "Lanjut ke Kenaikan Kelas",
+    "users": "Pengguna dan akses",
+    "accounts": "Akun pengguna",
+    "roles": "Peran dan akses",
+    "importEnrollment": "Impor penempatan",
+    "backToClasses": "Kembali ke Siswa dan kelas",
+    "requestSubstitute": "Ajukan pengganti",
+    "openAttendance": "Buka presensi dan jurnal",
+    "scanEntry": "Pindai masuk kelas",
+    "personalAttendance": "Presensi kerja",
+    "journalQuick": "Lengkapi jurnal mengajar",
+    "continuePromotion": "Lanjut ke kenaikan kelas",
     "journalSaved": "Jurnal tersimpan",
     "journalMissing": "Jurnal belum diisi",
-    "journalHelp": "Absensi dan jurnal disimpan bersama untuk pertemuan ini.",
+    "journalHelp": "Presensi dan jurnal disimpan bersama untuk pertemuan ini.",
     "yearScope": "Tahun ajaran: {year}",
     "learningNav": "Pembelajaran",
-    "subjectsTab": "Mata Pelajaran",
-    "periodsTab": "Jam Pelajaran",
-    "teachingTab": "Pembagian Mengajar",
-    "dutiesTab": "Tugas Tambahan"
+    "subjectsTab": "Mata pelajaran",
+    "periodsTab": "Jam pelajaran",
+    "teachingTab": "Pembagian mengajar",
+    "dutiesTab": "Tugas tambahan"
+  },
+  "yearFlow": {
+    "fromYear": "Dari tahun ajaran",
+    "fromYearHint": "Biasanya tahun ajaran aktif.",
+    "toYear": "Ke tahun ajaran",
+    "toYearHint": "Tahun ajaran yang akan dibuka.",
+    "pickYear": "Pilih tahun ajaran",
+    "sameYearError": "Tahun ajaran asal dan tujuan harus berbeda.",
+    "needTwoYears": "Buat dulu tahun ajaran tujuan di halaman Tahun ajaran.",
+    "addYear": "Tambah tahun ajaran",
+    "stepYears": "Pilih tahun",
+    "stepReview": "Tinjau rencana",
+    "stepDone": "Selesai",
+    "previewAgain": "Perbarui rencana",
+    "summary": "Ringkasan rencana",
+    "doneEyebrow": "Selesai",
+    "startOver": "Mulai lagi"
   }
 }

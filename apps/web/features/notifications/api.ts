@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
 import { isModuleEnabled, type FeatureModule } from "../../lib/modules/feature-modules";
-import { useSession } from "../../lib/session/session-provider";
+import { useSession, type Me } from "../../lib/session/session-provider";
 
 /** Every notification kind the API emits; drives the preferences matrix. */
 export const NOTIFICATION_KINDS = [
@@ -59,6 +59,76 @@ export function availableNotificationKinds(
 export function useNotificationKinds(): NotificationKind[] {
   const { me } = useSession();
   return availableNotificationKinds((module) => isModuleEnabled(me, module));
+}
+
+/**
+ * Who can be sent each kind, read from where the API addresses it
+ * (apps/api/internal/wiring/eventbridge.go): a reader holding any of the
+ * permissions, or with one of the profile kinds, can receive it;
+ * `undefined` for a kind that may reach anyone (an announcement). Duties
+ * count, since `me.permissions` carries the active duties' permissions:
+ * the homeroom duty's review_leave_requests, the counselor's
+ * issue_leave_letters, security's scan_exit_permits. A student is the one
+ * who submits leave requests and exit permits.
+ */
+export interface NotificationKindAudience {
+  permissions?: readonly string[];
+  profileKinds?: readonly NonNullable<Me["profile_kind"]>[];
+}
+
+const STUDENT_PERMISSIONS = ["submit_leave_requests"] as const;
+const STUDENT: NotificationKindAudience = {
+  permissions: STUDENT_PERMISSIONS,
+  profileKinds: ["student"],
+};
+const HOMEROOM = ["review_leave_requests", "correct_attendance"] as const;
+
+export const NOTIFICATION_KIND_AUDIENCE: Record<
+  NotificationKind,
+  NotificationKindAudience | undefined
+> = {
+  announcement_published: undefined,
+  attendance_submitted: { permissions: HOMEROOM },
+  substitution_requested: { permissions: ["manage_schedules"], profileKinds: ["teacher"] },
+  substitution_responded: { permissions: ["manage_schedules"], profileKinds: ["teacher"] },
+  leave_request_submitted: { permissions: [...HOMEROOM, "issue_leave_letters"] },
+  leave_request_reviewed: STUDENT,
+  leave_request_issued: STUDENT,
+  exit_permit_stage_changed: STUDENT,
+  exit_permit_issued: {
+    permissions: [...STUDENT_PERMISSIONS, "scan_exit_permits"],
+    profileKinds: ["student"],
+  },
+  exit_permit_exited: STUDENT,
+  late_arrival_opened: { permissions: HOMEROOM },
+  late_arrival_updated: STUDENT,
+};
+
+/** Whether `me` can ever be sent `kind`. */
+export function canReceiveNotificationKind(
+  kind: NotificationKind,
+  me: Pick<Me, "permissions" | "profile_kind"> | undefined,
+): boolean {
+  const audience = NOTIFICATION_KIND_AUDIENCE[kind];
+  if (!audience) return true;
+  if (!me) return false;
+  const byPermission = audience.permissions?.some((code) => me.permissions.includes(code));
+  const byProfile =
+    me.profile_kind !== undefined && audience.profileKinds?.includes(me.profile_kind);
+  return Boolean(byPermission) || Boolean(byProfile);
+}
+
+/**
+ * The kinds the signed-in reader can receive, of the modules that are on:
+ * for the reader's own preferences and filters, where a kind they are
+ * never sent is only noise. A school's defaults keep the full
+ * `useNotificationKinds` list.
+ */
+export function useOwnNotificationKinds(): NotificationKind[] {
+  const { me } = useSession();
+  return availableNotificationKinds((module) => isModuleEnabled(me, module)).filter((kind) =>
+    canReceiveNotificationKind(kind, me),
+  );
 }
 
 export const NOTIFICATION_CHANNELS = ["inapp", "push", "email", "whatsapp"] as const;

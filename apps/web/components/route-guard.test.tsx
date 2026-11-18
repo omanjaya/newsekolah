@@ -77,7 +77,7 @@ describe("RouteGuard", () => {
   it("shows the forbidden page when the required permission is missing", () => {
     mockedUseSession.mockReturnValue({
       status: "authenticated",
-      me: { must_change_password: false, permissions: [] } as never,
+      me: { must_change_password: false, permissions: [], roles: [] } as never,
       isReady: true,
     });
 
@@ -88,5 +88,28 @@ describe("RouteGuard", () => {
     );
 
     expect(screen.queryByText("protected")).not.toBeInTheDocument();
+    // The shell's state, with the way home marked by its house.
+    expect(screen.getByRole("heading", { level: 1, name: "title" })).toBeInTheDocument();
+    expect(screen.getByText("body")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "backHome" }).querySelector("svg.lucide-house"),
+    ).not.toBeNull();
+  });
+
+  it("says a platform operator's page is theirs alone, instead of sending the reader to the school admin", () => {
+    mockedUseSession.mockReturnValue({
+      status: "authenticated",
+      me: { must_change_password: false, permissions: [], roles: [{ slug: "admin" }] } as never,
+      isReady: true,
+    });
+
+    render(
+      <RouteGuard requiredPermission="platform_superadmin">
+        <p>protected</p>
+      </RouteGuard>,
+    );
+
+    expect(screen.getByText("platformBody")).toBeInTheDocument();
+    expect(screen.queryByText("body")).not.toBeInTheDocument();
   });
 });

@@ -1,7 +1,15 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Checkbox, Input, useToast } from "@newsekolah/ui";
+import {
+  NumberInput,
+  DialogFooter,
+  Field,
+  Button,
+  Checkbox,
+  Input,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -63,8 +71,7 @@ export function ViolationTypeForm({
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("code")}</span>
+      <Field label={t("code")}>
         <Input
           value={code}
           onChange={(e) => {
@@ -73,9 +80,8 @@ export function ViolationTypeForm({
           required
           maxLength={20}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
+      </Field>
+      <Field label={t("name")}>
         <Input
           value={name}
           onChange={(e) => {
@@ -84,21 +90,18 @@ export function ViolationTypeForm({
           required
           maxLength={200}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("points")}</span>
-        <Input
-          type="number"
-          value={points}
-          onChange={(e) => {
-            setPoints(e.target.value);
+      </Field>
+      <Field label={t("points")}>
+        <NumberInput
+          value={points === "" ? null : Number(points)}
+          onChange={(next) => {
+            setPoints(next === null ? "" : String(next));
           }}
           required
           min={0}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("category")}</span>
+      </Field>
+      <Field label={t("category")}>
         <Input
           value={category}
           onChange={(e) => {
@@ -107,24 +110,22 @@ export function ViolationTypeForm({
           placeholder={t("categoryPlaceholder")}
           maxLength={100}
         />
-      </label>
-      <label className="flex items-center gap-2 text-[13px]">
-        <Checkbox
-          checked={isActive}
-          onCheckedChange={(v) => {
-            setIsActive(v === true);
-          }}
-        />
-        {t("active")}
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      </Field>
+      <Checkbox
+        label={t("active")}
+        checked={isActive}
+        onCheckedChange={(v) => {
+          setIsActive(v === true);
+        }}
+      />
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={pending}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

@@ -2,22 +2,38 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
-import { EmptyState, PageHeader, Skeleton, domainIcons } from "@newsekolah/ui";
-import { FileText } from "lucide-react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  HeroCard,
+  IconCircle,
+  List,
+  ListRow,
+  Skeleton,
+  SkeletonList,
+} from "@newsekolah/ui";
+import { FileWarning, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useSession } from "../../../lib/session/session-provider";
 import { useMyDisciplineQuery } from "../api";
 
+import { PointsMeter, nextLevel } from "./points-meter";
+
 /**
- * A student's own discipline record: total points, warning letters, and
- * the violation records behind them. Plain and factual, no verdict beyond
- * what the ledger itself carries (DESIGN.md on copy tone).
+ * A student's own discipline record, phone first: the points against the
+ * school's warning-letter thresholds always in view (also when the record
+ * is clean, so the rules are known), then any letters, then the history.
+ * Plain and factual, no verdict beyond what the ledger itself carries.
  */
 export function MyDisciplineView(): ReactElement {
   const t = useTranslations("app.discipline.myDiscipline");
+  const tNav = useTranslations("app.shell.nav.items");
   const locale = useLocale() as Locale;
   const { me } = useSession();
   const timeZone = me?.tenant.timezone;
@@ -27,76 +43,101 @@ export function MyDisciplineView(): ReactElement {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4 p-4 md:p-6" aria-busy="true">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-40 w-full" />
-      </div>
+      <AppPage variant="narrow" title={tNav("myDiscipline")}>
+        <Skeleton className="h-52 w-full rounded-xl" />
+        <SkeletonList rows={3} leading framed />
+      </AppPage>
     );
   }
   if (error || !data) {
-    return <QueryError retry={() => refetch()} className="m-4 md:m-6" />;
+    return (
+      <AppPage variant="narrow" title={tNav("myDiscipline")}>
+        <QueryError retry={() => refetch()} error={error} />
+      </AppPage>
+    );
   }
 
+  const total = data.total_points;
+  const next = nextLevel(total, data.policy.levels);
+  const crossedAny = data.first_crossed.length > 0;
+  const clean = records.length === 0 && letters.length === 0;
+
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+    <AppPage variant="narrow" title={tNav("myDiscipline")}>
+      <HeroCard
+        tone={crossedAny ? "warning" : "accent-soft"}
+        eyebrow={t("heroEyebrow")}
+        title={t("points", { points: total })}
+        meta={
+          clean
+            ? t("clean")
+            : next
+              ? t("toNext", { points: next.min_points - total, level: next.label })
+              : t("pastAll")
+        }
+      >
+        <Card padding="sm" className="mt-3 text-fg">
+          <PointsMeter total={total} levels={data.policy.levels} crossings={data.first_crossed} />
+        </Card>
+      </HeroCard>
 
-      {records.length === 0 && letters.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.violation aria-hidden="true" />}
-          title={t("emptyTitle")}
-          description={t("emptyBody")}
-        />
-      ) : (
-        <div className="flex flex-col gap-4">
-          <p className="text-[15px] font-medium text-fg [font-variant-numeric:tabular-nums]">
-            {t("totalPoints", { points: data.total_points })}
-          </p>
-
-          {letters.length > 0 && (
-            <section className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-4">
-              <h2 className="text-[16px] font-medium text-fg">{t("letters")}</h2>
-              <ul className="flex flex-col gap-1.5">
-                {letters.map((letter) => (
-                  <li key={letter.id} className="flex items-start gap-2 text-[13px] text-fg">
-                    <FileText className="mt-0.5 size-4 shrink-0 text-fg-muted" aria-hidden="true" />
-                    <span>
-                      {letter.letter_number} · {letter.level_label} ·{" "}
-                      <span className="text-fg-muted">
-                        {formatDate(letter.issued_at, { locale, timeZone })}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          <section className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-4">
-            <h2 className="text-[16px] font-medium text-fg">{t("records")}</h2>
-            {records.length === 0 ? (
-              <p className="text-[13px] text-fg-muted">{t("recordsEmpty")}</p>
-            ) : (
-              <ul className="flex flex-col divide-y divide-border">
-                {records.map((record) => (
-                  <li
-                    key={record.id}
-                    className="flex items-center justify-between gap-3 py-2 text-[13px] text-fg"
-                  >
-                    <span className="flex flex-col">
-                      <span>{record.type_name}</span>
-                      <span className="text-[12px] text-fg-muted">
-                        {formatDate(record.occurred_on, { locale, timeZone })}
-                      </span>
-                    </span>
-                    <span className="[font-variant-numeric:tabular-nums]">{record.points}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
+      {letters.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle as="h2">{t("letters")}</CardTitle>
+          </CardHeader>
+          <List>
+            {letters.map((letter) => (
+              <ListRow
+                key={letter.id}
+                leading={
+                  <IconCircle tone="warning">
+                    <FileWarning />
+                  </IconCircle>
+                }
+                title={letter.level_label}
+                titleLines={2}
+                meta={`${letter.letter_number} · ${formatDate(letter.issued_at, { locale, timeZone })}`}
+              />
+            ))}
+          </List>
+        </Card>
       )}
-    </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">{t("records")}</CardTitle>
+        </CardHeader>
+        {records.length === 0 ? (
+          <EmptyState
+            icon={<ShieldCheck aria-hidden="true" />}
+            tone="success"
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+          />
+        ) : (
+          <List>
+            {records.map((record) => (
+              <ListRow
+                key={record.id}
+                leading={
+                  <IconCircle tone="neutral">
+                    <ShieldAlert />
+                  </IconCircle>
+                }
+                title={record.type_name}
+                titleLines={2}
+                meta={formatDate(record.occurred_on, { locale, timeZone: "UTC" })}
+                trailing={
+                  <span className="text-label text-fg tabular-nums">
+                    {t("recordPoints", { points: record.points })}
+                  </span>
+                }
+              />
+            ))}
+          </List>
+        )}
+      </Card>
+    </AppPage>
   );
 }

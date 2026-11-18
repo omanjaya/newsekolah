@@ -23,6 +23,7 @@ function DataTableFiltersDemo() {
   const [sort, setSort] = useState("");
   const [recordedFrom, setRecordedFrom] = useState("");
   const [recordedTo, setRecordedTo] = useState("");
+  const [period, setPeriod] = useState("");
 
   const filters: DataTableFilterDef[] = [
     {
@@ -87,6 +88,14 @@ function DataTableFiltersDemo() {
         },
       ],
     },
+    {
+      id: "period",
+      label: "Periode",
+      type: "month",
+      value: period,
+      onChange: setPeriod,
+      today: isoDate(STORY_TODAY),
+    },
   ];
 
   return <DataTableFilters filters={filters} />;
@@ -131,6 +140,13 @@ export const WithActiveFilters: Story = {
             { label: "Hari ini", from: "2026-09-15", to: "2026-09-15" },
             { label: "7 hari terakhir", from: "2026-09-09", to: "2026-09-15" },
           ],
+        },
+        {
+          id: "period",
+          label: "Periode",
+          type: "month",
+          value: "2026-09",
+          onChange: () => undefined,
         },
       ]}
     />

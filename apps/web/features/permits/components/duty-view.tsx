@@ -1,54 +1,181 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import type { Locale } from "@newsekolah/i18n";
+import { formatTime } from "@newsekolah/i18n";
 import {
-  PageHeader,
+  Avatar,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CountBadge,
+  Dialog,
+  DialogContent,
+  EmptyState,
+  List,
+  ListRow,
   QrPanel,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  QrPanelSkeleton,
+  SegmentedControl,
+  SkeletonList,
+  TextLink,
+  domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
+import { ChevronRight, ClipboardPen, MonitorPlay } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
+import { QueryError } from "../../../components/query-error";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { DutyWorkspaceActions } from "../../student-services/components/service-workspace-nav";
-import { type ScanPurpose, encodeScanPayload, useIssueScanTokenMutation } from "../api";
+import { useCan, useSession } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
+import { useDirectoryNames } from "../../reference/directory-names";
+import {
+  type LateArrivalSummary,
+  type ScanPurpose,
+  encodeScanPayload,
+  useIssueScanTokenMutation,
+  useLateArrivalQueueQuery,
+} from "../api";
 
-import { DutyManualRecordPanel } from "./duty-manual-record-panel";
+import { type ManualRecord, DutyManualRecordPanel } from "./duty-manual-record-panel";
+import { ApprovePanel } from "./exit-permit-panels";
+import { LateArrivalReviewForm } from "./late-arrivals-view";
+
+/** The QR and approval modes of the desk; recording by hand is a task, not a mode. */
+const MODES = ["classroom_entry", "late_arrival", "exit"] as const;
+type DutyMode = (typeof MODES)[number];
+/** `?mode=manual` (the old fourth mode) still opens the manual record. */
+const URL_MODES = [...MODES, "manual"] as const;
+type UrlMode = (typeof URL_MODES)[number];
+
+interface DeskLogEntry {
+  key: string;
+  kind: "exit" | "late" | "review";
+  studentName: string;
+  at: string;
+}
 
 /**
- * The duty teacher's desk (docs/07-ui-ux.md section 4, "Guru piket"): one
- * screen with the QR per purpose, no menu diving. Each QR is a single-use
- * token that renews itself when it expires.
+ * Piket hari ini (docs/07-ui-ux.md section 4, "Guru piket"): one screen, no
+ * menu diving. The QR for the chosen mode comes first and large, with its
+ * countdown; the late arrivals waiting for review and what was recorded at
+ * this desk today sit beside it on a laptop and under it on a phone. Each QR
+ * is a single-use token that renews itself when it expires. Recording a
+ * student without a phone is the page's primary action, a dialog (a bottom
+ * sheet on a phone), so the three modes fit one row at 390px.
  */
 export function DutyView(): ReactElement {
   const t = useTranslations("app.duty");
+  const locale = useLocale() as Locale;
+  const { me } = useSession();
+  const canMonitor = useCan("view_monitor_presence");
+  const [urlMode, setMode] = useUrlState<UrlMode>("mode", URL_MODES, "classroom_entry");
+  const mode: DutyMode = urlMode === "manual" ? "classroom_entry" : urlMode;
+  const [manualRequested, setManualRequested] = useState(false);
+  const manualOpen = manualRequested || urlMode === "manual";
+  const [log, setLog] = useState<DeskLogEntry[]>([]);
+  const today = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: me?.tenant.timezone,
+  }).format(businessNow());
+
+  function remember(kind: DeskLogEntry["kind"], studentName: string) {
+    setLog((prev) =>
+      [
+        { key: `${kind}:${Date.now()}`, kind, studentName, at: businessNow().toISOString() },
+        ...prev,
+      ].slice(0, 30),
+    );
+  }
+
+  function closeManual() {
+    setManualRequested(false);
+    if (urlMode === "manual") setMode("classroom_entry");
+  }
+
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <DutyWorkspaceActions />
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <p className="max-w-2xl text-[13px] text-fg-muted">{t("intro")}</p>
-      <Tabs defaultValue="classroom_entry">
-        <TabsList>
-          <TabsTrigger value="classroom_entry">{t("purposes.classroom_entry")}</TabsTrigger>
-          <TabsTrigger value="late_arrival">{t("purposes.late_arrival")}</TabsTrigger>
-          <TabsTrigger value="manual">{t("purposes.manual")}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="classroom_entry" className="pt-4">
-          <PurposePanel purpose="classroom_entry" />
-        </TabsContent>
-        <TabsContent value="late_arrival" className="pt-4">
-          <PurposePanel purpose="late_arrival" />
-        </TabsContent>
-        <TabsContent value="manual" className="pt-4">
-          <DutyManualRecordPanel />
-        </TabsContent>
-      </Tabs>
-    </div>
+    // The eyebrow is the sidebar group ("Piket dan gerbang"), not a repeat
+    // of the title.
+    <AppPage
+      variant="wide"
+      title={t("title")}
+      description={today}
+      nav={false}
+      primaryAction={
+        <Button
+          icon={<ClipboardPen />}
+          onClick={() => {
+            setManualRequested(true);
+          }}
+        >
+          {t("purposes.manual")}
+        </Button>
+      }
+      secondaryActions={
+        canMonitor
+          ? [
+              {
+                label: t("openMonitor"),
+                icon: <MonitorPlay />,
+                onSelect: () => {
+                  window.open("/monitor", "_blank", "noopener,noreferrer");
+                },
+              },
+            ]
+          : undefined
+      }
+      toolbar={
+        <SegmentedControl
+          aria-label={t("modeLabel")}
+          options={MODES.map((value) => ({ value, label: t(`purposes.${value}`) }))}
+          value={mode}
+          onValueChange={setMode}
+          fullWidth="phone"
+        />
+      }
+    >
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start">
+        <div className="flex min-w-0 flex-col gap-4">
+          {mode === "exit" ? <ApprovePanel /> : <PurposePanel key={mode} purpose={mode} />}
+        </div>
+        <div className="flex min-w-0 flex-col gap-6">
+          <LateQueue
+            onReviewed={(name) => {
+              remember("review", name);
+            }}
+          />
+          <DeskLog entries={log} locale={locale} timeZone={me?.tenant.timezone} />
+        </div>
+      </div>
+
+      <Dialog
+        open={manualOpen}
+        onOpenChange={(open) => {
+          if (!open) closeManual();
+        }}
+      >
+        <DialogContent title={t("manualForm.title")} description={t("manualForm.intro")}>
+          <DutyManualRecordPanel
+            layout="dialog"
+            onRecorded={(record: ManualRecord) => {
+              remember(record.kind, record.studentName);
+              closeManual();
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    </AppPage>
   );
 }
 
@@ -78,11 +205,16 @@ function PurposePanel({ purpose }: { purpose: ScanPurpose }): ReactElement {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-[minmax(0,320px)_1fr]">
+    <div className="flex flex-col gap-3">
       {issue.data ? (
         <QrPanel
+          size="lg"
+          autoRenew
+          label={t(`qrLabel.${purpose}`)}
           payload={encodeScanPayload(purpose, "", issue.data.token)}
-          code={issue.data.token}
+          // The raw token is 43 characters: nobody types that. A student
+          // without a camera is recorded by hand under "Catat manual".
+          code=""
           expiresAt={issue.data.expires_at}
           onRenew={renew}
           renewing={issue.isPending}
@@ -90,16 +222,160 @@ function PurposePanel({ purpose }: { purpose: ScanPurpose }): ReactElement {
           expiresInLabel={(seconds) => tQr("expiresIn", { seconds })}
           renewLabel={tQr("renew")}
         />
+      ) : issue.isError ? (
+        <QueryError retry={renew} error={issue.error} />
       ) : (
-        <div
-          className="h-80 animate-pulse rounded-sm border border-border bg-surface"
-          aria-busy="true"
-        />
+        <QrPanelSkeleton size="lg" />
       )}
-      <div className="flex flex-col gap-2 text-[13px] text-fg-muted">
-        <h2 className="text-[15px] font-medium text-fg">{t(`purposes.${purpose}`)}</h2>
-        <p>{t(`help.${purpose}`)}</p>
-      </div>
+      <p className="text-body-sm text-fg-muted">{t(`help.${purpose}`)}</p>
     </div>
+  );
+}
+
+/** Late arrivals waiting for this duty teacher, with one tap to review each. */
+function LateQueue({ onReviewed }: { onReviewed: (studentName: string) => void }): ReactElement {
+  const t = useTranslations("app.duty.queue");
+  const tLate = useTranslations("app.permits.late");
+  const locale = useLocale() as Locale;
+  const { me } = useSession();
+  const canLate = me?.profile_kind === "teacher" || me?.profile_kind === "staff";
+  const queue = useLateArrivalQueueQuery(canLate);
+  const items = queue.data?.data ?? [];
+  const names = useDirectoryNames(
+    items.map((item) => item.student_user_id),
+    canLate,
+  );
+  const [reviewing, setReviewing] = useState<LateArrivalSummary | null>(null);
+  const nameOf = (item: LateArrivalSummary) =>
+    names.get(item.student_user_id)?.name ?? tLate("unknownStudent");
+
+  return (
+    <Card>
+      <CardHeader
+        action={
+          <TextLink href="/inbox?type=late" className="inline-flex items-center gap-0.5">
+            {t("openInbox")}
+            <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
+          </TextLink>
+        }
+      >
+        <CardTitle as="h2" className="flex items-center gap-2">
+          {t("title")}
+          <CountBadge count={items.length} tone="accent" />
+        </CardTitle>
+        <CardDescription>{t("description")}</CardDescription>
+      </CardHeader>
+      {queue.isLoading ? (
+        <SkeletonList rows={3} leading />
+      ) : queue.isError ? (
+        <CardContent>
+          <QueryError retry={() => void queue.refetch()} error={queue.error} />
+        </CardContent>
+      ) : items.length === 0 ? (
+        <CardContent>
+          <EmptyState
+            variant="compact"
+            icon={<domainIcons.late aria-hidden="true" />}
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+          />
+        </CardContent>
+      ) : (
+        <List>
+          {items.map((item) => (
+            <ListRow
+              key={item.instance_id}
+              leading={<Avatar size={40} name={nameOf(item)} decorative />}
+              title={nameOf(item)}
+              titleLines={2}
+              meta={[
+                t("occurrence", {
+                  n: item.occurrence_number,
+                  time: formatTime(item.opened_at, { locale, timeZone: me?.tenant.timezone }),
+                }),
+                item.reason,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+              action={
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setReviewing(item);
+                  }}
+                >
+                  {tLate("review")}
+                </Button>
+              }
+            />
+          ))}
+        </List>
+      )}
+      <Dialog
+        open={reviewing !== null}
+        onOpenChange={(open) => {
+          if (!open) setReviewing(null);
+        }}
+      >
+        <DialogContent
+          title={tLate("reviewTitle")}
+          description={reviewing ? nameOf(reviewing) : undefined}
+        >
+          {reviewing && (
+            <LateArrivalReviewForm
+              item={reviewing}
+              onDone={() => {
+                onReviewed(nameOf(reviewing));
+                setReviewing(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+/** What was recorded or reviewed at this desk since the page opened. */
+function DeskLog({
+  entries,
+  locale,
+  timeZone,
+}: {
+  entries: DeskLogEntry[];
+  locale: Locale;
+  timeZone: string | undefined;
+}): ReactElement {
+  const t = useTranslations("app.duty.log");
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle as="h2">{t("title")}</CardTitle>
+        <CardDescription>{t("description")}</CardDescription>
+      </CardHeader>
+      {entries.length === 0 ? (
+        <CardContent>
+          <EmptyState
+            variant="compact"
+            icon={<domainIcons.document aria-hidden="true" />}
+            title={t("empty")}
+          />
+        </CardContent>
+      ) : (
+        <List dense>
+          {entries.map((entry) => (
+            <ListRow
+              key={entry.key}
+              leading={<Avatar size={32} name={entry.studentName} decorative />}
+              title={entry.studentName}
+              titleLines={2}
+              meta={t(`kinds.${entry.kind}`)}
+              trailing={formatTime(entry.at, { locale, timeZone })}
+            />
+          ))}
+        </List>
+      )}
+    </Card>
   );
 }

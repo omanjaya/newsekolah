@@ -4,22 +4,19 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Alert,
   Button,
-  Card,
-  CardContent,
   ConfirmDialog,
   domainIcons,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   EmptyState,
+  Field,
+  IconButton,
   SearchInput,
+  SectionHeader,
   SemanticStatusBadge,
-  Skeleton,
+  SkeletonList,
   Switch,
   useToast,
 } from "@newsekolah/ui";
-import { Download, MoreHorizontal, Plus } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -40,13 +37,14 @@ import {
 import { type GradebookExportScope, downloadGradebookExport } from "../gradebook-export-api";
 import {
   gradebookClassAverage,
+  gradebookFillPercentage,
   gradebookTuntasRate,
   gradebookUngradedCount,
 } from "../lib/gradebook-stats";
 
 import { ComponentDialog } from "./component-dialog";
 import { GradebookExportScopePicker } from "./gradebook-export-scope-picker";
-import { GradebookPageTiles } from "./gradebook-page-tiles";
+import { GradebookSummaryStrip } from "./gradebook-summary-strip";
 import { GradebookTable } from "./gradebook-table";
 import { ManualScoreDialog } from "./manual-score-dialog";
 import { StarDialog } from "./star-dialog";
@@ -55,7 +53,7 @@ export interface GradebookSheetProps {
   classId: string;
   subjectId: string;
   termId?: string;
-  /** The class's display name ("X-A"), for the page title -- not a CSS class. */
+  /** The class's display name ("X-A"), for the sheet's title -- not a CSS class. */
   className?: string;
   subjectName?: string;
   canManage: boolean;
@@ -63,12 +61,11 @@ export interface GradebookSheetProps {
 }
 
 /**
- * One class-subject sheet, restyled as the "Gradebook page"
- * (docs/07-ui-ux.md): a header titled "Kelas · Mapel" with the publish
- * switch and the e-Rapor export as pill actions, everything else
- * (add component, legacy actions) tucked under "Lainnya"; a compact
- * stat-tile row (class average, tuntas rate, not-yet-graded count); then
- * the score grid, unchanged, inside a card.
+ * One class-subject sheet as a single-focus workspace: the sheet's name with
+ * its publish status (the one place it is shown) and the export, one
+ * summary strip, then the search and "Tambah komponen" right above the
+ * scores. On a wide screen it fills the page's height and the table scrolls
+ * inside it, so the component names stay in view.
  */
 export function GradebookSheet({
   classId,
@@ -80,9 +77,9 @@ export function GradebookSheet({
   onPendingChangesChange,
 }: GradebookSheetProps): ReactElement {
   const t = useTranslations("app.grading.sheet");
+  const tGrading = useTranslations("app.grading");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const tApp = useTranslations("app");
   const {
     data: sheet,
     isLoading,
@@ -111,7 +108,7 @@ export function GradebookSheet({
   // Columns comes from the first class in scope).
   const exportColumns = useMemo(() => {
     const columns = [
-      { key: "no", label: "No" },
+      { key: "no", label: t("exportColumnNumber") },
       { key: "name", label: t("exportColumnName") },
     ];
     for (const component of sheet?.components ?? []) {
@@ -141,23 +138,27 @@ export function GradebookSheet({
     .join(" · ");
 
   if (isLoading) {
-    return <Skeleton className="h-96 w-full" aria-busy="true" />;
+    return <SkeletonList rows={6} leading={false} />;
   }
   if (error || !sheet) {
     return (
-      <Alert variant="warning" title={t("loadError")}>
-        <div className="flex flex-col items-start gap-2">
-          {error instanceof ApiError && <p>{apiErrorMessage(error.code)}</p>}
+      <Alert
+        variant="danger"
+        title={t("loadError")}
+        action={
           <Button
+            size="sm"
             variant="secondary"
             loading={isRefetching}
             onClick={() => {
               void refetch();
             }}
           >
-            {tApp("offlinePage.retry")}
+            {tGrading("table.retry")}
           </Button>
-        </div>
+        }
+      >
+        {error instanceof ApiError ? apiErrorMessage(error.code) : undefined}
       </Alert>
     );
   }
@@ -179,87 +180,127 @@ export function GradebookSheet({
     }
   }
 
-  return (
-    <div className={canManage ? "flex flex-col gap-4 pb-24 md:pb-20" : "flex flex-col gap-4"}>
-      {/*
-       * A local, `h2`-level header rather than `PageHeader` (which renders
-       * an `h1`): the page's own `h1` is the entry page's "Penilaian"
-       * title (GradingView's PageHeader) -- this is the opened sheet
-       * nested under it, not a second page.
-       */}
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-4">
-        <h2 className="font-heading text-[20px] font-bold tracking-tight text-fg">{title}</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Primary pill: the publish switch itself, kept exactly as
-                a `role="switch"` with its existing label so the existing
-                publish flow (and its tests) keep working -- only its
-                visual wrapper changed. A read-only viewer sees just the
-                status badge, no edit control at all. */}
-          <span
-            className={
-              sheet.is_published
-                ? "flex items-center gap-2 rounded-full border border-accent bg-accent-soft px-3 py-1.5"
-                : "flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5"
-            }
-          >
-            <SemanticStatusBadge
-              status={sheet.is_published ? "published" : "draft"}
-              label={sheet.is_published ? t("publishedBadge") : t("draftBadge")}
-            />
-            {canManage && (
-              <label className="flex items-center gap-2 text-[13px]">
-                <span className="text-fg-muted">{t("publishToggleLabel")}</span>
-                <Switch
-                  checked={sheet.is_published}
-                  onCheckedChange={(checked) => {
-                    setPendingPublish(checked);
-                  }}
-                />
-              </label>
-            )}
-          </span>
+  const hasComponents = sheet.components.length > 0;
 
+  const openExport = () => {
+    setExportScope({ kind: "class", classId });
+    setExportOpen(true);
+  };
+  const addComponent = () => {
+    setComponentDialog("new");
+  };
+
+  return (
+    // Pads itself clear of the sticky save bar while the bar shows (the
+    // bar publishes its height), so the last rows never hide behind it.
+    <div className="flex flex-col gap-4 pb-(--sticky-save-bar-height) md:min-h-0 md:flex-1">
+      {/* The scope picker above already names the sheet on screen. */}
+      <SectionHeader className="sr-only" title={title} />
+      <div className="flex min-h-11 items-center justify-between gap-4">
+        <p className="hidden text-body-sm text-fg-muted md:block">
+          {t("meta", { students: sheet.students.length, components: sheet.components.length })}
+        </p>
+        {/* The sheet's one publish status. A manager toggles it right
+            here; a read-only viewer only sees the badge. */}
+        <div className="flex items-center gap-3">
+          <SemanticStatusBadge
+            status={sheet.is_published ? "published" : "draft"}
+            label={sheet.is_published ? t("publishedBadge") : t("draftBadge")}
+          />
+          {canManage && (
+            <Field label={t("publishToggleLabel")} orientation="inline">
+              <Switch
+                checked={sheet.is_published}
+                onCheckedChange={(checked) => {
+                  setPendingPublish(checked);
+                }}
+              />
+            </Field>
+          )}
           <Button
-            size="sm"
             variant="secondary"
-            className="rounded-full"
+            size="sm"
             icon={<Download />}
-            onClick={() => {
-              setExportScope({ kind: "class", classId });
-              setExportOpen(true);
-            }}
+            className="hidden md:inline-flex"
+            onClick={openExport}
           >
             {t("exportGradebook")}
           </Button>
-
-          {canManage && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="ghost" className="rounded-full">
-                  <MoreHorizontal className="size-4" aria-hidden="true" />
-                  {t("moreActions")}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onSelect={() => {
-                    setComponentDialog("new");
-                  }}
-                >
-                  <Plus className="size-4" aria-hidden="true" />
-                  {t("addComponent")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
         </div>
+        <IconButton
+          icon={<Download />}
+          aria-label={t("exportGradebook")}
+          variant="surface"
+          className="md:hidden"
+          onClick={openExport}
+        />
       </div>
 
-      <GradebookPageTiles
-        classAverage={gradebookClassAverage(sheet.students)}
-        tuntasRate={gradebookTuntasRate(sheet.students, sheet.scale.default_kktp)}
-        ungradedCount={gradebookUngradedCount(sheet.students)}
-      />
+      {/* The figures sit above the scores on a wide screen and after them
+          on a phone, where the scores have to start on the first screen. */}
+      {hasComponents && (
+        <div className="order-last md:order-none">
+          <GradebookSummaryStrip
+            studentCount={sheet.students.length}
+            componentCount={sheet.components.length}
+            fillPercent={gradebookFillPercentage(sheet.students, sheet.components.length)}
+            classAverage={gradebookClassAverage(sheet.students)}
+            tuntasRate={gradebookTuntasRate(sheet.students, sheet.scale.default_kktp)}
+            ungradedCount={gradebookUngradedCount(sheet.students)}
+          />
+        </div>
+      )}
+
+      {hasComponents ? (
+        <>
+          <div className="hidden items-center gap-2 md:flex">
+            <SearchInput
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchPlaceholder")}
+              className="min-w-0 flex-1 md:max-w-xs"
+            />
+            {canManage && (
+              <Button
+                variant="secondary"
+                icon={<Plus />}
+                className="ml-auto shrink-0"
+                onClick={addComponent}
+              >
+                {t("addComponent")}
+              </Button>
+            )}
+          </div>
+          <GradebookTable
+            sheet={sheet}
+            canManage={canManage}
+            search={search}
+            onSearchChange={setSearch}
+            starBalances={starBalances}
+            onEditComponent={setComponentDialog}
+            onManualOverride={setManualTarget}
+            onGiveStar={setStarTarget}
+            onAddComponent={addComponent}
+            onPendingChangesChange={onPendingChangesChange}
+          />
+        </>
+      ) : (
+        <EmptyState
+          icon={<domainIcons.grades aria-hidden="true" />}
+          title={t("emptyTitle")}
+          description={canManage ? t("emptyBody") : t("emptyBodyReadOnly")}
+          action={
+            canManage && (
+              <Button icon={<Plus />} onClick={addComponent}>
+                {t("addComponent")}
+              </Button>
+            )
+          }
+        />
+      )}
 
       <ReportExportDialog
         open={exportOpen}
@@ -283,54 +324,6 @@ export function GradebookSheet({
           />
         }
       />
-
-      <Card>
-        <CardContent className="flex flex-col gap-4 p-4 md:p-5">
-          <div className="flex flex-wrap items-center gap-3">
-            <SearchInput
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-              }}
-              placeholder={t("searchPlaceholder")}
-              aria-label={t("searchPlaceholder")}
-              className="w-full md:w-64"
-            />
-          </div>
-
-          {sheet.components.length === 0 ? (
-            <EmptyState
-              icon={<domainIcons.grades aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-              action={
-                canManage && (
-                  <Button
-                    size="sm"
-                    icon={<Plus />}
-                    onClick={() => {
-                      setComponentDialog("new");
-                    }}
-                  >
-                    {t("addComponent")}
-                  </Button>
-                )
-              }
-            />
-          ) : (
-            <GradebookTable
-              sheet={sheet}
-              canManage={canManage}
-              search={search}
-              starBalances={starBalances}
-              onEditComponent={setComponentDialog}
-              onManualOverride={setManualTarget}
-              onGiveStar={setStarTarget}
-              onPendingChangesChange={onPendingChangesChange}
-            />
-          )}
-        </CardContent>
-      </Card>
 
       {componentDialog && (
         <ComponentDialog

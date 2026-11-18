@@ -1,4 +1,4 @@
-import { Select, Tabs, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { Select, Tabs, TabsList, TabsTrigger, Field } from "@newsekolah/ui";
 import type { ReactElement } from "react";
 
 import type { ClassRef, GradeLevel } from "../../reference/api";
@@ -55,8 +55,7 @@ export function GradebookExportScopePicker(props: GradebookExportScopePickerProp
         </TabsList>
       </Tabs>
       {scope.kind === "class" ? (
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{classLabel}</span>
+        <Field label={classLabel}>
           <Select
             options={(classes ?? []).map((c) => ({ value: c.id, label: c.name }))}
             value={scope.classId}
@@ -68,10 +67,9 @@ export function GradebookExportScopePicker(props: GradebookExportScopePickerProp
             aria-label={classLabel}
             className="w-56"
           />
-        </label>
+        </Field>
       ) : (
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{gradeLevelLabel}</span>
+        <Field label={gradeLevelLabel}>
           <Select
             options={(gradeLevels ?? []).map((g) => ({ value: g.id, label: g.name }))}
             value={scope.gradeLevelId}
@@ -83,7 +81,7 @@ export function GradebookExportScopePicker(props: GradebookExportScopePickerProp
             aria-label={gradeLevelLabel}
             className="w-56"
           />
-        </label>
+        </Field>
       )}
     </div>
   );

@@ -4,20 +4,24 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Alert,
   Badge,
-  Button,
   ConfirmDialog,
+  Field,
+  FormSection,
   Input,
-  PageHeader,
-  Skeleton,
-  Switch,
+  PasswordInput,
+  SkeletonForm,
   useToast,
 } from "@newsekolah/ui";
+import { Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { SettingSwitchRow } from "../../settings/components/setting-switch-row";
+import { SettingsPage } from "../../settings/components/settings-page";
+import { SettingsSaveBar } from "../../settings/components/settings-save-bar";
 import {
   useGoogleSSOConfigQuery,
   useRemoveGoogleSSOConfigMutation,
@@ -30,6 +34,8 @@ interface FormState {
   hostedDomain: string;
   enabled: boolean;
 }
+
+const NAV_KEY = "settings-sso";
 
 /**
  * Admin screen for Google Workspace SSO: a school supplies the OAuth 2.0
@@ -48,35 +54,43 @@ export function SsoView(): ReactElement {
   const remove = useRemoveGoogleSSOConfigMutation();
 
   const [form, setForm] = useState<FormState | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
 
-  if (config.isError && !config.data)
-    return <QueryError retry={() => config.refetch()} className="m-4" />;
+  if (config.isError && !config.data) {
+    return (
+      <SettingsPage navKey={NAV_KEY} description={t("description")}>
+        <QueryError retry={() => config.refetch()} error={config.error} />
+      </SettingsPage>
+    );
+  }
 
   if (config.isLoading || !config.data) {
     return (
-      <div className="flex flex-col gap-6 p-4 md:p-6">
-        <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-        <Skeleton className="h-64 w-full max-w-lg" />
-      </div>
+      <SettingsPage navKey={NAV_KEY} description={t("description")}>
+        <SkeletonForm fields={3} actions={false} />
+      </SettingsPage>
     );
   }
 
   const data = config.data;
-  const active =
-    form ??
-    ({
-      clientId: data.client_id ?? "",
-      clientSecret: "",
-      hostedDomain: data.hosted_domain ?? "",
-      enabled: data.configured ? data.enabled : true,
-    } satisfies FormState);
+  const saved: FormState = {
+    clientId: data.client_id ?? "",
+    clientSecret: "",
+    hostedDomain: data.hosted_domain ?? "",
+    // Before the first configuration there is nothing to switch: saving
+    // the credentials turns sign-in on.
+    enabled: data.configured ? data.enabled : true,
+  };
+  const active = form ?? saved;
+  const dirty = JSON.stringify(active) !== JSON.stringify(saved);
+  const clientIdError = submitted && !active.clientId.trim() ? t("clientIdRequired") : undefined;
+  const domainError =
+    submitted && !active.hostedDomain.trim() ? t("hostedDomainRequired") : undefined;
 
   async function handleSave() {
-    if (!active.clientId.trim() || !active.hostedDomain.trim()) {
-      toast.error(t("validationRequired"));
-      return;
-    }
+    setSubmitted(true);
+    if (!active.clientId.trim() || !active.hostedDomain.trim()) return;
     try {
       await save.mutateAsync({
         client_id: active.clientId.trim(),
@@ -85,6 +99,7 @@ export function SsoView(): ReactElement {
         enabled: active.enabled,
       });
       setForm(null);
+      setSubmitted(false);
       toast.success(t("toasts.saved"));
     } catch (error) {
       toast.error(
@@ -106,86 +121,109 @@ export function SsoView(): ReactElement {
     }
   }
 
-  return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <p className="max-w-lg text-[13px] text-fg-muted">{t("description")}</p>
+  const statusBadge = !data.configured ? (
+    <Badge tone="neutral">{t("statusUnset")}</Badge>
+  ) : data.enabled ? (
+    <Badge tone="success">{t("statusOn")}</Badge>
+  ) : (
+    <Badge tone="neutral">{t("statusOff")}</Badge>
+  );
 
-      <section className="flex max-w-lg flex-col gap-4 rounded-sm border border-border bg-surface p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <h2 className="text-[16px] font-medium text-fg">{t("statusTitle")}</h2>
-              <Badge variant={data.configured && data.enabled ? "accent" : "neutral"}>
-                {data.configured && data.enabled ? t("statusOn") : t("statusOff")}
-              </Badge>
-            </div>
-            <p className="text-[13px] text-fg-muted">{t("statusBody")}</p>
-          </div>
-          <Switch
+  return (
+    <SettingsPage
+      navKey={NAV_KEY}
+      description={t("description")}
+      // The state of the feature belongs to the page, beside its title.
+      actions={statusBadge}
+      secondaryActions={
+        data.configured
+          ? [
+              {
+                label: t("removeAction"),
+                icon: <Trash2 />,
+                destructive: true,
+                onSelect: () => {
+                  setShowRemoveConfirm(true);
+                },
+              },
+            ]
+          : undefined
+      }
+      floating={
+        <SettingsSaveBar
+          dirty={dirty}
+          saving={save.isPending}
+          saveLabel={data.configured ? undefined : t("saveAndEnable")}
+          onSave={() => void handleSave()}
+          onDiscard={() => {
+            setForm(null);
+            setSubmitted(false);
+          }}
+        />
+      }
+    >
+      {/* The switch has nothing to switch before the first save, so its
+          card appears only once the credentials are stored. */}
+      {data.configured && (
+        <FormSection variant="card" columns={1} title={t("statusTitle")}>
+          <SettingSwitchRow
+            label={t("enabledToggleLabel")}
+            hint={t("statusBody")}
             checked={active.enabled}
             onCheckedChange={(enabled) => {
               setForm({ ...active, enabled });
             }}
-            aria-label={t("enabledToggleLabel")}
           />
-        </div>
+        </FormSection>
+      )}
 
-        {!data.configured && <Alert variant="info" title={t("neverConfigured")} />}
-
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("clientIdLabel")}</span>
+      <FormSection
+        variant="card"
+        columns={1}
+        title={t("credentialsTitle")}
+        description={t("credentialsHint")}
+      >
+        {!data.configured && <Alert tone="info">{t("neverConfigured")}</Alert>}
+        <Field label={t("clientIdLabel")} required hint={t("clientIdHint")} error={clientIdError}>
           <Input
             value={active.clientId}
-            placeholder={t("clientIdPlaceholder")}
+            autoCapitalize="none"
+            spellCheck={false}
             onChange={(event) => {
               setForm({ ...active, clientId: event.target.value });
             }}
           />
-        </label>
-
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("clientSecretLabel")}</span>
-          <Input
-            type="password"
+        </Field>
+        <Field
+          label={t("clientSecretLabel")}
+          hint={data.configured ? t("clientSecretHint") : undefined}
+        >
+          <PasswordInput
             value={active.clientSecret}
+            autoComplete="off"
             placeholder={data.configured ? t("clientSecretUnchangedPlaceholder") : ""}
             onChange={(event) => {
               setForm({ ...active, clientSecret: event.target.value });
             }}
           />
-          <span className="text-[12px] text-fg-muted">{t("clientSecretHint")}</span>
-        </label>
-
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("hostedDomainLabel")}</span>
+        </Field>
+        <Field
+          label={t("hostedDomainLabel")}
+          required
+          hint={t("hostedDomainHint")}
+          error={domainError}
+        >
           <Input
             value={active.hostedDomain}
             placeholder={t("hostedDomainPlaceholder")}
+            autoCapitalize="none"
+            spellCheck={false}
             onChange={(event) => {
               setForm({ ...active, hostedDomain: event.target.value });
             }}
           />
-          <span className="text-[12px] text-fg-muted">{t("hostedDomainHint")}</span>
-        </label>
-
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" loading={save.isPending} onClick={() => void handleSave()}>
-            {t("saveAction")}
-          </Button>
-          {data.configured && (
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => {
-                setShowRemoveConfirm(true);
-              }}
-            >
-              {t("removeAction")}
-            </Button>
-          )}
-        </div>
-      </section>
+        </Field>
+      </FormSection>
 
       <ConfirmDialog
         open={showRemoveConfirm}
@@ -193,10 +231,10 @@ export function SsoView(): ReactElement {
         title={t("removeDialogTitle")}
         description={t("removeDialogBody")}
         confirmLabel={t("removeAction")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={() => void handleRemove()}
       />
-    </div>
+    </SettingsPage>
   );
 }

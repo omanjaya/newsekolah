@@ -55,9 +55,9 @@ export function ConnectionStatusIndicator(): ReactElement | null {
   return (
     <span
       role="status"
-      className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2 py-1 text-[11px] font-medium text-fg-muted shadow-(--shadow-float)"
+      className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2 py-1 text-caption text-fg-muted shadow-(--shadow-float)"
     >
-      <WifiOff className="size-3.5 shrink-0 text-status-late" aria-hidden="true" />
+      <WifiOff className="size-3.5 shrink-0 text-warning" aria-hidden="true" />
       {t("reconnecting")}
     </span>
   );

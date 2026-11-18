@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import type { Locale } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
@@ -9,35 +10,41 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
-  PageHeader,
+  RowActionsMenu,
   useToast,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus, Users } from "lucide-react";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { Pencil, Plus, SlidersHorizontal, Trash2, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
-import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   type Extracurricular,
   useDeleteExtracurricularMutation,
   useExtracurricularsQuery,
 } from "../api";
+import { clubScheduleLabel } from "../lib/club-schedule";
 
 import { ClubForm } from "./club-form";
 import { MembershipPolicyForm } from "./membership-policy-form";
 
-const WEEKDAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-
+/**
+ * The extracurriculars of the year, a tab of the student activities area
+ * (its title and group come from the navigation). A row opens the club;
+ * editing and deleting wait in the row's menu.
+ */
 export function ClubsView(): ReactElement {
-  const workspace = useTranslations("app.workspace");
   const t = useTranslations("app.activities.clubs");
+  const locale = useLocale() as Locale;
+  const router = useRouter();
+  const [search, setSearch] = useState("");
   const canManage = useCan("manage_extracurriculars");
   const canManagePolicy = useCan("manage_settings");
   const [includeInactiveParam, setIncludeInactiveParam] = useUrlState<"" | "true">(
@@ -46,7 +53,7 @@ export function ClubsView(): ReactElement {
     "",
   );
   const includeInactive = includeInactiveParam === "true";
-  const { data, isLoading } = useExtracurricularsQuery(includeInactive);
+  const { data, isLoading, error, refetch } = useExtracurricularsQuery(includeInactive);
   const [editing, setEditing] = useState<Extracurricular | "new" | null>(null);
 
   const [pendingDelete, setPendingDelete] = useState<Extracurricular | null>(null);
@@ -76,29 +83,17 @@ export function ClubsView(): ReactElement {
         accessorKey: "name",
         header: t("columns.name"),
         enableSorting: false,
-        cell: ({ row }) => (
-          <Link
-            href={`/activities/clubs/${row.original.id}`}
-            className="font-medium underline-offset-2 hover:underline"
-          >
-            {row.original.name}
-          </Link>
-        ),
+        meta: { card: "title" },
+        // The whole row opens the club (onRowActivate), so the name is
+        // plain text rather than a link that looks like every other cell.
+        cell: ({ row }) => <span className="font-medium text-fg">{row.original.name}</span>,
       },
       {
         accessorKey: "meeting_day",
         header: t("columns.schedule"),
         enableSorting: false,
-        cell: ({ row }) => {
-          const club = row.original;
-          if (club.meeting_day === undefined) return "-";
-          const day = t(`weekdays.${WEEKDAY_KEYS[club.meeting_day] ?? "sunday"}`);
-          const time =
-            club.meeting_start && club.meeting_end
-              ? `${club.meeting_start}-${club.meeting_end}`
-              : (club.meeting_start ?? "");
-          return `${day}${time ? ` ${time}` : ""}`;
-        },
+        cell: ({ row }) =>
+          clubScheduleLabel(row.original, (key) => t(`weekdays.${key}`), locale) ?? "-",
       },
       {
         accessorKey: "capacity",
@@ -110,11 +105,15 @@ export function ClubsView(): ReactElement {
         accessorKey: "is_active",
         header: t("columns.status"),
         enableSorting: false,
-        cell: ({ row }) => (
-          <Badge variant={row.original.is_active ? "accent" : "neutral"}>
-            {t(row.original.is_active ? "status.active" : "status.inactive")}
-          </Badge>
-        ),
+        meta: { card: "meta" },
+        // Active is the normal state, said quietly; only an inactive club
+        // stands out with a badge.
+        cell: ({ row }) =>
+          row.original.is_active ? (
+            <span className="text-fg-muted">{t("status.active")}</span>
+          ) : (
+            <Badge tone="neutral">{t("status.inactive")}</Badge>
+          ),
       },
       ...(canManage
         ? [
@@ -123,73 +122,74 @@ export function ClubsView(): ReactElement {
               header: t("columns.actions"),
               enableSorting: false,
               cell: ({ row }: { row: { original: Extracurricular } }) => (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      setEditing(row.original);
-                    }}
-                  >
-                    {t("edit")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setPendingDelete(row.original);
-                    }}
-                  >
-                    {t("delete")}
-                  </Button>
-                </div>
+                <RowActionsMenu
+                  ariaLabel={t("rowActions", { name: row.original.name })}
+                  items={[
+                    {
+                      label: t("edit"),
+                      icon: <Pencil />,
+                      onClick: () => {
+                        setEditing(row.original);
+                      },
+                    },
+                    {
+                      label: t("delete"),
+                      icon: <Trash2 />,
+                      tone: "danger",
+                      onClick: () => {
+                        setPendingDelete(row.original);
+                      },
+                    },
+                  ]}
+                />
               ),
             } satisfies ColumnDef<Extracurricular>,
           ]
         : []),
     ],
-    [t, canManage],
+    [t, canManage, locale],
   );
 
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the table scrolls its rows internally while the
-    // filter row stays put. See school/components/users-view.tsx for the
-    // reference pattern.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <ActivitiesWorkspaceNav />
-      <PageHeader eyebrow={t("eyebrow")} title={workspace("studentActivities")} />
-
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        {(canManage || canManagePolicy) && (
-          <div className="grid w-full gap-2 sm:flex sm:w-auto">
-            {canManagePolicy && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
+    <AppPage
+      variant="fit"
+      primaryAction={
+        canManage ? (
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              setEditing("new");
+            }}
+          >
+            {t("add")}
+          </Button>
+        ) : undefined
+      }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("add"),
+              onSelect: () => {
+                setEditing("new");
+              },
+            }
+          : undefined
+      }
+      secondaryActions={
+        canManagePolicy
+          ? [
+              {
+                label: t("policy.title"),
+                icon: <SlidersHorizontal />,
+                onSelect: () => {
                   setPolicyOpen(true);
-                }}
-              >
-                {t("policy.title")}
-              </Button>
-            )}
-            {canManage && (
-              <Button
-                size="sm"
-                icon={<Plus />}
-                className="order-first sm:order-none"
-                onClick={() => {
-                  setEditing("new");
-                }}
-              >
-                {t("add")}
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-
+                },
+              },
+            ]
+          : undefined
+      }
+    >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/activities/components/clubs-view:1"
@@ -201,20 +201,41 @@ export function ClubsView(): ReactElement {
           onPaginationChange={() => undefined}
           sorting={[]}
           onSortingChange={() => undefined}
-          globalFilter=""
+          globalFilter={search}
+          onGlobalFilterChange={setSearch}
           filters={filters}
           filtersLabels={{
             reset: t("filters.reset"),
             removeFilter: (label) => t("filters.removeFilter", { label }),
           }}
           isLoading={isLoading}
+          error={error}
+          onRetry={() => void refetch()}
           getRowId={(item) => item.id}
+          onRowActivate={(club) => {
+            router.push(`/activities/clubs/${club.id}`);
+          }}
           fillHeight
           emptyState={
             <EmptyState
               icon={<Users aria-hidden="true" />}
               title={t("emptyTitle")}
               description={t("emptyBody")}
+              // The header already carries the primary "add"; this one
+              // only repeats it where the reader is looking.
+              action={
+                canManage ? (
+                  <Button
+                    variant="secondary"
+                    icon={<Plus />}
+                    onClick={() => {
+                      setEditing("new");
+                    }}
+                  >
+                    {t("add")}
+                  </Button>
+                ) : undefined
+              }
             />
           }
         />
@@ -271,6 +292,6 @@ export function ClubsView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }

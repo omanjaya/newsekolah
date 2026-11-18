@@ -20,6 +20,7 @@ vi.mock("../../reference/components/directory-picker", async () => {
   const { directoryPickerStubModule } = await import("../../../test/directory-picker-stub");
   return directoryPickerStubModule;
 });
+vi.mock("../use-tenant-timezone", () => ({ useTenantTimeZone: () => "Asia/Jakarta" }));
 vi.mock("../visits-api", () => ({
   useRecordLibraryVisitMutation: () => ({ mutate: mocks.recordVisit, isPending: false }),
   useLibraryReadInPlaceQuery: () => ({ data: { data: [] }, isLoading: false }),

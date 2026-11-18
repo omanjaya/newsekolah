@@ -1,7 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ permissions: [] as string[] }));
+const mocks = vi.hoisted(() => ({ permissions: [] as string[], openReport: vi.fn() }));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -14,8 +14,17 @@ vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (permission: string) => mocks.permissions.includes(permission),
   useSession: () => ({ me: { permissions: mocks.permissions } }),
 }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../reference/api", () => ({
   useLookup: () => new Map(),
+  useClassesQuery: () => ({ data: { data: [{ id: "class-1", name: "X-A" }] } }),
+}));
+vi.mock("../../analytics/api", () => ({
+  useStudentRiskQuery: () => ({ data: { class_id: "class-1" } }),
+}));
+vi.mock("../../school/components/user-form", () => ({ UserForm: () => null }));
+vi.mock("./student-overview", () => ({
+  StudentOverviewTab: () => <div>panel:overview</div>,
 }));
 vi.mock("../../reference/directory-names", async () => {
   const { directoryNamesStub } = await import("../../../test/directory-names-stub");
@@ -25,13 +34,12 @@ vi.mock("../../school/api", () => ({ useUserQuery: () => ({ data: undefined }) }
 vi.mock("../../mentoring/api", () => ({
   useMentorStudentSnapshotQuery: () => ({ data: undefined }),
 }));
-vi.mock("../../discipline/components/student-discipline-view", () => ({
-  StudentDisciplineReportButton: () => null,
+vi.mock("../../discipline/components/use-open-student-discipline-report", () => ({
+  useOpenStudentDisciplineReport: () => ({ open: mocks.openReport, pending: false }),
 }));
 vi.mock("./student-tab-panels", () => {
   const panel = (name: string) => () => <div>{`panel:${name}`}</div>;
   return {
-    StudentOverviewTab: panel("overview"),
     StudentAttendanceTab: panel("attendance"),
     StudentGradesTab: panel("grades"),
     StudentPermitsTab: panel("permits"),
@@ -76,6 +84,19 @@ describe("StudentProfileView tab visibility", () => {
     mocks.permissions = ["manage_counseling"];
     render(<StudentProfileView studentId="s1" />);
     expect(tabNames()).toEqual(["tabs.counseling"]);
+  });
+
+  it("offers the printable discipline report as a header action, not a loose button", () => {
+    mocks.permissions = ["view_discipline"];
+    render(<StudentProfileView studentId="s1" />);
+    fireEvent.click(screen.getByRole("button", { name: "printReport" }));
+    expect(mocks.openReport).toHaveBeenCalledWith("s1");
+  });
+
+  it("leaves the report out without the discipline permission", () => {
+    mocks.permissions = ["view_reports"];
+    render(<StudentProfileView studentId="s1" />);
+    expect(screen.queryByRole("button", { name: "printReport" })).toBeNull();
   });
 
   it("opens the tab named in the URL when the reader may see it, else the first", () => {

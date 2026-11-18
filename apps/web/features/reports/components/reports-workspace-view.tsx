@@ -1,9 +1,9 @@
 "use client";
 
-import { Tabs, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import type { ComponentType, ReactElement } from "react";
+import type { ComponentType, ReactElement, ReactNode } from "react";
 
 import { ForbiddenPage } from "../../../components/forbidden-page";
 import { ModuleUnavailablePage } from "../../../components/module-unavailable-page";
@@ -14,6 +14,8 @@ import { useSession } from "../../../lib/session/session-provider";
 
 interface SectionViewProps {
   tabKey?: string;
+  /** The hub's strip of report sections, drawn under the section's page header. */
+  sectionNav?: ReactNode;
 }
 
 type ReportSectionKey = (typeof REPORT_SECTIONS)[number]["key"];
@@ -35,15 +37,17 @@ const VisitorReports: ComponentType<SectionViewProps> = dynamic(() =>
  * module each needs, come from `REPORT_SECTIONS`, the same list the
  * navigation registry decides the menu entry and the route from: the
  * school reports call the report centre (reports), the library reports
- * call library, the visitor recap calls visitors.
+ * call library, the visitor recap calls visitors. Each section is named
+ * with its page's registry label, so the strip here, the area's tabs on
+ * the section's own route and its menu entry read alike.
  */
 const SECTION_VIEWS: Record<
   ReportSectionKey,
   { label: string; View: ComponentType<SectionViewProps> }
 > = {
-  school: { label: "schoolReports", View: SchoolReports },
-  library: { label: "libraryReports", View: LibraryReports },
-  visitors: { label: "visitorReports", View: VisitorReports },
+  school: { label: "app.reports.navLabel", View: SchoolReports },
+  library: { label: "app.library.reports.navLabel", View: LibraryReports },
+  visitors: { label: "nav.visitors.items.reports", View: VisitorReports },
 };
 
 /**
@@ -52,7 +56,7 @@ const SECTION_VIEWS: Record<
  */
 export function ReportsWorkspaceView(): ReactElement {
   const { me } = useSession();
-  const t = useTranslations("app.workspace");
+  const t = useTranslations();
   const access = navAccessFromMe(me);
   const sections = REPORT_SECTIONS.filter(
     (section) => moduleSectionsAccess([section], access) === "ok",
@@ -72,22 +76,30 @@ export function ReportsWorkspaceView(): ReactElement {
     );
   }
   const { View } = SECTION_VIEWS[selected.key];
+  const tabKey = selected.key === "school" ? "tab" : `${selected.key}Tab`;
+  if (sections.length <= 1) return <View tabKey={tabKey} />;
+  // The section strip sits under the page title: every section takes it
+  // into its own page template, so switching sections never swaps the header.
+  const strip = (
+    <TabsList variant="underline" aria-label={t("app.shell.nav.items.reports")}>
+      {sections.map((entry) => (
+        <TabsTrigger key={entry.key} value={entry.key}>
+          {t(SECTION_VIEWS[entry.key].label)}
+        </TabsTrigger>
+      ))}
+    </TabsList>
+  );
   return (
-    <>
-      {sections.length > 1 && (
-        <div className="px-4 pt-4 md:px-6">
-          <Tabs value={selected.key} onValueChange={setSection}>
-            <TabsList aria-label={t("reports")} className="flex-wrap">
-              {sections.map((entry) => (
-                <TabsTrigger key={entry.key} value={entry.key}>
-                  {t(SECTION_VIEWS[entry.key].label)}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-      )}
-      <View tabKey={selected.key === "school" ? "tab" : `${selected.key}Tab`} />
-    </>
+    <Tabs value={selected.key} onValueChange={setSection}>
+      {/* The section view is the panel of whichever section tab is active;
+          it draws the page header, so the panel adds no padding of its own. */}
+      {sections.map((entry) => (
+        // Every trigger's aria-controls names a mounted panel; only the
+        // selected one holds the view.
+        <TabsContent key={entry.key} value={entry.key} forceMount className="pt-0">
+          {entry.key === selected.key ? <View tabKey={tabKey} sectionNav={strip} /> : null}
+        </TabsContent>
+      ))}
+    </Tabs>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, useToast } from "@newsekolah/ui";
+import { Button, DialogFooter, Field, NumberInput, Select, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -104,8 +104,7 @@ export function ScheduleForm({
         submitSchedule();
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("reportKind")}</span>
+      <Field label={t("reportKind")}>
         <Select
           options={(reports.data?.data ?? []).map((r) => {
             const kindKey = r.kind.replaceAll(".", "_");
@@ -120,11 +119,10 @@ export function ScheduleForm({
           disabled={initial !== undefined || reports.isLoading}
           aria-label={t("reportKind")}
         />
-      </label>
+      </Field>
 
       {needsClass && (
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("class")}</span>
+        <Field label={t("class")}>
           <Select
             options={(classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
             value={classId}
@@ -133,11 +131,10 @@ export function ScheduleForm({
             disabled={classes.isLoading}
             aria-label={t("class")}
           />
-        </label>
+        </Field>
       )}
       {needsSubject && (
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("subject")}</span>
+        <Field label={t("subject")}>
           <Select
             options={(subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }))}
             value={subjectId}
@@ -146,11 +143,10 @@ export function ScheduleForm({
             disabled={subjects.isLoading}
             aria-label={t("subject")}
           />
-        </label>
+        </Field>
       )}
       {needsTerm && (
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("term")}</span>
+        <Field label={t("term")}>
           <Select
             options={(terms.data?.data ?? []).map((tm) => ({ value: tm.id, label: tm.name }))}
             value={termId}
@@ -159,11 +155,10 @@ export function ScheduleForm({
             disabled={terms.isLoading}
             aria-label={t("term")}
           />
-        </label>
+        </Field>
       )}
 
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("format")}</span>
+      <Field label={t("format")}>
         <Select
           options={[
             { value: "xlsx", label: t("formatXlsx") },
@@ -175,10 +170,9 @@ export function ScheduleForm({
           }}
           aria-label={t("format")}
         />
-      </label>
+      </Field>
 
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("cadence")}</span>
+      <Field label={t("cadence")}>
         <Select
           options={[
             { value: "daily", label: t("cadenceDaily") },
@@ -191,11 +185,10 @@ export function ScheduleForm({
           }}
           aria-label={t("cadence")}
         />
-      </label>
+      </Field>
 
       {cadence === "weekly" && (
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("weekday")}</span>
+        <Field label={t("weekday")}>
           <Select
             options={WEEKDAY_VALUES.map((d) => ({
               value: String(d),
@@ -205,26 +198,22 @@ export function ScheduleForm({
             onValueChange={setWeekday}
             aria-label={t("weekday")}
           />
-        </label>
+        </Field>
       )}
       {cadence === "monthly" && (
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("dayOfMonth")}</span>
-          <Input
-            type="number"
+        <Field label={t("dayOfMonth")} hint={t("dayOfMonthHint")}>
+          <NumberInput
             min={1}
             max={31}
-            value={dayOfMonth}
-            onChange={(e) => {
-              setDayOfMonth(e.target.value);
+            value={dayOfMonth === "" ? null : Number(dayOfMonth)}
+            onChange={(value) => {
+              setDayOfMonth(value === null ? "" : String(value));
             }}
           />
-          <span className="text-[12px] text-fg-muted">{t("dayOfMonthHint")}</span>
-        </label>
+        </Field>
       )}
 
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("hour")}</span>
+      <Field label={t("hour")} hint={t("hourHint")}>
         <Select
           options={HOUR_VALUES.map((h) => ({
             value: String(h),
@@ -234,22 +223,20 @@ export function ScheduleForm({
           onValueChange={setHour}
           aria-label={t("hour")}
         />
-        <span className="text-[12px] text-fg-muted">{t("hourHint")}</span>
-      </label>
+      </Field>
 
-      <div className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("recipients")}</span>
+      <Field label={t("recipients")}>
         <ScheduleRecipientsInput value={recipients} onChange={setRecipients} />
-      </div>
+      </Field>
 
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={pending} disabled={!canSubmit}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

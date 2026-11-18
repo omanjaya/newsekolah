@@ -42,7 +42,8 @@
         "CVE-2025-71329",
         "CVE-2025-71330",
         "CVE-2026-85393",
-        "CVE-2026-93687"
+        "CVE-2026-93687",
+        "CVE-2026-112366"
       ]
     },
     "overrides": {
@@ -67,6 +68,18 @@
       "node-forge@<1.4.1": "^1.4.1",
       "vite@>=8.0.0 <8.2.4": "^8.2.4",
       "vite@>=6.0.0 <6.4.4": "^6.4.4"
+    },
+    "packageExtensions": {
+      "next": {
+        "peerDependencies": {
+          "@types/react": "*"
+        },
+        "peerDependenciesMeta": {
+          "@types/react": {
+            "optional": true
+          }
+        }
+      }
     }
   }
 }

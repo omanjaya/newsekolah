@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,9 +10,11 @@ const mocks = vi.hoisted(() => ({
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/library/catalogue",
+  useRouter: () => ({ push: vi.fn() }),
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => mocks.canManage }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/view-state/view-state-provider", () => ({
   useRememberedViewState: () => ["", vi.fn()],
 }));
@@ -111,17 +113,63 @@ describe("CatalogueView filters", () => {
     expect(new URLSearchParams(window.location.search).get("availability")).toBe("");
   });
 
-  it("consolidates header actions into a single row with a Lainnya menu", async () => {
-    const user = userEvent.setup();
+  it("leads the header with adding a title, and keeps import, settings and the report in the area strip", () => {
     render(<CatalogueView />);
 
-    expect(screen.getByRole("button", { name: "addTitle" })).toBeInTheDocument();
+    // In the header, and again in the empty catalogue's own call to action.
+    expect(screen.getAllByRole("button", { name: "addTitle" })).toHaveLength(2);
     expect(screen.getByRole("button", { name: "exportCatalogue" })).toBeInTheDocument();
-    expect(screen.queryByRole("menuitem", { name: "importBooks" })).not.toBeInTheDocument();
+    const strip = screen.getByRole("navigation", { name: "catalogue" });
+    expect(within(strip).getByRole("link", { name: "nav.library.items.catalog" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      within(strip).getByRole("link", { name: "app.library.import.navLabel" }),
+    ).toHaveAttribute("href", "/library/import");
+    expect(screen.getByRole("link", { name: "catalogueSettings" })).toHaveAttribute(
+      "href",
+      "/library/settings?section=masterData",
+    );
+    expect(screen.getByRole("link", { name: "report" })).toHaveAttribute(
+      "href",
+      "/library/reports?tab=accessionRegister",
+    );
+  });
 
-    await user.click(screen.getByRole("button", { name: "more" }));
-    expect(screen.getByRole("menuitem", { name: "importBooks" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "catalogueSettings" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "report" })).toBeInTheDocument();
+  it("leaves a catalogue reader without the editing actions", () => {
+    mocks.canManage = false;
+    render(<CatalogueView />);
+
+    expect(screen.queryByRole("button", { name: "addTitle" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "exportCatalogue" })).not.toBeInTheDocument();
+  });
+
+  it("pages the titles query by offset and keeps the page in the URL", async () => {
+    const user = userEvent.setup();
+    mocks.useLibraryTitlesQuery.mockReturnValue({
+      data: {
+        data: Array.from({ length: 50 }, (_, i) => ({
+          id: `t${i}`,
+          title: `Judul ${i}`,
+          author: "A",
+          classification: "",
+          available_copies: 1,
+          total_copies: 1,
+        })),
+      },
+      isLoading: false,
+    });
+    render(<CatalogueView />);
+
+    expect(mocks.useLibraryTitlesQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ limit: 50, offset: 0 }),
+    );
+    await user.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
+
+    expect(mocks.useLibraryTitlesQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ limit: 50, offset: 50 }),
+    );
+    expect(new URLSearchParams(window.location.search).get("page")).toBe("2");
   });
 });

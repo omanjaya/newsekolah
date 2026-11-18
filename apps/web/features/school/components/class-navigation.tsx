@@ -1,10 +1,24 @@
 "use client";
 
-import { SearchInput, Select, cn } from "@newsekolah/ui";
+import {
+  Avatar,
+  Card,
+  List,
+  ListRow,
+  SearchInput,
+  Select,
+  useDebouncedCallback,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import { useMemo, useState, type ReactElement } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { navAccessFromMe } from "../../../lib/navigation-access";
+import { canOpenPath } from "../../../lib/navigation-permissions";
+import { useSession } from "../../../lib/session/session-provider";
+import { useDirectoryNames } from "../../reference/directory-names";
+import { STUDENT_SEARCH_MIN_CHARS, useStudentSearchQuery } from "../../students/api";
+import { studentProfileHref } from "../../students/href";
 import { useGradeLevelsQuery, type ClassRow } from "../api";
 
 interface ClassGroup {
@@ -13,6 +27,16 @@ interface ClassGroup {
   items: ClassRow[];
 }
 
+/** Pause after the last keystroke before the student directory is asked. */
+const STUDENT_SEARCH_DEBOUNCE_MS = 300;
+
+/**
+ * The left half of Siswa dan kelas: one search for a class or a student,
+ * the grade filter, and the classes grouped by grade with their homeroom
+ * teacher. A student hit opens the profile, wherever the student sits. On
+ * a phone the list gives way to one class picker, so the roster stays on
+ * the first screen.
+ */
 export function ClassNavigation({
   items,
   selectedId,
@@ -24,7 +48,15 @@ export function ClassNavigation({
 }): ReactElement {
   const t = useTranslations("app.school.classes");
   const common = useTranslations("common");
+  const { me } = useSession();
   const [search, setSearch] = useState("");
+  const [studentTerm, setStudentTerm] = useState("");
+  const debounceStudentTerm = useDebouncedCallback(setStudentTerm, STUDENT_SEARCH_DEBOUNCE_MS);
+  const canOpenProfiles = useMemo(
+    () => (me ? canOpenPath(studentProfileHref("student"), navAccessFromMe(me)) : false),
+    [me],
+  );
+  const students = useStudentSearchQuery(studentTerm, canOpenProfiles);
   const grades = useGradeLevelsQuery();
   const options = (grades.data?.data ?? []).map((grade) => ({
     value: grade.id,
@@ -35,11 +67,16 @@ export function ClassNavigation({
     ["", ...options.map((option) => option.value)],
     "",
   );
+  const homerooms = useDirectoryNames(items.map((item) => item.homeroom_teacher_id));
+  const query = search.trim().toLocaleLowerCase();
   const filtered = items.filter(
     (item) =>
-      (!grade || item.grade_level_id === grade) &&
-      item.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
+      (!grade || item.grade_level_id === grade) && item.name.toLocaleLowerCase().includes(query),
   );
+  const studentHits =
+    canOpenProfiles && search.trim().length >= STUDENT_SEARCH_MIN_CHARS
+      ? (students.data ?? [])
+      : [];
   // Grouped by grade level, in the same order the grades query returns them,
   // so the list reads top-to-bottom the way a school year is structured
   // rather than alphabetically by class name.
@@ -69,69 +106,94 @@ export function ClassNavigation({
     return ordered;
   }, [filtered, options]);
 
+  const homeroomOf = (item: ClassRow): string => {
+    const name = item.homeroom_teacher_id
+      ? homerooms.get(item.homeroom_teacher_id)?.name
+      : undefined;
+    return name ?? t("noHomeroomShort");
+  };
+
   return (
-    <div className="flex min-w-0 flex-col gap-2 rounded-sm border border-border bg-surface p-2 md:min-h-0">
-      <SearchInput
-        aria-label={t("searchClasses")}
-        placeholder={t("searchClasses")}
-        value={search}
-        onChange={(event) => {
-          setSearch(event.target.value);
-        }}
+    // A phone gets one class picker above the class (the header search
+    // already finds students); a wide screen gets the searchable list.
+    <div className="contents">
+      <Select
+        className="md:hidden"
+        aria-label={t("pickClass")}
+        options={items.map((item) => ({ value: item.id, label: item.name }))}
+        value={selectedId}
+        placeholder={t("pickClass")}
+        onValueChange={onSelect}
       />
-      {options.length > 1 && (
-        <Select
-          aria-label={t("form.grade")}
-          options={[{ value: "all", label: t("allGrades") }, ...options]}
-          value={grade || "all"}
-          onValueChange={(value) => {
-            setGrade(value === "all" ? "" : value);
-          }}
-        />
-      )}
-      <nav
-        aria-label={t("title")}
-        className="flex min-w-0 gap-1 overflow-x-auto md:min-h-0 md:flex-1 md:flex-col md:overflow-y-auto"
-      >
-        {groups.map((group) => (
-          <div key={group.id} className="contents">
-            {group.label && (
-              <p className="hidden px-3 pt-2 pb-1 text-[12px] font-medium text-fg-muted md:block">
-                {group.label}
-              </p>
-            )}
-            {group.items.map((item) => {
-              const selected = selectedId === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  aria-current={selected ? "true" : undefined}
-                  onClick={() => {
-                    onSelect(item.id);
-                  }}
-                  title={item.name}
-                  className={cn(
-                    "flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-xs px-3 py-2 text-left text-[14px]",
-                    "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
-                    "md:border-l-2",
-                    selected
-                      ? "bg-accent/10 text-fg font-medium md:border-accent"
-                      : "text-fg hover:bg-bg md:border-transparent",
-                  )}
-                >
-                  {item.name}
-                </button>
-              );
-            })}
-          </div>
-        ))}
-        {filtered.length === 0 && (
-          <p role="status" className="px-3 py-2 text-[13px] text-fg-muted">
-            {common("states.noResults")}
-          </p>
-        )}
-      </nav>
+      <Card className="flex min-w-0 flex-col max-md:hidden md:min-h-0">
+        <div className="flex flex-col gap-2 p-3">
+          <SearchInput
+            aria-label={t("searchClasses")}
+            placeholder={t("searchClasses")}
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              debounceStudentTerm(event.target.value);
+            }}
+          />
+          {options.length > 1 && (
+            <Select
+              aria-label={t("form.grade")}
+              options={[{ value: "all", label: t("allGrades") }, ...options]}
+              value={grade || "all"}
+              onValueChange={(value) => {
+                setGrade(value === "all" ? "" : value);
+              }}
+            />
+          )}
+        </div>
+        <div className="flex min-w-0 flex-col md:min-h-0 md:flex-1 md:overflow-y-auto">
+          {studentHits.length > 0 && (
+            <section aria-label={t("studentResults")} className="flex flex-col pb-2">
+              <p className="px-4 pt-1 pb-1 text-caption text-fg-muted">{t("studentResults")}</p>
+              <List dense variant="plain">
+                {studentHits.map((hit) => (
+                  <ListRow
+                    key={hit.id}
+                    leading={<Avatar size={32} name={hit.name} decorative />}
+                    title={hit.name}
+                    meta={hit.nis ?? hit.username}
+                    href={studentProfileHref(hit.id)}
+                  />
+                ))}
+              </List>
+            </section>
+          )}
+          <nav aria-label={t("classList")}>
+            {groups.map((group) => (
+              <section key={group.id} className="flex flex-col pb-2">
+                {group.label && (
+                  <p className="px-4 pt-1 pb-1 text-caption text-fg-muted">{group.label}</p>
+                )}
+                <List dense variant="plain">
+                  {group.items.map((item) => (
+                    <ListRow
+                      key={item.id}
+                      title={item.name}
+                      meta={homeroomOf(item)}
+                      selected={selectedId === item.id}
+                      chevron={false}
+                      onClick={() => {
+                        onSelect(item.id);
+                      }}
+                    />
+                  ))}
+                </List>
+              </section>
+            ))}
+          </nav>
+          {filtered.length === 0 && studentHits.length === 0 && (
+            <p role="status" className="px-4 pb-4 text-body-sm text-fg-muted">
+              {common("states.noResults")}
+            </p>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }

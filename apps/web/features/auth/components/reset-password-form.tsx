@@ -4,17 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { resetPasswordSchema, type ResetPasswordInput } from "@newsekolah/schemas";
-import {
-  Alert,
-  Button,
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  Input,
-} from "@newsekolah/ui";
+import { Alert, Button, Field, Form, FormField, PasswordInput, useHydrated } from "@newsekolah/ui";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -35,14 +25,22 @@ import { useConfirmPasswordResetMutation } from "../api";
 export function ResetPasswordForm({
   token,
   onSuccess,
+  onInvalidToken,
 }: {
   token: string;
   onSuccess: () => void;
+  /**
+   * Called when the server rejects the token. A page that passes it owns the
+   * dead-link screen (title included); without it the form shows its own.
+   */
+  onInvalidToken?: () => void;
 }): ReactElement {
   const t = useTranslations("app.account.resetPassword");
   const locale = useLocale() as Locale;
   const apiErrorMessage = useApiErrorMessage();
   const mutation = useConfirmPasswordResetMutation();
+  // Server-rendered form: the submit waits for the handler (see LoginForm).
+  const hydrated = useHydrated();
 
   const form = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
@@ -59,6 +57,7 @@ export function ResetPasswordForm({
       // below (it replaces the whole form with a dead-link state), so there
       // is nothing more to do with it here beyond letting it settle.
       if (error instanceof ApiError && error.code === "PASSWORD_RESET_TOKEN_INVALID") {
+        onInvalidToken?.();
         return;
       }
       const message =
@@ -73,58 +72,52 @@ export function ResetPasswordForm({
     mutation.error.code === "PASSWORD_RESET_TOKEN_INVALID"
   ) {
     return (
-      <div className="flex flex-col gap-4">
-        <Alert variant="warning" title={t("invalidTitle")}>
+      <div className="flex flex-col gap-5">
+        <Alert tone="warning" title={t("invalidTitle")}>
           {t("invalidBody")}
         </Alert>
-        <Link
-          href="/forgot-password"
-          className="text-center text-[13px] text-accent hover:underline"
-        >
-          {t("requestNew")}
-        </Link>
+        <Button asChild size="lg" className="w-full">
+          <Link href="/forgot-password">{t("requestNew")}</Link>
+        </Button>
       </div>
     );
   }
+
+  const rootError = form.formState.errors.root?.message;
 
   return (
     <Form
       form={form}
       translate={translateFormMessage(locale)}
       onSubmit={onSubmit}
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
     >
-      <p className="text-[13px] text-fg-muted">{t("body")}</p>
-      {form.formState.errors.root?.message && (
-        <Alert variant="warning" title={form.formState.errors.root.message} />
-      )}
+      {rootError && <Alert tone="danger" title={rootError} />}
       <FormField
         control={form.control}
         name="new_password"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>{t("newLabel")}</FormLabel>
-            <FormControl>
-              <Input type="password" autoComplete="new-password" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+          <Field label={t("newLabel")} hint={t("newHint")}>
+            <PasswordInput autoComplete="new-password" {...field} />
+          </Field>
         )}
       />
       <FormField
         control={form.control}
         name="confirm_password"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>{t("confirmLabel")}</FormLabel>
-            <FormControl>
-              <Input type="password" autoComplete="new-password" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+          <Field label={t("confirmLabel")}>
+            <PasswordInput autoComplete="new-password" {...field} />
+          </Field>
         )}
       />
-      <Button type="submit" loading={mutation.isPending} className="mt-2">
+      <Button
+        type="submit"
+        size="lg"
+        disabled={!hydrated}
+        loading={mutation.isPending}
+        className="mt-1 w-full"
+      >
         {t("submit")}
       </Button>
     </Form>

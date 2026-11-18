@@ -1,29 +1,40 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  DatePicker,
+  DialogFooter,
+  Field,
+  FormSection,
+  Select,
+  Textarea,
+  TimePicker,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
-import { toDateTimeLocalValue } from "../../../lib/tenant-date";
 import {
   type Incident,
   type IncidentWrite,
   useCreateIncidentMutation,
   useUpdateIncidentMutation,
 } from "../api";
+import { SEVERITIES } from "../lib/incident-severity";
+import { joinInstant, splitInstant } from "../lib/instant";
 
 type Severity = IncidentWrite["severity"];
 
-const SEVERITIES: Severity[] = ["low", "medium", "high", "critical"];
-
-function nowLocal(): string {
-  return toDateTimeLocalValue(businessNow());
-}
-
+/**
+ * Records or edits an incident: when it happened (school date and time,
+ * defaulting to now), how serious it is, what happened, who was involved
+ * and what was done. Save stays available and names any gap.
+ */
 export function IncidentForm({
   incident,
   onDone,
@@ -34,35 +45,46 @@ export function IncidentForm({
   const t = useTranslations("app.visitors.incidents.form");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
   const create = useCreateIncidentMutation();
   const update = useUpdateIncidentMutation();
 
-  const [occurredAt, setOccurredAt] = useState(
-    incident ? toDateTimeLocalValue(new Date(incident.occurred_at)) : nowLocal(),
+  const [initial] = useState(() =>
+    splitInstant(incident ? new Date(incident.occurred_at) : businessNow(), timeZone),
   );
+  const [date, setDate] = useState(initial.date);
+  const [time, setTime] = useState(initial.time);
   const [severity, setSeverity] = useState<Severity>(incident?.severity ?? "low");
   const [description, setDescription] = useState(incident?.description ?? "");
   const [personsInvolved, setPersonsInvolved] = useState(incident?.persons_involved ?? "");
   const [actionTaken, setActionTaken] = useState(incident?.action_taken ?? "");
+  const [attempted, setAttempted] = useState(false);
 
-  const severityOptions = SEVERITIES.map((value) => ({ value, label: t(`severities.${value}`) }));
-  const canSubmit = description.trim() !== "" && occurredAt !== "";
+  const occurredAt = joinInstant(date, time, timeZone);
+  const errors = {
+    occurredAt: occurredAt === null ? t("errors.occurredAt") : undefined,
+    description: description.trim() === "" ? t("errors.description") : undefined,
+  };
+  const shown = (error: string | undefined) => (attempted ? error : undefined);
   const isPending = create.isPending || update.isPending;
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        if (!canSubmit) return;
+        setAttempted(true);
+        if (occurredAt === null || errors.description !== undefined || isPending) return;
         const body: IncidentWrite = {
-          occurred_at: new Date(occurredAt).toISOString(),
+          occurred_at: occurredAt.toISOString(),
           severity,
           description: description.trim(),
           persons_involved: personsInvolved.trim() || undefined,
           action_taken: actionTaken.trim() || undefined,
         };
-        const onSettled = {
+        const callbacks = {
           onSuccess: (saved: Incident) => {
             toast.success(t(incident ? "updated" : "recorded"));
             onDone(saved);
@@ -74,69 +96,79 @@ export function IncidentForm({
           },
         };
         if (incident) {
-          update.mutate({ id: incident.id, ...body }, onSettled);
+          update.mutate({ id: incident.id, ...body }, callbacks);
         } else {
-          create.mutate(body, onSettled);
+          create.mutate(body, callbacks);
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("occurredAt")}</span>
-        <Input
-          type="datetime-local"
-          value={occurredAt}
-          onChange={(e) => {
-            setOccurredAt(e.target.value);
-          }}
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("severity")}</span>
-        <Select
-          options={severityOptions}
-          value={severity}
-          onValueChange={(v) => {
-            setSeverity(v as Severity);
-          }}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("description")}</span>
-        <Textarea
-          rows={4}
-          value={description}
-          onChange={(e) => {
-            setDescription(e.target.value);
-          }}
-          maxLength={2000}
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("personsInvolved")}</span>
-        <Textarea
-          rows={2}
-          value={personsInvolved}
-          onChange={(e) => {
-            setPersonsInvolved(e.target.value);
-          }}
-          maxLength={1000}
-          placeholder={t("personsInvolvedPlaceholder")}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("actionTaken")}</span>
-        <Textarea
-          rows={3}
-          value={actionTaken}
-          onChange={(e) => {
-            setActionTaken(e.target.value);
-          }}
-          maxLength={2000}
-        />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <FormSection columns={1}>
+        <Field label={t("occurredAt")} required error={shown(errors.occurredAt)}>
+          {(control) => (
+            <div
+              role="group"
+              aria-labelledby={control.labelId}
+              aria-describedby={control["aria-describedby"]}
+              className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-2"
+            >
+              <DatePicker
+                value={date}
+                onChange={setDate}
+                aria-label={t("date")}
+                invalid={attempted && date === ""}
+                required
+              />
+              <TimePicker
+                value={time}
+                onChange={setTime}
+                aria-label={t("time")}
+                invalid={attempted && time === ""}
+                required
+              />
+            </div>
+          )}
+        </Field>
+        <Field label={t("severity")} required>
+          <Select
+            options={SEVERITIES.map((value) => ({ value, label: t(`severities.${value}`) }))}
+            value={severity}
+            onValueChange={(v) => {
+              setSeverity(v as Severity);
+            }}
+          />
+        </Field>
+        <Field label={t("description")} required error={shown(errors.description)}>
+          <Textarea
+            rows={3}
+            value={description}
+            onChange={(e) => {
+              setDescription(e.target.value);
+            }}
+            maxLength={2000}
+          />
+        </Field>
+        <Field label={t("personsInvolved")} optional>
+          <Textarea
+            rows={2}
+            value={personsInvolved}
+            onChange={(e) => {
+              setPersonsInvolved(e.target.value);
+            }}
+            maxLength={1000}
+          />
+        </Field>
+        <Field label={t("actionTaken")} optional>
+          <Textarea
+            rows={2}
+            value={actionTaken}
+            onChange={(e) => {
+              setActionTaken(e.target.value);
+            }}
+            maxLength={2000}
+          />
+        </Field>
+      </FormSection>
+      <DialogFooter>
         <Button
           type="button"
           variant="secondary"
@@ -146,10 +178,10 @@ export function IncidentForm({
         >
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={isPending} disabled={!canSubmit}>
+        <Button type="submit" loading={isPending}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

@@ -11,7 +11,7 @@ interface WorkspaceDefinition {
 
 /** Presentation only: every original route remains in the authorization registry. */
 const WORKSPACES: WorkspaceDefinition[] = [
-  { key: "dashboard", members: ["dashboard", "library-dashboard"] },
+  { key: "dashboard", members: ["dashboard"] },
   { key: "announcements", members: ["announcements"] },
   { key: "reports", members: ["reports", "library-reports", "visitors-recap"], label: "reports" },
   { key: "schedule", members: ["schedule", "school-calendar", "substitutions"], label: "schedule" },
@@ -72,6 +72,8 @@ const WORKSPACES: WorkspaceDefinition[] = [
     group: NAV_GROUP.masterData,
   },
   { key: "school-structure", members: ["school-structure"], label: "structure" },
+  // The library's own home leads the library group, under the page's title.
+  { key: "library-dashboard", members: ["library-dashboard"] },
   {
     key: "library-catalogue",
     members: [
@@ -111,6 +113,9 @@ const WORKSPACES: WorkspaceDefinition[] = [
     members: ["visitors-board", "visitors-expected", "visitors-incidents"],
     label: "visitors",
     group: NAV_GROUP.duty,
+    // The recap is a tab of the visitors workspace nav and also a member of
+    // the reports hub; while on the route the visitors entry stays active.
+    detailPaths: ["/visitors/recap"],
   },
   { key: "billing", members: ["billing"], label: "billing" },
   {
@@ -134,6 +139,16 @@ const WORKSPACES: WorkspaceDefinition[] = [
   },
   { key: "platform-tenants", members: ["platform-tenants"], label: "platform" },
 ];
+
+/**
+ * Each workspace's member keys: the registry pages that share one tab strip
+ * (lib/navigation/page-context.ts). Read by lib/i18n/namespace-sets.ts so a
+ * provider that carries one member's screen also carries its siblings' tab
+ * labels.
+ */
+export const WORKSPACE_MEMBER_KEYS: readonly (readonly string[])[] = WORKSPACES.map(
+  (definition) => definition.members,
+);
 
 export interface NavigationContext {
   profileKind?: NavProfileKind;
@@ -176,19 +191,82 @@ function relevant(item: NavItem, context: NavigationContext): boolean {
   return true;
 }
 
+/** Menu labels live in the shell catalog, in sentence case (app.shell.nav.items). */
+const LABELS = "app.shell.nav.items";
+
 function labelFor(
   definition: WorkspaceDefinition,
   selected: NavItem,
   context: NavigationContext,
 ): string {
   if (definition.key === "attendance" && context.profileKind === "student")
-    return "app.workspace.myAttendance";
-  if (definition.key === "grading" && selected.key === "my-grades") return "app.workspace.myGrades";
+    return `${LABELS}.myAttendance`;
+  if (definition.key === "grading" && selected.key === "my-grades") return `${LABELS}.myGrades`;
   if (definition.key === "violations" && selected.key === "my-discipline")
-    return "app.workspace.myDiscipline";
+    return `${LABELS}.myDiscipline`;
   if (definition.key === "counseling" && selected.key === "analytics")
-    return "app.workspace.monitoring";
-  return definition.label ? `app.workspace.${definition.label}` : selected.labelKey;
+    return `${LABELS}.monitoring`;
+  return definition.label ? `${LABELS}.${definition.label}` : selected.labelKey;
+}
+
+/**
+ * Bottom tab bar labels: one short word each, so five fit a 360px phone
+ * without truncating (app.shell.nav.short).
+ */
+const TAB_LABELS: Record<string, string> = {
+  reports: "reports",
+  attendance: "attendance",
+  schedule: "schedule",
+  "leave-requests": "permits",
+  grading: "grades",
+  violations: "discipline",
+  counseling: "counseling",
+  duty: "duty",
+  "visitors-board": "visitors",
+  "library-desk": "circulation",
+  "library-catalogue": "catalogue",
+  "library-members": "members",
+  "school-users": "users",
+  "school-classes": "classes",
+};
+
+/** Shorter labels for a row under its group heading (app.shell.nav.inGroup). */
+const IN_GROUP_LABELS: Record<string, string> = {
+  "library-settings": "app.shell.nav.inGroup.librarySettings",
+};
+
+/** docs/17: the top of the menu is daily work, in this order, before everything else. */
+const LEADING_KEYS = ["dashboard", "inbox", "scan", "reports"];
+
+function leadWithDailyDestinations(entries: NavItem[]): NavItem[] {
+  const rank = (item: NavItem) => {
+    const index = LEADING_KEYS.indexOf(item.key);
+    return index === -1 ? LEADING_KEYS.length : index;
+  };
+  // Array.prototype.sort is stable, so the remaining order is untouched.
+  return [...entries].sort((a, b) => rank(a) - rank(b));
+}
+
+/**
+ * A workspace's `detailPaths` are routes it owns even when another workspace
+ * also lists them as a member. The other workspace stops claiming them so
+ * the menu highlights one entry for the route.
+ */
+function releaseClaimedDetailPaths(output: NavItem[], available: NavItem[]): void {
+  const hrefByKey = new Map(available.map((item) => [item.key, item.href]));
+  for (const definition of WORKSPACES) {
+    const owner = output.find((item) => item.key === definition.key);
+    if (!owner || !definition.detailPaths) continue;
+    for (const other of output) {
+      if (other === owner) continue;
+      const memberHrefs = new Set(
+        (other.aliases ?? []).map((key) => hrefByKey.get(key)).filter(Boolean),
+      );
+      other.activePaths = other.activePaths?.filter(
+        (path) => !(definition.detailPaths ?? []).includes(path) || !memberHrefs.has(path),
+      );
+    }
+  }
 }
 
 /** Merge only the already authorized destinations; custom permission sets get safe fallbacks. */
@@ -208,6 +286,7 @@ export function consolidateNavigation(
       );
     const selected = members[0];
     if (!selected) return [];
+    const tab = TAB_LABELS[definition.key];
     return [
       {
         ...selected,
@@ -223,12 +302,12 @@ export function consolidateNavigation(
         aliases: members.map((item) => item.key),
         activePaths: [...members.map((item) => item.href), ...(definition.detailPaths ?? [])],
         searchTerms: members.map((item) => item.labelKey),
-        tabLabelKey: ["attendance", "schedule", "leave-requests"].includes(definition.key)
-          ? `app.workspace.short.${definition.key}`
-          : selected.tabLabelKey,
+        tabLabelKey: tab ? `app.shell.nav.short.${tab}` : selected.tabLabelKey,
+        groupLabelKey: IN_GROUP_LABELS[definition.key] ?? selected.groupLabelKey,
       },
     ];
   });
+  releaseClaimedDetailPaths(output, available);
   // These remain direct mobile/account actions, not entries in the browsable menu.
   const assigned = new Set(WORKSPACES.flatMap((definition) => definition.members));
   const additional = available.filter(
@@ -239,8 +318,7 @@ export function consolidateNavigation(
       item.sidebarPlacement !== "hidden",
   );
   return [
-    ...output,
-    ...additional,
+    ...leadWithDailyDestinations([...output, ...additional]),
     ...items
       .filter((item) => item.accountMenu === true || item.key === "classroom-entry")
       .map((item) => ({ ...item, sidebarPlacement: "hidden" as const })),

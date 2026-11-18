@@ -23,6 +23,9 @@ vi.mock("../../reference/directory-names", async () => {
   ];
   return { ...directoryNamesStub(people), useDirectorySearch: mocks.search };
 });
+vi.mock("../../../lib/session/session-provider", () => ({
+  useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+}));
 vi.mock("../api", () => ({
   useRecordViolationMutation: () => ({ mutateAsync: mocks.record, isPending: false }),
   useViolationTypesQuery: () => ({
@@ -84,13 +87,14 @@ describe("ViolationRecordForm student search", () => {
     const onDone = vi.fn();
     render(<ViolationRecordForm onDone={onDone} />);
 
-    await user.type(screen.getByRole("textbox", { name: "studentSearchPlaceholder" }), "sar");
+    await user.type(screen.getByRole("searchbox", { name: "studentSearchPlaceholder" }), "sar");
     await waitFor(() => {
       expect(mocks.search).toHaveBeenLastCalledWith(expect.objectContaining({ query: "sar" }));
     });
 
     await user.click(screen.getAllByRole("checkbox").at(0) ?? document.body);
-    expect(screen.getByRole("button", { name: /Sari/ })).toBeInTheDocument();
+    // The picked student shows as a removable chip.
+    expect(screen.getByRole("button", { name: /removeStudent.*Sari/ })).toHaveTextContent("Sari");
     await user.click(screen.getByRole("checkbox", { name: /Terlambat/ }));
     await user.click(screen.getByRole("button", { name: "submit" }));
 
@@ -100,5 +104,20 @@ describe("ViolationRecordForm student search", () => {
       );
     });
     expect(onDone).toHaveBeenCalled();
+  });
+});
+
+describe("ViolationRecordForm date", () => {
+  it("defaults to the school's calendar day, not the UTC one", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // 20:00 UTC on 25 Sep is already 03:00 on 26 Sep in Jakarta.
+    vi.setSystemTime(new Date("2026-09-25T20:00:00Z"));
+    try {
+      const { container } = render(<ViolationRecordForm onDone={vi.fn()} />);
+      const input = container.querySelector<HTMLInputElement>('input[name="occurred_on"]');
+      expect(input?.value).toBe("2026-09-26");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

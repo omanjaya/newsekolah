@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@newsekolah/ui";
+import { SegmentedControl } from "@newsekolah/ui";
 import type { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -23,28 +23,15 @@ export function GradebookEntryModeToggle({
   onModeChange: (mode: GradebookEntryMode) => void;
 }): ReactElement {
   return (
-    <div
-      role="tablist"
+    <SegmentedControl<GradebookEntryMode>
       aria-label={t("entryMode.label")}
-      className="inline-flex w-fit gap-1 rounded-sm border border-border bg-surface p-1"
-    >
-      {(["component", "student"] as const).map((value) => (
-        <button
-          key={value}
-          type="button"
-          role="tab"
-          aria-selected={mode === value}
-          onClick={() => {
-            onModeChange(value);
-          }}
-          className={cn(
-            "min-h-9 rounded-xs px-3 text-[13px] font-medium transition-colors",
-            mode === value ? "bg-accent text-accent-fg" : "text-fg-muted",
-          )}
-        >
-          {t(`entryMode.${value}`)}
-        </button>
-      ))}
-    </div>
+      value={mode}
+      onValueChange={onModeChange}
+      className="shrink-0"
+      options={[
+        { value: "component", label: t("entryMode.componentShort") },
+        { value: "student", label: t("entryMode.studentShort") },
+      ]}
+    />
   );
 }

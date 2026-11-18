@@ -7,16 +7,14 @@ import { loginSchema, type LoginInput } from "@newsekolah/schemas";
 import {
   Alert,
   Button,
+  Field,
   Form,
-  FormControl,
   FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
   Input,
+  PasswordInput,
+  TextLink,
+  useHydrated,
 } from "@newsekolah/ui";
-import { Eye, EyeOff } from "lucide-react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -36,6 +34,12 @@ function safeNextPath(next: string | null): string {
   return next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
 }
 
+/**
+ * Username and password first, with the forgot-password link on the
+ * password label's row; the second factor joins the same form when the
+ * server asks for it. Google and passkey sign-in follow under an "atau"
+ * rule as secondary buttons, so the everyday path stays the obvious one.
+ */
 export function LoginForm(): ReactElement {
   const t = useTranslations("auth.login");
   const tLogin = useTranslations("app.login");
@@ -47,13 +51,16 @@ export function LoginForm(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const googleSSO = useGoogleSSOAvailabilityQuery();
   const passkeySupported = usePasskeySupported();
+  // The form is in the server markup: until React attaches onSubmit, a
+  // press would run the browser's own submit. Form posts (never a GET with
+  // the password in the URL), and the button waits for hydration besides.
+  const hydrated = useHydrated();
 
   // Set once the API rejects a login attempt with MFA_REQUIRED, so the same
   // username and password can be resubmitted with an added `otp` field
   // (docs/08-security.md section 2: TOTP as a second factor at sign-in).
   const [otpRequired, setOtpRequired] = useState(false);
   const [otp, setOtp] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const otpRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -82,70 +89,44 @@ export function LoginForm(): ReactElement {
     }
   }
 
+  const rootError = form.formState.errors.root?.message;
+  const showAlternatives = !otpRequired && (googleSSO.data?.enabled === true || passkeySupported);
+
   return (
     <Form
       form={form}
       translate={translateFormMessage(locale)}
       onSubmit={onSubmit}
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
     >
-      {form.formState.errors.root?.message && (
-        <Alert variant="warning" title={form.formState.errors.root.message} />
-      )}
+      {rootError && <Alert tone="danger" title={rootError} />}
       <FormField
         control={form.control}
         name="username"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>{t("usernameLabel")}</FormLabel>
-            <FormControl>
-              <Input
-                autoComplete="username"
-                placeholder={tLogin("usernamePlaceholder")}
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+          <Field label={t("usernameLabel")}>
+            <Input autoComplete="username" autoCapitalize="none" spellCheck={false} {...field} />
+          </Field>
         )}
       />
       <FormField
         control={form.control}
         name="password"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>{t("passwordLabel")}</FormLabel>
-            <div className="relative">
-              <FormControl>
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  placeholder={tLogin("passwordPlaceholder")}
-                  className="pr-11"
-                  {...field}
-                />
-              </FormControl>
-              <button
-                type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-fg-muted"
-                aria-label={showPassword ? tLogin("hidePassword") : tLogin("showPassword")}
-                onClick={() => {
-                  setShowPassword((visible) => !visible);
-                }}
-              >
-                {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
-              </button>
-            </div>
-            <FormMessage />
-          </FormItem>
+          <Field
+            label={t("passwordLabel")}
+            labelAside={
+              otpRequired ? undefined : (
+                <TextLink href="/forgot-password">{t("forgotPasswordLink")}</TextLink>
+              )
+            }
+          >
+            <PasswordInput autoComplete="current-password" {...field} />
+          </Field>
         )}
       />
       {otpRequired && (
-        <div className="flex flex-col gap-2">
-          <label htmlFor="login-otp" className="text-[13px] font-medium text-fg">
-            {tSecurity("login.otpLabel")}
-          </label>
-          <p className="text-[13px] text-fg-muted">{tSecurity("login.otpBody")}</p>
+        <Field label={tSecurity("login.otpLabel")} hint={tSecurity("login.otpBody")}>
           <Input
             id="login-otp"
             ref={otpRef}
@@ -156,9 +137,15 @@ export function LoginForm(): ReactElement {
               setOtp(event.target.value);
             }}
           />
-        </div>
+        </Field>
       )}
-      <Button type="submit" loading={loginMutation.isPending} className="mt-2">
+      <Button
+        type="submit"
+        size="lg"
+        disabled={!hydrated}
+        loading={loginMutation.isPending}
+        className="mt-1 w-full"
+      >
         {loginMutation.isPending
           ? t("submitting")
           : otpRequired
@@ -166,23 +153,14 @@ export function LoginForm(): ReactElement {
             : t("submit")}
       </Button>
 
-      {!otpRequired && (
-        <Link
-          href="/forgot-password"
-          className="text-center text-[13px] text-accent hover:underline"
-        >
-          {t("forgotPasswordLink")}
-        </Link>
-      )}
-
-      {!otpRequired && (googleSSO.data?.enabled === true || passkeySupported) && (
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex w-full items-center gap-3 text-[13px] text-fg-muted">
-            <span className="h-px flex-1 bg-border" aria-hidden="true" />
+      {showAlternatives && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3 text-caption text-fg-muted">
+            <span className="h-px flex-1 bg-line" aria-hidden="true" />
             {t("orDivider")}
-            <span className="h-px flex-1 bg-border" aria-hidden="true" />
+            <span className="h-px flex-1 bg-line" aria-hidden="true" />
           </div>
-          <div className="flex flex-col items-stretch gap-2 self-stretch">
+          <div className="flex flex-col items-stretch gap-2">
             {googleSSO.data?.enabled && googleSSO.data.client_id && (
               <GoogleSignInButton
                 clientId={googleSSO.data.client_id}

@@ -1,3 +1,5 @@
+"use client";
+
 import { createContext, useContext, type ComponentPropsWithoutRef } from "react";
 
 import { cn } from "../utils/cn.js";
@@ -6,16 +8,18 @@ export type TableDensity = "normal" | "compact";
 
 const TableDensityContext = createContext<TableDensity>("normal");
 
-type TableSection = "header" | "body" | undefined;
+type TableSection = "header" | "body" | "footer" | undefined;
 const TableSectionContext = createContext<TableSection>(undefined);
 
-// Mirrors `packages/ui/src/components/data-table/data-table.tsx` +
-// `data-table-head.tsx`: `normal` is the comfortable ~52px row with
-// `px-4 py-3` cells, `compact` is the tighter row every hand-rolled table
-// used before this primitive existed.
+// Mirrors data-table-body.tsx and data-table-head.tsx: `normal` is the
+// comfortable ~52px row with `px-4 py-3` cells, `compact` the tighter row.
 const CELL_PADDING: Record<TableDensity, string> = {
   normal: "px-4 py-3",
   compact: "px-3 py-2",
+};
+const HEAD_PADDING: Record<TableDensity, string> = {
+  normal: "px-4",
+  compact: "px-3",
 };
 const ROW_MIN_HEIGHT: Record<TableDensity, string> = {
   normal: "min-h-[52px]",
@@ -32,27 +36,45 @@ export interface TableProps extends ComponentPropsWithoutRef<"table"> {
   density?: TableDensity;
   /** className for the rounded, scrollable card wrapping the table. */
   containerClassName?: string;
+  /**
+   * False renders the bare `<table>` with no card around it, for a grid
+   * that already sits in its own `Card` and scroll area (a timetable whose
+   * day headings stick to the top of that scroll area). Default true.
+   */
+  framed?: boolean;
 }
 
 /**
- * The shared HTML table primitive: a rounded, horizontally scrollable card
- * (`Table`) around `thead`/`tbody`/`tr`/`th`/`td`/`caption` wrappers that
- * apply `DataTable`'s spacing so every hand-rolled table reads the same as
- * the TanStack-backed one. See docs/05-shared-components.md.
+ * The shared HTML table primitive: the same card, header band, rows and
+ * cells as `DataTable`'s desktop table, for a table that needs none of its
+ * search, paging or phone cards (a grade sheet, a report). See
+ * docs/05-shared-components.md.
  */
-export function Table({ density = "normal", className, containerClassName, ...props }: TableProps) {
+export function Table({
+  density = "normal",
+  framed = true,
+  className,
+  containerClassName,
+  ...props
+}: TableProps) {
+  const table = (
+    <table
+      className={cn("w-full border-collapse text-body-sm tabular-nums", className)}
+      {...props}
+    />
+  );
+  if (!framed) {
+    return <TableDensityContext.Provider value={density}>{table}</TableDensityContext.Provider>;
+  }
   return (
     <TableDensityContext.Provider value={density}>
       <div
         className={cn(
-          "overflow-x-auto rounded-lg border border-border bg-surface",
+          "overflow-x-auto rounded-lg border border-border bg-surface shadow-1",
           containerClassName,
         )}
       >
-        <table
-          className={cn("w-full border-collapse text-[13px] tabular-nums", className)}
-          {...props}
-        />
+        {table}
       </div>
     </TableDensityContext.Provider>
   );
@@ -74,14 +96,33 @@ export function TableBody({ className, ...props }: ComponentPropsWithoutRef<"tbo
   );
 }
 
+/**
+ * A totals row band under the body, on the header's tint
+ * (`bg-surface-header`: sunken in light, a step above the card in dark).
+ */
+export function TableFooter({ className, ...props }: ComponentPropsWithoutRef<"tfoot">) {
+  return (
+    <TableSectionContext.Provider value="footer">
+      <tfoot className={cn("bg-surface-header font-semibold", className)} {...props} />
+    </TableSectionContext.Provider>
+  );
+}
+
 export function TableRow({ className, ...props }: ComponentPropsWithoutRef<"tr">) {
   const density = useContext(TableDensityContext);
   const section = useContext(TableSectionContext);
   return (
     <tr
       className={cn(
-        "border-b border-line",
-        section === "header" ? "bg-bg" : cn(ROW_MIN_HEIGHT[density], "last:border-b-0 hover:bg-bg"),
+        section === "header"
+          ? "bg-surface-header"
+          : section === "footer"
+            ? cn(ROW_MIN_HEIGHT[density], "border-t border-line")
+            : cn(
+                ROW_MIN_HEIGHT[density],
+                "border-b border-line last:border-b-0 transition-colors hover:bg-state-hover",
+                "data-[state=selected]:bg-state-selected",
+              ),
         className,
       )}
       {...props}
@@ -89,13 +130,39 @@ export function TableRow({ className, ...props }: ComponentPropsWithoutRef<"tr">
   );
 }
 
+/**
+ * A header cell. In `TableHeader` it is a column header on the header band:
+ * caption-size muted label, at least 40px tall (`h-10` is a minimum in a
+ * table), with its own vertical padding so a header of several lines (a
+ * code over its weight) does not touch the card's edge. In `TableBody` and
+ * `TableFooter` it heads its row (a student's name, "Total"): the cell's
+ * padding, wrapping like a cell, `scope="row"`. A caller's `scope` wins.
+ */
 export function TableHead({ className, ...props }: ComponentPropsWithoutRef<"th">) {
   const density = useContext(TableDensityContext);
+  const section = useContext(TableSectionContext);
+  if (section === "body" || section === "footer") {
+    return (
+      <th
+        scope="row"
+        className={cn(
+          CELL_PADDING[density],
+          "text-left align-middle font-medium text-fg",
+          className,
+        )}
+        {...props}
+      />
+    );
+  }
   return (
     <th
+      scope="col"
       className={cn(
-        CELL_PADDING[density],
-        "text-left align-middle text-[12px] font-semibold text-fg-muted",
+        HEAD_PADDING[density],
+        // The header's separator is drawn inside each cell, as in DataTable,
+        // so it stays put under a sticky header.
+        "h-10 py-2 text-left align-middle text-caption font-semibold whitespace-nowrap text-fg-muted",
+        "shadow-[inset_0_-1px_0_var(--color-line)]",
         className,
       )}
       {...props}
@@ -109,5 +176,10 @@ export function TableCell({ className, ...props }: ComponentPropsWithoutRef<"td"
 }
 
 export function TableCaption({ className, ...props }: ComponentPropsWithoutRef<"caption">) {
-  return <caption className={cn("mt-3 text-[13px] text-fg-muted", className)} {...props} />;
+  return (
+    <caption
+      className={cn("caption-bottom py-3 text-body-sm text-fg-muted", className)}
+      {...props}
+    />
+  );
 }

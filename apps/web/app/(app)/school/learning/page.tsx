@@ -1,3 +1,4 @@
+import { SkeletonList } from "@newsekolah/ui";
 import { Suspense } from "react";
 import type { ReactElement } from "react";
 
@@ -5,9 +6,7 @@ import { LearningView } from "../../../../features/academic/components/learning-
 
 export default function Page(): ReactElement {
   return (
-    <Suspense
-      fallback={<div aria-busy="true" className="m-6 h-64 animate-pulse rounded-sm bg-surface" />}
-    >
+    <Suspense fallback={<SkeletonList rows={6} framed className="m-4 md:m-6" />}>
       <LearningView />
     </Suspense>
   );

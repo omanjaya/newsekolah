@@ -1,7 +1,7 @@
 import { CalendarCheck } from "lucide-react";
 import { describe, expect, it } from "vitest";
 
-import { collectBlocks, mergeTiles, pickHero } from "./compose";
+import { collectBlocks, guardHero, guardTiles, mergeTiles, pickHero } from "./compose";
 import { HERO_PRIORITY, type TileSpec } from "./types";
 
 const tile = (key: string, priority: number): TileSpec => ({
@@ -43,20 +43,82 @@ describe("mergeTiles", () => {
 describe("collectBlocks", () => {
   it("stacks columns in block order and picks one hero", () => {
     const out = collectBlocks([
-      { tiles: [tile("x", 1)], left: [{ key: "l1", node: null }], right: [] },
+      { tiles: [tile("x", 1)], main: [{ key: "l1", node: null }], side: [] },
       {
         hero: { key: "h", priority: 1, eyebrow: "", title: "h" },
         tiles: [],
-        left: [{ key: "l2", node: null }],
-        right: [{ key: "r1", node: null }],
+        main: [{ key: "l2", node: null }],
+        side: [{ key: "r1", node: null }],
       },
     ]);
     expect(out.hero?.key).toBe("h");
-    expect(out.left.map((s) => s.key)).toEqual(["l1", "l2"]);
-    expect(out.right.map((s) => s.key)).toEqual(["r1"]);
+    expect(out.main.map((s) => s.key)).toEqual(["l1", "l2"]);
+    expect(out.side.map((s) => s.key)).toEqual(["r1"]);
     expect(out.tiles.map((t) => t.key)).toEqual(["x"]);
+    expect(out.pending).toBe(false);
+  });
+  it("leaves out the tiles the winning hero already states, before the top four are cut", () => {
+    const out = collectBlocks([
+      {
+        hero: { key: "h", priority: 2, eyebrow: "", title: "h", coversTiles: ["a", "b"] },
+        tiles: [tile("a", 9), tile("b", 8), tile("c", 7), tile("d", 6), tile("e", 5)],
+        main: [],
+        side: [],
+      },
+      {
+        hero: { key: "low", priority: 1, eyebrow: "", title: "low", coversTiles: ["c"] },
+        tiles: [tile("f", 4)],
+        main: [],
+        side: [],
+      },
+    ]);
+    // Only the winning hero covers tiles: "c" stays, "a" and "b" make room for "f".
+    expect(out.tiles.map((t) => t.key)).toEqual(["c", "d", "e", "f"]);
+  });
+  it("is pending while any block still loads", () => {
+    const out = collectBlocks([
+      { tiles: [], main: [], side: [] },
+      { tiles: [], main: [], side: [], pending: true },
+    ]);
+    expect(out.pending).toBe(true);
   });
 });
 
-// `bentoCells`/`tileColumns` moved to `apps/web/lib/layout/bento.ts` (shared
-// with the attendance day list); see `bento.test.ts` there.
+describe("guardHero", () => {
+  const hero = {
+    key: "h",
+    priority: 1,
+    eyebrow: "",
+    title: "h",
+    action: { label: "Monitor", href: "/monitor" },
+    secondaryAction: { label: "Laporan", href: "/reports?tab=school" },
+  };
+  it("keeps links the reader can open", () => {
+    const out = guardHero(hero, () => true);
+    expect(out.action?.href).toBe("/monitor");
+    expect(out.secondaryAction?.href).toBe("/reports?tab=school");
+  });
+  it("promotes the secondary link when the primary would end on no access", () => {
+    const out = guardHero(hero, (href) => href !== "/monitor");
+    expect(out.action?.href).toBe("/reports?tab=school");
+    expect(out.secondaryAction).toBeUndefined();
+  });
+  it("drops every action the reader cannot open", () => {
+    const out = guardHero(hero, () => false);
+    expect(out.action).toBeUndefined();
+    expect(out.secondaryAction).toBeUndefined();
+  });
+});
+
+describe("guardTiles", () => {
+  it("unlinks a tile whose page the reader cannot open", () => {
+    const out = guardTiles(
+      [
+        { ...tile("a", 1), href: "/monitor" },
+        { ...tile("b", 1), href: "/inbox" },
+      ],
+      (href) => href === "/inbox",
+    );
+    expect(out.map((t) => t.href)).toEqual([undefined, "/inbox"]);
+  });
+});

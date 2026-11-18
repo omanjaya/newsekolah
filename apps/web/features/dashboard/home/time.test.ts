@@ -6,6 +6,7 @@ import {
   minutesInZone,
   parseClock,
   pickCurrentOrNext,
+  splitMinutes,
 } from "./time";
 
 describe("time helpers", () => {
@@ -37,5 +38,11 @@ describe("time helpers", () => {
       50,
     );
     expect(attendanceRate([null, undefined], ["present"])).toBeUndefined();
+  });
+  it("splits minutes into whole hours and the rest", () => {
+    expect(splitMinutes(45)).toEqual({ hours: 0, minutes: 45 });
+    expect(splitMinutes(80)).toEqual({ hours: 1, minutes: 20 });
+    expect(splitMinutes(960)).toEqual({ hours: 16, minutes: 0 });
+    expect(splitMinutes(-5)).toEqual({ hours: 0, minutes: 0 });
   });
 });

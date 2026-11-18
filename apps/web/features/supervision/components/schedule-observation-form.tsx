@@ -1,13 +1,14 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, useToast } from "@newsekolah/ui";
+import { Button, DatePicker, DialogFooter, Field, Select, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import {
@@ -17,11 +18,10 @@ import {
 import { useSchedulesQuery } from "../../schedule/api";
 import { useScheduleObservationMutation } from "../api";
 
-function today(): string {
-  return todayInZone();
-}
-
-/** Schedules an observation against one of a teacher's own lesson blocks. */
+/**
+ * Schedules an observation against one of a teacher's own lesson blocks:
+ * the teacher, which of their lessons, and the date of the visit.
+ */
 export function ScheduleObservationForm({
   cycleId,
   onDone,
@@ -44,7 +44,10 @@ export function ScheduleObservationForm({
   const subjectMap = useLookup(subjects.data?.data);
 
   const [scheduleId, setScheduleId] = useState("");
-  const [lessonDate, setLessonDate] = useState(today());
+  const { me } = useSession();
+  const today = todayInZone(me?.tenant.timezone);
+  const [lessonDate, setLessonDate] = useState(today);
+  const [attempted, setAttempted] = useState(false);
   const schedule = useScheduleObservationMutation(cycleId);
 
   const blockOptions = (blocks.data?.data ?? []).map((block) => ({
@@ -58,14 +61,22 @@ export function ScheduleObservationForm({
       .join(" – "),
   }));
 
-  const canSubmit = teacherId !== "" && scheduleId !== "" && lessonDate !== "";
+  const errors = {
+    teacher: teacherId === "" ? t("errors.teacher") : undefined,
+    lesson: scheduleId === "" ? t("errors.lesson") : undefined,
+    date: lessonDate === "" ? t("errors.date") : undefined,
+  };
+  const valid = Object.values(errors).every((error) => error === undefined);
+  const shown = (error: string | undefined) => (attempted ? error : undefined);
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        if (!canSubmit) return;
+        setAttempted(true);
+        if (!valid || schedule.isPending) return;
         schedule.mutate(
           { schedule_id: scheduleId, lesson_date: lessonDate },
           {
@@ -84,8 +95,7 @@ export function ScheduleObservationForm({
         );
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("teacher")}</span>
+      <Field label={t("teacher")} required error={shown(errors.teacher)}>
         <DirectoryPicker
           profileKind="teacher"
           value={teacherId}
@@ -95,36 +105,33 @@ export function ScheduleObservationForm({
           }}
           labels={teacherLabels}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("lesson")}</span>
+      </Field>
+      <Field
+        label={t("lesson")}
+        required
+        disabled={teacherId === ""}
+        hint={teacherId === "" ? t("selectTeacherFirst") : undefined}
+        error={teacherId === "" ? undefined : shown(errors.lesson)}
+      >
         <Select
           options={blockOptions}
           value={scheduleId}
           onValueChange={setScheduleId}
-          placeholder={teacherId ? t("lessonPlaceholder") : t("selectTeacherFirst")}
+          placeholder={t("lessonPlaceholder")}
           disabled={teacherId === ""}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("lessonDate")}</span>
-        <Input
-          type="date"
-          value={lessonDate}
-          onChange={(e) => {
-            setLessonDate(e.target.value);
-          }}
-          required
-        />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      </Field>
+      <Field label={t("lessonDate")} required error={shown(errors.date)}>
+        <DatePicker value={lessonDate} onChange={setLessonDate} today={today} required />
+      </Field>
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={schedule.isPending} disabled={!canSubmit}>
+        <Button type="submit" loading={schedule.isPending}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

@@ -1,23 +1,26 @@
 "use client";
 
 import {
+  Button,
+  DatePicker,
   EmptyState,
-  Input,
-  PageHeader,
-  Skeleton,
+  Field,
+  SkeletonList,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@newsekolah/ui";
 import { FileBarChart } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
+import { QueryError } from "../../../components/query-error";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
-import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
 import { todayInZone, useOwnDailyAttendanceReportQuery } from "../api";
 
 import { AttendanceDailySessions } from "./attendance-daily-sessions";
@@ -32,37 +35,47 @@ import { MonthlyReportTab } from "./monthly-report-tab";
 export function AttendanceReportsView(): ReactElement {
   const t = useTranslations("app.attendanceReports");
   const canViewReports = useCan("view_reports");
-  const [tab, setTab] = useUrlState<string>(
-    "tab",
-    canViewReports ? ["mine", "daily", "monthly"] : ["mine"],
-    canViewReports ? "daily" : "mine",
-  );
+  const { me } = useSession();
+  // "Presensi saya" lists the sessions the reader taught, so only a teacher
+  // gets it beside the school-wide reports (and a reader with no other
+  // report keeps it as the page's one report).
+  const isTeacher = me?.roles.some((role) => role.slug === "teacher") ?? false;
+  const showMine = isTeacher || !canViewReports;
+  const tabs = [...(showMine ? ["mine"] : []), ...(canViewReports ? ["daily", "monthly"] : [])];
+  const [tab, setTab] = useUrlState<string>("tab", tabs, canViewReports ? "daily" : "mine");
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <AcademicWorkspaceLinks area="attendance" />
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="mine">{t("tabs.mine")}</TabsTrigger>
-          {canViewReports && <TabsTrigger value="daily">{t("tabs.daily")}</TabsTrigger>}
-          {canViewReports && <TabsTrigger value="monthly">{t("tabs.monthly")}</TabsTrigger>}
-        </TabsList>
-        <TabsContent value="mine" className="pt-4">
-          <MineReportTab />
-        </TabsContent>
+    // Every reader reaches this page from the area's tabs, so it keeps the
+    // area's title like its sibling pages.
+    <AppPage navParams={["date"]}>
+      <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-4">
+        {/* One report needs no switch. */}
+        {tabs.length > 1 && (
+          <TabsList aria-label={t("tabsLabel")} className="self-start">
+            {tabs.map((id) => (
+              <TabsTrigger key={id} value={id}>
+                {t(`tabs.${id}`)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        )}
+        {showMine && (
+          <TabsContent value="mine" className="pt-0">
+            <MineReportTab />
+          </TabsContent>
+        )}
         {canViewReports && (
-          <TabsContent value="daily" className="pt-4">
+          <TabsContent value="daily" className="pt-0">
             <DailyReportTab />
           </TabsContent>
         )}
         {canViewReports && (
-          <TabsContent value="monthly" className="pt-4">
+          <TabsContent value="monthly" className="pt-0">
             <MonthlyReportTab />
           </TabsContent>
         )}
       </Tabs>
-    </div>
+    </AppPage>
   );
 }
 
@@ -82,26 +95,24 @@ function MineReportTab(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("date")}</span>
-        <Input
-          type="date"
-          value={date}
-          onChange={(e) => {
-            setDate(e.target.value);
-          }}
-          aria-label={t("date")}
-          className="w-44"
-        />
-      </label>
+      <Field label={t("date")}>
+        <DatePicker value={date} onChange={setDate} clearable={false} className="w-full sm:w-44" />
+      </Field>
 
       {report.isLoading ? (
-        <Skeleton className="h-40 w-full" aria-busy="true" />
+        <SkeletonList rows={3} />
+      ) : report.isError ? (
+        <QueryError retry={report.refetch} error={report.error} />
       ) : sessions.length === 0 ? (
         <EmptyState
           icon={<FileBarChart aria-hidden="true" />}
           title={t("emptyTitle")}
           description={t("emptyBody")}
+          action={
+            <Button asChild variant="secondary">
+              <Link href="/attendance">{t("openToday")}</Link>
+            </Button>
+          }
         />
       ) : (
         <AttendanceDailySessions sessions={sessions} />

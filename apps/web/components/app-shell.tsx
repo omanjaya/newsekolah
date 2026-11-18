@@ -2,19 +2,24 @@
 
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { ReactElement, ReactNode } from "react";
+import { useRef, type ReactElement, type ReactNode } from "react";
 
 import { useActionInboxCount } from "../features/inbox/use-action-inbox-count";
 import { useNotificationsSocket } from "../features/notifications/realtime";
+import { mobileTabLayout, mobileTabRoots } from "../lib/mobile-navigation";
 import { navigation, filterNavigation } from "../lib/navigation";
+import { activeNavHref } from "../lib/navigation/active-href";
 import { navAccessFromMe } from "../lib/navigation-access";
-import { pathAccess } from "../lib/navigation-permissions";
+import { canOpenPath, pathAccess } from "../lib/navigation-permissions";
+import { sortQuickActions } from "../lib/navigation-quick-actions";
 import { consolidateNavigation } from "../lib/navigation-workspaces";
 import { ConnectionStatusIndicator } from "../lib/realtime/connection-status-indicator";
 import { LiveSocketProvider } from "../lib/realtime/live-socket-provider";
 import { useSession } from "../lib/session/session-provider";
+import { useQuickActions } from "../lib/use-quick-actions";
 
 import { CommandPaletteProvider } from "./command-palette-provider";
+import { useCurrentSessionHref } from "./current-session-href";
 import { ForbiddenPage } from "./forbidden-page";
 import { Header } from "./header";
 import { ImpersonationBanner } from "./impersonation-banner";
@@ -24,11 +29,14 @@ import { OfflineIndicator } from "./offline-indicator";
 import { Sidebar } from "./sidebar";
 import { SimulationControls } from "./simulation-controls";
 import { UpdateAvailable } from "./update-available";
+import { useNavDirection } from "./use-nav-direction";
+import { useShellHeaderHeight } from "./use-shell-header-height";
 
 /**
  * Single layout for the `(app)` route group (docs/03-layered-architecture.md
- * section 3): sidebar on desktop, bottom tab bar on mobile, one header, all
- * reading from the same `navigation` registry.
+ * section 3): sidebar on desktop, a bottom tab bar with a raised centre
+ * action on a phone, one header, all reading from the same `navigation`
+ * registry.
  *
  * `LiveSocketProvider` wraps the whole shell so every screen under it can
  * call `useLiveInvalidate`/`useLiveTopic`
@@ -74,38 +82,60 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
   // inside the shell rather than around it, so a refusal still leaves the
   // reader somewhere to go.
   const routeAccess = pathAccess(pathname, access);
+  // The stack's height, strips included, for the `fit` pages under it.
+  const shellRef = useRef<HTMLDivElement>(null);
+  const stackRef = useRef<HTMLDivElement>(null);
+  useShellHeaderHeight(stackRef, shellRef);
+
+  // The phone bar: its tabs and the raised centre action, checked against
+  // the same route access as the home hero. A teacher's "Isi presensi"
+  // opens the session running now or next, as the hero does.
+  const quickActions = sortQuickActions(useQuickActions());
+  const layout = mobileTabLayout({
+    items,
+    profile: me?.profile_kind,
+    duties: me?.duties,
+    quickActions,
+    canOpen: (path) => canOpenPath(path, access),
+  });
+  const teaching = layout.centre?.id === "attendance";
+  const sessionHref = useCurrentSessionHref(me?.tenant.timezone, teaching);
+  const tabBar =
+    teaching && layout.centre
+      ? { ...layout, centre: { ...layout.centre, href: sessionHref } }
+      : layout;
+  // Which way a phone's page content enters: deeper, back, or across tabs.
+  useNavDirection(pathname, mobileTabRoots(layout), (path) => activeNavHref(path, items));
 
   return (
     <CommandPaletteProvider>
       <a href="#main-content" className="skip-link">
         {t("skipToContent")}
       </a>
-      <div className="flex min-h-dvh">
+      <div ref={shellRef} className="flex min-h-dvh">
         <Sidebar items={items} className="hidden md:flex" />
         <div className="flex min-w-0 flex-1 flex-col">
           {/*
-            Sticky like the sidebar: search and the notification bell are
-            reached from wherever the reader is on a long page, not only
-            from the top of it.
+            One sticky stack: the header, then any standing state as a
+            one-line strip (testing as another account, a simulated clock,
+            no connection, a new version). Strips stay in view on a long
+            page and never sit over the phone's tab bar. Its measured
+            height is published as --shell-header-height.
           */}
-          <div className="sticky top-0 z-(--z-sticky)">
+          <div ref={stackRef} className="sticky top-0 z-sticky">
             <Header />
+            <ImpersonationBanner />
+            <SimulationControls />
+            <OfflineIndicator />
+            <UpdateAvailable />
             {/*
-              Not inside components/header.tsx itself: that file is
-              outside this chunk's scope
-              (docs/analysis/realtime-plan-2026-09-25.md chunk D). A thin
-              right-aligned row under the header keeps it close to where
-              the notification bell lives without touching that file, and
-              renders nothing (ConnectionStatusIndicator returns null)
-              except during a sustained disconnect.
+              Renders nothing (ConnectionStatusIndicator returns null)
+              except during a sustained realtime disconnect.
             */}
             <div className="flex justify-end px-4 md:px-6">
               <ConnectionStatusIndicator />
             </div>
-            <SimulationControls />
           </div>
-          <ImpersonationBanner />
-          <OfflineIndicator />
           <main
             id="main-content"
             className="flex-1 pb-[calc(var(--shell-mobile-tab-offset)+1rem)] md:pb-0"
@@ -122,11 +152,11 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
       </div>
       <MobileTabBar
         items={items}
-        profile={me?.profile_kind}
+        layout={tabBar}
+        quickActions={quickActions}
         scope={me ? `${me.tenant.tenant_id}:${me.id}` : undefined}
         className="md:hidden"
       />
-      <UpdateAvailable />
     </CommandPaletteProvider>
   );
 }

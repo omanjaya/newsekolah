@@ -1,5 +1,5 @@
 import type * as UiModule from "@newsekolah/ui";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -10,7 +10,9 @@ import { DeskOverdueTable } from "./desk-overdue-table";
 type LibraryOverdueLoanDetail = DeskApiModule.LibraryOverdueLoanDetail;
 
 vi.mock("../../../lib/session/session-provider", () => ({
-  useSession: () => ({ me: { permissions: [], profile_kind: "staff" } }),
+  useSession: () => ({
+    me: { permissions: [], profile_kind: "staff", tenant: { timezone: "Asia/Makassar" } },
+  }),
 }));
 
 vi.mock("next-intl", () => ({
@@ -18,17 +20,15 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
 }));
 
-vi.mock("@newsekolah/i18n", () => ({
-  formatDate: (value: string) => value,
-}));
-
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 
+const mutations = vi.hoisted(() => ({ returnLoan: vi.fn(), sendReminders: vi.fn() }));
+
 vi.mock("../api", () => ({
   useRenewLoanMutation: () => ({ mutate: vi.fn(), isPending: false }),
-  useReturnLoanMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useReturnLoanMutation: () => ({ mutate: mutations.returnLoan, isPending: false }),
 }));
 
 vi.mock("../desk-api", async () => {
@@ -36,7 +36,10 @@ vi.mock("../desk-api", async () => {
   return {
     ...actual,
     useOverdueLoansDetailedQuery: vi.fn(),
-    useSendLibraryDueRemindersMutation: () => ({ mutate: vi.fn(), isPending: false }),
+    useSendLibraryDueRemindersMutation: () => ({
+      mutate: mutations.sendReminders,
+      isPending: false,
+    }),
   };
 });
 
@@ -86,6 +89,23 @@ describe("DeskOverdueTable", () => {
     expect(screen.getAllByText("Biologi").length).toBeGreaterThan(0);
     expect(screen.getAllByText("BC-001").length).toBeGreaterThan(0);
     expect(screen.getAllByText("BC-002").length).toBeGreaterThan(0);
+  });
+
+  it("shows the short overdue badge with the due date as its own line", () => {
+    mockedQuery.mockReturnValue({
+      data: { data: [loan("loan-1", "Matematika", "BC-001")] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    render(<DeskOverdueTable />);
+
+    // The section heading already says the loan is late, so the badge drops
+    // the "(jatuh tempo ...)" tail that kept the row too wide to fit.
+    expect(screen.getAllByText("overdueShort").length).toBeGreaterThan(0);
+    expect(screen.queryByText("overdue")).not.toBeInTheDocument();
+    expect(screen.getAllByText("dueDate").length).toBeGreaterThan(0);
   });
 
   it("filters the local table by title and barcode", async () => {
@@ -146,15 +166,56 @@ describe("DeskOverdueTable", () => {
       data: undefined,
       isLoading: false,
       isError: true,
+      error: new Error("offline"),
       refetch,
     } as never);
 
     const user = userEvent.setup();
     render(<DeskOverdueTable />);
 
-    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "retry" }));
+    await user.click(screen.getByRole("button", { name: "Coba lagi" }));
     expect(refetch).toHaveBeenCalledOnce();
+  });
+
+  it("asks for confirmation before recording a return", async () => {
+    mutations.returnLoan.mockReset();
+    mockedQuery.mockReturnValue({
+      data: { data: [loan("loan-1", "Matematika", "BC-001")] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    const user = userEvent.setup();
+    render(<DeskOverdueTable />);
+    const returnButton = screen.getAllByRole("button", { name: "return" }).at(0);
+    if (!returnButton) throw new Error("return button missing");
+    await user.click(returnButton);
+
+    expect(mutations.returnLoan).not.toHaveBeenCalled();
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "return" }));
+    expect(mutations.returnLoan).toHaveBeenCalledOnce();
+  });
+
+  it("asks for confirmation before sending reminders to every overdue member", async () => {
+    mutations.sendReminders.mockReset();
+    mockedQuery.mockReturnValue({
+      data: { data: [loan("loan-1", "Matematika", "BC-001")] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    const user = userEvent.setup();
+    render(<DeskOverdueTable />);
+    await user.click(screen.getByRole("button", { name: "sendReminders" }));
+
+    expect(mutations.sendReminders).not.toHaveBeenCalled();
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "sendReminders" }));
+    expect(mutations.sendReminders).toHaveBeenCalledOnce();
   });
 });

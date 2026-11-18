@@ -1,89 +1,52 @@
 "use client";
 
-import { ApiError } from "@newsekolah/api-client";
-import { PageHeader, Skeleton, Switch, useToast } from "@newsekolah/ui";
+import { ApiError, queryKeys } from "@newsekolah/api-client";
+import { Card, CardDescription, CardHeader, CardTitle, useToast } from "@newsekolah/ui";
+import { useQueries } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { useApiClient } from "../../../lib/api/client";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
-  NOTIFICATION_CHANNELS,
   useNotificationKinds,
   type NotificationChannel,
   type NotificationKind,
   useSetTenantNotificationDefaultMutation,
-  useTenantNotificationDefaultQuery,
 } from "../../notifications/api";
+
+import { NotificationChannelMatrix } from "./notification-channel-matrix";
+import { SettingsPage } from "./settings-page";
 
 /**
  * Tenant-wide default channels per notification kind, as opposed to
  * `NotificationSettingsView` which edits the signed-in user's own
  * preferences. A user who never touched their own preference falls back to
  * this default (see GET /v1/notification-preferences on the API side).
+ * A switch saves at once; only a failure says anything.
  */
 export function NotificationDefaultsView(): ReactElement {
   const t = useTranslations("app.settings.notificationDefaults");
   const tKinds = useTranslations("app.notifications.kinds");
-  const kinds = useNotificationKinds();
-
-  return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <p className="text-[13px] text-fg-muted">{t("body")}</p>
-
-      <div className="hidden overflow-x-auto rounded-lg border border-border bg-surface md:block">
-        <table className="w-full min-w-[560px] text-[13px]">
-          <thead>
-            <tr className="border-b border-line bg-bg text-left">
-              <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
-                {t("kindColumn")}
-              </th>
-              {NOTIFICATION_CHANNELS.map((channel) => (
-                <th
-                  key={channel}
-                  scope="col"
-                  className="px-4 py-3 text-center text-[12px] font-semibold text-fg-muted"
-                >
-                  {t(`channels.${channel}`)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {kinds.map((kind) => (
-              <NotificationDefaultRow key={kind} kind={kind} label={tKinds(kind)} />
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* A four-column matrix on a phone shows one column and hides the rest
-          behind a sideways scroll nothing announces (same trade-off as
-          NotificationSettingsView's own channel matrix). Stacked per kind,
-          every channel for that kind is on screen at once. */}
-      <ul className="flex flex-col gap-3 md:hidden">
-        {kinds.map((kind) => (
-          <NotificationDefaultCard key={kind} kind={kind} label={tKinds(kind)} />
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function useNotificationDefaultRow(kind: NotificationKind) {
-  const t = useTranslations("app.settings.notificationDefaults");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const { data, isLoading } = useTenantNotificationDefaultQuery(kind);
+  const client = useApiClient();
+  const kinds = useNotificationKinds();
   const setDefault = useSetTenantNotificationDefaultMutation();
+  // One read per kind (the API answers per kind), sharing the cache entries
+  // of useTenantNotificationDefaultQuery.
+  const defaults = useQueries({
+    queries: kinds.map((kind) => ({
+      queryKey: queryKeys.tenantNotificationDefault(kind),
+      queryFn: () =>
+        client.GET("/v1/tenant/notification-defaults", { params: { query: { kind } } }),
+    })),
+  });
 
-  function toggle(channel: NotificationChannel, enabled: boolean) {
+  function toggle(kind: NotificationKind, channel: NotificationChannel, enabled: boolean) {
     setDefault.mutate(
       { kind, channel, enabled },
       {
-        onSuccess: () => {
-          toast.success(t("saved"));
-        },
         onError: (error) => {
           toast.error(
             error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
@@ -93,74 +56,31 @@ function useNotificationDefaultRow(kind: NotificationKind) {
     );
   }
 
-  return { t, data, isLoading, toggle };
-}
-
-function NotificationDefaultRow({
-  kind,
-  label,
-}: {
-  kind: NotificationKind;
-  label: string;
-}): ReactElement {
-  const { t, data, isLoading, toggle } = useNotificationDefaultRow(kind);
-
   return (
-    <tr className="border-b border-line last:border-b-0 hover:bg-bg">
-      <th scope="row" className="px-4 py-3 text-left font-normal text-fg">
-        {label}
-      </th>
-      {NOTIFICATION_CHANNELS.map((channel) => (
-        <td key={channel} className="px-4 py-3 text-center">
-          {isLoading ? (
-            <Skeleton className="mx-auto h-5 w-9" />
-          ) : (
-            <Switch
-              checked={data?.[channel] ?? false}
-              disabled={channel === "inapp"}
-              aria-label={`${label}: ${t(`channels.${channel}`)}`}
-              onCheckedChange={(checked) => {
-                toggle(channel, checked);
-              }}
-            />
-          )}
-        </td>
-      ))}
-    </tr>
-  );
-}
-
-function NotificationDefaultCard({
-  kind,
-  label,
-}: {
-  kind: NotificationKind;
-  label: string;
-}): ReactElement {
-  const { t, data, isLoading, toggle } = useNotificationDefaultRow(kind);
-
-  return (
-    <li className="flex flex-col gap-2 rounded-sm border border-border p-3">
-      <span className="text-[13px] font-medium text-fg">{label}</span>
-      <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-        {NOTIFICATION_CHANNELS.map((channel) => (
-          <div key={channel} className="flex items-center justify-between gap-3">
-            <span className="text-[13px] text-fg-muted">{t(`channels.${channel}`)}</span>
-            {isLoading ? (
-              <Skeleton className="h-5 w-9" />
-            ) : (
-              <Switch
-                checked={data?.[channel] ?? false}
-                disabled={channel === "inapp"}
-                aria-label={`${label}: ${t(`channels.${channel}`)}`}
-                onCheckedChange={(checked) => {
-                  toggle(channel, checked);
-                }}
-              />
-            )}
-          </div>
-        ))}
-      </div>
-    </li>
+    <SettingsPage navKey="settings-notification-defaults" description={t("body")}>
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">{t("channelsTitle")}</CardTitle>
+          <CardDescription>{t("channelsBody")}</CardDescription>
+        </CardHeader>
+        <NotificationChannelMatrix
+          kindLabel={t("kindColumn")}
+          channelLabel={(channel) => t(`channels.${channel}`)}
+          failedLabel={t("loadFailed")}
+          onToggle={toggle}
+          rows={kinds.map((kind, index) => {
+            const query = defaults[index];
+            return {
+              kind,
+              label: tKinds(kind),
+              values: query?.data,
+              loading: query?.isLoading ?? true,
+              failed: query ? query.isError && !query.data : false,
+              onRetry: () => void query?.refetch(),
+            };
+          })}
+        />
+      </Card>
+    </SettingsPage>
   );
 }

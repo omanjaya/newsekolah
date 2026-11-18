@@ -1,8 +1,17 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Select, Skeleton, Textarea, useToast } from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
+import {
+  Alert,
+  Button,
+  DialogFooter,
+  Field,
+  Select,
+  Skeleton,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
@@ -18,6 +27,7 @@ import {
   useReplaceScheduleBlockMutation,
   useScheduleQuery,
 } from "../api";
+import { clockLabel } from "../clock-label";
 import { useNamedConflict } from "../use-named-conflict";
 
 export function ScheduleForm({
@@ -46,11 +56,12 @@ export function ScheduleForm({
   const tSchedule = useTranslations("app.schedule");
   const tDays = useTranslations("app.common.weekdays");
   const tCommon = useTranslations("app.offlinePage");
+  const locale = useLocale();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
-  const teacherLabels = useDirectoryPickerLabels(t("pick"));
+  const teacherLabels = useDirectoryPickerLabels(tSchedule("pickTeacher"));
   const periods = usePeriodsQuery();
   const create = useCreateScheduleMutation();
   const replace = useReplaceScheduleBlockMutation();
@@ -92,7 +103,7 @@ export function ScheduleForm({
 
   const periodOptions = lessons.map((p) => ({
     value: p.id,
-    label: `${p.name} (${p.starts_at.slice(0, 5)})`,
+    label: `${p.name} (${clockLabel(p.starts_at, locale)})`,
   }));
 
   async function submit() {
@@ -139,12 +150,7 @@ export function ScheduleForm({
     }
   }
 
-  const field = (label: string, control: ReactElement) => (
-    <label className="flex flex-col gap-1 text-[13px]">
-      <span className="font-medium">{label}</span>
-      {control}
-    </label>
-  );
+  const field = (label: string, control: ReactElement) => <Field label={label}>{control}</Field>;
 
   return (
     <form
@@ -154,18 +160,14 @@ export function ScheduleForm({
         void submit();
       }}
     >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-          {error}
-        </p>
-      )}
+      {error && <Alert variant="danger">{error}</Alert>}
       {field(
         t("class"),
         <Select
           options={(classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
           value={classId}
           onValueChange={setClassId}
-          placeholder={t("pick")}
+          placeholder={tSchedule("pickClass")}
         />,
       )}
       {field(
@@ -174,7 +176,7 @@ export function ScheduleForm({
           options={(subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }))}
           value={subjectId}
           onValueChange={setSubjectId}
-          placeholder={t("pick")}
+          placeholder={tSchedule("pickSubject")}
         />,
       )}
       {field(
@@ -186,18 +188,22 @@ export function ScheduleForm({
           labels={teacherLabels}
         />,
       )}
-      <div className="grid gap-4 md:grid-cols-3">
-        {field(
-          t("day"),
-          <Select
-            options={[1, 2, 3, 4, 5, 6, 7].map((d) => ({
-              value: String(d),
-              label: tDays(String(d)),
-            }))}
-            value={day}
-            onValueChange={setDay}
-          />,
-        )}
+      {/* The day on its own row, the two periods side by side, so a period
+          label ("Jam 1 (07.00)") never wraps inside its select. */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2">
+          {field(
+            t("day"),
+            <Select
+              options={[1, 2, 3, 4, 5, 6, 7].map((d) => ({
+                value: String(d),
+                label: tDays(String(d)),
+              }))}
+              value={day}
+              onValueChange={setDay}
+            />,
+          )}
+        </div>
         {field(
           t("start"),
           <Select options={periodOptions} value={startId} onValueChange={setStartId} />,
@@ -207,12 +213,20 @@ export function ScheduleForm({
       {editing && detail.isLoading ? (
         <Skeleton className="h-20 w-full" aria-busy="true" />
       ) : editing && detail.isError ? (
-        <div className="flex flex-col gap-2 rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-          <p role="alert">{t("notesLoadError")}</p>
-          <Button type="button" variant="secondary" size="sm" onClick={() => void detail.refetch()}>
-            {tCommon("retry")}
-          </Button>
-        </div>
+        <Alert
+          variant="danger"
+          title={t("notesLoadError")}
+          action={
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => void detail.refetch()}
+            >
+              {tCommon("retry")}
+            </Button>
+          }
+        />
       ) : (
         field(
           t("notes"),
@@ -227,7 +241,7 @@ export function ScheduleForm({
           />,
         )
       )}
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <DialogFooter>
         <Button
           type="button"
           variant="secondary"
@@ -243,7 +257,7 @@ export function ScheduleForm({
         >
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

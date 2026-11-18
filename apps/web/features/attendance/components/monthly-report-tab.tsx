@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, EmptyState, Input, Select } from "@newsekolah/ui";
+import { Button, EmptyState, Field, MonthPicker, Select } from "@newsekolah/ui";
 import { Download, FileBarChart } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -69,9 +69,10 @@ export function MonthlyReportTab(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("class")}</span>
+      {/* Two by two on a phone (class and student, then month and the
+          download); one row from 640px, the download at its end. */}
+      <div className="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
+        <Field label={t("class")}>
           <Select
             options={classOptions(classes.data?.data)}
             value={classId}
@@ -82,11 +83,10 @@ export function MonthlyReportTab(): ReactElement {
             placeholder={t("classPlaceholder")}
             disabled={classes.isLoading}
             aria-label={t("class")}
-            className="w-56"
+            className="w-full sm:w-56"
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("student")}</span>
+        </Field>
+        <Field label={t("student")}>
           <Select
             options={studentOptions}
             value={studentId}
@@ -94,29 +94,25 @@ export function MonthlyReportTab(): ReactElement {
             placeholder={t("studentPlaceholder")}
             disabled={classId === "" || enrollments.isLoading}
             aria-label={t("student")}
-            className="w-56"
+            className="w-full sm:w-56"
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("month")}</span>
-          <Input
-            type="month"
+        </Field>
+        <Field label={t("month")}>
+          <MonthPicker
             value={month}
-            onChange={(e) => {
-              setMonth(e.target.value);
-            }}
-            aria-label={t("month")}
-            className="w-40"
+            onChange={setMonth}
+            clearable={false}
+            className="w-full sm:w-44"
           />
-        </label>
+        </Field>
         <Button
-          size="sm"
           variant="secondary"
+          icon={<Download />}
+          className="sm:ml-auto"
           onClick={() => {
             setExportOpen(true);
           }}
         >
-          <Download className="size-4" aria-hidden="true" />
           {t("downloadRecap")}
         </Button>
       </div>
@@ -143,7 +139,7 @@ export function MonthlyReportTab(): ReactElement {
               gradeLevelPlaceholder={t("gradeLevelPlaceholder")}
             />
             {!scopeIsReady(downloadScope) && (
-              <p className="text-[13px] text-fg-muted">{t("exportScopeHint")}</p>
+              <p className="text-body-sm text-fg-muted">{t("exportScopeHint")}</p>
             )}
           </div>
         }

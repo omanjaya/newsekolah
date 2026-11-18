@@ -13,6 +13,10 @@ const mocks = vi.hoisted(() => ({
   reviewMutate: vi.fn(),
   reviewMutateAsync: vi.fn(),
 }));
+// useUrlState reads the query through the router; follow the address.
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(window.location.search),
+}));
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => "id",
@@ -188,14 +192,21 @@ describe("permit queue filters", () => {
     mocks.late.mockReturnValue({ ...emptyResult, data: { data: [lateItem("c")] } });
   });
 
-  it("narrows the queue by type with the chips and keeps it in the URL", async () => {
+  it("narrows the queue by type with the segmented filter and keeps it in the URL", async () => {
     render(<PermitUnifiedQueue />);
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
 
-    await userEvent.click(screen.getByRole("button", { name: "late" }));
+    await userEvent.click(screen.getByRole("radio", { name: /^late/ }));
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
-    expect(screen.getByRole("button", { name: "late" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("radio", { name: /^late/ })).toHaveAttribute("aria-checked", "true");
     expect(window.location.search).toBe("?type=late");
+  });
+
+  it("carries each queue's count on its filter segment instead of a row of tiles", () => {
+    render(<PermitUnifiedQueue />);
+    expect(screen.getByRole("radio", { name: "leave 2" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "late 1" })).toBeInTheDocument();
+    expect(screen.queryByTestId("permit-queue-tiles")).not.toBeInTheDocument();
   });
 
   it("opens on the type selected by the link", () => {
@@ -232,7 +243,7 @@ describe("permit queue filters", () => {
     for (const box of screen.getAllByRole("checkbox")) await userEvent.click(box);
     expect(screen.getByRole("button", { name: "bulkApprove" })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "late" }));
+    await userEvent.click(screen.getByRole("radio", { name: /^late/ }));
     expect(screen.queryByRole("button", { name: "bulkApprove" })).not.toBeInTheDocument();
     expect(mocks.reviewMutateAsync).not.toHaveBeenCalled();
   });
@@ -243,9 +254,9 @@ describe("permit queue filters", () => {
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   });
 
-  it("shows no type chips when the reader has a single queue", () => {
+  it("shows no type filter when the reader has a single queue", () => {
     mocks.can.mockReturnValue(false);
     render(<PermitUnifiedQueue />);
-    expect(screen.queryByRole("group", { name: "typeFilter" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("radiogroup", { name: "typeFilter" })).not.toBeInTheDocument();
   });
 });

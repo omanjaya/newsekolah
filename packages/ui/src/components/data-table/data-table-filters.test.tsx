@@ -49,10 +49,49 @@ function dateRangeFilter(overrides: Partial<DataTableFilterDef> = {}): DataTable
 }
 
 describe("DataTableFilters", () => {
+  // Without a glyph the pills read as action buttons next to "Tambah".
+  it("ends a pill that opens a list or a date popover in a chevron, but not an on/off pill", () => {
+    render(
+      <DataTableFilters
+        filters={[materialTypeFilter(), dateRangeFilter(), availabilityFilter()]}
+      />,
+    );
+    const chevron = (name: string) =>
+      screen.getByRole("button", { name }).querySelector("svg[aria-hidden=true]");
+    expect(chevron("Jenis bahan")).not.toBeNull();
+    expect(chevron("Tanggal")).not.toBeNull();
+    expect(chevron("Hanya tersedia")).toBeNull();
+  });
+
+  it("fades the strip's edges only while pills scroll past them, as a tab strip does", () => {
+    const { container } = render(<DataTableFilters filters={[materialTypeFilter()]} />);
+    const strip = container.firstElementChild;
+    expect(strip).toHaveClass("scroll-fade-x");
+    // jsdom lays nothing out, so nothing overflows and no edge is marked.
+    expect(strip).not.toHaveAttribute("data-overflow-end");
+  });
+
   it("shows only the label for an unset filter, with no remove control", () => {
     render(<DataTableFilters filters={[materialTypeFilter()]} />);
     expect(screen.getByRole("button", { name: "Jenis bahan" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Hapus filter/ })).not.toBeInTheDocument();
+  });
+
+  it("keeps a visible focus ring on a pill reached by keyboard", async () => {
+    const user = userEvent.setup();
+    render(<DataTableFilters filters={[materialTypeFilter({ value: "book" })]} />);
+    await user.tab();
+    const trigger = screen.getByRole("button", { name: "Jenis bahan: Buku" });
+    expect(trigger).toHaveFocus();
+    // The base :focus-visible outline is what shows the ring; nothing on
+    // the pill may switch it off or clip it.
+    expect(trigger).not.toHaveClass("outline-none");
+    expect(trigger.parentElement).not.toHaveClass("overflow-hidden");
+
+    await user.tab();
+    const remove = screen.getByRole("button", { name: "Hapus filter Jenis bahan" });
+    expect(remove).toHaveFocus();
+    expect(remove).not.toHaveClass("outline-none");
   });
 
   it("opens the popover and applies the chosen option", async () => {
@@ -221,6 +260,49 @@ describe("DataTableFilters", () => {
       expect(onChangeRange).toHaveBeenCalledWith({ from: "", to: "" });
     });
 
+    it("reads a page's default period out in the neutral style, not as an applied filter", () => {
+      render(
+        <DataTableFilters
+          filters={[
+            dateRangeFilter({
+              from: "2026-11-01",
+              to: "2026-11-17",
+              defaultFrom: "2026-11-01",
+              defaultTo: "2026-11-17",
+            }),
+          ]}
+        />,
+      );
+      // The pill still says which days are shown.
+      const trigger = screen.getByRole("button", { name: "Tanggal: 1-17 Nov 2026" });
+      expect(trigger.parentElement).toHaveClass("border-border", "bg-surface");
+      expect(trigger.parentElement).not.toHaveClass("bg-accent-soft");
+      expect(screen.queryByRole("button", { name: /Hapus filter/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Reset filter" })).not.toBeInTheDocument();
+    });
+
+    it("comes back to the default period when a changed range is removed or reset", async () => {
+      const user = userEvent.setup();
+      const onChangeRange = vi.fn();
+      render(
+        <DataTableFilters
+          filters={[
+            dateRangeFilter({
+              from: "2026-09-01",
+              to: "2026-09-15",
+              defaultFrom: "2026-11-01",
+              defaultTo: "2026-11-17",
+              onChangeRange,
+            }),
+          ]}
+        />,
+      );
+      await user.click(screen.getByRole("button", { name: "Hapus filter Tanggal" }));
+      expect(onChangeRange).toHaveBeenLastCalledWith({ from: "2026-11-01", to: "2026-11-17" });
+      await user.click(screen.getByRole("button", { name: "Reset filter" }));
+      expect(onChangeRange).toHaveBeenLastCalledWith({ from: "2026-11-01", to: "2026-11-17" });
+    });
+
     it("is cleared by the shared Reset filter alongside other filters", async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -261,6 +343,67 @@ describe("DataTableFilters", () => {
       );
       await user.click(screen.getByRole("button", { name: /^Tanggal/ }));
       await screen.findByLabelText("Dari");
+      await expectNoAxeViolations(container);
+    });
+  });
+
+  describe("month filter", () => {
+    function periodFilter(overrides: Partial<DataTableFilterDef> = {}): DataTableFilterDef {
+      return {
+        id: "period",
+        label: "Periode",
+        type: "month",
+        value: "",
+        onChange: vi.fn(),
+        today: "2026-11-14",
+        ...overrides,
+      };
+    }
+
+    it("shows only the label while unset, and the month by name once set", () => {
+      const { rerender } = render(<DataTableFilters filters={[periodFilter()]} />);
+      expect(screen.getByRole("button", { name: "Periode" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Hapus filter/ })).not.toBeInTheDocument();
+
+      rerender(<DataTableFilters filters={[periodFilter({ value: "2026-09" })]} />);
+      expect(screen.getByRole("button", { name: "Periode: September 2026" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Hapus filter Periode" })).toBeInTheDocument();
+    });
+
+    it("opens the month grid on the current month and applies a pick by keyboard", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<DataTableFilters filters={[periodFilter({ onChange })]} />);
+
+      await user.click(screen.getByRole("button", { name: "Periode" }));
+      expect(await screen.findByRole("gridcell", { name: "November 2026" })).toHaveFocus();
+      await user.keyboard("{ArrowLeft}{Enter}");
+
+      expect(onChange).toHaveBeenCalledWith("2026-10");
+      await waitFor(() => {
+        expect(screen.queryByRole("grid")).not.toBeInTheDocument();
+      });
+    });
+
+    it("is cleared by its remove control and by the shared Reset filter", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<DataTableFilters filters={[periodFilter({ value: "2026-09", onChange })]} />);
+
+      await user.click(screen.getByRole("button", { name: "Hapus filter Periode" }));
+      expect(onChange).toHaveBeenLastCalledWith("");
+      onChange.mockClear();
+      await user.click(screen.getByRole("button", { name: "Reset filter" }));
+      expect(onChange).toHaveBeenCalledWith("");
+    });
+
+    it("has no accessibility violations with the month grid open", async () => {
+      const user = userEvent.setup();
+      const { container } = render(
+        <DataTableFilters filters={[periodFilter({ value: "2026-09" })]} />,
+      );
+      await user.click(screen.getByRole("button", { name: /^Periode/ }));
+      await screen.findByRole("grid");
       await expectNoAxeViolations(container);
     });
   });

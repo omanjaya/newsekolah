@@ -3,14 +3,25 @@
 import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
+  Alert,
   Badge,
   Button,
-  EmptyState,
-  Input,
-  Skeleton,
-  domainIcons,
+  Card,
+  CardHeader,
+  CardTitle,
+  DataList,
+  DataListItem,
   Dialog,
   DialogContent,
+  EmptyState,
+  Field,
+  List,
+  ListRow,
+  MonthPicker,
+  SectionHeader,
+  SkeletonDetail,
+  SkeletonList,
+  domainIcons,
 } from "@newsekolah/ui";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
@@ -19,10 +30,8 @@ import { useMemo, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
-import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
-import { useCan, useSession } from "../../../lib/session/session-provider";
+import { useSession } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
-import { StudentRiskPanel } from "../../analytics/components/student-risk-panel";
 import { todayInZone } from "../../attendance/api";
 import { MonthlyAttendanceTable } from "../../attendance/components/monthly-attendance-table";
 import { StudentCounselingHistory } from "../../discipline/components/student-counseling-history";
@@ -32,69 +41,30 @@ import { MemberLoanRow, loanRowSortKey } from "../../library/components/member-l
 import { useLibraryMemberQuery, useLibraryMemberTypesQuery } from "../../library/members-api";
 import { useMemberViolationsQuery } from "../../library/violations-api";
 import { useMentorStudentSnapshotQuery } from "../../mentoring/api";
-import {
-  SnapshotAttendanceSection,
-  SnapshotDisciplineSection,
-  SnapshotGradesSection,
-} from "../../mentoring/components/student-snapshot-sections";
+import { SnapshotGradesSection } from "../../mentoring/components/student-snapshot-sections";
 import { useLeaveReviewQueueQuery } from "../../permits/api";
 import { LeaveRequestDetail } from "../../permits/components/leave-request-detail";
 import { useLookup } from "../../reference/api";
 import { useUserQuery } from "../../school/api";
 
 /*
- * One component per profile tab. Each reuses the panel or hook its own
- * feature already ships; none owns data logic of its own. Which tab a
- * reader sees is decided by `visibleStudentProfileTabs`, so a panel here
- * can assume its endpoint's permission.
+ * One component per profile tab after the overview (student-overview.tsx).
+ * Each reuses the panel or hook its own feature already ships; none owns
+ * data logic of its own. Which tab a reader sees is decided by
+ * `visibleStudentProfileTabs`, so a panel here can assume its endpoint's
+ * permission.
  */
-
-export function StudentOverviewTab({ studentId }: { studentId: string }): ReactElement {
-  const canRisk = useCan("view_early_warning");
-  const mentoringOn = useModuleEnabled("mentoring");
-  const canSnapshot = useCan("view_mentoring") && mentoringOn;
-  return (
-    <div className="flex flex-col gap-6">
-      {canRisk && <StudentRiskPanel studentId={studentId} />}
-      {canSnapshot && <StudentSnapshotOverview studentId={studentId} />}
-    </div>
-  );
-}
-
-function StudentSnapshotOverview({ studentId }: { studentId: string }): ReactElement {
-  const snapshot = useMentorStudentSnapshotQuery(studentId);
-  if (snapshot.isError && !snapshot.data) return <QueryError retry={() => snapshot.refetch()} />;
-  if (!snapshot.data) return <Skeleton className="h-40 w-full" />;
-  return (
-    <div className="flex flex-col gap-6">
-      <SnapshotAttendanceSection snapshot={snapshot.data} />
-      <SnapshotDisciplineSection snapshot={snapshot.data} />
-    </div>
-  );
-}
 
 export function StudentAttendanceTab({ studentId }: { studentId: string }): ReactElement {
   const t = useTranslations("app.studentProfile.attendance");
   const { me } = useSession();
-  const [month, setMonth] = useDateFilter(
-    "month",
-    todayInZone(me?.tenant.timezone).slice(0, 7),
-    true,
-  );
+  const today = todayInZone(me?.tenant.timezone);
+  const [month, setMonth] = useDateFilter("month", today.slice(0, 7), true);
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("month")}</span>
-        <Input
-          type="month"
-          value={month}
-          onChange={(e) => {
-            setMonth(e.target.value);
-          }}
-          aria-label={t("month")}
-          className="w-40"
-        />
-      </label>
+      <Field label={t("month")} className="sm:w-56">
+        <MonthPicker value={month} onChange={setMonth} today={today} />
+      </Field>
       <MonthlyAttendanceTable studentId={studentId} month={month} />
     </div>
   );
@@ -102,8 +72,10 @@ export function StudentAttendanceTab({ studentId }: { studentId: string }): Reac
 
 export function StudentGradesTab({ studentId }: { studentId: string }): ReactElement {
   const snapshot = useMentorStudentSnapshotQuery(studentId);
-  if (snapshot.isError && !snapshot.data) return <QueryError retry={() => snapshot.refetch()} />;
-  if (!snapshot.data) return <Skeleton className="h-40 w-full" />;
+  if (snapshot.isError && !snapshot.data) {
+    return <QueryError retry={() => void snapshot.refetch()} error={snapshot.error} />;
+  }
+  if (!snapshot.data) return <SkeletonList rows={5} framed />;
   return <SnapshotGradesSection snapshot={snapshot.data} />;
 }
 
@@ -118,13 +90,23 @@ export function StudentPermitsTab({ studentId }: { studentId: string }): ReactEl
     [queue.data, studentId],
   );
 
-  if (queue.isError && !queue.data) return <QueryError retry={() => queue.refetch()} />;
-  if (queue.isLoading) return <Skeleton className="h-32 w-full" />;
+  if (queue.isError && !queue.data) {
+    return <QueryError retry={() => void queue.refetch()} error={queue.error} />;
+  }
+  if (queue.isLoading) return <SkeletonList rows={3} framed />;
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-      <p className="text-[13px] text-fg-muted">{t("note")}</p>
+      <SectionHeader
+        title={t("title")}
+        description={t("note")}
+        count={items.length}
+        action={
+          <Button asChild variant="link">
+            <Link href="/leave-requests">{t("openQueue")}</Link>
+          </Button>
+        }
+      />
       {items.length === 0 ? (
         <EmptyState
           icon={<domainIcons.exitPermit aria-hidden="true" />}
@@ -132,39 +114,27 @@ export function StudentPermitsTab({ studentId }: { studentId: string }): ReactEl
           description={t("emptyBody")}
         />
       ) : (
-        <ul className="flex flex-col gap-2">
+        <List framed>
           {items.map((item) => (
-            <li key={item.instance_id}>
-              <button
-                type="button"
-                onClick={() => {
-                  setOpenId(item.instance_id);
-                }}
-                className="flex w-full flex-col gap-1.5 rounded-sm border border-border bg-surface p-3 text-left"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="neutral">{tLeave(`categories.${item.category}`)}</Badge>
-                  <span className="text-[13px] text-fg-muted">
-                    {formatDate(item.starts_on, { locale })} -{" "}
-                    {formatDate(item.ends_on, { locale })}
-                  </span>
-                </div>
-                {item.reason && <span className="text-[13px] text-fg">{item.reason}</span>}
-              </button>
-            </li>
+            <ListRow
+              key={item.instance_id}
+              title={tLeave(`categories.${item.category}`)}
+              meta={item.reason}
+              trailing={`${formatDate(item.starts_on, { locale })} - ${formatDate(item.ends_on, { locale })}`}
+              onClick={() => {
+                setOpenId(item.instance_id);
+              }}
+            />
           ))}
-        </ul>
+        </List>
       )}
-      <Button asChild variant="secondary" size="sm" className="self-start">
-        <Link href="/leave-requests">{t("openQueue")}</Link>
-      </Button>
       <Dialog
         open={openId !== null}
         onOpenChange={(open) => {
           if (!open) setOpenId(null);
         }}
       >
-        <DialogContent title={t("detailTitle")} className="max-w-xl">
+        <DialogContent title={t("detailTitle")} size="lg">
           {openId && <LeaveRequestDetail id={openId} />}
         </DialogContent>
       </Dialog>
@@ -201,7 +171,7 @@ export function StudentLibraryTab({ studentId }: { studentId: string }): ReactEl
   );
   const unpaid = (violations.data?.data ?? []).filter((v) => v.status === "unpaid");
 
-  if (member.isLoading) return <Skeleton className="h-32 w-full" />;
+  if (member.isLoading) return <SkeletonDetail rows={4} />;
   if (!member.data) {
     return (
       <EmptyState
@@ -214,28 +184,40 @@ export function StudentLibraryTab({ studentId }: { studentId: string }): ReactEl
   const data = member.data;
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center gap-6 rounded-sm border border-border bg-surface p-4">
-        <Field label={t("memberNo")}>{data.member_no}</Field>
-        <Field label={t("memberType")}>{memberTypeMap.get(data.member_type_id)?.name ?? "-"}</Field>
-        <Field label={t("validUntil")}>
-          {data.valid_until ? formatDate(data.valid_until, { locale }) : "-"}
-        </Field>
-        <Field label={t("statusLabel")}>
-          <Badge variant={data.status === "active" ? "accent" : "neutral"}>
-            {t(`status.${data.status}`)}
-          </Badge>
-        </Field>
-      </div>
+    <div className="flex flex-col gap-6">
+      <Card padding="md">
+        <DataList layout="stacked" columns={2} className="lg:grid-cols-4">
+          <DataListItem label={t("memberNo")}>{data.member_no}</DataListItem>
+          <DataListItem label={t("memberType")}>
+            {memberTypeMap.get(data.member_type_id)?.name}
+          </DataListItem>
+          <DataListItem label={t("validUntil")}>
+            {data.valid_until ? formatDate(data.valid_until, { locale }) : undefined}
+          </DataListItem>
+          <DataListItem label={t("statusLabel")}>
+            <Badge tone={data.status === "active" ? "success" : "neutral"}>
+              {t(`status.${data.status}`)}
+            </Badge>
+          </DataListItem>
+        </DataList>
+      </Card>
       {unpaid.length > 0 && (
-        <p className="text-[13px] text-status-late">
-          {tHistory("fines.title")}: {unpaid.length}
-        </p>
+        <Alert tone="warning" title={`${tHistory("fines.title")}: ${unpaid.length}`} />
       )}
       <section className="flex flex-col gap-3">
-        <h2 className="text-[16px] font-medium text-fg">{tHistory("currentLoans")}</h2>
+        <SectionHeader
+          title={tHistory("currentLoans")}
+          count={activeLoans.length}
+          action={
+            <Button asChild variant="link">
+              <Link href={`/library/members/${encodeURIComponent(studentId)}`}>
+                {tProfile("openMember")}
+              </Link>
+            </Button>
+          }
+        />
         {loans.isLoading ? (
-          <Skeleton className="h-24 w-full" />
+          <SkeletonList rows={2} framed />
         ) : activeLoans.length === 0 ? (
           <EmptyState
             icon={<domainIcons.library aria-hidden="true" />}
@@ -257,20 +239,6 @@ export function StudentLibraryTab({ studentId }: { studentId: string }): ReactEl
           </ul>
         )}
       </section>
-      <Button asChild variant="secondary" size="sm" className="self-start">
-        <Link href={`/library/members/${encodeURIComponent(studentId)}`}>
-          {tProfile("openMember")}
-        </Link>
-      </Button>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }): ReactElement {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-[12px] font-medium text-fg-muted">{label}</span>
-      <span className="text-[14px] text-fg">{children}</span>
     </div>
   );
 }
@@ -279,31 +247,26 @@ export function StudentGuardiansTab({ studentId }: { studentId: string }): React
   const t = useTranslations("app.studentProfile.guardians");
   const user = useUserQuery(studentId);
 
-  if (user.isLoading) return <Skeleton className="h-32 w-full" />;
+  if (user.isLoading) return <SkeletonDetail rows={5} />;
   const profile = user.data?.profile;
-  if (!profile) return <QueryError retry={() => user.refetch()} />;
-
-  const rows: [string, string | undefined][] = [
-    [t("fatherName"), profile.father_name],
-    [t("motherName"), profile.mother_name],
-    [t("guardianName"), profile.guardian_name],
-    [t("guardianPhone"), profile.guardian_phone],
-    [t("parentOccupation"), profile.parent_occupation],
-  ];
+  if (!profile) return <QueryError retry={() => void user.refetch()} error={user.error} />;
 
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-      <dl className="grid grid-cols-1 gap-4 rounded-sm border border-border bg-surface p-4 sm:grid-cols-2">
-        {rows.map(([label, value]) => (
-          <div key={label} className="flex flex-col gap-1">
-            <dt className="text-[12px] text-fg-muted">{label}</dt>
-            <dd className="text-[14px] text-fg">
-              {value === undefined || value === "" ? t("notRecorded") : value}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle as="h2">{t("title")}</CardTitle>
+      </CardHeader>
+      <div className="px-5 pb-5">
+        <DataList layout="stacked" columns={2}>
+          <DataListItem label={t("fatherName")}>{profile.father_name}</DataListItem>
+          <DataListItem label={t("motherName")}>{profile.mother_name}</DataListItem>
+          <DataListItem label={t("guardianName")}>{profile.guardian_name}</DataListItem>
+          <DataListItem label={t("guardianPhone")}>{profile.guardian_phone}</DataListItem>
+          <DataListItem label={t("parentOccupation")} fullWidth>
+            {profile.parent_occupation}
+          </DataListItem>
+        </DataList>
+      </div>
+    </Card>
   );
 }

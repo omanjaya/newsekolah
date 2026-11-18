@@ -3,32 +3,40 @@
 import { ApiError } from "@newsekolah/api-client";
 import {
   Avatar,
-  Badge,
   Button,
   ConfirmDialog,
   DataTable,
   Dialog,
   DialogContent,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  IconButton,
-  PageHeader,
+  EmptyState,
+  FilteredEmptyState,
+  RowActionsMenu,
+  domainIcons,
+  cn,
+  type RowActionsMenuItem,
   useToast,
   type DataTableFilterDef,
+  type DataTableProps,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Plus, Upload } from "lucide-react";
-import Link from "next/link";
+import {
+  Archive,
+  ArchiveRestore,
+  KeyRound,
+  Pencil,
+  Plus,
+  Upload,
+  VenetianMask,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
-import { CursorPagination } from "../../../components/cursor-pagination";
+import { AppPage } from "../../../components/app-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { ServerAccessCookieError } from "../../../lib/session/clear-server-access-cookie";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
@@ -37,14 +45,14 @@ import {
   type ProfileKind,
   type UserStatus,
   useArchiveUserMutation,
-  useResetPasswordMutation,
   useRolesQuery,
   useUsersQuery,
 } from "../api";
 import { useImpersonateUserMutation } from "../duties-api";
 
+import { ResetPasswordFlow } from "./reset-password-flow";
+import { UserRolesCell, UserStatusCell } from "./user-cells";
 import { UserForm } from "./user-form";
-import { UsersTableEmptyState } from "./users-table-empty-state";
 
 const KINDS: ProfileKind[] = ["teacher", "staff", "student"];
 const KIND_VALUES = ["", ...KINDS] as const;
@@ -52,8 +60,9 @@ const STATUSES: UserStatus[] = ["active", "inactive", "invited"];
 const STATUS_VALUES = ["", ...STATUSES] as const;
 const ARCHIVED_VALUES = ["", "true"] as const;
 
+type Density = NonNullable<DataTableProps<AdminUser>["density"]>;
+
 export function UsersView(): ReactElement {
-  const tWorkspace = useTranslations("app.academic.workspace");
   const t = useTranslations("app.school.users");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -83,7 +92,7 @@ export function UsersView(): ReactElement {
   const resetPagination = () => {
     setCursors([""]);
   };
-  const { data, isError, isLoading, refetch } = useUsersQuery({
+  const { data, error, isLoading, isRefetching, refetch } = useUsersQuery({
     q: search || undefined,
     profile_kind: kind || undefined,
     status: status || undefined,
@@ -93,9 +102,12 @@ export function UsersView(): ReactElement {
   });
   const roles = useRolesQuery();
   const archive = useArchiveUserMutation();
-  const reset = useResetPasswordMutation();
   const [editing, setEditing] = useState<AdminUser | "new" | null>(null);
-  const [resetToken, setResetToken] = useState<string | null>(null);
+  // A school has hundreds of accounts, so the list starts compact (one
+  // line per person) and the toolbar's toggle still opens it up.
+  const [density, setDensity] = useState<Density>("compact");
+  const compact = density === "compact";
+  const [resetting, setResetting] = useState<AdminUser | null>(null);
 
   const roleOptions = (roles.data?.data ?? []).map((r) => ({ value: r.slug, label: r.name }));
 
@@ -155,12 +167,21 @@ export function UsersView(): ReactElement {
         accessorKey: "name",
         header: t("columns.name"),
         enableSorting: false,
+        meta: { card: "title", skeleton: "avatar" },
+        // A compact table row is 40px, so from md up the name and the
+        // username share one line instead of stacking against its borders;
+        // the phone card (which has no density) keeps the two lines.
         cell: ({ row }) => (
-          <div className="flex min-w-0 items-center gap-2">
-            <Avatar size="sm" name={row.original.name} />
-            <div className="flex min-w-0 flex-col">
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar size={32} name={row.original.name} />
+            <div
+              className={cn(
+                "flex min-w-0 flex-col",
+                compact && "md:flex-row md:items-baseline md:gap-2",
+              )}
+            >
               <span className="truncate text-fg">{row.original.name}</span>
-              <span className="truncate text-[12px] text-fg-muted">
+              <span className="truncate text-caption text-fg-muted">
                 {row.original.username}
                 {row.original.email ? ` · ${row.original.email}` : ""}
               </span>
@@ -172,31 +193,22 @@ export function UsersView(): ReactElement {
         accessorKey: "profile_kind",
         header: t("columns.kind"),
         enableSorting: false,
+        meta: { card: "meta" },
         cell: ({ row }) => t(`kinds.${row.original.profile_kind}`),
       },
       {
         id: "roles",
         header: t("columns.roles"),
         enableSorting: false,
-        cell: ({ row }) => (
-          <div className="flex flex-wrap gap-1">
-            {row.original.roles.map((role) => (
-              <Badge key={role.id} variant={role.is_primary ? "accent" : "neutral"}>
-                {role.name}
-              </Badge>
-            ))}
-          </div>
-        ),
+        meta: { card: "meta", label: t("columns.roles") },
+        cell: ({ row }) => <UserRolesCell user={row.original} />,
       },
       {
         accessorKey: "status",
         header: t("columns.status"),
         enableSorting: false,
-        cell: ({ row }) => (
-          <Badge variant={row.original.status === "active" ? "accent" : "neutral"}>
-            {t(`status.${row.original.status}`)}
-          </Badge>
-        ),
+        meta: { card: "meta", skeleton: "badge" },
+        cell: ({ row }) => <UserStatusCell user={row.original} />,
       },
       {
         id: "actions",
@@ -204,39 +216,44 @@ export function UsersView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) => {
           const user = row.original;
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <IconButton icon={<MoreHorizontal />} aria-label={t("actions.menu")} />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {canEdit && (
-                  <DropdownMenuItem
-                    onSelect={() => {
+          const restore = user.status === "inactive";
+          const items: RowActionsMenuItem[] = [
+            ...(canEdit
+              ? [
+                  {
+                    label: t("actions.edit"),
+                    icon: <Pencil />,
+                    onClick: () => {
                       setEditing(user);
-                    }}
-                  >
-                    {t("actions.edit")}
-                  </DropdownMenuItem>
-                )}
-                {canEdit && (
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      reset.mutate(user.id, {
-                        onSuccess: (r) => {
-                          setResetToken(r.set_password_token);
-                        },
-                        onError: fail,
-                      });
-                    }}
-                  >
-                    {t("actions.resetPassword")}
-                  </DropdownMenuItem>
-                )}
-                {canArchive && (
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      const restore = user.status === "inactive";
+                    },
+                  },
+                  {
+                    label: t("actions.resetPassword"),
+                    icon: <KeyRound />,
+                    onClick: () => {
+                      setResetting(user);
+                    },
+                  },
+                ]
+              : []),
+            ...(canImpersonate && user.status === "active" && user.id !== me?.id
+              ? [
+                  {
+                    label: t("actions.impersonate"),
+                    icon: <VenetianMask />,
+                    onClick: () => {
+                      setImpersonating(user);
+                    },
+                  },
+                ]
+              : []),
+            ...(canArchive
+              ? [
+                  {
+                    label: restore ? t("actions.restore") : t("actions.archive"),
+                    icon: restore ? <ArchiveRestore /> : <Archive />,
+                    tone: restore ? ("default" as const) : ("danger" as const),
+                    onClick: () => {
                       archive.mutate(
                         { id: user.id, restore },
                         {
@@ -246,72 +263,73 @@ export function UsersView(): ReactElement {
                           onError: fail,
                         },
                       );
-                    }}
-                  >
-                    {user.status === "inactive" ? t("actions.restore") : t("actions.archive")}
-                  </DropdownMenuItem>
-                )}
-                {canImpersonate && user.status === "active" && user.id !== me?.id && (
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      setImpersonating(user);
-                    }}
-                  >
-                    {t("actions.impersonate")}
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          );
+                    },
+                  },
+                ]
+              : []),
+          ];
+          return items.length > 0 ? (
+            <RowActionsMenu ariaLabel={t("actions.menuFor", { name: user.name })} items={items} />
+          ) : null;
         },
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fail/reset/archive are stable enough per render
-    [t, canEdit, canArchive, canImpersonate, me?.id],
+    [t, canEdit, canArchive, canImpersonate, me?.id, compact],
   );
 
   const items = data?.data ?? [];
+  const filtering = Boolean(search || kind || status || role || includeArchived);
+  const clearFilters = () => {
+    setSearch("");
+    setKind("");
+    setStatus("");
+    setRole("");
+    setIncludeArchivedParam("");
+    resetPagination();
+  };
+  const openCreate = () => {
+    setEditing("new");
+  };
+  const addButton = (
+    <Button icon={<Plus />} onClick={openCreate}>
+      {t("actions.create")}
+    </Button>
+  );
+  const addCompact = { icon: <Plus />, label: t("actions.create"), onSelect: openCreate };
 
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the table scrolls its rows internally while the
-    // filter row and pagination stay put. See classes-view.tsx for the
-    // reference pattern.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <AcademicWorkspaceLinks area="users" />
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={tWorkspace("users")}
-        actions={
-          canCreate && (
-            <div className="flex gap-2">
-              <Button asChild variant="secondary" size="sm" icon={<Upload />}>
-                <Link href="/school/users/import">{t("actions.import")}</Link>
-              </Button>
-              <Button
-                size="sm"
-                icon={<Plus />}
-                onClick={() => {
-                  setEditing("new");
-                }}
-              >
-                {t("actions.create")}
-              </Button>
-            </div>
-          )
-        }
-      />
+    // Viewport-fit: the table scrolls inside; the tabs are the area strip the roles page shares.
+    <AppPage
+      variant="fit"
+      nav={<AcademicWorkspaceLinks area="users" />}
+      primaryAction={canCreate ? addButton : undefined}
+      primaryActionCompact={canCreate ? addCompact : undefined}
+      secondaryActions={
+        canCreate
+          ? [{ label: t("actions.import"), icon: <Upload />, href: "/school/users/import" }]
+          : undefined
+      }
+    >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/school/components/users-view:1"
           mode="cursor"
           data={items}
           columns={columns}
-          rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
+          cursorPagination={{
+            hasPrevious: cursors.length > 1,
+            hasNext: Boolean(data?.next_cursor),
+            onPrevious: () => {
+              setCursors((previous) => previous.slice(0, -1));
+            },
+            onNext: () => {
+              const next = data?.next_cursor;
+              if (next) setCursors((previous) => [...previous, next]);
+            },
+            page: cursors.length,
+            pageSize: 50,
+          }}
           globalFilter={search}
           onGlobalFilterChange={(v) => {
             setSearch(v);
@@ -323,36 +341,27 @@ export function UsersView(): ReactElement {
             removeFilter: (label) => t("filters.removeFilter", { label }),
           }}
           isLoading={isLoading}
+          error={error}
+          onRetry={() => void refetch()}
+          retrying={isRefetching}
           getRowId={(u) => u.id}
+          density={density}
+          onDensityChange={setDensity}
           fillHeight
           emptyState={
-            <UsersTableEmptyState
-              isError={isError}
-              emptyTitle={t("emptyTitle")}
-              emptyBody={t("emptyBody")}
-              loadErrorTitle={t("loadErrorTitle")}
-              loadErrorBody={t("loadErrorBody")}
-              retryLabel={t("retry")}
-              onRetry={() => {
-                void refetch();
-              }}
-            />
+            filtering ? (
+              <FilteredEmptyState onReset={clearFilters} />
+            ) : (
+              <EmptyState
+                icon={<domainIcons.users aria-hidden="true" />}
+                title={t("emptyTitle")}
+                description={t("emptyBody")}
+                action={canCreate ? addButton : undefined}
+              />
+            )
           }
         />
       </div>
-      <CursorPagination
-        hasPrevious={cursors.length > 1}
-        hasNext={Boolean(data?.next_cursor)}
-        previousLabel={t("pagePrev")}
-        nextLabel={t("pageNext")}
-        onPrevious={() => {
-          setCursors((previous) => previous.slice(0, -1));
-        }}
-        onNext={() => {
-          const next = data?.next_cursor;
-          if (next) setCursors((previous) => [...previous, next]);
-        }}
-      />
 
       <Dialog
         open={editing !== null}
@@ -362,7 +371,7 @@ export function UsersView(): ReactElement {
       >
         <DialogContent
           title={editing === "new" ? t("form.createTitle") : t("form.editTitle")}
-          className="max-w-2xl"
+          size="lg"
         >
           {editing !== null && (
             <UserForm
@@ -374,21 +383,12 @@ export function UsersView(): ReactElement {
           )}
         </DialogContent>
       </Dialog>
-      <Dialog
-        open={resetToken !== null}
-        onOpenChange={(open) => {
-          if (!open) setResetToken(null);
+      <ResetPasswordFlow
+        user={resetting}
+        onClose={() => {
+          setResetting(null);
         }}
-      >
-        <DialogContent title={t("resetTitle")}>
-          <p className="text-[13px] text-fg-muted">{t("resetBody")}</p>
-          <code className="mt-3 block rounded-xs bg-bg p-3 text-[12px] break-all">
-            {typeof window !== "undefined"
-              ? `${window.location.origin}/reset-password?token=${resetToken ?? ""}`
-              : resetToken}
-          </code>
-        </DialogContent>
-      </Dialog>
+      />
 
       <ConfirmDialog
         open={impersonating !== null}
@@ -400,7 +400,7 @@ export function UsersView(): ReactElement {
           impersonating ? t("actions.impersonateBody", { name: impersonating.name }) : ""
         }
         confirmLabel={t("actions.impersonate")}
-        destructive
+        tone="danger"
         confirming={impersonate.isPending}
         onConfirm={async () => {
           if (!impersonating) return;
@@ -408,11 +408,15 @@ export function UsersView(): ReactElement {
             await impersonate.mutateAsync(impersonating.id);
             router.replace("/dashboard");
           } catch (error) {
-            fail(error);
+            if (error instanceof ServerAccessCookieError) {
+              toast.error(t("actions.impersonatePrepareFailed"));
+            } else {
+              fail(error);
+            }
             setImpersonating(null);
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }

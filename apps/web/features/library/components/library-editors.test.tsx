@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   createTitle: vi.fn(),
   updateMember: vi.fn(),
   updatePolicy: vi.fn(),
+  push: vi.fn(),
   canManage: true,
 }));
 const title: LibraryTitle = {
@@ -56,11 +57,13 @@ vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/library/catalogue",
   useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: mocks.push }),
 }));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => mocks.canManage }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/view-state/view-state-provider", () => ({
   useRememberedViewState: () => ["", vi.fn()],
 }));
@@ -81,7 +84,7 @@ vi.mock("../members-api", () => ({
   useUpdateLibraryMemberMutation: () => ({ mutate: mocks.updateMember, isPending: false }),
 }));
 vi.mock("./duplicate-title-warning", () => ({ DuplicateTitleWarning: () => null }));
-vi.mock("./isbn-lookup-panel", () => ({ IsbnLookupPanel: () => null }));
+vi.mock("./isbn-lookup-panel", () => ({ IsbnLookupField: () => null }));
 vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
   return { ...actual, useToast: () => ({ success: vi.fn(), error: vi.fn() }) };
@@ -118,7 +121,7 @@ describe("library editors", () => {
     const rowMenuButton = screen.getAllByRole("button", { name: "rowActions" })[0];
     if (!rowMenuButton) throw new Error("Missing title row actions menu");
     await user.click(rowMenuButton);
-    const editButton = await screen.findByRole("button", { name: "editTitle" });
+    const editButton = await screen.findByRole("menuitem", { name: "editTitle" });
     await user.click(editButton);
     const titleInput = screen.getByRole("textbox", { name: "title" });
     await user.clear(titleInput);
@@ -136,14 +139,17 @@ describe("library editors", () => {
       expect.any(Object),
     );
     expect(mocks.createTitle).not.toHaveBeenCalled();
+    // The row opens the title's page (75082415); its "..." menu must edit
+    // in place without that navigation firing too.
+    expect(mocks.push).not.toHaveBeenCalled();
   });
 
   it("hides catalogue write actions for readers", () => {
     mocks.canManage = false;
     render(<CatalogueView />);
-    expect(screen.queryByRole("button", { name: "editTitle" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "editTitle" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "addTitle" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "deleteTitle" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "deleteTitle" })).not.toBeInTheDocument();
   });
 
   it("clears member expiry without changing their status", async () => {
@@ -162,7 +168,7 @@ describe("library editors", () => {
         onDone={vi.fn()}
       />,
     );
-    fireEvent.change(screen.getByLabelText(/validUntil/), { target: { value: "" } });
+    await user.click(screen.getByRole("button", { name: "Hapus tanggal" }));
     await user.click(screen.getByRole("button", { name: "save" }));
     const payload: unknown = mocks.updateMember.mock.calls[0]?.[0];
     expect(payload).toEqual({

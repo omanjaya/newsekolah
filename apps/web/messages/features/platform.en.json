@@ -2,7 +2,7 @@
   "tenants": {
     "eyebrow": "Platform",
     "title": "Platform console",
-    "subtitle": "Manage every school on this multi-tenant deployment.",
+    "subtitle": "Every school on this deployment, its health and its active modules.",
     "add": "Add school",
     "columns": {
       "name": "School",
@@ -30,30 +30,51 @@
     "emptyBody": "Schools you create will show up here.",
     "viewDetail": "View detail",
     "suspend": "Suspend",
+    "suspendDialog": {
+      "title": "Suspend this school?",
+      "body": "{name} will be suspended and its {count} users cannot sign in until you resume it."
+    },
     "resume": "Resume",
     "suspended": "School suspended",
     "resumed": "School resumed",
     "create": {
-      "title": "Add a new school",
-      "slug": "Slug",
-      "slugHint": "Lowercase letters, digits and hyphens, e.g. sman-1-denpasar",
+      "title": "Add school",
+      "slug": "Short address",
+      "slugHint": "Lowercase letters, digits and hyphens, e.g. sman-1-denpasar. Filled in from the name.",
       "name": "School name",
       "level": "Level",
-      "timezone": "Timezone",
+      "timezone": "Time zone",
       "adminSectionTitle": "First administrator",
       "adminUsername": "Username",
-      "adminEmail": "Email (optional)",
+      "adminEmail": "Email",
       "adminName": "Full name",
       "submit": "Create school",
       "cancel": "Cancel",
-      "created": "School created"
+      "created": "School created",
+      "schoolSectionTitle": "School",
+      "slugFormat": "Use lowercase letters, digits and hyphens only.",
+      "adminSectionHint": "Created with the school. Its password is shown once after the school is created.",
+      "required": "Required.",
+      "usernameLength": "At least 3 characters.",
+      "timezones": {
+        "Asia_Jakarta": "WIB (Asia/Jakarta)",
+        "Asia_Makassar": "WITA (Asia/Makassar)",
+        "Asia_Jayapura": "WIT (Asia/Jayapura)"
+      }
     },
     "created": {
       "title": "School created",
-      "body": "Give the following credentials to the school's administrator. This password is shown once and cannot be retrieved again.",
+      "body": "Give these credentials to the school's administrator now. Once this dialog closes the password cannot be seen again.",
       "username": "Username",
       "password": "Password",
-      "done": "Done"
+      "done": "Saved them",
+      "onceTitle": "The password is shown only once",
+      "school": "School",
+      "copied": "Copied",
+      "copyFailed": "Could not copy. Copy it by hand.",
+      "copyBoth": "Copy both",
+      "copyUsername": "Copy username",
+      "copyPassword": "Copy password"
     },
     "detail": {
       "title": "School detail",
@@ -70,7 +91,7 @@
         "permits": "Permits",
         "announcements": "Announcements",
         "reports": "Reports",
-        "billing": "School Fees"
+        "billing": "Bills and payments"
       },
       "flagUpdated": "Module updated",
       "exportTitle": "Export school data",
@@ -83,13 +104,39 @@
         "failed": "Failed"
       },
       "exportDownload": "Download file",
-      "storageBucket": "Storage bucket"
+      "storageBucket": "Storage bucket",
+      "sectionsLabel": "School detail sections",
+      "tabs": {
+        "summary": "Summary",
+        "modules": "Modules",
+        "domain": "Domain",
+        "export": "Export"
+      },
+      "slug": "Short address",
+      "timezone": "Time zone",
+      "createdAt": "Created",
+      "userCount": "{count, plural, one {# user} other {# users}}",
+      "flagsHint": "A module switched off disappears from the menu of every user of this school. Changes apply at once.",
+      "flagOn": "{module} switched on",
+      "flagOff": "{module} switched off",
+      "domainHint": "The address the school opens the app on. Leave empty to use the default address."
+    },
+    "rowActions": "Actions for {name}",
+    "idle": "Quiet",
+    "summaryLabel": "School summary",
+    "summary": {
+      "total": "Schools",
+      "active": "Active",
+      "trial": "Trial",
+      "suspended": "Suspended",
+      "idle": "No activity",
+      "idleHint": "Last 7 days"
     }
   },
   "operatorAlerts": {
     "eyebrow": "Platform",
     "title": "Operator alerts",
-    "subtitle": "Set up Telegram alerting for server health checks, without editing any files on the server.",
+    "subtitle": "Telegram reminders for server health checks, set up without editing files on the server.",
     "loadError": "Could not load operator alert settings.",
     "botSetup": {
       "title": "Create a Telegram bot",
@@ -104,7 +151,8 @@
       "show": "Show token",
       "hide": "Hide token",
       "remove": "Remove token",
-      "removed": "The token will be removed once you save"
+      "removed": "The token will be removed once you save",
+      "keep": "Keep the token"
     },
     "detect": {
       "button": "Detect chat",
@@ -115,7 +163,8 @@
     "chatId": {
       "label": "Telegram chat id",
       "placeholder": "e.g. -1001234567890",
-      "picker": "Pick from detected chats"
+      "picker": "Pick from detected chats",
+      "hint": "Send any message to the bot, then use Detect chat to fill this in."
     },
     "test": {
       "button": "Send test message",
@@ -124,7 +173,7 @@
       "needToken": "Enter the bot token first.",
       "needChat": "Enter a chat id or use Detect chat first."
     },
-    "enabled": "Enable operator alerts",
+    "enabled": "Send operator alerts",
     "checks": {
       "title": "Checks to send",
       "health": "API health",
@@ -140,14 +189,28 @@
       "diskPercent": "Disk threshold (%)",
       "memoryMb": "Memory threshold (MB)",
       "backupHours": "Max backup age (hours)",
-      "certDays": "Certificate warning (days)"
+      "certDays": "Certificate warning (days)",
+      "description": "A reminder goes out when a value crosses these limits.",
+      "disk": "Disk usage",
+      "memory": "Memory threshold",
+      "backup": "Maximum backup age",
+      "cert": "Certificate warning",
+      "hours": "hours",
+      "days": "days"
     },
     "dailySummary": {
       "title": "Daily summary",
       "enabled": "Send a daily summary",
-      "hour": "Send hour (WITA)"
+      "hour": "Send at",
+      "enabledHint": "One message with the result of every check each day.",
+      "hourHint": "In WITA, the operator server's time."
     },
     "save": "Save",
-    "saved": "Settings saved"
+    "saved": "Settings saved",
+    "bot": {
+      "title": "Telegram bot and chat",
+      "description": "Where the reminders go."
+    },
+    "enabledHint": "Switch off to stop every reminder without losing the settings."
   }
 }

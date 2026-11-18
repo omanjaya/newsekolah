@@ -1,52 +1,98 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { type Locale, formatCurrency } from "@newsekolah/i18n";
-import { Button, Input, Select, useToast } from "@newsekolah/ui";
-import { useLocale, useTranslations } from "next-intl";
+import {
+  Button,
+  DataList,
+  DataListItem,
+  DatePicker,
+  DialogFooter,
+  Field,
+  Input,
+  NumberInput,
+  SegmentedControl,
+  useToast,
+} from "@newsekolah/ui";
+import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { type Bill, type PaymentMethod, today, useRecordPaymentMutation } from "../api";
+import { useSession } from "../../../lib/session/session-provider";
+import {
+  type Bill,
+  type Payment,
+  type PaymentMethod,
+  today,
+  useRecordPaymentMutation,
+} from "../api";
+import { useBillingFormat } from "../lib/use-billing-format";
 
-export function PaymentForm({ bill, onDone }: { bill: Bill; onDone: () => void }): ReactElement {
+const METHODS: { value: PaymentMethod; key: string }[] = [
+  { value: "cash", key: "cash" },
+  { value: "bank_transfer", key: "bankTransfer" },
+  { value: "other", key: "other" },
+];
+
+/**
+ * Records a payment against one bill. The amount starts at the full
+ * remainder (paying in full needs no typing), shows thousands separators,
+ * says what will be left after it, and refuses more than is owed with a
+ * message on the field. `onRecorded` receives the saved payment so the
+ * caller can offer its receipt.
+ */
+export function PaymentForm({
+  bill,
+  onCancel,
+  onRecorded,
+}: {
+  bill: Bill;
+  onCancel: () => void;
+  onRecorded: (payment: Payment) => void;
+}): ReactElement {
   const t = useTranslations("app.billing.paymentDesk.paymentForm");
-  const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const record = useRecordPaymentMutation();
+  const { money, day } = useBillingFormat();
+  const { me } = useSession();
+  const todayIso = today(me?.tenant.timezone);
 
   const outstanding = bill.amount_minor - bill.paid_amount_minor;
-  const [amount, setAmount] = useState(String(outstanding));
+  const [amount, setAmount] = useState<number | null>(outstanding);
   const [method, setMethod] = useState<PaymentMethod>("cash");
-  const [paidOn, setPaidOn] = useState(today());
+  const [paidOn, setPaidOn] = useState(todayIso);
   const [reference, setReference] = useState("");
+  const [attempted, setAttempted] = useState(false);
 
-  const methodOptions = [
-    { value: "cash", label: t("method.cash") },
-    { value: "bank_transfer", label: t("method.bankTransfer") },
-    { value: "other", label: t("method.other") },
-  ];
+  const amountError =
+    amount === null || amount <= 0
+      ? t("errors.amount")
+      : amount > outstanding
+        ? t("errors.tooMuch", { amount: money(outstanding, bill.currency) })
+        : undefined;
+  const dateError = paidOn === "" ? t("errors.paidOn") : undefined;
+  const remainder = amount !== null && amount > 0 ? outstanding - amount : outstanding;
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
+        setAttempted(true);
+        if (amountError !== undefined || dateError !== undefined || amount === null) return;
+        if (record.isPending) return;
         record.mutate(
           {
             bill_id: bill.id,
-            amount_minor: Number(amount),
+            amount_minor: amount,
             method,
             paid_on: paidOn,
             reference: reference.trim() || undefined,
           },
           {
-            onSuccess: () => {
-              toast.success(t("recorded"));
-              onDone();
-            },
+            onSuccess: onRecorded,
             onError: (error) => {
               toast.error(
                 error instanceof ApiError
@@ -58,67 +104,84 @@ export function PaymentForm({ bill, onDone }: { bill: Bill; onDone: () => void }
         );
       }}
     >
-      <p className="text-[13px] text-fg-muted">
-        {t("outstanding", { amount: formatCurrency(outstanding, bill.currency, { locale }) })}
-      </p>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("amount")}</span>
-        <Input
-          type="number"
+      <DataList>
+        <DataListItem label={t("bill")}>
+          {bill.fee_type_name} · {bill.period}
+        </DataListItem>
+        <DataListItem label={t("dueDate")}>{day(bill.due_date)}</DataListItem>
+        <DataListItem label={t("outstandingLabel")}>
+          <span className="text-heading tabular-nums">{money(outstanding, bill.currency)}</span>
+        </DataListItem>
+      </DataList>
+      <Field
+        label={t("amount")}
+        required
+        error={attempted || (amount !== null && amount > outstanding) ? amountError : undefined}
+        hint={
+          amountError === undefined
+            ? remainder === 0
+              ? t("settlesBill")
+              : t("remainderAfter", { amount: money(remainder, bill.currency) })
+            : undefined
+        }
+        labelAside={
+          amount !== outstanding ? (
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => {
+                setAmount(outstanding);
+              }}
+            >
+              {t("payInFull")}
+            </Button>
+          ) : undefined
+        }
+      >
+        <NumberInput
           value={amount}
-          onChange={(e) => {
-            setAmount(e.target.value);
-          }}
-          min={1}
-          max={outstanding}
-          required
+          onChange={setAmount}
+          min={0}
+          prefix="Rp"
+          useGrouping
+          inputClassName="tabular-nums"
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("method.label")}</span>
-        <Select
-          options={methodOptions}
-          value={method}
-          onValueChange={(v) => {
-            setMethod(v as PaymentMethod);
-          }}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("paidOn")}</span>
-        <Input
-          type="date"
-          value={paidOn}
-          onChange={(e) => {
-            setPaidOn(e.target.value);
-          }}
-          max={today()}
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("reference")}</span>
+      </Field>
+      <Field label={t("method.label")}>
+        {(control) => (
+          <SegmentedControl<PaymentMethod>
+            aria-labelledby={control.labelId}
+            value={method}
+            onValueChange={setMethod}
+            fullWidth
+            options={METHODS.map((item) => ({
+              value: item.value,
+              label: t(`method.${item.key}`),
+            }))}
+          />
+        )}
+      </Field>
+      <Field label={t("paidOn")} required error={attempted ? dateError : undefined}>
+        <DatePicker value={paidOn} onChange={setPaidOn} max={todayIso} today={todayIso} required />
+      </Field>
+      <Field label={t("reference")} optional hint={t("referenceHint")}>
         <Input
           value={reference}
           onChange={(e) => {
             setReference(e.target.value);
           }}
-          placeholder={t("referencePlaceholder")}
           maxLength={200}
+          autoComplete="off"
         />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
-        <Button type="button" variant="secondary" onClick={onDone}>
+      </Field>
+      <DialogFooter>
+        <Button type="button" variant="secondary" onClick={onCancel}>
           {t("cancel")}
         </Button>
-        <Button
-          type="submit"
-          loading={record.isPending}
-          disabled={Number(amount) <= 0 || Number(amount) > outstanding}
-        >
+        <Button type="submit" loading={record.isPending}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

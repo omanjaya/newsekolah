@@ -8,6 +8,8 @@ import {
   Button,
   DataTable,
   EmptyState,
+  FilteredEmptyState,
+  TextLink,
   domainIcons,
   useToast,
   type DataTableFilterDef,
@@ -18,20 +20,18 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 
-import { CursorPagination } from "../../../components/cursor-pagination";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { useClassesQuery } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
-import { StudentLink } from "../../students/components/student-link";
-import { studentProfileHref } from "../../students/href";
 import {
   type WarningLetter,
   useWarningLetterDocumentUrlMutation,
   useWarningLettersQuery,
 } from "../api";
+import { studentDisciplineHref } from "../href";
 
 /** Rows per page; the warning letters API pages by offset and reports no total. */
 const PAGE_SIZE = 50;
@@ -48,7 +48,7 @@ export function IssuedLettersPanel(): ReactElement {
   const classes = useClassesQuery();
   const [search, setSearch] = useUrlState<string>("letters_q", () => true, "");
   const paging = useOffsetPage(PAGE_SIZE, "letters_page");
-  const { data, isLoading } = useWarningLettersQuery(classId || undefined, {
+  const { data, isLoading, error, refetch } = useWarningLettersQuery(classId || undefined, {
     limit: paging.limit,
     offset: paging.offset,
     search,
@@ -56,6 +56,12 @@ export function IssuedLettersPanel(): ReactElement {
   const documentUrl = useWarningLetterDocumentUrlMutation();
 
   const items = data?.data ?? [];
+  const filtering = search !== "" || classId !== "";
+  function resetFilters() {
+    setSearch("");
+    setClassId("");
+    paging.resetPage();
+  }
   const studentMap = useDirectoryNames(items.map((item) => item.student_user_id));
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
 
@@ -88,17 +94,15 @@ export function IssuedLettersPanel(): ReactElement {
         id: "student",
         header: t("columns.student"),
         enableSorting: false,
+        // Plain text: the row opens the student's discipline record, which
+        // links on to the profile, so the row has one destination.
         cell: ({ row }) => {
           const name = studentMap.get(row.original.student_user_id)?.name;
           if (!name) return t("unknownStudent");
           return (
-            <div className="flex min-w-0 items-center gap-2">
-              <Avatar size="sm" name={name} />
-              <span className="truncate">
-                <StudentLink studentId={row.original.student_user_id} tab="discipline">
-                  {name}
-                </StudentLink>
-              </span>
+            <div className="flex min-w-0 items-center gap-3">
+              <Avatar size={32} name={name} />
+              <span className="truncate">{name}</span>
             </div>
           );
         },
@@ -147,6 +151,16 @@ export function IssuedLettersPanel(): ReactElement {
           rowCount={items.length}
           pagination={{ pageIndex: 0, pageSize: PAGE_SIZE }}
           onPaginationChange={() => undefined}
+          cursorPagination={{
+            hasPrevious: paging.hasPrevious,
+            hasNext: paging.hasNextFor(items.length),
+            onPrevious: paging.goPrevious,
+            onNext: paging.goNext,
+            page: paging.page,
+            pageSize: paging.limit,
+          }}
+          error={error}
+          onRetry={() => void refetch()}
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter={search}
@@ -160,24 +174,29 @@ export function IssuedLettersPanel(): ReactElement {
           isLoading={isLoading}
           getRowId={(item) => item.id}
           onRowActivate={(item) => {
-            router.push(studentProfileHref(item.student_user_id, "discipline"));
+            router.push(studentDisciplineHref(item.student_user_id));
           }}
           fillHeight
           emptyState={
-            <EmptyState
-              icon={<domainIcons.violation aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
+            filtering ? (
+              <FilteredEmptyState onReset={resetFilters} />
+            ) : (
+              <EmptyState
+                icon={<domainIcons.violation aria-hidden="true" />}
+                title={t("emptyTitle")}
+                description={t("emptyBody")}
+                // Letters start from the students due one. Whoever reads this
+                // page holds view_discipline, as the candidates tab asks.
+                secondaryAction={
+                  <TextLink href="/discipline/violations?tab=atRisk">
+                    {t("viewCandidates")}
+                  </TextLink>
+                }
+              />
+            )
           }
         />
       </div>
-      <CursorPagination
-        hasPrevious={paging.hasPrevious}
-        hasNext={paging.hasNextFor(items.length)}
-        onPrevious={paging.goPrevious}
-        onNext={paging.goNext}
-      />
     </div>
   );
 }

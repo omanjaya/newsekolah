@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Select, useToast } from "@newsekolah/ui";
+import { Button, Field, Select, useToast } from "@newsekolah/ui";
 import { Download } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -123,8 +123,7 @@ export function DynamicColumnsExportForm({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("arguments.scopeType")}</span>
+        <Field label={t("arguments.scopeType")}>
           <Select
             options={scopeOptions}
             value={scopeType}
@@ -134,10 +133,9 @@ export function DynamicColumnsExportForm({
             aria-label={t("arguments.scopeType")}
             className="w-40"
           />
-        </label>
+        </Field>
         {scopeType === "class" && (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("arguments.class")}</span>
+          <Field label={t("arguments.class")}>
             <Select
               options={(classes.data?.data ?? []).map((item) => ({
                 value: item.id,
@@ -150,11 +148,10 @@ export function DynamicColumnsExportForm({
               aria-label={t("arguments.class")}
               className="w-56"
             />
-          </label>
+          </Field>
         )}
         {scopeType === "gradeLevel" && (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("arguments.gradeLevel")}</span>
+          <Field label={t("arguments.gradeLevel")}>
             <Select
               options={(gradeLevels.data?.data ?? []).map((item) => ({
                 value: item.id,
@@ -167,11 +164,10 @@ export function DynamicColumnsExportForm({
               aria-label={t("arguments.gradeLevel")}
               className="w-56"
             />
-          </label>
+          </Field>
         )}
         {needsSubject && (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("arguments.subject")}</span>
+          <Field label={t("arguments.subject")}>
             <Select
               options={(subjects.data?.data ?? []).map((item) => ({
                 value: item.id,
@@ -184,11 +180,10 @@ export function DynamicColumnsExportForm({
               aria-label={t("arguments.subject")}
               className="w-56"
             />
-          </label>
+          </Field>
         )}
         {needsTerm && (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("arguments.term")}</span>
+          <Field label={t("arguments.term")}>
             <Select
               options={(terms.data?.data ?? []).map((item) => ({
                 value: item.id,
@@ -201,7 +196,7 @@ export function DynamicColumnsExportForm({
               aria-label={t("arguments.term")}
               className="w-56"
             />
-          </label>
+          </Field>
         )}
       </div>
       <div>

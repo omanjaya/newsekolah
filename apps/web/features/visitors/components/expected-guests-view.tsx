@@ -3,29 +3,33 @@
 import { ApiError } from "@newsekolah/api-client";
 import {
   Button,
+  ConfirmDialog,
   DataTable,
   Dialog,
   DialogContent,
   domainIcons,
   EmptyState,
-  Input,
-  PageHeader,
+  FilteredEmptyState,
+  FirstUseEmptyState,
+  RowActionsMenu,
   SemanticStatusBadge,
   useToast,
   type DataTableFilterDef,
   type SemanticStatus,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus } from "lucide-react";
+import { CalendarX2, LogIn, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
+import { DayStepper } from "../../attendance/components/day-stepper";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { VisitorsWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import { type ExpectedGuest, useCancelExpectedGuestMutation, useExpectedGuestsQuery } from "../api";
@@ -42,19 +46,20 @@ const EXPECTED_STATUS: Record<string, SemanticStatus> = {
 
 const ONLY_PENDING_VALUES = ["", "true"] as const;
 
-function today(): string {
-  return todayInZone();
-}
-
-/** The office's ahead-of-time list, so the guard can find a name instead of typing it. */
+/**
+ * The office's ahead-of-time list, so the guard finds a name instead of
+ * typing it: one day at a time, each guest with whom they will see and why,
+ * checked in or cancelled from their row.
+ */
 export function ExpectedGuestsView(): ReactElement {
-  const workspace = useTranslations("app.serviceWorkspace");
   const t = useTranslations("app.visitors.expected");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_visitors");
+  const { me } = useSession();
+  const today = todayInZone(me?.tenant.timezone);
 
-  const [date, setDate] = useDateFilter("date", today());
+  const [date, setDate] = useDateFilter("date", today);
   const [onlyPending, setOnlyPending] = useUrlState<(typeof ONLY_PENDING_VALUES)[number]>(
     "only_pending",
     ONLY_PENDING_VALUES,
@@ -62,12 +67,19 @@ export function ExpectedGuestsView(): ReactElement {
   );
   const [creating, setCreating] = useState(false);
   const [checkingIn, setCheckingIn] = useState<ExpectedGuest | null>(null);
+  const [cancelling, setCancelling] = useState<ExpectedGuest | null>(null);
 
-  const { data, isLoading } = useExpectedGuestsQuery(date, onlyPending !== "true");
+  const { data, isLoading, isError, error, refetch, isRefetching } = useExpectedGuestsQuery(
+    date,
+    onlyPending !== "true",
+  );
   const cancel = useCancelExpectedGuestMutation();
 
   const items = data?.data ?? [];
   const hostMap = useDirectoryNames(items.map((item) => item.host_user_id));
+  const startCreate = () => {
+    setCreating(true);
+  };
 
   const filters: DataTableFilterDef[] = [
     {
@@ -84,8 +96,18 @@ export function ExpectedGuestsView(): ReactElement {
 
   const columns = useMemo<ColumnDef<ExpectedGuest>[]>(
     () => [
-      { accessorKey: "full_name", header: t("columns.name"), enableSorting: false },
-      { accessorKey: "organization", header: t("columns.organization"), enableSorting: false },
+      {
+        accessorKey: "full_name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
+      {
+        accessorKey: "organization",
+        header: t("columns.organization"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+      },
       {
         id: "host",
         header: t("columns.host"),
@@ -93,9 +115,18 @@ export function ExpectedGuestsView(): ReactElement {
         cell: ({ row }) => hostMap.get(row.original.host_user_id)?.name ?? t("unknownHost"),
       },
       {
+        accessorKey: "purpose",
+        header: t("columns.purpose"),
+        enableSorting: false,
+        cell: ({ row }) => (
+          <span className="line-clamp-2 max-w-sm">{row.original.purpose || "–"}</span>
+        ),
+      },
+      {
         id: "status",
         header: t("columns.status"),
         enableSorting: false,
+        meta: { card: "meta", skeleton: "badge" },
         cell: ({ row }) => (
           <SemanticStatusBadge
             status={EXPECTED_STATUS[row.original.status] ?? "pending"}
@@ -103,81 +134,87 @@ export function ExpectedGuestsView(): ReactElement {
           />
         ),
       },
-      {
-        id: "actions",
-        header: t("columns.actions"),
-        enableSorting: false,
-        cell: ({ row }) =>
-          canManage && row.original.status === "pending" ? (
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={() => {
-                  setCheckingIn(row.original);
-                }}
-              >
-                {t("checkIn")}
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  cancel.mutate(row.original.id, {
-                    onSuccess: () => {
-                      toast.success(t("cancelled"));
-                    },
-                    onError: (error) => {
-                      toast.error(
-                        error instanceof ApiError
-                          ? apiErrorMessage(error.code)
-                          : apiErrorMessage("UNKNOWN"),
-                      );
-                    },
-                  });
-                }}
-              >
-                {t("cancel")}
-              </Button>
-            </div>
-          ) : null,
-      },
+      // Read-only roles have no row actions, so they get no empty "Aksi" column.
+      ...(canManage
+        ? [
+            {
+              id: "actions",
+              header: t("columns.actions"),
+              enableSorting: false,
+              cell: ({ row }: { row: { original: ExpectedGuest } }) =>
+                row.original.status === "pending" ? (
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={<LogIn />}
+                      onClick={() => {
+                        setCheckingIn(row.original);
+                      }}
+                    >
+                      {t("checkIn")}
+                    </Button>
+                    <RowActionsMenu
+                      ariaLabel={t("rowActions", { name: row.original.full_name })}
+                      items={[
+                        {
+                          label: t("cancel"),
+                          icon: <CalendarX2 />,
+                          tone: "danger",
+                          onClick: () => {
+                            setCancelling(row.original);
+                          },
+                        },
+                      ]}
+                    />
+                  </div>
+                ) : null,
+            } satisfies ColumnDef<ExpectedGuest>,
+          ]
+        : []),
     ],
-    [t, canManage, hostMap, cancel, toast, apiErrorMessage],
+    [t, canManage, hostMap],
   );
 
+  const empty = {
+    icon: <domainIcons.visitor />,
+    title: date === today ? t("emptyTitle") : t("emptyTitleOther"),
+    description: t("emptyBody"),
+  };
+
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the table scrolls its rows internally while the
-    // filter row stays put. See school/components/users-view.tsx for the
-    // reference pattern.
-    <div className="flex flex-col gap-4 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <VisitorsWorkspaceNav />
-      <PageHeader eyebrow={t("eyebrow")} title={workspace("visitors")} />
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("filters.date")}</span>
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => {
-              setDate(e.target.value);
-            }}
-            className="w-44"
-          />
-        </label>
-        {canManage && (
-          <Button
-            size="sm"
-            icon={<Plus />}
-            onClick={() => {
-              setCreating(true);
-            }}
-          >
+    <AppPage
+      variant="fit"
+      nav={<VisitorsWorkspaceNav />}
+      documentTitle={t("documentTitle")}
+      // The day acts on the list, so it is the toolbar, under the tabs. With
+      // the action on the title's line on a phone, nothing else stands
+      // between the title and the tabs, so the tab row sits at the same
+      // height on every Buku tamu page, whoever reads it.
+      toolbar={
+        <DayStepper
+          value={date}
+          onChange={setDate}
+          today={today}
+          labels={{
+            previous: t("day.previous"),
+            next: t("day.next"),
+            today: t("day.today"),
+            date: t("filters.date"),
+          }}
+        />
+      }
+      primaryAction={
+        canManage ? (
+          <Button icon={<Plus />} onClick={startCreate}>
             {t("add")}
           </Button>
-        )}
-      </div>
-
+        ) : undefined
+      }
+      primaryActionCompact={
+        canManage ? { icon: <Plus />, label: t("add"), onSelect: startCreate } : undefined
+      }
+    >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/visitors/components/expected-guests-view:1"
@@ -185,35 +222,65 @@ export function ExpectedGuestsView(): ReactElement {
           data={items}
           columns={columns}
           rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
+          searchable={false}
           filters={filters}
           filtersLabels={{
             reset: t("filters.reset"),
             removeFilter: (label) => t("filters.removeFilter", { label }),
           }}
           isLoading={isLoading}
+          error={isError ? error : undefined}
+          onRetry={() => void refetch()}
+          retrying={isRefetching}
           getRowId={(item) => item.id}
           fillHeight
           emptyState={
-            <EmptyState
-              icon={<domainIcons.visitor aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
+            onlyPending === "true" ? (
+              <FilteredEmptyState
+                onReset={() => {
+                  setOnlyPending("");
+                }}
+              />
+            ) : canManage ? (
+              <FirstUseEmptyState {...empty} actionLabel={t("add")} onAction={startCreate} />
+            ) : (
+              <EmptyState {...empty} />
+            )
           }
         />
       </div>
 
-      <Dialog
-        open={creating}
+      <ConfirmDialog
+        open={cancelling !== null}
         onOpenChange={(open) => {
-          setCreating(open);
+          if (!open) setCancelling(null);
         }}
-      >
+        title={t("cancelDialog.title")}
+        description={t("cancelDialog.body", { name: cancelling?.full_name ?? "" })}
+        confirmLabel={t("cancel")}
+        tone="danger"
+        confirming={cancel.isPending}
+        onConfirm={() => {
+          if (!cancelling) return;
+          cancel.mutate(cancelling.id, {
+            onSuccess: () => {
+              toast.success(t("cancelled"));
+            },
+            onError: (cancelError) => {
+              toast.error(
+                cancelError instanceof ApiError
+                  ? apiErrorMessage(cancelError.code)
+                  : apiErrorMessage("UNKNOWN"),
+              );
+            },
+            onSettled: () => {
+              setCancelling(null);
+            },
+          });
+        }}
+      />
+
+      <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent title={t("add")}>
           {creating && (
             <ExpectedGuestForm
@@ -247,6 +314,6 @@ export function ExpectedGuestsView(): ReactElement {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </AppPage>
   );
 }

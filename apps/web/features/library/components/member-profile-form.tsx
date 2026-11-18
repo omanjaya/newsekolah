@@ -1,7 +1,15 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  DatePicker,
+  DialogFooter,
+  Field,
+  Select,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -57,28 +65,18 @@ export function MemberProfileForm({
         );
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span>{t("memberType")}</span>
+      <Field label={t("memberType")}>
         <Select
           value={memberTypeId}
           onValueChange={setMemberTypeId}
           options={(types.data?.data ?? []).map((type) => ({ value: type.id, label: type.name }))}
           disabled={types.isLoading}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span>{t("validUntil")}</span>
-        <Input
-          type="date"
-          value={validUntil}
-          onChange={(event) => {
-            setValidUntil(event.target.value);
-          }}
-        />
-        <span className="text-fg-muted">{t("validUntilHint")}</span>
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span>{t("notes")}</span>
+      </Field>
+      <Field label={t("validUntil")} hint={t("validUntilHint")}>
+        <DatePicker value={validUntil} onChange={setValidUntil} clearable />
+      </Field>
+      <Field label={t("notes")}>
         <Textarea
           value={notes}
           onChange={(event) => {
@@ -86,15 +84,15 @@ export function MemberProfileForm({
           }}
           maxLength={1000}
         />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
-        <Button type="button" variant="secondary" onClick={onDone}>
+      </Field>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={update.isPending} disabled={!memberTypeId || types.isError}>
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

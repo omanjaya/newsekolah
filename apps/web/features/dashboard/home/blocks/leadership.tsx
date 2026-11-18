@@ -1,14 +1,27 @@
 "use client";
 
 import type { components } from "@newsekolah/api-client";
-import { Badge, Card, CardHeader, CardTitle, Skeleton } from "@newsekolah/ui";
-import { Activity, ArrowUpRight, ClipboardCheck, Inbox, Users } from "lucide-react";
-import Link from "next/link";
+import {
+  Badge,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  List,
+  ListRow,
+  Skeleton,
+  SkeletonList,
+  TextLink,
+} from "@newsekolah/ui";
+import { ClipboardCheck, Inbox, ShieldCheck, Users } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
 import { isModuleEnabled } from "../../../../lib/modules/feature-modules";
+import { navAccessFromMe } from "../../../../lib/navigation-access";
+import { canOpenPath } from "../../../../lib/navigation-permissions";
 import { useAtRiskStudentsQuery } from "../../../analytics/api";
 import { RiskLevelBadge } from "../../../analytics/components/risk-level-badge";
 import {
@@ -24,18 +37,20 @@ import {
   EMPTY_BLOCK,
   HERO_PRIORITY,
   type BlockSlot,
+  type HeroCandidate,
   type Me,
   type PersonaBlock,
   type TileSpec,
 } from "../types";
 
 import { LoginActivityChart } from "./login-activity-chart";
-import { PresenceCard } from "./presence-card";
 
 type AdminDashboard = components["schemas"]["AdminDashboard"];
 type StudentRisk = components["schemas"]["StudentRisk"];
 
 const MONITOR_HREF = "/monitor";
+const INBOX_HREF = "/inbox";
+const REPORTS_HREF = "/reports";
 const ANALYTICS_HREF = "/analytics";
 
 /** Same three workflow queues `admin-dashboard-panel.tsx` (removed in Task 7) listed. */
@@ -49,9 +64,9 @@ const PENDING_LINKS = [
  * School leadership (admin/super_admin/principal): the operational snapshot
  * from `GET /v1/analytics/admin-dashboard` (same restriction, see that
  * endpoint's `isAdminCaller`) plus the early-warning list, top 5 by score.
- * Moves the queue table and login histogram out of the deleted
- * `admin-dashboard-panel.tsx` rather than duplicating them (Task 5 of
- * docs/superpowers/plans/2026-09-26-dashboard-per-peran.md).
+ * The hero carries attendance taken in the classes in session right now,
+ * so no card repeats it; the early-warning list and system activity sit
+ * under the queue, as the side column already holds check-in and shortcuts.
  */
 export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   const t = useTranslations("app.dashboardSchool.leadership");
@@ -61,17 +76,19 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   // them): the query only runs, and the card only renders, for a caller who
   // actually has it.
   const canViewAtRisk = me.permissions.includes("view_early_warning");
-  const canViewMonitor = me.permissions.includes("view_monitor_presence");
   // The pending queues (leave, exit permits, late arrivals) are permits data.
   const permitsOn = isModuleEnabled(me, "permits");
   const atRisk = useAtRiskStudentsQuery(active && canViewAtRisk);
   // Only the top rows are shown, so only their names are looked up.
-  const topAtRisk = [...(atRisk.data?.data ?? [])].sort((a, b) => b.score - a.score).slice(0, 5);
+  const topAtRisk = (atRisk.data?.data ?? [])
+    .filter((row) => row.level !== "none")
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
   const studentMap = useDirectoryNames(
     topAtRisk.map((row) => row.student_user_id),
     active,
   );
-  const classes = useClassesQuery(active);
+  const classes = useClassesQuery(active && canViewAtRisk);
   const classMap = useLookup(classes.data?.data);
 
   if (!active) return EMPTY_BLOCK;
@@ -79,25 +96,64 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   const data = dashboard.data;
   const ready = !dashboard.isLoading && !dashboard.isError && Boolean(data);
   const attendanceToday = data?.attendance_today;
+  const pendingTotal = data
+    ? data.pending.leave_request + data.pending.exit_permit + data.pending.late_arrival
+    : 0;
 
-  const hero =
-    ready && data && attendanceToday && attendanceToday.total > 0
-      ? {
-          key: "school.summary",
-          priority: HERO_PRIORITY.schoolSummary,
-          eyebrow: t("hero.eyebrow"),
-          title: t("hero.title", {
-            submitted: attendanceToday.submitted,
-            total: attendanceToday.total,
-          }),
-          meta: t("hero.meta", { pending: attendanceToday.total - attendanceToday.submitted }),
-          action: { label: t("hero.action"), href: MONITOR_HREF },
-        }
-      : undefined;
+  let hero: HeroCandidate | undefined;
+  if (ready && data) {
+    if (attendanceToday && attendanceToday.total > 0) {
+      const waiting = attendanceToday.total - attendanceToday.submitted;
+      // The title and the meter carry the one figure; no meta sentence
+      // restates it, and the stat row leaves out its own copy of it.
+      hero = {
+        key: "school.summary",
+        priority: HERO_PRIORITY.schoolSummary,
+        tone: waiting > 0 ? "accent-soft" : "neutral",
+        eyebrow: t("hero.eyebrow"),
+        title: t("hero.title", {
+          submitted: attendanceToday.submitted,
+          total: attendanceToday.total,
+        }),
+        coversTiles: ["school.sessions"],
+        progress: {
+          value: attendanceToday.submitted,
+          max: attendanceToday.total,
+          label: t("hero.progressLabel"),
+          valueLabel: `${attendanceToday.submitted}/${attendanceToday.total}`,
+        },
+        // A leader without the monitor permission gets the reports instead
+        // (the home guards every hero link against the reader's access).
+        action: { label: t("hero.action"), href: MONITOR_HREF },
+        secondaryAction: { label: t("hero.reportsAction"), href: REPORTS_HREF },
+      };
+    } else if (permitsOn && pendingTotal > 0) {
+      hero = {
+        key: "school.queue",
+        priority: HERO_PRIORITY.schoolSummary,
+        eyebrow: t("hero.queueEyebrow"),
+        title: t("hero.queueTitle", { count: pendingTotal }),
+        meta: t("hero.queueMeta"),
+        action: { label: t("hero.queueAction"), href: INBOX_HREF },
+        secondaryAction: { label: t("hero.reportsAction"), href: REPORTS_HREF },
+      };
+    } else {
+      hero = {
+        key: "school.idle",
+        priority: HERO_PRIORITY.inboxIdle,
+        tone: "neutral",
+        eyebrow: t("hero.eyebrow"),
+        title: t("hero.idleTitle"),
+        meta: t("hero.idleMeta"),
+        action: { label: t("hero.reportsAction"), href: REPORTS_HREF },
+        secondaryAction: { label: t("hero.action"), href: MONITOR_HREF },
+      };
+    }
+  }
 
   const tiles: TileSpec[] = [];
   if (ready && data) {
-    if (attendanceToday) {
+    if (attendanceToday && attendanceToday.total > 0) {
       tiles.push({
         key: "school.sessions",
         priority: 80,
@@ -113,11 +169,10 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
         key: "school.pending",
         priority: 75,
         label: t("tiles.pending"),
-        value: String(
-          data.pending.leave_request + data.pending.exit_permit + data.pending.late_arrival,
-        ),
+        value: String(pendingTotal),
         icon: Inbox,
         tone: "amber",
+        href: INBOX_HREF,
       });
     }
     tiles.push({
@@ -128,66 +183,41 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
       icon: Users,
       tone: "blue",
     });
-    tiles.push({
-      key: "school.online",
-      priority: 40,
-      label: t("tiles.online"),
-      value: String(Object.values(data.online_by_role).reduce((sum, count) => sum + count, 0)),
-      icon: Activity,
-      tone: "purple",
-    });
+    // Who is online is named, role by role, in the activity card.
   }
 
-  const atRiskRows = topAtRisk;
+  // A queue row links only to a screen the reader may open; the principal
+  // holds none of the permit permissions, so those rows stay plain.
+  const access = navAccessFromMe(me);
+  const openableQueues = PENDING_LINKS.filter(({ href }) => canOpenPath(href, access)).map(
+    ({ key }) => key,
+  );
 
-  const left: BlockSlot[] = [
-    ...(permitsOn
-      ? [
-          {
-            key: "school.queue",
-            node: (
-              <SchoolQueueCard
-                key="school.queue"
-                isLoading={dashboard.isLoading}
-                isError={dashboard.isError}
-                refetch={dashboard.refetch}
-                data={data}
-              />
-            ),
-          },
-        ]
-      : []),
-    ...(canViewMonitor
-      ? [
-          {
-            key: "school.presence",
-            node: (
-              <PresenceCard
-                key="school.presence"
-                isLoading={dashboard.isLoading}
-                isError={dashboard.isError}
-                refetch={dashboard.refetch}
-                attendance={attendanceToday}
-              />
-            ),
-          },
-        ]
-      : []),
-  ];
+  // With every queue empty the tile already reads zero, so the card is left
+  // out unless it is loading or failed (same rule as the picket queue).
+  const showQueueCard = permitsOn && (dashboard.isLoading || dashboard.isError || pendingTotal > 0);
+  const main: BlockSlot[] = showQueueCard
+    ? [
+        {
+          key: "school.queue",
+          node: (
+            <SchoolQueueCard
+              key="school.queue"
+              isLoading={dashboard.isLoading}
+              error={dashboard.isError ? dashboard.error : null}
+              refetch={dashboard.refetch}
+              data={data}
+              linkedQueues={openableQueues}
+              inboxHref={canOpenPath(INBOX_HREF, access) ? INBOX_HREF : undefined}
+            />
+          ),
+        },
+      ]
+    : [];
 
-  const right: BlockSlot[] = [
-    {
-      key: "school.activity",
-      node: (
-        <SchoolActivityCard
-          key="school.activity"
-          isLoading={dashboard.isLoading}
-          isError={dashboard.isError}
-          refetch={dashboard.refetch}
-          data={data}
-        />
-      ),
-    },
+  // Both cards read as main content; the side column already holds check-in,
+  // shortcuts and announcements, so these two live under the queue.
+  const insights: BlockSlot[] = [
     ...(canViewAtRisk
       ? [
           {
@@ -196,9 +226,9 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
               <AtRiskCard
                 key="school.atRisk"
                 isLoading={atRisk.isLoading}
-                isError={atRisk.isError}
+                error={atRisk.isError ? atRisk.error : null}
                 refetch={atRisk.refetch}
-                rows={atRiskRows}
+                rows={topAtRisk}
                 studentMap={studentMap}
                 classMap={classMap}
               />
@@ -206,145 +236,142 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
           },
         ]
       : []),
+    {
+      key: "school.activity",
+      node: (
+        <SchoolActivityCard
+          key="school.activity"
+          isLoading={dashboard.isLoading}
+          error={dashboard.isError ? dashboard.error : null}
+          refetch={dashboard.refetch}
+          data={data}
+        />
+      ),
+    },
   ];
 
-  return { hero, tiles, left, right };
+  return { hero, tiles, main: [...main, ...insights], side: [], pending: dashboard.isLoading };
 }
 
 function SchoolQueueCard({
   isLoading,
-  isError,
+  error,
   refetch,
   data,
+  linkedQueues,
+  inboxHref,
 }: {
   isLoading: boolean;
-  isError: boolean;
+  error: unknown;
   refetch: () => unknown;
   data: AdminDashboard | undefined;
+  linkedQueues: readonly (typeof PENDING_LINKS)[number]["key"][];
+  inboxHref: string | undefined;
 }): ReactElement {
   const t = useTranslations("app.dashboardSchool.leadership.queue");
   const format = useFormatter();
+  const allClear = data !== undefined && PENDING_LINKS.every(({ key }) => data.pending[key] === 0);
   return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle>{t("title")}</CardTitle>
+    <Card>
+      <CardHeader
+        action={inboxHref ? <TextLink href={inboxHref}>{t("openInbox")}</TextLink> : undefined}
+      >
+        <CardTitle as="h2">{t("title")}</CardTitle>
       </CardHeader>
-      <div className="px-5 pb-5">
-        {isError ? (
-          <QueryError retry={refetch} />
-        ) : isLoading || !data ? (
-          <Skeleton className="h-24 w-full" aria-busy="true" />
-        ) : (
-          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="border-b border-line bg-bg text-left">
-                  <th scope="col" className="px-4 py-3 text-[12px] font-semibold text-fg-muted">
-                    {t("type")}
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-4 py-3 text-right text-[12px] font-semibold text-fg-muted"
-                  >
-                    {t("count")}
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    <span className="sr-only">{t("open")}</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {PENDING_LINKS.map(({ key, href }) => (
-                  <tr key={key} className="border-b border-line last:border-b-0 hover:bg-bg">
-                    <th scope="row" className="px-4 py-3 text-left font-normal text-fg">
-                      {t(`labels.${key}`)}
-                    </th>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      <Badge variant={data.pending[key] > 0 ? "accent" : "neutral"}>
-                        {format.number(data.pending[key])}
-                      </Badge>
-                    </td>
-                    <td className="w-11 px-4 py-3 text-right">
-                      <Link
-                        href={href}
-                        aria-label={`${t("open")}: ${t(`labels.${key}`)}`}
-                        className="inline-flex size-11 items-center justify-center rounded-xs text-fg-muted hover:bg-bg hover:text-fg"
-                      >
-                        <ArrowUpRight className="size-4" aria-hidden="true" />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {error ? (
+        <div className="px-5 pb-5">
+          <QueryError retry={refetch} error={error} />
+        </div>
+      ) : isLoading || !data ? (
+        <div className="px-5 pb-5">
+          <SkeletonList rows={3} leading={false} framed={false} />
+        </div>
+      ) : allClear ? (
+        <div className="px-5 pb-5">
+          <EmptyState variant="compact" icon={<ShieldCheck />} title={t("allClear")} />
+        </div>
+      ) : (
+        <List>
+          {PENDING_LINKS.map(({ key, href }) => {
+            const count = data.pending[key];
+            return (
+              <ListRow
+                key={key}
+                href={linkedQueues.includes(key) ? href : inboxHref}
+                title={t(`labels.${key}`)}
+                trailing={
+                  <Badge tone={count > 0 ? "warning" : "neutral"} size="sm">
+                    {format.number(count)}
+                  </Badge>
+                }
+              />
+            );
+          })}
+        </List>
+      )}
     </Card>
   );
 }
 
 function SchoolActivityCard({
   isLoading,
-  isError,
+  error,
   refetch,
   data,
 }: {
   isLoading: boolean;
-  isError: boolean;
+  error: unknown;
   refetch: () => unknown;
   data: AdminDashboard | undefined;
 }): ReactElement {
   const t = useTranslations("app.dashboardSchool.leadership.activity");
   const format = useFormatter();
+  const onlineRoles = Object.entries(data?.online_by_role ?? {})
+    .filter(([, count]) => count > 0)
+    .sort(([, a], [, b]) => b - a);
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader>
-        <CardTitle>{t("title")}</CardTitle>
+        <CardTitle as="h2">{t("title")}</CardTitle>
       </CardHeader>
-      <div className="px-5 pb-5">
-        {isError ? (
-          <QueryError retry={refetch} />
+      <CardContent className="flex flex-col gap-4">
+        {error ? (
+          <QueryError retry={refetch} error={error} />
         ) : isLoading || !data ? (
-          <Skeleton className="h-24 w-full" aria-busy="true" />
+          <Skeleton className="h-28 w-full" aria-busy="true" />
         ) : (
           <>
             <LoginActivityChart values={data.login_histogram} />
-            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border pt-3 text-[12px] text-fg-muted">
-              <span className="font-medium text-fg">{t("onlineTitle")}</span>
-              {(() => {
-                const onlineRoles = Object.entries(data.online_by_role)
-                  .filter(([, count]) => count > 0)
-                  .sort(([, a], [, b]) => b - a);
-                return onlineRoles.length === 0 ? (
-                  <span>{t("onlineEmpty")}</span>
-                ) : (
-                  onlineRoles.map(([role, count]) => (
-                    <span key={role}>
-                      <span className="tabular-nums text-fg">{format.number(count)}</span>{" "}
-                      {t.has(`roleNames.${role}`) ? t(`roleNames.${role}`) : role}
-                    </span>
-                  ))
-                );
-              })()}
+            <div className="flex flex-col gap-1">
+              <p className="text-label text-fg">{t("onlineTitle")}</p>
+              <p className="text-body-sm text-fg-muted">
+                {onlineRoles.length === 0
+                  ? t("onlineEmpty")
+                  : onlineRoles
+                      .map(
+                        ([role, count]) =>
+                          `${format.number(count)} ${t.has(`roleNames.${role}`) ? t(`roleNames.${role}`) : role}`,
+                      )
+                      .join(" · ")}
+              </p>
             </div>
           </>
         )}
-      </div>
+      </CardContent>
     </Card>
   );
 }
 
 function AtRiskCard({
   isLoading,
-  isError,
+  error,
   refetch,
   rows,
   studentMap,
   classMap,
 }: {
   isLoading: boolean;
-  isError: boolean;
+  error: unknown;
   refetch: () => unknown;
   rows: StudentRisk[];
   studentMap: Map<string, DirectoryUser>;
@@ -354,46 +381,35 @@ function AtRiskCard({
   const levelLabel = useTranslations("app.analytics.level");
 
   return (
-    <Card className="h-full">
-      <CardHeader className="flex-row items-center justify-between gap-3">
-        <CardTitle>{t("title")}</CardTitle>
-        <Link
-          href={ANALYTICS_HREF}
-          className="shrink-0 text-[13px] text-accent underline underline-offset-2"
-        >
-          {t("viewAll")}
-        </Link>
+    <Card>
+      <CardHeader action={<TextLink href={ANALYTICS_HREF}>{t("viewAll")}</TextLink>}>
+        <CardTitle as="h2">{t("title")}</CardTitle>
       </CardHeader>
-      <div className="px-5 pb-5">
-        {isError ? (
-          <QueryError retry={refetch} />
-        ) : isLoading ? (
-          <Skeleton className="h-24 w-full" aria-busy="true" />
-        ) : rows.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("empty")}</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {rows.map((row) => (
-              <li key={row.student_user_id}>
-                <Link
-                  href={studentProfileHref(row.student_user_id)}
-                  className="flex items-center justify-between gap-3 text-[13px] text-fg hover:text-accent"
-                >
-                  <span className="flex min-w-0 flex-col">
-                    <span className="truncate">
-                      {studentMap.get(row.student_user_id)?.name ?? t("unknownStudent")}
-                    </span>
-                    <span className="truncate text-fg-muted">
-                      {classMap.get(row.class_id)?.name ?? "-"}
-                    </span>
-                  </span>
-                  <RiskLevelBadge level={row.level} label={levelLabel(row.level)} />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {error ? (
+        <div className="px-5 pb-5">
+          <QueryError retry={refetch} error={error} />
+        </div>
+      ) : isLoading ? (
+        <div className="px-5 pb-5">
+          <SkeletonList rows={3} framed={false} />
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="px-5 pb-5">
+          <EmptyState variant="compact" icon={<ShieldCheck />} title={t("empty")} />
+        </div>
+      ) : (
+        <List>
+          {rows.map((row) => (
+            <ListRow
+              key={row.student_user_id}
+              href={studentProfileHref(row.student_user_id)}
+              title={studentMap.get(row.student_user_id)?.name ?? t("unknownStudent")}
+              meta={classMap.get(row.class_id)?.name ?? "-"}
+              trailing={<RiskLevelBadge level={row.level} label={levelLabel(row.level)} />}
+            />
+          ))}
+        </List>
+      )}
     </Card>
   );
 }

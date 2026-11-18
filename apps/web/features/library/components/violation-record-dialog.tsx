@@ -1,7 +1,17 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Dialog, DialogContent, Input, Select, Textarea } from "@newsekolah/ui";
+import {
+  DialogFooter,
+  NumberInput,
+  FormError,
+  Field,
+  Button,
+  Dialog,
+  DialogContent,
+  Select,
+  Textarea,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -64,7 +74,7 @@ export function ViolationRecordDialog({
         onOpenChange(next);
       }}
     >
-      <DialogContent title={t("title")}>
+      <DialogContent title={t("title")} size="md">
         <form
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -96,17 +106,16 @@ export function ViolationRecordDialog({
             );
           }}
         >
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("member")}</span>
+          {/* Simpan waits for the member: the asterisk says why. */}
+          <Field label={t("member")} required>
             <DirectoryPicker
               value={memberUserId}
               onValueChange={setMemberUserId}
               labels={memberLabels}
               showUsername
             />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("kind")}</span>
+          </Field>
+          <Field label={t("kind")}>
             <Select
               options={KINDS.map((k) => ({ value: k, label: tViolations(`kinds.${k}`) }))}
               value={kind}
@@ -114,45 +123,39 @@ export function ViolationRecordDialog({
                 setKind(v as LibraryViolationKind);
               }}
             />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("penalty")}</span>
+          </Field>
+          <Field label={t("penalty")}>
             <Select
-              options={PENALTIES.map((p) => ({ value: p, label: t(`penalties.${p}`) }))}
+              options={PENALTIES.map((p) => ({ value: p, label: tViolations(`penalties.${p}`) }))}
               value={penalty}
               onValueChange={(v) => {
                 setPenalty(v as LibraryPenalty);
               }}
             />
-          </label>
+          </Field>
           {penalty === "fine" && (
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("amount")}</span>
-              <Input
-                type="number"
+            <Field label={t("amount")}>
+              <NumberInput
                 min={0}
-                value={amount}
-                onChange={(e) => {
-                  setAmount(e.target.value);
+                value={amount === "" ? null : Number(amount)}
+                onChange={(next) => {
+                  setAmount(next === null ? "" : String(next));
                 }}
               />
-            </label>
+            </Field>
           )}
           {penalty === "suspend" && (
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("suspendDays")}</span>
-              <Input
-                type="number"
+            <Field label={t("suspendDays")}>
+              <NumberInput
                 min={0}
-                value={suspendDays}
-                onChange={(e) => {
-                  setSuspendDays(e.target.value);
+                value={suspendDays === "" ? null : Number(suspendDays)}
+                onChange={(next) => {
+                  setSuspendDays(next === null ? "" : String(next));
                 }}
               />
-            </label>
+            </Field>
           )}
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("notes")}</span>
+          <Field label={t("notes")}>
             <Textarea
               rows={3}
               value={notes}
@@ -161,9 +164,9 @@ export function ViolationRecordDialog({
               }}
               maxLength={500}
             />
-          </label>
-          {error && <p className="text-[13px] text-status-absent">{error}</p>}
-          <div className="flex justify-end gap-2 border-t border-border pt-4">
+          </Field>
+          {error && <FormError>{error}</FormError>}
+          <DialogFooter>
             <Button
               type="button"
               variant="secondary"
@@ -176,7 +179,7 @@ export function ViolationRecordDialog({
             <Button type="submit" loading={create.isPending} disabled={!memberUserId}>
               {t("submit")}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

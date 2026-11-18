@@ -1,6 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { hydrateRoot, type Root } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { useForm } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
@@ -64,5 +66,37 @@ describe("Form", () => {
     await userEvent.type(screen.getByLabelText("Nama pengguna"), "guru01");
     await userEvent.click(screen.getByRole("button", { name: "Masuk" }));
     expect(onSubmit).toHaveBeenCalledWith({ username: "guru01" }, expect.anything());
+  });
+
+  it("declares method post, so a native submit never puts the fields in the URL", () => {
+    const html = renderToString(<TestForm onSubmit={vi.fn()} />);
+    expect(html).toMatch(/<form[^>]*method="post"/);
+    const { container } = render(<TestForm onSubmit={vi.fn()} />);
+    expect(container.querySelector("form")).toHaveAttribute("method", "post");
+  });
+
+  it("keeps text typed into the server markup before hydration", async () => {
+    const onSubmit = vi.fn();
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(<TestForm onSubmit={onSubmit} />);
+    document.body.appendChild(container);
+    const input = container.querySelector("input");
+    if (!input) throw new Error("no input in the server markup");
+    input.value = "typed-early";
+
+    let root: Root | undefined;
+    await act(async () => {
+      root = hydrateRoot(container, <TestForm onSubmit={onSubmit} />);
+      await Promise.resolve();
+    });
+    expect(input).toHaveValue("typed-early");
+    await userEvent.click(within(container).getByRole("button", { name: "Masuk" }));
+    expect(onSubmit).toHaveBeenCalledWith({ username: "typed-early" }, expect.anything());
+    expect(input).toHaveValue("typed-early");
+
+    act(() => {
+      root?.unmount();
+    });
+    container.remove();
   });
 });

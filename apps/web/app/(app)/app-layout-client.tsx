@@ -1,5 +1,7 @@
 "use client";
 
+import { UiLinkProvider } from "@newsekolah/ui";
+import Link from "next/link";
 import type { ReactElement, ReactNode } from "react";
 
 import { AppShell } from "../../components/app-shell";
@@ -18,13 +20,19 @@ import { RouteGuard } from "../../components/route-guard";
  * item 8) only matter inside `(app)`: nothing under `(auth)`/`(public)` reads
  * a data table's remembered state, so this stays out of the root providers
  * and out of the JS those routes (e.g. `/login`) ship.
+ *
+ * `UiLinkProvider` hands next/link to the shared components (breadcrumbs,
+ * list rows, text links, page header actions), so their internal links
+ * navigate client-side instead of reloading the app.
  */
 export function AppLayoutClient({ children }: { children: ReactNode }): ReactElement {
   return (
-    <DataTableStateScope>
-      <RouteGuard>
-        <AppShell>{children}</AppShell>
-      </RouteGuard>
-    </DataTableStateScope>
+    <UiLinkProvider component={Link}>
+      <DataTableStateScope>
+        <RouteGuard>
+          <AppShell>{children}</AppShell>
+        </RouteGuard>
+      </DataTableStateScope>
+    </UiLinkProvider>
   );
 }

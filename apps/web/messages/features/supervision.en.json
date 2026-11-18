@@ -2,76 +2,122 @@
   "navGroupLabel": "Supervision",
   "navLabelCycles": "Supervision cycles",
   "navLabelMyReport": "My supervision",
+  "cycleNav": {
+    "label": "Cycle sections",
+    "observations": "Observations",
+    "report": "Results"
+  },
   "instrument": {
+    "heading": "Assessment instrument",
+    "headingHint": "What is scored during an observation, and the range of scores.",
     "name": "Instrument name",
-    "namePlaceholder": "e.g. Classroom Supervision Instrument",
-    "scaleMin": "Scale minimum",
-    "scaleMax": "Scale maximum",
+    "namePlaceholder": "e.g. Classroom supervision instrument",
+    "scaleMin": "Lowest score",
+    "scaleMinHint": "Usually 1.",
+    "scaleMax": "Highest score",
+    "scaleMaxHint": "For example 4 or 5.",
     "criteria": "Criteria",
-    "criterionKeyPlaceholder": "Key",
+    "criteriaHint": "The code fills itself in from the criterion's name and is what scores are saved against.",
+    "criterionKeyLabel": "Criterion {index} code",
+    "criterionNameLabel": "Criterion {index} name",
+    "criterionKeyPlaceholder": "Code",
     "criterionNamePlaceholder": "Criterion name",
-    "removeCriterion": "Remove criterion",
+    "removeCriterionNumbered": "Remove criterion {index}",
     "addCriterion": "Add criterion"
   },
   "cycles": {
-    "eyebrow": "Supervision",
-    "title": "Supervision cycles",
     "add": "Create cycle",
     "edit": "Edit",
+    "rowActions": "Actions for {name}",
+    "searchPlaceholder": "Search cycle name",
+    "scaleRange": "{min}–{max}",
     "columns": {
+      "actions": "Actions",
       "name": "Cycle name",
+      "instrument": "Instrument",
       "criteria": "Criteria",
       "scale": "Scale"
     },
     "emptyTitle": "No supervision cycles yet",
     "emptyBody": "Create a cycle and define its instrument to start scheduling observations.",
+    "emptyBodyReader": "Supervision cycles created by school leadership appear here.",
     "form": {
       "createTitle": "Create supervision cycle",
       "editTitle": "Edit supervision cycle",
       "name": "Cycle name",
-      "namePlaceholder": "e.g. Fall Semester 2025/2026",
+      "namePlaceholder": "e.g. Odd semester 2025/2026",
+      "errors": {
+        "name": "Enter the cycle's name.",
+        "instrumentName": "Enter the instrument's name.",
+        "scale": "The highest score must be above the lowest.",
+        "criteria": "Every criterion needs a name and a code."
+      },
       "cancel": "Cancel",
       "submit": "Save",
       "saved": "Supervision cycle saved"
     }
   },
   "cycleDetail": {
+    "summary": "{instrument} · {criteria} criteria",
+    "summaryLabel": "Cycle summary",
+    "steps": {
+      "instrument": "Instrument",
+      "schedule": "Schedule",
+      "observe": "Fill in",
+      "report": "See results"
+    },
+    "stats": {
+      "scheduled": "Scheduled observations",
+      "teachers": "Teachers",
+      "criteria": "Criteria",
+      "scale": "Scale"
+    },
+    "scaleRange": "{min}–{max}",
+    "scheduledTitle": "Scheduled observations",
+    "instrumentTitle": "Instrument",
+    "instrumentMeta": "{name} · scale {min}–{max}",
     "columns": {
+      "actions": "Actions",
       "lessonDate": "Lesson date",
-      "teacher": "Teacher"
+      "teacher": "Teacher",
+      "observer": "Observer"
     },
     "unknownTeacher": "Unknown teacher",
-    "complete": "Complete observation",
-    "viewReport": "View cycle report",
+    "complete": "Fill in",
     "schedule": "Schedule observation",
     "emptyTitle": "No observations scheduled yet",
-    "emptyBody": "Schedule an observation against one of a teacher's lessons to start this cycle.",
-    "scheduleTitle": "Schedule an observation"
+    "emptyBody": "Schedule an observation of a teacher's lesson to start this cycle.",
+    "scheduleTitle": "Schedule observation"
   },
   "completeObservation": {
+    "breadcrumb": "Fill in observation",
     "backToCycle": "Back to cycle",
     "notFoundTitle": "Scheduled observation not found",
-    "notFoundBody": "This observation may already be completed or its schedule was removed. Go back to the cycle to check."
+    "notFoundBody": "It may already be filled in, or its schedule was removed. Go back to the cycle to check."
   },
   "cycleReport": {
-    "title": "Cycle report: {cycle}",
-    "columns": {
-      "teacher": "Teacher",
-      "scheduledCount": "Scheduled observations"
-    },
+    "documentTitle": "{cycle} results",
+    "teachersTitle": "Observed teachers",
+    "teachersHint": "Open a teacher to see the averages per criterion and every observation.",
+    "scheduledCount": "{count, plural, one {# observation scheduled} other {# observations scheduled}}",
     "unknownTeacher": "Unknown teacher",
-    "emptyTitle": "No teacher scheduled yet",
-    "emptyBody": "Teachers scheduled for observation in this cycle will show up here.",
-    "breadcrumb": "Report"
+    "emptyTitle": "No teachers scheduled yet",
+    "emptyBody": "Teachers scheduled for observation in this cycle appear here.",
+    "breadcrumb": "Results"
   },
   "schedule": {
     "form": {
       "teacher": "Teacher",
       "teacherPlaceholder": "Select a teacher",
       "lesson": "Lesson",
-      "lessonPlaceholder": "Select a lesson block",
-      "selectTeacherFirst": "Select a teacher first",
+      "lessonPlaceholder": "Select a lesson slot",
+      "selectTeacherFirst": "Select a teacher first.",
       "lessonDate": "Observation date",
+      "errors": {
+        "teacher": "Select the teacher to observe.",
+        "lesson": "Select the lesson to observe.",
+        "date": "Select the observation date."
+      },
       "cancel": "Cancel",
       "submit": "Schedule",
       "saved": "Observation scheduled"
@@ -79,60 +125,73 @@
   },
   "observationForm": {
     "observedAt": "Observed at",
-    "scoresHeading": "Score per criterion",
-    "scoresHint": "Scale {min}–{max}",
+    "observedDate": "Observation date",
+    "observedTime": "Observation time",
+    "observedAtRequired": "Enter the date and time of the observation.",
+    "scoresHeading": "Scores by criterion",
+    "scoresHint": "Scale {min}–{max}: {min} lowest, {max} highest.",
+    "scoreFor": "Criterion {index} score: {name}",
+    "scoreMissing": "Not scored yet",
     "progress": "{scored} of {total} criteria scored",
+    "progressWithAverage": "{progress} · average {average}",
     "observerNotes": "Observer notes",
     "observerNotesPlaceholder": "What was observed during the lesson",
+    "observerNotesRequired": "Write the observer notes.",
     "cancel": "Cancel",
     "submit": "Save observation",
-    "retry": "Retry",
+    "retry": "Try again",
     "savedAt": "Saved at {time}",
-    "discardChanges": "Your unsaved observation will be lost. Continue?",
+    "discardChanges": "The unsaved observation will be lost. Continue?",
     "draftFoundTitle": "There is an unsaved observation draft",
-    "draftFoundBody": "The last draft was auto-saved at {time} on this device.",
+    "draftFoundBody": "The last draft was saved automatically at {time} on this device.",
     "draftRestore": "Restore draft",
-    "draftDismiss": "Dismiss"
+    "draftDismiss": "Discard"
   },
   "teacherReport": {
-    "export": "Download",
-    "defaultTitle": "Teacher Supervision Report",
+    "export": "Download report",
+    "defaultTitle": "Teacher supervision report",
     "overallAverage": "Overall average",
+    "ofScale": "Scale {min}–{max}",
+    "completed": "Completed observations",
     "byCriterion": "Average by criterion",
     "observations": "Observations",
-    "noObservations": "No completed observations in this cycle yet.",
-    "scoreCount": "{count} scores",
+    "noObservationsTitle": "No completed observations yet",
+    "noObservations": "Observations filled in during this cycle appear here.",
+    "observationAverage": "Average {average}",
+    "responded": "Responded",
+    "notResponded": "No response yet",
     "columns": {
-      "date": "Observation Date",
+      "date": "Observation date",
       "average": "Average",
-      "observer_notes": "Observer Notes",
-      "teacher_response": "Teacher Response",
-      "agreed_follow_up": "Follow-up"
+      "observer_notes": "Observer notes",
+      "teacher_response": "Teacher response",
+      "agreed_follow_up": "Agreed follow-up"
     }
   },
   "observationDetail": {
-    "backToCycle": "Back to cycle",
+    "title": "Observation result",
+    "scale": "Scale {min}–{max}",
+    "averageOfScale": "Average {average} on a {min}–{max} scale",
     "scores": "Scores",
+    "criterionFallback": "Criterion {n}",
     "observerNotes": "Observer notes",
+    "noNotes": "No notes.",
     "teacherResponse": "Teacher response",
     "responseLabel": "Response",
-    "responsePlaceholder": "Response to the observation",
+    "responsePlaceholder": "Your response to the observation",
     "followUpLabel": "Agreed follow-up",
-    "followUpPlaceholder": "Optional",
     "cancel": "Cancel",
     "submit": "Save",
     "saved": "Response saved",
     "noResponseYet": "No response yet.",
-    "noFollowUpYet": "No follow-up has been agreed yet.",
+    "noFollowUpYet": "No follow-up agreed yet.",
     "editResponse": "Edit response",
     "addResponse": "Add response"
   },
   "myReport": {
-    "eyebrow": "Supervision",
-    "title": "My supervision",
     "cycle": "Cycle",
     "cyclePlaceholder": "Select a cycle",
     "noCyclesTitle": "No supervision cycles yet",
-    "noCyclesBody": "You are not part of any supervision cycle yet. Contact the school admin if this looks wrong."
+    "noCyclesBody": "Your observation results appear here once school leadership creates a supervision cycle."
   }
 }

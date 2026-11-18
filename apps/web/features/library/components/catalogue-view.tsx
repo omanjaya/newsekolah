@@ -7,24 +7,23 @@ import {
   DataTable,
   Dialog,
   DialogContent,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   EmptyState,
-  PageHeader,
+  FilteredEmptyState,
   RowActionsMenu,
   domainIcons,
   useToast,
   type DataTableFilterDef,
+  type PageHeaderAction,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { BookOpen, ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { Download, Pencil, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
+import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
@@ -37,19 +36,21 @@ import {
 import { useLibraryCatalogueOptionsQuery } from "../master-data-api";
 import { useLibraryErrorMessage } from "../use-library-error-message";
 
+import { LibraryWorkspaceNav, useLibraryShortcuts } from "./library-workspace-nav";
 import { TitleForm } from "./title-form";
 
 const AVAILABILITY_VALUES = ["", "available"] as const;
 const SORT_VALUES = ["", "newest"] as const;
 
+/** Rows per page; the titles API pages by offset and reports no total. */
+const TITLES_PAGE_SIZE = 50;
+
 export function CatalogueView(): ReactElement {
   const t = useTranslations("app.library.catalogue");
-  const tWorkspace = useTranslations("app.library.workspace");
+  const router = useRouter();
   const toast = useToast();
   const libraryErrorMessage = useLibraryErrorMessage();
   const canManage = useCan("manage_library_catalog");
-  const canView = useCan("view_library");
-  const canReport = useCan("view_library_reports");
   const [search, setSearch] = useRememberedViewState("catalogue-search", "");
   const [materialTypeId, setMaterialTypeId] = useUrlState<string>("material_type", () => true, "");
   const [ddcClass, setDdcClass] = useUrlState<string>("ddc_class", () => true, "");
@@ -62,7 +63,10 @@ export function CatalogueView(): ReactElement {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<LibraryTitle | null>(null);
   const [deleting, setDeleting] = useState<LibraryTitle | null>(null);
-  const { data, isLoading } = useLibraryTitlesQuery({
+  const paging = useOffsetPage(TITLES_PAGE_SIZE);
+  const { data, isLoading, error, refetch, isRefetching } = useLibraryTitlesQuery({
+    limit: paging.limit,
+    offset: paging.offset,
     search,
     materialTypeId,
     ddcClass,
@@ -82,23 +86,19 @@ export function CatalogueView(): ReactElement {
     label: `${ddc.code} — ${ddc.name}`,
   }));
 
-  // The table always shows the catalogue's first page (`pagination` below
-  // is a fixed `{ pageIndex: 0, ... }`, not wired to a real offset
-  // control), so a filter change already lands on page one without an
-  // explicit reset -- there is no further-along page state to clear.
   const filters: DataTableFilterDef[] = [
     {
       id: "materialType",
       label: t("filters.materialType"),
       value: materialTypeId,
-      onChange: setMaterialTypeId,
+      onChange: paging.resetting(setMaterialTypeId),
       options: materialTypeOptions,
     },
     {
       id: "classification",
       label: t("filters.classification"),
       value: ddcClass,
-      onChange: setDdcClass,
+      onChange: paging.resetting(setDdcClass),
       options: ddcOptions,
     },
     {
@@ -107,6 +107,7 @@ export function CatalogueView(): ReactElement {
       value: availability,
       onChange: (value) => {
         setAvailability(value as (typeof AVAILABILITY_VALUES)[number]);
+        paging.resetPage();
       },
       type: "boolean",
       activeValue: "available",
@@ -117,6 +118,7 @@ export function CatalogueView(): ReactElement {
       value: sort,
       onChange: (value) => {
         setSort(value as (typeof SORT_VALUES)[number]);
+        paging.resetPage();
       },
       options: [
         { value: "", label: t("filters.sortTitle") },
@@ -127,8 +129,23 @@ export function CatalogueView(): ReactElement {
 
   const columns = useMemo<ColumnDef<LibraryTitle>[]>(
     () => [
-      { accessorKey: "title", header: t("columns.title"), enableSorting: false },
-      { accessorKey: "author", header: t("columns.author"), enableSorting: false },
+      {
+        accessorKey: "title",
+        header: t("columns.title"),
+        enableSorting: false,
+        meta: { card: "title" },
+        // Body text, as in the other areas' tables: the row opens the title.
+        cell: ({ row }) => <span className="font-semibold text-fg">{row.original.title}</span>,
+      },
+      {
+        accessorKey: "author",
+        header: t("columns.author"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        // A missing author is a dash in the table; the phone card leaves
+        // the line out rather than show a bare dash under the title.
+        cell: ({ row }) => row.original.author || <span className="max-md:hidden">-</span>,
+      },
       {
         accessorKey: "classification",
         header: t("columns.classification"),
@@ -139,11 +156,15 @@ export function CatalogueView(): ReactElement {
         id: "copies",
         header: t("columns.copies"),
         enableSorting: false,
+        meta: { card: "meta", skeleton: "badge" },
         cell: ({ row }) => (
           <Badge
-            variant={row.original.available_copies > 0 ? "accent" : "neutral"}
-            className={
-              row.original.available_copies === 0 ? "border-status-late/40 text-status-late" : ""
+            tone={
+              row.original.total_copies === 0
+                ? "neutral"
+                : row.original.available_copies > 0
+                  ? "success"
+                  : "warning"
             }
           >
             {t("copiesAvailable", {
@@ -153,129 +174,100 @@ export function CatalogueView(): ReactElement {
           </Badge>
         ),
       },
-      {
-        id: "actions",
-        header: t("columns.actions"),
-        enableSorting: false,
-        cell: ({ row }) => (
-          <div className="flex items-center gap-1">
-            <Button asChild size="sm" variant="secondary">
-              <Link href={`/library/catalogue/${row.original.id}`}>
-                <BookOpen aria-hidden="true" />
-                {t("viewCopies")}
-              </Link>
-            </Button>
-            {canManage && (
-              <TitleRowActionsMenu
-                title={row.original.title}
-                onEdit={() => {
-                  setEditing(row.original);
-                }}
-                onDelete={() => {
-                  setDeleting(row.original);
-                }}
-              />
-            )}
-          </div>
-        ),
-      },
+      ...(canManage
+        ? [
+            {
+              id: "actions",
+              header: t("columns.actions"),
+              enableSorting: false,
+              cell: ({ row }: { row: { original: LibraryTitle } }) => (
+                <TitleRowActionsMenu
+                  title={row.original.title}
+                  onEdit={() => {
+                    setEditing(row.original);
+                  }}
+                  onDelete={() => {
+                    setDeleting(row.original);
+                  }}
+                />
+              ),
+            } satisfies ColumnDef<LibraryTitle>,
+          ]
+        : []),
     ],
     [t, canManage],
   );
 
-  return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the table scrolls its rows internally while the
-    // action row stays put. See school/users-view.tsx for the reference
-    // pattern.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <nav
-          aria-label={tWorkspace("catalogue")}
-          className="inline-flex w-fit items-center gap-1 rounded-full bg-bg p-1"
-        >
-          <Link
-            href="/library/catalogue"
-            aria-current="page"
-            className="flex h-11 items-center justify-center rounded-full bg-surface px-4 text-[13px] font-medium text-fg shadow-(--shadow-card) md:h-8"
-          >
-            {tWorkspace("titles")}
-          </Link>
-          <Link
-            href="/library/copies"
-            className="flex h-11 items-center justify-center rounded-full px-4 text-[13px] font-medium text-fg-muted hover:text-fg md:h-8"
-          >
-            {tWorkspace("copies")}
-          </Link>
-        </nav>
-        <div className="flex flex-wrap items-center gap-2">
-          {canManage && (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                void downloadLibraryCatalogueExportXlsx();
-              }}
-            >
-              {t("exportCatalogue")}
-            </Button>
-          )}
-          {canManage && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                setAdding(true);
-              }}
-            >
-              {t("addTitle")}
-            </Button>
-          )}
-          {(canManage || canView || canReport) && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="secondary">
-                  {t("more")}
-                  <ChevronDown aria-hidden="true" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {canManage && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/library/import">{tWorkspace("importBooks")}</Link>
-                  </DropdownMenuItem>
-                )}
-                {canView && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/library/master-data">{tWorkspace("catalogueSettings")}</Link>
-                  </DropdownMenuItem>
-                )}
-                {canReport && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/library/reports?tab=accessionRegister">
-                      {tWorkspace("report")}
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
+  const shortcuts = useLibraryShortcuts(["catalogueSettings", { report: "accessionRegister" }]);
+  const secondaryActions: PageHeaderAction[] = [
+    ...(canManage
+      ? [
+          {
+            label: t("exportCatalogue"),
+            icon: <Download />,
+            onSelect: () => {
+              void downloadLibraryCatalogueExportXlsx();
+            },
+          },
+        ]
+      : []),
+    ...shortcuts,
+  ];
+  const filtered = search !== "" || materialTypeId !== "" || ddcClass !== "" || availability !== "";
 
+  return (
+    // Viewport-fit on desktop: the page itself never scrolls; the table
+    // scrolls its rows internally. Eyebrow and title come from the
+    // navigation registry. The tabs are the catalogue area's own strip,
+    // the one the copies, import and stocktake pages show: import is one
+    // of its tabs, and catalogue settings and the report sit at its end.
+    <AppPage
+      variant="fit"
+      nav={<LibraryWorkspaceNav area="catalogue" />}
+      primaryAction={
+        canManage ? (
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              setAdding(true);
+            }}
+          >
+            {t("addTitle")}
+          </Button>
+        ) : undefined
+      }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("addTitle"),
+              onSelect: () => {
+                setAdding(true);
+              },
+            }
+          : undefined
+      }
+      secondaryActions={secondaryActions}
+    >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/library/components/catalogue-view:1"
           data={titles}
+          mode="cursor"
           columns={columns}
           rowCount={titles.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
+          cursorPagination={{
+            hasPrevious: paging.hasPrevious,
+            hasNext: paging.hasNextFor(titles.length),
+            onPrevious: paging.goPrevious,
+            onNext: paging.goNext,
+            page: paging.page,
+            pageSize: paging.limit,
+          }}
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter={search}
-          onGlobalFilterChange={setSearch}
+          onGlobalFilterChange={paging.resetting(setSearch)}
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
           filtersLabels={{
@@ -283,14 +275,45 @@ export function CatalogueView(): ReactElement {
             removeFilter: (label) => t("filters.removeFilter", { label }),
           }}
           isLoading={isLoading}
+          error={error}
+          onRetry={() => void refetch()}
+          retrying={isRefetching}
           getRowId={(item) => item.id}
+          onRowActivate={(item) => {
+            router.push(`/library/catalogue/${item.id}`);
+          }}
           fillHeight
           emptyState={
-            <EmptyState
-              icon={<domainIcons.library aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
+            filtered ? (
+              <FilteredEmptyState
+                onReset={() => {
+                  setSearch("");
+                  setMaterialTypeId("");
+                  setDdcClass("");
+                  setAvailability("");
+                  paging.resetPage();
+                }}
+              />
+            ) : (
+              <EmptyState
+                icon={<domainIcons.library aria-hidden="true" />}
+                title={t("emptyTitle")}
+                description={t("emptyBody")}
+                action={
+                  canManage ? (
+                    <Button
+                      variant="secondary"
+                      icon={<Plus />}
+                      onClick={() => {
+                        setAdding(true);
+                      }}
+                    >
+                      {t("addTitle")}
+                    </Button>
+                  ) : undefined
+                }
+              />
+            )
           }
         />
       </div>
@@ -304,7 +327,7 @@ export function CatalogueView(): ReactElement {
           }
         }}
       >
-        <DialogContent title={editing ? t("editTitle") : t("addTitle")}>
+        <DialogContent title={editing ? t("editTitle") : t("addTitle")} size="lg">
           {(adding || editing) && (
             <TitleForm
               key={editing?.id ?? "new"}
@@ -340,7 +363,7 @@ export function CatalogueView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }
 

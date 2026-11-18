@@ -4,7 +4,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import type { ReactElement, ReactNode } from "react";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createApiClient } from "../client.js";
 import { queryKeys } from "../query-keys.js";
@@ -130,5 +130,104 @@ describe("useLogin", () => {
         permissions: [],
       });
     });
+  });
+
+  // Branding names the school, not the reader, and the web app seeds it
+  // from the server once per page load: dropping it would send one more
+  // request to the public, rate-limited branding endpoint per sign-in.
+  it("keeps the tenant's branding through the clear", async () => {
+    server.use(
+      http.post(`${BASE_URL}/v1/auth/login`, () => HttpResponse.json(loginResponse("user-3"))),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(queryKeys.tenantBranding(), { name: "School" });
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => null,
+      clientHeader: "web/test",
+    });
+    function wrapper({ children }: { children: ReactNode }): ReactElement {
+      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    }
+    const { result } = renderHook(() => useLogin(client), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ username: "u", password: "p", client: "web" });
+    });
+
+    expect(queryClient.getQueryData(queryKeys.tenantBranding())).toEqual({ name: "School" });
+  });
+
+  it("runs beforeRequest before the credentials go out, and sends none when it fails", async () => {
+    const order: string[] = [];
+    server.use(
+      http.post(`${BASE_URL}/v1/auth/login`, () => {
+        order.push("login");
+        return HttpResponse.json(loginResponse("user-4"));
+      }),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => null,
+      clientHeader: "web/test",
+    });
+    function wrapper({ children }: { children: ReactNode }): ReactElement {
+      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    }
+    const beforeRequest = vi.fn(() => {
+      order.push("before");
+      return Promise.resolve();
+    });
+    const onTokens = vi.fn();
+    const { result } = renderHook(() => useLogin(client, { beforeRequest, onTokens }), {
+      wrapper,
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ username: "u", password: "p", client: "web" });
+    });
+    expect(order).toEqual(["before", "login"]);
+
+    beforeRequest.mockRejectedValueOnce(new Error("cookie stayed"));
+    onTokens.mockClear();
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ username: "u", password: "p", client: "web" }),
+      ).rejects.toThrow("cookie stayed");
+    });
+    expect(order).toEqual(["before", "login"]);
+    expect(onTokens).not.toHaveBeenCalled();
+  });
+
+  // The sign-in page's own `/v1/me` may have asked for a refresh that is
+  // still on its way: it belongs to whoever was signed in before.
+  it("drops any refresh still on its way before the new session's tokens are handed over", async () => {
+    server.use(
+      http.post(`${BASE_URL}/v1/auth/login`, () => HttpResponse.json(loginResponse("user-5"))),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => null,
+      clientHeader: "web/test",
+    });
+    const order: string[] = [];
+    vi.spyOn(client, "forgetAccessToken").mockImplementation(() => {
+      order.push("forget");
+    });
+    const onTokens = vi.fn(() => {
+      order.push("tokens");
+    });
+    function wrapper({ children }: { children: ReactNode }): ReactElement {
+      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    }
+    const { result } = renderHook(() => useLogin(client, { onTokens }), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ username: "u", password: "p", client: "web" });
+    });
+
+    expect(order).toEqual(["forget", "tokens"]);
   });
 });

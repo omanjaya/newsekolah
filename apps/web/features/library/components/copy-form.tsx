@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, useToast } from "@newsekolah/ui";
+import { Field, Button, Input, Select, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -69,8 +69,7 @@ export function CopyForm({
         );
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("barcode")}</span>
+      <Field label={t("barcode")}>
         <Input
           value={barcode}
           onChange={(e) => {
@@ -79,9 +78,8 @@ export function CopyForm({
           required
           maxLength={64}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("condition")}</span>
+      </Field>
+      <Field label={t("condition")}>
         <Select
           value={condition}
           onValueChange={(value) => {
@@ -92,9 +90,8 @@ export function CopyForm({
             label: tCondition(value as string),
           }))}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("notes")}</span>
+      </Field>
+      <Field label={t("notes")}>
         <Input
           value={notes}
           onChange={(e) => {
@@ -102,10 +99,9 @@ export function CopyForm({
           }}
           maxLength={500}
         />
-      </label>
+      </Field>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("category")}</span>
+        <Field label={t("category")}>
           <Select
             options={(options.data?.collection_categories ?? []).map((c) => ({
               value: c.id,
@@ -116,9 +112,8 @@ export function CopyForm({
             placeholder={t("categoryPlaceholder")}
             disabled={options.isLoading}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("location")}</span>
+        </Field>
+        <Field label={t("location")}>
           <Select
             options={(options.data?.locations ?? []).map((l) => ({ value: l.id, label: l.name }))}
             value={locationId}
@@ -126,9 +121,8 @@ export function CopyForm({
             placeholder={t("locationPlaceholder")}
             disabled={options.isLoading}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("source")}</span>
+        </Field>
+        <Field label={t("source")}>
           <Select
             options={(options.data?.acquisition_sources ?? []).map((s) => ({
               value: s.id,
@@ -139,9 +133,8 @@ export function CopyForm({
             placeholder={t("sourcePlaceholder")}
             disabled={options.isLoading}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("partner")}</span>
+        </Field>
+        <Field label={t("partner")}>
           <Select
             options={(options.data?.partners ?? []).map((p) => ({ value: p.id, label: p.name }))}
             value={partnerId}
@@ -149,7 +142,7 @@ export function CopyForm({
             placeholder={t("partnerPlaceholder")}
             disabled={options.isLoading}
           />
-        </label>
+        </Field>
       </div>
       <Button type="submit" loading={create.isPending}>
         {t("save")}

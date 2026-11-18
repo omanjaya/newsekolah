@@ -14,8 +14,16 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (code: string) => mocks.permissions.has(code),
-  useSession: () => ({ me: { profile_kind: mocks.profileKind } }),
+  useSession: () => ({
+    me: {
+      profile_kind: mocks.profileKind,
+      permissions: [...mocks.permissions],
+      roles: [],
+      disabled_modules: [],
+    },
+  }),
 }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../use-action-inbox-count", () => ({ useActionInboxSummary: mocks.summary }));
 vi.mock("../../permits/components/permit-unified-queue", () => ({
   PermitUnifiedQueue: () => <div data-testid="permit-queue" />,
@@ -87,6 +95,27 @@ describe("ActionInboxView", () => {
     render(<ActionInboxView />);
     expect(screen.getByText("emptyTitle")).toBeInTheDocument();
     expect(screen.queryByTestId("permit-queue")).not.toBeInTheDocument();
+    // A reviewer has no leave history: /leave-requests would send them back here.
+    expect(screen.queryByRole("link", { name: "historyLeave" })).not.toBeInTheDocument();
+  });
+
+  it("offers the warning letters as the history of an all-clear issuer", () => {
+    mocks.permissions = new Set([
+      "review_leave_requests",
+      "issue_warning_letters",
+      "view_discipline",
+    ]);
+    mocks.summary.mockReturnValue(summary({ leave: 0, warningLetters: 0, total: 0 }));
+    render(<ActionInboxView />);
+    expect(screen.getByRole("link", { name: "historyWarningLetters" })).toHaveAttribute(
+      "href",
+      "/discipline/warning-letters",
+    );
+  });
+
+  it("offers the way home from the no-access state", () => {
+    render(<ActionInboxView />);
+    expect(screen.getByRole("link", { name: "backHome" })).toHaveAttribute("href", "/dashboard");
   });
 
   it("keeps the sections visible when a queue failed so its retry stays reachable", () => {

@@ -41,11 +41,9 @@ function renderBar(overrides: Partial<Parameters<typeof ScheduleScopeBar>[0]> = 
       onDayFilterChange={vi.fn()}
       classOptions={[]}
       classId=""
-      className=""
       onClassChange={vi.fn()}
       teacherId="teacher-2"
       onTeacherChange={onTeacherChange}
-      yearLabel="2026/2027"
       {...overrides}
     />,
   );

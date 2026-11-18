@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { branding, buildMe, mockBranding, mockSession } from "./fixtures";
+import { branding, buildMe, expectHome, mockBranding, mockSession, pickDate } from "./fixtures";
 
 // Keep API fixtures in Playwright's routing layer after a document reload.
 test.use({ serviceWorkers: "block" });
@@ -116,10 +116,10 @@ test("topbar switches roles, survives reload, and returns to superadmin with sim
   });
 
   await page.goto("/dashboard");
-  await expect(page.getByText(`Selamat datang, ${admin.name}`)).toBeVisible();
+  await expectHome(page, admin.name);
   const simulation = page.getByTestId("simulation-controls");
   await simulation.locator("summary").click();
-  await simulation.getByLabel("Tanggal sekolah").fill("2026-09-28");
+  await pickDate(page, simulation.getByLabel("Tanggal sekolah"), "2026-09-28");
   await simulation.getByLabel("Jam sekolah (Asia/Makassar)").fill("06:45");
   await simulation.getByRole("button", { name: "Terapkan", exact: true }).click();
 
@@ -128,26 +128,26 @@ test("topbar switches roles, survives reload, and returns to superadmin with sim
   const dialog = page.getByTestId("role-testing-dialog");
   await dialog.getByRole("radio", { name: /Guru Pengujian/ }).check();
   await dialog.getByRole("button", { name: "Beralih ke akun", exact: true }).click();
-  await expect(page.getByText(`Selamat datang, ${teacher.name}`)).toBeVisible();
+  await expectHome(page, teacher.name);
   await expect(switcher).toBeVisible();
   await expect(simulation).toContainText("Senin");
 
   await page.reload();
-  await expect(page.getByText(`Selamat datang, ${teacher.name}`)).toBeVisible();
+  await expectHome(page, teacher.name);
   await expect(simulation).toContainText("Senin");
   await switcher.getByRole("button", { name: "Ganti role", exact: true }).click();
   await dialog.getByRole("combobox", { name: "Role untuk mencari akun" }).click();
   await page.getByRole("option", { name: "Siswa", exact: true }).click();
   await dialog.getByRole("radio", { name: /Siswa Pengujian/ }).check();
   await dialog.getByRole("button", { name: "Beralih ke akun", exact: true }).click();
-  await expect(page.getByText(`Selamat datang, ${student.name}`)).toBeVisible();
+  await expectHome(page, student.name);
   expect(switches).toEqual([
     { user_id: teacher.id, role: "teacher" },
     { user_id: student.id, role: "student" },
   ]);
 
   await switcher.getByRole("button", { name: "Kembali ke superadmin", exact: true }).click();
-  await expect(page.getByText(`Selamat datang, ${admin.name}`)).toBeVisible();
+  await expectHome(page, admin.name);
   await expect(simulation).toContainText("Senin");
   await expect(
     switcher.getByRole("button", { name: "Kembali ke superadmin", exact: true }),
@@ -166,6 +166,6 @@ test("ordinary users cannot see the role-testing switcher", async ({ page }) => 
     route.fulfill({ json: { available: false, active: false, roles: [], users: [] } }),
   );
   await page.goto("/dashboard");
-  await expect(page.getByText(`Selamat datang, ${user.name}`)).toBeVisible();
+  await expectHome(page, user.name);
   await expect(page.getByTestId("role-testing-switcher")).toHaveCount(0);
 });

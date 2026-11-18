@@ -1,5 +1,5 @@
 {
-  "navLabel": "Sesi dan keamanan",
+  "navLabel": "Keamanan akun",
   "eyebrow": "Pengaturan",
   "title": "Verifikasi dua langkah",
   "description": "Tambahkan kode dari aplikasi autentikator sebagai lapisan kedua saat masuk, selain kata sandi.",
@@ -8,7 +8,7 @@
     "enabledBadge": "Aktif",
     "disabledBadge": "Tidak aktif",
     "enabledBody": "Kode dari aplikasi autentikator diminta setiap masuk, selain kata sandi.",
-    "disabledBody": "Belum aktif. Setelah diaktifkan, masuk memerlukan kode dari aplikasi autentikator selain kata sandi.",
+    "disabledBody": "Disarankan untuk akun dengan akses data sekolah.",
     "recoveryCodesRemaining": "{count} kode pemulihan tersisa",
     "recoveryCodesLow": "Kode pemulihan hampir habis. Buat ulang sebelum kode terakhir terpakai.",
     "enableAction": "Aktifkan verifikasi dua langkah",
@@ -55,7 +55,6 @@
     "title": "Passkey",
     "description": "Masuk tanpa kata sandi memakai sidik jari, wajah, atau kunci keamanan perangkat ini.",
     "emptyTitle": "Belum ada passkey",
-    "emptyBody": "Tambahkan passkey untuk masuk tanpa kata sandi dari perangkat ini.",
     "addAction": "Tambah passkey",
     "renameAction": "Ubah nama",
     "removeAction": "Hapus",
@@ -65,12 +64,21 @@
     "addConfirm": "Buat passkey",
     "renameDialogTitle": "Ubah nama passkey",
     "renameConfirm": "Simpan",
-    "removeDialogTitle": "Hapus passkey",
+    "removeDialogTitle": "Hapus passkey?",
     "removeDialogBody": "Passkey \"{name}\" tidak akan bisa dipakai lagi untuk masuk.",
     "toasts": {
       "added": "Passkey ditambahkan",
       "renamed": "Nama passkey diperbarui",
       "removed": "Passkey dihapus"
-    }
-  }
+    },
+    "nameLabel": "Nama passkey",
+    "cancel": "Batal",
+    "rowActions": "Aksi untuk {name}"
+  },
+  "pageDescription": "Cara Anda masuk ke akun ini: verifikasi dua langkah, passkey, kata sandi, dan perangkat yang sedang masuk.",
+  "passwordAndSessions": {
+    "title": "Kata sandi dan sesi aktif",
+    "body": "Ubah kata sandi dan keluarkan perangkat yang tidak Anda kenali, di halaman profil."
+  },
+  "cancel": "Batal"
 }

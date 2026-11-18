@@ -1,7 +1,6 @@
-import type { ReactElement } from "react";
+import { redirect } from "next/navigation";
 
-import { LoanRulesView } from "../../../../features/library/components/loan-rules-view";
-
-export default function Page(): ReactElement {
-  return <LoanRulesView />;
+/** Loan rules live in the library settings hub; old links land on that section. */
+export default function Page(): never {
+  redirect("/library/settings?section=loanRules");
 }

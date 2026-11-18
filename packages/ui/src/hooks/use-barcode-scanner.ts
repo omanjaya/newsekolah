@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { createDuplicateScanGuard } from "./duplicate-scan-guard.js";
 
@@ -62,6 +62,34 @@ export function isScanBurst(
   return average <= options.maxAverageIntervalMs;
 }
 
+/** What `useBarcodeScanner` hands back to a component with its own text entry. */
+export interface BarcodeScannerHandle {
+  /**
+   * Whether an Enter pressed now ends a scanner-speed burst, which the
+   * hook reports itself as a "scanner" scan. A field that also handles
+   * Enter (a manual-entry input a scanner may type into) checks this in
+   * its own `onKeyDown`, which runs before the hook's window listener, and
+   * leaves such an Enter to the hook, so one scan is one `onScan`.
+   */
+  isScanPending: () => boolean;
+}
+
+interface Burst {
+  chars: string[];
+  times: number[];
+}
+
+/** The gap in ms between each keystroke and the one before it. */
+function intervalsOf(times: number[]): number[] {
+  const intervals: number[] = [];
+  for (let index = 1; index < times.length; index += 1) {
+    const current = times[index];
+    const previous = times[index - 1];
+    if (current !== undefined && previous !== undefined) intervals.push(current - previous);
+  }
+  return intervals;
+}
+
 /**
  * Listens for barcode scanner input anywhere on the page: a physical
  * scanner behaves like a very fast keyboard typing a code and ending with
@@ -70,7 +98,7 @@ export function isScanBurst(
  * left alone -- the timing between keystrokes is what tells the two apart,
  * not which element is focused.
  */
-export function useBarcodeScanner(options: UseBarcodeScannerOptions): void {
+export function useBarcodeScanner(options: UseBarcodeScannerOptions): BarcodeScannerHandle {
   const {
     onScan,
     minLength = DEFAULTS.minLength,
@@ -86,18 +114,16 @@ export function useBarcodeScanner(options: UseBarcodeScannerOptions): void {
   useEffect(() => {
     onScanRef.current = onScan;
   }, [onScan]);
+  const burst = useRef<Burst>({ chars: [], times: [] });
 
   useEffect(() => {
     if (!enabled) return;
     const eventTarget = target ?? window;
     const guard = createDuplicateScanGuard(duplicateWindowMs);
-
-    let chars: string[] = [];
-    let times: number[] = [];
+    burst.current = { chars: [], times: [] };
 
     const reset = () => {
-      chars = [];
-      times = [];
+      burst.current = { chars: [], times: [] };
     };
 
     const handleKeyDown = (event: Event) => {
@@ -108,20 +134,15 @@ export function useBarcodeScanner(options: UseBarcodeScannerOptions): void {
       }
 
       const at = now();
-      const lastAt = times[times.length - 1];
+      const lastAt = burst.current.times.at(-1);
       if (lastAt !== undefined && at - lastAt > burstResetMs) {
         reset();
       }
+      const { chars, times } = burst.current;
 
       if (keyboardEvent.key === "Enter") {
         const code = chars.join("");
-        const intervals: number[] = [];
-        let previous: number | undefined;
-        for (const t of times) {
-          if (previous !== undefined) intervals.push(t - previous);
-          previous = t;
-        }
-        if (isScanBurst(code.length, intervals, { minLength, maxAverageIntervalMs })) {
+        if (isScanBurst(code.length, intervalsOf(times), { minLength, maxAverageIntervalMs })) {
           if (guard.accept(code, at)) {
             onScanRef.current({ code, source: "scanner", at });
           }
@@ -133,12 +154,10 @@ export function useBarcodeScanner(options: UseBarcodeScannerOptions): void {
       if (keyboardEvent.key.length === 1) {
         chars.push(keyboardEvent.key);
         times.push(at);
-      } else {
-        // A named key other than Enter (Tab, Shift, arrow keys, ...)
-        // breaks the burst without discarding characters already read,
-        // since scanners sometimes emit a benign key like Shift.
-        return;
       }
+      // A named key other than Enter (Tab, Shift, arrow keys, ...) breaks
+      // the burst without discarding characters already read, since
+      // scanners sometimes emit a benign key like Shift.
     };
 
     eventTarget.addEventListener("keydown", handleKeyDown);
@@ -146,4 +165,14 @@ export function useBarcodeScanner(options: UseBarcodeScannerOptions): void {
       eventTarget.removeEventListener("keydown", handleKeyDown);
     };
   }, [enabled, target, now, minLength, maxAverageIntervalMs, burstResetMs, duplicateWindowMs]);
+
+  const isScanPending = useCallback(() => {
+    if (!enabled) return false;
+    const { chars, times } = burst.current;
+    const lastAt = times.at(-1);
+    if (lastAt === undefined || now() - lastAt > burstResetMs) return false;
+    return isScanBurst(chars.length, intervalsOf(times), { minLength, maxAverageIntervalMs });
+  }, [enabled, now, burstResetMs, minLength, maxAverageIntervalMs]);
+
+  return { isScanPending };
 }

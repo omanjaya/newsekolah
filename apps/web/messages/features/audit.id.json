@@ -2,7 +2,7 @@
   "navLabel": "Jejak audit",
   "eyebrow": "Pengaturan",
   "title": "Jejak audit",
-  "description": "Riwayat perubahan yang dilakukan pengguna di sistem ini, terbaru di atas.",
+  "description": "Siapa mengubah apa dan kapan, terbaru di atas. Buka satu baris untuk melihat perubahannya.",
   "system": "Sistem",
   "actingAs": "meniru {name}",
   "filters": {
@@ -12,7 +12,7 @@
     "entityType": "Jenis entitas",
     "from": "Dari tanggal",
     "to": "Sampai tanggal",
-    "reset": "Reset filter",
+    "reset": "Hapus filter",
     "entityTypeAll": "Semua jenis",
     "removeFilter": "Hapus filter {label}",
     "dateRange": "Rentang tanggal",
@@ -35,7 +35,13 @@
     "after": "Sesudah",
     "noValue": "Tidak ada data",
     "requestId": "ID permintaan",
-    "entityId": "ID entitas"
+    "entityId": "ID entitas",
+    "code": "Kode aksi",
+    "changes": "Yang berubah",
+    "field": "Kolom",
+    "showRaw": "Lihat data mentah",
+    "hideRaw": "Sembunyikan data mentah",
+    "noChanges": "Tidak ada kolom yang berubah di catatan ini."
   },
   "impersonationNote": "Sesi ini sedang meniru pengguna lain. Lihat detail dan hentikan di halaman profil.",
   "impersonationLink": "Buka profil",
@@ -48,6 +54,14 @@
     "resetLinkBody": "Admin sekolah hanya bisa membuat tautan set kata sandi baru, bukan melihat kata sandi Anda. Tautan itu berlaku sekali pakai dan kedaluwarsa dalam 30 menit."
   },
   "actions": {
+    "counseling": {
+      "create": "Mencatat konseling",
+      "update": "Mengubah catatan konseling",
+      "read": "Membuka catatan konseling"
+    },
+    "document": {
+      "issue": "Menerbitkan dokumen"
+    },
     "duty_assignment": {
       "create": "Menambah penugasan tugas",
       "update": "Mengubah penugasan tugas",
@@ -59,9 +73,25 @@
       "delete": "Menghapus jenis tugas",
       "replace_permissions": "Mengubah izin jenis tugas"
     },
+    "role_testing": {
+      "start": "Memulai uji peran",
+      "switch": "Berpindah akun uji",
+      "stop": "Menghentikan uji peran",
+      "logout": "Mengakhiri sesi uji peran"
+    },
+    "feature_flag": {
+      "update": "Mengubah modul sekolah"
+    },
+    "grading": {
+      "report_publish": "Menerbitkan rapor",
+      "score_save": "Menyimpan nilai"
+    },
     "impersonation": {
       "start": "Mulai meniru pengguna",
       "stop": "Berhenti meniru pengguna"
+    },
+    "operator_alerts": {
+      "update": "Mengubah notifikasi operator"
     },
     "passkey": {
       "register": "Mendaftarkan passkey",
@@ -70,6 +100,10 @@
     "password_reset": {
       "request": "Meminta reset kata sandi",
       "confirm": "Mengatur ulang kata sandi"
+    },
+    "payment": {
+      "record": "Mencatat pembayaran",
+      "void": "Membatalkan pembayaran"
     },
     "role": {
       "create": "Membuat peran",
@@ -90,7 +124,11 @@
       "avatar_update": "Mengganti foto profil",
       "update_own_profile": "Mengubah profil sendiri",
       "import_create": "Membuat pengguna lewat impor",
-      "import_commit": "Menyelesaikan impor pengguna"
+      "import_commit": "Menyelesaikan impor pengguna",
+      "import_update": "Memperbarui pengguna lewat impor"
+    },
+    "violation": {
+      "void": "Membatalkan pelanggaran"
     },
     "read": "Membuka data"
   },
@@ -102,6 +140,17 @@
     "webauthn_credential": "Passkey",
     "sso_google_config": "Masuk dengan Google",
     "tenant": "Sekolah",
-    "visitor_incident": "Insiden kampus"
+    "visitor_incident": "Insiden kampus",
+    "counseling": "Konseling",
+    "report_publication": "Penerbitan rapor",
+    "assessment_component": "Komponen penilaian",
+    "payment": "Pembayaran",
+    "violation_record": "Pelanggaran",
+    "feature_flag": "Modul sekolah",
+    "operator_alert_settings": "Notifikasi operator",
+    "leave_request": "Pengajuan izin",
+    "document": "Dokumen",
+    "visitor_visit": "Kunjungan tamu",
+    "warning_letter": "Surat peringatan"
   }
 }

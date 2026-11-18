@@ -1,43 +1,58 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Badge, Button, useToast } from "@newsekolah/ui";
-import { useQueryClient } from "@tanstack/react-query";
+import { Button, useToast } from "@newsekolah/ui";
+import { UserRoundCog } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
 
 import { useStopImpersonationMutation } from "../features/auth/api";
 import {
   useRoleTestingQuery,
   useRoleTestingSwitchMutation,
 } from "../features/auth/role-testing-api";
-import { setAccessToken } from "../lib/api/access-token";
 import { useApiErrorMessage } from "../lib/i18n/api-error-message";
 import { confirmUnsavedChangesBeforeNavigation } from "../lib/navigation/use-unsaved-changes-protection";
+import { isAuthRedirecting } from "../lib/session/auth-redirect-flag";
+import { ServerAccessCookieError } from "../lib/session/clear-server-access-cookie";
+import { useEndSession } from "../lib/session/end-session";
+import { forgetAccountOnThisBrowser } from "../lib/session/forget-account";
 import { useSession } from "../lib/session/session-provider";
-import { clearSimulation } from "../lib/simulation/clock";
+
+import { ShellStrip } from "./shell-strip";
 
 /**
  * Renders nothing outside an impersonation session (docs/08-security.md
- * section 2: "ditandai di UI"). Deliberately loud and un-dismissible --
- * this is the one signal an administrator has that they are not looking at
- * their own account -- with a single click back out.
+ * section 2: "ditandai di UI"). Un-dismissible -- it is the one signal an
+ * administrator has that they are not looking at their own account -- but
+ * quiet: one line in the header's sticky stack, so it stays in view on a
+ * long page without pushing the screen around, with one way back out.
+ * Testing as another account shows who and as which role; the header's
+ * role switcher carries the controls on a desktop, and the strip offers
+ * the way back on a phone, where the header has no room for them.
+ *
+ * Stopping an impersonation goes to the sign-in page once the server has
+ * ended it, or has answered that it was already over (its fixed end came,
+ * another tab stopped it): useStopImpersonationMutation treats both the
+ * same, with no error to show. A stop that failed otherwise (no answer, a
+ * server error, too many requests) leaves everything as it was, since the
+ * impersonation is still going on: the strip stays, says what went wrong,
+ * and its button can be pressed again.
  */
 export function ImpersonationBanner(): ReactElement | null {
   const { me } = useSession();
   const router = useRouter();
   const t = useTranslations("app.shell.impersonation");
   const tRole = useTranslations("app.shell.roleTesting");
+  const tStrip = useTranslations("app.shell.strip");
   const locale = useLocale();
   const toast = useToast();
-  const queryClient = useQueryClient();
   const apiErrorMessage = useApiErrorMessage();
   const stop = useStopImpersonationMutation();
+  const endSession = useEndSession();
   const roleStatus = useRoleTestingQuery({}, Boolean(me?.impersonated_by));
   const roleSwitch = useRoleTestingSwitchMutation();
-  const [returnFailed, setReturnFailed] = useState(false);
 
   if (!me?.impersonated_by) return null;
 
@@ -58,44 +73,42 @@ export function ImpersonationBanner(): ReactElement | null {
     try {
       await roleSwitch.mutateAsync(null);
       router.replace("/dashboard");
-    } catch {
-      setReturnFailed(true);
-      toast.error(tRole("returnFailed"));
+    } catch (error) {
+      toast.error(
+        tRole(error instanceof ServerAccessCookieError ? "prepareFailed" : "returnFailed"),
+      );
     }
   }
 
   function signInAgain() {
-    setAccessToken(null);
-    clearSimulation();
-    queryClient.clear();
+    endSession();
     router.replace("/login");
   }
 
   if (expired) {
     return (
-      <div className="px-4 pt-4 md:px-6">
-        <Alert variant="warning" title={tRole("sessionExpired")}>
+      <ShellStrip
+        icon={<UserRoundCog />}
+        title={tStrip("roleTestingExpired")}
+        detail={tRole("sessionExpired")}
+        action={
           <Button size="sm" variant="secondary" onClick={signInAgain}>
             {tRole("signIn")}
           </Button>
-        </Alert>
-      </div>
+        }
+      />
     );
   }
 
   if (roleStatus.data?.active) {
     return (
-      <div className="px-4 pt-4 md:px-6">
-        <Alert variant="warning" title={tRole("activeAs", { name: me.name, role: selectedRole })}>
-          <div className="flex flex-wrap gap-1">
-            {me.roles.map((role) => (
-              <Badge key={role.id} variant="accent">
-                {role.name}
-              </Badge>
-            ))}
-          </div>
-          {expiry && <p>{tRole("expiresAt", { time: expiry })}</p>}
-          {returnFailed && <p>{tRole("returnFailed")}</p>}
+      <ShellStrip
+        icon={<UserRoundCog />}
+        title={tStrip("roleTesting", { name: me.name })}
+        detail={[selectedRole, expiry ? tRole("expiresAt", { time: expiry }) : null]
+          .filter(Boolean)
+          .join(" · ")}
+        action={
           <Button
             size="sm"
             variant="secondary"
@@ -103,23 +116,34 @@ export function ImpersonationBanner(): ReactElement | null {
             onClick={() => {
               void returnToAdmin();
             }}
-            className="mt-2"
+            className="md:hidden"
           >
-            {tRole("return")}
+            {tStrip("roleTestingReturn")}
           </Button>
-        </Alert>
-      </div>
+        }
+      />
     );
   }
 
   if (roleStatus.isPending) return null;
 
   function handleStop() {
+    // Pressing Stop is an explicit sign-out on this browser, like the account
+    // menu: drafts and account caches are forgotten before the request, so
+    // they go even if the request then fails. The session itself ends only
+    // when the server confirms the stop or answers that it is already over
+    // (useStopImpersonationMutation); a stop that merely fails keeps the
+    // token, the cached data and this strip, so it can be pressed again.
+    forgetAccountOnThisBrowser();
     stop.mutateAsync().then(
       () => {
         router.replace("/login");
       },
       (error: unknown) => {
+        // Another request found the session gone meanwhile, and the app is
+        // already on its way to the sign-in page (app/providers.tsx,
+        // handleUnauthorized).
+        if (isAuthRedirecting()) return;
         toast.error(
           error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
         );
@@ -127,22 +151,17 @@ export function ImpersonationBanner(): ReactElement | null {
     );
   }
 
+  const adminName = me.impersonated_by.name ?? "admin";
   return (
-    <div className="px-4 pt-4 md:px-6">
-      <Alert
-        variant="warning"
-        title={t("banner", { name: me.name, adminName: me.impersonated_by.name ?? "admin" })}
-      >
-        <Button
-          size="sm"
-          variant="secondary"
-          loading={stop.isPending}
-          onClick={handleStop}
-          className="mt-2"
-        >
-          {t("stop")}
+    <ShellStrip
+      icon={<UserRoundCog />}
+      title={tStrip("impersonation", { adminName, name: me.name })}
+      detail={t("banner", { name: me.name, adminName })}
+      action={
+        <Button size="sm" variant="secondary" loading={stop.isPending} onClick={handleStop}>
+          {tStrip("impersonationStop")}
         </Button>
-      </Alert>
-    </div>
+      }
+    />
   );
 }

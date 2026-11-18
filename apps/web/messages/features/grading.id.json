@@ -10,23 +10,6 @@
   "tabSettings": "Pengaturan",
   "tabErapor": "e-Rapor",
   "tabTpMapping": "Pemetaan TP",
-  "entryTiles": {
-    "students": "Siswa",
-    "components": "Komponen",
-    "filled": "Nilai terisi",
-    "published": "Status",
-    "publishedValue": "Terbit",
-    "draftValue": "Draf"
-  },
-  "pageTiles": {
-    "average": "Rata-rata kelas",
-    "tuntas": "Tuntas KKM",
-    "ungraded": "Belum dinilai"
-  },
-  "assignmentCard": {
-    "open": "Buka gradebook",
-    "studentCount": "{count, plural, other {# siswa}}"
-  },
   "kind": {
     "formative": "Formatif",
     "summative": "Sumatif",
@@ -37,11 +20,12 @@
   },
   "sheet": {
     "loadError": "Lembar nilai gagal dimuat.",
-    "searchPlaceholder": "Cari nama siswa",
+    "searchPlaceholder": "Cari siswa",
     "addComponent": "Tambah komponen",
     "publishToggleLabel": "Terbitkan ke siswa",
     "emptyTitle": "Belum ada komponen penilaian",
     "emptyBody": "Tambah komponen seperti ulangan harian atau tugas untuk mulai mengisi nilai.",
+    "emptyBodyReadOnly": "Guru mapel belum menambahkan komponen penilaian untuk lembar ini.",
     "publishedToast": "Nilai diterbitkan ke siswa.",
     "unpublishedToast": "Nilai disembunyikan dari siswa.",
     "publishConfirmTitle": "Terbitkan nilai ke siswa",
@@ -50,9 +34,8 @@
     "unpublishConfirmBody": "Siswa dan orang tua tidak akan lagi melihat nilai mapel ini sampai diterbitkan kembali.",
     "confirmPublish": "Terbitkan",
     "confirmUnpublish": "Sembunyikan",
-    "exportGradebook": "Ekspor e-Rapor",
+    "exportGradebook": "Ekspor nilai",
     "exportDefaultTitle": "Buku Nilai",
-    "moreActions": "Lainnya",
     "exportColumnName": "Nama Siswa",
     "exportColumnAverage": "Rata-rata",
     "exportColumnReportScore": "Nilai Rapor",
@@ -61,7 +44,9 @@
     "exportScopeClassPlaceholder": "Pilih kelas",
     "exportScopeGradeLevelPlaceholder": "Pilih angkatan",
     "publishedBadge": "Terbit",
-    "draftBadge": "Draf"
+    "draftBadge": "Draf",
+    "meta": "{students, plural, other {# siswa}} · {components, plural, other {# komponen}}",
+    "exportColumnNumber": "No"
   },
   "table": {
     "studentColumn": "Nama siswa",
@@ -75,6 +60,7 @@
     "averageColumn": "Rata-rata",
     "reportScoreColumn": "Nilai rapor",
     "reportScorePending": "Diperbarui setelah disimpan",
+    "reportScoreSet": "Isi nilai rapor {name}",
     "starsColumn": "Bintang",
     "scoreFor": "Nilai {code} untuk {name}",
     "starsFor": "Atur bintang {name}",
@@ -84,6 +70,10 @@
     "scoresSaved": "Nilai tersimpan pukul {time}.",
     "unsavedChanges": "{count, plural, other {# perubahan belum tersimpan}}",
     "discardChanges": "Perubahan nilai yang belum tersimpan akan hilang. Lanjutkan?",
+    "discardChangesTitle": "Buang perubahan yang belum disimpan?",
+    "discardChangesBody": "{count, plural, other {# perubahan nilai}} belum tersimpan dan akan hilang jika Anda melanjutkan.",
+    "discardChangesConfirm": "Buang perubahan",
+    "discardChangesCancel": "Kembali",
     "retry": "Coba lagi",
     "missingCount": "{count, plural, other {# kosong}}",
     "scoreRangeHint": "Nilai {min}-{max}",
@@ -97,8 +87,15 @@
       "label": "Mode isi nilai",
       "component": "Per komponen",
       "student": "Per siswa",
-      "componentPicker": "Pilih komponen penilaian"
-    }
+      "componentPicker": "Pilih komponen penilaian",
+      "componentShort": "Komponen",
+      "studentShort": "Siswa"
+    },
+    "kktpLabel": "KKTP {kktp}",
+    "saveComponent": "Simpan {code}",
+    "rowUnsaved": "Belum disimpan",
+    "scoresFor": "Nilai {code}",
+    "addComponent": "Tambah komponen"
   },
   "componentDialog": {
     "editTitle": "Ubah komponen",
@@ -198,7 +195,15 @@
       "up": "Naik",
       "down": "Turun",
       "flat": "Stabil"
-    }
+    },
+    "statsLabel": "Ringkasan nilai",
+    "statStars": "Bintang",
+    "kktpLine": "KKTP {kktp}",
+    "aboveKktp": "Sudah tuntas",
+    "belowKktpBy": "Kurang {points} poin",
+    "studentsOnlyTitle": "Halaman ini untuk siswa",
+    "studentsOnlyBody": "Nilai saya menampilkan nilai yang diterbitkan untuk seorang siswa. Akun Anda bukan akun siswa.",
+    "openGrading": "Buka penilaian"
   },
   "erapor": {
     "pickTerm": "Pilih semester",
@@ -250,5 +255,17 @@
     "deleted": "Pemetaan dihapus."
   },
   "noAssignmentsTitle": "Belum ada kelas yang Anda ajar",
-  "noAssignmentsBody": "Lembar nilai terbuka setelah admin menetapkan kelas dan mapel yang Anda ajar di Penugasan mengajar."
+  "noAssignmentsBody": "Lembar nilai terbuka setelah admin menetapkan kelas dan mapel yang Anda ajar di Penugasan mengajar.",
+  "pickAssignment": "Kelas dan mapel",
+  "pickBothTitle": "Pilih lembar nilai",
+  "openSchedule": "Lihat jadwal",
+  "tabsLabel": "Bagian nilai",
+  "summary": {
+    "label": "Ringkasan lembar nilai",
+    "students": "Siswa",
+    "average": "Rata-rata kelas",
+    "tuntas": "Tuntas KKTP",
+    "ungraded": "Belum dinilai",
+    "filled": "Nilai terisi"
+  }
 }

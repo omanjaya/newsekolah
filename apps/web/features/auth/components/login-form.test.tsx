@@ -50,14 +50,22 @@ describe("LoginForm auth affordances", () => {
   it("toggles password visibility without losing the entered value", async () => {
     const user = userEvent.setup();
     render(<LoginForm />);
-    const password = screen.getByPlaceholderText("passwordPlaceholder");
+    const password = screen.getByLabelText("passwordLabel");
 
     await user.type(password, "secret-value");
-    await user.click(screen.getByRole("button", { name: "showPassword" }));
+    await user.click(screen.getByRole("button", { name: "Tampilkan kata sandi" }));
 
     expect(password).toHaveAttribute("type", "text");
     expect(password).toHaveValue("secret-value");
-    expect(screen.getByRole("button", { name: "hidePassword" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sembunyikan kata sandi" })).toBeInTheDocument();
+  });
+
+  it("offers the forgot-password link on the password label's row", () => {
+    render(<LoginForm />);
+    expect(screen.getByRole("link", { name: "forgotPasswordLink" })).toHaveAttribute(
+      "href",
+      "/forgot-password",
+    );
   });
 
   it("focuses the OTP field when the server requests MFA", async () => {
@@ -66,12 +74,26 @@ describe("LoginForm auth affordances", () => {
     );
     const user = userEvent.setup();
     render(<LoginForm />);
-    await user.type(screen.getByPlaceholderText("usernamePlaceholder"), "teacher");
-    await user.type(screen.getByPlaceholderText("passwordPlaceholder"), "secret-value");
+    await user.type(screen.getByLabelText("usernameLabel"), "teacher");
+    await user.type(screen.getByLabelText("passwordLabel"), "secret-value");
     await user.click(screen.getByRole("button", { name: "submit" }));
 
     await waitFor(() => {
       expect(screen.getByRole("textbox", { name: "login.otpLabel" })).toHaveFocus();
     });
+  });
+
+  it("announces a rejected sign-in as a danger alert with the server's reason", async () => {
+    mutateAsync.mockRejectedValue(
+      new ApiError({ status: 401, code: "AUTH_INVALID_CREDENTIALS", message: "wrong" }),
+    );
+    const user = userEvent.setup();
+    render(<LoginForm />);
+    await user.type(screen.getByLabelText("usernameLabel"), "teacher");
+    await user.type(screen.getByLabelText("passwordLabel"), "wrong-value");
+    await user.click(screen.getByRole("button", { name: "submit" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("AUTH_INVALID_CREDENTIALS");
+    expect(replace).not.toHaveBeenCalled();
   });
 });

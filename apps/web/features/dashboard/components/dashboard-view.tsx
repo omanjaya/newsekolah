@@ -1,40 +1,55 @@
 "use client";
 
 import {
-  Badge,
   Button,
   Card,
-  CardContent,
   CardHeader,
   CardTitle,
-  cn,
   HeroCard,
+  IconCircle,
+  List,
+  ListRow,
+  Progress,
   Skeleton,
-  StatTile,
+  Stat,
+  StatGrid,
+  TextLink,
+  cn,
 } from "@newsekolah/ui";
 import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
-import { bentoCells, tileColumns } from "../../../lib/layout/bento";
+import { useIsDesktop, useIsTwoColumn } from "../../../components/use-is-desktop";
 import { isModuleEnabled } from "../../../lib/modules/feature-modules";
+import { navAccessFromMe } from "../../../lib/navigation-access";
+import { canOpenPath } from "../../../lib/navigation-permissions";
+import { QUICK_ACTION_TONE, sortQuickActions } from "../../../lib/navigation-quick-actions";
+import { quickActionHref } from "../../../lib/quick-actions";
 import { businessNow, useSimulation } from "../../../lib/simulation/clock";
+import { useQuickActions } from "../../../lib/use-quick-actions";
 import { AnnouncementFeed } from "../../announcements/components/announcement-feed";
+import { useActionInboxSummary } from "../../inbox/use-action-inbox-count";
 import { useUnreadCountQuery } from "../../notifications/api";
 import { useDashboardData } from "../api";
 import { useCheckInBlock } from "../home/blocks/check-in";
 import { useCounselorBlock } from "../home/blocks/counselor";
+import { useDeputyBlock } from "../home/blocks/deputy";
+import { useGateBlock } from "../home/blocks/gate";
 import { useHomeroomBlock } from "../home/blocks/homeroom";
 import { useLeadershipBlock } from "../home/blocks/leadership";
 import { useLibrarianBlock } from "../home/blocks/librarian";
 import { usePicketBlock } from "../home/blocks/picket";
 import { useStudentBlock } from "../home/blocks/student";
 import { useTeacherBlock } from "../home/blocks/teacher";
-import { collectBlocks } from "../home/compose";
+import { collectBlocks, guardHero, guardTiles } from "../home/compose";
+import { entrance, useFirstEntrance } from "../home/entrance";
 import { resolvePersonas } from "../home/personas";
-import type { Me, PersonaBlock, PersonaKey } from "../home/types";
+import { buildShortcuts } from "../home/shortcuts";
+import type { HeroCandidate, Me, PersonaBlock, PersonaKey, TileSpec } from "../home/types";
 
 /**
  * Stand-in `Me` while `/v1/me` is still loading. Every persona hook is
@@ -45,63 +60,110 @@ import type { Me, PersonaBlock, PersonaKey } from "../home/types";
  */
 const LOADING_ME = { tenant: { timezone: "UTC" }, permissions: [], duties: [] } as unknown as Me;
 
+/** The notifications count that fills a short stat row (see `notifications` below). */
+const NOTIFICATIONS_TILE = "common.notifications";
+
+/** The reader's own check-in card (home/blocks/check-in.tsx), first in the side column. */
+const CHECK_IN_SLOT = "checkIn.card";
+
 /**
- * The combined per-role home: every persona the signed-in user holds
- * stacks its own block, the most urgent hero and the top four stat tiles
- * across all of them win the fold. Replaces the single permission-driven
- * view (docs/superpowers/plans/2026-09-26-dashboard-per-peran.md Task 7).
+ * The desktop tile row spreads as many columns as it has tiles. A row is
+ * never a single tile: the filler only ever stands beside a persona tile.
+ */
+const TILE_COLUMNS: Record<number, string> = {
+  2: "sm:grid-cols-2",
+  3: "sm:grid-cols-3",
+  4: "sm:grid-cols-4",
+};
+
+/** A tile's value as a number when it is a plain count, so it can count up. */
+function countable(value: string): number | string {
+  return /^\d+$/.test(value) ? Number(value) : value;
+}
+
+/**
+ * The combined per-role home, one template for every role: the most urgent
+ * "now" card across the reader's personas (or a calm one when nothing is
+ * due) with exactly one primary action, a compact stat row, the personas'
+ * task cards, and announcements. A main column and a side column from
+ * `lg`; one column below it, in that order except that the reader's own
+ * check-in card comes straight after the figures.
  */
 export function DashboardView(): ReactElement {
   useSimulation();
-  const { data: me, isLoading, isError, refetch } = useDashboardData();
+  const { data: me, isLoading, isError, error, refetch } = useDashboardData();
   const t = useTranslations("app.dashboard");
+  const tQuick = useTranslations("app.quickActions");
   const format = useFormatter();
+  const isDesktop = useIsDesktop();
+  const twoColumn = useIsTwoColumn();
 
   const personas = me ? resolvePersonas(me) : new Set<PersonaKey>();
   const active = (key: PersonaKey) => personas.has(key);
   const blockMe = me ?? LOADING_ME;
 
-  // Fixed order per the plan: teacher, check-in, homeroom, student, leadership,
-  // picket, counselor, librarian. Left/right slots render in this order.
+  // Fixed order: the order cards stack in within each column.
   const teacher = useTeacherBlock(blockMe, active("teacher"));
-  const checkIn = useCheckInBlock(blockMe, active("checkIn"));
-  const homeroom = useHomeroomBlock(blockMe, active("homeroom"));
   const student = useStudentBlock(blockMe, active("student"));
   const leadership = useLeadershipBlock(blockMe, active("leadership"));
+  const deputy = useDeputyBlock(blockMe, active("deputy"));
   const picket = usePicketBlock(blockMe, active("picket"));
   const counselor = useCounselorBlock(blockMe, active("counselor"));
+  const homeroom = useHomeroomBlock(blockMe, active("homeroom"));
   const librarian = useLibrarianBlock(blockMe, active("librarian"));
+  const gate = useGateBlock(blockMe, active("gate"));
+  const checkIn = useCheckInBlock(blockMe, active("checkIn"));
   const unread = useUnreadCountQuery(Boolean(me));
+  const inbox = useActionInboxSummary();
+  const quickActions = sortQuickActions(useQuickActions());
 
-  if (isError) return <QueryError retry={() => refetch()} className="m-4" />;
+  // Personal check-in leads the side column: it is the reader's own task
+  // twice a day, ahead of the context cards the personas add.
+  const personaBlocks = [
+    checkIn,
+    teacher,
+    student,
+    leadership,
+    deputy,
+    picket,
+    counselor,
+    homeroom,
+    librarian,
+    gate,
+  ];
 
-  if (isLoading || !me) {
+  // The stagger and the count-up play on the first visit only.
+  const firstEntrance = useFirstEntrance(
+    Boolean(me) && !personaBlocks.some((block) => block.pending === true),
+  );
+
+  if (isError) {
     return (
-      <div className="mx-auto flex max-w-[1280px] flex-col gap-4 p-4 md:p-6" aria-busy="true">
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-36 w-full" />
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Skeleton className="h-[104px] w-full" />
-          <Skeleton className="h-[104px] w-full" />
-          <Skeleton className="h-[104px] w-full" />
-          <Skeleton className="h-[104px] w-full" />
-        </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </div>
-      </div>
+      <AppPage variant="wide" title={t("title")} nav={false}>
+        <QueryError retry={() => refetch()} error={error} />
+      </AppPage>
     );
   }
 
-  // Notifications never depend on an active persona: it is the guaranteed
-  // filler tile (priority 0) so the tile row is never empty.
+  if (isLoading || !me) {
+    return (
+      <AppPage variant="wide" header={false} nav={false} documentTitle={t("title")}>
+        <Skeleton className="h-14 w-60" aria-busy="true" />
+        <HomeSkeleton />
+      </AppPage>
+    );
+  }
+
+  const access = navAccessFromMe(me);
+  const canOpen = (href: string) => canOpenPath(href, access);
+
+  // Notifications never depend on an active persona: it is the filler tile
+  // (priority 0) that rounds out a short stat row. On its own it would only
+  // repeat the header bell, so a home without persona tiles has no row.
   const notifications: PersonaBlock = {
     tiles: [
       {
-        key: "common.notifications",
+        key: NOTIFICATIONS_TILE,
         priority: 0,
         label: t("tiles.notifications.label"),
         value: String(unread.data?.count ?? 0),
@@ -111,140 +173,261 @@ export function DashboardView(): ReactElement {
         tone: "purple",
       },
     ],
-    left: [],
-    right: [],
+    main: [],
+    side: [],
   };
 
-  const { hero, tiles, left, right } = collectBlocks([
-    teacher,
-    checkIn,
-    homeroom,
-    student,
-    leadership,
-    picket,
-    counselor,
-    librarian,
-    notifications,
-  ]);
+  const collected = collectBlocks([...personaBlocks, notifications]);
+  const merged = guardTiles(collected.tiles, canOpen);
+  // The filler only rounds out the desktop tile row. On a phone's strip it
+  // would take a row of its own (figures sit two to a row) to repeat the
+  // count the header bell already shows.
+  const shown = isDesktop ? merged : merged.filter((tile) => tile.key !== NOTIFICATIONS_TILE);
+  const tiles = shown.some((tile) => tile.key !== NOTIFICATIONS_TILE) ? shown : [];
 
-  const tileGrid = tileColumns(tiles.length);
-  const cards = bentoCells([
-    ...left,
-    ...right,
-    ...(isModuleEnabled(me, "announcements")
-      ? [
-          {
-            key: "announcements",
-            node: (
-              <Card className="h-full">
-                <CardHeader className="flex-row items-center justify-between gap-3">
-                  <CardTitle>{t("announcementsTitle")}</CardTitle>
-                  <Button asChild variant="ghost" size="sm">
-                    <Link href="/announcements">{t("openAnnouncements")}</Link>
-                  </Button>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <AnnouncementFeed limit={3} compact />
-                </CardContent>
-              </Card>
-            ),
-          },
-        ]
-      : []),
-  ]);
+  // The reader's own check-in leads the side column beside the queue; in
+  // one column it comes straight after the figures, ahead of the queue
+  // and the insight cards, instead of two thirds down the page.
+  const checkInSlot = collected.side.find((slot) => slot.key === CHECK_IN_SLOT);
+  const contextSlots = collected.side.filter((slot) => slot.key !== CHECK_IN_SLOT);
+  // A main column that no queue card leads (a picket teacher's empty queue
+  // is dropped, the gate adds none) takes the context cards, so it is not
+  // the hero and tiles beside a long side column. When it is still empty,
+  // the announcements close it instead of the side column.
+  const shortMain = collected.main.length <= 1;
+  const mainSlots = shortMain ? [...collected.main, ...contextSlots] : collected.main;
+  const sideSlots = shortMain ? [] : contextSlots;
+  const announcementsInMain = mainSlots.length === 0;
+  const fallback: HeroCandidate =
+    inbox.total > 0
+      ? {
+          key: "common.inbox",
+          priority: 0,
+          eyebrow: t("fallback.inboxEyebrow"),
+          title: t("fallback.inboxTitle", { count: inbox.total }),
+          meta: t("fallback.inboxMeta"),
+          action: { label: t("fallback.inboxAction"), href: "/inbox" },
+        }
+      : {
+          key: "common.idle",
+          priority: 0,
+          tone: "neutral",
+          eyebrow: t("fallback.eyebrow"),
+          title: t("fallback.title"),
+          meta: t("fallback.meta"),
+          action: { label: t("fallback.action"), href: "/notifications" },
+        };
+  const hero = guardHero(collected.hero ?? fallback, canOpen);
+
+  const shortcuts = buildShortcuts({
+    me,
+    hero,
+    canOpen,
+    hasCheckInCard: checkIn.side.length > 0,
+    quick: quickActions.map((action) => ({
+      key: action.id,
+      href: quickActionHref(action),
+      label: tQuick(`actions.${action.labelKey}`),
+      icon: <action.icon />,
+      tone: QUICK_ACTION_TONE[action.id],
+    })),
+    extra: {
+      monitor: t("shortcuts.monitor"),
+      setup: t("shortcuts.setup"),
+    },
+  });
+
+  const announcementsOn = isModuleEnabled(me, "announcements");
+  const firstName = me.name.trim().split(/\s+/)[0] ?? me.name;
 
   return (
-    <div className="mx-auto flex max-w-[1280px] flex-col gap-4 p-4 md:p-6">
-      <header className="flex flex-wrap items-start justify-between gap-3 pb-1">
-        <div className="min-w-0">
-          <p className="mb-1 text-[12px] text-fg-muted">
-            {t("title")} ·{" "}
-            {format.dateTime(businessNow(), {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              timeZone: me.tenant.timezone,
-            })}
-          </p>
-          <h1 className="font-heading text-[28px] font-bold tracking-tight text-fg">
-            {t("greeting", { name: me.name })}
-          </h1>
+    // The home runs wide (dashboards and their tile rows). The greeting is
+    // the page title and the date its eyebrow; the reader's roles and
+    // school year live in the account menu. The tab reads "Beranda".
+    <AppPage
+      variant="wide"
+      nav={false}
+      documentTitle={t("title")}
+      eyebrow={format.dateTime(businessNow(), {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        timeZone: me.tenant.timezone,
+      })}
+      title={<span className="block truncate">{t("greeting", { name: firstName })}</span>}
+    >
+      <div className="grid items-start gap-4 lg:grid-cols-12 lg:gap-6">
+        <div className="flex min-w-0 flex-col gap-4 lg:col-span-8" data-testid="dashboard-main">
+          {collected.pending ? (
+            <HomeSkeleton tiles={Math.max(tiles.length, 2)} strip={!isDesktop} />
+          ) : (
+            <>
+              <HomeHero hero={hero} enter={firstEntrance} />
+              {tiles.length > 0 && (
+                <StatGrid
+                  variant={isDesktop ? "tiles" : "strip"}
+                  aria-label={t("statsLabel")}
+                  className={cn(
+                    entrance(firstEntrance, 1).className,
+                    isDesktop && TILE_COLUMNS[Math.min(tiles.length, 4)],
+                  )}
+                  style={entrance(firstEntrance, 1).style}
+                  data-testid="dashboard-tiles"
+                >
+                  {tiles.map((tile) => (
+                    <HomeStat key={tile.key} tile={tile} countUp={firstEntrance} />
+                  ))}
+                </StatGrid>
+              )}
+            </>
+          )}
+          {checkInSlot && !twoColumn && (
+            <div data-testid={`dashboard-card-${checkInSlot.key}`} {...entrance(firstEntrance, 2)}>
+              {checkInSlot.node}
+            </div>
+          )}
+          {mainSlots.map((slot, index) => (
+            <div
+              key={slot.key}
+              data-testid={`dashboard-card-${slot.key}`}
+              {...entrance(firstEntrance, (checkInSlot && !twoColumn ? 3 : 2) + index)}
+            >
+              {slot.node}
+            </div>
+          ))}
+          {announcementsOn && announcementsInMain && <AnnouncementsCard />}
         </div>
-        <div className="flex items-center gap-3 md:flex-col md:items-end md:gap-1.5">
-          <div className="flex flex-wrap gap-1.5">
-            {me.roles.map((role) => (
-              <Badge key={role.id} variant="neutral">
-                {role.name}
-              </Badge>
-            ))}
-          </div>
-          <p className="text-[12px] text-fg-muted">
-            {me.active_academic_year?.label ?? t("noAcademicYear")}
-          </p>
-        </div>
-      </header>
 
-      {hero && (
-        <HeroCard
-          eyebrow={hero.eyebrow}
-          title={hero.title}
-          meta={hero.meta}
-          chip={hero.chip}
-          action={
-            hero.action && (
-              <Button asChild>
-                <Link href={hero.action.href}>{hero.action.label}</Link>
-              </Button>
-            )
-          }
+        <div className="flex min-w-0 flex-col gap-4 lg:col-span-4" data-testid="dashboard-side">
+          {checkInSlot && twoColumn && (
+            <div data-testid={`dashboard-card-${checkInSlot.key}`}>{checkInSlot.node}</div>
+          )}
+          {sideSlots.map((slot) => (
+            <div key={slot.key} data-testid={`dashboard-card-${slot.key}`}>
+              {slot.node}
+            </div>
+          ))}
+          {shortcuts.length > 0 && (
+            // The phone has the same actions one tap away on the floating
+            // quick-action button, so the card is for wider screens. The
+            // bottom padding keeps the last icon off the card's edge, as on
+            // the circulation desk's shortcuts.
+            <Card className="hidden pb-2 md:block" data-testid="dashboard-card-shortcuts">
+              <CardHeader>
+                <CardTitle as="h2">{t("shortcuts.title")}</CardTitle>
+              </CardHeader>
+              <List variant="inset">
+                {shortcuts.map((shortcut) => (
+                  <ListRow
+                    key={shortcut.key}
+                    href={shortcut.href}
+                    leading={
+                      <IconCircle tone={shortcut.tone} size="sm">
+                        {shortcut.icon}
+                      </IconCircle>
+                    }
+                    title={shortcut.label}
+                  />
+                ))}
+              </List>
+            </Card>
+          )}
+          {announcementsOn && !announcementsInMain && <AnnouncementsCard />}
+        </div>
+      </div>
+    </AppPage>
+  );
+}
+
+/** The latest three announcements; it closes whichever column has room. */
+function AnnouncementsCard(): ReactElement {
+  const t = useTranslations("app.dashboard");
+  return (
+    <Card data-testid="dashboard-card-announcements">
+      <CardHeader action={<TextLink href="/announcements">{t("openAnnouncements")}</TextLink>}>
+        <CardTitle as="h2">{t("announcementsTitle")}</CardTitle>
+      </CardHeader>
+      <AnnouncementFeed limit={3} compact />
+    </Card>
+  );
+}
+
+function HomeHero({ hero, enter }: { hero: HeroCandidate; enter: boolean }): ReactElement {
+  return (
+    <HeroCard
+      {...entrance(enter, 0)}
+      data-testid="dashboard-hero"
+      tone={hero.tone}
+      eyebrow={hero.eyebrow}
+      title={hero.title}
+      meta={hero.meta}
+      chip={hero.chip}
+      live={hero.live}
+      action={
+        hero.action && (
+          <Button asChild className="w-full sm:w-auto">
+            <Link href={hero.action.href}>{hero.action.label}</Link>
+          </Button>
+        )
+      }
+      secondaryAction={
+        hero.secondaryAction && (
+          <TextLink href={hero.secondaryAction.href}>{hero.secondaryAction.label}</TextLink>
+        )
+      }
+    >
+      {hero.progress && (
+        <Progress
+          className="mt-1"
+          variant="meter"
+          value={hero.progress.value}
+          max={hero.progress.max}
+          label={hero.progress.label}
+          valueLabel={hero.progress.valueLabel}
         />
       )}
+    </HeroCard>
+  );
+}
 
-      <div className={tileGrid.container} data-testid="dashboard-tiles">
-        {tiles.map((tile, index) => {
-          const isLast = index === tiles.length - 1;
-          const content = (
-            <StatTile
-              className="h-full"
-              icon={tile.icon}
-              tone={tile.tone}
-              value={tile.value}
-              label={tile.label}
-              hint={tile.hint}
-            />
-          );
-          return (
-            <div
-              key={tile.key}
-              data-testid={`dashboard-tile-${tile.key}`}
-              className={cn("h-full", isLast && tileGrid.lastTileClassName)}
-            >
-              {tile.href ? (
-                <Link
-                  href={tile.href}
-                  className="block h-full rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2"
-                >
-                  {content}
-                </Link>
-              ) : (
-                content
-              )}
-            </div>
-          );
-        })}
-      </div>
+function HomeStat({ tile, countUp }: { tile: TileSpec; countUp: boolean }): ReactElement {
+  const Icon = tile.icon;
+  return (
+    <Stat
+      data-testid={`dashboard-tile-${tile.key}`}
+      icon={<Icon />}
+      tone={tile.tone}
+      value={countable(tile.value)}
+      label={tile.label}
+      hint={tile.hint}
+      href={tile.href}
+      countUp={countUp}
+    />
+  );
+}
 
-      <div className="grid gap-4 lg:grid-cols-2" data-testid="dashboard-cards">
-        {cards.map((cell) => (
-          <div
-            key={cell.key}
-            data-testid={`dashboard-card-${cell.key}`}
-            className={cn("flex flex-col", cell.span === "full" && "lg:col-span-2")}
-          >
-            <div className="flex-1">{cell.node}</div>
-          </div>
-        ))}
-      </div>
+/**
+ * The hero and stat row's place while the personas' first answers load, so
+ * nothing jumps. Like the route's loading screen it stays invisible for the
+ * first 200ms and then fades in, so a short wait never flashes a skeleton.
+ */
+function HomeSkeleton({ tiles = 4, strip = false }: { tiles?: number; strip?: boolean }) {
+  return (
+    <div
+      className="flex animate-fade-in flex-col gap-4 [animation-delay:var(--duration-base)]"
+      aria-busy="true"
+      data-testid="dashboard-skeleton"
+    >
+      <Skeleton className="h-44 w-full rounded-xl" />
+      {strip ? (
+        <Skeleton className="h-16 w-full rounded-lg" />
+      ) : (
+        <div className={cn("grid grid-cols-2 gap-3", TILE_COLUMNS[Math.min(tiles, 4)])}>
+          {Array.from({ length: Math.min(tiles, 4) }, (_, index) => (
+            <Skeleton key={index} className="h-26 w-full rounded-lg" />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mocks.replace }),
   useSearchParams: () => new URLSearchParams(mocks.query),
@@ -37,20 +38,21 @@ beforeEach(() => {
 });
 
 describe("PermitsWorkspaceView", () => {
-  it("offers a student the request kinds without any queue option and no banner", () => {
-    mocks.permissions = new Set(["submit_leave_requests"]);
-    render(<PermitsWorkspaceView initialType="leave" />);
-    expect(screen.getByTestId("leave")).toBeInTheDocument();
-    expect(screen.getByText("requestKind")).toBeInTheDocument();
-    expect(screen.queryByText("allQueue")).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /reviewBanner/ })).not.toBeInTheDocument();
-    expect(mocks.replace).not.toHaveBeenCalled();
-  });
+  it.each(["leave", "exit", "late"])(
+    "gives a student the %s route's own screen, with no type picker and no redirect",
+    (pageType) => {
+      mocks.permissions = new Set(["submit_leave_requests"]);
+      render(<PermitsWorkspaceView initialType={pageType} />);
+      expect(screen.getByTestId(pageType)).toBeInTheDocument();
+      expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+      expect(mocks.replace).not.toHaveBeenCalled();
+    },
+  );
 
-  it("shows reviewers who also submit a banner linking to the inbox", () => {
+  it("keeps a reviewing student on the route", () => {
     mocks.permissions = new Set(["submit_leave_requests", "review_leave_requests"]);
     render(<PermitsWorkspaceView initialType="leave" />);
-    expect(screen.getByRole("link", { name: /reviewBanner/ })).toHaveAttribute("href", "/inbox");
+    expect(screen.getByTestId("leave")).toBeInTheDocument();
     expect(mocks.replace).not.toHaveBeenCalled();
   });
 
@@ -70,4 +72,25 @@ describe("PermitsWorkspaceView", () => {
     render(<PermitsWorkspaceView initialType="leave" />);
     expect(mocks.replace).toHaveBeenCalledWith("/inbox?type=leave");
   });
+
+  it.each(["leave", "exit", "late"])(
+    "sends a staff reviewer holding every permit permission from the %s route to the inbox when it is not a type they can open",
+    (pageType) => {
+      mocks.profileKind = "staff";
+      mocks.permissions = new Set([
+        "submit_leave_requests",
+        "review_leave_requests",
+        "issue_leave_letters",
+        "issue_scan_tokens",
+        "scan_exit_permits",
+      ]);
+      render(<PermitsWorkspaceView initialType={pageType} />);
+      if (pageType === "late") {
+        expect(mocks.replace).toHaveBeenCalledWith("/inbox?type=late");
+      } else {
+        expect(mocks.replace).not.toHaveBeenCalled();
+        expect(screen.getByTestId(pageType)).toBeInTheDocument();
+      }
+    },
+  );
 });

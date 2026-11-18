@@ -1,22 +1,29 @@
 "use client";
 
-import { PageHeader, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { SkeletonDetail, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryNames } from "../../reference/directory-names";
-import { useMentorGroupMembersQuery, useMentorGroupQuery } from "../api";
+import { useGroupSizeLimitQuery, useMentorGroupMembersQuery, useMentorGroupQuery } from "../api";
 
 import { MentorGroupMembersPanel } from "./mentor-group-members-panel";
 import { MentorMeetingNotesPanel } from "./mentor-meeting-notes-panel";
 
+/**
+ * One mentoring group: its mentor and size against the school's limit in
+ * the header, its members, and the meeting notes for whoever keeps them.
+ */
 export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactElement {
   const t = useTranslations("app.mentoring.groupDetail");
+  const tMembers = useTranslations("app.mentoring.members");
   const canSeeNotes = useCan("manage_mentoring");
+  const limit = useGroupSizeLimitQuery();
   const [tab, setTab] = useUrlState<string>(
     "tab",
     ["members", ...(canSeeNotes ? ["notes"] : [])],
@@ -27,39 +34,42 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
   const members = useMentorGroupMembersQuery(groupId);
   const teacherMap = useDirectoryNames([group.data?.mentor_user_id]);
 
-  if (group.isError && !group.data)
-    return <QueryError retry={() => group.refetch()} className="m-4" />;
+  if (group.isError && !group.data) {
+    return (
+      <AppPage>
+        <QueryError retry={() => group.refetch()} error={group.error} />
+      </AppPage>
+    );
+  }
 
   if (group.isLoading || !group.data) {
     return (
-      <div className="flex flex-col gap-6 p-4 md:p-6" aria-busy="true">
-        <div className="flex flex-col gap-1">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-7 w-56" />
-          <Skeleton className="h-4 w-40" />
-        </div>
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-48 w-full" />
-      </div>
+      <AppPage>
+        <SkeletonDetail rows={5} />
+      </AppPage>
     );
   }
 
   const rawMentorName = teacherMap.get(group.data.mentor_user_id)?.name;
   const mentorName = rawMentorName ? formatDisplayName(rawMentorName) : t("unknownMentor");
+  const size =
+    members.data && limit.data
+      ? tMembers("countOfLimit", { count: members.data.data.length, limit: limit.data.limit })
+      : undefined;
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <div className="flex flex-col gap-1">
-        <PageHeader eyebrow={t("eyebrow")} title={group.data.name} className="border-b-0 pb-0" />
-        <p className="text-[13px] text-fg-muted">{t("mentorLabel", { name: mentorName })}</p>
-      </div>
-
+    <AppPage
+      title={group.data.name}
+      description={[t("mentorLabel", { name: mentorName }), size].filter(Boolean).join(" · ")}
+    >
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="members">{t("tabs.members")}</TabsTrigger>
-          {canSeeNotes && <TabsTrigger value="notes">{t("tabs.notes")}</TabsTrigger>}
-        </TabsList>
-        <TabsContent value="members" className="pt-4">
+        {canSeeNotes && (
+          <TabsList>
+            <TabsTrigger value="members">{t("tabs.members")}</TabsTrigger>
+            <TabsTrigger value="notes">{t("tabs.notes")}</TabsTrigger>
+          </TabsList>
+        )}
+        <TabsContent value="members" className={canSeeNotes ? "pt-4" : undefined}>
           <MentorGroupMembersPanel groupId={groupId} />
         </TabsContent>
         {canSeeNotes && (
@@ -68,6 +78,6 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
           </TabsContent>
         )}
       </Tabs>
-    </div>
+    </AppPage>
   );
 }

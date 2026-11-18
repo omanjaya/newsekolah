@@ -203,6 +203,20 @@ describe("DataTable", () => {
     expect(screen.queryByText("Siti Aminah")).not.toBeInTheDocument();
   });
 
+  it("announces the sort direction on sortable column headers", async () => {
+    render(<Harness data={ROWS} rowCount={ROWS.length} />);
+    const header = screen.getByRole("columnheader", { name: "Nama" });
+    expect(header).toHaveAttribute("aria-sort", "none");
+    // A column that cannot sort says nothing about order.
+    expect(screen.getByRole("columnheader", { name: "Aksi" })).not.toHaveAttribute("aria-sort");
+
+    await userEvent.click(screen.getByRole("button", { name: "Nama" }));
+    expect(header).toHaveAttribute("aria-sort", "ascending");
+
+    await userEvent.click(screen.getByRole("button", { name: "Nama" }));
+    expect(header).toHaveAttribute("aria-sort", "descending");
+  });
+
   it("calls onSortingChange when a sortable header is clicked", async () => {
     const onSortingChange = vi.fn();
     render(<Harness data={ROWS} rowCount={ROWS.length} onSortingChange={onSortingChange} />);
@@ -248,7 +262,9 @@ describe("DataTable", () => {
 
     expect(screen.getAllByText("Siti Aminah").length).toBeGreaterThan(0);
     expect(screen.queryByText("Siswa 0")).not.toBeInTheDocument();
-    expect(screen.getByText("Halaman 1 dari 1")).toBeInTheDocument();
+    // Back on one page: the footer only counts the rows.
+    expect(screen.getByText("1 data")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ke halaman berikutnya" })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByRole("searchbox", { name: "Cari" }), {
       target: { value: "missing" },
@@ -276,10 +292,12 @@ describe("DataTable", () => {
     expect(screen.getAllByText("Siswa 9").length).toBeGreaterThan(0);
     expect(screen.queryByText("Siswa 10")).not.toBeInTheDocument();
     expect(screen.getByText("Halaman 1 dari 2")).toBeInTheDocument();
+    expect(screen.getByText("1–10 dari 12")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
     expect(screen.getAllByText("Siswa 10").length).toBeGreaterThan(0);
     expect(screen.queryByText("Siswa 0")).not.toBeInTheDocument();
+    expect(screen.getByText("11–12 dari 12")).toBeInTheDocument();
   });
 
   it("keeps the 50-row default page size when defaultPageSize is not set", () => {
@@ -290,7 +308,10 @@ describe("DataTable", () => {
     render(<LocalHarness data={rows} />);
 
     expect(screen.getAllByText("Siswa 11").length).toBeGreaterThan(0);
-    expect(screen.getByText("Halaman 1 dari 1")).toBeInTheDocument();
+    // One page of 50: a row count, no page label and nowhere to navigate.
+    expect(screen.getByText("12 data")).toBeInTheDocument();
+    expect(screen.queryByText(/Halaman 1 dari/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ke halaman berikutnya" })).not.toBeInTheDocument();
   });
 
   it("does not render offset pagination for cursor data", () => {
@@ -300,7 +321,17 @@ describe("DataTable", () => {
   });
 
   it("uses column headers in the visibility menu and keeps action columns out", async () => {
-    render(<LocalHarness data={ROWS} />);
+    // The menu needs two columns to choose between.
+    render(
+      <DataTable
+        mode="local"
+        data={ROWS}
+        columns={[
+          ...columns,
+          { id: "code", header: "Kode", accessorFn: (row: Row) => row.id.padStart(3, "0") },
+        ]}
+      />,
+    );
     await userEvent.click(screen.getByRole("button", { name: "Kolom tampil" }));
 
     expect(screen.getByRole("menuitemcheckbox", { name: "Nama" })).toBeInTheDocument();
@@ -439,12 +470,34 @@ describe("DataTable", () => {
 
   it("does not force the fillHeight table area to fill its parent when rows are few", () => {
     render(<FillHeightHarness data={ROWS} />);
-    const wrapper = screen.getByRole("table").parentElement;
-    if (!wrapper) throw new Error("Missing table wrapper");
-    // No flex-1 (which would force it to grow to the parent's full height
-    // regardless of content): it only ever caps at that height.
-    expect(wrapper.className).not.toMatch(/flex-1/);
-    expect(wrapper).toHaveClass("md:max-h-full", "md:overflow-y-auto");
+    const scroller = screen.getByRole("table").parentElement;
+    const card = scroller?.parentElement;
+    if (!scroller || !card) throw new Error("Missing table wrapper");
+    // No flex-1 (which would force either to grow to the parent's full
+    // height regardless of content): the card only ever caps at that
+    // height, and the rows scroll inside it, above the footer.
+    expect(card.className).not.toMatch(/flex-1/);
+    expect(scroller.className).not.toMatch(/flex-1/);
+    expect(card).toHaveClass("md:max-h-full");
+    expect(scroller).toHaveClass("md:min-h-0", "md:overflow-y-auto");
+  });
+
+  it("fades a fillHeight body's edges while rows wait past them, below the sticky head", () => {
+    render(<FillHeightHarness data={ROWS} />);
+    const scroller = screen.getByRole("table").parentElement;
+    if (!scroller) throw new Error("Missing table wrapper");
+    expect(scroller).toHaveClass("scroll-fade-y", "[--scroll-fade-inset-start:var(--space-10)]");
+    // jsdom has no layout: give the box more rows than room, then scroll.
+    Object.defineProperty(scroller, "clientHeight", { configurable: true, value: 200 });
+    Object.defineProperty(scroller, "scrollHeight", { configurable: true, value: 600 });
+    fireEvent.scroll(scroller);
+    expect(scroller).toHaveAttribute("data-overflow-end");
+    expect(scroller).not.toHaveAttribute("data-overflow-start");
+  });
+
+  it("leaves an ordinary table's body unmasked", () => {
+    render(<LocalHarness data={ROWS} />);
+    expect(screen.getByRole("table").parentElement).not.toHaveClass("scroll-fade-y");
   });
 
   it("does not expose remembered state across scopes", () => {
@@ -459,6 +512,26 @@ describe("DataTable", () => {
 
     view.rerender(<AsyncRememberedHarness data={ROWS} isLoading={false} scope="tenant:b" />);
     expect(screen.getByRole("searchbox", { name: "Cari" })).toHaveValue("");
+    vi.useRealTimers();
+  });
+
+  it("restores a scope's remembered search when that scope comes back, without remounting", () => {
+    vi.useFakeTimers();
+    const view = render(<AsyncRememberedHarness data={ROWS} isLoading={false} scope="tenant:a" />);
+    const table = screen.getByRole("table");
+    fireEvent.change(screen.getByRole("searchbox", { name: "Cari" }), {
+      target: { value: "Siti" },
+    });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    view.rerender(<AsyncRememberedHarness data={ROWS} isLoading={false} scope="tenant:b" />);
+    expect(screen.getByRole("searchbox", { name: "Cari" })).toHaveValue("");
+    view.rerender(<AsyncRememberedHarness data={ROWS} isLoading={false} scope="tenant:a" />);
+    expect(screen.getByRole("searchbox", { name: "Cari" })).toHaveValue("Siti");
+    // The table element itself survived both scope changes.
+    expect(screen.getByRole("table")).toBe(table);
     vi.useRealTimers();
   });
 });

@@ -1,11 +1,11 @@
 {
   "eyebrow": "Perpustakaan",
-  "title": "Pengaturan Perpustakaan",
+  "title": "Pengaturan perpustakaan",
   "tabsLabel": "Bagian pengaturan perpustakaan",
   "tabs": {
-    "loanRules": "Aturan Peminjaman",
-    "memberTypes": "Jenis Anggota",
-    "masterData": "Data Perpustakaan"
+    "loanRules": "Aturan peminjaman",
+    "memberTypes": "Jenis anggota",
+    "masterData": "Data katalog"
   },
   "noAccessTitle": "Tidak ada pengaturan yang bisa dibuka",
   "noAccessDescription": "Akun Anda belum memiliki akses ke pengaturan perpustakaan."

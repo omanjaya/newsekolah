@@ -1,8 +1,18 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
-vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key,
+  useLocale: () => "id",
+}));
+// useUrlState reads the tab from the router's query, which Next keeps in
+// step with the history writes it makes; the stub follows the address the
+// same way, so a tab click lands on its panel.
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(window.location.search),
+}));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/hooks/use-active-year", () => ({ useActiveYear: () => ({ id: "year-1" }) }));
 vi.mock("../../academic/api-offerings", () => ({
   // A teacher (canOpenAny=false) is scoped to their own assignments; a
@@ -34,28 +44,26 @@ vi.mock("./tp-mapping-editor", () => ({
   TPMappingEditor: () => <div data-testid="tp-mapping-editor" />,
 }));
 vi.mock("./gradebook-sheet", () => ({
-  GradebookSheet: ({ canManage }: { canManage: boolean }) => (
-    <div data-testid="gradebook-sheet" data-can-manage={String(canManage)} />
-  ),
-}));
-vi.mock("./grading-assignment-card", () => ({
-  GradingAssignmentCard: ({ classId, subjectId }: { classId: string; subjectId: string }) => (
-    <div data-testid={`grading-assignment-card-${classId}-${subjectId}`} />
+  GradebookSheet: ({
+    canManage,
+    onPendingChangesChange,
+  }: {
+    canManage: boolean;
+    onPendingChangesChange: (count: number) => void;
+  }) => (
+    <div data-testid="gradebook-sheet" data-can-manage={String(canManage)}>
+      <button
+        type="button"
+        onClick={() => {
+          onPendingChangesChange(3);
+        }}
+      >
+        make-dirty
+      </button>
+    </div>
   ),
 }));
 vi.mock("../api", () => ({
-  useGradebookQuery: () => ({
-    data: {
-      class_id: "class-1",
-      subject_id: "subject-1",
-      term_id: "term-1",
-      is_published: false,
-      scale: { min: 0, max: 100, default_kktp: 75 },
-      components: [{ id: "c1" }],
-      students: [{ student_user_id: "s1", name: "Siswa", scores: {} }],
-    },
-    isLoading: false,
-  }),
   useTermsQuery: () => ({ data: { data: [] }, isLoading: false }),
 }));
 
@@ -70,6 +78,8 @@ import { GradingView } from "./grading-view";
 afterEach(() => {
   cleanup();
   canFn.mockReset();
+  // The tab lives in the address; start every test on the default panel.
+  window.history.replaceState(null, "", "/");
 });
 
 /** Permission holder: view_grades + view_reports only, exactly a principal
@@ -117,19 +127,39 @@ describe("GradingView read-only rendering for view_grades", () => {
     expect(screen.getByRole("tab", { name: "tabErapor" })).toBeInTheDocument();
   });
 
-  it("shows the entry stat-tile row and the teaching assignment as a bento card, alongside the opened sheet", () => {
+  it("opens the sheet first, scoped by one picker of the teacher's own assignments", () => {
     grantManageGrades();
     render(<GradingView />);
 
-    expect(screen.getByTestId("grading-entry-tiles")).toBeInTheDocument();
-    expect(screen.getByTestId("grading-entry-tile-students")).toBeInTheDocument();
-    expect(screen.getByTestId("grading-entry-tile-components")).toBeInTheDocument();
-    expect(screen.getByTestId("grading-entry-tile-filled")).toBeInTheDocument();
-    expect(screen.getByTestId("grading-entry-tile-published")).toBeInTheDocument();
-
-    expect(screen.getByTestId("grading-assignment-cards")).toBeInTheDocument();
-    expect(screen.getByTestId("grading-assignment-card-class-1-subject-1")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "pickAssignment" })).toHaveTextContent(
+      "X-A · Matematika",
+    );
+    expect(screen.queryByRole("combobox", { name: "pickClass" })).not.toBeInTheDocument();
     expect(screen.getByTestId("gradebook-sheet")).toBeInTheDocument();
+  });
+
+  it("gives a school-wide reader separate class and subject pickers", () => {
+    grantViewGradesOnly();
+    render(<GradingView />);
+
+    expect(screen.getByRole("combobox", { name: "pickClass" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "pickSubject" })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "pickAssignment" })).not.toBeInTheDocument();
+    // On a phone the subject, the longest name, takes a row of its own
+    // under the class and the term instead of being cut beside the class.
+    expect(
+      screen.getByRole("combobox", { name: "pickSubject" }).closest(".col-span-2"),
+    ).toHaveClass("max-sm:order-last", "sm:col-span-1");
+  });
+
+  it("hides the class and subject pickers on the e-Rapor panel, which has its own scope", async () => {
+    grantManageGrades();
+    const user = userEvent.setup();
+    render(<GradingView />);
+
+    await user.click(screen.getByRole("tab", { name: "tabErapor" }));
+    expect(screen.getByRole("tabpanel")).toContainElement(screen.getByTestId("erapor-export"));
+    expect(screen.queryByRole("combobox", { name: "pickAssignment" })).not.toBeInTheDocument();
   });
 
   it("shows no tab bar at all for a reader with neither manage_grades nor view_grades", () => {
@@ -146,5 +176,33 @@ describe("GradingView read-only rendering for view_grades", () => {
     // GradingView's own rendering degrades safely (read-only) rather than
     // crashing if it were ever reached.
     expect(screen.getByTestId("gradebook-sheet")).toHaveAttribute("data-can-manage", "false");
+  });
+});
+
+describe("GradingView unsaved changes", () => {
+  it("asks through the shared confirm dialog, not window.confirm, before leaving a dirty sheet", async () => {
+    grantManageGrades();
+    const nativeConfirm = vi.spyOn(window, "confirm");
+    const user = userEvent.setup();
+    render(<GradingView />);
+
+    await user.click(screen.getByRole("button", { name: "make-dirty" }));
+    await user.click(screen.getByRole("tab", { name: "tabErapor" }));
+
+    expect(nativeConfirm).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "table.discardChangesTitle" })).toBeInTheDocument();
+    expect(screen.queryByTestId("erapor-export")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "table.discardChangesConfirm" }));
+    expect(screen.getByTestId("erapor-export")).toBeInTheDocument();
+  });
+
+  it("switches tabs straight away when nothing is unsaved", async () => {
+    grantManageGrades();
+    const user = userEvent.setup();
+    render(<GradingView />);
+
+    await user.click(screen.getByRole("tab", { name: "tabErapor" }));
+    expect(screen.getByTestId("erapor-export")).toBeInTheDocument();
   });
 });

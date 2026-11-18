@@ -2,10 +2,11 @@
 
 import type { components } from "@newsekolah/api-client";
 import {
+  Badge,
+  Button,
   DataTable,
   EmptyState,
-  Input,
-  PageHeader,
+  HeroCard,
   Stat,
   StatGrid,
   StatusBadge,
@@ -13,24 +14,29 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-  cn,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
-import { UsersRound } from "lucide-react";
+import { CircleDashed, ClipboardList, UserX, UsersRound } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
+import { navAccessFromMe } from "../../../lib/navigation-access";
+import { canOpenPath } from "../../../lib/navigation-permissions";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { todayInZone, useHomeroomAttendanceQuery } from "../../attendance/api";
+import { DayStepper } from "../../attendance/components/day-stepper";
 import { statusToken } from "../../attendance/lib/status-tokens";
 import { useLeaveReviewQueueQuery } from "../../permits/api";
+import { useClassesQuery } from "../../reference/api";
 import { StudentLink } from "../../students/components/student-link";
 
 import { HomeroomDashboard } from "./homeroom-dashboard";
@@ -70,7 +76,9 @@ export function HomeroomView(): ReactElement {
     ],
     "overview",
   );
-  const [date, setDate] = useDateFilter("date", todayInZone(me?.tenant.timezone));
+  const today = todayInZone(me?.tenant.timezone);
+  const [date, setDate] = useDateFilter("date", today);
+  const classes = useClassesQuery();
   const [search, setSearch] = useRememberedViewState("homeroom-search", "");
   const [statusCode, setStatusCode] = useUrlState<(typeof STATUS_VALUES)[number]>(
     "status",
@@ -82,7 +90,7 @@ export function HomeroomView(): ReactElement {
     pageSize: PAGE_SIZE,
   });
 
-  const { data, isLoading } = useHomeroomAttendanceQuery(
+  const { data, isLoading, isError, error, refetch } = useHomeroomAttendanceQuery(
     {
       date,
       search: search || undefined,
@@ -136,6 +144,7 @@ export function HomeroomView(): ReactElement {
         accessorKey: "name",
         header: t("columns.name"),
         enableSorting: false,
+        meta: { card: "title" },
         cell: ({ row }) => (
           <div className="flex flex-col">
             <span className="text-fg">
@@ -144,7 +153,7 @@ export function HomeroomView(): ReactElement {
               </StudentLink>
             </span>
             {row.original.nis && (
-              <span className="text-[12px] text-fg-muted">{row.original.nis}</span>
+              <span className="text-caption font-normal text-fg-muted">{row.original.nis}</span>
             )}
           </div>
         ),
@@ -153,13 +162,14 @@ export function HomeroomView(): ReactElement {
         accessorKey: "status_code",
         header: t("columns.status"),
         enableSorting: false,
+        meta: { card: "meta" },
         cell: ({ row }) => {
           const code = row.original.status_code;
           const token = statusToken(code);
           return token ? (
             <StatusBadge status={token} label={t(`codes.${code}`)} />
           ) : (
-            <span className="text-fg-muted">{t(`codes.${code}`)}</span>
+            <Badge tone="neutral">{t(`codes.${code}`)}</Badge>
           );
         },
       },
@@ -168,7 +178,7 @@ export function HomeroomView(): ReactElement {
         header: t("columns.sessions"),
         enableSorting: false,
         cell: ({ row }) => (
-          <span className={cn(!row.original.complete && "text-status-late")}>
+          <span className={row.original.complete ? undefined : "text-warning"}>
             {row.original.submitted_sessions}/{row.original.expected_sessions}
           </span>
         ),
@@ -186,7 +196,7 @@ export function HomeroomView(): ReactElement {
             <div className="flex flex-col">
               {guardian_name && <span className="text-fg">{guardian_name}</span>}
               {guardian_phone && (
-                <span className="text-[12px] text-fg-muted">{guardian_phone}</span>
+                <span className="text-caption font-normal text-fg-muted">{guardian_phone}</span>
               )}
             </div>
           );
@@ -218,17 +228,25 @@ export function HomeroomView(): ReactElement {
     [t, disciplineOn],
   );
 
+  const access = navAccessFromMe(me);
   if (!homeroom) {
+    // An administrator can make someone a homeroom teacher; say where.
+    const canAssign = canOpenPath("/school/assignments", access);
     return (
-      <div className="p-4 md:p-6">
-        <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <AppPage>
         <EmptyState
           icon={<UsersRound aria-hidden="true" />}
           title={t("noHomeroomTitle")}
-          description={t("noHomeroomBody")}
-          className="mt-6"
+          description={canAssign ? t("noHomeroomAdminBody") : t("noHomeroomBody")}
+          action={
+            canAssign ? (
+              <Button asChild variant="secondary">
+                <Link href="/school/assignments">{t("openAssignments")}</Link>
+              </Button>
+            ) : undefined
+          }
         />
-      </div>
+      </AppPage>
     );
   }
 
@@ -236,60 +254,93 @@ export function HomeroomView(): ReactElement {
   const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
   const absent = counts.A ?? 0;
   const incomplete = counts.INCOMPLETE ?? 0;
+  // The duty names its class; an older assignment without the label falls
+  // back to the class list.
+  const className =
+    homeroom.scope_label ?? classes.data?.data.find((c) => c.id === homeroom.scope_id)?.name;
+
+  function changeDate(next: string) {
+    setDate(next);
+    setPagination((p) => ({ ...p, pageIndex: 0 }));
+  }
+
+  function showAttention() {
+    setStatusCode("A");
+    setPagination((p) => ({ ...p, pageIndex: 0 }));
+    setTab("attendance");
+  }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={
-          homeroom.scope_label
-            ? t("titleWithClass", { className: homeroom.scope_label })
-            : t("title")
-        }
+    <Tabs value={tab} onValueChange={setTab} className="contents">
+      <AppPage
+        description={className ? t("titleWithClass", { className }) : undefined}
         actions={
-          <Input
-            type="date"
+          <DayStepper
             value={date}
-            onChange={(e) => {
-              if (e.target.value) {
-                setDate(e.target.value);
-                setPagination((p) => ({ ...p, pageIndex: 0 }));
-              }
+            onChange={changeDate}
+            today={today}
+            labels={{
+              previous: t("prevDay"),
+              next: t("nextDay"),
+              today: t("today"),
+              date: t("dateLabel"),
             }}
-            aria-label={t("dateLabel")}
-            className="w-44"
           />
         }
-      />
+        nav={
+          <TabsList variant="underline" aria-label={t("tabsLabel")}>
+            <TabsTrigger value="overview">{t("tabs.overview")}</TabsTrigger>
+            <TabsTrigger value="attendance">{t("tabs.attendance")}</TabsTrigger>
+            {permitsOn && <TabsTrigger value="permits">{t("tabs.permits")}</TabsTrigger>}
+            {canViewDiscipline && (
+              <TabsTrigger value="discipline">{t("tabs.discipline")}</TabsTrigger>
+            )}
+            <TabsTrigger value="parents">{t("tabs.parents")}</TabsTrigger>
+          </TabsList>
+        }
+      >
+        <TabsContent value="overview" className="flex flex-col gap-6 pt-0">
+          {/* Who needs the homeroom teacher today, first. */}
+          <HeroCard
+            tone={dashboard.isLoading || attentionRows.length === 0 ? "accent-soft" : "warning"}
+            // A calm day gets a neutral eyebrow, not "Perlu perhatian".
+            eyebrow={attentionRows.length > 0 ? t("attentionTitle") : t("today")}
+            title={
+              attentionRows.length > 0
+                ? t("attentionCount", { count: attentionRows.length })
+                : t("attentionNoneTitle")
+            }
+            meta={
+              attentionRows.length > 0
+                ? t("attentionBreakdown", { absent, incomplete })
+                : t("attentionEmpty")
+            }
+            action={
+              attentionRows.length > 0 ? (
+                <Button variant="secondary" onClick={showAttention}>
+                  {t("attentionOpen")}
+                </Button>
+              ) : undefined
+            }
+          />
 
-      <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-4">
-        <TabsList>
-          <TabsTrigger value="overview">{t("tabs.overview")}</TabsTrigger>
-          <TabsTrigger value="attendance">{t("tabs.attendance")}</TabsTrigger>
-          {permitsOn && <TabsTrigger value="permits">{t("tabs.permits")}</TabsTrigger>}
-          {canViewDiscipline && (
-            <TabsTrigger value="discipline">{t("tabs.discipline")}</TabsTrigger>
-          )}
-          <TabsTrigger value="parents">{t("tabs.parents")}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview" className="flex flex-col gap-6">
-          <StatGrid className="rounded-sm border border-border bg-surface p-4">
-            <Stat label={t("statTotal")} value={total} />
+          <StatGrid variant="strip" aria-label={t("statsLabel")}>
+            <Stat icon={<UsersRound />} tone="blue" value={total} label={t("statTotal")} />
+            <Stat icon={<UserX />} tone="red" value={absent} label={t("statAbsent")} />
             <Stat
-              label={t("statAbsent")}
-              value={
-                <span className={absent > 0 ? "text-status-absent" : undefined}>{absent}</span>
-              }
-            />
-            <Stat
+              icon={<CircleDashed />}
+              tone="amber"
+              value={incomplete}
               label={t("statIncomplete")}
-              value={
-                <span className={incomplete > 0 ? "text-status-late" : undefined}>
-                  {incomplete}
-                </span>
-              }
             />
-            {permitsOn && <Stat label={t("statPendingLeave")} value={pendingLeave.length} />}
+            {permitsOn && (
+              <Stat
+                icon={<ClipboardList />}
+                tone="purple"
+                value={pendingLeave.length}
+                label={t("statPendingLeave")}
+              />
+            )}
           </StatGrid>
 
           <HomeroomDashboard
@@ -300,10 +351,9 @@ export function HomeroomView(): ReactElement {
             leaveLoading={leaveQueue.isLoading}
             showLeave={permitsOn}
             showDiscipline={disciplineOn}
-            timeZone={me?.tenant.timezone}
           />
         </TabsContent>
-        <TabsContent value="attendance">
+        <TabsContent value="attendance" className="pt-0">
           <DataTable
             stateKey="features/homeroom/components/homeroom-view:1"
             data={rows}
@@ -324,6 +374,10 @@ export function HomeroomView(): ReactElement {
               removeFilter: (label) => t("filters.removeFilter", { label }),
             }}
             isLoading={isLoading}
+            error={isError ? error : undefined}
+            onRetry={() => {
+              void refetch();
+            }}
             getRowId={(r) => r.student_user_id}
             toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
             emptyState={
@@ -336,19 +390,19 @@ export function HomeroomView(): ReactElement {
           />
         </TabsContent>
         {permitsOn && (
-          <TabsContent value="permits">
+          <TabsContent value="permits" className="pt-0">
             <HomeroomPermitsTab classId={homeroom.scope_id ?? ""} timeZone={me?.tenant.timezone} />
           </TabsContent>
         )}
         {canViewDiscipline && (
-          <TabsContent value="discipline">
+          <TabsContent value="discipline" className="pt-0">
             <HomeroomDisciplineTab classId={homeroom.scope_id ?? ""} />
           </TabsContent>
         )}
-        <TabsContent value="parents">
+        <TabsContent value="parents" className="pt-0">
           <HomeroomParentsTab rows={dashboard.data?.data ?? []} isLoading={dashboard.isLoading} />
         </TabsContent>
-      </Tabs>
-    </div>
+      </AppPage>
+    </Tabs>
   );
 }

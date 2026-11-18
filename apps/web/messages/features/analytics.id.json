@@ -7,7 +7,7 @@
     "columns": {
       "student": "Siswa",
       "class": "Kelas",
-      "level": "Status",
+      "level": "Level",
       "score": "Skor",
       "computedAt": "Diperbarui"
     },
@@ -16,8 +16,21 @@
     "emptyBody": "Belum ada siswa di kelas ini yang mencapai ambang siaga atau berisiko.",
     "policy": "Atur kebijakan",
     "summary": {
-      "chartLabel": "Dari {total} siswa: {none} aman, {watch} siaga, {at_risk} berisiko."
-    }
+      "chartLabel": "Dari {total} siswa: {none} aman, {watch} siaga, {at_risk} berisiko.",
+      "label": "Siswa per level",
+      "filtering": "Menyaring daftar",
+      "filterHint": "Ketuk untuk menyaring"
+    },
+    "searchPlaceholder": "Cari nama siswa atau kelas",
+    "notAssignedTitle": "Belum ada kelas yang Anda pantau",
+    "notAssignedBody": "Daftar ini tersedia untuk wali kelas, guru BK, atau pimpinan sekolah yang memiliki penugasan aktif.",
+    "backHome": "Kembali ke beranda",
+    "filters": {
+      "class": "Kelas"
+    },
+    "computedAt": "Data dihitung {time}",
+    "sortedHint": "Diurutkan dari skor tertinggi",
+    "scoreValue": "Skor {score}"
   },
   "level": {
     "none": "Aman",
@@ -28,6 +41,7 @@
     "eyebrow": "Peringatan dini",
     "back": "Kembali",
     "unknownStudent": "Siswa tidak dikenal",
+    "nis": "NIS {nis}",
     "freshness": "Data dihitung {time}",
     "score": "Skor {score}",
     "reasonsTitle": "Alasan",
@@ -36,10 +50,10 @@
     "reasonWeight": "{weight} poin",
     "signalsTitle": "Sinyal",
     "signals": {
-      "attendance": "Kehadiran",
-      "attendanceValue": "Absen {absent} dari {considered} hari sekolah terakhir",
+      "attendance": "Presensi",
+      "attendanceValue": "Tidak hadir {absent} dari {considered} hari sekolah terakhir",
       "attendancePresentTooltip": "Hadir {count} hari",
-      "attendanceAbsentTooltip": "Absen {count} hari",
+      "attendanceAbsentTooltip": "Tidak hadir {count} hari",
       "discipline": "Pelanggaran",
       "disciplineValue": "{points} poin pelanggaran aktif",
       "warningLetters": "Surat peringatan diterbitkan",
@@ -47,11 +61,15 @@
       "gradeTrendValue": "Rata-rata nilai rapor dari {previous} ke {current}",
       "gradeTrendPrevious": "Sebelumnya",
       "gradeTrendCurrent": "Saat ini",
-      "noData": "Belum ada data"
+      "noData": "Belum ada data",
+      "absentUnit": "dari {considered} hari tidak hadir",
+      "disciplineUnit": "poin aktif",
+      "warningLettersUnit": "surat",
+      "gradeTrendUnit": "rata-rata rapor, sebelumnya {previous}"
     },
     "reasons": {
-      "attendance_absence_watch": "Absen {absent_days} dari {considered_days} hari sekolah terakhir",
-      "attendance_absence_at_risk": "Absen {absent_days} dari {considered_days} hari sekolah terakhir",
+      "attendance_absence_watch": "Tidak hadir {absent_days} dari {considered_days} hari sekolah terakhir",
+      "attendance_absence_at_risk": "Tidak hadir {absent_days} dari {considered_days} hari sekolah terakhir",
       "discipline_points_watch": "{points} poin pelanggaran aktif",
       "discipline_points_at_risk": "{points} poin pelanggaran aktif",
       "warning_letter_watch": "{warning_letter_count} surat peringatan sudah diterbitkan",
@@ -59,7 +77,8 @@
       "grade_drop_watch": "Rata-rata nilai rapor turun dari {previous_average} ke {current_average}",
       "grade_drop_at_risk": "Rata-rata nilai rapor turun dari {previous_average} ke {current_average}",
       "unknown": "Sinyal tidak dikenal"
-    }
+    },
+    "openProfile": "Lihat profil siswa"
   },
   "policy": {
     "title": "Kebijakan peringatan dini",
@@ -70,15 +89,15 @@
     "cancel": "Batal",
     "fields": {
       "window_days": "Rentang hari sekolah",
-      "attendance_watch_rate": "Rasio absen: siaga (0–1)",
-      "attendance_at_risk_rate": "Rasio absen: berisiko (0–1)",
+      "attendance_watch_rate": "Rasio tidak hadir: siaga (0–1)",
+      "attendance_at_risk_rate": "Rasio tidak hadir: berisiko (0–1)",
       "discipline_watch_points": "Poin pelanggaran: siaga",
       "discipline_at_risk_points": "Poin pelanggaran: berisiko",
       "warning_letter_watch_count": "Jumlah SP: siaga",
       "warning_letter_at_risk_count": "Jumlah SP: berisiko",
       "grade_drop_watch_points": "Penurunan nilai: siaga",
       "grade_drop_at_risk_points": "Penurunan nilai: berisiko",
-      "attendance_weight": "Bobot kehadiran",
+      "attendance_weight": "Bobot presensi",
       "discipline_weight": "Bobot pelanggaran",
       "warning_weight": "Bobot surat peringatan",
       "grade_weight": "Bobot nilai",

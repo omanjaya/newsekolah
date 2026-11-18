@@ -3,11 +3,22 @@
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatTime } from "@newsekolah/i18n";
-import { Alert, Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import {
+  DateTimeField,
+  DialogFooter,
+  Field,
+  Alert,
+  Button,
+  Input,
+  Select,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
 
+import { useDraftOwner } from "../../../lib/drafts/draft-owner";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
@@ -53,6 +64,7 @@ export function CounselingForm({
   const apiErrorMessage = useApiErrorMessage();
   const locale = useLocale() as Locale;
   const { me } = useSession();
+  const draftOwner = useDraftOwner();
   const studentLabels = useDirectoryPickerLabels(t("studentPlaceholder"));
   const create = useCreateCounselingMutation();
   const update = useUpdateCounselingMutation();
@@ -76,16 +88,17 @@ export function CounselingForm({
   const [draftOffer, setDraftOffer] = useState<{ savedAt: string } | null>(null);
 
   // Offer to restore an in-progress draft the browser still has from
-  // before a reload or an accidental tab close, once per mount -- see
-  // `lib/counseling-draft.ts`. Reads `window.localStorage`, so this cannot
-  // move into a lazy `useState` initializer the way a server-safe value
-  // could.
+  // before a reload or an accidental tab close -- see
+  // `lib/counseling-draft.ts`. Checked again when the owner becomes known
+  // (a draft is only ever offered to the account that wrote it) and
+  // withdrawn when there is none; `draftId` is fixed for the form's life.
+  // Reads `window.localStorage`, so this cannot move into a lazy
+  // `useState` initializer the way a server-safe value could.
   useEffect(() => {
-    const draft = loadCounselingDraft(draftId);
+    const draft = loadCounselingDraft(draftOwner, draftId);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- see the comment above.
-    if (draft) setDraftOffer({ savedAt: draft.savedAt });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- check once per mount, keyed by the stable draftId
-  }, []);
+    setDraftOffer(draft ? { savedAt: draft.savedAt } : null);
+  }, [draftOwner, draftId]);
 
   const isDirty =
     title.trim() !== (initial?.title ?? "") ||
@@ -99,11 +112,17 @@ export function CounselingForm({
   // counselor's notes; cleared the moment a save succeeds.
   useEffect(() => {
     if (!isDirty) return;
-    saveCounselingDraft(draftId, { title, content, followUpPlan, careerGoals, problemDescription });
-  }, [draftId, title, content, followUpPlan, careerGoals, problemDescription, isDirty]);
+    saveCounselingDraft(draftOwner, draftId, {
+      title,
+      content,
+      followUpPlan,
+      careerGoals,
+      problemDescription,
+    });
+  }, [draftOwner, draftId, title, content, followUpPlan, careerGoals, problemDescription, isDirty]);
 
   function restoreDraft() {
-    const draft = loadCounselingDraft(draftId);
+    const draft = loadCounselingDraft(draftOwner, draftId);
     if (!draft) return;
     setTitle(draft.title);
     setContent(draft.content);
@@ -114,7 +133,7 @@ export function CounselingForm({
   }
 
   function dismissDraft() {
-    clearCounselingDraft(draftId);
+    clearCounselingDraft(draftOwner, draftId);
     setDraftOffer(null);
   }
 
@@ -141,7 +160,7 @@ export function CounselingForm({
         };
         const onSuccess = () => {
           toast.success(t("saved"));
-          clearCounselingDraft(draftId);
+          clearCounselingDraft(draftOwner, draftId);
           onDone();
         };
         const onError = (error: unknown) => {
@@ -173,8 +192,7 @@ export function CounselingForm({
           </div>
         </Alert>
       )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("student")}</span>
+      <Field label={t("student")} required>
         <DirectoryPicker
           profileKind="student"
           value={studentId}
@@ -182,20 +200,15 @@ export function CounselingForm({
           labels={studentLabels}
           disabled={initial !== undefined}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("sessionAt")}</span>
-        <Input
-          type="datetime-local"
-          value={sessionAt}
-          onChange={(e) => {
-            setSessionAt(e.target.value);
-          }}
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("kind")}</span>
+      </Field>
+      <DateTimeField
+        value={sessionAt}
+        onChange={setSessionAt}
+        dateLabel={t("sessionDate")}
+        timeLabel={t("sessionTime")}
+        required
+      />
+      <Field label={t("kind")}>
         <Select
           options={KINDS.map((k) => ({ value: k, label: t(`kindOptions.${k}`) }))}
           value={kind}
@@ -203,9 +216,8 @@ export function CounselingForm({
             setKind(v as CounselingKind);
           }}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("topic")}</span>
+      </Field>
+      <Field label={t("topic")}>
         <Select
           options={TOPICS.map((topicOption) => ({
             value: topicOption,
@@ -216,10 +228,9 @@ export function CounselingForm({
             setTopic(v as CounselingTopic);
           }}
         />
-      </label>
+      </Field>
       {topic === "career" && (
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("careerGoals")}</span>
+        <Field label={t("careerGoals")}>
           <Textarea
             rows={2}
             value={careerGoals}
@@ -229,11 +240,10 @@ export function CounselingForm({
             placeholder={t("careerGoalsPlaceholder")}
             maxLength={5000}
           />
-        </label>
+        </Field>
       )}
       {topic === "problem" && (
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("problemDescription")}</span>
+        <Field label={t("problemDescription")}>
           <Textarea
             rows={2}
             value={problemDescription}
@@ -243,10 +253,9 @@ export function CounselingForm({
             placeholder={t("problemDescriptionPlaceholder")}
             maxLength={5000}
           />
-        </label>
+        </Field>
       )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("title")}</span>
+      <Field label={t("title")} required>
         <Input
           value={title}
           onChange={(e) => {
@@ -256,9 +265,8 @@ export function CounselingForm({
           required
           maxLength={200}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("content")}</span>
+      </Field>
+      <Field label={t("content")} required>
         <Textarea
           rows={5}
           value={content}
@@ -268,9 +276,8 @@ export function CounselingForm({
           placeholder={t("contentPlaceholder")}
           required
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("followUpPlan")}</span>
+      </Field>
+      <Field label={t("followUpPlan")}>
         <Textarea
           rows={2}
           value={followUpPlan}
@@ -279,9 +286,8 @@ export function CounselingForm({
           }}
           placeholder={t("followUpPlanPlaceholder")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("visibility")}</span>
+      </Field>
+      <Field label={t("visibility")} hint={t(`visibilityHint.${visibility}`)}>
         <Select
           options={VISIBILITIES.map((v) => ({ value: v, label: t(`visibilityOptions.${v}`) }))}
           value={visibility}
@@ -289,16 +295,15 @@ export function CounselingForm({
             setVisibility(v as CounselingVisibility);
           }}
         />
-        <span className="text-[12px] text-fg-muted">{t(`visibilityHint.${visibility}`)}</span>
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      </Field>
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button type="submit" loading={pending} disabled={!studentId}>
           {t("submit")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

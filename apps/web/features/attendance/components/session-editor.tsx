@@ -5,12 +5,13 @@ import type { Locale } from "@newsekolah/i18n";
 import { formatTime } from "@newsekolah/i18n";
 import {
   Alert,
-  Badge,
   Button,
+  SearchInput,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
+  cn,
   useToast,
 } from "@newsekolah/ui";
 import { useRouter } from "next/navigation";
@@ -18,6 +19,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { useDraftOwner } from "../../../lib/drafts/draft-owner";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useUnsavedChangesProtection } from "../../../lib/navigation/use-unsaved-changes-protection";
@@ -56,6 +58,7 @@ export function SessionEditor({
   const apiErrorMessage = useApiErrorMessage();
   const locale = useLocale() as Locale;
   const { me } = useSession();
+  const draftOwner = useDraftOwner();
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
   const classMap = useLookup(classes.data?.data);
@@ -103,16 +106,17 @@ export function SessionEditor({
   const disciplineOn = useModuleEnabled("discipline");
 
   // Offer to restore an in-progress draft the browser still has from
-  // before a reload or a dropped connection, once per mount. This reads
-  // `window.localStorage`, which does not exist during server rendering,
-  // so it cannot move into a lazy `useState` initializer the way a
-  // server-safe value could -- the effect is the deliberate, correct way
-  // to reach it only after the client has mounted.
+  // before a reload or a dropped connection, once per session and owner:
+  // rechecked when the owner becomes known, and withdrawn when there is
+  // none. This reads `window.localStorage`, which does not exist during
+  // server rendering, so it cannot move into a lazy `useState` initializer
+  // the way a server-safe value could -- the effect is the deliberate,
+  // correct way to reach it only after the client has mounted.
   useEffect(() => {
-    const draft = loadAttendanceDraft(session.id);
+    const draft = loadAttendanceDraft(draftOwner, session.id);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- see the comment above.
-    if (draft) setDraftOffer({ savedAt: draft.savedAt });
-  }, [session.id]);
+    setDraftOffer(draft ? { savedAt: draft.savedAt } : null);
+  }, [draftOwner, session.id]);
 
   const isCorrection = Boolean(session.submitted_at) || openedInCorrection;
   const presentCodes = useMemo(
@@ -150,8 +154,15 @@ export function SessionEditor({
   // away work still in memory; cleared the moment a save succeeds.
   useEffect(() => {
     if (!isDirty) return;
-    saveAttendanceDraft(session.id, { statuses, notes, violations, topic, activities, reflection });
-  }, [session.id, statuses, notes, violations, topic, activities, reflection, isDirty]);
+    saveAttendanceDraft(draftOwner, session.id, {
+      statuses,
+      notes,
+      violations,
+      topic,
+      activities,
+      reflection,
+    });
+  }, [draftOwner, session.id, statuses, notes, violations, topic, activities, reflection, isDirty]);
 
   const handleStatusChange = useCallback((studentId: string, statusCode: string) => {
     setStatuses((prev) => ({ ...prev, [studentId]: statusCode }));
@@ -187,6 +198,8 @@ export function SessionEditor({
       for (const id of ids) next[id] = defaultCode;
       return next;
     });
+    // Says what the bulk action left alone, at the moment it matters.
+    toast.info(t("markedAllPresent"), { description: t("markAllPresentHint") });
   }
 
   function resetChanges() {
@@ -197,11 +210,11 @@ export function SessionEditor({
     setActivities(initialJournal.activities);
     setReflection(initialJournal.reflection);
     setReason("");
-    clearAttendanceDraft(session.id);
+    clearAttendanceDraft(draftOwner, session.id);
   }
 
   function restoreDraft() {
-    const draft = loadAttendanceDraft(session.id);
+    const draft = loadAttendanceDraft(draftOwner, session.id);
     if (!draft) return;
     setStatuses((prev) => ({ ...prev, ...draft.statuses }));
     setNotes((prev) => ({ ...prev, ...draft.notes }));
@@ -213,7 +226,7 @@ export function SessionEditor({
   }
 
   function dismissDraft() {
-    clearAttendanceDraft(session.id);
+    clearAttendanceDraft(draftOwner, session.id);
     setDraftOffer(null);
   }
 
@@ -249,7 +262,7 @@ export function SessionEditor({
           : {}),
       });
       setSavedSuccessfully(true);
-      clearAttendanceDraft(session.id);
+      clearAttendanceDraft(draftOwner, session.id);
       toast.success(
         t("savedAt", {
           time: formatTime(businessNow(), { locale, timeZone: me?.tenant.timezone }),
@@ -265,60 +278,87 @@ export function SessionEditor({
 
   const className = classMap.get(session.class_id)?.name ?? "";
   const subjectName = subjectMap.get(session.subject_id)?.name ?? "";
+  // The journal's state is one dot on its tab: saved with this session
+  // already, or written now and saved together with the roster.
+  const journalFilled = topic.trim() !== "";
 
   return (
-    <div className="flex flex-col gap-4 p-4 pb-28 md:p-6 md:pb-28">
-      <SessionRosterHeader
-        session={session}
-        className={className}
-        subjectName={subjectName}
-        isCorrection={isCorrection}
-        timeZone={me?.tenant.timezone}
-        onMarkAllPresent={markAllPresent}
-        onResetChanges={resetChanges}
-        canReset={isDirty}
-        disabled={save.isPending}
-      />
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={session.journal_topic?.trim() ? "accent" : "neutral"}>
-          {tWorkspace(session.journal_topic?.trim() ? "journalSaved" : "journalMissing")}
-        </Badge>
-        <p className="text-[13px] text-fg-muted">{tWorkspace("journalHelp")}</p>
-      </div>
+    <SessionRosterHeader
+      session={session}
+      className={className}
+      subjectName={subjectName}
+      isCorrection={isCorrection}
+      timeZone={me?.tenant.timezone}
+      onMarkAllPresent={markAllPresent}
+      onResetChanges={resetChanges}
+      canReset={isDirty}
+      disabled={save.isPending}
+      floating={
+        <SessionSaveBar
+          isCorrection={isCorrection}
+          reason={reason}
+          onReasonChange={setReason}
+          studentTotal={session.roster.length}
+          changedFromDefaultCount={session.roster.length - (counts[defaultCode] ?? 0)}
+          saving={save.isPending}
+          formError={formError}
+          onSave={() => void submit()}
+        />
+      }
+    >
       {draftOffer && (
-        <Alert variant="warning" title={t("draftFoundTitle")}>
-          <p>
-            {t("draftFoundBody", {
-              time: formatTime(draftOffer.savedAt, { locale, timeZone: me?.tenant.timezone }),
-            })}
-          </p>
-          <div className="mt-2 flex gap-2">
-            <Button size="sm" onClick={restoreDraft}>
-              {t("draftRestore")}
-            </Button>
-            <Button size="sm" variant="secondary" onClick={dismissDraft}>
-              {t("draftDismiss")}
-            </Button>
-          </div>
+        <Alert
+          variant="warning"
+          title={t("draftFoundTitle")}
+          action={
+            <div className="flex gap-2">
+              <Button size="sm" variant="secondary" onClick={dismissDraft}>
+                {t("draftDismiss")}
+              </Button>
+              <Button size="sm" onClick={restoreDraft}>
+                {t("draftRestore")}
+              </Button>
+            </div>
+          }
+        >
+          {t("draftFoundBody", {
+            time: formatTime(draftOffer.savedAt, { locale, timeZone: me?.tenant.timezone }),
+          })}
         </Alert>
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="roster">{t("tabRoster")}</TabsTrigger>
-          <TabsTrigger value="journal" className="flex items-center gap-1.5">
-            {t("tabJournal")}
-            {topic.trim() !== "" && (
+      {/* Clears the fixed save bar at the end of the roster. */}
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex flex-col gap-3 pb-(--sticky-save-bar-height)"
+      >
+        <div className="flex items-center gap-2">
+          <TabsList aria-label={t("tabsLabel")} className="shrink-0">
+            <TabsTrigger value="roster">{t("tabRoster")}</TabsTrigger>
+            <TabsTrigger value="journal">
+              {t("tabJournal")}
               <span
-                className="size-1.5 rounded-full bg-accent"
-                aria-label={t("journalFilled")}
-                title={t("journalFilled")}
+                role="img"
+                className={cn("size-2 rounded-full", journalFilled ? "bg-accent" : "bg-warning")}
+                aria-label={journalFilled ? t("journalFilled") : tWorkspace("journalMissing")}
+                title={journalFilled ? t("journalFilled") : tWorkspace("journalMissing")}
               />
-            )}
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="roster">
+            </TabsTrigger>
+          </TabsList>
+          {activeTab === "roster" && (
+            <SearchInput
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchPlaceholder")}
+              className="min-w-0 flex-1 sm:ml-auto sm:max-w-64"
+            />
+          )}
+        </div>
+        <TabsContent value="roster" className="pt-0">
           <SessionRosterPanel
             roster={session.roster}
             statuses={session.statuses}
@@ -333,7 +373,6 @@ export function SessionEditor({
             defaultCode={defaultCode}
             disabled={save.isPending}
             search={search}
-            onSearchChange={setSearch}
             statusFilter={statusFilter}
             onToggleStatusFilter={toggleStatusFilter}
             onStatusChange={handleStatusChange}
@@ -341,7 +380,7 @@ export function SessionEditor({
             onToggleViolation={handleToggleViolation}
           />
         </TabsContent>
-        <TabsContent value="journal">
+        <TabsContent value="journal" className="pt-0">
           <SessionJournalPanel
             previousTopic={session.previous_journal_topic}
             topic={topic}
@@ -354,17 +393,6 @@ export function SessionEditor({
           />
         </TabsContent>
       </Tabs>
-
-      <SessionSaveBar
-        isCorrection={isCorrection}
-        reason={reason}
-        onReasonChange={setReason}
-        studentTotal={session.roster.length}
-        changedFromDefaultCount={session.roster.length - (counts[defaultCode] ?? 0)}
-        saving={save.isPending}
-        formError={formError}
-        onSave={() => void submit()}
-      />
-    </div>
+    </SessionRosterHeader>
   );
 }

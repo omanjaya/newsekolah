@@ -41,6 +41,8 @@ const baseSettings: PlatformOperatorAlertSettings = {
 };
 
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+vi.mock("./platform-nav", () => ({ PlatformNav: () => null }));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
@@ -87,10 +89,19 @@ describe("OperatorAlertsView", () => {
     expect(screen.queryByText("save")).not.toBeInTheDocument();
   });
 
-  it("shows an error state when the query fails", () => {
+  it("shows a retryable error state when the query fails", () => {
     mocks.queryState = { data: undefined, isLoading: false, isError: true };
     render(<OperatorAlertsView />);
-    expect(screen.getByText("loadError")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "actions.retry" })).toBeInTheDocument();
+    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+  });
+
+  it("offers to save only once the form differs from what is saved", async () => {
+    const user = userEvent.setup();
+    render(<OperatorAlertsView />);
+    expect(screen.queryByRole("button", { name: "save" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("switch", { name: "enabled" }));
+    expect(screen.getByRole("button", { name: "save" })).toBeInTheDocument();
   });
 
   it("shows the token-saved placeholder and a remove action when a token is stored", () => {
@@ -135,7 +146,7 @@ describe("OperatorAlertsView", () => {
     await waitFor(() => {
       expect(mocks.detect).toHaveBeenCalled();
     });
-    expect(screen.getByRole("combobox")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "chatId.picker" })).toBeInTheDocument();
   });
 
   it("shows the empty-detect message when no chats are found", async () => {

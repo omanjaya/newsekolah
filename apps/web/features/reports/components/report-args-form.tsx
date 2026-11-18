@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, useToast } from "@newsekolah/ui";
+import { Button, DatePicker, Field, Select, useToast } from "@newsekolah/ui";
 import { Download } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -160,8 +160,7 @@ function GenericReportArgsForm({ report }: { report: ReportDefinition }): ReactE
       <div className="flex flex-wrap items-end gap-3">
         {needsClass && (
           <>
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium text-fg">{t("arguments.scopeType")}</span>
+            <Field label={t("arguments.scopeType")}>
               <Select
                 options={[
                   { value: "class", label: t("arguments.scopeTypeClass") },
@@ -174,10 +173,9 @@ function GenericReportArgsForm({ report }: { report: ReportDefinition }): ReactE
                 aria-label={t("arguments.scopeType")}
                 className="w-40"
               />
-            </label>
+            </Field>
             {scopeType === "class" ? (
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium text-fg">{t("arguments.class")}</span>
+              <Field label={t("arguments.class")}>
                 <Select
                   options={(classes.data?.data ?? []).map((item) => ({
                     value: item.id,
@@ -190,10 +188,9 @@ function GenericReportArgsForm({ report }: { report: ReportDefinition }): ReactE
                   aria-label={t("arguments.class")}
                   className="w-56"
                 />
-              </label>
+              </Field>
             ) : (
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium text-fg">{t("arguments.gradeLevel")}</span>
+              <Field label={t("arguments.gradeLevel")}>
                 <Select
                   options={(gradeLevels.data?.data ?? []).map((item) => ({
                     value: item.id,
@@ -206,13 +203,12 @@ function GenericReportArgsForm({ report }: { report: ReportDefinition }): ReactE
                   aria-label={t("arguments.gradeLevel")}
                   className="w-56"
                 />
-              </label>
+              </Field>
             )}
           </>
         )}
         {needsSubject && (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("arguments.subject")}</span>
+          <Field label={t("arguments.subject")}>
             <Select
               options={(subjects.data?.data ?? []).map((item) => ({
                 value: item.id,
@@ -225,24 +221,15 @@ function GenericReportArgsForm({ report }: { report: ReportDefinition }): ReactE
               aria-label={t("arguments.subject")}
               className="w-56"
             />
-          </label>
+          </Field>
         )}
         {needsDate && (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("arguments.date")}</span>
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => {
-                setDate(e.target.value);
-              }}
-              aria-label={t("arguments.date")}
-            />
-          </label>
+          <Field label={t("arguments.date")}>
+            <DatePicker value={date === "" ? null : date} onChange={setDate} className="w-48" />
+          </Field>
         )}
         {needsTerm && (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("arguments.term")}</span>
+          <Field label={t("arguments.term")}>
             <Select
               options={(terms.data?.data ?? []).map((item) => ({
                 value: item.id,
@@ -255,19 +242,18 @@ function GenericReportArgsForm({ report }: { report: ReportDefinition }): ReactE
               aria-label={t("arguments.term")}
               className="w-56"
             />
-          </label>
+          </Field>
         )}
       </div>
       <div>
         <Button
-          size="sm"
+          icon={<Download />}
           disabled={!canDownload}
           loading={downloading}
           onClick={() => {
             void handleDownload();
           }}
         >
-          <Download className="size-4" aria-hidden="true" />
           {t("download")}
         </Button>
       </div>

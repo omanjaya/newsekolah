@@ -1,67 +1,112 @@
 "use client";
 
-import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { Button, SegmentedControl } from "@newsekolah/ui";
+import { Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import { type ReactElement, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { PeriodsView } from "../../school/components/periods-view";
 import { SubjectsView } from "../../school/components/subjects-view";
 
+import type { HubPageProps } from "./hub-page";
 import { LearningWorkspaceNav } from "./learning-workspace-nav";
 import { SubjectOfferingsView } from "./subject-offerings-view";
 
+/**
+ * A section either renders the page itself from the hub's frame (`page`),
+ * with its own add button as the header's primary action, or is still a
+ * bare body the hub wraps in the page.
+ */
+type SectionView =
+  | { kind: "page"; View: (props: { page: HubPageProps }) => ReactElement }
+  | { kind: "body"; View: () => ReactElement };
+
 const sections = [
-  { value: "subjects", label: "subjects", View: SubjectsView },
-  { value: "offerings", label: "offerings", View: SubjectOfferingsView },
-  { value: "periods", label: "periods", View: PeriodsView },
-] as const;
+  { value: "subjects", label: "subjects", section: { kind: "body", View: SubjectsView } },
+  {
+    value: "offerings",
+    label: "offerings",
+    section: { kind: "page", View: SubjectOfferingsView },
+  },
+  { value: "periods", label: "periods", section: { kind: "body", View: PeriodsView } },
+] as const satisfies readonly { value: string; label: string; section: SectionView }[];
 
-/** The workspace strip owns the top-level choice; only sibling sections stay as inner tabs. */
-const sectionGroups: readonly (readonly string[])[] = [["subjects", "offerings"], ["periods"]];
+type Section = (typeof sections)[number]["value"];
 
+/** The workspace strip owns the top-level choice; sibling sections switch in the toolbar. */
+const sectionGroups: readonly (readonly Section[])[] = [["subjects", "offerings"], ["periods"]];
+
+/**
+ * Pembelajaran: subjects (and their offering per academic year) and the
+ * lesson periods. The area's tabs sit under the header; the two views of
+ * subjects are a segmented switch, all kept in `?tab=`. The hub owns that
+ * frame and hands it to the active section (see HubPageProps).
+ */
 export function LearningView(): ReactElement {
   const t = useTranslations("app.academic.learning");
-  const tNav = useTranslations("app.navigation");
-  const tWorkspace = useTranslations("app.workspace");
+  const tSubjects = useTranslations("app.school.subjects");
+  // "Tambah mapel" is the page header's primary action; the subjects list
+  // only owns the dialog it opens.
+  const [addingSubject, setAddingSubject] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const requested = searchParams.get("tab");
-  const active = sections.find((section) => section.value === requested)?.value ?? "subjects";
+  const requested = useSearchParams().get("tab");
+  const active = sections.find((section) => section.value === requested) ?? sections[0];
+  const siblings = sectionGroups.find((group) => group.includes(active.value)) ?? [active.value];
 
-  const siblings = sectionGroups.find((group) => group.includes(active)) ?? [active];
+  const page: HubPageProps = {
+    description: t("description"),
+    nav: <LearningWorkspaceNav />,
+    toolbar:
+      siblings.length > 1 ? (
+        <SegmentedControl
+          aria-label={t("title")}
+          options={sections
+            .filter(({ value }) => siblings.includes(value))
+            .map(({ value, label }) => ({ value, label: t(label) }))}
+          value={active.value}
+          onValueChange={(value) => {
+            router.push(`/school/learning?tab=${value}`, { scroll: false });
+          }}
+        />
+      ) : undefined,
+  };
 
-  return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the active tab's panel scrolls internally.
-    <div className="flex min-w-0 flex-col gap-4 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <LearningWorkspaceNav />
-      <PageHeader eyebrow={tNav("masterData")} title={tWorkspace("learning")} />
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
-      <Tabs
-        value={active}
-        onValueChange={(value) => {
-          router.push(`/school/learning?tab=${value}`, { scroll: false });
+  if (active.section.kind === "page") {
+    const PageSection = active.section.View;
+    return <PageSection page={page} />;
+  }
+  if (active.value === "subjects") {
+    return (
+      <AppPage
+        {...page}
+        primaryAction={
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              setAddingSubject(true);
+            }}
+          >
+            {tSubjects("add")}
+          </Button>
+        }
+        primaryActionCompact={{
+          icon: <Plus />,
+          label: tSubjects("add"),
+          onSelect: () => {
+            setAddingSubject(true);
+          },
         }}
-        className="flex flex-col md:min-h-0 md:flex-1"
       >
-        {siblings.length > 1 && (
-          <TabsList aria-label={t("title")} className="flex-wrap">
-            {sections
-              .filter(({ value }) => siblings.includes(value))
-              .map(({ value, label }) => (
-                <TabsTrigger key={value} value={value}>
-                  {t(label)}
-                </TabsTrigger>
-              ))}
-          </TabsList>
-        )}
-        {sections.map(({ value, View }) => (
-          <TabsContent key={value} value={value} className="md:min-h-0 md:flex-1">
-            <View />
-          </TabsContent>
-        ))}
-      </Tabs>
-    </div>
+        <SubjectsView adding={addingSubject} onAddingChange={setAddingSubject} />
+      </AppPage>
+    );
+  }
+  const BodySection = active.section.View;
+  return (
+    <AppPage {...page}>
+      <BodySection />
+    </AppPage>
   );
 }

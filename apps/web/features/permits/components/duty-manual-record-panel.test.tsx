@@ -68,7 +68,7 @@ describe("DutyManualRecordPanel student search", () => {
     );
     expect(screen.getByRole("button", { name: /Sari/ })).toBeInTheDocument();
 
-    await user.type(screen.getByRole("textbox", { name: "studentSearchPlaceholder" }), "sar");
+    await user.type(screen.getByRole("searchbox", { name: "studentSearchPlaceholder" }), "sar");
     await waitFor(() => {
       expect(mocks.search).toHaveBeenLastCalledWith(expect.objectContaining({ query: "sar" }));
     });

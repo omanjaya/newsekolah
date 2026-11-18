@@ -23,26 +23,58 @@ Rencana mengurangi menu sidebar supaya setiap pengguna menemukan pekerjaannya ta
 
 ## Struktur sidebar
 
+Susunan yang berlaku (17 November 2026), dengan nama menu persis seperti di aplikasi:
+
 ```
 Beranda
-Perlu Tindakan       badge jumlah antrean
-Scan                 siswa, satpam, guru piket
-Laporan
+Perlu tindakan       angka antrean
+Pindai               siswa, satpam, guru piket
+Pengumuman           hanya pembuat pengumuman
+Laporan              pusat laporan, laporan perpustakaan, rekap kunjungan
 
-AKADEMIK             Jadwal, Presensi & Jurnal, Nilai, Wali Kelas
-KESISWAAN            Izin & Keterlambatan, Tata Tertib, Konseling BK, Kegiatan & Prestasi, Pendampingan
-PIKET & GERBANG      Piket, Buku Tamu
-KEPEGAWAIAN          Absensi Pegawai, Supervisi
-PERPUSTAKAAN         Sirkulasi, Katalog, Anggota, Kunjungan, Stok Opname, Pengaturan Perpustakaan
-ADMINISTRASI         Tagihan & Pembayaran
-DATA SEKOLAH         Siswa & Kelas, Pengguna & Akses, Mata Pelajaran, Pembagian Tugas, Tahun Ajaran, Struktur Sekolah
+AKADEMIK             Jadwal dan kalender, Presensi dan jurnal, Nilai, Wali kelas
+KESISWAAN            Izin dan keterlambatan, Tata tertib, Konseling BK, Kegiatan siswa
+PIKET DAN GERBANG    Piket, Buku tamu
+KEPEGAWAIAN          Presensi pegawai, Supervisi
+PERPUSTAKAAN         Dasbor perpustakaan, Katalog, Sirkulasi, Anggota, Pengaturan perpustakaan
+ADMINISTRASI         Tagihan dan pembayaran
+DATA SEKOLAH         Siswa dan kelas, Pengguna dan akses, Pembelajaran, Tahun ajaran, Struktur sekolah
 
 -- bawah --
-Pengaturan Sekolah   satu halaman, empat bagian, dengan pencarian
-Kelola Sekolah       konsol platform
+Pengaturan sekolah   satu halaman, empat bagian, dengan pencarian
+Kelola sekolah       konsol platform
 ```
 
-Lonceng di header memuat Notifikasi dan Pengumuman. Menu avatar memuat Profil, Absensi Saya, Keamanan, dan Tampilan.
+Lonceng di header memuat Notifikasi dan Pengumuman. Menu avatar memuat Profil, Presensi saya, Keamanan akun, dan Tampilan.
+
+Menu sidebar, judul halaman, breadcrumb, dan tab area membaca label yang sama dari registri navigasi, jadi satu halaman hanya punya satu nama. Rute yang sekarang hanya mengalihkan (Aturan peminjaman, Jenis anggota) tetap ada tetapi tidak tampil di menu maupun di pencarian `Ctrl+K`. `offeredTo` di registri mempersempit siapa yang ditawari sebuah menu tanpa menutup rutenya: Keterlambatan hanya untuk siswa, Peringatan dini untuk peran pengawas dan tugas BK, pimpinan, atau wali kelas, dan Jurnal mengajar tidak untuk tugas gerbang.
+
+## Tab bawah HP per peran
+
+Di HP sidebar diganti tab bawah: Beranda, dua tab, **tombol tengah** yang menonjol, satu tab, lalu Menu. Tombol tengah adalah satu tugas utama pembaca hari itu dan menggantikan tombol "+" mengambang yang lama. Aturannya ada di `apps/web/lib/mobile-navigation.ts`; peran dikenali dari jenis profil, tugas tambahan, dan menu yang dipegang, dalam urutan baris tabel ini (baris pertama yang cocok yang dipakai).
+
+| Peran                  | Dikenali dari                             | Bilah (tombol tengah ditebalkan)                                                             |
+| ---------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Siswa                  | jenis profil siswa                        | Beranda, Jadwal, **Pindai**, Izin, Menu                                                      |
+| TU, admin              | memegang Pengguna sekolah                 | Beranda, Tindakan, **Aksi cepat**, Pengguna, Menu                                            |
+| Guru BK                | tugas BK atau halaman Catatan konseling   | Beranda, Tindakan, **Catat** (pelanggaran), Konseling, Menu                                  |
+| Guru piket             | tugas piket                               | Beranda, Pindai, **QR piket**, Presensi, Menu                                                |
+| Satpam                 | tugas gerbang                             | Beranda, Tamu, **Pindai**, Izin, Menu                                                        |
+| Pustakawan             | tugas pustakawan atau Sirkulasi           | Beranda, Katalog, **Sirkulasi**, Anggota, Menu                                               |
+| Kepala sekolah, wakil  | tugas pimpinan atau Presensi pegawai      | Beranda, Laporan, **Tindakan**, Presensi, Menu                                               |
+| Petugas buku tamu lain | memegang Buku tamu                        | Beranda, Tamu, **Pindai** (atau Tambah tamu), Izin, Menu                                     |
+| Wali kelas             | jenis profil guru dengan tugas wali kelas | Beranda, Tindakan, **Presensi** (isi presensi), Jadwal, Menu                                 |
+| Guru                   | jenis profil guru                         | Beranda, Jadwal, **Presensi** (isi presensi), Nilai, Menu                                    |
+| Lainnya                | selain di atas                            | Beranda, dua dari Tindakan, Pindai, Jadwal, Presensi, Laporan, dengan pilihan umum di tengah |
+
+Aturan tambahan:
+
+- Tombol tengah tidak pernah menuju halaman yang tertutup bagi pembaca (izin atau modul). Bila tujuan perannya tertutup, tombol memakai pilihan umum: lembar aksi cepat bila pembaca punya dua aksi cepat atau lebih, aksi itu sendiri bila hanya satu, selain itu Perlu tindakan. TU dan admin selalu mendapat pilihan umum.
+- Tombol Presensi guru langsung membuka sesi yang sedang berjalan atau berikutnya begitu jadwal hari itu termuat.
+- Tujuan tombol tengah tidak diulang sebagai tab. Bila salah satu tab peran tidak terbuka bagi pembaca, slotnya diisi Profil, Perlu tindakan, atau Pindai.
+- Pembaca tanpa tombol tengah mendapat Beranda dan tiga tab sebelum Menu.
+- Aksi cepat yang bukan tombol tengah tetap ada di lembar Menu, kecuali bila tombol tengah sendiri membuka lembar aksi cepat.
+- Angka antrean menempel di tab (atau tombol tengah) tempat antrean itu berada; Menu menjumlahkan sisanya.
 
 ## Penggabungan fitur
 
@@ -56,7 +88,7 @@ Lonceng di header memuat Notifikasi dan Pengumuman. Menu avatar memuat Profil, A
 | 6   | Layar kiosk dibuka dari halaman induknya                                                                    | Kiosk Perpustakaan, Kiosk Kunjungan, Monitor   |
 | 7   | **Pengaturan Perpustakaan** (`/library/settings`): aturan pinjam, jenis anggota, data                       | Aturan Peminjaman, Jenis Anggota, Data Pustaka |
 | 8   | **Pengaturan Sekolah** (`/settings`) dengan empat bagian dan pencarian                                      | Sub-halaman pengaturan                         |
-| 9   | Absen pegawai menjadi kartu di beranda dan entri menu avatar                                                | Absensi Saya                                   |
+| 9   | Presensi pegawai menjadi kartu di beranda dan entri menu avatar                                             | Presensi saya                                  |
 | 10  | **Wali Kelas** menjadi pusat kerja wali kelas, dengan tab presensi, izin, tata tertib, nilai, dan orang tua | -                                              |
 | 11  | Kandidat dan riwayat **Surat Peringatan** masuk ke halaman Tata Tertib                                      | Surat Peringatan                               |
 | 12  | Siswa berisiko dan kehadiran hari ini menjadi kartu beranda                                                 | -                                              |
@@ -73,24 +105,24 @@ Data Sekolah dibuka serius sekali di awal tahun ajaran, lalu sesekali saja. Grup
 
 ## Status (10 Oktober 2026)
 
-| Bagian                                                                                          | Status                                         |
-| ----------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| Grup Piket & Gerbang; Absensi Saya ke menu avatar; grup satu menu dilebur                       | Selesai                                        |
-| Scan universal (`/scan`), kamera beruntun dengan umpan balik warna dan getar                    | Selesai                                        |
-| Perlu Tindakan (`/inbox`) sebagai satu-satunya tempat menyetujui izin, dengan setujui sekaligus | Selesai                                        |
-| Profil Siswa (`/students/[id]`); nama siswa di daftar staf menaut ke profil                     | Selesai                                        |
-| `Ctrl+K`: cari siswa dan aksi cepat; tombol "+" di tab bawah HP                                 | Selesai                                        |
-| Pengaturan Sekolah (`/settings`) dan Pengaturan Perpustakaan (`/library/settings`)              | Selesai                                        |
-| Lonceng dengan tab Pengumuman; menu Pengumuman hanya untuk pembuat pengumuman                   | Selesai                                        |
-| Kartu beranda: absen masuk/pulang, siswa berisiko (BK), kehadiran hari ini (pimpinan)           | Selesai                                        |
-| Kandidat dan riwayat SP sebagai tab di Tata Tertib; Wali Kelas sebagai hub bertab               | Selesai                                        |
-| Pembelajaran (mapel + pembagian tugas) dan Kegiatan Siswa (ekskul + pendampingan) satu menu     | Selesai                                        |
-| Perpustakaan: Stok Opname di Katalog, Kunjungan di Sirkulasi                                    | Selesai                                        |
-| Status alur kerja memakai satu pemetaan warna dan kata (`SemanticStatusBadge`)                  | Selesai                                        |
-| Tab bawah mobile mengikuti peran                                                                | Selesai                                        |
-| Jurnal di layar presensi                                                                        | Sudah ada sebelumnya (`session-journal-panel`) |
-| Laporan satu pintu                                                                              | Belum                                          |
-| Orang tua tanpa sidebar                                                                         | Belum: web belum punya jenis profil orang tua  |
+| Bagian                                                                                          | Status                                                                                                         |
+| ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Grup Piket & Gerbang; Absensi Saya ke menu avatar; grup satu menu dilebur                       | Selesai                                                                                                        |
+| Scan universal (`/scan`), kamera beruntun dengan umpan balik warna dan getar                    | Selesai                                                                                                        |
+| Perlu Tindakan (`/inbox`) sebagai satu-satunya tempat menyetujui izin, dengan setujui sekaligus | Selesai                                                                                                        |
+| Profil Siswa (`/students/[id]`); nama siswa di daftar staf menaut ke profil                     | Selesai                                                                                                        |
+| `Ctrl+K`: cari siswa dan aksi cepat; tombol tengah di tab bawah HP (menggantikan tombol "+")    | Selesai                                                                                                        |
+| Pengaturan Sekolah (`/settings`) dan Pengaturan Perpustakaan (`/library/settings`)              | Selesai                                                                                                        |
+| Lonceng dengan tab Pengumuman; menu Pengumuman hanya untuk pembuat pengumuman                   | Selesai                                                                                                        |
+| Kartu beranda: absen masuk/pulang, siswa berisiko (BK), kehadiran hari ini (pimpinan)           | Selesai                                                                                                        |
+| Kandidat dan riwayat SP sebagai tab di Tata Tertib; Wali Kelas sebagai hub bertab               | Selesai                                                                                                        |
+| Pembelajaran (mapel + pembagian tugas) dan Kegiatan Siswa (ekskul + pendampingan) satu menu     | Selesai                                                                                                        |
+| Perpustakaan: Stok Opname di Katalog, Kunjungan di Sirkulasi                                    | Selesai                                                                                                        |
+| Status alur kerja memakai satu pemetaan warna dan kata (`SemanticStatusBadge`)                  | Selesai                                                                                                        |
+| Tab bawah mobile mengikuti peran                                                                | Selesai                                                                                                        |
+| Jurnal di layar presensi                                                                        | Sudah ada sebelumnya (`session-journal-panel`)                                                                 |
+| Laporan satu pintu                                                                              | Sebagian: `/reports` menggabungkan pusat laporan, laporan perpustakaan, dan rekap kunjungan dengan satu header |
+| Orang tua tanpa sidebar                                                                         | Belum: web belum punya jenis profil orang tua                                                                  |
 
 ## Celah yang ditemukan
 

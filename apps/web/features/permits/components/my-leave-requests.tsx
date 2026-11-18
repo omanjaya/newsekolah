@@ -1,102 +1,153 @@
 "use client";
 
 import type { Locale } from "@newsekolah/i18n";
-import { formatDate } from "@newsekolah/i18n";
-import { Card, Dialog, DialogContent, Skeleton, StatTile, cn } from "@newsekolah/ui";
+import {
+  Button,
+  Card,
+  Dialog,
+  DialogContent,
+  EmptyState,
+  HeroCard,
+  IconCircle,
+  List,
+  ListRow,
+  SectionHeader,
+  Skeleton,
+  SkeletonList,
+  Stat,
+  StatGrid,
+} from "@newsekolah/ui";
+import { CalendarX2, FileText, HeartPulse, Landmark, Plus, Stamp } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
-import { bentoCells, tileColumns } from "../../../lib/layout/bento";
-import { useSession } from "../../../lib/session/session-provider";
-import { type LeaveRequestSummary, useMyLeaveRequestsQuery } from "../api";
+import {
+  type LeaveCategory,
+  type LeaveRequestSummary,
+  useLeaveRequestQuery,
+  useMyLeaveRequestsQuery,
+} from "../api";
 import { buildLeaveMineTiles, countLeaveMineStatuses } from "../lib/leave-mine-tiles";
+import { countDays, formatDayRange } from "../lib/permit-dates";
 
 import { LeaveRequestDetail } from "./leave-request-detail";
 import { SubmitForm } from "./leave-request-submit-form";
-import { WorkflowMineStageTrack, WorkflowStatusBadge } from "./workflow-stepper";
+import { WorkflowMineStageTrack, WorkflowStatusBadge, WorkflowSteps } from "./workflow-stepper";
+
+const CATEGORY_ICON: Record<LeaveCategory, ReactNode> = {
+  sick: <HeartPulse />,
+  religious_ceremony: <Landmark />,
+  dispensation: <Stamp />,
+  other: <FileText />,
+};
+
+/** A request still on its way: waiting on the homeroom teacher, or on the letter. */
+function isActive(item: LeaveRequestSummary): boolean {
+  return item.status === "in_progress" || item.status === "approved";
+}
 
 /**
- * A student's own leave requests as the bento card grid (docs/07-ui-ux.md):
- * four stat tiles for how many are total/in progress/approved/rejected,
- * then every request as a card with its status, category and date range,
- * and a compact horizontal stage track. The "Ajukan izin" action itself
- * lives in the page header (`LeaveRequestsView`); this component only owns
- * the list and the two dialogs it opens (create, view).
+ * A student's own leave requests, phone first (docs/07-ui-ux.md section 3,
+ * Workflow): the request on its way as the status card, with who it waits
+ * on and when each stage was done; one strip of counts; then the history.
+ * The "Ajukan izin" action lives in the page header (`LeaveRequestsView`);
+ * this component owns the list and the two dialogs it opens.
  */
 export function MyLeaveRequests({
   creating,
   onCreatingChange,
+  onCreate,
 }: {
   creating: boolean;
   onCreatingChange: (creating: boolean) => void;
+  onCreate: () => void;
 }): ReactElement {
   const t = useTranslations("app.permits.leave");
   const locale = useLocale() as Locale;
-  const { me } = useSession();
   const { data, isLoading, isError, refetch } = useMyLeaveRequestsQuery();
   const [openId, setOpenId] = useState<string | null>(null);
   const items = data?.data ?? [];
-
+  const active = items.find(isActive);
   const tiles = buildLeaveMineTiles(countLeaveMineStatuses(items.map((item) => item.status)));
-  const grid = tileColumns(tiles.length);
-  const cells = bentoCells(
-    items.map((item) => ({
-      key: item.instance_id,
-      node: (
-        <LeaveRequestCard
-          item={item}
-          locale={locale}
-          timeZone={me?.tenant.timezone}
-          onOpen={() => {
-            setOpenId(item.instance_id);
-          }}
-        />
-      ),
-    })),
-  );
+  const history = items.filter((item) => item !== active);
+
+  let body: ReactNode;
+  if (isLoading) {
+    body = (
+      <>
+        <Skeleton className="h-44 w-full rounded-xl" />
+        <SkeletonList rows={3} leading framed />
+      </>
+    );
+  } else if (isError && !data) {
+    body = <QueryError retry={() => refetch()} />;
+  } else if (items.length === 0) {
+    body = (
+      <EmptyState
+        icon={<CalendarX2 aria-hidden="true" />}
+        title={t("emptyTitle")}
+        description={t("emptyBody")}
+        action={
+          <Button icon={<Plus />} onClick={onCreate}>
+            {t("submit")}
+          </Button>
+        }
+      />
+    );
+  } else {
+    body = (
+      <>
+        {active && (
+          <ActiveLeaveCard
+            item={active}
+            locale={locale}
+            onOpen={() => {
+              setOpenId(active.instance_id);
+            }}
+          />
+        )}
+        <StatGrid variant="strip" data-testid="leave-mine-tiles">
+          {tiles.map((tile) => (
+            <Stat
+              key={tile.key}
+              data-testid={`leave-mine-tile-${tile.key}`}
+              icon={<tile.icon />}
+              category={tile.tone}
+              value={tile.value}
+              label={t(`mine.${tile.labelKey}`)}
+            />
+          ))}
+        </StatGrid>
+        {history.length > 0 && (
+          <section className="flex flex-col gap-3" aria-labelledby="leave-history-title">
+            <SectionHeader
+              titleId="leave-history-title"
+              title={t("historyTitle")}
+              count={history.length}
+            />
+            <List framed>
+              {history.map((item) => (
+                <LeaveRequestRow
+                  key={item.instance_id}
+                  item={item}
+                  locale={locale}
+                  onOpen={() => {
+                    setOpenId(item.instance_id);
+                  }}
+                />
+              ))}
+            </List>
+          </section>
+        )}
+      </>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-4">
-      {isLoading ? (
-        <Skeleton className="h-40 w-full" aria-busy="true" />
-      ) : isError && !data ? (
-        <QueryError retry={() => refetch()} />
-      ) : items.length === 0 ? (
-        <p className="text-[14px] text-fg-muted">{t("emptyBody")}</p>
-      ) : (
-        <>
-          <div className={grid.container} data-testid="leave-mine-tiles">
-            {tiles.map((tile, index) => (
-              <div
-                key={tile.key}
-                data-testid={`leave-mine-tile-${tile.key}`}
-                className={cn("h-full", index === tiles.length - 1 && grid.lastTileClassName)}
-              >
-                <StatTile
-                  className="h-full"
-                  icon={tile.icon}
-                  tone={tile.tone}
-                  value={tile.value}
-                  label={t(`mine.${tile.labelKey}`)}
-                />
-              </div>
-            ))}
-          </div>
-          <div className="grid gap-4 lg:grid-cols-2" data-testid="leave-mine-cards">
-            {cells.map((cell) => (
-              <div
-                key={cell.key}
-                data-testid={`leave-mine-cell-${cell.key}`}
-                className={cn("flex h-full flex-col", cell.span === "full" && "lg:col-span-2")}
-              >
-                <div className="flex-1">{cell.node}</div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+    <>
+      {body}
       <LeaveRequestFormDialog
         open={creating}
         onOpenChange={onCreatingChange}
@@ -110,55 +161,87 @@ export function MyLeaveRequests({
           if (!open) setOpenId(null);
         }}
       />
-    </div>
+    </>
   );
 }
 
-function LeaveRequestCard({
+/** The request on its way, as the page's status card: what, when, and each stage. */
+function ActiveLeaveCard({
   item,
   locale,
-  timeZone,
   onOpen,
 }: {
   item: LeaveRequestSummary;
   locale: Locale;
-  timeZone?: string;
   onOpen: () => void;
 }): ReactElement {
   const t = useTranslations("app.permits.leave");
-  const range = `${formatDate(item.starts_on, { locale, timeZone })} - ${formatDate(item.ends_on, { locale, timeZone })}`;
-  const openedText = t("mine.opened", {
-    date: formatDate(item.opened_at, { locale, timeZone }),
-  });
+  const tWorkflow = useTranslations("app.permits.workflow");
+  const detail = useLeaveRequestQuery(item.instance_id);
+  const instance = detail.data?.instance;
+  const waitingOn = instance?.current_stage?.label;
 
   return (
-    <Card className="h-full">
-      <button
-        type="button"
-        onClick={onOpen}
-        data-testid={`leave-mine-card-${item.instance_id}`}
-        className="flex h-full w-full flex-col gap-3 rounded-lg p-4 text-left transition-colors hover:bg-bg"
-      >
-        <div className="flex items-center justify-between gap-2">
-          <WorkflowStatusBadge status={item.status} />
-        </div>
-        <div className="flex flex-col gap-1">
-          <p className="text-[15px] font-medium text-fg">
-            {t(`categories.${item.category}`)} <span className="text-fg-muted">&middot;</span>{" "}
-            {range}
-          </p>
-          <p className="text-[13px] text-fg-muted">
-            {openedText}
-            {item.letter_number && ` · ${t("letterNumber")}: ${item.letter_number}`}
-          </p>
-        </div>
-        <WorkflowMineStageTrack
-          status={item.status}
-          currentStageIndex={item.current_stage_index}
-          className="pt-1"
-        />
-      </button>
-    </Card>
+    <HeroCard
+      data-testid={`leave-mine-card-${item.instance_id}`}
+      eyebrow={t("hero.eyebrow")}
+      chip={
+        item.status === "approved"
+          ? t("hero.letterPending")
+          : waitingOn
+            ? tWorkflow("waitingFor", { stage: waitingOn })
+            : tWorkflow(`status.${item.status}`)
+      }
+      live
+      title={t(`categories.${item.category}`)}
+      meta={[
+        formatDayRange(item.starts_on, item.ends_on, locale),
+        t("days", { count: countDays(item.starts_on, item.ends_on) }),
+      ].join(" · ")}
+      action={
+        <Button variant="secondary" onClick={onOpen} className="w-full sm:w-auto">
+          {t("hero.detail")}
+        </Button>
+      }
+    >
+      <Card padding="sm" className="mt-3 text-fg">
+        {instance ? (
+          <WorkflowSteps instance={instance} />
+        ) : (
+          <WorkflowMineStageTrack
+            status={item.status}
+            currentStageIndex={item.current_stage_index}
+          />
+        )}
+      </Card>
+    </HeroCard>
+  );
+}
+
+function LeaveRequestRow({
+  item,
+  locale,
+  onOpen,
+}: {
+  item: LeaveRequestSummary;
+  locale: Locale;
+  onOpen: () => void;
+}): ReactElement {
+  const t = useTranslations("app.permits.leave");
+  const meta = [
+    formatDayRange(item.starts_on, item.ends_on, locale),
+    t("days", { count: countDays(item.starts_on, item.ends_on) }),
+    ...(item.letter_number ? [t("letterNumberShort", { number: item.letter_number })] : []),
+  ].join(" · ");
+  return (
+    <ListRow
+      data-testid={`leave-mine-card-${item.instance_id}`}
+      leading={<IconCircle tone="neutral">{CATEGORY_ICON[item.category]}</IconCircle>}
+      title={t(`categories.${item.category}`)}
+      meta={meta}
+      trailing={<WorkflowStatusBadge status={item.status} />}
+      onClick={onOpen}
+    />
   );
 }
 
@@ -174,9 +257,12 @@ function LeaveRequestFormDialog({
   const t = useTranslations("app.permits.leave");
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent title={t("submit")}>
+      <DialogContent title={t("submit")} description={t("form.description")}>
         {open && (
           <SubmitForm
+            onCancel={() => {
+              onOpenChange(false);
+            }}
             onDone={(id) => {
               onOpenChange(false);
               onCreated(id);
@@ -198,7 +284,7 @@ export function LeaveRequestDetailDialog({
   const t = useTranslations("app.permits.leave");
   return (
     <Dialog open={id !== null} onOpenChange={onOpenChange}>
-      <DialogContent title={t("detailTitle")} className="max-w-xl">
+      <DialogContent title={t("detailTitle")} size="lg">
         {id && <LeaveRequestDetail id={id} />}
       </DialogContent>
     </Dialog>

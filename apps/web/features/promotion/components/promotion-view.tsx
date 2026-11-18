@@ -2,30 +2,36 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
-  Badge,
+  Alert,
   Button,
+  Card,
   ConfirmDialog,
-  DataTable,
+  DatePicker,
   EmptyState,
-  Input,
-  PageHeader,
-  Select,
-  Skeleton,
+  Field,
+  HeroCard,
+  SkeletonList,
+  Stat,
+  StatGrid,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import type { ColumnDef } from "@tanstack/react-table";
-import { GraduationCap } from "lucide-react";
+import { ArrowUpRight, GraduationCap, LogOut, RotateCcw, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
-import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { AppPage } from "../../../components/app-page";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { businessNow } from "../../../lib/simulation/clock";
+import { useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import { useAcademicYearsQuery } from "../../academic/api";
 import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
-import { useLookup } from "../../reference/api";
+import {
+  WizardProgress,
+  YearPairStep,
+  useYearPair,
+} from "../../academic/components/year-pair-step";
 import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type PromotionAction,
@@ -36,47 +42,61 @@ import {
   usePreviewPromotionMutation,
 } from "../api";
 
-const ACTIONS: PromotionAction[] = ["promote", "retain", "graduate", "transfer"];
+import { PROMOTION_ACTIONS, PromotionPlanTable } from "./promotion-plan-table";
 
-/** Preview and confirm bulk class promotion from one academic year into the next. */
+interface Done {
+  from: string;
+  to: string;
+  applied: number;
+  skipped: number;
+}
+
+/**
+ * Class promotion from one academic year into the next, as a wizard:
+ * choose the years, review the plan (decisions per student, changed one
+ * by one or for every ticked row, filtered to what still needs a class),
+ * then a result report that stays until the years change.
+ */
 export function PromotionView(): ReactElement {
   const t = useTranslations("app.promotion");
+  const tFlow = useTranslations("app.academic.yearFlow");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
+  const { me } = useSession();
+  const today = todayInZone(me?.tenant.timezone);
   const years = useAcademicYearsQuery();
   const yearOptions = years.data?.data ?? [];
+  const { fromYearId, toYearId, setFromYearId, setToYearId } = useYearPair(yearOptions);
+  const yearLabel = (id: string) => yearOptions.find((year) => year.id === id)?.label ?? "";
 
-  const [fromYearId, setFromYearId] = useUrlState(
-    "fromYear",
-    yearOptions.map((year) => year.id),
-    "",
-  );
-  const [toYearId, setToYearId] = useUrlState(
-    "toYear",
-    yearOptions.map((year) => year.id),
-    "",
-  );
-  const [previewResult, setPreviewResult] = useState<
-    { from: string; to: string; plan: PromotionPlanItem[] } | undefined
-  >(undefined);
+  const [previewResult, setPreviewResult] = useState<{
+    from: string;
+    to: string;
+    plan: PromotionPlanItem[];
+  } | null>(null);
   const plan =
-    previewResult?.from === fromYearId && previewResult.to === toYearId
+    previewResult !== null && previewResult.from === fromYearId && previewResult.to === toYearId
       ? previewResult.plan
       : undefined;
   const [overrides, setOverrides] = useState<Record<string, PromotionOverride>>({});
   const [confirming, setConfirming] = useState(false);
-  const [effectiveOn, setEffectiveOn] = useState(() => businessNow().toISOString().slice(0, 10));
+  const [effectiveOn, setEffectiveOn] = useState(today);
+  const [done, setDone] = useState<Done | null>(null);
+  const result = done !== null && done.from === fromYearId && done.to === toYearId ? done : null;
 
   const fromClasses = useClassesForYearQuery(fromYearId);
-  const fromClassMap = useLookup(fromClasses.data?.data);
   const toClasses = useClassesForYearQuery(toYearId);
+  const fromClassOptions = (fromClasses.data?.data ?? []).map((c) => ({
+    value: c.id,
+    label: c.name,
+  }));
   const toClassOptions = (toClasses.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
 
   // Batch directory lookup instead of one GET /v1/users/{id} per row: a
-  // school-wide plan can list ~900 students, so a per-row fetch would fire
-  // ~900 requests and ~1800 Selects worth of re-render on every override.
+  // school-wide plan can list ~900 students.
   const studentMap = useDirectoryNames((plan ?? []).map((item) => item.student_user_id));
+  const studentName = useCallback((id: string) => studentMap.get(id)?.name ?? id, [studentMap]);
 
   const preview = usePreviewPromotionMutation();
   const commit = useCommitPromotionMutation();
@@ -107,10 +127,16 @@ export function PromotionView(): ReactElement {
 
   const rows = useMemo(
     () =>
-      (plan ?? []).map((item) => ({
-        ...item,
-        ...overrides[item.student_user_id],
-      })),
+      (plan ?? []).map((item) => {
+        const override = overrides[item.student_user_id];
+        if (!override) return item;
+        const merged = { ...item, ...override };
+        // A decision without a class needs none; one with a class is
+        // resolved once the class is chosen.
+        const unresolved =
+          (merged.action === "promote" || merged.action === "retain") && !merged.target_class_id;
+        return { ...merged, unresolved };
+      }),
     [plan, overrides],
   );
 
@@ -129,195 +155,128 @@ export function PromotionView(): ReactElement {
     return { counts, unresolvedCount };
   }, [rows]);
 
-  function setOverride(row: PromotionPlanItem, override: PromotionOverride) {
-    setOverrides((prev) => ({ ...prev, [row.student_user_id]: override }));
-  }
+  const applyOverrides = useCallback((next: PromotionOverride[]) => {
+    setOverrides((prev) => {
+      const merged = { ...prev };
+      for (const override of next) merged[override.student_user_id] = override;
+      return merged;
+    });
+  }, []);
 
-  const columns = useMemo<ColumnDef<PromotionPlanItem>[]>(
-    () => [
-      {
-        id: "student",
-        header: t("table.student"),
-        enableSorting: false,
-        accessorFn: (row) => studentMap.get(row.student_user_id)?.name ?? row.student_user_id,
-        cell: ({ row }) =>
-          studentMap.get(row.original.student_user_id)?.name ?? row.original.student_user_id,
-      },
-      {
-        id: "fromClass",
-        header: t("table.fromClass"),
-        enableSorting: false,
-        cell: ({ row }) => (
-          <span className="text-fg-muted">
-            {fromClassMap.get(row.original.from_class_id)?.name ?? "-"}
-          </span>
-        ),
-      },
-      {
-        id: "action",
-        header: t("table.action"),
-        enableSorting: false,
-        cell: ({ row }) => (
-          <Select
-            options={ACTIONS.map((a) => ({ value: a, label: t(`action.${a}`) }))}
-            value={row.original.action}
-            onValueChange={(action) => {
-              setOverride(row.original, {
-                student_user_id: row.original.student_user_id,
-                action: action as PromotionAction,
-                target_class_id:
-                  action === "promote" || action === "retain"
-                    ? row.original.target_class_id
-                    : undefined,
-              });
-            }}
-            className="w-32"
-          />
-        ),
-      },
-      {
-        id: "targetClass",
-        header: t("table.targetClass"),
-        enableSorting: false,
-        cell: ({ row }) =>
-          row.original.action === "promote" || row.original.action === "retain" ? (
-            <Select
-              options={toClassOptions}
-              value={row.original.target_class_id ?? ""}
-              onValueChange={(targetClassId) => {
-                setOverride(row.original, {
-                  student_user_id: row.original.student_user_id,
-                  action: row.original.action,
-                  target_class_id: targetClassId,
-                });
-              }}
-              placeholder={t("table.chooseClass")}
-              invalid={row.original.unresolved}
-              className="w-40"
-            />
-          ) : null,
-      },
-    ],
-    [t, studentMap, fromClassMap, toClassOptions],
-  );
+  const step = result ? 2 : plan ? 1 : 0;
+  const icons: Record<PromotionAction, ReactElement> = {
+    promote: <ArrowUpRight />,
+    retain: <RotateCcw />,
+    graduate: <GraduationCap />,
+    transfer: <LogOut />,
+  };
+  const tones = {
+    promote: "green",
+    retain: "amber",
+    graduate: "blue",
+    transfer: "purple",
+  } as const;
 
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the form,
-    // banners, and summary badges stay fixed; once a plan loads, the table
-    // takes the remaining height and scrolls its rows internally.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <AcademicWorkspaceLinks area="years" />
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <p className="text-[13px] text-fg-muted">{t("description")}</p>
+    // No title or description of its own: the area's header (h1 "Tahun
+    // ajaran", eyebrow "Data sekolah") stays put between its tabs, and the
+    // current tab names this page.
+    <AppPage variant="wide" nav={<AcademicWorkspaceLinks area="years" />}>
+      <WizardProgress
+        current={step}
+        labels={[tFlow("stepYears"), tFlow("stepReview"), tFlow("stepDone")]}
+      />
 
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("fromYear")}</span>
-          <Select
-            options={yearOptions.map((y) => ({ value: y.id, label: y.label }))}
-            value={fromYearId}
-            onValueChange={setFromYearId}
-            className="w-56"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("toYear")}</span>
-          <Select
-            options={yearOptions.map((y) => ({ value: y.id, label: y.label }))}
-            value={toYearId}
-            onValueChange={setToYearId}
-            className="w-56"
-          />
-        </label>
-        <Button
-          onClick={runPreview}
-          loading={preview.isPending}
-          disabled={!fromYearId || !toYearId || fromYearId === toYearId}
-        >
-          {t("preview")}
-        </Button>
-      </div>
-
-      {fromYearId && fromYearId === toYearId && (
-        <p className="text-[13px] text-status-absent">{t("sameYearError")}</p>
+      {result ? (
+        <HeroCard
+          tone="accent-soft"
+          eyebrow={tFlow("doneEyebrow")}
+          title={t("doneTitle", { year: yearLabel(result.to) })}
+          meta={t("doneBody", { applied: result.applied, skipped: result.skipped })}
+          action={
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setDone(null);
+              }}
+            >
+              {tFlow("startOver")}
+            </Button>
+          }
+        />
+      ) : (
+        <YearPairStep
+          years={yearOptions}
+          fromYearId={fromYearId}
+          toYearId={toYearId}
+          onFromChange={setFromYearId}
+          onToChange={setToYearId}
+          onPreview={runPreview}
+          previewing={preview.isPending}
+          previewLabel={plan ? tFlow("previewAgain") : t("preview")}
+          title={t("idleTitle")}
+          description={t("description")}
+        />
       )}
 
-      {preview.isPending ? (
-        <Skeleton className="h-64 w-full" aria-busy="true" />
-      ) : plan === undefined ? (
-        <EmptyState
-          icon={<GraduationCap aria-hidden="true" />}
-          title={t("idleTitle")}
-          description={t("idleBody")}
-        />
-      ) : plan.length === 0 ? (
+      {result ? null : preview.isPending ? (
+        <SkeletonList rows={6} framed />
+      ) : plan === undefined ? null : plan.length === 0 ? (
         <EmptyState
           icon={<domainIcons.users aria-hidden="true" />}
           title={t("emptyTitle")}
           description={t("emptyBody")}
         />
       ) : (
-        <div className="flex flex-col gap-3 md:min-h-0 md:flex-1">
-          <div className="flex flex-wrap gap-2 text-[13px]">
-            {ACTIONS.map((action) => (
-              <Badge key={action} variant="neutral">
-                {t(`action.${action}`)}: {summary.counts[action]}
-              </Badge>
-            ))}
-            {summary.unresolvedCount > 0 && (
-              <Badge variant="accent">{t("unresolvedCount", { n: summary.unresolvedCount })}</Badge>
-            )}
-          </div>
-
-          <div className="md:min-h-0 md:flex-1">
-            <DataTable
-              stateKey="features/promotion/components/promotion-view:1"
-              mode="local"
-              data={rows}
-              columns={columns}
-              rowCount={rows.length}
-              pagination={{ pageIndex: 0, pageSize: 50 }}
-              onPaginationChange={() => undefined}
-              sorting={[]}
-              onSortingChange={() => undefined}
-              globalFilter=""
-              getRowId={(r) => r.student_user_id}
-              fillHeight
-              emptyState={
-                <EmptyState
-                  icon={<domainIcons.users aria-hidden="true" />}
-                  title={t("emptyTitle")}
-                  description={t("emptyBody")}
-                />
-              }
-            />
-          </div>
-
-          <div className="flex flex-wrap items-end gap-3 border-t border-border pt-4">
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("effectiveOn")}</span>
-              <Input
-                type="date"
-                value={effectiveOn}
-                onChange={(e) => {
-                  setEffectiveOn(e.target.value);
-                }}
-                className="w-44"
+        <>
+          <StatGrid variant="strip" aria-label={tFlow("summary")}>
+            {PROMOTION_ACTIONS.map((action) => (
+              <Stat
+                key={action}
+                icon={icons[action]}
+                tone={tones[action]}
+                label={t(`action.${action}`)}
+                value={summary.counts[action]}
               />
-            </label>
-            <Button
-              onClick={() => {
-                setConfirming(true);
-              }}
-              disabled={summary.unresolvedCount > 0}
-            >
-              {t("commit")}
-            </Button>
+            ))}
+            <Stat
+              icon={<TriangleAlert />}
+              tone={summary.unresolvedCount > 0 ? "red" : "green"}
+              label={t("unresolvedLabel")}
+              value={summary.unresolvedCount}
+            />
+          </StatGrid>
+
+          <PromotionPlanTable
+            rows={rows}
+            studentName={studentName}
+            fromClasses={fromClassOptions}
+            toClasses={toClassOptions}
+            onOverride={applyOverrides}
+          />
+
+          <Card padding="md">
             {summary.unresolvedCount > 0 && (
-              <p className="text-[13px] text-status-absent">{t("resolveBeforeCommit")}</p>
+              <Alert tone="warning" title={t("unresolvedCount", { n: summary.unresolvedCount })}>
+                {t("resolveBeforeCommit")}
+              </Alert>
             )}
-          </div>
-        </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <Field label={t("effectiveOn")} className="sm:w-56">
+                <DatePicker value={effectiveOn} onChange={setEffectiveOn} today={today} />
+              </Field>
+              <Button
+                className="max-sm:w-full"
+                onClick={() => {
+                  setConfirming(true);
+                }}
+                disabled={summary.unresolvedCount > 0 || !effectiveOn}
+              >
+                {t("commit")}
+              </Button>
+            </div>
+          </Card>
+        </>
       )}
 
       <ConfirmDialog
@@ -325,6 +284,7 @@ export function PromotionView(): ReactElement {
         onOpenChange={setConfirming}
         title={t("confirmTitle")}
         description={t("confirmBody", { n: rows.length })}
+        confirmLabel={t("commit")}
         confirming={commit.isPending}
         onConfirm={() => {
           commit.mutate(
@@ -335,10 +295,16 @@ export function PromotionView(): ReactElement {
               effective_on: effectiveOn,
             },
             {
-              onSuccess: () => {
+              onSuccess: (response) => {
                 setConfirming(false);
-                setPreviewResult(undefined);
+                setPreviewResult(null);
                 setOverrides({});
+                setDone({
+                  from: fromYearId,
+                  to: toYearId,
+                  applied: response.applied.length,
+                  skipped: response.skipped.length,
+                });
                 toast.success(t("committed"));
               },
               onError: handleError,
@@ -346,6 +312,6 @@ export function PromotionView(): ReactElement {
           );
         }}
       />
-    </div>
+    </AppPage>
   );
 }

@@ -1,103 +1,89 @@
-import type { StatTileTone } from "@newsekolah/ui";
+import type { StatCategory } from "@newsekolah/ui";
 import {
   BarChart3,
   CheckCircle2,
   CircleDashed,
-  ListChecks,
-  Megaphone,
   Percent,
   Users,
   type LucideIcon,
 } from "lucide-react";
 
-export interface GradingTile {
-  key: string;
+import { formatScore } from "./format-score";
+
+export interface GradebookSummaryItem {
+  key: "students" | "average" | "tuntas" | "ungraded" | "filled";
   icon: LucideIcon;
-  tone: StatTileTone;
+  tone: StatCategory;
   value: string;
-  /** `app.grading.*` message key for the tile's label. */
+  /** `app.grading.summary.*` message key for the figure's label. */
   labelKey: string;
 }
 
+export interface GradebookSummaryInput {
+  studentCount: number;
+  componentCount: number;
+  /** 0-100, how many of the sheet's score slots hold a value. */
+  fillPercent: number;
+  classAverage: number | undefined;
+  /** 0-100, the share of students at or above their KKTP. */
+  tuntasRate: number;
+  ungradedCount: number;
+  locale?: string;
+}
+
 /**
- * The teacher entry page's stat-tile row (docs/07-ui-ux.md bento header):
- * how many students the currently open sheet covers, how many components
- * it has, how much of the grid is already filled, and whether it is
- * published -- the same four numbers a teacher needs before deciding
- * whether to open the grid at all.
+ * The opened sheet's one summary strip (docs/superpowers/specs/
+ * 2026-11-14-ui-overhaul-design.md section 7): who is on the sheet, how the
+ * class is doing against its KKTP, and how much is still to fill -- the
+ * figures that used to be spread over seven tiles above the table. With no
+ * components there are no slots to fill or scores to judge, so those
+ * figures read as a dash instead of a misleading "100%" or "0%".
  */
-export function buildGradingEntryTiles(
-  studentCount: number,
-  componentCount: number,
-  fillPercent: number,
-  isPublished: boolean,
-  publishedStatusLabel: string,
-  draftStatusLabel: string,
-): GradingTile[] {
+export function buildGradebookSummary({
+  studentCount,
+  componentCount,
+  fillPercent,
+  classAverage,
+  tuntasRate,
+  ungradedCount,
+  locale,
+}: GradebookSummaryInput): GradebookSummaryItem[] {
+  const hasSlots = componentCount > 0;
   return [
     {
       key: "students",
       icon: Users,
       tone: "blue",
       value: String(studentCount),
-      labelKey: "entryTiles.students",
+      labelKey: "summary.students",
     },
-    {
-      key: "components",
-      icon: ListChecks,
-      tone: "purple",
-      value: String(componentCount),
-      labelKey: "entryTiles.components",
-    },
-    {
-      key: "filled",
-      icon: Percent,
-      tone: "amber",
-      value: `${fillPercent}%`,
-      labelKey: "entryTiles.filled",
-    },
-    {
-      key: "published",
-      icon: Megaphone,
-      tone: isPublished ? "green" : "amber",
-      value: isPublished ? publishedStatusLabel : draftStatusLabel,
-      labelKey: "entryTiles.published",
-    },
-  ];
-}
-
-/**
- * The opened gradebook's compact stat-tile row: academic performance
- * instead of the entry page's plain counts -- class average, how much of
- * the class is already tuntas against its KKTP, and how many students
- * still have nothing scored at all.
- */
-export function buildGradebookPageTiles(
-  classAverage: number | undefined,
-  tuntasRate: number,
-  ungradedCount: number,
-): GradingTile[] {
-  return [
     {
       key: "average",
       icon: BarChart3,
-      tone: "blue",
-      value: classAverage === undefined ? "-" : classAverage.toFixed(1),
-      labelKey: "pageTiles.average",
+      tone: "purple",
+      value: classAverage === undefined ? "-" : formatScore(classAverage, locale),
+      labelKey: "summary.average",
     },
     {
       key: "tuntas",
       icon: CheckCircle2,
       tone: "green",
-      value: `${tuntasRate}%`,
-      labelKey: "pageTiles.tuntas",
+      value: hasSlots ? `${tuntasRate}%` : "-",
+      labelKey: "summary.tuntas",
     },
     {
       key: "ungraded",
       icon: CircleDashed,
       tone: "amber",
       value: String(ungradedCount),
-      labelKey: "pageTiles.ungraded",
+      labelKey: "summary.ungraded",
+    },
+    {
+      key: "filled",
+      icon: Percent,
+      tone: "blue",
+      value: hasSlots ? `${fillPercent}%` : "-",
+      labelKey: "summary.filled",
     },
   ];
 }

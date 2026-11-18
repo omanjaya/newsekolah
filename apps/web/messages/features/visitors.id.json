@@ -1,65 +1,96 @@
 {
   "board": {
-    "eyebrow": "Tamu & insiden",
-    "title": "Papan tamu",
-    "count": "{count, plural, other {# tamu di kampus}}",
-    "newVisitor": "Tamu Baru",
-    "searchPlaceholder": "Cari nama atau instansi tamu",
-    "searchEmptyTitle": "Tidak ditemukan",
-    "searchEmptyBody": "Tidak ada tamu di kampus yang cocok dengan pencarian \"{query}\".",
-    "overdue": "Belum Keluar",
-    "purpose": "Keperluan",
-    "noPurpose": "Tidak dicatat",
-    "arrivedAt": "Masuk",
-    "badgeNumber": "No. Badge",
-    "noBadge": "Belum ada",
-    "checkOut": "Catat Keluar",
+    "documentTitle": "Tamu hari ini",
+    "newVisitor": "Tamu baru",
+    "searchPlaceholder": "Cari nama atau instansi",
+    "filterLabel": "Tampilkan tamu",
+    "filters": {
+      "all": "Semua",
+      "onSite": "Di sekolah",
+      "expected": "Terjadwal"
+    },
+    "onSiteTitle": "Di sekolah sekarang",
+    "live": "Diperbarui {time}",
+    "stale": "Gagal memperbarui, data {time}",
+    "searchEmptyTitle": "Tidak ada tamu yang cocok",
+    "searchEmptyBody": "Tidak ada tamu di sekolah yang cocok dengan \"{query}\".",
+    "clearSearch": "Hapus pencarian",
+    "overdue": "Belum keluar",
+    "host": "Menemui {name}",
+    "arrived": "Masuk {time} · {stay}",
+    "stayMinutes": "{minutes} mnt",
+    "stayHours": "{hours} j {minutes} mnt",
+    "badgeNumber": "Kartu {number}",
+    "checkOut": "Catat keluar",
+    "checkOutShort": "Keluar",
+    "checkOutFor": "Catat keluar {name}",
     "signedOut": "{name} sudah dicatat keluar",
-    "emptyTitle": "Belum ada tamu",
-    "emptyBody": "Tamu yang masuk lewat gerbang akan muncul di sini."
+    "checkOutDialog": {
+      "title": "Catat tamu keluar?",
+      "body": "{name} akan dicatat sudah meninggalkan sekolah dan hilang dari daftar tamu di sekolah."
+    },
+    "emptyTitle": "Belum ada tamu di sekolah",
+    "emptyBody": "Tamu yang dicatat masuk di gerbang muncul di sini."
   },
   "checkIn": {
     "fullName": "Nama lengkap",
     "fullNamePlaceholder": "Nama tamu",
-    "organization": "Instansi/organisasi",
-    "organizationPlaceholder": "Opsional",
-    "host": "Ditemui",
+    "organization": "Instansi atau organisasi",
+    "host": "Menemui",
     "hostPlaceholder": "Pilih guru atau pegawai",
     "purpose": "Keperluan",
-    "purposePlaceholder": "Opsional",
     "idChecked": "Identitas sudah diperiksa",
-    "idCheckedHint": "Hanya mencatat jenis identitasnya, bukan foto atau nomornya.",
-    "idTypePlaceholder": "Jenis identitas",
+    "idCheckedHint": "Hanya jenis identitasnya yang dicatat, bukan foto atau nomornya.",
+    "idType": "Jenis identitas",
+    "idTypePlaceholder": "Pilih jenis identitas",
     "idTypes": {
-      "none": "Belum dipilih",
       "ktp": "KTP",
       "sim": "SIM",
-      "kartu_pelajar": "Kartu Pelajar",
-      "kartu_pegawai": "Kartu Pegawai",
+      "kartu_pelajar": "Kartu pelajar",
+      "kartu_pegawai": "Kartu pegawai",
       "other": "Lainnya"
     },
+    "errors": {
+      "fullName": "Isi nama tamu.",
+      "host": "Pilih guru atau pegawai yang ditemui.",
+      "idType": "Pilih jenis identitas yang diperiksa."
+    },
     "cancel": "Batal",
-    "submit": "Catat Masuk",
+    "submit": "Catat masuk",
     "signedIn": "Tamu sudah dicatat masuk"
   },
   "expected": {
-    "eyebrow": "Tamu & insiden",
-    "title": "Tamu dijadwalkan",
+    "documentTitle": "Tamu terjadwal",
     "filters": {
       "date": "Tanggal",
       "onlyPending": "Hanya yang menunggu",
       "reset": "Reset filter",
       "removeFilter": "Hapus filter {label}"
     },
-    "add": "Tambah Tamu",
-    "checkIn": "Catat Masuk",
+    "day": {
+      "previous": "Hari sebelumnya",
+      "next": "Hari berikutnya",
+      "today": "Hari ini"
+    },
+    "add": "Jadwalkan tamu",
+    "checkIn": "Catat masuk",
+    "checkInShort": "Masuk",
+    "checkInFor": "Catat masuk {name}",
     "cancel": "Batalkan",
-    "cancelled": "Entri tamu dibatalkan",
+    "rowActions": "Aksi untuk {name}",
+    "cancelled": "Jadwal tamu dibatalkan",
     "unknownHost": "Tidak diketahui",
+    "hostLine": "Menemui {name}",
+    "todayTitle": "Terjadwal hari ini",
+    "todayEmptyTitle": "Tidak ada tamu terjadwal hari ini",
+    "todayEmptyBody": "Tamu yang dijadwalkan kantor untuk hari ini muncul di sini.",
+    "todaySearchEmpty": "Tidak ada tamu terjadwal yang cocok",
+    "scheduleGuest": "Jadwalkan tamu",
     "columns": {
       "name": "Nama",
       "organization": "Instansi",
-      "host": "Ditemui",
+      "host": "Menemui",
+      "purpose": "Keperluan",
       "status": "Status",
       "actions": "Aksi"
     },
@@ -69,25 +100,34 @@
       "expired": "Kedaluwarsa",
       "cancelled": "Dibatalkan"
     },
-    "emptyTitle": "Belum ada tamu dijadwalkan",
-    "emptyBody": "Tambahkan nama tamu yang diharapkan datang hari ini.",
+    "emptyTitle": "Tidak ada tamu terjadwal hari ini",
+    "emptyTitleOther": "Tidak ada tamu terjadwal pada tanggal ini",
+    "emptyBody": "Tamu yang dijadwalkan muncul di sini, siap dicatat masuk saat datang.",
+    "cancelDialog": {
+      "title": "Batalkan jadwal tamu?",
+      "body": "Rencana kunjungan {name} dibatalkan dan tamu ini tidak bisa lagi dicatat masuk dari daftar."
+    },
     "form": {
       "fullName": "Nama lengkap",
-      "organization": "Instansi/organisasi",
-      "host": "Ditemui",
+      "organization": "Instansi atau organisasi",
+      "host": "Menemui",
       "hostPlaceholder": "Pilih guru atau pegawai",
-      "date": "Tanggal diharapkan",
+      "date": "Tanggal kedatangan",
       "purpose": "Keperluan",
       "notes": "Catatan",
+      "errors": {
+        "fullName": "Isi nama tamu.",
+        "host": "Pilih guru atau pegawai yang akan ditemui.",
+        "date": "Pilih tanggal kedatangan."
+      },
       "cancel": "Batal",
       "submit": "Simpan",
-      "added": "Tamu dijadwalkan ditambahkan"
+      "added": "Tamu sudah dijadwalkan"
     }
   },
   "incidents": {
-    "eyebrow": "Tamu & insiden",
-    "title": "Insiden",
-    "record": "Catat Insiden",
+    "documentTitle": "Insiden",
+    "record": "Catat insiden",
     "open": "Buka",
     "filters": {
       "includeClosed": "Tampilkan yang sudah ditutup",
@@ -116,16 +156,17 @@
       "high": "Tinggi",
       "critical": "Kritis"
     },
-    "emptyTitle": "Belum ada insiden",
-    "emptyBody": "Insiden yang tercatat dalam 30 hari terakhir akan muncul di sini.",
+    "emptyTitle": "Tidak ada insiden",
+    "emptyBody": "Insiden yang tercatat muncul di sini.",
+    "emptyRange": "Tidak ada insiden tercatat pada {range}.",
     "detail": {
       "title": "Detail insiden",
-      "loading": "Memuat...",
+      "editTitle": "Ubah insiden",
       "status": {
         "open": "Terbuka",
         "closed": "Ditutup"
       },
-      "severity": "Tingkat keparahan",
+      "occurredAt": "Waktu kejadian",
       "severities": {
         "low": "Rendah",
         "medium": "Sedang",
@@ -136,11 +177,17 @@
       "personsInvolved": "Orang yang terlibat",
       "actionTaken": "Tindakan yang diambil",
       "edit": "Ubah",
-      "close": "Tutup Insiden",
-      "closed": "Insiden ditutup"
+      "close": "Tutup insiden",
+      "closed": "Insiden ditutup",
+      "closeDialog": {
+        "title": "Tutup insiden ini?",
+        "body": "Insiden yang sudah ditutup tidak bisa diubah lagi."
+      }
     },
     "form": {
       "occurredAt": "Waktu kejadian",
+      "date": "Tanggal kejadian",
+      "time": "Jam kejadian",
       "severity": "Tingkat keparahan",
       "severities": {
         "low": "Rendah",
@@ -150,8 +197,11 @@
       },
       "description": "Ringkasan kejadian",
       "personsInvolved": "Orang yang terlibat",
-      "personsInvolvedPlaceholder": "Opsional",
       "actionTaken": "Tindakan yang diambil",
+      "errors": {
+        "occurredAt": "Isi tanggal dan jam kejadian.",
+        "description": "Tulis ringkasan kejadian."
+      },
       "cancel": "Batal",
       "submit": "Simpan",
       "recorded": "Insiden dicatat",
@@ -159,21 +209,29 @@
     }
   },
   "recap": {
-    "eyebrow": "Tamu & insiden",
-    "title": "Rekap kunjungan",
+    "documentTitle": "Rekap kunjungan",
+    "periodLabel": "Periode rekap",
     "tabs": {
       "daily": "Harian",
       "monthly": "Bulanan"
     },
+    "day": {
+      "previous": "Hari sebelumnya",
+      "next": "Hari berikutnya",
+      "today": "Hari ini"
+    },
     "dateLabel": "Tanggal",
     "monthLabel": "Bulan",
-    "export": "Unduh",
-    "defaultTitleDaily": "Rekap Kunjungan Harian",
-    "defaultTitleMonthly": "Rekap Kunjungan Bulanan",
+    "export": "Unduh rekap",
+    "defaultTitleDaily": "Rekap kunjungan harian",
+    "defaultTitleMonthly": "Rekap kunjungan bulanan",
+    "visitsTitle": "Kunjungan",
     "totalVisits": "Total kunjungan",
-    "stillOnCampus": "Masih di kampus",
-    "avgStayMinutes": "Rata-rata durasi (menit)",
+    "stillOnCampus": "Masih di sekolah",
+    "avgStay": "Rata-rata lama kunjungan",
     "incidentsBySeverity": "Insiden per tingkat keparahan",
+    "emptyTitle": "Tidak ada kunjungan pada {period}",
+    "emptyBody": "Kunjungan dan insiden yang tercatat pada periode ini muncul di sini.",
     "severities": {
       "low": "Rendah",
       "medium": "Sedang",

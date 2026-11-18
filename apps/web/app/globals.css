@@ -8,6 +8,17 @@ body {
   height: 100%;
 }
 
+/*
+ * The viewport covers the whole screen (`viewportFit: "cover"`,
+ * app/layout.tsx), so in landscape the page keeps clear of a notch at the
+ * side. The insets are zero on every screen without one, desktops included.
+ * The header pads its own top and the tab bar its own bottom.
+ */
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
 .skip-link {
   position: absolute;
   top: -100%;
@@ -17,7 +28,12 @@ body {
   background-color: var(--color-accent);
   color: var(--color-accent-fg);
   border-radius: var(--radius-xs);
-  font-size: var(--text-13);
+  /* The label role (packages/ui-tokens), whole: family, size, line, weight. */
+  font-family: var(--font-sans);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  letter-spacing: var(--type-label-tracking);
 }
 
 .skip-link:focus {
@@ -28,10 +44,14 @@ body {
 /*
  * Tenant accent, resolved per theme.
  *
- * TenantProvider writes `--tenant-accent` (a readable light-theme variant) and `--tenant-accent-dark` (derived by
- * lib/tenant/accent.ts to clear 4.5:1 on the dark surface). These rules
- * choose between them, mirroring the selectors the token package uses for
- * every other themed value.
+ * TenantProvider writes `--tenant-accent` (a readable light-theme variant)
+ * and `--tenant-accent-dark` (derived by lib/tenant/accent.ts to clear 4.5:1
+ * on the dark surface, or the token's own #2FD6A0 for the platform default).
+ * These rules choose between them, mirroring the selectors the token package
+ * uses for every other themed value. The focus ring follows the accent so a
+ * branded school's ring matches its buttons, and the selected-row layer is
+ * mixed from it (8% light, 10% dark, the token's own strengths) so a chosen
+ * row is tinted with the school's colour, not the platform green.
  *
  * The doubled `:root:root` is deliberate. The token package sets
  * `--color-accent` from `:root:not([data-theme="light"])`, which outranks
@@ -39,38 +59,65 @@ body {
  * rely on once Next.js splits the CSS into chunks. Repeating the pseudo
  * class raises specificity enough to win outright, in both themes.
  *
- * Defaults live on the variables themselves, so a tenant without branding
- * (or any paint before branding arrives) still renders DESIGN.md's colours.
+ * Defaults live on the variables themselves and equal the token pair
+ * (packages/ui-tokens), so a tenant without branding, or any paint before
+ * branding arrives, renders the platform accent in both themes.
  */
 :root {
   --tenant-accent: #0f7a5f;
-  --tenant-accent-dark: #409680;
+  --tenant-accent-dark: #2fd6a0;
   --tenant-accent-fg: #ffffff;
-  --tenant-accent-dark-fg: #000000;
+  --tenant-accent-dark-fg: #06261d;
   --shell-sidebar-width: 15rem;
-  --shell-mobile-tab-offset: calc(4rem + env(safe-area-inset-bottom));
+  /*
+   * The phone's tab bar (components/mobile-tab-bar.tsx, geometry in
+   * mobile-tab-slot.tsx): a 64px row of slots, padded clear of the home
+   * indicator, with the 56px centre button rising 24px above it, plus its
+   * 4px ring: 28px of overhang, and 4px of air on top of that make the
+   * 32px raise. The offset is everything at the bottom that the page's
+   * end keeps clear of: the bar, the home indicator and the raise. A bar
+   * that docks on the tab bar (a StickySaveBar, a sticky form row) sits at
+   * the bar and the home indicator and takes the raise as bottom padding,
+   * so no strip of page shows between the two. A bar without a centre
+   * action (`data-centre` absent) raises nothing.
+   */
+  --shell-mobile-tab-bar: 4rem;
+  --shell-mobile-tab-raise: 2rem;
+  --shell-mobile-tab-offset: calc(
+    var(--shell-mobile-tab-bar) + var(--shell-mobile-tab-raise) + env(safe-area-inset-bottom)
+  );
+}
+
+:root:has([data-tab-bar]:not([data-centre])) {
+  --shell-mobile-tab-raise: 0px;
 }
 
 :root:root {
   --color-accent: var(--tenant-accent);
   --color-accent-fg: var(--tenant-accent-fg);
+  --color-focus-ring: var(--tenant-accent);
+  --color-state-selected: color-mix(in srgb, var(--tenant-accent) 8%, transparent);
 }
 
 :root:root[data-theme="dark"] {
   --color-accent: var(--tenant-accent-dark);
   --color-accent-fg: var(--tenant-accent-dark-fg);
+  --color-focus-ring: var(--tenant-accent-dark);
+  --color-state-selected: color-mix(in srgb, var(--tenant-accent-dark) 10%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:root:not([data-theme="light"]) {
     --color-accent: var(--tenant-accent-dark);
     --color-accent-fg: var(--tenant-accent-dark-fg);
+    --color-focus-ring: var(--tenant-accent-dark);
+    --color-state-selected: color-mix(in srgb, var(--tenant-accent-dark) 10%, transparent);
   }
 }
 
 /*
- * Auth hero motion: slow-drifting gradient orbs behind the login brand panel.
- * Purely decorative, so it collapses to a static position under
+ * Auth hero motion: the light bloom behind the sign-in brand panel drifts
+ * very slowly. Purely decorative, so it stays still under
  * prefers-reduced-motion.
  */
 @keyframes auth-orb-a {
@@ -82,26 +129,164 @@ body {
   }
 }
 
-@keyframes auth-orb-b {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  100% {
-    transform: translate3d(-8%, 6%, 0) scale(1.1);
-  }
-}
-
 .auth-orb-a {
   animation: auth-orb-a 18s ease-in-out infinite alternate;
 }
 
-.auth-orb-b {
-  animation: auth-orb-b 22s ease-in-out infinite alternate;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .auth-orb-a,
-  .auth-orb-b {
+  .auth-orb-a {
     animation: none;
   }
+}
+
+/*
+ * Phone tab bar (components/mobile-tab-slot.tsx).
+ *
+ * Press feedback: every slot shrinks while held, twice the press token's
+ * dip (0.98, so 0.96) in 80ms, and settles back at the normal 120ms.
+ * Derived from the token, so reduced motion (which sets it to 1) keeps the
+ * slot still.
+ */
+.tab-press {
+  transition-property: color, scale;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-standard);
+}
+
+.tab-press:active {
+  scale: calc(1 - 2 * (1 - var(--motion-scale-press)));
+  transition-duration: var(--duration-instant);
+}
+
+/*
+ * The active tab's icon reads as filled without leaving Lucide: a heavier
+ * stroke and a faint wash of the accent inside its closed shapes (open
+ * strokes, like the menu's lines, enclose nothing and stay as they are).
+ */
+.tab-icon-active > svg {
+  stroke-width: 2.4;
+  fill: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+/*
+ * A form's own sticky action row (FormActions `sticky`) docks on the
+ * phone's tab bar instead of sliding under it, with the centre button's
+ * rise as padding (the tab bar paints its button over that padding, as
+ * it does for a StickySaveBar). Dialogs and sheets are portalled outside
+ * <main>, so their rows keep the dialog's bottom edge.
+ */
+@media (width < 48rem) {
+  main [data-slot="form-actions"].sticky {
+    bottom: calc(var(--shell-mobile-tab-bar) + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--space-3) + var(--shell-mobile-tab-raise));
+  }
+}
+
+/*
+ * Directional page entrances on a phone (components/use-nav-direction.ts
+ * marks <html>). Going deeper, the page's column (its head and content,
+ * never the shell) enters from the right by a short distance with a fade;
+ * going back, from the left; switching bottom tabs, a quick fade that
+ * starts at half opacity, so the switch never blinks to an empty page.
+ * Anything else keeps PageShell's own fade and rise on the content. The
+ * distance is 2.5 rises (20px), so reduced motion, which zeroes the rise,
+ * leaves only the fade. A loading skeleton (`animate={false}`) never moves.
+ */
+@keyframes page-enter-forward {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--motion-rise) * 2.5));
+  }
+}
+
+@keyframes page-enter-back {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--motion-rise) * -2.5));
+  }
+}
+
+/* A sibling tab's page is a place the reader already knows: no blank frame. */
+@keyframes page-enter-tab {
+  from {
+    opacity: 0.5;
+  }
+}
+
+@media (width < 48rem) {
+  /*
+   * The entering column starts 20px to the right, and a full-bleed row
+   * inside it (a chip strip, a scroller) then reaches past the screen: the
+   * page gained a horizontal scroll for the length of the entrance. Clip
+   * sideways only; `clip`, unlike `hidden`, makes no scroll container, so
+   * sticky bars inside the page keep sticking to the viewport.
+   */
+  [data-page-shell][data-animate] {
+    overflow-x: clip;
+  }
+
+  html[data-nav-direction="forward"] [data-page-shell][data-animate] > [data-slot="page-column"] {
+    animation: page-enter-forward var(--duration-base) var(--ease-enter) backwards;
+  }
+
+  html[data-nav-direction="back"] [data-page-shell][data-animate] > [data-slot="page-column"] {
+    animation: page-enter-back var(--duration-base) var(--ease-enter) backwards;
+  }
+
+  html[data-nav-direction="tab"] [data-page-shell][data-animate] > [data-slot="page-column"] {
+    animation: page-enter-tab var(--duration-fast) var(--ease-standard) backwards;
+  }
+
+  html:is([data-nav-direction="forward"], [data-nav-direction="back"], [data-nav-direction="tab"])
+    [data-page-shell][data-animate]
+    > [data-slot="page-column"]
+    > [data-slot="page-content"] {
+    animation: none;
+  }
+}
+
+/*
+ * Touch behaviour of an installed app: no grey flash on tap, no 300ms
+ * double-tap wait on controls, no text selection or callout on the tab
+ * bar and buttons, the page never rubber-bands the shell away on a phone,
+ * scroll areas keep their momentum, and the text size stays the one the
+ * reader set in the system (not one the browser guesses in landscape).
+ * Selection and overscroll are left alone with a mouse on a wide screen,
+ * so the desktop behaves as it did.
+ */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@media (width < 48rem) {
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+}
+
+:where(a, button, input, select, textarea, label, summary, [role="button"], [role="tab"]) {
+  touch-action: manipulation;
+}
+
+[data-tab-bar] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+@media (pointer: coarse) {
+  :where(button, [role="button"], [role="tab"]) {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+[data-tab-bar] {
+  -webkit-touch-callout: none;
+}
+
+:where(.overflow-auto, .overflow-y-auto, .overflow-x-auto, .overflow-scroll) {
+  -webkit-overflow-scrolling: touch;
 }

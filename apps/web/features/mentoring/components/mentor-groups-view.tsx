@@ -7,34 +7,24 @@ import {
   DataTable,
   Dialog,
   DialogContent,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   EmptyState,
-  IconButton,
-  PageHeader,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  FilteredEmptyState,
+  RowActionsMenu,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { Pencil, Plus, Trash2, UsersRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
-import { QueryError } from "../../../components/query-error";
-import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { AppPage } from "../../../components/app-page";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryNames } from "../../reference/directory-names";
-import { ActivitiesWorkspaceNav } from "../../student-services/components/service-workspace-nav";
 import {
   type MentorGroup,
   useDeleteMentorGroupMutation,
@@ -45,15 +35,20 @@ import {
 import { GroupSizeLimitPanel } from "./group-size-limit-panel";
 import { MentorGroupForm } from "./mentor-group-form";
 
+type MentorGroupRow = MentorGroup & { mentor_name: string };
+
+/**
+ * The mentoring groups: the reader's own (/mentoring/my-groups) or every
+ * group (/mentoring/groups). Each scope is its own route, so the area's
+ * tabs move between them; the group size limit opens from the header.
+ */
 export function MentorGroupsView({
   initialScope = "mine",
 }: {
   initialScope?: "mine" | "all";
 }): ReactElement {
-  const workspace = useTranslations("app.serviceWorkspace");
-  const shell = useTranslations("app.workspace");
   const mine = useTranslations("app.mentoring.myGroups");
-  const [scope, setScope] = useUrlState<string>("scope", ["mine", "all"], initialScope);
+  const scope = initialScope;
   const t = useTranslations("app.mentoring.groups");
   const router = useRouter();
   const toast = useToast();
@@ -62,29 +57,44 @@ export function MentorGroupsView({
 
   const allGroups = useMentorGroupsQuery(scope === "all");
   const myGroups = useMyMentorGroupsQuery(scope === "mine");
-  const { data, isLoading, isError, refetch } = scope === "mine" ? myGroups : allGroups;
+  const { data, isLoading, error, refetch } = scope === "mine" ? myGroups : allGroups;
   const remove = useDeleteMentorGroupMutation();
 
-  const [tab, setTab] = useUrlState<string>(
-    "tab",
-    canManage ? ["groups", "limit"] : ["groups"],
-    "groups",
-  );
   const [editing, setEditing] = useState<MentorGroup | "new" | null>(null);
   const [pendingDelete, setPendingDelete] = useState<MentorGroup | null>(null);
+  const [limitOpen, setLimitOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
-  const items = data?.data ?? [];
+  const items = useMemo(() => data?.data ?? [], [data]);
   const teacherMap = useDirectoryNames(items.map((item) => item.mentor_user_id));
 
-  const columns = useMemo<ColumnDef<MentorGroup>[]>(() => {
-    const base: ColumnDef<MentorGroup>[] = [
-      { accessorKey: "name", header: t("columns.name"), enableSorting: false },
+  // The searchable name lives in the row data, not in an accessor closing over
+  // the lookup: the table caches accessor values per row, so a name that
+  // resolves after the rows would otherwise stay unsearchable.
+  const tableRows = useMemo<MentorGroupRow[]>(
+    () =>
+      items.map((item) => ({
+        ...item,
+        mentor_name: teacherMap.get(item.mentor_user_id)?.name ?? "",
+      })),
+    [items, teacherMap],
+  );
+
+  const columns = useMemo<ColumnDef<MentorGroupRow>[]>(() => {
+    const base: ColumnDef<MentorGroupRow>[] = [
       {
-        id: "mentor",
+        accessorKey: "name",
+        header: t("columns.name"),
+        enableSorting: false,
+        meta: { card: "title", label: t("columns.name") },
+      },
+      {
+        accessorKey: "mentor_name",
         header: t("columns.mentor"),
         enableSorting: false,
+        meta: { card: "subtitle", label: t("columns.mentor") },
         cell: ({ row }) => {
-          const name = teacherMap.get(row.original.mentor_user_id)?.name;
+          const name = row.original.mentor_name;
           return name ? formatDisplayName(name) : t("unknownMentor");
         },
       },
@@ -96,137 +106,146 @@ export function MentorGroupsView({
         id: "actions",
         header: t("columns.actions"),
         enableSorting: false,
+        meta: { label: t("columns.actions") },
         cell: ({ row }) => {
           const item = row.original;
           return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <IconButton
-                  icon={<MoreHorizontal />}
-                  aria-label={t("columns.actions")}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onSelect={() => {
+            <RowActionsMenu
+              ariaLabel={t("columns.actions")}
+              items={[
+                {
+                  label: t("edit"),
+                  icon: <Pencil />,
+                  onClick: () => {
                     setEditing(item);
-                  }}
-                >
-                  {t("edit")}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => {
+                  },
+                },
+                {
+                  label: t("delete"),
+                  icon: <Trash2 />,
+                  tone: "danger",
+                  onClick: () => {
                     setPendingDelete(item);
-                  }}
-                >
-                  {t("delete")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  },
+                },
+              ]}
+            />
           );
         },
       },
     ];
-  }, [t, teacherMap, canManage]);
+  }, [t, canManage]);
 
   return (
-    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
-    // itself never scrolls; the active tab's panel scrolls internally.
-    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
-      <ActivitiesWorkspaceNav />
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={shell("studentActivities")}
-        actions={
-          canManage &&
-          tab === "groups" && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
+    // No title or eyebrow of its own: the area's header stays put between
+    // its tabs, and the current tab names this page.
+    <AppPage
+      variant="fit"
+      primaryAction={
+        canManage ? (
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              setEditing("new");
+            }}
+          >
+            {t("add")}
+          </Button>
+        ) : undefined
+      }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("add"),
+              onSelect: () => {
                 setEditing("new");
-              }}
-            >
-              {t("add")}
-            </Button>
-          )
-        }
-      />
+              },
+            }
+          : undefined
+      }
+      secondaryActions={
+        canManage
+          ? [
+              {
+                label: t("limitAction"),
+                icon: <UsersRound />,
+                onSelect: () => {
+                  setLimitOpen(true);
+                },
+              },
+            ]
+          : undefined
+      }
+    >
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/mentoring/components/mentor-groups-view:2"
+          mode="local"
+          data={tableRows}
+          columns={columns}
+          rowCount={tableRows.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter={search}
+          onGlobalFilterChange={setSearch}
+          // Nothing to search in an empty list; a search that emptied it
+          // keeps its box so it can be changed, and so does the first load,
+          // which usually brings rows.
+          searchable={isLoading || items.length > 0 || search !== ""}
+          toolbarLabels={{
+            // One's own groups all share one mentor, so only the name is searched.
+            searchPlaceholder:
+              scope === "mine" ? mine("searchPlaceholder") : t("searchPlaceholder"),
+          }}
+          isLoading={isLoading}
+          error={error}
+          onRetry={() => void refetch()}
+          getRowId={(item) => item.id}
+          onRowActivate={(item) => {
+            router.push(`/mentoring/groups/${item.id}`);
+          }}
+          fillHeight
+          emptyState={
+            search !== "" ? (
+              <FilteredEmptyState
+                onReset={() => {
+                  setSearch("");
+                }}
+              />
+            ) : (
+              <EmptyState
+                icon={<domainIcons.mentoring aria-hidden="true" />}
+                title={scope === "mine" ? mine("emptyTitle") : t("emptyTitle")}
+                description={scope === "mine" ? mine("emptyBody") : t("emptyBody")}
+                // The header carries the primary. The empty list of every
+                // group repeats it quietly; one's own groups are not made here.
+                action={
+                  canManage && scope === "all" ? (
+                    <Button
+                      variant="secondary"
+                      icon={<Plus />}
+                      onClick={() => {
+                        setEditing("new");
+                      }}
+                    >
+                      {t("add")}
+                    </Button>
+                  ) : undefined
+                }
+              />
+            )
+          }
+        />
+      </div>
 
-      {isError && <QueryError retry={() => refetch()} />}
-      <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
-        {canManage && (
-          <TabsList>
-            <TabsTrigger value="groups">{t("tabs.groups")}</TabsTrigger>
-            <TabsTrigger value="limit">{t("tabs.limit")}</TabsTrigger>
-          </TabsList>
-        )}
-        <TabsContent value="groups" className="pt-4 md:min-h-0 md:flex-1">
-          <div className="flex flex-col gap-3 md:h-full md:min-h-0">
-            {/*
-              `scope` picks between two different endpoints (the caller's own
-              groups vs. every group), not an optional list filter -- there is
-              no "unset" state, so it stays its own required control rather
-              than a `DataTableFilters` pill, but as a pill-style `Tabs`
-              (matching `CounselingView`'s mine/bkTeam switch) positioned
-              directly above the table, next to the search box its toolbar
-              renders (see docs/analysis/table-filters-audit-2026-09-30.md).
-            */}
-            <Tabs value={scope} onValueChange={setScope} aria-label={workspace("groupScope")}>
-              <TabsList>
-                <TabsTrigger value="mine">{workspace("mine")}</TabsTrigger>
-                <TabsTrigger value="all">{workspace("allGroups")}</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <DataTable
-              stateKey="features/mentoring/components/mentor-groups-view:1"
-              mode="local"
-              data={items}
-              columns={columns}
-              rowCount={items.length}
-              pagination={{ pageIndex: 0, pageSize: 50 }}
-              onPaginationChange={() => undefined}
-              sorting={[]}
-              onSortingChange={() => undefined}
-              globalFilter=""
-              isLoading={isLoading}
-              getRowId={(item) => item.id}
-              onRowActivate={(item) => {
-                router.push(`/mentoring/groups/${item.id}`);
-              }}
-              fillHeight
-              emptyState={
-                <EmptyState
-                  icon={<domainIcons.mentoring aria-hidden="true" />}
-                  title={scope === "mine" ? mine("emptyTitle") : t("emptyTitle")}
-                  description={scope === "mine" ? mine("emptyBody") : t("emptyBody")}
-                  action={
-                    canManage && (
-                      <Button
-                        size="sm"
-                        icon={<Plus />}
-                        onClick={() => {
-                          setEditing("new");
-                        }}
-                      >
-                        {t("add")}
-                      </Button>
-                    )
-                  }
-                />
-              }
-            />
-          </div>
-        </TabsContent>
-        {canManage && (
-          <TabsContent value="limit" className="pt-4 md:min-h-0 md:flex-1 md:overflow-y-auto">
-            <GroupSizeLimitPanel />
-          </TabsContent>
-        )}
-      </Tabs>
+      <Dialog open={limitOpen} onOpenChange={setLimitOpen}>
+        <DialogContent title={t("tabs.limit")} size="sm">
+          {limitOpen && <GroupSizeLimitPanel />}
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={editing !== null}
@@ -234,10 +253,7 @@ export function MentorGroupsView({
           if (!open) setEditing(null);
         }}
       >
-        <DialogContent
-          title={editing === "new" ? t("form.createTitle") : t("form.editTitle")}
-          className="max-w-lg"
-        >
+        <DialogContent title={editing === "new" ? t("form.createTitle") : t("form.editTitle")}>
           {editing !== null && (
             <MentorGroupForm
               initial={editing === "new" ? undefined : editing}
@@ -257,7 +273,7 @@ export function MentorGroupsView({
         title={t("deleteTitle")}
         description={pendingDelete ? t("deleteBody", { name: pendingDelete.name }) : ""}
         confirmLabel={t("deleteConfirm")}
-        destructive
+        tone="danger"
         confirming={remove.isPending}
         onConfirm={async () => {
           if (!pendingDelete) return;
@@ -273,6 +289,6 @@ export function MentorGroupsView({
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }

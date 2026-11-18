@@ -1,56 +1,38 @@
 "use client";
 
-import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { EmptyState, domainIcons } from "@newsekolah/ui";
-import Link from "next/link";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  List,
+  ListRow,
+  TextLink,
+  domainIcons,
+} from "@newsekolah/ui";
+import { BookCheck, Flame } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { useCan } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
+import { useDirectoryNames } from "../../reference/directory-names";
 import type { LibraryLoan, LibraryMostBorrowedTitle } from "../api";
+import { formatShortDate } from "../lib/short-date";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 
+import { DueBadge } from "./due-badge";
 import { LibraryTitleName } from "./library-title-name";
 
-function LoanList({
-  loans,
-  emptyLabel,
-  showDueOn,
-}: {
-  loans: LibraryLoan[];
-  emptyLabel: string;
-  showDueOn: boolean;
-}): ReactElement {
-  const t = useTranslations("app.library.dashboard");
-  const locale = useLocale() as Locale;
-
-  if (loans.length === 0) {
-    return (
-      <p className="text-[13px] text-fg-muted">
-        {emptyLabel}{" "}
-        <Link href="/library/desk" className="text-accent underline underline-offset-2">
-          {t("openDesk")}
-        </Link>
-      </p>
-    );
-  }
-
-  return (
-    <ul className="flex flex-col gap-2">
-      {loans.map((loan) => (
-        <li key={loan.id} className="flex items-center justify-between gap-3 text-[13px]">
-          <span className="truncate text-fg">
-            <LibraryTitleName titleId={loan.title_id} />
-          </span>
-          <span className="shrink-0 text-fg-muted">
-            {formatDate(showDueOn ? loan.due_on : loan.borrowed_at, { locale })}
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/** The dashboard's three read-only lists: latest loans, longest overdue, and popular titles. */
+/**
+ * The dashboard's three lists, as cards in the dashboard grid: the most
+ * borrowed titles (beside the trend), then the latest loans and the
+ * longest overdue, each loan naming its borrower and opening their page.
+ * A borrower's page opens only for whoever manages members, and the desk
+ * links show only to whoever runs circulation; other readers get plain
+ * rows.
+ */
 export function DashboardActivityLists({
   latestLoans,
   longestOverdue,
@@ -61,42 +43,122 @@ export function DashboardActivityLists({
   popularTitles: LibraryMostBorrowedTitle[];
 }): ReactElement {
   const t = useTranslations("app.library.dashboard");
+  const locale = useLocale() as Locale;
+  const today = todayInZone(useTenantTimeZone());
+  const canCirculate = useCan("manage_library_circulation");
+  const canViewMembers = useCan("manage_library_members");
+  const memberHref = (loan: LibraryLoan) =>
+    canViewMembers ? `/library/members/${loan.member_user_id}` : undefined;
+  const names = useDirectoryNames([
+    ...latestLoans.map((loan) => loan.member_user_id),
+    ...longestOverdue.map((loan) => loan.member_user_id),
+  ]);
+  const borrower = (loan: LibraryLoan) =>
+    names.get(loan.member_user_id)?.name ?? t("unknownMember");
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <div className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-        <h2 className="text-[15px] font-semibold text-fg">{t("latestLoans")}</h2>
-        <LoanList loans={latestLoans} emptyLabel={t("noLatestLoans")} showDueOn={false} />
-      </div>
-
-      <div className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-        <h2 className="text-[15px] font-semibold text-fg">{t("longestOverdue")}</h2>
-        <LoanList loans={longestOverdue} emptyLabel={t("noOverdue")} showDueOn />
-      </div>
-
-      <div className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-        <h2 className="text-[15px] font-semibold text-fg">{t("popularTitles")}</h2>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">{t("popularTitles")}</CardTitle>
+        </CardHeader>
         {popularTitles.length === 0 ? (
+          <EmptyState icon={<Flame aria-hidden="true" />} title={t("noPopularTitles")} />
+        ) : (
+          <List>
+            {popularTitles.map((entry) => (
+              <ListRow
+                key={entry.title.id}
+                title={entry.title.title}
+                href={`/library/catalogue/${entry.title.id}`}
+                trailing={
+                  <span className="text-body-sm tabular-nums text-fg-muted">
+                    {t("loanCount", { count: entry.loan_count })}
+                  </span>
+                }
+              />
+            ))}
+          </List>
+        )}
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">{t("latestLoans")}</CardTitle>
+        </CardHeader>
+        {latestLoans.length === 0 ? (
           <EmptyState
             icon={<domainIcons.library aria-hidden="true" />}
-            title={t("noPopularTitles")}
+            title={t("noLatestLoans")}
+            action={
+              canCirculate ? <TextLink href="/library/desk">{t("openDesk")}</TextLink> : undefined
+            }
           />
         ) : (
-          <ul className="flex flex-col gap-2">
-            {popularTitles.map((entry) => (
-              <li
-                key={entry.title.id}
-                className="flex items-center justify-between gap-3 text-[13px]"
-              >
-                <span className="truncate text-fg">{entry.title.title}</span>
-                <span className="shrink-0 tabular-nums text-fg-muted">
-                  {t("loanCount", { count: entry.loan_count })}
-                </span>
-              </li>
+          <List>
+            {latestLoans.map((loan) => (
+              <ListRow
+                key={loan.id}
+                title={<LibraryTitleName titleId={loan.title_id} />}
+                meta={`${borrower(loan)} · ${formatShortDate(loan.borrowed_at, locale, { today })}`}
+                href={memberHref(loan)}
+              />
             ))}
-          </ul>
+          </List>
         )}
-      </div>
-    </div>
+      </Card>
+
+      <Card className="lg:col-span-2">
+        <CardHeader
+          action={
+            canCirculate ? (
+              <TextLink href="/library/desk#desk-overdue" className="max-sm:hidden">
+                {t("followUpAll")}
+              </TextLink>
+            ) : undefined
+          }
+        >
+          <CardTitle as="h2">{t("longestOverdue")}</CardTitle>
+        </CardHeader>
+        {longestOverdue.length === 0 ? (
+          <EmptyState
+            icon={<BookCheck aria-hidden="true" />}
+            tone="success"
+            title={t("noOverdue")}
+          />
+        ) : (
+          <List>
+            {longestOverdue.map((loan) => (
+              <ListRow
+                key={loan.id}
+                title={<LibraryTitleName titleId={loan.title_id} />}
+                meta={borrower(loan)}
+                href={memberHref(loan)}
+                trailing={
+                  // A phone row keeps room for the title: the days late
+                  // only, the due date from sm up. One wrapper, so the
+                  // hidden badge never shifts the shown one.
+                  <span className="contents">
+                    <DueBadge
+                      dueOn={loan.due_on}
+                      today={today}
+                      locale={locale}
+                      compact
+                      className="sm:hidden"
+                    />
+                    <DueBadge
+                      dueOn={loan.due_on}
+                      today={today}
+                      locale={locale}
+                      className="max-sm:hidden"
+                    />
+                  </span>
+                }
+              />
+            ))}
+          </List>
+        )}
+      </Card>
+    </>
   );
 }

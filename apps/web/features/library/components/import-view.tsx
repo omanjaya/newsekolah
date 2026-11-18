@@ -1,12 +1,23 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Button, PageHeader, Stepper, useToast } from "@newsekolah/ui";
-import { Download, Upload } from "lucide-react";
+import {
+  Alert,
+  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  FileDropzone,
+  Stepper,
+  useToast,
+} from "@newsekolah/ui";
+import { Download, FileSpreadsheet, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   downloadLibraryImportTemplate,
@@ -24,15 +35,20 @@ import { parseImportFile } from "../import-lib";
 
 import { ImportMappingStep } from "./import-mapping-step";
 import { ImportPreviewTable } from "./import-preview-table";
-import { LibraryWorkspaceNav } from "./library-workspace-nav";
+import { LibraryWorkspaceNav, useLibraryShortcuts } from "./library-workspace-nav";
 
 type Step = "upload" | "mapping" | "preview" | "result";
 
+/**
+ * Importing a collection from the XLSX template, as a numbered wizard
+ * (docs/07-ui-ux.md "Wizard"): upload, map the columns, review every row,
+ * then the result. The page keeps the catalogue tabs under its header.
+ */
 export function ImportView(): ReactElement {
   const t = useTranslations("app.library.import");
+  const shortcuts = useLibraryShortcuts(["catalogueSettings"]);
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const preview = useLibraryImportPreviewMutation();
   const commit = useLibraryImportCommitMutation();
 
@@ -113,47 +129,55 @@ export function ImportView(): ReactElement {
     setPreviewResult(null);
     setCommitResult(null);
     setError("");
-    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <LibraryWorkspaceNav area="catalogue" />
-      <Stepper steps={steps} currentIndex={Math.max(currentIndex, 0)} />
+  // A file that cannot be read is said under the drop zone; a later step's
+  // failure (preview, commit) above the step it stopped.
+  const uploadError = step === "upload" && error ? error : undefined;
 
-      {error && <Alert variant="warning" title={error} />}
+  return (
+    <AppPage nav={<LibraryWorkspaceNav area="catalogue" />} secondaryActions={shortcuts}>
+      <Stepper steps={steps} currentIndex={Math.max(currentIndex, 0)} variant="compact" />
+
+      {error && !uploadError && <Alert tone="danger" title={error} />}
 
       {step === "upload" && (
-        <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-6">
-          <p className="text-[13px] text-fg-muted">{t("uploadDescription")}</p>
-          <Button
-            type="button"
-            variant="secondary"
-            icon={<Download />}
-            onClick={() => {
-              void downloadLibraryImportTemplate();
-            }}
-          >
-            {t("downloadTemplate")}
-          </Button>
-          <label className="flex flex-col gap-2 text-[13px]">
-            <span className="font-medium text-fg">{t("uploadLabel")}</span>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void handleFile(file);
+        <Card>
+          <CardHeader>
+            <CardTitle as="h2">{t("uploadLabel")}</CardTitle>
+            <CardDescription>{t("uploadDescription")}</CardDescription>
+          </CardHeader>
+          <div className="flex flex-col gap-4 px-5 pb-5">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Download />}
+              className="self-start"
+              onClick={() => {
+                void downloadLibraryImportTemplate();
               }}
-              className="rounded-xs border border-border bg-bg p-2 text-[13px] file:mr-3 file:rounded-xs file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-accent-fg"
+            >
+              {t("downloadTemplate")}
+            </Button>
+
+            {/* The template can be dropped as well as picked; a file that
+                cannot be read or has no rows is said under the zone. */}
+            <FileDropzone
+              accept=".xlsx"
+              fileName={fileName}
+              icon={<FileSpreadsheet />}
+              chooseLabel={t("pickFile")}
+              replaceLabel={t("pickAnother")}
+              title={t("pickHint")}
+              hint={t("formatHint")}
+              error={uploadError}
+              rejectMessage={t("parseError")}
+              onFile={(file) => {
+                void handleFile(file);
+              }}
             />
-            {fileName && (
-              <span className="text-fg-muted">{t("selectedFile", { name: fileName })}</span>
-            )}
-          </label>
-        </div>
+          </div>
+        </Card>
       )}
 
       {step === "mapping" && (
@@ -184,16 +208,13 @@ export function ImportView(): ReactElement {
       )}
 
       {step === "result" && commitResult && (
-        <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-6">
-          <p className="text-[14px] text-fg">
-            {t("resultSummary", {
-              titles: commitResult.created_titles,
-              copies: commitResult.created_copies,
-            })}
-          </p>
-          <div className="flex justify-end border-t border-border pt-4">
+        <Alert
+          tone="success"
+          title={t("committed")}
+          action={
             <Button
-              type="button"
+              size="sm"
+              variant="secondary"
               icon={<Upload />}
               onClick={() => {
                 resetAll();
@@ -201,9 +222,14 @@ export function ImportView(): ReactElement {
             >
               {t("importAnother")}
             </Button>
-          </div>
-        </div>
+          }
+        >
+          {t("resultSummary", {
+            titles: commitResult.created_titles,
+            copies: commitResult.created_copies,
+          })}
+        </Alert>
       )}
-    </div>
+    </AppPage>
   );
 }

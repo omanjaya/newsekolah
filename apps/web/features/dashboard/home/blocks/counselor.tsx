@@ -1,11 +1,21 @@
 "use client";
 
 import type { components } from "@newsekolah/api-client";
-import { Card, CardHeader, CardTitle, Skeleton } from "@newsekolah/ui";
-import { FileClock, ShieldAlert } from "lucide-react";
-import Link from "next/link";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  List,
+  ListRow,
+  SectionHeader,
+  SkeletonList,
+  TextLink,
+} from "@newsekolah/ui";
+import { CheckCheck, FileClock, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 import { QueryError } from "../../../../components/query-error";
 import { isModuleEnabled } from "../../../../lib/modules/feature-modules";
@@ -31,9 +41,12 @@ type StudentRisk = components["schemas"]["StudentRisk"];
 
 const LEAVE_REQUESTS_HREF = "/leave-requests";
 const WARNING_LETTERS_HREF = "/discipline/warning-letters";
+const COUNSELING_HREF = "/discipline/counseling";
 const ANALYTICS_HREF = "/analytics";
 const QUEUE_PREVIEW_SIZE = 5;
 const AT_RISK_PREVIEW_SIZE = 3;
+/** A list inside a section of the card lines its rows up with the card header's 20px inset. */
+const SECTION_LIST_INSET = "[--list-inset:var(--space-5)]";
 
 const SP_CANDIDATE_FILTERS: SPCandidateFilters = {
   classId: "",
@@ -43,7 +56,19 @@ const SP_CANDIDATE_FILTERS: SPCandidateFilters = {
   offset: 0,
 };
 
-/** The counselor's home block: leave requests at the counseling stage, and warning-letter (SP) candidates. */
+interface QueueState {
+  isLoading: boolean;
+  isError: boolean;
+  error: unknown;
+  refetch: () => unknown;
+}
+
+/**
+ * The counselor's home block: leave requests at the counseling stage and
+ * warning-letter (SP) candidates as the task card, the students flagged by
+ * the early-warning roster beside it, and a calm hero when the counseling
+ * queue is empty.
+ */
 export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
   const t = useTranslations("app.dashboardDuty");
   // Leave requests belong to permits and warning letters to discipline; a
@@ -57,8 +82,11 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
   const canViewAtRisk = me.permissions.includes("view_early_warning");
   const atRisk = useAtRiskStudentsQuery(active && canViewAtRisk);
   const classes = useClassesQuery(active && canViewAtRisk);
+  // The roster endpoint also returns students whose level is "none" (safe);
+  // only the ones who actually need attention belong on this card.
+  const flagged = (atRisk.data?.data ?? []).filter((row) => row.level !== "none");
   const studentMap = useDirectoryNames(
-    [...(atRisk.data?.data ?? [])]
+    [...flagged]
       .sort((a, b) => b.score - a.score)
       .slice(0, AT_RISK_PREVIEW_SIZE)
       .map((row) => row.student_user_id),
@@ -68,7 +96,12 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
 
   if (!active) return EMPTY_BLOCK;
 
-  const block: PersonaBlock = { tiles: [], left: [], right: [] };
+  const block: PersonaBlock = {
+    tiles: [],
+    main: [],
+    side: [],
+    pending: (canReviewLeave && leave.isLoading) || (canIssueWarningLetters && sp.isLoading),
+  };
 
   const leaveItems =
     canReviewLeave && !leave.isLoading && !leave.isError ? (leave.data?.data ?? []) : undefined;
@@ -91,6 +124,7 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
         priority: HERO_PRIORITY.leaveQueue,
         eyebrow: t("counselor.heroEyebrow"),
         title: t("counselor.heroTitle", { count: leaveItems.length }),
+        meta: t("counselor.heroMeta"),
         action: { label: t("counselor.heroAction"), href: LEAVE_REQUESTS_HREF },
       };
     }
@@ -108,10 +142,38 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
     });
   }
 
+  // Nothing waits at the counseling stage: the counselor's own daily work
+  // (counseling notes) is the way forward.
+  const queuesSettled =
+    (!canReviewLeave || leaveItems !== undefined) &&
+    (!canIssueWarningLetters || spItems !== undefined);
+  if (!block.hero && queuesSettled) {
+    block.hero = {
+      key: "counselor.idle",
+      priority: HERO_PRIORITY.counselorIdle,
+      tone: "neutral",
+      eyebrow: t("counselor.heroEyebrow"),
+      title: t("counselor.idleTitle"),
+      meta:
+        spItems && spItems.length > 0
+          ? t("counselor.idleMetaSp", { count: spItems.length })
+          : t("counselor.idleMeta"),
+      action:
+        spItems && spItems.length > 0
+          ? { label: t("counselor.spAction"), href: WARNING_LETTERS_HREF }
+          : { label: t("counselor.idleAction"), href: COUNSELING_HREF },
+    };
+  }
+
   // Neither queue is any of this counselor's business without at least one
   // of the two permissions -- an empty card saying so would just be noise.
-  if (canReviewLeave || canIssueWarningLetters) {
-    block.left.push({
+  // Nor is the card shown once every queue it lists has loaded empty: the
+  // calm hero and the tiles already say so.
+  const queuesClear =
+    (!canReviewLeave || leaveItems?.length === 0) &&
+    (!canIssueWarningLetters || spItems?.length === 0);
+  if ((canReviewLeave || canIssueWarningLetters) && !queuesClear) {
+    block.main.push({
       key: "counselor.queue",
       node: (
         <CounselorQueueCard
@@ -128,17 +190,16 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
   }
 
   if (canViewAtRisk) {
-    const atRiskRows = atRisk.data?.data ?? [];
-    block.right.push({
+    block.main.push({
       key: "counselor.atRisk",
       node: (
         <AtRiskCard
           key="counselor.atRisk"
           isLoading={atRisk.isLoading}
-          isError={atRisk.isError}
+          error={atRisk.isError ? atRisk.error : null}
           refetch={atRisk.refetch}
-          total={atRiskRows.length}
-          rows={[...atRiskRows].sort((a, b) => b.score - a.score).slice(0, AT_RISK_PREVIEW_SIZE)}
+          total={flagged.length}
+          rows={[...flagged].sort((a, b) => b.score - a.score).slice(0, AT_RISK_PREVIEW_SIZE)}
           studentMap={studentMap}
           classMap={classMap}
         />
@@ -151,7 +212,7 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
 
 function AtRiskCard({
   isLoading,
-  isError,
+  error,
   refetch,
   total,
   rows,
@@ -159,7 +220,7 @@ function AtRiskCard({
   classMap,
 }: {
   isLoading: boolean;
-  isError: boolean;
+  error: unknown;
   refetch: () => unknown;
   total: number;
   rows: StudentRisk[];
@@ -169,50 +230,82 @@ function AtRiskCard({
   const t = useTranslations("app.dashboardDuty.counselor.atRisk");
   const levelLabel = useTranslations("app.analytics.level");
   return (
-    <Card className="h-full">
-      <CardHeader className="flex-row items-center justify-between gap-3">
-        <CardTitle>{t("title")}</CardTitle>
-        <Link
-          href={ANALYTICS_HREF}
-          className="shrink-0 text-[13px] text-accent underline underline-offset-2"
-        >
-          {t("viewAll")}
-        </Link>
-      </CardHeader>
-      <div className="flex flex-col gap-3 px-5 pb-5">
-        {isError ? (
-          <QueryError retry={refetch} />
-        ) : isLoading ? (
-          <Skeleton className="h-24 w-full" aria-busy="true" />
-        ) : rows.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("empty")}</p>
-        ) : (
-          <>
-            <p className="text-[13px] font-medium text-fg">{t("count", { count: total })}</p>
-            <ul className="flex flex-col gap-2">
-              {rows.map((row) => (
-                <li key={row.student_user_id}>
-                  <Link
-                    href={`${ANALYTICS_HREF}/${row.student_user_id}`}
-                    className="flex items-center justify-between gap-3 text-[13px] text-fg hover:text-accent"
-                  >
-                    <span className="flex min-w-0 flex-col">
-                      <span className="truncate">
-                        {studentMap.get(row.student_user_id)?.name ?? t("unknownStudent")}
-                      </span>
-                      <span className="truncate text-fg-muted">
-                        {classMap.get(row.class_id)?.name ?? "-"}
-                      </span>
-                    </span>
-                    <RiskLevelBadge level={row.level} label={levelLabel(row.level)} />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </>
+    <Card>
+      <CardHeader action={<TextLink href={ANALYTICS_HREF}>{t("viewAll")}</TextLink>}>
+        <CardTitle as="h2">{t("title")}</CardTitle>
+        {!isLoading && !error && rows.length > 0 && (
+          <CardDescription>{t("count", { count: total })}</CardDescription>
         )}
-      </div>
+      </CardHeader>
+      {error ? (
+        <div className="px-5 pb-5">
+          <QueryError retry={refetch} error={error} />
+        </div>
+      ) : isLoading ? (
+        <div className="px-5 pb-5">
+          <SkeletonList rows={3} framed={false} />
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="px-5 pb-5">
+          <EmptyState variant="compact" icon={<ShieldCheck />} title={t("empty")} />
+        </div>
+      ) : (
+        <List>
+          {rows.map((row) => (
+            <ListRow
+              key={row.student_user_id}
+              href={`${ANALYTICS_HREF}/${row.student_user_id}`}
+              title={studentMap.get(row.student_user_id)?.name ?? t("unknownStudent")}
+              meta={classMap.get(row.class_id)?.name ?? "-"}
+              trailing={<RiskLevelBadge level={row.level} label={levelLabel(row.level)} />}
+            />
+          ))}
+        </List>
+      )}
     </Card>
+  );
+}
+
+/** One titled part of the counseling queue card, with its own "see all" link. */
+function QueueSection({
+  title,
+  href,
+  query,
+  empty,
+  children,
+}: {
+  title: string;
+  href: string;
+  query: QueueState;
+  empty: string | null;
+  children: ReactNode;
+}): ReactElement {
+  const t = useTranslations("app.dashboardDuty");
+  return (
+    <section className="flex flex-col gap-1">
+      <SectionHeader
+        as="h3"
+        size="sm"
+        title={title}
+        className="px-5"
+        action={<TextLink href={href}>{t("counselor.seeAll")}</TextLink>}
+      />
+      {query.isLoading ? (
+        <div className="px-5 pt-2">
+          <SkeletonList rows={2} framed={false} />
+        </div>
+      ) : query.isError ? (
+        <div className="px-5 pt-2">
+          <QueryError retry={query.refetch} error={query.error} />
+        </div>
+      ) : empty !== null ? (
+        <div className="px-5">
+          <EmptyState variant="compact" icon={<CheckCheck />} title={empty} />
+        </div>
+      ) : (
+        children
+      )}
+    </section>
   );
 }
 
@@ -224,8 +317,8 @@ function CounselorQueueCard({
   showLeave,
   showSp,
 }: {
-  leave: { isLoading: boolean; isError: boolean; refetch: () => unknown };
-  sp: { isLoading: boolean; isError: boolean; refetch: () => unknown };
+  leave: QueueState;
+  sp: QueueState;
   leaveItems: LeaveRequestSummary[] | undefined;
   spItems: SPCandidate[] | undefined;
   showLeave: boolean;
@@ -233,79 +326,49 @@ function CounselorQueueCard({
 }): ReactElement {
   const t = useTranslations("app.dashboardDuty");
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader>
-        <CardTitle>{t("counselor.cardTitle")}</CardTitle>
+        <CardTitle as="h2">{t("counselor.cardTitle")}</CardTitle>
       </CardHeader>
-      <div className="flex flex-col gap-5 px-5 pb-5">
+      <div className="flex flex-col gap-4 pb-3">
         {showLeave && (
-          <section className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <h4 className="text-[13px] font-medium text-fg">
-                {t("counselor.leaveSectionTitle")}
-              </h4>
-              <Link href={LEAVE_REQUESTS_HREF} className="text-[12px] text-accent hover:underline">
-                {t("counselor.seeAll")}
-              </Link>
-            </div>
-            {leave.isLoading ? (
-              <Skeleton className="h-16 w-full" aria-busy="true" />
-            ) : leave.isError ? (
-              <QueryError retry={leave.refetch} />
-            ) : leaveItems?.length === 0 ? (
-              <p className="text-[13px] text-fg-muted">{t("counselor.leaveEmpty")}</p>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {(leaveItems ?? []).slice(0, QUEUE_PREVIEW_SIZE).map((item) => (
-                  <li
-                    key={item.instance_id}
-                    className="flex items-center justify-between gap-2 text-[13px] text-fg"
-                  >
-                    <span className="truncate">
-                      {item.student_name} · {item.class_name}
-                    </span>
-                    <Link
-                      href={`${LEAVE_REQUESTS_HREF}/${item.instance_id}`}
-                      className="shrink-0 text-accent hover:underline"
-                    >
-                      {t("counselor.review")}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <QueueSection
+            title={t("counselor.leaveSectionTitle")}
+            href={LEAVE_REQUESTS_HREF}
+            query={leave}
+            empty={leaveItems?.length === 0 ? t("counselor.leaveEmpty") : null}
+          >
+            <List className={SECTION_LIST_INSET}>
+              {(leaveItems ?? []).slice(0, QUEUE_PREVIEW_SIZE).map((item) => (
+                <ListRow
+                  key={item.instance_id}
+                  href={`${LEAVE_REQUESTS_HREF}/${item.instance_id}`}
+                  title={item.student_name}
+                  meta={item.class_name}
+                  trailing={t("counselor.review")}
+                />
+              ))}
+            </List>
+          </QueueSection>
         )}
         {showSp && (
-          <section className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <h4 className="text-[13px] font-medium text-fg">{t("counselor.spSectionTitle")}</h4>
-              <Link href={WARNING_LETTERS_HREF} className="text-[12px] text-accent hover:underline">
-                {t("counselor.seeAll")}
-              </Link>
-            </div>
-            {sp.isLoading ? (
-              <Skeleton className="h-16 w-full" aria-busy="true" />
-            ) : sp.isError ? (
-              <QueryError retry={sp.refetch} />
-            ) : spItems?.length === 0 ? (
-              <p className="text-[13px] text-fg-muted">{t("counselor.spEmpty")}</p>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {(spItems ?? []).slice(0, QUEUE_PREVIEW_SIZE).map((item) => (
-                  <li
-                    key={item.student_user_id}
-                    className="flex items-center justify-between gap-2 text-[13px] text-fg"
-                  >
-                    <span className="truncate">
-                      {item.student_name} · {item.class_name}
-                    </span>
-                    <span className="shrink-0 tabular-nums text-fg-muted">{item.total_points}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <QueueSection
+            title={t("counselor.spSectionTitle")}
+            href={WARNING_LETTERS_HREF}
+            query={sp}
+            empty={spItems?.length === 0 ? t("counselor.spEmpty") : null}
+          >
+            <List className={SECTION_LIST_INSET}>
+              {(spItems ?? []).slice(0, QUEUE_PREVIEW_SIZE).map((item) => (
+                <ListRow
+                  key={item.student_user_id}
+                  title={item.student_name}
+                  meta={item.class_name}
+                  trailing={t("counselor.points", { points: item.total_points })}
+                />
+              ))}
+            </List>
+          </QueueSection>
         )}
       </div>
     </Card>

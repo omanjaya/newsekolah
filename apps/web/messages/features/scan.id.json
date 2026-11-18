@@ -2,7 +2,7 @@
   "navLabel": "Pindai",
   "eyebrow": "Pindai",
   "title": "Pindai kode QR",
-  "intro": "Arahkan kamera ke kode QR apa pun: masuk kelas, keterlambatan, izin keluar, gerbang, atau kunjungan perpustakaan. Tindakan yang sesuai dijalankan otomatis.",
+  "intro": "Arahkan kamera ke kode QR; tindakan yang sesuai berjalan otomatis.",
   "introPermits": "Arahkan kamera ke kode QR masuk kelas, keterlambatan, izin keluar, atau gerbang. Tindakan yang sesuai dijalankan otomatis.",
   "introLibrary": "Arahkan kamera ke kode QR kunjungan perpustakaan. Kunjungan dicatat otomatis.",
   "scanLabel": "Kode QR",
@@ -14,7 +14,7 @@
   "errorTitle": "Pindai gagal",
   "historyTitle": "Pindaian sebelumnya",
   "results": {
-    "classroom_entry": "Kehadiran Anda tercatat di kelas {teacher}.",
+    "classroom_entry": "Presensi Anda tercatat di kelas {teacher}.",
     "exit_stage": "Tahap izin keluar {student} dikonfirmasi.",
     "gate_exit": "{student} ({className}) diizinkan keluar.",
     "late_arrival_open": "Keterlambatan dibuka dan menunggu proses berikutnya.",

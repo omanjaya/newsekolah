@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-import { TitleCopiesView } from "../../../../../features/library/components/title-copies-view";
+import { TitleDetailView } from "../../../../../features/library/components/title-detail-view";
 
 export default async function Page({
   params,
@@ -8,5 +8,5 @@ export default async function Page({
   params: Promise<{ titleId: string }>;
 }): Promise<ReactElement> {
   const { titleId } = await params;
-  return <TitleCopiesView titleId={titleId} />;
+  return <TitleDetailView titleId={titleId} />;
 }

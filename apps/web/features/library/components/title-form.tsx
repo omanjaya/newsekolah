@@ -1,7 +1,17 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import {
+  FormSection,
+  DialogFooter,
+  NumberInput,
+  Field,
+  Button,
+  Input,
+  Select,
+  Textarea,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -17,7 +27,7 @@ import type { LibraryExternalBibliography } from "../isbn-lookup-api";
 import { useLibraryCatalogueOptionsQuery } from "../master-data-api";
 
 import { DuplicateTitleWarning } from "./duplicate-title-warning";
-import { IsbnLookupPanel } from "./isbn-lookup-panel";
+import { IsbnLookupField } from "./isbn-lookup-panel";
 
 export function TitleForm({
   initial,
@@ -68,7 +78,7 @@ export function TitleForm({
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-6"
       onSubmit={(e) => {
         e.preventDefault();
         const body: LibraryTitleWrite = {
@@ -116,157 +126,147 @@ export function TitleForm({
         else create.mutate(body, callbacks);
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("title")}</span>
-        <Input
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-          }}
-          required
-          maxLength={300}
+      <FormSection title={t("sections.lookup")} columns={1}>
+        <IsbnLookupField
+          label={t("isbn")}
+          isbn={isbn}
+          onIsbnChange={setIsbn}
+          onApply={applyLookup}
+          onCoverImported={setCoverAssetId}
+          warning={isbn !== initial?.isbn && <DuplicateTitleWarning isbn={isbn} />}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("subtitle")}</span>
-        <Input
-          value={subtitle}
-          onChange={(e) => {
-            setSubtitle(e.target.value);
-          }}
-          maxLength={300}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("author")}</span>
-        <Input
-          value={author}
-          onChange={(e) => {
-            setAuthor(e.target.value);
-          }}
-          maxLength={200}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("publisher")}</span>
-        <Input
-          value={publisher}
-          onChange={(e) => {
-            setPublisher(e.target.value);
-          }}
-          maxLength={200}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("publishYear")}</span>
-        <Input
-          type="number"
-          value={publishYear}
-          onChange={(e) => {
-            setPublishYear(e.target.value);
-          }}
-          min={1000}
-          max={3000}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("isbn")}</span>
-        <Input
-          value={isbn}
-          onChange={(e) => {
-            setIsbn(e.target.value);
-          }}
-          maxLength={32}
-        />
-      </label>
-      {isbn !== initial?.isbn && <DuplicateTitleWarning isbn={isbn} />}
-      <IsbnLookupPanel isbn={isbn} onApply={applyLookup} onCoverImported={setCoverAssetId} />
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("classification")}</span>
-        <Input
-          value={classification}
-          onChange={(e) => {
-            setClassification(e.target.value);
-          }}
-          maxLength={60}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("materialType")}</span>
-        <Select
-          options={(options.data?.material_types ?? []).map((mt) => ({
-            value: mt.id,
-            label: mt.name,
-          }))}
-          value={materialTypeId}
-          onValueChange={setMaterialTypeId}
-          placeholder={t("materialTypePlaceholder")}
-          disabled={options.isLoading}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("additionalAuthors")}</span>
-        <Input
-          value={additionalAuthors}
-          onChange={(e) => {
-            setAdditionalAuthors(e.target.value);
-          }}
-          maxLength={500}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("publishPlace")}</span>
-        <Input
-          value={publishPlace}
-          onChange={(e) => {
-            setPublishPlace(e.target.value);
-          }}
-          maxLength={120}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("pages")}</span>
-        <Input
-          value={pages}
-          onChange={(e) => {
-            setPages(e.target.value);
-          }}
-          maxLength={60}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("subjects")}</span>
-        <Input
-          value={subjects}
-          onChange={(e) => {
-            setSubjects(e.target.value);
-          }}
-          maxLength={500}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("language")}</span>
-        <Input
-          value={language}
-          onChange={(e) => {
-            setLanguage(e.target.value);
-          }}
-          maxLength={10}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("abstract")}</span>
-        <Textarea
-          value={abstract}
-          onChange={(e) => {
-            setAbstract(e.target.value);
-          }}
-          rows={3}
-          maxLength={2000}
-        />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
-        <Button type="button" variant="secondary" onClick={onDone}>
+      </FormSection>
+      <FormSection title={t("sections.identity")}>
+        <Field label={t("title")} required className="col-span-full">
+          <Input
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+            }}
+            required
+            maxLength={300}
+          />
+        </Field>
+        <Field label={t("subtitle")} className="col-span-full">
+          <Input
+            value={subtitle}
+            onChange={(e) => {
+              setSubtitle(e.target.value);
+            }}
+            maxLength={300}
+          />
+        </Field>
+        <Field label={t("author")}>
+          <Input
+            value={author}
+            onChange={(e) => {
+              setAuthor(e.target.value);
+            }}
+            maxLength={200}
+          />
+        </Field>
+        <Field label={t("additionalAuthors")}>
+          <Input
+            value={additionalAuthors}
+            onChange={(e) => {
+              setAdditionalAuthors(e.target.value);
+            }}
+            maxLength={500}
+          />
+        </Field>
+      </FormSection>
+      <FormSection title={t("sections.publication")}>
+        <Field label={t("publisher")}>
+          <Input
+            value={publisher}
+            onChange={(e) => {
+              setPublisher(e.target.value);
+            }}
+            maxLength={200}
+          />
+        </Field>
+        <Field label={t("publishPlace")}>
+          <Input
+            value={publishPlace}
+            onChange={(e) => {
+              setPublishPlace(e.target.value);
+            }}
+            maxLength={120}
+          />
+        </Field>
+        <Field label={t("publishYear")}>
+          <NumberInput
+            value={publishYear === "" ? null : Number(publishYear)}
+            onChange={(next) => {
+              setPublishYear(next === null ? "" : String(next));
+            }}
+            min={1000}
+            max={3000}
+          />
+        </Field>
+        <Field label={t("pages")}>
+          <Input
+            value={pages}
+            onChange={(e) => {
+              setPages(e.target.value);
+            }}
+            maxLength={60}
+          />
+        </Field>
+        <Field label={t("language")}>
+          <Input
+            value={language}
+            onChange={(e) => {
+              setLanguage(e.target.value);
+            }}
+            maxLength={10}
+          />
+        </Field>
+      </FormSection>
+      <FormSection title={t("sections.classification")}>
+        <Field label={t("classification")}>
+          <Input
+            value={classification}
+            onChange={(e) => {
+              setClassification(e.target.value);
+            }}
+            maxLength={60}
+          />
+        </Field>
+        <Field label={t("materialType")}>
+          <Select
+            options={(options.data?.material_types ?? []).map((mt) => ({
+              value: mt.id,
+              label: mt.name,
+            }))}
+            value={materialTypeId}
+            onValueChange={setMaterialTypeId}
+            placeholder={t("materialTypePlaceholder")}
+            disabled={options.isLoading}
+          />
+        </Field>
+        <Field label={t("subjects")} className="col-span-full">
+          <Input
+            value={subjects}
+            onChange={(e) => {
+              setSubjects(e.target.value);
+            }}
+            maxLength={500}
+          />
+        </Field>
+        <Field label={t("abstract")} className="col-span-full">
+          <Textarea
+            value={abstract}
+            onChange={(e) => {
+              setAbstract(e.target.value);
+            }}
+            rows={3}
+            maxLength={2000}
+          />
+        </Field>
+      </FormSection>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
         <Button
@@ -276,7 +276,7 @@ export function TitleForm({
         >
           {t("save")}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }

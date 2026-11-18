@@ -9,6 +9,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+vi.mock("../../reference/api", () => ({
+  useClassesQuery: () => ({ data: { data: [{ id: "class-1", name: "X-A" }] } }),
+}));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/homeroom",
   useSearchParams: () => new URLSearchParams(window.location.search),
@@ -25,6 +29,9 @@ vi.mock("../../../lib/session/session-provider", () => ({
       duties: [{ slug: "homeroom", scope_id: "class-1", scope_label: "X-A" }],
       disabled_modules: mocks.disabledModules,
       permissions: [],
+      roles: [],
+      profile_kind: "teacher",
+      modules: [],
     },
   }),
 }));
@@ -180,5 +187,56 @@ describe("HomeroomView roster with discipline switched off", () => {
     render(<HomeroomView />);
     expect(screen.queryByText("columns.violations")).not.toBeInTheDocument();
     expect(screen.queryByText("noViolations")).not.toBeInTheDocument();
+  });
+});
+
+describe("HomeroomView overview", () => {
+  beforeEach(() => {
+    mocks.disabledModules.length = 0;
+    mocks.useHomeroomAttendanceQuery.mockReset();
+    mocks.useHomeroomAttendanceQuery.mockReturnValue({
+      data: {
+        data: [
+          { student_user_id: "s1", name: "Siswa Satu", status_code: "A" },
+          { student_user_id: "s2", name: "Siswa Dua", status_code: "H" },
+        ],
+        total: 2,
+        status_counts: { A: 1, H: 1 },
+      },
+      isLoading: false,
+    });
+    window.history.replaceState(null, "", "/homeroom");
+  });
+
+  it("opens on who needs attention today, and lists them in class attendance", async () => {
+    const user = userEvent.setup();
+    render(<HomeroomView />);
+
+    expect(screen.getByRole("heading", { name: "attentionCount" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "attentionOpen" }));
+
+    expect(new URLSearchParams(window.location.search).get("tab")).toBe("attendance");
+    expect(lastRosterCallArgs()).toEqual([expect.objectContaining({ statusCode: "A" }), true]);
+  });
+
+  it("keeps the alarm eyebrow while someone needs attention", () => {
+    render(<HomeroomView />);
+    expect(screen.getByText("attentionTitle")).toBeInTheDocument();
+  });
+
+  it("heads a calm day with a neutral eyebrow instead of an alarm", () => {
+    mocks.useHomeroomAttendanceQuery.mockReturnValue({
+      data: {
+        data: [{ student_user_id: "s2", name: "Siswa Dua", status_code: "H" }],
+        total: 1,
+        status_counts: { H: 1 },
+      },
+      isLoading: false,
+    });
+    render(<HomeroomView />);
+
+    expect(screen.getByRole("heading", { name: "attentionNoneTitle" })).toBeInTheDocument();
+    expect(screen.getByText("today")).toBeInTheDocument();
+    expect(screen.queryByText("attentionTitle")).not.toBeInTheDocument();
   });
 });

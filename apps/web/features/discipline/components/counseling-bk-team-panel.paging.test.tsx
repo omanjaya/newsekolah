@@ -56,7 +56,7 @@ describe("CounselingBKTeamPanel paging", () => {
       offset: 0,
       search: "",
     });
-    await user.click(screen.getByRole("button", { name: "next" }));
+    await user.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
 
     expect(mocks.useBKTeamCounselingsQuery).toHaveBeenLastCalledWith("", {
       limit: 50,

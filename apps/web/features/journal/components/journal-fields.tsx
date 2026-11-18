@@ -1,6 +1,6 @@
 "use client";
 
-import { Input, Textarea } from "@newsekolah/ui";
+import { Input, Textarea, Field } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -35,12 +35,11 @@ export function JournalFields({
   return (
     <div className="flex flex-col gap-3">
       {previousTopic && (
-        <p className="text-[13px] text-fg-muted">
+        <p className="text-body-sm text-fg-muted">
           {t("previousTopic")}: {previousTopic}
         </p>
       )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("topic")}</span>
+      <Field label={t("topic")}>
         <Input
           value={topic}
           onChange={(e) => {
@@ -50,9 +49,8 @@ export function JournalFields({
           disabled={disabled}
           aria-label={t("topic")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("activities")}</span>
+      </Field>
+      <Field label={t("activities")}>
         <Textarea
           rows={3}
           value={activities}
@@ -63,9 +61,8 @@ export function JournalFields({
           disabled={disabled}
           aria-label={t("activities")}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("reflection")}</span>
+      </Field>
+      <Field label={t("reflection")}>
         <Textarea
           rows={2}
           value={reflection}
@@ -76,7 +73,7 @@ export function JournalFields({
           disabled={disabled}
           aria-label={t("reflection")}
         />
-      </label>
+      </Field>
     </div>
   );
 }

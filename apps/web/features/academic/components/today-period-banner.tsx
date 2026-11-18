@@ -3,10 +3,11 @@
 import { ApiError } from "@newsekolah/api-client";
 import { Badge } from "@newsekolah/ui";
 import { Clock3 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
+import { clockRange } from "../../schedule/clock-label";
 import { usePeriodTodayQuery } from "../api-enrollment";
 
 /**
@@ -17,6 +18,7 @@ import { usePeriodTodayQuery } from "../api-enrollment";
  */
 export function TodayPeriodBanner(): ReactElement | null {
   const t = useTranslations("app.academic.today");
+  const locale = useLocale();
   const year = useActiveYear();
   const query = usePeriodTodayQuery(year.id);
 
@@ -26,15 +28,15 @@ export function TodayPeriodBanner(): ReactElement | null {
   if (query.isError && !notFound) return null;
 
   return (
-    <div className="flex items-center gap-2 rounded-xs border border-border bg-surface px-3 py-2 text-[13px]">
+    <div className="flex items-center gap-2 rounded-md bg-surface-sunken px-3 py-2 text-body-sm">
       <Clock3 className="size-4 text-fg-muted" aria-hidden="true" />
       {query.data ? (
         <>
           <span className="font-medium">{query.data.name}</span>
-          <span className="text-fg-muted">
-            {query.data.starts_at.slice(0, 5)}-{query.data.ends_at.slice(0, 5)}
+          <span className="text-fg-muted tabular-nums">
+            {clockRange(query.data.starts_at, query.data.ends_at, locale)}
           </span>
-          {query.data.is_break && <Badge variant="neutral">{t("break")}</Badge>}
+          {query.data.is_break && <Badge tone="neutral">{t("break")}</Badge>}
         </>
       ) : (
         <span className="text-fg-muted">{t("noPeriodNow")}</span>
