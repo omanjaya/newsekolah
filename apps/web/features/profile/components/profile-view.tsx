@@ -42,6 +42,7 @@ export function ProfileView(): ReactElement | null {
   const t = useTranslations("app.profile");
   const tAudit = useTranslations("app.audit");
   const tAuth = useTranslations("auth.sessions");
+  const tAccount = useTranslations("app.settingsHub.sections.account");
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
@@ -63,7 +64,10 @@ export function ProfileView(): ReactElement | null {
   }
 
   return (
-    <AppPage variant="narrow" nav={false}>
+    // Opened from the account menu, as Keamanan akun and Preferensi
+    // notifikasi are, so it carries their eyebrow ("Akun saya") rather
+    // than the registry group ("Pengaturan") no menu shows this reader.
+    <AppPage variant="narrow" nav={false} eyebrow={tAccount("title")}>
       <ProfileIdentity />
       <Tabs value={tab} onValueChange={selectTab} className="flex flex-col gap-6">
         <TabsList variant="underline" aria-label={t("tabsLabel")}>
