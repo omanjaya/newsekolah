@@ -27,6 +27,7 @@ import { canOpenPath } from "../../../lib/navigation-permissions";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useStudentRiskQuery } from "../../analytics/api";
+import { useOpenStudentDisciplineReport } from "../../discipline/components/use-open-student-discipline-report";
 import { useMentorStudentSnapshotQuery } from "../../mentoring/api";
 import { useClassesQuery } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
@@ -44,7 +45,6 @@ import {
   StudentLibraryTab,
   StudentPermitsTab,
 } from "./student-tab-panels";
-import { useOpenDisciplineReport } from "./use-discipline-report";
 
 const TAB_PANELS: Record<StudentProfileTab, (props: { studentId: string }) => ReactElement> = {
   overview: StudentOverviewTab,
@@ -76,7 +76,7 @@ export function StudentProfileView({ studentId }: { studentId: string }): ReactE
   const canCounsel = useCan("manage_counseling") && disciplineOn;
   const workspace = useTranslations("app.serviceWorkspace");
   const tDiscipline = useTranslations("app.discipline.studentDetail");
-  const report = useOpenDisciplineReport();
+  const report = useOpenStudentDisciplineReport();
   const [editing, setEditing] = useState(false);
 
   const { me } = useSession();
