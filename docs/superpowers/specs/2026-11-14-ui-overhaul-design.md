@@ -100,12 +100,13 @@ Tujuannya memberi kesan halus dan responsif, bukan menarik perhatian. Semua gera
 6. **Umpan balik.** Toast masuk dengan geser dan pudar 200 ms, keluar 120 ms. `StickySaveBar` naik 200 ms saat ada perubahan. Skeleton berkilau pelan (1,5 detik, linear) lalu berganti ke isi dengan pudar 120 ms. Angka pada ubin statistik beranda menghitung naik sekali dalam 320 ms.
 7. **Tata letak.** Lebar sidebar saat diciutkan atau dilebarkan (200 ms) dan buka-tutup grup navigasi (200 ms, lewat `grid-template-rows`).
 8. **Arah navigasi di HP.** Di bawah 768 px, kolom halaman (kepala dan isi, bukan shell) masuk sesuai arah yang ditandai `components/use-nav-direction.ts` pada `<html>`: masuk lebih dalam, dari kanan sejauh 20 px (2,5 kali `motion-rise`) sambil memudar dalam 200 ms dengan `ease-enter`; kembali, dari kiri; pindah tab bawah, pudar dari opasitas 0,5 dalam 120 ms supaya tidak berkedip kosong. Masuk konten (butir 3) tidak diputar lagi di atasnya, skeleton (`animate={false}`) tidak bergerak, dan halaman dipotong ke samping (`overflow-x: clip`) selama masuk. Aturannya di `apps/web/app/globals.css`.
+9. **Suasana halaman masuk.** Satu pengecualian yang disengaja, sama dengan `docs/07-ui-ux.md` bagian 0: kilau di balik panel merek halaman masuk (`.auth-orb-a` di `apps/web/app/globals.css`) bergeser sangat pelan, 18 detik bolak-balik, hanya lewat `transform`. Murni dekoratif, tidak membawa informasi, dan diam saat `prefers-reduced-motion: reduce`. Tidak ada layar lain yang memakai gerak suasana seperti ini.
 
 **Aturan**
 
 - Hanya `opacity`, `transform`, dan warna yang dianimasikan, kecuali dua kasus tata letak di butir 7.
-- Tidak ada gerak lebih dari 320 ms, tidak ada pantulan, pegas, atau lewat batas.
-- Tidak ada yang berulang kecuali skeleton, spinner, dan titik "sedang berlangsung" (denyut 2 detik).
+- Tidak ada gerak lebih dari 320 ms, tidak ada pantulan, pegas, atau lewat batas, kecuali kilau halaman masuk di butir 9.
+- Tidak ada yang berulang kecuali skeleton, spinner, titik "sedang berlangsung" (denyut 2 detik), dan kilau halaman masuk di butir 9.
 - Animasi tidak pernah menunda interaksi: elemen bisa diklik sejak bingkai pertama.
 - `prefers-reduced-motion: reduce` mematikan semua transform dan hitung naik; yang tersisa hanya pudar singkat.
 - Urutan berjenjang diatur lewat CSS variable `--stagger` pada elemen; ini satu-satunya `style` inline yang diizinkan untuk gerak.
