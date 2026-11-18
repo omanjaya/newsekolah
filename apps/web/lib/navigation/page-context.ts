@@ -1,6 +1,14 @@
+import { splitSidebarGroups } from "../group-navigation";
 import { navigation, navGroupLabelKey, type NavItem } from "../navigation";
 
 import { activeNavHref, matchesHref } from "./active-href";
+
+/**
+ * The eyebrow of a page whose menu entry sits in the menu's top block,
+ * under no group heading: every page head keeps the same geometry, and it
+ * never names a group the reader cannot see.
+ */
+export const TOP_LEVEL_EYEBROW_KEY = "app.page.workspaceEyebrow";
 
 /**
  * Menu entries whose members are not sibling pages of one area, so they
@@ -24,8 +32,9 @@ export interface PageContext {
   /** The registry page the route belongs to (longest href that matches it). */
   page?: NavItem;
   /**
-   * Message key the sidebar labels the page's group with, the page's
-   * eyebrow: the same key, so the eyebrow and the sidebar heading read alike.
+   * The page's eyebrow: the message key of the heading the reader's own
+   * menu shows the entry under, so the eyebrow and the sidebar heading read
+   * alike, or `TOP_LEVEL_EYEBROW_KEY` for an entry in the menu's top block.
    */
   groupKey?: string;
   /** The area's pages as tabs, in registry order: two or more, only on an area's own pages. */
@@ -46,6 +55,30 @@ function bestMatch(pathname: string, items: readonly NavItem[]): NavItem | undef
     if (!best || item.href.length > best.href.length) best = item;
   }
   return best;
+}
+
+/**
+ * The heading the reader's menu shows `entry` under. The sidebar and the
+ * phone menu draw their main entries through `splitSidebarGroups`, which
+ * lifts a group of one page and every ungrouped entry into the top block,
+ * so the registry group is not always the one the reader sees. Entries
+ * outside the main list (the footer's settings, the account menu's pages)
+ * keep their registry group.
+ */
+function menuGroupKey(
+  entry: NavItem | undefined,
+  page: NavItem | undefined,
+  entries: readonly NavItem[],
+): string | undefined {
+  if (!entry) return page?.group === undefined ? undefined : navGroupLabelKey(page.group);
+  const inMain = (item: NavItem) => (item.sidebarPlacement ?? "main") === "main";
+  if (!inMain(entry)) {
+    const group = entry.group ?? page?.group;
+    return group === undefined ? TOP_LEVEL_EYEBROW_KEY : navGroupLabelKey(group);
+  }
+  const { groups } = splitSidebarGroups(entries.filter(inMain));
+  const shown = groups.find(([, items]) => items.includes(entry));
+  return shown ? navGroupLabelKey(shown[0]) : TOP_LEVEL_EYEBROW_KEY;
 }
 
 /**
@@ -71,11 +104,10 @@ export function resolvePageContext(pathname: string, entries: readonly NavItem[]
     !ENTRIES_WITHOUT_TABS.has(entry.key) &&
     destinations.length >= 2 &&
     !isDetail;
-  const group = entry?.group ?? page?.group;
   return {
     entry,
     page,
-    groupKey: group === undefined ? undefined : navGroupLabelKey(group),
+    groupKey: menuGroupKey(entry, page, entries),
     tabs: showsTabs
       ? destinations.map((member) => ({
           key: member.key,

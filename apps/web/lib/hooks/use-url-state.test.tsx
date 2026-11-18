@@ -1,8 +1,13 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// The router's view of the query. `null` follows the browser address, as
+// Next does once a history write has landed; a string stands for the
+// query of a client navigation the browser has not committed yet.
+const router = vi.hoisted(() => ({ search: null as string | null }));
+
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(window.location.search),
+  useSearchParams: () => new URLSearchParams(router.search ?? window.location.search),
 }));
 
 import { useUrlState } from "./use-url-state";
@@ -11,6 +16,7 @@ const tabs = ["students", "teachers"] as const;
 
 describe("useUrlState", () => {
   beforeEach(() => {
+    router.search = null;
     window.history.replaceState(null, "", "/school/classes?view=compact#roster");
   });
 
@@ -24,6 +30,7 @@ describe("useUrlState", () => {
     expect(window.location.href).toContain("view=compact");
     expect(window.location.href).toContain("tab=teachers");
     expect(window.location.hash).toBe("#roster");
+    expect(result.current[0]).toBe("teachers");
   });
 
   it("hands the history API a string URL, which a Worker can clone", () => {
@@ -50,15 +57,26 @@ describe("useUrlState", () => {
     replace.mockRestore();
   });
 
-  it("uses the default for unknown values and follows browser history", () => {
-    window.history.replaceState(null, "", "/school/classes?tab=unknown");
+  it("reads the router's query during a client navigation, not the old address", () => {
+    // A tab Link or a redirect renders the new page before the browser
+    // address changes; reading window.location there showed the default.
+    window.history.replaceState(null, "", "/library/master-data");
+    router.search = "?tab=teachers";
+
     const { result } = renderHook(() => useUrlState("tab", tabs, "students"));
+
+    expect(result.current[0]).toBe("teachers");
+  });
+
+  it("uses the default for unknown values and follows the router's query", () => {
+    router.search = "?tab=unknown";
+    const { result, rerender } = renderHook(() => useUrlState("tab", tabs, "students"));
     expect(result.current[0]).toBe("students");
 
-    act(() => {
-      window.history.pushState(null, "", "/school/classes?tab=teachers");
-      window.dispatchEvent(new PopStateEvent("popstate"));
-    });
+    // Back and forward reach the hook through the router, which hands it
+    // the restored query.
+    router.search = "?tab=teachers";
+    rerender();
     expect(result.current[0]).toBe("teachers");
   });
 });

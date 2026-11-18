@@ -13,6 +13,13 @@ describe("Progress", () => {
     expect(bar).toHaveAttribute("aria-valuemax", "100");
   });
 
+  it("draws its track as a wash of the text colour, visible on any surface", () => {
+    render(<Progress value={0} aria-label="Presensi" />);
+    const track = screen.getByRole("progressbar", { name: "Presensi" });
+    expect(track).toHaveClass("bg-neutral-soft");
+    expect(track).not.toHaveClass("bg-surface-sunken");
+  });
+
   it("grows its fill in with a transform, from empty", async () => {
     render(<Progress value={64} aria-label="Unggah" />);
     const fill = screen.getByRole("progressbar", { name: "Unggah" }).firstElementChild;

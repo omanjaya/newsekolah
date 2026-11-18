@@ -10,6 +10,13 @@ import { UiLink } from "./ui-link.js";
 export type FirstUseEmptyStateProps = Omit<EmptyStateProps, "action"> & {
   /** The add button's label, naming what it creates ("Tambah siswa"). */
   actionLabel: string;
+  /**
+   * How loud the add button is. `secondary` (the default) is the outline
+   * button: the page header (or the table toolbar) already carries the
+   * same create action as the one filled primary on the screen. Pass
+   * `primary` only where nothing else on the screen offers the action.
+   */
+  emphasis?: "primary" | "secondary";
 } & (
     | {
         /** Opens the create form in place (a dialog, a sheet). */
@@ -26,12 +33,15 @@ export type FirstUseEmptyStateProps = Omit<EmptyStateProps, "action"> & {
 /**
  * The "nothing here yet" preset: a list that is empty because nothing has
  * been created, whose way forward is creating the first one. It always
- * carries that action, the primary button with a plus; the title and
- * description name the thing ("Belum ada siswa"). A screen whose reader
- * cannot create anything uses a plain EmptyState instead.
+ * carries that action, a button with a plus; the title and description name
+ * the thing ("Belum ada siswa"). The header carries the primary: the button
+ * here is the outline one unless `emphasis="primary"`, so a screen never
+ * shows two filled buttons for one action. A screen whose reader cannot
+ * create anything uses a plain EmptyState instead.
  */
 export function FirstUseEmptyState({
   actionLabel,
+  emphasis = "secondary",
   onAction,
   href,
   ...props
@@ -42,11 +52,11 @@ export function FirstUseEmptyState({
       {...props}
       action={
         href === undefined ? (
-          <Button size={size} icon={<Plus />} onClick={onAction}>
+          <Button variant={emphasis} size={size} icon={<Plus />} onClick={onAction}>
             {actionLabel}
           </Button>
         ) : (
-          <Button asChild size={size} icon={<Plus />}>
+          <Button asChild variant={emphasis} size={size} icon={<Plus />}>
             <UiLink href={href} onClick={onAction}>
               {actionLabel}
             </UiLink>

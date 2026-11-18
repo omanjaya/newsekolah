@@ -53,7 +53,10 @@ export function RouteGuard({
   }
 
   if (requiredPermission && !me?.permissions.includes(requiredPermission)) {
-    return <ForbiddenPage />;
+    // A platform operator's page: no school admin can open it for the reader.
+    return (
+      <ForbiddenPage reason={requiredPermission.startsWith("platform_") ? "platform" : undefined} />
+    );
   }
 
   if (module && !isModuleEnabled(me, module)) {

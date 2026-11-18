@@ -160,7 +160,7 @@
       "label": "Data sekolah",
       "items": {
         "academicYear": "Tahun ajaran",
-        "classesAndStudents": "Kelas dan siswa",
+        "classesAndStudents": "Siswa dan kelas",
         "teachersAndStaff": "Guru dan pegawai",
         "subjects": "Mapel",
         "rooms": "Ruang",
@@ -174,7 +174,7 @@
         "subjectOfferings": "Mapel per tahun ajaran",
         "teachingAssignments": "Penugasan mengajar",
         "enrollmentImport": "Impor penempatan kelas",
-        "newYearSetup": "Persiapan tahun ajaran baru"
+        "newYearSetup": "Tahun ajaran baru"
       }
     },
     "settings": {

@@ -146,5 +146,92 @@ describe("DataTable toolbar on a phone", () => {
     render(<DataTable mode="local" data={USERS} columns={fieldColumns} />);
     const toolbar = screen.getByRole("searchbox").closest(".flex-wrap");
     expect(toolbar).not.toHaveClass("max-md:hidden");
+    // The column menu sits beside the search box.
+    expect(screen.getByRole("button", { name: "Opsi tabel" })).toBeInTheDocument();
+  });
+
+  it("leaves out the phone column menu when there is no search box to sit beside", () => {
+    render(
+      <DataTable
+        mode="local"
+        data={USERS}
+        columns={fieldColumns}
+        searchable={false}
+        filters={[{ id: "kind", label: "Jenis", value: "", onChange: () => undefined }]}
+      />,
+    );
+    // Otherwise it wraps onto a row of its own, a lone "..." above the pills.
+    expect(screen.queryByRole("button", { name: "Opsi tabel" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Kolom tampil" })).toBeInTheDocument();
+  });
+
+  it("runs the pill row into the gutter so the next pill peeks in", () => {
+    render(
+      <DataTable
+        mode="local"
+        data={USERS}
+        columns={fieldColumns}
+        filters={[{ id: "kind", label: "Jenis", value: "", onChange: () => undefined }]}
+      />,
+    );
+    const strip = screen.getByRole("button", { name: "Jenis" }).closest(".scroll-fade-x");
+    expect(strip).toHaveClass("max-md:-mx-4", "max-md:px-4", "max-md:basis-[calc(100%+2rem)]");
+  });
+});
+
+describe("DataTable view options", () => {
+  it("are left out over an empty table that no search or filter emptied", () => {
+    render(<DataTable mode="local" data={[]} columns={fieldColumns} />);
+    expect(screen.queryByRole("button", { name: /^Kepadatan/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Kolom tampil" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Opsi tabel" })).not.toBeInTheDocument();
+  });
+
+  it("stay while a filter has emptied the table, so the toolbar does not jump", () => {
+    render(
+      <DataTable
+        mode="local"
+        data={[]}
+        columns={fieldColumns}
+        filters={[{ id: "kind", label: "Jenis", value: "a", onChange: () => undefined }]}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /^Kepadatan/ })).toBeInTheDocument();
+  });
+
+  it("stay while the rows load", () => {
+    render(<DataTable mode="local" data={[]} columns={fieldColumns} isLoading />);
+    expect(screen.getByRole("button", { name: /^Kepadatan/ })).toBeInTheDocument();
+  });
+
+  it("are left out on request, and the toolbar with nothing else in it is not drawn", () => {
+    const { container } = render(
+      <DataTable
+        mode="local"
+        data={USERS}
+        columns={fieldColumns}
+        searchable={false}
+        viewOptions={false}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: /^Kepadatan/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Kolom tampil" })).not.toBeInTheDocument();
+    expect(container.querySelector("[data-slot=data-table-toolbar]")).toBeNull();
+  });
+
+  it("offer no column menu for a single column that could be hidden", () => {
+    render(
+      <DataTable
+        mode="local"
+        data={USERS}
+        columns={[
+          { accessorKey: "name", header: "Nama" },
+          { id: "actions", header: "Aksi", cell: () => null },
+        ]}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /^Kepadatan/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Kolom tampil" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Opsi tabel" })).not.toBeInTheDocument();
   });
 });

@@ -306,9 +306,11 @@ export function GroupFlyout({
               )}
             />
           )}
+          {/* Smaller and 2px out into the rail's 12px gutter, so it stands
+              clear of the 20px icon and its stroke still ends inside the row. */}
           <ChevronRight
             aria-hidden="true"
-            className="absolute top-1/2 right-0 size-3 -translate-y-1/2 text-fg-muted"
+            className="absolute top-1/2 -right-0.5 size-2.5 -translate-y-1/2 text-fg-muted"
           />
         </button>
       </PopoverTrigger>

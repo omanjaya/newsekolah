@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Me } from "../session/session-provider";
 
-import { resolvePageContext, withCarriedParams } from "./page-context";
+import { resolvePageContext, TOP_LEVEL_EYEBROW_KEY, withCarriedParams } from "./page-context";
 import { appNavigationFor } from "./use-app-navigation";
 
 function reader(
@@ -48,6 +48,20 @@ describe("resolvePageContext", () => {
       ["/journal", true],
       ["/attendance/reports", false],
     ]);
+  });
+
+  it("names the menu's top block for an entry outside any group the reader sees", () => {
+    // The reports hub has no group: it leads the menu, under no heading.
+    expect(resolvePageContext("/reports", appNavigationFor(ADMIN)).groupKey).toBe(
+      TOP_LEVEL_EYEBROW_KEY,
+    );
+    // Billing belongs to the administration group, but a reader whose only
+    // administration page it is sees it in the top block, so the eyebrow
+    // never names a heading that is not in the reader's menu.
+    const bursar = reader(["view_billing"], "staff", ["bursar"]);
+    const context = resolvePageContext("/billing", appNavigationFor(bursar));
+    expect(context.entry?.key).toBe("billing");
+    expect(context.groupKey).toBe(TOP_LEVEL_EYEBROW_KEY);
   });
 
   it("marks the longest matching page current, not every ancestor", () => {
