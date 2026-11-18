@@ -2,12 +2,18 @@ import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
 
 import { CLEAR_ACCESS_COOKIE_PATH } from "../../../../lib/session/clear-server-access-cookie";
+import { POST as LEGACY_POST } from "../../role-testing/clear-access-cookie/route";
 
 import { POST } from "./route";
 
 describe("server access cookie cleanup", () => {
   it("is served at the path the browser helper calls", () => {
     expect(CLEAR_ACCESS_COOKIE_PATH).toBe("/api/session/clear-access-cookie");
+  });
+
+  // A tab still running the previous bundle during a deploy calls the old path.
+  it("is still served at its previous path for one release", () => {
+    expect(LEGACY_POST).toBe(POST);
   });
 
   it("deletes sat for a same-origin request, signed in or not", () => {
