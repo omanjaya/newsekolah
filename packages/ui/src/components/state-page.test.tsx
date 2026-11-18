@@ -44,6 +44,23 @@ describe("StatePage", () => {
     }
   });
 
+  // With an icon on the primary the pair no longer fit a phone's row and
+  // wrapped at their own widths, the secondary wider than the primary.
+  it("stacks its actions at one width on a phone, the primary first", () => {
+    render(
+      <StatePage
+        kind="forbidden"
+        title="Tidak ada akses"
+        action={<a href="/dashboard">Kembali ke beranda</a>}
+        secondaryAction={<button type="button">Halaman sebelumnya</button>}
+      />,
+    );
+    const primary = screen.getByRole("link", { name: "Kembali ke beranda" });
+    const actions = primary.parentElement;
+    expect(actions).toHaveClass("flex-col", "[&>*]:w-full", "sm:flex-row", "sm:[&>*]:w-auto");
+    expect(actions?.firstElementChild).toBe(primary);
+  });
+
   it("fills the viewport outside the app shell", () => {
     const { container } = render(<StatePage kind="offline" title="Offline" fullScreen />);
     expect(container.firstElementChild).toHaveClass("min-h-dvh");

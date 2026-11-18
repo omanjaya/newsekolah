@@ -92,7 +92,13 @@ export function StatePage({
           {description && <p className="text-body text-balance text-fg-muted">{description}</p>}
         </div>
         {hasActions && (
-          <div className="flex flex-wrap items-center justify-center gap-2">
+          // On a phone the two stack at one width, the primary first,
+          // instead of wrapping at their own widths into a ragged pair;
+          // from 640px they sit side by side.
+          <div
+            data-slot="state-page-actions"
+            className="flex w-full max-w-xs flex-col gap-2 [&>*]:w-full sm:w-auto sm:max-w-none sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:[&>*]:w-auto"
+          >
             {action}
             {secondaryAction}
           </div>
