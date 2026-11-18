@@ -118,7 +118,7 @@ function CheckInCard({
   const hasArrival = Boolean(current?.arrival_at);
   const done = completeDate === today || Boolean(current?.departure_at);
   const time = (iso: string | null | undefined) =>
-    iso ? formatTime(iso, { locale, timeZone }) : "-";
+    iso ? formatTime(iso, { locale, timeZone }) : "–";
   const statusToken = current ? STATUS_TOKEN[current.status_code] : undefined;
 
   function handleScan() {
