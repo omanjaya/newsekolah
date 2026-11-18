@@ -166,7 +166,7 @@ describe("DataTable toolbar on a phone", () => {
   });
 
   it("runs the pill row into the gutter so the next pill peeks in", () => {
-    render(
+    const { container } = render(
       <DataTable
         mode="local"
         data={USERS}
@@ -174,7 +174,10 @@ describe("DataTable toolbar on a phone", () => {
         filters={[{ id: "kind", label: "Jenis", value: "", onChange: () => undefined }]}
       />,
     );
-    const strip = screen.getByRole("button", { name: "Jenis" }).closest(".scroll-fade-x");
+    // The "Jenis" column's sort button shares the filter's name: find the pill in the toolbar.
+    const toolbar = container.querySelector<HTMLElement>("[data-slot=data-table-toolbar]");
+    if (!toolbar) throw new Error("Missing toolbar");
+    const strip = within(toolbar).getByRole("button", { name: "Jenis" }).closest(".scroll-fade-x");
     expect(strip).toHaveClass("max-md:-mx-4", "max-md:px-4", "max-md:basis-[calc(100%+2rem)]");
   });
 });
