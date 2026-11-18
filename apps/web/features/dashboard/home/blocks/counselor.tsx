@@ -285,6 +285,7 @@ function QueueSection({
     <section className="flex flex-col gap-1">
       <SectionHeader
         as="h3"
+        size="sm"
         title={title}
         className="px-5"
         action={<TextLink href={href}>{t("counselor.seeAll")}</TextLink>}
