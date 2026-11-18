@@ -115,7 +115,7 @@ function SessionSettingsForm({ initial }: { initial: AuthSettings }): ReactEleme
       }
     >
       {error && <FormError>{error}</FormError>}
-      <FormSection variant="card" columns={1} title={t("sessionTitle")}>
+      <FormSection variant="card" columns={1} title={t("rulesTitle")}>
         <Field label={t("daysLabel")} hint={t("daysHint")} error={daysError}>
           <NumberInput
             min={MIN_DAYS}
@@ -126,8 +126,6 @@ function SessionSettingsForm({ initial }: { initial: AuthSettings }): ReactEleme
             className="sm:w-48"
           />
         </Field>
-      </FormSection>
-      <FormSection variant="card" columns={1} title={t("devicesTitle")}>
         <SettingSwitchRow
           label={t("singleDeviceLabel")}
           hint={t("singleDeviceHint")}

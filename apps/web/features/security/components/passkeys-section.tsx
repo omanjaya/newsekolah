@@ -190,9 +190,10 @@ export function PasskeysSection(): ReactElement | null {
         <SkeletonList rows={2} framed={false} className="px-5 pb-5" />
       ) : items.length === 0 ? (
         <EmptyState
+          variant="compact"
+          className="px-5 pb-5"
           icon={<Fingerprint aria-hidden="true" />}
           title={t("emptyTitle")}
-          description={t("emptyBody")}
           action={addButton("secondary")}
         />
       ) : (
