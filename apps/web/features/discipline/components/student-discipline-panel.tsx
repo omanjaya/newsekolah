@@ -108,15 +108,18 @@ export function StudentDisciplinePanel({
           }
         >
           <CardTitle as="h2">{t("recap")}</CardTitle>
-          <CardDescription>
+        </CardHeader>
+        {/* The figure first, then the sentence that reads it. */}
+        <div className="flex flex-col gap-1">
+          <p className="text-title-lg text-fg tabular-nums">
+            {tMeter("points", { points: data.total_points })}
+          </p>
+          <p className="text-body-sm text-fg-muted">
             {next
               ? tMeter("toNext", { points: next.min_points - data.total_points, level: next.label })
               : tMeter("pastAll")}
-          </CardDescription>
-        </CardHeader>
-        <p className="text-title-lg text-fg tabular-nums">
-          {tMeter("points", { points: data.total_points })}
-        </p>
+          </p>
+        </div>
         <PointsMeter
           total={data.total_points}
           levels={data.policy.levels}
