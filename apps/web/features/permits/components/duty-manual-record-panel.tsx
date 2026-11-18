@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
   Checkbox,
+  DialogFooter,
   Field,
   FormActions,
   FormError,
@@ -50,11 +51,16 @@ export interface ManualRecord {
  * in one step. The result is an ordinary exit permit or late arrival --
  * same lists, review queues and reports as a self-service one -- with the
  * duty teacher (not the student) as who recorded it.
+ *
+ * `layout="dialog"` drops the card and its heading (the dialog's own title
+ * and description say them) and ends the form with the dialog's footer.
  */
 export function DutyManualRecordPanel({
   onRecorded,
+  layout = "card",
 }: {
   onRecorded?: (record: ManualRecord) => void;
+  layout?: "card" | "dialog";
 } = {}): ReactElement {
   const t = useTranslations("app.duty.manualForm");
   const toast = useToast();
@@ -149,177 +155,187 @@ export function DutyManualRecordPanel({
   }
 
   const required = t("requiredError");
+  const submitButton = (
+    <Button type="submit" loading={submitting}>
+      {t("submit")}
+    </Button>
+  );
+  const form = (
+    <form
+      className="flex flex-col gap-5"
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+    >
+      {formError && <FormError>{formError}</FormError>}
+
+      <SegmentedControl<Kind>
+        aria-label={t("kindLabel")}
+        fullWidth
+        options={[
+          { value: "exit", label: t("kindExit") },
+          { value: "late", label: t("kindLate") },
+        ]}
+        value={kind}
+        onValueChange={setKind}
+      />
+
+      <Field
+        label={t("student")}
+        required
+        error={attempted && !studentId ? t("studentRequired") : undefined}
+      >
+        {(control) =>
+          selectedStudent ? (
+            <List variant="plain">
+              <ListRow
+                leading={<Avatar size={40} name={selectedStudent.name} decorative />}
+                title={selectedStudent.name}
+                titleLines={2}
+                selected
+                action={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setStudentId("");
+                    }}
+                  >
+                    {t("changeStudent")}
+                  </Button>
+                }
+              />
+            </List>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <SearchInput
+                id={control.id}
+                aria-describedby={control["aria-describedby"]}
+                value={studentSearch}
+                onChange={(e) => {
+                  setStudentSearch(e.target.value);
+                  debounceStudentQuery(e.target.value.trim());
+                }}
+                placeholder={t("studentSearchPlaceholder")}
+                aria-label={t("studentSearchPlaceholder")}
+              />
+              <Card tone="sunken" className="max-h-60 overflow-y-auto">
+                {found.isFetching && found.data === undefined ? (
+                  <SkeletonList rows={3} leading />
+                ) : visibleStudents.length === 0 ? (
+                  <p className="px-4 py-3 text-body-sm text-fg-muted">{t("noStudents")}</p>
+                ) : (
+                  <List dense>
+                    {visibleStudents.map((student) => (
+                      <ListRow
+                        key={student.id}
+                        leading={<Avatar size={32} name={student.name} decorative />}
+                        title={student.name}
+                        titleLines={2}
+                        chevron={false}
+                        onClick={() => {
+                          setStudentId(student.id);
+                        }}
+                      />
+                    ))}
+                  </List>
+                )}
+              </Card>
+            </div>
+          )
+        }
+      </Field>
+
+      {kind === "exit" ? (
+        <FormSection>
+          <Field
+            label={t("destination")}
+            required
+            error={attempted && !destination.trim() ? required : undefined}
+            className="col-span-full"
+          >
+            <Input
+              value={destination}
+              onChange={(e) => {
+                setDestination(e.target.value);
+              }}
+              placeholder={t("destinationPlaceholder")}
+              maxLength={500}
+            />
+          </Field>
+          <Field
+            label={t("startPeriod")}
+            required
+            error={attempted && !startPeriodId ? required : undefined}
+            hint={periodOptions.length === 0 && !periods.isLoading ? t("noPeriods") : undefined}
+          >
+            <Select
+              options={periodOptions}
+              value={startPeriodId}
+              onValueChange={setStartPeriodId}
+              placeholder={t("selectPeriod")}
+            />
+          </Field>
+          <Field
+            label={t("endPeriod")}
+            required
+            error={attempted && !endPeriodId ? required : undefined}
+          >
+            <Select
+              options={periodOptions}
+              value={endPeriodId}
+              onValueChange={setEndPeriodId}
+              placeholder={t("selectPeriod")}
+            />
+          </Field>
+        </FormSection>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <Field
+            label={t("reason")}
+            required
+            error={attempted && !reason.trim() ? required : undefined}
+          >
+            <Textarea
+              rows={2}
+              autoResize
+              value={reason}
+              onChange={(e) => {
+                setReason(e.target.value);
+              }}
+              placeholder={t("reasonPlaceholder")}
+              maxLength={500}
+            />
+          </Field>
+          <Checkbox
+            label={t("homeroomReported")}
+            checked={homeroomReported}
+            onCheckedChange={(v) => {
+              setHomeroomReported(v === true);
+            }}
+          />
+        </div>
+      )}
+
+      <p className="text-caption text-fg-muted">{t("recordedHint")}</p>
+      {layout === "dialog" ? (
+        <DialogFooter>{submitButton}</DialogFooter>
+      ) : (
+        <FormActions>{submitButton}</FormActions>
+      )}
+    </form>
+  );
+
+  if (layout === "dialog") return form;
   return (
     <Card padding="md">
       <CardHeader>
         <CardTitle as="h2">{t("title")}</CardTitle>
         <CardDescription>{t("intro")}</CardDescription>
       </CardHeader>
-      <form
-        className="flex flex-col gap-5"
-        noValidate
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit();
-        }}
-      >
-        {formError && <FormError>{formError}</FormError>}
-
-        <SegmentedControl<Kind>
-          aria-label={t("kindLabel")}
-          fullWidth
-          options={[
-            { value: "exit", label: t("kindExit") },
-            { value: "late", label: t("kindLate") },
-          ]}
-          value={kind}
-          onValueChange={setKind}
-        />
-
-        <Field
-          label={t("student")}
-          required
-          error={attempted && !studentId ? t("studentRequired") : undefined}
-        >
-          {(control) =>
-            selectedStudent ? (
-              <List variant="plain">
-                <ListRow
-                  leading={<Avatar size={40} name={selectedStudent.name} decorative />}
-                  title={selectedStudent.name}
-                  titleLines={2}
-                  selected
-                  action={
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setStudentId("");
-                      }}
-                    >
-                      {t("changeStudent")}
-                    </Button>
-                  }
-                />
-              </List>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <SearchInput
-                  id={control.id}
-                  aria-describedby={control["aria-describedby"]}
-                  value={studentSearch}
-                  onChange={(e) => {
-                    setStudentSearch(e.target.value);
-                    debounceStudentQuery(e.target.value.trim());
-                  }}
-                  placeholder={t("studentSearchPlaceholder")}
-                  aria-label={t("studentSearchPlaceholder")}
-                />
-                <Card tone="sunken" className="max-h-60 overflow-y-auto">
-                  {found.isFetching && found.data === undefined ? (
-                    <SkeletonList rows={3} leading />
-                  ) : visibleStudents.length === 0 ? (
-                    <p className="px-4 py-3 text-body-sm text-fg-muted">{t("noStudents")}</p>
-                  ) : (
-                    <List dense>
-                      {visibleStudents.map((student) => (
-                        <ListRow
-                          key={student.id}
-                          leading={<Avatar size={32} name={student.name} decorative />}
-                          title={student.name}
-                          titleLines={2}
-                          chevron={false}
-                          onClick={() => {
-                            setStudentId(student.id);
-                          }}
-                        />
-                      ))}
-                    </List>
-                  )}
-                </Card>
-              </div>
-            )
-          }
-        </Field>
-
-        {kind === "exit" ? (
-          <FormSection>
-            <Field
-              label={t("destination")}
-              required
-              error={attempted && !destination.trim() ? required : undefined}
-              className="col-span-full"
-            >
-              <Input
-                value={destination}
-                onChange={(e) => {
-                  setDestination(e.target.value);
-                }}
-                placeholder={t("destinationPlaceholder")}
-                maxLength={500}
-              />
-            </Field>
-            <Field
-              label={t("startPeriod")}
-              required
-              error={attempted && !startPeriodId ? required : undefined}
-              hint={periodOptions.length === 0 && !periods.isLoading ? t("noPeriods") : undefined}
-            >
-              <Select
-                options={periodOptions}
-                value={startPeriodId}
-                onValueChange={setStartPeriodId}
-                placeholder={t("selectPeriod")}
-              />
-            </Field>
-            <Field
-              label={t("endPeriod")}
-              required
-              error={attempted && !endPeriodId ? required : undefined}
-            >
-              <Select
-                options={periodOptions}
-                value={endPeriodId}
-                onValueChange={setEndPeriodId}
-                placeholder={t("selectPeriod")}
-              />
-            </Field>
-          </FormSection>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <Field
-              label={t("reason")}
-              required
-              error={attempted && !reason.trim() ? required : undefined}
-            >
-              <Textarea
-                rows={2}
-                autoResize
-                value={reason}
-                onChange={(e) => {
-                  setReason(e.target.value);
-                }}
-                placeholder={t("reasonPlaceholder")}
-                maxLength={500}
-              />
-            </Field>
-            <Checkbox
-              label={t("homeroomReported")}
-              checked={homeroomReported}
-              onCheckedChange={(v) => {
-                setHomeroomReported(v === true);
-              }}
-            />
-          </div>
-        )}
-
-        <p className="text-caption text-fg-muted">{t("recordedHint")}</p>
-        <FormActions>
-          <Button type="submit" loading={submitting}>
-            {t("submit")}
-          </Button>
-        </FormActions>
-      </form>
+      {form}
     </Card>
   );
 }

@@ -29,6 +29,7 @@ import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { usePeriodsQuery } from "../../reference/api";
+import { clockRange } from "../../schedule/clock-label";
 import {
   type ExitPermitDetail as ExitPermitDetailData,
   encodeScanPayload,
@@ -50,6 +51,7 @@ export function CreateForm({
   onCancel?: () => void;
 }): ReactElement {
   const t = useTranslations("app.permits.exit.form");
+  const locale = useLocale();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const periods = usePeriodsQuery();
@@ -57,7 +59,7 @@ export function CreateForm({
   const lessons = (periods.data?.data ?? []).filter((p) => !p.is_break);
   const options = lessons.map((p) => ({
     value: p.id,
-    label: `${p.name} (${p.starts_at.slice(0, 5)}-${p.ends_at.slice(0, 5)})`,
+    label: `${p.name} (${clockRange(p.starts_at, p.ends_at, locale)})`,
   }));
   const [destination, setDestination] = useState("");
   const [startId, setStartId] = useState("");

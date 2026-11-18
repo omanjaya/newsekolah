@@ -2,7 +2,7 @@
   "navLabel": "Scan",
   "eyebrow": "Scan",
   "title": "Scan QR code",
-  "intro": "Point the camera at any QR code: classroom entry, late arrival, exit permit, gate, or library visit. The matching action runs automatically.",
+  "intro": "Point the camera at a QR code; the matching action runs automatically.",
   "introPermits": "Point the camera at a classroom entry, late arrival, exit permit, or gate QR code. The matching action runs automatically.",
   "introLibrary": "Point the camera at a library visit QR code. The visit is recorded automatically.",
   "scanLabel": "QR code",

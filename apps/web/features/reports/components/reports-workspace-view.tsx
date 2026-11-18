@@ -91,8 +91,9 @@ export function ReportsWorkspaceView(): ReactElement {
   );
   return (
     <Tabs value={selected.key} onValueChange={setSection}>
-      {/* The section view is the panel of whichever section tab is active. */}
-      <TabsContent value={selected.key}>
+      {/* The section view is the panel of whichever section tab is active;
+          it draws the page header, so the panel adds no padding of its own. */}
+      <TabsContent value={selected.key} className="pt-0">
         <View tabKey={tabKey} sectionNav={strip} />
       </TabsContent>
     </Tabs>

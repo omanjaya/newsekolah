@@ -52,7 +52,7 @@
   },
   "checkIn": {
     "title": "Presensi kerja",
-    "openPage": "Riwayat",
+    "openPage": "Buka",
     "notYet": "Belum ada catatan hari ini",
     "done": "Presensi kerja hari ini sudah lengkap.",
     "checkIn": "Catat kedatangan",

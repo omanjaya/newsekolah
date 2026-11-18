@@ -12,9 +12,11 @@ import {
   FilteredEmptyState,
   RowActionsMenu,
   domainIcons,
+  cn,
   type RowActionsMenuItem,
   useToast,
   type DataTableFilterDef,
+  type DataTableProps,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
@@ -57,6 +59,8 @@ const STATUSES: UserStatus[] = ["active", "inactive", "invited"];
 const STATUS_VALUES = ["", ...STATUSES] as const;
 const ARCHIVED_VALUES = ["", "true"] as const;
 
+type Density = NonNullable<DataTableProps<AdminUser>["density"]>;
+
 export function UsersView(): ReactElement {
   const t = useTranslations("app.school.users");
   const toast = useToast();
@@ -98,6 +102,10 @@ export function UsersView(): ReactElement {
   const roles = useRolesQuery();
   const archive = useArchiveUserMutation();
   const [editing, setEditing] = useState<AdminUser | "new" | null>(null);
+  // A school has hundreds of accounts, so the list starts compact (one
+  // line per person) and the toolbar's toggle still opens it up.
+  const [density, setDensity] = useState<Density>("compact");
+  const compact = density === "compact";
   const [resetting, setResetting] = useState<AdminUser | null>(null);
 
   const roleOptions = (roles.data?.data ?? []).map((r) => ({ value: r.slug, label: r.name }));
@@ -159,10 +167,18 @@ export function UsersView(): ReactElement {
         header: t("columns.name"),
         enableSorting: false,
         meta: { card: "title", skeleton: "avatar" },
+        // A compact table row is 40px, so from md up the name and the
+        // username share one line instead of stacking against its borders;
+        // the phone card (which has no density) keeps the two lines.
         cell: ({ row }) => (
           <div className="flex min-w-0 items-center gap-3">
             <Avatar size={32} name={row.original.name} />
-            <div className="flex min-w-0 flex-col">
+            <div
+              className={cn(
+                "flex min-w-0 flex-col",
+                compact && "md:flex-row md:items-baseline md:gap-2",
+              )}
+            >
               <span className="truncate text-fg">{row.original.name}</span>
               <span className="truncate text-caption text-fg-muted">
                 {row.original.username}
@@ -258,7 +274,7 @@ export function UsersView(): ReactElement {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fail/reset/archive are stable enough per render
-    [t, canEdit, canArchive, canImpersonate, me?.id],
+    [t, canEdit, canArchive, canImpersonate, me?.id, compact],
   );
 
   const items = data?.data ?? [];
@@ -328,6 +344,8 @@ export function UsersView(): ReactElement {
           onRetry={() => void refetch()}
           retrying={isRefetching}
           getRowId={(u) => u.id}
+          density={density}
+          onDensityChange={setDensity}
           fillHeight
           emptyState={
             filtering ? (

@@ -39,6 +39,7 @@ export function UserForm({
 }): ReactElement {
   const t = useTranslations("app.school.users.form");
   const tKinds = useTranslations("app.school.users.kinds");
+  const tValidation = useTranslations("validation");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const { me } = useSession();
@@ -59,6 +60,7 @@ export function UserForm({
   const [nis, setNis] = useState(initial?.profile?.nis ?? "");
   const [nip, setNip] = useState(initial?.profile?.nip ?? "");
   const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const pending = create.isPending || update.isPending;
 
   // The API enforces exactly one primary role that must be a system role,
@@ -76,10 +78,8 @@ export function UserForm({
 
   async function submit() {
     setError(null);
-    if (!name.trim() || !primaryRoleId) {
-      setError(t("requiredError"));
-      return;
-    }
+    setSubmitted(true);
+    if (!name.trim() || !primaryRoleId) return;
     const body: UserWriteFields = {
       name: name.trim(),
       ...(email.trim() ? { email: email.trim() } : {}),
@@ -111,7 +111,18 @@ export function UserForm({
     }
   }
 
-  const field = (label: string, control: ReactElement) => <Field label={label}>{control}</Field>;
+  // The name and the primary role are required: marked on their labels
+  // and said under the field on save, as the class form does, never left
+  // to the browser's own bubble.
+  const field = (label: string, control: ReactElement, required?: { missing: boolean }) => (
+    <Field
+      label={label}
+      required={required !== undefined}
+      error={submitted && required?.missing ? tValidation("required") : undefined}
+    >
+      {control}
+    </Field>
+  );
 
   return (
     <form
@@ -130,8 +141,8 @@ export function UserForm({
             onChange={(e) => {
               setName(e.target.value);
             }}
-            required
           />,
+          { missing: !name.trim() },
         )}
         {field(
           t("username"),
@@ -207,6 +218,7 @@ export function UserForm({
             value={primaryRoleId}
             onValueChange={setPrimaryRoleId}
           />,
+          { missing: !primaryRoleId },
         )}
         <p className="text-fg-muted">{t("primaryRoleHint")}</p>
         {primaryRole?.slug === "teacher" && <Alert tone="info" title={t("teacherLeaveHint")} />}

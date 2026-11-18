@@ -39,6 +39,7 @@
     "hoursRange": "{arrival} – {departure}",
     "emptyTitle": "Belum ada jadwal kerja",
     "emptyBody": "Papan ini menampilkan pegawai yang punya jadwal kerja. Atur jadwalnya lebih dulu.",
+    "emptyBodyReadOnly": "Belum ada pegawai dengan jadwal kerja.",
     "openSchedule": "Atur jadwal kerja",
     "manualEntry": "Entri manual",
     "columns": {
@@ -186,9 +187,9 @@
     }
   },
   "self": {
-    "navLabel": "Presensi saya",
+    "navLabel": "Presensi kerja",
     "eyebrow": "Kepegawaian",
-    "title": "Presensi saya",
+    "title": "Presensi kerja",
     "today": "Hari ini",
     "arrival": "Datang",
     "departure": "Pulang",
@@ -200,11 +201,14 @@
     "doneTitle": "Presensi hari ini lengkap",
     "doneBody": "Kedatangan dan kepulangan sudah tercatat. Hubungi admin bila ada yang perlu dikoreksi.",
     "hint": "Tekan sekali saat tiba dan sekali lagi saat pulang. Jam dicatat dari server sekolah.",
-    "thisWeek": "Minggu ini",
+    "thisWeek": "7 hari terakhir",
     "thisWeekEmpty": "Belum ada hari untuk ditampilkan.",
     "hoursRange": "{arrival} – {departure}",
     "holidayWithName": "Libur: {name}",
     "holidayHint": "Hari ini libur. Anda tetap bisa mencatat presensi bila diperlukan.",
-    "unscheduledHint": "Jadwal kerja Anda belum diatur. Hubungi admin untuk mengaturnya."
+    "unscheduledHint": "Jadwal kerja Anda belum diatur. Hubungi admin untuk mengaturnya.",
+    "noRecord": "Belum ada catatan",
+    "unscheduledHintManage": "Jadwal kerja Anda belum diatur.",
+    "openSchedule": "Atur jadwal kerja"
   }
 }

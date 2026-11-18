@@ -48,15 +48,16 @@ import { WorkflowStepper, WorkflowSteps } from "./workflow-stepper";
 /**
  * Keterlambatan: a student's own late check-in, scan first. The duty
  * teacher's review queue lives on the duty screen and in the Perlu
- * tindakan inbox, so this view has no queue.
+ * tindakan inbox, so this view has no queue. The h1 is the area's label and
+ * the eyebrow its sidebar group, from the template, the same on every tab;
+ * the tab names the browser tab.
  */
 export function LateArrivalsView(): ReactElement {
   const t = useTranslations("app.permits.late");
-  const tNav = useTranslations("app.shell.nav.items");
   const canSubmit = useCanSubmitPermit();
 
   return (
-    <AppPage title={t("title")} eyebrow={tNav("permits")}>
+    <AppPage>
       {canSubmit ? (
         <MyLateArrival />
       ) : (
@@ -106,8 +107,22 @@ function LateCheckIn(): ReactElement {
     }
   }
 
+  // The camera submits on its first read, so the reason ("Isi sebelum
+  // memindai") comes before the scanner on screen, not after it.
   return (
     <div className="flex w-full max-w-xl flex-col gap-4">
+      <Field label={t("reasonLabel")} hint={t("reasonHint")} optional>
+        <Textarea
+          rows={2}
+          autoResize
+          value={reason}
+          onChange={(e) => {
+            setReason(e.target.value);
+          }}
+          maxLength={500}
+          placeholder={t("reasonPlaceholder")}
+        />
+      </Field>
       <Scanner
         title={t("scanTitle")}
         description={t("scanBody")}
@@ -118,20 +133,7 @@ function LateCheckIn(): ReactElement {
         manualPlaceholder={tScan("placeholder")}
         submitLabel={tScan("submit")}
         result={result}
-      >
-        <Field label={t("reasonLabel")} hint={t("reasonHint")} optional>
-          <Textarea
-            rows={2}
-            autoResize
-            value={reason}
-            onChange={(e) => {
-              setReason(e.target.value);
-            }}
-            maxLength={500}
-            placeholder={t("reasonPlaceholder")}
-          />
-        </Field>
-      </Scanner>
+      />
     </div>
   );
 }

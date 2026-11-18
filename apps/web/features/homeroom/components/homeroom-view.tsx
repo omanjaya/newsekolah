@@ -350,7 +350,6 @@ export function HomeroomView(): ReactElement {
             leaveLoading={leaveQueue.isLoading}
             showLeave={permitsOn}
             showDiscipline={disciplineOn}
-            timeZone={me?.tenant.timezone}
           />
         </TabsContent>
         <TabsContent value="attendance" className="pt-0">

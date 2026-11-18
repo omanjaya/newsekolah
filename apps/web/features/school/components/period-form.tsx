@@ -42,11 +42,17 @@ export function PeriodForm({
   const [start, setStart] = useState(initial?.starts_at.slice(0, 5) ?? lastEnd);
   const [end, setEnd] = useState(initial?.ends_at.slice(0, 5) ?? addMinutes(lastEnd, 45));
   const [isBreak, setIsBreak] = useState(initial?.is_break ?? false);
+  const [submitted, setSubmitted] = useState(false);
+  const tValidation = useTranslations("validation");
   return (
     <form
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
+        // The name is required: marked on its label and said under it on
+        // save, never left to the browser's own bubble.
+        setSubmitted(true);
+        if (!name.trim()) return;
         void onSubmit({
           name: name.trim(),
           sequence: Number(sequence),
@@ -57,13 +63,16 @@ export function PeriodForm({
       }}
     >
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label={t("name")}>
+        <Field
+          label={t("name")}
+          required
+          error={submitted && !name.trim() ? tValidation("required") : undefined}
+        >
           <Input
             value={name}
             onChange={(e) => {
               setName(e.target.value);
             }}
-            required
           />
         </Field>
         <Field label={t("sequence")}>

@@ -30,9 +30,10 @@ type StaffTab = "today" | "schedule" | "recap" | "import";
 /**
  * Staff attendance for the office and the head: today's board first, then
  * work schedules, the monthly recap and the attendance machine import, as
- * one row of tabs under the title. The day switcher and manual entry sit
- * in the header while the board is open; an employee's own check-in is a
- * link to "Presensi saya", not a button on this board.
+ * one row of tabs under the title. While the board is open, manual entry
+ * is the header's primary action and the day switcher is the toolbar under
+ * the tabs, so on a phone it never stacks extra rows above them; an
+ * employee's own check-in is a header link, not a button on this board.
  */
 export function StaffAttendanceView(): ReactElement {
   const t = useTranslations("app.staffAttendance");
@@ -66,7 +67,7 @@ export function StaffAttendanceView(): ReactElement {
     >
       <AppPage
         documentTitle={t(`tabs.${tab}`)}
-        actions={
+        toolbar={
           onBoard ? (
             <DayStepper
               value={date}

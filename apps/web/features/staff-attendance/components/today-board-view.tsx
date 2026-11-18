@@ -214,22 +214,26 @@ export function TodayBoardView({
 
   return (
     <>
-      <StatGrid variant="tiles" aria-label={t("today.summaryLabel")}>
-        {SUMMARY.map((item) => (
-          <Stat
-            key={item.code}
-            icon={item.icon}
-            tone={item.tone}
-            label={t(`statuses.${item.code}`)}
-            value={counts[item.code] ?? 0}
-            loading={board.isLoading}
-            selected={status === item.code}
-            onClick={() => {
-              setStatus((current) => (current === item.code ? "" : item.code));
-            }}
-          />
-        ))}
-      </StatGrid>
+      {/* A board with nobody on it has nothing to count or filter: four
+          clickable zeros above the empty state would only repeat it. */}
+      {(board.isLoading || rows.length > 0) && (
+        <StatGrid variant="tiles" aria-label={t("today.summaryLabel")}>
+          {SUMMARY.map((item) => (
+            <Stat
+              key={item.code}
+              icon={item.icon}
+              tone={item.tone}
+              label={t(`statuses.${item.code}`)}
+              value={counts[item.code] ?? 0}
+              loading={board.isLoading}
+              selected={status === item.code}
+              onClick={() => {
+                setStatus((current) => (current === item.code ? "" : item.code));
+              }}
+            />
+          ))}
+        </StatGrid>
+      )}
       <DataTable
         stateKey="features/staff-attendance/components/today-board-view:1"
         mode="local"
@@ -255,10 +259,11 @@ export function TodayBoardView({
               }}
             />
           ) : (
+            // Only a reader who can set schedules is asked to.
             <EmptyState
               icon={<CalendarClock />}
               title={t("today.emptyTitle")}
-              description={t("today.emptyBody")}
+              description={canSchedule ? t("today.emptyBody") : t("today.emptyBodyReadOnly")}
               action={
                 canSchedule ? (
                   <Button variant="secondary" onClick={onOpenSchedule}>

@@ -1,8 +1,6 @@
 "use client";
 
 import type { components } from "@newsekolah/api-client";
-import type { Locale } from "@newsekolah/i18n";
-import { formatDate } from "@newsekolah/i18n";
 import {
   Badge,
   Card,
@@ -16,7 +14,8 @@ import {
   SkeletonList,
   StatusBadge,
 } from "@newsekolah/ui";
-import { useLocale, useTranslations } from "next-intl";
+import { CheckCircle2 } from "lucide-react";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
 import { formatDisplayName } from "../../../lib/text/format-name";
@@ -43,7 +42,6 @@ export function HomeroomDashboard({
   leaveLoading,
   showLeave,
   showDiscipline,
-  timeZone,
 }: {
   attentionRows: Entry[];
   disciplineRows: Entry[];
@@ -54,10 +52,9 @@ export function HomeroomDashboard({
   showLeave: boolean;
   /** False when the school switched discipline off: the discipline card goes away. */
   showDiscipline: boolean;
-  timeZone?: string;
 }): ReactElement {
   const t = useTranslations("app.homeroom");
-  const locale = useLocale() as Locale;
+  const format = useFormatter();
 
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
@@ -108,7 +105,11 @@ export function HomeroomDashboard({
             <ListRow
               key={item.instance_id}
               title={formatDisplayName(item.student_name)}
-              meta={`${formatDate(item.starts_on, { locale, timeZone })} – ${formatDate(item.ends_on, { locale, timeZone })}`}
+              meta={format.dateTimeRange(
+                new Date(`${item.starts_on}T12:00:00Z`),
+                new Date(`${item.ends_on}T12:00:00Z`),
+                { day: "numeric", month: "short", timeZone: "UTC" },
+              )}
               trailing={
                 <Badge tone="warning" size="sm">
                   {t("pendingLeaveReview")}
@@ -172,7 +173,12 @@ function DashboardCard({
         </CardContent>
       ) : count === 0 ? (
         <CardContent className="pt-0">
-          <EmptyState variant="compact" title={empty} />
+          <EmptyState
+            variant="compact"
+            tone="success"
+            icon={<CheckCircle2 aria-hidden="true" />}
+            title={empty}
+          />
         </CardContent>
       ) : (
         <List>{children}</List>
