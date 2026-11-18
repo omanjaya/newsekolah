@@ -15,6 +15,7 @@ import {
 import { useApiErrorMessage } from "../lib/i18n/api-error-message";
 import { confirmUnsavedChangesBeforeNavigation } from "../lib/navigation/use-unsaved-changes-protection";
 import { isAuthRedirecting } from "../lib/session/auth-redirect-flag";
+import { ServerAccessCookieError } from "../lib/session/clear-server-access-cookie";
 import { useEndSession } from "../lib/session/end-session";
 import { useSession } from "../lib/session/session-provider";
 
@@ -71,8 +72,10 @@ export function ImpersonationBanner(): ReactElement | null {
     try {
       await roleSwitch.mutateAsync(null);
       router.replace("/dashboard");
-    } catch {
-      toast.error(tRole("returnFailed"));
+    } catch (error) {
+      toast.error(
+        tRole(error instanceof ServerAccessCookieError ? "prepareFailed" : "returnFailed"),
+      );
     }
   }
 

@@ -43,7 +43,10 @@ export function useRoleTestingQuery(filter: RoleTestingFilter = {}, enabled = tr
  * Starts testing as another account, or (with `null`) goes back to the
  * superadmin's own. Removes the server access cookie first, so neither a
  * reload nor the next server render can load the previous actor's
- * `/v1/me`; a switch that cannot remove it does not happen.
+ * `/v1/me`. A switch that cannot remove it (the route refused, failed or
+ * did not answer in time) does not happen: it fails with
+ * `ServerAccessCookieError`, which the caller shows as such. Showing the
+ * wrong actor matters more here than one more try.
  */
 export function useRoleTestingSwitchMutation() {
   const client = useApiClient();

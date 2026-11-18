@@ -166,6 +166,7 @@
         "expiresAt": "Test session ends {time}",
         "switchFailed": "Could not switch accounts. Try again.",
         "returnFailed": "Could not return to superadmin. Try again or sign in again.",
+        "prepareFailed": "Account not switched: the web app could not release the current account's page session. Try again in a moment.",
         "sessionExpired": "Test session expired. Sign in again to continue.",
         "signIn": "Sign in again"
       },
@@ -1727,6 +1728,7 @@
           "restored": "User restored",
           "impersonate": "Sign in as this user",
           "impersonateBody": "You will act as {name} for up to 30 minutes. Everything done during that time is logged.",
+          "impersonatePrepareFailed": "Impersonation not started: the web app could not release your account's page session. Try again in a moment.",
           "import": "Import users",
           "menuFor": "Actions for {name}"
         },

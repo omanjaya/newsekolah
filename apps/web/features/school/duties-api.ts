@@ -163,7 +163,9 @@ export function useEndDutyAssignmentMutation() {
  * way the role-testing switch handles its own: the server access cookie
  * is removed before the request, so a reload cannot render the admin's
  * `/v1/me` over the impersonated account (an impersonation that cannot
- * remove it does not start), and the response goes through `switchReader`.
+ * remove it does not start, and fails with `ServerAccessCookieError`,
+ * which the caller shows as such), and the response goes through
+ * `switchReader`.
  * SimulationSync would not drop the admin's reads: it refetches only when
  * the business clock moves, not when the reader changes.
  */

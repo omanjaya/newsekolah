@@ -4,7 +4,10 @@ import type { ReactElement, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getAccessToken, setAccessToken } from "../../lib/api/access-token";
-import { CLEAR_ACCESS_COOKIE_PATH } from "../../lib/session/clear-server-access-cookie";
+import {
+  CLEAR_ACCESS_COOKIE_PATH,
+  ServerAccessCookieError,
+} from "../../lib/session/clear-server-access-cookie";
 import type { Me } from "../../lib/session/session-provider";
 import {
   clearSimulation,
@@ -146,6 +149,8 @@ describe("useImpersonateUserMutation", () => {
     expect(calls).toEqual(["clear-sat", "impersonate"]);
   });
 
+  // Privileged, and the wrong identity on screen matters more here than one
+  // more try: it does not start, and the error says why (users-view.tsx).
   it("does not start when the server access cookie stays", async () => {
     clearSatStatus = 403;
     const client = appQueryClient();
@@ -155,7 +160,9 @@ describe("useImpersonateUserMutation", () => {
     });
 
     await act(async () => {
-      await expect(result.current.mutateAsync("teacher")).rejects.toThrow();
+      await expect(result.current.mutateAsync("teacher")).rejects.toBeInstanceOf(
+        ServerAccessCookieError,
+      );
     });
 
     expect(post).not.toHaveBeenCalled();

@@ -7,12 +7,14 @@ import {
   useRoleTestingQuery,
   useRoleTestingSwitchMutation,
 } from "../features/auth/role-testing-api";
+import { ServerAccessCookieError } from "../lib/session/clear-server-access-cookie";
 
 import { RoleTestingSwitcher } from "./role-testing-switcher";
 
 const replace = vi.fn();
 const mutateAsync = vi.fn();
 const allowed = vi.fn(() => true);
+const toastError = vi.hoisted(() => vi.fn());
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
@@ -30,7 +32,7 @@ vi.mock("../features/auth/role-testing-api", () => ({
 }));
 vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
-  return { ...actual, useToast: () => ({ error: vi.fn(), success: vi.fn() }) };
+  return { ...actual, useToast: () => ({ error: toastError, success: vi.fn() }) };
 });
 
 const mockedQuery = vi.mocked(useRoleTestingQuery);
@@ -88,5 +90,21 @@ describe("RoleTestingSwitcher", () => {
       expect(mutateAsync).toHaveBeenCalledWith({ userId: "teacher-1", role: "teacher" });
       expect(replace).toHaveBeenCalledWith("/dashboard");
     });
+  });
+
+  // The switch did not happen because the previous actor's server access
+  // cookie could not be removed first: say so, not a generic failure.
+  it("tells the superadmin when the switch could not be prepared", async () => {
+    mutateAsync.mockRejectedValue(new ServerAccessCookieError());
+    const user = userEvent.setup();
+    render(<RoleTestingSwitcher />);
+    await user.click(screen.getByRole("button", { name: "changeRole" }));
+    await user.click(screen.getByRole("radio", { name: "Teacher One (teacher.one)" }));
+    await user.click(screen.getByRole("button", { name: "switch" }));
+
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith("prepareFailed");
+    });
+    expect(replace).not.toHaveBeenCalled();
   });
 });

@@ -34,6 +34,7 @@ import { useMemo, useState } from "react";
 import { AppPage } from "../../../components/app-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { ServerAccessCookieError } from "../../../lib/session/clear-server-access-cookie";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { AcademicWorkspaceLinks } from "../../academic/components/academic-workspace-links";
@@ -389,7 +390,11 @@ export function UsersView(): ReactElement {
             await impersonate.mutateAsync(impersonating.id);
             router.replace("/dashboard");
           } catch (error) {
-            fail(error);
+            if (error instanceof ServerAccessCookieError) {
+              toast.error(t("actions.impersonatePrepareFailed"));
+            } else {
+              fail(error);
+            }
             setImpersonating(null);
           }
         }}
