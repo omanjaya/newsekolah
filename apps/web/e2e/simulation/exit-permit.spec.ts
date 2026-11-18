@@ -1,7 +1,11 @@
-import type { Locator, Page } from "@playwright/test";
+import { randomUUID } from "node:crypto";
+
+import type { Browser, BrowserContext, Locator, Page } from "@playwright/test";
 
 import {
   ACTORS,
+  type ApiSession,
+  apiAs,
   assertNoNavigation,
   closeAll,
   expect,
@@ -28,6 +32,16 @@ import {
  * inbox (/inbox), since their approver_rule is duty-scoped; following one
  * up opens the same desk on that permit. The student scans each stage's
  * QR from a sheet on their own card, which moves on without a reload.
+ *
+ * The student is the run's own. permits allows one exit permit per student
+ * per tenant-local day, counting one that already went through the gate
+ * (409 EXIT_PERMIT_ALREADY_TODAY, backed by the unique index
+ * ux_workflow_instances_one_exit_permit_per_day), so a seeded student
+ * could walk this chain once a day at most. Each run instead enrolls a new
+ * student in X-A -- "siswa"'s class, so the same duty holders approve --
+ * through the admin API, signs them in for the first time (the forced
+ * password change included), and afterwards takes them out of the class
+ * and archives the account.
  */
 test("exit permit: request -> picket -> counselor -> leadership -> security gate -> exited", async ({
   browser,
@@ -36,20 +50,33 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
   // own retry) risks the default test timeout before the chain itself
   // even starts, so these run concurrently instead -- independent
   // browser contexts, nothing shared between them.
-  test.setTimeout(150_000);
-  const [student, picket, counselor, leadership, security] = await Promise.all([
-    loginAs(browser, ACTORS.student),
+  test.setTimeout(180_000);
+  const [picket, counselor, leadership, security] = await Promise.all([
     loginAs(browser, ACTORS.picket),
     loginAs(browser, ACTORS.counselor),
     loginAs(browser, ACTORS.leadership),
     loginAs(browser, ACTORS.security),
   ]);
+  const admin = await apiAs(picket.apiBase, ACTORS.admin);
+  const newcomer = newStudent();
+  let signedIn: { context: BrowserContext } | undefined;
 
   try {
-    // A permit "siswa" still has on its way (an earlier run that stopped
-    // midway) hides the request button and answers the queue checks below
-    // before the new permit exists: finish it first.
-    await finishOpenExitPermit({ student: student.page, security: security.page });
+    await enrollStudent(admin, newcomer);
+    const student = await signInFirstTime(browser, newcomer);
+    signedIn = student;
+
+    // The area keeps its title on every permit route (82289c1d); its tabs
+    // mark the exit permits as the one open. Nothing is on its way yet.
+    await student.page.goto("/exit-permits");
+    await expect(
+      student.page.getByRole("heading", { level: 1, name: "Izin dan keterlambatan" }),
+    ).toBeVisible();
+    await expect(
+      student.page
+        .getByRole("navigation", { name: "Bagian Izin dan keterlambatan" })
+        .getByRole("link", { name: "Izin keluar", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
 
     await student.page.getByRole("button", { name: "Ajukan izin keluar" }).click();
     const dialog = student.page.getByRole("dialog");
@@ -113,14 +140,14 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
 
     // Stage 2: counselor. Listed in the counselor's inbox; following it up
     // opens the approve desk on this permit, which mints the stage QR.
-    const counselorCard = await openInboxPermit(counselor.page, "Berjalan");
+    const counselorCard = await openInboxPermit(counselor.page, newcomer.name, "Berjalan");
     await counselorCard.getByRole("button", { name: "Tindak lanjuti" }).click();
     const counselorCode = await readQrCode(counselor.page.getByRole("dialog"), APPROVE_QR);
 
     await scanStage(student.page, "Guru BK", counselorCode, "Menunggu: Pimpinan");
 
     // Stage 3: leadership. Same inbox pattern as the counselor.
-    const leadershipCard = await openInboxPermit(leadership.page, "Berjalan");
+    const leadershipCard = await openInboxPermit(leadership.page, newcomer.name, "Berjalan");
     await leadershipCard.getByRole("button", { name: "Tindak lanjuti" }).click();
     const leadershipCode = await readQrCode(leadership.page.getByRole("dialog"), APPROVE_QR);
 
@@ -133,7 +160,7 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
 
     // The security gate's inbox picks the now fully approved permit up,
     // before any gate scan has happened.
-    await openInboxPermit(security.page, "Disetujui");
+    await openInboxPermit(security.page, newcomer.name, "Disetujui");
 
     // The student shows the gate QR; the visible code text under it is the
     // raw token only (packages/ui/src/components/qr-panel.tsx), so the
@@ -146,21 +173,137 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
     const gateToken = await readQrCode(student.page, GATE_QR);
     await passGate(security.page, `sion:gate:${permitId}:${gateToken}`);
 
-    // The student's already open card follows the gate scan live.
+    // The student's already open card follows the gate scan live, to its
+    // exited state with the time they went through.
     await assertNoNavigation(student.page, async () => {
       await expect(student.page.getByText("Sudah keluar", { exact: true })).toBeVisible({
         timeout: 20_000,
       });
+      await expect(student.page.getByText(/^Keluar gerbang pukul \d{2}\.\d{2}$/)).toBeVisible();
     });
   } finally {
-    await closeAll(student, picket, counselor, leadership, security);
+    await closeAll(
+      ...[signedIn, picket, counselor, leadership, security].filter((actor) => actor !== undefined),
+    );
+    await releaseStudent(admin, newcomer);
+    await admin.dispose();
   }
 });
 
 const APPROVE_QR = "Kode QR persetujuan izin keluar";
 const GATE_QR = "Kode QR gerbang izin keluar";
-const STUDENT_NAME = "Siswa Contoh";
-const GATE_TOKEN_PATH = /\/v1\/exit-permits\/([^/]+)\/gate-token/;
+/** The seeded homeroom class (cmd/seed), "siswa"'s own. */
+const CLASS_NAME = "X-A";
+
+/** This run's own student; the ids fill in as {@link enrollStudent} goes. */
+interface Newcomer {
+  name: string;
+  username: string;
+  password: string;
+  userId?: string;
+  enrollmentId?: string;
+  /** The tenant-local day of the enrollment, YYYY-MM-DD. */
+  today?: string;
+}
+
+function newStudent(): Newcomer {
+  const stamp = Date.now().toString(36);
+  return {
+    name: `Siswa Simulasi ${stamp}`,
+    username: `simsiswa${stamp}`,
+    password: `Sim-${randomUUID()}`,
+  };
+}
+
+/** Creates the student's account and enrolls it in {@link CLASS_NAME} from today. */
+async function enrollStudent(admin: ApiSession, student: Newcomer): Promise<void> {
+  const me = await admin.get<{
+    active_academic_year?: { id: string };
+    tenant: { timezone: string };
+  }>("/v1/me");
+  const yearId = me.active_academic_year?.id;
+  if (!yearId) throw new Error("the tenant has no active academic year");
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: me.tenant.timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  const roles = await admin.get<{ data: { id: string; slug: string }[] }>("/v1/roles");
+  const role = roles.data.find((item) => item.slug === "student");
+  if (!role) throw new Error("the tenant has no student role");
+  const classes = await admin.get<{ data: { id: string; name: string }[] }>(
+    `/v1/academic/classes?academic_year_id=${yearId}&search=${encodeURIComponent(CLASS_NAME)}`,
+  );
+  const homeClass = classes.data.find((item) => item.name === CLASS_NAME);
+  if (!homeClass) throw new Error(`the active year has no class ${CLASS_NAME}`);
+
+  const user = await admin.post<{ id: string }>("/v1/users", {
+    name: student.name,
+    username: student.username,
+    password: student.password,
+    profile_kind: "student",
+    locale: "id",
+    roles: [{ role_id: role.id, is_primary: true }],
+  });
+  student.userId = user.id;
+  student.today = today;
+  const enrollment = await admin.post<{ id: string }>(
+    `/v1/academic/classes/${homeClass.id}/enrollments`,
+    { student_user_id: user.id, joined_on: today },
+  );
+  student.enrollmentId = enrollment.id;
+}
+
+/**
+ * Takes the run's student out of the class and archives the account, so
+ * runs do not pile up in X-A's roster. Best-effort: a failure here must
+ * not hide the scenario's own result.
+ */
+async function releaseStudent(admin: ApiSession, student: Newcomer): Promise<void> {
+  const { enrollmentId, userId, today } = student;
+  if (enrollmentId && today) {
+    await admin
+      .post(`/v1/academic/enrollments/${enrollmentId}/leave`, { left_on: today })
+      .catch(() => undefined);
+  }
+  if (userId) {
+    await admin.post(`/v1/users/${userId}/archive`).catch(() => undefined);
+  }
+}
+
+/**
+ * The student's first sign-in: a new account must choose its own password
+ * before reaching any page (RouteGuard sends it to /change-password).
+ */
+async function signInFirstTime(
+  browser: Browser,
+  student: Newcomer,
+): Promise<{ context: BrowserContext; page: Page }> {
+  const context = await browser.newContext();
+  try {
+    const page = await context.newPage();
+    await page.goto("/login");
+    await page.getByLabel("Nama pengguna").fill(student.username);
+    await page.getByLabel("Kata sandi", { exact: true }).fill(student.password);
+    await page.getByRole("button", { name: "Masuk", exact: true }).click();
+    await page.waitForURL("**/change-password", { timeout: 20_000 });
+
+    const chosen = `Sim-${randomUUID()}`;
+    await page.getByLabel("Kata sandi saat ini").fill(student.password);
+    // exact: "Kata sandi baru" is a substring of "Konfirmasi kata sandi baru".
+    await page.getByLabel("Kata sandi baru", { exact: true }).fill(chosen);
+    await page.getByLabel("Konfirmasi kata sandi baru").fill(chosen);
+    await page.getByRole("button", { name: "Ubah kata sandi" }).click();
+    await page.waitForURL("**/dashboard", { timeout: 20_000 });
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    return { context, page };
+  } catch (error) {
+    await context.close();
+    throw error;
+  }
+}
 
 /**
  * The code typed under a QR (packages/ui QrPanel), read from the panel the
@@ -208,13 +351,13 @@ async function typeScannedCode(scope: Locator, label: string, code: string): Pro
   await scope.getByRole("button", { name: "Kirim kode" }).click();
 }
 
-/** The reviewer's inbox card for this student's exit permit, in `status`. */
-async function openInboxPermit(page: Page, status: string): Promise<Locator> {
+/** The reviewer's inbox card for `studentName`'s exit permit, in `status`. */
+async function openInboxPermit(page: Page, studentName: string, status: string): Promise<Locator> {
   await page.goto("/inbox");
   await waitForToastsGone(page);
   const card = page
     .getByRole("listitem")
-    .filter({ hasText: STUDENT_NAME })
+    .filter({ hasText: studentName })
     .filter({ hasText: "Izin keluar" })
     .filter({ hasText: status });
   await expect(card).toHaveCount(1, { timeout: 20_000 });
@@ -227,49 +370,4 @@ async function passGate(security: Page, payload: string): Promise<void> {
   const desk = security.locator('[data-slot="scanner"]').filter({ hasText: "Pindai QR gerbang" });
   await typeScannedCode(desk, "Kode QR gerbang", payload);
   await expect(desk.getByText("Siswa diizinkan keluar")).toBeVisible({ timeout: 20_000 });
-}
-
-/**
- * permits allows one exit permit on its way per student, and the student's
- * page offers no new request while one is. Cancels one still in progress;
- * one already approved goes through the gate, the way the scenario ends
- * its own. Leaves the student on /exit-permits with the request button.
- */
-async function finishOpenExitPermit(actors: { student: Page; security: Page }): Promise<void> {
-  const { student, security } = actors;
-  await student.goto("/exit-permits");
-  // Since 82289c1d the permit routes keep the area's title; the area's
-  // tabs mark which of them is open.
-  await expect(
-    student.getByRole("heading", { level: 1, name: "Izin dan keterlambatan" }),
-  ).toBeVisible();
-  await expect(
-    student
-      .getByRole("navigation", { name: "Bagian Izin dan keterlambatan" })
-      .getByRole("link", { name: "Izin keluar", exact: true }),
-  ).toHaveAttribute("aria-current", "page");
-  await expect(student.locator('[data-slot="skeleton"], .animate-pulse')).toHaveCount(0, {
-    timeout: 20_000,
-  });
-  const request = student.getByRole("button", { name: "Ajukan izin keluar" });
-  if (await request.isVisible()) return;
-
-  const cancel = student.getByRole("button", { name: "Batalkan izin" });
-  const gate = student.getByRole("button", { name: "Tampilkan QR gerbang" });
-  if (await cancel.isVisible()) {
-    await cancel.click();
-  } else if (await gate.isVisible()) {
-    // An approved card no longer shows the permit code; the gate QR's own
-    // request names the permit.
-    const minted = student.waitForRequest(
-      (req) => req.method() === "POST" && GATE_TOKEN_PATH.test(req.url()),
-    );
-    await gate.click();
-    const permitId = GATE_TOKEN_PATH.exec((await minted).url())?.[1] ?? "";
-    expect(permitId).not.toBe("");
-    const token = await readQrCode(student, GATE_QR);
-    await passGate(security, `sion:gate:${permitId}:${token}`);
-    await student.reload();
-  }
-  await expect(request).toBeVisible({ timeout: 20_000 });
 }
