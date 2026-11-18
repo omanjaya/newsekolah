@@ -169,6 +169,17 @@ export function AchievementsView(): ReactElement {
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("add"),
+              onSelect: () => {
+                setEditing("new");
+              },
+            }
+          : undefined
+      }
     >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable

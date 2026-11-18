@@ -4,14 +4,16 @@ import { ApiError } from "@newsekolah/api-client";
 import { useToast } from "@newsekolah/ui";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useStudentDisciplineReportMutation } from "../../discipline/api";
+import { useStudentDisciplineReportMutation } from "../api";
 
 /**
- * Opens one student's printable discipline PDF in a new tab, for the
- * profile header's overflow action. The discipline record page has the
- * same flow behind its own button.
+ * Opens one student's printable discipline PDF in a new tab, with a toast
+ * on failure. A page header passes it as a secondary action
+ * (`{ label, icon: <Printer />, disabled: pending, onSelect: () => open(id) }`),
+ * so on a phone it joins the header's menu. Shared by the student profile
+ * and the discipline record page.
  */
-export function useOpenDisciplineReport(): {
+export function useOpenStudentDisciplineReport(): {
   open: (studentId: string) => void;
   pending: boolean;
 } {

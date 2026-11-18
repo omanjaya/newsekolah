@@ -100,6 +100,9 @@ export function ViolationsView(): ReactElement {
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canRecord ? { icon: <Plus />, label: t("record"), onSelect: record } : undefined
+      }
       secondaryActions={secondaryActions}
     >
       {canViewLetters ? (

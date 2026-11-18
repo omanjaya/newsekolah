@@ -16,7 +16,7 @@ import { DoorOpen, Plus, Users, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { cloneElement, useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
@@ -179,6 +179,17 @@ export function VisitsView(): ReactElement {
     <AppPage
       nav={<LibraryWorkspaceNav area="circulation" />}
       primaryAction={recordButton}
+      primaryActionCompact={
+        canRecord
+          ? {
+              icon: <Plus />,
+              label: t("record"),
+              onSelect: () => {
+                setRecording(true);
+              },
+            }
+          : undefined
+      }
       secondaryActions={shortcuts}
     >
       <StatGrid variant="strip" aria-label={t("summary.heading")}>
@@ -241,7 +252,7 @@ export function VisitsView(): ReactElement {
             icon={<domainIcons.users aria-hidden="true" />}
             title={t("emptyTitle")}
             description={t("emptyBody")}
-            action={recordButton}
+            action={recordButton && cloneElement(recordButton, { variant: "secondary" })}
           />
         }
       />

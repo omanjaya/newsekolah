@@ -291,6 +291,7 @@ export function CatalogueView(): ReactElement {
                 action={
                   canManage ? (
                     <Button
+                      variant="secondary"
                       icon={<Plus />}
                       onClick={() => {
                         setAdding(true);

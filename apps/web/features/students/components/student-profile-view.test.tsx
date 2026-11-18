@@ -34,8 +34,8 @@ vi.mock("../../school/api", () => ({ useUserQuery: () => ({ data: undefined }) }
 vi.mock("../../mentoring/api", () => ({
   useMentorStudentSnapshotQuery: () => ({ data: undefined }),
 }));
-vi.mock("./use-discipline-report", () => ({
-  useOpenDisciplineReport: () => ({ open: mocks.openReport, pending: false }),
+vi.mock("../../discipline/components/use-open-student-discipline-report", () => ({
+  useOpenStudentDisciplineReport: () => ({ open: mocks.openReport, pending: false }),
 }));
 vi.mock("./student-tab-panels", () => {
   const panel = (name: string) => () => <div>{`panel:${name}`}</div>;

@@ -57,17 +57,16 @@ function useFormatDay(): (value: string) => string {
 }
 
 /** The club's facts under its name: "Jumat, 15.00 – 16.30 · Kuota 30 anggota · Lapangan". */
-function useClubFacts(club: Extracurricular | undefined): string | undefined {
+function useClubFacts(club: Extracurricular | undefined): string[] {
   const t = useTranslations("app.activities.clubDetail");
   const tClubs = useTranslations("app.activities.clubs");
   const locale = useLocale() as Locale;
-  if (!club) return undefined;
-  const facts = [
+  if (!club) return [];
+  return [
     clubScheduleLabel(club, (key) => tClubs(`weekdays.${key}`), locale),
     club.capacity ? t("facts.capacity", { count: club.capacity }) : t("facts.noLimit"),
     club.location.trim() || undefined,
   ].filter((fact): fact is string => Boolean(fact));
-  return facts.join(" · ");
 }
 
 /**
@@ -118,7 +117,17 @@ export function ClubDetailView({ clubId }: { clubId: string }): ReactElement {
         club ? (
           <>
             {club.description && <p>{club.description}</p>}
-            {facts && <p className="mt-1 text-body-sm">{facts}</p>}
+            {facts.length > 0 && (
+              // Each fact stays whole: a wrap starts a new fact, never strands a dot.
+              <p className="mt-1 flex flex-wrap gap-x-1.5 text-body-sm">
+                {facts.map((fact, index) => (
+                  <span key={fact} className="whitespace-nowrap">
+                    {index > 0 && <span aria-hidden="true">· </span>}
+                    {fact}
+                  </span>
+                ))}
+              </p>
+            )}
           </>
         ) : undefined
       }

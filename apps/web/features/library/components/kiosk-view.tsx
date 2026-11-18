@@ -15,7 +15,7 @@ import {
 import { BookCheck, IdCard, LogOut, ScanLine } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { todayInZone } from "../../../lib/tenant-date";
@@ -54,6 +54,31 @@ function useSecondsLeft(deadline: number | null): number | null {
   }, [deadline]);
   if (deadline === null) return null;
   return Math.max(0, Math.ceil((deadline - now) / 1000));
+}
+
+/** Tailwind `lg`: from here the scanner's side column sits beside the camera instead of under it. */
+const WIDE_QUERY = "(min-width: 1024px)";
+
+function wideQuery(): MediaQueryList | null {
+  return typeof window !== "undefined" && typeof window.matchMedia === "function"
+    ? window.matchMedia(WIDE_QUERY)
+    : null;
+}
+
+function subscribeWide(callback: () => void): () => void {
+  const query = wideQuery();
+  query?.addEventListener("change", callback);
+  return () => {
+    query?.removeEventListener("change", callback);
+  };
+}
+
+function useIsWide(): boolean {
+  return useSyncExternalStore(
+    subscribeWide,
+    () => wideQuery()?.matches ?? false,
+    () => false,
+  );
 }
 
 /**
@@ -169,6 +194,7 @@ export function KioskView(): ReactElement {
     ? { tone: feedback.tone, title: feedback.message, key: feedback.key }
     : null;
   const active = memberUserId !== null;
+  const wide = useIsWide();
 
   return (
     <div className="flex flex-1 flex-col items-center px-4 py-6 sm:px-8">
@@ -230,7 +256,7 @@ export function KioskView(): ReactElement {
           fullScreen={false}
           onScan={active ? handleBookScan : handleCardScan}
           result={result}
-          manualEntry={active ? true : "open"}
+          manualEntry={active || !wide ? true : "open"}
           manualLabel={active ? t("active.scanLabel") : t("idle.scanLabel")}
           submitLabel={active ? t("active.submit") : t("idle.submit")}
           disabled={borrow.isPending || returnLoan.isPending}
@@ -245,7 +271,7 @@ export function KioskView(): ReactElement {
               emptyLabel={t("active.empty")}
             />
           ) : (
-            <Card padding="md" className="flex-row items-start">
+            <Card padding="md" className="hidden flex-row items-start lg:flex">
               <IconCircle tone="accent" size="lg">
                 <IdCard />
               </IconCircle>
@@ -256,6 +282,9 @@ export function KioskView(): ReactElement {
             </Card>
           )}
         </Scanner>
+        {active ? null : (
+          <p className="text-center text-body text-fg-muted lg:hidden">{t("idle.privacy")}</p>
+        )}
       </div>
     </div>
   );

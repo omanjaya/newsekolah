@@ -1151,7 +1151,8 @@
       "emptyTitle": "DDC class data is unavailable",
       "emptyBody": "Contact the platform operator if this list should be populated."
     },
-    "tabsLabel": "Catalogue data lists"
+    "tabsLabel": "Catalogue data lists",
+    "typeLabel": "Catalogue data"
   },
   "loanRules": {
     "eyebrow": "Library",

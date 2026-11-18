@@ -53,7 +53,22 @@ export function AnnouncementsView(): ReactElement {
   ) : undefined;
 
   return (
-    <AppPage nav={false} primaryAction={primaryAction}>
+    <AppPage
+      nav={false}
+      primaryAction={primaryAction}
+      primaryActionCompact={
+        canCreate
+          ? {
+              icon: <Plus />,
+              label: t("actions.create"),
+              onSelect: () => {
+                selectTab("manage");
+                setCreating(true);
+              },
+            }
+          : undefined
+      }
+    >
       {canManage ? (
         <Tabs value={tab} onValueChange={selectTab} className="flex flex-col gap-5">
           <TabsList aria-label={t("tabsLabel")}>

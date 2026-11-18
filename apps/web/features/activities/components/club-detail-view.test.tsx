@@ -79,9 +79,9 @@ beforeEach(() => {
 describe("ClubDetailView", () => {
   it("states the club's schedule and quota under its name", () => {
     render(<ClubDetailView clubId="club-1" />);
-    expect(
-      screen.getByText("weekdays.friday, 15.00 – 16.30 · facts.capacity · Lapangan"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("weekdays.friday, 15.00 – 16.30")).toBeInTheDocument();
+    expect(screen.getByText("facts.capacity", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("Lapangan", { exact: false })).toBeInTheDocument();
   });
 
   it("enrolls a member from the header's action, not an inline form", async () => {

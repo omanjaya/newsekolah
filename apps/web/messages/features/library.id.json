@@ -1151,7 +1151,8 @@
       "emptyTitle": "Data kelas DDC tidak tersedia",
       "emptyBody": "Hubungi operator platform bila daftar ini seharusnya terisi."
     },
-    "tabsLabel": "Jenis data katalog"
+    "tabsLabel": "Jenis data katalog",
+    "typeLabel": "Data katalog"
   },
   "loanRules": {
     "eyebrow": "Perpustakaan",

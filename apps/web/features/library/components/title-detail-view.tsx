@@ -246,6 +246,7 @@ export function TitleDetailView({ titleId }: { titleId: string }): ReactElement 
                 action={
                   canManage ? (
                     <Button
+                      variant="secondary"
                       icon={<Plus />}
                       onClick={() => {
                         setAdding(true);
