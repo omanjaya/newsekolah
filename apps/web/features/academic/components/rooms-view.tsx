@@ -10,9 +10,9 @@ import {
   DialogFooter,
   EmptyState,
   Field,
-  IconButton,
   Input,
   NumberInput,
+  RowActionsMenu,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -21,6 +21,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
@@ -32,7 +33,9 @@ import {
   useUpdateRoomMutation,
 } from "../api-master-data";
 
-export function RoomsView(): ReactElement {
+import type { HubPageProps } from "./hub-page";
+
+export function RoomsView({ page }: { page: HubPageProps }): ReactElement {
   const t = useTranslations("app.academic.rooms");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -47,6 +50,7 @@ export function RoomsView(): ReactElement {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [capacity, setCapacity] = useState("");
+  const [submitted, setSubmitted] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Room | null>(null);
 
   const rows = data?.data ?? [];
@@ -62,9 +66,11 @@ export function RoomsView(): ReactElement {
     setCode(target === "new" ? "" : target.code);
     setName(target === "new" ? "" : target.name);
     setCapacity(target === "new" || target.capacity === undefined ? "" : String(target.capacity));
+    setSubmitted(false);
   }
 
   async function save() {
+    setSubmitted(true);
     if (!code.trim() || !name.trim()) return;
     const body = {
       code: code.trim().toUpperCase(),
@@ -108,22 +114,26 @@ export function RoomsView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) =>
           canManage ? (
-            <div className="flex justify-end gap-1">
-              <IconButton
-                icon={<Pencil />}
-                aria-label={t("edit")}
-                onClick={() => {
-                  open(row.original);
-                }}
-              />
-              <IconButton
-                icon={<Trash2 />}
-                aria-label={t("delete")}
-                onClick={() => {
-                  setPendingDelete(row.original);
-                }}
-              />
-            </div>
+            <RowActionsMenu
+              ariaLabel={t("rowActions", { name: row.original.name })}
+              items={[
+                {
+                  label: t("edit"),
+                  icon: <Pencil />,
+                  onClick: () => {
+                    open(row.original);
+                  },
+                },
+                {
+                  label: t("delete"),
+                  icon: <Trash2 />,
+                  tone: "danger",
+                  onClick: () => {
+                    setPendingDelete(row.original);
+                  },
+                },
+              ]}
+            />
           ) : null,
       },
     ],
@@ -131,20 +141,22 @@ export function RoomsView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <AppPage
+      {...page}
+      primaryAction={
+        canManage ? (
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              open("new");
+            }}
+          >
+            {t("add")}
+          </Button>
+        ) : undefined
+      }
+    >
       <DataTable
-        toolbarActions={
-          canManage ? (
-            <Button
-              icon={<Plus />}
-              onClick={() => {
-                open("new");
-              }}
-            >
-              {t("add")}
-            </Button>
-          ) : undefined
-        }
         stateKey="features/academic/components/rooms-view:1"
         data={rows}
         columns={columns}
@@ -190,31 +202,38 @@ export function RoomsView(): ReactElement {
         <DialogContent title={editing === "new" ? t("add") : t("edit")}>
           <form
             className="flex flex-col gap-4"
+            noValidate
             onSubmit={(e) => {
               e.preventDefault();
               void save();
             }}
           >
-            <Field label={t("columns.code")}>
+            <Field
+              label={t("columns.code")}
+              required
+              error={submitted && !code.trim() ? t("codeRequired") : undefined}
+            >
               <Input
                 value={code}
                 maxLength={16}
                 onChange={(e) => {
                   setCode(e.target.value);
                 }}
-                required
               />
             </Field>
-            <Field label={t("columns.name")}>
+            <Field
+              label={t("columns.name")}
+              required
+              error={submitted && !name.trim() ? t("nameRequired") : undefined}
+            >
               <Input
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
                 }}
-                required
               />
             </Field>
-            <Field label={t("columns.capacity")}>
+            <Field label={t("columns.capacity")} optional>
               <NumberInput
                 min={1}
                 value={capacity ? Number(capacity) : null}
@@ -264,6 +283,6 @@ export function RoomsView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }

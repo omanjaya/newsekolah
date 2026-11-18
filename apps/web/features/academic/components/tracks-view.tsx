@@ -10,8 +10,8 @@ import {
   DialogFooter,
   EmptyState,
   Field,
-  IconButton,
   Input,
+  RowActionsMenu,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -20,6 +20,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
@@ -31,8 +32,10 @@ import {
   useUpdateTrackMutation,
 } from "../api-master-data";
 
+import type { HubPageProps } from "./hub-page";
+
 /** Tracks (peminatan): IPA/IPS/Bahasa in SMA, or program majors in SMK. */
-export function TracksView(): ReactElement {
+export function TracksView({ page }: { page: HubPageProps }): ReactElement {
   const t = useTranslations("app.academic.tracks");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -45,6 +48,7 @@ export function TracksView(): ReactElement {
   const [editing, setEditing] = useState<Track | "new" | null>(null);
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [submitted, setSubmitted] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Track | null>(null);
   const [filter, setFilter] = useRememberedViewState("tracks-filter", "");
 
@@ -66,9 +70,11 @@ export function TracksView(): ReactElement {
     setEditing(target);
     setCode(target === "new" ? "" : target.code);
     setName(target === "new" ? "" : target.name);
+    setSubmitted(false);
   }
 
   async function save() {
+    setSubmitted(true);
     if (!code.trim() || !name.trim()) return;
     const body = { code: code.trim().toUpperCase(), name: name.trim() };
     try {
@@ -102,22 +108,26 @@ export function TracksView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) =>
           canManage ? (
-            <div className="flex justify-end gap-1">
-              <IconButton
-                icon={<Pencil />}
-                aria-label={t("edit")}
-                onClick={() => {
-                  open(row.original);
-                }}
-              />
-              <IconButton
-                icon={<Trash2 />}
-                aria-label={t("delete")}
-                onClick={() => {
-                  setPendingDelete(row.original);
-                }}
-              />
-            </div>
+            <RowActionsMenu
+              ariaLabel={t("rowActions", { name: row.original.name })}
+              items={[
+                {
+                  label: t("edit"),
+                  icon: <Pencil />,
+                  onClick: () => {
+                    open(row.original);
+                  },
+                },
+                {
+                  label: t("delete"),
+                  icon: <Trash2 />,
+                  tone: "danger",
+                  onClick: () => {
+                    setPendingDelete(row.original);
+                  },
+                },
+              ]}
+            />
           ) : null,
       },
     ],
@@ -125,21 +135,23 @@ export function TracksView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <AppPage
+      {...page}
+      primaryAction={
+        canManage ? (
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              open("new");
+            }}
+          >
+            {t("add")}
+          </Button>
+        ) : undefined
+      }
+    >
       <p className="text-body-sm text-fg-muted">{t("description")}</p>
       <DataTable
-        toolbarActions={
-          canManage ? (
-            <Button
-              icon={<Plus />}
-              onClick={() => {
-                open("new");
-              }}
-            >
-              {t("add")}
-            </Button>
-          ) : undefined
-        }
         stateKey="features/academic/components/tracks-view:1"
         data={rows}
         columns={columns}
@@ -185,28 +197,35 @@ export function TracksView(): ReactElement {
         <DialogContent title={editing === "new" ? t("add") : t("edit")}>
           <form
             className="flex flex-col gap-4"
+            noValidate
             onSubmit={(e) => {
               e.preventDefault();
               void save();
             }}
           >
-            <Field label={t("columns.code")}>
+            <Field
+              label={t("columns.code")}
+              required
+              error={submitted && !code.trim() ? t("codeRequired") : undefined}
+            >
               <Input
                 value={code}
                 maxLength={16}
                 onChange={(e) => {
                   setCode(e.target.value);
                 }}
-                required
               />
             </Field>
-            <Field label={t("columns.name")}>
+            <Field
+              label={t("columns.name")}
+              required
+              error={submitted && !name.trim() ? t("nameRequired") : undefined}
+            >
               <Input
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
                 }}
-                required
               />
             </Field>
             <DialogFooter>
@@ -249,6 +268,6 @@ export function TracksView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }

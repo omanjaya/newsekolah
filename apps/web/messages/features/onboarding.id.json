@@ -21,6 +21,11 @@
     "id": "Bahasa Indonesia",
     "en": "English"
   },
+  "timezones": {
+    "wib": "WIB (Waktu Indonesia Barat)",
+    "wita": "WITA (Waktu Indonesia Tengah)",
+    "wit": "WIT (Waktu Indonesia Timur)"
+  },
   "profile": {
     "title": "Profil sekolah",
     "body": "Nama, jenjang, zona waktu, dan bahasa bawaan sekolah.",
@@ -54,8 +59,8 @@
     },
     "grade_levels": {
       "label": "Tingkat kelas",
-      "description": "Daftar jenjang (misalnya kelas 1 sampai 6) yang menjadi dasar pembagian kelas.",
-      "count": "{count} jenjang"
+      "description": "Daftar tingkat kelas (misalnya kelas 1 sampai 6) yang menjadi dasar pembagian kelas.",
+      "count": "{count} tingkat"
     },
     "classes": {
       "label": "Kelas",

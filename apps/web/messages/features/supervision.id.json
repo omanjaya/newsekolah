@@ -173,6 +173,7 @@
     "scale": "Skala {min}–{max}",
     "averageOfScale": "Rata-rata {average} pada skala {min}–{max}",
     "scores": "Skor",
+    "criterionFallback": "Kriteria {n}",
     "observerNotes": "Catatan pengamat",
     "noNotes": "Tidak ada catatan.",
     "teacherResponse": "Tanggapan guru",

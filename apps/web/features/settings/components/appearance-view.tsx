@@ -47,7 +47,9 @@ export function AppearanceView(): ReactElement {
               onValueChange={(value) => {
                 if (isTheme(value)) setTheme(value);
               }}
-              className="grid gap-3 sm:grid-cols-3"
+              // One tile per row at every width: three across a 720px card
+              // left each hint a 110px column of one or two words a line.
+              className="grid gap-3"
             >
               {OPTIONS.map(({ value, icon: Icon }) => (
                 <RadioGroupItem

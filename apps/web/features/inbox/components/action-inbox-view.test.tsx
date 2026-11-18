@@ -95,10 +95,21 @@ describe("ActionInboxView", () => {
     render(<ActionInboxView />);
     expect(screen.getByText("emptyTitle")).toBeInTheDocument();
     expect(screen.queryByTestId("permit-queue")).not.toBeInTheDocument();
-    // The all-clear state still offers a way on: the history of the queue.
-    expect(screen.getByRole("link", { name: "historyLeave" })).toHaveAttribute(
+    // A reviewer has no leave history: /leave-requests would send them back here.
+    expect(screen.queryByRole("link", { name: "historyLeave" })).not.toBeInTheDocument();
+  });
+
+  it("offers the warning letters as the history of an all-clear issuer", () => {
+    mocks.permissions = new Set([
+      "review_leave_requests",
+      "issue_warning_letters",
+      "view_discipline",
+    ]);
+    mocks.summary.mockReturnValue(summary({ leave: 0, warningLetters: 0, total: 0 }));
+    render(<ActionInboxView />);
+    expect(screen.getByRole("link", { name: "historyWarningLetters" })).toHaveAttribute(
       "href",
-      "/leave-requests",
+      "/discipline/warning-letters",
     );
   });
 

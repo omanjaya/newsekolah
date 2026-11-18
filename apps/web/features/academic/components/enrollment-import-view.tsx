@@ -164,7 +164,9 @@ export function EnrollmentImportView(): ReactElement {
   ];
 
   return (
-    <AppPage title={t("title")} description={t("description")}>
+    // The area's header (Siswa dan kelas) over its tabs, as on the class
+    // list; the "Siapkan berkas" card says what this page does.
+    <AppPage>
       <ImportProgress stage={stage} />
 
       {!committed && (

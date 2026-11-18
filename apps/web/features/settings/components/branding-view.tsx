@@ -14,6 +14,7 @@ import { type BrandingWrite, type TenantBranding, useUpdateBrandingMutation } fr
 
 import { BrandAssetUpload } from "./brand-asset-upload";
 import { BrandingPreview } from "./branding-preview";
+import { PreviewSheet } from "./preview-sheet";
 import { SettingsPage } from "./settings-page";
 import { SettingsSaveBar } from "./settings-save-bar";
 
@@ -145,6 +146,16 @@ function BrandingForm({ initial }: { initial: TenantBranding }): ReactElement {
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="flex min-w-0 flex-col gap-6">
           {error && <FormError>{error}</FormError>}
+          <PreviewSheet label={t("preview.title")}>
+            <BrandingPreview
+              name={values.name}
+              shortName={values.shortName}
+              tagline={values.tagline}
+              accent={accentValid ? values.accentColor : saved.accentColor}
+              logoUrl={initial.logo_url}
+              faviconUrl={initial.favicon_url}
+            />
+          </PreviewSheet>
           <FormSection variant="card" title={t("identityTitle")}>
             <Field label={t("nameLabel")} required error={nameError}>
               <Input
@@ -218,7 +229,7 @@ function BrandingForm({ initial }: { initial: TenantBranding }): ReactElement {
           </FormSection>
         </div>
 
-        <div className="lg:sticky lg:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)]">
+        <div className="max-lg:hidden lg:sticky lg:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)]">
           <BrandingPreview
             name={values.name}
             shortName={values.shortName}

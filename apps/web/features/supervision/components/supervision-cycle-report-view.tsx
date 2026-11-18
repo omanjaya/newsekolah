@@ -18,6 +18,7 @@ import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { useScheduledObservationsQuery, useSupervisionCycleQuery } from "../api";
+import { useCycleTrail } from "../lib/use-cycle-trail";
 
 import { CycleNav } from "./cycle-nav";
 
@@ -34,7 +35,8 @@ interface TeacherRow {
  */
 export function SupervisionCycleReportView({ cycleId }: { cycleId: string }): ReactElement {
   const t = useTranslations("app.supervision.cycleReport");
-  const tRoot = useTranslations("app.supervision");
+  const tDetail = useTranslations("app.supervision.cycleDetail");
+  const trail = useCycleTrail();
 
   const cycle = useSupervisionCycleQuery(cycleId);
   const scheduled = useScheduledObservationsQuery(cycleId);
@@ -103,13 +105,15 @@ export function SupervisionCycleReportView({ cycleId }: { cycleId: string }): Re
 
   return (
     <AppPage
+      // The same head as the cycle's Observasi tab (title, description,
+      // trail), so switching tabs moves only the underline.
       title={cycle.data.name}
       documentTitle={t("documentTitle", { cycle: cycle.data.name })}
-      breadcrumb={[
-        { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
-        { label: cycle.data.name, href: `/supervision/cycles/${cycleId}` },
-        { label: t("breadcrumb") },
-      ]}
+      description={tDetail("summary", {
+        instrument: cycle.data.instrument.name,
+        criteria: cycle.data.instrument.criteria.length,
+      })}
+      breadcrumb={trail.cycle(cycle.data.name)}
       nav={<CycleNav cycleId={cycleId} current="report" />}
     >
       <section className="flex flex-col gap-3">

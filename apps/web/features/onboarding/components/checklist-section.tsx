@@ -115,12 +115,19 @@ function ChecklistRow({ step, href }: { step: SetupStep; href: string }): ReactE
           {!step.required && <Badge tone="neutral">{t("optional")}</Badge>}
         </span>
       }
-      meta={
-        showCount
-          ? `${tStep("description")} ${tStep("count", { count: step.count })}`
-          : tStep("description")
+      // The count sits at the row's end, where the meta's two-line clamp
+      // cannot cut it off on a phone.
+      meta={tStep("description")}
+      trailing={
+        showCount || step.done ? (
+          <>
+            {showCount && (
+              <span className="text-body-sm">{tStep("count", { count: step.count })}</span>
+            )}
+            {step.done && <span className="sr-only">{t("done")}</span>}
+          </>
+        ) : undefined
       }
-      trailing={step.done ? <span className="sr-only">{t("done")}</span> : undefined}
     />
   );
 }

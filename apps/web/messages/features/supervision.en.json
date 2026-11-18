@@ -173,6 +173,7 @@
     "scale": "Scale {min}–{max}",
     "averageOfScale": "Average {average} on a {min}–{max} scale",
     "scores": "Scores",
+    "criterionFallback": "Criterion {n}",
     "observerNotes": "Observer notes",
     "noNotes": "No notes.",
     "teacherResponse": "Teacher response",

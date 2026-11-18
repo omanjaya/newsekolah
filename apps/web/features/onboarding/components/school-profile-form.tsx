@@ -26,7 +26,12 @@ import {
   useUpdateSchoolProfileMutation,
 } from "../api";
 
-const TIMEZONES = ["Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura"];
+/** Indonesia's three zones: the IANA id is stored, the zone's own name is shown. */
+const TIMEZONES = [
+  { zone: "Asia/Jakarta", label: "wib" },
+  { zone: "Asia/Makassar", label: "wita" },
+  { zone: "Asia/Jayapura", label: "wit" },
+] as const;
 
 type EducationLevel = SchoolProfileWrite["education_level"];
 const EDUCATION_LEVELS: EducationLevel[] = ["sd", "smp", "sma", "smk", "other"];
@@ -65,6 +70,7 @@ function SchoolProfileForm({ initial }: { initial: TenantBranding }): ReactEleme
   const t = useTranslations("app.onboarding.profile");
   const tLevels = useTranslations("app.onboarding.levels");
   const tLocales = useTranslations("app.onboarding.locales");
+  const tZones = useTranslations("app.onboarding.timezones");
   const apiErrorMessage = useApiErrorMessage();
   const update = useUpdateSchoolProfileMutation();
   const [name, setName] = useState(initial.name);
@@ -107,16 +113,15 @@ function SchoolProfileForm({ initial }: { initial: TenantBranding }): ReactEleme
       {error && <Alert tone="danger" title={error} />}
       {saved && !error && <Alert tone="success" title={t("saved")} />}
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label={t("name")}>
+        <Field label={t("name")} required>
           <Input
             value={name}
             onChange={(e) => {
               setName(e.target.value);
             }}
-            required
           />
         </Field>
-        <Field label={t("educationLevel")}>
+        <Field label={t("educationLevel")} required>
           <Select
             options={EDUCATION_LEVELS.map((level) => ({ value: level, label: tLevels(level) }))}
             value={educationLevel}
@@ -128,7 +133,7 @@ function SchoolProfileForm({ initial }: { initial: TenantBranding }): ReactEleme
         </Field>
         <Field label={t("timezone")}>
           <Select
-            options={TIMEZONES.map((zone) => ({ value: zone, label: zone }))}
+            options={TIMEZONES.map(({ zone, label }) => ({ value: zone, label: tZones(label) }))}
             value={timezone}
             onValueChange={setTimezone}
             placeholder={t("pick")}
