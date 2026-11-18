@@ -209,7 +209,21 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
   ) : undefined;
 
   return (
-    <AppPage nav={<LibraryWorkspaceNav area="circulation" />} primaryAction={recordButton}>
+    <AppPage
+      nav={<LibraryWorkspaceNav area="circulation" />}
+      primaryAction={recordButton}
+      primaryActionCompact={
+        canRecord
+          ? {
+              icon: <Plus />,
+              label: t("record"),
+              onSelect: () => {
+                setRecording(true);
+              },
+            }
+          : undefined
+      }
+    >
       {memberUserId && (
         <Alert
           title={t("memberScope", { name: directoryMap.get(memberUserId)?.name ?? memberUserId })}

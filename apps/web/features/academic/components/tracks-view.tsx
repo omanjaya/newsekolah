@@ -149,6 +149,17 @@ export function TracksView({ page }: { page: HubPageProps }): ReactElement {
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("add"),
+              onSelect: () => {
+                open("new");
+              },
+            }
+          : undefined
+      }
     >
       <p className="text-body-sm text-fg-muted">{t("description")}</p>
       <DataTable

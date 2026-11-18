@@ -288,16 +288,15 @@ export function UsersView(): ReactElement {
     setIncludeArchivedParam("");
     resetPagination();
   };
+  const openCreate = () => {
+    setEditing("new");
+  };
   const addButton = (
-    <Button
-      icon={<Plus />}
-      onClick={() => {
-        setEditing("new");
-      }}
-    >
+    <Button icon={<Plus />} onClick={openCreate}>
       {t("actions.create")}
     </Button>
   );
+  const addCompact = { icon: <Plus />, label: t("actions.create"), onSelect: openCreate };
 
   return (
     // Viewport-fit: the table scrolls inside; the tabs are the area strip the roles page shares.
@@ -305,6 +304,7 @@ export function UsersView(): ReactElement {
       variant="fit"
       nav={<AcademicWorkspaceLinks area="users" />}
       primaryAction={canCreate ? addButton : undefined}
+      primaryActionCompact={canCreate ? addCompact : undefined}
       secondaryActions={
         canCreate
           ? [{ label: t("actions.import"), icon: <Upload />, href: "/school/users/import" }]

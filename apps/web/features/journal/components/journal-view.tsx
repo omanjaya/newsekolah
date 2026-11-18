@@ -229,6 +229,13 @@ export function JournalView(): ReactElement {
           {t("new")}
         </Button>
       }
+      primaryActionCompact={{
+        icon: <Plus />,
+        label: t("new"),
+        onSelect: () => {
+          setEditing("new");
+        },
+      }}
       secondaryActions={downloads}
     >
       <ReportExportDialog

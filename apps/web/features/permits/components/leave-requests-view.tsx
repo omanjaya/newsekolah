@@ -50,6 +50,17 @@ export function LeaveRequestsView(): ReactElement {
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canSubmit
+          ? {
+              icon: <Plus />,
+              label: t("submit"),
+              onSelect: () => {
+                setCreating(true);
+              },
+            }
+          : undefined
+      }
     >
       {canSubmit ? (
         <MyLeaveRequests

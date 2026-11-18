@@ -236,6 +236,17 @@ export function CatalogueView(): ReactElement {
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("addTitle"),
+              onSelect: () => {
+                setAdding(true);
+              },
+            }
+          : undefined
+      }
       secondaryActions={secondaryActions}
     >
       <div className="flex flex-col md:min-h-0 md:flex-1">

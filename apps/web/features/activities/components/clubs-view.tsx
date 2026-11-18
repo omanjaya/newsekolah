@@ -165,6 +165,17 @@ export function ClubsView(): ReactElement {
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("add"),
+              onSelect: () => {
+                setEditing("new");
+              },
+            }
+          : undefined
+      }
       secondaryActions={
         canManagePolicy
           ? [

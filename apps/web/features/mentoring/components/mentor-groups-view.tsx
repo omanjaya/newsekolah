@@ -153,6 +153,17 @@ export function MentorGroupsView({
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("add"),
+              onSelect: () => {
+                setEditing("new");
+              },
+            }
+          : undefined
+      }
       secondaryActions={
         canManage
           ? [

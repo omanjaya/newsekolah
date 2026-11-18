@@ -124,6 +124,9 @@ export function SupervisionCyclesView(): ReactElement {
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canManage ? { icon: <Plus />, label: t("add"), onSelect: startCreate } : undefined
+      }
     >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable

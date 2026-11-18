@@ -177,6 +177,17 @@ export function GradeLevelsView({ page }: { page: HubPageProps }): ReactElement 
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("add"),
+              onSelect: () => {
+                open("new");
+              },
+            }
+          : undefined
+      }
       secondaryActions={
         canManage
           ? [

@@ -113,6 +113,13 @@ export function StocktakeView(): ReactElement {
     <AppPage
       nav={<LibraryWorkspaceNav area="catalogue" />}
       primaryAction={startButton}
+      primaryActionCompact={{
+        icon: <Plus />,
+        label: t("startNew"),
+        onSelect: () => {
+          setStarting(true);
+        },
+      }}
       secondaryActions={shortcuts}
     >
       <DataTable

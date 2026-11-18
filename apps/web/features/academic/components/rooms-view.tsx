@@ -155,6 +155,17 @@ export function RoomsView({ page }: { page: HubPageProps }): ReactElement {
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("add"),
+              onSelect: () => {
+                open("new");
+              },
+            }
+          : undefined
+      }
     >
       <DataTable
         stateKey="features/academic/components/rooms-view:1"

@@ -232,6 +232,17 @@ export function MembersView(): ReactElement {
       variant="fit"
       nav={false}
       primaryAction={registerButton}
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("register"),
+              onSelect: () => {
+                setRegistering(true);
+              },
+            }
+          : undefined
+      }
       secondaryActions={secondaryActions}
     >
       <div className="flex flex-col md:min-h-0 md:flex-1">
