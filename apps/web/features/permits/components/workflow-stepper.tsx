@@ -41,30 +41,45 @@ function stageTimes(instance: WorkflowInstance): Map<string, string> {
 
 /**
  * The stages of one request as the shared `Stepper` (docs/07-ui-ux.md
- * section 3, Workflow): each stage with how it is verified and, once
- * acted on, when. A row from 640px up and a list on a phone, where the
- * row has no room for the times.
+ * section 3, Workflow): a stage still ahead says how it is verified, a
+ * finished one what came of it ("Disetujui", or the last stage's own
+ * outcome such as "Surat diterbitkan" when `finalOutcome` names it; the
+ * request's end, such as "Ditolak", where it stopped) and when. A row
+ * from 640px up and a list on a phone, where the row has no room for the
+ * times.
  */
 export function WorkflowSteps({
   instance,
   orientation,
+  finalOutcome,
   className,
 }: {
   instance: WorkflowInstance;
   orientation?: StepperProps["orientation"];
+  /** What the last stage produced once complete (a leave request's issued letter); "Disetujui" otherwise. */
+  finalOutcome?: string;
   className?: string;
 }): ReactElement {
   const t = useTranslations("app.permits.workflow");
   const locale = useLocale() as Locale;
   const { me } = useSession();
   const times = stageTimes(instance);
+  const lastIndex = instance.stages.length - 1;
   const steps: StepperStep[] = instance.stages.map((stage, index) => {
     const state = stageState(instance, index);
     const at = times.get(stage.key);
+    const description =
+      state === "complete"
+        ? index === lastIndex && finalOutcome
+          ? finalOutcome
+          : t("outcome.approved")
+        : state === "stopped"
+          ? t(`status.${instance.status}`)
+          : t(`verification.${stage.verification}`);
     return {
       id: stage.key,
       label: stage.label,
-      description: t(`verification.${stage.verification}`),
+      description,
       time:
         at && (state === "complete" || state === "stopped")
           ? formatShortDateTime(at, locale, me?.tenant.timezone)
@@ -83,7 +98,14 @@ export function WorkflowSteps({
 }
 
 /** Stage progress plus a status line; the detail dialogs and review forms use it. */
-export function WorkflowStepper({ instance }: { instance: WorkflowInstance }): ReactElement {
+export function WorkflowStepper({
+  instance,
+  finalOutcome,
+}: {
+  instance: WorkflowInstance;
+  /** Passed to `WorkflowSteps`: what the last stage produced once complete. */
+  finalOutcome?: string;
+}): ReactElement {
   const t = useTranslations("app.permits.workflow");
   return (
     <div className="flex flex-col gap-4">
@@ -95,7 +117,7 @@ export function WorkflowStepper({ instance }: { instance: WorkflowInstance }): R
           </span>
         )}
       </div>
-      <WorkflowSteps instance={instance} />
+      <WorkflowSteps instance={instance} finalOutcome={finalOutcome} />
     </div>
   );
 }

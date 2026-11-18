@@ -1400,6 +1400,9 @@
           "qr_scan": "QR scan",
           "manual": "Manual review",
           "auto": "Automatic"
+        },
+        "outcome": {
+          "approved": "Approved"
         }
       },
       "scan": {

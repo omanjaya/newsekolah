@@ -1400,6 +1400,9 @@
           "qr_scan": "Pindai QR",
           "manual": "Ditinjau langsung",
           "auto": "Otomatis"
+        },
+        "outcome": {
+          "approved": "Disetujui"
         }
       },
       "scan": {

@@ -88,4 +88,32 @@ describe("WorkflowSteps", () => {
     expect(second).toHaveAttribute("aria-current", "step");
     expect(second).not.toHaveTextContent("09.14");
   });
+
+  // A finished stage read "Ditinjau langsung", how it is verified, instead
+  // of what happened; only a stage still ahead says how it is verified.
+  it("says what came of a finished stage and how a stage ahead is verified", () => {
+    render(<WorkflowSteps instance={instance} />);
+    const [first, second] = screen.getAllByRole("listitem");
+    expect(first).toHaveTextContent("outcome.approved");
+    expect(first).not.toHaveTextContent("verification.qr_scan");
+    expect(second).toHaveTextContent("verification.qr_scan");
+  });
+
+  it("gives the last stage its own outcome once the request is done", () => {
+    render(
+      <WorkflowSteps
+        instance={{ ...instance, status: "completed" }}
+        finalOutcome="Surat diterbitkan"
+      />,
+    );
+    const [first, second] = screen.getAllByRole("listitem");
+    expect(first).toHaveTextContent("outcome.approved");
+    expect(second).toHaveTextContent("Surat diterbitkan");
+  });
+
+  it("says how the request ended at the stage where it stopped", () => {
+    render(<WorkflowSteps instance={{ ...instance, status: "rejected" }} />);
+    const [, second] = screen.getAllByRole("listitem");
+    expect(second).toHaveTextContent("status.rejected");
+  });
 });
