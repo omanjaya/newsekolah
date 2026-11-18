@@ -956,7 +956,7 @@
       "log": {
         "title": "Dicatat hari ini",
         "description": "Catatan manual dan tinjauan dari layar ini sejak dibuka.",
-        "empty": "Belum ada catatan dari layar ini.",
+        "empty": "Belum ada catatan dari layar ini",
         "kinds": {
           "exit": "Izin keluar dicatat",
           "late": "Keterlambatan dicatat",

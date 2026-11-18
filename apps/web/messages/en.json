@@ -956,7 +956,7 @@
       "log": {
         "title": "Recorded today",
         "description": "Manual records and reviews from this screen since it opened.",
-        "empty": "Nothing recorded from this screen yet.",
+        "empty": "Nothing recorded from this screen yet",
         "kinds": {
           "exit": "Exit permit recorded",
           "late": "Late arrival recorded",
