@@ -3,6 +3,7 @@
 import { ApiError } from "@newsekolah/api-client";
 import { Badge } from "@newsekolah/ui";
 import { Clock3 } from "lucide-react";
+import { useLocale } from "next-intl";
 import type { ReactElement } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
@@ -21,6 +22,7 @@ import { formatPeriodTime } from "../period-span";
  */
 export function ScheduleCurrentPeriodPill(): ReactElement | null {
   const year = useActiveYear();
+  const locale = useLocale();
   const query = usePeriodTodayQuery(year.id);
 
   if (query.isLoading || year.id === "") return null;
@@ -34,7 +36,7 @@ export function ScheduleCurrentPeriodPill(): ReactElement | null {
     <Badge variant={query.data.is_break ? "neutral" : "accent"} className="gap-1.5 py-1">
       <Clock3 className="size-3.5" aria-hidden="true" />
       <span>{query.data.name}</span>
-      <span className="tabular-nums">{formatPeriodTime(query.data)}</span>
+      <span className="tabular-nums">{formatPeriodTime(query.data, locale)}</span>
     </Badge>
   );
 }

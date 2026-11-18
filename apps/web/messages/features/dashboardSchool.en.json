@@ -3,9 +3,7 @@
     "hero": {
       "eyebrow": "Attendance right now",
       "title": "{submitted} of {total} classes have taken attendance",
-      "meta": "{pending} classes in session have not taken attendance yet",
       "action": "Open monitor",
-      "metaDone": "Every class in session has taken attendance",
       "reportsAction": "Open reports",
       "progressLabel": "Attendance in classes in session",
       "queueEyebrow": "Needs action",
@@ -18,8 +16,7 @@
     "tiles": {
       "sessions": "Classes with attendance",
       "pending": "Awaiting review",
-      "users": "Active users",
-      "online": "Online now"
+      "users": "Active users"
     },
     "queue": {
       "title": "School queue",

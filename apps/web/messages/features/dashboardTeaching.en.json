@@ -38,7 +38,6 @@
       "action": "Review leave requests",
       "empty": "No leave requests waiting",
       "noStatus": "No attendance data yet today",
-      "review": "Review",
       "statusTitle": "{className} attendance today",
       "statusTitleFallback": "Class attendance today",
       "statusLabel": "Attendance status today"

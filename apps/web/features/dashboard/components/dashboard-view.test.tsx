@@ -45,6 +45,7 @@ vi.mock("next-intl", () => ({
   useFormatter: () => ({ dateTime: () => "Sabtu, 26 September" }),
 }));
 
+import { resetHomeEntranceForTests } from "../home/entrance";
 import type { Me, PersonaBlock } from "../home/types";
 
 import { DashboardView } from "./dashboard-view";
@@ -186,6 +187,31 @@ describe("DashboardView", () => {
     expect(screen.queryByTestId("dashboard-tiles")).not.toBeInTheDocument();
   });
 
+  it("plays the staggered entrance on the first visit only", () => {
+    resetHomeEntranceForTests();
+    teacherBlock.mockReturnValue({ ...emptyBlock(), main: [slot("teacher", "Teacher main")] });
+
+    const first = render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-hero")).toHaveClass("animate-enter");
+    expect(screen.getByTestId("dashboard-card-teacher")).toHaveClass("animate-enter");
+    first.unmount();
+
+    // Coming back to the home: only the page template's own entrance plays.
+    render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-hero")).not.toHaveClass("animate-enter");
+    expect(screen.getByTestId("dashboard-card-teacher")).not.toHaveClass("animate-enter");
+  });
+
+  it("keeps the entrance for the first settled visit when the first one never loaded", () => {
+    resetHomeEntranceForTests();
+    teacherBlock.mockReturnValue({ ...emptyBlock(), pending: true });
+    render(<DashboardView />).unmount();
+
+    teacherBlock.mockReturnValue(emptyBlock());
+    render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-hero")).toHaveClass("animate-enter");
+  });
+
   it("shows only the top four tiles when the active blocks offer six", () => {
     teacherBlock.mockReturnValue({
       ...emptyBlock(),
@@ -202,9 +228,18 @@ describe("DashboardView", () => {
     expect(screen.queryByTestId("dashboard-tile-common.notifications")).not.toBeInTheDocument();
   });
 
-  it("keeps the notifications tile as the filler of an otherwise empty stat row", () => {
+  it("rounds out a short stat row with the notifications tile", () => {
+    teacherBlock.mockReturnValue({ ...emptyBlock(), tiles: [tile("t1", 90)] });
     render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-tile-t1")).toBeInTheDocument();
     expect(screen.getByTestId("dashboard-tile-common.notifications")).toBeInTheDocument();
+  });
+
+  it("shows no stat row when the notifications tile would stand alone", () => {
+    // The header bell already carries the count (the gate home has no figures).
+    render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-hero")).toBeInTheDocument();
+    expect(screen.queryByTestId("dashboard-tiles")).not.toBeInTheDocument();
   });
 
   it("puts task cards in the main column and context cards in the side column", () => {

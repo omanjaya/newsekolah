@@ -65,6 +65,8 @@ export function useLibrarianBlock(me: Me, active: boolean): PersonaBlock {
           summary.overdue > 0 ? t("hero.meta", { overdue: summary.overdue }) : t("hero.metaClear"),
         action: { label: t("hero.action"), href: CIRCULATION_DESK_HREF },
         secondaryAction: { label: t("hero.overviewAction"), href: LIBRARY_HREF },
+        // The title already counts today's loans and returns.
+        coversTiles: ["library.loansToday", "library.returnsToday"],
       }
     : undefined;
 

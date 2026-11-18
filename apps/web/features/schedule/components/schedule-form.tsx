@@ -11,7 +11,7 @@ import {
   Textarea,
   useToast,
 } from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
@@ -27,6 +27,7 @@ import {
   useReplaceScheduleBlockMutation,
   useScheduleQuery,
 } from "../api";
+import { clockLabel } from "../clock-label";
 import { useNamedConflict } from "../use-named-conflict";
 
 export function ScheduleForm({
@@ -55,11 +56,12 @@ export function ScheduleForm({
   const tSchedule = useTranslations("app.schedule");
   const tDays = useTranslations("app.common.weekdays");
   const tCommon = useTranslations("app.offlinePage");
+  const locale = useLocale();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
-  const teacherLabels = useDirectoryPickerLabels(t("pick"));
+  const teacherLabels = useDirectoryPickerLabels(tSchedule("pickTeacher"));
   const periods = usePeriodsQuery();
   const create = useCreateScheduleMutation();
   const replace = useReplaceScheduleBlockMutation();
@@ -101,7 +103,7 @@ export function ScheduleForm({
 
   const periodOptions = lessons.map((p) => ({
     value: p.id,
-    label: `${p.name} (${p.starts_at.slice(0, 5)})`,
+    label: `${p.name} (${clockLabel(p.starts_at, locale)})`,
   }));
 
   async function submit() {
@@ -165,7 +167,7 @@ export function ScheduleForm({
           options={(classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
           value={classId}
           onValueChange={setClassId}
-          placeholder={t("pick")}
+          placeholder={tSchedule("pickClass")}
         />,
       )}
       {field(
@@ -187,7 +189,7 @@ export function ScheduleForm({
         />,
       )}
       {/* The day on its own row, the two periods side by side, so a period
-          label ("Jam 1 (07:00)") never wraps inside its select. */}
+          label ("Jam 1 (07.00)") never wraps inside its select. */}
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           {field(

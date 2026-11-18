@@ -1,16 +1,7 @@
 "use client";
 
-import {
-  Badge,
-  Card,
-  CardHeader,
-  CardTitle,
-  EmptyState,
-  List,
-  ListRow,
-  TextLink,
-} from "@newsekolah/ui";
-import { CheckCheck, Inbox } from "lucide-react";
+import { Badge, Card, CardHeader, CardTitle, List, ListRow, TextLink } from "@newsekolah/ui";
+import { Inbox } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -94,10 +85,14 @@ export function useDeputyBlock(_me: Me, active: boolean): PersonaBlock {
           };
   }
 
-  block.main.push({
-    key: "deputy.queues",
-    node: <DeputyQueueCard summary={summary} queues={queues} />,
-  });
+  // With every queue empty the calm hero already says nothing waits, so the
+  // queue card is left out rather than repeating it.
+  if (summary.isLoading || summary.isError || summary.total > 0) {
+    block.main.push({
+      key: "deputy.queues",
+      node: <DeputyQueueCard summary={summary} queues={queues} />,
+    });
+  }
   return block;
 }
 
@@ -109,32 +104,25 @@ function DeputyQueueCard({
   queues: readonly Queue[];
 }): ReactElement {
   const t = useTranslations("app.dashboardDuty.deputy");
-  const allClear = !summary.isLoading && !summary.isError && summary.total === 0;
   return (
     <Card>
       <CardHeader action={<TextLink href={INBOX_HREF}>{t("cardAction")}</TextLink>}>
         <CardTitle as="h2">{t("cardTitle")}</CardTitle>
       </CardHeader>
-      {allClear ? (
-        <div className="px-5 pb-5">
-          <EmptyState variant="compact" icon={<CheckCheck />} title={t("empty")} />
-        </div>
-      ) : (
-        <List>
-          {queues.map(({ key, href }) => (
-            <ListRow
-              key={key}
-              href={href}
-              title={t(`queues.${key}`)}
-              trailing={
-                <Badge tone={summary[key] > 0 ? "warning" : "neutral"} size="sm">
-                  {summary.isLoading ? "–" : summary[key]}
-                </Badge>
-              }
-            />
-          ))}
-        </List>
-      )}
+      <List>
+        {queues.map(({ key, href }) => (
+          <ListRow
+            key={key}
+            href={href}
+            title={t(`queues.${key}`)}
+            trailing={
+              <Badge tone={summary[key] > 0 ? "warning" : "neutral"} size="sm">
+                {summary.isLoading ? "–" : summary[key]}
+              </Badge>
+            }
+          />
+        ))}
+      </List>
     </Card>
   );
 }

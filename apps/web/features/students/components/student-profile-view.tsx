@@ -13,7 +13,7 @@ import {
   domainIcons,
   type BreadcrumbItem,
 } from "@newsekolah/ui";
-import { MessagesSquare, Pencil } from "lucide-react";
+import { MessagesSquare, Pencil, Printer } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -27,7 +27,6 @@ import { canOpenPath } from "../../../lib/navigation-permissions";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useStudentRiskQuery } from "../../analytics/api";
-import { StudentDisciplineReportButton } from "../../discipline/components/student-discipline-view";
 import { useMentorStudentSnapshotQuery } from "../../mentoring/api";
 import { useClassesQuery } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
@@ -45,6 +44,7 @@ import {
   StudentLibraryTab,
   StudentPermitsTab,
 } from "./student-tab-panels";
+import { useOpenDisciplineReport } from "./use-discipline-report";
 
 const TAB_PANELS: Record<StudentProfileTab, (props: { studentId: string }) => ReactElement> = {
   overview: StudentOverviewTab,
@@ -75,6 +75,8 @@ export function StudentProfileView({ studentId }: { studentId: string }): ReactE
   const canDiscipline = useCan("view_discipline") && disciplineOn;
   const canCounsel = useCan("manage_counseling") && disciplineOn;
   const workspace = useTranslations("app.serviceWorkspace");
+  const tDiscipline = useTranslations("app.discipline.studentDetail");
+  const report = useOpenDisciplineReport();
   const [editing, setEditing] = useState(false);
 
   const { me } = useSession();
@@ -149,7 +151,6 @@ export function StudentProfileView({ studentId }: { studentId: string }): ReactE
           .filter(Boolean)
           .join(" · ") || undefined
       }
-      actions={canDiscipline ? <StudentDisciplineReportButton studentId={studentId} /> : undefined}
       primaryAction={
         canCounsel ? (
           <Button asChild icon={<MessagesSquare />}>
@@ -159,8 +160,22 @@ export function StudentProfileView({ studentId }: { studentId: string }): ReactE
           </Button>
         ) : undefined
       }
-      secondaryActions={
-        canEditUsers && user.data
+      // The printable report and "Ubah data" are the header's further
+      // actions: buttons of one size from 640px, one menu on a phone.
+      secondaryActions={[
+        ...(canDiscipline
+          ? [
+              {
+                label: tDiscipline("printReport"),
+                icon: <Printer />,
+                disabled: report.pending,
+                onSelect: () => {
+                  report.open(studentId);
+                },
+              },
+            ]
+          : []),
+        ...(canEditUsers && user.data
           ? [
               {
                 label: t("editData"),
@@ -170,8 +185,8 @@ export function StudentProfileView({ studentId }: { studentId: string }): ReactE
                 },
               },
             ]
-          : undefined
-      }
+          : []),
+      ]}
     >
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-6">
         <TabsList variant="underline" aria-label={t("tabsLabel")}>

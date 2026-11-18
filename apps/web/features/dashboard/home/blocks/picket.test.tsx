@@ -68,6 +68,22 @@ describe("usePicketBlock", () => {
     expect(result.current.hero?.secondaryAction?.href).toBe("/scan");
     expect(result.current.tiles.find((t) => t.key === "picket.late")?.value).toBe("0");
     expect(result.current.tiles.find((t) => t.key === "picket.exit")?.value).toBe("0");
+    // The calm hero and the zero tiles already say it: no empty queue card too.
+    expect(result.current.main).toEqual([]);
+  });
+
+  it("keeps the queue card, with both sections, while one queue has items", () => {
+    lateArrivalQueueQuery.mockReturnValue(refetchable({ data: { data: [] } }));
+    exitPermitReviewQueueQuery.mockReturnValue(
+      refetchable({ data: { data: [{ instance_id: "e1", student_name: "Siswa E" }] } }),
+    );
+
+    const { result } = renderHook(() => usePicketBlock(me, true));
+
+    expect(result.current.main.map((slot) => slot.key)).toEqual(["picket.queue"]);
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
+    expect(screen.getByText("picket.lateEmpty")).toBeInTheDocument();
+    expect(screen.getByText("Siswa E")).toBeInTheDocument();
   });
 
   it("raises a hero pointing at the late-arrival queue, with the duty QR beside it", () => {

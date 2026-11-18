@@ -212,7 +212,7 @@ export function ScheduleMobileAgenda({
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="flex items-center gap-1.5">
                     <span className="truncate text-heading">{subject}</span>
-                    {blockCrossesBreak(block, lessonPeriods) && (
+                    {canManage && blockCrossesBreak(block, lessonPeriods) && (
                       <span
                         role="img"
                         aria-label={t("crossesBreakWarning")}

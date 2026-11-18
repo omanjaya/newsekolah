@@ -69,7 +69,9 @@ export function MonthlyReportTab(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end gap-3">
+      {/* Two by two on a phone (class and student, then month and the
+          download); one row from 640px, the download at its end. */}
+      <div className="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
         <Field label={t("class")}>
           <Select
             options={classOptions(classes.data?.data)}

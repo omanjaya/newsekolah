@@ -5,10 +5,10 @@
   "title": "Bills and payments",
   "tabsLabel": "Bills and payments sections",
   "tabs": {
-    "desk": "Payment desk",
+    "desk": "Desk",
     "bills": "Bills",
     "feeTypes": "Fee types",
-    "generate": "Issue bills",
+    "generate": "Issuing",
     "arrears": "Arrears"
   },
   "feeTypes": {

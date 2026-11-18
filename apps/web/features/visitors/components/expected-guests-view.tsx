@@ -187,7 +187,9 @@ export function ExpectedGuestsView(): ReactElement {
       variant="fit"
       nav={<VisitorsWorkspaceNav />}
       documentTitle={t("documentTitle")}
-      actions={
+      // The day acts on the list, so it is the toolbar, under the tabs: the
+      // tab row then sits at the same height on every Buku tamu page.
+      toolbar={
         <DayStepper
           value={date}
           onChange={setDate}
