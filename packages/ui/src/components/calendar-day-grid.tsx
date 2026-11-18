@@ -339,18 +339,14 @@ function DayContent({
       )}
     >
       {info.day}
-      {/* Compact cells have room under the number for either the today
-          dot or the caller's markers, not both; markers win. */}
-      {!fluid && (showExtra || info.today) && (
+      {/* The dot slot under the number is for the caller's markers only;
+          today is marked by weight and accent colour above. */}
+      {!fluid && showExtra && (
         <span
           aria-hidden="true"
           className="absolute inset-x-0 bottom-1 flex justify-center gap-0.5"
         >
-          {showExtra ? (
-            extra
-          ) : (
-            <span className={cn("size-1 rounded-full", filled ? "bg-accent-fg" : "bg-accent")} />
-          )}
+          {extra}
         </span>
       )}
     </span>
