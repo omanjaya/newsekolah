@@ -125,7 +125,18 @@ function MyExitPermits(): ReactElement {
   const [openId, setOpenId] = useState<string | null>(null);
   const items = data?.data ?? [];
   const active = items.find(isActive);
-  const history = items.filter((item) => item !== active);
+  // The permit the status card showed last. The gate scan completes it,
+  // so it is no longer active; the card stays on it so that its exited
+  // state ("Sudah keluar", with the time) answers the scan, instead of the
+  // page dropping back to the idle prompt under the student's eyes. A
+  // cancelled permit still leaves the card, and a fresh visit starts idle.
+  const [cardId, setCardId] = useState<string | null>(null);
+  if (active && active.id !== cardId) setCardId(active.id);
+  const exited = active
+    ? undefined
+    : items.find((item) => item.id === cardId && item.status === "completed");
+  const onCard = active ?? exited;
+  const history = items.filter((item) => item !== onCard);
   const timeZone = me?.tenant.timezone;
 
   return (
@@ -141,8 +152,8 @@ function MyExitPermits(): ReactElement {
         <QueryError retry={() => refetch()} />
       ) : (
         <>
-          {active ? (
-            <ActiveExitPermitCard id={active.id} />
+          {onCard ? (
+            <ActiveExitPermitCard id={onCard.id} />
           ) : (
             <EmptyState
               icon={<domainIcons.exitPermit aria-hidden="true" />}

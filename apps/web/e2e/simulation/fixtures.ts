@@ -1,4 +1,4 @@
-import { expect, test as base } from "@playwright/test";
+import { expect, request, test as base } from "@playwright/test";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 
 import { assertBaseUrlAllowed } from "./guard";
@@ -46,20 +46,33 @@ async function fillLoginForm(page: Page, username: string): Promise<void> {
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
 }
 
+const LOGIN_PATH = "/v1/auth/login";
+
 /**
  * Logs `username` in through the real login page on a brand new browser
  * context, and returns the ready-to-use page once /dashboard has
  * actually stuck (mirrors apps/web/e2e/smoke/roles/*.setup.ts's
  * landedOnDashboard: a cold dev server can bounce the very first login
  * back to /login a moment after landing on /dashboard).
+ *
+ * `apiBase` is the API the app talks to (its NEXT_PUBLIC_API_URL, baked
+ * into the build), as the login request saw it, so a spec that sets data
+ * up through the API ({@link apiAs}) reaches the same one without naming
+ * a host or port of its own.
  */
 export async function loginAs(
   browser: Browser,
   username: string,
   options?: { viewport?: { width: number; height: number } },
-): Promise<{ context: BrowserContext; page: Page }> {
+): Promise<{ context: BrowserContext; page: Page; apiBase: string }> {
   const context = await browser.newContext({ viewport: options?.viewport });
   const page = await context.newPage();
+  let apiBase = "";
+  page.on("request", (req) => {
+    if (req.method() === "POST" && req.url().endsWith(LOGIN_PATH)) {
+      apiBase = req.url().slice(0, -LOGIN_PATH.length);
+    }
+  });
 
   async function attempt(): Promise<boolean> {
     await page.goto("/login");
@@ -79,7 +92,48 @@ export async function loginAs(
   if (!ok) {
     throw new Error(`login as "${username}" never reached a stable /dashboard`);
   }
-  return { context, page };
+  expect(apiBase, `the login request of "${username}" was not seen`).not.toBe("");
+  return { context, page, apiBase };
+}
+
+/** A signed-in API client: JSON in, JSON out, and any non-2xx answer fails the test. */
+export interface ApiSession {
+  get<T>(path: string): Promise<T>;
+  post<T>(path: string, data?: unknown): Promise<T>;
+  dispose(): Promise<void>;
+}
+
+/**
+ * Signs `username` in to the API itself (no browser), for the setup a
+ * scenario cannot do from its own actors' screens -- see
+ * exit-permit.spec.ts. `apiBase` comes from {@link loginAs}.
+ */
+export async function apiAs(apiBase: string, username: string): Promise<ApiSession> {
+  const client = await request.newContext();
+  const login = await client.post(`${apiBase}${LOGIN_PATH}`, {
+    data: { username, password: PASSWORD, client: "web" },
+  });
+  expect(login.status(), `API login as "${username}"`).toBe(200);
+  const { access_token: token } = (await login.json()) as { access_token: string };
+
+  async function call<T>(method: "GET" | "POST", path: string, data?: unknown): Promise<T> {
+    const res = await client.fetch(`${apiBase}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${token}` },
+      data,
+    });
+    expect(
+      res.ok(),
+      `${method} ${path} answered ${String(res.status())}: ${await res.text()}`,
+    ).toBe(true);
+    return (res.status() === 204 ? undefined : await res.json()) as T;
+  }
+
+  return {
+    get: (path) => call("GET", path),
+    post: (path, data) => call("POST", path, data),
+    dispose: () => client.dispose(),
+  };
 }
 
 /** Closes every context in `pages`, best-effort, so a failing assertion earlier does not leak browser processes. */
