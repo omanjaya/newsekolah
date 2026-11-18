@@ -91,6 +91,13 @@ export function LearningView(): ReactElement {
             {tSubjects("add")}
           </Button>
         }
+        primaryActionCompact={{
+          icon: <Plus />,
+          label: tSubjects("add"),
+          onSelect: () => {
+            setAddingSubject(true);
+          },
+        }}
       >
         <SubjectsView adding={addingSubject} onAddingChange={setAddingSubject} />
       </AppPage>
