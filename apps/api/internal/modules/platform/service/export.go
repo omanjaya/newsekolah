@@ -35,7 +35,7 @@ type ExportView struct {
 // it in object storage, mirroring how the reports module builds and
 // stores a spreadsheet export.
 func (s *Service) RequestExport(ctx context.Context, tenantID uuid.UUID) (domain.Export, error) {
-	if err := s.guard(); err != nil {
+	if err := s.guardMulti(); err != nil {
 		return domain.Export{}, err
 	}
 	if s.storage == nil {
@@ -67,7 +67,7 @@ func (s *Service) RequestExport(ctx context.Context, tenantID uuid.UUID) (domain
 // GetExport reports one export's status and, once it is done, a
 // time-limited download URL.
 func (s *Service) GetExport(ctx context.Context, tenantID, exportID uuid.UUID) (ExportView, error) {
-	if err := s.guard(); err != nil {
+	if err := s.guardMulti(); err != nil {
 		return ExportView{}, err
 	}
 	var (

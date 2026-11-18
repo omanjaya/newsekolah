@@ -26,6 +26,8 @@ export function OpacHighlights(): ReactElement | null {
     );
   }
 
+  // A failed read, MODULE_DISABLED included, leaves no data: the block is
+  // supplementary, so it steps aside and the search below reports the state.
   if (!data || (data.newest.length === 0 && data.most_borrowed.length === 0)) {
     return null;
   }

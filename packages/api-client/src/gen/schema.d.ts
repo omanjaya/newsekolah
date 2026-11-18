@@ -6564,7 +6564,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List every tenant with a health summary */
+        /**
+         * List every tenant with a health summary
+         * @description In single-tenant mode only the deployment's own school is listed, and its detail and module flags are the only ones the console can read or change. Creating, suspending or resuming a tenant, setting a custom domain and tenant exports answer 409 PLATFORM_TENANCY_DISABLED in that mode; tenancy_mode tells the console which actions to offer.
+         */
         get: operations["listPlatformTenants"];
         put?: never;
         /** Provision a new tenant and its first administrator */
@@ -11319,8 +11322,16 @@ export interface components {
         PlatformEducationLevel: "sd" | "smp" | "sma" | "smk";
         /** @enum {string} */
         PlatformTenantStatus: "trial" | "active" | "suspended" | "offboarding";
-        /** @enum {string} */
-        PlatformModule: "library" | "discipline" | "grading" | "permits" | "announcements" | "reports" | "billing";
+        /**
+         * @description How the deployment runs. single: one school, the console manages only that school's modules. multi: the full tenant console.
+         * @enum {string}
+         */
+        PlatformTenancyMode: "single" | "multi";
+        /**
+         * @description Every toggleable feature module, in the order the console shows them (platform domain.AllModules; a Go test keeps the two equal).
+         * @enum {string}
+         */
+        PlatformModule: "library" | "discipline" | "grading" | "permits" | "announcements" | "reports" | "activities" | "mentoring" | "supervision" | "staff_attendance" | "visitors" | "billing";
         PlatformTenant: {
             /** Format: uuid */
             id: string;
@@ -11345,6 +11356,7 @@ export interface components {
             enabled: boolean;
         };
         PlatformTenantDetail: components["schemas"]["PlatformTenantHealth"] & {
+            /** @description The effective state of every PlatformModule, in enum order; a module the tenant never switched off is reported as enabled. */
             flags: components["schemas"]["PlatformModuleFlag"][];
         };
         PlatformTenantCreate: {
@@ -25715,6 +25727,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["PlatformTenantHealth"][];
+                        tenancy_mode: components["schemas"]["PlatformTenancyMode"];
                     };
                 };
             };

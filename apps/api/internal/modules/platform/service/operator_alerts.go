@@ -3,11 +3,12 @@
 // script (infra/scripts/monitor.sh) reads through the internal
 // GET /internal/monitor-config endpoint (cmd/api/monitor_config.go), and a
 // platform superadmin configures from the console instead of editing files
-// on the server. Unlike every other method in this package, these methods
-// never call s.guard(): the deployment being monitored exists whether the
-// install itself is single-tenant or multi-tenant, so operator alerting
-// must work in both (docs/12-roadmap.md's tenancy guard is about the
-// cross-tenant tenant-management console, not this).
+// on the server. These methods are neither refused by s.guardMulti() nor
+// scoped by s.scopeSingle(): the deployment being monitored exists whether
+// the install itself is single-tenant or multi-tenant, so operator alerting
+// must work in both, and it is platform-wide rather than per tenant
+// (docs/12-roadmap.md's tenancy guard is about the cross-tenant
+// tenant-management console, not this).
 package service
 
 import (

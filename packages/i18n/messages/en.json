@@ -343,6 +343,17 @@
     "LEAVE_DATE_RANGE_INVALID": "The end date cannot be before the start date.",
     "LEAVE_REQUEST_GUARDIAN_NOT_LINKED": "You are not registered as a guardian who can submit a leave request for this student.",
     "HOMEROOM_TEACHER_REQUIRED": "This student's class has no active homeroom teacher yet, so a leave request cannot be submitted. Contact the school.",
-    "WORKFLOW_ALREADY_IN_PROGRESS": "This student already has a leave request in progress today."
+    "WORKFLOW_ALREADY_IN_PROGRESS": "This student already has a leave request in progress today.",
+    "PLATFORM_TENANCY_DISABLED": "This action is only available on a multi-school deployment.",
+    "PLATFORM_TENANT_NOT_FOUND": "School not found.",
+    "PLATFORM_SLUG_TAKEN": "This slug is already used by another school.",
+    "PLATFORM_DOMAIN_TAKEN": "This domain is already used by another school.",
+    "PLATFORM_UNKNOWN_MODULE": "Unknown module.",
+    "PLATFORM_EXPORT_NOT_FOUND": "Export not found.",
+    "PLATFORM_STORAGE_DISABLED": "File storage is not configured.",
+    "PLATFORM_TELEGRAM_TOKEN_MISSING": "The Telegram bot token is missing.",
+    "PLATFORM_TELEGRAM_CHAT_MISSING": "The Telegram chat ID is missing.",
+    "PLATFORM_TELEGRAM_UNREACHABLE": "The server could not reach Telegram. Try again later.",
+    "PLATFORM_TELEGRAM_API_ERROR": "Telegram rejected the request. Check the bot token and chat ID."
   }
 }

@@ -147,6 +147,18 @@ Sisa dari pekerjaan ini: redesain layar per peran di web, sekitar 20 layar mobil
 - Test e2e presensi kepala sekolah dilewati hanya pada 00.00-07.00 WITA, saat jadwal seed memang tidak punya kelas berjalan.
 - Live di staging dan production (commit `949968a`).
 
+## Pembaruan 18 November: on/off modul oleh superadmin
+
+Audit menyeluruh alur menyalakan dan mematikan modul (backend, konsol superadmin, dan layar yang memakai modul) menemukan 18 bug terkonfirmasi. Semuanya diperbaiki.
+
+- **Konsol di mode single-tenant.** Production berjalan dengan `TENANCY_MODE=single`, dan selama ini setiap panggilan konsol ditolak dengan 409. Akibatnya superadmin di production tidak bisa mengubah modul sama sekali. Kini daftar sekolah, detail, serta baca dan ubah flag modul berjalan di mode single, terbatas pada sekolah milik request; sekolah lain dijawab 404. Tambah sekolah, suspend, resume, domain kustom, dan ekspor tetap khusus mode multi. `GET /v1/platform/tenants` kini mengembalikan `tenancy_mode`, dan web memakainya untuk menyembunyikan aksi yang khusus mode multi.
+- **Dua belas modul.** Enum OpenAPI `PlatformModule` dan konsol web sebelumnya hanya berisi 7 modul. Kegiatan, Guru Wali, Supervisi, Presensi pegawai, dan Tamu tidak bisa diubah, bahkan ditolak validator di mode enforce. Daftar konsol kini diambil dari `FEATURE_MODULES`. Test menjaga enum, `AllModules`, `FEATURE_MODULES`, dan label i18n tetap sama.
+- **Detail sekolah** melaporkan status efektif tiap modul. Modul tanpa baris tersimpan dihitung menyala.
+- **Switch konsol.** Saat menyimpan, switch menampilkan status yang diminta, terkunci, dan memberi toast per modul. Switch kini punya nama aksesibel. Field domain terisi dari nilai tersimpan. Semua kode error `PLATFORM_*` sudah diterjemahkan.
+- **Sesi ikut berubah.** Setelah toggle, sesi (`Me.disabled_modules`) dan branding publik dimuat ulang, jadi sidebar dan gerbang rute langsung mengikuti. Respons `MODULE_DISABLED` juga memuat ulang keduanya. Halaman "modul tidak tersedia" punya tombol "Periksa lagi", dan sesi dimuat ulang tiap 60 detik selama ada modul yang mati.
+- **Notifikasi** dari modul yang mati disembunyikan dari inbox, jumlah belum dibaca, digest, dan tandai-semua-dibaca. Tidak ada yang dihapus, jadi notifikasi kembali muncul saat modul dinyalakan lagi.
+- **Lain-lain.** Templat dokumen tidak lagi tertutup hanya karena izin, kesiswaan, atau tamu dimatikan. OPAC menampilkan status "tidak tersedia" alih-alih katalog kosong. Jenis notifikasi kesiswaan dan perpustakaan kini terdaftar di web. Kolom "Aktivitas terakhir" di konsol kini memakai format Indonesia dan zona waktu sekolah, bukan format bawaan browser.
+
 ## Yang tersisa
 
 Diurutkan dari yang paling berdampak bagi pengguna.

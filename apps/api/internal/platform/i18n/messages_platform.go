@@ -1,7 +1,7 @@
 package i18n
 
 func init() {
-	catalog["PLATFORM_TENANCY_DISABLED"] = map[string]string{Indonesian: "Konsol platform tidak tersedia pada mode single-tenant.", English: "The platform console is unavailable in single-tenant mode."}
+	catalog["PLATFORM_TENANCY_DISABLED"] = map[string]string{Indonesian: "Tindakan ini hanya tersedia bila platform melayani banyak sekolah (mode multi-tenant).", English: "This action is only available when the platform serves several schools (multi-tenant mode)."}
 	catalog["PLATFORM_TENANT_NOT_FOUND"] = map[string]string{Indonesian: "Sekolah tidak ditemukan.", English: "Tenant not found."}
 	catalog["PLATFORM_SLUG_TAKEN"] = map[string]string{Indonesian: "Slug sekolah ini sudah dipakai.", English: "This tenant slug is already in use."}
 	catalog["PLATFORM_DOMAIN_TAKEN"] = map[string]string{Indonesian: "Domain ini sudah dipakai sekolah lain.", English: "This domain is already in use by another tenant."}

@@ -17,10 +17,11 @@ import (
 )
 
 // TestOperatorFlagMethodsWorkInSingleTenantMode covers the operator-tooling
-// path cmd/modules uses: it works where the console path is refused
-// (TENANCY_MODE=single, which keeps the console guarded), rejects a list
-// containing an unknown module without writing any of it, skips modules
-// already in the requested state, and audits only actual changes.
+// path cmd/modules uses: it works in TENANCY_MODE=single without an HTTP
+// request behind it, where the console path (scoped to the request's own
+// tenant) finds no tenant at all, rejects a list containing an unknown
+// module without writing any of it, skips modules already in the requested
+// state, and audits only actual changes.
 func TestOperatorFlagMethodsWorkInSingleTenantMode(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()
@@ -31,9 +32,9 @@ func TestOperatorFlagMethodsWorkInSingleTenantMode(t *testing.T) {
 	svc := Register(Dependencies{Pool: pg.AppPool, Clock: clock.Real{}, Mode: config.TenancySingle}).Service
 
 	_, err = svc.ListFlags(ctx, tenant.ID)
-	require.ErrorIs(t, err, domain.ErrTenancyDisabled, "the console path stays guarded")
+	require.ErrorIs(t, err, domain.ErrTenantNotFound, "the console path needs the request's own tenant")
 	_, err = svc.SetFlag(ctx, tenant.ID, "library", false)
-	require.ErrorIs(t, err, domain.ErrTenancyDisabled, "the console path stays guarded")
+	require.ErrorIs(t, err, domain.ErrTenantNotFound, "the console path needs the request's own tenant")
 
 	var notified []uuid.UUID
 	svc.OnFlagChanged(func(id uuid.UUID) { notified = append(notified, id) })

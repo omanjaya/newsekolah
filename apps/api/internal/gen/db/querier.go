@@ -326,6 +326,7 @@ type Querier interface {
 	CountTitlesActive(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	CountTitlesAddedInPeriod(ctx context.Context, arg CountTitlesAddedInPeriodParams) (int32, error)
 	CountUnpaidViolations(ctx context.Context, arg CountUnpaidViolationsParams) (int32, error)
+	// hidden_kinds: see ListNotificationsForUser.
 	CountUnreadNotifications(ctx context.Context, arg CountUnreadNotificationsParams) (int64, error)
 	CountUsersForRole(ctx context.Context, arg CountUsersForRoleParams) (int64, error)
 	CountVisitsBetween(ctx context.Context, arg CountVisitsBetweenParams) (int32, error)
@@ -1214,6 +1215,10 @@ type Querier interface {
 	ListMembershipsForClub(ctx context.Context, arg ListMembershipsForClubParams) ([]ExtracurricularMembership, error)
 	ListMembershipsForStudent(ctx context.Context, arg ListMembershipsForStudentParams) ([]ListMembershipsForStudentRow, error)
 	ListNotificationPreferencesForUser(ctx context.Context, arg ListNotificationPreferencesForUserParams) ([]NotificationPreference, error)
+	// hidden_kinds are the kinds of every module the tenant switched off
+	// (notifications domain.HiddenKinds): those rows stay stored but are left
+	// out of the inbox, the unread count and the digest until the module is
+	// switched on again. An empty array hides nothing.
 	ListNotificationsForUser(ctx context.Context, arg ListNotificationsForUserParams) ([]Notification, error)
 	// The gate board: everyone who has not signed out, oldest arrival first.
 	ListOnCampus(ctx context.Context, tenantID uuid.UUID) ([]VisitorVisit, error)
@@ -1348,7 +1353,8 @@ type Querier interface {
 	// service layer never has to N+1 master data lookups per row.
 	ListTitlesForExport(ctx context.Context, tenantID uuid.UUID) ([]ListTitlesForExportRow, error)
 	// Feeds the daily digest job: notifications created since the recipient's
-	// last digest run, still unread at digest time.
+	// last digest run, still unread at digest time. hidden_kinds: see
+	// ListNotificationsForUser.
 	ListUnreadNotificationsSince(ctx context.Context, arg ListUnreadNotificationsSinceParams) ([]Notification, error)
 	// cross-module read: roles/user_roles tables are owned by the identity module.
 	ListUserIDsByRoleSlugs(ctx context.Context, arg ListUserIDsByRoleSlugsParams) ([]uuid.UUID, error)
@@ -1408,6 +1414,8 @@ type Querier interface {
 	LoginHistogramByHour(ctx context.Context, arg LoginHistogramByHourParams) ([]LoginHistogramByHourRow, error)
 	LookupLibraryCopies(ctx context.Context, arg LookupLibraryCopiesParams) ([]LookupLibraryCopiesRow, error)
 	LookupLibraryMembers(ctx context.Context, arg LookupLibraryMembersParams) ([]LookupLibraryMembersRow, error)
+	// Leaves hidden_kinds unread (see ListNotificationsForUser): the caller only
+	// marks what it can see, so a switched-off module's items come back unread.
 	MarkAllNotificationsRead(ctx context.Context, arg MarkAllNotificationsReadParams) error
 	MarkAnnouncementRead(ctx context.Context, arg MarkAnnouncementReadParams) error
 	MarkDigestSent(ctx context.Context, arg MarkDigestSentParams) error

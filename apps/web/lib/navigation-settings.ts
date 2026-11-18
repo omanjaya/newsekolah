@@ -15,7 +15,7 @@ import {
 
 import type { NavItem } from "./navigation";
 import { NAV_GROUP } from "./navigation-groups";
-import { DOCUMENT_TEMPLATE_SECTIONS, REPORT_SECTIONS } from "./navigation-sections";
+import { REPORT_SECTIONS } from "./navigation-sections";
 
 /**
  * Settings, reporting and platform entries, split out of `navigation.ts`
@@ -152,9 +152,10 @@ export const settingsNavItems: NavItem[] = [
     key: "settings-document-templates",
     labelKey: "app.documents.templates.navLabel",
     href: "/settings/document-templates",
-    // Templates are shared by every issuing module; the screen itself hides
-    // the kinds whose module is off.
-    moduleSections: DOCUMENT_TEMPLATE_SECTIONS,
+    // No module gate: templates are shared by every issuing module and the
+    // class journal kind belongs to no toggleable module, so the screen is
+    // always usable. It filters the kinds itself through
+    // `availableTemplateKinds`, and the API leaves switched-off kinds out.
     icon: domainIcons.document,
     permission: "manage_settings",
     group: NAV_GROUP.settings,

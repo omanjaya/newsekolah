@@ -12,9 +12,10 @@ import (
 // ListFlags reports which modules are on for a tenant, filling in every
 // unlisted module as enabled: feature_flags is opt-out (a tenant with no
 // row for a module still runs it), so the console must show that default
-// explicitly rather than a silent gap.
+// explicitly rather than a silent gap. In single-tenant mode only the
+// deployment's own tenant is in scope (see scopeSingle).
 func (s *Service) ListFlags(ctx context.Context, tenantID uuid.UUID) ([]domain.ModuleFlag, error) {
-	if err := s.guard(); err != nil {
+	if err := s.scopeSingle(ctx, tenantID); err != nil {
 		return nil, err
 	}
 	if _, ok, err := s.repo.GetTenant(ctx, tenantID); err != nil {
@@ -32,28 +33,41 @@ func (s *Service) ListFlags(ctx context.Context, tenantID uuid.UUID) ([]domain.M
 	if err != nil {
 		return nil, err
 	}
+	return effectiveFlags(stored), nil
+}
 
+// effectiveFlags expands a tenant's stored feature_flags rows to one entry
+// per module in domain.AllModules order: the row's value when there is
+// one, otherwise enabled (feature_flags is opt-out). A row for a module
+// outside AllModules (a legacy or mistyped name) is dropped, so a module
+// the console cannot toggle never leaves the service.
+func effectiveFlags(stored []domain.ModuleFlag) []domain.ModuleFlag {
 	byModule := make(map[string]bool, len(stored))
 	for _, f := range stored {
 		byModule[f.Module] = f.Enabled
 	}
+	return effectiveFlagsFromMap(byModule)
+}
+
+// effectiveFlagsFromMap is effectiveFlags for rows already keyed by module.
+func effectiveFlagsFromMap(stored map[string]bool) []domain.ModuleFlag {
 	out := make([]domain.ModuleFlag, len(domain.AllModules))
 	for i, m := range domain.AllModules {
-		enabled, ok := byModule[string(m)]
+		enabled, ok := stored[string(m)]
 		if !ok {
 			enabled = true
 		}
 		out[i] = domain.ModuleFlag{Module: string(m), Enabled: enabled}
 	}
-	return out, nil
+	return out
 }
 
 // IsModuleEnabled is the enforcement point other modules call, through a
 // wiring adapter, before running an operation gated by a feature flag
 // (docs/12-roadmap.md Fase 6: "setiap modul masuk sebagai feature flag").
-// Unlike ListFlags/SetFlag it is not guarded to multi-tenant mode: a
-// single-tenant deployment still has one tenant row and its flags still
-// apply, so a Fase 6 module stays toggleable even before Fase 3 ships.
+// Unlike ListFlags/SetFlag it is not scoped to the request's tenant: other
+// modules and background jobs call it for whichever tenant they work on,
+// in both tenancy modes.
 func (s *Service) IsModuleEnabled(ctx context.Context, tenantID uuid.UUID, module string) (bool, error) {
 	m := domain.Module(module)
 	if !m.Valid() {
@@ -142,9 +156,10 @@ func recordFlagChange(ctx context.Context, tenantID uuid.UUID, m domain.Module, 
 // the module's effective state writes one audit_logs row in the same
 // transaction (see recordFlagChange); one that sets the state the module
 // already had writes none, the same rule as the operator CLI. The flag-change
-// observer is told either way, as before.
+// observer is told either way, as before. In single-tenant mode only the
+// deployment's own tenant is in scope (see scopeSingle).
 func (s *Service) SetFlag(ctx context.Context, tenantID uuid.UUID, module string, enabled bool) (domain.ModuleFlag, error) {
-	if err := s.guard(); err != nil {
+	if err := s.scopeSingle(ctx, tenantID); err != nil {
 		return domain.ModuleFlag{}, err
 	}
 	m := domain.Module(module)

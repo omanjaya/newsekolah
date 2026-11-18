@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { canOpenPathFixture, navAccessFixture } from "./navigation-access.fixture";
+import { FEATURE_MODULES } from "./modules/feature-modules";
+import { navigation } from "./navigation";
+import {
+  canOpenPathFixture,
+  filterNavigationFixture,
+  navAccessFixture,
+} from "./navigation-access.fixture";
 import { pathAccess } from "./navigation-permissions";
 
 const grants =
@@ -84,5 +90,34 @@ describe("pathAccess with disabled modules", () => {
     expect(pathAccess("/billing", access)).toBe("ok");
     expect(pathAccess("/school/classes", access)).toBe("ok");
     expect(pathAccess("/not-in-the-registry", access)).toBe("ok");
+  });
+});
+
+describe("pathAccess for document templates", () => {
+  const settingsOnly = grants("manage_settings");
+  const templatesAccess = (can: (permission: string) => boolean, disabled: string[]) =>
+    pathAccess("/settings/document-templates", navAccessFixture(can, "staff", [], disabled));
+  const listed = (disabled: string[]) =>
+    filterNavigationFixture(navigation, settingsOnly, "staff", [], disabled).some(
+      (item) => item.key === "settings-document-templates",
+    );
+
+  // The class journal kind belongs to no toggleable module, so the screen
+  // always has a kind to edit; it filters the others through
+  // availableTemplateKinds.
+  it("stays open and listed with every feature module off", () => {
+    const disabled = [...FEATURE_MODULES];
+    expect(templatesAccess(settingsOnly, disabled)).toBe("ok");
+    expect(listed(disabled)).toBe(true);
+  });
+
+  it("stays open and listed with permits, discipline and visitors off", () => {
+    const disabled = ["permits", "discipline", "visitors"];
+    expect(templatesAccess(settingsOnly, disabled)).toBe("ok");
+    expect(listed(disabled)).toBe(true);
+  });
+
+  it("still needs manage_settings", () => {
+    expect(templatesAccess(grants(), [])).toBe("forbidden");
   });
 });

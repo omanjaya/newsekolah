@@ -43,7 +43,7 @@ Sistem eksternal: Dapodik (import Excel), e-Rapor (ekspor XLSX), Google Workspac
 | Identitas       | Pengguna milik satu tenant (`UNIQUE (tenant_id, username)`, `UNIQUE (tenant_id, email)`). Orang tua dengan anak di dua sekolah mempunyai dua akun; penggabungan identitas global adalah pekerjaan fase lanjut |
 | Konfigurasi     | `tenant_settings` bertipe (JSON Schema per kunci) + `platform_settings` default; feature flag per tenant per modul                                                                                            |
 | Isolasi lain    | Prefix `tenant_id` di kunci Redis, path S3 `tenants/<id>/...`, job queue args, log dan metrik berlabel tenant                                                                                                 |
-| Mode self-host  | `TENANCY_MODE=single` membuat satu tenant saat bootstrap dan mematikan konsol platform; kode sama                                                                                                             |
+| Mode self-host  | `TENANCY_MODE=single` membuat satu tenant saat bootstrap; konsol platform hanya mengelola sekolah itu (detail dan on/off modul), aksi multi-tenant ditolak; kode sama                                         |
 | Offboarding     | Ekspor lengkap (SQL + file) dan penghapusan terjadwal per tenant sebagai fitur konsol                                                                                                                         |
 
 ## 4. Komponen

@@ -26,6 +26,10 @@ type Dependencies struct {
 	Contacts service.ContactReader     // nil: email and WhatsApp channels have no address to send to
 	Bus      *events.Bus               // nil: no domain-event subscriptions
 	Clock    clock.Clock
+	// Flags hides the inbox, unread-count and digest entries of a module
+	// the tenant switched off (announcements, library, permits, discipline);
+	// nil hides nothing.
+	Flags service.ModuleFlagReader
 
 	// Senders are only needed by the process that runs the workers.
 	Push     notify.PushSender
@@ -64,6 +68,9 @@ func Register(deps Dependencies) *Module {
 	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Jobs, deps.Realtime, clk, deps.Contacts)
 	svc.SetWhatsAppSecrets(deps.Sealer, deps.WhatsAppAppSecret, deps.WhatsAppWebhookVerifyToken)
 	svc.SetAPNsConfigured(deps.APNSConfigured)
+	if deps.Flags != nil {
+		svc.SetModuleFlags(deps.Flags)
+	}
 	if deps.Bus != nil {
 		service.RegisterEventHandlers(deps.Bus, svc)
 	}

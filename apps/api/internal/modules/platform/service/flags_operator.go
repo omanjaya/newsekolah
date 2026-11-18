@@ -1,14 +1,13 @@
 // flags_operator.go is the operator-tooling path to module feature flags:
 // cmd/modules calls these methods straight against the database, with no
-// HTTP request and no authenticated user behind them. Unlike ListFlags and
-// SetFlag (flags.go), which serve the platform console and stay refused by
-// s.guard() in single-tenant mode, nothing here calls s.guard(): every
-// current deployment runs TENANCY_MODE=single, where flags are still
-// enforced (IsModuleEnabled and the central module gate apply in both
-// modes) but the console does not exist, so without this path the only way
-// to switch a module off would be raw SQL. These methods must never be
-// exposed through an HTTP handler: whoever can run them already holds the
-// database credentials.
+// HTTP request and no authenticated user behind them. ListFlags and SetFlag
+// (flags.go) serve the platform console and, in single-tenant mode, are
+// scoped to the tenant the HTTP request resolved to (s.scopeSingle). An
+// operator command has no request, so nothing here is scoped that way; it
+// names its tenant explicitly instead (ResolveTenantForOperator), which
+// keeps flags switchable over SSH when no superadmin can sign in to the
+// console. These methods must never be exposed through an HTTP handler:
+// whoever can run them already holds the database credentials.
 package service
 
 import (
@@ -127,7 +126,7 @@ func (s *Service) ResolveTenantForOperator(ctx context.Context, slug string) (do
 	return tenants[0], nil
 }
 
-// ListFlagsForOperator is ListFlags without the console guard: every module
+// ListFlagsForOperator is ListFlags without the console's request scope: every module
 // in domain.AllModules order, with modules that have no feature_flags row
 // reported as enabled (opt-out).
 func (s *Service) ListFlagsForOperator(ctx context.Context, tenantID uuid.UUID) ([]domain.ModuleFlag, error) {
@@ -138,11 +137,11 @@ func (s *Service) ListFlagsForOperator(ctx context.Context, tenantID uuid.UUID) 
 	if err != nil {
 		return nil, err
 	}
-	return operatorEffectiveFlags(stored), nil
+	return effectiveFlagsFromMap(stored), nil
 }
 
 // SetFlagsForOperator turns every named module on or off for one tenant,
-// without the console guard. All names are validated before anything is
+// without the console's request scope. All names are validated before anything is
 // written (an unknown one fails the call with
 // *OperatorUnknownModulesError and changes nothing), and every write
 // happens in one transaction. A module already in the requested state is
@@ -217,19 +216,4 @@ func (s *Service) requireOperatorTenant(ctx context.Context, tenantID uuid.UUID)
 		return domain.ErrTenantNotFound
 	}
 	return nil
-}
-
-// operatorEffectiveFlags expands a tenant's explicit rows (module ->
-// enabled) to every module in domain.AllModules order, defaulting a
-// missing row to enabled.
-func operatorEffectiveFlags(stored map[string]bool) []domain.ModuleFlag {
-	out := make([]domain.ModuleFlag, len(domain.AllModules))
-	for i, m := range domain.AllModules {
-		enabled, ok := stored[string(m)]
-		if !ok {
-			enabled = true
-		}
-		out[i] = domain.ModuleFlag{Module: string(m), Enabled: enabled}
-	}
-	return out
 }

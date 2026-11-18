@@ -15123,6 +15123,10 @@ paths:
       operationId: listPlatformTenants
       x-permission: platform_superadmin
       summary: List every tenant with a health summary
+      description: In single-tenant mode only the deployment's own school is listed, and its detail and module flags are the
+        only ones the console can read or change. Creating, suspending or resuming a tenant, setting a custom domain and
+        tenant exports answer 409 PLATFORM_TENANCY_DISABLED in that mode; tenancy_mode tells the console which actions
+        to offer.
       responses:
         "200":
           description: Tenants
@@ -15132,11 +15136,14 @@ paths:
                 type: object
                 required:
                   - data
+                  - tenancy_mode
                 properties:
                   data:
                     type: array
                     items:
                       $ref: "#/components/schemas/PlatformTenantHealth"
+                  tenancy_mode:
+                    $ref: "#/components/schemas/PlatformTenancyMode"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -26448,8 +26455,17 @@ components:
         - active
         - suspended
         - offboarding
+    PlatformTenancyMode:
+      type: string
+      description: "How the deployment runs. single: one school, the console manages only that school's modules. multi: the
+        full tenant console."
+      enum:
+        - single
+        - multi
     PlatformModule:
       type: string
+      description: Every toggleable feature module, in the order the console shows them (platform domain.AllModules; a Go test
+        keeps the two equal).
       enum:
         - library
         - discipline
@@ -26457,6 +26473,11 @@ components:
         - permits
         - announcements
         - reports
+        - activities
+        - mentoring
+        - supervision
+        - staff_attendance
+        - visitors
         - billing
     PlatformTenant:
       type: object
@@ -26523,6 +26544,8 @@ components:
           properties:
             flags:
               type: array
+              description: The effective state of every PlatformModule, in enum order; a module the tenant never switched off is
+                reported as enabled.
               items:
                 $ref: "#/components/schemas/PlatformModuleFlag"
     PlatformTenantCreate:

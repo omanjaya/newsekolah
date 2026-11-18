@@ -97,8 +97,18 @@ func toAPIExport(e service.ExportView) api.PlatformExport {
 	return out
 }
 
+// consoleCtx hands the service the tenant this request resolved to, which
+// scopes the console to the deployment's own school in single-tenant mode
+// (service.WithRequestTenant).
+func consoleCtx(ctx context.Context) context.Context {
+	if id, ok := httpx.TenantIDFromContext(ctx); ok {
+		return service.WithRequestTenant(ctx, id)
+	}
+	return ctx
+}
+
 func (h *PlatformHandler) ListPlatformTenants(ctx context.Context, _ api.ListPlatformTenantsRequestObject) (api.ListPlatformTenantsResponseObject, error) {
-	tenants, err := h.service.ListTenants(ctx)
+	tenants, err := h.service.ListTenants(consoleCtx(ctx))
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -106,7 +116,9 @@ func (h *PlatformHandler) ListPlatformTenants(ctx context.Context, _ api.ListPla
 	for i, t := range tenants {
 		data[i] = toAPIHealth(t)
 	}
-	return api.ListPlatformTenants200JSONResponse{Data: data}, nil
+	return api.ListPlatformTenants200JSONResponse{
+		Data: data, TenancyMode: api.PlatformTenancyMode(h.service.TenancyMode()),
+	}, nil
 }
 
 func (h *PlatformHandler) CreatePlatformTenant(ctx context.Context, request api.CreatePlatformTenantRequestObject) (api.CreatePlatformTenantResponseObject, error) {
@@ -128,7 +140,7 @@ func (h *PlatformHandler) CreatePlatformTenant(ctx context.Context, request api.
 }
 
 func (h *PlatformHandler) GetPlatformTenant(ctx context.Context, request api.GetPlatformTenantRequestObject) (api.GetPlatformTenantResponseObject, error) {
-	detail, err := h.service.GetTenantDetail(ctx, request.TenantId)
+	detail, err := h.service.GetTenantDetail(consoleCtx(ctx), request.TenantId)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -167,7 +179,7 @@ func (h *PlatformHandler) UpdatePlatformTenantDomain(ctx context.Context, reques
 }
 
 func (h *PlatformHandler) ListPlatformTenantFlags(ctx context.Context, request api.ListPlatformTenantFlagsRequestObject) (api.ListPlatformTenantFlagsResponseObject, error) {
-	flags, err := h.service.ListFlags(ctx, request.TenantId)
+	flags, err := h.service.ListFlags(consoleCtx(ctx), request.TenantId)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -175,7 +187,7 @@ func (h *PlatformHandler) ListPlatformTenantFlags(ctx context.Context, request a
 }
 
 func (h *PlatformHandler) SetPlatformTenantFlag(ctx context.Context, request api.SetPlatformTenantFlagRequestObject) (api.SetPlatformTenantFlagResponseObject, error) {
-	flag, err := h.service.SetFlag(ctx, request.TenantId, string(request.Module), request.Body.Enabled)
+	flag, err := h.service.SetFlag(consoleCtx(ctx), request.TenantId, string(request.Module), request.Body.Enabled)
 	if err != nil {
 		return nil, mapError(err)
 	}

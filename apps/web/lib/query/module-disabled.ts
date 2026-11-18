@@ -7,16 +7,20 @@ export function isModuleDisabledError(error: unknown): boolean {
 }
 
 /**
- * A request hit a module that is off although the session said otherwise
+ * A request hit a module that is off although the client said otherwise
  * (the vendor flipped the flag mid-session). Re-read `/v1/me` so
  * `disabled_modules` catches up: the menu drops the entry and the shell
- * shows the "module not available" state instead of a broken screen. It is
- * not an authentication failure, so nothing here signs the reader out.
+ * shows the "module not available" state instead of a broken screen. Also
+ * re-read the public branding, whose `disabled_public_modules` is all an
+ * anonymous page (the OPAC) has to go on, since such a visitor never loads
+ * `/v1/me`. It is not an authentication failure, so nothing here signs the
+ * reader out.
  */
 export function refreshSessionOnModuleDisabled(client: QueryClient, error: unknown): void {
   if (!isModuleDisabledError(error)) return;
-  const key = queryKeys.me();
-  // Many queries of one screen fail together; one refetch is enough.
-  if (client.isFetching({ queryKey: key }) > 0) return;
-  void client.invalidateQueries({ queryKey: key });
+  // Many queries of one screen fail together; one refetch of each is enough.
+  for (const key of [queryKeys.me(), queryKeys.tenantBranding()]) {
+    if (client.isFetching({ queryKey: key }) > 0) continue;
+    void client.invalidateQueries({ queryKey: key });
+  }
 }

@@ -53,6 +53,34 @@ describe("OpacGate", () => {
     expect(screen.getByRole("link", { name: "signIn" })).toHaveAttribute("href", "/login");
   });
 
+  it("swaps the catalogue for the not-available page when a refetched branding turns library off", () => {
+    mockUseTenant.mockReturnValue({
+      branding: { disabled_public_modules: [] },
+      displayName: "SMA 1",
+      isLoading: false,
+    });
+    const { rerender } = render(
+      <OpacGate>
+        <p>catalogue</p>
+      </OpacGate>,
+    );
+    expect(screen.getByText("catalogue")).toBeInTheDocument();
+
+    // A refused OPAC request re-reads the branding (lib/query/module-disabled.ts).
+    mockUseTenant.mockReturnValue({
+      branding: { disabled_public_modules: ["library"] },
+      displayName: "SMA 1",
+      isLoading: false,
+    });
+    rerender(
+      <OpacGate>
+        <p>catalogue</p>
+      </OpacGate>,
+    );
+    expect(screen.queryByText("catalogue")).not.toBeInTheDocument();
+    expect(screen.getByText("unavailableTitle")).toBeInTheDocument();
+  });
+
   it("mounts nothing of the catalogue while branding is still loading", () => {
     mockUseTenant.mockReturnValue({ branding: undefined, displayName: "SION", isLoading: true });
     renderGate();

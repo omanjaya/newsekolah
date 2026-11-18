@@ -290,7 +290,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Contacts: identityContacts{svc: identityModule.Service}, Bus: eventBus, Clock: clock.Real{},
 		Push: senders.Push, Email: senders.Email, WhatsApp: senders.WhatsApp,
 		Sealer: sealer, WhatsAppAppSecret: cfg.WhatsAppAppSecret, WhatsAppWebhookVerifyToken: cfg.WhatsAppWebhookVerifyToken,
-		APNSConfigured: cfg.APNSKeyP8 != "",
+		APNSConfigured: cfg.APNSKeyP8 != "", Flags: backgroundFlags,
 	})
 	pushDevices.svc = notificationsModule.Service
 	announcementsModule := announcements.Register(announcements.Dependencies{

@@ -6,16 +6,30 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
+import { isModuleDisabledError } from "../../../lib/query/module-disabled";
 import { useOpacTitlesQuery } from "../opac-api";
 
 import { OpacHighlights } from "./opac-highlights";
+import { OpacUnavailable } from "./opac-unavailable";
 
 /** Public catalogue search: no session, reachable from a kiosk or a phone. */
 export function OpacView(): ReactElement {
   const t = useTranslations("app.library.opac");
   const [search, setSearch] = useState("");
-  const { data, isLoading } = useOpacTitlesQuery(search);
+  const { data, isLoading, isError, error, refetch } = useOpacTitlesQuery(search);
   const titles = data?.data ?? [];
+
+  // Library was switched off after the page loaded: say so rather than
+  // passing the refusal off as an empty catalogue. The refusal also re-reads
+  // the branding, after which OpacGate shows its own branded page.
+  if (isModuleDisabledError(error)) {
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-6 p-4 md:p-6">
+        <OpacUnavailable />
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-6 p-4 md:p-6">
@@ -32,6 +46,8 @@ export function OpacView(): ReactElement {
 
       {isLoading ? (
         <Skeleton className="h-48 w-full" aria-busy="true" />
+      ) : isError ? (
+        <QueryError retry={refetch} />
       ) : titles.length === 0 ? (
         <EmptyState
           icon={<domainIcons.library aria-hidden="true" />}

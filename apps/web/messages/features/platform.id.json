@@ -3,6 +3,7 @@
     "eyebrow": "Platform",
     "title": "Konsol platform",
     "subtitle": "Kelola setiap sekolah pada penyebaran multi-sekolah ini.",
+    "subtitleSingle": "Penyebaran ini melayani satu sekolah. Buka sekolah untuk mengatur modul yang aktif.",
     "add": "Tambah Sekolah",
     "columns": {
       "name": "Sekolah",
@@ -63,6 +64,7 @@
       "domainSaved": "Domain diperbarui",
       "domainNone": "Belum diatur",
       "flagsTitle": "Modul aktif",
+      "flagsBody": "Modul yang dimatikan hilang dari menu sekolah ini dan permintaannya ditolak.",
       "modules": {
         "library": "Perpustakaan",
         "discipline": "Kesiswaan",
@@ -70,9 +72,16 @@
         "permits": "Perizinan",
         "announcements": "Pengumuman",
         "reports": "Laporan",
+        "activities": "Kegiatan",
+        "mentoring": "Guru Wali",
+        "supervision": "Supervisi",
+        "staff_attendance": "Presensi pegawai",
+        "visitors": "Tamu & insiden",
         "billing": "Pembayaran SPP"
       },
-      "flagUpdated": "Modul diperbarui",
+      "flagEnabled": "{module} diaktifkan",
+      "flagDisabled": "{module} dinonaktifkan",
+      "flagFailed": "{module} gagal diubah: {reason}",
       "exportTitle": "Ekspor data sekolah",
       "exportBody": "Membuat berkas ZIP berisi data inti sekolah ini (pengguna, tahun ajaran, kelas) sebagai CSV.",
       "exportButton": "Mulai ekspor",

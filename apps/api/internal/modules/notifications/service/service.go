@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,12 +21,14 @@ import (
 // concrete implementation lives in repository/ and is backed by sqlc.
 type Repository interface {
 	InsertNotification(ctx context.Context, tenantID, userID uuid.UUID, kind domain.Kind, title, body, href string, data map[string]any, announcementID uuid.NullUUID) (domain.Notification, error)
-	ListNotifications(ctx context.Context, tenantID, userID uuid.UUID, unreadOnly bool, search, kind string, cursor Cursor, limit int) ([]domain.Notification, error)
+	// hiddenKinds (domain.HiddenKinds) are left out of the inbox, the unread
+	// count, mark-all-read and the digest; nil hides nothing.
+	ListNotifications(ctx context.Context, tenantID, userID uuid.UUID, hiddenKinds []string, unreadOnly bool, search, kind string, cursor Cursor, limit int) ([]domain.Notification, error)
 	GetNotification(ctx context.Context, tenantID, id uuid.UUID) (domain.Notification, error)
 	MarkRead(ctx context.Context, tenantID, userID, id uuid.UUID) error
-	MarkAllRead(ctx context.Context, tenantID, userID uuid.UUID) error
-	CountUnread(ctx context.Context, tenantID, userID uuid.UUID) (int64, error)
-	ListUnreadSince(ctx context.Context, tenantID, userID uuid.UUID, since time.Time) ([]domain.Notification, error)
+	MarkAllRead(ctx context.Context, tenantID, userID uuid.UUID, hiddenKinds []string) error
+	CountUnread(ctx context.Context, tenantID, userID uuid.UUID, hiddenKinds []string) (int64, error)
+	ListUnreadSince(ctx context.Context, tenantID, userID uuid.UUID, since time.Time, hiddenKinds []string) ([]domain.Notification, error)
 	DeleteReadOlderThan(ctx context.Context, tenantID uuid.UUID, cutoff time.Time) (int64, error)
 	EnsurePartition(ctx context.Context, month time.Time) error
 
@@ -113,6 +116,9 @@ type Service struct {
 	realtime RealtimePublisher
 	clock    clock.Clock
 	contacts ContactReader
+	// flags hides the notifications of switched-off modules (see
+	// hiddenKinds); nil, the default, hides nothing.
+	flags ModuleFlagReader
 
 	// WhatsApp secrets, set by SetWhatsAppSecrets after construction (see
 	// that method's comment for why).
@@ -124,6 +130,39 @@ type Service struct {
 	// silently unusable row when the server has no APNs credentials
 	// (reference/sion-rebuild-go apns.go's apnsEnabled check).
 	apnsConfigured bool
+}
+
+// ModuleFlagReader answers whether a toggleable feature module is on for a
+// tenant (the platform's feature flags, adapted at wiring time so this
+// module never imports the platform module).
+type ModuleFlagReader interface {
+	IsModuleEnabled(ctx context.Context, tenantID uuid.UUID, module string) (bool, error)
+}
+
+// SetModuleFlags attaches the flag reader that hides a switched-off
+// module's notifications. Set once at wiring time (module.go).
+func (s *Service) SetModuleFlags(flags ModuleFlagReader) {
+	s.flags = flags
+}
+
+// hiddenKinds is every notification kind whose module the tenant switched
+// off (domain.HiddenKinds). Without a flag reader nothing is hidden. It is
+// read before the caller opens its own transaction.
+func (s *Service) hiddenKinds(ctx context.Context, tenantID uuid.UUID) ([]string, error) {
+	if s.flags == nil {
+		return []string{}, nil
+	}
+	var disabled []string
+	for _, module := range domain.NotificationModules() {
+		on, err := s.flags.IsModuleEnabled(ctx, tenantID, module)
+		if err != nil {
+			return nil, fmt.Errorf("read module flag %s: %w", module, err)
+		}
+		if !on {
+			disabled = append(disabled, module)
+		}
+	}
+	return domain.HiddenKinds(disabled), nil
 }
 
 // SetAPNsConfigured records whether this server has APNs credentials, for
