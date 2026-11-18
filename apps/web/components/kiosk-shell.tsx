@@ -93,9 +93,11 @@ export function KioskShell({ title, exitHref, timeZone, children }: KioskShellPr
           {/* Reserves the clock's width before the client knows the time.
               The kiosk display role, read from across the room, from sm
               up; on a phone held in the hand the title-lg role is plenty
-              and leaves the school and the screen their names. */}
+              and leaves the school and the screen their names. Figures
+              stay proportional: a minute clock gains nothing from tabular
+              ones, whose narrow "1" opens a gap ("1 4.07") at this size. */}
           <time
-            className="min-w-[5ch] text-right text-title-lg tabular-nums sm:text-kiosk-display"
+            className="min-w-[5ch] text-right text-title-lg sm:text-kiosk-display"
             suppressHydrationWarning
           >
             {time ?? " "}
