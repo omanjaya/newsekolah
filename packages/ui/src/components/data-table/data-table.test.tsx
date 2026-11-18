@@ -321,7 +321,17 @@ describe("DataTable", () => {
   });
 
   it("uses column headers in the visibility menu and keeps action columns out", async () => {
-    render(<LocalHarness data={ROWS} />);
+    // The menu needs two columns to choose between.
+    render(
+      <DataTable
+        mode="local"
+        data={ROWS}
+        columns={[
+          ...columns,
+          { id: "code", header: "Kode", accessorFn: (row: Row) => row.id.padStart(3, "0") },
+        ]}
+      />,
+    );
     await userEvent.click(screen.getByRole("button", { name: "Kolom tampil" }));
 
     expect(screen.getByRole("menuitemcheckbox", { name: "Nama" })).toBeInTheDocument();
@@ -470,6 +480,24 @@ describe("DataTable", () => {
     expect(scroller.className).not.toMatch(/flex-1/);
     expect(card).toHaveClass("md:max-h-full");
     expect(scroller).toHaveClass("md:min-h-0", "md:overflow-y-auto");
+  });
+
+  it("fades a fillHeight body's edges while rows wait past them, below the sticky head", () => {
+    render(<FillHeightHarness data={ROWS} />);
+    const scroller = screen.getByRole("table").parentElement;
+    if (!scroller) throw new Error("Missing table wrapper");
+    expect(scroller).toHaveClass("scroll-fade-y", "[--scroll-fade-inset-start:var(--space-10)]");
+    // jsdom has no layout: give the box more rows than room, then scroll.
+    Object.defineProperty(scroller, "clientHeight", { configurable: true, value: 200 });
+    Object.defineProperty(scroller, "scrollHeight", { configurable: true, value: 600 });
+    fireEvent.scroll(scroller);
+    expect(scroller).toHaveAttribute("data-overflow-end");
+    expect(scroller).not.toHaveAttribute("data-overflow-start");
+  });
+
+  it("leaves an ordinary table's body unmasked", () => {
+    render(<LocalHarness data={ROWS} />);
+    expect(screen.getByRole("table").parentElement).not.toHaveClass("scroll-fade-y");
   });
 
   it("does not expose remembered state across scopes", () => {

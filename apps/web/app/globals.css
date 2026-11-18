@@ -74,10 +74,12 @@ body {
    * mobile-tab-slot.tsx): a 64px row of slots, padded clear of the home
    * indicator, with the 56px centre button rising 24px above it, plus its
    * 4px ring: 28px of overhang, and 4px of air on top of that make the
-   * 32px raise. The offset is everything at the bottom that content keeps
-   * clear of (the page's end, a StickySaveBar, a sticky form row): the
-   * bar, the home indicator and the raise. A bar without a centre action
-   * (`data-centre` absent) raises nothing.
+   * 32px raise. The offset is everything at the bottom that the page's
+   * end keeps clear of: the bar, the home indicator and the raise. A bar
+   * that docks on the tab bar (a StickySaveBar, a sticky form row) sits at
+   * the bar and the home indicator and takes the raise as bottom padding,
+   * so no strip of page shows between the two. A bar without a centre
+   * action (`data-centre` absent) raises nothing.
    */
   --shell-mobile-tab-bar: 4rem;
   --shell-mobile-tab-raise: 2rem;
@@ -167,14 +169,16 @@ body {
 }
 
 /*
- * A form's own sticky action row (FormActions `sticky`) rides above the
- * phone's tab bar instead of sliding under it. Dialogs and sheets are
- * portalled outside <main>, so their rows keep the dialog's bottom edge.
+ * A form's own sticky action row (FormActions `sticky`) docks on the
+ * phone's tab bar instead of sliding under it, with the centre button's
+ * rise as padding (the tab bar paints its button over that padding, as
+ * it does for a StickySaveBar). Dialogs and sheets are portalled outside
+ * <main>, so their rows keep the dialog's bottom edge.
  */
 @media (width < 48rem) {
   main [data-slot="form-actions"].sticky {
-    bottom: var(--shell-mobile-tab-offset);
-    padding-bottom: var(--space-3);
+    bottom: calc(var(--shell-mobile-tab-bar) + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--space-3) + var(--shell-mobile-tab-raise));
   }
 }
 
@@ -182,7 +186,8 @@ body {
  * Directional page entrances on a phone (components/use-nav-direction.ts
  * marks <html>). Going deeper, the page's column (its head and content,
  * never the shell) enters from the right by a short distance with a fade;
- * going back, from the left; switching bottom tabs, a plain quick fade.
+ * going back, from the left; switching bottom tabs, a quick fade that
+ * starts at half opacity, so the switch never blinks to an empty page.
  * Anything else keeps PageShell's own fade and rise on the content. The
  * distance is 2.5 rises (20px), so reduced motion, which zeroes the rise,
  * leaves only the fade. A loading skeleton (`animate={false}`) never moves.
@@ -198,6 +203,13 @@ body {
   from {
     opacity: 0;
     transform: translateX(calc(var(--motion-rise) * -2.5));
+  }
+}
+
+/* A sibling tab's page is a place the reader already knows: no blank frame. */
+@keyframes page-enter-tab {
+  from {
+    opacity: 0.5;
   }
 }
 
@@ -222,7 +234,7 @@ body {
   }
 
   html[data-nav-direction="tab"] [data-page-shell][data-animate] > [data-slot="page-column"] {
-    animation: fade-in var(--duration-fast) var(--ease-standard) backwards;
+    animation: page-enter-tab var(--duration-fast) var(--ease-standard) backwards;
   }
 
   html:is([data-nav-direction="forward"], [data-nav-direction="back"], [data-nav-direction="tab"])

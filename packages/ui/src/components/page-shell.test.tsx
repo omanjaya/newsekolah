@@ -112,7 +112,8 @@ describe("PageShell", () => {
     const widths: Record<PageShellVariant, string> = {
       default: "max-w-default",
       wide: "max-w-wide",
-      narrow: "max-w-narrow",
+      // The head keeps the default column; only the content narrows.
+      narrow: "max-w-default",
       fit: "max-w-wide",
     };
     for (const [variant, width] of Object.entries(widths) as [PageShellVariant, string][]) {
@@ -127,6 +128,26 @@ describe("PageShell", () => {
       expect(root.firstElementChild).toHaveClass(width, "mx-auto", "gap-6");
       unmount();
     }
+  });
+
+  // A narrow page centred its whole column, so its title, trail and tabs
+  // started about 216px right of a default sibling's at 1440px.
+  it("keeps a narrow page's head on the default column and narrows only its content", () => {
+    const { container } = render(
+      <PageShell
+        variant="narrow"
+        breadcrumb={[{ label: "Pengaturan sekolah", href: "/settings" }, { label: "Sesi" }]}
+        header={<PageHeader title="Sesi dan masuk" />}
+        toolbar={<span>Filter</span>}
+      >
+        <p>Isi</p>
+      </PageShell>,
+    );
+    expect(slot(container, "page-column")).toHaveClass("max-w-default", "mx-auto");
+    expect(slot(container, "page-column")).not.toHaveClass("max-w-narrow");
+    expect(slot(container, "page-head")).not.toHaveClass("max-w-narrow");
+    expect(slot(container, "page-content")).toHaveClass("w-full", "max-w-narrow");
+    expect(slot(container, "page-content")).not.toHaveClass("mx-auto");
   });
 
   it("fits the viewport under the app's sticky chrome and lets the content take the rest", () => {

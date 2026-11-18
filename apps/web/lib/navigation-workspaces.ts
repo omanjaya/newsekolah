@@ -140,6 +140,16 @@ const WORKSPACES: WorkspaceDefinition[] = [
   { key: "platform-tenants", members: ["platform-tenants"], label: "platform" },
 ];
 
+/**
+ * Each workspace's member keys: the registry pages that share one tab strip
+ * (lib/navigation/page-context.ts). Read by lib/i18n/namespace-sets.ts so a
+ * provider that carries one member's screen also carries its siblings' tab
+ * labels.
+ */
+export const WORKSPACE_MEMBER_KEYS: readonly (readonly string[])[] = WORKSPACES.map(
+  (definition) => definition.members,
+);
+
 export interface NavigationContext {
   profileKind?: NavProfileKind;
   duties?: readonly { slug: string }[];

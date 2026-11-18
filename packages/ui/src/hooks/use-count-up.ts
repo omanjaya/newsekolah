@@ -19,6 +19,12 @@ export interface UseCountUpOptions {
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
+/**
+ * A count shorter than this is shown at once: counting 0 to 2 in 320ms
+ * shows a wrong "1" for about 100ms and reads as a glitch, not a count.
+ */
+const MIN_COUNTED_DISTANCE = 10;
+
 // Layout effect on the client so the starting value is in place before the
 // first paint; plain effect on the server, where layout effects never run.
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -45,9 +51,11 @@ function easeOut(progress: number): number {
 
 /**
  * Counts a number up once, the first time it is known (a home-screen stat
- * tile settling on "96"). Later changes to `target` show immediately. Under
- * `prefers-reduced-motion: reduce` it never counts and always returns
- * `target`. The returned value is a number; format it at the call site.
+ * tile settling on "96"). Later changes to `target` show immediately, and
+ * so does a first value less than 10 away from `from`, whose few steps
+ * would only flash wrong figures. Under `prefers-reduced-motion: reduce`
+ * it never counts and always returns `target`. The returned value is a
+ * number; format it at the call site.
  */
 export function useCountUp(target: number, options: UseCountUpOptions = {}): number {
   const { duration = motion.duration.slow, from = 0, enabled = true } = options;
@@ -62,8 +70,10 @@ export function useCountUp(target: number, options: UseCountUpOptions = {}): num
       setValue(target);
       return;
     }
+    // The first known value uses up the mount's one count even when it is
+    // shown at once, so a later, larger value does not count either.
     hasCounted.current = true;
-    if (prefersReducedMotion()) {
+    if (prefersReducedMotion() || Math.abs(target - from) < MIN_COUNTED_DISTANCE) {
       setValue(target);
       return;
     }

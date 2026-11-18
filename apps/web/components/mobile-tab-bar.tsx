@@ -57,8 +57,8 @@ const PILL_CARRIER = cn(
  * one tab, then Menu on the right with everything else. A soft accent
  * pill slides from the old tab to the new one behind the icon. A page
  * reached through Menu lights Menu up; the centre's own pages mark the
- * centre. The bar is the surface colour, slightly translucent with a blur
- * so content scrolls softly under it, with a hairline on top, padded
+ * centre. The bar is the opaque surface colour, like the header, so no
+ * page text ever reads through its labels, with a hairline on top, padded
  * clear of the home indicator. Its height plus the centre's overhang is
  * `--shell-mobile-tab-offset` (globals.css), which the page, sticky save
  * bars and sticky form rows keep clear of. Counts of pending items ride
@@ -92,9 +92,16 @@ export function MobileTabBar({
   const activeHref = activeNavHref(pathname, items);
   const centreCurrent = centre?.ownerHref !== undefined && centre.ownerHref === activeHref;
   // A page reached through Menu lights Menu up, so the bar always says where
-  // the reader is, without claiming a tab the page does not belong to.
+  // the reader is, without claiming a tab the page does not belong to. A page
+  // the menu does not list (a hidden entry, such as /check-in reached from
+  // the account menu) lights nothing: Menu would point at a list without it.
+  const activeItem =
+    activeHref === undefined ? undefined : items.find((item) => item.href === activeHref);
   const inMenu =
-    activeHref !== undefined && !centreCurrent && !tabs.some((item) => item.href === activeHref);
+    activeItem !== undefined &&
+    activeItem.sidebarPlacement !== "hidden" &&
+    !centreCurrent &&
+    !tabs.some((item) => item.href === activeHref);
   const centreItem = centre?.ownerHref
     ? items.find((item) => item.href === centre.ownerHref)
     : undefined;
@@ -158,7 +165,7 @@ export function MobileTabBar({
     >
       <div
         className={cn(
-          "border-t border-line bg-surface/85 backdrop-blur-xl backdrop-saturate-150",
+          "border-t border-line bg-surface",
           "pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]",
         )}
       >

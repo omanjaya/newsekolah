@@ -72,11 +72,16 @@ function render<TData>(cell: Cell<TData, unknown>): ReactNode {
 
 /**
  * A link or button inside a card is lifted above the card's own tap
- * target and given a thumb-sized height, so it stays its own control.
+ * target and given a thumb-sized target, so it stays its own control. A
+ * link's 44px target is an invisible box centred on it (TextLink's own
+ * geometry, so a TextLink's box and this one agree), not layout height:
+ * a linked title sits as close to its subtitle as a plain one.
  */
 const LIFT_CONTROLS =
-  "[&_a]:relative [&_a]:z-10 [&_button]:relative [&_button]:z-10 " +
-  "[&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_button]:min-h-11";
+  "[&_a]:relative [&_a]:z-10 [&_button]:relative [&_button]:z-10 [&_button]:min-h-11 " +
+  "[&_a]:inline-flex [&_a]:items-center " +
+  "[&_a]:after:absolute [&_a]:after:-inset-x-2 [&_a]:after:top-1/2 [&_a]:after:h-11 " +
+  "[&_a]:after:-translate-y-1/2 [&_a]:after:content-['']";
 
 /**
  * The same rows as a stacked list, for a screen too narrow to hold the
@@ -168,8 +173,14 @@ function DataTableCard<TData>({
     <li
       data-state={selected ? "selected" : undefined}
       className={cn(
-        "relative rounded-lg border border-border bg-surface shadow-1 transition-colors",
+        "relative rounded-lg border border-border bg-surface shadow-1",
         "data-[state=selected]:border-accent data-[state=selected]:bg-state-selected",
+        // A tappable card dips while its overlay is held, as buttons,
+        // cards and tabs do; a press on a control lifted out of the
+        // overlay leaves the card still. Reduced motion sets the press
+        // scale to 1.
+        "transition-[background-color,border-color,box-shadow,scale]",
+        "has-[>button:active]:scale-(--motion-scale-press) has-[>button:active]:duration-instant",
       )}
     >
       {/* Dense on purpose: 12px above and below, 6px between the title,

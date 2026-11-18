@@ -38,11 +38,20 @@ describe("KioskShell", () => {
     expect(screen.getByRole("main")).toHaveTextContent("Layar");
   });
 
-  it("sets the clock in the kiosk display role, large enough for a wall", () => {
+  it("sets the clock in the kiosk display role from sm up, large enough for a wall", () => {
     renderShell();
     const clock = screen.getByText("07.42");
     expect(clock.tagName).toBe("TIME");
-    expect(clock).toHaveClass("text-kiosk-display", "tabular-nums");
+    expect(clock).toHaveClass("sm:text-kiosk-display", "tabular-nums");
+  });
+
+  // On a phone the header was a giant clock with the screen's name hidden.
+  it("keeps the screen named on a phone, as a caption under the school", () => {
+    renderShell();
+    expect(screen.getByText("07.42")).toHaveClass("text-title-lg");
+    const title = screen.getByText("Monitor presensi");
+    expect(title).not.toHaveClass("hidden");
+    expect(title).toHaveClass("text-caption", "sm:text-heading");
   });
 
   it("offers one quiet way back to where the kiosk was opened", () => {
