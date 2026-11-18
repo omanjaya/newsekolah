@@ -219,6 +219,7 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
             stateKey="features/supervision/components/supervision-cycle-detail-view:1"
             mode="local"
             searchable={false}
+            viewOptions={false}
             data={items}
             columns={columns}
             rowCount={items.length}

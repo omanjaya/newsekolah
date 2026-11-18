@@ -16,7 +16,7 @@
     "revokeConfirmTitle": "Revoke this API key?",
     "revokeConfirmBody": "The key \"{name}\" will stop working immediately. This cannot be undone.",
     "emptyTitle": "No API keys yet",
-    "emptyBody": "Create a key to give machine access to this school's data.",
+    "emptyBody": "Create a key to give other apps access to this school's data.",
     "neverUsed": "Never used",
     "statusActive": "Active",
     "statusRevoked": "Revoked",

@@ -61,8 +61,8 @@ export function useLibrarianBlock(me: Me, active: boolean): PersonaBlock {
         tone: summary.overdue > 0 ? ("accent-soft" as const) : ("neutral" as const),
         eyebrow: t("hero.eyebrow"),
         title: t("hero.title", { loans: summary.loans_today, returns: summary.returns_today }),
-        meta:
-          summary.overdue > 0 ? t("hero.meta", { overdue: summary.overdue }) : t("hero.metaClear"),
+        // With overdue loans the overdue tile and card already carry the count.
+        meta: summary.overdue > 0 ? undefined : t("hero.metaClear"),
         action: { label: t("hero.action"), href: CIRCULATION_DESK_HREF },
         secondaryAction: { label: t("hero.overviewAction"), href: LIBRARY_HREF },
         // The title already counts today's loans and returns.

@@ -242,7 +242,11 @@ describe("useLeadershipBlock", () => {
 
   it("says the attendance progress once, in the hero, not again in a card", () => {
     dashboardQuery.mockReturnValue({
-      data: { ...baseDashboard, attendance_today: { submitted: 3, total: 5 } },
+      data: {
+        ...baseDashboard,
+        attendance_today: { submitted: 3, total: 5 },
+        pending: { leave_request: 1, exit_permit: 0, late_arrival: 0 },
+      },
       isLoading: false,
       isError: false,
       refetch: vi.fn(),
@@ -256,6 +260,18 @@ describe("useLeadershipBlock", () => {
       "school.activity",
     ]);
     expect(withMonitor.result.current.side).toEqual([]);
+  });
+
+  it("leaves the queue card out when every queue is empty", () => {
+    dashboardQuery.mockReturnValue({
+      data: { ...baseDashboard, pending: { leave_request: 0, exit_permit: 0, late_arrival: 0 } },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    const { result } = renderHook(() => useLeadershipBlock(me, true));
+
+    expect(result.current.main.some((slot) => slot.key === "school.queue")).toBe(false);
   });
 
   it("links a queue row only to a screen the reader may open", () => {

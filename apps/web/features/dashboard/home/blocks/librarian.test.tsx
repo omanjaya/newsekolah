@@ -83,7 +83,8 @@ describe("useLibrarianBlock", () => {
 
     expect(result.current.hero?.title).toContain('"loans":4');
     expect(result.current.hero?.title).toContain('"returns":3');
-    expect(result.current.hero?.meta).toContain('"overdue":2');
+    // Overdue loans are counted by the overdue tile and card, not repeated here.
+    expect(result.current.hero?.meta).toBeUndefined();
     expect(result.current.hero?.action).toEqual({
       label: "hero.action",
       href: "/library/desk",

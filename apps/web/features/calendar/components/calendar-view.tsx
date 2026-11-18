@@ -154,7 +154,6 @@ export function CalendarView(): ReactElement {
   return (
     <AppPage
       variant="wide"
-      title={t("title")}
       nav={<AcademicWorkspaceLinks area="schedule" />}
       primaryAction={canManage ? addButton(selected, t("addEvent")) : undefined}
     >
