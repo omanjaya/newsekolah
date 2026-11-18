@@ -106,21 +106,24 @@ export function BrandAssetUpload({
 
   return (
     <div className="flex items-center gap-4">
-      <div
-        className={cn(
-          "flex shrink-0 items-center justify-center rounded-md bg-surface-sunken",
-          kind === "logo" ? "size-16" : "size-12",
-        )}
-      >
-        {currentUrl ? (
-          <img
-            src={currentUrl}
-            alt={t("previewAlt")}
-            className={cn("object-contain", kind === "logo" ? "max-h-12 max-w-12" : "size-6")}
-          />
-        ) : (
-          <ImageOff className="size-5 text-fg-muted" aria-label={t("none")} />
-        )}
+      {/* One slot width for both rows, so the logo and favicon text line up. */}
+      <div className="flex w-16 shrink-0 justify-center">
+        <div
+          className={cn(
+            "flex shrink-0 items-center justify-center rounded-md bg-surface-sunken",
+            kind === "logo" ? "size-16" : "size-12",
+          )}
+        >
+          {currentUrl ? (
+            <img
+              src={currentUrl}
+              alt={t("previewAlt")}
+              className={cn("object-contain", kind === "logo" ? "max-h-12 max-w-12" : "size-6")}
+            />
+          ) : (
+            <ImageOff className="size-5 text-fg-muted" aria-label={t("none")} />
+          )}
+        </div>
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className="text-label text-fg">{t("title")}</p>
