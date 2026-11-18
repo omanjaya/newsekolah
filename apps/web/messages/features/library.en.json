@@ -380,6 +380,7 @@
       "classesUnavailable": "The class list is not available to your account",
       "titleLabel": "Title",
       "preview": "Preview pairing",
+      "previewNeeds": "Choose a class and a title to preview",
       "previewEmptyTitle": "No pairs could be made",
       "previewEmptyBody": "This title does not have enough copies for the class, or every student already has one on loan.",
       "rejectedTitle": "Could not be lent",

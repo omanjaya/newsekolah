@@ -52,6 +52,8 @@ export function ClassLoanBorrowPanel(): ReactElement {
 
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
 
+  const ready = Boolean(classId && title);
+
   function runPreview() {
     if (!classId || !title) return;
     setPreview(null);
@@ -135,15 +137,17 @@ export function ClassLoanBorrowPanel(): ReactElement {
             />
           )}
         </Field>
-        <Button
-          type="button"
-          variant="secondary"
-          loading={previewMutation.isPending}
-          disabled={!classId || !title}
-          onClick={runPreview}
-        >
-          {t("preview")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            loading={previewMutation.isPending}
+            disabled={!ready}
+            onClick={runPreview}
+          >
+            {t("preview")}
+          </Button>
+          {!ready && <span className="text-caption text-fg-muted">{t("previewNeeds")}</span>}
+        </div>
       </div>
 
       {preview && (

@@ -380,6 +380,7 @@
       "classesUnavailable": "Daftar kelas tidak tersedia untuk akun Anda",
       "titleLabel": "Judul",
       "preview": "Tinjau pasangan",
+      "previewNeeds": "Pilih kelas dan judul untuk meninjau",
       "previewEmptyTitle": "Tidak ada pasangan yang bisa dibuat",
       "previewEmptyBody": "Eksemplar judul ini tidak cukup untuk kelas yang dipilih, atau semua siswa sudah meminjamnya.",
       "rejectedTitle": "Tidak bisa dipinjamkan",
