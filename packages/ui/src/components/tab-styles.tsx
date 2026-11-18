@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
@@ -21,7 +22,9 @@ export type StripSize = "sm" | "md";
  */
 export function stripTrackClass(variant: StripVariant, fullWidth?: boolean | "phone"): string {
   return cn(
-    "max-w-full min-w-0",
+    // Positioned for the edge cues (StripEdgeCues), which sit over the
+    // scroller's fades.
+    "relative max-w-full min-w-0",
     fullWidth === true || variant === "underline"
       ? "flex w-full"
       : fullWidth === "phone"
@@ -45,7 +48,7 @@ export function stripTrackClass(variant: StripVariant, fullWidth?: boolean | "ph
  */
 export function stripScrollerClass(variant: StripVariant): string {
   return cn(
-    "relative flex min-w-0 flex-1 flex-nowrap overflow-x-auto overscroll-x-contain scrollbar-none scroll-fade-x",
+    "peer/strip relative flex min-w-0 flex-1 flex-nowrap overflow-x-auto overscroll-x-contain scrollbar-none scroll-fade-x",
     variant === "pill"
       ? "p-1"
       : cn(
@@ -68,6 +71,47 @@ export function stripIndicatorClass(variant: StripVariant): string {
     variant === "pill"
       ? "top-0 h-(--indicator-h) translate-y-(--indicator-y) rounded-full bg-surface-raised shadow-1"
       : "bottom-0 h-0.5 rounded-full bg-accent",
+  );
+}
+
+/**
+ * A chevron over each edge fade of a strip that has more items past that
+ * edge. The fade alone could hide a whole item: a strip scrolled to its
+ * last tab (the active one) showed no trace of the first. Purely a cue:
+ * it lets taps through to the tab beneath and is hidden from assistive
+ * technology, which reaches every item anyway. Rendered right after the
+ * scroller, inside the track, so it reads the scroller's
+ * `data-overflow-*` marks through `peer/strip` and never re-renders.
+ */
+export function StripEdgeCues({ variant }: { variant: StripVariant }): ReactNode {
+  const cue =
+    "pointer-events-none absolute inset-y-0 flex items-center text-fg-muted opacity-0 transition-opacity duration-fast [&_svg]:size-4";
+  return (
+    <>
+      <span
+        aria-hidden="true"
+        data-strip-cue="start"
+        className={cn(
+          cue,
+          "left-0 pl-0.5 peer-data-[overflow-start]/strip:opacity-100",
+          // An underline strip runs into the phone's gutter; so does its cue.
+          variant === "underline" && "max-sm:-left-4",
+        )}
+      >
+        <ChevronLeft />
+      </span>
+      <span
+        aria-hidden="true"
+        data-strip-cue="end"
+        className={cn(
+          cue,
+          "right-0 pr-0.5 peer-data-[overflow-end]/strip:opacity-100",
+          variant === "underline" && "max-sm:-right-4",
+        )}
+      >
+        <ChevronRight />
+      </span>
+    </>
   );
 }
 

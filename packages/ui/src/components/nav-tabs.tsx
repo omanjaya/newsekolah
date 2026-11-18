@@ -14,6 +14,7 @@ import { cn } from "../utils/cn.js";
 
 import {
   StripCount,
+  StripEdgeCues,
   stripIndicatorClass,
   stripItemClass,
   stripScrollerClass,
@@ -166,6 +167,7 @@ const NavTabsStrip = forwardRef<HTMLElement, NavTabsProps>(function NavTabsStrip
           ))}
         </ul>
       </div>
+      <StripEdgeCues variant={variant} />
     </nav>
   );
 });

@@ -48,6 +48,25 @@ describe("NavTabs", () => {
     expect(screen.getByRole("link", { name: "Hari ini" })).toHaveAttribute("data-router");
   });
 
+  // A strip scrolled to its last item showed no trace of a first item
+  // hidden wholly past the start fade; a chevron now marks each edge
+  // with more past it, drawn by CSS from the scroller's overflow marks.
+  it("puts a hidden, tap-through chevron cue at each edge after the scroller", async () => {
+    const { container } = render(<NavTabs aria-label="Bagian" items={ITEMS} />);
+    const scroller = container.querySelector("[data-strip]");
+    const start = container.querySelector('[data-strip-cue="start"]');
+    const end = container.querySelector('[data-strip-cue="end"]');
+    expect(scroller).toHaveClass("peer/strip");
+    expect(start?.previousElementSibling).toBe(scroller);
+    for (const cue of [start, end]) {
+      expect(cue).toHaveAttribute("aria-hidden", "true");
+      expect(cue).toHaveClass("pointer-events-none", "opacity-0");
+    }
+    expect(start).toHaveClass("peer-data-[overflow-start]/strip:opacity-100");
+    expect(end).toHaveClass("peer-data-[overflow-end]/strip:opacity-100");
+    await expectNoAxeViolations(container);
+  });
+
   it("renders nothing for a single item", () => {
     const { container } = render(
       <NavTabs aria-label="Absensi" items={[{ href: "/check-in", label: "Absensi saya" }]} />,

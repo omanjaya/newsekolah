@@ -16,6 +16,7 @@ import { cn } from "../utils/cn.js";
 
 import {
   StripCount,
+  StripEdgeCues,
   stripIndicatorClass,
   stripItemClass,
   stripScrollerClass,
@@ -88,6 +89,7 @@ export const TabsList = forwardRef<HTMLDivElement, TabsListProps>(function TabsL
           <span ref={indicatorRef} aria-hidden="true" className={stripIndicatorClass(variant)} />
           {children}
         </div>
+        <StripEdgeCues variant={variant} />
       </TabsPrimitive.List>
     </TabsListContext.Provider>
   );
