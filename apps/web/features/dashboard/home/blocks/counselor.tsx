@@ -190,7 +190,7 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
   }
 
   if (canViewAtRisk) {
-    block.side.push({
+    block.main.push({
       key: "counselor.atRisk",
       node: (
         <AtRiskCard

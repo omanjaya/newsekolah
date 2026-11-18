@@ -5,10 +5,6 @@ import type { ReactElement } from "react";
 
 const HOURS = 24;
 
-function pad(hour: number): string {
-  return String(hour).padStart(2, "0");
-}
-
 /**
  * Logins summed per hour over the last seven days. Twenty-four bare bars say
  * nothing on their own, so the chart carries a baseline, ticks every six
@@ -28,6 +24,13 @@ function pad(hour: number): string {
 export function LoginActivityChart({ values }: { values: number[] }): ReactElement {
   const t = useTranslations("app.dashboardSchool.leadership.activity");
   const format = useFormatter();
+  // Written through the locale so the chart reads like every other time in the app.
+  const clock = (hour: number): string =>
+    format.dateTime(new Date(Date.UTC(2000, 0, 1, hour)), {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "UTC",
+    });
   const hours = Array.from({ length: HOURS }, (_, hour) => values[hour] ?? 0);
   const total = hours.reduce((sum, value) => sum + value, 0);
 
@@ -41,14 +44,14 @@ export function LoginActivityChart({ values }: { values: number[] }): ReactEleme
   return (
     <div className="flex flex-col gap-2">
       <p className="text-body-sm text-fg-muted">
-        {t("peak", { hour: `${pad(peakHour)}:00`, count: format.number(max) })}
+        {t("peak", { hour: clock(peakHour), count: format.number(max) })}
       </p>
       <div
         className="flex h-28 items-end gap-px border-b border-border"
         role="img"
         aria-label={t("chartLabel", {
           total: format.number(total),
-          hour: `${pad(peakHour)}:00`,
+          hour: clock(peakHour),
           count: format.number(max),
         })}
       >
@@ -56,7 +59,7 @@ export function LoginActivityChart({ values }: { values: number[] }): ReactEleme
           <div
             key={hour}
             className="flex h-full flex-1 items-end"
-            title={t("barLabel", { hour: `${pad(hour)}:00`, count: format.number(value) })}
+            title={t("barLabel", { hour: clock(hour), count: format.number(value) })}
           >
             <div
               className="w-full rounded-t-xs bg-fg-muted"
@@ -71,7 +74,7 @@ export function LoginActivityChart({ values }: { values: number[] }): ReactEleme
             key={hour}
             className="flex-1 text-center text-caption whitespace-nowrap tabular-nums text-fg-muted"
           >
-            {hour % 6 === 0 ? pad(hour) : ""}
+            {hour % 6 === 0 ? format.number(hour, { minimumIntegerDigits: 2 }) : ""}
           </span>
         ))}
       </div>

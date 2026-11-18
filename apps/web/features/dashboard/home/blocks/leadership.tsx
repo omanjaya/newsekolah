@@ -65,7 +65,8 @@ const PENDING_LINKS = [
  * from `GET /v1/analytics/admin-dashboard` (same restriction, see that
  * endpoint's `isAdminCaller`) plus the early-warning list, top 5 by score.
  * The hero carries attendance taken in the classes in session right now,
- * so no card repeats it; system activity sits in the side column.
+ * so no card repeats it; the early-warning list and system activity sit
+ * under the queue, as the side column already holds check-in and shortcuts.
  */
 export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   const t = useTranslations("app.dashboardSchool.leadership");
@@ -211,7 +212,9 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
       ]
     : [];
 
-  const side: BlockSlot[] = [
+  // Both cards read as main content; the side column already holds check-in,
+  // shortcuts and announcements, so these two live under the queue.
+  const insights: BlockSlot[] = [
     ...(canViewAtRisk
       ? [
           {
@@ -244,7 +247,7 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
     },
   ];
 
-  return { hero, tiles, main, side, pending: dashboard.isLoading };
+  return { hero, tiles, main: [...main, ...insights], side: [], pending: dashboard.isLoading };
 }
 
 function SchoolQueueCard({
@@ -291,7 +294,7 @@ function SchoolQueueCard({
             return (
               <ListRow
                 key={key}
-                href={linkedQueues.includes(key) ? href : undefined}
+                href={linkedQueues.includes(key) ? href : inboxHref}
                 title={t(`labels.${key}`)}
                 trailing={
                   <Badge tone={count > 0 ? "warning" : "neutral"} size="sm">
