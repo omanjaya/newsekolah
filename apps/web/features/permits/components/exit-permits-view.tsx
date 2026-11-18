@@ -89,22 +89,29 @@ function ExitPermitDesk({
     modes[0]?.value ?? "approve",
   );
 
+  // One row of navigation: the switch sits in the scanner's own header
+  // instead of a second strip under the area's tabs.
+  const modeSwitch =
+    modes.length > 1 ? (
+      <SegmentedControl
+        aria-label={t("modeLabel")}
+        options={modes}
+        value={mode}
+        onValueChange={setMode}
+        size="sm"
+      />
+    ) : undefined;
+
   return (
-    <AppPage
-      toolbar={
-        modes.length > 1 ? (
-          <SegmentedControl
-            aria-label={t("modeLabel")}
-            options={modes}
-            value={mode}
-            onValueChange={setMode}
-            className="self-start"
-          />
-        ) : undefined
-      }
-    >
+    <AppPage>
       <ReviewInboxBanner />
-      {mode === "gate" && canGate ? <GatePanel /> : canApprove ? <ApprovePanel /> : <GatePanel />}
+      {mode === "gate" && canGate ? (
+        <GatePanel modeSwitch={modeSwitch} />
+      ) : canApprove ? (
+        <ApprovePanel modeSwitch={modeSwitch} />
+      ) : (
+        <GatePanel modeSwitch={modeSwitch} />
+      )}
     </AppPage>
   );
 }

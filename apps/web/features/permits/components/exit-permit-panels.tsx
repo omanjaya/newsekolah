@@ -25,7 +25,7 @@ import {
 } from "@newsekolah/ui";
 import { Undo2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
@@ -50,7 +50,14 @@ import { WorkflowSteps } from "./workflow-stepper";
  * `prefillId` so a new value remounts it with a fresh initial state instead
  * of needing an effect to resynchronize local state from a prop.
  */
-export function ApprovePanel({ prefillId }: { prefillId?: string } = {}): ReactElement {
+export function ApprovePanel({
+  prefillId,
+  modeSwitch,
+}: {
+  prefillId?: string;
+  /** The desk's gate and approve switch, drawn at the end of the scanner's header. */
+  modeSwitch?: ReactNode;
+} = {}): ReactElement {
   const t = useTranslations("app.permits.exit.approve");
   const tQr = useTranslations("app.permits.qr");
   const toast = useToast();
@@ -88,6 +95,7 @@ export function ApprovePanel({ prefillId }: { prefillId?: string } = {}): ReactE
       <Scanner
         title={t("title")}
         description={t("hint")}
+        headerEnd={modeSwitch}
         camera={false}
         manualEntry="open"
         manualLabel={t("permitCode")}
@@ -146,7 +154,7 @@ interface GateLogEntry {
  * list lives only in this tab's memory, not the server, so "undo" only
  * hides an entry here; it does not reverse the recorded gate scan.
  */
-export function GatePanel(): ReactElement {
+export function GatePanel({ modeSwitch }: { modeSwitch?: ReactNode } = {}): ReactElement {
   const t = useTranslations("app.permits.exit.gate");
   const tScan = useTranslations("app.permits.scan");
   const locale = useLocale() as Locale;
@@ -201,6 +209,7 @@ export function GatePanel(): ReactElement {
       <Scanner
         title={t("title")}
         description={t("hint")}
+        headerEnd={modeSwitch}
         onScan={handleScan}
         disabled={scan.isPending}
         manualLabel={t("payloadLabel")}
