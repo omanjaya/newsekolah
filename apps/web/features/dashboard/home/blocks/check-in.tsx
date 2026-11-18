@@ -145,7 +145,7 @@ function CheckInCard({
           <QueryError retry={refetch} error={error} />
         ) : isLoading ? (
           <Skeleton className="h-28 w-full" aria-busy="true" />
-        ) : (
+        ) : hasArrival ? (
           <>
             <DataList layout="stacked" columns={2} className="grid-cols-2">
               <DataListItem label={tSelf("arrival")}>
@@ -156,15 +156,12 @@ function CheckInCard({
               </DataListItem>
             </DataList>
             <div className="flex flex-wrap items-center gap-2">
-              {current ? (
-                statusToken ? (
+              {current &&
+                (statusToken ? (
                   <StatusBadge status={statusToken} label={tStatus(current.status_code)} />
                 ) : (
                   <Badge>{tStatus(current.status_code)}</Badge>
-                )
-              ) : (
-                <span className="text-body-sm text-fg-muted">{t("notYet")}</span>
-              )}
+                ))}
               {current && current.late_minutes > 0 && (
                 <span className="text-body-sm text-fg-muted">
                   {tSelf("lateBy", { minutes: current.late_minutes })}
@@ -179,14 +176,36 @@ function CheckInCard({
               <Button
                 variant="secondary"
                 className="w-full"
-                icon={hasArrival ? <LogOut /> : <LogIn />}
+                icon={<LogOut />}
                 loading={scan.isPending}
                 onClick={handleScan}
               >
-                {hasArrival ? t("checkOut") : t("checkIn")}
+                {t("checkOut")}
               </Button>
             )}
           </>
+        ) : (
+          // Before the first tap there are no times to show: one row with
+          // the day's state and the button, instead of two dashes and a
+          // grey pill that lead every staff home on a phone while a school
+          // has not set work schedules yet.
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+            <p className="text-body-sm text-fg-muted" data-testid="check-in-state">
+              {done ? t("done") : current ? tStatus(current.status_code) : t("notYet")}
+            </p>
+            {!done && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="max-sm:w-full"
+                icon={<LogIn />}
+                loading={scan.isPending}
+                onClick={handleScan}
+              >
+                {t("checkIn")}
+              </Button>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

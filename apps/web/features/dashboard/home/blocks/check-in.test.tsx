@@ -77,6 +77,26 @@ describe("useCheckInBlock", () => {
     expect(button).not.toHaveClass("bg-accent");
   });
 
+  it("shows one compact row with the day's state and no placeholder times before arrival", () => {
+    historyQuery.mockReturnValue(
+      history({
+        date: "2026-09-26",
+        status_code: "unscheduled",
+        arrival_at: null,
+        departure_at: null,
+        late_minutes: 0,
+      }),
+    );
+
+    const { result } = renderHook(() => useCheckInBlock(me, true));
+    render(<>{result.current.side[0]?.node}</>);
+
+    expect(screen.getByTestId("check-in-state")).toHaveTextContent("unscheduled");
+    expect(screen.queryByText("arrival")).not.toBeInTheDocument();
+    expect(screen.queryByText("–")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "checkIn" })).toBeInTheDocument();
+  });
+
   it("offers check-out once arrival is recorded", () => {
     historyQuery.mockReturnValue(
       history({
