@@ -118,7 +118,8 @@ export function OverlayHeader({
       // On a bottom sheet the header is a drag handle too (overlay-drag.ts).
       data-sheet-drag=""
       className={cn(
-        "flex shrink-0 items-start gap-3 border-b border-transparent px-(--dialog-px) pb-4 transition-colors",
+        // 12px here and the body's 4px top inset make the 16px gap.
+        "flex shrink-0 items-start gap-3 border-b border-transparent px-(--dialog-px) pb-3 transition-colors",
         "[[data-overflow-start]>&]:border-line",
         className,
       )}
@@ -173,7 +174,9 @@ export function OverlayBody({
       ref={ref}
       className={cn(
         "dialog-body min-h-0 flex-1 overflow-y-auto overscroll-contain px-(--dialog-px)",
-        padTop && "pt-(--dialog-px)",
+        // Under a header, a 4px inset keeps the first child's outside
+        // ring and focus outline inside the scroller instead of clipped.
+        padTop ? "pt-(--dialog-px)" : "pt-1",
         // With a footer below, its own top padding is most of the gap.
         padBottom === "with-safe-area"
           ? "pb-[calc(var(--dialog-pb)+var(--dialog-safe-bottom))]"

@@ -54,7 +54,9 @@ export function FormSection({
       aria-labelledby={title !== undefined ? titleId : undefined}
       className={cn(
         "@container flex min-w-0 flex-col gap-4",
-        variant === "card" && "rounded-lg border border-border bg-surface p-5 shadow-1 md:p-6",
+        // The default Card's 20px inset at every width, so a form card and
+        // a plain card side by side line their content up.
+        variant === "card" && "rounded-lg border border-border bg-surface p-5 shadow-1",
         className,
       )}
       {...props}

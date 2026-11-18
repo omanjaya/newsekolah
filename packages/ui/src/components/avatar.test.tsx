@@ -53,6 +53,37 @@ describe("Avatar", () => {
     expect(avatar).toHaveTextContent(/^MW$/);
   });
 
+  // "Admin Contoh", "Guru Contoh" and "Satpam Contoh" hashed into red, so
+  // ordinary people read as flagged beside their status badges.
+  it("never gives a person the red or amber hue", () => {
+    const names = [
+      "Admin Contoh",
+      "Guru Contoh",
+      "Guru BK Contoh",
+      "Guru Piket Contoh",
+      "Satpam Contoh",
+      "Siswa Contoh",
+      "Wakil Kepala Sekolah Contoh",
+      "Pustakawan Contoh",
+      "Kepala Sekolah Contoh",
+      "Nadia Ayu Putri",
+      "Made Wirawan",
+      "Ni Luh Ketut Sari",
+    ];
+    render(
+      <>
+        {names.map((name) => (
+          <Avatar key={name} name={name} />
+        ))}
+      </>,
+    );
+    for (const name of names) {
+      const fallback = screen.getByRole("img", { name }).firstElementChild;
+      expect(fallback?.className).not.toMatch(/category-(red|amber)/);
+      expect(fallback?.className).toMatch(/bg-category-(green|purple|blue)-soft/);
+    }
+  });
+
   it("pins a tone and can be hidden when the name is written beside it", () => {
     const { container } = render(<Avatar name="Nadia" tone="accent" decorative />);
     expect(screen.queryByRole("img")).not.toBeInTheDocument();

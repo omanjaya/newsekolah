@@ -76,6 +76,26 @@ describe("AppPage", () => {
     expect(heading.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it("leaves out a tab whose label is not in the page's messages instead of printing its key", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(vi.fn());
+    const partial = structuredClone(messages) as { app: { attendanceReports: object } };
+    partial.app.attendanceReports = {};
+    render(
+      <NextIntlClientProvider locale="id" messages={partial as never}>
+        <AppPage>Isi</AppPage>
+      </NextIntlClientProvider>,
+    );
+    const tabs = screen.getByRole("navigation", { name: "Bagian Presensi dan jurnal" });
+    expect(
+      within(tabs)
+        .getAllByRole("link")
+        .map((link) => link.getAttribute("href")),
+    ).toEqual(["/attendance", "/journal"]);
+    expect(screen.queryByText("attendance-reports")).not.toBeInTheDocument();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("app.attendanceReports.navLabel"));
+    warn.mockRestore();
+  });
+
   it("names the browser tab after the current page and the school", () => {
     renderPage(<AppPage>Isi</AppPage>);
     expect(document.title).toBe("Jurnal mengajar · SMA Contoh");
@@ -146,6 +166,22 @@ describe("AppPage", () => {
     expect(
       filter.compareDocumentPosition(screen.getByText("Isi")) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it("passes the phone's compact primary action to the header's title line", () => {
+    renderPage(
+      <AppPage
+        primaryAction={<button type="button">Tambah</button>}
+        primaryActionCompact={{ icon: <span />, label: "Tambah entri", href: "/journal/new" }}
+      >
+        Isi
+      </AppPage>,
+    );
+    const compact = screen.getByRole("link", { name: "Tambah entri" });
+    expect(compact).toHaveAttribute("href", "/journal/new");
+    expect(compact.closest("[data-slot=page-header-heading]")).toContainElement(
+      screen.getByRole("heading", { level: 1 }),
+    );
   });
 
   it("passes a leading avatar through to the header, beside the title", () => {

@@ -99,6 +99,7 @@ Tujuannya memberi kesan halus dan responsif, bukan menarik perhatian. Semua gera
 5. **Indikator.** Pil aktif `Tabs` dan `SegmentedControl` bergeser ke item baru dalam 200 ms. Penanda aktif sidebar, ibu jari `Switch`, lebar `Progress` dan meter (320 ms) ikut beranimasi.
 6. **Umpan balik.** Toast masuk dengan geser dan pudar 200 ms, keluar 120 ms. `StickySaveBar` naik 200 ms saat ada perubahan. Skeleton berkilau pelan (1,5 detik, linear) lalu berganti ke isi dengan pudar 120 ms. Angka pada ubin statistik beranda menghitung naik sekali dalam 320 ms.
 7. **Tata letak.** Lebar sidebar saat diciutkan atau dilebarkan (200 ms) dan buka-tutup grup navigasi (200 ms, lewat `grid-template-rows`).
+8. **Arah navigasi di HP.** Di bawah 768 px, kolom halaman (kepala dan isi, bukan shell) masuk sesuai arah yang ditandai `components/use-nav-direction.ts` pada `<html>`: masuk lebih dalam, dari kanan sejauh 20 px (2,5 kali `motion-rise`) sambil memudar dalam 200 ms dengan `ease-enter`; kembali, dari kiri; pindah tab bawah, pudar dari opasitas 0,5 dalam 120 ms supaya tidak berkedip kosong. Masuk konten (butir 3) tidak diputar lagi di atasnya, skeleton (`animate={false}`) tidak bergerak, dan halaman dipotong ke samping (`overflow-x: clip`) selama masuk. Aturannya di `apps/web/app/globals.css`.
 
 **Aturan**
 
@@ -151,7 +152,7 @@ Tiap komponen baru atau yang diubah wajib punya story (terang, gelap, lebar HP) 
 **`PageShell`** (di `packages/ui`) adalah satu-satunya akar halaman di route group `(app)`:
 
 - Slot: `breadcrumb`, `header` (`PageHeader`), `nav` (`NavTabs`, selalu di bawah header, tidak tampil bila hanya satu item), `toolbar`, isi.
-- Varian: `default` (kontainer 1200, gulir halaman), `fit` (setinggi viewport, gulir internal untuk tabel dan grid), `narrow` (720, form dan pengaturan), `wide` (dasbor dan grid lebar).
+- Varian: `default` (kontainer 1200, gulir halaman), `fit` (setinggi viewport, gulir internal untuk tabel dan grid), `narrow` (form dan pengaturan: isi 720 rata kiri di bawah kepala selebar `default`, jadi judul dan tab tidak bergeser dari halaman saudaranya), `wide` (dasbor dan grid lebar).
 - Padding halaman: 16 px di HP, 24 px di desktop; jarak antarbagian 24 px.
 - Mengisi judul tab peramban dari judul halaman dan memberi animasi masuk konten.
 

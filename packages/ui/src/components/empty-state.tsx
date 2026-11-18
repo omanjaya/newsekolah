@@ -51,7 +51,9 @@ export interface EmptyStateProps extends Omit<ComponentPropsWithRef<"div">, "tit
 const FRAME_CLASS: Record<EmptyStateVariant, string> = {
   framed: "items-center gap-4 rounded-lg border border-border bg-surface px-6 py-10 text-center",
   inline: "items-center gap-4 px-6 py-8 text-center",
-  compact: "flex-row items-center gap-3 py-2 text-left",
+  // The row wraps so that on a phone its action can take a line of its
+  // own under the text instead of squeezing it (see the action row below).
+  compact: "flex-row flex-wrap items-center gap-3 py-2 text-left",
 };
 
 /**
@@ -84,9 +86,12 @@ export function EmptyState({
         </IconCircle>
       )}
       <div className={cn("flex min-w-0 flex-col", compact ? "flex-1 gap-0.5" : "max-w-sm gap-1")}>
-        <Title className={cn("text-fg", compact ? "text-label" : "text-heading")}>{title}</Title>
+        {/* Balanced and pretty wrapping: no one-word last line. */}
+        <Title className={cn("text-balance text-fg", compact ? "text-label" : "text-heading")}>
+          {title}
+        </Title>
         {description && (
-          <p className={cn("text-fg-muted", compact ? "text-caption" : "text-body-sm")}>
+          <p className={cn("text-pretty text-fg-muted", compact ? "text-caption" : "text-body-sm")}>
             {description}
           </p>
         )}
@@ -95,7 +100,11 @@ export function EmptyState({
         <div
           className={cn(
             "flex flex-wrap items-center gap-x-4 gap-y-2",
-            compact ? "shrink-0" : "mt-1 justify-center",
+            // Compact: beside the text from 640px; on a phone a line of its
+            // own under the text, lined up with it past the 32px icon.
+            compact
+              ? cn("shrink-0 max-sm:basis-full", icon ? "max-sm:pl-11" : undefined)
+              : "mt-1 justify-center",
           )}
         >
           {action}

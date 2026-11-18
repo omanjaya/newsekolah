@@ -13,6 +13,12 @@ export interface SectionHeaderProps extends Omit<ComponentPropsWithRef<"div">, "
   action?: ReactNode;
   /** `h2` by default: a section of the page under its h1. */
   as?: "h2" | "h3" | "h4";
+  /**
+   * `md` (default) sets the title on the heading role, for a section of
+   * the page. `sm` sets it on the muted label role, for a group inside a
+   * card, so it reads under the card's own title instead of as large.
+   */
+  size?: "md" | "sm";
   /** The id of the title, for a `section` labelled by it (`aria-labelledby`). */
   titleId?: string;
 }
@@ -21,7 +27,8 @@ export interface SectionHeaderProps extends Omit<ComponentPropsWithRef<"div">, "
  * The title of a section of a page (the artboard's "Hari ini" with "Lihat
  * semua"): Manrope on the heading role, an optional count and description,
  * and one action on the title's line. Sections are separated by
- * space and this title, not by rules.
+ * space and this title, not by rules. Inside a card, `size="sm"` keeps a
+ * group's title below the card's own.
  */
 export function SectionHeader({
   title,
@@ -29,6 +36,7 @@ export function SectionHeader({
   count,
   action,
   as: Heading = "h2",
+  size = "md",
   titleId,
   className,
   ...props
@@ -40,7 +48,13 @@ export function SectionHeader({
           lands within a pixel of the title's baseline anyway. */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <Heading id={titleId} className="min-w-0 text-heading text-fg">
+          <Heading
+            id={titleId}
+            className={cn(
+              "min-w-0",
+              size === "sm" ? "text-label text-fg-muted" : "text-heading text-fg",
+            )}
+          >
             {title}
           </Heading>
           {count !== undefined && <CountBadge count={count} />}

@@ -141,8 +141,11 @@ export function Progress({
           aria-valuemax={safeMax}
           aria-valuetext={typeof valueLabel === "string" ? valueLabel : `${percent}%`}
           aria-label={ariaLabel ?? label}
+          // The track is a 9% wash of the text colour, not a surface: it
+          // stays one step from whatever it sits on (a card, the mint hero,
+          // a raised menu) in both themes.
           className={cn(
-            "w-full overflow-hidden rounded-full bg-surface-sunken",
+            "w-full overflow-hidden rounded-full bg-neutral-soft",
             meter ? "h-2.5" : "h-1.5",
           )}
         >
