@@ -105,11 +105,10 @@ Yang sudah berjalan:
 - **Story.** 58 berkas story di `packages/ui` (`pnpm --filter @newsekolah/ui storybook`), termasuk "Foundations" untuk token, tipografi, dan gerak. Belum setiap komponen punya story, dan Storybook tidak dibangun di CI.
 - **Uji komponen.** Vitest dan Testing Library untuk `packages/ui` dan `apps/web`. 50 berkas uji di `packages/ui` juga memeriksa aksesibilitas dengan axe (`expectNoAxeViolations`, `packages/ui/src/test/axe.ts`); pemeriksaan itu ikut berjalan di CI karena CI menjalankan `pnpm test`.
 - **CI** (`.github/workflows/ci.yml`, job `web-packages`): `pnpm typecheck`, `pnpm lint`, `pnpm test`, lalu build web beserta paket yang dipakainya. Job `e2e-sim` menjalankan simulasi Playwright multi-peran di atas stack dev bila kode yang disentuhnya berubah.
-- **Lint** (`packages/config/eslint`): warna palet Tailwind, warna tetap, dan warna literal di nilai arbitrer ditolak di seluruh repo; emoji ditolak di string dan teks JSX; ukuran font literal (`text-[Npx]`) ditolak di `packages/ui` saja. `jsx-a11y` (rekomendasi) dan `react-hooks` aktif untuk semua berkas React.
+- **Lint** (`packages/config/eslint`): warna palet Tailwind, warna tetap, dan warna literal di nilai arbitrer ditolak di seluruh repo; emoji ditolak di string dan teks JSX; ukuran font literal (`text-[Npx]`) ditolak di `packages/ui` dan `apps/web`. Di `apps/web` plugin `design-system` juga menolak panel berbingkai dengan radius lama (`rounded-sm`/`rounded-xs`), input tanggal, waktu, bulan, dan angka bawaan, dialog bawaan peramban (`window.confirm`, `alert`, `prompt`), serta elemen mentah (`button`, `select`, `textarea`, `table`, `label`, `h1` sampai `h6`) di `apps/web/features` dan `apps/web/app` (spesifikasi overhaul bagian 8). `jsx-a11y` (rekomendasi) dan `react-hooks` aktif untuk semua berkas React.
 
 Yang masih rencana:
 
-- Larangan ukuran font literal di `apps/web`, larangan elemen mentah (`button`, `select`, `textarea`, `table`, `label`, `h1` sampai `h6`) di `apps/web/features` dan `apps/web/app`, larangan `window.confirm`, dan larangan radius lama pada permukaan (spesifikasi overhaul bagian 8).
 - Uji regresi visual (Chromatic atau tangkapan Playwright) untuk DataTable, roster presensi, Calendar, dan Scanner. Sekarang tangkapan layar hanya dibuat manual saat tinjauan.
 - Uji axe untuk halaman utuh di `apps/web`.
 
