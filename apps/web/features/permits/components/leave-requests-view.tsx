@@ -37,6 +37,7 @@ export function LeaveRequestsView(): ReactElement {
 
   return (
     <AppPage
+      documentTitle={!canSubmit && canIssueLetter ? t("issuerTitle") : undefined}
       primaryAction={
         canSubmit ? (
           <Button
@@ -86,19 +87,18 @@ export function LeaveRequestsView(): ReactElement {
  */
 function IssuerQueueUnavailable(): ReactElement {
   const t = useTranslations("app.permits.leave");
-  const tWorkspace = useTranslations("app.serviceWorkspace");
   const canReview = useCan("review_leave_requests");
   return (
     <EmptyState
       icon={<BellRing aria-hidden="true" />}
       tone="info"
-      title={t("issuerQueueUnavailableTitle")}
+      title={t("issuerTitle")}
       description={t("issuerQueueUnavailableBody")}
       action={
         canReview ? (
           <div className="flex flex-col items-center gap-3">
             <Button asChild>
-              <Link href="/inbox?type=leave">{tWorkspace("openInbox")}</Link>
+              <Link href="/inbox?type=leave">{t("issuerOpenInbox")}</Link>
             </Button>
             <TextLink href="/notifications">{t("openNotifications")}</TextLink>
           </div>
