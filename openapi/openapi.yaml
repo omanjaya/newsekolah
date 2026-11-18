@@ -15036,6 +15036,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /v1/documents/templates/{templateId}:
     put:
       tags:
@@ -15089,6 +15091,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /v1/documents/templates/{templateId}/set-default:
     post:
       tags:
@@ -18448,6 +18452,12 @@ components:
             $ref: "#/components/schemas/Error"
     BadRequest:
       description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    UnprocessableEntity:
+      description: Well-formed request whose content cannot be used (e.g. TEMPLATE_INVALID)
       content:
         application/json:
           schema:

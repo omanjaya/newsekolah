@@ -40,6 +40,7 @@ var (
 	errViolationInvalid    = httpx.NewError(http.StatusBadRequest, "VIOLATION_INVALID")
 	errScanConsumerStudent = httpx.NewError(http.StatusForbidden, "SCAN_TOKEN_CONSUMER_NOT_STUDENT")
 	errReasonTooLong       = httpx.NewError(http.StatusBadRequest, "REASON_TOO_LONG")
+	errTemplateInvalid     = httpx.NewError(http.StatusUnprocessableEntity, "TEMPLATE_INVALID")
 )
 
 var permitErrorMap = map[error]error{
@@ -69,6 +70,7 @@ var permitErrorMap = map[error]error{
 	domain.ErrEvidenceTooLarge:             errEvidenceTooLarge,
 	domain.ErrEvidenceInvalidType:          errEvidenceType,
 	domain.ErrTemplateNotFound:             httpx.ErrNotFound,
+	domain.ErrTemplateInvalid:              errTemplateInvalid,
 	domain.ErrDocumentNotFound:             httpx.ErrNotFound,
 	domain.ErrDocumentRevoked:              httpx.ErrNotFound,
 	domain.ErrEvidenceRequired:             errEvidenceRequired,

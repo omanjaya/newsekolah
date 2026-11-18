@@ -15,9 +15,11 @@ package documents
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html"
 	"html/template"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -72,7 +74,7 @@ func (r *HTMLPDFRenderer) Render(_ context.Context, tmpl Template, vars map[stri
 		return Rendered{}, fmt.Errorf("documents: unsupported template engine %q", tmpl.Engine)
 	}
 
-	t, err := template.New("document").Parse(tmpl.Body)
+	t, err := parseHTML(tmpl.Body)
 	if err != nil {
 		return Rendered{}, fmt.Errorf("parse document template: %w", err)
 	}
@@ -89,6 +91,34 @@ func (r *HTMLPDFRenderer) Render(_ context.Context, tmpl Template, vars map[stri
 	}
 
 	return Rendered{HTML: renderedHTML, PDF: pdf}, nil
+}
+
+// parseHTML is the one place a template body is parsed, so ValidateHTML
+// accepts exactly the bodies Render can parse.
+func parseHTML(body string) (*template.Template, error) {
+	return template.New("document").Parse(body)
+}
+
+// ValidateHTML reports whether an EngineHTML body would get past every
+// step of Render that does not depend on the values passed in: parsing,
+// and html/template's contextual escaping (which only runs on the first
+// Execute, e.g. an {{if}} whose branches end inside and outside an
+// attribute). Callers use it when a template is saved, so a broken body
+// is refused there instead of failing every later Render of its kind.
+//
+// Errors that do depend on the values (a missing variable handed to a
+// function, say) are not reported: the trial execution runs against an
+// empty map, so they would be false alarms here.
+func ValidateHTML(body string) error {
+	t, err := parseHTML(body)
+	if err != nil {
+		return err
+	}
+	var escapeErr *template.Error
+	if err := t.Execute(io.Discard, map[string]any{}); errors.As(err, &escapeErr) {
+		return escapeErr
+	}
+	return nil
 }
 
 var (

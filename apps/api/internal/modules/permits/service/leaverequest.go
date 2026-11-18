@@ -666,6 +666,9 @@ func (s *Service) CreateTemplate(ctx context.Context, t domain.Template) (domain
 	if t.Engine == "" {
 		t.Engine = domain.EngineHTML
 	}
+	if err := validateTemplateBody(t.Engine, t.Body); err != nil {
+		return domain.Template{}, err
+	}
 	if t.Kind == domain.TemplateKindLeaveLetter && len(t.Variables) == 0 {
 		t.Variables = leaveLetterTemplateVariables
 	}
@@ -691,10 +694,27 @@ func (s *Service) UpdateTemplate(ctx context.Context, tenantID, id uuid.UUID, na
 		if err := s.requireTemplateKind(ctx, tenantID, current.Kind); err != nil {
 			return err
 		}
+		if err := validateTemplateBody(current.Engine, body); err != nil {
+			return err
+		}
 		out, err = s.repo.UpdateTemplate(ctx, tenantID, id, name, body, variables, letterheadAssetID)
 		return err
 	})
 	return out, err
+}
+
+// validateTemplateBody refuses an html body the renderer could not render,
+// wrapping the parser's message (which names the line) in
+// domain.ErrTemplateInvalid. Other engines are not rendered today (see
+// documents.Engine), so there is nothing to check them against.
+func validateTemplateBody(engine domain.Engine, body string) error {
+	if engine != domain.EngineHTML {
+		return nil
+	}
+	if err := documents.ValidateHTML(body); err != nil {
+		return fmt.Errorf("%w: %v", domain.ErrTemplateInvalid, err)
+	}
+	return nil
 }
 
 func (s *Service) SetDefaultTemplate(ctx context.Context, tenantID, id uuid.UUID) (domain.Template, error) {
