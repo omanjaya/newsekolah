@@ -16,9 +16,11 @@ import { Breadcrumb, type BreadcrumbItem } from "./breadcrumb.js";
  * - `default`: up to 1200px, the page scrolls. Lists, detail pages.
  * - `wide`: up to 1440px, the page scrolls. Dashboards, wide grids.
  * - `narrow`: content (toolbar and body) up to 720px, the page scrolls.
- *   Forms, settings. The head (trail, header, sub-navigation) keeps the
- *   default column and the content sits at its left edge, so a narrow
- *   page's title and tabs do not jump sideways from a default sibling's.
+ *   Forms, settings. The head keeps the default column and the content
+ *   sits at its left edge, so a narrow page's title and tabs do not jump
+ *   sideways from a default sibling's. The trail and header stop at the
+ *   content's width too, so the header's actions end where the form
+ *   ends instead of 480px to its right.
  * - `fit`: up to 1440px and exactly as tall as the viewport from 768px up;
  *   the content area takes the remaining height and scrolls inside itself
  *   (a table with a sticky head, a class list beside its roster).
@@ -128,7 +130,13 @@ export function PageShell({
             className="flex min-w-0 flex-col gap-4 [&:not(:has(>:not(:empty)))]:hidden"
           >
             {(crumbs !== null || Boolean(header)) && (
-              <div className="flex min-w-0 flex-col gap-2">
+              <div
+                data-slot="page-title"
+                className={cn(
+                  "flex min-w-0 flex-col gap-2",
+                  variant === "narrow" && "max-w-narrow",
+                )}
+              >
                 {crumbs}
                 {header}
               </div>

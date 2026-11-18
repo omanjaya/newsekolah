@@ -148,6 +148,17 @@ describe("PageShell", () => {
     expect(slot(container, "page-head")).not.toHaveClass("max-w-narrow");
     expect(slot(container, "page-content")).toHaveClass("w-full", "max-w-narrow");
     expect(slot(container, "page-content")).not.toHaveClass("mx-auto");
+    // The header's actions end where the content ends, not at the column's edge.
+    expect(slot(container, "page-title")).toHaveClass("max-w-narrow");
+  });
+
+  it("lets a default page's header run the full column", () => {
+    const { container } = render(
+      <PageShell header={<PageHeader title="Pengguna" />}>
+        <p>Isi</p>
+      </PageShell>,
+    );
+    expect(slot(container, "page-title")).not.toHaveClass("max-w-narrow");
   });
 
   it("fits the viewport under the app's sticky chrome and lets the content take the rest", () => {
