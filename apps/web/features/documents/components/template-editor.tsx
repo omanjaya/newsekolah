@@ -14,6 +14,7 @@ import {
   FormSection,
   Input,
   Select,
+  Skeleton,
   SkeletonForm,
   Textarea,
   domainIcons,
@@ -23,7 +24,7 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useMemo, useRef, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
@@ -52,7 +53,8 @@ function EditorPage({
   floating,
   children,
 }: {
-  title: string;
+  /** A string once the template's name is known; a placeholder while it loads. */
+  title: ReactNode;
   floating?: ReactElement;
   children: ReactElement;
 }): ReactElement {
@@ -61,11 +63,14 @@ function EditorPage({
     <AppPage
       variant="default"
       title={title}
+      documentTitle={
+        typeof title === "string" ? title : t("app.documents.templates.editor.editTitle")
+      }
       nav={false}
       breadcrumb={[
         { label: t("app.settingsHub.title"), href: "/settings" },
         { label: t("app.documents.templates.navLabel"), href: LIST_HREF },
-        { label: title },
+        ...(typeof title === "string" ? [{ label: title }] : []),
       ]}
       floating={floating}
     >
@@ -96,7 +101,7 @@ export function TemplateEditorView({ templateId }: { templateId?: string }): Rea
   }
   if (templateId && query.isLoading) {
     return (
-      <EditorPage title={title}>
+      <EditorPage title={<Skeleton className="h-8 w-56" />}>
         <div aria-busy="true" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
           <SkeletonForm fields={4} actions={false} />
           <SkeletonForm fields={2} actions={false} className="hidden lg:flex" />
@@ -315,12 +320,20 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
           </CardHeader>
           <div className="flex flex-col gap-4 px-5 pb-5">
             <div className="rounded-md bg-surface-sunken p-3">
-              <iframe
-                title={t("previewLabel")}
-                sandbox=""
-                srcDoc={previewHtml}
-                className="aspect-[1/1.2] w-full rounded-xs bg-surface shadow-1"
-              />
+              {body.trim() ? (
+                <iframe
+                  title={t("previewLabel")}
+                  sandbox=""
+                  srcDoc={previewHtml}
+                  className="aspect-[1/1.2] w-full rounded-xs bg-surface shadow-1"
+                />
+              ) : (
+                <EmptyState
+                  variant="compact"
+                  icon={<domainIcons.document aria-hidden="true" />}
+                  title={t("previewEmpty")}
+                />
+              )}
             </div>
             <div className="flex flex-col gap-2">
               <p className="text-label text-fg">{t("placeholdersLabel")}</p>
@@ -335,7 +348,9 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
                       tone={knownPlaceholders.includes(placeholder) ? "success" : "warning"}
                       title={`{{${placeholder}}}`}
                     >
-                      {placeholderLabel(placeholder)}
+                      {knownPlaceholders.includes(placeholder)
+                        ? placeholderLabel(placeholder)
+                        : t("unknownBadge", { name: placeholderLabel(placeholder) })}
                     </Badge>
                   ))}
                 </div>

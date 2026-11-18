@@ -202,7 +202,7 @@ export function StageEditor({
         )}
       </Card>
 
-      <Card className="lg:sticky lg:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)]">
+      <Card className="hidden lg:sticky lg:block lg:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)]">
         <CardHeader>
           <CardTitle as="h2">{t("summaryTitle")}</CardTitle>
           <CardDescription>{t("summaryHint")}</CardDescription>
@@ -217,8 +217,8 @@ export function StageEditor({
               steps={items.map((item, index) => ({
                 id: item.id,
                 label: item.stage.label.trim() || t("stage.untitled", { index: index + 1 }),
-                description: t(`stage.verification.${item.stage.verification}`),
-                actor: ruleLabel(item.stage.approver_rule),
+                description: ruleLabel(item.stage.approver_rule),
+                actor: t(`stage.verification.${item.stage.verification}`),
                 state: "upcoming",
               }))}
             />

@@ -6,7 +6,6 @@ import {
   DisclosureIndicator,
   DisclosureTrigger,
   Field,
-  IconButton,
   Input,
   RowActionsMenu,
   Select,
@@ -55,8 +54,8 @@ export interface StageRowProps {
 
 /**
  * One stage of a workflow: a compact row (number, name, who approves and
- * how) that opens into its form. Order changes and removal are in the row,
- * removal behind its menu; the stage code, which in-flight requests refer
+ * how) that opens into its form. Order changes and removal sit together in
+ * the row's menu; the stage code, which in-flight requests refer
  * to, waits under "Lanjutan" in the open form.
  */
 export function StageRow({
@@ -131,28 +130,6 @@ export function StageRow({
             </span>
             <DisclosureIndicator />
           </DisclosureTrigger>
-          {editable && (
-            <div className="hidden shrink-0 items-center sm:flex">
-              <IconButton
-                variant="ghost"
-                icon={<ArrowUp />}
-                aria-label={t("moveUp")}
-                disabled={isFirst}
-                onClick={() => {
-                  onMove(-1);
-                }}
-              />
-              <IconButton
-                variant="ghost"
-                icon={<ArrowDown />}
-                aria-label={t("moveDown")}
-                disabled={isLast}
-                onClick={() => {
-                  onMove(1);
-                }}
-              />
-            </div>
-          )}
           {editable && <RowActionsMenu ariaLabel={t("actions", { name })} items={menu} />}
         </div>
 
