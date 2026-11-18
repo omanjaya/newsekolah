@@ -187,8 +187,10 @@ export function ExpectedGuestsView(): ReactElement {
       variant="fit"
       nav={<VisitorsWorkspaceNav />}
       documentTitle={t("documentTitle")}
-      // The day acts on the list, so it is the toolbar, under the tabs: the
-      // tab row then sits at the same height on every Buku tamu page.
+      // The day acts on the list, so it is the toolbar, under the tabs. With
+      // the action on the title's line on a phone, nothing else stands
+      // between the title and the tabs, so the tab row sits at the same
+      // height on every Buku tamu page, whoever reads it.
       toolbar={
         <DayStepper
           value={date}
@@ -208,6 +210,9 @@ export function ExpectedGuestsView(): ReactElement {
             {t("add")}
           </Button>
         ) : undefined
+      }
+      primaryActionCompact={
+        canManage ? { icon: <Plus />, label: t("add"), onSelect: startCreate } : undefined
       }
     >
       <div className="flex flex-col md:min-h-0 md:flex-1">

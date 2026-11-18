@@ -109,6 +109,7 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
   const [savedVersion, setSavedVersion] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const { lines, signers, emphasis } = draft;
+  const filledLines = lines.filter((line) => line.trim() !== "").length;
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
 
@@ -250,7 +251,9 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
                   <Button
                     variant="ghost"
                     icon={<Plus />}
-                    className="self-start"
+                    // Pulled out by its leading padding, so the icon lines
+                    // up with the edge of the fields above it.
+                    className="-ml-3.5 self-start"
                     disabled={lines.length >= MAX_LINES}
                     onClick={() => {
                       patch({ lines: [...lines, ""] });
@@ -261,29 +264,33 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
                 </div>
               )}
             </Field>
-            <Field label={t("emphasisLabel")} hint={t("emphasisHint")}>
-              {(control) => (
-                <RadioGroup
-                  aria-labelledby={control.labelId}
-                  aria-describedby={control["aria-describedby"]}
-                  value={emphasis === undefined ? AUTO : String(emphasis)}
-                  onValueChange={(value) => {
-                    patch({ emphasis: value === AUTO ? undefined : Number(value) });
-                  }}
-                >
-                  <RadioGroupItem value={AUTO} label={t("emphasisAuto")} />
-                  {lines.map((line, index) =>
-                    line.trim() === "" ? null : (
-                      <RadioGroupItem
-                        key={index}
-                        value={String(index)}
-                        label={t("emphasisLineOption", { index: index + 1, text: line })}
-                      />
-                    ),
-                  )}
-                </RadioGroup>
-              )}
-            </Field>
+            {/* A choice only once there are two filled lines to choose
+                between: with one, "automatic" is the only answer. */}
+            {filledLines >= 2 && (
+              <Field label={t("emphasisLabel")} hint={t("emphasisHint")}>
+                {(control) => (
+                  <RadioGroup
+                    aria-labelledby={control.labelId}
+                    aria-describedby={control["aria-describedby"]}
+                    value={emphasis === undefined ? AUTO : String(emphasis)}
+                    onValueChange={(value) => {
+                      patch({ emphasis: value === AUTO ? undefined : Number(value) });
+                    }}
+                  >
+                    <RadioGroupItem value={AUTO} label={t("emphasisAuto")} />
+                    {lines.map((line, index) =>
+                      line.trim() === "" ? null : (
+                        <RadioGroupItem
+                          key={index}
+                          value={String(index)}
+                          label={t("emphasisLineOption", { index: index + 1, text: line })}
+                        />
+                      ),
+                    )}
+                  </RadioGroup>
+                )}
+              </Field>
+            )}
           </FormSection>
 
           <FormSection variant="card" columns={1} title={t("placeTitle")}>

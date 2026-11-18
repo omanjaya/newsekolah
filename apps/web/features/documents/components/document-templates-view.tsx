@@ -31,6 +31,7 @@ import {
   useDocumentTemplatesQuery,
   useSetDefaultDocumentTemplateMutation,
 } from "../api";
+import { findLegacyPlaceholders } from "../template-syntax";
 
 const NEW_TEMPLATE_HREF = "/settings/document-templates/new";
 
@@ -38,7 +39,9 @@ const NEW_TEMPLATE_HREF = "/settings/document-templates/new";
  * The school's document templates, grouped by the kind of document they
  * print. A row opens the template's editor page; the kind's default is
  * marked, and any other template can be made the default from the row's
- * menu, so a long name keeps the row's width on a phone.
+ * menu, so a long name keeps the row's width on a phone. A template the
+ * first editor saved with values the API cannot read (`{{name}}`, no dot)
+ * is marked as needing a fix, which its editor page offers.
  */
 export function DocumentTemplatesView(): ReactElement {
   const t = useTranslations("app.documents.templates");
@@ -119,6 +122,7 @@ export function DocumentTemplatesView(): ReactElement {
               <List framed>
                 {group.templates.map((template) => {
                   const editorHref = `/settings/document-templates/${template.id}`;
+                  const needsFix = findLegacyPlaceholders(template.body).length > 0;
                   return (
                     <ListRow
                       key={template.id}
@@ -137,10 +141,19 @@ export function DocumentTemplatesView(): ReactElement {
                       })}
                       href={canManage ? editorHref : undefined}
                       trailing={
-                        template.is_default ? (
-                          <Badge tone="success" size="sm">
-                            {t("default")}
-                          </Badge>
+                        needsFix || template.is_default ? (
+                          <>
+                            {needsFix && (
+                              <Badge tone="warning" size="sm">
+                                {t("needsFix")}
+                              </Badge>
+                            )}
+                            {template.is_default && (
+                              <Badge tone="success" size="sm">
+                                {t("default")}
+                              </Badge>
+                            )}
+                          </>
                         ) : undefined
                       }
                       action={

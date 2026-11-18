@@ -2,7 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
-  Badge,
+  Alert,
   Button,
   Card,
   CardDescription,
@@ -32,18 +32,27 @@ import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { isModuleEnabled } from "../../../lib/modules/feature-modules";
 import { useSession } from "../../../lib/session/session-provider";
+import { PreviewSheet } from "../../settings/components/preview-sheet";
 import { SettingsSaveBar } from "../../settings/components/settings-save-bar";
 import {
+  KNOWN_TEMPLATE_LISTS,
   KNOWN_TEMPLATE_PLACEHOLDERS,
   availableTemplateKinds,
   type DocumentTemplate,
   type DocumentTemplateKind,
-  extractPlaceholders,
-  renderPreviewHtml,
   useCreateDocumentTemplateMutation,
   useDocumentTemplatesQuery,
   useUpdateDocumentTemplateMutation,
 } from "../api";
+import {
+  fixLegacyPlaceholders,
+  listBlockToken,
+  placeholderToken,
+  renderPreviewHtml,
+  scanTemplate,
+} from "../template-syntax";
+
+import { TemplatePreview } from "./template-preview";
 
 const LIST_HREF = "/settings/document-templates";
 
@@ -130,15 +139,21 @@ export function TemplateEditorView({ templateId }: { templateId?: string }): Rea
 
 /**
  * Two panes: name, kind and the HTML body on the left, with the kind's
- * placeholders as buttons that insert at the cursor; on the right a
- * preview rendered in an isolated frame with sample values, kept in view.
- * Create when `template` is undefined, edit otherwise; the kind is fixed
- * once created.
+ * values as buttons that insert `{{.name}}` at the cursor; on the right a
+ * preview rendered in an isolated frame, each value shown as its name in
+ * square brackets, kept in view. Below `lg` the preview opens in a bottom
+ * sheet from the body card instead. Create when `template` is undefined,
+ * edit otherwise; the kind is fixed once created.
+ *
+ * The first editor wrote values without their dot (`{{name}}`), which the
+ * API cannot parse, so every document issued from such a body fails. A
+ * body like that loads as it was saved, flagged above the field with a
+ * button that adds the dots, and cannot be saved again until it is fixed.
  */
 function TemplateEditorForm({ template }: { template?: DocumentTemplate }): ReactElement {
   const t = useTranslations("app.documents.templates.editor");
   const tKind = useTranslations("app.documents.templates.kind");
-  const tPlaceholder = useTranslations("app.documents.templates.placeholders");
+  const tTemplates = useTranslations("app.documents.templates");
   const toast = useToast();
   const router = useRouter();
   const apiErrorMessage = useApiErrorMessage();
@@ -160,23 +175,36 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const placeholders = useMemo(() => extractPlaceholders(body), [body]);
+  const { placeholders, legacy } = useMemo(() => scanTemplate(body), [body]);
   const knownPlaceholders = KNOWN_TEMPLATE_PLACEHOLDERS[kind] ?? [];
-  const previewHtml = useMemo(() => renderPreviewHtml(body, placeholders), [body, placeholders]);
+  const knownLists = KNOWN_TEMPLATE_LISTS[kind] ?? {};
+  const isKnown = (placeholder: string) =>
+    knownPlaceholders.includes(placeholder) || Object.hasOwn(knownLists, placeholder);
   const saving = create.isPending || update.isPending;
   const dirty = template
     ? name !== template.name || body !== template.body
     : name.trim() !== "" || body.trim() !== "";
   const nameError = submitted && !name.trim() ? t("nameRequired") : undefined;
-  const bodyError = submitted && !body.trim() ? t("bodyRequired") : undefined;
+  let bodyError: string | undefined;
+  if (submitted && !body.trim()) bodyError = t("bodyRequired");
+  else if (submitted && legacy.length > 0) bodyError = t("legacyError");
 
-  function placeholderLabel(placeholder: string): string {
-    return tPlaceholder.has(placeholder) ? tPlaceholder(placeholder) : placeholder;
+  /**
+   * A value's name for a person: "Nama siswa" for `student_name`, the
+   * field of an item when `list` names its list, the kind's own wording
+   * where it differs, and the raw name for a value the catalog lacks.
+   */
+  function placeholderLabel(placeholder: string, list: string | null = null): string {
+    const key = [
+      ...(list ? [`placeholderItems.${list}.${placeholder}`] : []),
+      `kindPlaceholders.${kind}.${placeholder}`,
+      `placeholders.${placeholder}`,
+    ].find((candidate) => tTemplates.has(candidate));
+    return key ? tTemplates(key) : placeholder;
   }
 
-  /** Puts `{{name}}` where the cursor is (or at the end) and keeps typing there. */
-  function insertPlaceholder(placeholder: string) {
-    const token = `{{${placeholder}}}`;
+  /** Puts `token` where the cursor is (or at the end) and keeps typing after it. */
+  function insertToken(token: string) {
     const field = bodyRef.current;
     const start = field?.selectionStart ?? body.length;
     const end = field?.selectionEnd ?? body.length;
@@ -187,6 +215,10 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
     });
   }
 
+  function fixLegacy() {
+    setBody(fixLegacyPlaceholders(body));
+  }
+
   function onError(err: unknown) {
     setError(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
   }
@@ -194,7 +226,7 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
   function handleSave() {
     setSubmitted(true);
     setError(null);
-    if (!name.trim() || !body.trim()) return;
+    if (!name.trim() || !body.trim() || legacy.length > 0) return;
     const done = (message: string) => {
       toast.success(message);
       router.push(LIST_HREF);
@@ -221,6 +253,19 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
       },
     );
   }
+
+  // The preview frame and the values in use: the trailing card from `lg`
+  // up; below it, a sheet the body card opens, so a phone need not scroll
+  // past the whole body to check an edit.
+  const preview = (
+    <TemplatePreview
+      html={renderPreviewHtml(body, placeholderLabel)}
+      placeholders={placeholders}
+      legacy={legacy}
+      isKnown={isKnown}
+      label={placeholderLabel}
+    />
+  );
 
   return (
     <EditorPage
@@ -274,7 +319,31 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
             columns={1}
             title={t("bodyTitle")}
             description={t("bodyHint")}
+            aside={
+              <PreviewSheet label={t("previewLabel")}>
+                <div className="flex flex-col gap-4">
+                  <p className="text-body-sm text-fg-muted">{t("previewHint")}</p>
+                  {preview}
+                </div>
+              </PreviewSheet>
+            }
           >
+            {legacy.length > 0 && (
+              <Alert
+                tone="warning"
+                title={t("legacyTitle")}
+                action={
+                  <Button variant="secondary" size="sm" onClick={fixLegacy}>
+                    {t("legacyFix")}
+                  </Button>
+                }
+              >
+                {t("legacyBody", {
+                  legacy: `{{${legacy[0] ?? ""}}}`,
+                  fixed: placeholderToken(legacy[0] ?? ""),
+                })}
+              </Alert>
+            )}
             <Field label={t("bodyLabel")} required error={bodyError}>
               <Textarea
                 ref={bodyRef}
@@ -299,12 +368,26 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
                       variant="secondary"
                       size="sm"
                       icon={<Plus />}
-                      title={`{{${placeholder}}}`}
+                      title={placeholderToken(placeholder)}
                       onClick={() => {
-                        insertPlaceholder(placeholder);
+                        insertToken(placeholderToken(placeholder));
                       }}
                     >
                       {placeholderLabel(placeholder)}
+                    </Button>
+                  ))}
+                  {Object.entries(knownLists).map(([list, fields]) => (
+                    <Button
+                      key={list}
+                      variant="secondary"
+                      size="sm"
+                      icon={<Plus />}
+                      title={`{{range .${list}}}`}
+                      onClick={() => {
+                        insertToken(listBlockToken(list, fields));
+                      }}
+                    >
+                      {placeholderLabel(list)}
                     </Button>
                   ))}
                 </div>
@@ -313,53 +396,12 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
           </FormSection>
         </div>
 
-        <Card className="lg:sticky lg:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)]">
+        <Card className="hidden lg:sticky lg:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)] lg:block">
           <CardHeader>
             <CardTitle as="h2">{t("previewLabel")}</CardTitle>
             <CardDescription>{t("previewHint")}</CardDescription>
           </CardHeader>
-          <div className="flex flex-col gap-4 px-5 pb-5">
-            <div className="rounded-md bg-surface-sunken p-3">
-              {body.trim() ? (
-                <iframe
-                  title={t("previewLabel")}
-                  sandbox=""
-                  srcDoc={previewHtml}
-                  className="aspect-[1/1.2] w-full rounded-xs bg-surface shadow-1"
-                />
-              ) : (
-                <EmptyState
-                  variant="compact"
-                  icon={<domainIcons.document aria-hidden="true" />}
-                  title={t("previewEmpty")}
-                />
-              )}
-            </div>
-            <div className="flex flex-col gap-2">
-              <p className="text-label text-fg">{t("placeholdersLabel")}</p>
-              {placeholders.length === 0 ? (
-                <p className="text-body-sm text-fg-muted">{t("noPlaceholders")}</p>
-              ) : (
-                <div className="flex flex-wrap gap-1.5">
-                  {placeholders.map((placeholder) => (
-                    <Badge
-                      key={placeholder}
-                      size="sm"
-                      tone={knownPlaceholders.includes(placeholder) ? "success" : "warning"}
-                      title={`{{${placeholder}}}`}
-                    >
-                      {knownPlaceholders.includes(placeholder)
-                        ? placeholderLabel(placeholder)
-                        : t("unknownBadge", { name: placeholderLabel(placeholder) })}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              {placeholders.some((placeholder) => !knownPlaceholders.includes(placeholder)) && (
-                <p className="text-body-sm text-fg-muted">{t("unknownPlaceholdersHint")}</p>
-              )}
-            </div>
-          </div>
+          <div className="px-5 pb-5">{preview}</div>
         </Card>
       </div>
     </EditorPage>

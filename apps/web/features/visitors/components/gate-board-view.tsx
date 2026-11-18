@@ -154,6 +154,11 @@ export function GateBoardView(): ReactElement {
           </Button>
         ) : undefined
       }
+      // On a phone the action is an icon on the title's line, as on every
+      // Buku tamu page, so the tab row sits at one height across them.
+      primaryActionCompact={
+        canManage ? { icon: <Plus />, label: t("newVisitor"), onSelect: startCheckIn } : undefined
+      }
       toolbar={
         // Full width of the toolbar row and allowed to shrink, so the filter
         // strip scrolls inside the column instead of pushing past it; the
