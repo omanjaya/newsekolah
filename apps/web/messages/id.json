@@ -1573,6 +1573,7 @@
         "noAccessBody": "Peran Anda tidak terlibat dalam alur izin terencana.",
         "issuerQueueUnavailableTitle": "Surat izin diterbitkan dari notifikasi",
         "issuerQueueUnavailableBody": "Setiap pengajuan yang sudah disetujui wali kelas dikirim ke notifikasi Anda. Buka notifikasinya untuk melihat pengajuan dan menerbitkan suratnya.",
+        "issuerQueueInboxBody": "Pengajuan yang sudah disetujui wali kelas menunggu di antrean izin. Buka antreannya untuk meninjau dan menerbitkan suratnya.",
         "openNotifications": "Buka notifikasi",
         "notFoundTitle": "Pengajuan tidak ditemukan",
         "notFoundBody": "Pengajuan ini sudah tidak tersedia atau bukan bagian dari tugas Anda.",
