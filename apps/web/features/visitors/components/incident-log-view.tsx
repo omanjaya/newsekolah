@@ -189,6 +189,11 @@ export function IncidentLogView(): ReactElement {
           </Button>
         ) : undefined
       }
+      // On a phone the action is an icon on the title's line, as on every
+      // Buku tamu page, so the tab row sits at one height across them.
+      primaryActionCompact={
+        canManage ? { icon: <Plus />, label: t("record"), onSelect: startCreate } : undefined
+      }
     >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable

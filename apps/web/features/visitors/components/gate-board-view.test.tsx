@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   checkOutMutate: vi.fn(),
   board: vi.fn(),
   canManage: true,
+  appPage: vi.fn<(props: { primaryActionCompact?: { label: string } }) => void>(),
 }));
 
 vi.mock("next-intl", () => ({
@@ -19,7 +20,15 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/visitors/board",
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
-vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+vi.mock("../../../components/app-page", async () => {
+  const stub = await import("../../../test/app-page-stub");
+  return {
+    AppPage: (props: Parameters<typeof stub.AppPage>[0]) => {
+      mocks.appPage(props);
+      return stub.AppPage(props);
+    },
+  };
+});
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => () => "error",
 }));
@@ -135,6 +144,14 @@ describe("GateBoardView", () => {
     render(<GateBoardView />);
     expect(screen.queryByRole("button", { name: /checkOutFor/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "newVisitor" })).not.toBeInTheDocument();
+    expect(mocks.appPage.mock.lastCall?.[0]).toMatchObject({ primaryActionCompact: undefined });
+  });
+
+  it("puts the check-in on the title's line on a phone, so the tab row keeps its height", () => {
+    render(<GateBoardView />);
+    expect(mocks.appPage.mock.lastCall?.[0]).toMatchObject({
+      primaryActionCompact: { label: "newVisitor" },
+    });
   });
 
   it("says a failed load failed instead of showing an empty board", () => {

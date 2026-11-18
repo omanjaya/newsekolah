@@ -182,8 +182,10 @@ export function VisitorRecapView({
       title={embedded && !sectionNav ? t("documentTitle") : undefined}
       nav={sectionNav ?? (embedded ? false : <VisitorsWorkspaceNav />)}
       documentTitle={t("documentTitle")}
-      // The period acts on the recap, so it is the toolbar, under the tabs:
-      // the tab row then sits at the same height on every Buku tamu page.
+      // The period acts on the recap, so it is the toolbar, under the tabs,
+      // and the export waits in the overflow menu on the title's line on a
+      // phone, where the other Buku tamu pages put their main action: the
+      // tab row then sits at the same height on all of them.
       toolbar={
         <>
           <SegmentedControl<Period>
