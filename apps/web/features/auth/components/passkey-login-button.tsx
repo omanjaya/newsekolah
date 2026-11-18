@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button } from "@newsekolah/ui";
+import { Button, useHydrated } from "@newsekolah/ui";
 import { KeyRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -31,6 +31,7 @@ export function PasskeyLoginButton({
   const apiErrorMessage = useApiErrorMessage();
   const passkeyLogin = usePasskeyLoginMutation();
   const passkeySupported = usePasskeySupported();
+  const hydrated = useHydrated();
 
   if (!passkeySupported) {
     return null;
@@ -53,6 +54,8 @@ export function PasskeyLoginButton({
     <Button
       type="button"
       variant="secondary"
+      size="lg"
+      disabled={!hydrated}
       icon={<KeyRound />}
       loading={passkeyLogin.isPending}
       onClick={() => void handleClick()}
