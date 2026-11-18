@@ -242,6 +242,8 @@ export function Stat({
         ROOT_CLASS[look],
         compact && Boolean(icon) && "pl-15",
         paired && "max-sm:min-w-0 max-sm:pr-3",
+        // A linked strip cell keeps room at its end for the "go to" chevron.
+        compact && href !== undefined && "pr-8 max-sm:pr-8",
         // The stretched target is the only focusable element, so the ring
         // goes on the whole stat instead of on the label text.
         interactive &&
@@ -313,12 +315,20 @@ export function Stat({
             {shown.node}
           </span>
         )}
-        {/* "Go to" only for a tile that leads somewhere: a button tile is
+        {/* "Go to" only for a figure that leads somewhere: a button stat is
             a filter or an action in place, and a chevron would promise a
-            page that never opens. */}
+            page that never opens. A strip cell centres a smaller one on
+            its end, so a phone's figures look as tappable as the tiles. */}
         {href !== undefined && look === "tile" && (
           <ChevronRight
             className="pointer-events-none absolute top-4 right-4 size-4 text-fg-muted"
+            aria-hidden="true"
+          />
+        )}
+        {href !== undefined && compact && (
+          <ChevronRight
+            data-stat-chevron=""
+            className="pointer-events-none absolute top-1/2 right-3 size-3.5 -translate-y-1/2 text-fg-muted"
             aria-hidden="true"
           />
         )}

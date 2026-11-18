@@ -144,6 +144,24 @@ describe("Stat", () => {
     expect(screen.queryByText("0")).not.toBeInTheDocument();
   });
 
+  it("marks a linked strip cell with a chevron and leaves a button cell without one", () => {
+    const { container, rerender } = render(
+      <StatGrid variant="strip">
+        <Stat value="4" label="Terlambat" href="/library/desk" />
+      </StatGrid>,
+    );
+    const chevron = container.querySelector("svg[data-stat-chevron]");
+    expect(chevron).toHaveClass("pointer-events-none", "absolute");
+    expect(chevron).toHaveAttribute("aria-hidden", "true");
+    expect(container.querySelector("dl > div")).toHaveClass("pr-8");
+    rerender(
+      <StatGrid variant="strip">
+        <Stat value="4" label="Terlambat" onClick={() => undefined} />
+      </StatGrid>,
+    );
+    expect(container.querySelector("svg[data-stat-chevron]")).toBeNull();
+  });
+
   // The whole stat is the target through the label's stretched ::after. The
   // chevron and a strip cell's icon are positioned, so they paint above
   // that layer; they must let the pointer through or they are dead spots.
