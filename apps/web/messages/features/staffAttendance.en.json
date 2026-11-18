@@ -39,7 +39,7 @@
     "hoursRange": "{arrival} – {departure}",
     "emptyTitle": "No work schedules yet",
     "emptyBody": "This board lists employees who have a work schedule. Set their schedules first.",
-    "emptyBodyReadOnly": "No employees have a work schedule yet.",
+    "emptyBodyReadOnly": "This board fills in once an admin sets staff work schedules.",
     "openSchedule": "Set work schedules",
     "manualEntry": "Manual entry",
     "columns": {
