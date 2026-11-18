@@ -41,10 +41,11 @@ vi.mock("../api", () => ({
   useSetDefaultDocumentTemplateMutation: () => setDefault() as never,
 }));
 
+const row = { body: "<p>{{.student_name}}</p>", updated_at: "2026-11-12" };
 const templates = [
-  { id: "a", name: "Surat A", kind: "leave_letter", is_default: false, updated_at: "2026-11-12" },
-  { id: "b", name: "Surat B", kind: "leave_letter", is_default: false, updated_at: "2026-11-12" },
-  { id: "c", name: "Kartu C", kind: "member_card", is_default: true, updated_at: "2026-11-12" },
+  { ...row, id: "a", name: "Surat A", kind: "leave_letter", is_default: false },
+  { ...row, id: "b", name: "Surat B", kind: "leave_letter", is_default: false },
+  { ...row, id: "c", name: "Kartu C", kind: "member_card", is_default: true },
 ];
 
 beforeEach(() => {
@@ -90,6 +91,19 @@ describe("DocumentTemplatesView", () => {
     );
     // Every row keeps its actions in one menu.
     expect(screen.getAllByRole("button", { name: "rowActions" })).toHaveLength(3);
+  });
+
+  it("marks a template saved without the dots the API needs, and only that one", () => {
+    query.mockReturnValue({
+      data: { data: [{ ...templates[0], body: "<p>{{student_name}}</p>" }, templates[1]] },
+      isLoading: false,
+      isError: false,
+    });
+    render(<DocumentTemplatesView />);
+    expect(screen.getAllByText("needsFix")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: /Surat A/ }).closest("li")).toHaveTextContent(
+      "needsFix",
+    );
   });
 
   it("offers the first template from the empty state", () => {

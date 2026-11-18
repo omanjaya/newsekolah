@@ -37,9 +37,9 @@
       "placeholdersLabel": "Automatic data in use",
       "noPlaceholders": "This template uses no automatic data yet.",
       "knownPlaceholdersLabel": "Placeholders available for this kind",
-      "knownPlaceholdersEmpty": "The system has no automatic data for this document kind yet. Text in curly braces prints as written.",
+      "knownPlaceholdersEmpty": "The system does not fill in automatic data for this document kind yet.",
       "previewLabel": "Preview",
-      "previewHint": "Uses sample values and renders in a frame isolated from this page.",
+      "previewHint": "Automatic data shows as its name in square brackets, for example [Issue date].",
       "save": "Save template",
       "cancel": "Cancel",
       "saved": "Template saved",
@@ -48,7 +48,7 @@
       "kindFixedHint": "The document kind cannot change once the template exists.",
       "bodyTitle": "Template body",
       "insertLabel": "Insert automatic data",
-      "unknownPlaceholdersHint": "Data marked Unknown is not recognised for this kind and prints as written.",
+      "unknownPlaceholdersHint": "Data marked unknown is not filled in by the system for this kind, so that part is blank on the issued document.",
       "nameRequired": "Enter a template name.",
       "bodyRequired": "Enter the template body.",
       "create": "Create template",
@@ -56,14 +56,22 @@
       "notFoundBody": "It may have been deleted, or the address is wrong.",
       "backToList": "Back to document templates",
       "previewEmpty": "The preview appears once the template body is filled in",
-      "unknownBadge": "{name} (unknown)"
+      "unknownBadge": "{name} (unknown)",
+      "legacyTitle": "The automatic data format needs fixing",
+      "legacyBody": "Automatic data such as {legacy} is written without a dot, so the document fails to issue. Fix it to {fixed}, then save the template.",
+      "legacyFix": "Fix format",
+      "legacyBadge": "{name} (old format)",
+      "legacyError": "Fix the automatic data format before saving."
     },
+    "needsFix": "Needs fixing",
     "description": "The templates used when the school issues letters and documents. One template per kind is the default.",
     "updatedAt": "Updated {date}",
     "placeholders": {
       "letter_number": "Letter number",
       "student_name": "Student name",
+      "nis": "Student number (NIS)",
       "class_name": "Class",
+      "address": "Address",
       "guardian_name": "Guardian name",
       "category": "Leave category",
       "reason": "Reason",
@@ -71,7 +79,32 @@
       "ends_on": "End date",
       "days": "Number of days",
       "issued_at": "Issue date",
-      "verification_code": "Verification code"
+      "issuer_name": "Issuer name",
+      "homeroom_name": "Homeroom teacher",
+      "verification_code": "Verification code",
+      "level": "Warning level",
+      "level_label": "Warning level name",
+      "total_points": "Total points",
+      "threshold_points": "Point threshold",
+      "opening_text": "Opening text",
+      "closing_text": "Closing text",
+      "violations": "Violation list",
+      "visitor_name": "Visitor name",
+      "organization": "Organisation",
+      "purpose": "Purpose",
+      "arrived_at": "Arrival time"
+    },
+    "placeholderItems": {
+      "violations": {
+        "date": "Date",
+        "name": "Violation",
+        "points": "Points"
+      }
+    },
+    "kindPlaceholders": {
+      "visitor_badge": {
+        "letter_number": "Visitor badge number"
+      }
     }
   }
 }

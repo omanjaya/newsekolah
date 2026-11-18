@@ -37,9 +37,9 @@
       "placeholdersLabel": "Data otomatis yang dipakai",
       "noPlaceholders": "Templat ini belum memakai data otomatis.",
       "knownPlaceholdersLabel": "Placeholder yang tersedia untuk jenis ini",
-      "knownPlaceholdersEmpty": "Jenis dokumen ini belum punya data otomatis dari sistem. Tulisan dalam kurung kurawal akan tampil apa adanya.",
+      "knownPlaceholdersEmpty": "Sistem belum mengisi data otomatis untuk jenis dokumen ini.",
       "previewLabel": "Pratinjau",
-      "previewHint": "Memakai nilai contoh dan ditampilkan dalam bingkai terpisah dari halaman ini.",
+      "previewHint": "Data otomatis tampil sebagai namanya dalam kurung siku, misalnya [Tanggal terbit].",
       "save": "Simpan templat",
       "cancel": "Batal",
       "saved": "Templat disimpan",
@@ -48,7 +48,7 @@
       "kindFixedHint": "Jenis dokumen tidak bisa diubah setelah templat dibuat.",
       "bodyTitle": "Isi templat",
       "insertLabel": "Sisipkan data otomatis",
-      "unknownPlaceholdersHint": "Data bertanda tidak dikenal tidak ada di sistem untuk jenis ini dan akan tampil apa adanya.",
+      "unknownPlaceholdersHint": "Data bertanda tidak dikenal tidak diisi sistem untuk jenis ini, jadi bagian itu kosong saat dokumen diterbitkan.",
       "nameRequired": "Nama templat wajib diisi.",
       "bodyRequired": "Isi templat wajib diisi.",
       "create": "Buat templat",
@@ -56,14 +56,22 @@
       "notFoundBody": "Templat ini mungkin sudah dihapus atau alamatnya salah.",
       "backToList": "Kembali ke templat dokumen",
       "previewEmpty": "Pratinjau muncul setelah isi templat diisi",
-      "unknownBadge": "{name} (tidak dikenal)"
+      "unknownBadge": "{name} (tidak dikenal)",
+      "legacyTitle": "Format data otomatis perlu diperbaiki",
+      "legacyBody": "Data otomatis seperti {legacy} ditulis tanpa titik, sehingga dokumen gagal diterbitkan. Perbaiki menjadi {fixed}, lalu simpan templat.",
+      "legacyFix": "Perbaiki format",
+      "legacyBadge": "{name} (format lama)",
+      "legacyError": "Perbaiki format data otomatis sebelum menyimpan."
     },
+    "needsFix": "Perlu diperbaiki",
     "description": "Templat yang dipakai saat sekolah menerbitkan surat dan dokumen. Satu templat per jenis menjadi bawaan.",
     "updatedAt": "Diperbarui {date}",
     "placeholders": {
       "letter_number": "Nomor surat",
       "student_name": "Nama siswa",
+      "nis": "NIS",
       "class_name": "Kelas",
+      "address": "Alamat",
       "guardian_name": "Nama wali",
       "category": "Kategori izin",
       "reason": "Alasan",
@@ -71,7 +79,32 @@
       "ends_on": "Tanggal selesai",
       "days": "Jumlah hari",
       "issued_at": "Tanggal terbit",
-      "verification_code": "Kode verifikasi"
+      "issuer_name": "Nama penerbit",
+      "homeroom_name": "Wali kelas",
+      "verification_code": "Kode verifikasi",
+      "level": "Tingkat SP",
+      "level_label": "Nama tingkat SP",
+      "total_points": "Total poin",
+      "threshold_points": "Ambang poin",
+      "opening_text": "Kalimat pembuka",
+      "closing_text": "Kalimat penutup",
+      "violations": "Daftar pelanggaran",
+      "visitor_name": "Nama tamu",
+      "organization": "Instansi",
+      "purpose": "Keperluan",
+      "arrived_at": "Waktu masuk"
+    },
+    "placeholderItems": {
+      "violations": {
+        "date": "Tanggal",
+        "name": "Pelanggaran",
+        "points": "Poin"
+      }
+    },
+    "kindPlaceholders": {
+      "visitor_badge": {
+        "letter_number": "Nomor kartu tamu"
+      }
     }
   }
 }
