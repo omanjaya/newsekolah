@@ -19,7 +19,7 @@ import {
   domainIcons,
   type CategoryTone,
 } from "@newsekolah/ui";
-import { Bell, CheckCheck, ClipboardList, Repeat, type LucideIcon } from "lucide-react";
+import { Bell, CheckCheck, Repeat, type LucideIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -52,7 +52,7 @@ const KIND_ICON: { prefix: string; icon: LucideIcon; tone: CategoryTone }[] = [
   { prefix: "announcement", icon: domainIcons.announcement, tone: "purple" },
   { prefix: "attendance", icon: domainIcons.attendance, tone: "green" },
   { prefix: "substitution", icon: Repeat, tone: "blue" },
-  { prefix: "leave_request", icon: ClipboardList, tone: "amber" },
+  { prefix: "leave_request", icon: domainIcons.leave, tone: "amber" },
   { prefix: "exit_permit", icon: domainIcons.exitPermit, tone: "blue" },
   { prefix: "late_arrival", icon: domainIcons.late, tone: "red" },
 ];
