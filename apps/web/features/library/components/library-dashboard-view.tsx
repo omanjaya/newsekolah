@@ -6,6 +6,7 @@ import {
   Card,
   CardHeader,
   CardTitle,
+  SectionHeader,
   SkeletonCards,
   Stat,
   StatGrid,
@@ -13,7 +14,7 @@ import {
 } from "@newsekolah/ui";
 import { BookCheck, BookPlus, BookX, DoorOpen } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactElement, ReactNode } from "react";
+import { type ReactElement, type ReactNode, useId } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
@@ -36,9 +37,10 @@ const COLLECTION_STAT_KEYS = [
 /**
  * The library's own home: today's circulation as four tiles (a compact
  * strip on a phone) that each open the place to act (the desk, its
- * overdue queue, the visits), the collection in one quiet strip (two to
- * a row on a phone), the 30-day trend and the most borrowed
- * titles, then the latest loans and the longest overdue. `toolbar` takes
+ * overdue queue, the visits), the collection as a titled section with
+ * one quiet strip, the 30-day trend and the most borrowed titles, then
+ * the latest loans and the longest overdue. On a phone the collection
+ * moves to the end, so today's figures are not stacked on seven more. `toolbar` takes
  * the home page's shortcuts when this is a librarian's home. A reader who
  * oversees the library without running its desk (a headmaster with
  * view_library_reports) sees the same figures as plain tiles: the desk
@@ -51,6 +53,25 @@ export function LibraryDashboardView({ toolbar }: { toolbar?: ReactNode } = {}):
   const canCirculate = useCan("manage_library_circulation");
   const isDesktop = useIsDesktop();
   const desk = canCirculate ? "/library/desk" : undefined;
+  const collectionTitleId = useId();
+
+  // The collection is reference, not today's work: a titled section of
+  // its own, so it does not read as a second copy of the today strip. On
+  // a phone it closes the page, after the trend and the lists.
+  const collection = data && (
+    <section aria-labelledby={collectionTitleId} className="flex flex-col gap-3">
+      <SectionHeader title={t("collectionHeading")} titleId={collectionTitleId} />
+      <StatGrid variant="strip" aria-label={t("collectionHeading")}>
+        {COLLECTION_STAT_KEYS.map((key) => (
+          <Stat key={key} label={t(`stats.${key}`)} value={data.summary[key]} />
+        ))}
+        <Stat
+          label={t("stats.unpaid_fines_total")}
+          value={formatCurrency(data.summary.unpaid_fines_total, "IDR", { locale })}
+        />
+      </StatGrid>
+    </section>
+  );
 
   return (
     <AppPage
@@ -109,15 +130,7 @@ export function LibraryDashboardView({ toolbar }: { toolbar?: ReactNode } = {}):
             />
           </StatGrid>
 
-          <StatGrid variant="strip" aria-label={t("collectionHeading")}>
-            {COLLECTION_STAT_KEYS.map((key) => (
-              <Stat key={key} label={t(`stats.${key}`)} value={data.summary[key]} />
-            ))}
-            <Stat
-              label={t("stats.unpaid_fines_total")}
-              value={formatCurrency(data.summary.unpaid_fines_total, "IDR", { locale })}
-            />
-          </StatGrid>
+          {isDesktop && collection}
 
           {/* `grid-cols-1` is minmax(0, 1fr): on a phone the one column
               is the screen's width, so a long list title truncates
@@ -138,6 +151,8 @@ export function LibraryDashboardView({ toolbar }: { toolbar?: ReactNode } = {}):
               popularTitles={data.popular_titles}
             />
           </div>
+
+          {!isDesktop && collection}
         </>
       )}
     </AppPage>
