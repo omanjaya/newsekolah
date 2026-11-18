@@ -140,6 +140,11 @@ describe("GradingView read-only rendering for view_grades", () => {
     expect(screen.getByRole("combobox", { name: "pickClass" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "pickSubject" })).toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: "pickAssignment" })).not.toBeInTheDocument();
+    // On a phone the subject, the longest name, takes a row of its own
+    // under the class and the term instead of being cut beside the class.
+    expect(
+      screen.getByRole("combobox", { name: "pickSubject" }).closest(".col-span-2"),
+    ).toHaveClass("max-sm:order-last", "sm:col-span-1");
   });
 
   it("hides the class and subject pickers on the e-Rapor panel, which has its own scope", async () => {
