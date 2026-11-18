@@ -2,7 +2,7 @@
 
 import type { components } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
-import { formatRelative, formatTime } from "@newsekolah/i18n";
+import { formatTime } from "@newsekolah/i18n";
 import {
   Button,
   Card,
@@ -26,10 +26,9 @@ import type { ReactElement } from "react";
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useIsDesktop } from "../../../components/use-is-desktop";
-import { dayKey, groupByDay } from "../../../lib/group-by-day";
+import { groupByDay } from "../../../lib/group-by-day";
 import { navAccessFromMe } from "../../../lib/navigation-access";
 import { useSession } from "../../../lib/session/session-provider";
-import { businessNow } from "../../../lib/simulation/clock";
 import { useDayLabel } from "../../../lib/use-day-label";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import {
@@ -96,10 +95,7 @@ export function NotificationsView(): ReactElement {
   const hasUnread = (unreadCount.data?.count ?? 0) > 0 || items.some((n) => !n.read_at);
   const isFiltering = search.trim() !== "" || kind !== "";
   const dayGroups = groupByDay(items, (item) => item.created_at, me?.tenant.timezone);
-  // useDayLabel subscribes the view to the business clock, so the "today"
-  // below moves with it, as the day headings do.
   const dayLabel = useDayLabel();
-  const todayKey = dayKey(businessNow().toISOString(), me?.tenant.timezone);
 
   // An inbox with nothing in it shows only its empty state: no filter, no
   // search and no menu holding a disabled mark-all. The controls stay
@@ -251,7 +247,6 @@ export function NotificationsView(): ReactElement {
                     <NotificationRow
                       key={item.id}
                       item={item}
-                      today={group.dateKey === todayKey}
                       timeZone={me?.tenant.timezone}
                       onOpen={() => {
                         if (!item.read_at) markRead.mutate(item.id);
@@ -270,13 +265,10 @@ export function NotificationsView(): ReactElement {
 
 function NotificationRow({
   item,
-  today,
   timeZone,
   onOpen,
 }: {
   item: Notification;
-  /** Whether the row sits under today's heading. */
-  today: boolean;
   timeZone?: string;
   onOpen: () => void;
 }): ReactElement {
@@ -286,12 +278,10 @@ function NotificationRow({
   const href = openableHref(item.href, navAccessFromMe(me));
   const unread = !item.read_at;
   const { icon: Icon, tone } = kindIcon(item.kind);
-  // The day heading above already names the date, so the row ends in the
-  // time alone ("19.00"), or "20 menit lalu" under today's: a short value
-  // that never squeezes the title on a phone.
-  const when = today
-    ? formatRelative(item.created_at, { locale, timeZone, now: businessNow() })
-    : formatTime(item.created_at, { locale, timeZone });
+  // The day heading above already names the day, "Hari ini" included, so
+  // every row ends in the clock time alone ("19.00"). A relative "18 menit
+  // yang lalu" took a third of a phone row and cut the title short.
+  const when = formatTime(item.created_at, { locale, timeZone });
   // Unread is told by the bold title and the coloured icon, not by the
   // selected state, which would announce each unread row as the current item.
   return (
