@@ -20,6 +20,13 @@ describe("translate", () => {
     expect(translate("id", "common.table.rowsSelected", { count: 5 })).toBe("5 baris dipilih");
   });
 
+  it("keeps ICU-quoted literal braces as text", () => {
+    expect(translate("id", "errors.TEMPLATE_INVALID")).toBe(
+      "Isi templat tidak valid. Periksa tanda {{ }} yang belum ditutup atau salah tulis.",
+    );
+    expect(translate("en", "errors.TEMPLATE_INVALID")).toContain("{{ }}");
+  });
+
   it("falls back to the key when no catalog has it", () => {
     // @ts-expect-error intentionally invalid key to test the fallback path
     expect(translate("id", "does.not.exist")).toBe("does.not.exist");
