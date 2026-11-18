@@ -1,9 +1,10 @@
 "use client";
 
-import { SegmentedControl } from "@newsekolah/ui";
+import { Button, SegmentedControl } from "@newsekolah/ui";
+import { Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import { type ReactElement, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { PeriodsView } from "../../school/components/periods-view";
@@ -45,6 +46,10 @@ const sectionGroups: readonly (readonly Section[])[] = [["subjects", "offerings"
  */
 export function LearningView(): ReactElement {
   const t = useTranslations("app.academic.learning");
+  const tSubjects = useTranslations("app.school.subjects");
+  // "Tambah mapel" is the page header's primary action; the subjects list
+  // only owns the dialog it opens.
+  const [addingSubject, setAddingSubject] = useState(false);
   const router = useRouter();
   const requested = useSearchParams().get("tab");
   const active = sections.find((section) => section.value === requested) ?? sections[0];
@@ -71,6 +76,25 @@ export function LearningView(): ReactElement {
   if (active.section.kind === "page") {
     const PageSection = active.section.View;
     return <PageSection page={page} />;
+  }
+  if (active.value === "subjects") {
+    return (
+      <AppPage
+        {...page}
+        primaryAction={
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              setAddingSubject(true);
+            }}
+          >
+            {tSubjects("add")}
+          </Button>
+        }
+      >
+        <SubjectsView adding={addingSubject} onAddingChange={setAddingSubject} />
+      </AppPage>
+    );
   }
   const BodySection = active.section.View;
   return (
