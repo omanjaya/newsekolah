@@ -200,6 +200,7 @@ export function TodayBoardView({
     ];
   }, [t, canCorrect, locale, timeZone]);
 
+  const hasBoard = board.isLoading || rows.length > 0 || status !== "";
   const filters: DataTableFilterDef[] = [
     {
       id: "status",
@@ -240,7 +241,10 @@ export function TodayBoardView({
         data={visible}
         columns={columns}
         rowCount={visible.length}
-        filters={filters}
+        // Over an empty board the search and the status filter have nothing
+        // to act on; an active filter keeps them, so it can be cleared.
+        searchable={hasBoard}
+        filters={hasBoard ? filters : undefined}
         filtersLabels={{
           reset: t("history.reset"),
           removeFilter: (label) => t("history.removeFilter", { label }),
