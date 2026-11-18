@@ -6,6 +6,7 @@ import { formatRelative, formatTime } from "@newsekolah/i18n";
 import {
   Button,
   Card,
+  DataTableFilters,
   EmptyState,
   FilteredEmptyState,
   IconCircle,
@@ -14,7 +15,6 @@ import {
   SearchInput,
   SectionHeader,
   SegmentedControl,
-  Select,
   SkeletonList,
   domainIcons,
   type CategoryTone,
@@ -25,6 +25,7 @@ import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { useIsDesktop } from "../../../components/use-is-desktop";
 import { dayKey, groupByDay } from "../../../lib/group-by-day";
 import { navAccessFromMe } from "../../../lib/navigation-access";
 import { useSession } from "../../../lib/session/session-provider";
@@ -87,6 +88,7 @@ export function NotificationsView(): ReactElement {
   });
   const markRead = useMarkReadMutation();
   const markAllRead = useMarkAllReadMutation();
+  const isDesktop = useIsDesktop();
   const items = data?.data ?? [];
   // Mark-all acts on every notification, not just the loaded page, so the
   // server count decides whether it is worth offering.
@@ -99,64 +101,101 @@ export function NotificationsView(): ReactElement {
   const dayLabel = useDayLabel();
   const todayKey = dayKey(businessNow().toISOString(), me?.tenant.timezone);
 
+  // An inbox with nothing in it shows only its empty state: no filter, no
+  // search and no menu holding a disabled mark-all. The controls stay
+  // while the list loads, so a full inbox does not shift when it arrives.
+  const hasList = isLoading || isError || items.length > 0 || isFiltering;
+  const showFilter = hasList || hasUnread || filter === "unread";
+  const markAll = () => {
+    markAllRead.mutate();
+  };
+
   return (
     <AppPage
       variant="narrow"
       nav={false}
-      // Housekeeping, not the page's main action: a button beside the title
-      // from 640px up, an item of the header's menu on a phone.
-      secondaryActions={[
-        {
-          label: t("markAllRead"),
-          icon: <CheckCheck />,
-          disabled: !hasUnread || markAllRead.isPending,
-          onSelect: () => {
-            markAllRead.mutate();
-          },
-        },
-      ]}
+      // Housekeeping, offered only while something is unread: on a phone
+      // an item of the header's menu; from 768px a quiet button at the end
+      // of the filter row, beside the list it acts on, instead of at the
+      // far edge of the header's wider column.
+      secondaryActions={
+        !isDesktop && hasUnread
+          ? [
+              {
+                label: t("markAllRead"),
+                icon: <CheckCheck />,
+                disabled: markAllRead.isPending,
+                onSelect: markAll,
+              },
+            ]
+          : undefined
+      }
       toolbar={
-        // The full width of the toolbar row, so the search can grow into it.
-        <div className="flex w-full flex-col gap-3">
-          <SegmentedControl
-            fullWidth="phone"
-            aria-label={t("filterLabel")}
-            options={[
-              { value: "all", label: t("filterAll") },
-              { value: "unread", label: t("filterUnread") },
-            ]}
-            value={filter}
-            onValueChange={(value) => {
-              setFilter(value);
-            }}
-          />
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <SearchInput
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-              }}
-              onClear={() => {
-                setSearch("");
-              }}
-              placeholder={t("searchPlaceholder")}
-              aria-label={t("searchPlaceholder")}
-              className="sm:flex-1"
-            />
-            <Select
-              options={[
-                { value: "all", label: t("kindAll") },
-                ...kinds.map((k) => ({ value: k, label: tKinds(k) })),
-              ]}
-              value={kind || "all"}
-              onValueChange={(v) => {
-                setKind(v === "all" ? "" : (v as NotificationKind));
-              }}
-              aria-label={t("kindFilterLabel")}
-              className="sm:w-56"
-            />
+        showFilter ? (
+          // The full width of the toolbar row, so the search can grow into it.
+          <div className="flex w-full flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <SegmentedControl
+                fullWidth="phone"
+                aria-label={t("filterLabel")}
+                options={[
+                  { value: "all", label: t("filterAll") },
+                  { value: "unread", label: t("filterUnread") },
+                ]}
+                value={filter}
+                onValueChange={(value) => {
+                  setFilter(value);
+                }}
+              />
+              {isDesktop && hasUnread && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<CheckCheck />}
+                  loading={markAllRead.isPending}
+                  onClick={markAll}
+                >
+                  {t("markAllRead")}
+                </Button>
+              )}
+            </div>
+            {hasList && (
+              <div className="flex items-center gap-2">
+                <SearchInput
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                  }}
+                  onClear={() => {
+                    setSearch("");
+                  }}
+                  placeholder={t("searchPlaceholder")}
+                  aria-label={t("searchPlaceholder")}
+                  className="min-w-0 flex-1"
+                />
+                {kinds.length > 0 && (
+                  // The single-choice filter pill the other lists use (a
+                  // popover, a bottom sheet on a phone), not a bordered
+                  // select: "Jenis" until one is chosen, then its name.
+                  <DataTableFilters
+                    className="shrink-0"
+                    filters={[
+                      {
+                        id: "kind",
+                        label: t("kindPill"),
+                        value: kind,
+                        onChange: (value) => {
+                          setKind(value as NotificationKind | "");
+                        },
+                        options: kinds.map((k) => ({ value: k, label: tKinds(k) })),
+                      },
+                    ]}
+                  />
+                )}
+              </div>
+            )}
           </div>
-        </div>
+        ) : undefined
       }
     >
       {isLoading ? (

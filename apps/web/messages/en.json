@@ -794,6 +794,7 @@
       "searchPlaceholder": "Search notification title or body",
       "kindAll": "All kinds",
       "kindFilterLabel": "Notification kind",
+      "kindPill": "Kind",
       "emptyFilteredTitle": "No notifications match",
       "emptyFilteredBody": "Try a different search term or kind.",
       "filterLabel": "Show notifications",

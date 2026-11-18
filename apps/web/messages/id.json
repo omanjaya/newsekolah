@@ -794,6 +794,7 @@
       "searchPlaceholder": "Cari judul atau isi notifikasi",
       "kindAll": "Semua jenis",
       "kindFilterLabel": "Jenis notifikasi",
+      "kindPill": "Jenis",
       "emptyFilteredTitle": "Tidak ada notifikasi yang cocok",
       "emptyFilteredBody": "Coba ubah kata pencarian atau pilih jenis lain.",
       "filterLabel": "Tampilkan notifikasi",
