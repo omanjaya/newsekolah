@@ -36,9 +36,12 @@ import {
   useUpdateLibraryPartnerMutation,
 } from "../master-data-api";
 
+import { MasterListHeader } from "./master-list-header";
+
 /** Donor and vendor partners, recorded on a copy to say who it came from. */
 export function PartnersTab(): ReactElement {
   const t = useTranslations("app.library.masterData.partners");
+  const tMasterData = useTranslations("app.library.masterData");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_library_catalog");
@@ -127,7 +130,16 @@ export function PartnersTab(): ReactElement {
   ) : undefined;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
+      <MasterListHeader
+        title={tMasterData("tabs.partners")}
+        count={items.length}
+        addLabel={t("add")}
+        showAdd={canManage && (isLoading || items.length > 0)}
+        onAdd={() => {
+          setCreating(true);
+        }}
+      />
       <DataTable
         stateKey="features/library/components/partners-tab:1"
         mode="local"
@@ -142,7 +154,6 @@ export function PartnersTab(): ReactElement {
         isLoading={isLoading}
         error={error}
         onRetry={() => void refetch()}
-        toolbarActions={addButton}
         getRowId={(item) => item.id}
         emptyState={
           <EmptyState
