@@ -22,7 +22,7 @@ import { CreditCard, GraduationCap, Plus, Printer, Users, UsersRound } from "luc
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { cloneElement, useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
@@ -313,7 +313,7 @@ export function MembersView(): ReactElement {
                 icon={<UsersRound aria-hidden="true" />}
                 title={t("emptyTitle")}
                 description={t("emptyBody")}
-                action={registerButton}
+                action={registerButton && cloneElement(registerButton, { variant: "secondary" })}
               />
             )
           }

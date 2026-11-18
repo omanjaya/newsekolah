@@ -22,7 +22,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { cloneElement, useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
@@ -133,7 +133,7 @@ export function StocktakeView(): ReactElement {
             icon={<domainIcons.library aria-hidden="true" />}
             title={t("emptyTitle")}
             description={t("emptyBody")}
-            action={startButton}
+            action={cloneElement(startButton, { variant: "secondary" })}
           />
         }
       />
