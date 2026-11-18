@@ -74,7 +74,10 @@ describe("ActivitiesCalendarView", () => {
     await user.click(within(screen.getByRole("table")).getByRole("button", { name: "rowActions" }));
     await user.click(await screen.findByRole("menuitem", { name: "edit" }));
     const dialog = within(screen.getByRole("dialog"));
-    const input = dialog.getByLabelText("name");
+    // By its accessible name: the required mark after the label is
+    // aria-hidden, so the field is still read as "name".
+    const input = dialog.getByRole("textbox", { name: "name" });
+    expect(input).toBeRequired();
     await user.clear(input);
     await user.type(input, "Science exhibition");
     await user.click(dialog.getByRole("button", { name: "submit" }));
