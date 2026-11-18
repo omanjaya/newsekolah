@@ -1,7 +1,12 @@
+import type { NewsekolahApiClient } from "@newsekolah/api-client";
 import type * as Ui from "@newsekolah/ui";
+import { QueryClient } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { getAccessToken, setAccessToken } from "../lib/api/access-token";
+import type { ExpiredSession } from "../lib/api/client";
 
 import { AppProviders } from "./providers";
 
@@ -9,13 +14,30 @@ function PassThrough({ children }: { children?: ReactNode }) {
   return <>{children}</>;
 }
 
+const navigation = vi.hoisted(() => ({ replace: vi.fn(), pathname: "/dashboard" }));
+/** The session-expiry handler AppProviders hands the API client provider. */
+const handlers = vi.hoisted(() => ({
+  onUnauthorized: undefined as ((session: ExpiredSession) => void) | undefined,
+}));
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: vi.fn() }),
-  usePathname: () => "/dashboard",
+  useRouter: () => ({ replace: navigation.replace }),
+  usePathname: () => navigation.pathname,
 }));
 
 vi.mock("../lib/query/query-provider", () => ({ QueryProvider: PassThrough }));
-vi.mock("../lib/api/client", () => ({ ApiClientProvider: PassThrough }));
+vi.mock("../lib/api/client", () => ({
+  ApiClientProvider: ({
+    onUnauthorized,
+    children,
+  }: {
+    onUnauthorized: (session: ExpiredSession) => void;
+    children?: ReactNode;
+  }) => {
+    handlers.onUnauthorized = onUnauthorized;
+    return <>{children}</>;
+  },
+}));
 vi.mock("../lib/tenant/tenant-provider", () => ({ TenantProvider: PassThrough }));
 vi.mock("../lib/session/session-provider", () => ({ SessionProvider: PassThrough }));
 vi.mock("../lib/simulation/simulation-sync", () => ({ SimulationSync: () => null }));
@@ -41,6 +63,13 @@ vi.mock("@newsekolah/ui", async (importOriginal) => {
   };
 });
 
+beforeEach(() => {
+  vi.clearAllMocks();
+  navigation.pathname = "/dashboard";
+  handlers.onUnauthorized = undefined;
+  setAccessToken(null);
+});
+
 describe("AppProviders", () => {
   // Every IconButton brings its own tooltip provider unless one is above
   // it; one at the root lets a page's buttons share it (and its skip delay).
@@ -54,5 +83,52 @@ describe("AppProviders", () => {
     expect(providers).toHaveLength(1);
     expect(providers[0]).toContainElement(screen.getByText("Halaman"));
     expect(providers[0]).toHaveAttribute("data-delay", "400");
+  });
+});
+
+// A refresh failed mid-visit. The sign-in page reads the cached `me`: left
+// there, it would take the tab for signed in and send it straight back.
+describe("a session that runs out mid-visit", () => {
+  const BRANDING_KEY = ["tenant", "branding", "default"];
+  const UNREAD_KEY = ["notifications", "unread-count"];
+
+  function expireOn(pathname: string) {
+    navigation.pathname = pathname;
+    render(
+      <AppProviders locale="id">
+        <p>Halaman</p>
+      </AppProviders>,
+    );
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(["me"], { id: "teacher" });
+    queryClient.setQueryData(UNREAD_KEY, { count: 2 });
+    queryClient.setQueryData(BRANDING_KEY, { name: "School" });
+    const forgetAccessToken = vi.fn();
+    const client = { forgetAccessToken } as unknown as NewsekolahApiClient;
+    setAccessToken("teacher-token");
+    handlers.onUnauthorized?.({ client, queryClient });
+    return { queryClient, forgetAccessToken };
+  }
+
+  it("ends the session completely before going to sign in", () => {
+    const { queryClient, forgetAccessToken } = expireOn("/dashboard");
+
+    expect(queryClient.getQueryData(["me"])).toBeUndefined();
+    expect(queryClient.getQueryData(UNREAD_KEY)).toBeUndefined();
+    expect(queryClient.getQueryData(BRANDING_KEY)).toEqual({ name: "School" });
+    expect(forgetAccessToken).toHaveBeenCalledTimes(1);
+    expect(getAccessToken()).toBeNull();
+    expect(navigation.replace).toHaveBeenCalledWith("/login?next=%2Fdashboard");
+  });
+
+  // Public pages work without a session: a failed boot refresh there is
+  // "nobody is signed in", not a session that ended.
+  it("leaves a public page where it is, with what it read", () => {
+    const { queryClient, forgetAccessToken } = expireOn("/verify/letter-1");
+
+    expect(queryClient.getQueryData(["me"])).toEqual({ id: "teacher" });
+    expect(queryClient.getQueryData(UNREAD_KEY)).toEqual({ count: 2 });
+    expect(forgetAccessToken).not.toHaveBeenCalled();
+    expect(navigation.replace).not.toHaveBeenCalled();
   });
 });
