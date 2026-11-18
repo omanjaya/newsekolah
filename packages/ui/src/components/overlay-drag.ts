@@ -208,9 +208,19 @@ export function attachSheetDrag(content: HTMLElement, options: SheetDragOptions)
         start = null;
         return;
       }
-      // Hold the page still while deciding, or the browser claims the gesture.
-      if (event.cancelable) event.preventDefault();
-      if (dy < SHEET_DRAG.slop) return;
+      if (start.body) {
+        // A touch in the body is the body's own scroll until it is clearly a
+        // downward drag: cancelling an early move (a 0 to 2px jitter at the
+        // start of a swipe up) would cancel native scrolling for the whole
+        // touch. The body's overscroll containment keeps those few pixels
+        // from moving the page behind.
+        if (dy < SHEET_DRAG.slop || dy <= Math.abs(dx)) return;
+      } else {
+        // On the handle or header, hold the page still while deciding, or
+        // the browser claims the gesture.
+        if (event.cancelable) event.preventDefault();
+        if (dy < SHEET_DRAG.slop) return;
+      }
       if (!event.cancelable) {
         start = null;
         return;

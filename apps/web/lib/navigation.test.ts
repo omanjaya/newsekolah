@@ -435,3 +435,13 @@ describe("navigation registry: icons", () => {
     expect(new Set(icons).size).toBe(icons.length);
   });
 });
+
+describe("navigation registry: labels", () => {
+  // A tab named like the heading above it reads as a repeat ("Nilai" under
+  // "Nilai"): the reader's own grades are "Nilai saya".
+  it("names the reader's own grades apart from the grading workspace", () => {
+    const myGrades = navigation.find((item) => item.key === "my-grades");
+    expect(myGrades?.labelKey).toBe("app.shell.nav.items.myGrades");
+    expect(myGrades?.labelKey).not.toBe("app.shell.nav.items.grades");
+  });
+});

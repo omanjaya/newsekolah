@@ -240,4 +240,9 @@ describe("id catalog vocabulary", () => {
       .map(({ key }) => key);
     expect(offenders).toEqual([]);
   });
+
+  it("spells the unexcused absence Alpha, as the attendance statuses do, never alpa", () => {
+    const offenders = leaves.filter(({ value }) => /\balpa\b/i.test(value)).map(({ key }) => key);
+    expect(offenders).toEqual([]);
+  });
 });
