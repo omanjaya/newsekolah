@@ -77,4 +77,19 @@ describe("ReportHeaderView", () => {
     expect(screen.getAllByText("SMA Harapan").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "save" })).toBeInTheDocument();
   });
+
+  it("asks which line to print in bold only once two lines are filled in", async () => {
+    const user = userEvent.setup();
+    renderView();
+    // With no line, or one, "automatic" would be the only option.
+    expect(screen.queryByRole("radiogroup", { name: "emphasisLabel" })).not.toBeInTheDocument();
+    await user.type(screen.getByRole("textbox", { name: "lineLabel" }), "Pemerintah Provinsi");
+    expect(screen.queryByRole("radiogroup", { name: "emphasisLabel" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "addLine" }));
+    const second = screen.getAllByRole("textbox", { name: "lineLabel" })[1];
+    if (!second) throw new Error("Missing the second line");
+    await user.type(second, "SMA Harapan");
+    expect(screen.getByRole("radiogroup", { name: "emphasisLabel" })).toBeInTheDocument();
+  });
 });
