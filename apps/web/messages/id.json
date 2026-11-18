@@ -198,6 +198,9 @@
         "body": "Muat ulang untuk memakai versi terbaru aplikasi.",
         "action": "Muat ulang"
       },
+      "unsavedChanges": {
+        "title": "Perubahan belum disimpan"
+      },
       "skipToContent": "Lompat ke konten utama",
       "sidebar": {
         "label": "Navigasi utama",

@@ -54,7 +54,7 @@ export function RoleTestingSwitcher(): ReactElement | null {
   const roleNames = me?.roles.map((role) => role.name).join(", ") ?? "";
 
   async function returnToAdmin() {
-    if (!confirmUnsavedChangesBeforeNavigation()) return;
+    if (!(await confirmUnsavedChangesBeforeNavigation())) return;
     try {
       await mutation.mutateAsync(null);
       router.replace("/dashboard");
@@ -129,7 +129,7 @@ function RoleTestingDialog({
   }, [search]);
 
   async function switchToUser() {
-    if (!selectedUser || !role || !confirmUnsavedChangesBeforeNavigation()) return;
+    if (!selectedUser || !role || !(await confirmUnsavedChangesBeforeNavigation())) return;
     try {
       await mutation.mutateAsync({ userId: selectedUser, role });
       onOpenChange(false);

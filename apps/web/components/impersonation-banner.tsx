@@ -69,7 +69,7 @@ export function ImpersonationBanner(): ReactElement | null {
     : null;
 
   async function returnToAdmin() {
-    if (!confirmUnsavedChangesBeforeNavigation()) return;
+    if (!(await confirmUnsavedChangesBeforeNavigation())) return;
     try {
       await roleSwitch.mutateAsync(null);
       router.replace("/dashboard");

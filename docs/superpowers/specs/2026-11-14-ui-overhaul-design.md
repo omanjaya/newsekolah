@@ -207,7 +207,13 @@ Dikerjakan dengan codemod, satu pola per commit, lalu lint untuk pola itu diakti
 
 Lint yang ditambahkan di `packages/config/eslint`: larangan kelas palet Tailwind dan warna arbitrer (sudah nol pelanggaran), `text-[Npx]`, radius lama pada permukaan, elemen mentah (`button`, `select`, `textarea`, `table`, `label`, `h1`-`h6`) di `apps/web/features` dan `apps/web/app`, `window.confirm`. Aturan yang masih punya pelanggaran dipasang sebagai ratchet (batas maksimum yang diturunkan), lalu jadi error.
 
-Keadaan per 17 November 2026: larangan warna aktif di seluruh repo dan larangan `text-[Npx]` aktif di `packages/ui`. Larangan `text-[Npx]` di `apps/web`, elemen mentah, `window.confirm`, dan radius lama belum menjadi aturan; pelanggarannya sedang dibersihkan di aliran kerja terpisah sebelum aturannya dipasang.
+Keadaan per 18 November 2026: semua aturan di atas aktif sebagai error, tanpa ratchet tersisa.
+
+- Larangan warna (palet Tailwind, warna tetap, warna literal di nilai arbitrer) aktif di seluruh repo lewat `no-restricted-syntax` di `base.js` dan `react.js`.
+- Larangan `text-[Npx]` aktif di `packages/ui` (`fontSizeRestrictions` di `design-system-patterns.js`) dan di seluruh `apps/web` (`design-system/no-literal-font-size`, plugin `design-system-plugin.js`). Pelanggaran di `apps/web`: nol.
+- Radius lama pada permukaan, yaitu kotak berbingkai `border` dengan `rounded-sm` atau `rounded-xs` (panel lama yang diganti `Card` dengan radius lg), dilarang di seluruh `apps/web` lewat `design-system/no-panel-radius`. Kontrol kecil di `packages/ui` tetap memakai radiusnya sendiri. Pelanggaran: nol.
+- Elemen mentah `button`, `select`, `textarea`, `table`, `label`, dan `h1`-`h6` dilarang di `apps/web/app` dan `apps/web/features` (kecuali berkas uji dan story) lewat `design-system/no-raw-elements`. Tersisa delapan pengecualian di tujuh tempat, masing-masing dengan `eslint-disable-next-line` beralasan: sel hari kalender presensi, segmen status presensi dan roster rapat (warna per opsi), kotak skor observasi, baris lonceng notifikasi tanpa tujuan, sel kosong jadwal, serta judul dan tombol `app/global-error.tsx` (menggantikan seluruh dokumen sehingga tidak punya stylesheet; dulu dimatikan per berkas di konfigurasi, sekarang per baris).
+- `window.confirm`, `alert`, dan `prompt` (sebagai global maupun lewat `window`, `globalThis`, `self`) dilarang di seluruh `apps/web` lewat `no-restricted-globals` dan `no-restricted-properties` (`nativeDialogRules`). Ratchet terakhir, penjaga perubahan belum disimpan (`lib/navigation/use-unsaved-changes-protection.ts`), sudah pindah ke `ConfirmDialog`: satu `UnsavedChangesDialog` dipasang di `app/providers.tsx`, menahan tautan, kembali/maju, dan navigasi eksplisit (palet perintah, uji peran, kembali dari impersonasi; `confirmUnsavedChangesBeforeNavigation` kini mengembalikan `Promise<boolean>`), lalu memutar ulang navigasi itu bila pengguna memilih keluar.
 
 ## 9. Urutan kerja
 

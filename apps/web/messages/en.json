@@ -198,6 +198,9 @@
         "body": "Reload to use the latest version of the app.",
         "action": "Reload"
       },
+      "unsavedChanges": {
+        "title": "Unsaved changes"
+      },
       "skipToContent": "Skip to main content",
       "sidebar": {
         "label": "Main navigation",

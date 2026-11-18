@@ -24,7 +24,7 @@ vi.mock("../lib/session/session-provider", () => ({
   }),
 }));
 vi.mock("../lib/navigation/use-unsaved-changes-protection", () => ({
-  confirmUnsavedChangesBeforeNavigation: () => allowed(),
+  confirmUnsavedChangesBeforeNavigation: () => Promise.resolve(allowed()),
 }));
 vi.mock("../features/auth/role-testing-api", () => ({
   useRoleTestingQuery: vi.fn(),
