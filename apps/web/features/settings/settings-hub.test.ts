@@ -67,6 +67,17 @@ describe("buildSettingsHubSections", () => {
     expect(hrefs(can, "no-such-card")).toEqual([]);
   });
 
+  it("marks a section complete only when every card it groups is listed", () => {
+    const sections = buildSettingsHubSections({
+      access: navAccessFixture(grant("manage_whatsapp")),
+      translate,
+    });
+    expect(sections.map((section) => [section.key, section.complete])).toEqual([
+      ["communication", false],
+      ["account", true],
+    ]);
+  });
+
   it("never lets search reveal a card the reader may not open", () => {
     expect(hrefs([], "audit")).toEqual([]);
   });

@@ -5,6 +5,8 @@ import {
   EmptyState,
   FilteredEmptyState,
   IconCircle,
+  List,
+  ListRow,
   SearchInput,
   SectionHeader,
   type CategoryTone,
@@ -85,9 +87,29 @@ export function SettingsHubView(): ReactElement {
                   <SectionHeader
                     titleId={titleId}
                     title={t(`app.settingsHub.sections.${section.key}.title`)}
-                    description={t(`app.settingsHub.sections.${section.key}.description`)}
+                    description={
+                      section.complete
+                        ? t(`app.settingsHub.sections.${section.key}.description`)
+                        : undefined
+                    }
                   />
-                  <ul className="grid gap-3 sm:grid-cols-2">
+                  {/* A phone reads a settings list, not a stack of cards. */}
+                  <List framed className="sm:hidden">
+                    {section.cards.map((card) => (
+                      <ListRow
+                        key={card.key}
+                        href={card.href}
+                        leading={
+                          <IconCircle tone={SECTION_TONE[section.key]}>
+                            <card.icon />
+                          </IconCircle>
+                        }
+                        title={card.label}
+                        meta={card.description}
+                      />
+                    ))}
+                  </List>
+                  <ul className="hidden gap-3 sm:grid sm:grid-cols-2">
                     {section.cards.map((card) => (
                       <li key={card.key} className="flex">
                         <Card interactive asChild>
