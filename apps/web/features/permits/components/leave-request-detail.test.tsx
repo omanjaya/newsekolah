@@ -27,6 +27,12 @@ vi.mock("../../../lib/session/session-provider", () => ({
 
 vi.mock("./workflow-stepper", () => ({ WorkflowStepper: () => null }));
 
+// jsdom has no layout: the tests say whether the docked row is stuck.
+let stuck = false;
+vi.mock("../../../lib/hooks/use-stuck-to-bottom", () => ({
+  useStuckToBottom: (_ref: unknown, enabled: boolean) => enabled && stuck,
+}));
+
 const stage = (key: string) => ({
   key,
   label: key,
@@ -104,9 +110,13 @@ describe("LeaveRequestDetail", () => {
     expect(row).toHaveClass(
       "max-md:sticky",
       "max-md:bottom-[calc(var(--shell-mobile-tab-bar,0px)+env(safe-area-inset-bottom))]",
-      "max-md:pb-[calc(var(--space-3)+var(--shell-mobile-tab-raise,0px))]",
+      // The centre button's rise pads the row only while it is stuck; at
+      // rest it ends the card with the card's own padding, not a 32px band.
+      "max-md:pb-5",
+      "max-md:data-stuck:pb-[calc(var(--space-3)+var(--shell-mobile-tab-raise,0px))]",
       "grid-cols-2",
     );
+    expect(row).not.toHaveAttribute("data-stuck");
     expect(row.className).not.toContain("--shell-mobile-tab-offset");
     expect(within(row).queryByRole("textbox")).not.toBeInTheDocument();
     expect(
@@ -116,12 +126,25 @@ describe("LeaveRequestDetail", () => {
     ).toEqual(["reject", "approve"]);
   });
 
+  it("marks the docked row while it is stuck, for the centre button's rise", () => {
+    permissions = new Set(["review_leave_requests"]);
+    detail = leave("in_progress", 0);
+    stuck = true;
+    const { container } = render(<LeaveRequestDetail id="leave-1" layout="page" />);
+
+    expect(container.querySelector('[data-slot="leave-decision"]')).toHaveAttribute("data-stuck");
+    stuck = false;
+  });
+
   it("keeps the inbox dialog's decision in its flow", () => {
     permissions = new Set(["review_leave_requests"]);
     detail = leave("in_progress", 0);
+    stuck = true;
     const { container } = render(<LeaveRequestDetail id="leave-1" />);
 
     const row = container.querySelector<HTMLElement>('[data-slot="leave-decision"]');
     expect(row?.className).not.toContain("sticky");
+    expect(row).not.toHaveAttribute("data-stuck");
+    stuck = false;
   });
 });
