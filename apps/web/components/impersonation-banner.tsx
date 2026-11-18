@@ -16,6 +16,7 @@ import {
 import { setAccessToken } from "../lib/api/access-token";
 import { useApiErrorMessage } from "../lib/i18n/api-error-message";
 import { confirmUnsavedChangesBeforeNavigation } from "../lib/navigation/use-unsaved-changes-protection";
+import { forgetAccountOnThisBrowser } from "../lib/session/forget-account";
 import { useSession } from "../lib/session/session-provider";
 import { clearSimulation } from "../lib/simulation/clock";
 
@@ -119,6 +120,9 @@ export function ImpersonationBanner(): ReactElement | null {
   if (roleStatus.isPending) return null;
 
   function handleStop() {
+    // Stopping signs out like the account menu does; forgotten before the
+    // request, so a stop that fails on the network still forgets.
+    forgetAccountOnThisBrowser();
     stop.mutateAsync().then(
       () => {
         router.replace("/login");

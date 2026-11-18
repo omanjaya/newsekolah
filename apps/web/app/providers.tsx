@@ -11,6 +11,7 @@ import { ApiClientProvider } from "../lib/api/client";
 import { syncCurrentLocale } from "../lib/i18n/current-locale";
 import { QueryProvider } from "../lib/query/query-provider";
 import { isExcludedPath } from "../lib/session/access-cookie";
+import { AccountBoundary } from "../lib/session/account-boundary";
 import { markAuthRedirect } from "../lib/session/auth-redirect-flag";
 import { SessionProvider } from "../lib/session/session-provider";
 import { SimulationSync } from "../lib/simulation/simulation-sync";
@@ -63,6 +64,7 @@ export function AppProviders({
         <TenantProvider initialBranding={initialBranding}>
           <SessionProvider>
             <SimulationSync />
+            <AccountBoundary />
             <ThemeProvider>
               {/*
                 Every internal link a shared component renders (breadcrumbs,

@@ -34,9 +34,9 @@ describe("useUrlState", () => {
   });
 
   it("hands the history API a string URL, which a Worker can clone", () => {
-    // The service worker's navigation cache wraps pushState/replaceState
-    // and posts the URL argument to a Worker; a URL object there throws
-    // DataCloneError on every write.
+    // With Serwist's cacheOnNavigation on (it is off now, next.config.ts)
+    // pushState/replaceState are wrapped and the URL argument is posted to
+    // a Worker; a URL object there throws DataCloneError on every write.
     const push = vi.spyOn(window.history, "pushState");
     const replace = vi.spyOn(window.history, "replaceState");
     const { result } = renderHook(() => useUrlState("tab", tabs, "students"));

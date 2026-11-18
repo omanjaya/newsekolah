@@ -27,8 +27,8 @@ describe("useOpacSearchParams", () => {
   });
 
   it("hands the history API a string URL, which a Worker can clone", () => {
-    // The service worker's navigation cache wraps replaceState and posts
-    // the URL argument to a Worker; a URL object there throws DataCloneError.
+    // See use-url-state.test.tsx: a wrapped history API posts the URL
+    // argument to a Worker; a URL object there throws DataCloneError.
     const replace = vi.spyOn(window.history, "replaceState");
     const { result } = renderHook(() => useOpacSearchParams());
 

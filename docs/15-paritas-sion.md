@@ -169,6 +169,85 @@ Data contoh ditambahkan ke database dev lokal lewat API supaya layar detail bisa
 
 Untuk melanjutkan: nyalakan kontainer `newsekolah-dev-postgres-1`, `redis-1`, `minio-1`, `mailpit-1`, `api-1` (tanpa `web-1`). Port 3000 di mesin pengembang dipakai proyek lain, sedangkan API dev hanya menerima asal `http://localhost:3000`, jadi web dijalankan di port 3100 lewat jembatan kecil di port 8090 yang meneruskan ke API (`NEXT_PUBLIC_API_URL=http://localhost:8090`, `API_INTERNAL_URL=http://localhost:8080`). Alat potret, pemotong per area, dan skrip peninjau tidak ada di repo.
 
+## Pembaruan 18 November: privasi di komputer bersama (service worker dan draf lokal)
+
+Dua cacat privasi yang ditemukan saat tinjauan akhir overhaul, keduanya sudah ada sebelum overhaul: data satu akun bisa sampai ke akun lain di browser yang sama. Dikerjakan di cabang `fix/web-shared-browser-privacy`, dipotong dari `claude/ui-overhaul-penyempurnaan-893ed6` di `c255538f`, lalu digabung ke cabang overhaul itu pada 18 November atas permintaan pemilik; cabangnya sendiri tidak di-push terpisah. Hanya `apps/web` yang berubah; API dan aplikasi mobile tidak disentuh. Perbaikan sesi yang bersebelahan (token klien setelah logout, cookie `sat`, mulai dan berhenti impersonasi) dikerjakan terpisah di cabang overhaul dan tidak diulang di sini.
+
+### Yang ditemukan
+
+**1. Service worker menyimpan data akun berdasarkan URL saja.** Dipastikan tanpa browser, dengan tiga cara:
+
+- Daftar aturan produksi Serwist yang asli (`defaultCache` dari `@serwist/next/worker`, `NODE_ENV=production`) digabung persis seperti di `app/sw.ts` lama, lalu contoh permintaan dicocokkan dengan semantik rute Serwist. Hasilnya: `GET /v1/me` dengan bearer token masuk `NetworkFirst("others")`; API di origin lain masuk `NetworkFirst("cross-origin")`; navigasi ke halaman `(app)` masuk `NetworkFirst("pages")` dengan batas tunggu jaringan 10 detik; payload RSC masuk `pages-rsc` dan `pages-rsc-prefetch`; URL objek presigned se-origin masuk `others`.
+- Worker hasil build produksi cabang overhaul (`public/sw.js` dari `c255538f`) memuat aturan yang sama.
+- `cacheOnNavigation: true` membuat halaman (lewat web worker, bukan service worker) mengambil setiap tujuan navigasi dengan cookie lalu menyimpan HTML-nya ke cache `pages`. HTML `(app)` dan `(kiosk)` memuat hasil `GET /v1/me` milik pemegang cookie `sat`. API tidak mengirim `Vary: Authorization`, jadi pencocokan cache hanya berdasarkan URL: permintaan akun B cocok dengan entri akun A. Karena batas tunggu 10 detik itu, koneksi lambat saja sudah cukup; jaringan tidak harus mati.
+
+Alur lengkapnya (dua akun bergantian di build produksi, lalu jaringan diputus) belum direproduksi di browser.
+
+**2. Draf lokal hanya berkunci rekaman.** Dibaca langsung di kode: kelima modul draf (presensi, konseling, jurnal, buku nilai, observasi supervisi) menyimpan ke `localStorage` dengan kunci dari rekamannya saja, misalnya `newsekolah:counseling-draft:new`. Tidak ada tenant, tidak ada user, tidak ada yang menghapusnya saat logout, dan isinya tidak mencatat penulisnya. Form menawarkan apa pun yang ditemukan kepada siapa pun yang membuka rekaman yang sama.
+
+**3. Halaman offline tidak pernah bisa tampil.** `/offline` tidak ada di daftar precache (194 entri: berkas `/_next/static/*` dan satu skrip worker navigasi), padahal `fallbacks` Serwist mengambilnya dari precache. Navigasi yang gagal selama ini menampilkan halaman galat bawaan browser, kecuali URL-nya kebetulan ada di cache `pages`.
+
+### Yang diubah
+
+Service worker (`app/sw.ts`, `lib/pwa/`, `next.config.ts`), dengan prinsip tolak secara bawaan:
+
+- Hanya dua rute. Navigasi selalu ke jaringan (`NetworkOnly`, tanpa batas tunggu) dan tidak disimpan; bila jaringan gagal, halaman `/offline` dari precache yang tampil. Berkas build se-origin di `/_next/static/*` disajikan `CacheFirst` dari satu cache, `next-static-assets`. Permintaan lain (API `/v1/*`, `/ws/*`, payload RSC, penyimpanan objek, origin lain, route handler) tidak cocok dengan rute mana pun, jadi worker tidak menjawabnya sama sekali.
+- `defaultCache` tidak dipakai lagi. Aturan lama menyaring daftar itu dengan daftar larangan, dan aturan yang tidak dilarang itulah yang bocor.
+- `cacheOnNavigation` dimatikan.
+- `/offline` masuk precache bersama tujuh chunk rute yang dimuat dokumennya, supaya tombol "Coba lagi" tetap berfungsi tanpa jaringan.
+- Saat worker baru aktif, semua cache selain precache dan `next-static-assets` dihapus, begitu juga catatan URL milik plugin kedaluwarsa Serwist di IndexedDB (`serwist-expiration`), yang menyimpan path API beserta id rekaman.
+- Halaman juga menghapus cache yang sama setiap kali identitas sesi mantap atau berganti dan saat logout, untuk menutup masa ketika worker lama masih mengendalikan tab yang terbuka. `skipWaiting` tetap `false` dan strip "pembaruan tersedia" tidak berubah.
+
+Pilihan lain yang ditolak: nama cache per user (worker tidak tahu akun tanpa kanal pesan yang berpacu dengan permintaan dan hilang saat worker dimulai ulang, dan entrinya tetap tersimpan di disk bersama) dan sekadar menghapus cache saat login atau logout (menyisakan jeda antara penulisan dan penghapusan berikutnya).
+
+Draf lokal (`lib/drafts/`, lima modul draf, lima form, `lib/session/`):
+
+- Pemilik draf adalah tenant dan user, ditambah id admin yang sedang bertindak saat impersonasi atau role testing. Kunci baru: `newsekolah:draft:<pemilik>:<jenis>:<rekaman>`. Pemilik juga ditulis di dalam isi draf dan diperiksa lagi saat dibaca.
+- Draf hanya ditawarkan kepada pemiliknya. Tanpa pemilik (sesi belum termuat atau anonim) tidak ada yang ditulis atau dibaca. Bila akun berganti saat form masih terbuka (misalnya tab lain login sebagai orang lain), form itu berhenti menyimpan draf sampai ditutup.
+- Draf tetap bertahan melewati muat ulang, tab tertutup, koneksi putus, dan sesi yang kedaluwarsa, hanya untuk pemiliknya.
+- Logout eksplisit (menu akun, layar wajib ganti password, hentikan impersonasi) menghapus semua draf di browser itu, milik siapa pun. Penghapusan dilakukan sebelum permintaan logout dikirim, jadi tetap terjadi walau jaringan gagal.
+- Draf dengan kunci lama tidak bisa dikaitkan ke siapa pun, jadi dihapus sekali saat aplikasi dibuka. Akibatnya, draf yang belum tersimpan pada saat rilis hilang satu kali.
+- Tidak ada penghapusan yang dipicu oleh `me` yang teramati, karena nilainya bisa tertinggal sesaat ketika identitas berganti.
+
+Yang sengaja dibiarkan: di browser yang penggunanya tidak pernah logout secara eksplisit, draf akun yang sesinya kedaluwarsa tetap ada di `localStorage`. Draf itu tidak pernah ditawarkan kepada akun lain di aplikasi.
+
+### Perilaku offline yang tersisa
+
+- Halaman yang sedang terbuka tetap bekerja dari memori. Isian di lima form berdraf tersimpan lokal, realtime menyambung ulang dan menyelaraskan data saat koneksi kembali, dan `reloadOnOnline` memuat ulang halaman lalu menawarkan drafnya kembali.
+- Membuka atau memuat ulang halaman apa pun saat offline menampilkan halaman offline aplikasi dengan tombol coba lagi. Ini baru sekarang benar-benar berfungsi.
+- Halaman yang pernah dikunjungi tidak lagi dibuka dari cache saat offline, termasuk halaman publik (login, OPAC). Itu harga dari perbaikan ini.
+- Logo sekolah di halaman offline hanya tampil bila cache HTTP browser masih menyimpannya; worker tidak lagi menyimpan gambar di luar `/_next/static/*`.
+- Berkas build, strip pembaruan, dan push notification tidak berubah.
+
+### Verifikasi sejauh ini
+
+- `pnpm --filter @newsekolah/web typecheck` lulus; `pnpm --filter @newsekolah/web lint` 0 galat (dua peringatan lama di berkas yang tidak disentuh).
+- Satu build produksi dijalankan hanya untuk memeriksa worker hasil kompilasi, karena `app/sw.ts` berada di luar `tsc` dan ESLint: `public/sw.js` memuat tepat dua rute di atas, dan precache (201 entri) memuat `/offline` beserta ketujuh chunk-nya.
+- Aturan baru dan modul draf dijalankan sekali lewat skrip lepas dengan contoh permintaan yang sama seperti saat memastikan cacatnya: API, RSC, dan objek presigned tidak lagi ditangani worker; draf akun A tidak terbaca oleh akun B, oleh admin yang bertindak sebagai A, atau tanpa sesi.
+- Test unit ditulis tetapi belum dijalankan, sesuai aturan kerja. Tidak ada dev server, browser, atau Docker yang dijalankan.
+
+### Yang harus dijalankan di putaran tes akhir
+
+- Test unit baru: `lib/pwa/runtime-caching.test.ts`, `lib/pwa/cache-policy.test.ts`, `lib/pwa/precache-exclude.test.ts`, `lib/drafts/draft-storage.test.ts`, `lib/drafts/draft-owner.test.ts`, `lib/session/forget-account.test.ts`, `lib/session/account-boundary.test.tsx`.
+- Test unit yang diubah: kelima `*-draft.test.ts`, `features/discipline/components/counseling-form.test.tsx`, `components/account-menu.test.tsx`, `app/providers.test.tsx`. Test form lain yang ikut terpengaruh: `session-editor.test.tsx`, `complete-observation-form.test.tsx`, `journal-view.test.tsx`, `journal-today-panel.test.tsx`.
+- Skenario `e2e/simulation/resilience.spec.ts` (wali kelas offline, siswa mengajukan izin, sinkron ulang saat tersambung), dan suite tiruan `pnpm --filter @newsekolah/web test:e2e`, yang berjalan di build produksi dengan service worker aktif.
+- Uji manual di browser dengan build produksi, belum pernah dilakukan: (a) login sebagai A, buka beberapa halaman, logout, login sebagai B, putuskan jaringan, muat ulang: harus tampil halaman offline, bukan data A; (b) Cache Storage hanya berisi precache dan `next-static-assets`, dan cache lama hilang setelah worker baru aktif; (c) tombol coba lagi di halaman offline berfungsi tanpa jaringan; (d) draf konseling A tidak ditawarkan kepada B, dan hilang setelah A logout.
+
+### Penyimpanan browser lain yang diperiksa
+
+Tidak diubah, karena bukan cacat yang sama:
+
+- `newsekolah:report-export:<laporan>` (`localStorage`): format, kop, urutan dan label kolom ekspor. Tanpa user di kuncinya, jadi pilihan satu akun terbawa ke akun berikutnya. Bukan data pribadi.
+- `newsekolah.monitor.display-token` (`localStorage`): token layar monitor. Ini kredensial tingkat sekolah yang sengaja melekat pada perangkat, tetapi bertahan setelah logout. Perlu keputusan pemilik apakah ikut dihapus saat logout.
+- Lipatan sidebar dan tema (`localStorage`), salinan branding tenant dan pencarian OPAC terakhir (`sessionStorage`): preferensi perangkat atau data publik. Jam simulasi (`sessionStorage`) sudah diperiksa terhadap aktor dan tenant saat dibaca.
+- Favorit navigasi sudah berkunci tenant dan user. Penyimpanan visibilitas kolom `DataTable` ada di `packages/ui`, tetapi belum ada pemanggil yang mengaktifkannya.
+
+### Dicatat, belum dikerjakan
+
+- API tidak mengirim `Cache-Control: no-store` maupun `Vary: Authorization` pada respons terautentikasi. Perbaikan ini tidak lagi bergantung padanya, tetapi header itu tetap layak ditambahkan di `apps/api`.
+- Login Google dan passkey tidak mengosongkan cache TanStack Query seperti login password; mulai impersonasi hanya mengganti `me`; logout yang gagal di jaringan tidak mengosongkan cache di memori. Semuanya berada di berkas yang sedang dikerjakan perbaikan sesi, jadi dicatat untuk pekerjaan itu.
+- Menanyakan kepada pengguna saat logout bila masih ada draf (hapus atau simpan untuk login berikutnya) akan membedakan perangkat pribadi dari komputer bersama; sekarang selalu dihapus.
+
 ## Yang tersisa
 
 Diurutkan dari yang paling berdampak bagi pengguna.

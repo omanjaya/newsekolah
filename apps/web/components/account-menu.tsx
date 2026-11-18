@@ -23,6 +23,7 @@ import { forwardRef, useState, type ComponentPropsWithoutRef, type ReactElement 
 import { useLogoutMutation } from "../features/auth/api";
 import { filterNavigation, navigation, type NavItem } from "../lib/navigation";
 import { navAccessFromMe } from "../lib/navigation-access";
+import { forgetAccountOnThisBrowser } from "../lib/session/forget-account";
 import { useSession } from "../lib/session/session-provider";
 import { useTenant } from "../lib/tenant/tenant-provider";
 
@@ -65,6 +66,8 @@ function useLogout() {
   const logoutMutation = useLogoutMutation();
   const router = useRouter();
   return async () => {
+    // Before the request, so a sign-out that fails on the network still forgets.
+    forgetAccountOnThisBrowser();
     await logoutMutation.mutateAsync();
     router.replace("/login");
   };

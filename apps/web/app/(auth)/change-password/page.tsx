@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { useLogoutMutation } from "../../../features/auth/api";
 import { AuthCard } from "../../../features/auth/components/auth-card";
 import { ChangePasswordForm } from "../../../features/auth/components/change-password-form";
+import { forgetAccountOnThisBrowser } from "../../../lib/session/forget-account";
 import { useSession } from "../../../lib/session/session-provider";
 
 /** Only reachable while `must_change_password` is true; see the build brief's forced-change requirement. */
@@ -35,6 +36,8 @@ export default function ChangePasswordPage(): ReactElement {
   }
 
   async function handleLogout() {
+    // Before the request, so a sign-out that fails on the network still forgets.
+    forgetAccountOnThisBrowser();
     await logout.mutateAsync();
     router.replace("/login");
   }

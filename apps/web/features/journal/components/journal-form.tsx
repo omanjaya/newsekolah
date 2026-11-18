@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { useDraftOwner } from "../../../lib/drafts/draft-owner";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
@@ -44,6 +45,7 @@ export function JournalForm({
   const apiErrorMessage = useApiErrorMessage();
   const locale = useLocale() as Locale;
   const { me } = useSession();
+  const draftOwner = useDraftOwner();
   const { revision } = useSimulation();
   const year = useActiveYear();
   const upsert = useUpsertJournalMutation();
@@ -116,34 +118,38 @@ export function JournalForm({
     topic.trim() !== "" &&
     activities.trim() !== "";
 
-  // Offers a local draft once per resolved class/subject/date -- a
-  // from-scratch entry only knows its key once the pickers settle, while a
-  // prefilled or existing entry knows it immediately.
+  // Offers a local draft once per owner and resolved class/subject/date --
+  // a from-scratch entry only knows its key once the pickers settle, while
+  // a prefilled or existing entry knows it immediately, and the owner may
+  // only become known after the first render. Once the lesson is resolved,
+  // finding no draft of this owner's (or no owner) withdraws any earlier
+  // offer, since a draft is only ever offered to the account that wrote it.
+  // An effect because localStorage is only reachable client-side, so this
+  // cannot be a lazy useState initializer.
   const checkedKey = useRef<string | null>(null);
   useEffect(() => {
     if (effectiveClassId === "" || effectiveSubjectId === "" || lessonDate === "") return;
-    const key = `${effectiveClassId}:${effectiveSubjectId}:${lessonDate}`;
+    const key = `${draftOwner ?? ""}|${effectiveClassId}:${effectiveSubjectId}:${lessonDate}`;
     if (checkedKey.current === key) return;
     checkedKey.current = key;
-    const draft = loadJournalDraft(effectiveClassId, effectiveSubjectId, lessonDate);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only reachable client-side, so this cannot be a lazy useState initializer.
-    if (draft) setDraftOffer({ savedAt: draft.savedAt });
-  }, [effectiveClassId, effectiveSubjectId, lessonDate]);
+    const draft = loadJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate);
+    setDraftOffer(draft ? { savedAt: draft.savedAt } : null);
+  }, [draftOwner, effectiveClassId, effectiveSubjectId, lessonDate]);
 
   // Mirrors every edit to localStorage so a dropped connection or an
   // accidental tab close does not throw away a quick entry in progress.
   useEffect(() => {
     if (effectiveClassId === "" || effectiveSubjectId === "" || lessonDate === "") return;
     if (topic.trim() === "" && activities.trim() === "" && reflection.trim() === "") return;
-    saveJournalDraft(effectiveClassId, effectiveSubjectId, lessonDate, {
+    saveJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate, {
       topic,
       activities,
       reflection,
     });
-  }, [effectiveClassId, effectiveSubjectId, lessonDate, topic, activities, reflection]);
+  }, [draftOwner, effectiveClassId, effectiveSubjectId, lessonDate, topic, activities, reflection]);
 
   function restoreDraft() {
-    const draft = loadJournalDraft(effectiveClassId, effectiveSubjectId, lessonDate);
+    const draft = loadJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate);
     if (!draft) return;
     setTopic(draft.topic);
     setActivities(draft.activities);
@@ -152,7 +158,7 @@ export function JournalForm({
   }
 
   function dismissDraft() {
-    clearJournalDraft(effectiveClassId, effectiveSubjectId, lessonDate);
+    clearJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate);
     setDraftOffer(null);
   }
 
@@ -169,7 +175,7 @@ export function JournalForm({
       },
       {
         onSuccess: () => {
-          clearJournalDraft(effectiveClassId, effectiveSubjectId, lessonDate);
+          clearJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate);
           toast.success(t("saved"));
           onDone();
         },

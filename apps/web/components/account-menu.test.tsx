@@ -79,4 +79,22 @@ describe("AccountMenu", () => {
       expect(replace).toHaveBeenCalledWith("/login");
     });
   });
+
+  // A shared computer: the next person must not be offered anyone's drafts.
+  it("leaves no draft of any account behind when signing out", async () => {
+    const draftKeys = [
+      "newsekolah:draft:t1:u1:counseling:new",
+      "newsekolah:draft:t1:u2:journal:class-1:subject-1:2026-09-21",
+    ];
+    for (const key of draftKeys) window.localStorage.setItem(key, "{}");
+    const user = userEvent.setup();
+    render(<AccountMenu />);
+    await user.click(screen.getByRole("button", { name: "profileMenu.label" }));
+    await user.click(screen.getByRole("button", { name: "profileMenu.logout" }));
+
+    await waitFor(() => {
+      expect(replace).toHaveBeenCalledWith("/login");
+    });
+    expect(draftKeys.map((key) => window.localStorage.getItem(key))).toEqual([null, null]);
+  });
 });

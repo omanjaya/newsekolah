@@ -20,8 +20,8 @@ describe("useQuickAction", () => {
   });
 
   it("hands the history API a string URL, which a Worker can clone", () => {
-    // See use-url-state.test.tsx: the service worker's navigation cache
-    // posts this argument to a Worker, which cannot clone a URL object.
+    // See use-url-state.test.tsx: a wrapped history API posts this
+    // argument to a Worker, which cannot clone a URL object.
     const replace = vi.spyOn(window.history, "replaceState");
     renderHook(() => {
       useQuickAction("submit-leave", vi.fn());

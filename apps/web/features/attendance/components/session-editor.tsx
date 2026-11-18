@@ -19,6 +19,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { useDraftOwner } from "../../../lib/drafts/draft-owner";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useUnsavedChangesProtection } from "../../../lib/navigation/use-unsaved-changes-protection";
@@ -57,6 +58,7 @@ export function SessionEditor({
   const apiErrorMessage = useApiErrorMessage();
   const locale = useLocale() as Locale;
   const { me } = useSession();
+  const draftOwner = useDraftOwner();
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
   const classMap = useLookup(classes.data?.data);
@@ -104,16 +106,17 @@ export function SessionEditor({
   const disciplineOn = useModuleEnabled("discipline");
 
   // Offer to restore an in-progress draft the browser still has from
-  // before a reload or a dropped connection, once per mount. This reads
-  // `window.localStorage`, which does not exist during server rendering,
-  // so it cannot move into a lazy `useState` initializer the way a
-  // server-safe value could -- the effect is the deliberate, correct way
-  // to reach it only after the client has mounted.
+  // before a reload or a dropped connection, once per session and owner:
+  // rechecked when the owner becomes known, and withdrawn when there is
+  // none. This reads `window.localStorage`, which does not exist during
+  // server rendering, so it cannot move into a lazy `useState` initializer
+  // the way a server-safe value could -- the effect is the deliberate,
+  // correct way to reach it only after the client has mounted.
   useEffect(() => {
-    const draft = loadAttendanceDraft(session.id);
+    const draft = loadAttendanceDraft(draftOwner, session.id);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- see the comment above.
-    if (draft) setDraftOffer({ savedAt: draft.savedAt });
-  }, [session.id]);
+    setDraftOffer(draft ? { savedAt: draft.savedAt } : null);
+  }, [draftOwner, session.id]);
 
   const isCorrection = Boolean(session.submitted_at) || openedInCorrection;
   const presentCodes = useMemo(
@@ -151,8 +154,15 @@ export function SessionEditor({
   // away work still in memory; cleared the moment a save succeeds.
   useEffect(() => {
     if (!isDirty) return;
-    saveAttendanceDraft(session.id, { statuses, notes, violations, topic, activities, reflection });
-  }, [session.id, statuses, notes, violations, topic, activities, reflection, isDirty]);
+    saveAttendanceDraft(draftOwner, session.id, {
+      statuses,
+      notes,
+      violations,
+      topic,
+      activities,
+      reflection,
+    });
+  }, [draftOwner, session.id, statuses, notes, violations, topic, activities, reflection, isDirty]);
 
   const handleStatusChange = useCallback((studentId: string, statusCode: string) => {
     setStatuses((prev) => ({ ...prev, [studentId]: statusCode }));
@@ -200,11 +210,11 @@ export function SessionEditor({
     setActivities(initialJournal.activities);
     setReflection(initialJournal.reflection);
     setReason("");
-    clearAttendanceDraft(session.id);
+    clearAttendanceDraft(draftOwner, session.id);
   }
 
   function restoreDraft() {
-    const draft = loadAttendanceDraft(session.id);
+    const draft = loadAttendanceDraft(draftOwner, session.id);
     if (!draft) return;
     setStatuses((prev) => ({ ...prev, ...draft.statuses }));
     setNotes((prev) => ({ ...prev, ...draft.notes }));
@@ -216,7 +226,7 @@ export function SessionEditor({
   }
 
   function dismissDraft() {
-    clearAttendanceDraft(session.id);
+    clearAttendanceDraft(draftOwner, session.id);
     setDraftOffer(null);
   }
 
@@ -252,7 +262,7 @@ export function SessionEditor({
           : {}),
       });
       setSavedSuccessfully(true);
-      clearAttendanceDraft(session.id);
+      clearAttendanceDraft(draftOwner, session.id);
       toast.success(
         t("savedAt", {
           time: formatTime(businessNow(), { locale, timeZone: me?.tenant.timezone }),

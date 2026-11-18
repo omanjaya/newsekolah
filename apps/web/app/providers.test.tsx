@@ -19,6 +19,7 @@ vi.mock("../lib/api/client", () => ({ ApiClientProvider: PassThrough }));
 vi.mock("../lib/tenant/tenant-provider", () => ({ TenantProvider: PassThrough }));
 vi.mock("../lib/session/session-provider", () => ({ SessionProvider: PassThrough }));
 vi.mock("../lib/simulation/simulation-sync", () => ({ SimulationSync: () => null }));
+vi.mock("../lib/session/account-boundary", () => ({ AccountBoundary: () => null }));
 vi.mock("../lib/theme/theme-provider", () => ({ ThemeProvider: PassThrough }));
 vi.mock("../components/ui-locale-provider", () => ({ UiLocaleProvider: PassThrough }));
 

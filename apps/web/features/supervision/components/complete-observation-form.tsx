@@ -24,6 +24,7 @@ import type { ReactElement, ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
+import { useDraftOwner } from "../../../lib/drafts/draft-owner";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useUnsavedChangesProtection } from "../../../lib/navigation/use-unsaved-changes-protection";
 import { useSession } from "../../../lib/session/session-provider";
@@ -91,6 +92,7 @@ export function CompleteObservationForm({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const { me } = useSession();
+  const draftOwner = useDraftOwner();
   const timeZone = me?.tenant.timezone;
   const complete = useCompleteObservationMutation();
 
@@ -105,16 +107,17 @@ export function CompleteObservationForm({
   const [draftOffer, setDraftOffer] = useState<{ savedAt: string } | null>(null);
 
   // Offer to restore an in-progress draft the browser still has from
-  // before a reload or a dropped connection, once per mount. This reads
-  // `window.localStorage`, which does not exist during server rendering,
-  // so it cannot move into a lazy `useState` initializer the way a
-  // server-safe value could -- the effect is the deliberate, correct way
-  // to reach it only after the client has mounted.
+  // before a reload or a dropped connection, once per observation and
+  // owner: rechecked when the owner becomes known, and withdrawn when
+  // there is none. This reads `window.localStorage`, which does not exist
+  // during server rendering, so it cannot move into a lazy `useState`
+  // initializer the way a server-safe value could -- the effect is the
+  // deliberate, correct way to reach it only after the client has mounted.
   useEffect(() => {
-    const draft = loadObservationDraft(scheduled.id);
+    const draft = loadObservationDraft(draftOwner, scheduled.id);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- see the comment above.
-    if (draft) setDraftOffer({ savedAt: draft.savedAt });
-  }, [scheduled.id]);
+    setDraftOffer(draft ? { savedAt: draft.savedAt } : null);
+  }, [draftOwner, scheduled.id]);
 
   const scoredCriteria = instrument.criteria.filter((c) => {
     const value = Number.parseInt(scores[c.key] ?? "", 10);
@@ -139,15 +142,15 @@ export function CompleteObservationForm({
   // away scoring already in memory; cleared the moment a save succeeds.
   useEffect(() => {
     if (!isDirty) return;
-    saveObservationDraft(scheduled.id, { scores, observerNotes, observedAt });
-  }, [scheduled.id, scores, observerNotes, observedAt, isDirty]);
+    saveObservationDraft(draftOwner, scheduled.id, { scores, observerNotes, observedAt });
+  }, [draftOwner, scheduled.id, scores, observerNotes, observedAt, isDirty]);
 
   function setScore(criterionKey: string, score: number) {
     setScores((prev) => ({ ...prev, [criterionKey]: String(score) }));
   }
 
   function restoreDraft() {
-    const draft = loadObservationDraft(scheduled.id);
+    const draft = loadObservationDraft(draftOwner, scheduled.id);
     if (!draft) return;
     setScores((prev) => ({ ...prev, ...draft.scores }));
     setObserverNotes(draft.observerNotes);
@@ -156,7 +159,7 @@ export function CompleteObservationForm({
   }
 
   function dismissDraft() {
-    clearObservationDraft(scheduled.id);
+    clearObservationDraft(draftOwner, scheduled.id);
     setDraftOffer(null);
   }
 
@@ -175,7 +178,7 @@ export function CompleteObservationForm({
         observed_at: observedInstant.toISOString(),
       });
       setSavedSuccessfully(true);
-      clearObservationDraft(scheduled.id);
+      clearObservationDraft(draftOwner, scheduled.id);
       toast.success(
         t("savedAt", {
           time: formatTime(businessNow(), { locale, timeZone }),
