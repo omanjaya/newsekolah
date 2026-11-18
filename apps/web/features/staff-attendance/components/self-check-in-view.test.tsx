@@ -7,6 +7,7 @@ import { SelfCheckInView } from "./self-check-in-view";
 const weekQuery = vi.hoisted(() => vi.fn());
 const scanMutation = vi.hoisted(() => vi.fn());
 const clockDay = vi.hoisted(() => ({ value: "2026-09-24" }));
+const session = vi.hoisted(() => ({ permissions: [] as string[] }));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, vars?: Record<string, unknown>) =>
@@ -15,8 +16,13 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({
-    me: { profile_kind: "teacher", permissions: [], tenant: { timezone: "Asia/Jakarta" } },
+    me: {
+      profile_kind: "teacher",
+      permissions: session.permissions,
+      tenant: { timezone: "Asia/Jakarta" },
+    },
   }),
+  useCan: (permission: string) => session.permissions.includes(permission),
 }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/check-in" }));
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
@@ -37,6 +43,7 @@ vi.mock("@newsekolah/ui", async () => {
 afterEach(() => {
   cleanup();
   clockDay.value = "2026-09-24";
+  session.permissions = [];
   scanMutation.mockReset();
   weekQuery.mockReset();
 });
