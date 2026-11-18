@@ -8,6 +8,10 @@ import {
   CardTitle,
   EmptyState,
   IconCircle,
+  List,
+  ListRow,
+  Sheet,
+  SheetContent,
   SkeletonCards,
   Tabs,
   TabsContent,
@@ -15,6 +19,7 @@ import {
   TabsTrigger,
   cn,
   domainIcons,
+  useMediaQuery,
   type CategoryTone,
 } from "@newsekolah/ui";
 import { ChevronUp, Download, FileSpreadsheet, type LucideIcon } from "lucide-react";
@@ -38,7 +43,16 @@ const DOMAIN: Record<string, { icon: LucideIcon; tone: CategoryTone }> = {
   grading: { icon: domainIcons.grades, tone: "blue" },
   permits: { icon: domainIcons.exitPermit, tone: "amber" },
 };
+/** Kinds whose topic is more specific than their first segment ("permits.leave_requests"). */
+const KIND_DOMAIN: Record<string, { icon: LucideIcon; tone: CategoryTone }> = {
+  "permits.leave_requests": { icon: domainIcons.leave, tone: "amber" },
+  "discipline.warning_letters": { icon: domainIcons.warningLetter, tone: "red" },
+};
 const FALLBACK_DOMAIN = { icon: domainIcons.document, tone: "purple" as const };
+
+function domainOf(kind: string): { icon: LucideIcon; tone: CategoryTone } {
+  return KIND_DOMAIN[kind] ?? DOMAIN[kind.split(".")[0] ?? ""] ?? FALLBACK_DOMAIN;
+}
 
 /**
  * Report centre: one catalogue of exports, filtered server-side to what the
@@ -70,15 +84,15 @@ function ReportsTabs({ tabKey }: { tabKey: string }): ReactElement {
   const [tab, setTab] = useUrlState<string>(tabKey, ["exports", "schedules"], "exports");
 
   return (
-    <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-5">
+    <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-4">
       <TabsList aria-label={t("tabsLabel")}>
         <TabsTrigger value="exports">{t("tabs.exports")}</TabsTrigger>
         <TabsTrigger value="schedules">{t("tabs.schedules")}</TabsTrigger>
       </TabsList>
-      <TabsContent value="exports">
+      <TabsContent value="exports" className="pt-0">
         <ExportsTab />
       </TabsContent>
-      <TabsContent value="schedules">
+      <TabsContent value="schedules" className="pt-0">
         <SchedulesView />
       </TabsContent>
     </Tabs>
@@ -89,6 +103,7 @@ function ExportsTab(): ReactElement {
   const t = useTranslations("app.reports");
   const [selectedKind, setSelectedKind] = useState<string | null>(null);
   const reports = useReportsQuery();
+  const wide = useMediaQuery("(min-width: 768px)");
 
   const items = reports.data?.data ?? [];
 
@@ -108,6 +123,59 @@ function ExportsTab(): ReactElement {
     );
   }
 
+  const labelOf = (kind: string) => {
+    const key = kind.replaceAll(".", "_");
+    return t.has(`kinds.${key}.label`) ? t(`kinds.${key}.label`) : kind;
+  };
+  const descriptionOf = (kind: string) => {
+    const key = kind.replaceAll(".", "_");
+    return t.has(`kinds.${key}.description`) ? t(`kinds.${key}.description`) : undefined;
+  };
+
+  if (!wide) {
+    // On a phone the catalogue is one list; a row opens its export settings
+    // in a bottom sheet instead of growing a card in place.
+    const chosen = items.find((report) => report.kind === selectedKind);
+    return (
+      <>
+        <List framed aria-label={t("title")}>
+          {items.map((report) => {
+            const domain = domainOf(report.kind);
+            const Icon = domain.icon;
+            return (
+              <ListRow
+                key={report.kind}
+                leading={
+                  <IconCircle tone={domain.tone} size="md">
+                    <Icon />
+                  </IconCircle>
+                }
+                title={labelOf(report.kind)}
+                meta={descriptionOf(report.kind)}
+                chevron
+                onClick={() => {
+                  setSelectedKind(report.kind);
+                }}
+              />
+            );
+          })}
+        </List>
+        <Sheet
+          open={Boolean(chosen)}
+          onOpenChange={(open) => {
+            if (!open) setSelectedKind(null);
+          }}
+        >
+          {chosen && (
+            <SheetContent title={labelOf(chosen.kind)} description={descriptionOf(chosen.kind)}>
+              <ReportArgsForm key={chosen.kind} report={chosen} />
+            </SheetContent>
+          )}
+        </Sheet>
+      </>
+    );
+  }
+
   return (
     <ul className="grid gap-4 md:grid-cols-2">
       {items.map((report) => {
@@ -116,11 +184,9 @@ function ExportsTab(): ReactElement {
         // next-intl key cannot contain a dot: it is the namespace
         // separator. The catalog uses underscores instead.
         const kindKey = report.kind.replaceAll(".", "_");
-        const label = t.has(`kinds.${kindKey}.label`) ? t(`kinds.${kindKey}.label`) : report.kind;
-        const description = t.has(`kinds.${kindKey}.description`)
-          ? t(`kinds.${kindKey}.description`)
-          : undefined;
-        const domain = DOMAIN[report.kind.split(".")[0] ?? ""] ?? FALLBACK_DOMAIN;
+        const label = labelOf(report.kind);
+        const description = descriptionOf(report.kind);
+        const domain = domainOf(report.kind);
         const Icon = domain.icon;
         const formId = `report-args-${kindKey}`;
         return (
@@ -161,7 +227,7 @@ function ExportsTab(): ReactElement {
                     setSelectedKind(report.kind);
                   }}
                 >
-                  {t("download")}
+                  {t("setUpDownload")}
                 </Button>
               )}
             </Card>
