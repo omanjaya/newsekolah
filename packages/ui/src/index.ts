@@ -270,6 +270,7 @@ export {
   PopoverContent,
   PopoverTrigger,
 } from "./components/popover.js";
+export { ResponsivePopover, type ResponsivePopoverProps } from "./components/responsive-popover.js";
 export {
   RowActionsMenu,
   type RowActionsMenuItem,

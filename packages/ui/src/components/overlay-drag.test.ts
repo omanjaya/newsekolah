@@ -140,6 +140,45 @@ describe("attachSheetDrag", () => {
     expect(scrolled.content.style.transform).toBe("");
   });
 
+  // Cancelling the first touchmove cancels native scrolling for the whole
+  // touch, so a swipe up in the body that starts with a small downward
+  // jitter must not be held while the sheet decides.
+  it("leaves the body's early moves to native scrolling until a drag is clear", () => {
+    const { content, row } = mountSheet();
+    const dismiss = vi.fn();
+    attachSheetDrag(content, { enabled: () => true, dismiss });
+
+    row.dispatchEvent(touch("touchstart", 300, 0));
+    const still = touch("touchmove", 300, 10);
+    row.dispatchEvent(still);
+    const jitter = touch("touchmove", 302, 20);
+    row.dispatchEvent(jitter);
+    expect(still.defaultPrevented).toBe(false);
+    expect(jitter.defaultPrevented).toBe(false);
+    const up = touch("touchmove", 200, 120);
+    row.dispatchEvent(up);
+    expect(up.defaultPrevented).toBe(false);
+    row.dispatchEvent(touch("touchend", 0, 120));
+    expect(dismiss).not.toHaveBeenCalled();
+    expect(content.style.transform).toBe("");
+
+    // A clear downward drag past the slop is still the sheet's.
+    row.dispatchEvent(touch("touchstart", 100, 200));
+    const down = touch("touchmove", 140, 240);
+    row.dispatchEvent(down);
+    expect(down.defaultPrevented).toBe(true);
+    expect(content.style.transform).toBe("translateY(32px)");
+  });
+
+  it("holds the page still from the first move on the handle", () => {
+    const { content, handle } = mountSheet();
+    attachSheetDrag(content, { enabled: () => true, dismiss: vi.fn() });
+    handle.dispatchEvent(touch("touchstart", 100, 0));
+    const early = touch("touchmove", 102, 10);
+    handle.dispatchEvent(early);
+    expect(early.defaultPrevented).toBe(true);
+  });
+
   it("leaves an upward or sideways swipe to the page", () => {
     const { content, handle } = mountSheet();
     const dismiss = vi.fn();

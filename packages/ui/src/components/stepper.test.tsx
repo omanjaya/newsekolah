@@ -32,6 +32,19 @@ describe("Stepper", () => {
     expect(screen.getByText("Issued")).toHaveClass("text-fg-muted");
   });
 
+  // A flow summary (no step under way) is not pending: its stages read at
+  // full strength, and only a stepper showing progress mutes what is next.
+  it("mutes upcoming labels only while the stepper shows progress", () => {
+    const { rerender } = render(<Stepper currentIndex={-1} steps={WORKFLOW} />);
+    for (const label of ["Diajukan", "Wali kelas", "Guru piket", "Gerbang"]) {
+      expect(screen.getByText(label)).toHaveClass("text-fg");
+      expect(screen.getByText(label)).not.toHaveClass("text-fg-muted");
+    }
+    rerender(<Stepper currentIndex={1} steps={WORKFLOW} />);
+    expect(screen.getByText("Gerbang")).toHaveClass("text-fg-muted");
+    expect(screen.getByText("Diajukan")).toHaveClass("text-fg");
+  });
+
   it("outlines upcoming steps and their connectors strongly enough for the dark theme", () => {
     render(<Stepper currentIndex={2} steps={WORKFLOW} />);
     const gate = screen.getByText("Gerbang").closest("li");

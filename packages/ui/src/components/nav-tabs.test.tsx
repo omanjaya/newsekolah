@@ -62,6 +62,23 @@ describe("NavTabs", () => {
     expect(scroller?.firstElementChild).toHaveAttribute("aria-hidden", "true");
   });
 
+  it("runs an underline strip into the phone's gutter so the next tab peeks in", () => {
+    render(<NavTabs aria-label="Bagian" items={ITEMS} variant="underline" />);
+    const scroller = screen.getByRole("navigation").firstElementChild;
+    // Out to the screen's edges, the first tab where it was, a longer end fade.
+    expect(scroller).toHaveClass(
+      "max-sm:-mx-4",
+      "max-sm:px-4",
+      "max-sm:scroll-px-4",
+      "[--scroll-fade-end-size:var(--space-12)]",
+    );
+  });
+
+  it("keeps a pill strip inside its capsule", () => {
+    render(<NavTabs aria-label="Bagian" items={ITEMS} variant="pill" />);
+    expect(screen.getByRole("navigation").firstElementChild).not.toHaveClass("max-sm:-mx-4");
+  });
+
   it("forwards a ref and other attributes to the landmark, like TabsList", () => {
     const ref = createRef<HTMLElement>();
     render(

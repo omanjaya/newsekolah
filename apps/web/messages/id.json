@@ -449,7 +449,7 @@
         "nameLabel": "Nama lengkap",
         "emailLabel": "Email",
         "phoneLabel": "Telepon",
-        "phonePlaceholder": "Belum diisi",
+        "phonePlaceholder": "Isi nomor baru",
         "localeLabel": "Bahasa pilihan",
         "localeId": "Bahasa Indonesia",
         "localeEn": "Bahasa Inggris",
@@ -607,7 +607,8 @@
         "save": "Simpan perubahan",
         "sessionTitle": "Lama sesi",
         "daysUnit": "hari",
-        "devicesTitle": "Perangkat"
+        "devicesTitle": "Perangkat",
+        "rulesTitle": "Aturan sesi"
       },
       "branding": {
         "navLabel": "Merek sekolah",
@@ -730,9 +731,11 @@
     },
     "forbidden": {
       "title": "Tidak ada akses ke halaman ini",
-      "body": "Minta admin sekolah membuka aksesnya bila Anda memerlukan halaman ini.",
+      "body": "Akun Anda belum punya izin untuk halaman ini. Hubungi admin sekolah bila Anda memerlukannya.",
       "backHome": "Kembali ke beranda",
-      "back": "Halaman sebelumnya"
+      "back": "Halaman sebelumnya",
+      "bodyAdmin": "Akun Anda belum punya izin untuk halaman ini.",
+      "platformBody": "Halaman ini khusus operator platform."
     },
     "moduleUnavailable": {
       "title": "Fitur ini belum diaktifkan",
@@ -774,7 +777,7 @@
         "announcement_published": "Pengumuman baru",
         "attendance_submitted": "Presensi tercatat",
         "substitution_requested": "Permintaan guru pengganti",
-        "substitution_responded": "Respon guru pengganti",
+        "substitution_responded": "Tanggapan guru pengganti",
         "leave_request_submitted": "Pengajuan izin baru",
         "leave_request_reviewed": "Pengajuan izin ditinjau",
         "leave_request_issued": "Surat izin diterbitkan",
@@ -941,7 +944,7 @@
       "queue": {
         "title": "Antrean terlambat",
         "description": "Siswa yang memindai QR terlambat dan menunggu tinjauan Anda.",
-        "openInbox": "Perlu tindakan",
+        "openInbox": "Lihat semua",
         "emptyTitle": "Belum ada yang terlambat",
         "emptyBody": "Siswa yang memindai QR terlambat muncul di sini.",
         "occurrence": "Terlambat ke-{n}, {time}"
@@ -1256,8 +1259,11 @@
         "progressBody": "Kelas yang sedang belajar dan sudah menyimpan presensinya.",
         "noneRunning": "Belum ada kelas yang sedang belajar saat ini.",
         "openReports": "Buka laporan presensi",
-        "openMonitor": "Buka monitor"
-      }
+        "openMonitor": "Buka monitor",
+        "bodyReportsOnly": "Lihat rekap per kelas di laporan.",
+        "openReportsHub": "Buka pusat laporan"
+      },
+      "openSchedule": "Buka jadwal"
     },
     "homeroom": {
       "eyebrow": "Akademik",
@@ -1278,7 +1284,7 @@
       "noMatchTitle": "Tidak ada siswa yang cocok",
       "noMatchBody": "Ubah kata kunci pencarian atau filter status.",
       "statTotal": "Total siswa",
-      "statAbsent": "Alpa",
+      "statAbsent": "Alpha",
       "statIncomplete": "Belum lengkap",
       "statPendingLeave": "Izin menunggu",
       "attentionTitle": "Perlu perhatian hari ini",
@@ -1329,7 +1335,7 @@
       "statsLabel": "Ringkasan kelas",
       "attentionCount": "{count, plural, other {# siswa perlu perhatian}}",
       "attentionNoneTitle": "Semua siswa tercatat",
-      "attentionBreakdown": "{absent} alpa · {incomplete} presensi belum lengkap",
+      "attentionBreakdown": "{absent} alpha · {incomplete} presensi belum lengkap",
       "attentionOpen": "Lihat di presensi kelas",
       "attentionListTitle": "Perlu dihubungi",
       "noHomeroomAdminBody": "Halaman ini menampilkan rekap harian kelas binaan. Wali kelas diatur di penugasan.",
@@ -1343,7 +1349,7 @@
       "incoming": "Untuk saya",
       "outgoing": "Dari saya",
       "emptyTitle": "Belum ada permintaan",
-      "emptyIncomingBody": "Permintaan dari rekan guru untuk menggantikan jadwal Anda tampil di sini.",
+      "emptyIncomingBody": "Permintaan rekan guru agar Anda menggantikan jadwal mereka tampil di sini.",
       "emptyOutgoingBody": "Permintaan yang Anda kirim ke rekan guru tampil di sini.",
       "fromTeacher": "Dari",
       "toTeacher": "Kepada",
@@ -1647,7 +1653,9 @@
         "days": "{count, plural, other {# hari}}",
         "historyTitle": "Riwayat pengajuan",
         "letterNumberShort": "Surat {number}",
-        "opened": "Diajukan"
+        "opened": "Diajukan",
+        "issuerTitle": "Penerbitan surat izin",
+        "issuerOpenInbox": "Buka antrean izin"
       },
       "review": {
         "tabWithCount": "{label} {count}",
@@ -1731,7 +1739,7 @@
           "menuFor": "Aksi untuk {name}"
         },
         "form": {
-          "createTitle": "Pengguna baru",
+          "createTitle": "Tambah pengguna",
           "editTitle": "Ubah pengguna",
           "name": "Nama lengkap",
           "username": "Nama pengguna",
@@ -1760,14 +1768,14 @@
         "import": {
           "title": "Impor pengguna",
           "description": "Unduh templat, isi di luar sistem, unggah kembali, lalu periksa hasilnya sebelum benar-benar dibuat.",
-          "step1Body": "Templat berisi contoh baris dan sheet Referensi berisi kode yang diterima untuk setiap kolom (jenis kelamin, golongan darah, peran, dan sejenisnya).",
+          "step1Body": "Templat berisi contoh baris dan lembar Referensi berisi kode yang diterima untuk setiap kolom (jenis kelamin, golongan darah, peran, dan sejenisnya).",
           "downloadTemplate": "Unduh templat XLSX",
           "step2Body": "Maksimal 5000 baris dalam satu berkas. Baris kosong dilewati.",
           "mode": {
             "label": "Mode impor",
             "create": "Hanya buat baru",
             "upsert": "Buat dan perbarui",
-            "createBody": "Setiap baris membuat pengguna baru. Baris dengan nama pengguna yang sudah dipakai dianggap error.",
+            "createBody": "Setiap baris membuat pengguna baru. Baris dengan nama pengguna yang sudah dipakai ditolak.",
             "upsertBody": "Baris dengan nama pengguna yang cocok dengan pengguna yang sudah ada akan memperbarui profil pengguna itu, bukan gagal; baris yang tidak cocok tetap membuat pengguna baru. Nama pengguna dan kata sandi tidak pernah diubah.",
             "updateRolesLabel": "Perbarui peran juga",
             "updateRolesBody": "Jika aktif, peran pada baris yang cocok akan menggantikan peran pengguna yang sudah ada. Memerlukan hak kelola izin; bawaannya nonaktif agar impor tidak pernah mengubah siapa memegang peran apa."

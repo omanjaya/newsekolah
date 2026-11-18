@@ -166,6 +166,51 @@ describe("Scanner", () => {
     expect(section()).toHaveClass("rounded-lg", "bg-surface");
   });
 
+  it("puts a page's camera beside its field once the panel is wide, framed once", () => {
+    installCamera(() => Promise.resolve({ getTracks: () => [] }));
+    const { container } = render(<Scanner onScan={vi.fn()} autoStart={false} />);
+    const section = container.querySelector("[data-slot=scanner]");
+    const viewfinder = container.querySelector("[data-slot=scanner-viewfinder]");
+    expect(section).toHaveClass("@container");
+    // Camera and field side by side by the panel's own width, not the window's.
+    expect(viewfinder?.parentElement).toHaveClass("@3xl:grid");
+    // Square on a phone, 4:3 and capped from sm up, and no outline inside the card.
+    expect(viewfinder).toHaveClass(
+      "aspect-square",
+      "sm:aspect-[4/3]",
+      "sm:max-h-[min(45dvh,24rem)]",
+    );
+    expect(viewfinder).not.toHaveClass("border");
+  });
+
+  it("keeps a kiosk's viewfinder outlined on the bare screen", () => {
+    installCamera(() => Promise.resolve({ getTracks: () => [] }));
+    const { container } = render(<Scanner variant="kiosk" onScan={vi.fn()} autoStart={false} />);
+    expect(container.querySelector("[data-slot=scanner-viewfinder]")).toHaveClass("border");
+  });
+
+  it("stacks a page's field without a camera instead of leaving a column empty", () => {
+    const { container } = render(<Scanner onScan={vi.fn()} camera={false} manualEntry="open" />);
+    const field = screen.getByLabelText("Kode");
+    expect(container.querySelector(".\\@3xl\\:grid")).toBeNull();
+    expect(field).toBeInTheDocument();
+  });
+
+  it("ends the header row with the caller's control, beside the ready chip", () => {
+    render(
+      <Scanner
+        title="Izin keluar"
+        onScan={vi.fn()}
+        camera={false}
+        headerEnd={<button type="button">Ganti mode</button>}
+      />,
+    );
+    const control = screen.getByRole("button", { name: "Ganti mode" });
+    const heading = screen.getByRole("heading", { name: "Izin keluar" });
+    // The same row as the title, after it.
+    expect(control.closest(".justify-between")).toBe(heading.closest(".justify-between"));
+  });
+
   it("has no accessibility violations", async () => {
     installCamera(() => Promise.resolve({ getTracks: () => [] }));
     const { container } = render(

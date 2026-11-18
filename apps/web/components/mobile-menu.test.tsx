@@ -58,6 +58,30 @@ describe("mobile menu", () => {
     window.localStorage.removeItem("newsekolah:navigation:test-scope");
   });
 
+  // The chips drew an outside ring the scroller clipped at the top, stood
+  // 36px tall, and the row ended mid-word at the sheet's edge.
+  it("shows recent pages as thumb-sized bordered chips in a row that fades at its edge", () => {
+    window.localStorage.setItem(
+      "newsekolah:navigation:test-scope",
+      JSON.stringify({ favorites: [], recent: ["home"] }),
+    );
+    render(
+      <MobileMenu
+        scope="test-scope"
+        items={[
+          { key: "home", labelKey: "Home", href: "/dashboard", icon: Home },
+          { key: "classes", labelKey: "Classes", href: "/school/classes", icon: Users },
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "app.shell.mobileMenu.title" }));
+    const [chip] = screen.getAllByRole("link", { name: "Home" });
+    expect(chip).toHaveClass("h-11", "border", "border-border");
+    expect(chip).not.toHaveClass("ring-1");
+    expect(chip?.closest("ul")).toHaveClass("scroll-fade-x", "overflow-x-auto", "py-1", "-my-1");
+    window.localStorage.removeItem("newsekolah:navigation:test-scope");
+  });
+
   it("folds a group the reader sees only one page of into the top-level rows, as the sidebar does", () => {
     render(
       <MobileMenu
