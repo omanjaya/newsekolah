@@ -57,12 +57,14 @@ export function HomeroomDashboard({
   const format = useFormatter();
 
   return (
-    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+    // The cards stretch to one height, so the row ends on one line.
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <DashboardCard
         title={t("attentionListTitle")}
         count={attentionRows.length}
         loading={dashboardLoading}
-        empty={t("attentionEmpty")}
+        // Its own line: the hero above already says everyone is recorded.
+        empty={t("contactEmpty")}
       >
         {attentionRows.map((row) => {
           const token = statusToken(row.status_code);
@@ -160,7 +162,7 @@ function DashboardCard({
   children: ReactNode;
 }): ReactElement {
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle as="h2" className="flex items-center gap-2">
           {title}

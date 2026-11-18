@@ -1344,6 +1344,7 @@
       "attentionBreakdown": "{absent} alpha · {incomplete} presensi belum lengkap",
       "attentionOpen": "Lihat di presensi kelas",
       "attentionListTitle": "Perlu dihubungi",
+      "contactEmpty": "Tidak ada wali yang perlu dihubungi.",
       "noHomeroomAdminBody": "Halaman ini menampilkan rekap harian kelas binaan. Wali kelas diatur di penugasan.",
       "openAssignments": "Buka penugasan"
     },

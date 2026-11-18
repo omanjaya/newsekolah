@@ -1344,6 +1344,7 @@
       "attentionBreakdown": "{absent} absent · {incomplete} with attendance still incomplete",
       "attentionOpen": "Open in class attendance",
       "attentionListTitle": "To contact",
+      "contactEmpty": "No guardians to contact.",
       "noHomeroomAdminBody": "This page shows the daily summary of a homeroom class. Homeroom teachers are set in the duty assignments.",
       "openAssignments": "Open assignments"
     },
