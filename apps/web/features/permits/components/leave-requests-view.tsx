@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, EmptyState, TextLink, domainIcons } from "@newsekolah/ui";
-import { BellRing, Plus } from "lucide-react";
+import { BellRing, Inbox, Plus } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -101,7 +101,9 @@ function IssuerQueueUnavailable(): ReactElement {
   const canReview = useCan("review_leave_requests");
   return (
     <EmptyState
-      icon={<BellRing aria-hidden="true" />}
+      // The icon of where the main action leads: the inbox's leave queue
+      // (its "Perlu tindakan" nav icon), or the notifications.
+      icon={canReview ? <Inbox aria-hidden="true" /> : <BellRing aria-hidden="true" />}
       tone="info"
       title={t("issuerTitle")}
       description={t(canReview ? "issuerQueueInboxBody" : "issuerQueueUnavailableBody")}
