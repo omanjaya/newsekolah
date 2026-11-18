@@ -60,6 +60,30 @@ describe("TenantProvider", () => {
     expect(get).not.toHaveBeenCalled();
   });
 
+  // The phone header cut a long school name at about 17 characters while
+  // the school's own short name sat unused in its branding.
+  it("exposes the school's short name, and none when it is blank", () => {
+    function ShortName() {
+      const { shortName } = useTenant();
+      return <span data-testid="short">{shortName ?? "none"}</span>;
+    }
+    function renderWith(branding: Partial<TenantBranding>) {
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      return render(
+        <QueryClientProvider client={queryClient}>
+          <TenantProvider initialBranding={branding as TenantBranding}>
+            <ShortName />
+          </TenantProvider>
+        </QueryClientProvider>,
+      );
+    }
+    renderWith({ name: "SMA Negeri 1 Kuta Selatan", short_name: " SMAN 1 Kuta " });
+    expect(screen.getByTestId("short").textContent).toBe("SMAN 1 Kuta");
+    cleanup();
+    renderWith({ name: "SMA Harapan", short_name: "  " });
+    expect(screen.getByTestId("short")).toHaveTextContent("none");
+  });
+
   it("fetches the branding when the server could not supply it", () => {
     get.mockResolvedValue({ name: "SMA Harapan" });
     renderProvider();

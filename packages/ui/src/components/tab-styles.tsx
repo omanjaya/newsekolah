@@ -37,11 +37,21 @@ export function stripTrackClass(variant: StripVariant, fullWidth?: boolean | "ph
  * useScrollEdges) instead of widening the page. It is the indicator's
  * positioned ancestor. The pill's 4px padding sits inside the scroller so
  * focus rings and coarse-pointer hit areas are not clipped by it.
+ *
+ * Below 640px an underline strip runs out into the 16px page gutter on
+ * both sides (its first tab stays where it was), so the next tab peeks in
+ * from the screen's edge instead of ending flush with the column, and its
+ * end fades over 48px rather than 24. A pill strip keeps its capsule.
  */
 export function stripScrollerClass(variant: StripVariant): string {
   return cn(
     "relative flex min-w-0 flex-1 flex-nowrap overflow-x-auto overscroll-x-contain scrollbar-none scroll-fade-x",
-    variant === "pill" ? "p-1" : "gap-1 shadow-[inset_0_-1px_0_var(--color-line)]",
+    variant === "pill"
+      ? "p-1"
+      : cn(
+          "gap-1 shadow-[inset_0_-1px_0_var(--color-line)]",
+          "max-sm:-mx-4 max-sm:scroll-px-4 max-sm:px-4 [--scroll-fade-end-size:var(--space-12)]",
+        ),
   );
 }
 

@@ -8,6 +8,7 @@ import {
   type BreadcrumbItem,
   type NavTabsLinkProps,
   type PageHeaderAction,
+  type PageHeaderProps,
   type PageShellVariant,
 } from "@newsekolah/ui";
 import Link from "next/link";
@@ -41,6 +42,11 @@ export interface AppPageProps {
   actions?: ReactNode;
   /** The one main action, always visible. */
   primaryAction?: ReactNode;
+  /**
+   * The phone's form of `primaryAction`: an icon button on the title's line
+   * instead of a full row under it (PageHeader's `primaryActionCompact`).
+   */
+  primaryActionCompact?: PageHeaderProps["primaryActionCompact"];
   /** Further actions: buttons from 640px up, one menu on a phone. */
   secondaryActions?: PageHeaderAction[];
   /**
@@ -96,6 +102,7 @@ export function AppPage({
   breadcrumb,
   actions,
   primaryAction,
+  primaryActionCompact,
   secondaryActions,
   header,
   nav,
@@ -142,19 +149,33 @@ export function AppPage({
   );
 
   const areaName = entryLabel ?? (typeof resolvedTitle === "string" ? resolvedTitle : "");
+  // A tab whose label is not in this subtree's messages is left out rather
+  // than printed as its raw key (lib/i18n/namespace-sets.ts names what each
+  // provider carries).
+  const tabItems = context.tabs.flatMap((tab) => {
+    const tabLabel = label(tab.labelKey);
+    if (tabLabel === undefined) {
+      if (process.env.NODE_ENV !== "production")
+        console.warn(`AppPage: no message for tab label "${tab.labelKey}"; the tab is left out.`);
+      return [];
+    }
+    return [
+      {
+        href: withCarriedParams(tab.href, search, navParams),
+        label: tabLabel,
+        current: tab.current,
+      },
+    ];
+  });
   const resolvedNav =
     nav === false
       ? null
       : (nav ??
-        (context.tabs.length >= 2 ? (
+        (tabItems.length >= 2 ? (
           <NavTabs
             aria-label={tPage("sections", { area: areaName })}
             variant="underline"
-            items={context.tabs.map((tab) => ({
-              href: withCarriedParams(tab.href, search, navParams),
-              label: label(tab.labelKey) ?? tab.key,
-              current: tab.current,
-            }))}
+            items={tabItems}
             renderLink={renderNavLink}
           />
         ) : null));
@@ -178,6 +199,7 @@ export function AppPage({
             description={description}
             actions={actions}
             primaryAction={primaryAction}
+            primaryActionCompact={primaryActionCompact}
             secondaryActions={secondaryActions}
             // The phone's header names the page once this title scrolls
             // away; a page that set its own tab name (the home's greeting
