@@ -219,8 +219,9 @@ describe("useCounselorBlock", () => {
     const { result } = renderHook(() => useCounselorBlock(meWithEarlyWarning, true));
 
     expect(atRiskQuery).toHaveBeenCalledWith(true);
-    expect(result.current.side.map((slot) => slot.key)).toEqual(["counselor.atRisk"]);
-    render(<>{result.current.side.map((slot) => slot.node)}</>);
+    expect(result.current.main.map((slot) => slot.key)).toContain("counselor.atRisk");
+    expect(result.current.side).toEqual([]);
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
     expect(screen.getByText('count:{"count":4}')).toBeInTheDocument();
     expect(screen.getByText("Siswa A")).toBeInTheDocument();
     // Only the top three by score are listed (s2, s1, s3); s2 and s3 are unknown to the directory.
@@ -235,6 +236,6 @@ describe("useCounselorBlock", () => {
     const { result } = renderHook(() => useCounselorBlock(counselorWithBothPermissions, true));
 
     expect(atRiskQuery).toHaveBeenCalledWith(false);
-    expect(result.current.side).toEqual([]);
+    expect(result.current.main.some((slot) => slot.key === "counselor.atRisk")).toBe(false);
   });
 });

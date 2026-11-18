@@ -225,7 +225,7 @@ describe("useLeadershipBlock", () => {
     });
 
     const { result } = renderHook(() => useLeadershipBlock(meWithPermission, true));
-    const atRiskSlot = result.current.side.find((slot) => slot.key === "school.atRisk");
+    const atRiskSlot = result.current.main.find((slot) => slot.key === "school.atRisk");
     render(<>{atRiskSlot?.node}</>);
 
     expect(atRiskQuery).toHaveBeenCalledWith(true);
@@ -237,7 +237,7 @@ describe("useLeadershipBlock", () => {
     const { result } = renderHook(() => useLeadershipBlock(me, true));
 
     expect(atRiskQuery).toHaveBeenCalledWith(false);
-    expect(result.current.side.some((slot) => slot.key === "school.atRisk")).toBe(false);
+    expect(result.current.main.some((slot) => slot.key === "school.atRisk")).toBe(false);
   });
 
   it("says the attendance progress once, in the hero, not again in a card", () => {
@@ -251,8 +251,11 @@ describe("useLeadershipBlock", () => {
       useLeadershipBlock({ ...me, permissions: ["view_monitor_presence"] }, true),
     );
 
-    expect(withMonitor.result.current.main.map((slot) => slot.key)).toEqual(["school.queue"]);
-    expect(withMonitor.result.current.side.map((slot) => slot.key)).toEqual(["school.activity"]);
+    expect(withMonitor.result.current.main.map((slot) => slot.key)).toEqual([
+      "school.queue",
+      "school.activity",
+    ]);
+    expect(withMonitor.result.current.side).toEqual([]);
   });
 
   it("links a queue row only to a screen the reader may open", () => {
@@ -299,7 +302,7 @@ describe("useLeadershipBlock", () => {
     const { result } = renderHook(() =>
       useLeadershipBlock({ ...me, permissions: ["view_early_warning"] }, true),
     );
-    const slot = result.current.side.find((s) => s.key === "school.atRisk");
+    const slot = result.current.main.find((s) => s.key === "school.atRisk");
     render(<>{slot?.node}</>);
     expect(screen.getByText("Siswa Satu")).toBeInTheDocument();
     expect(screen.queryByText("Siswa Aman")).not.toBeInTheDocument();
