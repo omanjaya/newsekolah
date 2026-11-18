@@ -21,6 +21,7 @@ vi.mock("next-intl", () => ({ useTranslations: () => translate }));
 const FULL_PAGE_TIMEOUT_MS = 20_000;
 vi.mock("next/navigation", () => ({
   usePathname: () => "/library/copies",
+  useRouter: () => ({ push: vi.fn() }),
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => false }));

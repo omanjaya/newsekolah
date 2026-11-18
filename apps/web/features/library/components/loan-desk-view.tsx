@@ -169,7 +169,11 @@ export function LoanDeskView(): ReactElement {
                 )}
               </>
             ) : (
+              // Compact: an idle desk keeps the overdue queue near the
+              // fold instead of a tall placeholder above it.
               <EmptyState
+                variant="compact"
+                className="px-5 py-4"
                 icon={<ScanLine aria-hidden="true" />}
                 title={t("member.hintTitle")}
                 description={t("member.hintBody")}

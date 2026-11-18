@@ -109,7 +109,7 @@ export function VisitRecordDialog({
             />
           </Field>
           {kind === "member" ? (
-            <Field label={t("member")}>
+            <Field label={t("member")} required>
               <DirectoryPicker
                 value={memberUserId}
                 onValueChange={setMemberUserId}

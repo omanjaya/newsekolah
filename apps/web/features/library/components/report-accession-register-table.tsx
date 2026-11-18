@@ -4,7 +4,7 @@ import type { Locale } from "@newsekolah/i18n";
 import { DataTable, EmptyState, TextLink, domainIcons } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useMemo } from "react";
 
 import type { LibraryCopy } from "../api";
@@ -17,9 +17,12 @@ import { LibraryTitleName } from "./library-title-name";
 export function ReportAccessionRegisterTable({
   from,
   to,
+  emptyAction,
 }: {
   from: string;
   to: string;
+  /** The empty state's way on, such as stepping back a month. */
+  emptyAction?: ReactNode;
 }): ReactElement {
   const t = useTranslations("app.library.reports.accessionRegister");
   const locale = useLocale() as Locale;
@@ -75,7 +78,11 @@ export function ReportAccessionRegisterTable({
       onRetry={() => void refetch()}
       getRowId={(copy) => copy.id}
       emptyState={
-        <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />
+        <EmptyState
+          icon={<domainIcons.library aria-hidden="true" />}
+          title={t("emptyTitle")}
+          action={emptyAction}
+        />
       }
     />
   );

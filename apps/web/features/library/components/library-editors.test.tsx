@@ -82,7 +82,7 @@ vi.mock("../members-api", () => ({
   useUpdateLibraryMemberMutation: () => ({ mutate: mocks.updateMember, isPending: false }),
 }));
 vi.mock("./duplicate-title-warning", () => ({ DuplicateTitleWarning: () => null }));
-vi.mock("./isbn-lookup-panel", () => ({ IsbnLookupPanel: () => null }));
+vi.mock("./isbn-lookup-panel", () => ({ IsbnLookupField: () => null }));
 vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
   return { ...actual, useToast: () => ({ success: vi.fn(), error: vi.fn() }) };

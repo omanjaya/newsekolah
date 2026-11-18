@@ -27,7 +27,7 @@ import type { LibraryExternalBibliography } from "../isbn-lookup-api";
 import { useLibraryCatalogueOptionsQuery } from "../master-data-api";
 
 import { DuplicateTitleWarning } from "./duplicate-title-warning";
-import { IsbnLookupPanel } from "./isbn-lookup-panel";
+import { IsbnLookupField } from "./isbn-lookup-panel";
 
 export function TitleForm({
   initial,
@@ -127,17 +127,14 @@ export function TitleForm({
       }}
     >
       <FormSection title={t("sections.lookup")} columns={1}>
-        <Field label={t("isbn")}>
-          <Input
-            value={isbn}
-            onChange={(e) => {
-              setIsbn(e.target.value);
-            }}
-            maxLength={32}
-          />
-        </Field>
-        {isbn !== initial?.isbn && <DuplicateTitleWarning isbn={isbn} />}
-        <IsbnLookupPanel isbn={isbn} onApply={applyLookup} onCoverImported={setCoverAssetId} />
+        <IsbnLookupField
+          label={t("isbn")}
+          isbn={isbn}
+          onIsbnChange={setIsbn}
+          onApply={applyLookup}
+          onCoverImported={setCoverAssetId}
+          warning={isbn !== initial?.isbn && <DuplicateTitleWarning isbn={isbn} />}
+        />
       </FormSection>
       <FormSection title={t("sections.identity")}>
         <Field label={t("title")} required className="col-span-full">

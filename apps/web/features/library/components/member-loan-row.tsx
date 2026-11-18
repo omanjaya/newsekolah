@@ -20,7 +20,9 @@ import { LibraryTitleName } from "./library-title-name";
  * urgent its due date is, any fine, and (for library staff) Perpanjang,
  * the renewal history and Tandai hilang in the row's menu. Renewing an
  * overdue loan is refused by the library, so that item is disabled and
- * the reason shows under the row instead of hiding in a tooltip.
+ * the reason shows under the row instead of hiding in a tooltip. On a
+ * phone the book icon gives its width to the title (up to two lines) and
+ * the due badge, so neither loses the date.
  */
 export function MemberLoanRow({
   loan,
@@ -48,11 +50,11 @@ export function MemberLoanRow({
   return (
     <Card asChild padding="sm">
       <li className="flex-row items-center gap-3" data-urgency={urgency}>
-        <IconCircle tone={overdue ? "danger" : "accent"}>
+        <IconCircle tone={overdue ? "danger" : "accent"} className="max-sm:hidden">
           <BookOpen />
         </IconCircle>
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <span className="truncate text-body font-semibold text-fg">
+          <span className="line-clamp-2 text-body font-semibold [overflow-wrap:anywhere] text-fg">
             <LibraryTitleName titleId={loan.title_id} />
           </span>
           <div className="flex flex-wrap items-center gap-2">

@@ -165,7 +165,8 @@ export function LoanRulesView(): ReactElement {
           canManage ? (
             <>
               <LibraryPolicyDialog />
-              {addButton}
+              {/* An empty list offers its own Tambah aturan: one primary at a time. */}
+              {items.length > 0 && addButton}
             </>
           ) : undefined
         }
@@ -276,7 +277,9 @@ function LoanRuleForm({ onDone }: { onDone: () => void }): ReactElement {
           <DatePicker value={endsOn} onChange={setEndsOn} min={startsOn || undefined} required />
         </Field>
       </div>
-      <Field label={t("allowLoans")} orientation="horizontal">
+      {/* Inline: the 14rem label column of "horizontal" wrapped this label
+          in a dialog only 480px wide. */}
+      <Field label={t("allowLoans")} orientation="inline">
         <Switch checked={allowLoans} onCheckedChange={setAllowLoans} />
       </Field>
       {allowLoans && (

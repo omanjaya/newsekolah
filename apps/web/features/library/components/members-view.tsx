@@ -12,7 +12,6 @@ import {
   EmptyState,
   FilteredEmptyState,
   RowActionsMenu,
-  TextLink,
   selectionColumn,
   useToast,
   type DataTableFilterDef,
@@ -60,6 +59,7 @@ export function MembersView(): ReactElement {
   const t = useTranslations("app.library.members");
   const tMemberCards = useTranslations("app.library.memberCards");
   const locale = useLocale() as Locale;
+  const router = useRouter();
   const toast = useToast();
   const canManage = useCan("manage_library_members");
   const shortcuts = useLibraryShortcuts(["memberTypes", { report: "members" }]);
@@ -132,12 +132,8 @@ export function MembersView(): ReactElement {
             <div className="flex min-w-0 items-center gap-3">
               <Avatar size={32} name={name} decorative />
               <div className="flex min-w-0 flex-col">
-                <TextLink
-                  href={`/library/members/${row.original.user_id}`}
-                  className="truncate font-semibold"
-                >
-                  {name}
-                </TextLink>
+                {/* Body text, as in the other areas' tables: the row opens the member. */}
+                <span className="truncate font-semibold text-fg">{name}</span>
                 <span className="truncate text-caption text-fg-muted">
                   {row.original.member_no}
                 </span>
@@ -156,11 +152,16 @@ export function MembersView(): ReactElement {
         id: "status",
         header: t("columns.status"),
         enableSorting: false,
-        cell: ({ row }) => (
-          <Badge tone={toneOf(MEMBER_STATUS_TONE, row.original.status)}>
-            {t(`status.${row.original.status}`)}
-          </Badge>
-        ),
+        // The normal state is quiet text, as in the users table; a badge
+        // marks only the exceptions (pending, suspended, cleared...).
+        cell: ({ row }) =>
+          row.original.status === "active" ? (
+            <span className="text-fg-muted">{t("status.active")}</span>
+          ) : (
+            <Badge tone={toneOf(MEMBER_STATUS_TONE, row.original.status)}>
+              {t(`status.${row.original.status}`)}
+            </Badge>
+          ),
       },
       {
         id: "validUntil",
@@ -170,14 +171,16 @@ export function MembersView(): ReactElement {
           row.original.valid_until ? formatShortDate(row.original.valid_until, locale) : "-",
       },
       {
+        // Past loans returned late, not current lateness: a dash for none.
         id: "lateReturns",
         header: t("columns.lateReturns"),
         enableSorting: false,
+        meta: { align: "end" },
         cell: ({ row }) =>
           row.original.late_return_count > 0 ? (
             <Badge tone="warning">{row.original.late_return_count}</Badge>
           ) : (
-            <span className="text-fg-muted">0</span>
+            <span className="text-fg-muted">-</span>
           ),
       },
       {
@@ -289,6 +292,9 @@ export function MembersView(): ReactElement {
           onRowSelectionChange={onSelectionChange}
           bulkActions={<MemberCardPrintAction selectedIds={orderedIds} />}
           getRowId={(item) => item.user_id}
+          onRowActivate={(item) => {
+            router.push(`/library/members/${item.user_id}`);
+          }}
           fillHeight
           emptyState={
             isFiltered ? (

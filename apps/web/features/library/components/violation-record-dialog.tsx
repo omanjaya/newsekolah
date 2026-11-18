@@ -106,7 +106,8 @@ export function ViolationRecordDialog({
             );
           }}
         >
-          <Field label={t("member")}>
+          {/* Simpan waits for the member: the asterisk says why. */}
+          <Field label={t("member")} required>
             <DirectoryPicker
               value={memberUserId}
               onValueChange={setMemberUserId}
