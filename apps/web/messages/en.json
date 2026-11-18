@@ -635,6 +635,7 @@
           "uploading": "Uploading... {percent}%",
           "updated": "Logo updated",
           "emptyHint": "No logo yet. PNG, WebP or SVG, up to 2 MB.",
+          "shortHint": "Up to 2 MB",
           "upload": "Upload logo"
         },
         "favicon": {
@@ -646,6 +647,7 @@
           "uploading": "Uploading... {percent}%",
           "updated": "Favicon updated",
           "emptyHint": "No favicon yet. PNG, WebP or SVG, up to 512 KB.",
+          "shortHint": "Up to 512 KB",
           "upload": "Upload favicon"
         },
         "description": "The name, colour and logo every user sees in the app, on the sign-in page and in the browser tab.",
