@@ -13,7 +13,6 @@ import {
   EmptyState,
   Field,
   FileDropzone,
-  SectionHeader,
   Table,
   TableBody,
   TableCell,
@@ -23,7 +22,7 @@ import {
   Textarea,
   useToast,
 } from "@newsekolah/ui";
-import { Download } from "lucide-react";
+import { Download, FileSpreadsheet } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -183,12 +182,7 @@ export function ScheduleBulkView(): ReactElement {
               disabled={!canManage}
               onFile={handleFile}
             />
-            <Button
-              variant="ghost"
-              icon={<Download />}
-              onClick={downloadTemplate}
-              className="w-fit"
-            >
+            <Button variant="link" icon={<Download />} onClick={downloadTemplate} className="w-fit">
               {t("importSection.template")}
             </Button>
           </div>
@@ -208,17 +202,8 @@ export function ScheduleBulkView(): ReactElement {
         </CardContent>
       </Card>
 
-      <section className="flex flex-col gap-3">
-        <SectionHeader
-          title={t("importSection.previewTitle")}
-          description={
-            rows.length > 0
-              ? t("importSection.previewSummary", {
-                  valid: resolvedRows.length,
-                  invalid: invalidCount,
-                })
-              : undefined
-          }
+      <Card>
+        <CardHeader
           action={
             canManage &&
             rows.length > 0 && (
@@ -231,43 +216,59 @@ export function ScheduleBulkView(): ReactElement {
               </Button>
             )
           }
-        />
-        {importError && (
-          <Alert variant="danger" title={t("importSection.applyErrorTitle")}>
-            {importError}
-          </Alert>
-        )}
-        {rows.length === 0 ? (
-          <EmptyState variant="compact" title={t("importSection.empty")} />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-20">{t("importSection.columnLine")}</TableHead>
-                <TableHead>{t("importSection.columnStatus")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <TableRow key={row.line}>
-                  <TableCell className="tabular-nums">{row.line}</TableCell>
-                  <TableCell>
-                    {row.resolved ? (
-                      <Badge tone="success" size="sm" dot>
-                        {t("importSection.statusValid")}
-                      </Badge>
-                    ) : (
-                      <span className="text-body-sm text-danger">
-                        {t("importSection.statusInvalid", { columns: row.errors.join(", ") })}
-                      </span>
-                    )}
-                  </TableCell>
+        >
+          <CardTitle as="h2">{t("importSection.previewTitle")}</CardTitle>
+          {rows.length > 0 && (
+            <CardDescription>
+              {t("importSection.previewSummary", {
+                valid: resolvedRows.length,
+                invalid: invalidCount,
+              })}
+            </CardDescription>
+          )}
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          {importError && (
+            <Alert variant="danger" title={t("importSection.applyErrorTitle")}>
+              {importError}
+            </Alert>
+          )}
+          {rows.length === 0 ? (
+            <EmptyState
+              variant="compact"
+              icon={<FileSpreadsheet />}
+              title={t("importSection.empty")}
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-20">{t("importSection.columnLine")}</TableHead>
+                  <TableHead>{t("importSection.columnStatus")}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </section>
+              </TableHeader>
+              <TableBody>
+                {rows.map((row) => (
+                  <TableRow key={row.line}>
+                    <TableCell className="tabular-nums">{row.line}</TableCell>
+                    <TableCell>
+                      {row.resolved ? (
+                        <Badge tone="success" size="sm" dot>
+                          {t("importSection.statusValid")}
+                        </Badge>
+                      ) : (
+                        <span className="text-body-sm text-danger">
+                          {t("importSection.statusInvalid", { columns: row.errors.join(", ") })}
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       {canManage && <ClearSchedulesSection academicYearId={year.id} yearLabel={year.label} />}
     </AppPage>
