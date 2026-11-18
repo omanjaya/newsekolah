@@ -28,7 +28,9 @@
     "filters": {
       "class": "Class"
     },
-    "computedAt": "Data computed {time}"
+    "computedAt": "Data computed {time}",
+    "sortedHint": "Highest score first",
+    "scoreValue": "Score {score}"
   },
   "level": {
     "none": "None",

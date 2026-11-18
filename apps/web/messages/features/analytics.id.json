@@ -28,7 +28,9 @@
     "filters": {
       "class": "Kelas"
     },
-    "computedAt": "Data dihitung {time}"
+    "computedAt": "Data dihitung {time}",
+    "sortedHint": "Diurutkan dari skor tertinggi",
+    "scoreValue": "Skor {score}"
   },
   "level": {
     "none": "Aman",
