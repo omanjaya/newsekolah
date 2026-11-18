@@ -1,6 +1,7 @@
 "use client";
 
 import { Avatar, Button, TextLink } from "@newsekolah/ui";
+import { MessagesSquare } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -47,7 +48,7 @@ export function StudentRiskDetailView({ studentId }: StudentRiskDetailViewProps)
       }
       primaryAction={
         canCounsel ? (
-          <Button asChild>
+          <Button asChild icon={<MessagesSquare />}>
             <Link href={`/discipline/counseling?studentId=${encodeURIComponent(studentId)}`}>
               {workspace("followUpCounseling")}
             </Link>

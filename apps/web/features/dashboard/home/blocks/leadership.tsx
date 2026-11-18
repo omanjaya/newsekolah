@@ -193,7 +193,10 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
     ({ key }) => key,
   );
 
-  const main: BlockSlot[] = permitsOn
+  // With every queue empty the tile already reads zero, so the card is left
+  // out unless it is loading or failed (same rule as the picket queue).
+  const showQueueCard = permitsOn && (dashboard.isLoading || dashboard.isError || pendingTotal > 0);
+  const main: BlockSlot[] = showQueueCard
     ? [
         {
           key: "school.queue",

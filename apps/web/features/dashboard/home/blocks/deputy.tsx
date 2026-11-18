@@ -73,6 +73,8 @@ export function useDeputyBlock(_me: Me, active: boolean): PersonaBlock {
             meta: t("meta"),
             action: { label: t("action"), href: INBOX_HREF },
             secondaryAction: reports,
+            // The title already states the inbox count.
+            coversTiles: ["deputy.inbox"],
           }
         : {
             key: "deputy.idle",
@@ -82,6 +84,7 @@ export function useDeputyBlock(_me: Me, active: boolean): PersonaBlock {
             title: t("idleTitle"),
             meta: t("idleMeta"),
             action: reports,
+            coversTiles: ["deputy.inbox"],
           };
   }
 
