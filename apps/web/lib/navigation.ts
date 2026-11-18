@@ -335,7 +335,9 @@ export const navigation: NavItem[] = [
   },
   {
     key: "my-grades",
-    labelKey: "nav.compact.grades",
+    // "Nilai saya": plain "Nilai" is the grading workspace's own title, so
+    // the tab would repeat the heading above it.
+    labelKey: "app.shell.nav.items.myGrades",
     href: "/my-grades",
     module: "grading",
     icon: domainIcons.grades,

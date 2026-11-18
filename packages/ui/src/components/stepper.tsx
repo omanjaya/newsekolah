@@ -206,7 +206,10 @@ export function Stepper({
               <span
                 className={cn(
                   compact ? "text-caption" : "text-label",
-                  state === "upcoming" ? "text-fg-muted" : "text-fg",
+                  // An upcoming label is muted only while the stepper shows
+                  // progress: a summary with no current step (currentIndex
+                  // -1) would otherwise read as switched off.
+                  state === "upcoming" && currentIndex >= 0 ? "text-fg-muted" : "text-fg",
                   state === "stopped" && "text-danger",
                 )}
               >

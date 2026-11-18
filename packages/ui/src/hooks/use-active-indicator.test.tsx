@@ -137,6 +137,54 @@ function NestedStrip({ active }: { active: string }) {
   );
 }
 
+/** NestedStrip inside a named track, the way NavTabs names an area's tabs. */
+function NamedStrip({ label, active }: { label: string; active: string }) {
+  return (
+    <nav aria-label={label}>
+      <NestedStrip active={active} />
+    </nav>
+  );
+}
+
+describe("useActiveIndicator across pages", () => {
+  function indicatorXs(spy: { mock: { calls: unknown[][] } }): unknown[] {
+    return spy.mock.calls.filter(([name]) => name === "--indicator-x").map(([, value]) => value);
+  }
+
+  it("slides from the tab the same strip showed on the page just left", () => {
+    const left = render(<NamedStrip label="Perpustakaan" active="a" />);
+    left.unmount();
+    const setProperty = vi.spyOn(CSSStyleDeclaration.prototype, "setProperty");
+    try {
+      render(<NamedStrip label="Perpustakaan" active="b" />);
+      // From the old tab's box to the new one's, then no leftover scale.
+      expect(indicatorXs(setProperty)).toEqual(["4px", "84px"]);
+      const indicator = screen.getByTestId("indicator");
+      expect(indicator.style.getPropertyValue("--indicator-scale")).toBe("1");
+      expect(indicator).not.toHaveAttribute("data-instant");
+      expect(screen.getByTestId("strip")).toHaveAttribute("data-indicator", "ready");
+    } finally {
+      setProperty.mockRestore();
+    }
+  });
+
+  it("appears in place for another strip, or one with no name", () => {
+    render(<NamedStrip label="Kesiswaan" active="a" />).unmount();
+    render(<NestedStrip active="a" />).unmount();
+    const setProperty = vi.spyOn(CSSStyleDeclaration.prototype, "setProperty");
+    try {
+      const other = render(<NamedStrip label="Akademik" active="b" />);
+      expect(indicatorXs(setProperty)).toEqual(["84px"]);
+      other.unmount();
+      setProperty.mockClear();
+      render(<NestedStrip active="b" />);
+      expect(indicatorXs(setProperty)).toEqual(["84px"]);
+    } finally {
+      setProperty.mockRestore();
+    }
+  });
+});
+
 describe("useActiveIndicator size tracking", () => {
   beforeEach(() => {
     vi.stubGlobal("ResizeObserver", FakeResizeObserver);

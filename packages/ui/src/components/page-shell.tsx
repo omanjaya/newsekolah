@@ -15,18 +15,27 @@ import { Breadcrumb, type BreadcrumbItem } from "./breadcrumb.js";
  * How wide the page runs and how it scrolls:
  * - `default`: up to 1200px, the page scrolls. Lists, detail pages.
  * - `wide`: up to 1440px, the page scrolls. Dashboards, wide grids.
- * - `narrow`: up to 720px, the page scrolls. Forms, settings.
+ * - `narrow`: content (toolbar and body) up to 720px, the page scrolls.
+ *   Forms, settings. The head (trail, header, sub-navigation) keeps the
+ *   default column and the content sits at its left edge, so a narrow
+ *   page's title and tabs do not jump sideways from a default sibling's.
  * - `fit`: up to 1440px and exactly as tall as the viewport from 768px up;
  *   the content area takes the remaining height and scrolls inside itself
  *   (a table with a sticky head, a class list beside its roster).
  */
 export type PageShellVariant = "default" | "wide" | "narrow" | "fit";
 
+/** The page column: the head's width, and the content's unless narrowed below. */
 const WIDTH: Record<PageShellVariant, string> = {
   default: "max-w-default",
   wide: "max-w-wide",
-  narrow: "max-w-narrow",
+  narrow: "max-w-default",
   fit: "max-w-wide",
+};
+
+/** The content's own cap inside the column, left-aligned under the head. */
+const CONTENT_WIDTH: Partial<Record<PageShellVariant, string>> = {
+  narrow: "w-full max-w-narrow",
 };
 
 export interface PageShellProps extends Omit<ComponentPropsWithRef<"div">, "children"> {
@@ -135,6 +144,7 @@ export function PageShell({
           data-slot="page-content"
           className={cn(
             "flex min-w-0 flex-col gap-4",
+            CONTENT_WIDTH[variant],
             fit && "md:min-h-0 md:flex-1",
             animate && "animate-enter",
             contentClassName,
