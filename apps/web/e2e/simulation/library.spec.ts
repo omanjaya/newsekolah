@@ -31,13 +31,19 @@ test("library: student reserves -> librarian member page live", async ({ browser
     // The search box's onGlobalFilterChange is debounced 300ms
     // (packages/ui/src/components/data-table/data-table.tsx) before the
     // server-backed query it drives even fires; wait for the result to
-    // actually narrow to the one match instead of racing that debounce.
-    // The member's name is the link to their page (header row + one match).
+    // actually narrow to the one match instead of racing that debounce
+    // (header row + one match).
     await expect(librarian.page.getByRole("table").getByRole("row")).toHaveCount(2, {
       timeout: 20_000,
     });
-    const detailLink = librarian.page.getByRole("link", { name: "Siswa Dua Contoh", exact: true });
-    await expect(detailLink).toHaveCount(1);
+    // Since 6f8f521d the member's name is body text and the row itself
+    // opens their page (DataTable onRowActivate), as in the other areas'
+    // tables.
+    const memberRow = librarian.page
+      .getByRole("table")
+      .getByRole("row")
+      .filter({ has: librarian.page.getByText("Siswa Dua Contoh", { exact: true }) });
+    await expect(memberRow).toHaveCount(1);
     // The member page's reservations, read once they have loaded: until
     // then the tab shows the empty state, which would read as zero.
     const loadedReservations = librarian.page.waitForResponse(
@@ -45,7 +51,7 @@ test("library: student reserves -> librarian member page live", async ({ browser
         res.request().method() === "GET" &&
         /\/v1\/library\/members\/[^/]+\/reservations/.test(res.url()),
     );
-    await detailLink.click();
+    await memberRow.getByText("Siswa Dua Contoh", { exact: true }).click();
     await librarian.page.waitForURL(/\/library\/members\/[^/?]+/);
     await expect(
       librarian.page.getByRole("heading", { level: 1, name: "Siswa Dua Contoh" }),
