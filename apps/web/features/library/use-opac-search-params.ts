@@ -62,8 +62,9 @@ export function useOpacSearchParams(): readonly [
       if (value) url.searchParams.set(key, value);
       else url.searchParams.delete(key);
     }
-    // A string: the service worker's navigation cache posts it to a Worker
-    // (see lib/hooks/use-url-state.ts), which cannot clone a URL object.
+    // A string, not the URL object: a wrapped history API may post this
+    // argument to a Worker, which cannot clone a URL (see
+    // lib/hooks/use-url-state.ts).
     window.history.replaceState(null, "", url.href);
     rememberSearch(url.search);
   }, []);

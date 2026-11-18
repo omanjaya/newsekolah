@@ -171,7 +171,7 @@ Untuk melanjutkan: nyalakan kontainer `newsekolah-dev-postgres-1`, `redis-1`, `m
 
 ## Pembaruan 18 November: privasi di komputer bersama (service worker dan draf lokal)
 
-Dua cacat privasi yang ditemukan saat tinjauan akhir overhaul, keduanya sudah ada sebelum overhaul: data satu akun bisa sampai ke akun lain di browser yang sama. Dikerjakan di cabang `fix/web-shared-browser-privacy`, dipotong dari `claude/ui-overhaul-penyempurnaan-893ed6` di `c255538f`. Belum di-push dan belum digabung. Hanya `apps/web` yang berubah; API dan aplikasi mobile tidak disentuh. Perbaikan sesi yang bersebelahan (token klien setelah logout, cookie `sat`, mulai dan berhenti impersonasi) dikerjakan terpisah di cabang overhaul dan tidak diulang di sini.
+Dua cacat privasi yang ditemukan saat tinjauan akhir overhaul, keduanya sudah ada sebelum overhaul: data satu akun bisa sampai ke akun lain di browser yang sama. Dikerjakan di cabang `fix/web-shared-browser-privacy`, dipotong dari `claude/ui-overhaul-penyempurnaan-893ed6` di `c255538f`, lalu digabung ke cabang overhaul itu pada 18 November atas permintaan pemilik; cabangnya sendiri tidak di-push terpisah. Hanya `apps/web` yang berubah; API dan aplikasi mobile tidak disentuh. Perbaikan sesi yang bersebelahan (token klien setelah logout, cookie `sat`, mulai dan berhenti impersonasi) dikerjakan terpisah di cabang overhaul dan tidak diulang di sini.
 
 ### Yang ditemukan
 
