@@ -36,6 +36,7 @@ import { useSession } from "../../../lib/session/session-provider";
 import { useSimulation } from "../../../lib/simulation/clock";
 import { todayInZone, useMyCalendarQuery } from "../api";
 import { monthAttendanceStats } from "../lib/attendance-stats";
+import { sourceNoteText } from "../lib/source-note";
 
 /** Solid status dot for a calendar day cell -- distinct from the 15%-opacity blocks status-tokens.ts builds for the roster/report screens. */
 const STATUS_DOT_CLASS: Record<string, string> = {
@@ -58,6 +59,7 @@ const LEGEND_ORDER = ["H", "S", "I", "D", "A", "INCOMPLETE", "MIXED"];
 /** A student's month view: a symmetric bento of month stats, a dot calendar, and a detail card for the selected day. */
 export function AttendanceCalendar(): ReactElement {
   useSimulation();
+  const tAttendance = useTranslations("app.attendance");
   const tCal = useTranslations("app.attendance.calendar");
   const tMine = useTranslations("app.attendance.mine");
   const tDays = useTranslations("app.common.weekdaysShort");
@@ -313,7 +315,9 @@ export function AttendanceCalendar(): ReactElement {
                   : undefined;
                 const meta = [
                   [session.period_label, session.teacher_name].filter(Boolean).join(" · "),
-                  session.note,
+                  sourceNoteText(session.note, session.source, (number) =>
+                    tAttendance("leaveLetterNote", { number }),
+                  ),
                   session.source && session.source !== "teacher"
                     ? tCal(`sessionSource.${session.source}`)
                     : undefined,

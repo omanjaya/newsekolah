@@ -1268,7 +1268,8 @@
         "bodyReportsOnly": "See each class's record in the reports.",
         "openReportsHub": "Open the reports centre"
       },
-      "openSchedule": "Open schedule"
+      "openSchedule": "Open schedule",
+      "leaveLetterNote": "Leave letter {number}"
     },
     "homeroom": {
       "eyebrow": "Academic",

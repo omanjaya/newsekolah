@@ -1268,7 +1268,8 @@
         "bodyReportsOnly": "Lihat rekap per kelas di laporan.",
         "openReportsHub": "Buka pusat laporan"
       },
-      "openSchedule": "Buka jadwal"
+      "openSchedule": "Buka jadwal",
+      "leaveLetterNote": "Surat izin {number}"
     },
     "homeroom": {
       "eyebrow": "Akademik",
