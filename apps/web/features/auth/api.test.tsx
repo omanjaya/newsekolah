@@ -5,7 +5,11 @@ import type { ReactElement, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getAccessToken, setAccessToken } from "../../lib/api/access-token";
-import { CLEAR_ACCESS_COOKIE_PATH } from "../../lib/session/clear-server-access-cookie";
+import { STALE_ACCESS_COOKIE_NAME } from "../../lib/session/access-cookie";
+import {
+  CLEAR_ACCESS_COOKIE_PATH,
+  CLEAR_ACCESS_COOKIE_TIMEOUT_MS,
+} from "../../lib/session/clear-server-access-cookie";
 import type { Me } from "../../lib/session/session-provider";
 import {
   clearSimulation,
@@ -63,6 +67,11 @@ function setup<T>(useHook: () => T) {
   return { client, result };
 }
 
+/** Whether the browser marked the server access cookie stale (lib/session/access-cookie.ts). */
+function staleMarkerSet(): boolean {
+  return document.cookie.split("; ").includes(`${STALE_ACCESS_COOKIE_NAME}=1`);
+}
+
 /** A superadmin with a frozen test clock, so a test can tell whether the clock was cleared. */
 function startTestClock(): string {
   syncSimulationIdentity(person("earlier", ["platform_superadmin"]));
@@ -76,6 +85,7 @@ beforeEach(() => {
   clearSimulation();
   syncSimulationIdentity(undefined);
   setAccessToken("earlier-token");
+  document.cookie = `${STALE_ACCESS_COOKIE_NAME}=; Max-Age=0; Path=/`;
   calls = [];
   clearSatStatus = 204;
   vi.stubGlobal(
@@ -92,6 +102,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -297,6 +308,7 @@ describe("every sign-in", () => {
       });
 
       expect(calls.slice(-2)).toEqual(["clear-sat", sessionPath]);
+      expect(staleMarkerSet()).toBe(false);
       expect(forgetAccessToken).toHaveBeenCalledTimes(1);
       expect(tokenWhenForgotten).toBe("earlier-token");
       expect(getAccessToken()).toBe("next-token");
@@ -306,21 +318,56 @@ describe("every sign-in", () => {
     },
   );
 
+  // A proxy setting, a failing or a slow route must never lock anyone out.
+  // The cookie is marked stale instead, which the server render and
+  // middleware honour.
   it.each(signIns)(
-    "$name: does not sign in when the server access cookie stays",
+    "$name: signs in all the same when the cookie route refuses, marking the cookie stale",
     async ({ sessionPath, useSignIn }) => {
       clearSatStatus = 403;
       const { client, result } = setup(() => useSignIn());
 
       await act(async () => {
-        await expect(result.current()).rejects.toThrow();
+        await result.current();
       });
 
-      expect(calls).not.toContain(sessionPath);
-      expect(getAccessToken()).toBe("earlier-token");
-      expect(client.getQueryData<Me>(["me"])?.id).toBe("earlier");
+      expect(calls.slice(-2)).toEqual(["clear-sat", sessionPath]);
+      expect(staleMarkerSet()).toBe(true);
+      expect(getAccessToken()).toBe("next-token");
+      expect(client.getQueryData<Me>(["me"])?.id).toBe("next");
     },
   );
+
+  it("signs in once the cookie route has not answered in time, marking the cookie stale", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init?: RequestInit) => {
+        calls.push(url === CLEAR_ACCESS_COOKIE_PATH ? "clear-sat" : url);
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("The operation was aborted.", "AbortError"));
+          });
+        });
+      }),
+    );
+    const { client, result } = setup(() => useLoginMutation());
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+
+    await act(async () => {
+      const signIn = result.current.mutateAsync({
+        username: "next",
+        password: "secret",
+        client: "web",
+      });
+      await vi.advanceTimersByTimeAsync(CLEAR_ACCESS_COOKIE_TIMEOUT_MS);
+      await signIn;
+    });
+
+    expect(calls).toEqual(["clear-sat", "/v1/auth/login"]);
+    expect(staleMarkerSet()).toBe(true);
+    expect(getAccessToken()).toBe("next-token");
+    expect(client.getQueryData<Me>(["me"])?.id).toBe("next");
+  });
 
   it("asks for the passkey before removing the cookie, so the prompt follows the press", async () => {
     const { result } = setup(() => usePasskeyLoginMutation());

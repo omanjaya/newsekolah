@@ -18,8 +18,9 @@ export interface UseLoginOptions {
   /**
    * Awaited inside the mutation before the credentials are sent; a
    * rejection fails the sign-in before any session exists. The web app
-   * removes its server-rendering access cookie here, which still names
-   * whoever was signed in before.
+   * sets aside its server-rendering access cookie here, which still names
+   * whoever was signed in before (a step that never rejects, so it cannot
+   * keep anyone from signing in).
    */
   beforeRequest?: () => Promise<void>;
   /**
