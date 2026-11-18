@@ -38,7 +38,6 @@
       "action": "Tinjau izin",
       "empty": "Tidak ada izin menunggu",
       "noStatus": "Belum ada data presensi hari ini",
-      "review": "Tinjau",
       "statusTitle": "Presensi {className} hari ini",
       "statusTitleFallback": "Presensi kelas hari ini",
       "statusLabel": "Status presensi hari ini"
