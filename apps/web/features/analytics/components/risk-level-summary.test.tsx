@@ -41,6 +41,13 @@ describe("RiskLevelSummary", () => {
     expect(screen.getByRole("button", { name: /none/ })).toHaveAttribute("aria-pressed", "false");
   });
 
+  it("spans the toolbar row in three columns instead of shrinking to its tiles", () => {
+    render(<RiskLevelSummary rows={rows} selected="" onSelect={vi.fn()} />);
+    const grid = screen.getByRole("button", { name: /watch/ }).closest("dl");
+    expect(grid).toHaveClass("w-full", "grid-cols-3", "sm:grid-cols-3");
+    expect(grid).not.toHaveClass("sm:grid-cols-4");
+  });
+
   it("renders nothing for an empty roster", () => {
     const { container } = render(<RiskLevelSummary rows={[]} selected="" onSelect={vi.fn()} />);
     expect(container).toBeEmptyDOMElement();
