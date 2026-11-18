@@ -31,7 +31,10 @@ import { ShellStrip } from "./shell-strip";
  * the way back on a phone, where the header has no room for them.
  *
  * Stopping an impersonation goes to the sign-in page once the server has
- * ended it. A stop that failed leaves everything as it was, since the
+ * ended it, or has answered that it was already over (its fixed end came,
+ * another tab stopped it): useStopImpersonationMutation treats both the
+ * same, with no error to show. A stop that failed otherwise (no answer, a
+ * server error, too many requests) leaves everything as it was, since the
  * impersonation is still going on: the strip stays, says what went wrong,
  * and its button can be pressed again.
  */
@@ -126,8 +129,9 @@ export function ImpersonationBanner(): ReactElement | null {
         router.replace("/login");
       },
       (error: unknown) => {
-        // The session ran out meanwhile, and the app is already on its way
-        // to the sign-in page (app/providers.tsx, handleUnauthorized).
+        // Another request found the session gone meanwhile, and the app is
+        // already on its way to the sign-in page (app/providers.tsx,
+        // handleUnauthorized).
         if (isAuthRedirecting()) return;
         toast.error(
           error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),

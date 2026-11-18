@@ -1,3 +1,4 @@
+import { ApiError } from "@newsekolah/api-client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook } from "@testing-library/react";
 import type { ReactElement, ReactNode } from "react";
@@ -130,6 +131,57 @@ describe("useStopImpersonationMutation", () => {
     expect(getAccessToken()).toBe("earlier-token");
     expect(forgetAccessToken).not.toHaveBeenCalled();
     expect(getSimulationTime()).toBe(frozen);
+    expect(calls).not.toContain("clear-sat");
+    expect(client.getQueryData<Me>(["me"])?.id).toBe("earlier");
+    expect(client.getQueryData(UNREAD_KEY)).toEqual({ count: 3 });
+  });
+
+  // Nothing is left to stop: the impersonation reached its fixed end or
+  // another tab stopped it (401), or this tab now holds a session that is
+  // not an impersonation (400). Keeping the strip would leave a Stop that
+  // can never succeed.
+  it.each([
+    { status: 401, code: "AUTH_SESSION_REVOKED" },
+    { status: 400, code: "NOT_IMPERSONATING" },
+  ])(
+    "ends the session as a confirmed stop does when the server answers $status $code",
+    async ({ status, code }) => {
+      const frozen = startTestClock();
+      post.mockImplementation((path: string) => {
+        calls.push(path);
+        return Promise.reject(new ApiError({ status, code, message: code }));
+      });
+      const { client, result } = setup(() => useStopImpersonationMutation());
+      expect(getSimulationTime()).toBe(frozen);
+
+      await act(async () => {
+        await result.current.mutateAsync();
+      });
+
+      expect(calls).toEqual(["/v1/auth/impersonation/stop", "clear-sat"]);
+      expect(getAccessToken()).toBeNull();
+      expect(forgetAccessToken).toHaveBeenCalledTimes(1);
+      expect(getSimulationTime()).toBeNull();
+      expect(client.getQueryData(UNREAD_KEY)).toBeUndefined();
+      expect(client.getQueryData(["me"])).toBeUndefined();
+      expect(client.getQueryData(BRANDING_KEY)).toEqual({ name: "School" });
+    },
+  );
+
+  // These say nothing about the session, which is still alive.
+  it.each([
+    { status: 503, code: "SERVICE_UNAVAILABLE" },
+    { status: 429, code: "RATE_LIMITED" },
+  ])("changes nothing when the server answers $status $code", async ({ status, code }) => {
+    post.mockRejectedValue(new ApiError({ status, code, message: code }));
+    const { client, result } = setup(() => useStopImpersonationMutation());
+
+    await act(async () => {
+      await expect(result.current.mutateAsync()).rejects.toBeInstanceOf(ApiError);
+    });
+
+    expect(getAccessToken()).toBe("earlier-token");
+    expect(forgetAccessToken).not.toHaveBeenCalled();
     expect(calls).not.toContain("clear-sat");
     expect(client.getQueryData<Me>(["me"])?.id).toBe("earlier");
     expect(client.getQueryData(UNREAD_KEY)).toEqual({ count: 3 });

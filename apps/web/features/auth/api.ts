@@ -1,6 +1,6 @@
 "use client";
 
-import { queryKeys, type components } from "@newsekolah/api-client";
+import { ApiError, queryKeys, type components } from "@newsekolah/api-client";
 import {
   useChangePassword as useChangePasswordBase,
   useLogin as useLoginBase,
@@ -56,6 +56,31 @@ export function useLoginMutation() {
 }
 
 /**
+ * Whether the API refused a stop because the impersonation is already
+ * over, so that finishing it in this tab is all that is left to do:
+ * - any 401. The stop needs only an authenticated session, and the auth
+ *   middleware answers 401 when there is no live session behind the
+ *   token: AUTH_SESSION_REVOKED once the impersonation reached its fixed
+ *   end or another tab stopped it (platform/auth/middleware.go,
+ *   `!active`), AUTH_TOKEN_INVALID for a token it cannot use
+ *   (platform/authz/identity.go). AUTH_TOKEN_EXPIRED reaches this far only
+ *   after the client's own refresh failed as well, and is also what the
+ *   handler answers when the session row is gone (StopImpersonation's
+ *   ErrSessionNotFound, mapped by mapAuthError).
+ * - 400 NOT_IMPERSONATING. The token names a session that is not an
+ *   impersonation (service/impersonation.go): this tab refreshed into a
+ *   sign-in made in another tab, so the impersonation it shows is gone.
+ * A network error, a 5xx or a 429 says nothing about the session: not
+ * over, and the stop can be tried again.
+ */
+function isImpersonationOver(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    (error.status === 401 || (error.status === 400 && error.code === "NOT_IMPERSONATING"))
+  );
+}
+
+/**
  * POST /v1/auth/impersonation/stop. The server revokes the impersonation
  * session; there is no admin session to go back to (starting the
  * impersonation replaced it), so a stop the server confirmed ends like a
@@ -66,8 +91,13 @@ export function useLoginMutation() {
  * since the start removed the admin's, so failing to remove it does not
  * stop the sign-out; the next sign-in removes it again before it starts.
  *
- * A stop that failed changes nothing here. The impersonation session is
- * still alive on the server and the browser still holds its refresh
+ * A stop the server refused because the impersonation is already over
+ * (see `isImpersonationOver`) ends the same way: there is nothing left to
+ * stop, and keeping the strip would leave a Stop that can never succeed
+ * over screens that all get 401.
+ *
+ * Any other failed stop changes nothing here. The impersonation session
+ * is still alive on the server and the browser still holds its refresh
  * cookie, so the tab really is still impersonating: it keeps its token,
  * its data and the strip that says so (components/impersonation-banner.tsx),
  * which shows the error and lets the admin try again. Clearing anything
@@ -79,7 +109,11 @@ export function useStopImpersonationMutation() {
   const endSession = useEndSession();
   return useMutation({
     mutationFn: async () => {
-      await client.POST("/v1/auth/impersonation/stop");
+      try {
+        await client.POST("/v1/auth/impersonation/stop");
+      } catch (error) {
+        if (!isImpersonationOver(error)) throw error;
+      }
       await clearServerAccessCookie().catch(() => undefined);
     },
     onSuccess: endSession,

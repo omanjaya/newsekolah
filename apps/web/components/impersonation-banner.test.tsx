@@ -124,6 +124,32 @@ describe("ImpersonationBanner", () => {
     expect(post).toHaveBeenCalledTimes(2);
   });
 
+  // The impersonation reached its fixed end or another tab stopped it
+  // (401), or this tab holds a session that is not an impersonation (400):
+  // nothing is left to stop, and nothing went wrong that the admin did.
+  it.each([
+    { status: 401, code: "AUTH_SESSION_REVOKED" },
+    { status: 400, code: "NOT_IMPERSONATING" },
+  ])(
+    "goes to the sign-in page without an error when the server answers $status $code",
+    async ({ status, code }) => {
+      post.mockRejectedValue(new ApiError({ status, code, message: code }));
+      const user = userEvent.setup();
+      const client = renderStrip();
+
+      await user.click(screen.getByRole("button", { name: "impersonationStop" }));
+
+      await waitFor(() => {
+        expect(replace).toHaveBeenCalledWith("/login");
+      });
+      expect(toastError).not.toHaveBeenCalled();
+      expect(getAccessToken()).toBeNull();
+      expect(forgetAccessToken).toHaveBeenCalledTimes(1);
+      expect(client.getQueryData(["me"])).toBeUndefined();
+      expect(client.getQueryData(["notifications", "unread-count"])).toBeUndefined();
+    },
+  );
+
   it("goes to the sign-in page with no token left once the server stopped the impersonation", async () => {
     post.mockResolvedValue(undefined);
     const user = userEvent.setup();
