@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -111,6 +111,15 @@ it("refuses to save a body that still holds a value without its dot", async () =
   await user.click(screen.getByRole("button", { name: "save" }));
   expect(update).not.toHaveBeenCalled();
   expect(screen.getByText("legacyError")).toBeInTheDocument();
+});
+
+it("opens the preview in a sheet from the body card", async () => {
+  const user = userEvent.setup();
+  render(<TemplateEditorView templateId="t1" />);
+  const bodyCard = screen.getByRole("region", { name: "bodyTitle" });
+  await user.click(within(bodyCard).getByRole("button", { name: "previewLabel" }));
+  const sheet = screen.getByRole("dialog", { name: "previewLabel" });
+  expect(within(sheet).getByTitle("previewLabel")).toBeInTheDocument();
 });
 
 it("says so when the template does not exist", () => {

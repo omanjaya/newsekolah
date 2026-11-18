@@ -32,6 +32,7 @@ import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { isModuleEnabled } from "../../../lib/modules/feature-modules";
 import { useSession } from "../../../lib/session/session-provider";
+import { PreviewSheet } from "../../settings/components/preview-sheet";
 import { SettingsSaveBar } from "../../settings/components/settings-save-bar";
 import {
   KNOWN_TEMPLATE_LISTS,
@@ -140,7 +141,8 @@ export function TemplateEditorView({ templateId }: { templateId?: string }): Rea
  * Two panes: name, kind and the HTML body on the left, with the kind's
  * values as buttons that insert `{{.name}}` at the cursor; on the right a
  * preview rendered in an isolated frame, each value shown as its name in
- * square brackets, kept in view. Create when `template` is undefined,
+ * square brackets, kept in view. Below `lg` the preview opens in a bottom
+ * sheet from the body card instead. Create when `template` is undefined,
  * edit otherwise; the kind is fixed once created.
  *
  * The first editor wrote values without their dot (`{{name}}`), which the
@@ -252,6 +254,9 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
     );
   }
 
+  // The preview frame and the values in use: the trailing card from `lg`
+  // up; below it, a sheet the body card opens, so a phone need not scroll
+  // past the whole body to check an edit.
   const preview = (
     <TemplatePreview
       html={renderPreviewHtml(body, placeholderLabel)}
@@ -314,6 +319,14 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
             columns={1}
             title={t("bodyTitle")}
             description={t("bodyHint")}
+            aside={
+              <PreviewSheet label={t("previewLabel")}>
+                <div className="flex flex-col gap-4">
+                  <p className="text-body-sm text-fg-muted">{t("previewHint")}</p>
+                  {preview}
+                </div>
+              </PreviewSheet>
+            }
           >
             {legacy.length > 0 && (
               <Alert
@@ -383,7 +396,7 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
           </FormSection>
         </div>
 
-        <Card className="lg:sticky lg:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)]">
+        <Card className="hidden lg:sticky lg:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)] lg:block">
           <CardHeader>
             <CardTitle as="h2">{t("previewLabel")}</CardTitle>
             <CardDescription>{t("previewHint")}</CardDescription>
