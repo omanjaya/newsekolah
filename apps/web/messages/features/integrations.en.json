@@ -2,7 +2,7 @@
   "navLabel": "Integrations",
   "eyebrow": "Settings",
   "title": "API keys and webhooks",
-  "description": "Manage machine access to your school's data: API keys to call endpoints, and webhooks to receive events automatically.",
+  "description": "Connect other apps to your school's data: API keys to fetch data, and webhooks to send a notice when something new happens.",
   "tabs": {
     "apiKeys": "API keys",
     "webhooks": "Webhooks",

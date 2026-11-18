@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import { formatDate, type Locale } from "@newsekolah/i18n";
 import {
   Select,
   DatePicker,
@@ -14,13 +15,14 @@ import {
   DialogContent,
   EmptyState,
   Input,
+  RowActionsMenu,
   Textarea,
   useToast,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus, Trophy } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { Pencil, Plus, Trash2, Trophy } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
@@ -63,10 +65,13 @@ const LEVELS: AchievementLevel[] = [
   "international",
 ];
 
+/**
+ * The students' achievements of the year, a tab of the student activities
+ * area (its title and group come from the navigation), filtered by class.
+ */
 export function AchievementsView(): ReactElement {
-  const tNav = useTranslations("app.activities");
-  const tShell = useTranslations("app.shell.nav.items");
   const t = useTranslations("app.activities.achievements");
+  const locale = useLocale() as Locale;
   const [search, setSearch] = useState("");
   const canManage = useCan("manage_achievements");
   const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
@@ -107,45 +112,51 @@ export function AchievementsView(): ReactElement {
         cell: ({ row }) => t(`levels.${row.original.level}`),
       },
       { accessorKey: "placement", header: t("columns.placement"), enableSorting: false },
-      { accessorKey: "achieved_on", header: t("columns.date"), enableSorting: false },
       {
-        id: "actions",
-        header: t("columns.actions"),
+        accessorKey: "achieved_on",
+        header: t("columns.date"),
         enableSorting: false,
-        cell: ({ row }) =>
-          canManage ? (
-            <div className="flex justify-end gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  setEditing(row.original);
-                }}
-              >
-                {t("edit")}
-              </Button>
-
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setPendingDelete(row.original);
-                }}
-              >
-                {t("delete")}
-              </Button>
-            </div>
-          ) : null,
+        // A calendar date ("2026-11-17"), read in UTC so it stays that day.
+        cell: ({ row }) => formatDate(row.original.achieved_on, { locale, timeZone: "UTC" }),
       },
+      ...(canManage
+        ? [
+            {
+              id: "actions",
+              header: t("columns.actions"),
+              enableSorting: false,
+              cell: ({ row }: { row: { original: Achievement } }) => (
+                <RowActionsMenu
+                  ariaLabel={t("rowActions", { name: row.original.competition_name })}
+                  items={[
+                    {
+                      label: t("edit"),
+                      icon: <Pencil />,
+                      onClick: () => {
+                        setEditing(row.original);
+                      },
+                    },
+                    {
+                      label: t("delete"),
+                      icon: <Trash2 />,
+                      tone: "danger",
+                      onClick: () => {
+                        setPendingDelete(row.original);
+                      },
+                    },
+                  ]}
+                />
+              ),
+            } satisfies ColumnDef<Achievement>,
+          ]
+        : []),
     ],
-    [t, canManage],
+    [t, canManage, locale],
   );
 
   return (
     <AppPage
       variant="fit"
-      title={tNav("navLabelAchievements")}
-      eyebrow={tShell("studentActivities")}
       primaryAction={
         canManage ? (
           <Button
@@ -187,9 +198,11 @@ export function AchievementsView(): ReactElement {
               icon={<Trophy aria-hidden="true" />}
               title={t("emptyTitle")}
               description={t("emptyBody")}
+              // The header already carries the primary "add".
               action={
                 canManage ? (
                   <Button
+                    variant="secondary"
                     icon={<Plus />}
                     onClick={() => {
                       setEditing("new");
@@ -273,12 +286,27 @@ function AchievementForm({
     initial?.achieved_on ?? todayInZone(me?.tenant.timezone),
   );
   const [notes, setNotes] = useState(initial?.notes ?? "");
+  // Required fields are marked on their labels and checked on submit, so
+  // Simpan stays enabled and a missing value is named under its field.
+  const [attempted, setAttempted] = useState(false);
+  const errors = {
+    student: studentId === "" ? t("errors.student") : undefined,
+    competitionName: competitionName.trim() === "" ? t("errors.competitionName") : undefined,
+    placement: placement.trim() === "" ? t("errors.placement") : undefined,
+    achievedOn: achievedOn === "" ? t("errors.achievedOn") : undefined,
+  };
+  const valid = Object.values(errors).every((error) => error === undefined);
+  const shown = (error: string | undefined) => (attempted ? error : undefined);
+  const pending = create.isPending || update.isPending;
 
   return (
     <form
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
+        setAttempted(true);
+        if (!valid || pending) return;
         const body: AchievementWrite = {
           student_user_id: studentId.trim(),
           competition_name: competitionName.trim(),
@@ -302,21 +330,20 @@ function AchievementForm({
         else create.mutate(body, callbacks);
       }}
     >
-      <Field label={t("studentId")}>
+      <Field label={t("studentId")} required error={shown(errors.student)}>
         <StudentPicker value={studentId} onChange={setStudentId} />
       </Field>
-      <Field label={t("competitionName")}>
+      <Field label={t("competitionName")} required error={shown(errors.competitionName)}>
         <Input
           value={competitionName}
           onChange={(e) => {
             setCompetitionName(e.target.value);
           }}
-          required
           maxLength={200}
         />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label={t("level")}>
+        <Field label={t("level")} required>
           <Select
             value={level}
             onValueChange={(next) => {
@@ -325,18 +352,17 @@ function AchievementForm({
             options={LEVELS.map((lvl) => ({ value: lvl, label: tAchievements(`levels.${lvl}`) }))}
           />
         </Field>
-        <Field label={t("placement")}>
+        <Field label={t("placement")} required error={shown(errors.placement)}>
           <Input
             value={placement}
             onChange={(e) => {
               setPlacement(e.target.value);
             }}
-            required
             maxLength={100}
           />
         </Field>
       </div>
-      <Field label={t("achievedOn")}>
+      <Field label={t("achievedOn")} required error={shown(errors.achievedOn)}>
         <DatePicker value={achievedOn} required onChange={setAchievedOn} />
       </Field>
       <Field label={t("notes")}>
@@ -353,7 +379,7 @@ function AchievementForm({
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button type="submit" disabled={!studentId} loading={create.isPending || update.isPending}>
+        <Button type="submit" loading={pending}>
           {t("submit")}
         </Button>
       </DialogFooter>

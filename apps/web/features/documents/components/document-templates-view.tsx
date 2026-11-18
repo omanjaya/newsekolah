@@ -9,13 +9,15 @@ import {
   IconCircle,
   List,
   ListRow,
+  RowActionsMenu,
   SectionHeader,
   SkeletonList,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { Plus } from "lucide-react";
+import { BadgeCheck, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -35,11 +37,13 @@ const NEW_TEMPLATE_HREF = "/settings/document-templates/new";
 /**
  * The school's document templates, grouped by the kind of document they
  * print. A row opens the template's editor page; the kind's default is
- * marked, and any other template can be made the default from its row.
+ * marked, and any other template can be made the default from the row's
+ * menu, so a long name keeps the row's width on a phone.
  */
 export function DocumentTemplatesView(): ReactElement {
   const t = useTranslations("app.documents.templates");
   const tKind = useTranslations("app.documents.templates.kind");
+  const router = useRouter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_settings");
@@ -113,45 +117,63 @@ export function DocumentTemplatesView(): ReactElement {
                 count={group.templates.length}
               />
               <List framed>
-                {group.templates.map((template) => (
-                  <ListRow
-                    key={template.id}
-                    leading={
-                      <IconCircle tone={template.is_default ? "green" : "neutral"}>
-                        <domainIcons.document />
-                      </IconCircle>
-                    }
-                    title={template.name}
-                    meta={t("updatedAt", {
-                      date: formatDate(template.updated_at, {
-                        locale,
-                        timeZone: me?.tenant.timezone,
-                      }),
-                    })}
-                    href={canManage ? `/settings/document-templates/${template.id}` : undefined}
-                    trailing={
-                      template.is_default ? (
-                        <Badge tone="success" size="sm">
-                          {t("default")}
-                        </Badge>
-                      ) : undefined
-                    }
-                    action={
-                      canManage && !template.is_default ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          loading={setDefault.isPending && setDefault.variables === template.id}
-                          onClick={() => {
-                            handleSetDefault(template);
-                          }}
-                        >
-                          {t("setDefault")}
-                        </Button>
-                      ) : undefined
-                    }
-                  />
-                ))}
+                {group.templates.map((template) => {
+                  const editorHref = `/settings/document-templates/${template.id}`;
+                  return (
+                    <ListRow
+                      key={template.id}
+                      leading={
+                        <IconCircle tone={template.is_default ? "green" : "neutral"}>
+                          <domainIcons.document />
+                        </IconCircle>
+                      }
+                      title={template.name}
+                      titleLines={2}
+                      meta={t("updatedAt", {
+                        date: formatDate(template.updated_at, {
+                          locale,
+                          timeZone: me?.tenant.timezone,
+                        }),
+                      })}
+                      href={canManage ? editorHref : undefined}
+                      trailing={
+                        template.is_default ? (
+                          <Badge tone="success" size="sm">
+                            {t("default")}
+                          </Badge>
+                        ) : undefined
+                      }
+                      action={
+                        canManage ? (
+                          <RowActionsMenu
+                            ariaLabel={t("rowActions", { name: template.name })}
+                            items={[
+                              {
+                                label: t("edit"),
+                                icon: <Pencil />,
+                                onClick: () => {
+                                  router.push(editorHref);
+                                },
+                              },
+                              ...(template.is_default
+                                ? []
+                                : [
+                                    {
+                                      label: t("setDefault"),
+                                      icon: <BadgeCheck />,
+                                      disabled: setDefault.isPending,
+                                      onClick: () => {
+                                        handleSetDefault(template);
+                                      },
+                                    },
+                                  ]),
+                            ]}
+                          />
+                        ) : undefined
+                      }
+                    />
+                  );
+                })}
               </List>
             </section>
           );

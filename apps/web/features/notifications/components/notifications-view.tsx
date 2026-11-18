@@ -2,7 +2,7 @@
 
 import type { components } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
-import { formatRelative } from "@newsekolah/i18n";
+import { formatRelative, formatTime } from "@newsekolah/i18n";
 import {
   Button,
   Card,
@@ -16,31 +16,23 @@ import {
   SegmentedControl,
   Select,
   SkeletonList,
+  domainIcons,
   type CategoryTone,
 } from "@newsekolah/ui";
-import {
-  AlarmClock,
-  Bell,
-  CalendarCheck,
-  CheckCheck,
-  ClipboardList,
-  DoorOpen,
-  Megaphone,
-  Repeat,
-  type LucideIcon,
-} from "lucide-react";
+import { Bell, CheckCheck, Repeat, type LucideIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
-import { groupByDay } from "../../../lib/group-by-day";
+import { dayKey, groupByDay } from "../../../lib/group-by-day";
 import { navAccessFromMe } from "../../../lib/navigation-access";
 import { useSession } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
 import { useDayLabel } from "../../../lib/use-day-label";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import {
-  useNotificationKinds,
+  useOwnNotificationKinds,
   type NotificationKind,
   useMarkAllReadMutation,
   useMarkReadMutation,
@@ -51,14 +43,18 @@ import { openableHref } from "../lib/openable-href";
 
 type Notification = components["schemas"]["Notification"];
 
-/** One topic icon per family of notification kinds, the way stat tiles colour theirs. */
+/**
+ * One topic icon per family of notification kinds, the way stat tiles
+ * colour theirs, taken from the domain icon map so a concept looks the
+ * same here as on its own pages.
+ */
 const KIND_ICON: { prefix: string; icon: LucideIcon; tone: CategoryTone }[] = [
-  { prefix: "announcement", icon: Megaphone, tone: "purple" },
-  { prefix: "attendance", icon: CalendarCheck, tone: "green" },
+  { prefix: "announcement", icon: domainIcons.announcement, tone: "purple" },
+  { prefix: "attendance", icon: domainIcons.attendance, tone: "green" },
   { prefix: "substitution", icon: Repeat, tone: "blue" },
-  { prefix: "leave_request", icon: ClipboardList, tone: "amber" },
-  { prefix: "exit_permit", icon: DoorOpen, tone: "blue" },
-  { prefix: "late_arrival", icon: AlarmClock, tone: "red" },
+  { prefix: "leave_request", icon: domainIcons.leave, tone: "amber" },
+  { prefix: "exit_permit", icon: domainIcons.exitPermit, tone: "blue" },
+  { prefix: "late_arrival", icon: domainIcons.late, tone: "red" },
 ];
 
 function kindIcon(kind: string): { icon: LucideIcon; tone: CategoryTone } {
@@ -75,7 +71,9 @@ export function NotificationsView(): ReactElement {
   const t = useTranslations("app.notifications");
   const tKinds = useTranslations("app.notifications.kinds");
   const { me } = useSession();
-  const kinds = useNotificationKinds();
+  // Only the kinds this reader can be sent: a student never filters by
+  // "a substitution was requested".
+  const kinds = useOwnNotificationKinds();
   const [filter, setFilter] = useRememberedViewState<"all" | "unread">(
     "notifications-filter",
     "all",
@@ -96,28 +94,32 @@ export function NotificationsView(): ReactElement {
   const hasUnread = (unreadCount.data?.count ?? 0) > 0 || items.some((n) => !n.read_at);
   const isFiltering = search.trim() !== "" || kind !== "";
   const dayGroups = groupByDay(items, (item) => item.created_at, me?.tenant.timezone);
+  // useDayLabel subscribes the view to the business clock, so the "today"
+  // below moves with it, as the day headings do.
   const dayLabel = useDayLabel();
+  const todayKey = dayKey(businessNow().toISOString(), me?.tenant.timezone);
 
   return (
     <AppPage
       variant="narrow"
       nav={false}
-      actions={
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={<CheckCheck />}
-          disabled={!hasUnread || markAllRead.isPending}
-          onClick={() => {
+      // Housekeeping, not the page's main action: a button beside the title
+      // from 640px up, an item of the header's menu on a phone.
+      secondaryActions={[
+        {
+          label: t("markAllRead"),
+          icon: <CheckCheck />,
+          disabled: !hasUnread || markAllRead.isPending,
+          onSelect: () => {
             markAllRead.mutate();
-          }}
-        >
-          {t("markAllRead")}
-        </Button>
-      }
+          },
+        },
+      ]}
       toolbar={
-        <div className="flex flex-col gap-3">
+        // The full width of the toolbar row, so the search can grow into it.
+        <div className="flex w-full flex-col gap-3">
           <SegmentedControl
+            fullWidth="phone"
             aria-label={t("filterLabel")}
             options={[
               { value: "all", label: t("filterAll") },
@@ -210,6 +212,7 @@ export function NotificationsView(): ReactElement {
                     <NotificationRow
                       key={item.id}
                       item={item}
+                      today={group.dateKey === todayKey}
                       timeZone={me?.tenant.timezone}
                       onOpen={() => {
                         if (!item.read_at) markRead.mutate(item.id);
@@ -228,10 +231,13 @@ export function NotificationsView(): ReactElement {
 
 function NotificationRow({
   item,
+  today,
   timeZone,
   onOpen,
 }: {
   item: Notification;
+  /** Whether the row sits under today's heading. */
+  today: boolean;
   timeZone?: string;
   onOpen: () => void;
 }): ReactElement {
@@ -241,12 +247,19 @@ function NotificationRow({
   const href = openableHref(item.href, navAccessFromMe(me));
   const unread = !item.read_at;
   const { icon: Icon, tone } = kindIcon(item.kind);
+  // The day heading above already names the date, so the row ends in the
+  // time alone ("19.00"), or "20 menit lalu" under today's: a short value
+  // that never squeezes the title on a phone.
+  const when = today
+    ? formatRelative(item.created_at, { locale, timeZone, now: businessNow() })
+    : formatTime(item.created_at, { locale, timeZone });
+  // Unread is told by the bold title and the coloured icon, not by the
+  // selected state, which would announce each unread row as the current item.
   return (
     <ListRow
       href={href}
       onClick={onOpen}
       chevron={Boolean(href)}
-      selected={unread}
       leading={
         <IconCircle tone={unread ? tone : "neutral"} size="md">
           <Icon />
@@ -259,7 +272,7 @@ function NotificationRow({
         </span>
       }
       meta={item.body}
-      trailing={formatRelative(item.created_at, { locale, timeZone })}
+      trailing={when}
     />
   );
 }

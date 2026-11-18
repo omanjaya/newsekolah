@@ -133,6 +133,8 @@ export function SsoView(): ReactElement {
     <SettingsPage
       navKey={NAV_KEY}
       description={t("description")}
+      // The state of the feature belongs to the page, beside its title.
+      actions={statusBadge}
       secondaryActions={
         data.configured
           ? [
@@ -160,8 +162,10 @@ export function SsoView(): ReactElement {
         />
       }
     >
-      <FormSection variant="card" columns={1} title={t("statusTitle")} aside={statusBadge}>
-        {data.configured ? (
+      {/* The switch has nothing to switch before the first save, so its
+          card appears only once the credentials are stored. */}
+      {data.configured && (
+        <FormSection variant="card" columns={1} title={t("statusTitle")}>
           <SettingSwitchRow
             label={t("enabledToggleLabel")}
             hint={t("statusBody")}
@@ -170,10 +174,8 @@ export function SsoView(): ReactElement {
               setForm({ ...active, enabled });
             }}
           />
-        ) : (
-          <Alert tone="info">{t("neverConfigured")}</Alert>
-        )}
-      </FormSection>
+        </FormSection>
+      )}
 
       <FormSection
         variant="card"
@@ -181,10 +183,10 @@ export function SsoView(): ReactElement {
         title={t("credentialsTitle")}
         description={t("credentialsHint")}
       >
-        <Field label={t("clientIdLabel")} required error={clientIdError}>
+        {!data.configured && <Alert tone="info">{t("neverConfigured")}</Alert>}
+        <Field label={t("clientIdLabel")} required hint={t("clientIdHint")} error={clientIdError}>
           <Input
             value={active.clientId}
-            placeholder={t("clientIdPlaceholder")}
             autoCapitalize="none"
             spellCheck={false}
             onChange={(event) => {

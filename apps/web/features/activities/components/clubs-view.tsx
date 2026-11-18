@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import type { Locale } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
@@ -9,13 +10,14 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
+  RowActionsMenu,
   useToast,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus, SlidersHorizontal, Users } from "lucide-react";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { Pencil, Plus, SlidersHorizontal, Trash2, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
@@ -28,16 +30,20 @@ import {
   useDeleteExtracurricularMutation,
   useExtracurricularsQuery,
 } from "../api";
+import { clubScheduleLabel } from "../lib/club-schedule";
 
 import { ClubForm } from "./club-form";
 import { MembershipPolicyForm } from "./membership-policy-form";
 
-const WEEKDAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-
+/**
+ * The extracurriculars of the year, a tab of the student activities area
+ * (its title and group come from the navigation). A row opens the club;
+ * editing and deleting wait in the row's menu.
+ */
 export function ClubsView(): ReactElement {
-  const tNav = useTranslations("app.activities");
-  const tShell = useTranslations("app.shell.nav.items");
   const t = useTranslations("app.activities.clubs");
+  const locale = useLocale() as Locale;
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const canManage = useCan("manage_extracurriculars");
   const canManagePolicy = useCan("manage_settings");
@@ -77,29 +83,17 @@ export function ClubsView(): ReactElement {
         accessorKey: "name",
         header: t("columns.name"),
         enableSorting: false,
-        cell: ({ row }) => (
-          <Link
-            href={`/activities/clubs/${row.original.id}`}
-            className="font-medium underline-offset-2 hover:underline"
-          >
-            {row.original.name}
-          </Link>
-        ),
+        meta: { card: "title" },
+        // The whole row opens the club (onRowActivate), so the name is
+        // plain text rather than a link that looks like every other cell.
+        cell: ({ row }) => <span className="font-medium text-fg">{row.original.name}</span>,
       },
       {
         accessorKey: "meeting_day",
         header: t("columns.schedule"),
         enableSorting: false,
-        cell: ({ row }) => {
-          const club = row.original;
-          if (club.meeting_day === undefined) return "-";
-          const day = t(`weekdays.${WEEKDAY_KEYS[club.meeting_day] ?? "sunday"}`);
-          const time =
-            club.meeting_start && club.meeting_end
-              ? `${club.meeting_start}-${club.meeting_end}`
-              : (club.meeting_start ?? "");
-          return `${day}${time ? ` ${time}` : ""}`;
-        },
+        cell: ({ row }) =>
+          clubScheduleLabel(row.original, (key) => t(`weekdays.${key}`), locale) ?? "-",
       },
       {
         accessorKey: "capacity",
@@ -111,11 +105,15 @@ export function ClubsView(): ReactElement {
         accessorKey: "is_active",
         header: t("columns.status"),
         enableSorting: false,
-        cell: ({ row }) => (
-          <Badge variant={row.original.is_active ? "accent" : "neutral"}>
-            {t(row.original.is_active ? "status.active" : "status.inactive")}
-          </Badge>
-        ),
+        meta: { card: "meta" },
+        // Active is the normal state, said quietly; only an inactive club
+        // stands out with a badge.
+        cell: ({ row }) =>
+          row.original.is_active ? (
+            <span className="text-fg-muted">{t("status.active")}</span>
+          ) : (
+            <Badge tone="neutral">{t("status.inactive")}</Badge>
+          ),
       },
       ...(canManage
         ? [
@@ -124,39 +122,37 @@ export function ClubsView(): ReactElement {
               header: t("columns.actions"),
               enableSorting: false,
               cell: ({ row }: { row: { original: Extracurricular } }) => (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      setEditing(row.original);
-                    }}
-                  >
-                    {t("edit")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setPendingDelete(row.original);
-                    }}
-                  >
-                    {t("delete")}
-                  </Button>
-                </div>
+                <RowActionsMenu
+                  ariaLabel={t("rowActions", { name: row.original.name })}
+                  items={[
+                    {
+                      label: t("edit"),
+                      icon: <Pencil />,
+                      onClick: () => {
+                        setEditing(row.original);
+                      },
+                    },
+                    {
+                      label: t("delete"),
+                      icon: <Trash2 />,
+                      tone: "danger",
+                      onClick: () => {
+                        setPendingDelete(row.original);
+                      },
+                    },
+                  ]}
+                />
               ),
             } satisfies ColumnDef<Extracurricular>,
           ]
         : []),
     ],
-    [t, canManage],
+    [t, canManage, locale],
   );
 
   return (
     <AppPage
       variant="fit"
-      title={tNav("navLabelClubs")}
-      eyebrow={tShell("studentActivities")}
       primaryAction={
         canManage ? (
           <Button
@@ -205,15 +201,21 @@ export function ClubsView(): ReactElement {
           error={error}
           onRetry={() => void refetch()}
           getRowId={(item) => item.id}
+          onRowActivate={(club) => {
+            router.push(`/activities/clubs/${club.id}`);
+          }}
           fillHeight
           emptyState={
             <EmptyState
               icon={<Users aria-hidden="true" />}
               title={t("emptyTitle")}
               description={t("emptyBody")}
+              // The header already carries the primary "add"; this one
+              // only repeats it where the reader is looking.
               action={
                 canManage ? (
                   <Button
+                    variant="secondary"
                     icon={<Plus />}
                     onClick={() => {
                       setEditing("new");

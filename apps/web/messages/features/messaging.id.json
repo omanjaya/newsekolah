@@ -16,20 +16,19 @@
     "providerGateway": "Gateway lokal",
     "activeLabel": "Aktifkan pengiriman WhatsApp",
     "activeHint": "Saat nonaktif, notifikasi WhatsApp jatuh kembali ke pengaturan bawaan server.",
+    "unchangedPlaceholder": "Tidak diubah",
     "meta": {
       "phoneNumberIdLabel": "ID nomor telepon",
       "phoneNumberIdHint": "Dari WhatsApp Business Manager.",
       "accessTokenLabel": "Token akses",
-      "accessTokenPlaceholderSet": "Tersimpan — kosongkan untuk tetap memakai token ini",
-      "accessTokenPlaceholderUnset": "Belum diisi"
+      "accessTokenKeepHint": "Kosongkan untuk mempertahankan token yang sudah tersimpan."
     },
     "gateway": {
       "urlLabel": "URL gateway",
       "urlHint": "Endpoint gateway WhatsApp milik sekolah.",
       "headerNameLabel": "Nama header otentikasi",
       "headerValueLabel": "Nilai header otentikasi",
-      "headerValuePlaceholderSet": "Tersimpan — kosongkan untuk tetap memakai nilai ini",
-      "headerValuePlaceholderUnset": "Belum diisi"
+      "headerValueKeepHint": "Kosongkan untuk mempertahankan nilai yang sudah tersimpan."
     },
     "save": "Simpan",
     "saved": "Konfigurasi WhatsApp disimpan"

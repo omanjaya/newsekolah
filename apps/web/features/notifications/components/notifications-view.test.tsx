@@ -11,7 +11,13 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => "id",
 }));
-vi.mock("@newsekolah/i18n", () => ({ formatRelative: () => "5 menit lalu" }));
+vi.mock("@newsekolah/i18n", () => ({
+  formatRelative: () => "5 menit lalu",
+  formatTime: () => "19.00",
+}));
+vi.mock("../../../lib/simulation/clock", () => ({
+  businessNow: () => new Date("2026-11-14T05:00:00Z"),
+}));
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({
@@ -31,7 +37,7 @@ vi.mock("../../../lib/view-state/view-state-provider", async () => {
   };
 });
 vi.mock("../api", () => ({
-  useNotificationKinds: () => [],
+  useOwnNotificationKinds: () => [],
   useNotificationsQuery: () => ({
     data: { data: list.data },
     isLoading: false,
@@ -93,5 +99,48 @@ describe("NotificationsView", () => {
     expect(link).toHaveTextContent("unreadMarker");
     fireEvent.click(link);
     expect(markRead).toHaveBeenCalledWith("n1");
+  });
+
+  it("ends a row in a short time under its day heading, never the full date", () => {
+    list.data = [
+      {
+        id: "today",
+        kind: "leave_request_submitted",
+        title: "Izin hari ini",
+        body: "Budi mengajukan izin sakit",
+        href: null,
+        created_at: "2026-11-14T04:55:00Z",
+      },
+      {
+        id: "older",
+        kind: "leave_request_submitted",
+        title: "Izin lama",
+        body: "Sari mengajukan izin sakit",
+        href: null,
+        created_at: "2026-11-12T12:00:00Z",
+      },
+    ];
+    render(<NotificationsView />);
+    expect(screen.getByRole("button", { name: /Izin hari ini/ }).closest("li")).toHaveTextContent(
+      "5 menit lalu",
+    );
+    expect(screen.getByRole("button", { name: /Izin lama/ }).closest("li")).toHaveTextContent(
+      "19.00",
+    );
+  });
+
+  it("does not announce an unread notification as the current item", () => {
+    list.data = [
+      {
+        id: "n1",
+        kind: "announcement_published",
+        title: "Pengumuman",
+        body: "Libur",
+        href: "/announcements/1",
+        created_at: "2026-11-14T01:00:00Z",
+      },
+    ];
+    render(<NotificationsView />);
+    expect(screen.getByRole("link", { name: /Pengumuman/ })).not.toHaveAttribute("aria-current");
   });
 });

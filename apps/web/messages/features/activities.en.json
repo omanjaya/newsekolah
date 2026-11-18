@@ -13,6 +13,7 @@
     },
     "add": "Add extracurricular",
     "edit": "Edit",
+    "rowActions": "Actions for {name}",
     "saved": "Extracurricular saved",
     "noLimit": "No limit",
     "emptyTitle": "No extracurriculars yet",
@@ -50,7 +51,10 @@
       "meetingEnd": "End time",
       "cancel": "Cancel",
       "submit": "Save",
-      "active": "Active club"
+      "active": "Active club",
+      "errors": {
+        "name": "Enter the extracurricular's name."
+      }
     },
     "delete": "Delete",
     "deleteTitle": "Delete clubs?",
@@ -72,11 +76,26 @@
       "members": "Members",
       "meetings": "Meetings"
     },
+    "facts": {
+      "capacity": "Up to {count} members",
+      "noLimit": "No member limit"
+    },
     "members": {
+      "add": "Enroll member",
       "studentId": "Student",
       "studentIdPlaceholder": "Paste the student's ID",
       "joinedOn": "Joined on",
+      "joinedSince": "Joined {date}",
+      "memberPeriod": "Joined {from}, left {to}",
       "join": "Enroll",
+      "cancel": "Cancel",
+      "errors": {
+        "student": "Choose the student to enroll.",
+        "joinedOn": "Choose the date they joined."
+      },
+      "rowActions": "Actions for {name}",
+      "leaveTitle": "Remove {name}?",
+      "leaveBody": "Their membership ends today. Their attendance history is kept.",
       "joined": "Student enrolled",
       "includeLeft": "Show former members",
       "searchPlaceholder": "Search member name",
@@ -91,8 +110,13 @@
       "left": "Membership ended"
     },
     "meetings": {
+      "add": "Schedule meeting",
       "meetingDate": "Meeting date",
       "schedule": "Schedule",
+      "cancel": "Cancel",
+      "errors": {
+        "meetingDate": "Choose the meeting date."
+      },
       "scheduled": "Meeting scheduled",
       "empty": "No meetings scheduled yet.",
       "roster": {
@@ -138,11 +162,17 @@
       "location": "Location",
       "startDate": "Start date",
       "endDate": "End date",
+      "dates": "Activity dates",
       "cancel": "Cancel",
       "submit": "Save",
-      "editTitle": "Edit events"
+      "editTitle": "Edit events",
+      "errors": {
+        "name": "Enter the activity's name.",
+        "dates": "Choose the activity's dates."
+      }
     },
     "edit": "Edit",
+    "rowActions": "Actions for {name}",
     "delete": "Delete",
     "deleteTitle": "Delete events?",
     "deleteBody": "This record will be removed. Continue?",
@@ -204,9 +234,16 @@
       "notes": "Notes",
       "cancel": "Cancel",
       "submit": "Save",
-      "editTitle": "Edit achievements"
+      "editTitle": "Edit achievements",
+      "errors": {
+        "student": "Choose the student.",
+        "competitionName": "Enter the competition's name.",
+        "placement": "Enter the placement, such as 1st place.",
+        "achievedOn": "Choose the date."
+      }
     },
     "edit": "Edit",
+    "rowActions": "Actions for {name}",
     "delete": "Delete",
     "deleteTitle": "Delete achievements?",
     "deleteBody": "This record will be removed. Continue?",
