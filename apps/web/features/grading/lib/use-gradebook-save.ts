@@ -25,9 +25,11 @@ export interface UseGradebookSave {
  * Saving one gradebook sheet's edits, per column or all pending columns at
  * once. Split out of `GradebookTable` (whose own concern is the grid's
  * layout and navigation, not the save call, its retry toast, or clearing
- * the local draft once nothing is left pending).
+ * the local draft once nothing is left pending). `draftOwner` is the
+ * table's own `useDraftOwner()`, so both clear the draft they wrote.
  */
 export function useGradebookSave(
+  draftOwner: string | null,
   sheetKey: string,
   edits: Edits,
   setEdits: Dispatch<SetStateAction<Edits>>,
@@ -83,7 +85,7 @@ export function useGradebookSave(
           const remainingAfter =
             Object.values(edits).reduce((count, column) => count + Object.keys(column).length, 0) -
             Object.keys(edits[componentId] ?? {}).length;
-          if (remainingAfter <= 0) clearGradebookDraft(sheetKey);
+          if (remainingAfter <= 0) clearGradebookDraft(draftOwner, sheetKey);
         }
       } catch (error) {
         toast.error(
@@ -117,7 +119,7 @@ export function useGradebookSave(
         }
         if (savedAny) {
           savedToast();
-          clearGradebookDraft(sheetKey);
+          clearGradebookDraft(draftOwner, sheetKey);
         }
       } catch (error) {
         toast.error(

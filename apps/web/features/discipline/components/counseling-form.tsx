@@ -18,6 +18,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
 
+import { useDraftOwner } from "../../../lib/drafts/draft-owner";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
@@ -63,6 +64,7 @@ export function CounselingForm({
   const apiErrorMessage = useApiErrorMessage();
   const locale = useLocale() as Locale;
   const { me } = useSession();
+  const draftOwner = useDraftOwner();
   const studentLabels = useDirectoryPickerLabels(t("studentPlaceholder"));
   const create = useCreateCounselingMutation();
   const update = useUpdateCounselingMutation();
@@ -86,16 +88,17 @@ export function CounselingForm({
   const [draftOffer, setDraftOffer] = useState<{ savedAt: string } | null>(null);
 
   // Offer to restore an in-progress draft the browser still has from
-  // before a reload or an accidental tab close, once per mount -- see
-  // `lib/counseling-draft.ts`. Reads `window.localStorage`, so this cannot
-  // move into a lazy `useState` initializer the way a server-safe value
-  // could.
+  // before a reload or an accidental tab close -- see
+  // `lib/counseling-draft.ts`. Checked again when the owner becomes known
+  // (a draft is only ever offered to the account that wrote it) and
+  // withdrawn when there is none; `draftId` is fixed for the form's life.
+  // Reads `window.localStorage`, so this cannot move into a lazy
+  // `useState` initializer the way a server-safe value could.
   useEffect(() => {
-    const draft = loadCounselingDraft(draftId);
+    const draft = loadCounselingDraft(draftOwner, draftId);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- see the comment above.
-    if (draft) setDraftOffer({ savedAt: draft.savedAt });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- check once per mount, keyed by the stable draftId
-  }, []);
+    setDraftOffer(draft ? { savedAt: draft.savedAt } : null);
+  }, [draftOwner, draftId]);
 
   const isDirty =
     title.trim() !== (initial?.title ?? "") ||
@@ -109,11 +112,17 @@ export function CounselingForm({
   // counselor's notes; cleared the moment a save succeeds.
   useEffect(() => {
     if (!isDirty) return;
-    saveCounselingDraft(draftId, { title, content, followUpPlan, careerGoals, problemDescription });
-  }, [draftId, title, content, followUpPlan, careerGoals, problemDescription, isDirty]);
+    saveCounselingDraft(draftOwner, draftId, {
+      title,
+      content,
+      followUpPlan,
+      careerGoals,
+      problemDescription,
+    });
+  }, [draftOwner, draftId, title, content, followUpPlan, careerGoals, problemDescription, isDirty]);
 
   function restoreDraft() {
-    const draft = loadCounselingDraft(draftId);
+    const draft = loadCounselingDraft(draftOwner, draftId);
     if (!draft) return;
     setTitle(draft.title);
     setContent(draft.content);
@@ -124,7 +133,7 @@ export function CounselingForm({
   }
 
   function dismissDraft() {
-    clearCounselingDraft(draftId);
+    clearCounselingDraft(draftOwner, draftId);
     setDraftOffer(null);
   }
 
@@ -151,7 +160,7 @@ export function CounselingForm({
         };
         const onSuccess = () => {
           toast.success(t("saved"));
-          clearCounselingDraft(draftId);
+          clearCounselingDraft(draftOwner, draftId);
           onDone();
         };
         const onError = (error: unknown) => {

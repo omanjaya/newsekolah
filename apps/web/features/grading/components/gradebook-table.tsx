@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useDraftOwner } from "../../../lib/drafts/draft-owner";
 import { useUnsavedChangesProtection } from "../../../lib/navigation/use-unsaved-changes-protection";
 import { useSession } from "../../../lib/session/session-provider";
 import type { AssessmentComponent, Gradebook, GradebookStudent } from "../api";
@@ -78,6 +79,7 @@ export function GradebookTable({
   const tSheet = useTranslations("app.grading.sheet");
   const locale = useLocale() as Locale;
   const { me } = useSession();
+  const draftOwner = useDraftOwner();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [edits, setEdits] = useState<Edits>({});
   const [entryMode, setEntryMode] = useState<GradebookEntryMode>("component");
@@ -86,6 +88,7 @@ export function GradebookTable({
 
   const sheetKey = `${sheet.class_id}:${sheet.subject_id}:${sheet.term_id}`;
   const { savingComponentId, savingAll, saveColumn, saveAll } = useGradebookSave(
+    draftOwner,
     sheetKey,
     edits,
     setEdits,
@@ -102,23 +105,25 @@ export function GradebookTable({
   }, [onPendingChangesChange, pendingChanges]);
 
   // Offer to restore an in-progress draft the browser still has from
-  // before a reload or a dropped connection, once per sheet.
+  // before a reload or a dropped connection, once per sheet and owner
+  // (rechecked when the owner becomes known, withdrawn when there is none).
   useEffect(() => {
-    const draft = loadGradebookDraft(sheetKey);
+    const draft = loadGradebookDraft(draftOwner, sheetKey);
+    const hasEdits = draft !== null && Object.keys(draft.edits).length > 0;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mirrors attendance/components/session-editor.tsx's own draft-offer effect.
-    if (draft && Object.keys(draft.edits).length > 0) setDraftOffer({ savedAt: draft.savedAt });
-  }, [sheetKey]);
+    setDraftOffer(hasEdits ? { savedAt: draft.savedAt } : null);
+  }, [draftOwner, sheetKey]);
 
   // Mirrors every edit to localStorage (try/catch inside the helper) so a
   // dropped classroom connection or an accidental reload does not throw
   // away work still only in the local buffer.
   useEffect(() => {
     if (pendingChanges === 0) return;
-    saveGradebookDraft(sheetKey, edits);
-  }, [sheetKey, edits, pendingChanges]);
+    saveGradebookDraft(draftOwner, sheetKey, edits);
+  }, [draftOwner, sheetKey, edits, pendingChanges]);
 
   function restoreDraft() {
-    const draft = loadGradebookDraft(sheetKey);
+    const draft = loadGradebookDraft(draftOwner, sheetKey);
     if (!draft) return;
     setEdits((prev) => {
       const next: Edits = { ...prev };
@@ -131,7 +136,7 @@ export function GradebookTable({
   }
 
   function dismissDraft() {
-    clearGradebookDraft(sheetKey);
+    clearGradebookDraft(draftOwner, sheetKey);
     setDraftOffer(null);
   }
 
