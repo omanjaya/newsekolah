@@ -31,13 +31,20 @@ export function StudentRiskDetailView({ studentId }: StudentRiskDetailViewProps)
   const canCounsel = useCan("manage_counseling") && disciplineOn;
 
   const studentMap = useDirectoryNames([studentId]);
-  const studentName = studentMap.get(studentId)?.name ?? t("unknownStudent");
+  const student = studentMap.get(studentId);
+  const studentName = student?.name ?? t("unknownStudent");
 
   return (
     <AppPage
       leading={<Avatar name={studentName} size={48} decorative />}
       title={studentName}
-      description={<TextLink href={studentProfileHref(studentId)}>{t("openProfile")}</TextLink>}
+      // The same identity line as the student's discipline record.
+      description={
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {student?.nis && <span>{t("nis", { nis: student.nis })}</span>}
+          <TextLink href={studentProfileHref(studentId)}>{t("openProfile")}</TextLink>
+        </span>
+      }
       primaryAction={
         canCounsel ? (
           <Button asChild>

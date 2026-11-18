@@ -27,23 +27,22 @@ export function GradeTrendBars({ previous, current }: GradeTrendBarsProps): Reac
     current: current.toFixed(1),
   });
 
+  // Under the signal's figure (student-risk-panel.tsx), which states the
+  // averages; the sentence is the bars' accessible name.
   return (
-    <div className="flex flex-col gap-1.5">
-      <p className="text-body-sm text-fg">{label}</p>
-      <div role="img" aria-label={label} className="flex flex-col gap-1">
-        <GradeBar
-          labelText={t("gradeTrendPrevious")}
-          value={previous}
-          max={max}
-          colorClass="bg-fg-muted"
-        />
-        <GradeBar
-          labelText={t("gradeTrendCurrent")}
-          value={current}
-          max={max}
-          colorClass={dropped ? "bg-danger" : "bg-success"}
-        />
-      </div>
+    <div role="img" aria-label={label} className="flex flex-col gap-1">
+      <GradeBar
+        labelText={t("gradeTrendPrevious")}
+        value={previous}
+        max={max}
+        colorClass="bg-fg-muted"
+      />
+      <GradeBar
+        labelText={t("gradeTrendCurrent")}
+        value={current}
+        max={max}
+        colorClass={dropped ? "bg-danger" : "bg-success"}
+      />
     </div>
   );
 }

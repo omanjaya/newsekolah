@@ -73,13 +73,21 @@ export function StudentRiskPanel({ studentId }: { studentId: string }): ReactEle
         <CardHeader>
           <CardTitle as="h2">{t("signalsTitle")}</CardTitle>
         </CardHeader>
+        {/* Every signal has one shape: a figure with its unit, and for the
+            two ratios a bar under it. */}
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <SignalRow label={t("signals.attendance")}>
             {data.signals.has_attendance ? (
-              <AttendanceRatioBar
-                absentDays={data.signals.absent_days}
-                consideredDays={data.signals.considered_days}
-              />
+              <div className="flex flex-col gap-1.5">
+                <SignalFigure
+                  value={data.signals.absent_days}
+                  unit={t("signals.absentUnit", { considered: data.signals.considered_days })}
+                />
+                <AttendanceRatioBar
+                  absentDays={data.signals.absent_days}
+                  consideredDays={data.signals.considered_days}
+                />
+              </div>
             ) : (
               <p className="text-body-sm text-fg-muted">{t("signals.noData")}</p>
             )}
@@ -89,22 +97,36 @@ export function StudentRiskPanel({ studentId }: { studentId: string }): ReactEle
           {disciplineOn && (
             <>
               <SignalRow label={t("signals.discipline")}>
-                <p className="text-title-lg text-fg">
-                  {t("signals.disciplineValue", { points: data.signals.discipline_points })}
-                </p>
+                <SignalFigure
+                  value={data.signals.discipline_points}
+                  unit={t("signals.disciplineUnit")}
+                />
               </SignalRow>
               <SignalRow label={t("signals.warningLetters")}>
-                <p className="text-title-lg text-fg">{data.signals.warning_letter_count}</p>
+                <SignalFigure
+                  value={data.signals.warning_letter_count}
+                  unit={t("signals.warningLettersUnit", {
+                    count: data.signals.warning_letter_count,
+                  })}
+                />
               </SignalRow>
             </>
           )}
           {gradingOn && (
             <SignalRow label={t("signals.gradeTrend")}>
               {data.signals.has_grade_trend ? (
-                <GradeTrendBars
-                  previous={data.signals.previous_average}
-                  current={data.signals.current_average}
-                />
+                <div className="flex flex-col gap-1.5">
+                  <SignalFigure
+                    value={data.signals.current_average.toFixed(1)}
+                    unit={t("signals.gradeTrendUnit", {
+                      previous: data.signals.previous_average.toFixed(1),
+                    })}
+                  />
+                  <GradeTrendBars
+                    previous={data.signals.previous_average}
+                    current={data.signals.current_average}
+                  />
+                </div>
               ) : (
                 <p className="text-body-sm text-fg-muted">{t("signals.noData")}</p>
               )}
@@ -122,5 +144,15 @@ function SignalRow({ label, children }: { label: string; children: ReactElement 
       <dt className="text-caption text-fg-muted">{label}</dt>
       <dd>{children}</dd>
     </div>
+  );
+}
+
+/** A signal's figure on the title role, its unit beside it as a caption. */
+function SignalFigure({ value, unit }: { value: number | string; unit: string }): ReactElement {
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-1.5">
+      <span className="text-title-lg tabular-nums text-fg">{value}</span>
+      <span className="text-caption text-fg-muted">{unit}</span>
+    </p>
   );
 }
