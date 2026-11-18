@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   createTitle: vi.fn(),
   updateMember: vi.fn(),
   updatePolicy: vi.fn(),
+  push: vi.fn(),
   canManage: true,
 }));
 const title: LibraryTitle = {
@@ -56,6 +57,7 @@ vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/library/catalogue",
   useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: mocks.push }),
 }));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
@@ -137,6 +139,9 @@ describe("library editors", () => {
       expect.any(Object),
     );
     expect(mocks.createTitle).not.toHaveBeenCalled();
+    // The row opens the title's page (75082415); its "..." menu must edit
+    // in place without that navigation firing too.
+    expect(mocks.push).not.toHaveBeenCalled();
   });
 
   it("hides catalogue write actions for readers", () => {

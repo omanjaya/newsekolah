@@ -50,7 +50,9 @@ const PROPER_WORDS = new Set([
   "Telegram",
   "BotFather",
   "Dapodik",
+  // Microsoft's spreadsheet and word processor, named for the file a download makes.
   "Excel",
+  "Word",
   // Keys printed on the keyboard.
   "Ctrl",
   "Cmd",

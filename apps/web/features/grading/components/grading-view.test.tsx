@@ -6,7 +6,12 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => "id",
 }));
-vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
+// useUrlState reads the tab from the router's query, which Next keeps in
+// step with the history writes it makes; the stub follows the address the
+// same way, so a tab click lands on its panel.
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(window.location.search),
+}));
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/hooks/use-active-year", () => ({ useActiveYear: () => ({ id: "year-1" }) }));
 vi.mock("../../academic/api-offerings", () => ({
