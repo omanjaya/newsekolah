@@ -105,9 +105,11 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
 
   const go = useCallback(
     (href: string) => {
-      if (!confirmUnsavedChangesBeforeNavigation()) return;
-      setIsOpen(false);
-      router.push(href);
+      void confirmUnsavedChangesBeforeNavigation().then((leave) => {
+        if (!leave) return;
+        setIsOpen(false);
+        router.push(href);
+      });
     },
     [router, setIsOpen],
   );

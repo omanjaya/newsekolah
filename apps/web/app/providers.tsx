@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { UiLocaleProvider } from "../components/ui-locale-provider";
+import { UnsavedChangesDialog } from "../components/unsaved-changes-dialog";
 import { ApiClientProvider, type ExpiredSession } from "../lib/api/client";
 import { syncCurrentLocale } from "../lib/i18n/current-locale";
 import { QueryProvider } from "../lib/query/query-provider";
@@ -96,6 +97,11 @@ export function AppProviders({
                     Inside UiLocaleProvider so its close button and region are translated.
                   */}
                   <Toaster />
+                  {/*
+                    The one question asked before a navigation drops an
+                    editor's unsaved changes (useUnsavedChangesProtection).
+                  */}
+                  <UnsavedChangesDialog />
                 </UiLocaleProvider>
               </UiLinkProvider>
             </ThemeProvider>

@@ -44,6 +44,7 @@ vi.mock("../lib/simulation/simulation-sync", () => ({ SimulationSync: () => null
 vi.mock("../lib/session/account-boundary", () => ({ AccountBoundary: () => null }));
 vi.mock("../lib/theme/theme-provider", () => ({ ThemeProvider: PassThrough }));
 vi.mock("../components/ui-locale-provider", () => ({ UiLocaleProvider: PassThrough }));
+vi.mock("../components/unsaved-changes-dialog", () => ({ UnsavedChangesDialog: () => null }));
 
 vi.mock("@newsekolah/ui", async (importOriginal) => {
   const actual = await importOriginal<typeof Ui>();
