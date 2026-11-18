@@ -1,0 +1,2146 @@
+{
+  "checkedAt": "2026-11-18",
+  "commit": "e88c54e9",
+  "note": "Verification of the first fix round against before (capture2) and after (capture3) screenshots: seven units of fix items plus a sweep of screens that changed without a fix item. Paths are relative to the capture folders, which are not kept in the repository.",
+  "units": [
+    {
+      "unit": "activities-notifications",
+      "score": 8.5,
+      "verdict": "This unit's fix round worked. Of the 25 items, 23 are fixed in the new photographs, in the code, or both. FB-44 is partly done because one English string was missed, and nothing regressed. The notification rows now fit on a phone: the title is complete and the row ends in the time only (19.00). The notifications toolbar is full width, and 'Tandai semua dibaca' sits in the header menu. Unread rows lost the selected tint and aria-current. The activities pages use the area title 'Kegiatan siswa', and their empty states use a secondary button. Club detail now matches its sibling pages: its facts are in the header, enrolling opens a dialog from the primary action, members have a search and a filter pill, and removing a member goes through a row menu and a confirmation. Dates are formatted and schedules read 'Jumat, 15.00 – 16.30'. The WhatsApp and SSO settings pages now follow the session and SSO pattern: switch row, save bar, password inputs and hints. The workflow arrows are gone. The fix round caused three small new defects: the template editor shows the label 'Isi templat' twice; a dot separator dangles at a line end in the club facts on a phone; and on narrow pages the header action sits about 430px to the right of the 720px content.",
+      "items": [
+        {
+          "id": "FB-01",
+          "result": "fixed",
+          "note": "After (siswa phone): titles are complete ('Siswa telah keluar', 'Izin keluar diterbitkan') and each row ends in a short time ('23.43'). Code: notifications-view.tsx:253-255 uses formatTime outside today and formatRelative only under today's heading.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-02",
+          "result": "fixed",
+          "note": "After (admin phone): the toolbar wrapper is w-full (notifications-view.tsx:120), the SegmentedControl uses fullWidth='phone', the search placeholder shows in full, and 'Tandai semua dibaca' is in secondaryActions (the '...' beside the title). The phone now has three control rows, one segmented control and two fields.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-06/activities",
+          "result": "fixed",
+          "note": "After (admin phone, Prestasi and Agenda): the empty-state 'Catat prestasi' and 'Tambah kegiatan' buttons are secondary, under one primary in the header. Code: achievements-view.tsx:202-214, activities-calendar-view.tsx:160-172 and clubs-view.tsx:215-227 all use variant='secondary'.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-10",
+          "result": "fixed",
+          "note": "After (club detail, desktop and phone): the member meta reads 'Bergabung 17 November 2026' (club-detail-view.tsx:237-244 uses formatDate with timeZone UTC, keys joinedSince and memberPeriod in both catalogs). achievements-view.tsx:116-121 formats achieved_on the same way.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-11",
+          "result": "fixed",
+          "note": "After: 'Daftarkan anggota' is the AppPage primary action and opens a Dialog (JoinMemberForm with StudentPicker, DatePicker and required Fields). The tab switches the action to 'Jadwalkan pertemuan'. The header carries 'Jumat, 15.00 – 16.30 · Kuota 30 anggota · Lapangan upacara'. Members have a SearchInput and a boolean filter pill, and 'Keluarkan' is a destructive RowActionsMenu item behind a ConfirmDialog (club-detail-view.tsx:251-296).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-12",
+          "result": "fixed",
+          "note": "After (clubs, admin phone): the card ends in a single '...' RowActionsMenu (Ubah, then a danger 'Hapus') instead of two text buttons. The name is plain text, and onRowActivate pushes to the club (clubs-view.tsx:204-206). 'Aktif' is quiet muted text and only 'Tidak aktif' gets a Badge. achievements-view.tsx:129-148 uses the same RowActionsMenu.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-16/activities",
+          "result": "fixed",
+          "note": "After (admin phone and kepsek desktop): the h1 is 'Kegiatan siswa' and the eyebrow 'Kesiswaan' on all three tabs. The clubs, achievements and calendar views pass no title or eyebrow to AppPage.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-17",
+          "result": "fixed",
+          "note": "After (admin phone): the toolbar is the 'Semua pengguna' picker row, then the 'Jenis entitas' and 'Rentang tanggal' pill row; the lone '...' row is gone. On desktop the picker is a small rounded-full pill at the right of the filter row.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-18",
+          "result": "fixed",
+          "note": "After (desktop and phone): 'Aktifkan pengiriman WhatsApp' is a SettingSwitchRow with its hint under the label and the switch at the right edge (provider-config-view.tsx:110-117).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-19",
+          "result": "fixed",
+          "note": "The WhatsApp provider panel uses max-w-narrow (whatsapp-settings-view.tsx:62), and the card is 720px wide in the after shot. The SSO description is one line in both languages ('Izinkan staf dan guru masuk dengan akun Google Workspace sekolah.').",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-21",
+          "result": "fixed",
+          "note": "After (guru desktop): unread rows have no selected tint. The code no longer passes `selected`; unread shows as the bold title, the toned IconCircle and an sr-only marker (notifications-view.tsx:256-273).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-26",
+          "result": "fixed",
+          "note": "After (club dialog): 'Hari pertemuan' has its own full-width row, the two time pickers share a grid-cols-2 row, and 'Nama *' carries the required marker on its Field. The achievement and event dialogs (phone) show required markers on Siswa, Nama lomba, Tingkat, Capaian, Tanggal and Tanggal kegiatan. Simpan is enabled, with errors shown after a submit attempt. Events use a single DateRangePicker ('Pilih rentang tanggal').",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-29",
+          "result": "fixed",
+          "note": "After (kepsek desktop and admin phone): the schedule reads 'Jumat, 15.00 – 16.30', from clubScheduleLabel in features/activities/lib/club-schedule.ts using clockRange.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-38",
+          "result": "fixed",
+          "note": "After (phone): the full name 'Surat izin siswa (contoh)' shows (titleLines={2}), and the row ends in a '...' RowActionsMenu with Ubah and Jadikan bawaan instead of a wide ghost button. On desktop the row keeps its href, but ListRow drops the chevron when a row has an action, so 'Ubah' in the menu is the visible open cue, as the plan intended.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-39",
+          "result": "fixed",
+          "note": "After (phone, new template): the preview card shows a compact sunken empty state, 'Pratinjau muncul setelah isi templat diisi' with a document icon, instead of the tall blank white sheet. The key previewEmpty is in both catalogs. As the fixer reported, the optional Disclosure below lg was not added; it is no longer needed.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-40/notifications",
+          "result": "fixed",
+          "note": "After (siswa phone, notification settings): 'Kanal per jenis' lists 7 kinds a student can receive instead of all 12. api.ts adds NOTIFICATION_KIND_AUDIENCE, canReceiveNotificationKind and useOwnNotificationKinds. Only notification-settings-view.tsx and the notifications kind filter use it; notification-defaults-view.tsx keeps useNotificationKinds.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-44",
+          "result": "partly",
+          "note": "The template editor copy is fixed (after desktop: 'Detail templat', 'Isi templat', a hint with no {{}} syntax, the Skeleton title while loading, and an '(tidak dikenal)' badge). integrations.id.json description and apiKeys.emptyBody are rewritten, as is the en description. The en apiKeys.emptyBody still says 'machine access', so the two languages are not in step.",
+          "stillToDo": "apps/web/messages/features/integrations.en.json:19 apiKeys.emptyBody: change 'Create a key to give machine access to this school's data.' to 'Create a key to give other apps access to this school's data.' (Optional, outside the listed lines: id/en apiKeys.description and webhooks.description still say 'endpoint' and 'HMAC'.)"
+        },
+        {
+          "id": "FB-45",
+          "result": "fixed",
+          "note": "After (phone full and desktop): the provider card has no always-on Simpan. Code: use-provider-config-form.ts lifts the form state, whatsapp-settings-view.tsx:39-47 passes SettingsSaveBar as floating with dirty, saving, onSave and onDiscard, and provider-config-view.tsx:29-31 renders QueryError when the query fails with no data.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-46",
+          "result": "fixed",
+          "note": "After (desktop and phone): the separate status card is gone when unconfigured. The 'Belum pernah diatur' Alert is the first child of 'Kredensial Google', and the 'Belum diatur' badge sits in the page header actions. The switch card renders only when data.configured, retitled 'Di halaman masuk' / 'On the sign-in page'.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-50",
+          "result": "fixed",
+          "note": "After (phone): the provider card has no 'Penyedia pengiriman' title; only its sentence remains as the description. The panel is in the URL via useUrlState('panel', ...), Tabs use gap-6 and each TabsContent pt-0. The area NavTabs and the panel segmented control are still two rows, by design; the plan did not remove them.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-51",
+          "result": "fixed",
+          "note": "After (desktop): the 'Ringkasan alur' Stepper reads 'Guru piket / Guru mana pun / Pindai QR', approver rule before method, the same order as the rows (stage-editor.tsx:220-221). The Card is 'hidden lg:block' (stage-editor.tsx:205).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-56/notifications",
+          "result": "fixed",
+          "note": "Code: the notifications KIND_ICON map uses domainIcons.leave for leave_request (notifications-view.tsx:55). domainIcons.leave is ClipboardList, so the look does not change but the source matches the queue and reports.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-62",
+          "result": "fixed",
+          "note": "After (desktop): each workflow stage row ends in the expand chevron and the '...' menu only; the inline up and down IconButtons are gone, and the moves are in the menu (stage-row.tsx:90-99).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-63",
+          "result": "fixed",
+          "note": "After: 'Token akses' is a PasswordInput with a reveal eye and no status sentence as its placeholder. Once a token is saved, the placeholder is 'Tidak diubah' and the hint says to leave it blank to keep it (provider-config-view.tsx:62-74). The gateway header value works the same way.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-64",
+          "result": "fixed",
+          "note": "After (SSO phone full): the Client ID field has no placeholder, and the hint 'Berakhiran .apps.googleusercontent.com' shows in full under it (sso-view.tsx Field hint clientIdHint, in both catalogs).",
+          "stillToDo": ""
+        }
+      ],
+      "newFindings": [
+        {
+          "severity": "minor",
+          "route": "/settings/document-templates/new, /settings/document-templates/[templateId]",
+          "role": "admin",
+          "viewport": "desktop and phone",
+          "shot": "capture3/shots/admin/desktop-light/settings__document-templates__new--fold.png",
+          "title": "Template body card shows 'Isi templat' twice: the card title, then the field label",
+          "description": "The FB-44 copy fix renamed the body field label from 'Isi (HTML)' to 'Isi templat', the same text as its card title. The card now reads 'Isi templat' (title), the hint, then 'Isi templat *' (label). In English it reads 'Template body' twice.",
+          "cause": "apps/web/messages/features/documents.id.json:35 bodyLabel 'Isi templat' equals :49 bodyTitle 'Isi templat' (en.json:35 and :49 are both 'Template body'). Both are rendered at template-editor.tsx:275 (FormSection title) and :278 (Field label).",
+          "fix": "Give the field a distinct label: bodyLabel 'Teks dokumen' (en 'Document text'), keeping the required marker visible. Alternatively pass `hideLabel` on the Field at template-editor.tsx:278 so the card title names it, but that hides the required asterisk.",
+          "files": [
+            "apps/web/messages/features/documents.id.json",
+            "apps/web/messages/features/documents.en.json",
+            "apps/web/features/documents/components/template-editor.tsx"
+          ],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "polish",
+          "route": "/activities/clubs/[clubId]",
+          "role": "admin",
+          "viewport": "phone",
+          "shot": "capture3/shots/admin/mobile-light/activities__clubs__clubId--fold.png",
+          "title": "Club facts line breaks after a separator: 'Kuota 30 anggota ·' / 'Lapangan upacara'",
+          "description": "The new facts line under the club name is one string joined with ' · '. On a phone it wraps so that a lone dot ends the first line and the location starts the second, which looks unfinished.",
+          "cause": "apps/web/features/activities/components/club-detail-view.tsx:60-71 joins the facts into one string, and :121 renders it as plain text, so the browser may break after any separator.",
+          "fix": "Have useClubFacts return the array, and render `<p className=\"mt-1 flex flex-wrap gap-x-1.5 text-body-sm\">` with each fact in `<span className=\"whitespace-nowrap\">`, adding the separator as a leading `<span aria-hidden=\"true\">·</span>` inside every fact after the first. A wrap then always starts a new fact, never strands a dot.",
+          "files": ["apps/web/features/activities/components/club-detail-view.tsx"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "polish",
+          "route": "/notifications (also /settings/sso, /settings/document-templates)",
+          "role": "guru, siswa, admin",
+          "viewport": "desktop 1440",
+          "shot": "capture3/shots/guru/desktop-light/notifications--fold.png",
+          "title": "On narrow pages the header action floats about 430px right of the 720px content it acts on",
+          "description": "Before, the narrow notifications page was centred, and 'Tandai semua dibaca' sat at the right edge of the list. Now the content is left-aligned at 720px while the header keeps the 1200px column, so the button sits at x≈1415 and the list ends at x≈984, leaving a wide gap. The SSO status badge and the 'Tambah templat' button sit the same way.",
+          "cause": "packages/ui/src/components/page-shell.tsx:29-39: on narrow pages the header keeps max-w-default while the content is capped at max-w-narrow and left-aligned (the shared narrow-page change). Header actions therefore align to the 1200px edge.",
+          "fix": "Fix it locally for notifications, where the action belongs to the list: from sm up, render 'Tandai semua dibaca' as a ghost button at the right of the SegmentedControl row inside the 720px toolbar (notifications-view.tsx:121-132, wrap in `flex items-center justify-between`), and keep it in secondaryActions only below sm. Alternatively, cap the PageHeader actions to the content width on narrow pages in page-shell.tsx, if the design owner accepts that.",
+          "files": [
+            "apps/web/features/notifications/components/notifications-view.tsx",
+            "packages/ui/src/components/page-shell.tsx"
+          ],
+          "causedByFixRound": true
+        }
+      ]
+    },
+    {
+      "unit": "library",
+      "score": 8,
+      "verdict": "The library fix round mostly worked. 18 of the 19 blocker, major and minor items are fixed, shown either in the new screenshots or in the code. The one blocker is gone: the phone dashboard cards now fit the screen and truncate their titles. The headmaster's dashboard no longer links to the desk or to member pages. Each empty list shows a single primary button, the stocktake list has no primary button per row, and the phone report page has a Select. Member loan cards keep the whole title and due date, and the overdue hero is danger-toned. One item, FA-22, is not fixed. Its empty state is now compact, but the overdue queue sits exactly where it did, because the side panel sets the height of the first grid row. That leaves a 215px empty gap in the left column of the idle desk. Four new problems are worth fixing before release. One is minor: five more library lists still show two identical primary buttons when they are empty. Three are polish: the member header title sits at the top of its 64px avatar, the long follow-up link pushes the phone dashboard's overdue card title onto two lines, and the desk shortcut icon circles touch the row dividers.",
+      "items": [
+        {
+          "id": "FA-01",
+          "result": "fixed",
+          "note": "Checked on admin and kepsek mobile full, pustakawan mobile fold and admin desktop fold. On a phone every card fits the screen. Popular-title and overdue rows truncate their titles and end in the badge and chevron inside the card. On desktop the cards in a row share one height. The grid is `grid grid-cols-1 gap-6 lg:grid-cols-3` (library-dashboard-view.tsx:116). The only cut cell is the 7-figure collection strip, and that is its intended sideways scroll with an edge fade.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-02",
+          "result": "fixed",
+          "note": "Seen on admin mobile full. The 'Kembalikan' button is out of the card corner. It is its own column `action` with `card: meta` (desk-overdue-table.tsx:124-148), the corner keeps only the ... menu, and the full book title shows. The meta row wraps, so the button sits on its own line under the DueBadge instead of beside it. The text is no longer squeezed.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-03",
+          "result": "fixed",
+          "note": "Seen on admin desktop fold. The right column shows the 'Kode kartu anggota' field, the Masuk button and an idle panel (IdCard IconCircle with the 'Arahkan kartu anggota ke kamera atau pemindai' line). The camera frame ends at about y=868 in the 900px viewport, so the screen fits. The phone layout stacks cleanly.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-04",
+          "result": "fixed",
+          "note": "Seen on kepsek desktop fold and mobile full. There is no 'Buka meja sirkulasi' link, the four tiles are plain stats without chevrons, latest-loan rows have no chevron, and the overdue card has no follow-up link. The code checks useCan('manage_library_circulation') (library-dashboard-view.tsx:49-97) and useCan('manage_library_members') (dashboard-activity-lists.tsx:48-51, 94, 113-117). Popular titles still link to the catalogue, which kepsek can open.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-05",
+          "result": "fixed",
+          "note": "Admin mobile loan rules: the toolbar keeps only 'Kebijakan umum', and 'Tambah aturan' appears once, in the empty state. Admin desktop settings: the same. The library violations page (admin mobile library__violations fold) has the header primary 'Catat pelanggaran' plus a secondary copy in the empty state. The listed shot discipline__violations shows a different module (features/discipline), not this view, though it also shows a secondary copy now.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-06",
+          "result": "fixed",
+          "note": "Pustakawan mobile: the stocktake card has a body-text title and a chevron, with no button in the corner. Admin desktop: 'Lanjutkan pindai' is a small secondary button. The code uses `variant=secondary`, `card: hidden`, and onRowActivate opens the session (stocktake-view.tsx:77-125). The listed shot school__learning is not a library page.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-07",
+          "result": "fixed",
+          "note": "Admin mobile full: one tab row (the hub's), then a 'Jenis laporan' Select. The TabsList is `max-md:hidden`, and the Select is `md:hidden` (library-reports-view.tsx:164-179).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-08",
+          "result": "fixed",
+          "note": "There is no capture3 --full shot, so this was judged on admin/mobile-light/library__members__userId--fold.png. The loan card shows the whole title 'Sapiens: Riwayat Singkat Umat Manusia' and the full badge 'Terlambat 34 hari (jatuh tempo 15 Okt)'. The IconCircle is `max-sm:hidden`, and the title is `line-clamp-2` (member-loan-row.tsx:53-57).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-22",
+          "result": "not-fixed",
+          "note": "The session EmptyState is now `variant=\"compact\"` (loan-desk-view.tsx:174-180), but the overdue queue did not move. Before and after, the 'Terlambat' heading sits at y=757 on admin desktop and its rows start below the 900px fold. Row 1 of the grid is as tall as the right column (Hari ini plus Pintasan, about 500px), and the overdue wrapper spans both columns in row 2. Compacting the left card therefore only grew the empty gap in the left column, which now runs from about y=500 to y=715.",
+          "stillToDo": "apps/web/features/library/components/loan-desk-view.tsx. At line 94, add `lg:grid-rows-[auto_1fr]` to the grid. At line 185, give DeskTodayPanel `className=\"max-lg:order-last lg:col-start-2 lg:row-start-1 lg:row-span-2\"`. At line 187, change the overdue wrapper from `min-w-0 lg:col-span-2` to `min-w-0 lg:col-start-1`. The queue then sits in the left column directly under the session card and starts near y=520. Phone order is unchanged. If the six-column table is too wide for that column, hide the guardian-phone column at lg."
+        },
+        {
+          "id": "FA-23",
+          "result": "fixed",
+          "note": "Judged on admin mobile fold and desktop fold (there is no --full after shot). The avatar is now AppPage `leading` beside the name, so the lone avatar row inside the card is gone. The facts sit two to a row on a phone and three on desktop (member-detail-view.tsx:192-215). One leftover alignment problem is reported as a new finding.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-24",
+          "result": "fixed",
+          "note": "Siswa mobile full: the overdue hero is danger-toned (red surface and red 'Terlambat' pill), which matches the DueBadge, and the 'Jelajahi katalog' link is gone.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-25",
+          "result": "fixed",
+          "note": "Pustakawan desktop: the page reads 'Daftarkan diri Anda di halaman Anggota...', with a secondary 'Buka halaman Anggota' button and a 'Jelajahi katalog' text link. The code checks useCan, and notMemberBodyStaff and openMembers exist in both id and en (my-library-view.tsx:73-95, library.id.json:1522-1523).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-26",
+          "result": "fixed",
+          "note": "Admin desktop stocktake session: the live figure reads '2 Belum terpindai' with an amber hourglass icon instead of the red 'Hilang'. The code uses progress.remaining (stocktake-session-view.tsx:267, library.id.json:935).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-27",
+          "result": "fixed",
+          "note": "The violation dialog shot shows 'Anggota *'. The code adds `required` to both dialogs, and the visit dialog's only in the member branch (violation-record-dialog.tsx:110, visit-record-dialog.tsx:112).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-28",
+          "result": "fixed",
+          "note": "Admin mobile visits: the date range pill is quiet (not accent-filled), with no clear x and no 'Reset filter'. The code passes defaultFrom and defaultTo (visits-view.tsx:77-78).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-29",
+          "result": "fixed",
+          "note": "Admin desktop and mobile members: the column reads 'Riwayat terlambat', right-aligned, with '-' for zero, and the normal 'Aktif' is muted text rather than an accent badge. The second listed shot (school__users) belongs to the users page, not this unit.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-30",
+          "result": "fixed",
+          "note": "Catalogue desktop, members desktop and mobile, copies mobile, and visits mobile now show the row name as semibold body text, not green links. Rows open through onRowActivate (catalogue-view.tsx:138 and 271, members-view.tsx:136 and 295). Visits underline the name on hover only (visits-view.tsx:105-110).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-31",
+          "result": "fixed",
+          "note": "Pustakawan desktop reports: 'Unduh laporan' is a secondary button, not a primary 'Ekspor XLSX'. The empty report offers a secondary 'Lihat bulan sebelumnya'. On admin mobile the download moved into the ... menu.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-32",
+          "result": "fixed",
+          "note": "Satpam mobile copies: the placeholder reads 'Cari barcode atau RFID' in full.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-57",
+          "result": "fixed",
+          "note": "Admin desktop Tambah judul dialog: 'Cari ISBN' is a trailing secondary button beside the ISBN field, and the grey hint panel is gone.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-58",
+          "result": "fixed",
+          "note": "Admin desktop class loans: 'Tinjau pasangan' is primary (disabled) with the caption 'Pilih kelas dan judul untuk meninjau' beside it.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-59",
+          "result": "fixed",
+          "note": "Admin mobile import: the secondary 'Unduh templat XLSX' sits above the dropzone, and the stepper reads Unggah / Pemetaan / Pratinjau / Hasil on one line each.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-60",
+          "result": "fixed",
+          "note": "Admin mobile-dark catalogue: the 'Tempo' card has no '-' subtitle line, and the desktop cell keeps '-'. The dash is `max-md:hidden` (catalogue-view.tsx:147).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-61",
+          "result": "fixed",
+          "note": "Admin desk, light and dark: the 'Kunjungan hari ini' tile uses DoorOpen in purple, as on the dashboard, and the shortcut circles are tinted (blue, purple, amber, green). desk-today-tiles.ts:2 and 48 use DoorOpen.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-62",
+          "result": "confirmed-in-code",
+          "note": "There is no after shot of the dialog. loan-rules-view.tsx:282 now uses `<Field label={t(\"allowLoans\")} orientation=\"inline\">`, and Field supports 'inline' (packages/ui/src/components/field.tsx:25, 201-222).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-63",
+          "result": "fixed",
+          "note": "Admin mobile visits: the stats read 'Kunjungan hari ini', 'Anggota unik hari ini' and 'Total pengunjung hari ini'. The odd third cell spans the row as the shared strip intends.",
+          "stillToDo": ""
+        }
+      ],
+      "newFindings": [
+        {
+          "severity": "minor",
+          "route": "/library/catalogue, /library/members, /library/stocktake, /library/visits, /library/catalogue/[titleId]",
+          "role": "admin, pustakawan",
+          "viewport": "all",
+          "shot": "capture3/shots/pustakawan/mobile-light/library__stocktake--fold.png",
+          "title": "Five more library lists show two identical primary buttons when empty",
+          "description": "FA-05 fixed only loan rules and violations. The same pattern remains in five other views: the page header carries a primary button (Tambah judul, Daftarkan anggota, Mulai sesi baru, Catat kunjungan, Tambah eksemplar), and the list's EmptyState repeats the same primary button. A new school with an empty catalogue, member list, stocktake list, visit log or copy list sees two filled buttons. None of the screenshots shows it because the demo lists have rows.",
+          "cause": "The same button is passed both as AppPage primaryAction and as the EmptyState action in five places: catalogue-view.tsx:227 and 291, members-view.tsx:234 and 316 (registerButton), stocktake-view.tsx:115 and 136 (startButton), visits-view.tsx:181 and 244 (recordButton), title-detail-view.tsx:195 and 246.",
+          "fix": "Do what FA-05 did for violations-view.tsx:269-286. In each EmptyState, pass a `variant=\"secondary\"` copy of the action, keeping the same icon, label and onClick, or drop the action and let the header primary stand.",
+          "files": [
+            "apps/web/features/library/components/catalogue-view.tsx",
+            "apps/web/features/library/components/members-view.tsx",
+            "apps/web/features/library/components/stocktake-view.tsx",
+            "apps/web/features/library/components/visits-view.tsx",
+            "apps/web/features/library/components/title-detail-view.tsx"
+          ],
+          "causedByFixRound": false
+        },
+        {
+          "severity": "polish",
+          "route": "/library/members/[userId]",
+          "role": "admin, pustakawan",
+          "viewport": "mobile and desktop",
+          "shot": "capture3/shots/admin/mobile-light/library__members__userId--fold.png",
+          "title": "Member name sits on the top edge of its 64px avatar, not beside its middle",
+          "description": "Since FA-23 moved the avatar into the page header, the name 'Guru Contoh' aligns with the top of the 64px avatar. On the phone the name's centre is about 35px above the avatar's centre, and on desktop about 16px above. The header looks unbalanced.",
+          "cause": "packages/ui/src/components/page-header.tsx:245-259: the heading grid is `items-start`. The leading cell is `self-center`, but the h1 is not, so a 64px leading item (member-detail-view.tsx:194 `<Avatar size={64}>`) makes a tall row with the title pinned to its top.",
+          "fix": "In page-header.tsx:259, add `hasLeading && !description && \"self-center\"` to the h1 class list, so a title without a description centres on its avatar. Alternatively, use `size={48}` in member-detail-view.tsx:194.",
+          "files": [
+            "packages/ui/src/components/page-header.tsx",
+            "apps/web/features/library/components/member-detail-view.tsx"
+          ],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "polish",
+          "route": "/library",
+          "role": "admin, pustakawan",
+          "viewport": "mobile",
+          "shot": "capture3/shots/admin/mobile-light/library--full.png",
+          "title": "Phone dashboard: the overdue card title wraps to two lines beside a long link",
+          "description": "Now that the cards fit the phone, the header of the 'Paling lama terlambat' card shows its action link 'Tindak lanjuti di sirkulasi'. The link takes half the width and breaks the card title onto two lines. Before the fix, the link sat off-screen.",
+          "cause": "dashboard-activity-lists.tsx:112-117: the CardHeader action is a TextLink with the long followUpAll label at every width.",
+          "fix": "Hide the link below sm (`className=\"max-sm:hidden\"` on the TextLink). The red 'Terlambat' tile above already opens /library/desk#desk-overdue. Alternatively, use a short phone label such as 'Tindak lanjuti'.",
+          "files": ["apps/web/features/library/components/dashboard-activity-lists.tsx"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "polish",
+          "route": "/library/desk",
+          "role": "admin, pustakawan",
+          "viewport": "desktop",
+          "shot": "capture3/shots/admin/desktop-light/library__desk--full.png",
+          "title": "Desk shortcut icon circles touch the row dividers and the card's bottom edge",
+          "description": "In the 'Pintasan' card, each 32px tinted icon circle fills its dense row from divider to divider. The last circle touches the bottom border of the card. The tint added by FA-61 makes the crowding more visible than the grey circles did.",
+          "cause": "desk-today-panel.tsx:124-130: `<List dense>` rows put an `IconCircle size=\"sm\"` (32px) in a row only about 35px tall, with no vertical padding.",
+          "fix": "Drop `dense` from the List at desk-today-panel.tsx:124 so rows get the normal row padding, or keep dense and use a smaller circle (an xs size or a 28px class).",
+          "files": ["apps/web/features/library/components/desk-today-panel.tsx"],
+          "causedByFixRound": false
+        }
+      ]
+    },
+    {
+      "unit": "settings-supervision",
+      "score": 7.5,
+      "verdict": "Most of this unit landed well. The settings hub on a phone is now a real grouped settings list. The theme, security, session, branding and report-header pages are clean, and the school-setup, year-wizard and supervision report screens no longer show dead or empty filler. Three things still miss the bar. First, the setup checklist on a phone got worse: moving the counts to the row's trailing side made the title column too narrow, so 'Penempatan siswa ke kelas' is cut off after 'ke' with no ellipsis, the 'Opsional' badges drop onto their own line, and the descriptions are cut short. Second, the supervision cycle page still has the orphan density and column icon row over its two-row table. The fixer reported adding viewOptions={false}, but that change is not in the merged code. Third, on /school/learning the Mapel tab still puts 'Tambah mapel' in the table toolbar (a full-width bar above the search on a phone). The academic plumbing for a header primary action exists, but the school-owned SubjectsView is still a body section. The fix round also introduced two smaller problems: the leave-issuer text tells the reader to open notifications while the primary button opens the queue, and the shared stat strip now gives its cells unequal widths.",
+      "items": [
+        {
+          "id": "FA-15",
+          "result": "partly",
+          "note": "Stepper half is fixed: on the after image it spans about 460px and the labels sit on one line. The orphan density and column icon row above the 'Observasi terjadwal' table is still there (after image, y about 446). The fixer said the table passes viewOptions={false}, but grep finds no viewOptions in apps/web/features/supervision, and the DataTable call at supervision-cycle-detail-view.tsx:218-240 has no such prop.",
+          "stillToDo": "apps/web/features/supervision/components/supervision-cycle-detail-view.tsx:218-228: add `viewOptions={false}` to the DataTable props, next to `searchable={false}`. The prop exists in packages/ui data-table.tsx:108. With no search, filters or actions, the toolbar is then not drawn at all (data-table-toolbar.tsx:241)."
+        },
+        {
+          "id": "FA-18",
+          "result": "confirmed-in-code",
+          "note": "No after image of either report route. supervision-cycle-report-view.tsx:106-117 passes the cycle name as title, the same tDetail('summary') description and trail.cycle(name) as the Observasi tab. teacher-supervision-report-view.tsx:264-269 passes nav={false} and the trail Supervisi > cycle > Hasil. use-cycle-trail.ts:38 makes the trail root navGroupLabel 'Supervisi', which matches the list h1 (seen as 'Supervisi' on the cycle page's trail and the my-report h1).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-19/academic",
+          "result": "partly",
+          "note": "/school/structure is fixed on both widths: 'Tambah tingkat' is the header primary, 'Pakai templat' is a secondary (in the overflow menu on a phone), and rows end in a RowActionsMenu. grade-levels, tracks, rooms and subject-offerings all use primaryAction and RowActionsMenu. /school/learning is only half fixed. Row actions are now '...' menus, but 'Tambah mapel' is still a DataTable toolbar action: right of the search on desktop, and a full-width green bar above the search on a phone (mobile after image). learning-view.tsx supports `kind: \"page\"` sections, but subjects (:26) and periods (:32) are still `kind: \"body\"`.",
+          "stillToDo": "apps/web/features/academic/components/learning-view.tsx:26 and :32: switch subjects and periods to `kind: \"page\"`. In apps/web/features/school/components/subjects-view.tsx (school stream), accept `{ page: HubPageProps }`, render `<AppPage {...page} primaryAction={canManage ? <Button icon={<Plus/>}>Tambah mapel</Button> : undefined}>` and drop the add button from toolbarActions, as subject-offerings-view.tsx:173 does. Do the same for periods-view (period-table's add button)."
+        },
+        {
+          "id": "FA-21/academic",
+          "result": "fixed",
+          "note": "Import page after image: h1 is the area label 'Siswa dan kelas', no description, tab strip at y about 172 as on the classes page. The help text sits in the 'Siapkan berkas' card. years-view.tsx:198 has no title or description and moved yearHelp into the body (:214). new-year-setup-view.tsx:115 passes only nav. The phone after image of Tahun ajaran baru shows h1 'Tahun ajaran' with the strip right under it and the description inside the first card.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-13/inbox",
+          "result": "fixed",
+          "note": "action-inbox-view.tsx:27-69 offers historyLeave only when useCanSubmitPermit() is true. The librarian's all-clear inbox (after image) shows the empty state with no looping link. The fixer chose not to add the planned /late-arrivals history link, because that page has no staff history and would loop back to the inbox. That is a sound deviation from the plan. The permits half is also visible on /leave-requests: 'Buka antrean izin' is primary and 'Buka notifikasi' is secondary (see the new finding on its body text).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-33/academic",
+          "result": "confirmed-in-code",
+          "note": "today-period-banner.tsx:37 now renders clockRange(starts_at, ends_at, locale), which gives '09.30 – 10.15' in Indonesian. The banner is not visible in the photographed state. The schedule stream's pill on the same /schedule phone screen now reads 'Jam 4 09.30 – 10.15' where it read '13:45-18:00'.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-42",
+          "result": "fixed",
+          "note": "Kepsek phone 'Supervisi saya' with no observations now shows only the EmptyState 'Belum ada observasi selesai'. The dash tiles, empty meters and 'Unduh laporan' button are gone. teacher-supervision-report-view.tsx:61-69 returns the EmptyState early; :73 uses 'sm:grid-cols-2' without grid-cols-1.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-45",
+          "result": "confirmed-in-code",
+          "note": "The observation detail page was not photographed (the listed shot is the observe form, which is now left-aligned narrow). observation-detail-view.tsx:147 uses variant='narrow'. Prose has max-w-prose (:43). An unknown key falls back to t('criterionFallback', { n }) ('Kriteria {n}' and 'Criterion {n}' in both catalogs, :185). The trail is Supervisi > cycle > Hasil > teacher (:155-158).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-51",
+          "result": "regressed",
+          "note": "The counts are no longer cut off: they sit in ListRow trailing ('13 jam pelajaran', '2 pendaftaran'). But the trailing column now takes width from the title and meta column for the whole row (phone after image). As a result: (1) the title 'Penempatan siswa ke kelas' is clipped to 'Penempatan siswa ke' with no ellipsis, because ListRow's `truncate` wraps a `flex flex-wrap` span, so no ellipsis is drawn; (2) the 'Opsional' badge drops onto its own line under 'Penugasan mengajar' and 'Tugas piket', so those rows are taller and differ from the rest; (3) descriptions are cut to about 20 characters ('Daftar mata pelajaran yang...', 'Siswa yang sudah ditempatkan ke...'). None of this was in the before image. Desktop is fine.",
+          "stillToDo": "apps/web/features/onboarding/components/checklist-section.tsx:105-130: (a) pass `titleLines={2}` to ListRow, and replace the title's `<span className=\"flex flex-wrap items-center gap-2\">` with inline content `<>{tStep(\"label\")}{!step.required && <Badge tone=\"neutral\" className=\"ml-2 align-middle\">…</Badge>}</>` so a long label wraps instead of being clipped and the badge follows the text. (b) On phones show only the number in trailing: `<span className=\"sm:hidden\">{step.count}</span><span className=\"max-sm:hidden\">{tStep(\"count\", { count: step.count })}</span>`, and keep the full count for screen readers with `sr-only` on the phone. The description then keeps most of the row width."
+        },
+        {
+          "id": "FA-52",
+          "result": "fixed",
+          "note": "Zona waktu reads 'WITA (Waktu Indonesia Tengah)' on desktop and phone after images. The label comes from onboarding timezones.* in id and en ('WITA (Central Indonesia Time)'). school-profile-form.tsx:136 keeps the IANA value.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-53/academic",
+          "result": "confirmed-in-code",
+          "note": "grade-levels-view.tsx:238-262, tracks-view.tsx:200-222 and rooms-view.tsx:205-227 put `required` on Field, set noValidate on the form, and show a Field error after submit ('Isi kode tingkat, misalnya X.' and similar). save() sets submitted and returns while a field is empty. The photographed subject dialog (school stream) now shows the asterisks too.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-54",
+          "result": "fixed",
+          "note": "The setup checklist (desktop and phone after images) reads 'Daftar tingkat kelas (misalnya kelas 1 sampai 6) yang menjadi dasar pembagian kelas.' with count '3 tingkat'. The en catalog says 'grade levels' and '# grade level(s)'.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-55",
+          "result": "fixed",
+          "note": "Phone grade-level cards now show 'Kelas X' with a labelled 'Urutan 1' field row. The bare code and sequence lines are gone, and actions are in a '...' menu.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-56/academic",
+          "result": "fixed",
+          "note": "Phone after image of Tahun ajaran baru: the idle 'Pilih tahun ajaran' empty card under the step card is gone (new-year-setup-view.tsx:166 renders null while no plan exists). The info alert now carries a secondary 'Tambah tahun ajaran' button for managers (year-pair-step.tsx, useCan('manage_master_data')).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-40/settings",
+          "result": "fixed",
+          "note": "The student's 'Kanal per jenis' now lists 7 kinds where it listed 12 (no attendance, substitution, new-leave-request or late-arrival-opened rows). notifications/api.ts:86-128 adds NOTIFICATION_KIND_AUDIENCE and useOwnNotificationKinds. notification-settings-view.tsx:78 uses it, and notification-defaults-view.tsx:34 keeps the full list. The fixer reported needs-shared, but the shared half has since landed.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-41",
+          "result": "fixed",
+          "note": "The three theme tiles now stack full width inside the card on desktop, each hint on one line. The squeezed 110px columns are gone.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-42",
+          "result": "fixed",
+          "note": "Phone settings hub: each section is one framed list of rows with a tinted IconCircle, title, description and chevron, which reads like a native settings screen.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-43",
+          "result": "fixed",
+          "note": "Kepsek desktop hub: 'Akses dan keamanan' now shows only its heading over the single 'Jejak audit' card, without the description promising users, roles and sessions. 'Akun saya', which is complete, keeps its description.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-47",
+          "result": "fixed",
+          "note": "The passkey empty state is now one compact row ('Belum ada passkey' with the 'Tambah passkey' secondary button) on both desktop and phone. It no longer outweighs the 2FA card.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-48",
+          "result": "fixed",
+          "note": "The 2FA body is in CardContent: there is a clear gap before the button and normal bottom padding. The status line now reads 'Disarankan untuk akun dengan akses data sekolah.' instead of repeating the 'Tidak aktif' badge.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-49",
+          "result": "fixed",
+          "note": "/settings/session is now one 'Aturan sesi' card holding the 'Lama sesi' days field and the 'Masuk di satu perangkat' switch.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-66",
+          "result": "confirmed-in-code",
+          "note": "teacher-supervision-report-view.tsx:99-110 and observation-detail-view.tsx:177-190 both draw the muted 'w-5 text-right text-label text-fg-muted tabular-nums' number column. The '1.' prefix is gone.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-59",
+          "result": "fixed",
+          "note": "Phone branding: the logo and favicon previews sit in a 64px slot, so 'Logo' and 'Favicon' and their hints start at the same x. The hints read 'Maksimal 2 MB' and 'Maksimal 512 KB'.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-60",
+          "result": "fixed",
+          "note": "Phone Kop laporan and Merek sekolah show a secondary 'Pratinjau' button at the top, which opens a bottom Sheet (preview-sheet.tsx, lg:hidden). The trailing preview card is max-lg:hidden and no longer appears at the end of the page.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-61",
+          "result": "fixed",
+          "note": "Student phone notification matrix: kind labels and toggles now start on the card title's 20px inset (px-5). The desktop table has pl-5 on the first column and pr-5 on the last (notification-channel-matrix.tsx:88-130).",
+          "stillToDo": ""
+        }
+      ],
+      "newFindings": [
+        {
+          "severity": "minor",
+          "route": "/leave-requests",
+          "role": "admin (issuer without a submit permission)",
+          "viewport": "desktop-light",
+          "shot": "capture3/shots/admin/desktop-light/leave-requests--fold.png",
+          "title": "Leave issuer text sends the reader to notifications while the primary button opens the queue",
+          "description": "The 'Penerbitan surat izin' empty state says approved requests go to the reader's notifications and tells them to open the notifications. Its primary button is now 'Buka antrean izin' (the inbox queue), with 'Buka notifikasi' only as a secondary link, so the sentence and the main action disagree.",
+          "cause": "apps/web/messages/id.json:1574 app.permits.leave.issuerQueueUnavailableBody (and its en twin) was written for the old notifications-only action. leave-requests-view.tsx:95-107 now makes /inbox?type=leave the primary.",
+          "fix": "Reword issuerQueueUnavailableBody to match the queue, e.g. id 'Pengajuan yang sudah disetujui wali kelas masuk ke antrean Perlu tindakan. Buka antreannya untuk meninjau pengajuan dan menerbitkan suratnya.' and en 'Requests approved by the homeroom teacher wait in your action queue. Open it to review them and issue the letters.'",
+          "files": ["apps/web/messages/id.json", "apps/web/messages/en.json"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "polish",
+          "route": "/supervision/cycles/[cycleId]",
+          "role": "admin",
+          "viewport": "desktop-light",
+          "shot": "capture3/shots/admin/desktop-light/supervision__cycles__cycleId--fold.png",
+          "title": "Stat strip cells now have unequal widths",
+          "description": "The four-figure strip on the cycle page used to split into four equal cells (288px each). It now gives the 'Observasi terjadwal' cell about 348px and the others about 262 to 276px, so the dividers fall unevenly and the strip looks unbalanced on every screen that uses it.",
+          "cause": "packages/ui/src/components/stat.tsx:79-80: compact cells use `flex-[1_0_auto]` (from d38a62c7 in the shared round). Free space is added on top of each content width, so cells with longer labels stay wider.",
+          "fix": "In ROOT_CLASS.compact, replace `flex-[1_0_auto]` with `flex-[1_0_0%] sm:min-w-max`. Cells then share the row equally when everything fits and never shrink below their content, so the strip still scrolls instead of crossing a divider. Keep `max-sm:min-w-0` on paired cells (stat.tsx:244).",
+          "files": ["packages/ui/src/components/stat.tsx"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "polish",
+          "route": "/settings/report-header",
+          "role": "admin",
+          "viewport": "mobile-light",
+          "shot": "capture3/shots/admin/mobile-light/settings__report-header--full.png",
+          "title": "'Baris yang ditebalkan' is a radio group with a single option",
+          "description": "While the kop has no filled line, the 'Baris yang ditebalkan' field shows one pre-selected radio ('Otomatis, baris yang sama dengan nama sekolah') with nothing to choose between, plus a hint. Separately, the ghost 'Tambah baris' button's icon sits about 32px in from the field edge above it.",
+          "cause": "apps/web/features/settings/components/report-header-view.tsx:264-285 always renders the emphasis Field and adds one RadioGroupItem per non-empty line. At :250-259 the ghost Button keeps its own horizontal padding, which pushes it in from the field edge.",
+          "fix": "Render the emphasis Field only when at least two lines are non-empty: `lines.filter((l) => l.trim()).length >= 2 && (<Field …>)`. Give the 'Tambah baris' button `className=\"-ml-3 self-start\"` so its icon lines up with the field edge.",
+          "files": ["apps/web/features/settings/components/report-header-view.tsx"],
+          "causedByFixRound": false
+        }
+      ]
+    },
+    {
+      "unit": "student-affairs",
+      "score": 8.5,
+      "verdict": "The student-affairs screens now meet the bar almost everywhere. Of the 25 blocker, major and minor items, 24 are fixed or confirmed in code, and 1 is only partly fixed: FA-21 on the promotion page. That page dropped its own header, but its help sentence now sits as a muted line under the wizard card. The sibling 'Tahun ajaran baru' wizard puts the same kind of sentence inside its card, so the two wizards in one area now differ. The changes that hold, all seen in the after images: area headers stay put (Tata tertib, Konseling BK, Kegiatan siswa, Tahun ajaran); repeated primary buttons became one header primary plus a quiet secondary; the settings editors left the Pelanggaran tabs; the early-warning tiles span their row; the SP legend sits under its own ticks; the mentoring member table uses one row menu; the mentor's snapshot now sits in three columns. Nothing regressed visibly. New findings, all minor or polish: the 'Kandidat SP' rows still open the general profile while the tab beside them opens the discipline record; the parallel fixes left two copies of the report hook; the early-warning detail's primary button has no icon; the snapshot cards have ragged bottom edges.",
+      "items": [
+        {
+          "id": "FA-14",
+          "result": "fixed",
+          "note": "guru/mobile-light/substitutions after: the 'Untuk saya' empty state has no action and the header keeps the only 'Minta pengganti'. The outgoing branch is confirmed in substitutions-view.tsx:135-141: it shows a secondary Button only when direction is 'outgoing'. The shots listed for this item (journal, violations) are not the substitutions page.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-21/promotion",
+          "result": "partly",
+          "note": "Header fixed: school/promotion after shows h1 'Tahun ajaran', eyebrow 'Data sekolah', and the tab strip at the same height as its siblings (y=172 on desktop). But the help text did not move into the first card's description as the fix asked. It is a muted <p> under the wizard card, so on desktop it reads like a footnote and on a phone it falls below the disabled 'Tampilkan rencana'. The sibling new-year-setup wizard heads its card with 'Pilih tahun ajaran' plus its description (new-year-setup-view.tsx:159-160), so the two wizards in one area now disagree. The promotion key 'idleTitle' ('Pilih tahun ajaran') exists but is unused.",
+          "stillToDo": "apps/web/features/promotion/components/promotion-view.tsx:208-217: pass `title={t(\"idleTitle\")}` and `description={t(\"description\")}` to <YearPairStep>, as new-year-setup-view.tsx:159-160 does. At lines 222-225, replace the `plan === undefined ? (<p className=\"max-w-prose text-body-sm text-fg-muted\">{t(\"description\")}</p>)` branch with `null`."
+        },
+        {
+          "id": "FA-56/promotion",
+          "result": "fixed",
+          "note": "admin/mobile-light and desktop-light school__promotion after: no idle EmptyState card. The 'Buat dulu tahun ajaran tujuan' Alert now carries a secondary '+ Tambah tahun ajaran' button (year-pair-step.tsx, gated on manage_master_data). Only the placement of the remaining hint line is open, and that belongs to FA-21.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-05",
+          "result": "fixed",
+          "note": "admin/mobile-light discipline__violations after: the pill tabs are only 'Catatan poin' and 'Kandidat SP' and fit one line. The catalog and policy editors are header secondaryActions: the '...' button beside the h1 on a phone, and 'Katalog pelanggaran' and 'Kebijakan SP' buttons on desktop. Each opens a Sheet (side right, which becomes a bottom sheet on a phone) in violations-view.tsx:59-133. The search field is now full width. The list still starts about halfway down the phone screen because of the header, area tabs, search and filter chips, but the tab overflow that was complained about is gone.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-06/discipline",
+          "result": "fixed",
+          "note": "admin mobile-light, mobile-dark and desktop discipline__violations after, and gurubk counseling after: the empty-state 'Catat pelanggaran' and 'Catat konseling' are outlined secondary buttons; the header keeps the only filled primary. Code: violations-ledger-view.tsx:268-281 and counseling-view.tsx:180-191 use variant=\"secondary\". On gurubk's phone the raised centre tab 'Catat' remains, but it is the active navigation destination, not a page action.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-07",
+          "result": "fixed",
+          "note": "admin/desktop-light mentoring__my-groups after: one 'Buat kelompok' in the header, no button in the empty state, and no search box or view icons over the empty list. Code: mentor-groups-view.tsx sets searchable={isLoading || items.length > 0 || search !== \"\"}; the empty-state action shows only for scope 'all' and is secondary.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-08",
+          "result": "fixed",
+          "note": "admin and gurubk desktop analytics after: the three level tiles (Berisiko, Siaga, Aman) span the full row in equal thirds instead of 80px squares at the left; the phone shows three equal tiles.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-09",
+          "result": "fixed",
+          "note": "admin desktop and mobile discipline record, and siswa my-discipline (desktop and phone), after: the markers keep only their ticks. Each legend item ('SP 1 · 25 / Belum tercapai') is right-aligned and ends under its own tick; there is no second row of SP labels. On the staff record '0 poin' now comes before '25 poin lagi menuju SP 1'.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-14",
+          "result": "fixed",
+          "note": "admin mobile and desktop mentoring group after: the name is plain text and the row ends in a single '...' RowActionsMenu (the remove action has tone danger and keeps its confirm, per mentor-group-members-panel.tsx:93-130). 'Tambah anggota' is a default-size button in the DataTable toolbar, full width on a phone, and '1 dari 15 anggota' moved into the header description. Rows open the mentor's student view.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-15/discipline",
+          "result": "fixed",
+          "note": "student-discipline-view.tsx:34 exports useOpenStudentDisciplineReport. admin/mobile-light students__studentId after: only the primary 'Catat tindak lanjut konseling' plus the overflow menu; the stacked 'Cetak laporan' row is gone. Desktop: 'Cetak laporan' and 'Ubah data' are the same size. The profile view uses a duplicate hook of its own (reported as a new finding).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-16/analytics",
+          "result": "fixed",
+          "note": "admin and gurubk desktop analytics after: h1 'Konseling BK', eyebrow 'Kesiswaan', tab strip at y=172, no per-tab description. The guru, who has only this page, sees h1 'Peringatan dini'. The ordering hint moved into the caption 'Diurutkan dari skor tertinggi · Data dihitung ...'.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-16/discipline",
+          "result": "fixed",
+          "note": "After images for violations (admin, gurubk, satpam), warning letters (admin, satpam) and counseling (gurubk): every h1 reads 'Tata tertib' or 'Konseling BK' under the eyebrow 'Kesiswaan', and the active tab names the page. No title or eyebrow is passed in violations-view, warning-letters-view or counseling-view.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-16/mentoring",
+          "result": "fixed",
+          "note": "admin desktop my-groups and mobile groups after: h1 'Kegiatan siswa', eyebrow 'Kesiswaan', the same for both mentoring tabs; mentor-groups-view.tsx passes no title or eyebrow.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-39",
+          "result": "fixed",
+          "note": "guru/desktop-light grading after: the count badges are gone. The captions read 'Bobot 1 · 1 kosong', 'Bobot 2 · 2 kosong' and so on. The empty report score is a plain muted '-' with no dotted underline. A set score keeps its link style, which is intended.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-40",
+          "result": "fixed",
+          "note": "admin/mobile-light grading after: class and 'Semester aktif' share row 1, and 'Bahasa Indonesia' spans row 2 untruncated (before it read 'Bahasa Indone...').",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-23",
+          "result": "fixed",
+          "note": "wakepsek/mobile-light profile after: the profile avatar has the same mint accent as the header's WC button, and 'Wakil Kepala Sekolah Contoh' wraps onto two lines instead of truncating.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-24",
+          "result": "fixed",
+          "note": "admin mobile-light and desktop analytics/[studentId] after: each signal is a title-size figure plus a caption unit ('0 dari 2 hari tidak hadir', '0 poin aktif', '0 surat'), with the attendance bar under its figure. The header shows 'NIS 2026001' beside 'Lihat profil siswa'. A missing grade trend reads 'Belum ada data', which is acceptable.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-25",
+          "result": "fixed",
+          "note": "admin desktop and mobile discipline record after: the 'Riwayat konseling' title and body start at the same 20px inset as 'Rekap poin' and 'Catatan pelanggaran' (x=285 on desktop, where it was 281).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-27",
+          "result": "fixed",
+          "note": "The listed guru full-page after was not taken, but guru/mobile-light analytics--fold and admin/mobile-light analytics--full show the same cards. Each card has the avatar and a plain-text name with 'X-A' on a second line, then the 'Aman' badge with 'Skor 0' as meta. There are no loose Kelas or Skor rows, and the chevron sits level with the name.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-30/analytics",
+          "result": "confirmed-in-code",
+          "note": "at-risk-students-view.tsx:252-253 calls onRowActivate, which does router.push(studentRiskHref(item.student_user_id)). analytics/href.ts:5-7 resolves that to /analytics/{id}, which matches that page's 'Peringatan dini' breadcrumb.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-30/discipline",
+          "result": "confirmed-in-code",
+          "note": "violations-ledger-view.tsx:256-257 and issued-letters-panel.tsx:176-177 push studentDisciplineHref(item.student_user_id), which is /discipline/students/{id} (discipline/href.ts:6-7). The sibling 'Kandidat SP' tab still goes to the profile; that is reported as a new finding, since it was outside this item's listed files.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-31",
+          "result": "fixed",
+          "note": "admin and satpam mobile warning-letters after: the empty 'Belum ada surat peringatan' card offers a 'Lihat kandidat SP' text link to /discipline/violations?tab=atRisk (issued-letters-panel.tsx:189-193, key viewCandidates).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-33",
+          "result": "fixed",
+          "note": "admin desktop and mobile mentor student after: attendance reads 'Sakit 2 hari', 'Dispensasi 1 hari', 'Belum lengkap 27 hari'. The Disiplin stats sit two across without wrapping 'Pelanggaran aktif'. The grades card row is padded. On desktop the three cards sit side by side with the term summary full width below. Their uneven heights are reported as a new finding.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-34",
+          "result": "fixed",
+          "note": "admin mobile and desktop after: the textarea has the label 'Rangkuman'; Simpan is the default size (full width on a phone, right-aligned on desktop); the form is held to max-w-prose on desktop (mentor-term-summary-panel.tsx:63-93).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-36",
+          "result": "fixed",
+          "note": "admin/mobile-light mentoring groups after: the placeholder 'Cari kelompok atau guru wali' fits the phone field in full. The 'mine' scope uses myGroups.searchPlaceholder 'Cari kelompok' (mentoring.id.json:55; en 'Search groups').",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-58",
+          "result": "fixed",
+          "note": "gurubk/mobile-light counseling after reads 'Catatan konseling Anda akan muncul di sini.' with no 'Klik baris'. The mentoring catalog has no 'Klik' wording either (mentoring.id.json:99).",
+          "stillToDo": ""
+        }
+      ],
+      "newFindings": [
+        {
+          "severity": "minor",
+          "route": "/discipline/violations?tab=atRisk",
+          "role": "admin",
+          "viewport": "mobile-light",
+          "shot": "capture3/shots/admin/mobile-light/discipline__violations--fold.png",
+          "title": "'Kandidat SP' rows open the general profile while the neighbouring tab opens the discipline record",
+          "description": "On Tata tertib > Pelanggaran, a row in 'Catatan poin' now opens /discipline/students/[id], whose back link says 'Pelanggaran'. A row in the 'Kandidat SP' tab next to it still opens the student's general profile on its discipline tab. The same student opens a different page depending on which pill tab they were found in.",
+          "cause": "apps/web/features/discipline/components/at-risk-panel.tsx:227-229: onRowActivate pushes studentProfileHref(item.student_user_id, \"discipline\"). FB-30 changed only the ledger and the issued letters.",
+          "fix": "In at-risk-panel.tsx import studentDisciplineHref from \"../href\" and push studentDisciplineHref(item.student_user_id) in onRowActivate. Then remove the studentProfileHref import if it is unused.",
+          "files": ["apps/web/features/discipline/components/at-risk-panel.tsx"],
+          "causedByFixRound": false
+        },
+        {
+          "severity": "polish",
+          "route": "/students/[studentId]",
+          "role": "admin",
+          "viewport": "desktop-light",
+          "shot": "capture3/shots/admin/desktop-light/students__studentId--fold.png",
+          "title": "Two copies of the discipline-report hook, and a now-unused report button",
+          "description": "Two agents worked on FB-15 in parallel, and each wrote its own copy of the report hook. The screen is correct, but the code now has two identical hooks. StudentDisciplineReportButton is exported and no longer used by any page.",
+          "cause": "apps/web/features/students/components/use-discipline-report.ts:14 (useOpenDisciplineReport, used at student-profile-view.tsx:47,79) duplicates apps/web/features/discipline/components/student-discipline-view.tsx:34 (useOpenStudentDisciplineReport). StudentDisciplineReportButton at student-discipline-view.tsx:64-82 has no callers.",
+          "fix": "Delete students/components/use-discipline-report.ts. In student-profile-view.tsx import useOpenStudentDisciplineReport from \"../../discipline/components/student-discipline-view\" (or move it to discipline/hooks and import it from there), and update the mock in student-profile-view.test.tsx:38. Delete StudentDisciplineReportButton and fix the doc comment at student-discipline-view.tsx:59-63.",
+          "files": [
+            "apps/web/features/students/components/use-discipline-report.ts",
+            "apps/web/features/students/components/student-profile-view.tsx",
+            "apps/web/features/students/components/student-profile-view.test.tsx",
+            "apps/web/features/discipline/components/student-discipline-view.tsx"
+          ],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "polish",
+          "route": "/analytics/[studentId]",
+          "role": "admin",
+          "viewport": "desktop-light",
+          "shot": "capture3/shots/admin/desktop-light/analytics__studentId--fold.png",
+          "title": "Early-warning detail's primary 'Catat tindak lanjut konseling' has no icon",
+          "description": "The early-warning detail page shows the same follow-up action as the student profile. On the profile it carries the MessagesSquare icon; here it is a bare text button. It is also the only iconless header primary in the Kesiswaan pages.",
+          "cause": "apps/web/features/analytics/components/student-risk-detail-view.tsx:48-53: the Button asChild has no icon prop. student-profile-view.tsx passes icon={<MessagesSquare />} for the same action.",
+          "fix": "Import MessagesSquare from lucide-react and add icon={<MessagesSquare />} to the Button at student-risk-detail-view.tsx:49.",
+          "files": ["apps/web/features/analytics/components/student-risk-detail-view.tsx"],
+          "causedByFixRound": false
+        },
+        {
+          "severity": "polish",
+          "route": "/mentoring/groups/[groupId]/students/[studentId]",
+          "role": "admin",
+          "viewport": "desktop-light",
+          "shot": "capture3/shots/admin/desktop-light/mentoring__groups__groupId__students__studentId--fold.png",
+          "title": "Mentor snapshot cards end at three different heights; at lg the third card sits alone",
+          "description": "The three new side-by-side cards (Presensi bulan ini, Disiplin, Nilai rapor terbit) are 138px, 125px and 91px tall, so their bottom edges are ragged above the full-width summary card. Between 1024px and 1279px the grid has two columns, which leaves the grades card alone in a half-empty second row.",
+          "cause": "apps/web/features/mentoring/components/mentor-student-view.tsx:72: `grid gap-4 lg:grid-cols-2 lg:items-start xl:grid-cols-3`. items-start sizes each card to its content.",
+          "fix": "Drop `lg:items-start`. Each section's root is a Card, so the cards then stretch to one row height. To avoid the lone card at lg, either use `lg:grid-cols-3` straight away (the Disiplin stats are already two-up), or wrap SnapshotGradesSection in `<div className=\"lg:col-span-2 xl:col-span-1\">` with the Card at h-full.",
+          "files": ["apps/web/features/mentoring/components/mentor-student-view.tsx"],
+          "causedByFixRound": true
+        }
+      ]
+    },
+    {
+      "unit": "home-attendance",
+      "score": 7,
+      "verdict": "Most of this unit landed. Of the 21 blocker, major and minor items, 15 are fixed or confirmed in code, and 3 are partly fixed (FA-09, FA-17/visitors, FA-46, plus FA-33/schedule for one leftover placeholder). None of the listed items is worse than before. The staff home now has one primary action. The satpam stat row is gone. Leadership homes say each figure once and are balanced on a desktop. The Buku tamu toolbar, the attendance report filters, the billing tabs, the student profile header and the login buttons all look right now. What still holds the screens back is layout knock-on from the home fixes. The picket and satpam desktop homes have an empty main column. On a phone the notifications filler takes a row of its own, and the admin's own check-in card drops below the insight cards. The student calendar now draws 'Belum lengkap' in nearly the same colour as 'Sakit'. All of these are minor.",
+      "items": [
+        {
+          "id": "FA-09",
+          "result": "partly",
+          "note": "Gone: the empty queue cards for picket (gurupiket phone and desktop), counseling (gurubk) and the deputy (wakepsek). Leadership lost its hero meta and the 'Kelas dipresensi' and 'Sedang daring' tiles (admin, kepsek). The librarian's loans and returns tiles are gone. Still said twice or three times: on pustakawan the hero meta '2 peminjaman terlambat', the '2 Terlambat' tile and the 'Terlambat terlama' card. On admin and kepsek the 'Antrean sekolah' card shows only 'Semua antrean kosong' beside the '0 Menunggu tinjauan' tile. On wakepsek the hero 'Tidak ada yang menunggu keputusan' sits above a '0 Perlu tindakan' tile.",
+          "stillToDo": "(1) apps/web/features/dashboard/home/blocks/librarian.tsx:64-65: set `meta: summary.overdue > 0 ? undefined : t(\"hero.metaClear\")`; the overdue tile and the OverdueCard already carry the count. (2) apps/web/features/dashboard/home/blocks/leadership.tsx:196-213: push the school.queue slot only when `dashboard.isLoading || dashboard.isError || pendingTotal > 0`, the same rule as picket.tsx:139. (3) apps/web/features/dashboard/home/blocks/deputy.tsx:66-85: add `coversTiles: [\"deputy.inbox\"]` to both hero variants, since the hero states the inbox count."
+        },
+        {
+          "id": "FA-10",
+          "result": "fixed",
+          "note": "'Catat kedatangan' is now an outline secondary button on the guru light and admin dark desktop homes, and on every phone home I opened. The hero keeps the only solid primary. check-in.tsx:179-187 always passes variant=\"secondary\".",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-11",
+          "result": "fixed",
+          "note": "The satpam desktop home has no stat row any more: the lone 'Notifikasi belum dibaca' tile and its empty slot are gone. dashboard-view.tsx:188 drops a row that holds only the filler, and TILE_COLUMNS[1] is removed.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-12",
+          "result": "confirmed-in-code",
+          "note": "No after image exists; this is motion. home/entrance.ts adds a module-level homeEntered flag through useFirstEntrance, set once the home has settled. dashboard-view.tsx applies the stagger (entrance()) and countUp only when firstEntrance is true. HomeSkeleton (dashboard-view.tsx:387-405) has the delayed `animate-fade-in [animation-delay:var(--duration-base)]`. One small leftover: the heading Skeleton at dashboard-view.tsx:157 on the `isLoading || !me` path still shows at once, without the delay.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-16",
+          "result": "fixed",
+          "note": "On the satpam phone, the search and the segmented control now stay inside the gutter. On admin desktop the search is about 320px wide with the full placeholder 'Cari nama atau instansi', and the filter sits on the right. gate-board-view.tsx:161 and :169 carry `w-full min-w-0` and `sm:w-72 sm:flex-none lg:w-80`.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-17/attendance",
+          "result": "fixed",
+          "note": "day-stepper.tsx now has the root `flex w-full items-center gap-1.5 sm:w-auto` and the DatePicker `min-w-0 flex-1 sm:w-40 sm:flex-none`. In the after shots of staff-attendance and visitors expected and recap (admin phone), the stepper spans the row under the tabs and the arrows sit at the edges.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-17/visitors",
+          "result": "partly",
+          "note": "The period controls now go in the toolbar under the tabs (expected-guests-view.tsx:192, visitor-recap-view.tsx:187), so they no longer stack under the title. The tab row still moves between sibling pages on a phone. It sits at y≈432 on Tamu hari ini, Tamu terjadwal and Insiden, which have a primary button, and at y≈320 on Rekap kunjungan, which has only the overflow menu. The code comment says the tab row sits at the same height on every Buku tamu page, which is not true.",
+          "stillToDo": "apps/web/features/visitors/components/visitor-recap-view.tsx:224-232: replace the secondaryActions export entry with `primaryAction={<Button variant=\"secondary\" icon={<Download />} onClick={() => setExporting(true)}>{t(\"export\")}</Button>}`. The recap header then has the same action row as the other three tabs, and the tab row stays at one height."
+        },
+        {
+          "id": "FB-15/students",
+          "result": "fixed",
+          "note": "Phone: 'Cetak laporan' is gone from the visible header and sits in the overflow menu, leaving one primary button. Desktop: 'Cetak laporan' and 'Ubah data' are the same size beside the primary. student-profile-view.tsx:165-169 passes it as a secondaryActions entry through the exported useOpenStudentDisciplineReport.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-33/schedule",
+          "result": "partly",
+          "note": "The current-period pill now reads '09.30 – 10.15' on the admin phone, in light and dark. period-span.ts:19 returns clockRange(start, end, locale), and both call sites pass the locale. schedule-form.tsx:106 uses clockLabel. Still open: the subject Select placeholder is the generic 'Pilih'.",
+          "stillToDo": "apps/web/features/schedule/components/schedule-form.tsx:179: change `placeholder={t(\"pick\")}` to `placeholder={tSchedule(\"pickSubject\")}`. Add `\"pickSubject\": \"Pilih mata pelajaran\"` next to pickTeacher under app.schedule in apps/web/messages/id.json (around line 1017), with en 'Choose a subject'. The teacher field already reads 'Pilih guru' through DirectoryPicker."
+        },
+        {
+          "id": "FA-34",
+          "result": "fixed",
+          "note": "Calendar dots and the 'Belum lengkap' legend dot now use bg-status-late (attendance-calendar.tsx:47-49), and the comment is updated. This created a new problem with the Sakit dot, filed under newFindings.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-35",
+          "result": "fixed",
+          "note": "On guru /attendance/reports the title is now 'Presensi dan jurnal', the same as its sibling pages; before it was 'Laporan presensi saya'. The myReportLink secondary action is gone from attendance-view.tsx:260-266.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-36",
+          "result": "fixed",
+          "note": "The admin header no longer has 'Monitor presensi'; only the card's 'Buka monitor' remains. attendance-view.tsx:263 adds the monitor only once a teacher is picked. For the principal, school-attendance-today.tsx:35 uses bodyReportsOnly when !canMonitor, and :47 uses openReportsHub for /reports. Both keys exist in id/en.json:1265-1266.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-37",
+          "result": "fixed",
+          "note": "On the gurubk phone, the no-sessions empty state now has a secondary 'Buka jadwal' button (attendance-view.tsx:324-331).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-38",
+          "result": "fixed",
+          "note": "On the admin phone, Kelas and Tanggal sit in a two-column grid with 'Unduh' full width under them (daily-report-tab.tsx:119, :143). The 'Presensi saya' tab is gone for admin; attendance-reports-view.tsx shows it only to teachers or to readers without view_reports.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-41",
+          "result": "fixed",
+          "note": "The siswa phone schedule shows no warning triangle on the Matematika block. The admin view still shows it. All three sites are gated on canManage: schedule-grid-cells.tsx:286, schedule-mobile-agenda.tsx:215, schedule-mobile-day-list.tsx:125.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-44",
+          "result": "fixed",
+          "note": "Billing tabs read 'Loket', 'Daftar tagihan', 'Jenis biaya', then 'Penerbitan', which peeks in at the right edge of the phone.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-46",
+          "result": "partly",
+          "note": "Admin and kepsek: at-risk and activity now sit under the queue in main, and the columns are balanced (main is the longer one). Gurubk is better but still lopsided on a desktop. Main is hero, tiles and Siswa berisiko, ending at y≈657. Side is check-in, 'Mengajar hari ini', Pintasan and Pengumuman, ending at y≈870. counselor.atRisk did move to main (counselor.tsx:192-208).",
+          "stillToDo": "apps/web/features/dashboard/components/dashboard-view.tsx after line 186: when `collected.main.length <= 1`, move the side slots whose key is not \"checkIn.card\" (here \"teacher.today\", which teacher.tsx:189 sends to side on a no-lessons day) to the end of the main list. The main column then carries the persona's day card whenever no queue card leads it."
+        },
+        {
+          "id": "FA-47/dashboard",
+          "result": "fixed",
+          "note": "The home check-in card writes '–' for a missing time (check-in.tsx:121), which shows on every home after image.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-48",
+          "result": "confirmed-in-code",
+          "note": "The queue cards are not on screen because their queues are empty, so the photos cannot show this. Both QueueSection headers pass size=\"sm\": picket.tsx:177-183 and counselor.tsx:286-292. The SectionHeader sm size renders text-label text-fg-muted (section-header.tsx:55).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-49",
+          "result": "confirmed-in-code",
+          "note": "On kepsek every queue is 0 now, so the card shows 'Semua antrean kosong' and the rows are not on screen. leadership.tsx:297 has `href={linkedQueues.includes(key) ? href : inboxHref}`. kepsek can open the inbox (the 'Perlu tindakan' link shows), so every row gets the chevron.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-53",
+          "result": "fixed",
+          "note": "'Masuk dengan passkey' is now the same 48px height as 'Masuk' on the desktop login. passkey-login-button.tsx passes size=\"lg\" and disabled={!hydrated}. Whether it still pops in after load cannot be seen in a still image; the code supports the fixer's report.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-64/schedule",
+          "result": "fixed",
+          "note": "The bulk preview's empty line now has a file icon in the compact empty state, as seen in the admin desktop after image.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-65",
+          "result": "fixed",
+          "note": "'Unduh templat' is a flush link-style button under the drop zone, and 'Pratinjau' is now a Card with a header like the sections around it.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-67",
+          "result": "fixed",
+          "note": "The login chart reads 'Paling ramai pukul 14.00' on admin and kepsek. login-activity-chart.tsx:28-33 formats the hours through format.dateTime.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-69",
+          "result": "confirmed-in-code",
+          "note": "The guru after image has no pending leave row ('Tidak ada izin menunggu'), so the badge cannot be seen. homeroom.tsx no longer renders the card.review badge, and the key is removed from the dashboardTeaching catalogs.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-54",
+          "result": "fixed",
+          "note": "In the student overview, 'Rata-rata nilai' shows '–', and 'Lihat semua' is gone from the empty 'Riwayat terbaru' card on both phone and desktop.",
+          "stillToDo": ""
+        }
+      ],
+      "newFindings": [
+        {
+          "severity": "minor",
+          "route": "/dashboard",
+          "role": "admin, kepsek, gurubk",
+          "viewport": "mobile",
+          "shot": "capture3/shots/admin/mobile-light/dashboard--full.png",
+          "title": "On a phone the reader's own check-in card sinks below the at-risk and activity cards",
+          "description": "FA-46 moved school.atRisk, school.activity and counselor.atRisk into main. On a phone main renders before side, so 'Presensi kerja', the reader's own twice-a-day task, now sits under 'Antrean sekolah', 'Siswa berisiko' and the 'Aktivitas masuk' chart, around two thirds of the way down the page. On gurubk it sits under 'Siswa berisiko'.",
+          "cause": "apps/web/features/dashboard/components/dashboard-view.tsx:247-288 renders all of collected.main and then all of collected.side in one column below lg. The check-in card is a side slot (check-in.tsx:68-85), so every main card the fix added now comes before it.",
+          "fix": "In dashboard-view.tsx, when !isDesktop, take the slot with key \"checkIn.card\" out of collected.side and render it right after the StatGrid, before collected.main. The desktop keeps it at the top of the side column.",
+          "files": ["apps/web/features/dashboard/components/dashboard-view.tsx"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "minor",
+          "route": "/dashboard",
+          "role": "gurupiket, satpam (also gurubk, wakepsek)",
+          "viewport": "desktop",
+          "shot": "capture3/shots/gurupiket/desktop-light/dashboard--fold.png",
+          "title": "With the empty queue card gone, the wide column holds only the hero and tiles",
+          "description": "On gurupiket the main column ends at the tile row (y≈510) while the side column (check-in, 'Mengajar hari ini', Pintasan, Pengumuman) runs to y≈780, leaving an empty block under the tiles. Satpam is worse: main is the hero alone (ends y≈340) beside three side cards that end at y≈680. See satpam/desktop-light/dashboard--fold.png.",
+          "cause": "FA-09 rightly drops the empty picket queue card (picket.tsx:139-155), but nothing takes its place. teacher.tsx:186-189 sends the no-lessons 'Mengajar hari ini' card to side 'so another persona's queue leads the main one'. Satpam's gate block (gate.tsx) adds no main card at all.",
+          "fix": "dashboard-view.tsx after line 186: when collected.main is empty or has one card, move the side slots other than \"checkIn.card\" (teacher.today) to the end of main. When main is still empty after that (satpam), render the announcements card at the bottom of the main column instead of the side column.",
+          "files": [
+            "apps/web/features/dashboard/components/dashboard-view.tsx",
+            "apps/web/features/dashboard/home/blocks/teacher.tsx"
+          ],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "minor",
+          "route": "/dashboard",
+          "role": "gurupiket, admin, kepsek",
+          "viewport": "mobile",
+          "shot": "capture3/shots/gurupiket/mobile-light/dashboard--full.png",
+          "title": "On a phone the notifications filler adds a whole strip row that repeats the header bell",
+          "description": "The phone stat strip now pairs its figures, so a three-figure row becomes 2+1. The third figure is the 'Notifikasi belum dibaca' filler, stretched across a full-width row of its own. On a phone the header bell already shows that count one tap away. FA-11 dropped this filler on its own for the same reason. Before this round the strip scrolled and the filler sat off-screen.",
+          "cause": "dashboard-view.tsx:169-188 always adds the NOTIFICATIONS_TILE filler beside persona tiles. stat-grid.tsx:93-97 (PAIRED_CLASS) gives the odd last cell col-span-2 below sm.",
+          "fix": "dashboard-view.tsx:188: on the strip, drop the filler, e.g. `const shown = isDesktop ? merged : merged.filter((tile) => tile.key !== NOTIFICATIONS_TILE); const tiles = shown.some((tile) => tile.key !== NOTIFICATIONS_TILE) ? shown : [];`. The filler only exists to round out the desktop tile row.",
+          "files": ["apps/web/features/dashboard/components/dashboard-view.tsx"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "minor",
+          "route": "/attendance",
+          "role": "siswa",
+          "viewport": "desktop",
+          "shot": "capture3/shots/siswa/desktop-light/attendance--fold.png",
+          "title": "Calendar dots for 'Belum lengkap' and 'Sakit' are now nearly the same colour",
+          "description": "After FA-34 the 'Belum lengkap' dot uses status-late (#B54708), and 'Sakit' uses status-sick (#A15C00). Sampled pixels are rgb(181,71,8) and rgb(161,92,0). At 6px the student cannot tell a sick day (18) from the incomplete days around it, and the two legend dots look alike. Before, 'Belum lengkap' was grey and distinct.",
+          "cause": "apps/web/features/attendance/components/attendance-calendar.tsx:47-49 `INCOMPLETE: \"bg-status-late\"`, set next to `S: \"bg-status-sick\"`. Both tokens are dark amber-orange in packages/ui-tokens (dist/tokens.css:59 and :67, dark :240 and :248).",
+          "fix": "Keep the late family but change the shape. In attendance-calendar.tsx:48 set `INCOMPLETE: \"bg-transparent ring-[1.5px] ring-inset ring-status-late\"`, a hollow ring that reads as unfinished. The legend reuses STATUS_DOT_CLASS, so it follows. The day card's StatusBadge can stay as it is.",
+          "files": ["apps/web/features/attendance/components/attendance-calendar.tsx"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "minor",
+          "route": "/attendance",
+          "role": "admin, gurubk, guru",
+          "viewport": "mobile",
+          "shot": "capture3/shots/admin/mobile-light/attendance--fold.png",
+          "title": "On /attendance the day stepper still sits above the tabs, so the 'Presensi dan jurnal' tab row jumps",
+          "description": "Staff attendance and Buku tamu moved their date controls under the tabs this round. /attendance still renders the DayStepper as a header row between the title and the tabs. On a phone the tab row therefore sits at y≈432 on 'Presensi' and at y≈320 on 'Laporan presensi' (admin/mobile-light/attendance__reports--fold.png). This is the FA-17 defect on a route that plan did not list.",
+          "cause": "apps/web/features/attendance/components/attendance-view.tsx:281-293 passes <DayStepper> as AppPage `actions`. The comment at :269-270 keeps it beside the title on purpose.",
+          "fix": "Pass the stepper in `toolbar` with the teacher picker, e.g. `toolbar={<><DayStepper .../>{showTeacherPicker && <Field ...><Select .../></Field>}</>}`, and drop `actions`. It then sits under the tabs like staff-attendance and visitors, and the tab row stays at one height across the area.",
+          "files": ["apps/web/features/attendance/components/attendance-view.tsx"],
+          "causedByFixRound": false
+        }
+      ]
+    },
+    {
+      "unit": "shared-a",
+      "score": 8,
+      "verdict": "The shared fixes mostly landed and nothing in this unit got worse. The phone tab bar is now solid. The lone '...' rows and the view icons over empty tables are gone. Empty states use outline buttons now, the library report tab shows its label, and the scanner sits side by side on desktop and is square on a phone. Progress tracks show in both themes, header heights match across sibling pages, top-level pages carry the 'Ruang kerja' eyebrow, and the forbidden page wording matches the reader. Three items still fall short. SH-05: the supervision cycle table still shows the density and column icons, because its feature half was never committed. SH-14: tab strips now run into the gutter, but on some strips the neighbouring tab barely shows (library class loans, visits). SH-31: the compact primary action exists in PageHeader and AppPage, but no page uses it, so phones look the same as before. New problems that need fixing: the admin home queue card still has a 'Perlu tindakan' link that reads like a status, Profil and Keamanan akun have different eyebrows although both open from the account menu, and the academic calendar's page title changes when you switch tabs within the same area.",
+      "items": [
+        {
+          "id": "SH-03",
+          "result": "fixed",
+          "note": "After shots (admin mobile light tab-bar state, siswa and guru dashboards, admin dark users) show an opaque bar with a hairline and no page text under the labels. mobile-tab-bar.tsx:168 is `border-t border-line bg-surface`; the comment was updated.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-05",
+          "result": "partly",
+          "note": "Shared part works. Audit logs, loan rules, library violations, academic years and expected visitors on a phone have no lone '...' row. Desktop library reports and integrations have no icons over an empty table. Mentoring group drops the column menu when only one column can be hidden. data-table-toolbar.tsx:211-216 gates on viewOptions, hasRows or narrowed, MIN_MENU_COLUMNS and showSearch. Still wrong: /supervision/cycles/[cycleId] still shows the density and column icons over its two-row list. Commit 2a4a2ee7 says FA-15 passes viewOptions=false, but that commit only touched settings files.",
+          "stillToDo": "apps/web/features/supervision/components/supervision-cycle-detail-view.tsx:218: add `viewOptions={false}` to the <DataTable> props (FA-15 half was never committed)."
+        },
+        {
+          "id": "SH-07",
+          "result": "fixed",
+          "note": "first-use-empty-state.tsx now takes emphasis with 'secondary' as the default, and the doc comment was updated. After shots of visitors board (desktop), expected visitors (phone), discipline violations (dark phone) and activities achievements (phone) show the empty-state button as an outline button under the header's single primary.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-08",
+          "result": "fixed",
+          "note": "Library reports on phone and desktop now show 'Pusat laporan' as the first tab. The library namespaces now come from the strip label keys, and app-page.tsx:153-167 leaves out a tab with an unresolved label and warns in development.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-09",
+          "result": "confirmed-in-code",
+          "note": "No after shot. New packages/ui/src/components/responsive-popover.tsx (exported in index.ts:273) shows a Sheet (bottom side by default, titled) below 40rem and a Popover above. data-table-filters.tsx uses it for the single-choice (292) and date-range (427) pills; there is no separate multiple-choice filter type. popover.tsx adds the tab-bar clearance (probe of --shell-mobile-tab-offset when [data-tab-bar] is visible; mobile-tab-bar.tsx:162 sets it) to the bottom collisionPadding. The month filter (data-table-month-filter.tsx) still uses the plain Popover, now with the clearance floor. To see it work: photograph a phone with a ten-option filter open.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-10",
+          "result": "fixed",
+          "note": "Desktop stocktake now puts the camera on the left and the barcode field with Catat on the right, all above the fold. On a phone, /scan and exit permits show a square viewfinder without the second border. headerEnd exists (scanner.tsx:235-255), and exit permits puts its Gerbang/Setujui switch in it; on a narrow screen the switch wraps under the title, as the code comment intends.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-11",
+          "result": "confirmed-in-code",
+          "note": "The desktop users list now starts compact (FA-20), so all 10 rows fit and none is cut, which means the fade cannot be seen in this shot. In code, styles.css:462-483 adds scroll-fade-y with an inset start, and data-table-scroller.tsx:25-33 applies useScrollEdges(axis y) and `scroll-fade-y [--scroll-fade-inset-start:var(--space-10)]` to the fillHeight body, keeping the 40px sticky head out of the mask. To see it work: photograph a fill-height table with more rows than fit.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-12",
+          "result": "fixed",
+          "note": "Duty queue link reads 'Lihat semua'. Homeroom shows 'Alpha' and '0 alpha · 2 presensi belum lengkap'. Substitutions incoming body, profile phone placeholder 'Isi nomor baru', users dialog 'Tambah pengguna', import copy, 'Tanggapan guru pengganti' and the session card 'Aturan sesi' are all as specified. The new keys exist and are used. The voice test bans alpa case-insensitively. app.shell.nav.items.myAttendance still says 'Presensi saya' on purpose (commit c6ab9d29): it labels only the student's own attendance (navigation-workspaces.ts:202-203). The staff labels myAttendanceStaff, personalAttendance and staffAttendance.self.navLabel all say 'Presensi kerja', and the staff check-in page shows that name.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-13",
+          "result": "fixed",
+          "note": "page-header.tsx:303 uses `sm:-my-1`, and the description has text-pretty (286). Warning letters (no action) and leave requests (with action) now both put the tab strip at y=172.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-14",
+          "result": "partly",
+          "note": "tab-styles.tsx makes underline strips bleed on phones (`max-sm:-mx-4 max-sm:px-4 max-sm:scroll-px-4`, end fade --space-12), and the toolbar's filter row bleeds too (data-table-toolbar.tsx:276-282). Billing ('Penerbitan'), activities ('Men') and visitors ('Rekap ku') now show the next tab. On library class loans, though, the next tab starts about 6px before the screen edge, inside the 48px end fade, and shows only as a ghost 'K'. On library visits the tab before 'Peminjaman kelas' is hidden entirely on the left. So a peek is still not guaranteed.",
+          "stillToDo": "packages/ui/src/hooks/use-active-indicator.ts revealInStrip (lines 79-92, REVEAL_MARGIN line 15): after the active item is revealed in an overflowing strip, check the first item cut by each edge. If less than about 32px of it shows, nudge scrollLeft by the shortfall (towards the end, or towards the start for the leading edge), but only while the active item stays fully visible. That way a neighbour always reads past the 48px end fade and the 24px start fade."
+        },
+        {
+          "id": "SH-15",
+          "result": "fixed",
+          "note": "Inbox (dark desktop), announcements (phone), billing, reports, scan and library reports now carry 'Ruang kerja'. page-context.ts:66-82 derives the group from splitSidebarGroups over the reader's entries. TOP_LEVEL_EYEBROW_KEY points at app.page.workspaceEyebrow, which exists in id and en. The home keeps its date and detail pages keep their trail.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-17",
+          "result": "fixed",
+          "note": "On the light desktop hero the track is visible as a soft grey-green bar on the mint. On the dark phone hero it is a mid-grey track, no longer a black bar. On white cards (attendance summary, stocktake) it reads clearly.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-18",
+          "result": "fixed",
+          "note": "empty-state.tsx gives the title text-balance and the description text-pretty. Compact now uses `flex-row flex-wrap`, with the action wrapper `max-sm:basis-full max-sm:pl-11`. On the satpam visitors board on a phone, the 'Jadwalkan tamu' button sits under the text, lined up with it. Activities events and attendance reports titles are balanced.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-21",
+          "result": "fixed",
+          "note": "mobile-tab-bar.tsx:98-104 uses activeItem.sidebarPlacement !== 'hidden'. On gurupiket /check-in, Menu is no longer lit.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-22",
+          "result": "confirmed-in-code",
+          "note": "overlay-drag.ts:212-219: a touch that starts in the body returns without preventDefault while dy < slop or dy <= |dx|. The handle and header still call preventDefault early. A non-cancelable move drops the gesture. A still photo cannot show this.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-23",
+          "result": "fixed",
+          "note": "The forbidden page now sits in the app shell, with a house icon on the button and a 'Halaman sebelumnya' secondary button. The siswa copy says 'Hubungi admin sekolah bila Anda memerlukannya'. /platform for the admin says 'Halaman ini khusus operator platform.' The kiosk /monitor shows the same page full screen. forbidden-page.tsx picks platformBody, bodyAdmin or body. route-guard.tsx:58 passes reason, and kiosk-layout-client.tsx:28-30 renders ModuleUnavailablePage or ForbiddenPage fullScreen.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-24",
+          "result": "fixed",
+          "note": "Library visits on a phone: the default 'Rentang tanggal: 1-18 Nov 2026' pill is neutral with no remove control, and Reset filter is gone. isFilterActive and clearFilter use defaultFrom and defaultTo (data-table-filters.tsx:143-160).",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-25",
+          "result": "confirmed-in-code",
+          "note": "use-active-indicator.ts keeps handoffs keyed by the strip's aria-label plus its text (stripKey, line 36), valid for HANDOFF_MS 2000. On first placement it takes the FLIP path from the remembered box unless the user prefers reduced motion. A still photo cannot show this. If a tab count changes between pages, the key changes and the indicator jumps instead of sliding.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-26",
+          "result": "confirmed-in-code",
+          "note": "webauthn.ts:44-60: the server snapshot of usePasskeySupported is assumeSupported (true), so the passkey block is in the first paint.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-27",
+          "result": "fixed",
+          "note": "School classes tab reads 'Siswa dan kelas', matching its h1. The academic years strip reads 'Tahun ajaran baru', and 'Kenaikan kelas' now fits on the 390px strip. my-grades uses app.shell.nav.items.myGrades, and its tab shows 'Nilai saya'. The activities workspace has label studentActivities, so its pages read h1 'Kegiatan siswa'.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-29",
+          "result": "fixed",
+          "note": "icons.ts:40 maps leave to ClipboardList and :45 maps warningLetter to FileWarning. In the reports hub, 'Surat peringatan' and 'Pengajuan izin' now use them, and notifications-view uses domainIcons.leave.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-31",
+          "result": "partly",
+          "note": "PageHeader and AppPage accept primaryActionCompact. Below sm it renders a primary IconButton in the heading's trailing column beside the overflow button (page-header.tsx:105-118, 262-276), and from sm up it falls back to the full button. As the plan said, no page uses it yet, so the photographed screens are unchanged: gurubk announcements on a phone still give 'Buat pengumuman' a full row under the title.",
+          "stillToDo": "Pass `primaryActionCompact={{ icon: <Plus />, label: <same label as the primary>, onSelect: <same handler> }}` (or href) to AppPage in apps/web/features/announcements/components/announcements-view.tsx, apps/web/features/academic/components/years-view.tsx, apps/web/features/activities/components/achievements-view.tsx, apps/web/features/library/components/visits-view.tsx and apps/web/features/discipline/components/violations-view.tsx."
+        },
+        {
+          "id": "SH-32",
+          "result": "fixed",
+          "note": "mobile-tab-slot.tsx:149 dropped font-semibold, and :171 uses slotState(current). The centre labels 'Aksi cepat', 'Catat' and 'Pindai' now match the other inactive tabs.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-33",
+          "result": "fixed",
+          "note": "sidebar-nav.tsx:313 uses `-right-0.5 size-2.5` (not -right-1 as specified). In the rail shot the chevrons now sit clear of the icons.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-35",
+          "result": "fixed",
+          "note": "account-menu.tsx:117-118 adds lg:max-w-64. The wakepsek header shows 'Wakil Kepala Sekolah Contoh' in full.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-37",
+          "result": "fixed",
+          "note": "form-layout.tsx:59 uses p-5 for the card variant. The Aturan sesi card's inset is 20px, the same as plain cards.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-38",
+          "result": "fixed",
+          "note": "stepper.tsx:212 mutes a label only when currentIndex >= 0. In the workflows summary all three stage names read text-fg.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-39",
+          "result": "fixed",
+          "note": "Commit 2b33e511 removed the today dot (calendar-day-grid.tsx:329 marks today by weight and accent). On the phone calendar, today shows as the selected fill with no dot.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-43",
+          "result": "confirmed-in-code",
+          "note": "use-count-up.ts:26 sets MIN_COUNTED_DISTANCE = 10, and line 76 shows the final value when |target - from| < 10. With the default from = 0 this matches 'skip under 10'.",
+          "stillToDo": ""
+        }
+      ],
+      "newFindings": [
+        {
+          "severity": "minor",
+          "route": "/dashboard (leadership and admin home)",
+          "role": "admin",
+          "viewport": "desktop-light and mobile (light and dark)",
+          "shot": "capture3/shots/admin/desktop-light/dashboard--fold.png",
+          "title": "Home 'Antrean sekolah' card link reads 'Perlu tindakan', like a status",
+          "description": "The school queue card's header link says 'Perlu tindakan' in accent green beside the title. It reads as a status badge, not a link, and it still says so when the card body says 'Semua antrean kosong'. This is the same defect SH-12 fixed for the duty queue (now 'Lihat semua'), but the leadership home uses its own key.",
+          "cause": "apps/web/messages/features/dashboardSchool.id.json:28 leadership.queue.openInbox = 'Perlu tindakan' (en.json:28 'Needs action'), rendered by apps/web/features/dashboard/home/blocks/leadership.tsx:274.",
+          "fix": "Set leadership.queue.openInbox to 'Lihat semua' in dashboardSchool.id.json and 'View all' in dashboardSchool.en.json.",
+          "files": [
+            "apps/web/messages/features/dashboardSchool.id.json",
+            "apps/web/messages/features/dashboardSchool.en.json"
+          ],
+          "causedByFixRound": false
+        },
+        {
+          "severity": "minor",
+          "route": "/school/calendar",
+          "role": "admin",
+          "viewport": "mobile-light (and desktop)",
+          "shot": "capture3/shots/admin/mobile-light/school__calendar--full.png",
+          "title": "Academic calendar sets its tab name as the h1, so the title jumps between sibling tabs",
+          "description": "In the Jadwal / Kalender akademik / Guru pengganti strip, the schedule and substitutions pages show the h1 'Jadwal dan kalender', but the calendar page shows 'Kalender akademik', the active tab's name. The heading changes as the reader switches tabs in the same area. SH-27 fixed the same pattern for activities.",
+          "cause": "apps/web/features/calendar/components/calendar-view.tsx:157 passes `title={t(\"title\")}` to AppPage, overriding the workspace label that its siblings use.",
+          "fix": "Remove the title prop at calendar-view.tsx:157 so AppPage uses the workspace label. The browser tab still reads 'Kalender akademik' through the current tab label (app-page.tsx useDocumentTitle).",
+          "files": ["apps/web/features/calendar/components/calendar-view.tsx"],
+          "causedByFixRound": false
+        },
+        {
+          "severity": "polish",
+          "route": "/profile",
+          "role": "admin",
+          "viewport": "desktop-light",
+          "shot": "capture3/shots/admin/desktop-light/profile--fold.png",
+          "title": "Profil's eyebrow 'Pengaturan' names a group the reader never sees; its account-menu sibling says 'Akun saya'",
+          "description": "Profil and Keamanan akun both open from the account menu. Keamanan akun (and Preferensi notifikasi) show the eyebrow 'Akun saya', but Profil shows 'Pengaturan', the registry group, which appears nowhere in this reader's menus. This is the same 'eyebrow names an invisible group' defect SH-15 addressed for top-level pages.",
+          "cause": "apps/web/lib/navigation/page-context.ts:75-77 keeps the registry group (NAV_GROUP.settings) for entries outside the main list. apps/web/features/profile/components/profile-view.tsx:66 renders AppPage without an eyebrow, while SettingsPage (settings-page.tsx:53-59) uses app.settingsHub.sections.account.title.",
+          "fix": "In profile-view.tsx:66 pass `eyebrow={t('app.settingsHub.sections.account.title')}` (through a root useTranslations), so it matches the other account pages.",
+          "files": ["apps/web/features/profile/components/profile-view.tsx"],
+          "causedByFixRound": false
+        }
+      ]
+    },
+    {
+      "unit": "shared-b-and-permits",
+      "score": 8,
+      "verdict": "The fix round held up well. Of the 29 blocker, major and minor items, 24 are fixed in the photographs or confirmed in code. Both blockers are gone: library settings now opens its own section (master data, member types), and phone stat strips are a 2x2 grid with hairlines or a strip that scrolls behind a fade. Three items are only part done: FA-19/school (subjects still put \"Tambah mapel\" as a full-width toolbar bar because the learning hub never wires the lifted add state), FB-20 (the 16px offset is fixed but the inactive section triggers still point at unmounted panels) and SH-42 (the sign-in glow loop was kept and written up as an exception, so docs/07 now contradicts the spec rule against loops). Nothing regressed outright. The fix round did bring in a few small new defects: desktop stat strip cells are no longer equal widths; the sticky decision bar on the leave detail page floats 32px above the phone tab bar, the same defect SH-06 fixed for the save bar; the issuer page body text sends readers to notifications while its primary button opens the queue; and three small copy or layout points.",
+      "items": [
+        {
+          "id": "SH-01",
+          "result": "fixed",
+          "note": "After shots of /library/master-data and /library/member-types open Data katalog (Jenis bahan) and Jenis anggota, where before both fell back to Aturan peminjaman. use-url-state.ts now reads searchParams.get(key) and no longer reads window.location.search. A harmless `refresh` counter is still there although the plan said to drop it.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-02",
+          "result": "fixed",
+          "note": "Stocktake, supervision cycle, siswa attendance and siswa leave strips are now a 2x2 grid with hairlines. Home strips with 3 figures are 2 + 1 with the odd cell spanning the row. The library collection strip (more than 4 figures) scrolls inside a bordered box with an edge fade and snap. Values sit at the top of their cells. Nothing is cut mid-word at a divider any more. On desktop the cells are now unequal widths; that is reported as a new finding.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-13",
+          "result": "fixed",
+          "note": "Desktop: with no backlog the list spans the full width, and the rail appears for the guru who has a backlog. The empty state has no second primary. Downloads moved to the header as secondary actions, and on a phone into the overflow menu. The full-width 'Unduh' bar is gone.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-17/staff-attendance",
+          "result": "fixed",
+          "note": "capture3 admin/mobile-light/staff-attendance--fold.png exists even though the work list says null. The day stepper now sits under the tabs and spans the row: 'Rab, 18 Nov' takes the room the arrows leave. The header keeps only the title and 'Entri manual'. The code passes DayStepper as AppPage toolbar, and day-stepper.tsx has w-full sm:w-auto and min-w-0 flex-1 sm:w-40.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-19/school",
+          "result": "partly",
+          "note": "Row actions are fixed: subjects and the period table use RowActionsMenu ('...') instead of the pencil and bin pair. /school/structure has 'Tambah tingkat' plus 'Pakai templat' in the header. /school/learning (subjects) still shows 'Tambah mapel' as a full-width bar above the search on a phone and inside the table toolbar on desktop. SubjectsView gained `adding/onAddingChange` (controlled mode), but the hub never passes them.",
+          "stillToDo": "apps/web/features/academic/components/learning-view.tsx (around lines 25-75): for the subjects section, hold `const [addingSubject, setAddingSubject] = useState(false)`. Render `<AppPage {...page} primaryAction={active.value === 'subjects' ? <Button icon={<Plus />} onClick={() => setAddingSubject(true)}>{tSubjects('add')}</Button> : undefined}>` and `<SubjectsView adding={addingSubject} onAddingChange={setAddingSubject} />`. Alternatively, turn subjects into a `kind: 'page'` section like SubjectOfferingsView. That hides the toolbar button (subjects-view.tsx:129 already does this when controlled)."
+        },
+        {
+          "id": "FA-20",
+          "result": "fixed",
+          "note": "The user list opens at compact density: all 10 users fit with the footer visible (before, 8 rows and the 9th cut at the fold). The density toggle is shown as active.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-03",
+          "result": "confirmed-in-code",
+          "note": "The after data holds no pending requests, so the guru inbox shows only its empty state. permit-unified-queue.tsx:190-231 drops the StatTiles and the chip buttons. It renders SearchInput (size sm, onClear), an optional class Select and one `SegmentedControl size=sm fullWidth=phone` carrying per-queue counts, all in a `flex w-full flex-col gap-2 sm:flex-row` row. queueHint no longer appears anywhere.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-04",
+          "result": "fixed",
+          "note": "The duty page shows three segments (Masuk kelas, Terlambat, Izin keluar) that fit the track, plus a 'Catat manual' primary with the ClipboardPen icon. The duty--dialog shot shows the manual record as a bottom sheet. `?mode=manual` still opens it (duty-view.tsx:55-104).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-13/permits",
+          "result": "fixed",
+          "note": "The issuer page is titled 'Penerbitan surat izin'. Its primary 'Buka antrean izin' goes to /inbox?type=leave and 'Buka notifikasi' is a secondary TextLink. Gurubk, who has no review permission, keeps a single 'Buka notifikasi'. The body text now disagrees with the primary; that is reported as a new finding.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-16/permits",
+          "result": "fixed",
+          "note": "leave-requests, late-arrivals and exit-permits show h1 'Izin dan keterlambatan' under eyebrow 'Kesiswaan' on every tab (seen for siswa leave, siswa late and admin exit). Duty's eyebrow is now the 'Piket dan gerbang' group (admin). The analytics shots show 'Konseling BK' / 'Kesiswaan' instead of the tab name.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-04",
+          "result": "fixed",
+          "note": "Notification defaults, document templates, SSO, my-discipline and library/me now start the breadcrumb, title and tabs at x=264 like default pages, with content capped near 720px on the left. Before they started at x=480. page-shell.tsx has narrow: max-w-default on the column and w-full max-w-narrow on the content. The sticky save bar's narrow container is wrapped in mx-auto max-w-default.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-06",
+          "result": "fixed",
+          "note": "The attendance session and supervision observe save bars now continue down to the tab bar. Sampled pixels between the bar and the tab bar are white (255) after, page background (247,246,242) before. The code docks the bar at tab-bar + safe area with the raise added as bottom padding, in sticky-save-bar.tsx:112 and globals.css:180-181.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-33/school",
+          "result": "fixed",
+          "note": "The schedule pill reads 'Jam 4 09.30 – 10.15' (before: '13:45-18:00'). period-table.tsx:84, period-span.ts and today-period-banner.tsx all go through clockRange. The remaining `.slice(0, 5)` at period-table.tsx:198 only seeds a time input value, which is correct.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-43",
+          "result": "fixed",
+          "note": "The kepsek board with no schedules shows no stat tiles, and the read-only empty body is 'Belum ada pegawai dengan jadwal kerja.' with no setup advice. The admin phone board also has no zero tiles. The new wording repeats its title; that is reported as a new finding.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-47/staff-attendance",
+          "result": "fixed",
+          "note": "The check-in card has no 'Jadwal belum diatur' pill and no row badges. The single hint carries an 'Atur jadwal kerja' link for the admin and 'Hubungi admin' for the guru. Rows read 'Belum ada catatan' instead of '– – –'. The section is titled '7 hari terakhir'.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-50",
+          "result": "fixed",
+          "note": "The page title, the dashboard card and the nav label (staffAttendance.self.navLabel, used by navigation.ts:282) all read 'Presensi kerja', and the card link reads 'Buka'. The fixer's leftover, app.shell.nav.items.myAttendance 'Presensi saya', labels the student's class attendance (navigation-workspaces.ts:202), not staff check-in, so nothing remains.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-53/school",
+          "result": "fixed",
+          "note": "The 'Tambah mapel' dialog marks Kode and Nama with an asterisk. subjects-view.tsx:249-271 uses noValidate with Field required and an error. user-form.tsx:117-121's field() helper takes a required flag, used for the name and the primary role.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-20",
+          "result": "partly",
+          "note": "The gap from the Unduhan/Jadwal kirim control to the cards is now 16px (before 36px), with pt-0 and gap-4 in place. The section triggers' aria-controls still point at panels that are not mounted; the fixer said so too. This is Radix's default and low impact, but it is part of the complaint.",
+          "stillToDo": "apps/web/features/reports/components/reports-workspace-view.tsx (around line 95): render the section strip as NavTabs whose items are `?section=` links instead of a TabsList with one TabsContent. If the strip stays a Tabs, render one `<TabsContent value={s.key} className='pt-0'>` per section and put the view only in the selected one."
+        },
+        {
+          "id": "FB-22",
+          "result": "fixed",
+          "note": "The /reports description now reads 'Unduh laporan sebagai berkas Excel atau PDF. Hanya laporan yang boleh dijalankan akun ini yang ditampilkan.', with the en text to match.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-28",
+          "result": "fixed",
+          "note": "The queue link is an accent 'Lihat semua' with a chevron. The desk log empty state is a compact EmptyState with an icon. Its title now ends in a period; that is reported as a new finding.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-32",
+          "result": "fixed",
+          "note": "'Alasan (opsional)' with the hint 'Isi sebelum memindai.' now comes before the camera. It sits outside and above the scanner card; that is reported as a new finding.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-35",
+          "result": "fixed",
+          "note": "The exit permits phone page has a single navigation row (the area tabs). The Gerbang/Setujui control moved inside the scanner card, under its heading, and the toolbar row is gone.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-37",
+          "result": "confirmed-in-code",
+          "note": "No after shot of /leave-requests/[id] exists. leave-request-page-view.tsx: title is the category, description is formatDisplayName(student) (class) · range, default variant, no in-card heading in page layout. leave-request-detail.tsx:121-128 puts the issued Alert above the stepper and uses formatDisplayName. The review and issue buttons sit in a bordered footer that sticks on phones. That sticky offset re-creates the SH-06 gap; it is reported as a new finding.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-52",
+          "result": "confirmed-in-code",
+          "note": "exit-permit-detail.tsx:62 formats the period as clockRange(p.starts_at, p.ends_at, locale) instead of slicing the raw time. No exit-permit detail shot exists.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-16",
+          "result": "fixed",
+          "note": "Analytics risk tiles (Berisiko, Siaga, Aman) no longer draw a chevron. stat.tsx:317 draws ChevronRight only for `href !== undefined && look === 'tile'`. Linked library dashboard tiles keep theirs.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-19",
+          "result": "fixed",
+          "note": "Catalogue cards on a phone have about 6px between title and author (before, a 33px gap). data-table-cards.tsx gives links an invisible 44px ::after target instead of min-h-11 layout height. The li now has a press scale while its overlay button is held.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-20",
+          "result": "fixed",
+          "note": "The quick-action tiles' top borders are no longer clipped under the sheet header (overlay body pt-1, header pb-3). Recent chips are 44px with borders and fade at the right edge ('Pengguna' fades). The code shows border instead of ring, useScrollEdges with scroll-fade-x, and py-1 -my-1.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-28",
+          "result": "fixed",
+          "note": "Avatars on /school/users, light and dark, use only green, blue and purple hues; no red or amber. avatar.tsx filters red and amber out of PERSON_TONES.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-30",
+          "result": "confirmed-in-code",
+          "note": "section-header.tsx gained `size: 'md' | 'sm'`, where sm renders text-label text-fg-muted. The picket and counselor queue cards use size='sm'. In the after data the empty picket queue card is hidden, so it is not photographed.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-64/homeroom",
+          "result": "fixed",
+          "note": "Compact empty states ('Tidak ada izin yang menunggu persetujuan', 'Tidak ada pelanggaran tercatat') now carry a CheckCircle2 success icon. homeroom-dashboard.tsx:108 uses format.dateTimeRange for pending leave; no pending leave exists in the after data to photograph.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FA-68",
+          "result": "fixed",
+          "note": "The check-in clock reads '09.24' with proportional figures. Before, '14.01' showed the tabular gap.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-55",
+          "result": "fixed",
+          "note": "The /scan intro is one sentence over two lines on a phone (before, four lines).",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-56/permits",
+          "result": "fixed",
+          "note": "The queue no longer draws a leave glyph since the tiles were removed. Inbox remains only as the empty-queue icon.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-56/reports",
+          "result": "fixed",
+          "note": "Pengajuan izin now uses a clipboard (domainIcons.leave), distinct from the Izin keluar door. Surat peringatan uses a file-warning icon, distinct from the Poin pelanggaran shield. Desktop cards and phone rows agree.",
+          "stillToDo": ""
+        },
+        {
+          "id": "FB-57",
+          "result": "fixed",
+          "note": "Below md the catalogue is one framed list of rows (icon circle, title, description, chevron), about 1000px instead of six tall cards. The desktop card buttons read 'Atur unduhan'.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-34",
+          "result": "confirmed-in-code",
+          "note": "header.tsx:82 renders `shortName ?? displayName`, and tenant-provider.tsx:157-164 exposes trimmed branding.short_name. The demo name 'SMA Contoh' is short, so the photograph cannot show the difference.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-36",
+          "result": "fixed",
+          "note": "The phone kiosk header has a title-lg clock and 'Monitor langsung' as a caption under the school name. Before, it had a giant clock and no screen name.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-40",
+          "result": "fixed",
+          "note": "The /library/me overdue hero uses the danger-soft surface with a danger 'Terlambat' chip, matching the danger due badge, on siswa phone and guru desktop.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-41",
+          "result": "confirmed-in-code",
+          "note": "globals.css:210-237 adds `@keyframes page-enter-tab { from { opacity: 0.5 } }`, used at duration-fast for data-nav-direction=tab. A still image cannot show motion.",
+          "stillToDo": ""
+        },
+        {
+          "id": "SH-42",
+          "result": "partly",
+          "note": "The phone forward, back and tab entrance is now documented in docs/07-ui-ux.md section 0 and spec section 4 item 8. The sign-in orb still loops (globals.css:118-139, 18s infinite alternate). Instead of being removed, it was written into docs/07 as 'satu pengecualian yang disengaja'. The spec's rule list (docs/superpowers/specs/2026-11-14-ui-overhaul-design.md, 'Tidak ada yang berulang kecuali skeleton, spinner, dan titik ...') still forbids it, so code and the two documents disagree.",
+          "stillToDo": "apps/web/app/globals.css:118-139: delete the comment, `@keyframes auth-orb-a`, the `.auth-orb-a { animation: ... }` rule and its reduced-motion block, keeping the static glow. docs/07-ui-ux.md:52: delete the sentence that begins 'Satu pengecualian yang disengaja: kilau di balik panel merek ...' so the rule reads with no loop exception, as the spec does."
+        }
+      ],
+      "newFindings": [
+        {
+          "severity": "minor",
+          "route": "/leave-requests/[instanceId] (phone, reviewer or issuer)",
+          "role": "guru (wali kelas), gurubk",
+          "viewport": "mobile",
+          "shot": "",
+          "title": "Sticky decision bar on the leave detail page floats 32px above the tab bar",
+          "description": "No after shot of this page exists. In code, the review and issue footer sticks at bottom = --shell-mobile-tab-offset, and that offset includes the 2rem centre-button raise. The stuck bar therefore floats 32px above the tab bar, with the card's own content scrolling visibly in the gap. SH-06 fixed exactly this for StickySaveBar and FormActions.",
+          "cause": "apps/web/features/permits/components/leave-request-detail.tsx:102-106: decisionClass uses `max-md:bottom-[var(--shell-mobile-tab-offset,0px)]`, added by the FB-37 fix.",
+          "fix": "Dock it as SH-06 does: replace it with `max-md:bottom-[calc(var(--shell-mobile-tab-bar,0px)+env(safe-area-inset-bottom))]` and replace `max-md:pb-5` with `max-md:pb-[calc(var(--space-5)+var(--shell-mobile-tab-raise,0px))]`, so the centre button paints over padding only.",
+          "files": ["apps/web/features/permits/components/leave-request-detail.tsx"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "minor",
+          "route": "/leave-requests",
+          "role": "admin (issuer who can also review)",
+          "viewport": "desktop and mobile",
+          "shot": "capture3/shots/admin/desktop-light/leave-requests--fold.png",
+          "title": "Issuer page text says 'open the notification' while its primary button opens the leave queue",
+          "description": "The body reads 'Setiap pengajuan yang sudah disetujui wali kelas dikirim ke notifikasi Anda. Buka notifikasinya untuk melihat pengajuan dan menerbitkan suratnya.' The primary directly under it is 'Buka antrean izin', and notifications are only the secondary link. Before the fix the only button was 'Buka notifikasi', so text and action agreed.",
+          "cause": "apps/web/features/permits/components/leave-requests-view.tsx:96 uses `t('issuerQueueUnavailableBody')` for both the canReview and the notifications-only branch.",
+          "fix": "Add app.permits.leave.issuerQueueInboxBody, id 'Pengajuan yang sudah disetujui wali kelas menunggu di antrean izin. Buka antreannya untuk meninjau dan menerbitkan suratnya.', en 'Requests the homeroom teacher approved wait in the leave queue. Open it to review them and issue their letters.' Use it as the description when canReview, and keep issuerQueueUnavailableBody for the notifications-only branch.",
+          "files": [
+            "apps/web/features/permits/components/leave-requests-view.tsx",
+            "apps/web/messages/id.json",
+            "apps/web/messages/en.json"
+          ],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "polish",
+          "route": "any page with a stat strip, at sm and up (/homeroom, /library, /supervision/cycles/[cycleId], /grading ...)",
+          "role": "guru, admin",
+          "viewport": "desktop",
+          "shot": "capture3/shots/guru/desktop-light/homeroom--fold.png",
+          "title": "Desktop stat strip cells are no longer equal widths",
+          "description": "The homeroom strip dividers moved from equal 288px cells (x=552/840/1127) to 284/255/307/305px cells (x=548/803/1110). The cells now grow from their content width, so the row looks unevenly divided wherever labels differ in length.",
+          "cause": "packages/ui/src/components/stat.tsx:79: ROOT_CLASS.compact `flex-[1_0_auto]` (SH-02) uses the content width as flex basis, so leftover space is added on top of unequal bases.",
+          "fix": "In ROOT_CLASS.compact use `flex-[1_0_0%] min-w-max` instead of `min-w-36 flex-[1_0_auto]`: equal shares when the row fits, never narrower than the figure and its nowrap label, so it still scrolls when it does not fit. Keep the paired `max-sm:min-w-0` override in Stat. Grid mode ignores the flex values.",
+          "files": ["packages/ui/src/components/stat.tsx"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "polish",
+          "route": "/late-arrivals (siswa, phone)",
+          "role": "siswa",
+          "viewport": "mobile",
+          "shot": "capture3/shots/siswa/mobile-light/late-arrivals--full.png",
+          "title": "Late-arrival reason field floats above the scanner card with no heading",
+          "description": "The page now opens straight on 'Alasan (opsional)' under the tabs. The heading that says what the screen is for ('Pindai QR di meja piket' and its explanation) comes after the field, inside the card below. The order is right, but the field has lost its context.",
+          "cause": "apps/web/features/permits/components/late-arrivals-view.tsx:113-136: the Field is a sibling placed before <Scanner title=... description=...>, and the title lives in the Scanner's card header.",
+          "fix": "Move the heading above the field: render `<SectionHeader as='h2' title={t('scanTitle')} description={t('scanBody')} />` first, then the Field, then `<Scanner>` without title and description, all in the same max-w-xl column. Alternatively wrap heading, field and scanner in one Card.",
+          "files": ["apps/web/features/permits/components/late-arrivals-view.tsx"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "polish",
+          "route": "/duty",
+          "role": "admin, gurupiket",
+          "viewport": "desktop",
+          "shot": "capture3/shots/admin/desktop-light/duty--fold.png",
+          "title": "Desk-log empty title ends with a period, unlike its sibling empty title",
+          "description": "'Dicatat hari ini' shows the empty title 'Belum ada catatan dari layar ini.' with a full stop. The card above it shows 'Belum ada yang terlambat' with none. The string was a sentence before FB-28 made it an EmptyState title.",
+          "cause": "apps/web/messages/id.json:957 and en.json:957 app.duty.log.empty, used as EmptyState title at duty-view.tsx:362.",
+          "fix": "Drop the trailing period: id 'Belum ada catatan dari layar ini', en 'Nothing recorded from this screen yet'.",
+          "files": ["apps/web/messages/id.json", "apps/web/messages/en.json"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "polish",
+          "route": "/staff-attendance (kepsek, empty board)",
+          "role": "kepsek",
+          "viewport": "desktop",
+          "shot": "capture3/shots/kepsek/desktop-light/staff-attendance--fold.png",
+          "title": "Read-only empty board says 'Belum ada' twice",
+          "description": "The title 'Belum ada jadwal kerja' is followed by the body 'Belum ada pegawai dengan jadwal kerja.' The body restates the title and adds no information.",
+          "cause": "apps/web/messages/features/staffAttendance.id.json:42 today.emptyBodyReadOnly (new in FA-43).",
+          "fix": "Make the body say what happens next: id 'Papan ini terisi setelah admin mengatur jadwal kerja pegawai.', en 'This board fills in once an admin sets staff work schedules.'",
+          "files": [
+            "apps/web/messages/features/staffAttendance.id.json",
+            "apps/web/messages/features/staffAttendance.en.json"
+          ],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "polish",
+          "route": "/monitor (kiosk)",
+          "role": "admin",
+          "viewport": "mobile and desktop",
+          "shot": "capture3/shots/admin/mobile-light/monitor--fold.png",
+          "title": "Kiosk clock keeps tabular figures, so a '1' opens a gap ('1 4.07')",
+          "description": "The before shot of this route shows '1 4.07'. FA-68 fixed the same thing on /check-in. The after shot reads '09.30', which has no 1, so the gap returns whenever the time contains one. A minute clock gains nothing from tabular digits.",
+          "cause": "apps/web/components/kiosk-shell.tsx:98: the clock span has `tabular-nums`.",
+          "fix": "Remove `tabular-nums` from the clock className at kiosk-shell.tsx:98; keep `min-w-[5ch] text-right`.",
+          "files": ["apps/web/components/kiosk-shell.tsx"],
+          "causedByFixRound": false
+        }
+      ]
+    },
+    {
+      "unit": "Regression sweep: unrequested changes (34 pairs), two unreviewed detail screens, three worst phone screens",
+      "score": 7,
+      "verdict": "Mostly no. Of the 34 screens that changed without a fix item naming them, 32 got better or stayed neutral. The shared fixes underneath did their job: stat strips no longer cut off at the phone edge, the tab bar is opaque, scanners fit above the fold, area headers stay put between tabs, orphan toolbar controls and duplicate empty-state primaries are gone, and the URL-state tabs now open the right tab. Two small regressions came from fixes landing on screens they were not aimed at. (1) On the phone forbidden page, adding a house icon to the primary button made the two actions too wide for one row, so they wrap into two stacked buttons of unequal width (775ff47b, state-page.tsx:95). (2) On a phone, the library kiosk is now a third longer. A hint card meant to fill the desktop side column repeats step 1 under the camera (8706df78). The fix round also left defects on the two screens nobody had reviewed. On the leave request page, 3bd8b74e moved the 'Surat izin sudah terbit' alert to the top, so its text 'Surat bisa diunduh di atas' now points up at a button that sits below it. Its new sticky approve/reject block uses the full tab offset, so it floats 32px above the tab bar (the gap 2efc82a3 closed for every other bar) and is about 220pt tall. The document template editor has an older blocker the fix round did not cause. Its placeholder parser, insert buttons and preview all use {{name}}, but the API renders Go html/template, which needs {{.name}}. So the preview shows raw tokens, the page says no automatic data is used, saving sends variables: [], and every inserted chip breaks letter issuing. On the three worst phone screens, the home's three figures leave half a row empty, the library's 7-figure collection strip still ends mid-word at the screen edge, and the empty notifications inbox still shows a search, a filter and a '...' menu whose only item is disabled.",
+      "items": [
+        {
+          "id": "siswa/mobile-light/late-arrivals--fold.png",
+          "result": "fixed",
+          "note": "Improvement: the area title holds across tabs. The reason now comes before the scanner it must be filled in for. The camera is square, and Pindai is no longer bold beside the lit Izin tab. Left: the reason is a bare field on the page background outside the scan card (finding: reason field outside the card).",
+          "stillToDo": ""
+        },
+        {
+          "id": "pustakawan/desktop-light/scan--fold.png",
+          "result": "fixed",
+          "note": "Improvement: the camera is capped at 24rem, so the whole card and the manual-entry link sit above the fold. The intro is one sentence and an eyebrow was added. Header and card now align left on the default column (neutral).",
+          "stillToDo": ""
+        },
+        {
+          "id": "satpam/mobile-light/duty--fold.png",
+          "result": "fixed",
+          "note": "Improvement: 'Catat manual' is now the primary action. The three modes share the phone width, and the opaque tab bar no longer lets the late-queue text show through.",
+          "stillToDo": ""
+        },
+        {
+          "id": "siswa/desktop-light/classroom-entry--fold.png",
+          "result": "fixed",
+          "note": "Improvement: the camera height is capped and the scan card fits above the fold. The viewfinder is no longer outlined twice.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/mobile-light/exit-permits--full.png",
+          "result": "fixed",
+          "note": "Improvement: the Gerbang/Setujui switch moved into the scanner header. The camera is square, the empty log is a compact state with an icon, and the area title holds.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/mobile-light/academic__new-year-setup--fold.png",
+          "result": "fixed",
+          "note": "Improvement: the area header 'Tahun ajaran' holds, all three tabs are visible, the card carries its title and explanation, and 'Tambah tahun ajaran' sits inside the alert.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/mobile-light/activities__clubs--dialog.png",
+          "result": "fixed",
+          "note": "Improvement: the required mark is on Nama, the start/end time pickers are paired, and the area header 'Kegiatan siswa' holds.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/mobile-light/library__kiosk--full.png",
+          "result": "regressed",
+          "note": "The header now fits a phone (good). But the desktop side-column fill (8706df78) also renders on a phone: an always-open member field, a disabled Masuk button and a hint card that repeats Langkah 1. The page grew from 942 to 1263pt.",
+          "stillToDo": "apps/web/features/library/components/kiosk-view.tsx:247-257: render the idle hint Card only from lg (className 'hidden lg:flex'). Restore the privacy line below lg ('<p className=\"lg:hidden ...\">{t(\"idle.privacy\")}</p>'). Open the field (manualEntry \"open\", line 233) only from lg, or keep it but drop the card on phones."
+        },
+        {
+          "id": "admin/mobile-light/school__promotion--full.png",
+          "result": "fixed",
+          "note": "Improvement: the years area header holds and the redundant idle empty card is gone. The explanation now trails the year card as a loose paragraph, unlike the sibling tab (finding: promotion description after the card).",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/mobile-light/academic__enrollment-import--full.png",
+          "result": "fixed",
+          "note": "Improvement: the area header 'Siswa dan kelas' holds and the tab labels now match it.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/mobile-light/library__master-data--fold.png",
+          "result": "fixed",
+          "note": "Improvement: the Data katalog tab now opens instead of Aturan peminjaman (URL-state tab fix), and the list has one primary action. Left: the six-pill sub-tab track scrolls under the scrolling tab strip, with 'Kat' cut off (finding: master-data pill tabs).",
+          "stillToDo": ""
+        },
+        {
+          "id": "siswa/desktop-light/late-arrivals--full.png",
+          "result": "fixed",
+          "note": "Improvement: the reason comes before scanning, the camera is capped, and the card fits. The same bare-field-outside-the-card issue as on the phone remains.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/mobile-light/change-password--full.png",
+          "result": "fixed",
+          "note": "This shot renders the admin home. Improvement: the stat strip is no longer clipped at the edge, the hero states its fact once, check-in is secondary, and queues are summarised. Left: the three figures leave an empty half row (finding: three-figure grid on the phone home).",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/mobile-light/library__visit-kiosk--fold.png",
+          "result": "fixed",
+          "note": "Improvement: the clock fits a phone and the screen is named under the school name. Polish: the caption 'Kios kunjungan' sits right above the hero eyebrow 'Kios kunjungan perpustakaan'.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/desktop-light/exit-permits--fold.png",
+          "result": "fixed",
+          "note": "Improvement: the whole scanner fits above the fold, the mode switch sits in its header, and the empty log has an icon.",
+          "stillToDo": ""
+        },
+        {
+          "id": "siswa/mobile-light/classroom-entry--fold.png",
+          "result": "fixed",
+          "note": "Improvement: the camera is square and no longer outlined twice. Neutral: Menu no longer lights up, so no tab is current on this scan page (finding: no tab lit on classroom entry).",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/mobile-light/library__member-types--fold.png",
+          "result": "fixed",
+          "note": "Improvement: the right tab opens, and the duplicate primary and orphan menu are gone.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/mobile-light/library__settings--fold.png",
+          "result": "fixed",
+          "note": "Improvement: one 'Tambah aturan' instead of two, and the orphan '...' above the empty card is gone.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/mobile-light/schedule__bulk--full.png",
+          "result": "fixed",
+          "note": "Improvement: the preview is framed as a card with an iconed empty state, and the template download is an accent link.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/mobile-light/mentoring__my-groups--fold.png",
+          "result": "fixed",
+          "note": "Improvement: one create action, no search over an empty list, and the area header holds.",
+          "stillToDo": ""
+        },
+        {
+          "id": "guru/mobile-light/homeroom--full.png",
+          "result": "fixed",
+          "note": "Improvement: four figures as a 2x2 grid instead of a clipped strip, the date field fills the stepper, and empty cards have icons. 'Alpa' became 'Alpha', the planned vocabulary (SH-12).",
+          "stillToDo": ""
+        },
+        {
+          "id": "pustakawan/mobile-light/library__members--full.png",
+          "result": "fixed",
+          "note": "Improvement: the avatar sits beside the name, the normal 'Aktif' is quiet, the late column is clearer, and the cards are shorter.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/desktop-light/settings__notifications--full.png",
+          "result": "fixed",
+          "note": "Neutral: header and tabs moved to the default column while the content stays narrow, as docs/07 section 0 specifies. Card titles now share one inset, and 'Respon' became 'Tanggapan'.",
+          "stillToDo": ""
+        },
+        {
+          "id": "satpam/mobile-light/visitors__incidents--fold.png",
+          "result": "fixed",
+          "note": "Improvement: the orphan '...' is gone, the empty-state add action is secondary instead of a second primary, and the filter pill peeks past the gutter.",
+          "stillToDo": ""
+        },
+        {
+          "id": "siswa/mobile-light/forbidden--fold.png",
+          "result": "regressed",
+          "note": "The house icon on the primary (775ff47b) pushes the pair past 358pt. They wrap into two centred buttons of unequal width (the secondary is wider than the primary).",
+          "stillToDo": "packages/ui/src/components/state-page.tsx:95: stack the actions on a phone at one width, for example 'flex w-full max-w-xs flex-col gap-2 [&>*]:w-full sm:w-auto sm:max-w-none sm:flex-row sm:justify-center sm:[&>*]:w-auto', primary first."
+        },
+        {
+          "id": "kepsek/mobile-light/visitors__recap--fold.png",
+          "result": "fixed",
+          "note": "Improvement: the day/month switch and date controls moved under the tabs into the toolbar, and the date field fills. The eyebrow now comes from the reader's own menu.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/desktop-dark/shell__sidebar-all-groups-open--state.png",
+          "result": "fixed",
+          "note": "The sidebar is unchanged. The page behind it is the new home: three tiles, facts said once, the chart in the main column, a secondary check-in.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/desktop-dark/shell__sidebar-expanded--state.png",
+          "result": "fixed",
+          "note": "Same home improvement behind an unchanged sidebar.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/desktop-dark/shell__sidebar-group-open--state.png",
+          "result": "fixed",
+          "note": "Same home improvement behind an unchanged sidebar.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/desktop-dark/shell__sidebar-rail-flyout--state.png",
+          "result": "fixed",
+          "note": "Improvement: the rail's group chevrons now stand clear of their icons. The flyout is unchanged and the home behind it is the new layout.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/desktop-light/change-password--full.png",
+          "result": "fixed",
+          "note": "This shot renders the home. Improvement: columns are balanced, a three-tile row fills the main column, and the activity chart moved to the main column.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/desktop-light/root--fold.png",
+          "result": "fixed",
+          "note": "Same home improvement as above.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/desktop-dark/shell__notifications--state.png",
+          "result": "fixed",
+          "note": "Neutral: the notification popover is unchanged. The difference is the new home behind it.",
+          "stillToDo": ""
+        },
+        {
+          "id": "admin/mobile-light/supervision__cycles__cycleId__report--fold.png",
+          "result": "fixed",
+          "note": "Improvement: the back link goes to Supervisi instead of the page itself, the instrument and criteria line was added, and the avatar is no longer tinted red.",
+          "stillToDo": ""
+        }
+      ],
+      "newFindings": [
+        {
+          "severity": "blocker",
+          "route": "/settings/document-templates/[templateId]",
+          "role": "admin",
+          "viewport": "desktop and phone",
+          "shot": "verify/extra/admin--desktop--document-template-editor.png",
+          "title": "Template editor does not understand the template syntax the API renders",
+          "description": "The preview shows raw {{.letter_number}} and {{.student_name}}, and 'Data otomatis yang dipakai' says 'Templat ini belum memakai data otomatis' for a template that uses five fields. Saving sends variables: []. Every 'Sisipkan data otomatis' chip inserts {{letter_number}} (no dot), which Go html/template rejects at issue time ('function not defined'). After one edit, 'Terbitkan surat' fails for every leave letter. The chip list also lacks NIS, Alamat, Penerbit and Wali kelas, which the API provides.",
+          "cause": "apps/web/features/documents/api.ts:112: PLACEHOLDER_PATTERN /\\{\\{\\s*([a-zA-Z0-9_]+)\\s*\\}\\}/g has no leading dot. template-editor.tsx:179 inserts `{{${placeholder}}}`. api.ts:151 replaces only `{{name}}`. The API parses bodies with html/template (apps/api/internal/platform/documents/renderer.go:75), and the seed uses {{.name}} (apps/api/internal/modules/permits/service/leaverequest.go:484-494). The API does not validate on save. KNOWN_TEMPLATE_PLACEHOLDERS (api.ts:131) is out of sync with leaveLetterTemplateVariables (leaverequest.go:502-505).",
+          "fix": "Match the API syntax. Change the pattern to /\\{\\{\\s*\\.([a-zA-Z0-9_]+)\\s*\\}\\}/g. Insert `{{.${placeholder}}}` and use the same token in the chip title. In renderPreviewHtml, replace each /\\{\\{\\s*\\.name\\s*\\}\\}/g with a sample. Add nis, address, issuer_name and homeroom_name to KNOWN_TEMPLATE_PLACEHOLDERS.leave_letter, with labels in documents.id.json and en.json. Server-side, parse the body with html/template on create and update, and reject a template that does not parse.",
+          "files": [
+            "apps/web/features/documents/api.ts",
+            "apps/web/features/documents/components/template-editor.tsx",
+            "apps/web/messages/features/documents.id.json",
+            "apps/web/messages/features/documents.en.json",
+            "apps/api/internal/modules/permits/transport/http/handler.go"
+          ],
+          "causedByFixRound": false
+        },
+        {
+          "severity": "major",
+          "route": "/leave-requests/[instanceId]",
+          "role": "guru (homeroom)",
+          "viewport": "desktop and phone",
+          "shot": "verify/extra/guru--desktop--leave-request-detail.png",
+          "title": "Issued-letter alert says the letter can be downloaded above, but the button is below",
+          "description": "The success alert leads the card with 'Surat bisa diunduh di atas.', but 'Unduh surat' is the last control in the card (desktop y=662; below the fold on a phone, under the tab bar). The main outcome of a finished request is hard to find, and the copy points the wrong way. The detail template also puts the main action at top right.",
+          "cause": "3bd8b74e moved the Alert to the top of LeaveRequestDetail (leave-request-detail.tsx:122-126) but left the letter button in the button row (:189-198). The copy in apps/web/messages/id.json:1615 was written for the old order, alert after the button.",
+          "fix": "Pass the button through the Alert's action slot: action={<Button variant=\"secondary\" icon={<Download />} onClick={() => void openDocument(\"letter\")}>{t(\"downloadLetter\")}</Button>}. Remove the duplicate letter button from the row and keep the evidence button there. Change issuedBody to 'Presensi pada tanggal izin sudah diisi otomatis.' (and the en key). On the page layout, also offer 'Unduh surat' as AppPage primaryAction, which shows top right on desktop and on the title line on a phone.",
+          "files": [
+            "apps/web/features/permits/components/leave-request-detail.tsx",
+            "apps/web/features/permits/components/leave-request-page-view.tsx",
+            "apps/web/messages/id.json",
+            "apps/web/messages/en.json"
+          ],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "major",
+          "route": "/leave-requests/[instanceId]",
+          "role": "guru (homeroom), guru BK",
+          "viewport": "phone",
+          "shot": "verify/extra/guru--phone--leave-request-detail.png",
+          "title": "Sticky approve/reject block floats 32px above the tab bar and covers about a third of the screen",
+          "description": "The captured request is already finished, so the bar is not in the shot; this comes from the code. While a request waits for the homeroom teacher, the decision block sticks at the full tab offset. That leaves a 32px strip of page between it and the tab bar, the gap SH-06 closed for every other bar. It holds the Catatan field plus Setujui and Tolak stacked at full width (about 220pt), with rounded bottom corners while stuck mid-card. The counselor's 'Terbitkan surat' row has the same offset.",
+          "cause": "apps/web/features/permits/components/leave-request-detail.tsx:103-107 uses max-md:bottom-[var(--shell-mobile-tab-offset,0px)], which includes the centre button's 2rem rise. It is the only bar still on that variable (StickySaveBar and FormActions moved off it in 2efc82a3). :212 stacks the buttons with flex-col-reverse, and the note Field sits inside the sticky block.",
+          "fix": "Keep the Catatan field in the normal flow above the decision. Make only the buttons sticky, side by side ('grid grid-cols-2 gap-2', Tolak then Setujui), docked like StickySaveBar: 'max-md:bottom-[calc(var(--shell-mobile-tab-bar)+env(safe-area-inset-bottom))] max-md:pb-[calc(var(--space-3)+var(--shell-mobile-tab-raise))]', with bg-surface-raised and border-t, and drop rounded-b-lg. Or render the phone bar through AppPage floating with StickySaveBar and keep the in-card row from md up.",
+          "files": ["apps/web/features/permits/components/leave-request-detail.tsx"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "minor",
+          "route": "/leave-requests/[instanceId]",
+          "role": "guru (homeroom)",
+          "viewport": "desktop 1440",
+          "shot": "verify/extra/guru--desktop--leave-request-detail.png",
+          "title": "Leave detail runs 1150px wide with a bare category as its h1",
+          "description": "On the default column, the key-value rows put about 450px between label and value. The two-stage stepper spreads its steps 555px apart. The h1 is just 'Sakit', the same word as the Keterangan row, while the detail template asks for an identity header.",
+          "cause": "apps/web/features/permits/components/leave-request-page-view.tsx:28-40: AppPage uses the default variant and title={t(`categories.${data.category}`)}. DataList inline splits each row 2fr:3fr (packages/ui/src/components/data-list.tsx:81).",
+          "fix": "Use AppPage variant=\"narrow\" (720px content; the header stays on the 1200px column per docs/07 section 0). Title the page with a sentence-like name, for example a new key 'Izin {category}' giving 'Izin sakit', or the student's name with 'Izin sakit · X-A · 18–19 Nov 2026' as the description.",
+          "files": [
+            "apps/web/features/permits/components/leave-request-page-view.tsx",
+            "apps/web/messages/id.json",
+            "apps/web/messages/en.json"
+          ],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "polish",
+          "route": "/leave-requests/[instanceId]",
+          "role": "guru (homeroom)",
+          "viewport": "desktop and phone",
+          "shot": "verify/extra/guru--phone--leave-request-detail.png",
+          "title": "Finished stages read 'Ditinjau langsung' instead of their outcome",
+          "description": "Both completed steps say how they are verified ('Ditinjau langsung') rather than what happened. The Guru BK step issued the letter, but it reads the same as the approval.",
+          "cause": "apps/web/features/permits/components/workflow-stepper.tsx:67: description is always t(`verification.${stage.verification}`), whatever the step state.",
+          "fix": "For complete steps, show the outcome ('Disetujui', or 'Surat diterbitkan' for the issuing stage; 'Ditolak' for stopped). Keep the verification method for current and upcoming steps.",
+          "files": [
+            "apps/web/features/permits/components/workflow-stepper.tsx",
+            "apps/web/messages/id.json"
+          ],
+          "causedByFixRound": false
+        },
+        {
+          "severity": "minor",
+          "route": "/settings/document-templates/[templateId]",
+          "role": "admin",
+          "viewport": "desktop and phone",
+          "shot": "verify/extra/admin--desktop--document-template-editor.png",
+          "title": "Preview promises sample values but would print English snake_case keys",
+          "description": "The hint says 'Memakai nilai contoh'. Once the syntax is fixed, the preview would show [student_name] and [letter_number] to an Indonesian school admin, not sample values or readable labels.",
+          "cause": "apps/web/features/documents/api.ts:148-153: renderPreviewHtml replaces each token with `[${name}]`. The hint is apps/web/messages/features/documents.id.json:42.",
+          "fix": "Pass the localized label into the preview, `[${placeholderLabel(name)}]` giving [Nama siswa], or a small sample map (Budi Santoso, X-A, 4/IZIN/XI/2026). Otherwise reword the hint to 'Data otomatis tampil sebagai [nama datanya]'.",
+          "files": [
+            "apps/web/features/documents/api.ts",
+            "apps/web/features/documents/components/template-editor.tsx",
+            "apps/web/messages/features/documents.id.json"
+          ],
+          "causedByFixRound": false
+        },
+        {
+          "severity": "polish",
+          "route": "/settings/document-templates/[templateId]",
+          "role": "admin",
+          "viewport": "desktop and phone",
+          "shot": "verify/extra/admin--phone--document-template-editor.png",
+          "title": "'Isi templat' card title repeated as its only field's label",
+          "description": "The card is titled 'Isi templat' and the textarea is labelled 'Isi templat *' right under its description. The old label 'Isi (HTML)' at least told the admin that the body is HTML.",
+          "cause": "766f758b changed bodyLabel (apps/web/messages/features/documents.id.json:35) to 'Isi templat', the same text as bodyTitle (:49).",
+          "fix": "Label the field 'Kode HTML', or hide the field label visually and keep it as the textarea's accessible name, so the card title names the section once.",
+          "files": [
+            "apps/web/messages/features/documents.id.json",
+            "apps/web/messages/features/documents.en.json",
+            "apps/web/features/documents/components/template-editor.tsx"
+          ],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "minor",
+          "route": "/settings/document-templates/[templateId]",
+          "role": "admin",
+          "viewport": "phone",
+          "shot": "verify/extra/admin--phone--document-template-editor.png",
+          "title": "On a phone the preview sits at the end of a 2000pt page",
+          "description": "Below lg, the preview card stacks after 18 rows of wrapped HTML and eleven insert chips. The admin cannot check the letter while editing. Branding and Report header already solved this with a preview button.",
+          "cause": "apps/web/features/documents/components/template-editor.tsx:244 and :316: a two-pane grid that only goes side by side from lg, with no phone access to the preview.",
+          "fix": "Below lg, show a 'Pratinjau' button in the Isi templat card that opens the preview in the shared PreviewSheet (apps/web/features/settings/components/preview-sheet.tsx, from 2a4a2ee7). Keep the trailing card from lg up.",
+          "files": ["apps/web/features/documents/components/template-editor.tsx"],
+          "causedByFixRound": false
+        },
+        {
+          "severity": "minor",
+          "route": "(forbidden)",
+          "role": "siswa",
+          "viewport": "phone 390",
+          "shot": "capture3/shots/siswa/mobile-light/forbidden--fold.png",
+          "title": "Access-state actions wrap into two stacked buttons of unequal width",
+          "description": "'Kembali ke beranda' (178pt) and 'Halaman sebelumnya' (189pt) no longer fit one row and wrap. They stack centred at different widths, with the secondary wider than the primary.",
+          "cause": "775ff47b added the House icon to the primary, widening the pair past the 358pt row. packages/ui/src/components/state-page.tsx:95 'flex flex-wrap items-center justify-center gap-2' then wraps them at their own widths.",
+          "fix": "On a phone, stack the actions at one width: 'flex w-full max-w-xs flex-col gap-2 [&>*]:w-full sm:w-auto sm:max-w-none sm:flex-row sm:justify-center sm:[&>*]:w-auto' (primary first).",
+          "files": ["packages/ui/src/components/state-page.tsx"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "minor",
+          "route": "/library/kiosk",
+          "role": "admin",
+          "viewport": "phone 390",
+          "shot": "capture3/shots/admin/mobile-light/library__kiosk--full.png",
+          "title": "Desktop side-column fill stacks under the camera on a phone",
+          "description": "The idle kiosk on a phone grew from 942 to 1263pt. An open member-code field, a disabled Masuk button and a hint card ('Arahkan kartu anggota ke kamera atau pemindai') now follow the camera, repeating Langkah 1 of the hero above. The new header caption 'Kios mandiri' also sits right over the hero eyebrow 'Kios mandiri perpustakaan'.",
+          "cause": "8706df78, apps/web/features/library/components/kiosk-view.tsx:233 (manualEntry \"open\") and :247-257 (hint Card) apply at every width. Below lg the kiosk Scanner stacks, so the side column lands under the camera.",
+          "fix": "Render the hint Card with 'hidden lg:flex'. Below lg, restore the privacy line as '<p className=\"text-center text-body text-fg-muted lg:hidden\">'. Open the field by default only from lg, using a media query for the manualEntry prop.",
+          "files": ["apps/web/features/library/components/kiosk-view.tsx"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "minor",
+          "route": "/dashboard",
+          "role": "admin",
+          "viewport": "phone 390",
+          "shot": "verify/extra/admin--phone--dashboard.png",
+          "title": "Home stat grid of three figures leaves an empty half row",
+          "description": "'Menunggu tinjauan' and 'Pengguna aktif' share row one. 'Notifikasi belum dibaca' spans row two but keeps its content on the left, so the right half reads as an empty cell. That tile also repeats the header bell.",
+          "cause": "apps/web/features/dashboard/components/dashboard-view.tsx:165-187 adds the notifications filler tile, making three. packages/ui/src/components/stat-grid.tsx PAIRED_CLASS ('max-sm:[&>*:last-child:nth-child(odd)]:col-span-2', from d38a62c7) spans the odd cell but leaves its layout as a half-width cell.",
+          "fix": "On a phone (!isDesktop), leave out the NOTIFICATIONS_TILE filler when it would make the count odd, since the bell in the phone header carries the count. Two tiles then fill one row. In stat-grid.tsx, give a spanning odd cell a row layout (icon, value and label on one line, or centred) so no strip shows half a row empty.",
+          "files": [
+            "apps/web/features/dashboard/components/dashboard-view.tsx",
+            "packages/ui/src/components/stat-grid.tsx",
+            "packages/ui/src/components/stat.tsx"
+          ],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "minor",
+          "route": "/library",
+          "role": "admin",
+          "viewport": "phone 390",
+          "shot": "verify/extra/admin--phone--library-dashboard.png",
+          "title": "Seven-figure collection strip still ends at the screen edge mid-word",
+          "description": "'4 Judul | 6 Eksemplar | 4 Tersedia...' scrolls sideways, and the edge cuts 'Tersedia' mid-word. Dipinjam, Anggota, Anggota aktif and Denda belum dibayar are out of sight with no clue except the fade.",
+          "cause": "apps/web/features/library/components/library-dashboard-view.tsx:102-110 puts 6 keys plus unpaid fines in one StatGrid strip. packages/ui/src/components/stat-grid.tsx:48 MAX_PAIRED_FIGURES = 4, so longer strips keep scrolling on a phone.",
+          "fix": "Below sm, pair icon-less strips of up to 8 figures (raise the limit when no Stat has an icon, or add a 'pairOnPhone' prop). The seven figures become a 2-column grid with 'Denda belum dibayar' spanning the last row in a row layout. Otherwise, render the collection figures in a Card as a DataList (label left, value right).",
+          "files": [
+            "apps/web/features/library/components/library-dashboard-view.tsx",
+            "packages/ui/src/components/stat-grid.tsx"
+          ],
+          "causedByFixRound": false
+        },
+        {
+          "severity": "minor",
+          "route": "/library",
+          "role": "admin",
+          "viewport": "phone 390",
+          "shot": "verify/extra/admin--phone--library-dashboard.png",
+          "title": "Four tall tiles fill the library home's first screen",
+          "description": "Four 130pt tiles (mostly zeros) take about 590pt of the 844pt screen, pushing the chart and lists down. The school home uses the compact strip on phones for the same kind of figures.",
+          "cause": "apps/web/features/library/components/library-dashboard-view.tsx:66 uses StatGrid variant=\"tiles\" at every width. dashboard-view.tsx:256 switches to \"strip\" below desktop.",
+          "fix": "Use variant={isDesktop ? \"tiles\" : \"strip\"} (useMediaQuery as on the home). Four figures then pair into a compact 2x2 of about 130pt, keeping their links and icons.",
+          "files": ["apps/web/features/library/components/library-dashboard-view.tsx"],
+          "causedByFixRound": false
+        },
+        {
+          "severity": "minor",
+          "route": "/notifications",
+          "role": "admin",
+          "viewport": "phone 390",
+          "shot": "verify/extra/admin--phone--notifications.png",
+          "title": "Empty inbox still shows a menu, a segmented filter, a search and a kind select",
+          "description": "With no notifications at all, the title carries a '...' button whose only item ('Tandai semua dibaca') is disabled. Above the empty state sit Semua/Belum dibaca, a search field and a full-width 'Semua jenis' select. Other lists drop such orphan controls, and their filters are pills that open a bottom sheet.",
+          "cause": "apps/web/features/notifications/components/notifications-view.tsx:108-117 always passes secondaryActions. :118-160 always renders the toolbar, with the kind filter as a bordered Select (:146).",
+          "fix": "Pass secondaryActions only when hasUnread. Render the search and kind filter only when items.length > 0 or isFiltering, and the segmented control only when there are notifications or unread ones. Replace the Select with the shared single-choice filter pill (data-table-filters with ResponsivePopover), as the other lists use.",
+          "files": ["apps/web/features/notifications/components/notifications-view.tsx"],
+          "causedByFixRound": false
+        },
+        {
+          "severity": "minor",
+          "route": "/school/promotion",
+          "role": "admin",
+          "viewport": "phone 390",
+          "shot": "capture3/shots/admin/mobile-light/school__promotion--full.png",
+          "title": "Promotion explanation trails the form card as a loose paragraph",
+          "description": "'Pindahkan siswa dari satu tahun ajaran ke tahun ajaran berikutnya...' now comes after 'Tampilkan rencana', on the page background. The sibling tab 'Tahun ajaran baru' titles the same year card 'Pilih tahun ajaran' and puts its explanation in the card header.",
+          "cause": "cf127a42, apps/web/features/promotion/components/promotion-view.tsx:225 renders t(\"description\") as a muted <p> after the year card, and the card has no header.",
+          "fix": "Give the promotion year card a CardHeader with title 'Pilih tahun ajaran' and t(\"description\") as its CardDescription, as in the new-year-setup card. Delete the trailing paragraph.",
+          "files": ["apps/web/features/promotion/components/promotion-view.tsx"],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "polish",
+          "route": "/late-arrivals",
+          "role": "siswa",
+          "viewport": "phone and desktop",
+          "shot": "capture3/shots/siswa/mobile-light/late-arrivals--fold.png",
+          "title": "Late-arrival reason field floats outside the scan card",
+          "description": "Putting the reason first is right, but it is now a bare field on the page background. The step heading 'Pindai QR di meja piket' and its explanation come after the field they introduce.",
+          "cause": "82289c1d, apps/web/features/permits/components/late-arrivals-view.tsx:113-125 renders the Field as a sibling above <Scanner>. Scanner has no slot between its header and the camera.",
+          "fix": "Add a 'lead' slot to packages/ui/src/components/scanner.tsx, rendered after the header and before the camera, and pass the reason Field there. The card then reads title, explanation, reason, camera.",
+          "files": [
+            "apps/web/features/permits/components/late-arrivals-view.tsx",
+            "packages/ui/src/components/scanner.tsx"
+          ],
+          "causedByFixRound": true
+        },
+        {
+          "severity": "minor",
+          "route": "/library/master-data",
+          "role": "admin",
+          "viewport": "phone 390",
+          "shot": "capture3/shots/admin/mobile-light/library__master-data--fold.png",
+          "title": "Six pill sub-tabs scroll inside their track under a scrolling tab strip",
+          "description": "'Jenis bahan / Sumber perolehan / Mitra / Kat...' is cut off at the track's right end, directly under the area tab strip, which also scrolls. Two stacked sideways scrollers on one screen.",
+          "cause": "apps/web/features/library/components/master-data-view.tsx:52-59: a TabsList with six triggers at every width.",
+          "fix": "Below sm, render the six catalogue lists as a Select ('Data katalog: Jenis bahan'), as 9ad5a819 did for the library reports. Keep the pill tabs from sm up.",
+          "files": ["apps/web/features/library/components/master-data-view.tsx"],
+          "causedByFixRound": false
+        },
+        {
+          "severity": "polish",
+          "route": "/classroom-entry",
+          "role": "siswa",
+          "viewport": "phone 390",
+          "shot": "capture3/shots/siswa/mobile-light/classroom-entry--fold.png",
+          "title": "No tab is current on the student's classroom-entry scan page",
+          "description": "After the Menu change, the phone tab bar lights nothing on 'Pindai masuk kelas', although it is a scan page of the Pindai centre. A real phone app always keeps one tab current.",
+          "cause": "be69bbaf, apps/web/components/mobile-tab-bar.tsx: inMenu now excludes hidden entries, and /classroom-entry is not counted as one of the centre's own pages.",
+          "fix": "Treat hidden scan routes (/classroom-entry, and any scan-result routes) as the centre's own pages so the Pindai centre shows as current. For example, give the centre item a list of owned hrefs and compare activeHref against it.",
+          "files": ["apps/web/components/mobile-tab-bar.tsx"],
+          "causedByFixRound": true
+        }
+      ]
+    }
+  ]
+}
