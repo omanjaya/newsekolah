@@ -27,9 +27,8 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useClassesQuery, useLookup } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
-import { StudentLink } from "../../students/components/student-link";
-import { studentProfileHref } from "../../students/href";
 import { type RiskLevel, type StudentRisk, useAtRiskStudentsQuery } from "../api";
+import { studentRiskHref } from "../href";
 
 import { PolicyDialog } from "./policy-dialog";
 import { RiskLevelBadge } from "./risk-level-badge";
@@ -52,7 +51,6 @@ const LEVELS: RiskLevel[] = ["at_risk", "watch", "none"];
 
 export function AtRiskStudentsView(): ReactElement {
   const t = useTranslations("app.analytics.list");
-  const tNav = useTranslations("app.analytics");
   const canManage = useCan("manage_early_warning_rules");
   const [policyOpen, setPolicyOpen] = useState(false);
   const locale = useLocale() as Locale;
@@ -117,17 +115,24 @@ export function AtRiskStudentsView(): ReactElement {
         header: t("columns.student"),
         enableSorting: false,
         meta: { card: "title", label: t("columns.student") },
+        // Plain text: the row opens the student's early-warning detail,
+        // which links on to the profile. On a phone card the class is the
+        // name's second line, so the card reads as one person.
         cell: ({ row }) => {
           const student = studentMap.get(row.original.student_user_id);
-          return student ? (
+          if (!student) return t("unknownStudent");
+          return (
             <div className="flex min-w-0 items-center gap-3">
               <Avatar size={32} name={student.name} decorative />
-              <span className="truncate">
-                <StudentLink studentId={student.id}>{student.name}</StudentLink>
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate">{student.name}</span>
+                {row.original.class_name && (
+                  <span className="truncate text-caption font-normal text-fg-muted md:hidden">
+                    {row.original.class_name}
+                  </span>
+                )}
               </span>
             </div>
-          ) : (
-            t("unknownStudent")
           );
         },
       },
@@ -135,7 +140,7 @@ export function AtRiskStudentsView(): ReactElement {
         accessorKey: "class_name",
         header: t("columns.class"),
         enableSorting: false,
-        meta: { card: "subtitle", label: t("columns.class") },
+        meta: { card: "hidden", label: t("columns.class") },
         cell: ({ row }) => row.original.class_name || "-",
       },
       {
@@ -151,8 +156,15 @@ export function AtRiskStudentsView(): ReactElement {
         accessorKey: "score",
         header: t("columns.score"),
         enableSorting: false,
-        meta: { card: "field", label: t("columns.score"), align: "end" },
-        cell: ({ row }) => <span className="tabular-nums">{row.original.score}</span>,
+        meta: { card: "meta", label: t("columns.score"), align: "end" },
+        // Beside the level badge on a phone card, which has no column
+        // header to name the number.
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            <span className="md:hidden">{t("scoreValue", { score: row.original.score })}</span>
+            <span className="max-md:hidden">{row.original.score}</span>
+          </span>
+        ),
       },
     ],
     [t, studentMap],
@@ -169,10 +181,11 @@ export function AtRiskStudentsView(): ReactElement {
         },
       ]
     : undefined;
+  // No title, eyebrow or description of its own: the area's header (h1
+  // "Konseling BK", or "Peringatan dini" for a reader with only this page)
+  // stays put between its tabs. How the list is ordered is said above it.
   const page = {
     variant: "fit" as const,
-    title: tNav("navLabel"),
-    description: t("description"),
     secondaryActions: policyAction,
   };
 
@@ -215,6 +228,7 @@ export function AtRiskStudentsView(): ReactElement {
       {canManage && policyOpen && <PolicyDialog open={policyOpen} onOpenChange={setPolicyOpen} />}
       {computedAt && (
         <p className="text-caption font-normal text-fg-muted">
+          {t("sortedHint")} ·{" "}
           {t("computedAt", {
             time: formatDateTime(computedAt, { locale, timeZone: me?.tenant.timezone }),
           })}
@@ -236,7 +250,7 @@ export function AtRiskStudentsView(): ReactElement {
           filters={filters}
           getRowId={(item) => item.student_user_id}
           onRowActivate={(item) => {
-            router.push(studentProfileHref(item.student_user_id));
+            router.push(studentRiskHref(item.student_user_id));
           }}
           fillHeight
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}

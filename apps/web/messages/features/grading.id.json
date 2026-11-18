@@ -60,6 +60,7 @@
     "averageColumn": "Rata-rata",
     "reportScoreColumn": "Nilai rapor",
     "reportScorePending": "Diperbarui setelah disimpan",
+    "reportScoreSet": "Isi nilai rapor {name}",
     "starsColumn": "Bintang",
     "scoreFor": "Nilai {code} untuk {name}",
     "starsFor": "Atur bintang {name}",

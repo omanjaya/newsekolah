@@ -77,7 +77,14 @@ export function AvatarUpload({ children }: { children?: ReactNode } = {}): React
 
   return (
     <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
-      <Avatar name={me.name} src={me.avatar_url} size={64} decorative={children !== undefined} />
+      {/* The signed-in reader's own tint, as on the header's account button. */}
+      <Avatar
+        name={me.name}
+        src={me.avatar_url}
+        size={64}
+        tone="accent"
+        decorative={children !== undefined}
+      />
       <div className="min-w-0">{children}</div>
       <div className="col-span-2 flex flex-col items-start gap-1.5 sm:col-span-1 sm:items-end">
         {progress !== null ? (

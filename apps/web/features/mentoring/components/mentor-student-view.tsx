@@ -65,9 +65,13 @@ export function MentorStudentView({
         { label: name },
       ]}
     >
-      <SnapshotAttendanceSection snapshot={data} />
-      <SnapshotDisciplineSection snapshot={data} />
-      <SnapshotGradesSection snapshot={data} />
+      {/* Three short read-outs side by side once there is room, each as tall
+          as its own content; the summary the mentor writes spans below. */}
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start xl:grid-cols-3">
+        <SnapshotAttendanceSection snapshot={data} />
+        <SnapshotDisciplineSection snapshot={data} />
+        <SnapshotGradesSection snapshot={data} />
+      </div>
 
       <Card padding="md">
         <CardHeader>

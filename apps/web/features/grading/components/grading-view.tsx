@@ -198,6 +198,9 @@ export function GradingView(): ReactElement {
   );
 
   const scope = !showScope ? undefined : canOpenAny ? (
+    // On a phone the class and the term share the first row and the
+    // subject, the longest name, takes the second whole; from sm one row
+    // in reading order.
     <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
       <Select
         options={classList.map((c) => ({ value: c.id, label: c.name }))}
@@ -211,19 +214,21 @@ export function GradingView(): ReactElement {
         aria-label={t("pickClass")}
         className="w-full sm:w-40"
       />
-      <Select
-        options={subjectList.map((s) => ({ value: s.id, label: s.name }))}
-        value={effectiveSubjectId}
-        onValueChange={(value) => {
-          changeScope(() => {
-            setSubjectId(value);
-          });
-        }}
-        placeholder={t("pickSubject")}
-        aria-label={t("pickSubject")}
-        className="w-full sm:w-48"
-      />
-      <div className="col-span-2 sm:col-span-1">{termSelect}</div>
+      <div className="col-span-2 max-sm:order-last sm:col-span-1">
+        <Select
+          options={subjectList.map((s) => ({ value: s.id, label: s.name }))}
+          value={effectiveSubjectId}
+          onValueChange={(value) => {
+            changeScope(() => {
+              setSubjectId(value);
+            });
+          }}
+          placeholder={t("pickSubject")}
+          aria-label={t("pickSubject")}
+          className="w-full sm:w-48"
+        />
+      </div>
+      <div className="min-w-0">{termSelect}</div>
     </div>
   ) : (
     <div className="grid w-full grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-2 sm:flex sm:w-auto">

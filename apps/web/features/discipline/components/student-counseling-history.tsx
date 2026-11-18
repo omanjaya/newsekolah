@@ -96,7 +96,8 @@ export function StudentCounselingHistory({ studentId }: { studentId: string }): 
   if (isLoading) return <Skeleton className="h-32 w-full" />;
 
   return (
-    <Card padding="sm">
+    // The same 20px inset as the record's cards above it.
+    <Card padding="md">
       <CardHeader>
         <CardTitle as="h2">{tDetail("counselingHistory")}</CardTitle>
       </CardHeader>

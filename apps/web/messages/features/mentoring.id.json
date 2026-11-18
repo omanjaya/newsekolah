@@ -36,7 +36,7 @@
     "deleteConfirm": "Hapus",
     "deleted": "Kelompok mentoring dihapus",
     "limitAction": "Atur batas anggota",
-    "searchPlaceholder": "Cari nama kelompok atau guru wali"
+    "searchPlaceholder": "Cari kelompok atau guru wali"
   },
   "groupSizeLimit": {
     "label": "Batas jumlah anggota per kelompok",
@@ -51,7 +51,8 @@
       "name": "Nama kelompok"
     },
     "emptyTitle": "Anda belum menjadi guru wali kelompok manapun",
-    "emptyBody": "Kelompok yang Anda bimbing akan muncul di sini."
+    "emptyBody": "Kelompok yang Anda bimbing akan muncul di sini.",
+    "searchPlaceholder": "Cari kelompok"
   },
   "groupDetail": {
     "eyebrow": "Mentoring",
@@ -64,9 +65,12 @@
   },
   "members": {
     "columns": {
-      "student": "Siswa"
+      "student": "Siswa",
+      "actions": "Aksi"
     },
     "view": "Lihat siswa",
+    "viewProfile": "Lihat profil siswa",
+    "actionsFor": "Aksi untuk {name}",
     "remove": "Keluarkan",
     "add": "Tambah anggota",
     "addTitle": "Tambah anggota kelompok",
@@ -92,7 +96,7 @@
       "attendees": "Peserta"
     },
     "emptyTitle": "Belum ada catatan pertemuan",
-    "emptyBody": "Catatan pertemuan mentoring akan muncul di sini. Klik baris untuk membuka isinya.",
+    "emptyBody": "Catatan pertemuan mentoring akan muncul di sini.",
     "deleteTitle": "Hapus catatan pertemuan",
     "deleteBody": "Catatan ini akan dihapus permanen dan tidak bisa dikembalikan.",
     "deleteConfirm": "Hapus",
@@ -136,6 +140,7 @@
     "attendance": {
       "title": "Presensi bulan ini",
       "empty": "Belum ada data presensi bulan ini.",
+      "days": "{count} hari",
       "codes": {
         "H": "Hadir",
         "S": "Sakit",
@@ -163,6 +168,7 @@
   },
   "termSummary": {
     "term": "Semester",
+    "summaryLabel": "Rangkuman",
     "termPlaceholder": "Pilih semester",
     "selectTermFirst": "Pilih semester untuk melihat atau menulis rangkuman.",
     "empty": "Rangkuman semester untuk siswa ini belum ditulis.",

@@ -179,6 +179,7 @@
     "download": "Download",
     "emptyTitle": "No warning letters yet",
     "emptyBody": "Letters issued this year will appear here.",
+    "viewCandidates": "See SP candidates",
     "unknownStudent": "Unknown student",
     "atRisk": {
       "filters": {
@@ -237,7 +238,7 @@
       "visibility": "Visibility"
     },
     "emptyTitle": "No counseling notes yet",
-    "emptyBody": "Your counseling notes will appear here. Click a row to open its content.",
+    "emptyBody": "Your counseling notes will appear here.",
     "unknownStudent": "Unknown student",
     "bkTeam": {
       "topicFilter": "Topic",

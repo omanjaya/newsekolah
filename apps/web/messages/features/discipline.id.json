@@ -179,6 +179,7 @@
     "download": "Unduh",
     "emptyTitle": "Belum ada surat peringatan",
     "emptyBody": "Surat yang diterbitkan tahun ini akan muncul di sini.",
+    "viewCandidates": "Lihat kandidat SP",
     "unknownStudent": "Siswa tidak diketahui",
     "atRisk": {
       "filters": {
@@ -237,7 +238,7 @@
       "visibility": "Visibilitas"
     },
     "emptyTitle": "Belum ada catatan konseling",
-    "emptyBody": "Catatan konseling Anda akan muncul di sini. Klik baris untuk membuka isinya.",
+    "emptyBody": "Catatan konseling Anda akan muncul di sini.",
     "unknownStudent": "Siswa tidak diketahui",
     "bkTeam": {
       "topicFilter": "Topik",

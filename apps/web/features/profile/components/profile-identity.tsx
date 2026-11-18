@@ -23,7 +23,9 @@ export function ProfileIdentity(): ReactElement | null {
       <AvatarUpload>
         <div className="flex min-w-0 flex-col gap-1.5">
           <div className="min-w-0">
-            <p className="truncate text-title text-fg">{me.name}</p>
+            {/* A long name ("Wakil Kepala Sekolah ...") wraps to a second line
+                on a phone instead of losing its end. */}
+            <p className="line-clamp-2 text-title [overflow-wrap:anywhere] text-fg">{me.name}</p>
             <p className="truncate text-body-sm text-fg-muted">
               @{me.username}
               {me.email ? ` · ${me.email}` : ""}

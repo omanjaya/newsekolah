@@ -2,7 +2,6 @@
 
 import {
   Button,
-  CountBadge,
   Table,
   TableBody,
   TableCell,
@@ -119,47 +118,52 @@ export function GradebookDesktopTable({
             const weight = t("weightLabel", { weight: component.weight });
             const kktp =
               component.kktp !== undefined ? t("kktpLabel", { kktp: component.kktp }) : undefined;
+            const detail = [weight, kktp].filter(Boolean).join(" · ");
             return (
               <TableHead
                 key={component.id}
                 scope="col"
-                className={cn(stickyHead, "w-28 min-w-28 border-l border-line px-2")}
+                className={cn(stickyHead, "w-32 min-w-32 border-l border-line px-2")}
               >
-                <div className="flex items-center gap-1">
+                {/* The code beside its menu, then the weight and, in words,
+                    how many scores the column still lacks, across the
+                    column's full width (wrapping rather than cut). */}
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1">
+                    <span className="truncate text-label text-fg" title={detail}>
+                      {component.code}
+                    </span>
+                    {canManage && (
+                      // Its 32px target overhangs the code's line instead of
+                      // pushing the caption down.
+                      <span className="-my-1 ml-auto">
+                        <GradebookColumnMenu
+                          t={t}
+                          code={component.code}
+                          hasEdits={Object.keys(edits[component.id] ?? {}).length > 0}
+                          saving={savingComponentId === component.id}
+                          disabled={hasInvalid}
+                          onEditComponent={() => {
+                            onEditComponent(component);
+                          }}
+                          onSaveColumn={() => {
+                            onSaveColumn(component.id);
+                          }}
+                        />
+                      </span>
+                    )}
+                  </div>
                   <span
-                    className="flex min-w-0 flex-col"
-                    title={[weight, kktp].filter(Boolean).join(" · ")}
+                    className="flex flex-wrap gap-x-1 text-caption font-normal text-fg-muted"
+                    title={detail}
                   >
-                    <span className="flex items-center gap-1.5">
-                      <span className="truncate text-label text-fg">{component.code}</span>
-                      {missing > 0 && (
-                        <>
-                          <CountBadge count={missing} aria-hidden="true" />
-                          <span className="sr-only">{t("missingCount", { count: missing })}</span>
-                        </>
-                      )}
-                    </span>
-                    <span className="truncate text-caption font-normal text-fg-muted">
-                      {weight}
-                    </span>
+                    <span>{weight}</span>
+                    {missing > 0 && (
+                      <span className="whitespace-nowrap">
+                        · {t("missingCount", { count: missing })}
+                      </span>
+                    )}
                   </span>
-                  {canManage && (
-                    <span className="ml-auto">
-                      <GradebookColumnMenu
-                        t={t}
-                        code={component.code}
-                        hasEdits={Object.keys(edits[component.id] ?? {}).length > 0}
-                        saving={savingComponentId === component.id}
-                        disabled={hasInvalid}
-                        onEditComponent={() => {
-                          onEditComponent(component);
-                        }}
-                        onSaveColumn={() => {
-                          onSaveColumn(component.id);
-                        }}
-                      />
-                    </span>
-                  )}
                 </div>
               </TableHead>
             );
@@ -213,6 +217,9 @@ export function GradebookDesktopTable({
               </TableCell>
               <TableCell className="border-l border-line text-right tabular-nums">
                 {canManage ? (
+                  // Opens the override even without a score yet (a teacher
+                  // may set the report score directly), but an empty one
+                  // reads as a plain muted dash, not an underlined link.
                   <Button
                     variant="link"
                     size="sm"
@@ -220,18 +227,27 @@ export function GradebookDesktopTable({
                       onManualOverride(student);
                     }}
                     title={pending ? t("reportScorePending") : undefined}
-                    className="text-fg underline decoration-dotted underline-offset-2"
+                    aria-label={
+                      student.report_score === undefined
+                        ? t("reportScoreSet", { name: student.name })
+                        : undefined
+                    }
+                    className={
+                      student.report_score !== undefined
+                        ? "text-fg underline decoration-dotted underline-offset-2"
+                        : "font-normal text-fg-muted"
+                    }
                   >
                     {student.report_score !== undefined
                       ? formatScore(student.report_score, locale)
                       : "-"}
                   </Button>
-                ) : (
+                ) : student.report_score !== undefined ? (
                   <span className="text-label text-fg">
-                    {student.report_score !== undefined
-                      ? formatScore(student.report_score, locale)
-                      : "-"}
+                    {formatScore(student.report_score, locale)}
                   </span>
+                ) : (
+                  <span className="text-fg-muted">-</span>
                 )}
                 {pending && (
                   <span

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -61,5 +62,36 @@ describe("ViolationsView warning-letter tabs", () => {
     mocks.permissions = new Set(["record_violations"]);
     render(<ViolationsView />);
     expect(screen.getByRole("button", { name: "record" })).toBeInTheDocument();
+  });
+
+  it("leaves the h1 and eyebrow to the area", () => {
+    render(<ViolationsView />);
+    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
+  });
+
+  it("opens the catalog and the SP policy from header actions, not tabs", async () => {
+    mocks.permissions = new Set([
+      "view_discipline",
+      "manage_discipline_catalog",
+      "manage_settings",
+    ]);
+    const user = userEvent.setup();
+    render(<ViolationsView />);
+
+    // The tabs keep to the two data views.
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "tabs.ledger",
+      "tabs.atRisk",
+    ]);
+
+    await user.click(screen.getByRole("button", { name: "tabs.catalog" }));
+    expect(await screen.findByRole("dialog", { name: "tabs.catalog" })).toBeInTheDocument();
+  });
+
+  it("offers no settings editor to a reader who manages neither", () => {
+    mocks.permissions = new Set(["view_discipline"]);
+    render(<ViolationsView />);
+    expect(screen.queryByRole("button", { name: "tabs.catalog" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "tabs.policy" })).not.toBeInTheDocument();
   });
 });

@@ -47,8 +47,6 @@ export function MentorGroupsView({
 }: {
   initialScope?: "mine" | "all";
 }): ReactElement {
-  const tMentoring = useTranslations("app.mentoring");
-  const tNav = useTranslations("app.shell.nav.items");
   const mine = useTranslations("app.mentoring.myGroups");
   const scope = initialScope;
   const t = useTranslations("app.mentoring.groups");
@@ -139,10 +137,10 @@ export function MentorGroupsView({
   }, [t, canManage]);
 
   return (
+    // No title or eyebrow of its own: the area's header stays put between
+    // its tabs, and the current tab names this page.
     <AppPage
       variant="fit"
-      title={scope === "mine" ? tMentoring("navLabelMyGroups") : tMentoring("navLabelGroups")}
-      eyebrow={tNav("studentActivities")}
       primaryAction={
         canManage ? (
           <Button
@@ -182,7 +180,15 @@ export function MentorGroupsView({
           onSortingChange={() => undefined}
           globalFilter={search}
           onGlobalFilterChange={setSearch}
-          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
+          // Nothing to search in an empty list; a search that emptied it
+          // keeps its box so it can be changed, and so does the first load,
+          // which usually brings rows.
+          searchable={isLoading || items.length > 0 || search !== ""}
+          toolbarLabels={{
+            // One's own groups all share one mentor, so only the name is searched.
+            searchPlaceholder:
+              scope === "mine" ? mine("searchPlaceholder") : t("searchPlaceholder"),
+          }}
           isLoading={isLoading}
           error={error}
           onRetry={() => void refetch()}
@@ -203,9 +209,12 @@ export function MentorGroupsView({
                 icon={<domainIcons.mentoring aria-hidden="true" />}
                 title={scope === "mine" ? mine("emptyTitle") : t("emptyTitle")}
                 description={scope === "mine" ? mine("emptyBody") : t("emptyBody")}
+                // The header carries the primary. The empty list of every
+                // group repeats it quietly; one's own groups are not made here.
                 action={
-                  canManage ? (
+                  canManage && scope === "all" ? (
                     <Button
+                      variant="secondary"
                       icon={<Plus />}
                       onClick={() => {
                         setEditing("new");
