@@ -69,15 +69,15 @@ function hasContent(node: ReactNode): boolean {
 
 // Tile: the artboard's 16px padding, 104px minimum height and radius 20.
 // Compact: one strip cell, the icon pinned left of a value-over-label pair.
-// A cell is never narrower than its figure and label (it grows from its
-// content, never shrinks below it), so a label cannot cross the divider;
-// figures start at the top, so values line up when only some cells carry
-// a hint.
+// Cells share the row equally when every figure fits (a zero basis, so
+// the dividers fall evenly whatever the label lengths), and a cell is
+// never narrower than its figure and label (`min-w-max`), so a label
+// cannot cross the divider and a row that does not fit scrolls. Figures
+// start at the top, so values line up when only some cells carry a hint.
 const ROOT_CLASS: Record<StatAppearance, string> = {
   plain: "flex flex-col",
   tile: "flex min-h-26 flex-col rounded-lg border border-border bg-surface p-4 shadow-1",
-  compact:
-    "relative flex min-w-36 flex-[1_0_auto] snap-start flex-col justify-start py-3 pr-5 pl-4",
+  compact: "relative flex min-w-max flex-[1_0_0%] snap-start flex-col justify-start py-3 pr-5 pl-4",
 };
 
 const VALUE_CLASS: Record<StatAppearance, string> = {

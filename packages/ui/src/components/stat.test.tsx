@@ -45,7 +45,22 @@ describe("Stat in a StatGrid", () => {
       </StatGrid>,
     );
     expect(container.querySelector("dl")).toHaveClass("sm:divide-x");
-    expect(container.querySelector("dl > div")).toHaveClass("min-w-36", "flex-[1_0_auto]");
+    expect(container.querySelector("dl > div")).toHaveClass("min-w-max", "flex-[1_0_0%]");
+  });
+
+  // Cells grew from their content width (`flex-[1_0_auto]`), so a strip's
+  // dividers fell unevenly wherever labels differed in length.
+  it("shares a strip's row equally, never narrower than a cell's figure and label", () => {
+    const { container } = render(
+      <StatGrid variant="strip">
+        <Stat value={1} label="Observasi terjadwal" />
+        <Stat value={2} label="Guru" />
+      </StatGrid>,
+    );
+    for (const cell of Array.from(container.querySelectorAll("dl > div"))) {
+      expect(cell).toHaveClass("flex-[1_0_0%]", "min-w-max");
+      expect(cell).not.toHaveClass("flex-[1_0_auto]");
+    }
   });
 });
 
