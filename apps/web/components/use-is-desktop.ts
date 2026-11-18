@@ -5,18 +5,31 @@ import { useSyncExternalStore } from "react";
 /** The shell's own breakpoint: the sidebar and header from here, the phone frame below (Tailwind `md`). */
 const DESKTOP_QUERY = "(min-width: 768px)";
 
-function mediaQuery(): MediaQueryList | null {
+/** Where a page's main and side columns sit side by side (Tailwind `lg`); one column below. */
+const TWO_COLUMN_QUERY = "(min-width: 1024px)";
+
+function mediaQuery(query: string): MediaQueryList | null {
   return typeof window !== "undefined" && typeof window.matchMedia === "function"
-    ? window.matchMedia(DESKTOP_QUERY)
+    ? window.matchMedia(query)
     : null;
 }
 
-function subscribe(callback: () => void): () => void {
-  const query = mediaQuery();
-  query?.addEventListener("change", callback);
-  return () => {
-    query?.removeEventListener("change", callback);
-  };
+/**
+ * Whether `query` matches. The server and an environment without
+ * `matchMedia` get `false`, the phone's answer.
+ */
+function useMatches(query: string): boolean {
+  return useSyncExternalStore(
+    (callback) => {
+      const list = mediaQuery(query);
+      list?.addEventListener("change", callback);
+      return () => {
+        list?.removeEventListener("change", callback);
+      };
+    },
+    () => mediaQuery(query)?.matches ?? false,
+    () => false,
+  );
 }
 
 /**
@@ -27,9 +40,14 @@ function subscribe(callback: () => void): () => void {
  * element either way, so nothing moves when the client corrects it.
  */
 export function useIsDesktop(): boolean {
-  return useSyncExternalStore(
-    subscribe,
-    () => mediaQuery()?.matches ?? false,
-    () => false,
-  );
+  return useMatches(DESKTOP_QUERY);
+}
+
+/**
+ * True from the `lg` breakpoint, where a page's main and side columns sit
+ * side by side; below it they stack in one column, so a card that leads
+ * the side column may need to move up. Server: `false`.
+ */
+export function useIsTwoColumn(): boolean {
+  return useMatches(TWO_COLUMN_QUERY);
 }

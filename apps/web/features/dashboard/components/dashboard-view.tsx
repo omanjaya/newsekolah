@@ -15,16 +15,15 @@ import {
   StatGrid,
   TextLink,
   cn,
-  type CategoryTone,
 } from "@newsekolah/ui";
-import { Bell, MonitorPlay, Rocket } from "lucide-react";
+import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
-import type { ReactElement, ReactNode } from "react";
+import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
-import { useIsDesktop } from "../../../components/use-is-desktop";
+import { useIsDesktop, useIsTwoColumn } from "../../../components/use-is-desktop";
 import { isModuleEnabled } from "../../../lib/modules/feature-modules";
 import { navAccessFromMe } from "../../../lib/navigation-access";
 import { canOpenPath } from "../../../lib/navigation-permissions";
@@ -49,6 +48,7 @@ import { useTeacherBlock } from "../home/blocks/teacher";
 import { collectBlocks, guardHero, guardTiles } from "../home/compose";
 import { entrance, useFirstEntrance } from "../home/entrance";
 import { resolvePersonas } from "../home/personas";
+import { buildShortcuts } from "../home/shortcuts";
 import type { HeroCandidate, Me, PersonaBlock, PersonaKey, TileSpec } from "../home/types";
 
 /**
@@ -60,11 +60,11 @@ import type { HeroCandidate, Me, PersonaBlock, PersonaKey, TileSpec } from "../h
  */
 const LOADING_ME = { tenant: { timezone: "UTC" }, permissions: [], duties: [] } as unknown as Me;
 
-/** At most this many shortcuts in the side column. */
-const MAX_SHORTCUTS = 5;
-
 /** The notifications count that fills a short stat row (see `notifications` below). */
 const NOTIFICATIONS_TILE = "common.notifications";
+
+/** The reader's own check-in card (home/blocks/check-in.tsx), first in the side column. */
+const CHECK_IN_SLOT = "checkIn.card";
 
 /**
  * The desktop tile row spreads as many columns as it has tiles. A row is
@@ -81,20 +81,13 @@ function countable(value: string): number | string {
   return /^\d+$/.test(value) ? Number(value) : value;
 }
 
-interface Shortcut {
-  key: string;
-  href: string;
-  label: string;
-  icon: ReactNode;
-  tone: CategoryTone;
-}
-
 /**
  * The combined per-role home, one template for every role: the most urgent
  * "now" card across the reader's personas (or a calm one when nothing is
  * due) with exactly one primary action, a compact stat row, the personas'
- * task cards, and announcements. A main column and a side column on a
- * desktop; one column on a phone, in that order.
+ * task cards, and announcements. A main column and a side column from
+ * `lg`; one column below it, in that order except that the reader's own
+ * check-in card comes straight after the figures.
  */
 export function DashboardView(): ReactElement {
   useSimulation();
@@ -103,6 +96,7 @@ export function DashboardView(): ReactElement {
   const tQuick = useTranslations("app.quickActions");
   const format = useFormatter();
   const isDesktop = useIsDesktop();
+  const twoColumn = useIsTwoColumn();
 
   const personas = me ? resolvePersonas(me) : new Set<PersonaKey>();
   const active = (key: PersonaKey) => personas.has(key);
@@ -185,7 +179,25 @@ export function DashboardView(): ReactElement {
 
   const collected = collectBlocks([...personaBlocks, notifications]);
   const merged = guardTiles(collected.tiles, canOpen);
-  const tiles = merged.some((tile) => tile.key !== NOTIFICATIONS_TILE) ? merged : [];
+  // The filler only rounds out the desktop tile row. On a phone's strip it
+  // would take a row of its own (figures sit two to a row) to repeat the
+  // count the header bell already shows.
+  const shown = isDesktop ? merged : merged.filter((tile) => tile.key !== NOTIFICATIONS_TILE);
+  const tiles = shown.some((tile) => tile.key !== NOTIFICATIONS_TILE) ? shown : [];
+
+  // The reader's own check-in leads the side column beside the queue; in
+  // one column it comes straight after the figures, ahead of the queue
+  // and the insight cards, instead of two thirds down the page.
+  const checkInSlot = collected.side.find((slot) => slot.key === CHECK_IN_SLOT);
+  const contextSlots = collected.side.filter((slot) => slot.key !== CHECK_IN_SLOT);
+  // A main column that no queue card leads (a picket teacher's empty queue
+  // is dropped, the gate adds none) takes the context cards, so it is not
+  // the hero and tiles beside a long side column. When it is still empty,
+  // the announcements close it instead of the side column.
+  const shortMain = collected.main.length <= 1;
+  const mainSlots = shortMain ? [...collected.main, ...contextSlots] : collected.main;
+  const sideSlots = shortMain ? [] : contextSlots;
+  const announcementsInMain = mainSlots.length === 0;
   const fallback: HeroCandidate =
     inbox.total > 0
       ? {
@@ -269,19 +281,28 @@ export function DashboardView(): ReactElement {
               )}
             </>
           )}
-          {collected.main.map((slot, index) => (
+          {checkInSlot && !twoColumn && (
+            <div data-testid={`dashboard-card-${checkInSlot.key}`} {...entrance(firstEntrance, 2)}>
+              {checkInSlot.node}
+            </div>
+          )}
+          {mainSlots.map((slot, index) => (
             <div
               key={slot.key}
               data-testid={`dashboard-card-${slot.key}`}
-              {...entrance(firstEntrance, 2 + index)}
+              {...entrance(firstEntrance, (checkInSlot && !twoColumn ? 3 : 2) + index)}
             >
               {slot.node}
             </div>
           ))}
+          {announcementsOn && announcementsInMain && <AnnouncementsCard />}
         </div>
 
         <div className="flex min-w-0 flex-col gap-4 lg:col-span-4" data-testid="dashboard-side">
-          {collected.side.map((slot) => (
+          {checkInSlot && twoColumn && (
+            <div data-testid={`dashboard-card-${checkInSlot.key}`}>{checkInSlot.node}</div>
+          )}
+          {sideSlots.map((slot) => (
             <div key={slot.key} data-testid={`dashboard-card-${slot.key}`}>
               {slot.node}
             </div>
@@ -309,19 +330,23 @@ export function DashboardView(): ReactElement {
               </List>
             </Card>
           )}
-          {announcementsOn && (
-            <Card data-testid="dashboard-card-announcements">
-              <CardHeader
-                action={<TextLink href="/announcements">{t("openAnnouncements")}</TextLink>}
-              >
-                <CardTitle as="h2">{t("announcementsTitle")}</CardTitle>
-              </CardHeader>
-              <AnnouncementFeed limit={3} compact />
-            </Card>
-          )}
+          {announcementsOn && !announcementsInMain && <AnnouncementsCard />}
         </div>
       </div>
     </AppPage>
+  );
+}
+
+/** The latest three announcements; it closes whichever column has room. */
+function AnnouncementsCard(): ReactElement {
+  const t = useTranslations("app.dashboard");
+  return (
+    <Card data-testid="dashboard-card-announcements">
+      <CardHeader action={<TextLink href="/announcements">{t("openAnnouncements")}</TextLink>}>
+        <CardTitle as="h2">{t("announcementsTitle")}</CardTitle>
+      </CardHeader>
+      <AnnouncementFeed limit={3} compact />
+    </Card>
   );
 }
 
@@ -403,61 +428,4 @@ function HomeSkeleton({ tiles = 4, strip = false }: { tiles?: number; strip?: bo
       )}
     </div>
   );
-}
-
-/**
- * The side column's shortcuts: the reader's quick actions (the same list,
- * in the same order, as the phone's quick-action button and the command
- * palette), plus the monitor and the setup checklist for whoever may open
- * them. A shortcut that repeats the hero's action or the check-in card
- * right beside it is left out.
- */
-function buildShortcuts({
-  me,
-  hero,
-  canOpen,
-  hasCheckInCard,
-  quick,
-  extra,
-}: {
-  me: Me;
-  hero: HeroCandidate;
-  canOpen: (href: string) => boolean;
-  hasCheckInCard: boolean;
-  quick: Shortcut[];
-  extra: { monitor: string; setup: string };
-}): Shortcut[] {
-  const path = (href: string) => href.split("?")[0] ?? href;
-  const heroPaths = new Set(
-    [hero.action, hero.secondaryAction].flatMap((link) => (link ? [path(link.href)] : [])),
-  );
-  const can = (permission: string) => me.permissions.includes(permission);
-  const links: Shortcut[] = [
-    ...quick.filter((shortcut) => !(hasCheckInCard && shortcut.key === "check-in")),
-    ...(can("view_monitor_presence")
-      ? [
-          {
-            key: "monitor",
-            href: "/monitor",
-            label: extra.monitor,
-            icon: <MonitorPlay />,
-            tone: "blue" as const,
-          },
-        ]
-      : []),
-    ...(can("manage_settings")
-      ? [
-          {
-            key: "setup",
-            href: "/setup",
-            label: extra.setup,
-            icon: <Rocket />,
-            tone: "green" as const,
-          },
-        ]
-      : []),
-  ];
-  return links
-    .filter((link) => canOpen(path(link.href)) && !heroPaths.has(path(link.href)))
-    .slice(0, MAX_SHORTCUTS);
 }

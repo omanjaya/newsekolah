@@ -35,6 +35,12 @@ vi.mock("../home/blocks/counselor", () => ({ useCounselorBlock: counselorBlock }
 vi.mock("../home/blocks/librarian", () => ({ useLibrarianBlock: librarianBlock }));
 vi.mock("../home/blocks/gate", () => ({ useGateBlock: gateBlock }));
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+
+const viewport = vi.hoisted(() => ({ desktop: false, twoColumn: false }));
+vi.mock("../../../components/use-is-desktop", () => ({
+  useIsDesktop: () => viewport.desktop,
+  useIsTwoColumn: () => viewport.twoColumn,
+}));
 vi.mock("next-intl", () => ({
   useTranslations: () =>
     Object.assign(
@@ -84,6 +90,8 @@ function slot(key: string, text: string) {
 
 describe("DashboardView", () => {
   beforeEach(() => {
+    viewport.desktop = true;
+    viewport.twoColumn = true;
     dashboardData
       .mockReset()
       .mockReturnValue({ data: me, isLoading: false, isError: false, refetch: vi.fn() });
@@ -233,6 +241,21 @@ describe("DashboardView", () => {
     render(<DashboardView />);
     expect(screen.getByTestId("dashboard-tile-t1")).toBeInTheDocument();
     expect(screen.getByTestId("dashboard-tile-common.notifications")).toBeInTheDocument();
+  });
+
+  // On a phone the strip pairs its figures, so the filler took a row of its
+  // own to repeat the header bell's count.
+  it("leaves the notifications filler out of a phone's strip", () => {
+    viewport.desktop = false;
+    viewport.twoColumn = false;
+    teacherBlock.mockReturnValue({
+      ...emptyBlock(),
+      tiles: [tile("t1", 90), tile("t2", 80)],
+    });
+    render(<DashboardView />);
+    expect(screen.getByTestId("dashboard-tile-t1")).toBeInTheDocument();
+    expect(screen.getByTestId("dashboard-tile-t2")).toBeInTheDocument();
+    expect(screen.queryByTestId("dashboard-tile-common.notifications")).not.toBeInTheDocument();
   });
 
   it("shows no stat row when the notifications tile would stand alone", () => {
