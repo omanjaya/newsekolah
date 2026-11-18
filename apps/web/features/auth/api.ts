@@ -36,7 +36,8 @@ function storeSessionTokens(data: components["schemas"]["AuthTokens"]): void {
  * load the previous account's `/v1/me` (a sign-in that cannot remove it
  * fails before any session exists); hands the tokens to
  * `storeSessionTokens`; and goes through the package's `useStartSession`
- * (`useLogin` uses it too), which empties the cache but for the tenant's
+ * (`useLogin` uses it too), which first drops any refresh still on its way
+ * for the previous identity, then empties the cache but for the tenant's
  * branding and seeds `me` from the response.
  */
 export function useLoginMutation() {
@@ -127,7 +128,7 @@ export function useGoogleSSOAvailabilityQuery() {
 /** POST /v1/auth/sso/google: exchanges a verified Google ID token for a session. */
 export function useGoogleLoginMutation() {
   const client = useApiClient();
-  const startSession = useStartSession({ onTokens: storeSessionTokens });
+  const startSession = useStartSession(client, { onTokens: storeSessionTokens });
   const mutation = useMutation({
     mutationFn: async (idToken: string) => {
       await clearServerAccessCookie();
@@ -151,7 +152,7 @@ export function useGoogleLoginMutation() {
  */
 export function usePasskeyLoginMutation() {
   const client = useApiClient();
-  const startSession = useStartSession({ onTokens: storeSessionTokens });
+  const startSession = useStartSession(client, { onTokens: storeSessionTokens });
   const mutation = useMutation({
     mutationFn: async (username: string) => {
       const options = await client.POST("/v1/auth/passkeys/login/options", {

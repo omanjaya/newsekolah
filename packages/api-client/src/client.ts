@@ -98,6 +98,12 @@ export interface NewsekolahApiClient {
    * out with the remembered one, which can name a session that is still
    * alive on the server. A failed refresh forgets on its own. The next
    * sign-in, and every refresh after it, work as before.
+   *
+   * Call it as well right before the app takes a new identity's token (a
+   * sign-in, the start of an impersonation, a role-testing switch): a
+   * refresh started for the previous identity then neither stores nor
+   * announces that identity's token over the new one, and one that fails
+   * does not report the new session as unauthorized.
    */
   forgetAccessToken: () => void;
 }
@@ -169,9 +175,10 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
   // getAccessToken has not caught up yet. Dropped by forgetAccessToken()
   // and by a failed refresh: the session it belongs to has ended.
   let lastRefreshed: string | null = null;
-  // Counts the sessions the app has ended. A refresh that started before
-  // the latest one ended belongs to that session, so its answer is dropped
-  // instead of handing the ended session's token back to the app.
+  // Counts the sessions the app has ended or replaced. A refresh that
+  // started before the latest one ended belongs to that session, so its
+  // answer is dropped instead of handing the ended session's token back to
+  // the app.
   let endedSessions = 0;
 
   function forgetAccessToken(): void {
@@ -199,6 +206,9 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       if (!response.ok) {
         lastRefreshed = null;
         await tokenStore.clear();
+        // Checked again after the await: a session that started meanwhile
+        // is not the one that failed, and must not be signed out for it.
+        if (sessionEnded()) return null;
         if (notifyOnFailure) {
           options.onUnauthorized?.();
         }

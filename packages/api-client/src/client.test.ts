@@ -465,3 +465,122 @@ describe("forgetting the remembered access token", () => {
     expect(seen).toEqual(["Bearer first-session", "Bearer second-session"]);
   });
 });
+
+// A sign-in, the start of an impersonation or a role-testing switch hands
+// the app a new identity's token while a refresh for the previous one may
+// still be on its way. The app calls forgetAccessToken() right before it
+// takes the new token (useStartSession, the web app's switchReader).
+describe("switching identity while a refresh is on its way", () => {
+  it("does not hand the previous identity's refreshed token over the new one", async () => {
+    const seen: (string | null)[] = [];
+    const onAccessToken = vi.fn();
+    let appToken: string | null = "admin-expired";
+    let refreshStarted: () => void = () => undefined;
+    const started = new Promise<void>((resolve) => {
+      refreshStarted = resolve;
+    });
+    let answerRefresh: () => void = () => undefined;
+    const answered = new Promise<void>((resolve) => {
+      answerRefresh = resolve;
+    });
+    server.use(
+      http.get(`${BASE_URL}/v1/me`, ({ request }) => {
+        const authorization = request.headers.get("authorization");
+        seen.push(authorization);
+        return authorization === "Bearer admin-expired"
+          ? HttpResponse.json(errorBody("AUTH_TOKEN_EXPIRED"), { status: 401 })
+          : HttpResponse.json({ id: authorization?.replace("Bearer ", "") });
+      }),
+      http.post(`${BASE_URL}/v1/auth/refresh`, async () => {
+        refreshStarted();
+        await answered;
+        return HttpResponse.json({ access_token: "admin-refreshed" });
+      }),
+    );
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => appToken,
+      clientHeader: "web/1.0.0",
+      onAccessToken: (token) => {
+        onAccessToken(token);
+        appToken = token;
+      },
+    });
+
+    const request = client.GET("/v1/me").catch((e: unknown) => e);
+    await started;
+    // The switch lands while the admin's refresh is still on its way.
+    client.forgetAccessToken();
+    appToken = "teacher-token";
+    answerRefresh();
+    const error = await request;
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(onAccessToken).not.toHaveBeenCalled();
+    expect(appToken).toBe("teacher-token");
+    expect(await client.GET("/v1/me")).toEqual({ id: "teacher-token" });
+    expect(seen).toEqual(["Bearer admin-expired", "Bearer teacher-token"]);
+  });
+
+  // The sign-in page after a sign-out: its own `/v1/me` goes out with no
+  // token, and the refresh it asks for fails on the dead cookie. A sign-in
+  // that completes before that answer arrives must keep its token.
+  it("does not report a session that started meanwhile as unauthorized", async () => {
+    const seen: (string | null)[] = [];
+    const onUnauthorized = vi.fn();
+    let appToken: string | null = null;
+    let refreshCalls = 0;
+    let refreshStarted: () => void = () => undefined;
+    const started = new Promise<void>((resolve) => {
+      refreshStarted = resolve;
+    });
+    let answerRefresh: () => void = () => undefined;
+    const answered = new Promise<void>((resolve) => {
+      answerRefresh = resolve;
+    });
+    server.use(
+      http.get(`${BASE_URL}/v1/me`, ({ request }) => {
+        const authorization = request.headers.get("authorization");
+        seen.push(authorization);
+        return authorization
+          ? HttpResponse.json({ id: authorization.replace("Bearer ", "") })
+          : HttpResponse.json(errorBody("AUTH_UNAUTHENTICATED"), { status: 401 });
+      }),
+      http.post(`${BASE_URL}/v1/auth/refresh`, async () => {
+        refreshCalls += 1;
+        // The page load's boot refresh fails at once; the one the
+        // unauthenticated 401 asks for is still on its way at the sign-in.
+        if (refreshCalls > 1) {
+          refreshStarted();
+          await answered;
+        }
+        return HttpResponse.json(errorBody("AUTH_INVALID_CREDENTIALS"), { status: 401 });
+      }),
+    );
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => appToken,
+      clientHeader: "web/1.0.0",
+      // What the web app does: drop its own token, then go to sign in.
+      onUnauthorized: () => {
+        onUnauthorized();
+        appToken = null;
+      },
+    });
+
+    const request = client.GET("/v1/me").catch((e: unknown) => e);
+    await started;
+    // The sign-in completes.
+    client.forgetAccessToken();
+    appToken = "new-session";
+    answerRefresh();
+    const error = await request;
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(refreshCalls).toBe(2);
+    expect(onUnauthorized).not.toHaveBeenCalled();
+    expect(appToken).toBe("new-session");
+    expect(await client.GET("/v1/me")).toEqual({ id: "new-session" });
+    expect(seen).toEqual([null, "Bearer new-session"]);
+  });
+});

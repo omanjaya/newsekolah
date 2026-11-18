@@ -232,6 +232,12 @@ describe("every sign-in", () => {
   it.each(signIns)(
     "$name: removes the server access cookie, then starts from an empty cache with me from the response",
     async ({ sessionPath, useSignIn }) => {
+      // Which token the tab held when the client was told to drop any
+      // refresh still on its way for the earlier account.
+      let tokenWhenForgotten: string | null = "not called";
+      forgetAccessToken.mockImplementation(() => {
+        tokenWhenForgotten = getAccessToken();
+      });
       const { client, result } = setup(() => useSignIn());
 
       await act(async () => {
@@ -239,6 +245,8 @@ describe("every sign-in", () => {
       });
 
       expect(calls.slice(-2)).toEqual(["clear-sat", sessionPath]);
+      expect(forgetAccessToken).toHaveBeenCalledTimes(1);
+      expect(tokenWhenForgotten).toBe("earlier-token");
       expect(getAccessToken()).toBe("next-token");
       expect(client.getQueryData(UNREAD_KEY)).toBeUndefined();
       expect(client.getQueryData<Me>(["me"])?.id).toBe("next");

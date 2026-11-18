@@ -53,7 +53,7 @@ export interface UseLoginOptions {
  */
 export function useLogin(client: NewsekolahApiClient, options: UseLoginOptions = {}) {
   const { beforeRequest } = options;
-  const startSession = useStartSession({ onTokens: options.onTokens });
+  const startSession = useStartSession(client, { onTokens: options.onTokens });
   return useMutation({
     mutationFn: async (body: LoginRequest) => {
       await beforeRequest?.();

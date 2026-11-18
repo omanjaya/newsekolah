@@ -21,15 +21,16 @@ Typed API client generated from `openapi/openapi.yaml`.
     option on any call.
   - `client.forgetAccessToken()` drops the token the client kept from its
     last refresh (and the answer of a refresh still on its way). Call it
-    whenever the app ends a session on purpose, with its own copy; a
-    failed refresh does it on its own.
+    whenever the app ends a session on purpose, with its own copy, and
+    right before it takes a new identity's token (`useStartSession` does
+    so for every sign-in); a failed refresh does it on its own.
 - `queryKeys` centralizes TanStack Query cache keys so web and mobile
   invalidate the same entries.
 - `@newsekolah/api-client/react` exports `useMe`, `useLogin`, `useLogout`,
   `useSessions`, `useRevokeSession`, `useChangePassword`,
   `useTenantBranding`, `useTenantLookup`, each taking the client instance as
   its first argument, plus `useStartSession` (what every sign-in does with
-  its tokens) and `clearReaderCache` (empties the cache when the reader
+  its tokens, also taking the client first) and `clearReaderCache` (empties the cache when the reader
   changes, keeping the tenant's branding). `@tanstack/react-query` and
   `react` are peer dependencies.
 

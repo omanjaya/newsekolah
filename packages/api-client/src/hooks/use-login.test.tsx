@@ -199,4 +199,35 @@ describe("useLogin", () => {
     expect(order).toEqual(["before", "login"]);
     expect(onTokens).not.toHaveBeenCalled();
   });
+
+  // The sign-in page's own `/v1/me` may have asked for a refresh that is
+  // still on its way: it belongs to whoever was signed in before.
+  it("drops any refresh still on its way before the new session's tokens are handed over", async () => {
+    server.use(
+      http.post(`${BASE_URL}/v1/auth/login`, () => HttpResponse.json(loginResponse("user-5"))),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => null,
+      clientHeader: "web/test",
+    });
+    const order: string[] = [];
+    vi.spyOn(client, "forgetAccessToken").mockImplementation(() => {
+      order.push("forget");
+    });
+    const onTokens = vi.fn(() => {
+      order.push("tokens");
+    });
+    function wrapper({ children }: { children: ReactNode }): ReactElement {
+      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    }
+    const { result } = renderHook(() => useLogin(client, { onTokens }), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ username: "u", password: "p", client: "web" });
+    });
+
+    expect(order).toEqual(["forget", "tokens"]);
+  });
 });
