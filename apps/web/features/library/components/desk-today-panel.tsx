@@ -121,7 +121,7 @@ export function DeskTodayPanel({ className }: { className?: string }): ReactElem
           <CardHeader>
             <CardTitle as="h2">{t("shortcuts.heading")}</CardTitle>
           </CardHeader>
-          <List dense>
+          <List>
             {shortcuts.map((shortcut) => (
               <ListRow
                 key={shortcut.key}

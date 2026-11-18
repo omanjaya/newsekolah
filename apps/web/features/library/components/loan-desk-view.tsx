@@ -91,7 +91,7 @@ export function LoanDeskView(): ReactElement {
     <AppPage variant="wide" nav={<LibraryWorkspaceNav area="circulation" />}>
       {/* The work on the left, today and the occasional destinations on the
           right; on a phone the overdue queue comes before the side column. */}
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-[auto_1fr]">
         <div className="flex min-w-0 flex-col gap-6">
           <DeskScanBar
             mode={session.mode}
@@ -182,9 +182,9 @@ export function LoanDeskView(): ReactElement {
           </Card>
         </div>
 
-        <DeskTodayPanel className="max-lg:order-last" />
+        <DeskTodayPanel className="max-lg:order-last lg:col-start-2 lg:row-span-2 lg:row-start-1" />
 
-        <div className="min-w-0 lg:col-span-2">
+        <div className="min-w-0 lg:col-start-1">
           <DeskOverdueTable />
         </div>
       </div>

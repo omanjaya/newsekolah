@@ -112,7 +112,9 @@ export function DashboardActivityLists({
         <CardHeader
           action={
             canCirculate ? (
-              <TextLink href="/library/desk#desk-overdue">{t("followUpAll")}</TextLink>
+              <TextLink href="/library/desk#desk-overdue" className="max-sm:hidden">
+                {t("followUpAll")}
+              </TextLink>
             ) : undefined
           }
         >
