@@ -36,12 +36,14 @@ const stage = (key: string) => ({
 
 let detail: Record<string, unknown> = {};
 
-const mutation = () => ({
+// The "../api" factory below is hoisted above this module's body and hands
+// this function over as a hook, so it has to exist before the factory runs.
+const mutation = vi.hoisted(() => () => ({
   mutate: vi.fn(),
   mutateAsync: vi.fn(),
   isPending: false,
   variables: undefined,
-});
+}));
 
 vi.mock("../api", () => ({
   LEAVE_EVIDENCE_MAX_LONG_EDGE: 1600,

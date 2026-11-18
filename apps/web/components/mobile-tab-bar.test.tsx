@@ -160,11 +160,21 @@ describe("MobileTabBar", () => {
   });
 
   it("moves the pill to Menu for a page reached through the menu", () => {
-    pathname.mockReturnValue("/profile");
-    renderBar(teacherItems, "teacher");
+    // The action inbox is listed in Menu and is neither a tab nor the
+    // centre. (An account page such as /profile is hidden from Menu, so
+    // since be69bbaf it lights nothing, like /check-in below.)
+    expect(teacherItems.find((item) => item.href === "/inbox")?.sidebarPlacement).not.toBe(
+      "hidden",
+    );
+    pathname.mockReturnValue("/inbox");
+    const { container } = renderBar(teacherItems, "teacher");
+    const active = container.querySelectorAll('[data-tab][data-state="active"]');
+    expect(active).toHaveLength(1);
+    expect(active[0]).toBe(screen.getByRole("navigation").querySelector("ul > li:last-child"));
     expect(pill().style.getPropertyValue("--indicator-x")).toBe(
       `${String(TRACK_PADDING + 4 * SLOT_WIDTH)}px`,
     );
+    expect(pill().parentElement).toHaveAttribute("data-indicator", "ready");
   });
 
   it("lights nothing on a page the menu does not list", () => {

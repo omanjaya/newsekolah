@@ -13,6 +13,10 @@ const mocks = vi.hoisted(() => ({
   reviewMutate: vi.fn(),
   reviewMutateAsync: vi.fn(),
 }));
+// useUrlState reads the query through the router; follow the address.
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(window.location.search),
+}));
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => "id",
