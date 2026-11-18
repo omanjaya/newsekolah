@@ -309,6 +309,22 @@ describe("PageHeader", () => {
     await expectNoAxeViolations(container);
   });
 
+  // A member's name hung from the top edge of its 64px avatar.
+  it("centres a title with no description on its leading avatar", () => {
+    const { rerender } = render(
+      <PageHeader title="Guru Contoh" leading={<span data-testid="avatar">GC</span>} />,
+    );
+    expect(screen.getByRole("heading", { level: 1 })).toHaveClass("self-center");
+    rerender(
+      <PageHeader
+        title="Guru Contoh"
+        description="Guru dan staf"
+        leading={<span data-testid="avatar">GC</span>}
+      />,
+    );
+    expect(screen.getByRole("heading", { level: 1 })).not.toHaveClass("self-center");
+  });
+
   it("passes an id, a test id and a ref to its root", () => {
     const ref = createRef<HTMLDivElement>();
     render(<PageHeader ref={ref} id="top" data-testid="page-header" title="Siswa" />);

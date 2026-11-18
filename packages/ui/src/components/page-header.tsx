@@ -208,6 +208,9 @@ export function PageHeader({
   const phoneActions = Boolean(actions) || (Boolean(primaryAction) && !compactPrimary);
   const phoneTrailing = secondaryActions.length > 0 || compactPrimary;
   const hasLeading = leading !== undefined && leading !== null && leading !== false;
+  // Only a title alone beside its leading item centres on it; with a
+  // description the two lines share the avatar's height already.
+  const centredOnLeading = hasLeading && !description;
   // A destructive action never sits out as a button: it waits in the menu
   // at every width, where it takes a deliberate second tap.
   const buttons = secondaryActions.filter((action) => !action.destructive);
@@ -238,7 +241,13 @@ export function PageHeader({
             title's first line; when they do not fit beside it, they wrap
             under the whole block, start-aligned as on a phone, instead of
             squeezing the title or splitting it from its description. */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:gap-x-6 sm:gap-y-4">
+        <div
+          className={cn(
+            "flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:gap-x-6 sm:gap-y-4",
+            // Beside a title centred on its avatar, the actions centre too.
+            centredOnLeading && "sm:items-center",
+          )}
+        >
           <div
             data-slot="page-header-heading"
             className={cn(
@@ -256,7 +265,12 @@ export function PageHeader({
                 {leading}
               </div>
             )}
-            <h1 ref={titleRef} className="min-w-0 text-display text-fg">
+            {/* A title with no description beside a taller leading avatar
+                centres on it, instead of hanging from its top edge. */}
+            <h1
+              ref={titleRef}
+              className={cn("min-w-0 text-display text-fg", centredOnLeading && "self-center")}
+            >
               {title}
             </h1>
             {/* The phone's overflow button ends the title's first line
@@ -267,7 +281,10 @@ export function PageHeader({
               (compactPrimary ? (
                 <div
                   data-slot="page-header-phone-actions"
-                  className="-my-1 flex items-center gap-2 self-start pointer-coarse:-my-2 sm:hidden"
+                  className={cn(
+                    "-my-1 flex items-center gap-2 self-start pointer-coarse:-my-2 sm:hidden",
+                    centredOnLeading && "self-center",
+                  )}
                 >
                   <CompactPrimary action={primaryActionCompact} />
                   {secondaryActions.length > 0 && (
@@ -277,7 +294,10 @@ export function PageHeader({
               ) : (
                 <OverflowMenu
                   actions={secondaryActions}
-                  className="-my-1 self-start pointer-coarse:-my-2 sm:hidden"
+                  className={cn(
+                    "-my-1 self-start pointer-coarse:-my-2 sm:hidden",
+                    centredOnLeading && "self-center",
+                  )}
                 />
               ))}
             {description && (
