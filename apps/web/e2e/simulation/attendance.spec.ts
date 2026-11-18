@@ -4,7 +4,7 @@ import { ACTORS, assertNoNavigation, closeAll, expect, loginAs, test } from "./f
  * Scenario c) Attendance: the homeroom teacher saves today's attendance
  * session for X-A, and the principal's already-open dashboard shows the
  * "classes currently in session" progress figure update live
- * (the leadership block's hero in
+ * (the leadership block's hero and its meter in
  * apps/web/features/dashboard/home/blocks/leadership.tsx, fed by the admin
  * dashboard query that `attendance.submitted` -> `role:principal`/
  * `role:admin` invalidates).
@@ -43,10 +43,14 @@ test("attendance: teacher saves -> principal dashboard progress live", async ({ 
 
   try {
     await principal.page.goto("/dashboard");
-    // The home's tile row: "Kelas dipresensi" with the submitted/total count.
-    await expect(principal.page.getByText("Kelas dipresensi", { exact: true })).toBeVisible({
-      timeout: 20_000,
+    // The leadership hero ("Presensi saat ini") carries the submitted/total
+    // figure in its title and its meter; since 1af39ca4 ("say each home
+    // fact once") the tile row leaves out its own "Kelas dipresensi" copy.
+    const attendanceMeter = principal.page.getByRole("meter", {
+      name: "Presensi kelas yang sedang belajar",
     });
+    await expect(attendanceMeter).toBeVisible({ timeout: 20_000 });
+    await expect(principal.page.getByText(/^\d+ dari \d+ kelas sudah dipresensi$/)).toBeVisible();
 
     await homeroom.page.goto("/attendance");
     await expect(
@@ -78,6 +82,7 @@ test("attendance: teacher saves -> principal dashboard progress live", async ({ 
       await expect(principal.page.getByText("1 dari 1 kelas sudah dipresensi")).toBeVisible({
         timeout: 20_000,
       });
+      await expect(attendanceMeter).toHaveAttribute("aria-valuenow", "1");
     });
   } finally {
     await closeAll(principal, homeroom);
