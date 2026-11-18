@@ -238,7 +238,16 @@ async function passGate(security: Page, payload: string): Promise<void> {
 async function finishOpenExitPermit(actors: { student: Page; security: Page }): Promise<void> {
   const { student, security } = actors;
   await student.goto("/exit-permits");
-  await expect(student.getByRole("heading", { level: 1, name: "Izin keluar" })).toBeVisible();
+  // Since 82289c1d the permit routes keep the area's title; the area's
+  // tabs mark which of them is open.
+  await expect(
+    student.getByRole("heading", { level: 1, name: "Izin dan keterlambatan" }),
+  ).toBeVisible();
+  await expect(
+    student
+      .getByRole("navigation", { name: "Bagian Izin dan keterlambatan" })
+      .getByRole("link", { name: "Izin keluar", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
   await expect(student.locator('[data-slot="skeleton"], .animate-pulse')).toHaveCount(0, {
     timeout: 20_000,
   });
