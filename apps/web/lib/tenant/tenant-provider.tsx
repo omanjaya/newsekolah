@@ -35,6 +35,12 @@ interface TenantContextValue {
   isLoading: boolean;
   /** `branding.name`, or the fallback product name while branding is unknown. */
   displayName: string;
+  /**
+   * `branding.short_name` when the school set one: the name for tight
+   * places (the phone header, the installed app's label). Unset otherwise,
+   * so callers fall back to `displayName`.
+   */
+  shortName?: string;
 }
 
 const TenantContext = createContext<TenantContextValue | null>(null);
@@ -147,12 +153,15 @@ export function TenantProvider({
   }, [branding?.name]);
 
   const displayName = branding?.name ?? PRODUCT_NAME_FALLBACK;
+  // A blank short name counts as none.
+  const trimmedShortName = branding?.short_name?.trim();
+  const shortName = trimmedShortName === "" ? undefined : trimmedShortName;
   // Same rationale as SessionProvider: an inline value object here would
   // re-render every consumer on each branding refetch, even when nothing
   // about the branding actually changed (docs/16-audit-performa-web.md item 3).
   const value = useMemo<TenantContextValue>(
-    () => ({ branding, isLoading, displayName }),
-    [branding, isLoading, displayName],
+    () => ({ branding, isLoading, displayName, shortName }),
+    [branding, isLoading, displayName, shortName],
   );
 
   return <TenantContext.Provider value={value}>{children}</TenantContext.Provider>;
