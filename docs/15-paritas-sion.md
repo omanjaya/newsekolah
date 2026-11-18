@@ -281,6 +281,15 @@ Hasil di kepala cabang `99db17f8`, dijalankan sesi utama pada hasil gabungan:
 
 `go test` tidak dijalankan: `apps/api` tidak berubah di cabang ini (satu-satunya perubahan di luar web adalah `infra/docker/README.dev.md`). Putaran perbaikan kedua belum dipotret ulang saat tabel ini ditulis.
 
+**Pengecekan terakhir.** Semua layar dipotret sekali lagi di kepala `99db17f8` (940 potret, tanpa galat halaman dan tanpa halaman yang meluber) dan tiga pemeriksa mencocokkan 65 butir putaran kedua: 61 beres atau terkonfirmasi di kode, 3 sebagian, 1 memburuk (antrean terlambat di meja sirkulasi yang dipindah ke kolom sempit sehingga tabelnya terpotong). Tidak ada temuan parah. Putusan akhir dari sekitar 60 layar lintas peran: skor 8 dari 10 ("profesional, dengan cacat kecil"), terbaca sebagai satu produk, dan di HP terasa seperti aplikasi; naik dari sekitar 7 sebelum perbaikan. Hasilnya di [analysis/ui-overhaul-final-check-2026-11-18.json](analysis/ui-overhaul-final-check-2026-11-18.json). Empat belas perbaikan terakhir (kemunduran di meja sirkulasi, waktu relatif yang memotong judul notifikasi hari ini di HP, catatan presensi berbahasa Inggris dari surat izin, dan sebelas pemolesan) dikerjakan sesudahnya; lihat riwayat commit setelah `fec37d7c`.
+
+Yang sengaja dibiarkan untuk diputuskan pemilik:
+
+- Kartu presensi kerja yang kosong tampil di urutan kedua atau ketiga pada beranda HP setiap pegawai di sekolah yang belum mengatur jadwal kerja.
+- Beranda perpustakaan di HP menumpuk dua kisi angka (sebelas angka) sebelum isi.
+- Aksi kepala halaman pada halaman sempit (`/settings/sso`, `/settings/document-templates`) masih berada di tepi kolom lebar.
+- Isi templat surat masih berupa HTML mentah bagi admin sekolah.
+
 Tindak lanjut yang dicatat, belum dikerjakan:
 
 - **API, templat surat**: validasi isi templat saat dibuat dan diubah (parse dengan `html/template`, tolak dengan 422); migrasi sekali jalan untuk templat yang tersimpan dengan format lama; `{{.category}}` pada surat izin mencetak enum mentah (`sick`, `dispensation`); deskripsi OpenAPI masih menulis `{{placeholder}}`; daftar nilai templat sebaiknya disajikan API.
