@@ -93,9 +93,13 @@ export function ReportsWorkspaceView(): ReactElement {
     <Tabs value={selected.key} onValueChange={setSection}>
       {/* The section view is the panel of whichever section tab is active;
           it draws the page header, so the panel adds no padding of its own. */}
-      <TabsContent value={selected.key} className="pt-0">
-        <View tabKey={tabKey} sectionNav={strip} />
-      </TabsContent>
+      {sections.map((entry) => (
+        // Every trigger's aria-controls names a mounted panel; only the
+        // selected one holds the view.
+        <TabsContent key={entry.key} value={entry.key} forceMount className="pt-0">
+          {entry.key === selected.key ? <View tabKey={tabKey} sectionNav={strip} /> : null}
+        </TabsContent>
+      ))}
     </Tabs>
   );
 }

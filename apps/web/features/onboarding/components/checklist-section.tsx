@@ -109,20 +109,32 @@ function ChecklistRow({ step, href }: { step: SetupStep; href: string }): ReactE
           {step.done ? <Check /> : <Circle className="fill-current [&]:size-2" />}
         </IconCircle>
       }
+      titleLines={2}
       title={
-        <span className="flex flex-wrap items-center gap-2">
+        <>
           {tStep("label")}
-          {!step.required && <Badge tone="neutral">{t("optional")}</Badge>}
-        </span>
+          {!step.required && (
+            <Badge tone="neutral" className="ml-2 align-middle">
+              {t("optional")}
+            </Badge>
+          )}
+        </>
       }
-      // The count sits at the row's end, where the meta's two-line clamp
-      // cannot cut it off on a phone.
+      // The count sits at the row's end; a phone shows only the number so
+      // the title and description keep the row's width.
       meta={tStep("description")}
       trailing={
         showCount || step.done ? (
           <>
             {showCount && (
-              <span className="text-body-sm">{tStep("count", { count: step.count })}</span>
+              <>
+                <span aria-hidden="true" className="text-body-sm sm:hidden">
+                  {step.count}
+                </span>
+                <span className="text-body-sm max-sm:sr-only">
+                  {tStep("count", { count: step.count })}
+                </span>
+              </>
             )}
             {step.done && <span className="sr-only">{t("done")}</span>}
           </>

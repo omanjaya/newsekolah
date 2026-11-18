@@ -266,8 +266,8 @@ export function DaySessions(): ReactElement {
   ];
 
   return (
-    // The day switcher stays beside the title; the teacher picker filters
-    // the content, so it is the toolbar. The area's tabs keep the chosen day.
+    // The day switcher and the teacher picker sit under the area's tabs, so
+    // the tab row stays at one height. The tabs keep the chosen day.
     <AppPage
       description={
         items.length > 0
@@ -278,33 +278,33 @@ export function DaySessions(): ReactElement {
             })
           : undefined
       }
-      actions={
-        <DayStepper
-          value={date}
-          onChange={setDate}
-          today={today}
-          labels={{
-            previous: t("prevDay"),
-            next: t("nextDay"),
-            today: t("today"),
-            date: t("dateLabel"),
-          }}
-        />
-      }
       secondaryActions={secondaryActions}
       navParams={NAV_PARAMS}
       toolbar={
-        showTeacherPicker ? (
-          <Field label={t("teacherLabel")} className="w-full sm:w-64">
-            <Select
-              options={teacherSelectOptions}
-              value={selectedTeacherId}
-              onValueChange={setSelectedTeacherId}
-              placeholder={t("teacherPlaceholder")}
-              disabled={teacherOptions.isLoading}
-            />
-          </Field>
-        ) : undefined
+        <>
+          <DayStepper
+            value={date}
+            onChange={setDate}
+            today={today}
+            labels={{
+              previous: t("prevDay"),
+              next: t("nextDay"),
+              today: t("today"),
+              date: t("dateLabel"),
+            }}
+          />
+          {showTeacherPicker && (
+            <Field label={t("teacherLabel")} className="w-full sm:w-64">
+              <Select
+                options={teacherSelectOptions}
+                value={selectedTeacherId}
+                onValueChange={setSelectedTeacherId}
+                placeholder={t("teacherPlaceholder")}
+                disabled={teacherOptions.isLoading}
+              />
+            </Field>
+          )}
+        </>
       }
     >
       {selectedTeacherId === "" ? (

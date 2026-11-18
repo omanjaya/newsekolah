@@ -214,16 +214,14 @@ export function PromotionView(): ReactElement {
           onPreview={runPreview}
           previewing={preview.isPending}
           previewLabel={plan ? tFlow("previewAgain") : t("preview")}
+          title={t("idleTitle")}
+          description={t("description")}
         />
       )}
 
       {result ? null : preview.isPending ? (
         <SkeletonList rows={6} framed />
-      ) : plan === undefined ? (
-        // Until a plan is built the year card is the one thing to do; one
-        // line under it says what the plan will move.
-        <p className="max-w-prose text-body-sm text-fg-muted">{t("description")}</p>
-      ) : plan.length === 0 ? (
+      ) : plan === undefined ? null : plan.length === 0 ? (
         <EmptyState
           icon={<domainIcons.users aria-hidden="true" />}
           title={t("emptyTitle")}
