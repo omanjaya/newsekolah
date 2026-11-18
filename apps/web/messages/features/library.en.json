@@ -314,6 +314,7 @@
       "emptyBody": "Every active loan is still within its due date.",
       "unknownMember": "Member identity unavailable",
       "unknownTitle": "Title unavailable",
+      "dueDate": "Due {date}",
       "loadError": "Overdue loans could not be loaded. Try again.",
       "confirmReturn": {
         "title": "Record this return?",

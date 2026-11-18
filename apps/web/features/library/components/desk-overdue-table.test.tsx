@@ -91,6 +91,23 @@ describe("DeskOverdueTable", () => {
     expect(screen.getAllByText("BC-002").length).toBeGreaterThan(0);
   });
 
+  it("shows the short overdue badge with the due date as its own line", () => {
+    mockedQuery.mockReturnValue({
+      data: { data: [loan("loan-1", "Matematika", "BC-001")] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    render(<DeskOverdueTable />);
+
+    // The section heading already says the loan is late, so the badge drops
+    // the "(jatuh tempo ...)" tail that kept the row too wide to fit.
+    expect(screen.getAllByText("overdueShort").length).toBeGreaterThan(0);
+    expect(screen.queryByText("overdue")).not.toBeInTheDocument();
+    expect(screen.getAllByText("dueDate").length).toBeGreaterThan(0);
+  });
+
   it("filters the local table by title and barcode", async () => {
     mockedQuery.mockReturnValue({
       data: { data: [loan("loan-1", "Matematika", "BC-001"), loan("loan-2", "Biologi", "BC-002")] },
