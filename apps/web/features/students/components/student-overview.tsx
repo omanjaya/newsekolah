@@ -119,7 +119,7 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
           style={enterStep(0)}
           tone="green"
           label={t("attendance")}
-          value={attendance === undefined ? "-" : `${attendance}%`}
+          value={attendance === undefined ? "–" : `${attendance}%`}
           hint={
             signals?.has_attendance
               ? t("absentDays", { absent: signals.absent_days, days: signals.considered_days })
@@ -157,7 +157,7 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
             icon={<TrendingUp />}
             tone="blue"
             label={t("averageGrade")}
-            value={signals?.has_grade_trend ? signals.current_average : "-"}
+            value={signals?.has_grade_trend ? signals.current_average : "–"}
             formatValue={(value) => value.toLocaleString(locale, { maximumFractionDigits: 1 })}
             hint={signals?.has_grade_trend ? undefined : t("noGrades")}
             delta={
@@ -311,7 +311,8 @@ function StudentHistory({ studentId }: { studentId: string }): ReactElement | nu
     <Card>
       <CardHeader
         action={
-          canDiscipline ? (
+          // An empty history has nothing to open the full list for.
+          canDiscipline && (loading || events.length > 0) ? (
             <TextLink href={studentProfileHref(studentId, "discipline")}>{t("seeAll")}</TextLink>
           ) : undefined
         }

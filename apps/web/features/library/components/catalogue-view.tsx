@@ -10,7 +10,6 @@ import {
   EmptyState,
   FilteredEmptyState,
   RowActionsMenu,
-  TextLink,
   domainIcons,
   useToast,
   type DataTableFilterDef,
@@ -18,6 +17,7 @@ import {
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Download, Pencil, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -47,6 +47,7 @@ const TITLES_PAGE_SIZE = 50;
 
 export function CatalogueView(): ReactElement {
   const t = useTranslations("app.library.catalogue");
+  const router = useRouter();
   const toast = useToast();
   const libraryErrorMessage = useLibraryErrorMessage();
   const canManage = useCan("manage_library_catalog");
@@ -133,18 +134,17 @@ export function CatalogueView(): ReactElement {
         header: t("columns.title"),
         enableSorting: false,
         meta: { card: "title" },
-        cell: ({ row }) => (
-          <TextLink href={`/library/catalogue/${row.original.id}`} className="font-semibold">
-            {row.original.title}
-          </TextLink>
-        ),
+        // Body text, as in the other areas' tables: the row opens the title.
+        cell: ({ row }) => <span className="font-semibold text-fg">{row.original.title}</span>,
       },
       {
         accessorKey: "author",
         header: t("columns.author"),
         enableSorting: false,
         meta: { card: "subtitle" },
-        cell: ({ row }) => row.original.author || "-",
+        // A missing author is a dash in the table; the phone card leaves
+        // the line out rather than show a bare dash under the title.
+        cell: ({ row }) => row.original.author || <span className="max-md:hidden">-</span>,
       },
       {
         accessorKey: "classification",
@@ -268,6 +268,9 @@ export function CatalogueView(): ReactElement {
           onRetry={() => void refetch()}
           retrying={isRefetching}
           getRowId={(item) => item.id}
+          onRowActivate={(item) => {
+            router.push(`/library/catalogue/${item.id}`);
+          }}
           fillHeight
           emptyState={
             filtered ? (

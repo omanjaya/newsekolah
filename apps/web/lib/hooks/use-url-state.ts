@@ -1,32 +1,31 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState, type SetStateAction } from "react";
+import { useCallback, useState, type SetStateAction } from "react";
 
-/** Keeps a small, validated UI choice in the URL without navigating the Next route. */
+/**
+ * Keeps a small, validated UI choice in the URL without navigating the Next route.
+ *
+ * The value is read from `useSearchParams()`, never from `window.location`:
+ * on a client navigation (a tab Link, `router.replace`, a page redirect) the
+ * router renders the new tree before it commits the URL to history, so the
+ * browser still holds the old query during that render. Writes go through
+ * the history API, which Next patches to feed `useSearchParams()`, and the
+ * router's own popstate handling covers back and forward.
+ */
 export function useUrlState<T extends string>(
   key: string,
   values: readonly T[] | ((value: string) => boolean),
   defaultValue: T,
 ): readonly [T, (value: SetStateAction<T>) => void, (value: SetStateAction<T>) => void] {
   const searchParams = useSearchParams();
+  // Next applies a history write to `useSearchParams()` in a transition;
+  // this re-render lets the host pick the new value up as soon as it lands.
   const [, refresh] = useState(0);
-  const currentParams =
-    typeof window === "undefined" ? searchParams : new URLSearchParams(window.location.search);
-  const requested = currentParams.get(key);
+  const requested = searchParams.get(key);
   const valid = (candidate: string) =>
     typeof values === "function" ? values(candidate) : values.includes(candidate as T);
   const value = requested !== null && valid(requested) ? (requested as T) : defaultValue;
-
-  useEffect(() => {
-    const onPopState = () => {
-      refresh((version) => version + 1);
-    };
-    window.addEventListener("popstate", onPopState);
-    return () => {
-      window.removeEventListener("popstate", onPopState);
-    };
-  }, []);
 
   const write = useCallback(
     (update: SetStateAction<T>, replace: boolean) => {

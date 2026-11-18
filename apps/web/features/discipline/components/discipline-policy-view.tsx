@@ -16,16 +16,12 @@ import { DisciplinePolicyEditor } from "./discipline-policy-editor";
 export function DisciplinePolicyView(): ReactElement {
   const policy = useDisciplinePolicyQuery();
 
-  if (policy.isError && !policy.data)
-    return <QueryError retry={() => policy.refetch()} className="m-4" />;
+  if (policy.isError && !policy.data) return <QueryError retry={() => policy.refetch()} />;
 
   if (policy.isLoading || !policy.data) {
     return <Skeleton className="h-40 w-full" aria-busy="true" />;
   }
 
-  return (
-    <div className="md:h-full md:min-h-0 md:flex-1 md:overflow-y-auto">
-      <DisciplinePolicyEditor initialLevels={policy.data.levels} />
-    </div>
-  );
+  // It opens in a sheet over the Pelanggaran page, whose body scrolls.
+  return <DisciplinePolicyEditor initialLevels={policy.data.levels} />;
 }

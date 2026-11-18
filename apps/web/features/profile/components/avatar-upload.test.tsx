@@ -111,3 +111,9 @@ it("skips the compression pipeline for a photo already under the threshold, uplo
   expect(uploadedFile).toBe(small);
   expect(createBitmap).not.toHaveBeenCalled();
 });
+
+it("tints the initials with the accent, as the header's account button does", () => {
+  render(<AvatarUpload />);
+  // Without children the avatar is the named image; without a photo it shows initials.
+  expect(screen.getByText("S")).toHaveClass("bg-accent-soft");
+});

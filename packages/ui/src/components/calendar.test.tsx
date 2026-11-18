@@ -50,6 +50,14 @@ describe("Calendar", () => {
     expect(cell("Selasa, 10 November 2026")).toHaveAttribute("tabindex", "0");
   });
 
+  it("marks today by weight and colour, not with a marker dot", () => {
+    render(<Calendar value="2026-11-10" today={TODAY} />);
+
+    const today = cell("Sabtu, 14 November 2026");
+    expect(today.querySelector("[aria-hidden='true']")).toBeNull();
+    expect(today.querySelector(".font-semibold")).not.toBeNull();
+  });
+
   it("follows the date grid keyboard pattern", async () => {
     const onChange = vi.fn();
     render(<ControlledCalendar onChange={onChange} />);

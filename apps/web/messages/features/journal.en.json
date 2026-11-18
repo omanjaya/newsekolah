@@ -19,9 +19,9 @@
     "to": "To",
     "invalidRange": "The start date must be before the end date."
   },
-  "exportXlsx": "Excel or PDF",
+  "downloadReport": "Download Excel or PDF",
   "exportReportTitle": "Teaching journal",
-  "exportDocx": "Word",
+  "downloadDocx": "Download Word",
   "emptyTitle": "No journal entries yet",
   "emptyBody": "Note the topic and activities every time you finish teaching.",
   "unknown": "-",
@@ -71,7 +71,6 @@
     "writeFor": "Write the journal for {lesson}"
   },
   "loadError": "Journal failed to load.",
-  "download": "Download",
   "weekSummary": "{count, plural, =0 {No journal written this week} one {# journal written this week} other {# journals written this week}}",
   "exportColumns": {
     "date": "Date",

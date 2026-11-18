@@ -52,7 +52,7 @@
   },
   "checkIn": {
     "title": "Work attendance",
-    "openPage": "History",
+    "openPage": "Open",
     "notYet": "Nothing recorded today",
     "done": "Today's work attendance is complete.",
     "checkIn": "Record arrival",
@@ -80,7 +80,6 @@
     "tile": "Needs action",
     "cardTitle": "Decision queue",
     "cardAction": "View all",
-    "empty": "Every queue is clear",
     "queues": {
       "leave": "Leave requests",
       "exit": "Exit permits",

@@ -66,4 +66,21 @@ describe("HeroCard", () => {
     const chip = screen.getByText("Lewat 2 hari").closest('[data-slot="badge"]');
     expect(chip?.querySelector(".animate-live")).toBeInTheDocument();
   });
+
+  // An overdue loan's hero was warning amber beside a red "Terlambat" badge.
+  it("offers a danger tone whose chip matches the danger badges", () => {
+    const { container } = render(
+      <HeroCard
+        tone="danger"
+        eyebrow="Perlu dikembalikan"
+        title="1 buku terlambat 42 hari"
+        meta="Laskar Pelangi"
+        chip="Terlambat"
+      />,
+    );
+    expect(container.firstElementChild).toHaveClass("bg-danger-soft", "text-danger-soft-fg");
+    expect(screen.getByText("Laskar Pelangi")).toHaveClass("text-danger-soft-fg/80");
+    const chip = screen.getByText("Terlambat").closest('[data-slot="badge"]');
+    expect(chip?.className).toMatch(/danger/);
+  });
 });

@@ -111,9 +111,11 @@ const AccountTrigger = forwardRef<
         decorative
         className="hidden md:inline-flex"
       />
+      {/* Room for a long name and role ("Wakil Kepala Sekolah ..."): the
+          header has space to spare from lg up, where this text shows. */}
       <span className="hidden min-w-0 flex-col text-left lg:flex">
-        <span className="max-w-40 truncate text-label text-fg">{name}</span>
-        <span className="max-w-40 truncate text-caption text-fg-muted">{role}</span>
+        <span className="max-w-40 truncate text-label text-fg lg:max-w-64">{name}</span>
+        <span className="max-w-40 truncate text-caption text-fg-muted lg:max-w-64">{role}</span>
       </span>
       <ChevronDown aria-hidden="true" className="hidden size-4 shrink-0 text-fg-muted lg:block" />
     </button>

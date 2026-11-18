@@ -2,7 +2,7 @@
   "navLabel": "Integrasi",
   "eyebrow": "Pengaturan",
   "title": "Kunci API dan webhook",
-  "description": "Kelola akses mesin ke data sekolah: kunci API untuk memanggil endpoint, dan webhook untuk menerima peristiwa secara otomatis.",
+  "description": "Hubungkan aplikasi lain ke data sekolah: kunci API untuk mengambil data, dan webhook untuk mengirim kabar saat ada kejadian baru.",
   "tabs": {
     "apiKeys": "Kunci API",
     "webhooks": "Webhook",
@@ -16,7 +16,7 @@
     "revokeConfirmTitle": "Cabut kunci API?",
     "revokeConfirmBody": "Kunci \"{name}\" akan berhenti berfungsi seketika. Tindakan ini tidak dapat dibatalkan.",
     "emptyTitle": "Belum ada kunci API",
-    "emptyBody": "Buat kunci untuk memberi akses mesin ke data sekolah ini.",
+    "emptyBody": "Buat kunci untuk memberi aplikasi lain akses ke data sekolah ini.",
     "neverUsed": "Belum pernah dipakai",
     "statusActive": "Aktif",
     "statusRevoked": "Dicabut",

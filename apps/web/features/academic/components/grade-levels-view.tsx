@@ -10,9 +10,9 @@ import {
   DialogFooter,
   EmptyState,
   Field,
-  IconButton,
   Input,
   NumberInput,
+  RowActionsMenu,
   Select,
   useToast,
 } from "@newsekolah/ui";
@@ -22,6 +22,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useCallback, useMemo, useState } from "react";
 
+import { AppPage } from "../../../components/app-page";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import {
@@ -33,10 +34,13 @@ import {
   useGradeLevelsQuery,
   useUpdateGradeLevelMutation,
 } from "../api-master-data";
+import { codeRepeatsName } from "../lib/grade-level-code";
+
+import type { HubPageProps } from "./hub-page";
 
 const TEMPLATES: GradeLevelTemplate[] = ["sd", "smp", "sma", "smk"];
 
-export function GradeLevelsView(): ReactElement {
+export function GradeLevelsView({ page }: { page: HubPageProps }): ReactElement {
   const t = useTranslations("app.academic.gradeLevels");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -51,6 +55,7 @@ export function GradeLevelsView(): ReactElement {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [sequence, setSequence] = useState("1");
+  const [submitted, setSubmitted] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<GradeLevel | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
   const [template, setTemplate] = useState<GradeLevelTemplate>("sd");
@@ -69,11 +74,13 @@ export function GradeLevelsView(): ReactElement {
       setCode(target === "new" ? "" : target.code);
       setName(target === "new" ? "" : target.name);
       setSequence(target === "new" ? String(rows.length + 1) : String(target.sequence));
+      setSubmitted(false);
     },
     [rows.length],
   );
 
   async function save() {
+    setSubmitted(true);
     if (!code.trim() || !name.trim()) return;
     const body = {
       code: code.trim().toUpperCase(),
@@ -104,12 +111,24 @@ export function GradeLevelsView(): ReactElement {
         header: t("columns.code"),
         enableSorting: false,
         meta: { card: "subtitle" },
+        // Cards only show below md: there a code that repeats the name
+        // ("X" under "Kelas X") is left out; the table keeps every code.
+        cell: ({ row }) => (
+          <span
+            className={
+              codeRepeatsName(row.original.code, row.original.name) ? "max-md:hidden" : undefined
+            }
+          >
+            {row.original.code}
+          </span>
+        ),
       },
       {
         accessorKey: "sequence",
         header: t("columns.sequence"),
         enableSorting: false,
-        meta: { card: "meta", align: "end" },
+        // A labelled "Urutan 1" row on the card, not a bare number.
+        meta: { card: "field", align: "end" },
       },
       {
         id: "actions",
@@ -117,22 +136,26 @@ export function GradeLevelsView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) =>
           canManage ? (
-            <div className="flex justify-end gap-1">
-              <IconButton
-                icon={<Pencil />}
-                aria-label={t("edit")}
-                onClick={() => {
-                  open(row.original);
-                }}
-              />
-              <IconButton
-                icon={<Trash2 />}
-                aria-label={t("delete")}
-                onClick={() => {
-                  setPendingDelete(row.original);
-                }}
-              />
-            </div>
+            <RowActionsMenu
+              ariaLabel={t("rowActions", { name: row.original.name })}
+              items={[
+                {
+                  label: t("edit"),
+                  icon: <Pencil />,
+                  onClick: () => {
+                    open(row.original);
+                  },
+                },
+                {
+                  label: t("delete"),
+                  icon: <Trash2 />,
+                  tone: "danger",
+                  onClick: () => {
+                    setPendingDelete(row.original);
+                  },
+                },
+              ]}
+            />
           ) : null,
       },
     ],
@@ -140,31 +163,35 @@ export function GradeLevelsView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <DataTable
-        toolbarActions={
-          canManage ? (
-            <>
-              <Button
-                variant="secondary"
-                icon={<Wand2 />}
-                onClick={() => {
+    <AppPage
+      {...page}
+      primaryAction={
+        canManage ? (
+          <Button
+            icon={<Plus />}
+            onClick={() => {
+              open("new");
+            }}
+          >
+            {t("add")}
+          </Button>
+        ) : undefined
+      }
+      secondaryActions={
+        canManage
+          ? [
+              {
+                label: t("applyTemplate"),
+                icon: <Wand2 />,
+                onSelect: () => {
                   setTemplateOpen(true);
-                }}
-              >
-                {t("applyTemplate")}
-              </Button>
-              <Button
-                icon={<Plus />}
-                onClick={() => {
-                  open("new");
-                }}
-              >
-                {t("add")}
-              </Button>
-            </>
-          ) : undefined
-        }
+                },
+              },
+            ]
+          : undefined
+      }
+    >
+      <DataTable
         stateKey="features/academic/components/grade-levels-view:1"
         mode="local"
         data={rows}
@@ -210,28 +237,35 @@ export function GradeLevelsView(): ReactElement {
         <DialogContent title={editing === "new" ? t("add") : t("edit")}>
           <form
             className="flex flex-col gap-4"
+            noValidate
             onSubmit={(e) => {
               e.preventDefault();
               void save();
             }}
           >
-            <Field label={t("columns.code")}>
+            <Field
+              label={t("columns.code")}
+              required
+              error={submitted && !code.trim() ? t("codeRequired") : undefined}
+            >
               <Input
                 value={code}
                 maxLength={8}
                 onChange={(e) => {
                   setCode(e.target.value);
                 }}
-                required
               />
             </Field>
-            <Field label={t("columns.name")}>
+            <Field
+              label={t("columns.name")}
+              required
+              error={submitted && !name.trim() ? t("nameRequired") : undefined}
+            >
               <Input
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
                 }}
-                required
               />
             </Field>
             <Field label={t("columns.sequence")}>
@@ -323,6 +357,6 @@ export function GradeLevelsView(): ReactElement {
           }
         }}
       />
-    </div>
+    </AppPage>
   );
 }

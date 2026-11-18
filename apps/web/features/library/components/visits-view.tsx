@@ -8,12 +8,12 @@ import {
   EmptyState,
   Stat,
   StatGrid,
-  TextLink,
   domainIcons,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DoorOpen, Plus, Users, UsersRound } from "lucide-react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -44,6 +44,7 @@ export function VisitsView(): ReactElement {
   const timeZone = useTenantTimeZone();
   const today = todayInZone(timeZone);
   const canRecord = useCan("manage_library_circulation");
+  const canViewMembers = useCan("manage_library_members");
 
   const [from, setFrom] = useDateFilter("from", startOfIsoMonth(today));
   const [to, setTo] = useDateFilter("to", today);
@@ -72,6 +73,9 @@ export function VisitsView(): ReactElement {
       type: "dateRange",
       from,
       to,
+      // The month so far is the page's own period, not a filter the reader set.
+      defaultFrom: startOfIsoMonth(today),
+      defaultTo: today,
       onChangeRange: ({ from: nextFrom, to: nextTo }) => {
         setFrom(nextFrom);
         setTo(nextTo);
@@ -88,17 +92,24 @@ export function VisitsView(): ReactElement {
         header: t("columns.who"),
         enableSorting: false,
         meta: { card: "title" },
-        cell: ({ row }) =>
-          row.original.member_user_id ? (
-            <TextLink
-              href={`/library/members/${row.original.member_user_id}`}
-              className="font-semibold"
+        // A visit has no page of its own, so the row does not open; a
+        // member's name links to their page in body text (as a student's
+        // name does elsewhere), for whoever may open it.
+        cell: ({ row }) => {
+          const memberId = row.original.member_user_id;
+          if (!memberId) return row.original.visitor_name ?? "-";
+          const name = directoryMap.get(memberId)?.name ?? t("unknownMember");
+          return canViewMembers ? (
+            <Link
+              href={`/library/members/${memberId}`}
+              className="font-semibold text-fg hover:underline focus-visible:underline"
             >
-              {directoryMap.get(row.original.member_user_id)?.name ?? t("unknownMember")}
-            </TextLink>
+              {name}
+            </Link>
           ) : (
-            (row.original.visitor_name ?? "-")
-          ),
+            <span className="font-semibold text-fg">{name}</span>
+          );
+        },
       },
       {
         id: "kind",
@@ -150,7 +161,7 @@ export function VisitsView(): ReactElement {
         ),
       },
     ],
-    [t, locale, directoryMap, timeZone],
+    [t, locale, directoryMap, timeZone, canViewMembers],
   );
 
   const recordButton = canRecord ? (

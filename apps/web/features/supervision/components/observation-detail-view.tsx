@@ -34,12 +34,13 @@ import {
   useSupervisionCycleQuery,
 } from "../api";
 import { averageScore, formatScore } from "../lib/score-format";
+import { cycleHref, useCycleTrail } from "../lib/use-cycle-trail";
 import { useLessonContext } from "../lib/use-lesson-context";
 
 /** A block of free text, or a quiet line when there is none yet. */
 function Prose({ text, empty }: { text: string; empty: string }): ReactElement {
   return text ? (
-    <p className="text-body whitespace-pre-wrap text-fg">{text}</p>
+    <p className="max-w-prose text-body whitespace-pre-wrap text-fg">{text}</p>
   ) : (
     <p className="text-body-sm text-fg-muted">{empty}</p>
   );
@@ -85,11 +86,12 @@ export function ObservationDetailView({ observationId }: { observationId: string
   const [agreedFollowUp, setAgreedFollowUp] = useState("");
   const [editingResponse, setEditingResponse] = useState(false);
 
-  const cyclesCrumb = { label: tRoot("navLabelCycles"), href: "/supervision/cycles" };
+  const trail = useCycleTrail();
+  const pendingTrail = [trail.root, { label: t("title") }];
 
   if ((observation.isError && !observation.data) || (cycle.isError && !cycle.data)) {
     return (
-      <AppPage nav={false} breadcrumb={[cyclesCrumb, { label: t("title") }]} title={t("title")}>
+      <AppPage variant="narrow" nav={false} breadcrumb={pendingTrail} title={t("title")}>
         <QueryError
           retry={() => {
             void observation.refetch();
@@ -103,7 +105,7 @@ export function ObservationDetailView({ observationId }: { observationId: string
 
   if (observation.isLoading || !observation.data || cycle.isLoading || !cycle.data) {
     return (
-      <AppPage nav={false} breadcrumb={[cyclesCrumb, { label: t("title") }]} title={t("title")}>
+      <AppPage variant="narrow" nav={false} breadcrumb={pendingTrail} title={t("title")}>
         <SkeletonDetail />
       </AppPage>
     );
@@ -112,6 +114,15 @@ export function ObservationDetailView({ observationId }: { observationId: string
   const obs = observation.data;
   const { instrument } = cycle.data;
   const criteriaByKey = new Map(instrument.criteria.map((c) => [c.key, c.name]));
+  // The scores in the instrument's order, so each carries the number the
+  // criterion has on the cycle's instrument; a key the instrument no longer
+  // lists goes last.
+  const position = new Map(instrument.criteria.map((c, index) => [c.key, index]));
+  const scores = [...obs.scores].sort(
+    (a, b) =>
+      (position.get(a.criterion_key) ?? Number.MAX_SAFE_INTEGER) -
+      (position.get(b.criterion_key) ?? Number.MAX_SAFE_INTEGER),
+  );
   const span = Math.max(instrument.scale_max - instrument.scale_min, 1);
   const average = averageScore(obs.scores);
   const teacherName =
@@ -132,14 +143,19 @@ export function ObservationDetailView({ observationId }: { observationId: string
 
   return (
     <AppPage
-      title={teacherName}
+      // Reading width: scores, notes and the response are one column of text.
+      variant="narrow"
+      // The trail walks back through the teacher's report, which the
+      // phone's back link opens; the teacher is named there, so the h1
+      // says what this page is.
+      title={t("title")}
+      documentTitle={`${t("title")} · ${teacherName}`}
       description={details}
       nav={false}
-      breadcrumb={[
-        cyclesCrumb,
-        { label: cycle.data.name, href: `/supervision/cycles/${cycle.data.id}` },
-        { label: t("title") },
-      ]}
+      breadcrumb={trail.within(cycle.data.id, cycle.data.name, trail.results(cycle.data.id), {
+        label: teacherName,
+        href: `${cycleHref(cycle.data.id)}/teachers/${encodeURIComponent(obs.teacher_user_id)}/report`,
+      })}
     >
       <Card>
         <CardHeader>
@@ -155,15 +171,24 @@ export function ObservationDetailView({ observationId }: { observationId: string
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {obs.scores.map((s) => (
-            <Progress
-              key={s.criterion_key}
-              variant="meter"
-              label={criteriaByKey.get(s.criterion_key) ?? s.criterion_key}
-              value={s.score - instrument.scale_min}
-              max={span}
-              valueLabel={String(s.score)}
-            />
+          {scores.map((s, index) => (
+            // The criterion's number in a muted column of its own, as on
+            // the cycle's instrument and the scoring form.
+            <div key={s.criterion_key} className="flex items-start gap-3">
+              <span className="w-5 shrink-0 text-right text-label text-fg-muted tabular-nums">
+                {index + 1}
+              </span>
+              <Progress
+                className="min-w-0 flex-1"
+                variant="meter"
+                label={
+                  criteriaByKey.get(s.criterion_key) ?? t("criterionFallback", { n: index + 1 })
+                }
+                value={s.score - instrument.scale_min}
+                max={span}
+                valueLabel={String(s.score)}
+              />
+            </div>
           ))}
         </CardContent>
       </Card>

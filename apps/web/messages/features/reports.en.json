@@ -2,7 +2,7 @@
   "navLabel": "Report center",
   "eyebrow": "Reports",
   "title": "Reports",
-  "description": "Download reports as Excel files. Only reports this account may run are listed.",
+  "description": "Download reports as Excel or PDF files. Only reports this account may run are listed.",
   "emptyTitle": "No reports available to download",
   "emptyBody": "This account has no access to any report. Contact the school admin if access is needed.",
   "download": "Download",
@@ -191,5 +191,6 @@
     }
   },
   "tabsLabel": "Report centre sections",
-  "close": "Close"
+  "close": "Close",
+  "setUpDownload": "Set up download"
 }

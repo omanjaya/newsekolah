@@ -66,6 +66,17 @@ describe("useCheckInBlock", () => {
     expect(screen.getByRole("link", { name: "openPage" })).toHaveAttribute("href", "/check-in");
   });
 
+  it("keeps the check-in button secondary, leaving the home's one primary to the hero", () => {
+    historyQuery.mockReturnValue(history(undefined));
+
+    const { result } = renderHook(() => useCheckInBlock(me, true));
+    render(<>{result.current.side[0]?.node}</>);
+
+    const button = screen.getByRole("button", { name: "checkIn" });
+    expect(button).toHaveClass("bg-surface");
+    expect(button).not.toHaveClass("bg-accent");
+  });
+
   it("offers check-out once arrival is recorded", () => {
     historyQuery.mockReturnValue(
       history({

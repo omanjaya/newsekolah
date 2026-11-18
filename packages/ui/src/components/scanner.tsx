@@ -55,6 +55,11 @@ export interface ScannerProps {
   onScan: (event: BarcodeScanEvent) => ScanHandlerResult | Promise<ScanHandlerResult>;
   title?: ReactNode;
   description?: ReactNode;
+  /**
+   * At the end of the header row, after the "ready" chip: a control that
+   * belongs to the whole scanner, such as a switch between two modes.
+   */
+  headerEnd?: ReactNode;
   /** The outcome of the last scan, shown large under the camera and announced. */
   result?: ScannerResultValue | null;
   /** Offer the camera at all (default true where the browser has one). */
@@ -106,6 +111,7 @@ export function Scanner({
   onScan,
   title,
   description,
+  headerEnd,
   result,
   camera = true,
   autoStart = true,
@@ -226,9 +232,11 @@ export function Scanner({
       {labels.scannerReady}
     </span>
   );
-  const header = (title !== undefined || description !== undefined) && (
-    <div className="flex items-start justify-between gap-4">
-      <div className="flex min-w-0 flex-col gap-1">
+  const header = (title !== undefined || description !== undefined || headerEnd !== undefined) && (
+    // A wide control at the end (a mode switch) wraps under the title on a
+    // narrow screen instead of squeezing it.
+    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+      <div className="flex min-w-0 flex-1 basis-48 flex-col gap-1">
         {title !== undefined && (
           <h2 className={kiosk ? "text-kiosk-title text-fg" : "text-heading text-fg"}>{title}</h2>
         )}
@@ -236,7 +244,14 @@ export function Scanner({
           <p className={cn("text-fg-muted", kiosk ? "text-body" : "text-body-sm")}>{description}</p>
         )}
       </div>
-      {ready}
+      {headerEnd === undefined ? (
+        ready
+      ) : (
+        <div className="flex shrink-0 items-center gap-2">
+          {ready}
+          {headerEnd}
+        </div>
+      )}
     </div>
   );
 
@@ -268,20 +283,28 @@ export function Scanner({
         "flex flex-col",
         kiosk && "w-full items-center gap-6",
         kiosk && fullScreen && "min-h-dvh bg-bg px-4 py-8 sm:px-8 md:py-12",
-        !kiosk && "gap-4 rounded-lg border border-border bg-surface p-4 shadow-1 md:p-5",
+        // A panel sizes its layout to its own width (`@container`), not the
+        // window's: it may fill a page or sit in one column of two.
+        !kiosk && "@container gap-4 rounded-lg border border-border bg-surface p-4 shadow-1 md:p-5",
         className,
       )}
     >
       <div className={cn("flex w-full flex-col", kiosk ? "max-w-6xl gap-8" : "gap-4")}>
         {header}
         {/* A kiosk screen is landscape more often than not: the camera on the
-            left, what happened and the fallback on the right, all above the fold. */}
+            left, what happened and the fallback on the right, all above the fold.
+            A wide panel does the same, so the field and its button are not
+            pushed under a camera as wide as the page. */}
         <div
           className={cn(
             "flex flex-col",
             kiosk
               ? "gap-6 lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start lg:gap-8"
-              : "gap-4",
+              : cn(
+                  "gap-4",
+                  cameraOffered &&
+                    "@3xl:grid @3xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] @3xl:items-start @3xl:gap-6",
+                ),
           )}
         >
           {cameraOffered && (
@@ -305,7 +328,11 @@ export function Scanner({
                 retry();
               }}
               onManualEntry={openManual}
-              className={kiosk ? "max-h-[min(60dvh,34rem)]" : undefined}
+              // A page's scanner is already a card: no second outline.
+              framed={kiosk}
+              // A phone's square box stays whole; from sm up the 4:3 box
+              // stops short of filling the screen.
+              className={kiosk ? "max-h-[min(60dvh,34rem)]" : "sm:max-h-[min(45dvh,24rem)]"}
             />
           )}
           <div className={cn("flex min-w-0 flex-col", kiosk ? "gap-6" : "gap-4")}>

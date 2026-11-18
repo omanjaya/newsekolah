@@ -37,15 +37,22 @@ export function avatarPixelSize(size: AvatarSize): AvatarPixelSize {
 /** Lets AvatarGroup size its avatars once instead of on every child. */
 export const AvatarSizeContext = createContext<AvatarSize | null>(null);
 
-// A fixed, deterministic pick from the category hues, so two people with
-// the same initials are still told apart at a glance without leaving the
-// token palette.
+// The category hues a person can be given. Red and amber are left out:
+// beside status badges they read as danger and warning, so an ordinary
+// person looked flagged (pink on maroon in dark).
+const PERSON_TONES = CATEGORY_TONES.filter(
+  (tone): tone is Exclude<CategoryTone, "red" | "amber"> => tone !== "red" && tone !== "amber",
+);
+
+// A fixed, deterministic pick from those hues, so two people with the same
+// initials are still told apart at a glance without leaving the token
+// palette.
 function toneFor(seed: string): CategoryTone {
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) {
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   }
-  return CATEGORY_TONES[hash % CATEGORY_TONES.length] ?? "green";
+  return PERSON_TONES[hash % PERSON_TONES.length] ?? "green";
 }
 
 /**

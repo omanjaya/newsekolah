@@ -220,11 +220,6 @@ function HomeroomClassCard({
                 href={`${LEAVE_HREF}/${item.instance_id}`}
                 title={item.student_name}
                 meta={categoryT(`categories.${item.category}`)}
-                trailing={
-                  <Badge tone="warning" size="sm">
-                    {t("card.review")}
-                  </Badge>
-                }
               />
             ))}
           </List>

@@ -10,13 +10,14 @@ interface QueryState {
   error: unknown;
 }
 let query: QueryState = { data: undefined, isLoading: false, error: null };
+const push = vi.hoisted(() => vi.fn());
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => "id",
 }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push }),
   usePathname: () => "/analytics",
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
@@ -44,9 +45,6 @@ vi.mock("../../../components/app-page", () => import("../../../test/app-page-stu
 vi.mock("../../student-services/components/service-workspace-nav", () => ({
   CounselingWorkspaceNav: () => null,
 }));
-vi.mock("../../students/components/student-link", () => ({
-  StudentLink: ({ children }: { children: string }) => <span>{children}</span>,
-}));
 vi.mock("../api", () => ({ useAtRiskStudentsQuery: () => query }));
 vi.mock("./policy-dialog", () => ({ PolicyDialog: () => null }));
 vi.mock("./risk-level-summary", () => ({ RiskLevelSummary: () => null }));
@@ -61,7 +59,24 @@ const row = (id: string, score: number) => ({
 
 beforeEach(() => {
   names = loadedNames;
+  push.mockReset();
   query = { data: { data: [row("s1", 10), row("s2", 5)] }, isLoading: false, error: null };
+});
+
+describe("AtRiskStudentsView rows and header", () => {
+  it("opens a row on the student's early-warning detail, whose trail leads back here", () => {
+    render(<AtRiskStudentsView />);
+    // The phone card's tap target, named after the row's title cell.
+    const [card] = screen.getAllByRole("button", { name: /Budi Santoso/ });
+    fireEvent.click(card ?? document.body);
+    expect(push).toHaveBeenCalledWith("/analytics/s1");
+  });
+
+  it("leaves the h1 to the area and says how the list is ordered above it", () => {
+    render(<AtRiskStudentsView />);
+    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
+    expect(screen.getByText(/sortedHint/)).toBeInTheDocument();
+  });
 });
 
 describe("AtRiskStudentsView", () => {

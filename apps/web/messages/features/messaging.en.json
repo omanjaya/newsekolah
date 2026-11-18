@@ -16,20 +16,19 @@
     "providerGateway": "Local gateway",
     "activeLabel": "Enable WhatsApp delivery",
     "activeHint": "While disabled, WhatsApp notifications fall back to the server's default configuration.",
+    "unchangedPlaceholder": "Unchanged",
     "meta": {
       "phoneNumberIdLabel": "Phone number ID",
       "phoneNumberIdHint": "From WhatsApp Business Manager.",
       "accessTokenLabel": "Access token",
-      "accessTokenPlaceholderSet": "Saved — leave blank to keep this token",
-      "accessTokenPlaceholderUnset": "Not set"
+      "accessTokenKeepHint": "Leave blank to keep the saved token."
     },
     "gateway": {
       "urlLabel": "Gateway URL",
       "urlHint": "The school's own WhatsApp gateway endpoint.",
       "headerNameLabel": "Auth header name",
       "headerValueLabel": "Auth header value",
-      "headerValuePlaceholderSet": "Saved — leave blank to keep this value",
-      "headerValuePlaceholderUnset": "Not set"
+      "headerValueKeepHint": "Leave blank to keep the saved value."
     },
     "save": "Save",
     "saved": "WhatsApp configuration saved"

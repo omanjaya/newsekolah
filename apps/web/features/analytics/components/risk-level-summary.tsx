@@ -39,7 +39,10 @@ export function RiskLevelSummary({
   for (const row of rows) counts[row.level] += 1;
 
   return (
-    <StatGrid variant="tiles" aria-label={t("label")} className="grid-cols-3">
+    // The page toolbar is a wrapping flex row, where the grid would shrink
+    // to its content: it takes the row's full width, three columns at every
+    // width (not StatGrid's four from sm).
+    <StatGrid variant="tiles" aria-label={t("label")} className="w-full grid-cols-3 sm:grid-cols-3">
       {LEVELS.map((level) => (
         <Stat
           key={level}

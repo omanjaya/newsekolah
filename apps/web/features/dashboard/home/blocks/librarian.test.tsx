@@ -88,6 +88,11 @@ describe("useLibrarianBlock", () => {
       label: "hero.action",
       href: "/library/desk",
     });
+    // The title counts loans and returns, so the stat row leaves those tiles out.
+    expect(result.current.hero?.coversTiles).toEqual([
+      "library.loansToday",
+      "library.returnsToday",
+    ]);
   });
 
   it("keeps the overdue tile in sync with the summary", () => {

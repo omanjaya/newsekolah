@@ -167,7 +167,12 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
 
   // Neither queue is any of this counselor's business without at least one
   // of the two permissions -- an empty card saying so would just be noise.
-  if (canReviewLeave || canIssueWarningLetters) {
+  // Nor is the card shown once every queue it lists has loaded empty: the
+  // calm hero and the tiles already say so.
+  const queuesClear =
+    (!canReviewLeave || leaveItems?.length === 0) &&
+    (!canIssueWarningLetters || spItems?.length === 0);
+  if ((canReviewLeave || canIssueWarningLetters) && !queuesClear) {
     block.main.push({
       key: "counselor.queue",
       node: (
@@ -185,7 +190,7 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
   }
 
   if (canViewAtRisk) {
-    block.side.push({
+    block.main.push({
       key: "counselor.atRisk",
       node: (
         <AtRiskCard
@@ -280,6 +285,7 @@ function QueueSection({
     <section className="flex flex-col gap-1">
       <SectionHeader
         as="h3"
+        size="sm"
         title={title}
         className="px-5"
         action={<TextLink href={href}>{t("counselor.seeAll")}</TextLink>}

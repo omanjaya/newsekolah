@@ -11,15 +11,22 @@ import { navAccessFromMe } from "../../../lib/navigation-access";
 import { canOpenPath } from "../../../lib/navigation-permissions";
 import { useSession } from "../../../lib/session/session-provider";
 import { PermitUnifiedQueue } from "../../permits/components/permit-unified-queue";
+import { useCanSubmitPermit } from "../../permits/lib/use-can-submit-permit";
 import { useInboxAccess } from "../lib/access";
 import { useActionInboxSummary } from "../use-action-inbox-count";
 
 import { WarningLetterCandidatesSection } from "./warning-letter-candidates-section";
 
-/** Where an all-clear reader can still look: the history of the queues they work. */
+/**
+ * Where an all-clear reader can still look: the history of the queues they
+ * work, where one exists. Leave requests keep a history only for the
+ * student who filed them (/leave-requests sends a reviewer straight back
+ * here), and late arrivals have none for staff (/late-arrivals does the
+ * same), so neither is offered as a way on that would loop.
+ */
 const HISTORY_LINKS = [
-  { href: "/leave-requests", label: "historyLeave" },
-  { href: "/discipline/warning-letters", label: "historyWarningLetters" },
+  { href: "/leave-requests", label: "historyLeave", submitterOnly: true },
+  { href: "/discipline/warning-letters", label: "historyWarningLetters", submitterOnly: false },
 ] as const;
 
 function InboxSection({
@@ -55,8 +62,11 @@ export function ActionInboxView(): ReactElement {
   const nothingToShow = !showPermits && !access.warningLetters;
   // A failed queue must stay visible with its retry, so only an error-free zero is "all clear".
   const allClear = !summary.isLoading && !summary.isError && summary.total === 0;
+  const canSubmitPermit = useCanSubmitPermit();
   const navAccess = navAccessFromMe(me);
-  const history = HISTORY_LINKS.find((link) => canOpenPath(link.href, navAccess));
+  const history = HISTORY_LINKS.find(
+    (link) => (canSubmitPermit || !link.submitterOnly) && canOpenPath(link.href, navAccess),
+  );
 
   return (
     <AppPage nav={false}>

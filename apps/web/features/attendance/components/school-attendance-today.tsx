@@ -26,10 +26,13 @@ export function SchoolAttendanceToday({ hint }: { hint?: string }): ReactElement
   const dashboard = useAdminDashboardQuery(isAdmin);
   const progress = dashboard.data?.attendance_today;
   const access = navAccessFromMe(me);
-  // Offer only routes the page guard lets this reader open.
+  // Offer only routes the page guard lets this reader open, and name them
+  // for what they are: the attendance report, or else the report centre.
   const reportsHref = ["/attendance/reports", "/reports"].find((href) => canOpenPath(href, access));
   const canMonitor = canOpenPath("/monitor", access);
   const running = progress !== undefined && progress.total > 0;
+  // The body promises the monitor only to a reader who is offered it.
+  const body = canMonitor ? t("body") : t("bodyReportsOnly");
 
   return (
     <div className="flex flex-col gap-3">
@@ -38,11 +41,13 @@ export function SchoolAttendanceToday({ hint }: { hint?: string }): ReactElement
         data-testid="school-attendance-today"
         eyebrow={t("eyebrow")}
         title={running ? t("progressTitle", progress) : t("title")}
-        meta={running ? t("progressBody") : progress ? t("noneRunning") : t("body")}
+        meta={running ? t("progressBody") : progress ? t("noneRunning") : body}
         action={
           reportsHref && (
             <Button asChild size="lg" className="w-full sm:w-auto">
-              <Link href={reportsHref}>{t("openReports")}</Link>
+              <Link href={reportsHref}>
+                {reportsHref === "/reports" ? t("openReportsHub") : t("openReports")}
+              </Link>
             </Button>
           )
         }

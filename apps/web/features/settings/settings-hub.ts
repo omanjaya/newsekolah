@@ -86,6 +86,12 @@ export interface SettingsHubCard {
 export interface SettingsHubSection {
   key: SettingsHubSectionKey;
   cards: SettingsHubCard[];
+  /**
+   * Whether every card the section groups is listed (the reader may open
+   * them all and no search narrowed them). The section's description names
+   * the whole group, so it is only true of a complete section.
+   */
+  complete: boolean;
 }
 
 export interface BuildSettingsHubInput {
@@ -122,17 +128,21 @@ export function buildSettingsHubSections({
   const byKey = allowedItems(access, registry);
   const needle = query.trim().toLowerCase();
 
-  return SETTINGS_HUB_SECTIONS.map((section) => ({
-    key: section.key,
-    cards: section.cards.flatMap((spec): SettingsHubCard[] => {
+  return SETTINGS_HUB_SECTIONS.map((section) => {
+    const cards = section.cards.flatMap((spec): SettingsHubCard[] => {
       const item = byKey.get(spec.navKey);
       if (!item) return [];
       const label = translate(item.labelKey);
       const description = translate(`app.settingsHub.cards.${spec.descriptionKey}`);
       if (needle && !`${label} ${description}`.toLowerCase().includes(needle)) return [];
       return [{ key: item.key, href: item.href, icon: item.icon, label, description }];
-    }),
-  })).filter((section) => section.cards.length > 0);
+    });
+    return {
+      key: section.key,
+      cards,
+      complete: cards.length === section.cards.length,
+    };
+  }).filter((section) => section.cards.length > 0);
 }
 
 export interface SettingsSectionTab {

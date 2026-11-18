@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -77,6 +78,18 @@ describe("LibraryReportsView overdue members tab", () => {
     expect(document.getElementById(panelId)).not.toBeNull();
   });
 
+  // A phone gets one tab row (the reports area's); the library's own
+  // reports are a Select there, showing the open report.
+  it("offers the reports as a Select for a phone, bound to the open tab", () => {
+    mocks.overdue.mockReturnValue({ data: { data: [] }, isLoading: false });
+    render(<LibraryReportsView />);
+
+    expect(screen.getByRole("combobox", { name: "typeLabel" })).toHaveTextContent(
+      "tabs.overdueMembers",
+    );
+    expect(screen.getByRole("tablist", { name: "tabsLabel" })).toHaveClass("max-md:hidden");
+  });
+
   it("falls back to a translated label for a member the directory does not know", () => {
     mocks.overdue.mockReturnValue({
       data: { data: [{ member_user_id: "ghost-id", loan_count: 1, total_fine: 0 }] },
@@ -111,6 +124,34 @@ describe("LibraryReportsView overdue members tab", () => {
     expect(container.querySelector('input[type="date"]')).toBeNull();
     expect(container.querySelector('input[type="month"]')).toBeNull();
     expect(screen.getByText("periodLabel")).toBeInTheDocument();
+  });
+});
+
+describe("LibraryReportsView period reports", () => {
+  beforeEach(() => {
+    mocks.overdue.mockReturnValue({ data: { data: [] }, isLoading: false });
+    window.history.replaceState(
+      null,
+      "",
+      "/library/reports?tab=loans&from=2026-09-01&to=2026-09-15",
+    );
+  });
+
+  it("steps an empty report back to the month before", async () => {
+    const user = userEvent.setup();
+    render(<LibraryReportsView />);
+
+    await user.click(screen.getByRole("button", { name: "earlierPeriod" }));
+
+    const params = new URLSearchParams(window.location.search);
+    expect(params.get("from")).toBe("2026-08-01");
+    expect(params.get("to")).toBe("2026-08-31");
+  });
+
+  it("offers the download as a secondary header action", () => {
+    render(<LibraryReportsView />);
+
+    expect(screen.getByRole("button", { name: "exportXlsx" })).toBeInTheDocument();
   });
 });
 

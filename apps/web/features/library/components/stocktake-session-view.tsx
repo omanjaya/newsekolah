@@ -25,10 +25,10 @@ import {
 } from "@newsekolah/ui";
 import {
   BookCheck,
-  BookX,
   CircleCheck,
   CircleX,
   Download,
+  Hourglass,
   Lock,
   MapPinned,
   ScanLine,
@@ -258,11 +258,13 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
                     label={t("result.scanned")}
                     loading={progress.isLoading}
                   />
+                  {/* While the session runs a copy not scanned yet is only
+                      that; "Hilang" is the closed session's verdict. */}
                   <Stat
-                    icon={<BookX />}
-                    category="red"
+                    icon={<Hourglass />}
+                    category="amber"
                     value={progress.data ? num(progress.data.missing_count) : "-"}
-                    label={t("result.missing")}
+                    label={t("progress.remaining")}
                     loading={progress.isLoading}
                   />
                   <Stat

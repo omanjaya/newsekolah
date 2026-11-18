@@ -52,7 +52,7 @@
   },
   "checkIn": {
     "title": "Presensi kerja",
-    "openPage": "Riwayat",
+    "openPage": "Buka",
     "notYet": "Belum ada catatan hari ini",
     "done": "Presensi kerja hari ini sudah lengkap.",
     "checkIn": "Catat kedatangan",
@@ -80,7 +80,6 @@
     "tile": "Perlu tindakan",
     "cardTitle": "Antrean keputusan",
     "cardAction": "Lihat semua",
-    "empty": "Semua antrean kosong",
     "queues": {
       "leave": "Izin terencana",
       "exit": "Izin keluar",

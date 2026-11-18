@@ -449,7 +449,7 @@
         "nameLabel": "Full name",
         "emailLabel": "Email",
         "phoneLabel": "Phone",
-        "phonePlaceholder": "Not set",
+        "phonePlaceholder": "Enter a new number",
         "localeLabel": "Preferred language",
         "localeId": "Indonesian",
         "localeEn": "English",
@@ -607,7 +607,8 @@
         "save": "Save settings",
         "sessionTitle": "Session length",
         "daysUnit": "days",
-        "devicesTitle": "Devices"
+        "devicesTitle": "Devices",
+        "rulesTitle": "Session rules"
       },
       "branding": {
         "navLabel": "School brand",
@@ -634,6 +635,7 @@
           "uploading": "Uploading... {percent}%",
           "updated": "Logo updated",
           "emptyHint": "No logo yet. PNG, WebP or SVG, up to 2 MB.",
+          "shortHint": "Up to 2 MB",
           "upload": "Upload logo"
         },
         "favicon": {
@@ -645,6 +647,7 @@
           "uploading": "Uploading... {percent}%",
           "updated": "Favicon updated",
           "emptyHint": "No favicon yet. PNG, WebP or SVG, up to 512 KB.",
+          "shortHint": "Up to 512 KB",
           "upload": "Upload favicon"
         },
         "description": "The name, colour and logo every user sees in the app, on the sign-in page and in the browser tab.",
@@ -730,9 +733,11 @@
     },
     "forbidden": {
       "title": "You have no access to this page",
-      "body": "Ask the school's admin for access if you need this page.",
+      "body": "Your account does not have permission for this page. Contact your school admin if you need it.",
       "backHome": "Back to home",
-      "back": "Previous page"
+      "back": "Previous page",
+      "bodyAdmin": "Your account does not have permission for this page.",
+      "platformBody": "This page is for platform operators only."
     },
     "moduleUnavailable": {
       "title": "This feature is not turned on",
@@ -941,7 +946,7 @@
       "queue": {
         "title": "Late queue",
         "description": "Students who scanned the late QR and wait for your review.",
-        "openInbox": "Needs action",
+        "openInbox": "View all",
         "emptyTitle": "Nobody is late yet",
         "emptyBody": "Students who scan the late QR show up here.",
         "occurrence": "Late #{n}, {time}"
@@ -1256,8 +1261,11 @@
         "progressBody": "Classes in session that have saved their attendance.",
         "noneRunning": "No class is in session right now.",
         "openReports": "Open attendance reports",
-        "openMonitor": "Open the monitor"
-      }
+        "openMonitor": "Open the monitor",
+        "bodyReportsOnly": "See each class's record in the reports.",
+        "openReportsHub": "Open the reports centre"
+      },
+      "openSchedule": "Open schedule"
     },
     "homeroom": {
       "eyebrow": "Academic",
@@ -1343,7 +1351,7 @@
       "incoming": "For me",
       "outgoing": "From me",
       "emptyTitle": "No requests yet",
-      "emptyIncomingBody": "Requests from colleagues to cover your schedule show up here.",
+      "emptyIncomingBody": "Requests from colleagues asking you to cover their lessons show up here.",
       "emptyOutgoingBody": "Requests you sent to colleagues show up here.",
       "fromTeacher": "From",
       "toTeacher": "To",
@@ -1647,7 +1655,9 @@
         "days": "{count, plural, one {# day} other {# days}}",
         "historyTitle": "Request history",
         "letterNumberShort": "Letter {number}",
-        "opened": "Requested"
+        "opened": "Requested",
+        "issuerTitle": "Issuing leave letters",
+        "issuerOpenInbox": "Open the leave queue"
       },
       "review": {
         "tabWithCount": "{label} {count}",
@@ -1731,7 +1741,7 @@
           "menuFor": "Actions for {name}"
         },
         "form": {
-          "createTitle": "New user",
+          "createTitle": "Add user",
           "editTitle": "Edit user",
           "name": "Full name",
           "username": "Username",
@@ -1767,7 +1777,7 @@
             "label": "Import mode",
             "create": "Create only",
             "upsert": "Create and update",
-            "createBody": "Every row creates a new user. A row whose username is already taken is an error.",
+            "createBody": "Every row creates a new user. A row whose username is already taken is rejected.",
             "upsertBody": "A row whose username matches an existing user updates that user's profile instead of failing; an unmatched row still creates a new user. Username and password are never changed.",
             "updateRolesLabel": "Also update roles",
             "updateRolesBody": "When on, a matched row's role replaces the existing user's role. Requires the manage permissions right; off by default so an import never changes who holds which role."

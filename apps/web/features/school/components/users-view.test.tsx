@@ -134,3 +134,30 @@ describe("UsersView filters", () => {
     expect(new URLSearchParams(window.location.search).get("kind")).toBe("");
   });
 });
+
+describe("UsersView density", () => {
+  beforeEach(() => {
+    mocks.canCreate = true;
+    mocks.useUsersQuery.mockReset();
+    mocks.useUsersQuery.mockReturnValue({
+      data: { data: [] },
+      isError: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+    window.history.replaceState(null, "", "/school/users");
+  });
+
+  it("starts the long list compact and still lets the toolbar open it up", async () => {
+    const user = userEvent.setup();
+    render(<UsersView />);
+
+    const toggle = screen.getByRole("button", { name: /^Kepadatan/ });
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    await user.click(toggle);
+    expect(screen.getByRole("button", { name: /^Kepadatan/ })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+});

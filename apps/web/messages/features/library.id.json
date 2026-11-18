@@ -6,7 +6,8 @@
   },
   "dueBadge": {
     "dueOn": "Kembali {date}",
-    "overdue": "Terlambat {days} hari (jatuh tempo {date})"
+    "overdue": "Terlambat {days} hari (jatuh tempo {date})",
+    "overdueShort": "Terlambat {days} hari"
   },
   "dashboard": {
     "eyebrow": "Perpustakaan",
@@ -112,7 +113,6 @@
       }
     },
     "isbnLookup": {
-      "hint": "Cari data bibliografi dari ISBN di atas.",
       "search": "Cari ISBN",
       "notFound": "Tidak ditemukan data untuk ISBN ini. Isi manual di bawah.",
       "apply": "Isi otomatis",
@@ -379,6 +379,7 @@
       "classesUnavailable": "Daftar kelas tidak tersedia untuk akun Anda",
       "titleLabel": "Judul",
       "preview": "Tinjau pasangan",
+      "previewNeeds": "Pilih kelas dan judul untuk meninjau",
       "previewEmptyTitle": "Tidak ada pasangan yang bisa dibuat",
       "previewEmptyBody": "Eksemplar judul ini tidak cukup untuk kelas yang dipilih, atau semua siswa sudah meminjamnya.",
       "rejectedTitle": "Tidak bisa dipinjamkan",
@@ -469,7 +470,7 @@
       "type": "Jenis",
       "status": "Status",
       "validUntil": "Berlaku sampai",
-      "lateReturns": "Keterlambatan",
+      "lateReturns": "Riwayat terlambat",
       "actions": "Aksi"
     },
     "filters": {
@@ -684,7 +685,7 @@
     "title": "Impor koleksi",
     "steps": {
       "upload": "Unggah",
-      "mapping": "Pemetaan kolom",
+      "mapping": "Pemetaan",
       "preview": "Pratinjau",
       "result": "Hasil"
     },
@@ -774,7 +775,7 @@
     "navLabel": "Eksemplar",
     "eyebrow": "Perpustakaan",
     "title": "Eksemplar",
-    "searchPlaceholder": "Cari barcode, nomor induk, atau RFID",
+    "searchPlaceholder": "Cari barcode atau RFID",
     "viewTitle": "Lihat judul",
     "noMatchTitle": "Tidak ada eksemplar yang cocok",
     "noMatchBody": "Coba ubah filter atau kata kunci pencarian.",
@@ -846,8 +847,8 @@
     },
     "summary": {
       "totalVisits": "Kunjungan hari ini",
-      "uniqueMembers": "Anggota berbeda hari ini",
-      "totalPeople": "Orang hari ini",
+      "uniqueMembers": "Anggota unik hari ini",
+      "totalPeople": "Total pengunjung hari ini",
       "heading": "Kunjungan hari ini"
     },
     "kinds": {
@@ -930,7 +931,8 @@
       "live": "Diperbarui otomatis setiap 5 detik selama sesi berjalan.",
       "meter": "Terpindai dari yang diharapkan",
       "meterValue": "{scanned} dari {expected}",
-      "ratio": "{scanned} dari {expected} terpindai"
+      "ratio": "{scanned} dari {expected} terpindai",
+      "remaining": "Belum terpindai"
     },
     "scan": {
       "heading": "Pindai eksemplar",
@@ -1195,7 +1197,8 @@
     "title": "Laporan perpustakaan",
     "fromLabel": "Dari tanggal",
     "toLabel": "Sampai tanggal",
-    "exportXlsx": "Ekspor XLSX",
+    "exportXlsx": "Unduh laporan",
+    "earlierPeriod": "Lihat bulan sebelumnya",
     "tabs": {
       "loans": "Peminjaman",
       "overdueMembers": "Anggota terlambat",
@@ -1351,6 +1354,7 @@
       }
     },
     "tabsLabel": "Jenis laporan perpustakaan",
+    "typeLabel": "Jenis laporan",
     "periodLabel": "Periode laporan"
   },
   "markLost": {
@@ -1450,7 +1454,8 @@
         "books": "Pindai bukunya",
         "done": "Tekan tombol Selesai"
       },
-      "privacy": "Sesi berakhir sendiri setelah 20 detik tanpa pindaian, jadi data Anda tidak terlihat orang berikutnya."
+      "privacy": "Sesi berakhir sendiri setelah 20 detik tanpa pindaian, jadi data Anda tidak terlihat orang berikutnya.",
+      "cardHint": "Arahkan kartu anggota ke kamera atau pemindai"
     },
     "active": {
       "title": "Pindai buku untuk dipinjam atau dikembalikan",
@@ -1514,6 +1519,8 @@
     "navLabel": "Pinjaman buku",
     "notMemberTitle": "Belum terdaftar sebagai anggota perpustakaan",
     "notMemberBody": "Minta pustakawan mendaftarkan Anda untuk mulai meminjam dan memesan buku.",
+    "notMemberBodyStaff": "Daftarkan diri Anda di halaman Anggota untuk mulai meminjam dan memesan buku.",
+    "openMembers": "Buka halaman Anggota",
     "unpaidFines": "Denda belum dibayar",
     "currency": "Rp{amount}",
     "violationKind": {

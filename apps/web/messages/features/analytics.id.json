@@ -28,7 +28,9 @@
     "filters": {
       "class": "Kelas"
     },
-    "computedAt": "Data dihitung {time}"
+    "computedAt": "Data dihitung {time}",
+    "sortedHint": "Diurutkan dari skor tertinggi",
+    "scoreValue": "Skor {score}"
   },
   "level": {
     "none": "Aman",
@@ -39,6 +41,7 @@
     "eyebrow": "Peringatan dini",
     "back": "Kembali",
     "unknownStudent": "Siswa tidak dikenal",
+    "nis": "NIS {nis}",
     "freshness": "Data dihitung {time}",
     "score": "Skor {score}",
     "reasonsTitle": "Alasan",
@@ -58,7 +61,11 @@
       "gradeTrendValue": "Rata-rata nilai rapor dari {previous} ke {current}",
       "gradeTrendPrevious": "Sebelumnya",
       "gradeTrendCurrent": "Saat ini",
-      "noData": "Belum ada data"
+      "noData": "Belum ada data",
+      "absentUnit": "dari {considered} hari tidak hadir",
+      "disciplineUnit": "poin aktif",
+      "warningLettersUnit": "surat",
+      "gradeTrendUnit": "rata-rata rapor, sebelumnya {previous}"
     },
     "reasons": {
       "attendance_absence_watch": "Tidak hadir {absent_days} dari {considered_days} hari sekolah terakhir",

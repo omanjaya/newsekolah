@@ -28,9 +28,23 @@ describe("PointsMeter", () => {
       container.querySelectorAll<HTMLElement>("[data-slot=progress-marker]"),
     ).map((line) => line.style.getPropertyValue("--marker"));
     expect(lines).toEqual(["0.25", "0.5", "1"]);
-    // The levels are named on the scale and said in text under it.
-    expect(screen.getByText("SP 2")).toBeInTheDocument();
+    // The lines are unnamed; the legend under them names each level once.
+    expect(screen.queryByText("SP 2")).not.toBeInTheDocument();
     expect(screen.getByText('threshold:{"level":"SP 1","points":25}')).toBeInTheDocument();
+  });
+
+  it("ends each level's legend under its own line", () => {
+    render(<PointsMeter total={40} levels={levels} />);
+    const legend = screen.getByText('threshold:{"level":"SP 1","points":25}').closest("ul");
+    // Tracks span 0-25, 25-50 and 50-100, each item right-aligned in its own.
+    expect(legend?.style.getPropertyValue("--legend-columns")).toBe("25fr 25fr 50fr");
+    expect(legend?.firstElementChild).toHaveClass("text-right");
+  });
+
+  it("keeps the stretch past the last level once the total runs beyond it", () => {
+    render(<PointsMeter total={120} levels={levels} />);
+    const legend = screen.getByText('threshold:{"level":"SP 3","points":100}').closest("ul");
+    expect(legend?.style.getPropertyValue("--legend-columns")).toBe("25fr 25fr 50fr 20fr");
   });
 
   it("turns red once the last level is reached and says when each level was reached", () => {

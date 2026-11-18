@@ -14,13 +14,14 @@ import {
   TextLink,
   domainIcons,
 } from "@newsekolah/ui";
-import { Search } from "lucide-react";
+import { IdCard, Search } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { useCan } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import type { LibraryLoan } from "../api";
 import { classifyDueDate, overdueDays } from "../lib/due-date";
@@ -42,13 +43,16 @@ const CATALOGUE_HREF = "/opac";
  * (a late book, else the next due date, else a way to the catalogue),
  * unpaid fines, the books out now with their renew button and the reason
  * when renewing is refused, the closed loans as a short list, and the
- * self-service holds.
+ * self-service holds. Someone who registers members (a librarian, an
+ * admin) and has no membership of their own is sent to the members page
+ * instead of being told to ask the librarian.
  */
 export function MyLibraryView(): ReactElement {
   const t = useTranslations("app.library.me");
   const locale = useLocale() as Locale;
   const today = todayInZone(useTenantTimeZone());
   const { data, isLoading, isError, error, refetch } = useMyLibraryProfileQuery();
+  const canRegister = useCan("manage_library_members");
 
   if (isError && !data) {
     return (
@@ -73,11 +77,22 @@ export function MyLibraryView(): ReactElement {
           variant="framed"
           icon={<domainIcons.library aria-hidden="true" />}
           title={t("notMemberTitle")}
-          description={t("notMemberBody")}
+          description={canRegister ? t("notMemberBodyStaff") : t("notMemberBody")}
           action={
-            <Button asChild variant="secondary" icon={<Search />}>
-              <Link href={CATALOGUE_HREF}>{t("browseCatalogue")}</Link>
-            </Button>
+            canRegister ? (
+              <Button asChild variant="secondary" icon={<IdCard />}>
+                <Link href="/library/members">{t("openMembers")}</Link>
+              </Button>
+            ) : (
+              <Button asChild variant="secondary" icon={<Search />}>
+                <Link href={CATALOGUE_HREF}>{t("browseCatalogue")}</Link>
+              </Button>
+            )
+          }
+          secondaryAction={
+            canRegister ? (
+              <TextLink href={CATALOGUE_HREF}>{t("browseCatalogue")}</TextLink>
+            ) : undefined
           }
         />
       </AppPage>
@@ -174,8 +189,10 @@ function MyLibraryHero({
   const latest = overdue[0];
   if (latest) {
     return (
+      // No way to the catalogue here: the one thing to do is return the
+      // book. The tone is "danger", as the due badges show lateness.
       <HeroCard
-        tone="warning"
+        tone="danger"
         eyebrow={t("overdueEyebrow")}
         title={t("overdueTitle", {
           count: overdue.length,
@@ -183,7 +200,6 @@ function MyLibraryHero({
         })}
         meta={t("overdueMeta", { title: latest.title_name ?? tMe("titleUnavailable") })}
         chip={t("overdueChip")}
-        secondaryAction={browse}
         data-testid="my-library-hero"
       />
     );

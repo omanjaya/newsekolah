@@ -18,7 +18,11 @@ export function mergeTiles(tiles: TileSpec[], max = 4): TileSpec[] {
   return [...byKey.values()].sort((a, b) => b.priority - a.priority).slice(0, max);
 }
 
-/** Merges every active persona block into the shape the dashboard view renders. */
+/**
+ * Merges every active persona block into the shape the dashboard view
+ * renders. The tiles the winning hero already states (`coversTiles`) are
+ * dropped before the top four are taken, so another tile can fill the row.
+ */
 export function collectBlocks(blocks: PersonaBlock[]): {
   hero?: HeroCandidate;
   tiles: TileSpec[];
@@ -26,9 +30,11 @@ export function collectBlocks(blocks: PersonaBlock[]): {
   side: BlockSlot[];
   pending: boolean;
 } {
+  const hero = pickHero(blocks.flatMap((b) => (b.hero ? [b.hero] : [])));
+  const covered = new Set(hero?.coversTiles ?? []);
   return {
-    hero: pickHero(blocks.flatMap((b) => (b.hero ? [b.hero] : []))),
-    tiles: mergeTiles(blocks.flatMap((b) => b.tiles)),
+    hero,
+    tiles: mergeTiles(blocks.flatMap((b) => b.tiles).filter((tile) => !covered.has(tile.key))),
     main: blocks.flatMap((b) => b.main),
     side: blocks.flatMap((b) => b.side),
     pending: blocks.some((b) => b.pending === true),

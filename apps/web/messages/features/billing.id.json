@@ -5,10 +5,10 @@
   "title": "Tagihan dan pembayaran",
   "tabsLabel": "Bagian tagihan dan pembayaran",
   "tabs": {
-    "desk": "Loket pembayaran",
+    "desk": "Loket",
     "bills": "Daftar tagihan",
     "feeTypes": "Jenis biaya",
-    "generate": "Terbitkan tagihan",
+    "generate": "Penerbitan",
     "arrears": "Tunggakan"
   },
   "feeTypes": {

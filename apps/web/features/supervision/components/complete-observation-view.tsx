@@ -12,6 +12,7 @@ import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { useScheduledObservationsQuery, useSupervisionCycleQuery } from "../api";
+import { cycleHref, useCycleTrail } from "../lib/use-cycle-trail";
 import { useLessonContext } from "../lib/use-lesson-context";
 
 import { CompleteObservationForm } from "./complete-observation-form";
@@ -32,6 +33,7 @@ export function CompleteObservationView({
 }): ReactElement {
   const t = useTranslations("app.supervision.completeObservation");
   const tRoot = useTranslations("app.supervision");
+  const trail = useCycleTrail();
   const locale = useLocale() as Locale;
   const router = useRouter();
 
@@ -44,12 +46,8 @@ export function CompleteObservationView({
   const scheduled = scheduledList.data?.data.find((s) => s.id === scheduledId);
   const lesson = useLessonContext(scheduled?.teacher_user_id ?? "", scheduled?.schedule_id ?? "");
 
-  const backHref = `/supervision/cycles/${cycleId}`;
-  const breadcrumb = [
-    { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
-    { label: cycle.data?.name ?? tRoot("navLabelCycles"), href: backHref },
-    { label: t("breadcrumb") },
-  ];
+  const backHref = cycleHref(cycleId);
+  const breadcrumb = trail.within(cycleId, cycle.data?.name, { label: t("breadcrumb") });
 
   const failed = (cycle.isError && !cycle.data) || (scheduledList.isError && !scheduledList.data);
   if (failed) {

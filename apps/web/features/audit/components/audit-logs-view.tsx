@@ -256,7 +256,9 @@ export function AuditLogsView(): ReactElement {
                   resetPaging();
                 }}
                 labels={actorLabels}
-                className="w-full sm:w-56"
+                // A filter among the filter pills, so it takes their shape
+                // and their compact height where the pointer is fine.
+                className="w-full sm:w-56 sm:rounded-full md:pointer-fine:h-8 md:pointer-fine:text-body-sm"
               />
               {actorUserId !== "" && (
                 <Button

@@ -5,12 +5,12 @@ import {
   DataTable,
   EmptyState,
   FilteredEmptyState,
-  TextLink,
   domainIcons,
   selectionColumn,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
@@ -59,6 +59,7 @@ const COPIES_PAGE_SIZE = 50;
  */
 export function CopiesBrowserView(): ReactElement {
   const t = useTranslations("app.library.copiesBrowser");
+  const router = useRouter();
   const canManage = useCan("manage_library_catalog");
   const [search, setSearch] = useRememberedViewState("copies-search", "");
   const [status, setStatus] = useUrlState<LibraryCopyStatus | "">(
@@ -125,12 +126,10 @@ export function CopiesBrowserView(): ReactElement {
         meta: { card: "title", skeleton: "lines" },
         cell: ({ row }) => (
           <div className="flex min-w-0 flex-col">
-            <TextLink
-              href={`/library/catalogue/${row.original.title_id}`}
-              className="font-semibold"
-            >
+            {/* Body text, as in the other areas' tables: the row opens the title. */}
+            <span className="font-semibold text-fg">
               <LibraryTitleName titleId={row.original.title_id} />
-            </TextLink>
+            </span>
             <span className="text-caption text-fg-muted tabular-nums">
               {row.original.barcode}
               {row.original.accession_number &&
@@ -224,6 +223,9 @@ export function CopiesBrowserView(): ReactElement {
             ) : undefined
           }
           getRowId={(item) => item.id}
+          onRowActivate={(item) => {
+            router.push(`/library/catalogue/${item.title_id}`);
+          }}
           fillHeight
           emptyState={
             isFiltered ? (

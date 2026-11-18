@@ -13,6 +13,7 @@
     },
     "add": "Tambah ekstrakurikuler",
     "edit": "Ubah",
+    "rowActions": "Aksi untuk {name}",
     "saved": "Ekstrakurikuler tersimpan",
     "noLimit": "Tanpa batas",
     "emptyTitle": "Belum ada ekstrakurikuler",
@@ -50,7 +51,10 @@
       "meetingEnd": "Jam selesai",
       "cancel": "Batal",
       "submit": "Simpan",
-      "active": "Ekstrakurikuler aktif"
+      "active": "Ekstrakurikuler aktif",
+      "errors": {
+        "name": "Isi nama ekstrakurikuler."
+      }
     },
     "delete": "Hapus",
     "deleteTitle": "Hapus ekstrakurikuler?",
@@ -72,11 +76,26 @@
       "members": "Anggota",
       "meetings": "Pertemuan"
     },
+    "facts": {
+      "capacity": "Kuota {count} anggota",
+      "noLimit": "Tanpa batas kuota"
+    },
     "members": {
+      "add": "Daftarkan anggota",
       "studentId": "Siswa",
       "studentIdPlaceholder": "Tempel ID siswa",
       "joinedOn": "Tanggal bergabung",
+      "joinedSince": "Bergabung {date}",
+      "memberPeriod": "Bergabung {from}, keluar {to}",
       "join": "Daftarkan",
+      "cancel": "Batal",
+      "errors": {
+        "student": "Pilih siswa yang didaftarkan.",
+        "joinedOn": "Pilih tanggal bergabung."
+      },
+      "rowActions": "Aksi untuk {name}",
+      "leaveTitle": "Keluarkan {name}?",
+      "leaveBody": "Keanggotaannya berakhir hari ini. Riwayat presensinya tetap tersimpan.",
       "joined": "Siswa terdaftar sebagai anggota",
       "includeLeft": "Tampilkan yang sudah keluar",
       "searchPlaceholder": "Cari nama anggota",
@@ -91,8 +110,13 @@
       "left": "Keanggotaan diakhiri"
     },
     "meetings": {
+      "add": "Jadwalkan pertemuan",
       "meetingDate": "Tanggal pertemuan",
       "schedule": "Jadwalkan",
+      "cancel": "Batal",
+      "errors": {
+        "meetingDate": "Pilih tanggal pertemuan."
+      },
       "scheduled": "Pertemuan dijadwalkan",
       "empty": "Belum ada pertemuan yang dijadwalkan.",
       "roster": {
@@ -138,11 +162,17 @@
       "location": "Lokasi",
       "startDate": "Tanggal mulai",
       "endDate": "Tanggal selesai",
+      "dates": "Tanggal kegiatan",
       "cancel": "Batal",
       "submit": "Simpan",
-      "editTitle": "Ubah kegiatan"
+      "editTitle": "Ubah kegiatan",
+      "errors": {
+        "name": "Isi nama kegiatan.",
+        "dates": "Pilih tanggal kegiatan."
+      }
     },
     "edit": "Ubah",
+    "rowActions": "Aksi untuk {name}",
     "delete": "Hapus",
     "deleteTitle": "Hapus kegiatan?",
     "deleteBody": "Data ini akan dihapus dari daftar. Lanjutkan?",
@@ -204,9 +234,16 @@
       "notes": "Catatan",
       "cancel": "Batal",
       "submit": "Simpan",
-      "editTitle": "Ubah prestasi"
+      "editTitle": "Ubah prestasi",
+      "errors": {
+        "student": "Pilih siswa yang berprestasi.",
+        "competitionName": "Isi nama lomba.",
+        "placement": "Isi capaian, misalnya Juara 1.",
+        "achievedOn": "Pilih tanggal."
+      }
     },
     "edit": "Ubah",
+    "rowActions": "Aksi untuk {name}",
     "delete": "Hapus",
     "deleteTitle": "Hapus prestasi?",
     "deleteBody": "Data ini akan dihapus dari daftar. Lanjutkan?",

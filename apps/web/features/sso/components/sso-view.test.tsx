@@ -13,8 +13,17 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => () => "error",
 }));
 vi.mock("../../settings/components/settings-page", () => ({
-  SettingsPage: ({ children, floating }: { children: ReactNode; floating?: ReactNode }) => (
+  SettingsPage: ({
+    actions,
+    children,
+    floating,
+  }: {
+    actions?: ReactNode;
+    children: ReactNode;
+    floating?: ReactNode;
+  }) => (
     <div>
+      <div data-testid="header-actions">{actions}</div>
       {children}
       {floating}
     </div>
@@ -44,8 +53,24 @@ describe("SsoView status", () => {
       isError: false,
     });
     render(<SsoView />);
-    expect(screen.getByText("statusUnset")).toBeInTheDocument();
+    expect(screen.getByTestId("header-actions")).toHaveTextContent("statusUnset");
     expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+    // The setup note opens the credentials card instead of a card of its own.
+    expect(screen.queryByText("statusTitle")).not.toBeInTheDocument();
+    expect(screen.getByText("neverConfigured")).toBeInTheDocument();
+  });
+
+  it("explains the Client ID's shape in a hint, not a placeholder cut on a phone", () => {
+    configQuery.mockReturnValue({
+      data: { configured: false, enabled: false },
+      isLoading: false,
+      isError: false,
+    });
+    render(<SsoView />);
+    expect(screen.getByRole("textbox", { name: /clientIdLabel/ })).not.toHaveAttribute(
+      "placeholder",
+    );
+    expect(screen.getByText("clientIdHint")).toBeInTheDocument();
   });
 
   it("keeps the switch and the badge in agreement once configured", () => {
@@ -55,7 +80,8 @@ describe("SsoView status", () => {
       isError: false,
     });
     render(<SsoView />);
-    expect(screen.getByText("statusOn")).toBeInTheDocument();
+    expect(screen.getByTestId("header-actions")).toHaveTextContent("statusOn");
+    expect(screen.getByText("statusTitle")).toBeInTheDocument();
     expect(screen.getByRole("switch")).toBeChecked();
   });
 

@@ -2,7 +2,7 @@
   "navLabel": "Pindai",
   "eyebrow": "Pindai",
   "title": "Pindai kode QR",
-  "intro": "Arahkan kamera ke kode QR apa pun: masuk kelas, keterlambatan, izin keluar, gerbang, atau kunjungan perpustakaan. Tindakan yang sesuai dijalankan otomatis.",
+  "intro": "Arahkan kamera ke kode QR; tindakan yang sesuai berjalan otomatis.",
   "introPermits": "Arahkan kamera ke kode QR masuk kelas, keterlambatan, izin keluar, atau gerbang. Tindakan yang sesuai dijalankan otomatis.",
   "introLibrary": "Arahkan kamera ke kode QR kunjungan perpustakaan. Kunjungan dicatat otomatis.",
   "scanLabel": "Kode QR",

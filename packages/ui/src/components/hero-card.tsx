@@ -4,7 +4,7 @@ import { cn } from "../utils/cn.js";
 
 import { Badge, type BadgeAppearance, type BadgeTone } from "./badge.js";
 
-export type HeroCardTone = "accent-soft" | "neutral" | "warning";
+export type HeroCardTone = "accent-soft" | "neutral" | "warning" | "danger";
 
 interface ToneStyle {
   surface: string;
@@ -33,6 +33,14 @@ const TONE: Record<HeroCardTone, ToneStyle> = {
     chipTone: "warning",
     chipAppearance: "solid",
   },
+  // The same build as warning, one step up: what an overdue or late
+  // badge elsewhere on the screen already calls danger.
+  danger: {
+    surface: "bg-danger-soft text-danger-soft-fg",
+    muted: "text-danger-soft-fg/80",
+    chipTone: "danger",
+    chipAppearance: "solid",
+  },
 };
 
 export interface HeroCardProps extends Omit<ComponentPropsWithRef<"section">, "title"> {
@@ -51,7 +59,11 @@ export interface HeroCardProps extends Omit<ComponentPropsWithRef<"section">, "t
   secondaryAction?: ReactNode;
   /** Extra content between the meta line and the actions (a progress bar, a short list). */
   children?: ReactNode;
-  /** `accent-soft` (default) for "now", `neutral` for a calm state, `warning` for something overdue. */
+  /**
+   * `accent-soft` (default) for "now", `neutral` for a calm state,
+   * `warning` for something due or slipping, `danger` for something
+   * already overdue that the screen's badges mark as danger (a late loan).
+   */
   tone?: HeroCardTone;
   /**
    * "md" (default) for a page. "kiosk" for a screen read standing back

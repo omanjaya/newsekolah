@@ -193,9 +193,9 @@ export function YearsView(): ReactElement {
   );
 
   return (
+    // The area's header (Tahun ajaran) with no description, as on its
+    // sibling tabs, so the tab strip stays put between them.
     <AppPage
-      title={tWorkspace("yearList")}
-      description={canManage ? tWorkspace("yearHelp") : undefined}
       nav={<AcademicWorkspaceLinks area="years" />}
       primaryAction={
         canManage ? (
@@ -210,6 +210,9 @@ export function YearsView(): ReactElement {
         ) : undefined
       }
     >
+      {canManage && (
+        <p className="max-w-prose text-body-sm text-fg-muted">{tWorkspace("yearHelp")}</p>
+      )}
       <DataTable
         stateKey="features/academic/components/years-view:1"
         mode="local"

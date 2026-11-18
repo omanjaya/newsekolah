@@ -6,6 +6,7 @@ import {
   Badge,
   Button,
   Card,
+  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
@@ -118,7 +119,7 @@ export function SecurityView(): ReactElement {
           <SkeletonForm fields={1} actions={false} className="px-5 pb-5" />
         ) : (
           <>
-            <div className="flex flex-col gap-3 px-5">
+            <CardContent className="flex flex-col gap-3">
               <p className="text-body-sm text-fg">
                 {data.confirmed ? t("status.enabledBody") : t("status.disabledBody")}
               </p>
@@ -128,7 +129,7 @@ export function SecurityView(): ReactElement {
                 </p>
               )}
               {showLowCodesWarning && <Alert tone="warning" title={t("status.recoveryCodesLow")} />}
-            </div>
+            </CardContent>
             <CardFooter className="flex-wrap">
               {data.confirmed ? (
                 <>

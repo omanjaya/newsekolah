@@ -56,7 +56,44 @@ describe("EmptyState", () => {
     render(<EmptyState variant="compact" icon={<Inbox />} title="Belum ada pengumuman" />);
     const title = screen.getByText("Belum ada pengumuman");
     expect(title).toHaveClass("text-label");
-    expect(title.parentElement?.parentElement).toHaveClass("flex-row", "text-left");
+    expect(title.parentElement?.parentElement).toHaveClass("flex-row", "flex-wrap", "text-left");
+  });
+
+  // On a phone the compact row's button no longer squeezes the text into a
+  // narrow column: it takes a line of its own, lined up with the text.
+  it("puts the compact variant's action under the text on a phone", () => {
+    const { rerender } = render(
+      <EmptyState
+        variant="compact"
+        icon={<Inbox />}
+        title="Tidak ada tamu terjadwal hari ini"
+        action={<button type="button">Jadwalkan tamu</button>}
+      />,
+    );
+    const actions = screen.getByRole("button", { name: "Jadwalkan tamu" }).parentElement;
+    expect(actions).toHaveClass("shrink-0", "max-sm:basis-full", "max-sm:pl-11");
+    rerender(
+      <EmptyState
+        variant="compact"
+        title="Tidak ada tamu terjadwal hari ini"
+        action={<button type="button">Jadwalkan tamu</button>}
+      />,
+    );
+    // Without an icon there is nothing to line up past.
+    expect(screen.getByRole("button", { name: "Jadwalkan tamu" }).parentElement).not.toHaveClass(
+      "max-sm:pl-11",
+    );
+  });
+
+  it("wraps the title and description without a one-word last line", () => {
+    render(
+      <EmptyState
+        title="Belum ada tamu di sekolah"
+        description="Tamu yang dicatat muncul di sini."
+      />,
+    );
+    expect(screen.getByText("Belum ada tamu di sekolah")).toHaveClass("text-balance");
+    expect(screen.getByText("Tamu yang dicatat muncul di sini.")).toHaveClass("text-pretty");
   });
 
   it("can title itself as a heading", () => {
@@ -97,7 +134,7 @@ describe("FilteredEmptyState", () => {
 });
 
 describe("FirstUseEmptyState", () => {
-  it("always offers the add action as the primary button with a plus", async () => {
+  it("always offers the add action, as the outline button with a plus by default", async () => {
     const onAction = vi.fn();
     const { container } = render(
       <FirstUseEmptyState
@@ -108,11 +145,25 @@ describe("FirstUseEmptyState", () => {
       />,
     );
     const button = screen.getByRole("button", { name: "Tambah siswa" });
-    expect(button).toHaveClass("bg-accent");
+    // The page header carries the filled primary for the same action.
+    expect(button).not.toHaveClass("bg-accent");
+    expect(button).toHaveClass("border-border");
     expect(button.querySelector("svg.lucide-plus")).toBeInTheDocument();
     await userEvent.click(button);
     expect(onAction).toHaveBeenCalledOnce();
     await expectNoAxeViolations(container);
+  });
+
+  it("fills the button when it carries the screen's only primary", () => {
+    render(
+      <FirstUseEmptyState
+        emphasis="primary"
+        title="Belum ada siswa"
+        actionLabel="Tambah siswa"
+        onAction={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Tambah siswa" })).toHaveClass("bg-accent");
   });
 
   it("links to a create page instead, with a smaller button in the compact variant", () => {

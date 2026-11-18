@@ -34,6 +34,7 @@ import {
   type DataTableCursorPagination,
   type DataTablePaginationLabels,
 } from "./data-table-pagination.js";
+import { DataTableScroller } from "./data-table-scroller.js";
 import { useDataTableState } from "./data-table-state.js";
 import {
   DataTableDefaultEmptyState,
@@ -97,6 +98,14 @@ export interface DataTableProps<TData> {
   bulkActions?: ReactNode;
   /** The table's own actions ("Tambah"), at the end of the toolbar beside the search. */
   toolbarActions?: ReactNode;
+  /**
+   * The toolbar's density and column controls (from `md` up; the column
+   * menu also beside the phone's search box). Default true. Pass false for
+   * a short, fixed list where neither choice means anything. Either way
+   * they stay out while the table is empty and no search or filter
+   * emptied it, and the column menu needs two columns to choose between.
+   */
+  viewOptions?: boolean;
   /**
    * `normal` (default) is a comfortable row: ~52px min height, `px-4 py-3`
    * cells, vertically centered content. `compact` keeps the tighter ~40px
@@ -172,6 +181,7 @@ export function DataTable<TData>({
   onRowSelectionChange,
   bulkActions,
   toolbarActions,
+  viewOptions = true,
   density: densityProp,
   onDensityChange,
   storageKey,
@@ -414,6 +424,10 @@ export function DataTable<TData>({
         filters={filters}
         filtersLabels={filtersLabels}
         actions={toolbarActions}
+        viewOptions={viewOptions}
+        // Skeleton rows count: the controls are there while rows load, so
+        // the toolbar does not grow a row above them when they arrive.
+        hasRows={isLoading === true || rows.length > 0}
       />
       {staleRows && <DataTableErrorAlert error={error} onRetry={onRetry} retrying={retrying} />}
       {/*
@@ -456,12 +470,7 @@ export function DataTable<TData>({
                 }}
               />
             </div>
-            <div
-              className={cn(
-                "hidden overflow-x-auto md:block",
-                fillHeight && "md:min-h-0 md:overflow-y-auto",
-              )}
-            >
+            <DataTableScroller fillHeight={fillHeight}>
               <table className="w-full border-collapse text-body-sm tabular-nums">
                 <DataTableHead table={table} fillHeight={fillHeight} density={density} />
                 <DataTableBody
@@ -477,7 +486,7 @@ export function DataTable<TData>({
                   onKeyDown={handleKeyDown}
                 />
               </table>
-            </div>
+            </DataTableScroller>
           </>
         )}
         {footer && <div className="shrink-0 px-1 md:border-t md:border-line md:px-4">{footer}</div>}

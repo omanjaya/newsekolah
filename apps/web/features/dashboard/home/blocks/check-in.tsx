@@ -118,7 +118,7 @@ function CheckInCard({
   const hasArrival = Boolean(current?.arrival_at);
   const done = completeDate === today || Boolean(current?.departure_at);
   const time = (iso: string | null | undefined) =>
-    iso ? formatTime(iso, { locale, timeZone }) : "-";
+    iso ? formatTime(iso, { locale, timeZone }) : "–";
   const statusToken = current ? STATUS_TOKEN[current.status_code] : undefined;
 
   function handleScan() {
@@ -174,8 +174,10 @@ function CheckInCard({
             {done ? (
               <p className="text-body-sm text-fg-muted">{t("done")}</p>
             ) : (
+              // Secondary on the home: the hero holds the page's one primary
+              // action. The /check-in page itself keeps a primary button.
               <Button
-                variant={hasArrival ? "secondary" : "primary"}
+                variant="secondary"
                 className="w-full"
                 icon={hasArrival ? <LogOut /> : <LogIn />}
                 loading={scan.isPending}

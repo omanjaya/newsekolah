@@ -41,8 +41,7 @@ import {
   useTeacherSupervisionReportQuery,
 } from "../api";
 import { averageScore, formatScore } from "../lib/score-format";
-
-import { CycleNav } from "./cycle-nav";
+import { useCycleTrail } from "../lib/use-cycle-trail";
 
 /**
  * The figures of one report: the overall average against the scale, each
@@ -55,18 +54,28 @@ function ReportContent({ report }: { report: TeacherSupervisionReport }): ReactE
   const locale = useLocale() as Locale;
   const { me } = useSession();
   const { scale_min: min, scale_max: max, criteria } = report.cycle.instrument;
-  // No completed observation yet: an average of 0,00 would read as a score.
-  const hasScores = report.observations.length > 0;
   const span = Math.max(max - min, 1);
+
+  // No completed observation yet: there is nothing to average, so the page
+  // says so once instead of showing dashes and empty meters.
+  if (report.observations.length === 0) {
+    return (
+      <EmptyState
+        icon={<domainIcons.supervision />}
+        title={t("noObservationsTitle")}
+        description={t("noObservations")}
+      />
+    );
+  }
 
   return (
     <>
-      <StatGrid variant="tiles" className="grid-cols-1 sm:grid-cols-2">
+      <StatGrid variant="tiles" className="sm:grid-cols-2">
         <Stat
           icon={<Gauge />}
           tone="green"
           label={t("overallAverage")}
-          value={hasScores ? formatScore(report.overall_average, locale) : "–"}
+          value={formatScore(report.overall_average, locale)}
           hint={t("ofScale", { min, max })}
         />
         <Stat
@@ -83,16 +92,23 @@ function ReportContent({ report }: { report: TeacherSupervisionReport }): ReactE
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {criteria.map((criterion, index) => {
-            const average = report.criterion_average[criterion.key] ?? 0;
+            const average = report.criterion_average[criterion.key];
             return (
-              <Progress
-                key={criterion.key}
-                variant="meter"
-                label={`${String(index + 1)}. ${criterion.name}`}
-                value={hasScores ? average - min : 0}
-                max={span}
-                valueLabel={hasScores ? formatScore(average, locale) : "–"}
-              />
+              // The criterion's number in a muted column of its own, as on
+              // the cycle's instrument and on an observation's scores.
+              <div key={criterion.key} className="flex items-start gap-3">
+                <span className="w-5 shrink-0 text-right text-label text-fg-muted tabular-nums">
+                  {index + 1}
+                </span>
+                <Progress
+                  className="min-w-0 flex-1"
+                  variant="meter"
+                  label={criterion.name}
+                  value={average === undefined ? 0 : average - min}
+                  max={span}
+                  valueLabel={average === undefined ? "–" : formatScore(average, locale)}
+                />
+              </div>
             );
           })}
         </CardContent>
@@ -100,37 +116,29 @@ function ReportContent({ report }: { report: TeacherSupervisionReport }): ReactE
 
       <section className="flex flex-col gap-3">
         <SectionHeader title={t("observations")} count={report.observations.length} />
-        {report.observations.length === 0 ? (
-          <EmptyState
-            icon={<domainIcons.supervision />}
-            title={t("noObservationsTitle")}
-            description={t("noObservations")}
-          />
-        ) : (
-          <List framed aria-label={t("observations")}>
-            {report.observations.map((observation) => {
-              const average = averageScore(observation.scores);
-              return (
-                <ListRow
-                  key={observation.id}
-                  title={formatDate(observation.observed_at, {
-                    locale,
-                    timeZone: me?.tenant.timezone,
-                  })}
-                  meta={[
-                    average === null
-                      ? undefined
-                      : t("observationAverage", { average: formatScore(average, locale) }),
-                    observation.teacher_response ? t("responded") : t("notResponded"),
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                  href={`/supervision/observations/${observation.id}`}
-                />
-              );
-            })}
-          </List>
-        )}
+        <List framed aria-label={t("observations")}>
+          {report.observations.map((observation) => {
+            const average = averageScore(observation.scores);
+            return (
+              <ListRow
+                key={observation.id}
+                title={formatDate(observation.observed_at, {
+                  locale,
+                  timeZone: me?.tenant.timezone,
+                })}
+                meta={[
+                  average === null
+                    ? undefined
+                    : t("observationAverage", { average: formatScore(average, locale) }),
+                  observation.teacher_response ? t("responded") : t("notResponded"),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+                href={`/supervision/observations/${observation.id}`}
+              />
+            );
+          })}
+        </List>
       </section>
     </>
   );
@@ -156,7 +164,7 @@ export function TeacherSupervisionReportView({
   toolbar?: ReactNode;
 }): ReactElement {
   const t = useTranslations("app.supervision.teacherReport");
-  const tRoot = useTranslations("app.supervision");
+  const trail = useCycleTrail();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
@@ -172,7 +180,7 @@ export function TeacherSupervisionReportView({
   } else if (isLoading || !data) {
     content = (
       <div className="flex flex-col gap-6" aria-busy="true">
-        <SkeletonCards count={2} className="grid-cols-1 sm:grid-cols-2" />
+        <SkeletonCards count={2} className="sm:grid-cols-2" />
         <SkeletonList rows={4} leading={false} />
       </div>
     );
@@ -225,15 +233,26 @@ export function TeacherSupervisionReportView({
   const openExport = () => {
     setDialogOpen(true);
   };
+  // A report without a completed observation has no rows to export. While
+  // it loads the button stays in place (disabled) so the row does not jump.
+  const hasObservations = data !== undefined && data.observations.length > 0;
+  const showExport = data === undefined || hasObservations;
 
   if (hideHeader) {
     return (
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           {toolbar ?? <span />}
-          <Button variant="secondary" icon={<Download />} disabled={!data} onClick={openExport}>
-            {t("export")}
-          </Button>
+          {showExport && (
+            <Button
+              variant="secondary"
+              icon={<Download />}
+              disabled={!hasObservations}
+              onClick={openExport}
+            >
+              {t("export")}
+            </Button>
+          )}
         </div>
         {content}
         {exportDialog}
@@ -244,17 +263,12 @@ export function TeacherSupervisionReportView({
   return (
     <AppPage
       title={data?.teacher_name}
-      breadcrumb={[
-        { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
-        {
-          label: data?.cycle.name ?? tRoot("cycleReport.breadcrumb"),
-          href: `/supervision/cycles/${cycleId}`,
-        },
-        { label: tRoot("cycleReport.breadcrumb"), href: `/supervision/cycles/${cycleId}/report` },
-      ]}
-      nav={<CycleNav cycleId={cycleId} current="report" />}
+      // One teacher's page below the cycle's results: the trail says where
+      // it sits, so it carries none of the cycle's own tabs.
+      breadcrumb={trail.within(cycleId, data?.cycle.name, trail.results(cycleId))}
+      nav={false}
       secondaryActions={
-        data ? [{ label: t("export"), icon: <Download />, onSelect: openExport }] : []
+        hasObservations ? [{ label: t("export"), icon: <Download />, onSelect: openExport }] : []
       }
     >
       {content}

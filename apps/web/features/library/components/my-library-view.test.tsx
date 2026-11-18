@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { LibraryLoan } from "../api";
 import type { LibraryMyProfile } from "../me-api";
@@ -32,7 +32,14 @@ vi.mock("../api", () => ({
   },
 }));
 
-const mocks = vi.hoisted(() => ({ data: undefined as LibraryMyProfile | undefined }));
+const mocks = vi.hoisted(() => ({
+  data: undefined as LibraryMyProfile | undefined,
+  permissions: new Set<string>(),
+}));
+
+vi.mock("../../../lib/session/session-provider", () => ({
+  useCan: (permission: string) => mocks.permissions.has(permission),
+}));
 
 vi.mock("../me-api", () => ({
   useMyLibraryProfileQuery: () => ({
@@ -70,6 +77,34 @@ function loan(patch: Partial<LibraryLoan> = {}): LibraryLoan {
 }
 
 describe("MyLibraryView", () => {
+  beforeEach(() => {
+    mocks.permissions = new Set();
+  });
+
+  it("tells a reader without a membership to ask the librarian", () => {
+    mocks.data = { ...profile([]), member: undefined };
+
+    render(<MyLibraryView />);
+
+    expect(screen.getByText("notMemberBody")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /browseCatalogue/ })).toHaveAttribute("href", "/opac");
+  });
+
+  // A librarian or an admin registers members themselves: "ask the
+  // librarian" would send them to themselves.
+  it("sends someone who registers members to the members page", () => {
+    mocks.permissions = new Set(["manage_library_members"]);
+    mocks.data = { ...profile([]), member: undefined };
+
+    render(<MyLibraryView />);
+
+    expect(screen.getByText("notMemberBodyStaff")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /openMembers/ })).toHaveAttribute(
+      "href",
+      "/library/members",
+    );
+  });
+
   it("shows the unpaid fines card when an unpaid violation has a positive amount", () => {
     mocks.data = profile([
       {
@@ -159,6 +194,8 @@ describe("MyLibraryView", () => {
     render(<MyLibraryView />);
 
     expect(screen.getByTestId("my-library-hero")).toHaveTextContent("overdueTitle");
+    // Returning the book is the one thing to do: no way to the catalogue.
+    expect(screen.queryByRole("link", { name: /browseCatalogue/ })).not.toBeInTheDocument();
   });
 
   it("points a reader with no loans at the catalogue", () => {

@@ -23,7 +23,7 @@ import {
   useCreateExtracurricularMutation,
   useUpdateExtracurricularMutation,
 } from "../api";
-const WEEKDAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+import { WEEKDAY_KEYS } from "../lib/club-schedule";
 
 /** Radix Select has no empty value; this one stands for "no fixed day". */
 const NO_DAY = "none";
@@ -54,12 +54,19 @@ export function ClubForm({
   const [meetingEnd, setMeetingEnd] = useState(initial?.meeting_end ?? "");
 
   const pending = create.isPending || update.isPending;
+  // The name is the one required field: marked on its label and checked on
+  // submit, so a missing name is said under it rather than by the browser.
+  const [attempted, setAttempted] = useState(false);
+  const nameError = attempted && name.trim() === "" ? t("errors.name") : undefined;
 
   return (
     <form
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
+        setAttempted(true);
+        if (name.trim() === "" || pending) return;
         const body: ExtracurricularWrite = {
           name: name.trim(),
           description: description.trim() || undefined,
@@ -87,13 +94,12 @@ export function ClubForm({
         }
       }}
     >
-      <Field label={t("name")}>
+      <Field label={t("name")} required error={nameError}>
         <Input
           value={name}
           onChange={(e) => {
             setName(e.target.value);
           }}
-          required
           maxLength={150}
         />
       </Field>
@@ -127,22 +133,24 @@ export function ClubForm({
           />
         </Field>
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Field label={t("meetingDay")}>
-          <Select
-            value={meetingDay === "" ? NO_DAY : meetingDay}
-            onValueChange={(next) => {
-              setMeetingDay(next === NO_DAY ? "" : next);
-            }}
-            options={[
-              { value: NO_DAY, label: t("meetingDayNone") },
-              ...WEEKDAY_KEYS.map((key, index) => ({
-                value: String(index),
-                label: tClubs(`weekdays.${key}`),
-              })),
-            ]}
-          />
-        </Field>
+      {/* The day on a row of its own, so "Belum ditentukan" is never cut;
+          the two times share the row below it. */}
+      <Field label={t("meetingDay")}>
+        <Select
+          value={meetingDay === "" ? NO_DAY : meetingDay}
+          onValueChange={(next) => {
+            setMeetingDay(next === NO_DAY ? "" : next);
+          }}
+          options={[
+            { value: NO_DAY, label: t("meetingDayNone") },
+            ...WEEKDAY_KEYS.map((key, index) => ({
+              value: String(index),
+              label: tClubs(`weekdays.${key}`),
+            })),
+          ]}
+        />
+      </Field>
+      <div className="grid grid-cols-2 gap-3">
         <Field label={t("meetingStart")}>
           <TimePicker value={meetingStart} onChange={setMeetingStart} />
         </Field>

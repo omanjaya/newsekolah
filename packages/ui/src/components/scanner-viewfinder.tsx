@@ -23,6 +23,12 @@ export interface ScannerViewfinderProps {
   onRetry?: () => void;
   /** Offered beside a camera that cannot be used. */
   onManualEntry?: () => void;
+  /**
+   * Its own 1px outline (default true). False inside a card that already
+   * frames it (a page's `Scanner`), where its sunken panels read as a well
+   * and a second outline would frame it twice.
+   */
+  framed?: boolean;
   className?: string;
 }
 
@@ -132,6 +138,7 @@ export function ScannerViewfinder({
   onStop,
   onRetry,
   onManualEntry,
+  framed = true,
   className,
 }: ScannerViewfinderProps): ReactElement {
   const labels = useUiLabels();
@@ -151,8 +158,11 @@ export function ScannerViewfinder({
       data-theme={streaming ? "dark" : undefined}
       className={cn(
         // `overflow-hidden` only clips the feed: on a state panel it would
-        // also cancel the box's right to grow taller than 4:3 for its text.
-        "relative isolate flex aspect-[4/3] w-full rounded-lg border border-border",
+        // also cancel the box's right to grow taller than its ratio for its
+        // text. Square on a phone, where a code is aimed at upright; 4:3
+        // from sm up.
+        "relative isolate flex aspect-square w-full rounded-lg sm:aspect-[4/3]",
+        framed && "border border-border",
         streaming && cn("overflow-hidden", MEDIA_SURFACE),
         className,
       )}

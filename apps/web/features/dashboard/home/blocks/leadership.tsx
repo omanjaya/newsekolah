@@ -14,7 +14,7 @@ import {
   SkeletonList,
   TextLink,
 } from "@newsekolah/ui";
-import { Activity, ClipboardCheck, Inbox, ShieldCheck, Users } from "lucide-react";
+import { ClipboardCheck, Inbox, ShieldCheck, Users } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -65,7 +65,8 @@ const PENDING_LINKS = [
  * from `GET /v1/analytics/admin-dashboard` (same restriction, see that
  * endpoint's `isAdminCaller`) plus the early-warning list, top 5 by score.
  * The hero carries attendance taken in the classes in session right now,
- * so no card repeats it; system activity sits in the side column.
+ * so no card repeats it; the early-warning list and system activity sit
+ * under the queue, as the side column already holds check-in and shortcuts.
  */
 export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   const t = useTranslations("app.dashboardSchool.leadership");
@@ -103,6 +104,8 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   if (ready && data) {
     if (attendanceToday && attendanceToday.total > 0) {
       const waiting = attendanceToday.total - attendanceToday.submitted;
+      // The title and the meter carry the one figure; no meta sentence
+      // restates it, and the stat row leaves out its own copy of it.
       hero = {
         key: "school.summary",
         priority: HERO_PRIORITY.schoolSummary,
@@ -112,7 +115,7 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
           submitted: attendanceToday.submitted,
           total: attendanceToday.total,
         }),
-        meta: waiting > 0 ? t("hero.meta", { pending: waiting }) : t("hero.metaDone"),
+        coversTiles: ["school.sessions"],
         progress: {
           value: attendanceToday.submitted,
           max: attendanceToday.total,
@@ -180,14 +183,7 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
       icon: Users,
       tone: "blue",
     });
-    tiles.push({
-      key: "school.online",
-      priority: 40,
-      label: t("tiles.online"),
-      value: String(Object.values(data.online_by_role).reduce((sum, count) => sum + count, 0)),
-      icon: Activity,
-      tone: "purple",
-    });
+    // Who is online is named, role by role, in the activity card.
   }
 
   // A queue row links only to a screen the reader may open; the principal
@@ -216,7 +212,9 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
       ]
     : [];
 
-  const side: BlockSlot[] = [
+  // Both cards read as main content; the side column already holds check-in,
+  // shortcuts and announcements, so these two live under the queue.
+  const insights: BlockSlot[] = [
     ...(canViewAtRisk
       ? [
           {
@@ -249,7 +247,7 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
     },
   ];
 
-  return { hero, tiles, main, side, pending: dashboard.isLoading };
+  return { hero, tiles, main: [...main, ...insights], side: [], pending: dashboard.isLoading };
 }
 
 function SchoolQueueCard({
@@ -296,7 +294,7 @@ function SchoolQueueCard({
             return (
               <ListRow
                 key={key}
-                href={linkedQueues.includes(key) ? href : undefined}
+                href={linkedQueues.includes(key) ? href : inboxHref}
                 title={t(`labels.${key}`)}
                 trailing={
                   <Badge tone={count > 0 ? "warning" : "neutral"} size="sm">

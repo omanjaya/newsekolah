@@ -60,6 +60,7 @@
     "averageColumn": "Average",
     "reportScoreColumn": "Report score",
     "reportScorePending": "Updates once saved",
+    "reportScoreSet": "Set the report score for {name}",
     "starsColumn": "Stars",
     "scoreFor": "{code} score for {name}",
     "starsFor": "Set stars for {name}",

@@ -1,8 +1,9 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import type { Locale } from "@newsekolah/i18n";
 import {
-  DatePicker,
+  DateRangePicker,
   DialogFooter,
   Field,
   Button,
@@ -12,18 +13,20 @@ import {
   DialogContent,
   EmptyState,
   Input,
+  RowActionsMenu,
   Textarea,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CalendarRange, Plus } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { CalendarRange, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import {
   type ActivityEvent,
   type ActivityEventWrite,
@@ -32,13 +35,18 @@ import {
   useUpdateActivityEventMutation,
   useDeleteActivityEventMutation,
 } from "../api";
+import { formatDayRange } from "../lib/activity-dates";
 
 import { ActivityParticipants } from "./activity-participants";
 
+/**
+ * The school's activity agenda, a tab of the student activities area (its
+ * title and group come from the navigation). Editing, the participants and
+ * deleting wait in each row's menu.
+ */
 export function ActivitiesCalendarView(): ReactElement {
-  const tNav = useTranslations("app.activities");
-  const tShell = useTranslations("app.shell.nav.items");
   const t = useTranslations("app.activities.events");
+  const locale = useLocale() as Locale;
   const [search, setSearch] = useState("");
   const canManage = useCan("manage_activity_events");
   const { data, isLoading, error, refetch } = useActivityEventsQuery();
@@ -59,7 +67,7 @@ export function ActivitiesCalendarView(): ReactElement {
         accessorKey: "start_date",
         header: t("columns.dates"),
         enableSorting: false,
-        cell: ({ row }) => `${row.original.start_date} - ${row.original.end_date}`,
+        cell: ({ row }) => formatDayRange(row.original.start_date, row.original.end_date, locale),
       },
       {
         accessorKey: "location",
@@ -67,52 +75,51 @@ export function ActivitiesCalendarView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) => row.original.location || "-",
       },
-      {
-        id: "actions",
-        header: t("columns.actions"),
-        enableSorting: false,
-        cell: ({ row }) =>
-          canManage ? (
-            <div className="flex justify-end gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  setEditing(row.original);
-                }}
-              >
-                {t("edit")}
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  setParticipants(row.original);
-                }}
-              >
-                {t("participants.title")}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setPendingDelete(row.original);
-                }}
-              >
-                {t("delete")}
-              </Button>
-            </div>
-          ) : null,
-      },
+      ...(canManage
+        ? [
+            {
+              id: "actions",
+              header: t("columns.actions"),
+              enableSorting: false,
+              cell: ({ row }: { row: { original: ActivityEvent } }) => (
+                <RowActionsMenu
+                  ariaLabel={t("rowActions", { name: row.original.name })}
+                  items={[
+                    {
+                      label: t("edit"),
+                      icon: <Pencil />,
+                      onClick: () => {
+                        setEditing(row.original);
+                      },
+                    },
+                    {
+                      label: t("participants.title"),
+                      icon: <Users />,
+                      onClick: () => {
+                        setParticipants(row.original);
+                      },
+                    },
+                    {
+                      label: t("delete"),
+                      icon: <Trash2 />,
+                      tone: "danger",
+                      onClick: () => {
+                        setPendingDelete(row.original);
+                      },
+                    },
+                  ]}
+                />
+              ),
+            } satisfies ColumnDef<ActivityEvent>,
+          ]
+        : []),
     ],
-    [t, canManage],
+    [t, canManage, locale],
   );
 
   return (
     <AppPage
       variant="fit"
-      title={tNav("navLabelEvents")}
-      eyebrow={tShell("studentActivities")}
       primaryAction={
         canManage ? (
           <Button
@@ -149,9 +156,11 @@ export function ActivitiesCalendarView(): ReactElement {
               icon={<CalendarRange aria-hidden="true" />}
               title={t("emptyTitle")}
               description={t("emptyBody")}
+              // The header already carries the primary "add".
               action={
                 canManage ? (
                   <Button
+                    variant="secondary"
                     icon={<Plus />}
                     onClick={() => {
                       setEditing("new");
@@ -235,25 +244,41 @@ function ActivityEventForm({
   const apiErrorMessage = useApiErrorMessage();
   const create = useCreateActivityEventMutation();
   const update = useUpdateActivityEventMutation();
+  const { me } = useSession();
 
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [location, setLocation] = useState(initial?.location ?? "");
-  const [startDate, setStartDate] = useState(initial?.start_date ?? "");
-  const [endDate, setEndDate] = useState(initial?.end_date ?? "");
+  // One picker for both ends, so the end can never come before the start.
+  const [dates, setDates] = useState({
+    from: initial?.start_date ?? "",
+    to: initial?.end_date ?? "",
+  });
+  // Required fields are marked on their labels and checked on submit.
+  const [attempted, setAttempted] = useState(false);
+  const errors = {
+    name: name.trim() === "" ? t("errors.name") : undefined,
+    dates: dates.from === "" || dates.to === "" ? t("errors.dates") : undefined,
+  };
+  const valid = Object.values(errors).every((error) => error === undefined);
+  const shown = (error: string | undefined) => (attempted ? error : undefined);
+  const pending = create.isPending || update.isPending;
 
   return (
     <form
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
+        setAttempted(true);
+        if (!valid || pending) return;
         const body: ActivityEventWrite = {
           organiser_user_id: initial?.organiser_user_id,
           name: name.trim(),
           description: description.trim() || undefined,
           location: location.trim() || undefined,
-          start_date: startDate,
-          end_date: endDate,
+          start_date: dates.from,
+          end_date: dates.to,
         };
         const callbacks = {
           onSuccess: () => {
@@ -270,13 +295,12 @@ function ActivityEventForm({
         else create.mutate(body, callbacks);
       }}
     >
-      <Field label={t("name")}>
+      <Field label={t("name")} required error={shown(errors.name)}>
         <Input
           value={name}
           onChange={(e) => {
             setName(e.target.value);
           }}
-          required
           maxLength={200}
         />
       </Field>
@@ -299,19 +323,19 @@ function ActivityEventForm({
           maxLength={200}
         />
       </Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label={t("startDate")}>
-          <DatePicker value={startDate} required onChange={setStartDate} />
-        </Field>
-        <Field label={t("endDate")}>
-          <DatePicker min={startDate} value={endDate} required onChange={setEndDate} />
-        </Field>
-      </div>
+      <Field label={t("dates")} required error={shown(errors.dates)}>
+        <DateRangePicker
+          value={dates}
+          onChange={setDates}
+          today={todayInZone(me?.tenant.timezone)}
+          required
+        />
+      </Field>
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={create.isPending || update.isPending}>
+        <Button type="submit" loading={pending}>
           {t("submit")}
         </Button>
       </DialogFooter>

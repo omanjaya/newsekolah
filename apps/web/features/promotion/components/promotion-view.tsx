@@ -60,7 +60,6 @@ interface Done {
 export function PromotionView(): ReactElement {
   const t = useTranslations("app.promotion");
   const tFlow = useTranslations("app.academic.yearFlow");
-  const tWorkspace = useTranslations("app.academic.workspace");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
@@ -179,12 +178,10 @@ export function PromotionView(): ReactElement {
   } as const;
 
   return (
-    <AppPage
-      variant="wide"
-      title={tWorkspace("promotion")}
-      description={t("description")}
-      nav={<AcademicWorkspaceLinks area="years" />}
-    >
+    // No title or description of its own: the area's header (h1 "Tahun
+    // ajaran", eyebrow "Data sekolah") stays put between its tabs, and the
+    // current tab names this page.
+    <AppPage variant="wide" nav={<AcademicWorkspaceLinks area="years" />}>
       <WizardProgress
         current={step}
         labels={[tFlow("stepYears"), tFlow("stepReview"), tFlow("stepDone")]}
@@ -223,11 +220,9 @@ export function PromotionView(): ReactElement {
       {result ? null : preview.isPending ? (
         <SkeletonList rows={6} framed />
       ) : plan === undefined ? (
-        <EmptyState
-          icon={<GraduationCap aria-hidden="true" />}
-          title={t("idleTitle")}
-          description={t("idleBody")}
-        />
+        // Until a plan is built the year card is the one thing to do; one
+        // line under it says what the plan will move.
+        <p className="max-w-prose text-body-sm text-fg-muted">{t("description")}</p>
       ) : plan.length === 0 ? (
         <EmptyState
           icon={<domainIcons.users aria-hidden="true" />}

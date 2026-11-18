@@ -154,14 +154,20 @@ it("sums up the week's journals in the header from the backlog's own data", () =
   expect(screen.getByText('weekSummary:{"count":1}')).toBeInTheDocument();
 });
 
-it("offers both downloads from one menu", async () => {
+it("offers both downloads as page actions, not as a table tool", () => {
   query.mockReturnValue({ data: { total: 0, data: [] }, isLoading: false });
-  const user = userEvent.setup();
   render(<JournalView />);
 
-  await user.click(screen.getByRole("button", { name: "download" }));
-  expect(await screen.findByRole("menuitem", { name: "exportXlsx" })).toBeInTheDocument();
-  expect(screen.getByRole("menuitem", { name: "exportDocx" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "downloadReport" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "downloadDocx" })).toBeInTheDocument();
+});
+
+it("keeps 'Jurnal baru' as the one create action when the history is empty", () => {
+  query.mockReturnValue({ data: { total: 0, data: [] }, isLoading: false });
+  render(<JournalView />);
+
+  expect(screen.getByText("emptyTitle")).toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: "new" })).toHaveLength(1);
 });
 
 it("shows a failed history load as an error with a retry, not as an empty journal", () => {

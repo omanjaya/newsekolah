@@ -57,6 +57,24 @@ describe("collectBlocks", () => {
     expect(out.tiles.map((t) => t.key)).toEqual(["x"]);
     expect(out.pending).toBe(false);
   });
+  it("leaves out the tiles the winning hero already states, before the top four are cut", () => {
+    const out = collectBlocks([
+      {
+        hero: { key: "h", priority: 2, eyebrow: "", title: "h", coversTiles: ["a", "b"] },
+        tiles: [tile("a", 9), tile("b", 8), tile("c", 7), tile("d", 6), tile("e", 5)],
+        main: [],
+        side: [],
+      },
+      {
+        hero: { key: "low", priority: 1, eyebrow: "", title: "low", coversTiles: ["c"] },
+        tiles: [tile("f", 4)],
+        main: [],
+        side: [],
+      },
+    ]);
+    // Only the winning hero covers tiles: "c" stays, "a" and "b" make room for "f".
+    expect(out.tiles.map((t) => t.key)).toEqual(["c", "d", "e", "f"]);
+  });
   it("is pending while any block still loads", () => {
     const out = collectBlocks([
       { tiles: [], main: [], side: [] },

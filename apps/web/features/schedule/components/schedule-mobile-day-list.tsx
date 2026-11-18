@@ -122,7 +122,7 @@ export function ScheduleMobileDayList({
                       <span className="truncate text-label">
                         {subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
                       </span>
-                      {blockCrossesBreak(block, lessonPeriods) && (
+                      {canManage && blockCrossesBreak(block, lessonPeriods) && (
                         <span
                           role="img"
                           aria-label={t("crossesBreakWarning")}

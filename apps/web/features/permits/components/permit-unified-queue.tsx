@@ -3,20 +3,18 @@
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import {
-  Button,
   Dialog,
   DialogContent,
-  Input,
-  Select,
   EmptyState,
+  SearchInput,
   SectionHeader,
+  SegmentedControl,
+  Select,
   SkeletonList,
-  StatTile,
   cn,
-  domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { Inbox, type LucideIcon } from "lucide-react";
+import { Inbox } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -24,7 +22,7 @@ import { useState } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { bentoCells, tileColumns } from "../../../lib/layout/bento";
+import { bentoCells } from "../../../lib/layout/bento";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useDirectoryNames } from "../../reference/directory-names";
 import {
@@ -64,8 +62,6 @@ export function PermitUnifiedQueue(): ReactElement {
   const sources: {
     type: PermitQueueRow["type"];
     label: string;
-    icon: LucideIcon;
-    tone: "amber" | "blue" | "purple";
     query: {
       data?: { data: unknown[] };
       isLoading: boolean;
@@ -73,39 +69,9 @@ export function PermitUnifiedQueue(): ReactElement {
       refetch: () => unknown;
     };
   }[] = [
-    ...(canLeave
-      ? [
-          {
-            type: "leave" as const,
-            label: t("leave"),
-            icon: Inbox,
-            tone: "amber" as const,
-            query: leave,
-          },
-        ]
-      : []),
-    ...(canApprove || canGate
-      ? [
-          {
-            type: "exit" as const,
-            label: t("exit"),
-            icon: domainIcons.exitPermit,
-            tone: "blue" as const,
-            query: exit,
-          },
-        ]
-      : []),
-    ...(canLate
-      ? [
-          {
-            type: "late" as const,
-            label: t("late"),
-            icon: domainIcons.late,
-            tone: "purple" as const,
-            query: late,
-          },
-        ]
-      : []),
+    ...(canLeave ? [{ type: "leave" as const, label: t("leave"), query: leave }] : []),
+    ...(canApprove || canGate ? [{ type: "exit" as const, label: t("exit"), query: exit }] : []),
+    ...(canLate ? [{ type: "late" as const, label: t("late"), query: late }] : []),
   ];
   const rows = mergePermitQueues({
     leave: canLeave ? leave.data?.data : undefined,
@@ -140,14 +106,6 @@ export function PermitUnifiedQueue(): ReactElement {
   );
   const loading = sources.some((source) => source.query.isLoading);
   const errors = sources.filter((source) => source.query.isError);
-  const tiles = sources.map((source) => ({
-    key: source.type,
-    icon: source.icon,
-    tone: source.tone,
-    value: source.query.data?.data.length ?? 0,
-    label: source.label,
-  }));
-  const grid = tileColumns(tiles.length);
 
   const fail = (error: unknown) => {
     toast.error(
@@ -224,37 +182,23 @@ export function PermitUnifiedQueue(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="max-w-3xl text-body-sm text-fg-muted">{t("queueHint")}</p>
-
-      {/* A lone count already shows on the queue's own tab, so one tile would only repeat it. */}
-      {!loading && tiles.length > 1 && (
-        <div className={grid.container} data-testid="permit-queue-tiles">
-          {tiles.map((tile, index) => (
-            <div
-              key={tile.key}
-              data-testid={`permit-queue-tile-${tile.key}`}
-              className={cn("h-full", index === tiles.length - 1 && grid.lastTileClassName)}
-            >
-              <StatTile
-                className="h-full"
-                icon={tile.icon}
-                tone={tile.tone}
-                value={tile.value}
-                label={tile.label}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Input
+      {/* One row of tools above the requests: the search, the class and,
+          for a reader of several queues, the kind as one segmented filter
+          that carries each queue's count (no tiles repeating the same
+          three numbers). On a phone they stack, the filter one scrolling
+          row with fades. */}
+      <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <SearchInput
+          size="sm"
           aria-label={t("search")}
           placeholder={t("search")}
           value={search}
-          className="sm:max-w-sm"
+          className="sm:max-w-sm sm:flex-1"
           onChange={(event) => {
             setSearch(event.target.value);
+          }}
+          onClear={() => {
+            setSearch("");
           }}
         />
         {classNames.length > 1 && (
@@ -269,25 +213,24 @@ export function PermitUnifiedQueue(): ReactElement {
             ]}
           />
         )}
+        {sources.length > 1 && (
+          <SegmentedControl
+            size="sm"
+            fullWidth="phone"
+            aria-label={t("typeFilter")}
+            value={kind}
+            onValueChange={setKind}
+            options={[
+              { value: "all", label: t("filterAll") },
+              ...sources.map((source) => ({
+                value: source.type,
+                label: source.label,
+                count: source.query.data?.data.length,
+              })),
+            ]}
+          />
+        )}
       </div>
-      {sources.length > 1 && (
-        <div role="group" aria-label={t("typeFilter")} className="flex flex-wrap gap-2">
-          {[{ type: "all", label: t("filterAll") }, ...sources].map((source) => (
-            <Button
-              key={source.type}
-              type="button"
-              size="sm"
-              variant={kind === source.type ? "primary" : "secondary"}
-              aria-pressed={kind === source.type}
-              onClick={() => {
-                setKind(source.type);
-              }}
-            >
-              {source.label}
-            </Button>
-          ))}
-        </div>
-      )}
       {errors.map((source, index) => (
         <section
           key={`${source.label}-${index}`}

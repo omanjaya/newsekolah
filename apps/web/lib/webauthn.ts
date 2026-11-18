@@ -40,16 +40,23 @@ function subscribeToNothing(): () => void {
   return noop;
 }
 
+/** Every browser the app supports speaks WebAuthn: assume it until the client says otherwise. */
+function assumeSupported(): boolean {
+  return true;
+}
+
 /**
  * isPasskeySupported() for use during render. The server cannot know
  * whether the browser speaks WebAuthn, so reading the predicate directly
  * makes the first client render disagree with the server HTML and React
  * throws the tree away with a hydration mismatch. The server snapshot pins
- * both sides to false for that first render; the real answer lands on the
- * commit right after, which is why passkey affordances appear a frame late.
+ * both sides to one answer for that first render, and the real answer
+ * lands on the commit right after. That answer is optimistic (true): the
+ * passkey option is in the first paint, so the sign-in card does not grow
+ * when it arrives, and only the rare browser without WebAuthn loses it.
  */
 export function usePasskeySupported(): boolean {
-  return useSyncExternalStore(subscribeToNothing, isPasskeySupported, () => false);
+  return useSyncExternalStore(subscribeToNothing, isPasskeySupported, assumeSupported);
 }
 
 /**

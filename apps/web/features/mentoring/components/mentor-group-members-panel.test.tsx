@@ -3,19 +3,19 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ assign: vi.fn() }));
+const mocks = vi.hoisted(() => ({ assign: vi.fn(), push: vi.fn() }));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
     values ? `${key} ${JSON.stringify(values)}` : key,
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
-vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => true }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useCan: () => true,
+  useSession: () => ({ me: undefined }),
+}));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
-}));
-vi.mock("../../students/components/student-link", () => ({
-  StudentLink: ({ children }: { children: string }) => <span>{children}</span>,
 }));
 vi.mock("../../reference/components/directory-picker", async () => {
   const { directoryPickerStubModule } = await import("../../../test/directory-picker-stub");
@@ -83,5 +83,29 @@ describe("MentorGroupMembersPanel add picker", () => {
 
     expect(screen.getByRole("button", { name: "addConfirm" })).toBeDisabled();
     expect(mocks.assign).not.toHaveBeenCalled();
+  });
+});
+
+describe("MentorGroupMembersPanel rows", () => {
+  it("opens the mentor's view of a member from the row", async () => {
+    const user = userEvent.setup();
+    render(<MentorGroupMembersPanel groupId="group-1" />);
+
+    // The phone card's tap target, named after the member.
+    await user.click(screen.getByRole("button", { name: "Sari" }));
+    expect(mocks.push).toHaveBeenCalledWith("/mentoring/groups/group-1/students/picked-1");
+  });
+
+  it("keeps the add action in the table toolbar and removal in the row menu", async () => {
+    const user = userEvent.setup();
+    render(<MentorGroupMembersPanel groupId="group-1" />);
+
+    // One add action: the toolbar's, not a second one in a row of its own.
+    expect(screen.getAllByRole("button", { name: "add" })).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "remove" })).not.toBeInTheDocument();
+
+    const [menu] = screen.getAllByRole("button", { name: 'actionsFor {"name":"Sari"}' });
+    await user.click(menu ?? document.body);
+    expect(await screen.findByRole("menuitem", { name: "remove" })).toBeInTheDocument();
   });
 });

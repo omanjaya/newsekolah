@@ -114,7 +114,9 @@ export function DailyReportTab(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end gap-3">
+      {/* Two fields side by side and the download under them on a phone;
+          one row from 640px, the download at its end. */}
+      <div className="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
         <Field label={t("class")}>
           <Select
             options={classOptions(classes.data?.data)}
@@ -131,13 +133,14 @@ export function DailyReportTab(): ReactElement {
             value={date}
             onChange={setDate}
             clearable={false}
+            formatOptions={{ day: "numeric", month: "short", year: "numeric" }}
             className="w-full sm:w-44"
           />
         </Field>
         <Button
           variant="secondary"
           icon={<Download />}
-          className="sm:ml-auto"
+          className="col-span-2 sm:ml-auto"
           onClick={() => {
             // Start the export from the class on screen.
             if (classId !== "") setDownloadScope({ kind: "class", classId });

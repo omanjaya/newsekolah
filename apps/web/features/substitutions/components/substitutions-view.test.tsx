@@ -68,11 +68,15 @@ it("counts the requests still waiting on this teacher on the incoming switch", (
   expect(screen.getByRole("button", { name: "accept" })).toBeInTheDocument();
 });
 
-it("offers a request from the empty list", async () => {
+it("repeats the request only on the empty list of one's own requests", async () => {
   const user = userEvent.setup();
   render(<SubstitutionsView />);
 
+  // While the incoming list is empty the header's request is the one way in.
+  expect(screen.getByText("emptyIncomingBody")).toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: "request" })).toHaveLength(1);
+
   await user.click(screen.getByRole("radio", { name: /outgoing/ }));
   expect(screen.getByText("emptyOutgoingBody")).toBeInTheDocument();
-  expect(screen.getAllByRole("button", { name: "request" }).length).toBeGreaterThan(1);
+  expect(screen.getAllByRole("button", { name: "request" })).toHaveLength(2);
 });

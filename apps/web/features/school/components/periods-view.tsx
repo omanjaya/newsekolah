@@ -53,6 +53,10 @@ export function PeriodsView(): ReactElement {
   const [renaming, setRenaming] = useState<PeriodTemplate | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [pendingDelete, setPendingDelete] = useState<PeriodTemplate | null>(null);
+  // Which template dialog has been submitted: its required name then says
+  // it is missing under the field, never in the browser's own bubble.
+  const [submitted, setSubmitted] = useState<"new" | "rename" | null>(null);
+  const tValidation = useTranslations("validation");
 
   const fail = (error: unknown) => {
     toast.error(
@@ -85,6 +89,7 @@ export function PeriodsView(): ReactElement {
               onClick={() => {
                 setRenaming(selected);
                 setRenameValue(selected.name);
+                setSubmitted(null);
               }}
             />
             <IconButton
@@ -102,6 +107,7 @@ export function PeriodsView(): ReactElement {
           icon={<Plus />}
           onClick={() => {
             setNewTemplate("");
+            setSubmitted(null);
             setTemplateOpen(true);
           }}
         >
@@ -129,6 +135,7 @@ export function PeriodsView(): ReactElement {
             className="flex flex-col gap-4"
             onSubmit={(e) => {
               e.preventDefault();
+              setSubmitted("new");
               if (!newTemplate.trim()) return;
               createTemplate.mutate(
                 { name: newTemplate.trim(), is_default: list.length === 0 },
@@ -143,14 +150,19 @@ export function PeriodsView(): ReactElement {
               );
             }}
           >
-            <Field label={t("newTemplate")}>
+            <Field
+              label={t("newTemplate")}
+              required
+              error={
+                submitted === "new" && !newTemplate.trim() ? tValidation("required") : undefined
+              }
+            >
               <Input
                 value={newTemplate}
                 onChange={(e) => {
                   setNewTemplate(e.target.value);
                 }}
                 placeholder={t("newTemplatePlaceholder")}
-                required
               />
             </Field>
             <DialogFooter>
@@ -182,6 +194,7 @@ export function PeriodsView(): ReactElement {
             className="flex flex-col gap-4"
             onSubmit={(e) => {
               e.preventDefault();
+              setSubmitted("rename");
               if (!renaming || !renameValue.trim()) return;
               updateTemplate.mutate(
                 {
@@ -198,13 +211,18 @@ export function PeriodsView(): ReactElement {
               );
             }}
           >
-            <Field label={t("newTemplate")}>
+            <Field
+              label={t("newTemplate")}
+              required
+              error={
+                submitted === "rename" && !renameValue.trim() ? tValidation("required") : undefined
+              }
+            >
               <Input
                 value={renameValue}
                 onChange={(e) => {
                   setRenameValue(e.target.value);
                 }}
-                required
               />
             </Field>
             <DialogFooter>

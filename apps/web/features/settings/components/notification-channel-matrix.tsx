@@ -2,6 +2,7 @@
 
 import {
   Button,
+  cn,
   Field,
   Skeleton,
   Switch,
@@ -84,9 +85,15 @@ export function NotificationChannelMatrix({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead scope="col">{kindLabel}</TableHead>
-              {channels.map((channel) => (
-                <TableHead key={channel} scope="col" className="w-28 text-center">
+              <TableHead scope="col" className="pl-5">
+                {kindLabel}
+              </TableHead>
+              {channels.map((channel, index) => (
+                <TableHead
+                  key={channel}
+                  scope="col"
+                  className={cn("w-28 text-center", index === channels.length - 1 && "pr-5")}
+                >
                   {channelLabel(channel)}
                 </TableHead>
               ))}
@@ -95,16 +102,19 @@ export function NotificationChannelMatrix({
           <TableBody>
             {rows.map((row) => (
               <TableRow key={row.kind}>
-                <TableHead scope="row" className="text-body text-fg">
+                <TableHead scope="row" className="pl-5 text-body text-fg">
                   {row.label}
                 </TableHead>
                 {row.failed ? (
-                  <TableCell colSpan={channels.length} className="text-center">
+                  <TableCell colSpan={channels.length} className="pr-5 text-center">
                     {retry(row)}
                   </TableCell>
                 ) : (
-                  channels.map((channel) => (
-                    <TableCell key={channel} className="text-center">
+                  channels.map((channel, index) => (
+                    <TableCell
+                      key={channel}
+                      className={cn("text-center", index === channels.length - 1 && "pr-5")}
+                    >
                       <span className="inline-flex">{control(row, channel)}</span>
                     </TableCell>
                   ))
@@ -117,7 +127,7 @@ export function NotificationChannelMatrix({
 
       <ul className="flex flex-col divide-y divide-line md:hidden">
         {rows.map((row) => (
-          <li key={row.kind} className="flex flex-col gap-2 px-4 py-3">
+          <li key={row.kind} className="flex flex-col gap-2 px-5 py-3">
             <span className="text-label text-fg">{row.label}</span>
             {row.failed ? (
               retry(row)

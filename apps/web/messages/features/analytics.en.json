@@ -28,7 +28,9 @@
     "filters": {
       "class": "Class"
     },
-    "computedAt": "Data computed {time}"
+    "computedAt": "Data computed {time}",
+    "sortedHint": "Highest score first",
+    "scoreValue": "Score {score}"
   },
   "level": {
     "none": "None",
@@ -39,6 +41,7 @@
     "eyebrow": "Early warning",
     "back": "Back",
     "unknownStudent": "Unknown student",
+    "nis": "NIS {nis}",
     "freshness": "Computed {time}",
     "score": "Score {score}",
     "reasonsTitle": "Reasons",
@@ -58,7 +61,11 @@
       "gradeTrendValue": "Report-score average from {previous} to {current}",
       "gradeTrendPrevious": "Previous",
       "gradeTrendCurrent": "Current",
-      "noData": "No data yet"
+      "noData": "No data yet",
+      "absentUnit": "of {considered} days absent",
+      "disciplineUnit": "active points",
+      "warningLettersUnit": "{count, plural, one {letter} other {letters}}",
+      "gradeTrendUnit": "report average, previously {previous}"
     },
     "reasons": {
       "attendance_absence_watch": "Absent {absent_days} of the last {considered_days} school days",

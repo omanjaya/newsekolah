@@ -14,6 +14,7 @@ import {
   Stat,
   StatGrid,
   StatusBadge,
+  TextLink,
   useToast,
   type StatusName,
 } from "@newsekolah/ui";
@@ -25,7 +26,7 @@ import { useMemo, useState } from "react";
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useSession } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useBusinessNow } from "../../../lib/simulation/clock";
 import { todayInZone } from "../../../lib/tenant-date";
 import {
@@ -69,6 +70,7 @@ export function SelfCheckInView(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const scan = useScanStaffAttendanceMutation();
+  const canEditSchedules = useCan("manage_staff_attendance_schedules");
 
   const today = todayInZone(timeZone);
   const from = shiftDateISO(today, -(WEEK_DAYS - 1));
@@ -106,6 +108,9 @@ export function SelfCheckInView(): ReactElement {
   // ComputeLateness's doc comment (apps/api) for why the two are kept
   // distinct all the way from the domain layer up to here.
   const holiday = record?.status_code === "holiday";
+  // The hint below states the unscheduled day once, so the pill and the row
+  // badges stay quiet for it.
+  const unscheduledToday = record?.status_code === "unscheduled";
 
   function handleScan() {
     scan.mutate(undefined, {
@@ -127,11 +132,13 @@ export function SelfCheckInView(): ReactElement {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
             <p className="text-body text-fg-muted">{formatDayOf(now, locale, timeZone)}</p>
-            <p className="text-kiosk-display text-fg tabular-nums" aria-live="off">
+            <p className="text-kiosk-display text-fg" aria-live="off">
               {formatTime(now, { locale, timeZone })}
             </p>
           </div>
-          {record && <DayStatus status={record.status_code} label={dayLabel(record)} />}
+          {record && !unscheduledToday && (
+            <DayStatus status={record.status_code} label={dayLabel(record)} />
+          )}
         </div>
 
         <StatGrid className="grid-cols-2 gap-4">
@@ -154,8 +161,17 @@ export function SelfCheckInView(): ReactElement {
           />
         </StatGrid>
 
-        {record?.status_code === "unscheduled" && (
-          <Alert tone="warning">{t("unscheduledHint")}</Alert>
+        {unscheduledToday && (
+          <Alert tone="warning">
+            {canEditSchedules ? (
+              <>
+                {t("unscheduledHintManage")}{" "}
+                <TextLink href="/staff-attendance?tab=schedule">{t("openSchedule")}</TextLink>
+              </>
+            ) : (
+              t("unscheduledHint")
+            )}
+          </Alert>
         )}
         {holiday && <Alert tone="info">{t("holidayHint")}</Alert>}
 
@@ -195,14 +211,22 @@ export function SelfCheckInView(): ReactElement {
                 selected={day.date === today}
                 title={dayFormat.format(new Date(`${day.date}T12:00:00Z`))}
                 meta={
-                  <span className="tabular-nums">
-                    {t("hoursRange", {
-                      arrival: time(day.arrival_at),
-                      departure: time(day.departure_at),
-                    })}
-                  </span>
+                  day.arrival_at || day.departure_at ? (
+                    <span className="tabular-nums">
+                      {t("hoursRange", {
+                        arrival: time(day.arrival_at),
+                        departure: time(day.departure_at),
+                      })}
+                    </span>
+                  ) : (
+                    t("noRecord")
+                  )
                 }
-                trailing={<DayStatus status={day.status_code} label={dayLabel(day)} />}
+                trailing={
+                  day.status_code === "unscheduled" ? undefined : (
+                    <DayStatus status={day.status_code} label={dayLabel(day)} />
+                  )
+                }
               />
             ))}
           </List>

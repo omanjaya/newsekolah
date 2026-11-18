@@ -260,6 +260,49 @@ describe("DataTableFilters", () => {
       expect(onChangeRange).toHaveBeenCalledWith({ from: "", to: "" });
     });
 
+    it("reads a page's default period out in the neutral style, not as an applied filter", () => {
+      render(
+        <DataTableFilters
+          filters={[
+            dateRangeFilter({
+              from: "2026-11-01",
+              to: "2026-11-17",
+              defaultFrom: "2026-11-01",
+              defaultTo: "2026-11-17",
+            }),
+          ]}
+        />,
+      );
+      // The pill still says which days are shown.
+      const trigger = screen.getByRole("button", { name: "Tanggal: 1-17 Nov 2026" });
+      expect(trigger.parentElement).toHaveClass("border-border", "bg-surface");
+      expect(trigger.parentElement).not.toHaveClass("bg-accent-soft");
+      expect(screen.queryByRole("button", { name: /Hapus filter/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Reset filter" })).not.toBeInTheDocument();
+    });
+
+    it("comes back to the default period when a changed range is removed or reset", async () => {
+      const user = userEvent.setup();
+      const onChangeRange = vi.fn();
+      render(
+        <DataTableFilters
+          filters={[
+            dateRangeFilter({
+              from: "2026-09-01",
+              to: "2026-09-15",
+              defaultFrom: "2026-11-01",
+              defaultTo: "2026-11-17",
+              onChangeRange,
+            }),
+          ]}
+        />,
+      );
+      await user.click(screen.getByRole("button", { name: "Hapus filter Tanggal" }));
+      expect(onChangeRange).toHaveBeenLastCalledWith({ from: "2026-11-01", to: "2026-11-17" });
+      await user.click(screen.getByRole("button", { name: "Reset filter" }));
+      expect(onChangeRange).toHaveBeenLastCalledWith({ from: "2026-11-01", to: "2026-11-17" });
+    });
+
     it("is cleared by the shared Reset filter alongside other filters", async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
