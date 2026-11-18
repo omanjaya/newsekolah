@@ -1,4 +1,4 @@
-import { queryKeys, type components } from "@newsekolah/api-client";
+import { queryKeys, type components, type NewsekolahApiClient } from "@newsekolah/api-client";
 import { isTenantBrandingQuery } from "@newsekolah/api-client/react";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 
@@ -26,6 +26,10 @@ function keptAcrossTheSwap(queryKey: QueryKey): boolean {
  * - Pauses the simulated clock while the token changes hands, then
  *   resolves it for the new account, which may use only its initiating
  *   superadmin's saved clock (lib/simulation/clock.ts).
+ * - Has the API client drop any refresh still on its way for the previous
+ *   account (`forgetAccessToken`) right before the new token is set: one
+ *   that lands later would otherwise store and announce the previous
+ *   account's token over the new one, under the new `me`.
  * - Removing a query does not notify a component still showing it: that
  *   component keeps the previous account's data until it renders again,
  *   and only then reads afresh, as the new account. The new `me`
@@ -38,9 +42,14 @@ function keptAcrossTheSwap(queryKey: QueryKey): boolean {
  * The caller removes the server access cookie (clearServerAccessCookie)
  * before the request that made the swap.
  */
-export async function switchReader(queryClient: QueryClient, tokens: AuthTokens): Promise<void> {
+export async function switchReader(
+  queryClient: QueryClient,
+  client: NewsekolahApiClient,
+  tokens: AuthTokens,
+): Promise<void> {
   await queryClient.cancelQueries();
   suspendSimulation();
+  client.forgetAccessToken();
   setAccessToken(tokens.access_token);
   queryClient.removeQueries({ predicate: (query) => !keptAcrossTheSwap(query.queryKey) });
   queryClient.setQueryData(queryKeys.me(), tokens.user);

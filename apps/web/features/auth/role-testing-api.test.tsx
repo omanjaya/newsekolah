@@ -16,7 +16,10 @@ import {
 import { useRoleTestingSwitchMutation } from "./role-testing-api";
 
 const post = vi.hoisted(() => vi.fn());
-vi.mock("../../lib/api/client", () => ({ useApiClient: () => ({ POST: post }) }));
+const forgetAccessToken = vi.hoisted(() => vi.fn());
+vi.mock("../../lib/api/client", () => ({
+  useApiClient: () => ({ POST: post, forgetAccessToken }),
+}));
 
 function actor(id: string, actorId?: string): Me {
   return {
@@ -64,6 +67,13 @@ describe("role-testing actor transition", () => {
       return Promise.resolve({ access_token: "teacher-token", user: teacher });
     });
 
+    // Records which token the app held when the client was told to drop
+    // the previous actor's refresh: it must come before the new one.
+    let tokenWhenForgotten: string | null = "not called";
+    forgetAccessToken.mockImplementation(() => {
+      tokenWhenForgotten = getAccessToken();
+    });
+
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     client.setQueryData(["me"], root);
     client.setQueryData(["attendance", "private"], { secret: "root-only" });
@@ -90,6 +100,8 @@ describe("role-testing actor transition", () => {
     expect(client.getQueryData(["attendance", "private"])).toBeUndefined();
     expect(client.getQueryData(["tenant", "branding", "default"])).toEqual({ name: "School" });
     expect(getAccessToken()).toBe("teacher-token");
+    expect(forgetAccessToken).toHaveBeenCalledTimes(1);
+    expect(tokenWhenForgotten).toBe("root-token");
     expect(getSimulationTime()).toBe("2026-09-30T00:00:00.000Z");
   });
 

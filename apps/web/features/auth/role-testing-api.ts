@@ -57,7 +57,7 @@ export function useRoleTestingSwitchMutation() {
             body: { user_id: target.userId, role: target.role },
           })
         : await client.POST("/v1/auth/role-testing/stop");
-      await switchReader(queryClient, result);
+      await switchReader(queryClient, client, result);
       return result;
     },
   });

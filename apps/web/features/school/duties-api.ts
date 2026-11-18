@@ -179,7 +179,7 @@ export function useImpersonateUserMutation() {
       });
     },
     onSuccess: async (data) => {
-      await switchReader(queryClient, data);
+      await switchReader(queryClient, client, data);
       // Seeded from the response above; read once more from the server too.
       void queryClient.invalidateQueries({ queryKey: queryKeys.me() });
     },

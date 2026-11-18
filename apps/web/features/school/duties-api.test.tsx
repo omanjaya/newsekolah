@@ -16,7 +16,10 @@ import {
 import { useImpersonateUserMutation } from "./duties-api";
 
 const post = vi.hoisted(() => vi.fn());
-vi.mock("../../lib/api/client", () => ({ useApiClient: () => ({ POST: post }) }));
+const forgetAccessToken = vi.hoisted(() => vi.fn());
+vi.mock("../../lib/api/client", () => ({
+  useApiClient: () => ({ POST: post, forgetAccessToken }),
+}));
 
 function person(id: string, impersonatedBy?: string, permissions: string[] = []): Me {
   return {
@@ -106,6 +109,26 @@ describe("useImpersonateUserMutation", () => {
     // The school's branding is not the admin's: kept, so the switch costs
     // no request to the rate-limited public branding endpoint.
     expect(client.getQueryData(BRANDING_KEY)).toEqual({ name: "School" });
+  });
+
+  // A refresh still on its way for the admin would otherwise land after
+  // the switch and hand the admin's token back over the teacher's.
+  it("drops the admin's refresh still on its way before the teacher's token is set", async () => {
+    let tokenWhenForgotten: string | null = "not called";
+    forgetAccessToken.mockImplementation(() => {
+      tokenWhenForgotten = getAccessToken();
+    });
+    const { result } = renderHook(() => useImpersonateUserMutation(), {
+      wrapper: wrapperFor(appQueryClient()),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync("teacher");
+    });
+
+    expect(forgetAccessToken).toHaveBeenCalledTimes(1);
+    expect(tokenWhenForgotten).toBe("admin-token");
+    expect(getAccessToken()).toBe("teacher-token");
   });
 
   // `sat` may still hold the admin's token, and the admin's own session is
