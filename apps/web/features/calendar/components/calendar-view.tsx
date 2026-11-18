@@ -156,6 +156,17 @@ export function CalendarView(): ReactElement {
       variant="wide"
       nav={<AcademicWorkspaceLinks area="schedule" />}
       primaryAction={canManage ? addButton(selected, t("addEvent")) : undefined}
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("addEvent"),
+              onSelect: () => {
+                openForm(undefined, selected);
+              },
+            }
+          : undefined
+      }
     >
       {query.isError && !query.data ? (
         <QueryError retry={() => void query.refetch()} error={query.error} />

@@ -127,6 +127,17 @@ export function CounselingView(): ReactElement {
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("add"),
+              onSelect: () => {
+                setEditing("new");
+              },
+            }
+          : undefined
+      }
     >
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
         <TabsList>

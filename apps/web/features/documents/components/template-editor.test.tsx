@@ -117,7 +117,12 @@ it("opens the preview in a sheet from the body card", async () => {
   const user = userEvent.setup();
   render(<TemplateEditorView templateId="t1" />);
   const bodyCard = screen.getByRole("region", { name: "bodyTitle" });
-  await user.click(within(bodyCard).getByRole("button", { name: "previewLabel" }));
+  const button = within(bodyCard).getByRole("button", { name: "previewLabel" });
+  // Under the card's title and hint, not beside them: as the section's
+  // aside it squeezed the hint into a narrow column on a phone.
+  const heading = within(bodyCard).getByRole("heading", { name: "bodyTitle" });
+  expect(heading.parentElement?.parentElement?.contains(button)).toBe(false);
+  await user.click(button);
   const sheet = screen.getByRole("dialog", { name: "previewLabel" });
   expect(within(sheet).getByTitle("previewLabel")).toBeInTheDocument();
 });

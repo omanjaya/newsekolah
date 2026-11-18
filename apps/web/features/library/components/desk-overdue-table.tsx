@@ -26,6 +26,7 @@ import {
   useOverdueLoansDetailedQuery,
   useSendLibraryDueRemindersMutation,
 } from "../desk-api";
+import { formatShortDate } from "../lib/short-date";
 import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import { DueBadge } from "./due-badge";
@@ -95,8 +96,10 @@ export function DeskOverdueTable(): ReactElement {
         accessorFn: (item) => `${item.title} ${item.barcode}`,
         enableSorting: false,
         meta: { card: "subtitle", skeleton: "lines" },
+        // A table cell grows to fit unwrapped text, so the cap is what lets
+        // a long title truncate instead of widening the table.
         cell: ({ row }) => (
-          <div className="flex min-w-0 flex-col">
+          <div className="flex min-w-0 flex-col md:max-w-64">
             <span className="truncate">{row.original.title || t("unknownTitle")}</span>
             <span className="truncate text-caption text-fg-muted">{row.original.barcode}</span>
           </div>
@@ -108,8 +111,18 @@ export function DeskOverdueTable(): ReactElement {
         accessorFn: (item) => item.loan.due_on,
         enableSorting: false,
         meta: { card: "meta", skeleton: "badge" },
+        // The short badge with the date under it, like the name and title
+        // cells: the full "Terlambat 43 hari (jatuh tempo 6 Okt)" badge
+        // cannot wrap and pushed the row's actions out of a 1280px table.
         cell: ({ row }) => (
-          <DueBadge dueOn={row.original.loan.due_on} today={today} locale={locale} />
+          <div className="flex flex-col items-start gap-1">
+            <DueBadge compact dueOn={row.original.loan.due_on} today={today} locale={locale} />
+            <span className="text-caption whitespace-nowrap text-fg-muted">
+              {t("dueDate", {
+                date: formatShortDate(row.original.loan.due_on, locale, { today }),
+              })}
+            </span>
+          </div>
         ),
       },
       {

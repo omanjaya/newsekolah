@@ -36,9 +36,12 @@ import {
   useUpdateLibraryMaterialTypeMutation,
 } from "../master-data-api";
 
+import { MasterListHeader } from "./master-list-header";
+
 /** Material types (book, magazine, ...), each with its own loan limits used when a title is checked out. */
 export function MaterialTypesTab(): ReactElement {
   const t = useTranslations("app.library.masterData.materialTypes");
+  const tMasterData = useTranslations("app.library.masterData");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_library_catalog");
@@ -130,7 +133,16 @@ export function MaterialTypesTab(): ReactElement {
   ) : undefined;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
+      <MasterListHeader
+        title={tMasterData("tabs.materialTypes")}
+        count={items.length}
+        addLabel={t("add")}
+        showAdd={canManage && (isLoading || items.length > 0)}
+        onAdd={() => {
+          setCreating(true);
+        }}
+      />
       <DataTable
         stateKey="features/library/components/material-types-tab:1"
         mode="local"
@@ -145,7 +157,6 @@ export function MaterialTypesTab(): ReactElement {
         isLoading={isLoading}
         error={error}
         onRetry={() => void refetch()}
-        toolbarActions={addButton}
         getRowId={(item) => item.id}
         emptyState={
           <EmptyState

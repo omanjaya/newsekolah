@@ -66,7 +66,21 @@ export function ClassesView(): ReactElement {
     // Viewport-fit on desktop: the page itself never scrolls; the class list
     // and the roster scroll internally. The enrollment import is a tab of
     // this area (navigation registry), so it is not repeated as a button.
-    <AppPage variant="fit" primaryAction={canManage ? addButton : undefined}>
+    <AppPage
+      variant="fit"
+      primaryAction={canManage ? addButton : undefined}
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("addClass"),
+              onSelect: () => {
+                setCreating(true);
+              },
+            }
+          : undefined
+      }
+    >
       {classes.isLoading ? (
         <div
           aria-busy="true"

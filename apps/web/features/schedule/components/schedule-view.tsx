@@ -266,7 +266,7 @@ export function ScheduleView(): ReactElement {
     }
   }
 
-  const { primaryAction, secondaryActions, description } = useScheduleHeader({
+  const { primaryAction, primaryActionCompact, secondaryActions, description } = useScheduleHeader({
     canManage,
     isStudent,
     className: classMap.get(effectiveClassId)?.name,
@@ -290,6 +290,7 @@ export function ScheduleView(): ReactElement {
       variant="fit"
       description={description}
       primaryAction={primaryAction}
+      primaryActionCompact={primaryActionCompact}
       secondaryActions={secondaryActions}
       toolbar={
         <ScheduleScopeBar

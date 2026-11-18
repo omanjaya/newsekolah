@@ -309,8 +309,10 @@ export function DashboardView(): ReactElement {
           ))}
           {shortcuts.length > 0 && (
             // The phone has the same actions one tap away on the floating
-            // quick-action button, so the card is for wider screens.
-            <Card className="hidden md:block" data-testid="dashboard-card-shortcuts">
+            // quick-action button, so the card is for wider screens. The
+            // bottom padding keeps the last icon off the card's edge, as on
+            // the circulation desk's shortcuts.
+            <Card className="hidden pb-2 md:block" data-testid="dashboard-card-shortcuts">
               <CardHeader>
                 <CardTitle as="h2">{t("shortcuts.title")}</CardTitle>
               </CardHeader>

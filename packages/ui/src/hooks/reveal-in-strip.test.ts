@@ -62,8 +62,9 @@ describe("revealInStrip", () => {
     const active = tabs[1];
     if (!active) throw new Error("no active tab");
     revealInStrip(container, active);
-    // 6px of the last tab showed; it now shows 40.
-    expect(scrollLeft()).toBe(34);
+    // 6px of the last tab showed; it now shows 56, enough for its label to
+    // clear the 48px end fade past the tab's own padding.
+    expect(scrollLeft()).toBe(50);
   });
 
   it("never moves the active tab under the start fade for a peek", () => {

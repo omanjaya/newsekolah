@@ -55,6 +55,7 @@ describe("LeaveRequestsView", () => {
     render(<LeaveRequestsView />);
     expect(screen.getByText("issuerTitle")).toBeInTheDocument();
     expect(screen.getByText("issuerQueueUnavailableBody")).toBeInTheDocument();
+    expect(document.querySelector("svg.lucide-bell-ring")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "submit" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "openNotifications" })).toHaveAttribute(
       "href",
@@ -71,8 +72,11 @@ describe("LeaveRequestsView", () => {
       "href",
       "/inbox?type=leave",
     );
-    // The text points where the main button goes, not to the notifications.
+    // The text and the icon point where the main button goes, not to the
+    // notifications.
     expect(screen.getByText("issuerQueueInboxBody")).toBeInTheDocument();
+    expect(document.querySelector("svg.lucide-inbox")).toBeInTheDocument();
+    expect(document.querySelector("svg.lucide-bell-ring")).not.toBeInTheDocument();
     expect(screen.queryByText("issuerQueueUnavailableBody")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "openNotifications" })).toHaveAttribute(
       "href",

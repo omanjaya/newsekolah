@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, type PageHeaderAction } from "@newsekolah/ui";
+import { Button, type PageHeaderAction, type PageHeaderProps } from "@newsekolah/ui";
 import { FileSpreadsheet, Plus, Repeat, ScanLine } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -35,6 +35,8 @@ export function useScheduleHeader({
   onAdd: () => void;
 }): {
   primaryAction: ReactNode;
+  /** The manager's add action as a round button beside the title on a phone. */
+  primaryActionCompact: PageHeaderProps["primaryActionCompact"];
   secondaryActions: PageHeaderAction[];
   description: ReactNode;
 } {
@@ -70,6 +72,10 @@ export function useScheduleHeader({
       <Link href="/classroom-entry">{tWorkspace("scanEntry")}</Link>
     </Button>
   ) : undefined;
+  // The student's scan action keeps its label: it leaves the timetable.
+  const primaryActionCompact = canManage
+    ? { icon: <Plus />, label: t("addBlock"), onSelect: onAdd }
+    : undefined;
 
   const description = (
     <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -78,5 +84,5 @@ export function useScheduleHeader({
     </span>
   );
 
-  return { primaryAction, secondaryActions, description };
+  return { primaryAction, primaryActionCompact, secondaryActions, description };
 }

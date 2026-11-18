@@ -303,7 +303,8 @@ export function HomeroomView(): ReactElement {
           {/* Who needs the homeroom teacher today, first. */}
           <HeroCard
             tone={dashboard.isLoading || attentionRows.length === 0 ? "accent-soft" : "warning"}
-            eyebrow={t("attentionTitle")}
+            // A calm day gets a neutral eyebrow, not "Perlu perhatian".
+            eyebrow={attentionRows.length > 0 ? t("attentionTitle") : t("today")}
             title={
               attentionRows.length > 0
                 ? t("attentionCount", { count: attentionRows.length })

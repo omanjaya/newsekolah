@@ -199,8 +199,10 @@ export function ScheduleMobileAgenda({
                   "flex items-start gap-3 rounded-lg px-4 py-3",
                   SUBJECT_TONE_CLASSES[subjectTone(block.subject_id)],
                   // Same accent-edge language as the desktop grid's
-                  // current-period cell, adapted to a card.
-                  isNow && "ring-2 ring-accent ring-offset-2 ring-offset-bg",
+                  // current-period cell, adapted to a card. Drawn inside
+                  // the card so it keeps the column's width; an offset ring
+                  // stuck 4px into the phone's gutter.
+                  isNow && "ring-2 ring-accent ring-inset",
                 )}
               >
                 <span className="flex w-12 shrink-0 flex-col pt-0.5 text-label tabular-nums">

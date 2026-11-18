@@ -1268,7 +1268,8 @@
         "bodyReportsOnly": "Lihat rekap per kelas di laporan.",
         "openReportsHub": "Buka pusat laporan"
       },
-      "openSchedule": "Buka jadwal"
+      "openSchedule": "Buka jadwal",
+      "leaveLetterNote": "Surat izin {number}"
     },
     "homeroom": {
       "eyebrow": "Akademik",
@@ -1343,6 +1344,7 @@
       "attentionBreakdown": "{absent} alpha · {incomplete} presensi belum lengkap",
       "attentionOpen": "Lihat di presensi kelas",
       "attentionListTitle": "Perlu dihubungi",
+      "contactEmpty": "Tidak ada wali yang perlu dihubungi.",
       "noHomeroomAdminBody": "Halaman ini menampilkan rekap harian kelas binaan. Wali kelas diatur di penugasan.",
       "openAssignments": "Buka penugasan"
     },

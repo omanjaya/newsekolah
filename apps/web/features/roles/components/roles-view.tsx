@@ -155,6 +155,17 @@ export function RolesView(): ReactElement {
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("addRole"),
+              onSelect: () => {
+                setCreating(true);
+              },
+            }
+          : undefined
+      }
       floating={
         selected && (
           <SettingsSaveBar

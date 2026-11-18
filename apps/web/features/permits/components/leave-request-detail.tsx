@@ -18,10 +18,11 @@ import {
 } from "@newsekolah/ui";
 import { Download, Upload } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useRef, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { useStuckToBottom } from "../../../lib/hooks/use-stuck-to-bottom";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { compressImage } from "../../../lib/media/compress-image";
 import { useCan, useSession } from "../../../lib/session/session-provider";
@@ -98,15 +99,7 @@ export function LeaveRequestDetail({
     }
   }
 
-  // On the page, a phone keeps the decision's buttons docked on the tab
-  // bar while the reader scrolls the request, as a StickySaveBar docks: at
-  // the bar plus the home indicator, with the centre button's rise as
-  // bottom padding, so that button paints over padding and no strip of
-  // page shows between the two bars. The row spans the card's padding;
-  // the card clips it to its rounded corners at rest.
-  const dockClass =
-    layout === "page" &&
-    "max-md:sticky max-md:bottom-[calc(var(--shell-mobile-tab-bar,0px)+env(safe-area-inset-bottom))] max-md:z-sticky max-md:-mx-5 max-md:-mb-5 max-md:border-t max-md:border-line max-md:bg-surface max-md:px-5 max-md:pt-3 max-md:pb-[calc(var(--space-3)+var(--shell-mobile-tab-raise,0px))]";
+  const docked = layout === "page";
   const issued = (inst.status === "completed" || inst.status === "approved") && data.has_letter;
   const letterButton = (size?: "sm") => (
     <Button
@@ -226,10 +219,7 @@ export function LeaveRequestDetail({
           </div>
           {/* Side by side on a phone (Tolak, then the main Setujui), a
               right-aligned row from 640px up. */}
-          <div
-            data-slot="leave-decision"
-            className={cn("grid grid-cols-2 gap-2 sm:flex sm:justify-end", dockClass)}
-          >
+          <DecisionDock docked={docked} className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
             <Button
               variant="secondary"
               loading={review.isPending && !review.variables.approve}
@@ -263,16 +253,13 @@ export function LeaveRequestDetail({
             >
               {t("approve")}
             </Button>
-          </div>
+          </DecisionDock>
         </>
       )}
       {canIssueNow && (
-        <div
-          data-slot="leave-decision"
-          className={cn(
-            "flex flex-col gap-2 border-t border-line pt-4 sm:flex-row sm:justify-end",
-            dockClass,
-          )}
+        <DecisionDock
+          docked={docked}
+          className="flex flex-col gap-2 border-t border-line pt-4 sm:flex-row sm:justify-end"
         >
           <Button
             loading={issue.isPending}
@@ -287,8 +274,41 @@ export function LeaveRequestDetail({
           >
             {t("issueLetter")}
           </Button>
-        </div>
+        </DecisionDock>
       )}
+    </div>
+  );
+}
+
+// On the page, a phone keeps the decision's buttons docked on the tab bar
+// while the reader scrolls the request, as a StickySaveBar docks: at the
+// bar plus the home indicator. Only while stuck does the row take the
+// centre button's rise as bottom padding, so that button paints over
+// padding and no strip of page shows between the two bars; at rest it ends
+// the card with the card's own padding. The row spans the card's padding;
+// the card clips it to its rounded corners at rest.
+const DOCK_CLASS =
+  "max-md:sticky max-md:bottom-[calc(var(--shell-mobile-tab-bar,0px)+env(safe-area-inset-bottom))] max-md:z-sticky max-md:-mx-5 max-md:-mb-5 max-md:border-t max-md:border-line max-md:bg-surface max-md:px-5 max-md:pt-3 max-md:pb-5 max-md:data-stuck:pb-[calc(var(--space-3)+var(--shell-mobile-tab-raise,0px))]";
+
+function DecisionDock({
+  docked,
+  className,
+  children,
+}: {
+  docked: boolean;
+  className: string;
+  children: ReactNode;
+}): ReactElement {
+  const ref = useRef<HTMLDivElement>(null);
+  const stuck = useStuckToBottom(ref, docked);
+  return (
+    <div
+      ref={ref}
+      data-slot="leave-decision"
+      data-stuck={stuck || undefined}
+      className={cn(className, docked && DOCK_CLASS)}
+    >
+      {children}
     </div>
   );
 }

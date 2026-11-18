@@ -245,6 +245,13 @@ export function TenantsView(): ReactElement {
       description={t("subtitle")}
       nav={<PlatformNav />}
       primaryAction={addButton}
+      primaryActionCompact={{
+        icon: <Plus />,
+        label: t("add"),
+        onSelect: () => {
+          setCreating(true);
+        },
+      }}
     >
       <StatGrid variant="strip" aria-label={t("summaryLabel")}>
         <Stat

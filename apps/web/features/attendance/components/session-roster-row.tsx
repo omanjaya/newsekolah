@@ -10,6 +10,7 @@ import { formatDisplayName } from "../../../lib/text/format-name";
 import type { ViolationType } from "../../discipline/api";
 import { StudentLink } from "../../students/components/student-link";
 import type { RosterItem, SessionDetail } from "../api";
+import { sourceNoteText } from "../lib/source-note";
 
 import { AttendanceStatusRadioGroup } from "./attendance-status-radio-group";
 import { SessionRowActionsMenu } from "./session-row-actions-menu";
@@ -62,11 +63,17 @@ export const SessionRosterRow = memo(function SessionRosterRow({
   onToggleViolation: (studentId: string, violationTypeId: string) => void;
 }): ReactElement {
   const t = useTranslations("app.attendance.session");
+  const tAttendance = useTranslations("app.attendance");
   // Local draft so typing paints instantly in this row; the value is
   // still committed to the parent on every change (cheap now that only
   // this row re-renders), which keeps the pending-changes count and the
-  // submit payload exactly as they were before this split.
-  const [draftNote, setDraftNote] = useState(note);
+  // submit payload exactly as they were before this split. A row filled
+  // in from a permit starts from its localized note ("Surat izin 21/...")
+  // instead of the API's English machine text; the parent keeps the
+  // stored note, so it is saved unchanged unless the teacher edits it.
+  const [draftNote, setDraftNote] = useState(() =>
+    sourceNoteText(note, item.source, (number) => tAttendance("leaveLetterNote", { number })),
+  );
   // The previous session's recorded status ("PS" in the old SION roster,
   // reference/sion-rebuild-go/frontend/app/attendance/page.tsx's
   // `attendance-ps` column), shown only when it was an exception worth a
@@ -77,7 +84,7 @@ export const SessionRosterRow = memo(function SessionRosterRow({
   // A not-present status always needs its note visible; a present student
   // keeps the field collapsed behind the actions menu until asked for, so
   // 36 rows of "Hadir" do not each carry an empty text box.
-  const [noteExpanded, setNoteExpanded] = useState(!isPresent || note !== "");
+  const [noteExpanded, setNoteExpanded] = useState(!isPresent || draftNote !== "");
   const noteVisible = !isPresent || noteExpanded;
 
   return (

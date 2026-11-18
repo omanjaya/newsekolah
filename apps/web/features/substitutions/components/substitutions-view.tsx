@@ -104,6 +104,7 @@ export function SubstitutionsView(): ReactElement {
           {t("request")}
         </Button>
       }
+      primaryActionCompact={{ icon: <Plus />, label: t("request"), onSelect: openRequest }}
       toolbar={
         <SegmentedControl<Direction>
           aria-label={t("directionLabel")}

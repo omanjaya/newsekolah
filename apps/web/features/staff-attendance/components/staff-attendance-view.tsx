@@ -94,6 +94,17 @@ export function StaffAttendanceView(): ReactElement {
             </Button>
           ) : undefined
         }
+        primaryActionCompact={
+          onBoard && canManage
+            ? {
+                icon: <Plus />,
+                label: t("today.manualEntry"),
+                onSelect: () => {
+                  setManualOpen(true);
+                },
+              }
+            : undefined
+        }
         secondaryActions={secondaryActions}
         nav={
           <TabsList variant="underline" aria-label={t("tabsLabel")}>

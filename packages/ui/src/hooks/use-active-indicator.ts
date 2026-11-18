@@ -74,8 +74,11 @@ function writeBox(indicator: HTMLElement, size: Box, at: Box, scale: number) {
  * How much of the first item cut by a strip's edge must show, so it reads
  * as "more this way" past the edge fade (24px at the start, up to 48px at
  * an underline strip's end on a phone) instead of a ghost of one letter.
+ * The item's box includes its own padding (12px), so 56 puts the start of
+ * its label at the inner edge of the widest fade; 40 left the label inside
+ * it, a faint ghost.
  */
-const PEEK = 40;
+const PEEK = 56;
 
 interface Span {
   start: number;

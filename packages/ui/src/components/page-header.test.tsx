@@ -291,6 +291,21 @@ describe("PageHeader", () => {
     expect(link.querySelector("svg.lucide-plus")).toBeInTheDocument();
   });
 
+  it("disables the compact primary action with the full one", () => {
+    render(
+      <PageHeader
+        title="Mapel per tingkat"
+        primaryAction={<Button disabled>Tambah</Button>}
+        primaryActionCompact={{ icon: <Plus />, label: "Tambah", href: "/new", disabled: true }}
+      />,
+    );
+    // A disabled action is a button, never a link that still navigates.
+    expect(screen.queryByRole("link", { name: "Tambah" })).not.toBeInTheDocument();
+    for (const button of screen.getAllByRole("button", { name: "Tambah" })) {
+      expect(button).toBeDisabled();
+    }
+  });
+
   it("sets a leading avatar beside the title and its description", async () => {
     const { container } = render(
       <PageHeader

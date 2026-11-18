@@ -319,15 +319,16 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
             columns={1}
             title={t("bodyTitle")}
             description={t("bodyHint")}
-            aside={
-              <PreviewSheet label={t("previewLabel")}>
-                <div className="flex flex-col gap-4">
-                  <p className="text-body-sm text-fg-muted">{t("previewHint")}</p>
-                  {preview}
-                </div>
-              </PreviewSheet>
-            }
           >
+            {/* The first thing in the card, not the section's aside: beside
+                the title it squeezed the hint into a narrow column on a
+                phone. */}
+            <PreviewSheet label={t("previewLabel")}>
+              <div className="flex flex-col gap-4">
+                <p className="text-body-sm text-fg-muted">{t("previewHint")}</p>
+                {preview}
+              </div>
+            </PreviewSheet>
             {legacy.length > 0 && (
               <Alert
                 tone="warning"

@@ -218,4 +218,25 @@ describe("HomeroomView overview", () => {
     expect(new URLSearchParams(window.location.search).get("tab")).toBe("attendance");
     expect(lastRosterCallArgs()).toEqual([expect.objectContaining({ statusCode: "A" }), true]);
   });
+
+  it("keeps the alarm eyebrow while someone needs attention", () => {
+    render(<HomeroomView />);
+    expect(screen.getByText("attentionTitle")).toBeInTheDocument();
+  });
+
+  it("heads a calm day with a neutral eyebrow instead of an alarm", () => {
+    mocks.useHomeroomAttendanceQuery.mockReturnValue({
+      data: {
+        data: [{ student_user_id: "s2", name: "Siswa Dua", status_code: "H" }],
+        total: 1,
+        status_counts: { H: 1 },
+      },
+      isLoading: false,
+    });
+    render(<HomeroomView />);
+
+    expect(screen.getByRole("heading", { name: "attentionNoneTitle" })).toBeInTheDocument();
+    expect(screen.getByText("today")).toBeInTheDocument();
+    expect(screen.queryByText("attentionTitle")).not.toBeInTheDocument();
+  });
 });

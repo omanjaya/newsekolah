@@ -183,6 +183,18 @@ export function SubjectOfferingsView({ page }: { page: HubPageProps }): ReactEle
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: t("add"),
+              disabled: !effectiveYearId,
+              onSelect: () => {
+                open("new");
+              },
+            }
+          : undefined
+      }
     >
       <Field label={t("year")} className="md:w-64">
         <Select

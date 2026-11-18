@@ -13,6 +13,8 @@ vi.mock("next-intl", () => ({
   useLocale: () => "id",
 }));
 vi.mock("@newsekolah/i18n", () => ({
+  // Rows no longer use it; it stays so a relative time slipping back in
+  // would show in the assertions.
   formatRelative: () => "5 menit lalu",
   formatTime: () => "19.00",
 }));
@@ -128,7 +130,7 @@ describe("NotificationsView", () => {
     expect(markRead).toHaveBeenCalledWith("n1");
   });
 
-  it("ends a row in a short time under its day heading, never the full date", () => {
+  it("ends every row in the clock time under its day heading, today's included", () => {
     list.data = [
       {
         id: "today",
@@ -148,9 +150,11 @@ describe("NotificationsView", () => {
       },
     ];
     render(<NotificationsView />);
-    expect(screen.getByRole("button", { name: /Izin hari ini/ }).closest("li")).toHaveTextContent(
-      "5 menit lalu",
-    );
+    // "Hari ini" already heads today's rows, and a relative "18 menit yang
+    // lalu" cut the title short on a phone.
+    const todayRow = screen.getByRole("button", { name: /Izin hari ini/ }).closest("li");
+    expect(todayRow).toHaveTextContent("19.00");
+    expect(todayRow).not.toHaveTextContent("5 menit lalu");
     expect(screen.getByRole("button", { name: /Izin lama/ }).closest("li")).toHaveTextContent(
       "19.00",
     );

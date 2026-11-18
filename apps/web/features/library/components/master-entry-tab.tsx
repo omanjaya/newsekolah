@@ -30,6 +30,8 @@ import { useCan } from "../../../lib/session/session-provider";
 import type { LibraryMasterEntry, LibraryMasterEntryWrite } from "../master-data-api";
 import { useLibraryErrorMessage } from "../use-library-error-message";
 
+import { MasterListHeader } from "./master-list-header";
+
 /**
  * The i18n namespaces of the simple code/name master lists. They all share
  * one key shape (add, columns.*, form.*, stillInUse, ...), which is what
@@ -39,6 +41,13 @@ export type MasterEntryNamespace =
   | "app.library.masterData.acquisitionSources"
   | "app.library.masterData.collectionCategories"
   | "app.library.masterData.locations";
+
+/** Each list's tab key, whose label also heads the list. */
+const LIST_KEY = {
+  "app.library.masterData.acquisitionSources": "acquisitionSources",
+  "app.library.masterData.collectionCategories": "collectionCategories",
+  "app.library.masterData.locations": "locations",
+} as const satisfies Record<MasterEntryNamespace, string>;
 
 export interface MasterEntryTabProps {
   namespace: MasterEntryNamespace;
@@ -69,6 +78,7 @@ export function MasterEntryTab({
   remove,
 }: MasterEntryTabProps): ReactElement {
   const t = useTranslations(namespace);
+  const tMasterData = useTranslations("app.library.masterData");
   const toast = useToast();
   const libraryErrorMessage = useLibraryErrorMessage();
   const canManage = useCan("manage_library_catalog");
@@ -152,7 +162,16 @@ export function MasterEntryTab({
   ) : undefined;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
+      <MasterListHeader
+        title={tMasterData(`tabs.${LIST_KEY[namespace]}`)}
+        count={items.length}
+        addLabel={t("add")}
+        showAdd={canManage && (isLoading || items.length > 0)}
+        onAdd={() => {
+          setCreating(true);
+        }}
+      />
       <DataTable
         stateKey={stateKey}
         mode="local"
@@ -167,7 +186,6 @@ export function MasterEntryTab({
         isLoading={isLoading}
         error={error}
         onRetry={onRetry}
-        toolbarActions={addButton}
         getRowId={(item) => item.id}
         emptyState={
           <EmptyState

@@ -126,6 +126,42 @@ describe("AttendanceCalendar", () => {
     expect(screen.getByText("Matematika")).toBeInTheDocument();
   });
 
+  it("shows a leave letter's number in a localized phrase, not the API's English note", () => {
+    calendarData = [
+      day("2026-09-20", "S", [
+        {
+          schedule_id: "sch-1",
+          subject_id: "subj-1",
+          subject_name: "Matematika",
+          status_code: "S",
+          period_label: "1-2",
+          teacher_name: "Bu Sari",
+          note: "leave letter 21/IZIN/XI/2026",
+          source: "leave",
+        },
+        {
+          schedule_id: "sch-2",
+          subject_id: "subj-2",
+          subject_name: "Biologi",
+          status_code: "S",
+          period_label: "3",
+          teacher_name: "Pak Budi",
+          note: "Surat dari dokter",
+          source: "leave",
+        },
+      ]),
+    ];
+    render(<AttendanceCalendar />);
+
+    fireEvent.click(dayButton("20"));
+
+    const letterRow = screen.getByText("Matematika").closest("li");
+    expect(letterRow).toHaveTextContent('leaveLetterNote {"number":"21/IZIN/XI/2026"}');
+    expect(letterRow).not.toHaveTextContent("leave letter");
+    // A note without the API's prefix is shown as written.
+    expect(screen.getByText("Biologi").closest("li")).toHaveTextContent("Surat dari dokter");
+  });
+
   it("shows a short sentence in the detail card when the selected day has no per-session data", () => {
     calendarData = [day("2026-09-20", "A", [])];
     render(<AttendanceCalendar />);

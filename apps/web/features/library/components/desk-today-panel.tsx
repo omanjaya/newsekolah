@@ -117,7 +117,9 @@ export function DeskTodayPanel({ className }: { className?: string }): ReactElem
         </Card>
       )}
       {shortcuts.length > 0 && (
-        <Card>
+        // The bottom padding keeps the last icon off the card's edge, as on
+        // the home's shortcuts.
+        <Card className="pb-2">
           <CardHeader>
             <CardTitle as="h2">{t("shortcuts.heading")}</CardTitle>
           </CardHeader>

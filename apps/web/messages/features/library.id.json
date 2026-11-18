@@ -314,6 +314,7 @@
       "emptyBody": "Semua peminjaman aktif masih dalam batas waktu.",
       "unknownMember": "Identitas anggota belum tersedia",
       "unknownTitle": "Judul belum tersedia",
+      "dueDate": "Jatuh tempo {date}",
       "loadError": "Daftar keterlambatan belum bisa dimuat. Coba lagi.",
       "confirmReturn": {
         "title": "Catat pengembalian?",

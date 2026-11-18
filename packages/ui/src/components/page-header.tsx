@@ -37,6 +37,8 @@ export interface PageHeaderCompactAction {
   label: string;
   onSelect?: () => void;
   href?: string;
+  /** Mirrors a disabled `primaryAction`, so the phone's form is not tappable either. */
+  disabled?: boolean;
 }
 
 export interface PageHeaderProps extends Omit<ComponentPropsWithRef<"div">, "title" | "children"> {
@@ -103,7 +105,7 @@ function SecondaryButtons({ actions }: { actions: PageHeaderAction[] }) {
 
 /** The phone's main action at the end of the title's line: an accent icon button, 44px on touch. */
 function CompactPrimary({ action }: { action: PageHeaderCompactAction }) {
-  return action.href ? (
+  return action.href && !action.disabled ? (
     <IconButton asChild variant="primary" icon={action.icon} aria-label={action.label}>
       <UiLink href={action.href} onClick={action.onSelect} />
     </IconButton>
@@ -112,6 +114,7 @@ function CompactPrimary({ action }: { action: PageHeaderCompactAction }) {
       variant="primary"
       icon={action.icon}
       aria-label={action.label}
+      disabled={action.disabled}
       onClick={action.onSelect}
     />
   );

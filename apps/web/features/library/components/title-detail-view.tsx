@@ -204,6 +204,17 @@ export function TitleDetailView({ titleId }: { titleId: string }): ReactElement 
           </Button>
         ) : undefined
       }
+      primaryActionCompact={
+        canManage
+          ? {
+              icon: <Plus />,
+              label: tCopies("addCopy"),
+              onSelect: () => {
+                setAdding(true);
+              },
+            }
+          : undefined
+      }
       secondaryActions={secondaryActions}
     >
       <TitleIdentity title={data} />
