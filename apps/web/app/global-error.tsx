@@ -11,7 +11,9 @@ import { useEffect } from "react";
  * It mirrors StatePage (danger icon in a soft circle, title, one sentence,
  * the action, a small code) with its own plain CSS, carrying the Hijau
  * Segar token values for both themes, and hardcoded Indonesian copy; this
- * screen exists to be readable when everything else has failed.
+ * screen exists to be readable when everything else has failed. For the
+ * same reason its title and button are plain HTML, not the shared
+ * components: those would render unstyled here.
  */
 const STYLES = `
   :root { color-scheme: light dark; }
@@ -62,11 +64,13 @@ export default function GlobalError({
             <TriangleAlert size={28} />
           </span>
           <div>
+            {/* eslint-disable-next-line design-system/no-raw-elements -- no stylesheet here, see the note at the top */}
             <h1 className="ge-title">Aplikasi gagal dimuat</h1>
             <p className="ge-text">
               Muat ulang halaman ini, dan bila tetap gagal, beri tahu admin sekolah kode di bawah.
             </p>
           </div>
+          {/* eslint-disable-next-line design-system/no-raw-elements -- no stylesheet here, see the note at the top */}
           <button type="button" className="ge-button" onClick={reset}>
             Coba lagi
           </button>

@@ -49,26 +49,4 @@ export default [
       "design-system/no-raw-elements": "error",
     },
   },
-  // Ratchet, 1 violation left: the unsaved-changes guard asks with
-  // window.confirm before a navigation. The file belongs to the navigation
-  // stream (lib/navigation*); it stays a warning until that guard moves to
-  // ConfirmDialog, then this block goes.
-  {
-    files: ["lib/navigation/use-unsaved-changes-protection.ts"],
-    rules: {
-      "no-restricted-properties": [
-        "warn",
-        ...nativeDialogRules["no-restricted-properties"].slice(1),
-      ],
-    },
-  },
-  // The root error boundary replaces the whole document, stylesheet and
-  // providers included, so it draws its title and button in plain HTML
-  // with its own CSS; shared components would render unstyled there.
-  {
-    files: ["app/global-error.tsx"],
-    rules: {
-      "design-system/no-raw-elements": "off",
-    },
-  },
 ];
