@@ -100,12 +100,33 @@ describe("SelfCheckInView -- unscheduled vs. holiday", () => {
 
     // The regression this guards: an employee with no schedule configured
     // must never see "Libur" (holiday) next to an active check-in button.
-    // The "this week" list repeats today's own row, so these labels
-    // legitimately appear more than once -- assert presence, not count.
     expect(screen.queryByText("holiday")).not.toBeInTheDocument();
-    expect(screen.getAllByText("unscheduled").length).toBeGreaterThan(0);
-    expect(screen.getByText("unscheduledHint")).toBeInTheDocument();
     expect(screen.queryByText("holidayHint")).not.toBeInTheDocument();
+    // The warning states the unscheduled day once (FA-47, f6595bc5): no
+    // status pill in the card and no badge on the day's row, which reads
+    // that nothing was recorded instead of an empty time range.
+    expect(screen.getAllByText("unscheduledHint")).toHaveLength(1);
+    expect(screen.queryByText("unscheduled")).not.toBeInTheDocument();
+    expect(screen.getByText("noRecord")).toBeInTheDocument();
+    expect(screen.queryByText("unscheduledHintManage")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "recordArrival" })).toBeEnabled();
+  });
+
+  it("points a schedule manager at the schedule editor on an unscheduled day", () => {
+    session.permissions = ["manage_staff_attendance_schedules"];
+    weekQuery.mockReturnValue({
+      data: { data: [record({ status_code: "unscheduled" })] },
+      isLoading: false,
+      isError: false,
+    });
+    render(<SelfCheckInView />);
+
+    expect(screen.getByText(/unscheduledHintManage/)).toBeInTheDocument();
+    expect(screen.queryByText("unscheduledHint")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "openSchedule" })).toHaveAttribute(
+      "href",
+      "/staff-attendance?tab=schedule",
+    );
     expect(screen.getByRole("button", { name: "recordArrival" })).toBeEnabled();
   });
 
