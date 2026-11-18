@@ -266,7 +266,20 @@ Melanjutkan catatan 17 November. Urutannya mengikuti permintaan pemilik: tinjau,
 
 **Satu pengecualian gerak.** Kilau pelan di balik panel merek halaman masuk dipertahankan sebagai satu-satunya animasi ambien (18 detik, dekoratif, diam saat `prefers-reduced-motion`) dan ditulis di `docs/07-ui-ux.md`.
 
-**Fase tes akhir (sedang berjalan).** Suite unit dijalankan pertama kali setelah semua itu: 2.845 lulus, 30 gagal (1 di `packages/ui`, 29 di `apps/web` pada sembilan berkas). Dua agen memperbaikinya, satu agen menjalankan dan memperbaiki ketiga suite Playwright, lalu satu pemeriksa membaca perbaikan unit. Hasilnya belum ada saat catatan ini ditulis.
+**Fase tes akhir.** Suite unit dijalankan pertama kali setelah semua itu: 2.845 lulus, 30 gagal (1 di `packages/ui`, 29 di `apps/web` pada sembilan berkas). Ketiga puluhnya salah di sisi test, bukan di produk: mock yang belum mengikuti `useUrlState` yang kini membaca dari router, mock tanpa `useCan`, pabrik `vi.mock` yang membaca variabel sebelum diinisialisasi, dan pernyataan yang masih memeriksa rancangan lama. Perbaikannya hanya menyentuh berkas test dan dibaca pemeriksa kedua (sepuluh berkas, semuanya dinilai sah). Suite Playwright menemukan satu cacat produk yang sudah diperbaiki: setelah satpam memindai QR gerbang, kartu izin keluar di layar siswa kembali ke ajakan mengajukan izin, sehingga status "Sudah keluar" tidak pernah tampil (`apps/web/features/permits/components/exit-permits-view.tsx`).
+
+Hasil di kepala cabang `99db17f8`, dijalankan sesi utama pada hasil gabungan:
+
+| Pemeriksaan                   | Hasil                                                                                         |
+| ----------------------------- | --------------------------------------------------------------------------------------------- |
+| `pnpm typecheck`, `pnpm lint` | lulus (14 dari 14 tugas, tanpa galat)                                                         |
+| Build produksi `apps/web`     | lulus                                                                                         |
+| Test unit                     | web 2.026, ui 701, config 73, api-client 24, tokens 23, i18n 18, schemas 17: semua lulus      |
+| E2E tiruan (`test:e2e`)       | 8 lulus                                                                                       |
+| Smoke di stack sungguhan      | 52 lulus, 2 dilewati (`test.fixme` unduhan laporan presensi, sudah begitu sejak suite dibuat) |
+| Simulasi hari sekolah         | 6 lulus, termasuk skenario izin keluar yang ditulis ulang dan skenario offline                |
+
+`go test` tidak dijalankan: `apps/api` tidak berubah di cabang ini (satu-satunya perubahan di luar web adalah `infra/docker/README.dev.md`). Putaran perbaikan kedua belum dipotret ulang saat tabel ini ditulis.
 
 Tindak lanjut yang dicatat, belum dikerjakan:
 
