@@ -47,6 +47,20 @@ describe("Field", () => {
     expect(input).toHaveAccessibleDescription("Untuk notifikasi. Email sudah dipakai");
   });
 
+  // Scrolled to, its label clears the shell's sticky header and its error
+  // the fixed bottom bars (the shell sets both insets, globals.css).
+  it("keeps clear of the page's sticky header and bottom bars when scrolled to", () => {
+    const { container } = render(
+      <Field label="Nama" error="Wajib diisi">
+        <Input />
+      </Field>,
+    );
+    expect(container.firstElementChild).toHaveClass(
+      "scroll-mt-[calc(var(--scroll-inset-top,0px)+var(--space-2))]",
+      "scroll-mb-[calc(var(--scroll-inset-bottom,0px)+var(--space-2))]",
+    );
+  });
+
   it("keeps the label and a small control on one line when inline", () => {
     const { container } = render(
       <Field label="Terbitkan" orientation="inline" hint="Siswa melihat nilai.">

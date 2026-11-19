@@ -183,6 +183,101 @@ describe("useSubmitValidation", () => {
     expect(scroll).toHaveBeenCalledWith({ block: "center", inline: "nearest" });
   });
 
+  /** Overrides computed styles jsdom cannot produce (it applies no stylesheet). */
+  function styleNodes(styles: (node: Element) => Partial<CSSStyleDeclaration> | undefined) {
+    const original = window.getComputedStyle.bind(window);
+    vi.spyOn(window, "getComputedStyle").mockImplementation((node, pseudo) => {
+      const computed = original(node, pseudo);
+      const extra = styles(node);
+      if (!extra) return computed;
+      return new Proxy(computed, {
+        get: (target, key: string) =>
+          key in extra
+            ? extra[key as keyof CSSStyleDeclaration]
+            : (Reflect.get(target, key) as unknown),
+      });
+    });
+  }
+
+  /** The scroll margins field.tsx derives from the app shell's header and bottom bars. */
+  function shellMargins(top: string, bottom: string) {
+    styleNodes((node) =>
+      node instanceof HTMLElement && node.dataset.slot === "field"
+        ? { scrollMarginTop: top, scrollMarginBottom: bottom }
+        : undefined,
+    );
+  }
+
+  // Inside the viewport, but its label sits under the 56px sticky header.
+  it("counts a field under the sticky header as out of view", async () => {
+    const scroll = stubScroll();
+    shellMargins("64px", "8px");
+    placeField(24, 80);
+    const user = userEvent.setup();
+    renderDemo();
+    await user.click(screen.getByRole("button", { name: "Simpan" }));
+
+    expect(screen.getByRole("textbox", { name: "Kode" })).toHaveFocus();
+    expect(scroll).toHaveBeenCalledWith({ block: "center", inline: "nearest" });
+  });
+
+  // Its error would sit under a floating save bar or the phone's tab bar.
+  it("counts a field whose error sits under the bottom bars as out of view", async () => {
+    const scroll = stubScroll();
+    shellMargins("64px", "160px");
+    placeField(window.innerHeight - 200, 80);
+    const user = userEvent.setup();
+    renderDemo();
+    await user.click(screen.getByRole("button", { name: "Simpan" }));
+
+    expect(scroll).toHaveBeenCalledWith({ block: "center", inline: "nearest" });
+  });
+
+  it("leaves a field clear of the header and the bars where it is", async () => {
+    const scroll = stubScroll();
+    shellMargins("64px", "160px");
+    placeField(100, 80);
+    const user = userEvent.setup();
+    renderDemo();
+    await user.click(screen.getByRole("button", { name: "Simpan" }));
+
+    expect(scroll).not.toHaveBeenCalled();
+  });
+
+  // It fits the raw viewport, but not the part the bars leave uncovered.
+  it("brings in from its top a field taller than the uncovered band", async () => {
+    const scroll = stubScroll();
+    shellMargins("64px", "160px");
+    placeField(-100, window.innerHeight - 100);
+    const user = userEvent.setup();
+    renderDemo();
+    await user.click(screen.getByRole("button", { name: "Simpan" }));
+
+    expect(scroll).toHaveBeenCalledWith({ block: "start", inline: "nearest" });
+  });
+
+  // A dialog body keeps scroll padding for its sticky footer (dialog-body).
+  it("counts a field under its scroll area's padded footer as out of view", async () => {
+    const scroll = stubScroll();
+    styleNodes((node) =>
+      node instanceof HTMLElement && node.dataset.testid === "area"
+        ? { overflowY: "auto", scrollPaddingBottom: "80px" }
+        : undefined,
+    );
+    placeField(300, 80);
+    const user = userEvent.setup();
+    render(
+      <div data-testid="area">
+        <Demo onSave={vi.fn()} />
+      </div>,
+    );
+    const area = screen.getByTestId("area");
+    Object.defineProperty(area, "clientHeight", { configurable: true, value: 420 });
+    await user.click(screen.getByRole("button", { name: "Simpan" }));
+
+    expect(scroll).toHaveBeenCalledWith({ block: "center", inline: "nearest" });
+  });
+
   it("focuses a field that mounts just after the attempt", async () => {
     const user = userEvent.setup();
     render(<HiddenUntilSubmit />);
