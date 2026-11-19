@@ -99,7 +99,8 @@ export function ActionInboxView(): ReactElement {
   // A permit sheet stays up until its reader closes it: approving the last
   // waiting item (or the live push that follows) drops the count to zero,
   // and swapping the queue for the all-clear then would unmount the sheet
-  // before its success line could be read.
+  // before its success line could be read. The queue reports the close
+  // once the sheet has slid out, so the swap never cuts that short.
   const [permitSheetOpen, setPermitSheetOpen] = useState(false);
   // A failed queue must stay visible with its retry, so only an error-free zero is "all clear".
   const allClear =

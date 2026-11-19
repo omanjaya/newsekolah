@@ -8,7 +8,8 @@
   ],
   "exports": {
     ".": "./src/index.ts",
-    "./styles.css": "./src/styles.css"
+    "./styles.css": "./src/styles.css",
+    "./test/exit-animation": "./src/test/exit-animation.ts"
   },
   "files": [
     "src",
