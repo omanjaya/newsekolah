@@ -30,6 +30,21 @@ describe("List and ListRow", () => {
     await expectNoAxeViolations(container);
   });
 
+  it("keeps each fact of a meta list whole, joined with a middle dot", () => {
+    render(
+      <List>
+        <ListRow title="Apotek" meta={["Kam, 19 Nov 2026", "keluar 15.49", undefined, ""]} />
+        <ListRow title="Rumah" meta={[undefined, ""]} />
+      </List>,
+    );
+    const time = screen.getByText("keluar 15.49");
+    expect(time).toHaveClass("whitespace-nowrap");
+    expect(time.parentElement).toHaveTextContent(/^Kam, 19 Nov 2026 · keluar 15\.49$/);
+    // Nothing to say: no empty meta line under the title.
+    const [, empty] = screen.getAllByRole("listitem");
+    expect(empty?.querySelector(".text-fg-muted")).toBeNull();
+  });
+
   it("truncates the title to one line unless it may take two", () => {
     render(
       <List>

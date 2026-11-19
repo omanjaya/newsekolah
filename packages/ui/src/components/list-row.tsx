@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
-import { useId, type ComponentPropsWithRef, type ReactNode } from "react";
+import { Fragment, useId, type ComponentPropsWithRef, type ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -18,8 +18,12 @@ export interface ListRowProps extends Omit<ComponentPropsWithRef<"li">, "title" 
    * book title.
    */
   titleLines?: 1 | 2;
-  /** The secondary line under the title, up to two lines. */
-  meta?: ReactNode;
+  /**
+   * The secondary line under the title, up to two lines. An array is a
+   * list of short facts (a day, "keluar 15.49", a count) joined with " · ":
+   * the line wraps only between facts, never inside one.
+   */
+  meta?: ReactNode | readonly ReactNode[];
   /**
    * A value, date or Badge at the end of the row. A child hidden at some
    * width (`hidden sm:inline`) leaves no gap behind there.
@@ -102,6 +106,23 @@ function RowTarget({
   );
 }
 
+/** Short facts joined with " · ", each kept on one line. */
+function presentSegments(segments: readonly ReactNode[]): ReactNode[] {
+  return segments.filter(
+    (segment) => segment !== null && segment !== undefined && segment !== false && segment !== "",
+  );
+}
+
+function MetaSegments({ segments }: { segments: readonly ReactNode[] }) {
+  return presentSegments(segments).map((segment, index) => (
+    // The facts are a fixed, ordered list for this row; the index is their identity.
+    <Fragment key={index}>
+      {index > 0 && " · "}
+      <span className="whitespace-nowrap">{segment}</span>
+    </Fragment>
+  ));
+}
+
 /**
  * One row of a List: leading avatar or icon circle, title, meta line,
  * trailing value, and an action or a chevron. A row with `href` or
@@ -125,6 +146,7 @@ export function ListRow({
 }: ListRowProps) {
   const { variant, dense } = useListContext();
   const metaId = useId();
+  const hasMeta = Array.isArray(meta) ? presentSegments(meta).length > 0 : Boolean(meta);
   const interactive = href !== undefined || onClick !== undefined;
   const showChevron = chevron ?? (interactive && !action && !disabled);
   const rule = "border-b border-line";
@@ -170,7 +192,7 @@ export function ListRow({
                 onClick={onClick}
                 selected={selected}
                 disabled={disabled}
-                describedBy={meta ? metaId : undefined}
+                describedBy={hasMeta ? metaId : undefined}
                 clamp={titleLines === 2}
               >
                 {title}
@@ -179,12 +201,12 @@ export function ListRow({
               title
             )}
           </p>
-          {meta && (
+          {hasMeta && (
             <div
               id={metaId}
               className={cn("line-clamp-2 text-fg-muted", dense ? "text-caption" : "text-body-sm")}
             >
-              {meta}
+              {Array.isArray(meta) ? <MetaSegments segments={meta} /> : meta}
             </div>
           )}
         </div>
