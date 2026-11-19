@@ -87,7 +87,7 @@ export type TenantLookupQuery = z.infer<typeof tenantLookupQuerySchema>;
 export const forgotPasswordSchema = z.object({
   username_or_email: z
     .string()
-    .min(1, "validation.usernameRequired")
+    .min(1, "validation.usernameOrEmailRequired")
     .max(USERNAME_OR_EMAIL_MAX_LENGTH, "validation.usernameOrEmailMax"),
 });
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;

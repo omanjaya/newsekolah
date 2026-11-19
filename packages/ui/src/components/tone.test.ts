@@ -64,3 +64,23 @@ describe("neutral soft tone", () => {
     expect(TONE_CLASSES.accent.softMuted).toBe("text-accent-soft-fg-muted");
   });
 });
+
+describe("accent icon circle", () => {
+  // The tint is system-owned and a tenant overrides only `accent`: an icon
+  // in `text-accent` would put a school's brand colour on the platform's
+  // mint, beside the scanner's soft circle in the tint's own foreground.
+  it("draws the icon in the tint's own foreground, like the scanner's circle", () => {
+    expect(TONE_CLASSES.accent.icon.split(" ")).toEqual(["bg-accent-soft", "text-accent-soft-fg"]);
+  });
+
+  it("keeps the icon at 3:1 or more on its tint in both themes", () => {
+    for (const theme of ["light", "dark"] as const) {
+      const palette = colors[theme];
+      for (const surface of SURFACES) {
+        const fill = over(parse(palette.accentSoft), parse(palette[surface]));
+        const icon = over(parse(palette.accentSoftFg), fill);
+        expect(contrast(icon, fill), `${theme} ${surface}`).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+});

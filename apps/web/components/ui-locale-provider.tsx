@@ -80,6 +80,7 @@ export function useAppUiLabels(): UiLabels {
       scannerManualLabel: t("scanner.manualLabel"),
       scannerManualPlaceholder: t("scanner.manualPlaceholder"),
       scannerSubmit: t("scanner.submit"),
+      scannerManualRequired: t("scanner.manualRequired"),
       scannerFieldSubmit: t("scanner.fieldSubmit"),
       scannerCamera: t("scanner.camera"),
       scannerCameraStart: t("scanner.cameraStart"),

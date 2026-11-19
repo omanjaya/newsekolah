@@ -24,7 +24,11 @@ export interface ToneClasses {
   outline: string;
   /** A small solid mark (leading dot, live indicator). */
   dot: string;
-  /** Soft circle behind a line icon drawn in the full hue (non-text, 3:1 or more). */
+  /**
+   * Soft circle behind a line icon drawn in the full hue (non-text, 3:1 or
+   * more); the accent draws it in the tint's own foreground instead, since
+   * the tint stays the platform's when a school brings its own accent.
+   */
   icon: string;
   /** Muted text on top of the soft tint (descriptions inside a tinted surface). */
   softMuted: string;
@@ -53,7 +57,10 @@ export const TONE_CLASSES: Record<Tone, ToneClasses> = {
     solid: "bg-accent text-accent-fg",
     outline: "text-accent ring-accent",
     dot: "bg-accent",
-    icon: "bg-accent-soft text-accent",
+    // The soft tint is system-owned (a tenant's brand colour replaces only
+    // `accent` itself), so the icon on it uses the tint's own foreground:
+    // a custom brand blue on the platform's mint would read as a second accent.
+    icon: "bg-accent-soft text-accent-soft-fg",
     softMuted: "text-accent-soft-fg-muted",
   },
   success: {

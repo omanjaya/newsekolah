@@ -290,6 +290,7 @@
           "manualLabel": "Code",
           "manualPlaceholder": "Type or paste the code",
           "submit": "Submit",
+          "manualRequired": "Type or paste a code first.",
           "fieldSubmit": "Record",
           "camera": "Scan with camera",
           "cameraStart": "Turn on camera",

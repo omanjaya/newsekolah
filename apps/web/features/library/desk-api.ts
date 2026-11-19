@@ -5,7 +5,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
 
-import { matchMemberByCode } from "./lib/member-code-match";
+import {
+  ALL_MEMBER_CODE_FIELDS,
+  matchMemberByCode,
+  type MemberCodeField,
+} from "./lib/member-code-match";
 
 export type LibraryLookupResult = components["schemas"]["LibraryLookupResult"];
 export type LibraryBatchBorrowResult = components["schemas"]["LibraryBatchBorrowResult"];
@@ -59,8 +63,12 @@ export function useLibraryTitleNameMutation() {
  * flow's member-card step): `/v1/library/lookup` is a fuzzy multi-match
  * search, so only a member whose number, NIS or username equals the code is
  * accepted (see `matchMemberByCode`); anything else is none or ambiguous.
+ * `fields` narrows which identifiers count (the self-service kiosk accepts
+ * only the printed member number).
  */
-export function useFindMemberByCodeMutation() {
+export function useFindMemberByCodeMutation(
+  fields: readonly MemberCodeField[] = ALL_MEMBER_CODE_FIELDS,
+) {
   const client = useApiClient();
   return useMutation({
     mutationFn: async (code: string) => {
@@ -68,7 +76,7 @@ export function useFindMemberByCodeMutation() {
         params: { query: { q: code.trim() } },
       });
       const members = result.data.flatMap((entry) => (entry.member ? [entry.member] : []));
-      return matchMemberByCode(members, code);
+      return matchMemberByCode(members, code, fields);
     },
   });
 }

@@ -443,6 +443,7 @@ export type MessageKey =
   | "validation.tenantQueryMin"
   | "validation.usernameMax"
   | "validation.usernameOrEmailMax"
+  | "validation.usernameOrEmailRequired"
   | "validation.usernameRequired";
 
 export const MESSAGE_KEYS: readonly MessageKey[] = [
@@ -888,5 +889,6 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "validation.tenantQueryMin",
   "validation.usernameMax",
   "validation.usernameOrEmailMax",
+  "validation.usernameOrEmailRequired",
   "validation.usernameRequired",
 ];

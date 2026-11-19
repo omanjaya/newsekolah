@@ -290,6 +290,7 @@
           "manualLabel": "Kode",
           "manualPlaceholder": "Ketik atau tempel kode",
           "submit": "Kirim",
+          "manualRequired": "Ketik atau tempel kode lebih dulu.",
           "fieldSubmit": "Catat",
           "camera": "Pindai dengan kamera",
           "cameraStart": "Nyalakan kamera",

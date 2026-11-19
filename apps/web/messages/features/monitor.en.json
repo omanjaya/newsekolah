@@ -39,5 +39,7 @@
   "gateTitle": "Connect this display",
   "gateBody": "This screen shows attendance for every class in session and refreshes on its own. Enter the display token once for this device.",
   "countsLabel": "Student attendance today",
-  "sessionsTitle": "Classes in session"
+  "sessionsTitle": "Classes in session",
+  "currentPeriod": "{name}, {start} to {end}",
+  "noScheduleTitle": "No lesson right now"
 }

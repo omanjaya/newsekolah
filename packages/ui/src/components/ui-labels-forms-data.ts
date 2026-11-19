@@ -68,6 +68,8 @@ export interface FormsDataUiLabels {
   scannerManualLabel: string;
   scannerManualPlaceholder: string;
   scannerSubmit: string;
+  /** Under the typed fallback when it is sent empty. */
+  scannerManualRequired: string;
   /** `BarcodeScannerField`'s submit, a desk action: "Catat". */
   scannerFieldSubmit: string;
   scannerCamera: string;
@@ -148,6 +150,7 @@ export const DEFAULT_FORMS_DATA_UI_LABELS: FormsDataUiLabels = {
   scannerManualLabel: "Kode",
   scannerManualPlaceholder: "Ketik atau tempel kode",
   scannerSubmit: "Kirim",
+  scannerManualRequired: "Ketik atau tempel kode lebih dulu.",
   scannerFieldSubmit: "Catat",
   scannerCamera: "Pindai dengan kamera",
   scannerCameraStart: "Nyalakan kamera",

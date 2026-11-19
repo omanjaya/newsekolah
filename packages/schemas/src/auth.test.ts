@@ -95,11 +95,11 @@ describe("forgotPasswordSchema", () => {
     expect(forgotPasswordSchema.safeParse({ username_or_email: "guru01" }).success).toBe(true);
   });
 
-  it("rejects an empty value with an i18n key", () => {
+  it("rejects an empty value with a message naming both accepted forms", () => {
     const result = forgotPasswordSchema.safeParse({ username_or_email: "" });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe("validation.usernameRequired");
+      expect(result.error.issues[0]?.message).toBe("validation.usernameOrEmailRequired");
     }
   });
 });

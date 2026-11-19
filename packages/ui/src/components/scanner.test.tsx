@@ -76,6 +76,78 @@ describe("Scanner", () => {
     expect(screen.getByLabelText("Kode")).toHaveValue("");
   });
 
+  it("keeps the manual send button enabled and says what is missing when it is empty", async () => {
+    const onScan = vi.fn();
+    render(<Scanner onScan={onScan} />);
+    const send = screen.getByRole("button", { name: "Kirim" });
+    expect(send).toBeEnabled();
+    await userEvent.click(send);
+    const field = screen.getByLabelText("Kode");
+    expect(field).toHaveAttribute("aria-invalid", "true");
+    expect(field).toHaveAccessibleDescription("Ketik atau tempel kode lebih dulu.");
+    await waitFor(() => {
+      expect(field).toHaveFocus();
+    });
+    expect(onScan).not.toHaveBeenCalled();
+  });
+
+  it("clears the missing-code message once a code is typed and sent", async () => {
+    const onScan = vi.fn();
+    render(<Scanner onScan={onScan} />);
+    await userEvent.click(screen.getByRole("button", { name: "Kirim" }));
+    const person = userEvent.setup({ delay: 60 });
+    await person.type(screen.getByLabelText("Kode"), "K7F2QD");
+    expect(screen.queryByText("Ketik atau tempel kode lebih dulu.")).not.toBeInTheDocument();
+    await person.click(screen.getByRole("button", { name: "Kirim" }));
+    await waitFor(() => {
+      expect(onScan).toHaveBeenCalledTimes(1);
+    });
+    // The field empties after a send; that is not flagged as a new mistake.
+    expect(screen.getByLabelText("Kode")).toHaveValue("");
+    expect(screen.queryByText("Ketik atau tempel kode lebih dulu.")).not.toBeInTheDocument();
+  });
+
+  it("clears the missing-code message when a hardware scanner sends a code", async () => {
+    const onScan = vi.fn();
+    render(<Scanner onScan={onScan} />);
+    await userEvent.click(screen.getByRole("button", { name: "Kirim" }));
+    expect(screen.getByText("Ketik atau tempel kode lebih dulu.")).toBeInTheDocument();
+    // userEvent's default typing is scanner speed: the whole code in a few ms.
+    await userEvent.type(screen.getByLabelText("Kode"), "sion:gate:abc{Enter}");
+    await waitFor(() => {
+      expect(onScan).toHaveBeenCalledWith(expect.objectContaining({ source: "scanner" }));
+    });
+    expect(screen.getByLabelText("Kode")).toHaveValue("");
+    expect(screen.queryByText("Ketik atau tempel kode lebih dulu.")).not.toBeInTheDocument();
+  });
+
+  it("clears the missing-code message when the camera reads a code", async () => {
+    const codes = ["A"];
+    class FakeDetector {
+      detect() {
+        const next = codes.shift();
+        return Promise.resolve(next ? [{ rawValue: next }] : []);
+      }
+    }
+    Object.defineProperty(window, "BarcodeDetector", { configurable: true, value: FakeDetector });
+    HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+    installCamera(() => Promise.resolve({ getTracks: () => [{ stop: vi.fn() }] }));
+    const onScan = vi.fn().mockResolvedValue(true);
+    render(<Scanner onScan={onScan} manualEntry="open" autoStart={false} />);
+    await userEvent.click(screen.getByRole("button", { name: "Kirim" }));
+    expect(screen.getByText("Ketik atau tempel kode lebih dulu.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Nyalakan kamera" }));
+    await waitFor(() => {
+      expect(onScan).toHaveBeenCalledWith(expect.objectContaining({ code: "A", source: "camera" }));
+    });
+    expect(screen.queryByText("Ketik atau tempel kode lebih dulu.")).not.toBeInTheDocument();
+  });
+
+  it("disables the manual send button only while the scanner is busy", () => {
+    render(<Scanner onScan={vi.fn()} disabled />);
+    expect(screen.getByRole("button", { name: "Kirim" })).toBeDisabled();
+  });
+
   it("reports a hardware scan into the focused manual field once", async () => {
     const onScan = vi.fn();
     render(<Scanner onScan={onScan} />);
