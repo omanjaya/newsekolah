@@ -9,6 +9,7 @@ import { API_URL } from "../../lib/env";
 
 export type MonitorSnapshot = components["schemas"]["MonitorSnapshot"];
 export type MonitorSessionCard = components["schemas"]["MonitorSessionCard"];
+export type MonitorPeriod = components["schemas"]["MonitorPeriod"];
 export type PresenceSnapshot = components["schemas"]["PresenceSnapshot"];
 
 /** How often the fallback poll re-fetches the snapshot once the socket has dropped. */

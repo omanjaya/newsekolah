@@ -12,6 +12,7 @@ import {
   Field,
   IconCircle,
   Input,
+  PageHeader,
   SectionHeader,
   Skeleton,
   cn,
@@ -19,18 +20,19 @@ import {
   type StatusName,
 } from "@newsekolah/ui";
 import { MonitorSmartphone, RefreshCw, Users } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useIsSchoolAdmin } from "../../../lib/session/school-admin";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
   useMonitorPresenceQuery,
   useMonitorSnapshotQuery,
   useMonitorSocket,
   type MonitorConnectionMode,
+  type MonitorPeriod,
   type MonitorSessionCard,
 } from "../api";
 
@@ -202,6 +204,7 @@ function MonitorDisplay({
       (snapshot.error.status === 401 || snapshot.error.status === 403);
     return (
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-4 px-4 py-10">
+        <MonitorPageHeading />
         {tokenRefused ? (
           <Alert variant="warning" title={t("tokenInvalidTitle")}>
             {schoolAdmin ? t("tokenInvalidBodyAdmin") : t("tokenInvalidBody")}
@@ -221,12 +224,18 @@ function MonitorDisplay({
     ...CODE_ORDER.filter((code) => code in counts),
     ...Object.keys(counts).filter((code) => !CODE_ORDER.includes(code)),
   ];
-  const sessions = [...(snapshot.data?.sessions ?? [])].sort(
-    (a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status),
-  );
+  // A class with no lesson right now is not "in session": it gets its own
+  // quiet list, so before and after school the board says nothing runs.
+  const allSessions = snapshot.data?.sessions ?? [];
+  const sessions = allSessions
+    .filter((session) => session.status !== "no_schedule")
+    .sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
+  const unscheduled = allSessions.filter((session) => session.status === "no_schedule");
+  const currentPeriod = snapshot.data?.current_period;
 
   return (
     <div className="flex flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
+      <MonitorPageHeading />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-body text-fg-muted">
           <ConnectionIndicator mode={mode} />
@@ -292,7 +301,11 @@ function MonitorDisplay({
             />
           ) : (
             <section className="flex flex-col gap-3" aria-labelledby="monitor-sessions-title">
-              <SectionHeader titleId="monitor-sessions-title" title={t("sessionsTitle")} />
+              <SectionHeader
+                titleId="monitor-sessions-title"
+                title={t("sessionsTitle")}
+                action={currentPeriod && <CurrentPeriod period={currentPeriod} />}
+              />
               <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {sessions.map((session, index) => (
                   <SessionCard
@@ -303,9 +316,61 @@ function MonitorDisplay({
               </ul>
             </section>
           )}
+
+          {unscheduled.length > 0 && (
+            <section className="flex flex-col gap-3" aria-labelledby="monitor-unscheduled-title">
+              <SectionHeader
+                titleId="monitor-unscheduled-title"
+                title={t("noScheduleTitle")}
+                count={unscheduled.length}
+              />
+              <ul className="flex flex-wrap gap-2">
+                {unscheduled.map((session, index) => (
+                  <li
+                    key={`${session.class_name}-${index}`}
+                    className="rounded-md border border-border bg-surface px-3 py-1.5 text-heading text-fg-muted"
+                  >
+                    {session.class_name}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * The page heading for heading navigation. The kiosk frame already shows
+ * the screen's name (as a paragraph beside the school's), so it is only
+ * read, not shown twice.
+ */
+function MonitorPageHeading(): ReactElement {
+  const t = useTranslations("app.monitor");
+  return <PageHeader title={t("navLabel")} compactTitle={false} className="sr-only" />;
+}
+
+/** The lesson period the board is showing, in the school's time zone. */
+function CurrentPeriod({ period }: { period: MonitorPeriod }): ReactElement {
+  const t = useTranslations("app.monitor");
+  const format = useFormatter();
+  const { me } = useSession();
+  const clock = (instant: string) =>
+    format.dateTime(new Date(instant), {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: me?.tenant.timezone,
+    });
+  return (
+    <span className="text-heading text-fg-muted tabular-nums">
+      {t("currentPeriod", {
+        name: period.name,
+        start: clock(period.starts_at),
+        end: clock(period.ends_at),
+      })}
+    </span>
   );
 }
 

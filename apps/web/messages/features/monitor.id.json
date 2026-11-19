@@ -39,5 +39,7 @@
   "gateTitle": "Hubungkan layar monitor",
   "gateBody": "Layar ini menampilkan presensi setiap kelas yang sedang belajar dan diperbarui sendiri. Masukkan token tampilan sekali untuk perangkat ini.",
   "countsLabel": "Presensi siswa hari ini",
-  "sessionsTitle": "Kelas yang sedang belajar"
+  "sessionsTitle": "Kelas yang sedang belajar",
+  "currentPeriod": "{name}, pukul {start} sampai {end}",
+  "noScheduleTitle": "Tanpa jadwal saat ini"
 }
