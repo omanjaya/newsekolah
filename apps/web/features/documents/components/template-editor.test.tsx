@@ -164,6 +164,22 @@ it("shows the create button on a new template before anything is typed", async (
   });
 });
 
+// docs/07-ui-ux.md, Form: an incomplete submit marks every missing field
+// and focuses the first one.
+it("marks the missing name and body on an empty create and focuses the name", async () => {
+  const user = userEvent.setup();
+  render(<TemplateEditorView />);
+  await user.click(screen.getByRole("button", { name: "create" }));
+
+  const name = screen.getByRole("textbox", { name: /nameLabel/ });
+  const body = screen.getByRole("textbox", { name: /bodyLabel/ });
+  expect(name).toHaveAttribute("aria-invalid", "true");
+  expect(body).toHaveAttribute("aria-invalid", "true");
+  expect(screen.getByText("nameRequired")).toBeInTheDocument();
+  expect(screen.getByText("bodyRequired")).toBeInTheDocument();
+  expect(name).toHaveFocus();
+});
+
 it("keeps the format toolbar on one sideways-scrolling row on a phone", () => {
   render(<TemplateEditorView templateId="t1" />);
   const toolbar = screen.getByRole("toolbar", { name: "toolbarLabel" });
