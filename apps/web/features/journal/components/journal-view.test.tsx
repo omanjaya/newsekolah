@@ -128,7 +128,7 @@ it("passes the chosen date range to the query and writes it to the URL state", a
   expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-09-30");
 });
 
-it("sums up the week's journals in the header from the backlog's own data", () => {
+it("leaves the week's count out of the header, so the area's tab strip keeps its place", () => {
   todayData.mockReturnValue({
     loading: false,
     isError: false,
@@ -151,7 +151,8 @@ it("sums up the week's journals in the header from the backlog's own data", () =
   query.mockReturnValue({ data: { total: 0, data: [] }, isLoading: false });
   render(<JournalView />);
 
-  expect(screen.getByText('weekSummary:{"count":1}')).toBeInTheDocument();
+  // The backlog card (mocked here) carries it instead.
+  expect(screen.queryByText(/weekSummary/)).not.toBeInTheDocument();
 });
 
 it("offers both downloads as page actions, not as a table tool", () => {

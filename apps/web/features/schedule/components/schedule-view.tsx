@@ -266,7 +266,7 @@ export function ScheduleView(): ReactElement {
     }
   }
 
-  const { primaryAction, primaryActionCompact, secondaryActions, description } = useScheduleHeader({
+  const { primaryAction, primaryActionCompact, secondaryActions, context } = useScheduleHeader({
     canManage,
     isStudent,
     className: classMap.get(effectiveClassId)?.name,
@@ -288,26 +288,30 @@ export function ScheduleView(): ReactElement {
       // The week grid fills the screen on desktop and scrolls under its
       // day headings; a phone scrolls the agenda as a page.
       variant="fit"
-      description={description}
       primaryAction={primaryAction}
       primaryActionCompact={primaryActionCompact}
       secondaryActions={secondaryActions}
+      // The year and the period in session sit in the toolbar, not under
+      // the title, so the header keeps the height of its sibling tabs.
       toolbar={
-        <ScheduleScopeBar
-          mode={mode}
-          onModeChange={setMode}
-          isStudent={isStudent}
-          ownTimetableOnly={isTeacher && !canViewAll}
-          canViewAll={canViewAll}
-          activeDays={activeDays}
-          dayFilter={dayFilter}
-          onDayFilterChange={setDayFilter}
-          classOptions={classOptions}
-          classId={effectiveClassId}
-          onClassChange={setClassId}
-          teacherId={effectiveTeacherId}
-          onTeacherChange={setTeacherId}
-        />
+        <>
+          <ScheduleScopeBar
+            mode={mode}
+            onModeChange={setMode}
+            isStudent={isStudent}
+            ownTimetableOnly={isTeacher && !canViewAll}
+            canViewAll={canViewAll}
+            activeDays={activeDays}
+            dayFilter={dayFilter}
+            onDayFilterChange={setDayFilter}
+            classOptions={classOptions}
+            classId={effectiveClassId}
+            onClassChange={setClassId}
+            teacherId={effectiveTeacherId}
+            onTeacherChange={setTeacherId}
+          />
+          {context}
+        </>
       }
     >
       <CopyBanner

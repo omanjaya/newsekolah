@@ -20,7 +20,7 @@ interface Option {
  * The view switch and the picker for whichever timetable is shown, as the
  * page's toolbar: the same row for every role, so the timetable below does
  * not move between readers. It offers only what the reader may open: a
- * student has no switch (their class is named in the page description), a
+ * student has no switch (the toolbar names their class instead), a
  * teacher without school-wide access gets their own timetable instead of a
  * teacher picker, and the whole-school day view is left out for anyone the
  * server would refuse it to.
@@ -90,7 +90,7 @@ export function ScheduleScopeBar({
     ) : null;
 
   return (
-    <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
       <SegmentedControl<ScheduleMode>
         aria-label={t("viewLabel")}
         value={mode}

@@ -11,13 +11,13 @@ import { usePeriodTodayQuery } from "../../academic/api-enrollment";
 import { formatPeriodTime } from "../period-span";
 
 /**
- * The period in session right now, as one pill in the header instead of
+ * The period in session right now, as one pill in the toolbar instead of
  * the old full-width bordered strip (`TodayPeriodBanner`, still used on
- * its own by the academic screens): the schedule header already carries
- * the view switch, the picker, the year, and the manage actions, so the
+ * its own by the academic screens): the schedule toolbar already carries
+ * the view switch, the picker and the year, so the
  * "where am I now" answer joins them as a badge rather than its own row.
  * Renders nothing outside school hours or while the query has not
- * resolved, keeping the header uncluttered rather than announcing an
+ * resolved, keeping the toolbar uncluttered rather than announcing an
  * empty state every time the school day is over.
  */
 export function ScheduleCurrentPeriodPill(): ReactElement | null {

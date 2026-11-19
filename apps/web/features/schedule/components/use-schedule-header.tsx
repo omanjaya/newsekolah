@@ -17,8 +17,11 @@ import { ScheduleCurrentPeriodPill } from "./schedule-current-period-pill";
  * The timetable page's header, per reader: the one main action (add a
  * lesson for a timetable manager, scan into class for a student), the
  * bulk operations and any substitution requests waiting on this teacher as
- * secondary actions, and one description line with the student's class,
- * the school year and the period in session now.
+ * secondary actions. Also the page's context (the student's class, the
+ * school year and the period in session now), which the page shows in its
+ * toolbar rather than as the header's description: the calendar and the
+ * substitutions tabs have none, so a description would move the area's
+ * tab strip between tabs.
  */
 export function useScheduleHeader({
   canManage,
@@ -29,7 +32,7 @@ export function useScheduleHeader({
 }: {
   canManage: boolean;
   isStudent: boolean;
-  /** The student's class, named in the description. */
+  /** The student's class, named in the context line. */
   className?: string;
   yearLabel: string;
   onAdd: () => void;
@@ -38,7 +41,8 @@ export function useScheduleHeader({
   /** The manager's add action as a round button beside the title on a phone. */
   primaryActionCompact: PageHeaderProps["primaryActionCompact"];
   secondaryActions: PageHeaderAction[];
-  description: ReactNode;
+  /** The class, year and current period, for the page's toolbar. */
+  context: ReactNode;
 } {
   const t = useTranslations("app.schedule");
   const tWorkspace = useTranslations("app.academic.workspace");
@@ -77,12 +81,15 @@ export function useScheduleHeader({
     ? { icon: <Plus />, label: t("addBlock"), onSelect: onAdd }
     : undefined;
 
-  const description = (
-    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+  const context = (
+    <p
+      className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-fg-muted sm:ml-auto"
+      data-testid="schedule-context"
+    >
       <span>{[isStudent ? className : undefined, yearLabel].filter(Boolean).join(" · ")}</span>
       <ScheduleCurrentPeriodPill />
-    </span>
+    </p>
   );
 
-  return { primaryAction, primaryActionCompact, secondaryActions, description };
+  return { primaryAction, primaryActionCompact, secondaryActions, context };
 }

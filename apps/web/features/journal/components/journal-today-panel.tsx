@@ -43,6 +43,7 @@ import {
   shiftDateISO,
   type LessonDayGroup,
 } from "../lib/build-lesson-days";
+import { computeJournalWeekStats } from "../lib/journal-week-stats";
 
 import { JournalForm } from "./journal-form";
 
@@ -196,6 +197,7 @@ export function JournalTodayPanel({ className }: { className?: string }): ReactE
         .filter((lesson) => !lesson.filled)
         .map((lesson) => ({ ...lesson, date: group.date })),
     );
+  const weekStats = computeJournalWeekStats(data.groups, data.today);
 
   function dayLabel(date: string): string {
     if (date === data.today) return t("todayLabel");
@@ -216,6 +218,11 @@ export function JournalTodayPanel({ className }: { className?: string }): ReactE
           <CountBadge count={missing.length} tone="accent" />
         </CardTitle>
         <CardDescription>{missing.length > 0 ? t("subtitle") : t("allWritten")}</CardDescription>
+        {/* The week's count lives with the week's lessons, not in the page
+            header, so the area's tab strip does not move between tabs. */}
+        <p className="text-caption text-fg-muted" data-testid="journal-week-summary">
+          {tApp("journal.weekSummary", { count: weekStats.filledThisWeek })}
+        </p>
       </CardHeader>
       {missing.length > 0 ? (
         <div className="min-h-0 overflow-y-auto">

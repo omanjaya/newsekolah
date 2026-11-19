@@ -147,6 +147,17 @@ it("says so calmly once every recent lesson has its journal", () => {
   expect(screen.queryByRole("button", { name: "writeFor" })).not.toBeInTheDocument();
 });
 
+it("counts the week's journals in the backlog card, which the page header no longer does", () => {
+  schedulesData.value = [
+    { schedule_ids: ["s2"], class_id: "class-2", subject_id: "subject-2", day_of_week: WEDNESDAY },
+  ];
+  render(<JournalTodayPanel />);
+
+  expect(
+    within(screen.getByTestId("journal-backlog")).getByTestId("journal-week-summary"),
+  ).toHaveTextContent("journal.weekSummary");
+});
+
 it("does not request schedules for a viewer without schedule access", () => {
   canViewSchedules.value = false;
   const { container } = render(<JournalTodayPanel />);
