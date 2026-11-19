@@ -10,6 +10,10 @@ import {
   DataList,
   DataListItem,
   DialogFooter,
+  Disclosure,
+  DisclosureContent,
+  DisclosureIndicator,
+  DisclosureTrigger,
   Field,
   FormError,
   FormSection,
@@ -24,13 +28,12 @@ import {
 import { ScanLine } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { usePeriodsQuery } from "../../reference/api";
-import { clockRange } from "../../schedule/clock-label";
 import {
   type ExitPermitDetail as ExitPermitDetailData,
   encodeScanPayload,
@@ -40,6 +43,11 @@ import {
   useIssueGateTokenMutation,
   useScanExitPermitStageMutation,
 } from "../api";
+import {
+  endAfterStartChange,
+  endPeriodOptions,
+  lessonPeriodOptions,
+} from "../lib/lesson-period-options";
 
 import { StageScanDialog } from "./stage-scan-dialog";
 import { WorkflowStepper, WorkflowSteps } from "./workflow-stepper";
@@ -57,11 +65,7 @@ export function CreateForm({
   const apiErrorMessage = useApiErrorMessage();
   const periods = usePeriodsQuery();
   const create = useCreateExitPermitMutation();
-  const lessons = (periods.data?.data ?? []).filter((p) => !p.is_break);
-  const options = lessons.map((p) => ({
-    value: p.id,
-    label: `${p.name} (${clockRange(p.starts_at, p.ends_at, locale)})`,
-  }));
+  const options = lessonPeriodOptions(periods.data?.data ?? [], locale);
   const [destination, setDestination] = useState("");
   const [startId, setStartId] = useState("");
   const [endId, setEndId] = useState("");
@@ -118,14 +122,14 @@ export function CreateForm({
             value={startId}
             onValueChange={(v) => {
               setStartId(v);
-              if (!endId) setEndId(v);
+              setEndId(endAfterStartChange(options, v, endId));
             }}
             placeholder={t("pick")}
           />
         </Field>
         <Field label={t("to")} error={attempted && !endId ? required : undefined} required>
           <Select
-            options={options}
+            options={endPeriodOptions(options, startId)}
             value={endId}
             onValueChange={setEndId}
             placeholder={t("pick")}
@@ -191,6 +195,16 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
   const periodRange = usePeriodRange(data);
   const [scanning, setScanning] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const gateQrRef = useRef<HTMLDivElement>(null);
+  const gateToken = gate.data?.token;
+  // At the gate the QR is all the student needs: bring it into view (above
+  // the bottom tab bar on a phone) as soon as it arrives.
+  useEffect(() => {
+    if (!gateToken) return;
+    // A smooth scroll asked for in JS ignores the CSS reduced-motion rule.
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    gateQrRef.current?.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+  }, [gateToken]);
 
   if (isLoading) return <Skeleton className="h-64 w-full rounded-xl" />;
   if (error || !data) return <QueryError retry={refetch} error={error} />;
@@ -213,6 +227,7 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
   }
 
   const approved = inst.status === "approved";
+  const timeZone = me?.tenant.timezone;
   const scanStage = inst.status === "in_progress" && stage?.verification === "qr_scan";
   return (
     <HeroCard
@@ -266,31 +281,54 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
         ) : undefined
       }
     >
-      <Card padding="sm" className="mt-3 text-fg">
-        <WorkflowSteps instance={inst} />
-        {inst.status === "in_progress" && stage?.verification === "manual" && (
-          <p className="text-body-sm text-fg-muted">{t("waitManual", { stage: stage.label })}</p>
-        )}
-      </Card>
       {approved && gate.data && (
-        <QrPanel
-          className="mt-3"
-          size="lg"
-          label={t("gateQrLabel")}
-          payload={encodeScanPayload("gate", id, gate.data.token)}
-          // The gate scanner needs the whole payload (permit and token), so
-          // a typed token could never pass; the guard records a student
-          // without a working QR by hand instead.
-          code=""
-          expiresAt={gate.data.expires_at}
-          onRenew={() => {
-            gate.mutate(id, { onError: fail });
-          }}
-          renewing={gate.isPending}
-          expiredLabel={tQr("expired")}
-          expiresInLabel={(seconds) => tQr("expiresIn", { seconds })}
-          renewLabel={tQr("renew")}
-        />
+        <div ref={gateQrRef} className="mt-3 scroll-mt-4">
+          <QrPanel
+            size="lg"
+            label={t("gateQrLabel")}
+            payload={encodeScanPayload("gate", id, gate.data.token)}
+            // The gate scanner needs the whole payload (permit and token), so
+            // a typed token could never pass; the guard records a student
+            // without a working QR by hand instead.
+            code=""
+            expiresAt={gate.data.expires_at}
+            onRenew={() => {
+              gate.mutate(id, { onError: fail });
+            }}
+            renewing={gate.isPending}
+            expiredLabel={tQr("expired")}
+            expiresInLabel={(seconds) => tQr("expiresIn", { seconds })}
+            // The gate pass lasts until the end of the school day: it reads
+            // as the time it stops working, on the school's clock.
+            expiryDisplay="until"
+            validUntilLabel={(expiresAt) =>
+              tQr("validUntil", { time: formatTime(expiresAt, { locale, timeZone }) })
+            }
+            renewLabel={tQr("renew")}
+          />
+        </div>
+      )}
+      {approved ? (
+        // Every stage is done: one line that opens the stages, so the gate
+        // QR stays near the top of a phone screen.
+        <Card padding="sm" className="mt-3 text-fg">
+          <Disclosure>
+            <DisclosureTrigger className="flex min-h-11 w-full items-center gap-2 rounded-md text-label text-fg">
+              <DisclosureIndicator />
+              {t("stagesApproved", { count: inst.stages.length })}
+            </DisclosureTrigger>
+            <DisclosureContent className="pt-3">
+              <WorkflowSteps instance={inst} />
+            </DisclosureContent>
+          </Disclosure>
+        </Card>
+      ) : (
+        <Card padding="sm" className="mt-3 text-fg">
+          <WorkflowSteps instance={inst} />
+          {inst.status === "in_progress" && stage?.verification === "manual" && (
+            <p className="text-body-sm text-fg-muted">{t("waitManual", { stage: stage.label })}</p>
+          )}
+        </Card>
       )}
       {scanStage && (
         <StageScanDialog

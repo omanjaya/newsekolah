@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
   Checkbox,
+  DialogClose,
   DialogFooter,
   Field,
   FormActions,
@@ -25,7 +26,7 @@ import {
   useDebouncedCallback,
   useToast,
 } from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
@@ -33,6 +34,11 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { usePeriodsQuery } from "../../reference/api";
 import { useDirectoryNames, useDirectorySearch } from "../../reference/directory-names";
 import { useRecordExitPermitByStaffMutation, useRecordLateArrivalByStaffMutation } from "../api";
+import {
+  endAfterStartChange,
+  endPeriodOptions,
+  lessonPeriodOptions,
+} from "../lib/lesson-period-options";
 
 type Kind = "exit" | "late";
 
@@ -53,7 +59,8 @@ export interface ManualRecord {
  * duty teacher (not the student) as who recorded it.
  *
  * `layout="dialog"` drops the card and its heading (the dialog's own title
- * and description say them) and ends the form with the dialog's footer.
+ * and description say them) and ends the form with the dialog's footer:
+ * "Batal", which closes the dialog, beside the primary action.
  */
 export function DutyManualRecordPanel({
   onRecorded,
@@ -63,6 +70,7 @@ export function DutyManualRecordPanel({
   layout?: "card" | "dialog";
 } = {}): ReactElement {
   const t = useTranslations("app.duty.manualForm");
+  const locale = useLocale();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
@@ -95,7 +103,7 @@ export function DutyManualRecordPanel({
   const studentMap = useDirectoryNames([studentId]);
   const selectedStudent = studentId ? studentMap.get(studentId) : undefined;
 
-  const periodOptions = (periods.data?.data ?? []).map((p) => ({ value: p.id, label: p.name }));
+  const periodOptions = lessonPeriodOptions(periods.data?.data ?? [], locale);
 
   function resetAfterSuccess() {
     setStudentId("");
@@ -274,7 +282,10 @@ export function DutyManualRecordPanel({
             <Select
               options={periodOptions}
               value={startPeriodId}
-              onValueChange={setStartPeriodId}
+              onValueChange={(v) => {
+                setStartPeriodId(v);
+                setEndPeriodId(endAfterStartChange(periodOptions, v, endPeriodId));
+              }}
               placeholder={t("selectPeriod")}
             />
           </Field>
@@ -284,7 +295,7 @@ export function DutyManualRecordPanel({
             error={attempted && !endPeriodId ? required : undefined}
           >
             <Select
-              options={periodOptions}
+              options={endPeriodOptions(periodOptions, startPeriodId)}
               value={endPeriodId}
               onValueChange={setEndPeriodId}
               placeholder={t("selectPeriod")}
@@ -321,7 +332,14 @@ export function DutyManualRecordPanel({
 
       <p className="text-caption text-fg-muted">{t("recordedHint")}</p>
       {layout === "dialog" ? (
-        <DialogFooter>{submitButton}</DialogFooter>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="secondary">
+              {t("cancel")}
+            </Button>
+          </DialogClose>
+          {submitButton}
+        </DialogFooter>
       ) : (
         <FormActions>{submitButton}</FormActions>
       )}

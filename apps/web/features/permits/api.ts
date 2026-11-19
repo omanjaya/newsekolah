@@ -24,6 +24,8 @@ export const LEAVE_EVIDENCE_MAX_LONG_EDGE = 1600;
 
 export type WorkflowInstance = components["schemas"]["WorkflowInstance"];
 export type ExitPermitDetail = components["schemas"]["ExitPermitDetail"];
+/** A row of the student's own exit permit history: the instance, where to and when they left. */
+export type MyExitPermit = components["schemas"]["MyExitPermit"];
 export type ExitPermitSummary = components["schemas"]["ExitPermitSummary"];
 export type LateArrivalDetail = components["schemas"]["LateArrivalDetail"];
 export type LateArrivalSummary = components["schemas"]["LateArrivalSummary"];

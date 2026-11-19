@@ -94,6 +94,8 @@ export interface FormsDataUiLabels {
   qrCode: string;
   qrExpired: string;
   qrExpiresIn: (seconds: number) => string;
+  /** Under a long-lived code, given its expiry already formatted ("15.59"). */
+  qrValidUntil: (time: string) => string;
   qrRenew: string;
   /** Lead-in above the typed fallback code under a QR. */
   qrManualCode: string;
@@ -171,6 +173,7 @@ export const DEFAULT_FORMS_DATA_UI_LABELS: FormsDataUiLabels = {
   qrCode: "Kode QR",
   qrExpired: "Kode kedaluwarsa",
   qrExpiresIn: (seconds) => `Berlaku ${seconds} detik lagi`,
+  qrValidUntil: (time) => `Berlaku sampai pukul ${time}`,
   qrRenew: "Buat kode baru",
   qrManualCode: "Tidak bisa memindai? Pakai kode ini",
 };

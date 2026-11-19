@@ -1,16 +1,35 @@
 import type * as UiModule from "@newsekolah/ui";
+import { Dialog, DialogContent } from "@newsekolah/ui";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ search: vi.fn(), recordLate: vi.fn() }));
 
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("next-intl", () => ({
+  useLocale: () => "id",
+  useTranslations: () => (key: string) => key,
+}));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 vi.mock("../../reference/api", () => ({
-  usePeriodsQuery: () => ({ data: { data: [] }, isLoading: false }),
+  usePeriodsQuery: () => ({
+    data: {
+      data: [
+        { id: "p1", name: "Jam 1", starts_at: "07:00:00", ends_at: "07:45:00", is_break: false },
+        {
+          id: "b1",
+          name: "Istirahat 1",
+          starts_at: "07:45:00",
+          ends_at: "08:00:00",
+          is_break: true,
+        },
+        { id: "p2", name: "Jam 2", starts_at: "08:00:00", ends_at: "08:45:00", is_break: false },
+      ],
+    },
+    isLoading: false,
+  }),
 }));
 vi.mock("../../reference/directory-names", async () => {
   const { directoryNamesStub } = await import("../../../test/directory-names-stub");
@@ -81,5 +100,43 @@ describe("DutyManualRecordPanel student search", () => {
     await user.click(screen.getByRole("button", { name: /Sari/ }));
 
     expect(screen.getAllByText("Sari").length).toBeGreaterThan(0);
+  });
+});
+
+describe("DutyManualRecordPanel exit periods", () => {
+  it("offers lessons with their times, no breaks, and ends no earlier than the start", async () => {
+    // Radix Select reads pointer-capture and scroll APIs jsdom does not implement.
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.releasePointerCapture = () => undefined;
+    Element.prototype.scrollIntoView = () => undefined;
+    const user = userEvent.setup();
+    render(<DutyManualRecordPanel />);
+
+    await user.click(screen.getByRole("combobox", { name: /startPeriod/ }));
+    expect(screen.getByRole("option", { name: "Jam 1 (07.00 – 07.45)" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /Istirahat/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("option", { name: "Jam 2 (08.00 – 08.45)" }));
+
+    await user.click(screen.getByRole("combobox", { name: /endPeriod/ }));
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
+      "Jam 2 (08.00 – 08.45)",
+    ]);
+  });
+});
+
+describe("DutyManualRecordPanel in a dialog", () => {
+  it("ends with Batal beside the primary action, which closes the dialog", async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    render(
+      <Dialog open onOpenChange={onOpenChange}>
+        <DialogContent title="title">
+          <DutyManualRecordPanel layout="dialog" />
+        </DialogContent>
+      </Dialog>,
+    );
+    expect(screen.getByRole("button", { name: "submit" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "cancel" }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 });

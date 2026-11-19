@@ -17,6 +17,7 @@ import {
   useToast,
 } from "@newsekolah/ui";
 import { Download, Upload } from "lucide-react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 import { useRef, useState } from "react";
@@ -70,11 +71,23 @@ export function LeaveRequestDetail({
 
   if (isLoading) return <SkeletonDetail rows={4} />;
   if (error instanceof ApiError && (error.status === 404 || error.status === 403)) {
+    // The full page offers a way on: a reviewer to the leave queue, anyone
+    // else to their own requests. The inbox dialog just closes.
+    const reviewer = canReview || canIssue;
     return (
       <EmptyState
         icon={<domainIcons.leave aria-hidden="true" />}
         title={t("notFoundTitle")}
         description={t("notFoundBody")}
+        action={
+          layout === "page" ? (
+            <Button asChild variant="secondary">
+              <Link href={reviewer ? "/inbox?type=leave" : "/leave-requests"}>
+                {reviewer ? t("issuerOpenInbox") : t("notFoundBackToMine")}
+              </Link>
+            </Button>
+          ) : undefined
+        }
       />
     );
   }

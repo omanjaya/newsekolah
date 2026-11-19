@@ -68,8 +68,36 @@ type InstanceWithDefinition struct {
 	Definition domain.Definition
 }
 
-func (s *Service) ListMyExitPermits(ctx context.Context, tenantID, studentUserID uuid.UUID, limit, offset int) ([]InstanceWithDefinition, error) {
-	return s.listInstancesWithDefinitions(ctx, tenantID, domain.KindExitPermit, studentUserID, limit, offset)
+// MyExitPermit is one row of a student's exit permit history: the
+// instance with its definition, and the permit itself (where to, and when
+// the student passed the gate).
+type MyExitPermit struct {
+	InstanceWithDefinition
+	Permit domain.ExitPermit
+}
+
+func (s *Service) ListMyExitPermits(ctx context.Context, tenantID, studentUserID uuid.UUID, limit, offset int) ([]MyExitPermit, error) {
+	items, err := s.listInstancesWithDefinitions(ctx, tenantID, domain.KindExitPermit, studentUserID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]uuid.UUID, len(items))
+	for i, it := range items {
+		ids[i] = it.Instance.ID
+	}
+	var permits map[uuid.UUID]domain.ExitPermit
+	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		permits, err = s.repo.ListExitPermitsByInstances(ctx, tenantID, ids)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]MyExitPermit, len(items))
+	for i, it := range items {
+		out[i] = MyExitPermit{InstanceWithDefinition: it, Permit: permits[it.Instance.ID]}
+	}
+	return out, nil
 }
 
 func (s *Service) listInstancesWithDefinitions(ctx context.Context, tenantID uuid.UUID, kind domain.Kind, subjectUserID uuid.UUID, limit, offset int) ([]InstanceWithDefinition, error) {

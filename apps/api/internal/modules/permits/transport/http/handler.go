@@ -123,9 +123,9 @@ func (h *PermitsHandler) ListMyExitPermits(ctx context.Context, request api.List
 	if err != nil {
 		return nil, mapError(err)
 	}
-	data := make([]api.WorkflowInstance, len(items))
+	data := make([]api.MyExitPermit, len(items))
 	for i, it := range items {
-		data[i] = toAPIInstance(it.Instance, it.Definition, nil)
+		data[i] = toAPIMyExitPermit(it)
 	}
 	return api.ListMyExitPermits200JSONResponse{Data: data}, nil
 }

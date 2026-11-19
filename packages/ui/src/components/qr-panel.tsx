@@ -22,6 +22,21 @@ export interface QrPanelProps {
   expiredLabel?: string;
   /** Defaults to `UiLabels.qrExpiresIn`. */
   expiresInLabel?: (secondsLeft: number) => string;
+  /**
+   * "countdown" (default) a ring and a seconds count, for a code that lives
+   * seconds; "until" the time it stops working and no ring, for a code the
+   * server issued for hours (a gate pass that lasts the school day), which
+   * offers a new code only once it has run out. Chosen by the caller, who
+   * knows what the server issued, never guessed from the device clock.
+   */
+  expiryDisplay?: "countdown" | "until";
+  /**
+   * With `expiryDisplay="until"`, the line under the code, given the expiry
+   * instant: "Berlaku sampai pukul 15.59". Pass one that formats in the
+   * school's timezone; the default formats `UiLabels.qrValidUntil` in the
+   * browser's.
+   */
+  validUntilLabel?: (expiresAt: string) => string;
   /** Defaults to `UiLabels.qrRenew`. */
   renewLabel?: string;
   /** The QR's accessible name, e.g. "Kode QR masuk kelas". Defaults to `UiLabels.qrCode`. */
@@ -133,6 +148,15 @@ function useAutoRenew({
 // eslint-disable-next-line no-restricted-syntax -- the QR tile is white in both themes
 const QR_TILE = "bg-white";
 
+/** "15.59" (id-ID) or "15:59" (en-GB), in the browser's timezone. */
+function clockTime(expiresAt: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(expiresAt));
+}
+
 /** Up to this many characters the fallback code is a human code, set large. */
 const SHORT_CODE_LENGTH = 12;
 
@@ -148,6 +172,8 @@ function Countdown({
   renewing,
   expiredLabel,
   expiresInLabel,
+  expiryDisplay = "countdown",
+  validUntilLabel,
   renewLabel,
   label,
   size = "md",
@@ -160,6 +186,7 @@ function Countdown({
   // `Countdown` every second would reconcile the whole QR subtree forever
   // for no visual change. The tick lives in `CountdownStatus` instead.
   const [expired, setExpired] = useState(() => remaining(expiresAt) <= 0);
+  const longLived = expiryDisplay === "until";
 
   const large = size === "lg";
   return (
@@ -195,6 +222,12 @@ function Countdown({
         large={large}
         expiredLabel={expiredLabel ?? labels.qrExpired}
         expiresInLabel={expiresInLabel ?? labels.qrExpiresIn}
+        validUntil={
+          longLived
+            ? (validUntilLabel?.(expiresAt) ??
+              labels.qrValidUntil(clockTime(expiresAt, labels.locale)))
+            : undefined
+        }
         onExpire={() => {
           setExpired(true);
           onExpire();
@@ -217,15 +250,17 @@ function Countdown({
           </code>
         </div>
       )}
-      <Button
-        variant={expired ? "primary" : "ghost"}
-        size="sm"
-        icon={<RotateCw />}
-        onClick={onRenew}
-        loading={renewing}
-      >
-        {renewLabel ?? labels.qrRenew}
-      </Button>
+      {(!longLived || expired) && (
+        <Button
+          variant={expired ? "primary" : "ghost"}
+          size="sm"
+          icon={<RotateCw />}
+          onClick={onRenew}
+          loading={renewing}
+        >
+          {renewLabel ?? labels.qrRenew}
+        </Button>
+      )}
     </div>
   );
 }
@@ -238,19 +273,22 @@ const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
  * does: it reports the expiry transition through `onExpire` (called once)
  * instead of lifting the ticking state. The ring steps once a second
  * rather than gliding, so nothing animates continuously on a screen that
- * stays open all day.
+ * stays open all day. With `validUntil` (a long-lived code) it shows that
+ * line and no ring, but still watches for the expiry.
  */
 function CountdownStatus({
   expiresAt,
   large,
   expiredLabel,
   expiresInLabel,
+  validUntil,
   onExpire,
 }: {
   expiresAt: string;
   large: boolean;
   expiredLabel: string;
   expiresInLabel: (secondsLeft: number) => string;
+  validUntil?: string;
   onExpire: () => void;
 }): ReactElement {
   const [secondsLeft, setSecondsLeft] = useState(() => remaining(expiresAt));
@@ -275,31 +313,33 @@ function CountdownStatus({
   const urgent = !expired && secondsLeft <= 10;
   return (
     <div className="flex items-center gap-2">
-      <svg
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-        className={cn("-rotate-90", large ? "size-6" : "size-5")}
-      >
-        <circle
-          cx="12"
-          cy="12"
-          r={RING_RADIUS}
-          fill="none"
-          strokeWidth="3"
-          className="stroke-line"
-        />
-        <circle
-          cx="12"
-          cy="12"
-          r={RING_RADIUS}
-          fill="none"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeDasharray={RING_LENGTH}
-          strokeDashoffset={RING_LENGTH * (1 - fraction)}
-          className={cn(urgent ? "stroke-warning" : "stroke-accent", expired && "opacity-0")}
-        />
-      </svg>
+      {validUntil === undefined && (
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          className={cn("-rotate-90", large ? "size-6" : "size-5")}
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r={RING_RADIUS}
+            fill="none"
+            strokeWidth="3"
+            className="stroke-line"
+          />
+          <circle
+            cx="12"
+            cy="12"
+            r={RING_RADIUS}
+            fill="none"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeDasharray={RING_LENGTH}
+            strokeDashoffset={RING_LENGTH * (1 - fraction)}
+            className={cn(urgent ? "stroke-warning" : "stroke-accent", expired && "opacity-0")}
+          />
+        </svg>
+      )}
       <p
         className={cn(
           "tabular-nums",
@@ -307,7 +347,7 @@ function CountdownStatus({
           expired ? "text-danger" : "text-fg-muted",
         )}
       >
-        {expired ? expiredLabel : expiresInLabel(secondsLeft)}
+        {expired ? expiredLabel : (validUntil ?? expiresInLabel(secondsLeft))}
       </p>
       {/* Announces the expiry once, not every second of the countdown. */}
       <span className="sr-only" aria-live="polite">

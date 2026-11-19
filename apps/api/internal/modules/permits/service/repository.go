@@ -43,6 +43,7 @@ type Repository interface {
 	// Exit permits.
 	CreateExitPermit(ctx context.Context, p domain.ExitPermit) (domain.ExitPermit, error)
 	GetExitPermit(ctx context.Context, tenantID, instanceID uuid.UUID) (domain.ExitPermit, bool, error)
+	ListExitPermitsByInstances(ctx context.Context, tenantID uuid.UUID, instanceIDs []uuid.UUID) (map[uuid.UUID]domain.ExitPermit, error)
 	MarkExitPermitIssued(ctx context.Context, tenantID, instanceID uuid.UUID, issuedAt time.Time) (domain.ExitPermit, error)
 	SetExitPermitGateToken(ctx context.Context, tenantID, instanceID, gateTokenID uuid.UUID) (domain.ExitPermit, error)
 	MarkExitPermitExited(ctx context.Context, tenantID, instanceID uuid.UUID, exitedAt time.Time, securityUserID uuid.UUID) (domain.ExitPermit, error)

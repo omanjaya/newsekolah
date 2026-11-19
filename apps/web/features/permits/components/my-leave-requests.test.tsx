@@ -73,6 +73,9 @@ describe("MyLeaveRequests", () => {
     const onCreate = vi.fn();
     renderMine(onCreate);
     expect(screen.getByText("emptyTitle")).toBeInTheDocument();
+    // The same glyph as leave everywhere else (domainIcons.leave), not a calendar.
+    expect(document.querySelector("svg.lucide-clipboard-list")).not.toBeNull();
+    expect(document.querySelector("svg.lucide-calendar-x2")).toBeNull();
     expect(screen.queryByTestId("leave-mine-tiles")).not.toBeInTheDocument();
     const repeat = screen.getByRole("button", { name: "submit" });
     // The header carries the primary; the empty list repeats it quietly.

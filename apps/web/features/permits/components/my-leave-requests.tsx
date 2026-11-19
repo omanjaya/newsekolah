@@ -16,8 +16,9 @@ import {
   SkeletonList,
   Stat,
   StatGrid,
+  domainIcons,
 } from "@newsekolah/ui";
-import { CalendarX2, FileText, HeartPulse, Landmark, Plus, Stamp } from "lucide-react";
+import { FileText, HeartPulse, Landmark, Plus, Stamp } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 import { useState } from "react";
@@ -86,7 +87,7 @@ export function MyLeaveRequests({
   } else if (items.length === 0) {
     body = (
       <EmptyState
-        icon={<CalendarX2 aria-hidden="true" />}
+        icon={<domainIcons.leave aria-hidden="true" />}
         title={t("emptyTitle")}
         description={t("emptyBody")}
         // The header carries the primary; the empty list repeats it quietly.

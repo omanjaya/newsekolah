@@ -1,7 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { WorkflowInstance } from "../api";
+import type { MyExitPermit } from "../api";
 
 import { ExitPermitsView } from "./exit-permits-view";
 
@@ -12,7 +12,7 @@ interface DeskApproval {
 }
 
 const mocks = vi.hoisted(() => ({
-  items: [] as WorkflowInstance[],
+  items: [] as MyExitPermit[],
   canSubmit: true,
   permissions: [] as string[],
   profileKind: "student",
@@ -21,7 +21,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, values?: Record<string, string>) =>
+    values?.time ? `${key} ${values.time}` : key,
 }));
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../components/query-error", () => ({
@@ -75,7 +76,11 @@ vi.mock("../../reference/directory-names", () => ({
 }));
 vi.mock("./review-inbox-banner", () => ({ ReviewInboxBanner: () => null }));
 
-function permit(id: string, status: WorkflowInstance["status"]): WorkflowInstance {
+function permit(
+  id: string,
+  status: MyExitPermit["status"],
+  extra: Partial<MyExitPermit> = {},
+): MyExitPermit {
   return {
     id,
     kind: "exit_permit",
@@ -84,6 +89,8 @@ function permit(id: string, status: WorkflowInstance["status"]): WorkflowInstanc
     stages: [],
     subject_user_id: "student-1",
     opened_at: "2026-11-18T02:00:00Z",
+    destination: "Puskesmas",
+    ...extra,
   };
 }
 
@@ -186,5 +193,26 @@ describe("ExitPermitsView for a student", () => {
     expect(screen.getByText("idleTitle")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "request" })).toBeInTheDocument();
     expect(screen.getByText("historyTitle")).toBeInTheDocument();
+  });
+});
+
+describe("ExitPermitsView history rows", () => {
+  it("names each past permit by where the student went, with the day and the gate time", () => {
+    mocks.items = [
+      permit("p0", "completed", {
+        destination: "Apotek",
+        exited_at: "2026-11-18T07:49:00Z",
+      }),
+      permit("p1", "cancelled", { destination: "Rumah" }),
+    ];
+    render(<ExitPermitsView />);
+
+    const [exited, cancelled] = screen.getAllByRole("listitem");
+    expect(exited).toHaveTextContent("Apotek");
+    expect(exited).toHaveTextContent("exitedMeta 15.49");
+    expect(exited).not.toHaveTextContent("openedAt");
+    // Never through the gate: the request time stands in.
+    expect(cancelled).toHaveTextContent("Rumah");
+    expect(cancelled).toHaveTextContent("openedAt 10.00");
   });
 });

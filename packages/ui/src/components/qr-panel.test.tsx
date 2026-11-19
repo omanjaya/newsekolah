@@ -184,6 +184,61 @@ describe("QrPanel", () => {
     expect(screen.getByRole("button", { name: "Buat kode baru" })).toHaveClass("bg-accent");
   });
 
+  it("reads a long-lived code as the time it stops working, not a seconds count", () => {
+    const { container } = render(
+      <QrPanel
+        payload="sion:gate:abc"
+        code=""
+        expiresAt={inSeconds(8 * 3600)}
+        onRenew={vi.fn()}
+        renewing={false}
+        expiryDisplay="until"
+        validUntilLabel={(expiresAt) => `Berlaku sampai ${expiresAt}`}
+      />,
+    );
+    expect(screen.getByText(`Berlaku sampai ${inSeconds(8 * 3600)}`)).toBeInTheDocument();
+    expect(screen.queryByText(/detik/)).not.toBeInTheDocument();
+    // No ring, and no "new code" while the code still works.
+    expect(container.querySelector("circle")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Buat kode baru" })).not.toBeInTheDocument();
+  });
+
+  it("formats a long-lived code's expiry with the locale by default, and offers a new code once it runs out", () => {
+    render(
+      <QrPanel
+        payload="sion:gate:abc"
+        code=""
+        expiresAt={inSeconds(180)}
+        onRenew={vi.fn()}
+        renewing={false}
+        expiryDisplay="until"
+      />,
+    );
+    expect(screen.getByText(/^Berlaku sampai pukul \d{2}\.\d{2}$/)).toBeInTheDocument();
+    act(() => {
+      vi.advanceTimersByTime(182 * 1000);
+    });
+    expect(screen.getAllByText("Kode kedaluwarsa").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Buat kode baru" })).toBeInTheDocument();
+  });
+
+  it("keeps the seconds countdown by default, even when the device clock runs behind the server", () => {
+    // A 30-second code read on a clock 10 minutes slow looks 630 seconds
+    // long; it is still a countdown with a way to a new code.
+    render(
+      <QrPanel
+        payload="sion:desk:abc"
+        code=""
+        expiresAt={inSeconds(630)}
+        onRenew={vi.fn()}
+        renewing={false}
+      />,
+    );
+    expect(screen.getByText("Berlaku 630 detik lagi")).toBeInTheDocument();
+    expect(screen.queryByText(/Berlaku sampai/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Buat kode baru" })).toBeInTheDocument();
+  });
+
   it("holds the panel's shape while loading", () => {
     const { container } = render(<QrPanelSkeleton />);
     expect(container.firstElementChild).toHaveAttribute("aria-busy", "true");

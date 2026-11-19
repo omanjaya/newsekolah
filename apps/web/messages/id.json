@@ -314,6 +314,7 @@
           "code": "Kode QR",
           "expired": "Kode kedaluwarsa",
           "expiresIn": "Berlaku {seconds, number} detik lagi",
+          "validUntil": "Berlaku sampai pukul {time}",
           "renew": "Buat kode baru",
           "manualCode": "Tidak bisa memindai? Pakai kode ini"
         },
@@ -918,7 +919,7 @@
       "help": {
         "classroom_entry": "Siswa memindai kode ini saat masuk kelas untuk mencatat kehadirannya di sesi yang sedang berjalan. Kode diperbarui sendiri saat habis.",
         "late_arrival": "Siswa yang datang terlambat memindai kode ini. Namanya langsung masuk antrean terlambat di halaman ini.",
-        "exit": "Siswa yang mengajukan izin keluar memindai kode ini dari tombol Pindai QR di layar izinnya. Siswa yang disetujui tercatat di Dicatat hari ini. Tahap BK dan pimpinan disetujui dari Perlu tindakan."
+        "exit": "Siswa yang mengajukan izin keluar memindai kode ini dari tombol Pindai QR di layar izinnya. Siswa yang disetujui tercatat di Dicatat di layar ini. Tahap BK dan pimpinan disetujui dari Perlu tindakan."
       },
       "manualForm": {
         "intro": "Untuk siswa yang tidak membawa HP: pilih jenisnya, cari siswanya, lalu catat langsung di sini.",
@@ -930,9 +931,9 @@
         "changeStudent": "Ganti",
         "destination": "Tujuan",
         "destinationPlaceholder": "Contoh: Puskesmas, jemput adik",
-        "startPeriod": "Jam mulai",
-        "endPeriod": "Jam selesai",
-        "selectPeriod": "Pilih jam",
+        "startPeriod": "Dari jam",
+        "endPeriod": "Sampai jam",
+        "selectPeriod": "Pilih",
         "noPeriods": "Jam pelajaran belum diatur.",
         "reason": "Alasan terlambat",
         "reasonPlaceholder": "Contoh: macet, bangun kesiangan",
@@ -942,6 +943,7 @@
         "recordedExit": "Izin keluar tercatat untuk {student}",
         "recordedLate": "Keterlambatan tercatat untuk {student}",
         "submit": "Catat",
+        "cancel": "Batal",
         "title": "Catat tanpa HP siswa",
         "kindLabel": "Jenis catatan",
         "studentRequired": "Pilih siswa dulu."
@@ -1454,7 +1456,8 @@
       "qr": {
         "expiresIn": "Berlaku {seconds} detik lagi",
         "expired": "Kode sudah kedaluwarsa",
-        "renew": "Buat kode baru"
+        "renew": "Buat kode baru",
+        "validUntil": "Berlaku sampai pukul {time}"
       },
       "exit": {
         "eyebrow": "Kesiswaan",
@@ -1524,6 +1527,7 @@
         },
         "periodRange": "{from} sampai {to}",
         "openedAt": "Diajukan pukul {time}",
+        "exitedMeta": "keluar {time}",
         "hero": {
           "activeEyebrow": "Izin keluar berjalan",
           "approvedEyebrow": "Siap keluar gerbang",
@@ -1534,6 +1538,7 @@
         },
         "waitManual": "Menunggu {stage} meninjau.",
         "gateQrLabel": "Kode QR gerbang izin keluar",
+        "stagesApproved": "{count} tahap disetujui",
         "lessons": "Jam pelajaran",
         "opened": "Diajukan",
         "exitedLabel": "Keluar gerbang",
@@ -1609,7 +1614,8 @@
         "issuerQueueInboxBody": "Pengajuan yang sudah disetujui wali kelas menunggu di antrean izin. Buka antreannya untuk meninjau dan menerbitkan suratnya.",
         "openNotifications": "Buka notifikasi",
         "notFoundTitle": "Pengajuan tidak ditemukan",
-        "notFoundBody": "Pengajuan ini sudah tidak tersedia atau bukan bagian dari tugas Anda.",
+        "notFoundBody": "Pengajuan ini sudah tidak tersedia atau tidak bisa Anda buka.",
+        "notFoundBackToMine": "Lihat pengajuan saya",
         "submit": "Ajukan izin",
         "emptyTitle": "Belum ada pengajuan izin",
         "emptyBody": "Sakit, upacara keagamaan, atau dispensasi? Ajukan izin dari sini, wali kelas akan meninjaunya.",
