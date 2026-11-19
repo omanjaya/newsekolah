@@ -1,14 +1,12 @@
 {
   "assignments": {
     "title": "Pembagian tugas",
-    "description": "Kelola pembagian mengajar dan tugas tambahan warga sekolah.",
     "teaching": "Mengajar",
     "duties": "Tugas tambahan",
     "types": "Jenis tugas"
   },
   "learning": {
     "title": "Mata pelajaran",
-    "description": "Kelola mata pelajaran, alokasi per tahun ajaran, dan jam pelajaran.",
     "subjects": "Mapel",
     "offerings": "Mapel per tahun ajaran",
     "periods": "Jam pelajaran"
@@ -176,16 +174,16 @@
     "eyebrow": "Data sekolah",
     "title": "Mapel per tahun ajaran",
     "year": "Tahun ajaran",
-    "add": "Tambah penawaran",
+    "add": "Tambah mapel tahun ajaran",
     "edit": "Ubah",
     "delete": "Hapus",
     "cancel": "Batal",
     "save": "Simpan",
-    "saved": "Penawaran mapel tersimpan",
-    "deleted": "Penawaran mapel dihapus",
+    "saved": "Mapel tahun ajaran tersimpan",
+    "deleted": "Mapel dihapus dari tahun ajaran ini",
     "rowActions": "Aksi lain untuk {name}",
-    "deleteTitle": "Hapus penawaran mapel ini?",
-    "deleteBody": "Penawaran mapel \"{name}\" akan dihapus.",
+    "deleteTitle": "Hapus mapel dari tahun ajaran ini?",
+    "deleteBody": "Mapel \"{name}\" akan dihapus dari tahun ajaran ini.",
     "pickSubject": "Pilih mapel",
     "allGrades": "Semua tingkat",
     "columns": {
@@ -194,7 +192,7 @@
       "hoursPerWeek": "Jam per minggu",
       "actions": "Aksi"
     },
-    "emptyTitle": "Belum ada penawaran mapel",
+    "emptyTitle": "Belum ada mapel untuk tahun ajaran ini",
     "emptyBody": "Tambahkan mapel yang diajarkan pada tahun ajaran ini."
   },
   "teachingAssignments": {
@@ -260,7 +258,7 @@
   "newYearSetup": {
     "eyebrow": "Data sekolah",
     "title": "Tahun ajaran baru",
-    "description": "Salin penawaran mapel dan kelas dari satu tahun ajaran ke tahun ajaran lain yang belum memilikinya.",
+    "description": "Salin mapel dan kelas dari satu tahun ajaran ke tahun ajaran lain yang belum memilikinya.",
     "fromYear": "Dari tahun ajaran",
     "toYear": "Ke tahun ajaran",
     "preview": "Tampilkan rencana",
@@ -268,17 +266,17 @@
     "idleTitle": "Pilih tahun ajaran",
     "idleBody": "Pilih tahun ajaran asal dan tujuan, lalu tampilkan rencana untuk melihat apa yang akan disalin.",
     "emptyTitle": "Tidak ada yang perlu disalin",
-    "emptyBody": "Tahun ajaran tujuan sudah memiliki semua penawaran mapel dan kelas dari tahun ajaran asal.",
-    "offeringsTitle": "Penawaran mapel ({n} baru)",
+    "emptyBody": "Tahun ajaran tujuan sudah memiliki semua mapel dan kelas dari tahun ajaran asal.",
+    "offeringsTitle": "Mapel tahun ajaran ({n} baru)",
     "classesTitle": "Kelas ({n} baru)",
-    "noOfferings": "Tidak ada penawaran mapel di tahun ajaran asal.",
+    "noOfferings": "Tidak ada mapel di tahun ajaran asal.",
     "noClasses": "Tidak ada kelas di tahun ajaran asal.",
     "alreadyExists": "Sudah ada",
     "willCopy": "Akan disalin",
     "commit": "Salin ke tahun tujuan",
     "confirmTitle": "Salin ke tahun ajaran {year}?",
-    "confirmBody": "{offerings} penawaran mapel dan {classes} kelas akan disalin.",
-    "committed": "{offerings} penawaran mapel dan {classes} kelas disalin.",
+    "confirmBody": "{offerings} mapel dan {classes} kelas akan disalin.",
+    "committed": "{offerings} mapel dan {classes} kelas disalin.",
     "offeringsLabel": "Mapel akan disalin",
     "classesLabel": "Kelas akan disalin",
     "ofTotal": "dari {n} di tahun asal",
@@ -323,7 +321,8 @@
     "subjectsTab": "Mata pelajaran",
     "periodsTab": "Jam pelajaran",
     "teachingTab": "Pembagian mengajar",
-    "dutiesTab": "Tugas tambahan"
+    "dutiesTab": "Tugas tambahan",
+    "learningDescription": "Kelola mapel, jam pelajaran, pembagian mengajar, dan tugas tambahan."
   },
   "yearFlow": {
     "fromYear": "Dari tahun ajaran",

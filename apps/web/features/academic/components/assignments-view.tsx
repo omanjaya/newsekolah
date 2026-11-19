@@ -36,6 +36,7 @@ const sectionGroups: readonly (readonly Section[])[] = [["teaching"], ["duties",
  */
 export function AssignmentsView(): ReactElement {
   const t = useTranslations("app.academic.assignments");
+  const tWorkspace = useTranslations("app.academic.workspace");
   const router = useRouter();
   const requested = useSearchParams().get("tab");
   const active = sections.find((section) => section.value === requested) ?? sections[0];
@@ -44,7 +45,8 @@ export function AssignmentsView(): ReactElement {
 
   return (
     <AppPage
-      description={t("description")}
+      // The Pembelajaran area's one subtitle, shared with LearningView.
+      description={tWorkspace("learningDescription")}
       nav={<LearningWorkspaceNav />}
       toolbar={
         siblings.length > 1 ? (
