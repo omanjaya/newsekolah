@@ -75,7 +75,10 @@ export function WebhookEndpointsPanel({
         const events = row.original.event_types;
         const rest = events.length - SHOWN_EVENTS;
         return (
-          <span className="flex flex-wrap items-center gap-1" title={events.join(", ")}>
+          <span
+            className="flex flex-wrap items-center gap-1"
+            title={events.map((eventType) => eventLabel(eventType)).join(", ")}
+          >
             {events.slice(0, SHOWN_EVENTS).map((eventType) => (
               <Badge key={eventType} size="sm" title={eventType}>
                 {eventLabel(eventType)}
