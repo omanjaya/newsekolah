@@ -1,4 +1,4 @@
-import { ApiError } from "@newsekolah/api-client";
+import { ApiError, queryKeys } from "@newsekolah/api-client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -25,9 +25,13 @@ function Name() {
   return <span data-testid="name">{isLoading ? "unknown" : displayName}</span>;
 }
 
-function renderProvider(initialBranding?: Partial<TenantBranding>) {
+function renderProvider(
+  initialBranding?: Partial<TenantBranding>,
+  seed?: (queryClient: QueryClient) => void,
+) {
   // The app's own default: no retry for a 4xx (lib/query/query-provider.tsx).
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  seed?.(queryClient);
   return render(
     <QueryClientProvider client={queryClient}>
       <TenantProvider initialBranding={initialBranding as TenantBranding | undefined}>
@@ -113,6 +117,28 @@ describe("TenantProvider", () => {
     expect(screen.getByTestId("name")).toHaveTextContent("unknown");
     expect(screen.queryByText("SION")).not.toBeInTheDocument();
     expect(screen.queryByText("SI")).not.toBeInTheDocument();
+  });
+
+  // The header kept a skeleton for good while every branding request was
+  // refused, though the signed-in session named the school (audit r3-n14).
+  it("names the signed-in school once the fetch is refused with nothing known", async () => {
+    get.mockRejectedValue(rateLimited());
+    renderProvider(undefined, (queryClient) => {
+      queryClient.setQueryData(queryKeys.me(), { tenant: { name: "SMA Contoh" } });
+    });
+
+    expect(await screen.findByText("SMA Contoh", { selector: "[data-testid=name]" })).toBeVisible();
+    // The mark falls back to the school's initials beside it, not a skeleton.
+    expect(screen.getByText("SC")).toBeInTheDocument();
+    expect(screen.queryByText("SION")).not.toBeInTheDocument();
+  });
+
+  it("waits for the branding before naming the school from the session", () => {
+    get.mockReturnValue(new Promise(() => undefined));
+    renderProvider(undefined, (queryClient) => {
+      queryClient.setQueryData(queryKeys.me(), { tenant: { name: "SMA Contoh" } });
+    });
+    expect(screen.getByTestId("name")).toHaveTextContent("unknown");
   });
 
   it("keeps naming the school from this tab's copy when the fetch is refused", async () => {

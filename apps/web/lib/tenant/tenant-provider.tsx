@@ -21,6 +21,7 @@ import { readBrandingSessionCopy, writeBrandingSessionCopy } from "./branding-se
 import { PRODUCT_NAME_FALLBACK } from "./product-name";
 
 export type TenantBranding = components["schemas"]["TenantBranding"];
+type Me = components["schemas"]["Me"];
 
 export { PRODUCT_NAME_FALLBACK };
 
@@ -28,12 +29,16 @@ interface TenantContextValue {
   /** The last branding known for this school: from the server, the API, or this tab's copy. */
   branding: TenantBranding | undefined;
   /**
-   * True while no branding is known at all: on the first load, and while
-   * the endpoint keeps failing with nothing known. Brand surfaces show a
-   * skeleton then, never the product name.
+   * True while the school's name is not known at all: on the first load,
+   * and while the endpoint keeps failing with nothing known and nobody
+   * signed in. Brand surfaces show a skeleton then, never the product name.
    */
   isLoading: boolean;
-  /** `branding.name`, or the fallback product name while branding is unknown. */
+  /**
+   * `branding.name`; while the endpoint fails with no branding known, the
+   * signed-in account's school; the fallback product name while neither is
+   * known.
+   */
   displayName: string;
   /**
    * `branding.short_name` when the school set one: the name for tight
@@ -55,6 +60,19 @@ function unsubscribe(): void {
 
 function noCopyOnServer(): undefined {
   return undefined;
+}
+
+/**
+ * The school `/v1/me` names, read from the query cache without fetching:
+ * this provider sits above the session, which owns that query.
+ */
+function useSignedInSchoolName(): string | undefined {
+  const queryClient = useQueryClient();
+  return useSyncExternalStore(
+    (onChange) => queryClient.getQueryCache().subscribe(onChange),
+    () => queryClient.getQueryData<Me>(queryKeys.me())?.tenant.name,
+    noCopyOnServer,
+  );
 }
 
 /**
@@ -107,7 +125,7 @@ export function TenantProvider({
     }
     return null;
   });
-  const { data } = useTenantBranding(client);
+  const { data, failureCount } = useTenantBranding(client);
   // The server's branding seeds the query, and the query keeps its last
   // data through a failed refetch. When neither ever had it (the endpoint
   // refused both the server and this tab), this tab's copy from an earlier
@@ -119,7 +137,14 @@ export function TenantProvider({
     noCopyOnServer,
   );
   const branding = data ?? sessionCopy;
-  const isLoading = branding === undefined;
+  // With nothing known and the endpoint refusing, a signed-in tab still
+  // knows its school from the session, so the header names it instead of
+  // holding a skeleton for good. Not before the first failure: on a normal
+  // load the branding (and its logo) lands moments later.
+  const signedInSchoolName = useSignedInSchoolName();
+  const fallbackName = branding === undefined && failureCount > 0 ? signedInSchoolName : undefined;
+  const schoolName = branding?.name ?? fallbackName;
+  const isLoading = schoolName === undefined;
 
   useEffect(() => {
     if (data) writeBrandingSessionCopy(data);
@@ -149,10 +174,10 @@ export function TenantProvider({
   // branding leaves the server's title as it is rather than writing the
   // product name over it.
   useEffect(() => {
-    if (branding?.name) setDocumentSchoolName(branding.name);
-  }, [branding?.name]);
+    if (schoolName) setDocumentSchoolName(schoolName);
+  }, [schoolName]);
 
-  const displayName = branding?.name ?? PRODUCT_NAME_FALLBACK;
+  const displayName = schoolName ?? PRODUCT_NAME_FALLBACK;
   // A blank short name counts as none.
   const trimmedShortName = branding?.short_name?.trim();
   const shortName = trimmedShortName === "" ? undefined : trimmedShortName;
