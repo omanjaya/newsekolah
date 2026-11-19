@@ -35,15 +35,18 @@ order by loan_count desc
 limit $2;
 
 -- name: DailyLoansSeries :many
-select date(borrowed_at) as day, count(*)::int as loan_count
+-- Days are the tenant's own calendar days (tz is its IANA zone), so a loan
+-- at 07:30 in UTC+8 lands on that local day, not the previous UTC one.
+select (borrowed_at at time zone sqlc.arg(tz)::text)::date as day, count(*)::int as loan_count
 from library_loans
-where tenant_id = $1 and borrowed_at >= $2
+where tenant_id = sqlc.arg(tenant_id) and borrowed_at >= sqlc.arg(since)
 group by day
 order by day;
 
 -- name: DailyReturnsSeries :many
-select date(returned_at) as day, count(*)::int as return_count
+-- Grouped by the tenant's calendar day, as DailyLoansSeries.
+select (returned_at at time zone sqlc.arg(tz)::text)::date as day, count(*)::int as return_count
 from library_loans
-where tenant_id = $1 and returned_at >= $2
+where tenant_id = sqlc.arg(tenant_id) and returned_at >= sqlc.arg(since)
 group by day
 order by day;

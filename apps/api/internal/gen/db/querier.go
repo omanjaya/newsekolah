@@ -442,7 +442,10 @@ type Querier interface {
 	// GetExitPermitInstanceForSubjectToday below agree on "today" with the
 	// tenant's own calendar, not the server's UTC one.
 	CreateWorkflowInstance(ctx context.Context, arg CreateWorkflowInstanceParams) (WorkflowInstance, error)
+	// Days are the tenant's own calendar days (tz is its IANA zone), so a loan
+	// at 07:30 in UTC+8 lands on that local day, not the previous UTC one.
 	DailyLoansSeries(ctx context.Context, arg DailyLoansSeriesParams) ([]DailyLoansSeriesRow, error)
+	// Grouped by the tenant's calendar day, as DailyLoansSeries.
 	DailyReturnsSeries(ctx context.Context, arg DailyReturnsSeriesParams) ([]DailyReturnsSeriesRow, error)
 	DeactivateActiveWorkflowDefinitions(ctx context.Context, arg DeactivateActiveWorkflowDefinitionsParams) error
 	DeactivateAllAcademicYears(ctx context.Context, tenantID uuid.UUID) error
