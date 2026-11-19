@@ -1,6 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { pickDate } from "../../../test/pick-date";
 
 const mocks = vi.hoisted(() => ({
   useLibraryVisitsQuery: vi.fn(),
@@ -48,13 +50,13 @@ describe("VisitsView filters", () => {
     window.history.replaceState(null, "", "/library/visits");
   });
 
-  it("sets a date range from the two native date inputs and writes both bounds to the URL", async () => {
+  it("sets a date range from the two date pickers and writes both bounds to the URL", async () => {
     const user = userEvent.setup();
     render(<VisitsView />);
 
     await user.click(screen.getByRole("button", { name: /^dateRange/ }));
-    fireEvent.change(screen.getByLabelText("fromLabel"), { target: { value: "2026-08-01" } });
-    fireEvent.change(screen.getByLabelText("toLabel"), { target: { value: "2026-08-15" } });
+    await pickDate(user, "fromLabel", "2026-08-01");
+    await pickDate(user, "toLabel", "2026-08-15");
 
     expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
       "2026-08-01T00:00:00Z",

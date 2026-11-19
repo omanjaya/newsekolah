@@ -1,5 +1,6 @@
 "use client";
 
+import { formatNumber, type Locale } from "@newsekolah/i18n";
 import {
   Badge,
   Card,
@@ -14,7 +15,7 @@ import {
   StatusBadge,
 } from "@newsekolah/ui";
 import { BookOpenCheck, CalendarCheck } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { statusToken } from "../../../lib/attendance-status";
@@ -135,6 +136,7 @@ export function SnapshotGradesSection({
   snapshot: MentorStudentSnapshot;
 }): ReactElement | null {
   const t = useTranslations("app.mentoring.studentView");
+  const locale = useLocale() as Locale;
   const subjects = useSubjectsQuery();
   const subjectMap = useLookup(subjects.data?.data);
   const gradingOn = useModuleEnabled("grading");
@@ -159,7 +161,11 @@ export function SnapshotGradesSection({
             <ListRow
               key={s.subject_id}
               title={subjectMap.get(s.subject_id)?.name ?? t("grades.unknownSubject")}
-              trailing={<span className="text-label text-fg tabular-nums">{s.score}</span>}
+              trailing={
+                <span className="text-label text-fg tabular-nums">
+                  {formatNumber(s.score, { locale, fractionDigits: 1 })}
+                </span>
+              }
             />
           ))}
         </List>

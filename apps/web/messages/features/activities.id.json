@@ -196,7 +196,7 @@
     }
   },
   "achievements": {
-    "searchPlaceholder": "Cari nama lomba",
+    "searchPlaceholder": "Cari siswa atau nama lomba",
     "eyebrow": "Kegiatan",
     "title": "Prestasi siswa",
     "filters": {

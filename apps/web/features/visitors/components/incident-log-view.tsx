@@ -105,6 +105,7 @@ export function IncidentLogView(): ReactElement {
         setTo(nextTo);
       },
       presets,
+      today,
     },
   ];
 

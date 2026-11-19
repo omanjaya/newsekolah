@@ -128,6 +128,7 @@ export function JournalView(): ReactElement {
         resetPaging();
       },
       presets,
+      today: todayData.today,
     },
   ];
 

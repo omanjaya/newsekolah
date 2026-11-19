@@ -196,9 +196,9 @@ export function GradebookSheet({
   };
 
   return (
-    // Pads itself clear of the sticky save bar while the bar shows (the
-    // bar publishes its height), so the last rows never hide behind it.
-    <div className="flex flex-col gap-4 pb-(--sticky-save-bar-height) md:min-h-0 md:flex-1">
+    // PageShell pads the page clear of the sticky save bar while the bar
+    // shows, so the last rows never hide behind it.
+    <div className="flex flex-col gap-4 md:min-h-0 md:flex-1">
       {/* The scope picker above already names the sheet on screen. */}
       <SectionHeader className="sr-only" title={title} />
       <div className="flex min-h-11 items-center justify-between gap-4">

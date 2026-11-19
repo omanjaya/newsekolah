@@ -327,12 +327,8 @@ export function SessionEditor({
         </Alert>
       )}
 
-      {/* Clears the fixed save bar at the end of the roster. */}
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="flex flex-col gap-3 pb-(--sticky-save-bar-height)"
-      >
+      {/* PageShell pads the page clear of the fixed save bar. */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <TabsList aria-label={t("tabsLabel")} className="shrink-0">
             <TabsTrigger value="roster">{t("tabRoster")}</TabsTrigger>

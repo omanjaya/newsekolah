@@ -22,6 +22,7 @@ import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import {
   DirectoryPicker,
   useDirectoryPickerLabels,
@@ -120,6 +121,7 @@ export function AuditLogsView(): ReactElement {
         resetPaging();
       },
       presets,
+      today: todayInZone(timeZone),
     },
   ];
 

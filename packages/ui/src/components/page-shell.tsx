@@ -108,7 +108,12 @@ export function PageShell({
       // entrance), which skip a shell that plays no entrance.
       data-animate={animate ? "" : undefined}
       className={cn(
-        "flex w-full min-w-0 flex-col px-4 py-4 md:px-6 md:py-6",
+        // The bottom padding also clears a shown StickySaveBar (it
+        // publishes its height; 0 without one), so the last field of a
+        // form always scrolls into view above the bar.
+        "flex w-full min-w-0 flex-col px-4 pt-4 md:px-6 md:pt-6",
+        "pb-[calc(var(--space-4)+var(--sticky-save-bar-height,0px))]",
+        "md:pb-[calc(var(--space-6)+var(--sticky-save-bar-height,0px))]",
         fit && "md:h-[calc(100dvh-var(--page-offset-top,var(--shell-header-height,0px)))]",
         className,
       )}

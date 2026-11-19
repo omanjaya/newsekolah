@@ -87,22 +87,30 @@
     "saved": "Kebijakan tersimpan.",
     "save": "Simpan",
     "cancel": "Batal",
+    "groups": {
+      "attendance": "Rasio tidak hadir (0–1)",
+      "discipline": "Poin pelanggaran",
+      "warningLetter": "Jumlah surat peringatan (SP)",
+      "gradeDrop": "Penurunan nilai",
+      "weights": "Bobot sinyal",
+      "totalScore": "Skor total"
+    },
     "fields": {
       "window_days": "Rentang hari sekolah",
-      "attendance_watch_rate": "Rasio tidak hadir: siaga (0–1)",
-      "attendance_at_risk_rate": "Rasio tidak hadir: berisiko (0–1)",
-      "discipline_watch_points": "Poin pelanggaran: siaga",
-      "discipline_at_risk_points": "Poin pelanggaran: berisiko",
-      "warning_letter_watch_count": "Jumlah SP: siaga",
-      "warning_letter_at_risk_count": "Jumlah SP: berisiko",
-      "grade_drop_watch_points": "Penurunan nilai: siaga",
-      "grade_drop_at_risk_points": "Penurunan nilai: berisiko",
-      "attendance_weight": "Bobot presensi",
-      "discipline_weight": "Bobot pelanggaran",
-      "warning_weight": "Bobot surat peringatan",
-      "grade_weight": "Bobot nilai",
-      "watch_score": "Skor total: siaga",
-      "at_risk_score": "Skor total: berisiko"
+      "attendance_watch_rate": "Siaga",
+      "attendance_at_risk_rate": "Berisiko",
+      "discipline_watch_points": "Siaga",
+      "discipline_at_risk_points": "Berisiko",
+      "warning_letter_watch_count": "Siaga",
+      "warning_letter_at_risk_count": "Berisiko",
+      "grade_drop_watch_points": "Siaga",
+      "grade_drop_at_risk_points": "Berisiko",
+      "attendance_weight": "Presensi",
+      "discipline_weight": "Pelanggaran",
+      "warning_weight": "Surat peringatan",
+      "grade_weight": "Nilai",
+      "watch_score": "Siaga",
+      "at_risk_score": "Berisiko"
     }
   }
 }

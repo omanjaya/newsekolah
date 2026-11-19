@@ -1,6 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { pickDate } from "../../../test/pick-date";
 
 const mocks = vi.hoisted(() => ({
   useViolationsQuery: vi.fn(),
@@ -106,15 +108,13 @@ describe("ViolationsLedgerView filters", () => {
     expect(new URLSearchParams(window.location.search).get("include_voided")).toBe("");
   });
 
-  it("sets a date range from the two native date inputs and writes both bounds to the URL", async () => {
+  it("sets a date range from the two date pickers and writes both bounds to the URL", async () => {
     const user = userEvent.setup();
     render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "filters.dateRange" }));
-    fireEvent.change(screen.getByLabelText("filters.from"), {
-      target: { value: "2026-09-01" },
-    });
-    fireEvent.change(screen.getByLabelText("filters.to"), { target: { value: "2026-09-15" } });
+    await pickDate(user, "filters.from", "2026-09-01");
+    await pickDate(user, "filters.to", "2026-09-15");
 
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ from: "2026-09-01", to: "2026-09-15" }),

@@ -5,8 +5,8 @@ import { useRef, useState, type ReactElement } from "react";
 
 import { useScrollEdges } from "../../hooks/use-scroll-edges.js";
 import { cn } from "../../utils/cn.js";
+import { DatePicker } from "../date-picker.js";
 import { Field, FieldError } from "../field.js";
-import { Input } from "../input.js";
 import { ResponsivePopover } from "../responsive-popover.js";
 import { useUiLabels } from "../ui-labels.js";
 
@@ -53,7 +53,8 @@ export interface DataTableFilterDef {
    * "boolean" turns the pill itself into a direct on/off toggle -- no
    * popover -- for a filter with exactly one meaningful "on" state (e.g.
    * "Hanya tersedia").
-   * "dateRange" opens a popover with two native date inputs (from/to) plus
+   * "dateRange" opens a popover with two `DatePicker` fields (from/to),
+   * which show the date in the page's language ("14 November 2026"), plus
    * any `presets`.
    * "month" opens the month grid of `MonthPicker` (a billing period, a
    * monthly report) and writes "YYYY-MM"; the chip reads "Periode:
@@ -91,8 +92,9 @@ export interface DataTableFilterDef {
   /** type="month" only: the latest month offered, "YYYY-MM". */
   maxMonth?: string;
   /**
-   * type="month" only: the school's "today", "YYYY-MM-DD", so the grid
-   * marks the current month from the business clock, not the device's.
+   * type="month" and "dateRange": the school's "today", "YYYY-MM-DD", so
+   * the month grid and the date calendars mark today from the business
+   * clock, not the device's.
    */
   today?: string;
 }
@@ -474,26 +476,26 @@ function DateRangeFilterPill({
                 })}
               </div>
             )}
-            <div className="grid grid-cols-2 gap-2">
+            {/* Stacked: a long date ("14 November 2026") with its clear
+                button does not fit two to a row in the 320px popover. */}
+            <div className="flex flex-col gap-3">
               <Field label={fromLabel}>
-                <Input
-                  type="date"
-                  size="sm"
+                <DatePicker
                   value={draftFrom}
+                  today={filter.today}
                   invalid={invalid}
-                  onChange={(event) => {
-                    commit(event.target.value, draftTo);
+                  onChange={(next) => {
+                    commit(next, draftTo);
                   }}
                 />
               </Field>
               <Field label={toLabel}>
-                <Input
-                  type="date"
-                  size="sm"
+                <DatePicker
                   value={draftTo}
+                  today={filter.today}
                   invalid={invalid}
-                  onChange={(event) => {
-                    commit(draftFrom, event.target.value);
+                  onChange={(next) => {
+                    commit(draftFrom, next);
                   }}
                 />
               </Field>

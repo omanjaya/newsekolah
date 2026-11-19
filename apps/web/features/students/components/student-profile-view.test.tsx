@@ -114,4 +114,14 @@ describe("StudentProfileView tab visibility", () => {
       "active",
     );
   });
+
+  // The Tabs gap spaces the panel already; TabsContent's own top padding
+  // doubled it to 40 px where sibling tabbed pages show 24 px.
+  it("does not stack the panel's top padding on the tab gap", () => {
+    mocks.permissions = ["view_reports"];
+    render(<StudentProfileView studentId="s1" />);
+    const panel = screen.getByRole("tabpanel");
+    expect(panel).toHaveClass("pt-0");
+    expect(panel).not.toHaveClass("pt-4");
+  });
 });
