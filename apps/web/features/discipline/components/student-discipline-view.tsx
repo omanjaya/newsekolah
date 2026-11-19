@@ -33,11 +33,14 @@ export function StudentDisciplineView({ studentId }: { studentId: string }): Rea
   const tViolations = useTranslations("app.discipline.violations");
   const canRecord = useCan("record_violations");
   const canCounsel = useCan("manage_counseling");
-  // "Still loading" and "not found" differ: the name stays a placeholder
-  // until the lookup settles, and only a settled miss says unknown.
+  // "Still loading", "failed" and "not found" differ: the name stays a
+  // placeholder while loading or after a failed lookup (the description
+  // offers a retry), and only a successful lookup without the student says
+  // unknown.
   const lookup = useDirectoryLookup([studentId]);
   const student = lookup.names.get(studentId);
-  const nameLoading = !student && lookup.isLoading;
+  const unknown = lookup.isSuccess && !student;
+  const namePending = !student && !unknown;
   const studentName = student?.name ?? t("unknownStudent");
   const report = useOpenStudentDisciplineReport();
   const [recording, setRecording] = useState(false);
@@ -65,13 +68,13 @@ export function StudentDisciplineView({ studentId }: { studentId: string }): Rea
   return (
     <AppPage
       leading={
-        nameLoading ? (
+        namePending ? (
           <Skeleton className="size-12 rounded-full" />
         ) : (
           <Avatar name={studentName} size={48} decorative />
         )
       }
-      title={nameLoading ? <Skeleton className="h-8 w-48" /> : studentName}
+      title={namePending ? <Skeleton className="h-8 w-48" /> : studentName}
       description={
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
           {student?.nis && <span>{t("nis", { nis: student.nis })}</span>}

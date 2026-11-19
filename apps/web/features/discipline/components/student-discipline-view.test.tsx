@@ -63,6 +63,7 @@ it("offers a retry when the name lookup fails", async () => {
   render(<StudentDisciplineView studentId="s1" />);
 
   expect(screen.getByText("nameLoadError")).toBeInTheDocument();
+  expect(screen.queryByText("unknownStudent")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "retry" }));
   expect(mocks.lookup.refetch).toHaveBeenCalled();
 });
