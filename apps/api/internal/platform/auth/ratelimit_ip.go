@@ -22,8 +22,9 @@ func NewIPRateLimiter(store KVStore, prefix string, limit int64, window time.Dur
 }
 
 // Allow increments the counter for ip and reports whether it is still
-// within the limit. It always increments, even past the limit, so repeated
-// attempts keep extending the block window.
+// within the limit. The window is fixed from the first request in it
+// (KVStore.Incr): requests past the limit are refused until it runs out,
+// and do not push that moment back.
 func (l *IPRateLimiter) Allow(ctx context.Context, ip string) (bool, error) {
 	count, err := l.store.Incr(ctx, fmt.Sprintf("%s:%s", l.prefix, ip), l.window)
 	if err != nil {

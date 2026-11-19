@@ -163,20 +163,52 @@ export function darkVariantOf(hex: string): string {
   return toHex(roundChannels(hslToRgb(h, saturation, 0.9)));
 }
 
-/** One accent per theme, each with the label colour a filled button writes on it. */
+/** How far the hover and press shade moves from the accent, toward black or white. */
+const STRONG_MIX = 0.2;
+
+/**
+ * The hover and press shade of a filled accent surface (`accent-strong`):
+ * the same hue, moved away from the label colour written on it, so the
+ * label only gains contrast. With a white label (the usual light-theme
+ * accent) it darkens, which also darkens hover text on a light page; with a
+ * dark label (the usual lightened dark-theme accent) it lightens, which
+ * also lifts hover text on the dark surface. An accent already at that end
+ * (pure black or white) has nowhere to go, so it moves the other way; the
+ * label keeps far more than 4.5:1 there.
+ */
+export function strongVariantOf(hex: string, fg: string): string {
+  const rgb = parseHex(hex);
+  if (!rgb) return hex;
+  const awayFromLabel = fg.toUpperCase() === "#FFFFFF" ? 0 : 255;
+  const shade = (target: number) => {
+    const mix = (channel: number) => channel + (target - channel) * STRONG_MIX;
+    return toHex(roundChannels({ r: mix(rgb.r), g: mix(rgb.g), b: mix(rgb.b) }));
+  };
+  const strong = shade(awayFromLabel);
+  return strong === toHex(rgb) ? shade(255 - awayFromLabel) : strong;
+}
+
+/**
+ * One accent per theme, each with the label colour a filled button writes
+ * on it and the shade it takes on hover and press.
+ */
 export interface TenantAccents {
   light: string;
   lightFg: string;
+  lightStrong: string;
   dark: string;
   darkFg: string;
+  darkStrong: string;
 }
 
 /** The Hijau Segar accent pair, straight from the design tokens. */
 export const PLATFORM_ACCENTS: TenantAccents = {
   light: colors.light.accent,
   lightFg: colors.light.accentFg,
+  lightStrong: colors.light.accentStrong,
   dark: colors.dark.accent,
   darkFg: colors.dark.accentFg,
+  darkStrong: colors.dark.accentStrong,
 };
 
 /**
@@ -196,5 +228,14 @@ export function resolveTenantAccents(supplied: string | null | undefined): Tenan
   if (!supplied || !rgb || isPlatformDefault) return PLATFORM_ACCENTS;
   const light = lightVariantOf(supplied);
   const dark = darkVariantOf(supplied);
-  return { light, lightFg: foregroundFor(light), dark, darkFg: foregroundFor(dark) };
+  const lightFg = foregroundFor(light);
+  const darkFg = foregroundFor(dark);
+  return {
+    light,
+    lightFg,
+    lightStrong: strongVariantOf(light, lightFg),
+    dark,
+    darkFg,
+    darkStrong: strongVariantOf(dark, darkFg),
+  };
 }

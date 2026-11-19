@@ -120,6 +120,7 @@ export function BrandingPreview({
   const paint = {
     "--color-accent": dark ? accents.dark : accents.light,
     "--color-accent-fg": dark ? accents.darkFg : accents.lightFg,
+    "--color-accent-strong": dark ? accents.darkStrong : accents.lightStrong,
     "--color-focus-ring": dark ? accents.dark : accents.light,
   } as CSSProperties;
   const signInPaint = {

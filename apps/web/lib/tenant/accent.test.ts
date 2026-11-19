@@ -8,6 +8,7 @@ import {
   lightVariantOf,
   parseHex,
   resolveTenantAccents,
+  strongVariantOf,
 } from "./accent";
 
 const DARK_SURFACE = { r: 0x21, g: 0x1f, b: 0x1b };
@@ -108,4 +109,44 @@ describe("resolveTenantAccents", () => {
     if (!dark || !darkFg) throw new Error("Invalid derived pair");
     expect(contrastRatio(dark, darkFg)).toBeGreaterThanOrEqual(4.5);
   });
+});
+
+// A navy primary button turned platform green on hover and press, because
+// `accent-strong` stayed the token (audit r3-n42).
+describe("accent-strong for a tenant colour", () => {
+  it("keeps the platform's own strong shades for the platform accent", () => {
+    expect(resolveTenantAccents(undefined).lightStrong).toBe("#0A5340");
+    expect(resolveTenantAccents("#0F7A5F").darkStrong).toBe("#26B389");
+  });
+
+  it("shades the school's own colour, not the platform green", () => {
+    const accents = resolveTenantAccents("#1F3A5F");
+    expect(accents.light).toBe("#1F3A5F");
+    expect(accents.lightStrong).toBe(strongVariantOf(accents.light, accents.lightFg));
+    // Darker navy under the white label.
+    expect(accents.lightStrong).toBe("#192E4C");
+    expect(accents.darkStrong).toBe(strongVariantOf(accents.dark, accents.darkFg));
+    for (const strong of [accents.lightStrong, accents.darkStrong]) {
+      expect(strong).not.toBe(PLATFORM_ACCENTS.lightStrong);
+      expect(strong).not.toBe(PLATFORM_ACCENTS.darkStrong);
+    }
+  });
+
+  it.each(["#FFFFFF", "#FFFF00", "#6288BC", "#1F3A5F", "#000000", "#00FF00", "#F0F", "#8B4513"])(
+    "gives %s a distinct hover shade that keeps its label readable",
+    (hex) => {
+      const accents = resolveTenantAccents(hex);
+      for (const [accent, fg, strong] of [
+        [accents.light, accents.lightFg, accents.lightStrong],
+        [accents.dark, accents.darkFg, accents.darkStrong],
+      ] as const) {
+        const [a, f, s] = [parseHex(accent), parseHex(fg), parseHex(strong)];
+        if (!a || !f || !s) throw new Error("Invalid derived shade");
+        expect(strong).not.toBe(accent);
+        // The label only gains contrast, except on pure black or white,
+        // where the shade turns back and the label still keeps twice 4.5:1.
+        expect(contrastRatio(s, f)).toBeGreaterThanOrEqual(Math.min(contrastRatio(a, f), 4.5 * 2));
+      }
+    },
+  );
 });

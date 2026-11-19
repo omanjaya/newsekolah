@@ -1,10 +1,11 @@
-import { ApiError } from "@newsekolah/api-client";
+import { ApiError, queryKeys } from "@newsekolah/api-client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TenantBrand } from "../../components/tenant-brand";
 
+import { resolveTenantAccents } from "./accent";
 import { readBrandingSessionCopy } from "./branding-session-copy";
 import {
   BRANDING_MAX_RETRIES,
@@ -25,9 +26,13 @@ function Name() {
   return <span data-testid="name">{isLoading ? "unknown" : displayName}</span>;
 }
 
-function renderProvider(initialBranding?: Partial<TenantBranding>) {
+function renderProvider(
+  initialBranding?: Partial<TenantBranding>,
+  seed?: (queryClient: QueryClient) => void,
+) {
   // The app's own default: no retry for a 4xx (lib/query/query-provider.tsx).
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  seed?.(queryClient);
   return render(
     <QueryClientProvider client={queryClient}>
       <TenantProvider initialBranding={initialBranding as TenantBranding | undefined}>
@@ -84,6 +89,16 @@ describe("TenantProvider", () => {
     expect(screen.getByTestId("short")).toHaveTextContent("none");
   });
 
+  // Buttons hovered and pressed in the platform green under a navy accent
+  // (audit r3-n42): the strong shade follows the school's colour too.
+  it("writes the hover and press shade of the school's accent for both themes", () => {
+    renderProvider({ name: "SMA Harapan", accent_color: "#1F3A5F" });
+    const accents = resolveTenantAccents("#1F3A5F");
+    const style = document.documentElement.style;
+    expect(style.getPropertyValue("--tenant-accent-strong")).toBe(accents.lightStrong);
+    expect(style.getPropertyValue("--tenant-accent-dark-strong")).toBe(accents.darkStrong);
+  });
+
   it("fetches the branding when the server could not supply it", () => {
     get.mockResolvedValue({ name: "SMA Harapan" });
     renderProvider();
@@ -113,6 +128,62 @@ describe("TenantProvider", () => {
     expect(screen.getByTestId("name")).toHaveTextContent("unknown");
     expect(screen.queryByText("SION")).not.toBeInTheDocument();
     expect(screen.queryByText("SI")).not.toBeInTheDocument();
+  });
+
+  // The header kept a skeleton for good while every branding request was
+  // refused, though the signed-in session named the school (audit r3-n14).
+  it("names the signed-in school once the fetch is refused with nothing known", async () => {
+    get.mockRejectedValue(rateLimited());
+    renderProvider(undefined, (queryClient) => {
+      queryClient.setQueryData(queryKeys.me(), {
+        tenant: { name: "SMA Contoh", accent_color: "#1F3A5F" },
+      });
+    });
+
+    expect(await screen.findByText("SMA Contoh", { selector: "[data-testid=name]" })).toBeVisible();
+    // The mark falls back to the school's initials beside it, not a skeleton.
+    expect(screen.getByText("SC")).toBeInTheDocument();
+    expect(screen.queryByText("SION")).not.toBeInTheDocument();
+    // The session's tenant is the school's whole branding: the accent follows.
+    const accents = resolveTenantAccents("#1F3A5F");
+    const style = document.documentElement.style;
+    expect(style.getPropertyValue("--tenant-accent")).toBe(accents.light);
+    expect(style.getPropertyValue("--tenant-accent-strong")).toBe(accents.lightStrong);
+  });
+
+  it("shows the signed-in school's logo and switched-off modules while the fetch is refused", async () => {
+    function Library() {
+      const { branding } = useTenant();
+      return <span data-testid="off">{branding?.disabled_public_modules.join(",") ?? "none"}</span>;
+    }
+    get.mockRejectedValue(rateLimited());
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(queryKeys.me(), {
+      tenant: {
+        name: "SMA Contoh",
+        logo_url: "https://example.test/logo.png",
+        disabled_public_modules: ["library"],
+      },
+    });
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <TenantProvider>
+          <Library />
+          <TenantBrand />
+        </TenantProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("library", { selector: "[data-testid=off]" })).toBeVisible();
+    expect(container.querySelector("img")).toHaveAttribute("src", "https://example.test/logo.png");
+  });
+
+  it("waits for the branding before naming the school from the session", () => {
+    get.mockReturnValue(new Promise(() => undefined));
+    renderProvider(undefined, (queryClient) => {
+      queryClient.setQueryData(queryKeys.me(), { tenant: { name: "SMA Contoh" } });
+    });
+    expect(screen.getByTestId("name")).toHaveTextContent("unknown");
   });
 
   it("keeps naming the school from this tab's copy when the fetch is refused", async () => {

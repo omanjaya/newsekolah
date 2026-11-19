@@ -6,7 +6,9 @@ import { useEffect } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { isModuleEnabled, type FeatureModule } from "../lib/modules/feature-modules";
+import { isSessionEndedRedirect } from "../lib/session/auth-redirect-flag";
 import { useSession } from "../lib/session/session-provider";
+import { signInPath } from "../lib/session/sign-in-path";
 
 import { ForbiddenPage } from "./forbidden-page";
 import { ModuleUnavailablePage } from "./module-unavailable-page";
@@ -47,7 +49,9 @@ export function RouteGuard({
   useEffect(() => {
     if (!isReady) return;
     if (status === "anonymous") {
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      // A link clicked as the session ended can land here before the
+      // session-ended redirect does; keep the reason it chose.
+      router.replace(signInPath(pathname, { sessionEnded: isSessionEndedRedirect() }));
       return;
     }
     if (me?.must_change_password) {

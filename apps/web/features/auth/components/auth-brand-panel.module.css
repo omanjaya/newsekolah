@@ -13,6 +13,7 @@
 .surface {
   --color-accent: var(--tenant-accent);
   --color-accent-fg: var(--tenant-accent-fg);
+  --color-accent-strong: var(--tenant-accent-strong);
   --brand-top: color-mix(in oklab, var(--tenant-accent) 88%, white);
   --brand-mid: var(--tenant-accent);
   --brand-bottom: color-mix(in oklab, var(--tenant-accent) 58%, black);

@@ -21,19 +21,25 @@ import { readBrandingSessionCopy, writeBrandingSessionCopy } from "./branding-se
 import { PRODUCT_NAME_FALLBACK } from "./product-name";
 
 export type TenantBranding = components["schemas"]["TenantBranding"];
+type Me = components["schemas"]["Me"];
 
 export { PRODUCT_NAME_FALLBACK };
 
 interface TenantContextValue {
-  /** The last branding known for this school: from the server, the API, or this tab's copy. */
+  /**
+   * The last branding known for this school: from the server, the API, this
+   * tab's copy, or, while the endpoint fails with none of those, the
+   * signed-in session's school.
+   */
   branding: TenantBranding | undefined;
   /**
    * True while no branding is known at all: on the first load, and while
-   * the endpoint keeps failing with nothing known. Brand surfaces show a
-   * skeleton then, never the product name.
+   * the endpoint keeps failing with nothing known and nobody signed in. Brand surfaces show a skeleton then, never the product name.
    */
   isLoading: boolean;
-  /** `branding.name`, or the fallback product name while branding is unknown. */
+  /**
+   * `branding.name`; the fallback product name while no branding is known.
+   */
   displayName: string;
   /**
    * `branding.short_name` when the school set one: the name for tight
@@ -58,6 +64,20 @@ function noCopyOnServer(): undefined {
 }
 
 /**
+ * The school `/v1/me` carries, a full branding, read from the query cache
+ * without fetching: this provider sits above the session, which owns that
+ * query. Returns the cached object itself, so the snapshot stays stable.
+ */
+function useSignedInSchool(): TenantBranding | undefined {
+  const queryClient = useQueryClient();
+  return useSyncExternalStore(
+    (onChange) => queryClient.getQueryCache().subscribe(onChange),
+    () => queryClient.getQueryData<Me>(queryKeys.me())?.tenant,
+    noCopyOnServer,
+  );
+}
+
+/**
  * The branding endpoint is public and rate limited (429 under load). A
  * refusal is worth retrying, with backoff, unlike most 4xx answers the app
  * gives up on at once (lib/query/query-provider.tsx).
@@ -75,7 +95,9 @@ export function brandingRetryDelay(attempt: number): number {
  * login screen is already branded.
  *
  * Theme-specific accents keep links readable against their surfaces; their
- * paired foregrounds keep filled buttons readable against the accent. A
+ * paired foregrounds keep filled buttons readable against the accent, and
+ * their strong shades give those buttons a hover and press in the school's
+ * own colour rather than the platform green. A
  * school without its own colour gets the platform's token pair unchanged
  * (see resolveTenantAccents). The runtime values feed globals.css so
  * switching themes stays CSS-driven.
@@ -107,7 +129,7 @@ export function TenantProvider({
     }
     return null;
   });
-  const { data } = useTenantBranding(client);
+  const { data, failureCount } = useTenantBranding(client);
   // The server's branding seeds the query, and the query keeps its last
   // data through a failed refetch. When neither ever had it (the endpoint
   // refused both the server and this tab), this tab's copy from an earlier
@@ -118,7 +140,15 @@ export function TenantProvider({
     readBrandingSessionCopy,
     noCopyOnServer,
   );
-  const branding = data ?? sessionCopy;
+  // With nothing known and the endpoint refusing, a signed-in tab still
+  // knows its school from the session, whose tenant is the same branding:
+  // the header shows its name and logo, the accent follows, and modules the
+  // school switched off stay off, instead of a skeleton held for good. Not
+  // before the first failure: on a normal load the branding lands moments
+  // later.
+  const signedInSchool = useSignedInSchool();
+  const branding = data ?? sessionCopy ?? (failureCount > 0 ? signedInSchool : undefined);
+  const schoolName = branding?.name;
   const isLoading = branding === undefined;
 
   useEffect(() => {
@@ -132,12 +162,16 @@ export function TenantProvider({
     root.style.setProperty("--tenant-accent-dark", accents.dark);
     root.style.setProperty("--tenant-accent-fg", accents.lightFg);
     root.style.setProperty("--tenant-accent-dark-fg", accents.darkFg);
+    root.style.setProperty("--tenant-accent-strong", accents.lightStrong);
+    root.style.setProperty("--tenant-accent-dark-strong", accents.darkStrong);
     return () => {
       for (const name of [
         "--tenant-accent",
         "--tenant-accent-dark",
         "--tenant-accent-fg",
         "--tenant-accent-dark-fg",
+        "--tenant-accent-strong",
+        "--tenant-accent-dark-strong",
       ]) {
         root.style.removeProperty(name);
       }
@@ -149,10 +183,10 @@ export function TenantProvider({
   // branding leaves the server's title as it is rather than writing the
   // product name over it.
   useEffect(() => {
-    if (branding?.name) setDocumentSchoolName(branding.name);
-  }, [branding?.name]);
+    if (schoolName) setDocumentSchoolName(schoolName);
+  }, [schoolName]);
 
-  const displayName = branding?.name ?? PRODUCT_NAME_FALLBACK;
+  const displayName = schoolName ?? PRODUCT_NAME_FALLBACK;
   // A blank short name counts as none.
   const trimmedShortName = branding?.short_name?.trim();
   const shortName = trimmedShortName === "" ? undefined : trimmedShortName;
