@@ -147,7 +147,7 @@ describe("MembersView filters", () => {
     expect(mocks.useLibraryMembersQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ status: "" }),
     );
-    expect(new URLSearchParams(window.location.search).get("status")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("status")).toBeNull();
   });
 
   it("shows the print-filtered action only once a member type filter is chosen", async () => {

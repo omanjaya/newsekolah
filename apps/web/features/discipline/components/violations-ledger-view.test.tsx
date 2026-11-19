@@ -105,7 +105,7 @@ describe("ViolationsLedgerView filters", () => {
       expect.objectContaining({ includeVoided: false }),
       { limit: 50, offset: 0, search: "" },
     );
-    expect(new URLSearchParams(window.location.search).get("include_voided")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("include_voided")).toBeNull();
   });
 
   it("sets a date range from the two date pickers and writes both bounds to the URL", async () => {

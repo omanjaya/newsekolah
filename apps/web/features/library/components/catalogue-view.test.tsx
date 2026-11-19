@@ -110,7 +110,7 @@ describe("CatalogueView filters", () => {
     expect(mocks.useLibraryTitlesQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ availability: "" }),
     );
-    expect(new URLSearchParams(window.location.search).get("availability")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("availability")).toBeNull();
   });
 
   it("leads the header with adding a title, and keeps import, settings and the report in the area strip", () => {

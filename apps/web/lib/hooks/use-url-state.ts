@@ -36,7 +36,10 @@ export function useUrlState<T extends string>(
       const previous = current !== null && isValid(current) ? (current as T) : defaultValue;
       const next = typeof update === "function" ? update(previous) : update;
       if (!isValid(next)) return;
-      url.searchParams.set(key, next);
+      // An empty choice with an empty default is the unset filter: drop the
+      // key instead of leaving a bare `key=` in a shared link.
+      if (next === "" && defaultValue === "") url.searchParams.delete(key);
+      else url.searchParams.set(key, next);
       if (url.href === window.location.href) return;
       // A string, not the URL object. Serwist's navigation cache
       // (cacheOnNavigation, now off in next.config.ts) wraps the history

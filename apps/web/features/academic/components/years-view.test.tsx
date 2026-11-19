@@ -97,7 +97,7 @@ describe("YearsView filters", () => {
     expect(mocks.useAcademicYearsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ includeArchived: false }),
     );
-    expect(new URLSearchParams(window.location.search).get("include_archived")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("include_archived")).toBeNull();
   });
 
   it("leaves the archive filter out for a reader who cannot manage years", () => {

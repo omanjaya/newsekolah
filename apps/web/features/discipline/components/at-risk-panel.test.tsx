@@ -111,7 +111,7 @@ describe("AtRiskPanel filters", () => {
     expect(mocks.useSPCandidatesQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ classId: "" }),
     );
-    expect(new URLSearchParams(window.location.search).get("class_id")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("class_id")).toBeNull();
   });
 });
 

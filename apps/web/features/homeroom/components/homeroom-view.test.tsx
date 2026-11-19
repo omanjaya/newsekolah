@@ -118,7 +118,7 @@ describe("HomeroomView filters", () => {
       expect.objectContaining({ statusCode: undefined }),
       true,
     ]);
-    expect(new URLSearchParams(window.location.search).get("status")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("status")).toBeNull();
   });
 });
 
