@@ -215,6 +215,8 @@
     "formatXlsx": "Excel (.xlsx)",
     "formatCsv": "CSV (.csv)",
     "previewError": "Could not load the export preview.",
+    "noClassesTitle": "No classes to export yet",
+    "noClassesBody": "The e-Rapor export covers the classes you teach. They show up here once your teaching schedule is set.",
     "summary": "{rows} rows ready to export, {skipped} skipped.",
     "rowsTitle": "Will be exported",
     "rowsEmpty": "Nothing can be exported for this selection.",

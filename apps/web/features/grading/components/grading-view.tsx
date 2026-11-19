@@ -15,7 +15,7 @@ import {
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
@@ -140,13 +140,23 @@ export function GradingView(): ReactElement {
     ["", ...(terms.data?.data ?? []).map((item) => item.id)],
     "",
   );
+  const scopeLoading =
+    classes.isLoading || subjects.isLoading || (needsAssignments && assignments.isLoading);
+  const noAssignments = !canOpenAny && !scopeLoading && classList.length === 0;
+
+  // The TP mapping and the e-Rapor export both work on classes the actor
+  // teaches (or any class for a school-wide reader): with none, the sheet
+  // tab's own empty state is the whole story, not a red error elsewhere.
+  const showTpTab = canManageGrades && !noAssignments;
+  const showEraporTab = (canManageGrades || canViewGrades) && !noAssignments;
+  const showSettingsTab = canManageSettings || canManageGrades;
   const [tab, setTab] = useUrlState<Tab>(
     "tab",
     [
       "gradebook",
-      ...(canManageGrades ? (["tp"] as const) : []),
-      ...(canManageGrades || canViewGrades ? (["erapor"] as const) : []),
-      ...(canManageSettings || canManageGrades ? (["settings"] as const) : []),
+      ...(showTpTab ? (["tp"] as const) : []),
+      ...(showEraporTab ? (["erapor"] as const) : []),
+      ...(showSettingsTab ? (["settings"] as const) : []),
     ],
     "gradebook",
   );
@@ -161,9 +171,6 @@ export function GradingView(): ReactElement {
       : (assignmentPairs.find((pair) => pair.classId === effectiveClassId)?.subjectId ??
         subjectList[0]?.id ??
         "");
-  const scopeLoading =
-    classes.isLoading || subjects.isLoading || (needsAssignments && assignments.isLoading);
-  const noAssignments = !canOpenAny && !scopeLoading && classList.length === 0;
   // The sheet is editable only where the server accepts the writes: a
   // pair the actor teaches, or any pair for manage_master_data. Anything
   // else a school-wide reader opens is the same read-only sheet a
@@ -195,12 +202,31 @@ export function GradingView(): ReactElement {
     change();
   }
 
+  // The legacy per-subject e-Rapor file is cut per (class, subject), so a
+  // teacher is offered the subjects they teach in the exported class.
+  const eraporSubjectsOf = (exportClassId: string) => {
+    const all = subjects.data?.data ?? [];
+    if (canOpenAny) return all;
+    const taught = new Set(
+      activeAssignments.filter((a) => a.class_id === exportClassId).map((a) => a.subject_id),
+    );
+    return all.filter((s) => taught.has(s.id));
+  };
+
+  // "Open the gradebook" from the e-Rapor panel unmounts the button that
+  // was pressed; focus follows the reader into the sheet panel instead of
+  // falling back to the top of the page.
+  const gradebookPanelRef = useRef<HTMLDivElement>(null);
+  const focusGradebookOnOpen = useRef(false);
+  useEffect(() => {
+    if (tab !== "gradebook" || !focusGradebookOnOpen.current) return;
+    focusGradebookOnOpen.current = false;
+    gradebookPanelRef.current?.focus();
+  }, [tab]);
+
   const classNameOf = (id: string) => classes.data?.data.find((c) => c.id === id)?.name ?? "";
   const subjectNameOf = (id: string) => subjects.data?.data.find((s) => s.id === id)?.name ?? "";
 
-  const showTpTab = canManageGrades && !noAssignments;
-  const showEraporTab = canManageGrades || canViewGrades;
-  const showSettingsTab = canManageSettings || canManageGrades;
   // The sheet panel is always there (it explains when there is no sheet).
   const tabCount = 1 + [showTpTab, showEraporTab, showSettingsTab].filter(Boolean).length;
   // The class and subject only steer the sheet and the TP mapping; the
@@ -345,7 +371,11 @@ export function GradingView(): ReactElement {
           )
         }
       >
-        <TabsContent value="gradebook" className="flex flex-col pt-0 md:min-h-0 md:flex-1">
+        <TabsContent
+          ref={gradebookPanelRef}
+          value="gradebook"
+          className="flex flex-col pt-0 md:min-h-0 md:flex-1"
+        >
           {gradebookPanel}
         </TabsContent>
         {showTpTab && (
@@ -371,6 +401,10 @@ export function GradingView(): ReactElement {
         {showEraporTab && (
           <TabsContent value="erapor" className="pt-0">
             <EraporExport
+              classes={classList}
+              loading={scopeLoading}
+              defaultClassId={effectiveClassId}
+              subjectsOf={eraporSubjectsOf}
               canPublishIn={canPublishIn}
               onOpenGradebook={(exportClassId) => {
                 changeScope(() => {
@@ -384,6 +418,7 @@ export function GradingView(): ReactElement {
                   ) {
                     setSubjectId(taught[0]?.subjectId ?? "");
                   }
+                  focusGradebookOnOpen.current = true;
                   setTab("gradebook");
                 });
               }}

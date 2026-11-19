@@ -215,6 +215,8 @@
     "formatXlsx": "Excel (.xlsx)",
     "formatCsv": "CSV (.csv)",
     "previewError": "Pratinjau ekspor gagal dimuat.",
+    "noClassesTitle": "Belum ada kelas untuk diekspor",
+    "noClassesBody": "Ekspor e-Rapor tersedia untuk kelas yang Anda ajar. Kelas akan muncul di sini setelah jadwal mengajar Anda diatur.",
     "summary": "{rows} baris siap diekspor, {skipped} dilewati.",
     "rowsTitle": "Akan diekspor",
     "rowsEmpty": "Tidak ada nilai yang bisa diekspor untuk pilihan ini.",
