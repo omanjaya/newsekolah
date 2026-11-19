@@ -49,7 +49,7 @@ export function GenerationView(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const { me } = useSession();
-  const { money } = useBillingFormat();
+  const { money, period: periodLabel } = useBillingFormat();
 
   const [period, setPeriod] = useState(currentPeriod(me?.tenant.timezone));
   const [preview, setPreview] = useState<GenerationSummary | null>(null);
@@ -78,7 +78,12 @@ export function GenerationView(): ReactElement {
       enableSorting: false,
       meta: { card: "subtitle" },
     },
-    { accessorKey: "period", header: t("columns.period"), enableSorting: false },
+    {
+      id: "period",
+      header: t("columns.period"),
+      enableSorting: false,
+      cell: ({ row }) => periodLabel(row.original.period),
+    },
     {
       id: "amount",
       header: t("columns.amount"),

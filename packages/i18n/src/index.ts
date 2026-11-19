@@ -14,6 +14,7 @@ export {
   formatCurrency,
   formatDate,
   formatDateTime,
+  formatMonth,
   formatNumber,
   formatRelative,
   formatTime,

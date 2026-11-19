@@ -20,6 +20,15 @@ export function formatDate(value: Date | string | number, options: FormatOptions
   }).format(toDate(value));
 }
 
+/** "September 2026" (id and en): a month as a whole, such as a billing period. */
+export function formatMonth(value: Date | string | number, options: FormatOptions): string {
+  return new Intl.DateTimeFormat(INTL_LOCALE[options.locale], {
+    month: "long",
+    year: "numeric",
+    timeZone: options.timeZone,
+  }).format(toDate(value));
+}
+
 /** "14.05" (id, 24-hour) / "2:05 PM" (en). */
 export function formatTime(value: Date | string | number, options: FormatOptions): string {
   return new Intl.DateTimeFormat(INTL_LOCALE[options.locale], {
