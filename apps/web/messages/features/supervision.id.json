@@ -101,6 +101,7 @@
     "backToCycle": "Kembali ke siklus",
     "notFoundTitle": "Observasi terjadwal tidak ditemukan",
     "notFoundBody": "Observasi ini mungkin sudah diisi atau jadwalnya dihapus. Kembali ke siklus untuk memeriksa.",
+    "doneBreadcrumb": "Hasil observasi",
     "doneTitle": "Observasi ini sudah diisi",
     "doneBody": "Hasilnya sudah tersimpan. Buka hasil observasi untuk membaca atau menanggapinya.",
     "viewResult": "Lihat hasil"

@@ -101,6 +101,7 @@
     "backToCycle": "Back to cycle",
     "notFoundTitle": "Scheduled observation not found",
     "notFoundBody": "It may already be filled in, or its schedule was removed. Go back to the cycle to check.",
+    "doneBreadcrumb": "Observation result",
     "doneTitle": "This observation is already filled in",
     "doneBody": "Its result is saved. Open the observation to read or respond to it.",
     "viewResult": "See result"

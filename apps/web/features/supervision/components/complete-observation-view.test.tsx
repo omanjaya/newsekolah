@@ -59,6 +59,7 @@ describe("CompleteObservationView", () => {
     observationId.mockReturnValue("obs1");
     render(<CompleteObservationView cycleId="c1" scheduledId="s1" />);
     expect(screen.queryByRole("form", { name: "observation form" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("doneBreadcrumb");
     expect(screen.getByText("doneTitle")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "viewResult" })).toHaveAttribute(
       "href",
