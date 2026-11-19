@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   useHomeroomAttendanceQuery: vi.fn(),
   permissions: new Set<string>(),
   disabledModules: [] as string[],
+  rememberedSearch: "",
 }));
 
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
@@ -35,9 +36,12 @@ vi.mock("../../../lib/session/session-provider", () => ({
     },
   }),
 }));
-vi.mock("../../../lib/view-state/view-state-provider", () => ({
-  useRememberedViewState: () => ["", vi.fn()],
-}));
+vi.mock("../../../lib/view-state/view-state-provider", async () => {
+  const { useState } = await import("react");
+  return {
+    useRememberedViewState: () => useState(mocks.rememberedSearch),
+  };
+});
 vi.mock("../../attendance/api", () => ({
   todayInZone: () => "2026-09-29",
   useHomeroomAttendanceQuery: mocks.useHomeroomAttendanceQuery,
@@ -204,6 +208,7 @@ describe("HomeroomView roster with discipline switched off", () => {
 describe("HomeroomView overview", () => {
   beforeEach(() => {
     mocks.disabledModules.length = 0;
+    mocks.rememberedSearch = "";
     mocks.useHomeroomAttendanceQuery.mockReset();
     mocks.useHomeroomAttendanceQuery.mockReturnValue({
       data: {
@@ -228,6 +233,68 @@ describe("HomeroomView overview", () => {
 
     expect(new URLSearchParams(window.location.search).get("tab")).toBe("attendance");
     expect(lastRosterCallArgs()).toEqual([expect.objectContaining({ statusCode: "A" }), true]);
+  });
+
+  it("drops a search left from an earlier visit when the hero opens a list", async () => {
+    mocks.rememberedSearch = "Budi";
+    const user = userEvent.setup();
+    render(<HomeroomView />);
+
+    await user.click(screen.getByRole("button", { name: "attentionOpen" }));
+
+    expect(new URLSearchParams(window.location.search).get("tab")).toBe("attendance");
+    expect(lastRosterCallArgs()).toEqual([
+      expect.objectContaining({ statusCode: "A", search: undefined }),
+      true,
+    ]);
+  });
+
+  it("opens the incomplete list from the hero when nobody is absent", async () => {
+    mocks.useHomeroomAttendanceQuery.mockReturnValue({
+      data: {
+        data: [
+          { student_user_id: "s1", name: "Siswa Satu", status_code: "INCOMPLETE" },
+          { student_user_id: "s2", name: "Siswa Dua", status_code: "INCOMPLETE" },
+        ],
+        total: 2,
+        status_counts: { A: 0, INCOMPLETE: 2 },
+      },
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<HomeroomView />);
+
+    await user.click(screen.getByRole("button", { name: "attentionOpen" }));
+
+    expect(new URLSearchParams(window.location.search).get("tab")).toBe("attendance");
+    expect(lastRosterCallArgs()).toEqual([
+      expect.objectContaining({ statusCode: "INCOMPLETE" }),
+      true,
+    ]);
+  });
+
+  it("opens each attention list from its own stat cell", async () => {
+    mocks.useHomeroomAttendanceQuery.mockReturnValue({
+      data: {
+        data: [
+          { student_user_id: "s1", name: "Siswa Satu", status_code: "A" },
+          { student_user_id: "s2", name: "Siswa Dua", status_code: "INCOMPLETE" },
+        ],
+        total: 2,
+        status_counts: { A: 1, INCOMPLETE: 1 },
+      },
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<HomeroomView />);
+
+    await user.click(screen.getByRole("button", { name: /statIncomplete/ }));
+
+    expect(new URLSearchParams(window.location.search).get("tab")).toBe("attendance");
+    expect(lastRosterCallArgs()).toEqual([
+      expect.objectContaining({ statusCode: "INCOMPLETE" }),
+      true,
+    ]);
   });
 
   it("keeps the alarm eyebrow while someone needs attention", () => {

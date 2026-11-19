@@ -1,4 +1,4 @@
-import { render, renderHook, screen } from "@testing-library/react";
+import { fireEvent, render, renderHook, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HERO_PRIORITY, type Me } from "../types";
@@ -16,7 +16,12 @@ vi.mock("../../../permits/api", () => ({
 }));
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => Object.assign((key: string) => key, { has: () => true }),
+  useTranslations: () =>
+    Object.assign(
+      (key: string, values?: Record<string, unknown>) =>
+        key === "card.statusChip" ? `${key}:${JSON.stringify(values)}` : key,
+      { has: () => true },
+    ),
 }));
 
 import { useHomeroomBlock } from "./homeroom";
@@ -137,8 +142,8 @@ describe("useHomeroomBlock", () => {
     expect(leaveTile?.value).toBe("1");
   });
 
-  it("renders the class card's left slot with a retry action on error", () => {
-    attendanceQuery.mockReturnValue({
+  it("shows one error with one retry for the card when both reads fail, and flags the block", () => {
+    const failed = () => ({
       data: undefined,
       isLoading: false,
       isError: true,
@@ -146,18 +151,43 @@ describe("useHomeroomBlock", () => {
       isSuccess: false,
       refetch: vi.fn(),
     });
-    leaveQueueQuery.mockReturnValue({
-      data: undefined,
+    const attendance = failed();
+    const leave = failed();
+    attendanceQuery.mockReturnValue(attendance);
+    leaveQueueQuery.mockReturnValue(leave);
+
+    const { result } = renderHook(() => useHomeroomBlock(meWithHomeroom(), true));
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
+
+    expect(result.current.failed).toBe(true);
+    // getByRole throws unless there is exactly one button.
+    fireEvent.click(screen.getByRole("button"));
+    expect(attendance.refetch).toHaveBeenCalledTimes(1);
+    expect(leave.refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("names the unit of each status count: students", () => {
+    attendanceQuery.mockReturnValue({
+      data: { data: [], total: 30, status_counts: { H: 28, INCOMPLETE: 2 } },
       isLoading: false,
-      isError: true,
-      error: new Error("failed"),
-      isSuccess: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn(),
+    });
+    leaveQueueQuery.mockReturnValue({
+      data: { data: [] },
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
       refetch: vi.fn(),
     });
 
     const { result } = renderHook(() => useHomeroomBlock(meWithHomeroom(), true));
     render(<>{result.current.main.map((slot) => slot.node)}</>);
 
-    expect(screen.getAllByRole("button").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText('card.statusChip:{"label":"codes.INCOMPLETE","count":2}'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('card.statusChip:{"label":"codes.H","count":28}')).toBeInTheDocument();
   });
 });

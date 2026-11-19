@@ -169,25 +169,41 @@ func (h *Handler) toAPIMe(ctx context.Context, tenantID uuid.UUID, me service.Me
 		}{Id: me.CurrentClass.ID, Name: me.CurrentClass.Name}
 	}
 
-	if len(me.Duties) > 0 {
-		duties := make([]struct {
-			ScopeId    *uuid.UUID            `json:"scope_id,omitempty"`
-			ScopeKind  api.MeDutiesScopeKind `json:"scope_kind"`
-			ScopeLabel *string               `json:"scope_label,omitempty"`
-			Slug       string                `json:"slug"`
-		}, len(me.Duties))
-		for i, d := range me.Duties {
-			duties[i].Slug = d.Slug
-			duties[i].ScopeKind = api.MeDutiesScopeKind(d.ScopeKind)
-			if d.ScopeID.Valid {
-				id := d.ScopeID.UUID
-				duties[i].ScopeId = &id
-			}
-		}
-		result.Duties = &duties
-	}
+	result.Duties = toAPIDuties(me.Duties)
 
 	return result
+}
+
+// toAPIDuties maps Me's duties onto the response, nil when there are none
+// so the field is omitted. scope_label names a class-scoped duty's class.
+func toAPIDuties(views []service.DutyView) *[]struct {
+	ScopeId    *uuid.UUID            `json:"scope_id,omitempty"`
+	ScopeKind  api.MeDutiesScopeKind `json:"scope_kind"`
+	ScopeLabel *string               `json:"scope_label,omitempty"`
+	Slug       string                `json:"slug"`
+} {
+	if len(views) == 0 {
+		return nil
+	}
+	duties := make([]struct {
+		ScopeId    *uuid.UUID            `json:"scope_id,omitempty"`
+		ScopeKind  api.MeDutiesScopeKind `json:"scope_kind"`
+		ScopeLabel *string               `json:"scope_label,omitempty"`
+		Slug       string                `json:"slug"`
+	}, len(views))
+	for i, d := range views {
+		duties[i].Slug = d.Slug
+		duties[i].ScopeKind = api.MeDutiesScopeKind(d.ScopeKind)
+		if d.ScopeID.Valid {
+			id := d.ScopeID.UUID
+			duties[i].ScopeId = &id
+		}
+		if d.ScopeLabel != "" {
+			label := d.ScopeLabel
+			duties[i].ScopeLabel = &label
+		}
+	}
+	return &duties
 }
 
 func toClientKind(c api.ClientKind) domain.ClientKind {

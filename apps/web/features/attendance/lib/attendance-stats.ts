@@ -7,10 +7,35 @@ export interface CalendarDayLike {
 }
 
 export interface MonthAttendanceStats {
-  /** Rounded percent of "H" (hadir) days among the month's known days, or undefined with none yet. */
+  /**
+   * Rounded percent of "H" (hadir) days among the month's recorded days, or
+   * undefined while nothing is recorded yet (see {@link presentRate}).
+   */
   presentRate: number | undefined;
   /** One count per status code seen among the month's known days (H, S, I, D, A, INCOMPLETE, MIXED). */
   counts: Record<string, number>;
+}
+
+/**
+ * Day codes that record no attendance: no lesson that day (NONE), a session
+ * the teacher has not filled in yet (INCOMPLETE), or nothing to base a
+ * status on (MIXED). See the API's attendance/domain/daily_status.go.
+ */
+const UNRECORDED_DAY_CODES: ReadonlySet<string> = new Set(["NONE", "INCOMPLETE", "MIXED"]);
+
+/**
+ * The percent of present ("H") days among the days with an attendance
+ * status recorded, or undefined while none has one. A day the teacher has
+ * not filled in yet is not an absence, so it never lowers the rate: a month
+ * that is all "belum lengkap" reads "-", not "0%" (audit teaching-3).
+ * Shared by the attendance page and the home's attendance tile so both
+ * show the same figure.
+ */
+export function presentRate(statuses: readonly string[]): number | undefined {
+  return attendanceRate(
+    statuses.filter((code) => !UNRECORDED_DAY_CODES.has(code)),
+    ["H"],
+  );
 }
 
 /**
@@ -35,5 +60,5 @@ export function monthAttendanceStats(
   const statuses = known.map((day) => day.status_code);
   const counts: Record<string, number> = {};
   for (const code of statuses) counts[code] = (counts[code] ?? 0) + 1;
-  return { presentRate: attendanceRate(statuses, ["H"]), counts };
+  return { presentRate: presentRate(statuses), counts };
 }

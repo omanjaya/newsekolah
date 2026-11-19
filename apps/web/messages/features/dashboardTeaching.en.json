@@ -14,11 +14,11 @@
     },
     "hero": {
       "nowEyebrow": "In progress",
-      "nowMeta": "{start}–{end} · attendance not submitted yet",
+      "nowMeta": "{range} · attendance not submitted yet",
       "nowChip": "running {hours, plural, =0 {{minutes} min} other {{minutes, plural, =0 {{hours} h} other {{hours} h {minutes} min}}}}",
       "nowAction": "Fill in attendance",
       "nextEyebrow": "Next",
-      "nextMeta": "{start}–{end}",
+      "nextMeta": "{range}",
       "nextChip": "in {hours, plural, =0 {{minutes} min} other {{minutes, plural, =0 {{hours} h} other {{hours} h {minutes} min}}}}",
       "nextAction": "Open attendance",
       "nextChipAt": "starts {start}",
@@ -40,7 +40,8 @@
       "noStatus": "No attendance data yet today",
       "statusTitle": "{className} attendance today",
       "statusTitleFallback": "Class attendance today",
-      "statusLabel": "Attendance status today"
+      "statusLabel": "Attendance status today",
+      "statusChip": "{label}: {count, plural, one {# student} other {# students}}"
     },
     "tiles": {
       "leaveLabel": "Class leave requests waiting",

@@ -1,28 +1,16 @@
 "use client";
 
 import type { components } from "@newsekolah/api-client";
-import {
-  Badge,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CountBadge,
-  EmptyState,
-  List,
-  ListRow,
-  SkeletonList,
-  StatusBadge,
-} from "@newsekolah/ui";
-import { CheckCircle2 } from "lucide-react";
+import { Badge, ListRow, StatusBadge } from "@newsekolah/ui";
 import { useFormatter, useTranslations } from "next-intl";
-import type { ReactElement, ReactNode } from "react";
+import type { ReactElement } from "react";
 
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { statusToken } from "../../attendance/lib/status-tokens";
 import { studentProfileHref } from "../../students/href";
 
 import { GuardianContactActions } from "./guardian-contact-actions";
+import { HomeroomQueueCard } from "./homeroom-queue-card";
 
 type Entry = components["schemas"]["AttendanceHomeroomEntry"];
 type LeaveRequestSummary = components["schemas"]["LeaveRequestSummary"];
@@ -59,9 +47,13 @@ export function HomeroomDashboard({
   return (
     // The cards stretch to one height, so the row ends on one line.
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <DashboardCard
+      <HomeroomQueueCard
+        className="h-full"
         title={t("attentionListTitle")}
         count={attentionRows.length}
+        // Guardians to contact wait on the teacher: the accent count, as
+        // on the journal's "Perlu diisi" and the permits tab.
+        countTone="accent"
         loading={dashboardLoading}
         // Its own line: the hero above already says everyone is recorded.
         empty={t("contactEmpty")}
@@ -94,12 +86,14 @@ export function HomeroomDashboard({
             />
           );
         })}
-      </DashboardCard>
+      </HomeroomQueueCard>
 
       {showLeave && (
-        <DashboardCard
+        <HomeroomQueueCard
+          className="h-full"
           title={t("pendingLeaveTitle")}
           count={pendingLeave.length}
+          countTone="accent"
           loading={leaveLoading}
           empty={t("pendingLeaveEmpty")}
         >
@@ -120,11 +114,13 @@ export function HomeroomDashboard({
               href={`/leave-requests/${item.instance_id}`}
             />
           ))}
-        </DashboardCard>
+        </HomeroomQueueCard>
       )}
 
       {showDiscipline && (
-        <DashboardCard
+        // A plain tally of records, nothing to act on: the neutral count.
+        <HomeroomQueueCard
+          className="h-full"
           title={t("disciplineTitle")}
           count={disciplineRows.length}
           loading={dashboardLoading}
@@ -141,50 +137,8 @@ export function HomeroomDashboard({
               href={studentProfileHref(row.student_user_id, "discipline")}
             />
           ))}
-        </DashboardCard>
+        </HomeroomQueueCard>
       )}
     </div>
-  );
-}
-
-function DashboardCard({
-  title,
-  count,
-  loading,
-  empty,
-  children,
-}: {
-  title: string;
-  count: number;
-  loading: boolean;
-  /** Said in the card when there is nothing to list. */
-  empty: string;
-  children: ReactNode;
-}): ReactElement {
-  return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle as="h2" className="flex items-center gap-2">
-          {title}
-          {!loading && <CountBadge count={count} />}
-        </CardTitle>
-      </CardHeader>
-      {loading ? (
-        <CardContent className="pt-0">
-          <SkeletonList rows={2} framed={false} />
-        </CardContent>
-      ) : count === 0 ? (
-        <CardContent className="pt-0">
-          <EmptyState
-            variant="compact"
-            tone="success"
-            icon={<CheckCircle2 aria-hidden="true" />}
-            title={empty}
-          />
-        </CardContent>
-      ) : (
-        <List>{children}</List>
-      )}
-    </Card>
   );
 }

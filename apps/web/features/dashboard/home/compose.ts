@@ -1,4 +1,11 @@
-import type { BlockSlot, HeroCandidate, HeroLink, PersonaBlock, TileSpec } from "./types";
+import {
+  HERO_PRIORITY,
+  type BlockSlot,
+  type HeroCandidate,
+  type HeroLink,
+  type PersonaBlock,
+  type TileSpec,
+} from "./types";
 
 /** The single most urgent hero candidate across all active persona blocks. */
 export function pickHero(candidates: HeroCandidate[]): HeroCandidate | undefined {
@@ -29,6 +36,7 @@ export function collectBlocks(blocks: PersonaBlock[]): {
   main: BlockSlot[];
   side: BlockSlot[];
   pending: boolean;
+  failed: boolean;
 } {
   const hero = pickHero(blocks.flatMap((b) => (b.hero ? [b.hero] : [])));
   const covered = new Set(hero?.coversTiles ?? []);
@@ -38,6 +46,7 @@ export function collectBlocks(blocks: PersonaBlock[]): {
     main: blocks.flatMap((b) => b.main),
     side: blocks.flatMap((b) => b.side),
     pending: blocks.some((b) => b.pending === true),
+    failed: blocks.some((b) => b.failed === true),
   };
 }
 
@@ -60,6 +69,17 @@ export function guardHero(hero: HeroCandidate, canOpen: (href: string) => boolea
       ? hero.secondaryAction
       : undefined;
   return { ...hero, action, secondaryAction };
+}
+
+/**
+ * A hero that says nothing is due: the calm states (`tone: "neutral"`) and
+ * anything ranked no higher than the idle inbox (the home's own fallback
+ * included). When a block failed to load, such a hero would be a false
+ * all-clear, so the home shows the failure instead (audit shell-home-3);
+ * a real urgent hero from a block that did load stays.
+ */
+export function isCalmHero(hero: HeroCandidate): boolean {
+  return hero.tone === "neutral" || hero.priority <= HERO_PRIORITY.inboxIdle;
 }
 
 /** The tiles with every link the reader cannot open removed (the tile stays, as plain figures). */

@@ -5,9 +5,6 @@ import { useSyncExternalStore } from "react";
 /** The shell's own breakpoint: the sidebar and header from here, the phone frame below (Tailwind `md`). */
 const DESKTOP_QUERY = "(min-width: 768px)";
 
-/** Where a page's main and side columns sit side by side (Tailwind `lg`); one column below. */
-const TWO_COLUMN_QUERY = "(min-width: 1024px)";
-
 function mediaQuery(query: string): MediaQueryList | null {
   return typeof window !== "undefined" && typeof window.matchMedia === "function"
     ? window.matchMedia(query)
@@ -43,11 +40,14 @@ export function useIsDesktop(): boolean {
   return useMatches(DESKTOP_QUERY);
 }
 
+/** Where a page that needs a roomier side column splits in two (Tailwind `xl`). */
+const WIDE_TWO_COLUMN_QUERY = "(min-width: 1280px)";
+
 /**
- * True from the `lg` breakpoint, where a page's main and side columns sit
- * side by side; below it they stack in one column, so a card that leads
- * the side column may need to move up. Server: `false`.
+ * True from the `xl` breakpoint, for a page whose side column needs more
+ * room than `lg` leaves beside the open sidebar (the home: at 1024px its
+ * side column was about 228px and truncated the shortcuts). Server: `false`.
  */
-export function useIsTwoColumn(): boolean {
-  return useMatches(TWO_COLUMN_QUERY);
+export function useIsWideTwoColumn(): boolean {
+  return useMatches(WIDE_TWO_COLUMN_QUERY);
 }

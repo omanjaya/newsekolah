@@ -429,6 +429,12 @@
         "inboxMeta": "Requests waiting on your decision, all in one place.",
         "inboxAction": "Open needs action"
       },
+      "failed": {
+        "eyebrow": "Today",
+        "title": "Part of your home did not load",
+        "meta": "Check your connection, then try again.",
+        "action": "Try again"
+      },
       "shortcuts": {
         "title": "Shortcuts",
         "monitor": "Attendance monitor",
@@ -1297,10 +1303,11 @@
       "contactCall": "Call {name}'s guardian",
       "contactWhatsapp": "WhatsApp {name}'s guardian",
       "pendingLeaveTitle": "Leave requests awaiting review",
-      "pendingLeaveEmpty": "No leave requests are waiting for review.",
+      "pendingLeaveEmpty": "No leave requests are waiting for review",
       "pendingLeaveReview": "Review",
       "disciplineTitle": "Discipline record",
-      "disciplineEmpty": "No violations recorded.",
+      "disciplineEmpty": "No violations recorded",
+      "disciplineEmptyBody": "Violations by students in this class will show up here.",
       "columns": {
         "name": "Name",
         "status": "Daily status",
@@ -1330,7 +1337,7 @@
         "parents": "Parents"
       },
       "exitPermitsTitle": "Exit permits awaiting approval",
-      "exitPermitsEmpty": "No exit permits are waiting.",
+      "exitPermitsEmpty": "No exit permits are waiting",
       "unknownStudent": "Student",
       "pointsBadge": "{points} points",
       "tabsLabel": "Homeroom sections",
@@ -1343,7 +1350,7 @@
       "attentionBreakdown": "{absent} absent · {incomplete} with attendance still incomplete",
       "attentionOpen": "Open in class attendance",
       "attentionListTitle": "To contact",
-      "contactEmpty": "No guardians to contact.",
+      "contactEmpty": "No guardians to contact",
       "noHomeroomAdminBody": "This page shows the daily summary of a homeroom class. Homeroom teachers are set in the duty assignments.",
       "openAssignments": "Open assignments"
     },

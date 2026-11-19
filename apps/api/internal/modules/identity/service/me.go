@@ -38,10 +38,13 @@ type ClassRef struct {
 	Name string
 }
 
-// StudentClassRepository resolves a student's own active class, so Me can
-// show it on the student's own /v1/me response.
+// StudentClassRepository resolves the classes /v1/me names: a student's own
+// active class, and the class each class-scoped duty (a homeroom) covers.
 type StudentClassRepository interface {
 	ActiveClassForStudent(ctx context.Context, tenantID, studentID, yearID uuid.UUID) (ClassRef, bool, error)
+	// ClassNames maps each live class among ids to its name; unknown or
+	// deleted classes are left out.
+	ClassNames(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]string, error)
 }
 
 // MeResult is identity's view of "who is this user"; it deliberately
@@ -113,13 +116,9 @@ func (s *Service) me(ctx context.Context, user domain.User) (MeResult, error) {
 		return MeResult{}, err
 	}
 
-	duties := make([]DutyView, 0, len(principal.Duties))
-	for _, d := range principal.Duties {
-		duties = append(duties, DutyView{
-			Slug:      d.Slug,
-			ScopeKind: string(d.ScopeKind),
-			ScopeID:   pickScopeID(d),
-		})
+	duties, err := s.dutyViews(ctx, user.TenantID, principal.Duties)
+	if err != nil {
+		return MeResult{}, err
 	}
 
 	result := MeResult{
@@ -157,6 +156,34 @@ func (s *Service) me(ctx context.Context, user domain.User) (MeResult, error) {
 	}
 
 	return result, nil
+}
+
+// dutyViews turns the principal's duties into Me's view, naming the class
+// of every class-scoped duty (a homeroom teacher's "X-A") in one lookup so
+// clients can say "Wali kelas X-A" without fetching the class themselves.
+func (s *Service) dutyViews(ctx context.Context, tenantID uuid.UUID, duties []authz.Duty) ([]DutyView, error) {
+	views := make([]DutyView, 0, len(duties))
+	var classIDs []uuid.UUID
+	for _, d := range duties {
+		view := DutyView{Slug: d.Slug, ScopeKind: string(d.ScopeKind), ScopeID: pickScopeID(d)}
+		if d.ScopeKind == authz.ScopeClass && view.ScopeID.Valid {
+			classIDs = append(classIDs, view.ScopeID.UUID)
+		}
+		views = append(views, view)
+	}
+	if len(classIDs) == 0 {
+		return views, nil
+	}
+	names, err := s.repo.ClassNames(ctx, tenantID, classIDs)
+	if err != nil {
+		return nil, err
+	}
+	for i := range views {
+		if views[i].ScopeKind == string(authz.ScopeClass) && views[i].ScopeID.Valid {
+			views[i].ScopeLabel = names[views[i].ScopeID.UUID]
+		}
+	}
+	return views, nil
 }
 
 func pickScopeID(d authz.Duty) uuid.NullUUID {

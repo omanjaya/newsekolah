@@ -125,7 +125,7 @@ export function useLibrarianBlock(me: Me, active: boolean): PersonaBlock {
     },
   ];
 
-  return { hero, tiles, main, side: [], pending: isLoading };
+  return { hero, tiles, main, side: [], pending: isLoading, failed: isError };
 }
 
 function OverdueCard({

@@ -15,7 +15,7 @@ import {
   cn,
 } from "@newsekolah/ui";
 import { BookOpen, CalendarCheck, CalendarX2, FileText, GraduationCap } from "lucide-react";
-import { useFormatter, useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, type ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
@@ -23,17 +23,17 @@ import { isModuleEnabled } from "../../../../lib/modules/feature-modules";
 import { quickActionHref, quickActions } from "../../../../lib/quick-actions";
 import { businessNow } from "../../../../lib/simulation/clock";
 import { todayInZone, useMyCalendarQuery } from "../../../attendance/api";
+import { monthAttendanceStats } from "../../../attendance/lib/attendance-stats";
 import { useMyGradesQuery } from "../../../grading/api";
 import { useMyLibraryProfileQuery } from "../../../library/me-api";
 import { useMyLeaveRequestsQuery } from "../../../permits/api";
 import { useAllPeriodsQuery, useLookup, useSubjectsQuery } from "../../../reference/api";
 import { useDirectoryLookup } from "../../../reference/directory-names";
 import { useSchedulesQuery } from "../../../schedule/api";
+import { clockLabel, clockRange } from "../../../schedule/clock-label";
 import {
   LONG_WAIT_MINUTES,
   STARTING_SOON_MINUTES,
-  attendanceRate,
-  clockInstant,
   isoWeekdayInZone,
   minutesInZone,
   parseClock,
@@ -76,14 +76,13 @@ const SUBMIT_LEAVE_HREF = SUBMIT_LEAVE ? quickActionHref(SUBMIT_LEAVE) : LEAVE_H
  */
 export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
   const t = useTranslations("app.dashboardStudent");
-  const format = useFormatter();
   const locale = useLocale() as Locale;
   const timeZone = me.tenant.timezone;
   const today = todayInZone(timeZone);
   const nowMinutes = minutesInZone(businessNow(), timeZone);
   const dayOfWeek = isoWeekdayInZone(businessNow(), timeZone);
-  const clock = (value: string) =>
-    format.dateTime(clockInstant(value), { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+  // Lesson times read as on the schedule and attendance ("07.00 – 08.30").
+  const clock = (value: string) => clockLabel(value, locale);
 
   const schedules = useSchedulesQuery({
     academicYearId: active ? (me.active_academic_year?.id ?? "") : "",
@@ -174,7 +173,7 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
       priority: HERO_PRIORITY.studentNext,
       eyebrow: state === "now" ? t("heroNowEyebrow") : t("heroNextEyebrow"),
       title: subjectName,
-      meta: [`${clock(item.startLabel)}–${clock(item.endLabel)}`, teacherName]
+      meta: [clockRange(item.startLabel, item.endLabel, locale), teacherName]
         .filter(Boolean)
         .join(" · "),
       chip:
@@ -204,10 +203,9 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
   const tiles: TileSpec[] = [];
 
   if (calendar.isSuccess) {
-    const known = calendar.data.data
-      .filter((day) => day.date <= today)
-      .map((day) => (day.status_code === "NONE" ? null : day.status_code));
-    const rate = attendanceRate(known, ["H"]);
+    // The attendance page's own rule, so the tile and the page agree: only
+    // recorded days count, and nothing recorded yet means no tile, not 0%.
+    const rate = monthAttendanceStats(calendar.data.data, today).presentRate;
     if (rate !== undefined) {
       tiles.push({
         key: "student.attendance",
@@ -356,6 +354,12 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
     hero,
     tiles,
     pending: scheduleLoading,
+    failed:
+      Boolean(scheduleError) ||
+      calendar.isError ||
+      leaveRequests.isError ||
+      grades.isError ||
+      library.isError,
     main: [
       { key: "student.schedule", node: scheduleNode },
       ...(leaveOn ? [{ key: "student.leave", node: leaveNode }] : []),

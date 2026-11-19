@@ -250,7 +250,14 @@ export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
     },
   ];
 
-  return { hero, tiles, main: [...main, ...insights], side: [], pending: dashboard.isLoading };
+  return {
+    hero,
+    tiles,
+    main: [...main, ...insights],
+    side: [],
+    pending: dashboard.isLoading,
+    failed: dashboard.isError,
+  };
 }
 
 function SchoolQueueCard({

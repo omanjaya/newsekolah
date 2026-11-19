@@ -1,7 +1,7 @@
 import { CalendarCheck } from "lucide-react";
 import { describe, expect, it } from "vitest";
 
-import { collectBlocks, guardHero, guardTiles, mergeTiles, pickHero } from "./compose";
+import { collectBlocks, guardHero, guardTiles, isCalmHero, mergeTiles, pickHero } from "./compose";
 import { HERO_PRIORITY, type TileSpec } from "./types";
 
 const tile = (key: string, priority: number): TileSpec => ({
@@ -56,6 +56,14 @@ describe("collectBlocks", () => {
     expect(out.side.map((s) => s.key)).toEqual(["r1"]);
     expect(out.tiles.map((t) => t.key)).toEqual(["x"]);
     expect(out.pending).toBe(false);
+    expect(out.failed).toBe(false);
+  });
+  it("reports a failure when any block's reads failed", () => {
+    const out = collectBlocks([
+      { tiles: [], main: [], side: [] },
+      { tiles: [], main: [], side: [], failed: true },
+    ]);
+    expect(out.failed).toBe(true);
   });
   it("leaves out the tiles the winning hero already states, before the top four are cut", () => {
     const out = collectBlocks([
@@ -120,5 +128,25 @@ describe("guardTiles", () => {
       (href) => href === "/inbox",
     );
     expect(out.map((t) => t.href)).toEqual([undefined, "/inbox"]);
+  });
+});
+
+describe("isCalmHero", () => {
+  const hero = (priority: number, tone?: "neutral" | "accent-soft") => ({
+    key: "h",
+    priority,
+    eyebrow: "",
+    title: "h",
+    ...(tone ? { tone } : {}),
+  });
+  it("treats a neutral hero or one ranked no higher than the idle inbox as calm", () => {
+    expect(isCalmHero(hero(HERO_PRIORITY.schoolSummary, "neutral"))).toBe(true);
+    expect(isCalmHero(hero(HERO_PRIORITY.teacherIdle))).toBe(true);
+    expect(isCalmHero(hero(0))).toBe(true);
+  });
+  it("never treats work waiting on the reader as calm", () => {
+    expect(isCalmHero(hero(HERO_PRIORITY.teacherNowPending))).toBe(false);
+    expect(isCalmHero(hero(HERO_PRIORITY.picketIdle, "accent-soft"))).toBe(false);
+    expect(isCalmHero(hero(HERO_PRIORITY.gateIdle))).toBe(false);
   });
 });

@@ -253,7 +253,9 @@ export function HomeroomView(): ReactElement {
     );
   }
 
-  const counts = data?.status_counts ?? {};
+  // The day's figures come from the unfiltered dashboard read: the table's
+  // own read counts only the rows its search and status filter keep.
+  const counts = dashboard.data?.status_counts ?? {};
   const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
   const absent = counts.A ?? 0;
   const incomplete = counts.INCOMPLETE ?? 0;
@@ -267,10 +269,24 @@ export function HomeroomView(): ReactElement {
     setPagination((p) => ({ ...p, pageIndex: 0 }));
   }
 
-  function showAttention() {
-    setStatusCode("A");
+  /**
+   * Opens class attendance filtered to one status, from the first page. A
+   * name still typed in its search from an earlier visit is dropped, or the
+   * list could come up empty although students have that status.
+   */
+  function showStatus(code: (typeof STATUS_VALUES)[number]) {
+    setSearch("");
+    setStatusCode(code);
     setPagination((p) => ({ ...p, pageIndex: 0 }));
     setTab("attendance");
+  }
+
+  // The status filter matches one code, so the hero opens the list that has
+  // rows: alpha first (the guardian needs a call), else the students whose
+  // attendance is not complete yet. The two stat cells below open each list
+  // on its own (audit teaching-1).
+  function showAttention() {
+    showStatus(absent > 0 ? "A" : "INCOMPLETE");
   }
 
   return (
@@ -334,12 +350,31 @@ export function HomeroomView(): ReactElement {
 
           <StatGrid variant="strip" aria-label={t("statsLabel")}>
             <Stat icon={<UsersRound />} tone="blue" value={total} label={t("statTotal")} />
-            <Stat icon={<UserX />} tone="red" value={absent} label={t("statAbsent")} />
+            <Stat
+              icon={<UserX />}
+              tone="red"
+              value={absent}
+              label={t("statAbsent")}
+              onClick={
+                absent > 0
+                  ? () => {
+                      showStatus("A");
+                    }
+                  : undefined
+              }
+            />
             <Stat
               icon={<CircleDashed />}
               tone="amber"
               value={incomplete}
               label={t("statIncomplete")}
+              onClick={
+                incomplete > 0
+                  ? () => {
+                      showStatus("INCOMPLETE");
+                    }
+                  : undefined
+              }
             />
             {permitsOn && (
               <Stat

@@ -33,6 +33,7 @@ export function HomeroomDisciplineTab({ classId }: { classId: string }): ReactEl
       <EmptyState
         icon={<domainIcons.violation aria-hidden="true" />}
         title={t("disciplineEmpty")}
+        description={t("disciplineEmptyBody")}
       />
     );
   }

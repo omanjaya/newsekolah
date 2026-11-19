@@ -2,7 +2,7 @@ import type { CategoryTone } from "@newsekolah/ui";
 import { MonitorPlay, Rocket } from "lucide-react";
 import type { ReactNode } from "react";
 
-import type { HeroCandidate, Me } from "./types";
+import { isHeroLink, type Me, type ShownHero } from "./types";
 
 /** At most this many shortcuts in the side column. */
 const MAX_SHORTCUTS = 5;
@@ -32,7 +32,7 @@ export function buildShortcuts({
   extra,
 }: {
   me: Me;
-  hero: HeroCandidate;
+  hero: ShownHero;
   canOpen: (href: string) => boolean;
   hasCheckInCard: boolean;
   quick: Shortcut[];
@@ -40,7 +40,9 @@ export function buildShortcuts({
 }): Shortcut[] {
   const path = (href: string) => href.split("?")[0] ?? href;
   const heroPaths = new Set(
-    [hero.action, hero.secondaryAction].flatMap((link) => (link ? [path(link.href)] : [])),
+    [hero.action, hero.secondaryAction].flatMap((link) =>
+      link && isHeroLink(link) ? [path(link.href)] : [],
+    ),
   );
   const can = (permission: string) => me.permissions.includes(permission);
   const links: Shortcut[] = [

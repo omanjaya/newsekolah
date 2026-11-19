@@ -101,6 +101,7 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
     main: [],
     side: [],
     pending: (canReviewLeave && leave.isLoading) || (canIssueWarningLetters && sp.isLoading),
+    failed: (canReviewLeave && leave.isError) || (canIssueWarningLetters && sp.isError),
   };
 
   const leaveItems =

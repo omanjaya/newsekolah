@@ -1041,6 +1041,10 @@ type Querier interface {
 	ListBillKeysForPeriod(ctx context.Context, arg ListBillKeysForPeriodParams) ([]ListBillKeysForPeriodRow, error)
 	ListBills(ctx context.Context, arg ListBillsParams) ([]Bill, error)
 	ListBillsForStudent(ctx context.Context, arg ListBillsForStudentParams) ([]Bill, error)
+	// Names the classes a user's class-scoped duties point at (a homeroom
+	// teacher's class), so /v1/me can label each duty without the client
+	// looking the class up.
+	ListClassNamesByIDs(ctx context.Context, arg ListClassNamesByIDsParams) ([]ListClassNamesByIDsRow, error)
 	// Every non-deleted class of the academic year in grade_level_id, ordered
 	// by name -- the grade-level ("angkatan") scope for attendance report
 	// exports: one section per class, matching

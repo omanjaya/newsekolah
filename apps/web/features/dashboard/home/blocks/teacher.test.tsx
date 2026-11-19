@@ -33,11 +33,15 @@ vi.mock("../../../reference/api", async (importOriginal) => {
 });
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => Object.assign((key: string) => key, { has: () => true }),
-  useFormatter: () => ({
-    dateTime: (date: Date) =>
-      `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`,
-  }),
+  useTranslations: () =>
+    Object.assign(
+      (key: string, values?: Record<string, unknown>) =>
+        key === "hero.nowMeta" || key === "hero.nextMeta"
+          ? `${key}:${JSON.stringify(values)}`
+          : key,
+      { has: () => true },
+    ),
+  useLocale: () => "id",
 }));
 
 import { useTeacherBlock } from "./teacher";
@@ -174,6 +178,30 @@ describe("useTeacherBlock", () => {
 
     expect(result.current.hero?.priority).toBe(HERO_PRIORITY.teacherNowPending);
     expect(result.current.hero?.action?.href).toBe("/attendance/s1");
+    // The span reads as on the schedule and attendance: spaced en dash.
+    expect(result.current.hero?.meta).toBe('hero.nowMeta:{"range":"08.40 – 09.20"}');
+  });
+
+  it("flags the block failed when today's sessions cannot be read", () => {
+    sessionsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      isSuccess: false,
+      error: new Error("x"),
+      refetch: vi.fn(),
+    });
+    periodsQuery.mockReturnValue({
+      data: { data: PERIODS },
+      isSuccess: true,
+      isLoading: false,
+      isError: false,
+    });
+
+    const { result } = renderHook(() => useTeacherBlock(me, true));
+
+    expect(result.current.failed).toBe(true);
+    expect(result.current.hero).toBeUndefined();
   });
 
   it("calms the hero once the running session is submitted and nothing else is upcoming", () => {

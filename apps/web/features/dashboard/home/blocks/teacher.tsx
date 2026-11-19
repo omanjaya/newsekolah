@@ -14,7 +14,7 @@ import {
   cn,
 } from "@newsekolah/ui";
 import { CalendarX2, ClipboardCheck } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../../components/query-error";
@@ -29,9 +29,9 @@ import {
   type PeriodRef,
   type SubjectRef,
 } from "../../../reference/api";
+import { clockLabel, clockRange } from "../../../schedule/clock-label";
 import {
   LONG_WAIT_MINUTES,
-  clockInstant,
   minutesInZone,
   parseClock,
   pickCurrentOrNext,
@@ -50,17 +50,22 @@ const ATTENDANCE_HREF = "/attendance";
 const SCHEDULE_HREF = "/schedule";
 const JOURNAL_HREF = "/journal";
 
-/** Formats a period's wall-clock start or end the way every other time on screen is written ("08.40"). */
-function useClockLabel(): (value: string | undefined) => string {
-  const format = useFormatter();
-  return (value) =>
-    value
-      ? format.dateTime(clockInstant(value), {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "UTC",
-        })
-      : "--.--";
+/**
+ * Formats a period's wall-clock start or end, and a lesson's span, the way
+ * the schedule and attendance write them ("08.40", "07.00 – 08.40"), so the
+ * same lesson reads the same one tap away from home.
+ */
+function useClockLabels(): {
+  clock: (value: string | undefined) => string;
+  range: (start: string | undefined, end: string | undefined) => string;
+} {
+  const locale = useLocale();
+  const clock = (value: string | undefined) => (value ? clockLabel(value, locale) : "--.--");
+  return {
+    clock,
+    range: (start, end) =>
+      start && end ? clockRange(start, end, locale) : `${clock(start)} – ${clock(end)}`,
+  };
 }
 
 /**
@@ -70,7 +75,7 @@ function useClockLabel(): (value: string | undefined) => string {
  */
 export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
   const t = useTranslations("app.dashboardTeaching.teacher");
-  const clock = useClockLabel();
+  const { clock, range } = useClockLabels();
   const sessions = useTodaySessionsQuery({ date: todayInZone(me.tenant.timezone) }, active);
   const periods = useAllPeriodsQuery(active);
   const classes = useClassesQuery(active);
@@ -93,6 +98,7 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
     main: [],
     side: [],
     pending: sessions.isLoading || periods.isLoading,
+    failed: sessions.isError || periods.isError,
   };
   let runningId: string | undefined;
 
@@ -134,8 +140,9 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
       const subjectName = subjectMap.get(session.subject_id)?.name ?? "";
       const className = classMap.get(session.class_id)?.name ?? "";
       const title = [subjectName, className].filter(Boolean).join(" · ");
-      const startLabel = clock(periodMap.get(session.start_period_id)?.starts_at);
-      const endLabel = clock(periodMap.get(session.end_period_id)?.ends_at);
+      const startsAt = periodMap.get(session.start_period_id)?.starts_at;
+      const startLabel = clock(startsAt);
+      const rangeLabel = range(startsAt, periodMap.get(session.end_period_id)?.ends_at);
       const sessionHref = `${ATTENDANCE_HREF}/${session.id}`;
 
       if (picked.state === "now") {
@@ -146,7 +153,7 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
           priority: HERO_PRIORITY.teacherNowPending,
           eyebrow: t("hero.nowEyebrow"),
           title,
-          meta: t("hero.nowMeta", { start: startLabel, end: endLabel }),
+          meta: t("hero.nowMeta", { range: rangeLabel }),
           chip: t("hero.nowChip", splitMinutes(now - start)),
           live: true,
           action: { label: t("hero.nowAction"), href: sessionHref },
@@ -158,7 +165,7 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
           priority: HERO_PRIORITY.teacherNext,
           eyebrow: t("hero.nextEyebrow"),
           title,
-          meta: t("hero.nextMeta", { start: startLabel, end: endLabel }),
+          meta: t("hero.nextMeta", { range: rangeLabel }),
           chip:
             wait > LONG_WAIT_MINUTES
               ? t("hero.nextChipAt", { start: startLabel })
