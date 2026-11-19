@@ -12,21 +12,44 @@ import { canOpenPath } from "../../../lib/navigation-permissions";
 import { useSession } from "../../../lib/session/session-provider";
 import { PermitUnifiedQueue } from "../../permits/components/permit-unified-queue";
 import { useCanSubmitPermit } from "../../permits/lib/use-can-submit-permit";
-import { useInboxAccess } from "../lib/access";
+import { type InboxAccess, useInboxAccess } from "../lib/access";
 import { useActionInboxSummary } from "../use-action-inbox-count";
 
 import { WarningLetterCandidatesSection } from "./warning-letter-candidates-section";
 
+/** What decides whether an all-clear reader is offered one of the ways on. */
+interface HistoryContext {
+  canSubmitPermit: boolean;
+  access: InboxAccess;
+  duties: readonly string[];
+}
+
 /**
  * Where an all-clear reader can still look: the history of the queues they
- * work, where one exists. Leave requests keep a history only for the
- * student who filed them (/leave-requests sends a reviewer straight back
- * here), and late arrivals have none for staff (/late-arrivals does the
- * same), so neither is offered as a way on that would loop.
+ * work, where one exists, or the desk they staff. Each link is offered only
+ * to the reader whose work it is (and who can open its route): leave
+ * requests keep a history only for the student who filed them
+ * (/leave-requests sends a reviewer straight back here), warning letters
+ * only to an issuer, and the duty desk to a teacher on picket duty. Late
+ * arrivals have no history for staff (/late-arrivals redirects here), so
+ * none is offered as a way on that would loop.
  */
 const HISTORY_LINKS = [
-  { href: "/leave-requests", label: "historyLeave", submitterOnly: true },
-  { href: "/discipline/warning-letters", label: "historyWarningLetters", submitterOnly: false },
+  {
+    href: "/leave-requests",
+    label: "historyLeave",
+    offered: ({ canSubmitPermit }: HistoryContext) => canSubmitPermit,
+  },
+  {
+    href: "/discipline/warning-letters",
+    label: "historyWarningLetters",
+    offered: ({ access }: HistoryContext) => access.warningLetters,
+  },
+  {
+    href: "/duty",
+    label: "openDuty",
+    offered: ({ duties }: HistoryContext) => duties.includes("picket"),
+  },
 ] as const;
 
 function InboxSection({
@@ -64,8 +87,13 @@ export function ActionInboxView(): ReactElement {
   const allClear = !summary.isLoading && !summary.isError && summary.total === 0;
   const canSubmitPermit = useCanSubmitPermit();
   const navAccess = navAccessFromMe(me);
+  const historyContext: HistoryContext = {
+    canSubmitPermit,
+    access,
+    duties: navAccess.duties ?? [],
+  };
   const history = HISTORY_LINKS.find(
-    (link) => (canSubmitPermit || !link.submitterOnly) && canOpenPath(link.href, navAccess),
+    (link) => link.offered(historyContext) && canOpenPath(link.href, navAccess),
   );
 
   return (
