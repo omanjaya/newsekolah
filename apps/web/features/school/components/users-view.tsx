@@ -336,10 +336,6 @@ export function UsersView(): ReactElement {
             resetPagination();
           }}
           filters={filters}
-          filtersLabels={{
-            reset: t("filters.reset"),
-            removeFilter: (label) => t("filters.removeFilter", { label }),
-          }}
           isLoading={isLoading}
           error={error}
           onRetry={() => void refetch()}

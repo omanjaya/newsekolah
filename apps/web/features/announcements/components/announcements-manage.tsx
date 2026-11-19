@@ -258,10 +258,6 @@ export function AnnouncementsManage({
         onSortingChange={() => undefined}
         globalFilter=""
         filters={filters}
-        filtersLabels={{
-          reset: t("filters.reset"),
-          removeFilter: (label) => t("filters.removeFilter", { label }),
-        }}
         isLoading={isLoading}
         error={isError ? error : undefined}
         onRetry={() => void refetch()}

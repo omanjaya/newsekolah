@@ -12,9 +12,7 @@
     "entityType": "Entity type",
     "from": "From date",
     "to": "To date",
-    "reset": "Clear filters",
     "entityTypeAll": "All types",
-    "removeFilter": "Remove {label} filter",
     "dateRange": "Date range",
     "invalidRange": "The from date must be on or before the to date"
   },

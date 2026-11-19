@@ -279,7 +279,7 @@
           "pageSize": "Rows per page",
           "previous": "Go to previous page",
           "next": "Go to next page",
-          "filtersReset": "Reset filters",
+          "filtersReset": "Clear all filters",
           "filterRemove": "Remove filter {label}",
           "filterDateFrom": "From",
           "filterDateTo": "To",
@@ -356,7 +356,7 @@
         "empty": {
           "filteredTitle": "Nothing matches",
           "filteredDescription": "Try another keyword or clear the active filters.",
-          "filteredReset": "Clear filters"
+          "filteredReset": "Clear all filters"
         },
         "statePage": {
           "code": "Code {code}"
@@ -814,10 +814,6 @@
       "unread": "New",
       "manageEmptyTitle": "No announcements created yet",
       "manageEmptyBody": "Create a draft, pick the audience, then publish or schedule it.",
-      "filters": {
-        "reset": "Reset filter",
-        "removeFilter": "Remove {label} filter"
-      },
       "columns": {
         "title": "Title",
         "status": "Status",
@@ -1282,11 +1278,6 @@
       "searchPlaceholder": "Search name or NIS",
       "statusFilterLabel": "Status",
       "statusFilterAll": "All statuses",
-      "statusFilterClear": "Clear filter",
-      "filters": {
-        "reset": "Reset filters",
-        "removeFilter": "Remove {label} filter"
-      },
       "noGuardian": "No guardian on file",
       "noViolations": "None",
       "violationSummary": "{count} violations, {points} points",
@@ -1731,9 +1722,7 @@
         "filters": {
           "kind": "Kind",
           "status": "Status",
-          "role": "Role",
-          "reset": "Reset filter",
-          "removeFilter": "Remove {label} filter"
+          "role": "Role"
         },
         "includeArchived": "Show archived",
         "emptyTitle": "No users yet",

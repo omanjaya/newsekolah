@@ -130,10 +130,6 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
           onGlobalFilterChange={paging.resetting(setSearch)}
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
-          filtersLabels={{
-            reset: t("bkTeam.reset"),
-            removeFilter: (label) => t("bkTeam.removeFilter", { label }),
-          }}
           isLoading={isLoading}
           getRowId={(item) => item.id}
           onRowActivate={(item) => {

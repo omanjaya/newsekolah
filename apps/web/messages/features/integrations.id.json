@@ -87,10 +87,6 @@
   "deliveries": {
     "filterEndpoint": "Endpoint",
     "filterEndpointAll": "Semua endpoint",
-    "filters": {
-      "reset": "Atur ulang filter",
-      "removeFilter": "Hapus filter {label}"
-    },
     "retry": "Kirim ulang",
     "retryEnqueued": "Pengiriman ulang dijadwalkan",
     "emptyTitle": "Belum ada riwayat pengiriman",

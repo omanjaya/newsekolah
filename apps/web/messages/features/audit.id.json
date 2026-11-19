@@ -12,9 +12,7 @@
     "entityType": "Jenis entitas",
     "from": "Dari tanggal",
     "to": "Sampai tanggal",
-    "reset": "Hapus filter",
     "entityTypeAll": "Semua jenis",
-    "removeFilter": "Hapus filter {label}",
     "dateRange": "Rentang tanggal",
     "invalidRange": "Tanggal mulai harus sebelum atau sama dengan tanggal akhir"
   },

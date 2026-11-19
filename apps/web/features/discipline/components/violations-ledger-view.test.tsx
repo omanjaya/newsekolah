@@ -98,7 +98,7 @@ describe("ViolationsLedgerView filters", () => {
     const user = userEvent.setup();
     render(<ViolationsLedgerView recording={false} onRecordingChange={vi.fn()} />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useViolationsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ includeVoided: false }),
       { limit: 50, offset: 0, search: "" },

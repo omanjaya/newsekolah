@@ -171,10 +171,6 @@ export function WebhookDeliveriesPanel({
       columns={columns}
       searchable={false}
       filters={filters}
-      filtersLabels={{
-        reset: t("filters.reset"),
-        removeFilter: (label) => t("filters.removeFilter", { label }),
-      }}
       isLoading={isLoading}
       // A failed read keeps the filter bar, so a bad filter can still be changed.
       error={loadError}

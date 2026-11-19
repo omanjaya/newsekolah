@@ -112,7 +112,7 @@ describe("AuditLogsView filters", () => {
     const user = userEvent.setup();
     render(<AuditLogsView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useAuditLogsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ entityType: undefined }),
     );
@@ -141,7 +141,7 @@ describe("AuditLogsView filters", () => {
     const user = userEvent.setup();
     render(<AuditLogsView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
 
     expect(mocks.useAuditLogsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ from: undefined, to: undefined }),

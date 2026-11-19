@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../../test/axe.js";
+import { FilteredEmptyState } from "../filtered-empty-state.js";
 
 import { DataTableFilters, type DataTableFilterDef } from "./data-table-filters.js";
 
@@ -145,14 +146,14 @@ describe("DataTableFilters", () => {
     expect(onChange).toHaveBeenCalledWith("");
   });
 
-  it("only shows Reset filter once a filter is active, and clears every active filter at once", async () => {
+  it("only shows the clear-all control once a filter is active, and clears every active filter at once", async () => {
     const user = userEvent.setup();
     const onMaterialChange = vi.fn();
     const onAvailabilityChange = vi.fn();
     const { rerender } = render(
       <DataTableFilters filters={[materialTypeFilter({ onChange: onMaterialChange })]} />,
     );
-    expect(screen.queryByRole("button", { name: "Reset filter" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Hapus semua filter" })).not.toBeInTheDocument();
 
     rerender(
       <DataTableFilters
@@ -162,9 +163,23 @@ describe("DataTableFilters", () => {
         ]}
       />,
     );
-    await user.click(screen.getByRole("button", { name: "Reset filter" }));
+    await user.click(screen.getByRole("button", { name: "Hapus semua filter" }));
     expect(onMaterialChange).toHaveBeenCalledWith("");
     expect(onAvailabilityChange).toHaveBeenCalledWith("");
+  });
+
+  // A filtered empty table showed "Reset filter" in the toolbar and "Hapus
+  // filter" in the empty state for the same action. Both read one label
+  // now, distinct from a single chip's "Hapus filter {label}".
+  it("names clear-all the same in the toolbar and the filtered empty state", () => {
+    render(
+      <>
+        <DataTableFilters filters={[materialTypeFilter({ value: "book" })]} />
+        <FilteredEmptyState onReset={vi.fn()} />
+      </>,
+    );
+    expect(screen.getAllByRole("button", { name: "Hapus semua filter" })).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Hapus filter Jenis bahan" })).toBeInTheDocument();
   });
 
   it("is keyboard operable: Tab to a pill, Enter opens it, Enter on an option applies it", async () => {
@@ -278,7 +293,7 @@ describe("DataTableFilters", () => {
       expect(trigger.parentElement).toHaveClass("border-border", "bg-surface");
       expect(trigger.parentElement).not.toHaveClass("bg-accent-soft");
       expect(screen.queryByRole("button", { name: /Hapus filter/ })).not.toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: "Reset filter" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Hapus semua filter" })).not.toBeInTheDocument();
     });
 
     it("comes back to the default period when a changed range is removed or reset", async () => {
@@ -299,11 +314,11 @@ describe("DataTableFilters", () => {
       );
       await user.click(screen.getByRole("button", { name: "Hapus filter Tanggal" }));
       expect(onChangeRange).toHaveBeenLastCalledWith({ from: "2026-11-01", to: "2026-11-17" });
-      await user.click(screen.getByRole("button", { name: "Reset filter" }));
+      await user.click(screen.getByRole("button", { name: "Hapus semua filter" }));
       expect(onChangeRange).toHaveBeenLastCalledWith({ from: "2026-11-01", to: "2026-11-17" });
     });
 
-    it("is cleared by the shared Reset filter alongside other filters", async () => {
+    it("is cleared by the shared clear-all control alongside other filters", async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
       const onChangeRange = vi.fn();
@@ -316,7 +331,7 @@ describe("DataTableFilters", () => {
         />,
       );
 
-      await user.click(screen.getByRole("button", { name: "Reset filter" }));
+      await user.click(screen.getByRole("button", { name: "Hapus semua filter" }));
       expect(onChange).toHaveBeenCalledWith("");
       expect(onChangeRange).toHaveBeenCalledWith({ from: "", to: "" });
     });
@@ -385,7 +400,7 @@ describe("DataTableFilters", () => {
       });
     });
 
-    it("is cleared by its remove control and by the shared Reset filter", async () => {
+    it("is cleared by its remove control and by the shared clear-all control", async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
       render(<DataTableFilters filters={[periodFilter({ value: "2026-09", onChange })]} />);
@@ -393,7 +408,7 @@ describe("DataTableFilters", () => {
       await user.click(screen.getByRole("button", { name: "Hapus filter Periode" }));
       expect(onChange).toHaveBeenLastCalledWith("");
       onChange.mockClear();
-      await user.click(screen.getByRole("button", { name: "Reset filter" }));
+      await user.click(screen.getByRole("button", { name: "Hapus semua filter" }));
       expect(onChange).toHaveBeenCalledWith("");
     });
 

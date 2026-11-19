@@ -122,7 +122,7 @@ export interface DataTableFiltersLabels {
  * the lint rule against deprecated symbols would refuse.)
  */
 export const DEFAULT_DATA_TABLE_FILTERS_LABELS: DataTableFiltersLabels = {
-  reset: "Reset filter",
+  reset: "Hapus semua filter",
   removeFilter: (label) => `Hapus filter ${label}`,
   dateRangeFrom: "Dari",
   dateRangeTo: "Sampai",

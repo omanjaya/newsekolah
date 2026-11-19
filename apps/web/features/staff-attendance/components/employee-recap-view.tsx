@@ -341,8 +341,6 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
           searchable={false}
           filters={historyFilters}
           filtersLabels={{
-            reset: t("history.reset"),
-            removeFilter: (label) => t("history.removeFilter", { label }),
             dateRangeFrom: t("history.from"),
             dateRangeTo: t("history.to"),
             dateRangeInvalid: t("history.invalidRange"),

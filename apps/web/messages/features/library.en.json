@@ -70,9 +70,7 @@
       "availability": "Available only",
       "sort": "Sort",
       "sortTitle": "Title A-Z",
-      "sortNewest": "Newest",
-      "reset": "Reset filters",
-      "removeFilter": "Remove {label} filter"
+      "sortNewest": "Newest"
     },
     "columns": {
       "title": "Title",
@@ -478,9 +476,7 @@
       "status": "Status",
       "statusAll": "All statuses",
       "type": "Member type",
-      "typeAll": "All types",
-      "clear": "Clear filters",
-      "removeFilter": "Remove {label} filter"
+      "typeAll": "All types"
     },
     "more": "More",
     "status": {
@@ -644,9 +640,7 @@
       "status": "Status",
       "statusAll": "All statuses",
       "kind": "Type",
-      "kindAll": "All types",
-      "clear": "Clear filters",
-      "removeFilter": "Remove {label} filter"
+      "kindAll": "All types"
     },
     "kinds": {
       "late": "Late",
@@ -798,9 +792,7 @@
       "category": "Category",
       "categoryAll": "All categories",
       "location": "Location",
-      "locationAll": "All locations",
-      "clear": "Clear filters",
-      "removeFilter": "Remove filter {label}"
+      "locationAll": "All locations"
     },
     "status": {
       "available": "Available",
@@ -833,8 +825,6 @@
     "fromLabel": "From date",
     "toLabel": "To date",
     "dateRange": "Date range",
-    "reset": "Reset filter",
-    "removeFilter": "Remove {label} filter",
     "invalidRange": "The from date must be on or before the to date",
     "groupSizeValue": "{count} people",
     "emptyTitle": "No visits in this range",

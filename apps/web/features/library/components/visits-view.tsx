@@ -236,8 +236,6 @@ export function VisitsView(): ReactElement {
         globalFilter=""
         filters={filters}
         filtersLabels={{
-          reset: t("reset"),
-          removeFilter: (label) => t("removeFilter", { label }),
           dateRangeFrom: t("fromLabel"),
           dateRangeTo: t("toLabel"),
           dateRangeInvalid: t("invalidRange"),

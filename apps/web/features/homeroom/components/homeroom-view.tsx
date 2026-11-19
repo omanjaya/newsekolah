@@ -369,10 +369,6 @@ export function HomeroomView(): ReactElement {
               setPagination((p) => ({ ...p, pageIndex: 0 }));
             }}
             filters={filters}
-            filtersLabels={{
-              reset: t("filters.reset"),
-              removeFilter: (label) => t("filters.removeFilter", { label }),
-            }}
             isLoading={isLoading}
             error={isError ? error : undefined}
             onRetry={() => {

@@ -87,10 +87,6 @@
   "deliveries": {
     "filterEndpoint": "Endpoint",
     "filterEndpointAll": "All endpoints",
-    "filters": {
-      "reset": "Reset filter",
-      "removeFilter": "Remove filter {label}"
-    },
     "retry": "Resend",
     "retryEnqueued": "Retry enqueued",
     "emptyTitle": "No deliveries yet",

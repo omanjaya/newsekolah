@@ -7,10 +7,6 @@
     "eyebrow": "Kegiatan",
     "title": "Ekstrakurikuler",
     "includeInactive": "Tampilkan yang tidak aktif",
-    "filters": {
-      "reset": "Reset filter",
-      "removeFilter": "Hapus filter {label}"
-    },
     "add": "Tambah ekstrakurikuler",
     "edit": "Ubah",
     "rowActions": "Aksi untuk {name}",
@@ -200,9 +196,7 @@
     "eyebrow": "Kegiatan",
     "title": "Prestasi siswa",
     "filters": {
-      "class": "Kelas",
-      "reset": "Reset filter",
-      "removeFilter": "Hapus filter {label}"
+      "class": "Kelas"
     },
     "add": "Catat prestasi",
     "saved": "Prestasi tersimpan",

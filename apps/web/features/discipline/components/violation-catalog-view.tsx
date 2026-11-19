@@ -135,10 +135,6 @@ export function ViolationCatalogView(): ReactElement {
         onSortingChange={() => undefined}
         globalFilter=""
         filters={filters}
-        filtersLabels={{
-          reset: t("filters.reset"),
-          removeFilter: (label) => t("filters.removeFilter", { label }),
-        }}
         toolbarActions={
           <Button
             icon={<Plus />}

@@ -69,7 +69,7 @@ describe("YearsView filters", () => {
     const user = userEvent.setup();
     render(<YearsView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
 
     expect(mocks.useAcademicYearsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ includeArchived: false }),

@@ -70,9 +70,7 @@
       "availability": "Hanya tersedia",
       "sort": "Urutkan",
       "sortTitle": "Judul A-Z",
-      "sortNewest": "Terbaru",
-      "reset": "Reset filter",
-      "removeFilter": "Hapus filter {label}"
+      "sortNewest": "Terbaru"
     },
     "columns": {
       "title": "Judul",
@@ -478,9 +476,7 @@
       "status": "Status",
       "statusAll": "Semua status",
       "type": "Jenis anggota",
-      "typeAll": "Semua jenis",
-      "clear": "Bersihkan filter",
-      "removeFilter": "Hapus filter {label}"
+      "typeAll": "Semua jenis"
     },
     "more": "Lainnya",
     "status": {
@@ -644,9 +640,7 @@
       "status": "Status",
       "statusAll": "Semua status",
       "kind": "Jenis",
-      "kindAll": "Semua jenis",
-      "clear": "Bersihkan filter",
-      "removeFilter": "Hapus filter {label}"
+      "kindAll": "Semua jenis"
     },
     "kinds": {
       "late": "Terlambat",
@@ -798,9 +792,7 @@
       "category": "Kategori",
       "categoryAll": "Semua kategori",
       "location": "Lokasi",
-      "locationAll": "Semua lokasi",
-      "clear": "Bersihkan filter",
-      "removeFilter": "Hapus filter {label}"
+      "locationAll": "Semua lokasi"
     },
     "status": {
       "available": "Tersedia",
@@ -833,8 +825,6 @@
     "fromLabel": "Dari tanggal",
     "toLabel": "Sampai tanggal",
     "dateRange": "Rentang tanggal",
-    "reset": "Reset filter",
-    "removeFilter": "Hapus filter {label}",
     "invalidRange": "Tanggal mulai harus sebelum atau sama dengan tanggal akhir",
     "groupSizeValue": "{count} orang",
     "emptyTitle": "Belum ada kunjungan pada rentang ini",

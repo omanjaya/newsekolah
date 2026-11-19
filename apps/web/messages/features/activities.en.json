@@ -7,10 +7,6 @@
     "eyebrow": "Activities",
     "title": "Extracurriculars",
     "includeInactive": "Show inactive",
-    "filters": {
-      "reset": "Reset filter",
-      "removeFilter": "Remove {label} filter"
-    },
     "add": "Add extracurricular",
     "edit": "Edit",
     "rowActions": "Actions for {name}",
@@ -200,9 +196,7 @@
     "eyebrow": "Activities",
     "title": "Student achievements",
     "filters": {
-      "class": "Class",
-      "reset": "Reset filter",
-      "removeFilter": "Remove {label} filter"
+      "class": "Class"
     },
     "add": "Record achievement",
     "saved": "Achievement saved",

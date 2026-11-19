@@ -205,8 +205,6 @@ export function IncidentLogView(): ReactElement {
           searchable={false}
           filters={filters}
           filtersLabels={{
-            reset: t("filters.reset"),
-            removeFilter: (label) => t("filters.removeFilter", { label }),
             dateRangeFrom: t("filters.from"),
             dateRangeTo: t("filters.to"),
             dateRangeInvalid: t("filters.invalidRange"),

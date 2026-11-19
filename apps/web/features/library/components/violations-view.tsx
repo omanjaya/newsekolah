@@ -258,10 +258,6 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         onSortingChange={() => undefined}
         globalFilter=""
         filters={filters}
-        filtersLabels={{
-          reset: t("filters.clear"),
-          removeFilter: (label) => t("filters.removeFilter", { label }),
-        }}
         isLoading={isLoading}
         error={error}
         onRetry={() => void refetch()}

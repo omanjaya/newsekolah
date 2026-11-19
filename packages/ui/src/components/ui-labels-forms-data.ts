@@ -137,7 +137,7 @@ export const DEFAULT_FORMS_DATA_UI_LABELS: FormsDataUiLabels = {
   tablePageSize: "Baris per halaman",
   tablePrevious: "Ke halaman sebelumnya",
   tableNext: "Ke halaman berikutnya",
-  tableFiltersReset: "Reset filter",
+  tableFiltersReset: "Hapus semua filter",
   tableFilterRemove: (label) => `Hapus filter ${label}`,
   tableFilterDateFrom: "Dari",
   tableFilterDateTo: "Sampai",

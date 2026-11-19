@@ -266,10 +266,6 @@ export function MembersView(): ReactElement {
           onGlobalFilterChange={paging.resetting(setSearch)}
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
-          filtersLabels={{
-            reset: t("filters.clear"),
-            removeFilter: (label) => t("filters.removeFilter", { label }),
-          }}
           toolbarActions={
             memberTypeId !== "" ? (
               <Button

@@ -279,7 +279,7 @@
           "pageSize": "Baris per halaman",
           "previous": "Ke halaman sebelumnya",
           "next": "Ke halaman berikutnya",
-          "filtersReset": "Reset filter",
+          "filtersReset": "Hapus semua filter",
           "filterRemove": "Hapus filter {label}",
           "filterDateFrom": "Dari",
           "filterDateTo": "Sampai",
@@ -356,7 +356,7 @@
         "empty": {
           "filteredTitle": "Tidak ada yang cocok",
           "filteredDescription": "Coba kata kunci lain atau hapus filter yang aktif.",
-          "filteredReset": "Hapus filter"
+          "filteredReset": "Hapus semua filter"
         },
         "statePage": {
           "code": "Kode {code}"
@@ -814,10 +814,6 @@
       "unread": "Baru",
       "manageEmptyTitle": "Belum ada pengumuman dibuat",
       "manageEmptyBody": "Buat draf, pilih penerima, lalu terbitkan atau jadwalkan.",
-      "filters": {
-        "reset": "Reset filter",
-        "removeFilter": "Hapus filter {label}"
-      },
       "columns": {
         "title": "Judul",
         "status": "Status",
@@ -1282,11 +1278,6 @@
       "searchPlaceholder": "Cari nama atau NIS",
       "statusFilterLabel": "Status",
       "statusFilterAll": "Semua status",
-      "statusFilterClear": "Hapus filter",
-      "filters": {
-        "reset": "Reset filter",
-        "removeFilter": "Hapus filter {label}"
-      },
       "noGuardian": "Belum ada data wali",
       "noViolations": "Tidak ada",
       "violationSummary": "{count} pelanggaran, {points} poin",
@@ -1731,9 +1722,7 @@
         "filters": {
           "kind": "Jenis",
           "status": "Status",
-          "role": "Peran",
-          "reset": "Reset filter",
-          "removeFilter": "Hapus filter {label}"
+          "role": "Peran"
         },
         "includeArchived": "Tampilkan yang diarsipkan",
         "emptyTitle": "Belum ada pengguna",

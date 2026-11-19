@@ -270,10 +270,6 @@ export function CatalogueView(): ReactElement {
           onGlobalFilterChange={paging.resetting(setSearch)}
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
-          filtersLabels={{
-            reset: t("filters.reset"),
-            removeFilter: (label) => t("filters.removeFilter", { label }),
-          }}
           isLoading={isLoading}
           error={error}
           onRetry={() => void refetch()}

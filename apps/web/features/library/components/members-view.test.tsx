@@ -143,7 +143,7 @@ describe("MembersView filters", () => {
     const user = userEvent.setup();
     render(<MembersView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useLibraryMembersQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ status: "" }),
     );

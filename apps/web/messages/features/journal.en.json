@@ -12,8 +12,6 @@
   "filterClassAll": "All classes",
   "searchPlaceholder": "Search topic or activities",
   "filters": {
-    "reset": "Reset filters",
-    "removeFilter": "Remove {label} filter",
     "dateRange": "Date",
     "from": "From",
     "to": "To",

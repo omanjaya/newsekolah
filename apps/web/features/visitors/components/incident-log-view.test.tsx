@@ -81,7 +81,7 @@ describe("IncidentLogView filters", () => {
     // The date range filter defaults to a non-empty 30-day window, so it is
     // always "active" too; its own remove button uses the same (untranslated,
     // mocked) label. The only-open pill is the first one in the bar.
-    const onlyOpenRemove = screen.getAllByRole("button", { name: "filters.removeFilter" })[0];
+    const onlyOpenRemove = screen.getAllByRole("button", { name: /^Hapus filter / })[0];
     if (!onlyOpenRemove) throw new Error("Missing only-open filter's remove control");
     await user.click(onlyOpenRemove);
     expect(mocks.useIncidentsQuery).toHaveBeenLastCalledWith(
