@@ -269,8 +269,13 @@ export function HomeroomView(): ReactElement {
     setPagination((p) => ({ ...p, pageIndex: 0 }));
   }
 
-  /** Opens class attendance filtered to one status, from the first page. */
+  /**
+   * Opens class attendance filtered to one status, from the first page. A
+   * name still typed in its search from an earlier visit is dropped, or the
+   * list could come up empty although students have that status.
+   */
   function showStatus(code: (typeof STATUS_VALUES)[number]) {
+    setSearch("");
     setStatusCode(code);
     setPagination((p) => ({ ...p, pageIndex: 0 }));
     setTab("attendance");
