@@ -38,6 +38,12 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 	return r
 }
 
+// corsAllowedHeaders is every request header a browser client sends
+// cross-origin. A custom header missing here makes the preflight fail and
+// the request never reach the handler (the monitor display's
+// X-Monitor-Token once did exactly that).
+const corsAllowedHeaders = "Authorization, Content-Type, X-Tenant, X-Client, X-Simulation-Time, Accept-Language, Idempotency-Key, X-Monitor-Token"
+
 // CORS allows only the configured origins, with credentials, matching
 // docs/08-security.md section 7 (no wildcard, ever).
 func CORS(allowedOrigins []string) func(http.Handler) http.Handler {
@@ -56,7 +62,7 @@ func CORS(allowedOrigins []string) func(http.Handler) http.Handler {
 			}
 			if r.Method == http.MethodOptions {
 				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-				w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Tenant, X-Client, X-Simulation-Time, Accept-Language, Idempotency-Key")
+				w.Header().Set("Access-Control-Allow-Headers", corsAllowedHeaders)
 				w.Header().Set("Access-Control-Max-Age", "600")
 				w.WriteHeader(http.StatusNoContent)
 				return
