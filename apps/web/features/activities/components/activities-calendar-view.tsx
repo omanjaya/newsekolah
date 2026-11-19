@@ -3,6 +3,8 @@
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import {
+  DataList,
+  DataListItem,
   DateRangePicker,
   DialogFooter,
   Field,
@@ -14,6 +16,7 @@ import {
   EmptyState,
   Input,
   RowActionsMenu,
+  SectionHeader,
   Textarea,
   useToast,
 } from "@newsekolah/ui";
@@ -21,7 +24,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarRange, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
@@ -41,8 +44,9 @@ import { ActivityParticipants } from "./activity-participants";
 
 /**
  * The school's activity agenda, a tab of the student activities area (its
- * title and group come from the navigation). Editing, the participants and
- * deleting wait in each row's menu.
+ * title and group come from the navigation). Any reader opens a row to see
+ * the event's details and who takes part; editing, managing participants
+ * and deleting wait in each row's menu for those who may manage events.
  */
 export function ActivitiesCalendarView(): ReactElement {
   const t = useTranslations("app.activities.events");
@@ -56,7 +60,8 @@ export function ActivitiesCalendarView(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const [participants, setParticipants] = useState<ActivityEvent | null>(null);
+  const [opened, setOpened] = useState<ActivityEvent | null>(null);
+  const participantsHeadingId = useId();
 
   const events = data?.data ?? [];
 
@@ -96,7 +101,7 @@ export function ActivitiesCalendarView(): ReactElement {
                       label: t("participants.title"),
                       icon: <Users />,
                       onClick: () => {
-                        setParticipants(row.original);
+                        setOpened(row.original);
                       },
                     },
                     {
@@ -161,6 +166,9 @@ export function ActivitiesCalendarView(): ReactElement {
           error={error}
           onRetry={() => void refetch()}
           getRowId={(item) => item.id}
+          onRowActivate={(item) => {
+            setOpened(item);
+          }}
           fillHeight
           emptyState={
             <EmptyState
@@ -229,13 +237,38 @@ export function ActivitiesCalendarView(): ReactElement {
         }}
       />
       <Dialog
-        open={participants !== null}
+        open={opened !== null}
         onOpenChange={(open) => {
-          if (!open) setParticipants(null);
+          if (!open) setOpened(null);
         }}
       >
-        <DialogContent title={t("participants.title")} description={participants?.name}>
-          {participants && <ActivityParticipants activityId={participants.id} />}
+        <DialogContent
+          title={opened?.name ?? t("participants.title")}
+          description={
+            opened ? formatDayRange(opened.start_date, opened.end_date, locale) : undefined
+          }
+        >
+          {opened && (
+            <div className="flex flex-col gap-4">
+              <DataList>
+                <DataListItem label={t("columns.location")}>{opened.location}</DataListItem>
+                <DataListItem label={t("form.description")}>
+                  {opened.description && (
+                    <p className="whitespace-pre-line">{opened.description}</p>
+                  )}
+                </DataListItem>
+              </DataList>
+              <section className="flex flex-col gap-3" aria-labelledby={participantsHeadingId}>
+                <SectionHeader
+                  as="h3"
+                  size="sm"
+                  title={t("participants.title")}
+                  titleId={participantsHeadingId}
+                />
+                <ActivityParticipants activityId={opened.id} canManage={canManage} />
+              </section>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </AppPage>

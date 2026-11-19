@@ -25,7 +25,9 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 vi.mock("./activity-participants", () => ({
-  ActivityParticipants: () => <div>Participant editor</div>,
+  ActivityParticipants: ({ canManage }: { canManage: boolean }) => (
+    <div>{canManage ? "Participant editor" : "Participant list"}</div>
+  ),
 }));
 vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
@@ -116,6 +118,26 @@ describe("ActivitiesCalendarView", () => {
     expect(screen.queryByRole("button", { name: "delete" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "add" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "participants.title" })).not.toBeInTheDocument();
+  });
+
+  it("opens an event's details and participants from its row for a read-only reader", async () => {
+    mocks.canManage = false;
+    const user = userEvent.setup();
+    render(<ActivitiesCalendarView />);
+    await user.click(within(screen.getByRole("table")).getByText("Science fair"));
+    const dialog = within(screen.getByRole("dialog", { name: "Science fair" }));
+    expect(dialog.getByText("Hall")).toBeInTheDocument();
+    expect(dialog.getByText("Exhibition")).toBeInTheDocument();
+    expect(dialog.getByRole("heading", { name: "participants.title" })).toBeInTheDocument();
+    expect(dialog.getByText("Participant list")).toBeInTheDocument();
+  });
+
+  it("gives a manager the participant editor in the same dialog", async () => {
+    const user = userEvent.setup();
+    render(<ActivitiesCalendarView />);
+    await user.click(within(screen.getByRole("table")).getByText("Science fair"));
+    const dialog = within(screen.getByRole("dialog", { name: "Science fair" }));
+    expect(dialog.getByText("Participant editor")).toBeInTheDocument();
   });
 
   it("names a missing title under its field instead of disabling Simpan", async () => {

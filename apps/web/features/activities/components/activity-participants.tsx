@@ -19,7 +19,17 @@ import {
 
 import { StudentPicker } from "./student-picker";
 
-export function ActivityParticipants({ activityId }: { activityId: string }): ReactElement {
+/**
+ * Who takes part in an activity. Every reader sees the list; only someone
+ * who may manage events gets the add form and the remove buttons.
+ */
+export function ActivityParticipants({
+  activityId,
+  canManage,
+}: {
+  activityId: string;
+  canManage: boolean;
+}): ReactElement {
   const t = useTranslations("app.activities.events.participants");
   const toast = useToast();
   const errorMessage = useApiErrorMessage();
@@ -39,57 +49,62 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
   );
   return (
     <div className="flex flex-col gap-4">
-      <form
-        className="flex flex-col gap-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!target) return;
-          const body =
-            scope === "class"
-              ? { class_id: target }
-              : scope === "grade_level"
-                ? { grade_level_id: target }
-                : { student_user_id: target };
-          add.mutate(body, {
-            onSuccess: () => {
-              setTarget("");
-              toast.success(t("added"));
-            },
-            onError: fail,
-          });
-        }}
-      >
-        <Select
-          aria-label={t("scope")}
-          value={scope}
-          onValueChange={(value) => {
-            setScope(value);
-            setTarget("");
+      {canManage && (
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!target) return;
+            const body =
+              scope === "class"
+                ? { class_id: target }
+                : scope === "grade_level"
+                  ? { grade_level_id: target }
+                  : { student_user_id: target };
+            add.mutate(body, {
+              onSuccess: () => {
+                setTarget("");
+                toast.success(t("added"));
+              },
+              onError: fail,
+            });
           }}
-          options={["student", "class", "grade_level"].map((value) => ({ value, label: t(value) }))}
-        />
-        {scope === "student" ? (
-          <StudentPicker value={target} onChange={setTarget} />
-        ) : (
-          <Select
-            aria-label={t("choose")}
-            placeholder={t("choose")}
-            value={target}
-            onValueChange={setTarget}
-            options={(scope === "class"
-              ? (classes.data?.data ?? [])
-              : (grades.data?.data ?? [])
-            ).map((item) => ({ value: item.id, label: item.name }))}
-          />
-        )}
-        <Button
-          type="submit"
-          disabled={!target || event.isLoading || event.isError}
-          loading={add.isPending}
         >
-          {t("add")}
-        </Button>
-      </form>
+          <Select
+            aria-label={t("scope")}
+            value={scope}
+            onValueChange={(value) => {
+              setScope(value);
+              setTarget("");
+            }}
+            options={["student", "class", "grade_level"].map((value) => ({
+              value,
+              label: t(value),
+            }))}
+          />
+          {scope === "student" ? (
+            <StudentPicker value={target} onChange={setTarget} />
+          ) : (
+            <Select
+              aria-label={t("choose")}
+              placeholder={t("choose")}
+              value={target}
+              onValueChange={setTarget}
+              options={(scope === "class"
+                ? (classes.data?.data ?? [])
+                : (grades.data?.data ?? [])
+              ).map((item) => ({ value: item.id, label: item.name }))}
+            />
+          )}
+          <Button
+            type="submit"
+            disabled={!target || event.isLoading || event.isError}
+            loading={add.isPending}
+          >
+            {t("add")}
+          </Button>
+        </form>
+      )}
       {event.isError && <Alert variant="danger" title={t("loadError")} />}
       {event.isLoading && <p className="text-body-sm text-fg-muted">{t("loading")}</p>}
       {!event.isLoading &&
@@ -118,15 +133,17 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
                       {formatDisplayName(name)}
                     </span>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setPendingRemove(participant.id);
-                    }}
-                  >
-                    {t("remove")}
-                  </Button>
+                  {canManage && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setPendingRemove(participant.id);
+                      }}
+                    >
+                      {t("remove")}
+                    </Button>
+                  )}
                 </li>
               );
             })}
