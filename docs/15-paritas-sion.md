@@ -338,13 +338,15 @@ Keputusan yang tadinya menunggu pemilik produk (guru mendapat 403 di "Supervisi 
 
 Aplikasi web dijalankan dengan build produksi dan data seed, lalu diaudit langsung di peramban (Playwright, 390 dan 1440 px, terang dan gelap, sepuluh peran). Setiap area punya auditor sendiri. Setiap temuan diperiksa ulang oleh verifikator yang berusaha membantahnya; yang tidak lolos dibuang. Semua perbaikan dikerjakan per kelompok berkas di worktree terpisah, ditinjau secara adversarial, lalu digabung di `claude/vibrant-knuth-13rzv2`.
 
-| Putaran                                                            | Temuan terkonfirmasi (ditolak)                        | Hasil                                                                     |
-| ------------------------------------------------------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------- |
-| Audit 1                                                            | 63 (26)                                               | 63 diperbaiki                                                             |
-| Audit 2 (cek ulang 63 perbaikan, lalu layar yang belum terjangkau) | 99 (27); 3 di antaranya "belum tuntas" dari putaran 1 | 99 diperbaiki; verifikasi langsung: 85 tuntas, 10 sebagian, 4 regresi     |
-| Perbaikan 3                                                        | 53 sisa dan temuan baru dari verifikasi               | 53 diperbaiki; verifikasi langsung (bersama dua crash): 51 dari 59 tuntas |
-| Perbaikan 4                                                        | 38 (8 sisa, 30 baru, sebagian ganda)                  | 38 diperbaiki; verifikasi langsung: 31 tuntas, 7 sebagian                 |
-| Perbaikan 5                                                        | 27 (7 sisa, 20 baru, hampir semua polesan)            | sedang dikerjakan                                                         |
+| Putaran                                                            | Temuan terkonfirmasi (ditolak)                        | Hasil                                                                                                                          |
+| ------------------------------------------------------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Audit 1                                                            | 63 (26)                                               | 63 diperbaiki                                                                                                                  |
+| Audit 2 (cek ulang 63 perbaikan, lalu layar yang belum terjangkau) | 99 (27); 3 di antaranya "belum tuntas" dari putaran 1 | 99 diperbaiki; verifikasi langsung: 85 tuntas, 10 sebagian, 4 regresi                                                          |
+| Perbaikan 3                                                        | 53 sisa dan temuan baru dari verifikasi               | 53 diperbaiki; verifikasi langsung (bersama dua crash): 51 dari 59 tuntas                                                      |
+| Perbaikan 4                                                        | 38 (8 sisa, 30 baru, sebagian ganda)                  | 38 diperbaiki; verifikasi langsung: 31 tuntas, 7 sebagian                                                                      |
+| Perbaikan 5                                                        | 27 (7 sisa, 20 baru, hampir semua polesan)            | 27 diperbaiki; verifikasi langsung: 24 dari 26 tuntas                                                                          |
+| Perbaikan 6                                                        | 13 (2 sisa, 11 baru)                                  | 13 diperbaiki; verifikasi langsung: 17 dari 18 tuntas (riwayat izin keluar diukur di 320/360/390 px, id dan en, 120 kombinasi) |
+| Perbaikan 7                                                        | 12 (1 sisa, 11 baru, sebagian ganda)                  | sedang dikerjakan                                                                                                              |
 
 Skor audit 2 terhadap patokan "sangat profesional": konsistensi 8,2; autentikasi dan halaman publik 8; shell dan beranda, mengajar, izin dan kedisiplinan, administrasi sekolah, pengaturan 7,5; perpustakaan 7,2; nilai dan siswa 6,5.
 
