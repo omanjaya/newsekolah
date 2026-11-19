@@ -29,6 +29,28 @@ export const react = [
       "jsx-a11y/no-autofocus": "warn",
     },
   },
+  // Next.js renders the app with its own bundled React canary, which lacks
+  // some hooks that the installed react package (and so vitest) has. A hook
+  // that only exists in the installed package passes every test and then
+  // crashes in the browser.
+  {
+    files: ["**/*.{ts,tsx,jsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "react",
+              importNames: ["useEffectEvent"],
+              message:
+                "Next.js's bundled React has no useEffectEvent. Keep the latest callback in a ref instead.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
 
 export default react;

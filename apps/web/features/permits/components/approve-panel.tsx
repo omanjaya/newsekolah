@@ -14,7 +14,7 @@ import {
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
@@ -199,14 +199,19 @@ export function ApprovePanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mint once on mount; the key remount covers a new instance
   }, []);
 
-  const handBack = useEffectEvent(() => {
-    onApproved?.();
+  // The latest callback, read when the timer fires. Next's bundled React has
+  // no useEffectEvent, so a ref keeps the effect from restarting on each render.
+  const onApprovedRef = useRef(onApproved);
+  useEffect(() => {
+    onApprovedRef.current = onApproved;
   });
   useEffect(() => {
     if (outcome !== "approved") return;
     // The flow left this approver's queue (and the inbox badge).
     invalidatePermits();
-    const timer = window.setTimeout(handBack, APPROVED_CLOSE_MS);
+    const timer = window.setTimeout(() => {
+      onApprovedRef.current?.();
+    }, APPROVED_CLOSE_MS);
     return () => {
       window.clearTimeout(timer);
     };

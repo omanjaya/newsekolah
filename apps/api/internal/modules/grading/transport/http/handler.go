@@ -440,7 +440,12 @@ func (h *GradingHandler) ListClassStarBalances(ctx context.Context, request api.
 	if err != nil {
 		return nil, mapError(err)
 	}
+	// Data is never null: a class with no star events lists no balances.
 	resp := api.ListClassStarBalances200JSONResponse{}
+	resp.Data = make([]struct {
+		Balance       int                `json:"balance"`
+		StudentUserId openapi_types.UUID `json:"student_user_id"`
+	}, 0, len(balances))
 	for _, b := range balances {
 		resp.Data = append(resp.Data, struct {
 			Balance       int                `json:"balance"`
