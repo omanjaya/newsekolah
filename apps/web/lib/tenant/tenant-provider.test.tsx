@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TenantBrand } from "../../components/tenant-brand";
 
+import { resolveTenantAccents } from "./accent";
 import { readBrandingSessionCopy } from "./branding-session-copy";
 import {
   BRANDING_MAX_RETRIES,
@@ -86,6 +87,16 @@ describe("TenantProvider", () => {
     cleanup();
     renderWith({ name: "SMA Harapan", short_name: "  " });
     expect(screen.getByTestId("short")).toHaveTextContent("none");
+  });
+
+  // Buttons hovered and pressed in the platform green under a navy accent
+  // (audit r3-n42): the strong shade follows the school's colour too.
+  it("writes the hover and press shade of the school's accent for both themes", () => {
+    renderProvider({ name: "SMA Harapan", accent_color: "#1F3A5F" });
+    const accents = resolveTenantAccents("#1F3A5F");
+    const style = document.documentElement.style;
+    expect(style.getPropertyValue("--tenant-accent-strong")).toBe(accents.lightStrong);
+    expect(style.getPropertyValue("--tenant-accent-dark-strong")).toBe(accents.darkStrong);
   });
 
   it("fetches the branding when the server could not supply it", () => {

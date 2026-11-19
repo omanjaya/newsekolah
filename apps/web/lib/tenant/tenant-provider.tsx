@@ -93,7 +93,9 @@ export function brandingRetryDelay(attempt: number): number {
  * login screen is already branded.
  *
  * Theme-specific accents keep links readable against their surfaces; their
- * paired foregrounds keep filled buttons readable against the accent. A
+ * paired foregrounds keep filled buttons readable against the accent, and
+ * their strong shades give those buttons a hover and press in the school's
+ * own colour rather than the platform green. A
  * school without its own colour gets the platform's token pair unchanged
  * (see resolveTenantAccents). The runtime values feed globals.css so
  * switching themes stays CSS-driven.
@@ -157,12 +159,16 @@ export function TenantProvider({
     root.style.setProperty("--tenant-accent-dark", accents.dark);
     root.style.setProperty("--tenant-accent-fg", accents.lightFg);
     root.style.setProperty("--tenant-accent-dark-fg", accents.darkFg);
+    root.style.setProperty("--tenant-accent-strong", accents.lightStrong);
+    root.style.setProperty("--tenant-accent-dark-strong", accents.darkStrong);
     return () => {
       for (const name of [
         "--tenant-accent",
         "--tenant-accent-dark",
         "--tenant-accent-fg",
         "--tenant-accent-dark-fg",
+        "--tenant-accent-strong",
+        "--tenant-accent-dark-strong",
       ]) {
         root.style.removeProperty(name);
       }
