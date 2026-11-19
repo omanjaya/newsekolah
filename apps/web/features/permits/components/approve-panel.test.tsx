@@ -221,5 +221,7 @@ describe("ApprovePanel", () => {
     rerender(<ApprovePanel kind="late_arrival" instanceId="late-1" />);
     expect(screen.queryByRole("img", { name: /qrLabelStage/ })).not.toBeInTheDocument();
     expect(screen.queryByText(/approvedFor/)).not.toBeInTheDocument();
+    // The approver is told why the QR went away, not left with a blank sheet.
+    expect(screen.getByText(/closedFor/)).toBeInTheDocument();
   });
 });

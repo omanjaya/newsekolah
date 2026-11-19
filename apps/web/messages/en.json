@@ -1703,7 +1703,8 @@
         "reason": "Reason",
         "title": "Approval QR",
         "titleStage": "{stage} approval QR",
-        "approvedFor": "{name} approved for the {stage} stage."
+        "approvedFor": "{name} approved for the {stage} stage.",
+        "closedFor": "{name}'s flow is already closed; the QR is no longer needed."
       }
     },
     "verify": {

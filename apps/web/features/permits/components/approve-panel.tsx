@@ -137,7 +137,8 @@ function outcomeOf(instance: WorkflowInstance, shown: ShownStage | null): Outcom
  * moves it past this stage, the QR gives way to "<nama> disetujui untuk
  * tahap <tahap>", the queues are refreshed, and `onApproved` lets the host
  * close the sheet a moment later. A flow that closed some other way
- * (rejected, expired) just drops its QR; the stepper says what happened.
+ * (rejected, expired, cancelled) swaps its QR for a note that it is no
+ * longer needed; the stepper below says how it ended.
  *
  * The caller keys this component on `instanceId`, so a different instance
  * remounts it and mints afresh instead of resynchronizing state.
@@ -220,6 +221,11 @@ export function ApprovePanel({
             name: formatDisplayName(subject.studentName),
             stage: shownStage.label,
           })}
+        />
+      ) : outcome === "closed" && subject ? (
+        <Alert
+          tone="info"
+          title={t("closedFor", { name: formatDisplayName(subject.studentName) })}
         />
       ) : outcome === "closed" ? null : (
         <>

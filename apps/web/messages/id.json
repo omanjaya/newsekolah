@@ -1703,7 +1703,8 @@
         "reason": "Alasan",
         "title": "QR persetujuan",
         "titleStage": "QR persetujuan {stage}",
-        "approvedFor": "{name} disetujui untuk tahap {stage}."
+        "approvedFor": "{name} disetujui untuk tahap {stage}.",
+        "closedFor": "Alur {name} sudah ditutup; QR tidak diperlukan lagi."
       }
     },
     "verify": {
