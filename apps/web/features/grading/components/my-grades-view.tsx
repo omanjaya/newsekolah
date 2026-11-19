@@ -300,8 +300,14 @@ function SubjectCard({
           {subject.components.map((component) => (
             <ListRow
               key={component.code}
-              title={component.code}
-              meta={tKind(component.kind)}
+              // What the assessment was, when the teacher said so; the
+              // code alone ("TG1") tells a student little.
+              title={component.description ?? component.code}
+              meta={
+                component.description
+                  ? `${component.code} · ${tKind(component.kind)}`
+                  : tKind(component.kind)
+              }
               trailing={
                 <span className="flex items-center gap-2">
                   {component.kktp !== undefined && component.score < component.kktp && (

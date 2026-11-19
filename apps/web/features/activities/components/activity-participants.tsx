@@ -18,8 +18,7 @@ import { useState, type ReactElement } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { formatDisplayName } from "../../../lib/text/format-name";
-import { useGradeLevelsQuery } from "../../academic/api-master-data";
-import { useClassesQuery } from "../../reference/api";
+import { useClassesQuery, useGradeLevelsQuery } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
 import {
   useActivityEventQuery,
@@ -29,13 +28,30 @@ import {
 
 import { StudentPicker } from "./student-picker";
 
-export function ActivityParticipants({ activityId }: { activityId: string }): ReactElement {
+/**
+ * Who takes part in an activity. Every reader sees the list; only someone
+ * who may manage events gets the add form and the remove buttons.
+ */
+export function ActivityParticipants({
+  activityId,
+  canManage,
+}: {
+  activityId: string;
+  canManage: boolean;
+}): ReactElement {
   const t = useTranslations("app.activities.events.participants");
   const toast = useToast();
   const errorMessage = useApiErrorMessage();
   const event = useActivityEventQuery(activityId);
-  const classes = useClassesQuery();
-  const grades = useGradeLevelsQuery();
+  const participants = event.data?.participants ?? [];
+  // The class and grade lists feed the add form and name the class and
+  // grade rows; a reader whose list has neither never fetches them.
+  const classes = useClassesQuery(
+    canManage || participants.some((participant) => participant.scope === "class"),
+  );
+  const grades = useGradeLevelsQuery(
+    canManage || participants.some((participant) => participant.scope === "grade_level"),
+  );
   const add = useAddActivityParticipantMutation(activityId);
   const remove = useRemoveActivityParticipantMutation();
   const [scope, setScope] = useState("student");
@@ -47,75 +63,80 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
     toast.error(error instanceof ApiError ? errorMessage(error.code) : errorMessage("UNKNOWN"));
   };
   const studentNameById = useDirectoryNames(
-    (event.data?.participants ?? []).map((participant) => participant.student_user_id),
+    participants.map((participant) => participant.student_user_id),
   );
   return (
     <div className="flex flex-col gap-4">
-      <form
-        ref={formRef}
-        className="flex flex-col gap-3"
-        noValidate
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!check(Boolean(target))) return;
-          const body =
-            scope === "class"
-              ? { class_id: target }
-              : scope === "grade_level"
-                ? { grade_level_id: target }
-                : { student_user_id: target };
-          add.mutate(body, {
-            onSuccess: () => {
-              setTarget("");
-              reset();
-              toast.success(t("added"));
-            },
-            onError: fail,
-          });
-        }}
-      >
-        <Select
-          aria-label={t("scope")}
-          value={scope}
-          onValueChange={(value) => {
-            setScope(value);
-            setTarget("");
+      {canManage && (
+        <form
+          ref={formRef}
+          className="flex flex-col gap-3"
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!check(Boolean(target))) return;
+            const body =
+              scope === "class"
+                ? { class_id: target }
+                : scope === "grade_level"
+                  ? { grade_level_id: target }
+                  : { student_user_id: target };
+            add.mutate(body, {
+              onSuccess: () => {
+                setTarget("");
+                reset();
+                toast.success(t("added"));
+              },
+              onError: fail,
+            });
           }}
-          options={["student", "class", "grade_level"].map((value) => ({ value, label: t(value) }))}
-        />
-        <Field
-          label={t("choose")}
-          hideLabel
-          required
-          error={attempted && !target ? tValidation("required") : undefined}
         >
-          {scope === "student" ? (
-            <StudentPicker value={target} onChange={setTarget} />
-          ) : (
-            <Select
-              placeholder={t("choose")}
-              value={target}
-              onValueChange={setTarget}
-              options={(scope === "class"
-                ? (classes.data?.data ?? [])
-                : (grades.data?.data ?? [])
-              ).map((item) => ({ value: item.id, label: item.name }))}
-            />
-          )}
-        </Field>
-        <Button type="submit" disabled={event.isLoading || event.isError} loading={add.isPending}>
-          {t("add")}
-        </Button>
-      </form>
+          <Select
+            aria-label={t("scope")}
+            value={scope}
+            onValueChange={(value) => {
+              setScope(value);
+              setTarget("");
+            }}
+            options={["student", "class", "grade_level"].map((value) => ({
+              value,
+              label: t(value),
+            }))}
+          />
+          <Field
+            label={t("choose")}
+            hideLabel
+            required
+            error={attempted && !target ? tValidation("required") : undefined}
+          >
+            {scope === "student" ? (
+              <StudentPicker value={target} onChange={setTarget} />
+            ) : (
+              <Select
+                placeholder={t("choose")}
+                value={target}
+                onValueChange={setTarget}
+                options={(scope === "class"
+                  ? (classes.data?.data ?? [])
+                  : (grades.data?.data ?? [])
+                ).map((item) => ({ value: item.id, label: item.name }))}
+              />
+            )}
+          </Field>
+          <Button type="submit" disabled={event.isLoading || event.isError} loading={add.isPending}>
+            {t("add")}
+          </Button>
+        </form>
+      )}
       {event.isError && <Alert variant="danger" title={t("loadError")} />}
       {event.isLoading && <p className="text-body-sm text-fg-muted">{t("loading")}</p>}
       {!event.isLoading &&
         !event.isError &&
-        ((event.data?.participants ?? []).length === 0 ? (
+        (participants.length === 0 ? (
           <EmptyState icon={<Users aria-hidden="true" />} title={t("empty")} />
         ) : (
           <ul className="divide-y divide-border">
-            {(event.data?.participants ?? []).map((participant) => {
+            {participants.map((participant) => {
               const name =
                 participant.scope === "student"
                   ? (studentNameById.get(participant.student_user_id ?? "")?.name ?? t("unknown"))
@@ -135,15 +156,17 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
                       {formatDisplayName(name)}
                     </span>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setPendingRemove(participant.id);
-                    }}
-                  >
-                    {t("remove")}
-                  </Button>
+                  {canManage && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setPendingRemove(participant.id);
+                      }}
+                    >
+                      {t("remove")}
+                    </Button>
+                  )}
                 </li>
               );
             })}

@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type * as ReferenceApi from "../../reference/api";
@@ -32,7 +32,15 @@ const myGradesFixture = {
   subjects: [
     { subject_id: "s1", components: [], average: 80, report_score: 80 },
     { subject_id: "s2", components: [], average: 60, report_score: 60 },
-    { subject_id: "s3", components: [], average: 90, report_score: 90 },
+    {
+      subject_id: "s3",
+      components: [
+        { code: "TG1", kind: "formative", description: "Kuis bab 3: pecahan", score: 90 },
+        { code: "UH1", kind: "formative", score: 90 },
+      ],
+      average: 90,
+      report_score: 90,
+    },
   ],
 };
 
@@ -99,6 +107,16 @@ describe("MyGradesView", () => {
     expect(screen.getByText("studentsOnlyTitle")).toBeInTheDocument();
     expect(screen.queryByTestId("my-grades-tiles")).not.toBeInTheDocument();
     profileKind.value = "student";
+  });
+
+  it("titles a component by the teacher's description, keeping its code beside the kind", () => {
+    render(<MyGradesView />);
+
+    const card = within(screen.getByTestId("my-grades-subject-card-s3"));
+    expect(card.getByText("Kuis bab 3: pecahan")).toBeInTheDocument();
+    expect(card.getByText("TG1 · formative")).toBeInTheDocument();
+    // Without a description the code stays the title.
+    expect(card.getByText("UH1")).toBeInTheDocument();
   });
 
   it("shows the tuntas badge for a passing subject and not for a failing one", () => {

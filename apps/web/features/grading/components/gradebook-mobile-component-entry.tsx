@@ -3,7 +3,7 @@
 import { IconButton, List, ListRow, SegmentedControl } from "@newsekolah/ui";
 import { Plus } from "lucide-react";
 import type { useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import { useId, type ReactElement } from "react";
 
 import type { AssessmentComponent, GradebookStudent } from "../api";
 
@@ -39,8 +39,12 @@ export interface GradebookMobileComponentEntryProps {
  * equivalent of filling a spreadsheet column, for a teacher standing in
  * front of the class scoring 36 students on the same quiz one after
  * another. The component picker is a segmented control whose count shows
- * how many scores each component still misses. Saving goes through the
- * sticky bar alone, so there is one way to save on a phone.
+ * how many scores each component still misses; the caption under it names
+ * that number for the active component, each segment is named with it
+ * ("TG1, 2 kosong") and the picker's description lists it for every
+ * component, so a screen reader never hears a bare "TG1 2".
+ * Saving goes through the sticky bar alone, so there is one way to save
+ * on a phone.
  */
 export function GradebookMobileComponentEntry({
   t,
@@ -59,6 +63,7 @@ export function GradebookMobileComponentEntry({
   onRegisterRef,
   onNavigate,
 }: GradebookMobileComponentEntryProps): ReactElement {
+  const missingSummaryId = useId();
   const active = components.find((c) => c.id === activeComponentId) ?? components[0];
   if (!active)
     return <p className="p-6 text-center text-body-sm text-fg-muted">{t("noComponents")}</p>;
@@ -69,22 +74,33 @@ export function GradebookMobileComponentEntry({
     active.kktp !== undefined ? t("kktpLabel", { kktp: active.kktp }) : undefined,
     missing > 0 ? t("missingCount", { count: missing }) : undefined,
   ].filter(Boolean);
+  const missingSummary = components
+    .filter((component) => (missingByComponent.get(component.id) ?? 0) > 0)
+    .map(
+      (component) =>
+        `${component.code}: ${t("missingCount", { count: missingByComponent.get(component.id) ?? 0 })}`,
+    )
+    .join(", ");
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <SegmentedControl
           aria-label={t("entryMode.componentPicker")}
+          aria-describedby={missingSummary ? missingSummaryId : undefined}
           value={active.id}
           onValueChange={onActiveComponentChange}
           className="min-w-0"
           options={components.map((component) => {
             const componentMissing = missingByComponent.get(component.id) ?? 0;
-            return {
-              value: component.id,
-              label: component.code,
-              count: componentMissing > 0 ? componentMissing : undefined,
-            };
+            return componentMissing > 0
+              ? {
+                  value: component.id,
+                  label: component.code,
+                  count: componentMissing,
+                  ariaLabel: `${component.code}, ${t("missingCount", { count: componentMissing })}`,
+                }
+              : { value: component.id, label: component.code };
           })}
         />
         <IconButton
@@ -95,6 +111,11 @@ export function GradebookMobileComponentEntry({
           onClick={onAddComponent}
         />
       </div>
+      {missingSummary && (
+        <span id={missingSummaryId} className="sr-only">
+          {t("entryMode.componentPickerMissing", { list: missingSummary })}
+        </span>
+      )}
       <p className="text-caption text-fg-muted">{details.join(" · ")}</p>
 
       <List framed aria-label={t("scoresFor", { code: active.code })}>

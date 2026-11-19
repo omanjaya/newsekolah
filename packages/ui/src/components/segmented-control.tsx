@@ -30,6 +30,13 @@ export interface SegmentedControlOption<T extends string = string> {
   icon?: ReactNode;
   /** A count after the label, e.g. pending items in a filter. */
   count?: number;
+  /**
+   * The segment's accessible name when the visible label and count alone
+   * would be read as a bare "TG1 2", e.g. "TG1, 2 kosong". A phone screen
+   * reader names each radio as the user swipes to it and skips the group's
+   * description, so a count that needs words carries them here.
+   */
+  ariaLabel?: string;
   disabled?: boolean;
 }
 
@@ -164,6 +171,7 @@ export function SegmentedControl<T extends string = string>({
               key={option.value}
               value={option.value}
               disabled={option.disabled}
+              aria-label={option.ariaLabel}
               className={cn(
                 "group/tab",
                 stripItemClass("pill", size === "dense" ? "md" : size),

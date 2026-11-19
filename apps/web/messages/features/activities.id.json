@@ -73,6 +73,7 @@
       "members": "Anggota",
       "meetings": "Pertemuan"
     },
+    "tabsLabel": "Bagian ekstrakurikuler",
     "facts": {
       "capacity": "Kuota {count} anggota",
       "noLimit": "Tanpa batas kuota"

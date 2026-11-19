@@ -64,7 +64,7 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
     >
       <Tabs value={tab} onValueChange={setTab}>
         {canSeeNotes && (
-          <TabsList>
+          <TabsList variant="underline" aria-label={t("tabsLabel")}>
             <TabsTrigger value="members">{t("tabs.members")}</TabsTrigger>
             <TabsTrigger value="notes">{t("tabs.notes")}</TabsTrigger>
           </TabsList>

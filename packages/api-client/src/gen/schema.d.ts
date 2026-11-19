@@ -9454,6 +9454,8 @@ export interface components {
         };
         MyComponentScore: {
             code: string;
+            /** @description What the assessment was, as the teacher wrote it on the component ("Kuis bab 3: pecahan"). Omitted when the teacher left it empty, so the code alone names the component. */
+            description?: string;
             kind: components["schemas"]["AssessmentComponentKind"];
             kktp?: number;
             score: number;

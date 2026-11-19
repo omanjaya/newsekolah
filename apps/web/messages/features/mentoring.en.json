@@ -61,7 +61,8 @@
     "tabs": {
       "members": "Members",
       "notes": "Meeting notes"
-    }
+    },
+    "tabsLabel": "Group sections"
   },
   "members": {
     "columns": {

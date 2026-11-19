@@ -374,7 +374,10 @@ func (h *GradingHandler) GetMyGrades(ctx context.Context, request api.GetMyGrade
 	for i, s := range grades.Subjects {
 		components := make([]api.MyComponentScore, len(s.Components))
 		for j, c := range s.Components {
-			components[j] = api.MyComponentScore{Code: c.Code, Kind: api.AssessmentComponentKind(c.Kind), Score: f32(c.Score), Kktp: f32Ptr(c.KKTP)}
+			components[j] = api.MyComponentScore{
+				Code: c.Code, Kind: api.AssessmentComponentKind(c.Kind), Description: stringPtr(c.Description),
+				Score: f32(c.Score), Kktp: f32Ptr(c.KKTP),
+			}
 		}
 		subjects[i] = api.MySubjectGrade{SubjectId: s.SubjectID, Components: components, Average: f32Ptr(s.Average), ReportScore: f32Ptr(s.ReportScore)}
 	}

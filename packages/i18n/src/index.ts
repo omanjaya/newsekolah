@@ -20,4 +20,5 @@ export {
   formatShortDate,
   formatTime,
   type FormatOptions,
+  type NumberFormatOptions,
 } from "./format.js";

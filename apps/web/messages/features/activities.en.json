@@ -73,6 +73,7 @@
       "members": "Members",
       "meetings": "Meetings"
     },
+    "tabsLabel": "Club sections",
     "facts": {
       "capacity": "Up to {count} members",
       "noLimit": "No member limit"

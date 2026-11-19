@@ -38,7 +38,7 @@ where g.tenant_id = $1 and g.component_id = any(sqlc.arg(component_ids)::uuid[])
 -- name: ListGradesForStudent :many
 -- Every grade of one student in a term, joined to its component; the
 -- service hides subjects whose publication is still off.
-select g.score, g.updated_at, c.id as component_id, c.code, c.kind, c.weight, c.kktp, c.subject_id, c.class_id, c.term_id
+select g.score, g.updated_at, c.id as component_id, c.code, c.kind, c.description, c.weight, c.kktp, c.subject_id, c.class_id, c.term_id
 from grades g
 join assessment_components c on c.id = g.component_id
 where g.tenant_id = $1 and g.student_user_id = $2 and c.term_id = $3

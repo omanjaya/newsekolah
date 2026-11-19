@@ -14,6 +14,7 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
+  FilteredEmptyState,
   Input,
   RowActionsMenu,
   Textarea,
@@ -32,7 +33,7 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import { useClassesQuery } from "../../reference/api";
-import { useDirectoryName } from "../../reference/directory-names";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type Achievement,
   type AchievementLevel,
@@ -45,9 +46,18 @@ import {
 
 import { StudentPicker } from "./student-picker";
 
-function AchievementStudentCell({ id }: { id: string }): ReactElement {
-  const t = useTranslations("app.activities.students");
-  const name = useDirectoryName(id)?.name ?? t("unknown");
+/**
+ * An achievement with the text its cells show. The table's local search
+ * matches accessor values, which it caches per row, so the student's name
+ * and the level's label live in the row data rather than in cells that
+ * resolve them: a search by name or by "Nasional" then finds the row.
+ */
+type AchievementRow = Achievement & {
+  student_name: string;
+  level_label: string;
+};
+
+function AchievementStudentCell({ name }: { name: string }): ReactElement {
   return (
     <div className="flex min-w-0 items-center gap-3">
       <Avatar size={32} name={name} />
@@ -71,6 +81,7 @@ const LEVELS: AchievementLevel[] = [
  */
 export function AchievementsView(): ReactElement {
   const t = useTranslations("app.activities.achievements");
+  const tStudents = useTranslations("app.activities.students");
   const locale = useLocale() as Locale;
   const [search, setSearch] = useState("");
   const canManage = useCan("manage_achievements");
@@ -83,7 +94,17 @@ export function AchievementsView(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const achievements = data?.data ?? [];
+  const achievements = useMemo(() => data?.data ?? [], [data]);
+  const studentMap = useDirectoryNames(achievements.map((item) => item.student_user_id));
+  const tableRows = useMemo<AchievementRow[]>(
+    () =>
+      achievements.map((item) => ({
+        ...item,
+        student_name: studentMap.get(item.student_user_id)?.name ?? "",
+        level_label: t(`levels.${item.level}`),
+      })),
+    [achievements, studentMap, t],
+  );
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
 
   const filters: DataTableFilterDef[] = [
@@ -96,23 +117,18 @@ export function AchievementsView(): ReactElement {
     },
   ];
 
-  const columns = useMemo<ColumnDef<Achievement>[]>(
+  const columns = useMemo<ColumnDef<AchievementRow>[]>(
     () => [
       {
-        accessorKey: "student_user_id",
+        accessorKey: "student_name",
         header: t("columns.student"),
         enableSorting: false,
-        // The value is an id; the name is resolved inside the cell.
-        enableGlobalFilter: false,
-        cell: ({ row }) => <AchievementStudentCell id={row.original.student_user_id} />,
+        cell: ({ row }) => (
+          <AchievementStudentCell name={row.original.student_name || tStudents("unknown")} />
+        ),
       },
       { accessorKey: "competition_name", header: t("columns.competition"), enableSorting: false },
-      {
-        accessorKey: "level",
-        header: t("columns.level"),
-        enableSorting: false,
-        cell: ({ row }) => t(`levels.${row.original.level}`),
-      },
+      { accessorKey: "level_label", header: t("columns.level"), enableSorting: false },
       { accessorKey: "placement", header: t("columns.placement"), enableSorting: false },
       {
         accessorKey: "achieved_on",
@@ -127,7 +143,7 @@ export function AchievementsView(): ReactElement {
               id: "actions",
               header: t("columns.actions"),
               enableSorting: false,
-              cell: ({ row }: { row: { original: Achievement } }) => (
+              cell: ({ row }: { row: { original: AchievementRow } }) => (
                 <RowActionsMenu
                   ariaLabel={t("rowActions", { name: row.original.competition_name })}
                   items={[
@@ -149,11 +165,11 @@ export function AchievementsView(): ReactElement {
                   ]}
                 />
               ),
-            } satisfies ColumnDef<Achievement>,
+            } satisfies ColumnDef<AchievementRow>,
           ]
         : []),
     ],
-    [t, canManage, locale],
+    [t, tStudents, canManage, locale],
   );
 
   return (
@@ -188,9 +204,9 @@ export function AchievementsView(): ReactElement {
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           stateKey="features/activities/components/achievements-view:1"
           mode="local"
-          data={achievements}
+          data={tableRows}
           columns={columns}
-          rowCount={achievements.length}
+          rowCount={tableRows.length}
           pagination={{ pageIndex: 0, pageSize: 50 }}
           onPaginationChange={() => undefined}
           sorting={[]}
@@ -203,26 +219,37 @@ export function AchievementsView(): ReactElement {
           onRetry={() => void refetch()}
           getRowId={(item) => item.id}
           fillHeight
+          // The class filter runs on the server, so an over-narrow class
+          // arrives as an empty list: say so, rather than "no achievements yet".
           emptyState={
-            <EmptyState
-              icon={<Trophy aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-              // The header already carries the primary "add".
-              action={
-                canManage ? (
-                  <Button
-                    variant="secondary"
-                    icon={<Plus />}
-                    onClick={() => {
-                      setEditing("new");
-                    }}
-                  >
-                    {t("add")}
-                  </Button>
-                ) : undefined
-              }
-            />
+            classId ? (
+              <FilteredEmptyState
+                onReset={() => {
+                  setClassId("");
+                  setSearch("");
+                }}
+              />
+            ) : (
+              <EmptyState
+                icon={<Trophy aria-hidden="true" />}
+                title={t("emptyTitle")}
+                description={t("emptyBody")}
+                // The header already carries the primary "add".
+                action={
+                  canManage ? (
+                    <Button
+                      variant="secondary"
+                      icon={<Plus />}
+                      onClick={() => {
+                        setEditing("new");
+                      }}
+                    >
+                      {t("add")}
+                    </Button>
+                  ) : undefined
+                }
+              />
+            )
           }
         />
       </div>

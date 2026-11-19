@@ -1,7 +1,7 @@
 "use client";
 
 import type { Locale } from "@newsekolah/i18n";
-import { formatDateTime } from "@newsekolah/i18n";
+import { formatDateTime, formatNumber } from "@newsekolah/i18n";
 import {
   Card,
   CardDescription,
@@ -16,6 +16,7 @@ import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
+import { useSession } from "../../../lib/session/session-provider";
 import { useStudentRiskQuery } from "../api";
 
 import { AttendanceRatioBar } from "./attendance-ratio-bar";
@@ -33,6 +34,7 @@ export function StudentRiskPanel({ studentId }: { studentId: string }): ReactEle
   const t = useTranslations("app.analytics.detail");
   const levelLabel = useTranslations("app.analytics.level");
   const locale = useLocale() as Locale;
+  const { me } = useSession();
   const reasonText = useReasonText();
   const disciplineOn = useModuleEnabled("discipline");
   const gradingOn = useModuleEnabled("grading");
@@ -51,7 +53,10 @@ export function StudentRiskPanel({ studentId }: { studentId: string }): ReactEle
           <CardTitle as="h2">{t("reasonsTitle")}</CardTitle>
           <CardDescription>
             {t("score", { score: data.score })} ·{" "}
-            {t("freshness", { time: formatDateTime(data.computed_at, { locale }) })}
+            {t("freshness", {
+              // In the school's zone, as the at-risk list states it.
+              time: formatDateTime(data.computed_at, { locale, timeZone: me?.tenant.timezone }),
+            })}
           </CardDescription>
         </CardHeader>
         {data.reasons.length === 0 ? (
@@ -117,9 +122,15 @@ export function StudentRiskPanel({ studentId }: { studentId: string }): ReactEle
               {data.signals.has_grade_trend ? (
                 <div className="flex flex-col gap-1.5">
                   <SignalFigure
-                    value={data.signals.current_average.toFixed(1)}
+                    value={formatNumber(data.signals.current_average, {
+                      locale,
+                      fractionDigits: 1,
+                    })}
                     unit={t("signals.gradeTrendUnit", {
-                      previous: data.signals.previous_average.toFixed(1),
+                      previous: formatNumber(data.signals.previous_average, {
+                        locale,
+                        fractionDigits: 1,
+                      }),
                     })}
                   />
                   <GradeTrendBars
