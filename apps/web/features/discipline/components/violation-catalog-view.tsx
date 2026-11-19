@@ -40,7 +40,7 @@ export function ViolationCatalogView(): ReactElement {
     "",
   );
   const includeInactive = includeInactiveParam === "true";
-  const { data, isLoading } = useViolationTypesQuery(includeInactive);
+  const { data, isLoading, error, refetch } = useViolationTypesQuery(includeInactive);
   const remove = useDeleteViolationTypeMutation();
 
   const [editing, setEditing] = useState<ViolationType | "new" | null>(null);
@@ -147,6 +147,8 @@ export function ViolationCatalogView(): ReactElement {
           </Button>
         }
         isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
         getRowId={(item) => item.id}
         emptyState={
           <EmptyState

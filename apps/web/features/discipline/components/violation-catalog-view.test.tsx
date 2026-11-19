@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -59,5 +59,24 @@ describe("ViolationCatalogView filters", () => {
     await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useViolationTypesQuery).toHaveBeenLastCalledWith(false);
     expect(new URLSearchParams(window.location.search).get("include_inactive")).toBe("");
+  });
+});
+
+describe("ViolationCatalogView load failure", () => {
+  it("shows the error with a retry instead of an empty catalog", async () => {
+    const refetch = vi.fn();
+    mocks.useViolationTypesQuery.mockReset();
+    mocks.useViolationTypesQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("boom"),
+      refetch,
+    });
+    const user = userEvent.setup();
+    render(<ViolationCatalogView />);
+
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+    await user.click(within(screen.getByRole("alert")).getByRole("button"));
+    expect(refetch).toHaveBeenCalled();
   });
 });

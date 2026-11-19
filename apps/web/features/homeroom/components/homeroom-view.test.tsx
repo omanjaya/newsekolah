@@ -138,6 +138,17 @@ describe("HomeroomView tabs", () => {
     expect(screen.queryByRole("tab", { name: "tabs.discipline" })).not.toBeInTheDocument();
   });
 
+  it("shows the day stepper only on the tabs that read the chosen day", () => {
+    const { unmount } = render(<HomeroomView />);
+    expect(screen.getByRole("button", { name: "prevDay" })).toBeInTheDocument();
+    unmount();
+
+    window.history.replaceState(null, "", "/homeroom?tab=permits");
+    render(<HomeroomView />);
+    expect(screen.getByText("permits-panel")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "prevDay" })).not.toBeInTheDocument();
+  });
+
   it("adds the discipline tab with view_discipline", () => {
     mocks.permissions = new Set(["view_discipline"]);
     render(<HomeroomView />);

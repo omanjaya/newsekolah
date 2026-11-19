@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogContent,
   type PageHeaderAction,
+  Skeleton,
   TextLink,
 } from "@newsekolah/ui";
 import { HeartHandshake, Plus, Printer } from "lucide-react";
@@ -15,7 +16,7 @@ import { useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useCan } from "../../../lib/session/session-provider";
-import { useDirectoryNames } from "../../reference/directory-names";
+import { useDirectoryLookup } from "../../reference/directory-names";
 import { studentProfileHref } from "../../students/href";
 
 import { StudentDisciplinePanel } from "./student-discipline-panel";
@@ -32,8 +33,14 @@ export function StudentDisciplineView({ studentId }: { studentId: string }): Rea
   const tViolations = useTranslations("app.discipline.violations");
   const canRecord = useCan("record_violations");
   const canCounsel = useCan("manage_counseling");
-  const studentMap = useDirectoryNames([studentId]);
-  const student = studentMap.get(studentId);
+  // "Still loading", "failed" and "not found" differ: the name stays a
+  // placeholder while loading or after a failed lookup (the description
+  // offers a retry), and only a successful lookup without the student says
+  // unknown.
+  const lookup = useDirectoryLookup([studentId]);
+  const student = lookup.names.get(studentId);
+  const unknown = lookup.isSuccess && !student;
+  const namePending = !student && !unknown;
   const studentName = student?.name ?? t("unknownStudent");
   const report = useOpenStudentDisciplineReport();
   const [recording, setRecording] = useState(false);
@@ -60,11 +67,25 @@ export function StudentDisciplineView({ studentId }: { studentId: string }): Rea
 
   return (
     <AppPage
-      leading={<Avatar name={studentName} size={48} decorative />}
-      title={studentName}
+      leading={
+        namePending ? (
+          <Skeleton className="size-12 rounded-full" />
+        ) : (
+          <Avatar name={studentName} size={48} decorative />
+        )
+      }
+      title={namePending ? <Skeleton className="h-8 w-48" /> : studentName}
       description={
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
           {student?.nis && <span>{t("nis", { nis: student.nis })}</span>}
+          {!student && lookup.isError && (
+            <span className="flex items-center gap-2">
+              <span>{t("nameLoadError")}</span>
+              <Button variant="link" size="sm" onClick={lookup.refetch}>
+                {t("retry")}
+              </Button>
+            </span>
+          )}
           <TextLink href={studentProfileHref(studentId)}>{t("openProfile")}</TextLink>
         </span>
       }

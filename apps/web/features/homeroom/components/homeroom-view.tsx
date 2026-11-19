@@ -51,6 +51,9 @@ const STATUS_VALUES = ["", ...STATUS_FILTER_CODES] as const;
 /** Statuses that put a student on the "needs attention today" list. */
 const ATTENTION_CODES = new Set(["A", "INCOMPLETE"]);
 
+/** Tabs that read the chosen day; the others carry no day stepper. */
+const DATED_TABS = new Set(["overview", "attendance", "parents"]);
+
 const PAGE_SIZE = 25;
 /** Large enough to hold a whole homeroom class in one page for the
  * dashboard's own summary sections, which need every student regardless
@@ -274,18 +277,23 @@ export function HomeroomView(): ReactElement {
     <Tabs value={tab} onValueChange={setTab} className="contents">
       <AppPage
         description={className ? t("titleWithClass", { className }) : undefined}
-        actions={
-          <DayStepper
-            value={date}
-            onChange={changeDate}
-            today={today}
-            labels={{
-              previous: t("prevDay"),
-              next: t("nextDay"),
-              today: t("today"),
-              date: t("dateLabel"),
-            }}
-          />
+        // The day steps only the tabs fed by the dated dashboard; Izin and
+        // Pelanggaran ignore it. In the toolbar, like attendance and staff
+        // attendance, so a phone keeps the tab strip right under the title.
+        toolbar={
+          DATED_TABS.has(tab) ? (
+            <DayStepper
+              value={date}
+              onChange={changeDate}
+              today={today}
+              labels={{
+                previous: t("prevDay"),
+                next: t("nextDay"),
+                today: t("today"),
+                date: t("dateLabel"),
+              }}
+            />
+          ) : undefined
         }
         nav={
           <TabsList variant="underline" aria-label={t("tabsLabel")}>

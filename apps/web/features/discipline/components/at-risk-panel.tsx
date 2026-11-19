@@ -5,8 +5,10 @@ import {
   Alert,
   Badge,
   Button,
+  ConfirmDialog,
   DataTable,
   EmptyState,
+  FilteredEmptyState,
   domainIcons,
   useToast,
   type DataTableFilterDef,
@@ -17,12 +19,12 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { useClassesQuery } from "../../reference/api";
-import { StudentLink } from "../../students/components/student-link";
 import {
   type SPCandidate,
   useDisciplinePolicyQuery,
@@ -34,12 +36,21 @@ import { dueLevels } from "../lib/sp-due-levels";
 
 const PAGE_SIZE = 25;
 
+/** The letter a counselor asked to issue, held until they confirm it. */
+interface PendingIssue {
+  candidate: SPCandidate;
+  level: number;
+  label: string;
+}
+
 export function AtRiskPanel(): ReactElement {
   const t = useTranslations("app.discipline.warningLetters.atRisk");
   const router = useRouter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canIssue = useCan("issue_warning_letters");
+  // The policy is set from a header action only settings managers see.
+  const canManagePolicy = useCan("manage_settings");
 
   const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
   const [level, setLevel] = useUrlState<string>("level", () => true, "");
@@ -64,6 +75,36 @@ export function AtRiskPanel(): ReactElement {
     offset: pagination.pageIndex * pagination.pageSize,
   });
   const issue = useIssueWarningLetterMutation();
+  // A letter gets a number and goes on the record at once, so it asks first.
+  const [pendingIssue, setPendingIssue] = useState<PendingIssue | null>(null);
+
+  const filtering = search !== "" || classId !== "" || level !== "";
+  function resetFilters() {
+    setSearch("");
+    setClassId("");
+    setLevel("");
+    setPagination((p) => ({ ...p, pageIndex: 0 }));
+  }
+
+  function confirmIssue() {
+    if (!pendingIssue) return;
+    const { candidate, level: letterLevel, label } = pendingIssue;
+    issue.mutate(
+      { student_user_id: candidate.student_user_id, level: letterLevel },
+      {
+        onSuccess: () => {
+          setPendingIssue(null);
+          toast.success(t("issued", { level: label }));
+        },
+        // On failure the dialog stays open so the counselor can try again.
+        onError: (error) => {
+          toast.error(
+            error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+          );
+        },
+      },
+    );
+  }
 
   const allRows = candidates.data?.data ?? [];
   const rows = allRows.slice(0, pagination.pageSize);
@@ -102,20 +143,28 @@ export function AtRiskPanel(): ReactElement {
         id: "student",
         header: t("columns.student"),
         enableSorting: false,
+        // Plain text: the row opens the student's discipline record, so the
+        // row has one destination, as in the ledger.
         cell: ({ row }) => (
           <div className="flex flex-col">
-            <span className="text-fg">
-              <StudentLink studentId={row.original.student_user_id} tab="discipline">
-                {row.original.student_name}
-              </StudentLink>
-            </span>
+            <span className="text-fg">{row.original.student_name}</span>
             <span className="text-caption text-fg-muted">
               {row.original.nis} · {row.original.class_name}
             </span>
           </div>
         ),
       },
-      { accessorKey: "total_points", header: t("columns.points"), enableSorting: false },
+      {
+        accessorKey: "total_points",
+        header: t("columns.points"),
+        enableSorting: false,
+        meta: { align: "end" },
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {t("pointsValue", { points: row.original.total_points })}
+          </span>
+        ),
+      },
       {
         id: "due",
         header: t("columns.due"),
@@ -162,24 +211,13 @@ export function AtRiskPanel(): ReactElement {
           return (
             <Button
               size="sm"
-              loading={issue.isPending}
               onClick={(e) => {
                 e.stopPropagation();
-                issue.mutate(
-                  { student_user_id: row.original.student_user_id, level: nextDue.level },
-                  {
-                    onSuccess: () => {
-                      toast.success(t("issued", { level: nextDue.label }));
-                    },
-                    onError: (error) => {
-                      toast.error(
-                        error instanceof ApiError
-                          ? apiErrorMessage(error.code)
-                          : apiErrorMessage("UNKNOWN"),
-                      );
-                    },
-                  },
-                );
+                setPendingIssue({
+                  candidate: row.original,
+                  level: nextDue.level,
+                  label: nextDue.label,
+                });
               }}
             >
               {t("issue", { level: nextDue.label })}
@@ -188,14 +226,18 @@ export function AtRiskPanel(): ReactElement {
         },
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- issue mutation identity is stable per render
     [t, levels, levelLabel, canIssue],
   );
 
-  if (levels.length === 0 && !policy.isLoading) {
+  // A failed policy load is not the same as no policy: say so and offer a retry.
+  if (policy.isError) {
+    return <QueryError retry={() => void policy.refetch()} error={policy.error} />;
+  }
+
+  if (policy.isSuccess && levels.length === 0) {
     return (
       <Alert variant="info" title={t("noPolicyTitle")}>
-        {t("noPolicyBody")}
+        {canManagePolicy ? t("noPolicyBody") : t("noPolicyBodyAsk")}
       </Alert>
     );
   }
@@ -219,6 +261,8 @@ export function AtRiskPanel(): ReactElement {
           }}
           filters={filters}
           isLoading={candidates.isLoading}
+          error={candidates.error}
+          onRetry={() => void candidates.refetch()}
           getRowId={(item) => item.student_user_id}
           onRowActivate={(item) => {
             router.push(studentDisciplineHref(item.student_user_id));
@@ -226,14 +270,33 @@ export function AtRiskPanel(): ReactElement {
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           fillHeight
           emptyState={
-            <EmptyState
-              icon={<domainIcons.violation aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
+            filtering ? (
+              <FilteredEmptyState onReset={resetFilters} />
+            ) : (
+              <EmptyState
+                icon={<domainIcons.violation aria-hidden="true" />}
+                title={t("emptyTitle")}
+                description={t("emptyBody")}
+              />
+            )
           }
         />
       </div>
+
+      <ConfirmDialog
+        open={pendingIssue !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingIssue(null);
+        }}
+        title={t("issueConfirm.title", {
+          level: pendingIssue?.label ?? "",
+          student: pendingIssue?.candidate.student_name ?? "",
+        })}
+        description={t("issueConfirm.body")}
+        confirmLabel={t("issue", { level: pendingIssue?.label ?? "" })}
+        confirming={issue.isPending}
+        onConfirm={confirmIssue}
+      />
     </div>
   );
 }

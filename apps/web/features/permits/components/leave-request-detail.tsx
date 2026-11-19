@@ -72,7 +72,7 @@ export function LeaveRequestDetail({
   if (error instanceof ApiError && (error.status === 404 || error.status === 403)) {
     return (
       <EmptyState
-        icon={<domainIcons.exitPermit aria-hidden="true" />}
+        icon={<domainIcons.leave aria-hidden="true" />}
         title={t("notFoundTitle")}
         description={t("notFoundBody")}
       />

@@ -154,7 +154,6 @@
     "title": "Surat peringatan",
     "tabs": {
       "issued": "Surat terbit",
-      "atRisk": "Siswa mendekati ambang",
       "template": "Templat surat"
     },
     "filters": {
@@ -191,18 +190,31 @@
       },
       "issue": "Terbitkan {level}",
       "issued": "{level} diterbitkan",
-      "emptyTitle": "Tidak ada siswa mendekati ambang",
-      "emptyBody": "Siswa yang mencapai tingkat SP pertama akan muncul di sini.",
+      "pointsValue": "{points} poin",
+      "issueConfirm": {
+        "title": "Terbitkan {level} untuk {student}?",
+        "body": "Nomor surat dibuat dan surat tercatat di riwayat siswa. Surat yang sudah terbit tidak bisa ditarik dari layar ini."
+      },
+      "emptyTitle": "Belum ada kandidat SP",
+      "emptyBody": "Siswa yang poinnya mencapai ambang SP muncul di sini.",
       "noPolicyTitle": "Kebijakan SP belum diatur",
-      "noPolicyBody": "Atur kebijakan SP di halaman Pelanggaran sebelum menerbitkan surat."
+      "noPolicyBody": "Atur lewat Kebijakan SP di kepala halaman ini sebelum menerbitkan surat.",
+      "noPolicyBodyAsk": "Minta admin sekolah mengatur Kebijakan SP sebelum surat bisa diterbitkan."
     },
     "template": {
       "description": "Pengaturan pola penomoran dan naskah surat peringatan. Perubahan berlaku untuk surat yang diterbitkan setelah disimpan.",
       "patternLabel": "Pola nomor surat",
-      "patternHint": "Placeholder yang diterima: {{seq}}, {{sp_level_number}}, {{month_roman}}, {{year}}.",
-      "missingSeqError": "Pola harus memuat {{seq}} agar setiap surat punya nomor berbeda.",
+      "patternHint": "Ketik pola nomor, lalu sisipkan data otomatis di posisi kursor.",
+      "insertLabel": "Data otomatis yang bisa dipakai",
+      "tokens": {
+        "seq": "Nomor urut",
+        "sp_level_number": "Tingkat SP",
+        "month_roman": "Bulan (romawi)",
+        "year": "Tahun"
+      },
+      "missingSeqError": "Pola harus memuat Nomor urut agar setiap surat punya nomor berbeda.",
       "seqPadLabel": "Panjang angka urut",
-      "seqPadHint": "Jumlah digit {{seq}}, diisi nol di depan. Contoh: 3 menghasilkan 001.",
+      "seqPadHint": "Jumlah digit Nomor urut, diisi nol di depan. Contoh: 3 menghasilkan 001.",
       "seqPadRangeError": "Panjang angka urut harus antara {min} dan {max}.",
       "previewLabel": "Contoh nomor dengan pola saat ini",
       "openingLabel": "Kalimat pembuka",
@@ -290,7 +302,7 @@
       "followUpPlanPlaceholder": "Opsional",
       "visibility": "Visibilitas",
       "visibilityOptions": {
-        "counselor": "Konselor",
+        "counselor": "Hanya saya",
         "bk_team": "Tim BK",
         "leadership": "Pimpinan"
       },
@@ -315,7 +327,7 @@
     "title": "Poin kedisiplinan",
     "loadError": "Data kedisiplinan gagal dimuat.",
     "emptyTitle": "Belum ada pelanggaran",
-    "emptyBody": "Tidak ada pelanggaran yang tercatat untukmu tahun ini.",
+    "emptyBody": "Tidak ada pelanggaran yang tercatat untuk Anda tahun ini.",
     "totalPoints": "Total poin: {points}",
     "letters": "Surat peringatan",
     "records": "Riwayat pelanggaran",
@@ -350,7 +362,9 @@
     "recordsCount": "{count, plural, other {# catatan}}",
     "recordCounseling": "Catat konseling",
     "nis": "NIS {nis}",
-    "openProfile": "Lihat profil siswa"
+    "openProfile": "Lihat profil siswa",
+    "nameLoadError": "Nama siswa gagal dimuat.",
+    "retry": "Coba lagi"
   },
   "pointsMeter": {
     "label": "{points} poin terhadap ambang surat peringatan",

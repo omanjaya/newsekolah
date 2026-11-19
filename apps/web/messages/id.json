@@ -931,7 +931,7 @@
         "reasonPlaceholder": "Contoh: macet, bangun kesiangan",
         "homeroomReported": "Wali kelas sudah diberi tahu",
         "requiredError": "Wajib diisi.",
-        "recordedHint": "Tercatat sebagai dicatat oleh guru piket, bukan permintaan mandiri siswa.",
+        "recordedHint": "Dicatat atas nama guru piket, bukan diajukan sendiri oleh siswa.",
         "recordedExit": "Izin keluar tercatat untuk {student}",
         "recordedLate": "Keterlambatan tercatat untuk {student}",
         "submit": "Catat",
@@ -954,7 +954,7 @@
         "occurrence": "Terlambat ke-{n}, {time}"
       },
       "log": {
-        "title": "Dicatat hari ini",
+        "title": "Dicatat di layar ini",
         "description": "Catatan manual dan tinjauan dari layar ini sejak dibuka.",
         "empty": "Belum ada catatan dari layar ini",
         "kinds": {
@@ -1382,7 +1382,19 @@
         "cancel": "Batal",
         "send": "Kirim permintaan"
       },
-      "directionLabel": "Arah permintaan"
+      "directionLabel": "Arah permintaan",
+      "rejectConfirm": {
+        "title": "Tolak permintaan dari {teacher}?",
+        "body": "{lesson}. Guru yang meminta melihat permintaan ini ditolak, beserta alasan bila Anda mengisinya.",
+        "noteLabel": "Alasan",
+        "confirm": "Tolak permintaan"
+      },
+      "cancelConfirm": {
+        "title": "Batalkan permintaan ke {teacher}?",
+        "body": "{lesson}. Permintaan ditarik dan tidak bisa dijawab lagi.",
+        "confirm": "Batalkan permintaan",
+        "keep": "Jangan batalkan"
+      }
     },
     "permits": {
       "workflow": {
@@ -1458,7 +1470,7 @@
           "from": "Dari jam",
           "to": "Sampai jam",
           "pick": "Pilih",
-          "stagesHint": "Setelah diajukan, minta guru piket lalu guru kelas memindai untuk menyetujui. QR gerbang muncul setelah tahap terakhir.",
+          "stagesHint": "Setelah diajukan, tunjukkan kode izin ke guru di setiap tahap, lalu pindai QR persetujuan yang ia tampilkan. QR gerbang muncul setelah tahap terakhir.",
           "requiredError": "Tujuan dan rentang jam wajib diisi.",
           "created": "Izin keluar diajukan",
           "submit": "Ajukan",
@@ -1516,7 +1528,7 @@
         "opened": "Diajukan",
         "exitedLabel": "Keluar gerbang",
         "idleTitle": "Tidak ada izin keluar berjalan",
-        "idleBody": "Perlu keluar sekolah di jam pelajaran? Ajukan izin, lalu minta guru memindai di setiap tahap. QR gerbang muncul setelah tahap terakhir.",
+        "idleBody": "Perlu keluar sekolah di jam pelajaran? Ajukan izin, tunjukkan kode izin ke guru di setiap tahap, lalu pindai QR persetujuan yang ia tampilkan. QR gerbang muncul setelah tahap terakhir.",
         "historyTitle": "Riwayat izin keluar",
         "modeLabel": "Tugas di halaman ini"
       },
@@ -1556,7 +1568,7 @@
         "noAccessTitle": "Khusus siswa",
         "noAccessBody": "Siswa yang terlambat memindai QR di meja piket dari halaman ini. Guru piket meninjaunya di halaman Piket hari ini.",
         "scanTitle": "Pindai QR di meja piket",
-        "scanBody": "Datang terlambat? Arahkan kamera ke QR terlambat di meja piket. Namamu langsung masuk antrean guru piket.",
+        "scanBody": "Datang terlambat? Arahkan kamera ke QR terlambat di meja piket. Nama Anda langsung masuk antrean guru piket.",
         "reasonHint": "Isi sebelum memindai.",
         "reasonPlaceholder": "Contoh: ban bocor di jalan",
         "hero": {
@@ -1613,7 +1625,7 @@
         "reject": "Tolak",
         "approve": "Setujui",
         "rejected": "Pengajuan ditolak",
-        "approved": "Pengajuan disetujui dan diteruskan ke guru BK",
+        "approved": "Pengajuan disetujui dan diteruskan ke tahap berikutnya",
         "issueLetter": "Terbitkan surat",
         "issued": "Surat izin diterbitkan",
         "issuedTitle": "Surat izin sudah terbit",
@@ -1651,7 +1663,7 @@
           "reasonRequired": "Tulis keterangan singkat.",
           "reasonPlaceholder": "Contoh: demam sejak semalam",
           "evidencePreview": "Pratinjau foto bukti",
-          "stagesHint": "Setelah dikirim, wali kelas meninjau pengajuan, lalu guru BK menerbitkan surat izin."
+          "stagesHint": "Setelah dikirim, pengajuan ditinjau oleh setiap tahap persetujuan. Surat izin terbit setelah tahap terakhir."
         },
         "hero": {
           "eyebrow": "Pengajuan berjalan",

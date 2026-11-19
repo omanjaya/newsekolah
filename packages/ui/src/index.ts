@@ -172,11 +172,14 @@ export {
 export { CountBadge, type CountBadgeProps, type CountBadgeTone } from "./components/count-badge.js";
 export { StatusBadge, type StatusBadgeProps, type StatusName } from "./components/status-badge.js";
 export {
+  DELIVERY_STATUS_TONE,
+  deliveryStatusTone,
   SEMANTIC_STATUS_TOKEN,
   SEMANTIC_STATUS_TONE,
   SemanticStatusBadge,
   semanticStatusToken,
   semanticStatusTone,
+  type DeliveryStatus,
   type SemanticStatus,
   type SemanticStatusBadgeProps,
 } from "./components/semantic-status.js";

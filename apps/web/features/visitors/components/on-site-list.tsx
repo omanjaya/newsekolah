@@ -70,6 +70,14 @@ export function OnSiteList({
                   <span className="truncate">
                     {host ? `${t("host", { name: host })} · ${arrival}` : arrival}
                   </span>
+                  {/* The guard collects this card at check out, often from a
+                      phone, where the trailing badge has no room. It sits
+                      outside the truncated text so the ellipsis never hides it. */}
+                  {visit.badge_number && (
+                    <span className="shrink-0 sm:hidden">
+                      {`· ${t("badgeNumber", { number: visit.badge_number })}`}
+                    </span>
+                  )}
                 </span>
               </>
             }

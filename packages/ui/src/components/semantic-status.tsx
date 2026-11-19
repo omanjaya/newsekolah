@@ -66,6 +66,28 @@ export function semanticStatusTone(status: SemanticStatus): SemanticTone | "neut
 }
 
 /**
+ * The vocabulary of automated sends (WhatsApp messages, webhook calls,
+ * scheduled report runs). Unlike a workflow's `pending`, a queued send waits
+ * on no person, so it stays `neutral` everywhere instead of `warning`.
+ */
+export type DeliveryStatus = "pending" | "sent" | "delivered" | "read" | "success" | "failed";
+
+/** Delivery state to a feedback tone; one map for every delivery log. */
+export const DELIVERY_STATUS_TONE: Record<DeliveryStatus, SemanticTone | "neutral"> = {
+  pending: "neutral",
+  sent: "info",
+  delivered: "success",
+  read: "success",
+  success: "success",
+  failed: "danger",
+};
+
+/** Tone for a delivery state; an unknown value from the API reads as `neutral`. */
+export function deliveryStatusTone(status: string): SemanticTone | "neutral" {
+  return (DELIVERY_STATUS_TONE as Record<string, SemanticTone | "neutral">)[status] ?? "neutral";
+}
+
+/**
  * Legacy: the attendance-token form of `SEMANTIC_STATUS_TONE`, from when
  * workflow states borrowed the `status-*` colours. Kept for code that still
  * colours a status that way; new code uses `SEMANTIC_STATUS_TONE` or

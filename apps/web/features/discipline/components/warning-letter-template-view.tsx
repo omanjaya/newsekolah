@@ -13,9 +13,10 @@ import {
   Textarea,
   useToast,
 } from "@newsekolah/ui";
+import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
@@ -33,6 +34,9 @@ import {
 
 const MIN_SEQ_PAD = 0;
 const MAX_SEQ_PAD = 10;
+
+/** The values a letter number can carry, in the order an admin usually writes them. */
+const NUMBER_TOKENS = ["seq", "sp_level_number", "month_roman", "year"] as const;
 
 export function WarningLetterTemplateView(): ReactElement {
   const t = useTranslations("app.discipline.warningLetters.template");
@@ -70,6 +74,22 @@ function WarningLetterTemplateEditor({
   const [openingText, setOpeningText] = useState(initial.opening_text);
   const [closingText, setClosingText] = useState(initial.closing_text);
   const [error, setError] = useState<string | null>(null);
+  const patternRef = useRef<HTMLInputElement>(null);
+
+  /** Puts `{{name}}` where the cursor is (or at the end) and keeps typing after it. */
+  function insertToken(name: (typeof NUMBER_TOKENS)[number]) {
+    const token = `{{${name}}}`;
+    const field = patternRef.current;
+    const start = field?.selectionStart ?? pattern.length;
+    const end = field?.selectionEnd ?? pattern.length;
+    const next = pattern.slice(0, start) + token + pattern.slice(end);
+    setPattern(next);
+    if (error === t("missingSeqError") && hasSeqPlaceholder(next)) setError(null);
+    requestAnimationFrame(() => {
+      field?.focus();
+      field?.setSelectionRange(start + token.length, start + token.length);
+    });
+  }
 
   const seqPadNumber = Number(seqPad);
   const preview = useMemo(
@@ -132,6 +152,7 @@ function WarningLetterTemplateEditor({
 
         <Field label={t("patternLabel")} hint={t("patternHint")}>
           <Input
+            ref={patternRef}
             value={pattern}
             disabled={!canEdit}
             onChange={(e) => {
@@ -143,6 +164,27 @@ function WarningLetterTemplateEditor({
             invalid={error === t("missingSeqError")}
           />
         </Field>
+        {canEdit && (
+          <div className="flex flex-col gap-2">
+            <p className="text-label text-fg">{t("insertLabel")}</p>
+            <div className="flex flex-wrap gap-2">
+              {NUMBER_TOKENS.map((name) => (
+                <Button
+                  key={name}
+                  variant="secondary"
+                  size="sm"
+                  icon={<Plus />}
+                  title={`{{${name}}}`}
+                  onClick={() => {
+                    insertToken(name);
+                  }}
+                >
+                  {t(`tokens.${name}`)}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <Field label={t("seqPadLabel")} hint={t("seqPadHint")}>
           <NumberInput
