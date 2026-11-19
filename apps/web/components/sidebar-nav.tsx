@@ -293,7 +293,7 @@ function focusFirstLink(container: HTMLElement | null) {
 /**
  * One group as a single rail icon that opens its pages in a flyout panel.
  * A mouse hovering it peeks; a click, a tap or a key pins it open and moves
- * focus to its first page. A small chevron tells it apart from the rail's
+ * focus to its first page, also when the peek is already showing. A small chevron tells it apart from the rail's
  * plain links, which navigate at once. Render it inside `RailFlyouts`.
  */
 export function GroupFlyout({
@@ -423,8 +423,14 @@ export function GroupFlyout({
             pin();
             focusFirstLink(contentRef.current);
           }}
+          // A key activates the trigger as a click does: on a peek it pins
+          // the panel and moves focus in, rather than toggling it shut. Read
+          // from the panel's state, not from a pointer press that may never
+          // have become a click.
           onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") clickPins.current = false;
+            if (event.key === "Enter" || event.key === " ") {
+              clickPins.current = open && mode === "peek";
+            }
           }}
           {...(holdsActive ? { [NAV_MARKER_ATTR]: "top" } : {})}
           className={cn(

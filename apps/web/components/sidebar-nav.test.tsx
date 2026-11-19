@@ -65,6 +65,21 @@ describe("GroupFlyout", () => {
     expect(trigger).toHaveAttribute("data-state", "closed");
   });
 
+  // Enter on a showing peek closed it while a click pinned it and moved
+  // focus in (audit r4-n1).
+  it("pins a hover peek and moves focus in when a key activates the trigger", async () => {
+    const user = userEvent.setup();
+    const trigger = renderFlyout();
+
+    await user.hover(trigger);
+    trigger.focus();
+    await user.keyboard("{Enter}");
+    expect(trigger).toHaveAttribute("data-state", "open");
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: "nav.schedule" })).toHaveFocus();
+    });
+  });
+
   // A press on a hover-opened trigger that never becomes a click (dragged
   // off, released elsewhere) must not leave the keyboard toggle swallowed.
   it("still toggles from the keyboard after a press that never clicked", async () => {
@@ -73,6 +88,12 @@ describe("GroupFlyout", () => {
 
     await user.hover(trigger);
     fireEvent.pointerDown(trigger);
+    trigger.focus();
+    // The key pins the peek, as a click would.
+    await user.keyboard("{Enter}");
+    expect(trigger).toHaveAttribute("data-state", "open");
+
+    // Pinned now, the next key toggles it shut.
     trigger.focus();
     await user.keyboard("{Enter}");
     expect(trigger).toHaveAttribute("data-state", "closed");
