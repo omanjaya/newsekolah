@@ -495,6 +495,44 @@ describe("HomeroomView overview", () => {
     }
   });
 
+  // The button went away with the notice once today loaded, and focus fell
+  // to <body> (audit r5-n5, the r3-n22 class).
+  it("keeps focus in the tab's panel after stepping back to today", async () => {
+    mocks.date = "2026-07-04";
+    const outOfTerm = {
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      isError: true,
+      error: new ApiError({ status: 403, code: "ATTENDANCE_NOT_HOMEROOM", message: "forbidden" }),
+      refetch: vi.fn(),
+    };
+    const loaded = {
+      data: { data: [], total: 0, status_counts: {} },
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    };
+    for (const tab of ["overview", "attendance", "parents"]) {
+      window.history.replaceState(null, "", `/homeroom?tab=${tab}`);
+      mocks.useHomeroomAttendanceQuery.mockReturnValue(outOfTerm);
+      const user = userEvent.setup();
+      const view = render(<HomeroomView />);
+
+      await user.click(screen.getByRole("button", { name: "outOfTermAction" }));
+      mocks.useHomeroomAttendanceQuery.mockReturnValue(loaded);
+      view.rerender(<HomeroomView />);
+
+      expect(screen.queryByRole("button", { name: "outOfTermAction" })).not.toBeInTheDocument();
+      expect(document.activeElement).not.toBe(document.body);
+      expect(screen.getByRole("tabpanel")).toHaveFocus();
+      view.unmount();
+    }
+    mocks.date = "2026-09-29";
+  });
+
   it("offers no way back to today when today itself is outside the term", () => {
     mocks.useHomeroomAttendanceQuery.mockReturnValue({
       data: undefined,

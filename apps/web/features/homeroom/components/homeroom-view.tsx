@@ -17,7 +17,7 @@ import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, RefObject } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
@@ -113,7 +113,9 @@ export function HomeroomView(): ReactElement {
   );
   const leaveQueue = useLeaveReviewQueueQuery(Boolean(homeroom) && permitsOn);
 
+  const overviewPanel = useRef<HTMLDivElement>(null);
   const attendancePanel = useRef<HTMLDivElement>(null);
+  const parentsPanel = useRef<HTMLDivElement>(null);
   const focusAttendance = useRef(false);
   useEffect(() => {
     if (tab !== "attendance" || !focusAttendance.current) return;
@@ -301,11 +303,20 @@ export function HomeroomView(): ReactElement {
 
   // The way back to today, offered where a dated tab explains that the
   // chosen day lies outside the reader's homeroom term (audit r5-n5).
+  // The button goes away with the notice once today loads, so focus moves
+  // to the tab's own panel, which is shown already, rather than falling to
+  // <body> (audit r3-n22).
   const showToday =
     date === today
       ? undefined
       : () => {
           changeDate(today);
+          const panels: Record<string, RefObject<HTMLDivElement | null> | undefined> = {
+            overview: overviewPanel,
+            attendance: attendancePanel,
+            parents: parentsPanel,
+          };
+          panels[tab]?.current?.focus();
         };
 
   return (
@@ -342,7 +353,7 @@ export function HomeroomView(): ReactElement {
           </TabsList>
         }
       >
-        <TabsContent value="overview" className="pt-0">
+        <TabsContent ref={overviewPanel} value="overview" className="pt-0">
           {/* Who needs the homeroom teacher on the chosen day, first. */}
           <HomeroomOverview
             date={date}
@@ -405,7 +416,7 @@ export function HomeroomView(): ReactElement {
             <HomeroomDisciplineTab classId={homeroom.scope_id ?? ""} />
           </TabsContent>
         )}
-        <TabsContent value="parents" className="pt-0">
+        <TabsContent ref={parentsPanel} value="parents" className="pt-0">
           {isOutsideHomeroomTerm(dashboard.error) ? (
             <HomeroomOutOfTerm date={date} onShowToday={showToday} />
           ) : (
