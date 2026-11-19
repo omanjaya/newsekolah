@@ -17,6 +17,7 @@ import {
   List,
   ListRow,
   SectionHeader,
+  SemanticStatusBadge,
   SkeletonDetail,
   Stat,
   StatGrid,
@@ -27,7 +28,9 @@ import type { ColumnDef } from "@tanstack/react-table";
 import {
   CalendarCheck,
   CalendarPlus,
+  CircleCheck,
   ClipboardPen,
+  Eye,
   ListChecks,
   Ruler,
   UsersRound,
@@ -46,6 +49,7 @@ import {
   useScheduledObservationsQuery,
   useSupervisionCycleQuery,
 } from "../api";
+import { cycleStepIndex } from "../lib/cycle-progress";
 import { useCycleTrail } from "../lib/use-cycle-trail";
 
 import { CycleNav } from "./cycle-nav";
@@ -54,8 +58,9 @@ import { ScheduleObservationForm } from "./schedule-observation-form";
 /**
  * One supervision cycle, laid out as its workflow: the instrument it
  * scores with, the observations scheduled against teachers' lessons (each
- * filled in from its row), and the results one tab over. The figures on
- * top say how far the cycle has got.
+ * filled in from its row, or opened once it is done), and the results one
+ * tab over. The figures and the stepper on top say how far the cycle has
+ * got.
  */
 export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): ReactElement {
   const t = useTranslations("app.supervision.cycleDetail");
@@ -73,6 +78,7 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
     items.flatMap((item) => [item.teacher_user_id, item.observer_user_id]),
   );
   const teacherCount = new Set(items.map((item) => item.teacher_user_id)).size;
+  const observedCount = items.filter((item) => item.observation_id).length;
   const startScheduling = () => {
     setScheduling(true);
   };
@@ -107,22 +113,41 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
         enableSorting: false,
         cell: ({ row }) => people.get(row.original.observer_user_id)?.name ?? "–",
       },
-      ...(canManage
-        ? [
-            {
-              id: "actions",
-              header: t("columns.actions"),
-              enableSorting: false,
-              cell: ({ row }: { row: { original: ScheduledObservation } }) => (
-                <Button asChild size="sm" variant="secondary" icon={<ClipboardPen />}>
-                  <Link href={`/supervision/cycles/${cycleId}/observe/${row.original.id}`}>
-                    {t("complete")}
-                  </Link>
-                </Button>
-              ),
-            } satisfies ColumnDef<ScheduledObservation>,
-          ]
-        : []),
+      {
+        id: "status",
+        header: t("columns.status"),
+        enableSorting: false,
+        meta: { card: "meta" },
+        cell: ({ row }) =>
+          row.original.observation_id ? (
+            <SemanticStatusBadge status="completed" label={t("status.observed")} />
+          ) : (
+            <SemanticStatusBadge status="draft" label={t("status.scheduled")} />
+          ),
+      },
+      {
+        id: "actions",
+        header: t("columns.actions"),
+        enableSorting: false,
+        cell: ({ row }) => {
+          const observationId = row.original.observation_id;
+          if (observationId) {
+            return (
+              <Button asChild size="sm" variant="secondary" icon={<Eye />}>
+                <Link href={`/supervision/observations/${observationId}`}>{t("viewResult")}</Link>
+              </Button>
+            );
+          }
+          if (!canManage) return null;
+          return (
+            <Button asChild size="sm" variant="secondary" icon={<ClipboardPen />}>
+              <Link href={`/supervision/cycles/${cycleId}/observe/${row.original.id}`}>
+                {t("complete")}
+              </Link>
+            </Button>
+          );
+        },
+      },
     ],
     [t, locale, people, canManage, cycleId],
   );
@@ -173,7 +198,7 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
         <Stepper
           className="w-full max-w-lg"
           variant="compact"
-          currentIndex={items.length > 0 ? 2 : 1}
+          currentIndex={cycleStepIndex(items.length, observedCount)}
           steps={[
             { id: "instrument", label: t("steps.instrument") },
             { id: "schedule", label: t("steps.schedule") },
@@ -189,6 +214,13 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
           tone="green"
           label={t("stats.scheduled")}
           value={items.length}
+          loading={scheduled.isLoading}
+        />
+        <Stat
+          icon={<CircleCheck />}
+          tone="green"
+          label={t("stats.observed")}
+          value={observedCount}
           loading={scheduled.isLoading}
         />
         <Stat

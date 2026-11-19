@@ -25,6 +25,7 @@ import { CycleNav } from "./cycle-nav";
 interface TeacherRow {
   teacherUserId: string;
   scheduledCount: number;
+  observedCount: number;
 }
 
 /**
@@ -45,14 +46,18 @@ export function SupervisionCycleReportView({ cycleId }: { cycleId: string }): Re
   );
 
   const rows = useMemo<TeacherRow[]>(() => {
-    const counts = new Map<string, number>();
+    const byTeacher = new Map<string, TeacherRow>();
     for (const s of scheduled.data?.data ?? []) {
-      counts.set(s.teacher_user_id, (counts.get(s.teacher_user_id) ?? 0) + 1);
+      const row = byTeacher.get(s.teacher_user_id) ?? {
+        teacherUserId: s.teacher_user_id,
+        scheduledCount: 0,
+        observedCount: 0,
+      };
+      row.scheduledCount += 1;
+      if (s.observation_id) row.observedCount += 1;
+      byTeacher.set(s.teacher_user_id, row);
     }
-    return [...counts.entries()].map(([teacherUserId, scheduledCount]) => ({
-      teacherUserId,
-      scheduledCount,
-    }));
+    return [...byTeacher.values()];
   }, [scheduled.data]);
 
   if (cycle.isError && !cycle.data) {
@@ -94,7 +99,10 @@ export function SupervisionCycleReportView({ cycleId }: { cycleId: string }): Re
               key={row.teacherUserId}
               leading={<Avatar name={name} size={40} decorative />}
               title={name}
-              meta={t("scheduledCount", { count: row.scheduledCount })}
+              meta={t("progress", {
+                observed: row.observedCount,
+                scheduled: row.scheduledCount,
+              })}
               href={`/supervision/cycles/${cycleId}/teachers/${row.teacherUserId}/report`}
             />
           );

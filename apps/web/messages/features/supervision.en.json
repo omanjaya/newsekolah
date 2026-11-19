@@ -70,7 +70,8 @@
       "scheduled": "Scheduled observations",
       "teachers": "Teachers",
       "criteria": "Criteria",
-      "scale": "Scale"
+      "scale": "Scale",
+      "observed": "Observed"
     },
     "scaleRange": "{min}–{max}",
     "scheduledTitle": "Scheduled observations",
@@ -80,30 +81,39 @@
       "actions": "Actions",
       "lessonDate": "Lesson date",
       "teacher": "Teacher",
-      "observer": "Observer"
+      "observer": "Observer",
+      "status": "Status"
     },
     "unknownTeacher": "Unknown teacher",
     "complete": "Fill in",
     "schedule": "Schedule observation",
     "emptyTitle": "No observations scheduled yet",
     "emptyBody": "Schedule an observation of a teacher's lesson to start this cycle.",
-    "scheduleTitle": "Schedule observation"
+    "scheduleTitle": "Schedule observation",
+    "status": {
+      "scheduled": "Scheduled",
+      "observed": "Done"
+    },
+    "viewResult": "See result"
   },
   "completeObservation": {
     "breadcrumb": "Fill in observation",
     "backToCycle": "Back to cycle",
     "notFoundTitle": "Scheduled observation not found",
-    "notFoundBody": "It may already be filled in, or its schedule was removed. Go back to the cycle to check."
+    "notFoundBody": "It may already be filled in, or its schedule was removed. Go back to the cycle to check.",
+    "doneTitle": "This observation is already filled in",
+    "doneBody": "Its result is saved. Open the observation to read or respond to it.",
+    "viewResult": "See result"
   },
   "cycleReport": {
     "documentTitle": "{cycle} results",
     "teachersTitle": "Observed teachers",
     "teachersHint": "Open a teacher to see the averages per criterion and every observation.",
-    "scheduledCount": "{count, plural, one {# observation scheduled} other {# observations scheduled}}",
     "unknownTeacher": "Unknown teacher",
     "emptyTitle": "No teachers scheduled yet",
     "emptyBody": "Teachers scheduled for observation in this cycle appear here.",
-    "breadcrumb": "Results"
+    "breadcrumb": "Results",
+    "progress": "{observed} of {scheduled} observations done"
   },
   "schedule": {
     "form": {
