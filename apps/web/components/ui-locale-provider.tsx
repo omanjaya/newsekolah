@@ -1,5 +1,6 @@
 "use client";
 
+import { apiErrorMessageKey } from "@newsekolah/i18n";
 import { UiLabelsProvider, type UiLabels } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, type ReactElement, type ReactNode } from "react";
@@ -25,6 +26,7 @@ export function useAppUiLabels(): UiLabels {
   const states = useTranslations("common.states");
   const confirm = useTranslations("common.confirmDialog");
   const table = useTranslations("app.shell.table");
+  const errors = useTranslations("errors");
   const t = useTranslations("app.shell.controls");
 
   return useMemo<UiLabels>(
@@ -62,6 +64,13 @@ export function useAppUiLabels(): UiLabels {
       tableClearSearch: t("table.clearSearch"),
       tableErrorTitle: t("table.errorTitle"),
       tableErrorDescription: t("table.errorDescription"),
+      tableErrorReason: (error) => {
+        // A lost connection keeps the "check your connection" hint; any
+        // other failure (a 4xx or 5xx code, an unexpected error) says its
+        // own reason from the shared errors catalog, as QueryError does.
+        const key = apiErrorMessageKey(error);
+        return key === "errors.NETWORK" ? undefined : errors(key.slice("errors.".length));
+      },
       tableRetry: t("table.retry"),
       tableErrorCode: (code) => t("table.errorCode", { code }),
       tablePageOf: (current, total) => t("table.pageOf", { current, total }),
@@ -162,7 +171,7 @@ export function useAppUiLabels(): UiLabels {
       stepperStepComplete: t("stepper.complete"),
       stepperStepStopped: t("stepper.stopped"),
     }),
-    [actions, confirm, locale, states, t, table],
+    [actions, confirm, errors, locale, states, t, table],
   );
 }
 

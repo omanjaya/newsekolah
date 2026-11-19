@@ -8,7 +8,7 @@ import { Button } from "../button.js";
 import { EmptyState, EmptyStateInlineScope } from "../empty-state.js";
 import { FilteredEmptyState } from "../filtered-empty-state.js";
 import { IconCircle } from "../icon-circle.js";
-import { useUiLabels } from "../ui-labels.js";
+import { useUiLabels, type UiLabels } from "../ui-labels.js";
 
 /**
  * The empty slot of the table body. The table's card (or, on a phone, the
@@ -36,11 +36,16 @@ function errorCode(error: unknown): string | undefined {
   return typeof code === "string" && code !== "" ? code : undefined;
 }
 
-/** A caller's own words for the failure: a string or an element, never an Error's raw message. */
-function errorDescription(error: unknown): ReactNode {
+/**
+ * What the failure line says: the caller's own words (a string or an
+ * element, never an Error's raw message), else the reason the app maps from
+ * the error (`UiLabels.tableErrorReason`, e.g. an API code's catalog text),
+ * else the generic connection hint.
+ */
+function errorDescription(error: unknown, labels: UiLabels): ReactNode {
   if (typeof error === "string" && error !== "") return error;
   if (isValidElement(error)) return error;
-  return undefined;
+  return labels.tableErrorReason(error) ?? labels.tableErrorDescription;
 }
 
 export interface DataTableErrorStateProps {
@@ -74,9 +79,7 @@ export function DataTableErrorState({
       </IconCircle>
       <div className="flex max-w-sm flex-col gap-1">
         <p className="text-heading text-fg">{labels.tableErrorTitle}</p>
-        <p className="text-body-sm text-fg-muted">
-          {errorDescription(error) ?? labels.tableErrorDescription}
-        </p>
+        <p className="text-body-sm text-fg-muted">{errorDescription(error, labels)}</p>
         {code && <p className="mt-1 text-caption text-fg-muted">{labels.tableErrorCode(code)}</p>}
       </div>
       {onRetry && (
@@ -125,7 +128,7 @@ export function DataTableErrorAlert({
         )
       }
     >
-      <p>{errorDescription(error) ?? labels.tableErrorDescription}</p>
+      <p>{errorDescription(error, labels)}</p>
       {code && <p className="text-caption">{labels.tableErrorCode(code)}</p>}
     </Alert>
   );

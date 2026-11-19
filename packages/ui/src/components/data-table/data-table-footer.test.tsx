@@ -72,6 +72,31 @@ describe("DataTable error state", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
+  it("says the error's own reason when the app maps one, keeping the code", () => {
+    render(
+      <UiLabelsProvider
+        labels={{
+          tableErrorReason: (error) =>
+            (error as { code?: string }).code === "VALIDATION_FAILED"
+              ? "Data yang dikirim tidak valid"
+              : undefined,
+        }}
+      >
+        <DataTable
+          mode="local"
+          data={[]}
+          columns={columns}
+          error={Object.assign(new Error("400"), { code: "VALIDATION_FAILED" })}
+        />
+      </UiLabelsProvider>,
+    );
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("Data yang dikirim tidak valid");
+    // Not blamed on the connection.
+    expect(alert).not.toHaveTextContent("Periksa koneksi internet");
+    expect(alert).toHaveTextContent("Kode galat: VALIDATION_FAILED");
+  });
+
   it("keeps loaded rows after a failed refetch, under an alert in the caller's words", async () => {
     const onRetry = vi.fn();
     const { rerender } = render(
