@@ -6,7 +6,7 @@
   "status": {
     "title": "Status",
     "enabledBadge": "Aktif",
-    "disabledBadge": "Tidak aktif",
+    "disabledBadge": "Nonaktif",
     "enabledBody": "Kode dari aplikasi autentikator diminta setiap masuk, selain kata sandi.",
     "disabledBody": "Disarankan untuk akun dengan akses data sekolah.",
     "recoveryCodesRemaining": "{count} kode pemulihan tersisa",

@@ -29,6 +29,7 @@
     "rowActions": "Aksi untuk {name}",
     "editor": {
       "createTitle": "Templat baru",
+      "createPending": "Templat baru belum disimpan",
       "editTitle": "Ubah templat",
       "nameLabel": "Nama templat",
       "kindLabel": "Jenis dokumen",

@@ -86,6 +86,42 @@
     "moreEvents": "+{count} peristiwa",
     "rowActions": "Aksi untuk {url}"
   },
+  "events": {
+    "attendance": {
+      "submitted": "Presensi kelas dikirim"
+    },
+    "substitution": {
+      "requested": "Guru pengganti diminta",
+      "responded": "Permintaan guru pengganti dijawab"
+    },
+    "leave_request": {
+      "submitted": "Izin siswa diajukan",
+      "reviewed": "Izin siswa ditinjau",
+      "issued": "Surat izin siswa terbit"
+    },
+    "exit_permit": {
+      "stage_changed": "Tahap izin keluar berubah",
+      "issued": "Izin keluar terbit",
+      "exited": "Siswa keluar sekolah"
+    },
+    "late_arrival": {
+      "opened": "Keterlambatan dicatat",
+      "updated": "Keterlambatan diperbarui"
+    },
+    "warning_letter": {
+      "issued": "Surat peringatan terbit"
+    },
+    "discipline": {
+      "threshold_reached": "Poin pelanggaran mencapai batas"
+    },
+    "announcement": {
+      "published": "Pengumuman diterbitkan"
+    },
+    "library": {
+      "reservation_ready": "Pesanan buku siap diambil",
+      "loan_due_reminder": "Pengingat batas pinjam buku"
+    }
+  },
   "deliveries": {
     "filterEndpoint": "Endpoint",
     "filterEndpointAll": "Semua endpoint",

@@ -150,6 +150,35 @@ it("opens the preview in a sheet from the body card", async () => {
   expect(within(sheet).getByTitle("previewLabel")).toBeInTheDocument();
 });
 
+it("shows the create button on a new template before anything is typed", async () => {
+  const user = userEvent.setup();
+  render(<TemplateEditorView />);
+  expect(screen.getByText("createPending")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "create" })).toBeInTheDocument();
+
+  // "Batal" leaves for the list instead of only clearing the fields.
+  const [cancel] = screen.getAllByRole("button", { name: "cancel" });
+  if (cancel) await user.click(cancel);
+  await vi.waitFor(() => {
+    expect(push).toHaveBeenCalledWith("/settings/document-templates");
+  });
+});
+
+it("keeps the format toolbar on one sideways-scrolling row on a phone", () => {
+  render(<TemplateEditorView templateId="t1" />);
+  const toolbar = screen.getByRole("toolbar", { name: "toolbarLabel" });
+  expect(toolbar).toHaveClass("overflow-x-auto", "sm:flex-wrap");
+  expect(toolbar).not.toHaveClass("flex-wrap");
+});
+
+it("draws the preview frame on white paper with a light colour scheme", async () => {
+  const user = userEvent.setup();
+  render(<TemplateEditorView templateId="t1" />);
+  await user.click(screen.getByRole("button", { name: "previewLabel" }));
+  const sheet = screen.getByRole("dialog", { name: "previewLabel" });
+  expect(within(sheet).getByTitle("previewLabel")).toHaveClass("bg-paper", "scheme-light");
+});
+
 it("says so when the template does not exist", () => {
   render(<TemplateEditorView templateId="missing" />);
   expect(screen.getByText("editor.notFoundTitle")).toBeInTheDocument();

@@ -45,7 +45,11 @@ function automaticEmphasis(lines: string[], schoolName: string | undefined): num
   return Math.max(0, lines.length - 2);
 }
 
-/** A sheet of paper with the letterhead and the signature block drawn from the unsaved form. */
+/**
+ * A sheet of paper with the letterhead and the signature block drawn from the unsaved form.
+ * White paper and dark ink in both themes (the `paper` tokens): what prints
+ * is always white.
+ */
 function LivePaper({
   draft,
   logoUrl,
@@ -66,20 +70,20 @@ function LivePaper({
 
   return (
     <div className="rounded-md bg-surface-sunken p-3 sm:p-4">
-      <div className="flex aspect-[1/1.2] flex-col gap-3 overflow-hidden rounded-xs bg-surface p-4 shadow-1">
-        <div className="flex items-center gap-3 border-b-2 border-fg pb-2">
+      <div className="flex aspect-[1/1.2] flex-col gap-3 overflow-hidden rounded-xs bg-paper p-4 text-paper-fg shadow-1">
+        <div className="flex items-center gap-3 border-b-2 border-paper-fg pb-2">
           {draft.showLogo &&
             (logoUrl ? (
               <img src={logoUrl} alt="" className="size-9 shrink-0 object-contain" />
             ) : (
               <span
                 aria-hidden="true"
-                className="size-9 shrink-0 rounded-full border border-dashed border-border-strong"
+                className="size-9 shrink-0 rounded-full border border-dashed border-paper-fg-muted"
               />
             ))}
           <div className="flex min-w-0 flex-1 flex-col items-center text-center">
             {lines.length === 0 ? (
-              <span className="text-caption text-fg-muted">{t("noLines")}</span>
+              <span className="text-caption text-paper-fg-muted">{t("noLines")}</span>
             ) : (
               lines.map((line, index) => (
                 <span
@@ -87,8 +91,8 @@ function LivePaper({
                   className={cn(
                     "max-w-full truncate",
                     index === emphasis
-                      ? "text-label font-heading font-bold text-fg"
-                      : "text-caption text-fg-muted",
+                      ? "text-label font-heading font-bold text-paper-fg"
+                      : "text-caption text-paper-fg-muted",
                   )}
                 >
                   {line}
@@ -99,19 +103,19 @@ function LivePaper({
           {draft.showLogo && <span aria-hidden="true" className="size-9 shrink-0" />}
         </div>
         <div aria-hidden="true" className="flex flex-col gap-1.5 pt-1">
-          <span className="mx-auto mb-1 h-2 w-2/5 rounded-full bg-line" />
+          <span className="mx-auto mb-1 h-2 w-2/5 rounded-full bg-paper-line" />
           {["w-full", "w-11/12", "w-full", "w-2/3", "w-5/6", "w-3/5"].map((width, index) => (
-            <span key={index} className={cn("h-1.5 rounded-full bg-line", width)} />
+            <span key={index} className={cn("h-1.5 rounded-full bg-paper-line", width)} />
           ))}
         </div>
         <div className="mt-auto flex justify-end gap-6">
           {signers.length === 0 ? (
-            <span className="text-caption text-fg-muted">{t("noSigners")}</span>
+            <span className="text-caption text-paper-fg-muted">{t("noSigners")}</span>
           ) : (
             signers.slice(0, 2).map((signer, index) => (
-              <div key={index} className="flex min-w-0 flex-col text-caption text-fg">
+              <div key={index} className="flex min-w-0 flex-col text-caption text-paper-fg">
                 {index === signers.length - 1 || signers.length === 1 ? (
-                  <span className="text-fg-muted">
+                  <span className="text-paper-fg-muted">
                     {draft.place.trim() ? `${draft.place.trim()}, ${today}` : today}
                   </span>
                 ) : (
@@ -123,7 +127,7 @@ function LivePaper({
                   {signer.name || t("namePlaceholder")}
                 </span>
                 {Boolean(signer.id_label) || Boolean(signer.id_number) ? (
-                  <span className="truncate text-fg-muted">
+                  <span className="truncate text-paper-fg-muted">
                     {[signer.id_label, signer.id_number].filter(Boolean).join(" ")}
                   </span>
                 ) : null}
@@ -195,22 +199,25 @@ export function ReportHeaderPreview({
   draft,
   logoUrl,
   savedVersion,
+  bare = false,
 }: {
   draft: ReportHeaderDraft;
   logoUrl?: string;
   /** Changes after each save, so the PDF is rendered again from the new settings. */
   savedVersion: number;
+  /**
+   * Without the card and its title, for a container that already names the
+   * preview (the phone's PreviewSheet), so the title is not shown twice.
+   */
+  bare?: boolean;
 }): ReactElement {
   const t = useTranslations("app.settings.reportHeader.preview");
   const [mode, setMode] = useState<Mode>("live");
+  const hint = mode === "live" ? t("liveHint") : t("pdfHint");
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle as="h2">{t("title")}</CardTitle>
-        <CardDescription>{mode === "live" ? t("liveHint") : t("pdfHint")}</CardDescription>
-      </CardHeader>
-      <div className="px-5 pb-4">
+  const body = (
+    <>
+      <div className={cn(!bare && "px-5 pb-4")}>
         <SegmentedControl<Mode>
           aria-label={t("modeLabel")}
           size="sm"
@@ -223,13 +230,31 @@ export function ReportHeaderPreview({
           ]}
         />
       </div>
-      <div className="px-5 pb-5">
+      <div className={cn(!bare && "px-5 pb-5")}>
         {mode === "live" ? (
           <LivePaper draft={draft} logoUrl={logoUrl} />
         ) : (
           <SavedPdf key={savedVersion} />
         )}
       </div>
+    </>
+  );
+
+  if (bare) {
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="text-body-sm text-fg-muted">{hint}</p>
+        {body}
+      </div>
+    );
+  }
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle as="h2">{t("title")}</CardTitle>
+        <CardDescription>{hint}</CardDescription>
+      </CardHeader>
+      {body}
     </Card>
   );
 }

@@ -1831,7 +1831,7 @@
           "title": "Impor pengguna",
           "description": "Unduh templat, isi di luar sistem, unggah kembali, lalu periksa hasilnya sebelum benar-benar dibuat.",
           "step1Body": "Templat berisi contoh baris dan lembar Referensi berisi kode yang diterima untuk setiap kolom (jenis kelamin, golongan darah, peran, dan sejenisnya).",
-          "downloadTemplate": "Unduh templat XLSX",
+          "downloadTemplate": "Unduh templat",
           "step2Body": "Maksimal 5000 baris dalam satu berkas. Baris kosong dilewati.",
           "mode": {
             "label": "Mode impor",
@@ -2114,7 +2114,7 @@
         "types": {
           "title": "Jenis tugas",
           "empty": "Belum ada jenis tugas",
-          "inactive": "Tidak aktif",
+          "inactive": "Nonaktif",
           "add": "Tambah jenis tugas",
           "name": "Nama",
           "scope": "Cakupan",

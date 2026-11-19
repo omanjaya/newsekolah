@@ -34,7 +34,7 @@
     "unpublishConfirmBody": "Siswa dan orang tua tidak akan lagi melihat nilai mapel ini sampai diterbitkan kembali.",
     "confirmPublish": "Terbitkan",
     "confirmUnpublish": "Sembunyikan",
-    "exportGradebook": "Ekspor nilai",
+    "exportGradebook": "Unduh nilai",
     "exportDefaultTitle": "Buku Nilai",
     "exportColumnName": "Nama Siswa",
     "exportColumnAverage": "Rata-rata",

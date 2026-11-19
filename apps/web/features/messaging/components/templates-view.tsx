@@ -12,9 +12,11 @@ import {
   EmptyState,
   Field,
   FormActions,
+  IconButton,
   Input,
   List,
   ListRow,
+  Select,
   SkeletonList,
   Textarea,
   useToast,
@@ -50,6 +52,14 @@ interface FormState {
   metaTemplateName: string;
   body: string;
 }
+
+/**
+ * The languages a Meta message template is commonly approved in, by Meta's
+ * language code. The code must match the approved template exactly, so it
+ * is chosen from this list rather than typed; a saved template in another
+ * language keeps its own code as an extra option.
+ */
+const TEMPLATE_LOCALES = ["id", "en", "en_US", "en_GB", "ms", "ar"] as const;
 
 const EMPTY_FORM: FormState = { name: "", locale: "id", metaTemplateName: "", body: "" };
 
@@ -138,9 +148,21 @@ export function TemplatesView(): ReactElement {
       <CardHeader
         action={
           showForm ? undefined : (
-            <Button size="sm" icon={<Plus />} onClick={startCreate}>
-              {t("addNew")}
-            </Button>
+            // On a phone the labelled button would squeeze the description
+            // into a narrow column beside it; there it is an icon button.
+            <>
+              <IconButton
+                variant="primary"
+                size="sm"
+                icon={<Plus />}
+                aria-label={t("addNew")}
+                className="sm:hidden"
+                onClick={startCreate}
+              />
+              <Button size="sm" icon={<Plus />} className="max-sm:hidden" onClick={startCreate}>
+                {t("addNew")}
+              </Button>
+            </>
           )
         }
       >
@@ -254,8 +276,21 @@ function TemplateForm({
     await preview.mutateAsync({ templateId, variables });
   }
 
+  const localeOptions = [
+    ...TEMPLATE_LOCALES,
+    ...(TEMPLATE_LOCALES.some((code) => code === form.locale) ? [] : [form.locale]),
+  ].map((code) => ({
+    value: code,
+    label: t("form.localeOption", {
+      name: (TEMPLATE_LOCALES as readonly string[]).includes(code)
+        ? t(`form.locales.${code}`)
+        : code,
+      code,
+    }),
+  }));
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex max-w-narrow flex-col gap-3">
       <Field label={t("form.nameLabel")}>
         <Input
           value={form.name}
@@ -265,11 +300,12 @@ function TemplateForm({
         />
       </Field>
       <Field label={t("form.localeLabel")}>
-        <Input
+        <Select
           value={form.locale}
-          onChange={(e) => {
-            setForm((f) => ({ ...f, locale: e.target.value }));
+          onValueChange={(locale) => {
+            setForm((f) => ({ ...f, locale }));
           }}
+          options={localeOptions}
         />
       </Field>
       <Field label={t("form.metaTemplateNameLabel")}>

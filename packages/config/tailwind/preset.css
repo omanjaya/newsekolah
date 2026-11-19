@@ -55,6 +55,12 @@
   --color-skeleton: var(--color-skeleton);
   --color-skeleton-shine: var(--color-skeleton-shine);
 
+  /* A printed page drawn on screen: white paper and dark ink in both themes. */
+  --color-paper: var(--color-paper);
+  --color-paper-fg: var(--color-paper-fg);
+  --color-paper-fg-muted: var(--color-paper-fg-muted);
+  --color-paper-line: var(--color-paper-line);
+
   /* Category hues: icon-in-soft-circle chips, topic coding (not severity). */
   --color-category-green: var(--color-category-green);
   --color-category-green-soft: var(--color-category-green-soft);

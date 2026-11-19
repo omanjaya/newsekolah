@@ -75,6 +75,18 @@ function baseChecks(themeName: string, theme: ThemeColors): Check[] {
       background: theme.category[tokens.semantic.danger].fg,
       minimum: AA_NORMAL_TEXT,
     },
+    {
+      label: `${themeName}: paper-fg on paper (print preview text)`,
+      foreground: theme.paperFg,
+      background: theme.paper,
+      minimum: AA_NORMAL_TEXT,
+    },
+    {
+      label: `${themeName}: paper-fg-muted on paper (print preview secondary text)`,
+      foreground: theme.paperFgMuted,
+      background: theme.paper,
+      minimum: AA_NORMAL_TEXT,
+    },
   ];
 }
 

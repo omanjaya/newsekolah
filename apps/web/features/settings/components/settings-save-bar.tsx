@@ -17,6 +17,14 @@ export interface SettingsSaveBarProps {
   message?: ReactNode;
   /** Defaults to "Simpan perubahan". */
   saveLabel?: ReactNode;
+  /** Defaults to "Batalkan". */
+  discardLabel?: ReactNode;
+  /**
+   * Shows the bar before anything changes: a create form, whose submit
+   * button is never held back (docs/07-ui-ux.md). Leaving still asks only
+   * once something was typed.
+   */
+  alwaysShow?: boolean;
   /** Lines the bar up with the page: `narrow` for a form, `default` for a two-pane editor. */
   container?: StickySaveBarProps["container"];
   /**
@@ -32,7 +40,8 @@ export interface SettingsSaveBarProps {
  * (above the phone tab bar, beside the sidebar) with the count of what is
  * pending, "Batalkan" and "Simpan perubahan", and in-app links, reloads
  * and the back button ask before throwing the change away. Render it in
- * `AppPage`'s `floating` slot, outside the entering content.
+ * `AppPage`'s `floating` slot, outside the entering content. A create
+ * form passes `alwaysShow`, so its create button is there from the start.
  */
 export function SettingsSaveBar({
   dirty,
@@ -41,16 +50,18 @@ export function SettingsSaveBar({
   onDiscard,
   message,
   saveLabel,
+  discardLabel,
+  alwaysShow = false,
   container = "narrow",
   protect = true,
 }: SettingsSaveBarProps): ReactElement | null {
   const t = useTranslations("app.settingsHub.saveBar");
   useUnsavedChangesProtection(protect && dirty, t("leaveConfirm"));
-  if (!dirty) return null;
+  if (!dirty && !alwaysShow) return null;
 
   const discard = (className: string) => (
     <Button variant="secondary" className={className} disabled={saving} onClick={onDiscard}>
-      {t("discard")}
+      {discardLabel ?? t("discard")}
     </Button>
   );
 

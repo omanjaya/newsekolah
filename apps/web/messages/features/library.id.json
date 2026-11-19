@@ -62,7 +62,7 @@
     "searchPlaceholder": "Cari judul, penulis, atau ISBN",
     "addTitle": "Tambah judul",
     "browseCopies": "Jelajahi eksemplar",
-    "exportCatalogue": "Ekspor katalog (XLSX)",
+    "exportCatalogue": "Unduh katalog",
     "more": "Lainnya",
     "filters": {
       "materialType": "Jenis bahan",
@@ -486,7 +486,7 @@
     "status": {
       "pending": "Menunggu",
       "active": "Aktif",
-      "inactive": "Tidak aktif",
+      "inactive": "Nonaktif",
       "suspended": "Ditangguhkan",
       "cleared": "Bebas pustaka"
     },
@@ -573,7 +573,7 @@
     "status": {
       "pending": "Menunggu",
       "active": "Aktif",
-      "inactive": "Tidak aktif",
+      "inactive": "Nonaktif",
       "suspended": "Ditangguhkan",
       "cleared": "Bebas pustaka"
     },
@@ -690,7 +690,7 @@
       "result": "Hasil"
     },
     "uploadDescription": "Unduh templat, isi datanya, lalu unggah kembali berkas yang sudah terisi.",
-    "downloadTemplate": "Unduh templat XLSX",
+    "downloadTemplate": "Unduh templat",
     "uploadLabel": "Unggah berkas koleksi",
     "selectedFile": "Berkas dipilih: {name}",
     "emptyFile": "Berkas tidak berisi baris data. Periksa kembali templat yang diisi.",
@@ -923,7 +923,7 @@
       "closed": "Selesai"
     },
     "emptyTitle": "Belum ada sesi opname",
-    "downloadReport": "Unduh laporan (XLSX)",
+    "downloadReport": "Unduh laporan",
     "progress": {
       "heading": "Perkembangan opname",
       "live": "Diperbarui otomatis setiap 5 detik selama sesi berjalan.",

@@ -22,6 +22,7 @@ import {
   useDeleteWebhookEndpointMutation,
   useWebhookEndpointsQuery,
 } from "../api";
+import { useWebhookEventLabel } from "../lib/use-webhook-event-label";
 
 import { WebhookEndpointDialog } from "./webhook-endpoint-dialog";
 
@@ -36,6 +37,7 @@ export function WebhookEndpointsPanel({
   onSelectEndpoint: (endpointId: string) => void;
 }): ReactElement {
   const t = useTranslations("app.integrations.webhooks");
+  const eventLabel = useWebhookEventLabel();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
@@ -73,10 +75,13 @@ export function WebhookEndpointsPanel({
         const events = row.original.event_types;
         const rest = events.length - SHOWN_EVENTS;
         return (
-          <span className="flex flex-wrap items-center gap-1" title={events.join(", ")}>
+          <span
+            className="flex flex-wrap items-center gap-1"
+            title={events.map((eventType) => eventLabel(eventType)).join(", ")}
+          >
             {events.slice(0, SHOWN_EVENTS).map((eventType) => (
-              <Badge key={eventType} size="sm" className="font-mono">
-                {eventType}
+              <Badge key={eventType} size="sm" title={eventType}>
+                {eventLabel(eventType)}
               </Badge>
             ))}
             {rest > 0 && (

@@ -26,6 +26,7 @@ import {
   useUpdateWebhookEndpointMutation,
   useWebhookEventTypesQuery,
 } from "../api";
+import { useWebhookEventLabel } from "../lib/use-webhook-event-label";
 import { offeredWebhookEvents } from "../lib/webhook-event-modules";
 
 /**
@@ -51,6 +52,7 @@ export function WebhookEndpointDialog({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const eventTypes = useWebhookEventTypesQuery();
+  const eventLabel = useWebhookEventLabel();
   const { me } = useSession();
   const createEndpoint = useCreateWebhookEndpointMutation();
   const updateEndpoint = useUpdateWebhookEndpointMutation();
@@ -153,7 +155,14 @@ export function WebhookEndpointDialog({
                 {offered.map((eventType) => (
                   <Checkbox
                     key={eventType}
-                    label={<span className="font-mono text-body-sm">{eventType}</span>}
+                    // The name a school admin reads, with the code an
+                    // integrator matches on beneath it.
+                    label={
+                      <span className="flex flex-col">
+                        <span>{eventLabel(eventType)}</span>
+                        <span className="font-mono text-caption text-fg-muted">{eventType}</span>
+                      </span>
+                    }
                     checked={selected.has(eventType)}
                     onCheckedChange={(checked) => {
                       setSelected((prev) => {

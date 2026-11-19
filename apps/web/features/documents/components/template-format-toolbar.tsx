@@ -1,6 +1,6 @@
 "use client";
 
-import { IconButton } from "@newsekolah/ui";
+import { IconButton, useScrollEdges } from "@newsekolah/ui";
 import {
   AlignCenter,
   Bold,
@@ -14,7 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Fragment, type ReactElement } from "react";
+import { Fragment, useRef, type ReactElement } from "react";
 
 import type { TemplateFormat } from "../template-format";
 
@@ -42,6 +42,11 @@ const GROUPS: { format: TemplateFormat; icon: LucideIcon }[][] = [
  * in the tags for it, so a school admin can bold a word or centre a
  * heading without writing HTML. Every button is named (and shows its name
  * as a tooltip); groups are split by a thin rule.
+ *
+ * Nine 44px touch targets do not fit a phone's card, and wrapping left the
+ * last button alone on a second row. Below `sm` the strip stays one row
+ * and scrolls sideways, with an edge fade where buttons wait past the edge;
+ * from `sm` up it wraps as before.
  */
 export function TemplateFormatToolbar({
   onFormat,
@@ -49,16 +54,19 @@ export function TemplateFormatToolbar({
   onFormat: (format: TemplateFormat) => void;
 }): ReactElement {
   const t = useTranslations("app.documents.templates.editor");
+  const stripRef = useRef<HTMLDivElement>(null);
+  useScrollEdges(stripRef, { axis: "x" });
   return (
     <div
+      ref={stripRef}
       role="toolbar"
       aria-label={t("toolbarLabel")}
       aria-orientation="horizontal"
-      className="flex flex-wrap items-center gap-0.5 rounded-md bg-surface-sunken p-1"
+      className="scrollbar-none flex items-center gap-0.5 overflow-x-auto overscroll-x-contain rounded-md bg-surface-sunken p-1 scroll-fade-x sm:flex-wrap sm:overflow-visible"
     >
       {GROUPS.map((group, index) => (
         <Fragment key={group[0]?.format}>
-          {index > 0 && <span aria-hidden="true" className="mx-1 h-5 w-px bg-line" />}
+          {index > 0 && <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-line" />}
           {group.map(({ format, icon: Icon }) => (
             <IconButton
               key={format}

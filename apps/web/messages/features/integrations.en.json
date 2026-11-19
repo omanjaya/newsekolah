@@ -86,6 +86,42 @@
     "moreEvents": "+{count} more",
     "rowActions": "Actions for {url}"
   },
+  "events": {
+    "attendance": {
+      "submitted": "Class attendance submitted"
+    },
+    "substitution": {
+      "requested": "Substitute teacher requested",
+      "responded": "Substitute request answered"
+    },
+    "leave_request": {
+      "submitted": "Student leave requested",
+      "reviewed": "Student leave reviewed",
+      "issued": "Student leave letter issued"
+    },
+    "exit_permit": {
+      "stage_changed": "Exit permit stage changed",
+      "issued": "Exit permit issued",
+      "exited": "Student left school"
+    },
+    "late_arrival": {
+      "opened": "Late arrival recorded",
+      "updated": "Late arrival updated"
+    },
+    "warning_letter": {
+      "issued": "Warning letter issued"
+    },
+    "discipline": {
+      "threshold_reached": "Violation points reached the limit"
+    },
+    "announcement": {
+      "published": "Announcement published"
+    },
+    "library": {
+      "reservation_ready": "Book reservation ready",
+      "loan_due_reminder": "Book loan due reminder"
+    }
+  },
   "deliveries": {
     "filterEndpoint": "Endpoint",
     "filterEndpointAll": "All endpoints",

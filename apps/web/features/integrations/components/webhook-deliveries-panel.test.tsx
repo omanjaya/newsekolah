@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
   useLocale: () => "id",
 }));
 vi.mock("../../../lib/session/session-provider", () => ({

@@ -35,15 +35,24 @@
   },
   "templates": {
     "title": "Message templates",
-    "body": "Each template maps to a template already approved in WhatsApp Business Manager. Wrap a variable name in double curly braces to create a placeholder.",
+    "body": "Each template maps to a template already approved in WhatsApp Business Manager. Write a variable name between double curly braces to create a placeholder.",
     "addNew": "Add template",
     "empty": "No templates yet.",
     "form": {
       "nameLabel": "Template name",
-      "localeLabel": "Locale",
+      "localeLabel": "Language",
+      "localeOption": "{name} ({code})",
+      "locales": {
+        "id": "Indonesian",
+        "en": "English",
+        "en_US": "English (US)",
+        "en_GB": "English (UK)",
+        "ms": "Malay",
+        "ar": "Arabic"
+      },
       "metaTemplateNameLabel": "Meta template name",
       "bodyLabel": "Message body",
-      "bodyHint": "Example: Hello parent_name, the amount payment is due on due_date (wrap each in double curly braces).",
+      "bodyHint": "Example: Hello '{{'parent_name'}}', the bill of '{{'amount'}}' is due on '{{'due_date'}}'.",
       "placeholdersLabel": "Detected variables",
       "save": "Save template",
       "edit": "Edit",

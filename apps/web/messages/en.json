@@ -1831,7 +1831,7 @@
           "title": "Import users",
           "description": "Download the template, fill it in outside the system, upload it back, then check the outcome before anything is actually created.",
           "step1Body": "The template includes an example row and a Referensi sheet listing the accepted codes for each column (gender, blood type, role, and so on).",
-          "downloadTemplate": "Download XLSX template",
+          "downloadTemplate": "Download template",
           "step2Body": "Up to 5000 rows in one file. Blank rows are skipped.",
           "mode": {
             "label": "Import mode",

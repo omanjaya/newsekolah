@@ -27,6 +27,7 @@ import {
   useWebhookDeliveriesQuery,
   useWebhookEndpointsQuery,
 } from "../api";
+import { useWebhookEventLabel } from "../lib/use-webhook-event-label";
 
 const PAGE_SIZE = 20;
 
@@ -45,6 +46,7 @@ export function WebhookDeliveriesPanel({
   onEndpointChange: (endpointId: string) => void;
 }): ReactElement {
   const t = useTranslations("app.integrations.deliveries");
+  const eventLabel = useWebhookEventLabel();
   const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -78,7 +80,12 @@ export function WebhookDeliveriesPanel({
       accessorKey: "event_type",
       header: t("columns.eventType"),
       meta: { card: "title" },
-      cell: ({ row }) => <span className="font-mono text-body-sm">{row.original.event_type}</span>,
+      cell: ({ row }) => (
+        <span className="flex flex-col">
+          <span>{eventLabel(row.original.event_type)}</span>
+          <span className="font-mono text-caption text-fg-muted">{row.original.event_type}</span>
+        </span>
+      ),
     },
     {
       id: "status",

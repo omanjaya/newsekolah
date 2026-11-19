@@ -204,6 +204,7 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
               draft={draft}
               logoUrl={branding?.logo_url}
               savedVersion={savedVersion}
+              bare
             />
           </PreviewSheet>
 

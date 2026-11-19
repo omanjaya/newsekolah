@@ -8,6 +8,8 @@ import { useState } from "react";
 export interface PreviewSheetProps {
   /** Names both the button and the sheet. */
   label: string;
+  /** A line under the sheet's title, such as when the preview updates. */
+  description?: string;
   /** The live preview, drawn from the unsaved draft. */
   children: ReactNode;
 }
@@ -17,9 +19,10 @@ export interface PreviewSheetProps {
  * longer sits beside the fields: a secondary button at the top opens it in a
  * bottom sheet, so the reader sees an edit without scrolling to the end of
  * the page. From `lg` up the button is hidden and the preview card stays in
- * its own column.
+ * its own column. The sheet carries the title, so the preview inside is
+ * drawn bare (no card or heading of its own).
  */
-export function PreviewSheet({ label, children }: PreviewSheetProps): ReactElement {
+export function PreviewSheet({ label, description, children }: PreviewSheetProps): ReactElement {
   const [open, setOpen] = useState(false);
 
   return (
@@ -34,7 +37,7 @@ export function PreviewSheet({ label, children }: PreviewSheetProps): ReactEleme
         {label}
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" title={label}>
+        <SheetContent side="bottom" title={label} description={description}>
           {children}
         </SheetContent>
       </Sheet>
