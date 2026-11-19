@@ -433,6 +433,50 @@ describe("DataTable", () => {
     vi.useRealTimers();
   });
 
+  it("recomputes accessor values when the columns change but the rows do not", () => {
+    vi.useFakeTimers();
+    interface Offering {
+      id: string;
+      gradeId: string;
+    }
+    const offerings: Offering[] = [{ id: "1", gradeId: "g10" }];
+    // The lookup arrives after the rows, as a second query would.
+    const lookupColumns = (names: Map<string, string>): ColumnDef<Offering>[] => [
+      { id: "grade", header: "Tingkat", accessorFn: (o) => names.get(o.gradeId) ?? "-" },
+    ];
+    const view = render(
+      <DataTable
+        mode="local"
+        data={offerings}
+        columns={lookupColumns(new Map())}
+        emptyState={<EmptyState title="Belum ada data" />}
+      />,
+    );
+    expect(screen.getAllByText("-").length).toBeGreaterThan(0);
+
+    view.rerender(
+      <DataTable
+        mode="local"
+        data={offerings}
+        columns={lookupColumns(new Map([["g10", "Kelas X"]]))}
+        emptyState={<EmptyState title="Belum ada data" />}
+      />,
+    );
+    expect(screen.getAllByText("Kelas X").length).toBeGreaterThan(0);
+    expect(screen.queryByText("-")).not.toBeInTheDocument();
+
+    // The search reads the fresh value too.
+    fireEvent.change(screen.getByRole("searchbox", { name: "Cari" }), {
+      target: { value: "Kelas X" },
+    });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(screen.getAllByText("Kelas X").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Tidak ada hasil")).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
   it("clamps a local page after settled data shrinks", () => {
     const rows = Array.from({ length: 51 }, (_, index) => ({
       id: String(index),
