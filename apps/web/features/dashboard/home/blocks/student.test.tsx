@@ -518,6 +518,21 @@ describe("useStudentBlock", () => {
     expect(attendanceTile?.value).toBe("75%");
   });
 
+  it("labels the grades tile on its own, with no hint that repeats it", () => {
+    mocks.grades.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: { subjects: [{ subject_id: "s1" }, { subject_id: "s2" }] },
+    });
+
+    const { result } = renderHook(() => useStudentBlock(me(), true));
+    const gradesTile = result.current.tiles.find((tile) => tile.key === "student.grades");
+
+    expect(gradesTile?.label).toBe("gradesLabel");
+    expect(gradesTile?.value).toBe("2");
+    expect(gradesTile?.hint).toBeUndefined();
+  });
+
   it("shows the empty sentence in the library card when there are no active loans", () => {
     mocks.library.mockReturnValue({
       ...idleQuery,

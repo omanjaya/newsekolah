@@ -264,7 +264,6 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
       priority: 60,
       label: t("gradesLabel"),
       value: String(grades.data.subjects.length),
-      hint: t("gradesHint"),
       icon: GraduationCap,
       tone: "blue",
       href: "/my-grades",
