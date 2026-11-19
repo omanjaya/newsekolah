@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -232,16 +232,30 @@ describe("DataTableFilters", () => {
       });
     });
 
-    it("sets the range from the two native date inputs", async () => {
+    // Native date inputs showed the browser's own "mm/dd/yyyy" pattern
+    // inside the Indonesian UI; the shared DatePicker reads the page's language.
+    it("sets the range from the two date pickers, shown in Indonesian", async () => {
       const user = userEvent.setup();
       const onChangeRange = vi.fn();
-      render(<DataTableFilters filters={[dateRangeFilter({ onChangeRange })]} />);
+      render(
+        <DataTableFilters filters={[dateRangeFilter({ onChangeRange, today: "2026-09-15" })]} />,
+      );
 
       await user.click(screen.getByRole("button", { name: "Tanggal" }));
-      fireEvent.change(screen.getByLabelText("Dari"), { target: { value: "2026-09-01" } });
-      fireEvent.change(screen.getByLabelText("Sampai"), { target: { value: "2026-09-15" } });
+      expect(document.querySelector('input[type="date"]')).toBeNull();
 
+      await user.click(screen.getByRole("combobox", { name: "Dari" }));
+      await user.click(screen.getByRole("gridcell", { name: "Selasa, 1 September 2026" }));
+      expect(onChangeRange).toHaveBeenLastCalledWith({ from: "2026-09-01", to: "" });
+      // Picking a day closes only the calendar, not the range popover.
+      expect(screen.getByRole("combobox", { name: "Dari" })).toHaveTextContent("1 September 2026");
+
+      await user.click(screen.getByRole("combobox", { name: "Sampai" }));
+      await user.click(screen.getByRole("gridcell", { name: "Selasa, 15 September 2026" }));
       expect(onChangeRange).toHaveBeenLastCalledWith({ from: "2026-09-01", to: "2026-09-15" });
+      expect(screen.getByRole("combobox", { name: "Sampai" })).toHaveTextContent(
+        "15 September 2026",
+      );
     });
 
     it("rejects a from date after the to date without committing it", async () => {
@@ -254,7 +268,8 @@ describe("DataTableFilters", () => {
       );
 
       await user.click(screen.getByRole("button", { name: /^Tanggal/ }));
-      fireEvent.change(screen.getByLabelText("Dari"), { target: { value: "2026-09-20" } });
+      await user.click(screen.getByRole("combobox", { name: "Dari" }));
+      await user.click(screen.getByRole("gridcell", { name: "Minggu, 20 September 2026" }));
 
       expect(onChangeRange).not.toHaveBeenCalled();
       expect(
