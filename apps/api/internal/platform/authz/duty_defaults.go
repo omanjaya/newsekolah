@@ -21,7 +21,12 @@ func DutyTypeDefaults() []DutyTypeDefault {
 		{"homeroom", "Wali Kelas", "class", []string{PermViewAttendance, PermReviewLeaveRequests, PermCorrectAttendance}},
 		{"counselor", "Guru BK", "school", []string{PermIssueLeaveLetters, PermViewReports, PermManageCounseling, PermIssueWarningLetters, PermViewDiscipline, PermRecordViolations}},
 		{"picket", "Guru Piket", "school", []string{PermManageAttendance}},
-		{"leadership", "Wakil Kepala Sekolah", "school", []string{PermReviewLeaveRequests, PermIssueLeaveLetters, PermViewReports, PermIssueWarningLetters, PermViewDiscipline}},
+		// issue_scan_tokens: the leadership stage of a late arrival or an
+		// exit permit is approved by showing the student a stage QR, so
+		// whoever holds this duty must be able to mint it -- including a
+		// principal, whose role leaves that permission out on purpose
+		// (role_defaults.go).
+		{"leadership", "Wakil Kepala Sekolah", "school", []string{PermReviewLeaveRequests, PermIssueLeaveLetters, PermViewReports, PermIssueWarningLetters, PermViewDiscipline, PermIssueScanTokens}},
 		{"security", "Satpam", "school", []string{PermScanExitPermits}},
 		{"librarian", "Petugas Perpustakaan", "school", []string{PermManageLibraryCirculation}},
 	}

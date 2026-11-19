@@ -209,13 +209,12 @@ func RoleDefaults() []RoleDefault {
 		//     homeroom/counselor duty reviewer, gate duty) -- none of them
 		//     mean "principal oversight".
 		//     "Approving at the leadership stage" (the product brief's
-		//     phrasing) is gated purely by holding the "leadership" duty
-		//     (service-layer HasActiveDuty check on an "authenticated"-only
-		//     operation, e.g. scanExitPermitStage, reviewLateArrival's next
-		//     stage), not by any permission -- there is nothing to add here
-		//     for it; a school that wants its principal to approve at that
-		//     stage assigns them the existing "leadership" duty
-		//     (duty_defaults.go), independently of this role.
+		//     phrasing) is gated by holding the "leadership" duty
+		//     (service-layer HasActiveDuty check against the stage QR's
+		//     issuer), not by this role: a school that wants its principal
+		//     to approve at that stage assigns them the existing
+		//     "leadership" duty (duty_defaults.go), which itself grants
+		//     issue_scan_tokens so its holder can mint that stage QR.
 		//   - issue_warning_letters, record_violations,
 		//     manage_discipline_catalog: "the counselor's issuing screen"
 		//     and recording, not oversight (view_discipline already covers
