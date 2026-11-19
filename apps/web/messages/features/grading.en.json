@@ -64,6 +64,7 @@
     "starsColumn": "Stars",
     "scoreFor": "{code} score for {name}",
     "starsFor": "Set stars for {name}",
+    "starsBalance": "{name}'s stars: {balance}",
     "rowChanged": "This row changed",
     "noComponents": "No assessment components for this subject yet.",
     "noMatch": "No student matches your search.",

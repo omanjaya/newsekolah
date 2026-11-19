@@ -1,8 +1,10 @@
 "use client";
 
 import { Input, cn, useDebouncedCallback } from "@newsekolah/ui";
+import { useLocale } from "next-intl";
 import { memo, useEffect, useRef, useState, type ClipboardEvent, type ReactElement } from "react";
 
+import { formatScore } from "../lib/format-score";
 import { isMultiCellPaste, parsePastedGrid } from "../lib/gradebook-paste";
 import { isScoreOutOfRange } from "../lib/gradebook-scores";
 
@@ -14,7 +16,12 @@ export interface GradebookScoreCellProps {
   rowIndex: number;
   /** The committed value: `edits[componentId][studentId]`, or the original score. */
   value: string;
-  disabled: boolean;
+  /**
+   * A reader who cannot edit this sheet: the score renders as plain text,
+   * the way the average and report score beside it do, instead of an input
+   * box that only looks editable.
+   */
+  readOnly?: boolean;
   ariaLabel: string;
   /** Layout classes (width, shrink, text alignment) -- moved onto the wrapper, not the input, so they still apply once the range hint needs a sizing anchor. */
   className?: string;
@@ -61,7 +68,7 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
   componentId,
   rowIndex,
   value,
-  disabled,
+  readOnly = false,
   ariaLabel,
   className,
   min,
@@ -74,6 +81,7 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
   onNavigate,
   onPasteBlock,
 }: GradebookScoreCellProps): ReactElement {
+  const locale = useLocale();
   const [draft, setDraft] = useState(value);
   const focusedRef = useRef(false);
   const draftRef = useRef(draft);
@@ -123,6 +131,23 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
     onPasteBlock(componentId, studentId, rows);
   }
 
+  if (readOnly) {
+    // Plain text in the cell: the column header and the row's student
+    // name already say whose score it is, as they do for the average.
+    const score = value === "" ? Number.NaN : Number(value);
+    return (
+      <span
+        className={cn(
+          "block py-1",
+          Number.isFinite(score) ? "text-fg" : "text-fg-muted",
+          className,
+        )}
+      >
+        {Number.isFinite(score) ? formatScore(score, locale) : "-"}
+      </span>
+    );
+  }
+
   return (
     <div className={cn("relative", className)}>
       <Input
@@ -140,7 +165,6 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
         step="0.1"
         min={min}
         max={max}
-        disabled={disabled}
         value={draft}
         placeholder="-"
         aria-label={ariaLabel}

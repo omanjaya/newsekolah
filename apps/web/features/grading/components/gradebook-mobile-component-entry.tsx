@@ -132,7 +132,6 @@ export function GradebookMobileComponentEntry({
                   componentId={active.id}
                   rowIndex={rowIndex}
                   value={cellValue(active.id, student)}
-                  disabled={false}
                   ariaLabel={t("scoreFor", { name: student.name, code: active.code })}
                   className="w-24 shrink-0"
                   size="lg"

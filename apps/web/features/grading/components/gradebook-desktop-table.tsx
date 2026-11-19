@@ -11,7 +11,7 @@ import {
   TableRow,
   cn,
 } from "@newsekolah/ui";
-import { Pencil, Star } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { useLocale, type useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -21,6 +21,7 @@ import { type StarBalances, starBalanceLabel } from "../lib/star-balances";
 
 import { GradebookColumnMenu } from "./gradebook-column-menu";
 import { GradebookScoreCell } from "./gradebook-score-cell";
+import { GradebookStarBalance } from "./gradebook-star-balance";
 import type { Edits } from "./gradebook-types";
 
 export interface GradebookDesktopTableProps {
@@ -200,7 +201,7 @@ export function GradebookDesktopTable({
                     componentId={component.id}
                     rowIndex={rowIndex}
                     value={cellValue(component.id, student)}
-                    disabled={!canManage}
+                    readOnly={!canManage}
                     ariaLabel={t("scoreFor", { name: student.name, code: component.code })}
                     className="w-full text-right tabular-nums"
                     min={scaleMin}
@@ -263,19 +264,16 @@ export function GradebookDesktopTable({
                 )}
               </TableCell>
               <TableCell className="border-l border-line">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={!canManage}
-                  onClick={() => {
+                <GradebookStarBalance
+                  t={t}
+                  studentName={student.name}
+                  label={starBalanceLabel(starBalances, student.student_user_id)}
+                  canManage={canManage}
+                  onOpen={() => {
                     onGiveStar(student);
                   }}
-                  className="-ml-2 px-2 text-fg-muted tabular-nums hover:text-fg disabled:opacity-100"
-                  aria-label={t("starsFor", { name: student.name })}
-                >
-                  <Star aria-hidden="true" />
-                  {starBalanceLabel(starBalances, student.student_user_id)}
-                </Button>
+                  className={canManage ? "-ml-2 px-2" : undefined}
+                />
               </TableCell>
             </TableRow>
           );
