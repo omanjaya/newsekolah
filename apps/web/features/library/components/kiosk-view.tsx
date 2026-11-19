@@ -22,6 +22,7 @@ import { todayInZone } from "../../../lib/tenant-date";
 import { useBorrowLoanMutation, useReturnLoanMutation } from "../api";
 import { useFindMemberByCodeMutation } from "../desk-api";
 import { looksLikeMemberUserId, useKioskMemberSession } from "../kiosk-session";
+import { PRINTED_CARD_CODE_FIELDS } from "../lib/member-code-match";
 import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import { KioskMemberPanel } from "./kiosk-member-panel";
@@ -113,7 +114,7 @@ export function KioskView(): ReactElement {
   const session = useKioskMemberSession(memberUserId);
   const borrow = useBorrowLoanMutation();
   const returnLoan = useReturnLoanMutation();
-  const findMember = useFindMemberByCodeMutation();
+  const findMember = useFindMemberByCodeMutation(PRINTED_CARD_CODE_FIELDS);
 
   const setMemberUserId = useCallback((userId: string | null) => {
     memberRef.current = userId;
@@ -160,7 +161,9 @@ export function KioskView(): ReactElement {
   /**
    * The member's user ID for a card code, or null when no single member
    * has it. A printed card carries the member number, resolved by the
-   * same exact-match lookup the desk uses; a user ID needs no request.
+   * same exact-match lookup the desk uses but on that number alone: no one
+   * staffs this screen, so a classmate's NIS or username must not open a
+   * session in their name. A user ID needs no request.
    */
   const resolveCardMember = async (code: string): Promise<string | null> => {
     if (looksLikeMemberUserId(code)) return code;
