@@ -19,10 +19,11 @@ describe("attendance message catalogs", () => {
     ["en", en],
   ] as const) {
     it(`carries the student's summary label and the day-aware school card in ${locale}`, () => {
-      const attendance = catalog.app.attendance as Record<string, Record<string, unknown>>;
+      const attendance: Record<string, unknown> = catalog.app.attendance;
       for (const [section, keys] of Object.entries(REQUIRED_KEYS)) {
+        const messages = attendance[section] as Record<string, unknown> | undefined;
         for (const key of keys) {
-          expect(attendance[section]?.[key], `${locale}: app.attendance.${section}.${key}`).toEqual(
+          expect(messages?.[key], `${locale}: app.attendance.${section}.${key}`).toEqual(
             expect.any(String),
           );
         }
