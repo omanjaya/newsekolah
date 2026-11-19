@@ -133,9 +133,12 @@ export function StudentProfileView({ studentId }: { studentId: string }): ReactE
 
   // A student the school does not have (an unknown or malformed id in the
   // address) is not found: no tabs whose every panel would fail to load.
+  // The user record already names the profile kind, so a staff or admin id
+  // is not found even before (or without) the directory lookup answering.
   if (
     personRecordStatus(lookup, studentId, "student") === "missing" ||
-    (!user.data && isNotFoundError(user.error))
+    (!user.data && isNotFoundError(user.error)) ||
+    (user.data !== undefined && user.data.profile_kind !== "student")
   ) {
     return (
       <RecordNotFoundPage
