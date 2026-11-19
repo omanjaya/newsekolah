@@ -5,6 +5,7 @@ package http
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -78,6 +79,8 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrMemberTypeInUse:     httpx.ErrLibraryMemberTypeInUse,
 	domain.ErrMemberNoExhausted:   httpx.ErrLibraryMemberNoExhausted,
 	domain.ErrMemberNoCollision:   httpx.ErrLibraryMemberNoCollision,
+	domain.ErrMemberHasTitle:      httpx.ErrLibraryAlreadyHasTitle,
+	domain.ErrNoCopyForClassLoan:  httpx.ErrLibraryNoCopyAvailable,
 
 	domain.ErrViolationNotFound:       httpx.ErrLibraryViolationNotFound,
 	domain.ErrViolationAlreadySettled: httpx.ErrLibraryViolationAlreadySettled,
@@ -100,6 +103,34 @@ func mapError(err error) error {
 		return appErr
 	}
 	return httpx.Internal(err)
+}
+
+// errorCode is the stable httpx code a domain error maps to, for a batch
+// row that reports a per-item failure inside a 200 response instead of
+// failing the whole request. The client translates the code exactly as it
+// would the same error from a single call.
+func errorCode(err error) string {
+	var appErr *httpx.Error
+	if errors.As(mapError(err), &appErr) {
+		return appErr.Code
+	}
+	return httpx.Internal(err).Code
+}
+
+// rowError renders a per-item failure of a batch response as its stable
+// code plus a human-readable reason. A domain error keeps its own text. An
+// unexpected error is logged with its cause, the way the response error
+// handler logs a 500, and its reason is the generic localized
+// INTERNAL_ERROR message: raw driver or wrapping text never reaches the
+// client.
+func rowError(ctx context.Context, err error) (code, reason string) {
+	code = errorCode(err)
+	if code != httpx.ErrInternal.Code {
+		return code, err.Error()
+	}
+	slog.ErrorContext(ctx, "library batch row failed",
+		"error", err, "request_id", httpx.RequestIDFromContext(ctx))
+	return code, i18n.Message(code, tenantLocale(ctx))
 }
 
 func strOr(p *string) string {

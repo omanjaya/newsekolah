@@ -24,6 +24,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { useIsSchoolAdmin } from "../../../lib/session/school-admin";
 import { useCan } from "../../../lib/session/session-provider";
 import {
   useMonitorPresenceQuery,
@@ -131,6 +132,9 @@ export function MonitorView(): ReactElement {
 function TokenGate({ onSubmit }: { onSubmit: (token: string) => void }): ReactElement {
   const t = useTranslations("app.monitor");
   const [value, setValue] = useState("");
+  // "Ask the school admin" would send the admin to themselves: tell them
+  // who sets the token instead.
+  const schoolAdmin = useIsSchoolAdmin();
   return (
     <div className="flex flex-1 items-center justify-center px-4 py-10">
       <Card padding="lg" className="w-full max-w-md">
@@ -154,7 +158,7 @@ function TokenGate({ onSubmit }: { onSubmit: (token: string) => void }): ReactEl
             onSubmit(value.trim());
           }}
         >
-          <Field label={t("tokenLabel")} hint={t("tokenHint")}>
+          <Field label={t("tokenLabel")} hint={schoolAdmin ? t("tokenHintAdmin") : t("tokenHint")}>
             <Input
               value={value}
               onChange={(event) => {
@@ -182,6 +186,7 @@ function MonitorDisplay({
 }): ReactElement {
   const t = useTranslations("app.monitor");
   const canSeePresence = useCan("view_monitor_presence");
+  const schoolAdmin = useIsSchoolAdmin();
 
   const mode = useMonitorSocket(token);
   const snapshot = useMonitorSnapshotQuery(token, {
@@ -199,7 +204,7 @@ function MonitorDisplay({
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-4 px-4 py-10">
         {tokenRefused ? (
           <Alert variant="warning" title={t("tokenInvalidTitle")}>
-            {t("tokenInvalidBody")}
+            {schoolAdmin ? t("tokenInvalidBodyAdmin") : t("tokenInvalidBody")}
           </Alert>
         ) : (
           <QueryError retry={() => snapshot.refetch()} error={snapshot.error} />

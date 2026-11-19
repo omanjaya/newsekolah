@@ -201,6 +201,7 @@ export function KioskView(): ReactElement {
       <div className="flex w-full max-w-6xl flex-col gap-6 md:gap-8">
         {active ? (
           <HeroCard
+            titleAs="h1"
             size="kiosk"
             eyebrow={t("active.eyebrow")}
             title={t("active.title")}
@@ -221,6 +222,7 @@ export function KioskView(): ReactElement {
           />
         ) : (
           <HeroCard
+            titleAs="h1"
             size="kiosk"
             eyebrow={t("idle.eyebrow")}
             title={t("idle.title")}

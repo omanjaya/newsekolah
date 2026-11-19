@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   type DeskBasketItem,
   addBasketItem,
-  borrowRejectReasonCode,
   classifyBorrowCopy,
   confirmableItems,
   hasUndoableItem,
@@ -136,21 +135,6 @@ describe("hasUndoableItem", () => {
   it("is false once everything is settled or the basket is empty", () => {
     expect(hasUndoableItem([item("A", { state: "done" })])).toBe(false);
     expect(hasUndoableItem([])).toBe(false);
-  });
-});
-
-describe("borrowRejectReasonCode", () => {
-  it("maps a known raw Go error string to its errors.* code", () => {
-    expect(borrowRejectReasonCode("copy is not available")).toEqual({
-      code: "LIBRARY_COPY_NOT_AVAILABLE",
-    });
-    expect(borrowRejectReasonCode("library member is suspended")).toEqual({
-      code: "LIBRARY_MEMBER_SUSPENDED",
-    });
-  });
-
-  it("falls back to the raw reason for an unrecognized string", () => {
-    expect(borrowRejectReasonCode("some future error")).toEqual({ raw: "some future error" });
   });
 });
 

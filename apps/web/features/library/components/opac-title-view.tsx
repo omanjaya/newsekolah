@@ -82,6 +82,7 @@ export function OpacTitleView({ titleId }: { titleId: string }): ReactElement {
       ) : error || !data ? (
         <EmptyState
           icon={<BookX aria-hidden="true" />}
+          titleAs="h1"
           title={t("detail.notFoundTitle")}
           description={t("detail.notFoundBody")}
         />
@@ -160,9 +161,18 @@ function TitleDetail({ detail }: { detail: LibraryOpacTitleDetail }): ReactEleme
             <DataListItem label={t("detail.edition")}>{title.edition}</DataListItem>
           )}
           {title.pages && <DataListItem label={t("detail.pages")}>{title.pages}</DataListItem>}
-          <DataListItem label={t("detail.isbn")}>
-            {title.isbn && <span className="tabular-nums">{title.isbn}</span>}
-          </DataListItem>
+          {/* A serial is identified by its ISSN: show the ISBN row only
+              when the title has one, or when there is no ISSN either. */}
+          {(title.isbn || !title.issn) && (
+            <DataListItem label={t("detail.isbn")}>
+              {title.isbn && <span className="tabular-nums">{title.isbn}</span>}
+            </DataListItem>
+          )}
+          {title.issn && (
+            <DataListItem label={t("detail.issn")}>
+              <span className="tabular-nums">{title.issn}</span>
+            </DataListItem>
+          )}
           <DataListItem label={t("detail.classification")}>{title.classification}</DataListItem>
           {title.call_number && (
             <DataListItem label={t("detail.callNumber")}>{title.call_number}</DataListItem>

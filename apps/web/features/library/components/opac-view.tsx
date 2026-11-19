@@ -189,7 +189,9 @@ export function OpacView(): ReactElement {
  * phone, where the title needs the whole width.
  */
 function TitleRow({ title }: { title: LibraryOpacTitle }): ReactElement {
-  const byline = [title.author, title.publish_year].filter(Boolean).join(" · ");
+  // A title with no author (a magazine, a dictionary) names its publisher
+  // instead, so the year never stands alone like a missing field.
+  const byline = [title.author || title.publisher, title.publish_year].filter(Boolean).join(" · ");
   const availability = (
     <OpacAvailability available={title.available_copies} total={title.total_copies} />
   );

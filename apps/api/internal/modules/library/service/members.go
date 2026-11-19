@@ -127,10 +127,19 @@ func (s *Service) RegisterMember(ctx context.Context, tenantID uuid.UUID, in Reg
 	return member, err
 }
 
+// FailedRegistration is one candidate BulkRegisterByRole could not
+// register, named so the librarian can tell who failed, with the domain
+// error explaining why.
+type FailedRegistration struct {
+	UserID   uuid.UUID
+	UserName string
+	Err      error
+}
+
 // BulkRegisterResult is BulkRegisterByRole's outcome.
 type BulkRegisterResult struct {
 	Registered []domain.Member
-	Failed     []RejectedBarcode // Barcode reused as the user id string; Reason is the error
+	Failed     []FailedRegistration
 }
 
 // BulkRegisterByRole registers every user of role not already a member
@@ -161,7 +170,7 @@ func (s *Service) BulkRegisterByRole(ctx context.Context, tenantID, memberTypeID
 		for _, c := range candidates {
 			member, err := s.createMemberWithGeneratedNo(ctx, tenantID, c.UserID, memberType, policy, now)
 			if err != nil {
-				result.Failed = append(result.Failed, RejectedBarcode{Barcode: c.UserID.String(), Reason: err.Error()})
+				result.Failed = append(result.Failed, FailedRegistration{UserID: c.UserID, UserName: c.UserName, Err: err})
 				continue
 			}
 			result.Registered = append(result.Registered, member)

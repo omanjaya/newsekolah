@@ -44,8 +44,12 @@ export interface EmptyStateProps extends Omit<ComponentPropsWithRef<"div">, "tit
   variant?: EmptyStateVariant;
   /** Tints the icon circle; neutral by default, since the accent is for actions. */
   tone?: Tone;
-  /** Heading level of the title, for when the empty state stands in for a titled section. */
-  titleAs?: "h2" | "h3" | "h4" | "p";
+  /**
+   * Heading level of the title, for when the empty state stands in for a
+   * titled section, or `h1` when it stands in for the whole page (a
+   * not-found state on a page that has no other heading).
+   */
+  titleAs?: "h1" | "h2" | "h3" | "h4" | "p";
 }
 
 const FRAME_CLASS: Record<EmptyStateVariant, string> = {

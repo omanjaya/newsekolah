@@ -21,7 +21,10 @@ func (h *LibraryHandler) PreviewLibraryClassLoans(ctx context.Context, request a
 	}
 	rejected := make([]api.LibraryClassLoanRejected, len(preview.Rejected))
 	for i, r := range preview.Rejected {
-		rejected[i] = api.LibraryClassLoanRejected{StudentUserId: r.StudentUserID, StudentName: r.StudentName, Reason: r.Reason}
+		code, reason := rowError(ctx, r.Err)
+		rejected[i] = api.LibraryClassLoanRejected{
+			StudentUserId: r.StudentUserID, StudentName: r.StudentName, Code: code, Reason: reason,
+		}
 	}
 	return api.PreviewLibraryClassLoans200JSONResponse{Pairs: pairs, Rejected: rejected}, nil
 }
@@ -35,7 +38,7 @@ func (h *LibraryHandler) CommitLibraryClassLoans(ctx context.Context, request ap
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.CommitLibraryClassLoans200JSONResponse(toAPIBatchResult(result)), nil
+	return api.CommitLibraryClassLoans200JSONResponse(toAPIBatchResult(ctx, result)), nil
 }
 
 func (h *LibraryHandler) CommitLibraryClassReturns(ctx context.Context, request api.CommitLibraryClassReturnsRequestObject) (api.CommitLibraryClassReturnsResponseObject, error) {
@@ -44,7 +47,7 @@ func (h *LibraryHandler) CommitLibraryClassReturns(ctx context.Context, request 
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.CommitLibraryClassReturns200JSONResponse(toAPIBatchResult(result)), nil
+	return api.CommitLibraryClassReturns200JSONResponse(toAPIBatchResult(ctx, result)), nil
 }
 
 func (h *LibraryHandler) SendLibraryDueReminders(ctx context.Context, _ api.SendLibraryDueRemindersRequestObject) (api.SendLibraryDueRemindersResponseObject, error) {

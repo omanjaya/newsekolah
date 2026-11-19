@@ -32,6 +32,7 @@ import {
 } from "../class-loans-api";
 
 import { ClassTitlePicker } from "./class-title-picker";
+import { RejectedReasonList } from "./rejected-reason-list";
 
 /** Picks a class and a title, previews the roster/copy pairing, then commits it as loans. */
 export function ClassLoanBorrowPanel(): ReactElement {
@@ -154,13 +155,14 @@ export function ClassLoanBorrowPanel(): ReactElement {
         <div className="flex flex-col gap-4 border-t border-line pt-4">
           {preview.rejected.length > 0 && (
             <Alert tone="danger" title={t("rejectedTitle")} className="mx-5">
-              <ul className="flex flex-col gap-1">
-                {preview.rejected.map((item) => (
-                  <li key={item.student_user_id}>
-                    {item.student_name}: {item.reason}
-                  </li>
-                ))}
-              </ul>
+              <RejectedReasonList
+                items={preview.rejected.map((item) => ({
+                  key: item.student_user_id,
+                  label: item.student_name,
+                  code: item.code,
+                  reason: item.reason,
+                }))}
+              />
             </Alert>
           )}
 

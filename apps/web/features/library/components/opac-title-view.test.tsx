@@ -1,61 +1,65 @@
-import { render } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { setDocumentSchoolName } from "../../../lib/page-title";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import { OpacTitleView } from "./opac-title-view";
 
 interface QueryState {
   data?: unknown;
   isLoading: boolean;
-  error: Error | null;
+  error: unknown;
 }
 
-const state = vi.hoisted(() => ({ current: undefined as QueryState | undefined }));
+const query = vi.hoisted(() => vi.fn<() => QueryState>());
 
-vi.mock("../opac-api", () => ({
-  useOpacTitleQuery: () => state.current,
-}));
+vi.mock("../opac-api", () => ({ useOpacTitleQuery: query }));
 vi.mock("next-intl", () => ({
-  useLocale: () => "id",
   useTranslations: () => (key: string) => key,
+  useLocale: () => "id",
 }));
 
-const DETAIL = {
-  title: {
-    id: "t1",
-    title: "Laskar Pelangi",
-    author: "Andrea Hirata",
-    classification: "Fiksi - Novel",
-  },
-  copies: [],
-};
+function detail(title: Record<string, unknown>) {
+  return {
+    title: { id: "t1", title: "Tempo", classification: "Non-Fiksi - Majalah", ...title },
+    copies: [],
+  };
+}
 
-beforeEach(() => {
-  setDocumentSchoolName("SMA Contoh");
-});
-
-afterEach(() => {
-  document.title = "";
-});
-
-// A shared link, a bookmark or the tab strip should say which book this is.
-describe("OpacTitleView tab title", () => {
-  it("names the catalogue while the book loads", () => {
-    state.current = { isLoading: true, error: null };
-    render(<OpacTitleView titleId="t1" />);
-    expect(document.title).toBe("title · SMA Contoh");
+describe("OpacTitleView", () => {
+  it("gives the not-found state the page heading", () => {
+    query.mockReturnValue({ data: undefined, isLoading: false, error: new Error("404") });
+    render(<OpacTitleView titleId="missing" />);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "detail.notFoundTitle" }),
+    ).toBeInTheDocument();
   });
 
-  it("names the book once it loads", () => {
-    state.current = { isLoading: false, error: null, data: DETAIL };
+  it("shows a serial's ISSN and no empty ISBN row", () => {
+    query.mockReturnValue({
+      data: detail({ issn: "0126-4273" }),
+      isLoading: false,
+      error: null,
+    });
     render(<OpacTitleView titleId="t1" />);
-    expect(document.title).toBe("Laskar Pelangi · SMA Contoh");
+    expect(screen.getByText("detail.issn")).toBeInTheDocument();
+    expect(screen.getByText("0126-4273")).toBeInTheDocument();
+    expect(screen.queryByText("detail.isbn")).not.toBeInTheDocument();
   });
 
-  it("names the not-found state for an unknown book", () => {
-    state.current = { isLoading: false, error: new Error("404") };
-    render(<OpacTitleView titleId="unknown" />);
-    expect(document.title).toBe("detail.notFoundTitle · SMA Contoh");
+  it("shows both identifiers when a title has both", () => {
+    query.mockReturnValue({
+      data: detail({ isbn: "9990000000048", issn: "0126-4273" }),
+      isLoading: false,
+      error: null,
+    });
+    render(<OpacTitleView titleId="t1" />);
+    expect(screen.getByText("9990000000048")).toBeInTheDocument();
+    expect(screen.getByText("0126-4273")).toBeInTheDocument();
+  });
+
+  it("keeps the ISBN row for a book with neither identifier", () => {
+    query.mockReturnValue({ data: detail({}), isLoading: false, error: null });
+    render(<OpacTitleView titleId="t1" />);
+    expect(screen.getByText("detail.isbn")).toBeInTheDocument();
+    expect(screen.queryByText("detail.issn")).not.toBeInTheDocument();
   });
 });
