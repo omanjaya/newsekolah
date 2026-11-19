@@ -1,3 +1,4 @@
+import type * as ReactQuery from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import { Bell } from "lucide-react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -31,6 +32,10 @@ const me = vi.hoisted(
     }) as unknown as Me,
 );
 
+vi.mock("@tanstack/react-query", async (importOriginal) => ({
+  ...(await importOriginal<typeof ReactQuery>()),
+  useQueryClient: () => ({ refetchQueries: vi.fn() }),
+}));
 vi.mock("../api", () => ({
   useDashboardData: () => ({ data: me, isLoading: false, isError: false, refetch: vi.fn() }),
 }));
@@ -57,7 +62,7 @@ vi.mock("../home/blocks/gate", () => ({ useGateBlock: blocks.empty }));
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../components/use-is-desktop", () => ({
   useIsDesktop: () => viewport.desktop,
-  useIsTwoColumn: () => viewport.twoColumn,
+  useIsWideTwoColumn: () => viewport.twoColumn,
 }));
 vi.mock("next-intl", () => ({
   useTranslations: () => Object.assign((key: string) => key, { has: () => true }),

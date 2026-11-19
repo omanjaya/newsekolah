@@ -428,6 +428,12 @@
         "inboxMeta": "Pengajuan yang menunggu keputusan Anda ada di satu tempat.",
         "inboxAction": "Buka perlu tindakan"
       },
+      "failed": {
+        "eyebrow": "Hari ini",
+        "title": "Sebagian beranda belum dimuat",
+        "meta": "Periksa koneksi lalu coba lagi.",
+        "action": "Coba lagi"
+      },
       "shortcuts": {
         "title": "Pintasan",
         "monitor": "Monitor presensi",

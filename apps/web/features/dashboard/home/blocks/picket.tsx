@@ -75,6 +75,7 @@ export function usePicketBlock(me: Me, active: boolean): PersonaBlock {
     main: [],
     side: [],
     pending: late.isLoading || exit.isLoading,
+    failed: late.isError || exit.isError,
   };
 
   const lateItems = !late.isLoading && !late.isError ? lateRows : undefined;

@@ -428,6 +428,12 @@
         "inboxMeta": "Requests waiting on your decision, all in one place.",
         "inboxAction": "Open needs action"
       },
+      "failed": {
+        "eyebrow": "Today",
+        "title": "Part of your home did not load",
+        "meta": "Check your connection, then try again.",
+        "action": "Try again"
+      },
       "shortcuts": {
         "title": "Shortcuts",
         "monitor": "Attendance monitor",

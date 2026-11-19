@@ -250,6 +250,8 @@ describe("useStudentBlock", () => {
     const { result } = renderHook(() => useStudentBlock(me(), true));
 
     expect(result.current.hero?.title).toBe("IPA");
+    // The span reads as on the schedule and attendance: spaced en dash.
+    expect(result.current.hero?.meta).toBe("08.40 – 10.00 · Pak Budi");
     expect(result.current.hero?.chip).toContain('"minutes":10');
     // Ten minutes before the lesson, scanning into class leads.
     expect(result.current.hero?.action?.href).toBe("/scan");
@@ -512,6 +514,33 @@ describe("useStudentBlock", () => {
 
     const attendanceTile = result.current.tiles.find((tile) => tile.key === "student.attendance");
     expect(attendanceTile?.value).toBe("75%");
+  });
+
+  it("shows no attendance rate while every past day is still unrecorded, never 0%", () => {
+    const unrecorded = (date: string) => ({
+      date,
+      status_code: "INCOMPLETE",
+      expected_sessions: 1,
+      submitted_sessions: 0,
+      complete: false,
+    });
+    mocks.calendar.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: { data: [unrecorded("2026-09-01"), unrecorded("2026-09-02")] },
+    });
+
+    const { result } = renderHook(() => useStudentBlock(me(), true));
+
+    expect(result.current.tiles.find((tile) => tile.key === "student.attendance")).toBeUndefined();
+  });
+
+  it("flags the block failed when a tile's read fails", () => {
+    mocks.calendar.mockReturnValue({ ...idleQuery, isError: true, error: new Error("x") });
+
+    const { result } = renderHook(() => useStudentBlock(me(), true));
+
+    expect(result.current.failed).toBe(true);
   });
 
   it("labels the grades tile on its own, with no hint that repeats it", () => {

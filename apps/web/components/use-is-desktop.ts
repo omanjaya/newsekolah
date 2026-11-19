@@ -51,3 +51,15 @@ export function useIsDesktop(): boolean {
 export function useIsTwoColumn(): boolean {
   return useMatches(TWO_COLUMN_QUERY);
 }
+
+/** Where a page that needs a roomier side column splits in two (Tailwind `xl`). */
+const WIDE_TWO_COLUMN_QUERY = "(min-width: 1280px)";
+
+/**
+ * True from the `xl` breakpoint, for a page whose side column needs more
+ * room than `lg` leaves beside the open sidebar (the home: at 1024px its
+ * side column was about 228px and truncated the shortcuts). Server: `false`.
+ */
+export function useIsWideTwoColumn(): boolean {
+  return useMatches(WIDE_TWO_COLUMN_QUERY);
+}

@@ -1,4 +1,6 @@
+import type * as ReactQuery from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Bell } from "lucide-react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -16,6 +18,12 @@ const picketBlock = vi.hoisted(() => vi.fn());
 const counselorBlock = vi.hoisted(() => vi.fn());
 const librarianBlock = vi.hoisted(() => vi.fn());
 const gateBlock = vi.hoisted(() => vi.fn());
+const refetchQueries = vi.hoisted(() => vi.fn());
+
+vi.mock("@tanstack/react-query", async (importOriginal) => ({
+  ...(await importOriginal<typeof ReactQuery>()),
+  useQueryClient: () => ({ refetchQueries }),
+}));
 
 vi.mock("../api", () => ({ useDashboardData: dashboardData }));
 vi.mock("../../notifications/api", () => ({ useUnreadCountQuery: unreadCount }));
@@ -39,7 +47,7 @@ vi.mock("../../../components/app-page", () => import("../../../test/app-page-stu
 const viewport = vi.hoisted(() => ({ desktop: false, twoColumn: false }));
 vi.mock("../../../components/use-is-desktop", () => ({
   useIsDesktop: () => viewport.desktop,
-  useIsTwoColumn: () => viewport.twoColumn,
+  useIsWideTwoColumn: () => viewport.twoColumn,
 }));
 vi.mock("next-intl", () => ({
   useTranslations: () =>
@@ -52,7 +60,7 @@ vi.mock("next-intl", () => ({
 }));
 
 import { resetHomeEntranceForTests } from "../home/entrance";
-import type { Me, PersonaBlock } from "../home/types";
+import { HERO_PRIORITY, type Me, type PersonaBlock } from "../home/types";
 
 import { DashboardView } from "./dashboard-view";
 
@@ -184,6 +192,71 @@ describe("DashboardView", () => {
       within(screen.getByTestId("dashboard-hero")).getByRole("heading", {
         name: 'fallback.inboxTitle:{"count":3}',
       }),
+    ).toBeInTheDocument();
+  });
+
+  it("says part of the home failed instead of a false all-clear, with one retry", async () => {
+    refetchQueries.mockReset();
+    teacherBlock.mockReturnValue({ ...emptyBlock(), failed: true });
+    render(<DashboardView />);
+
+    const hero = screen.getByTestId("dashboard-hero");
+    expect(within(hero).getByRole("heading", { name: "failed.title" })).toBeInTheDocument();
+    expect(within(hero).queryByText("fallback.title")).not.toBeInTheDocument();
+    await userEvent.click(within(hero).getByRole("button", { name: "failed.action" }));
+
+    expect(refetchQueries).toHaveBeenCalledTimes(1);
+    const filters = refetchQueries.mock.calls[0]?.[0] as {
+      type: string;
+      predicate: (query: { state: { status: string } }) => boolean;
+    };
+    expect(filters.type).toBe("active");
+    expect(filters.predicate({ state: { status: "error" } })).toBe(true);
+    expect(filters.predicate({ state: { status: "success" } })).toBe(false);
+  });
+
+  it("replaces a calm persona hero with the failure notice when a block failed", () => {
+    teacherBlock.mockReturnValue({
+      ...emptyBlock(),
+      hero: {
+        key: "teacher.idle",
+        priority: HERO_PRIORITY.teacherIdle,
+        tone: "neutral",
+        eyebrow: "Mengajar",
+        title: "Tidak ada jadwal",
+      },
+    });
+    homeroomBlock.mockReturnValue({ ...emptyBlock(), failed: true });
+    render(<DashboardView />);
+
+    const hero = screen.getByTestId("dashboard-hero");
+    expect(within(hero).getByRole("heading", { name: "failed.title" })).toBeInTheDocument();
+  });
+
+  it("keeps an urgent hero from a block that loaded when another block failed", () => {
+    teacherBlock.mockReturnValue({
+      ...emptyBlock(),
+      hero: {
+        key: "teacher.now",
+        priority: HERO_PRIORITY.teacherNowPending,
+        eyebrow: "Sekarang",
+        title: "Matematika · X-A",
+        action: { label: "Isi presensi", href: "/attendance" },
+      },
+    });
+    homeroomBlock.mockReturnValue({ ...emptyBlock(), failed: true });
+    render(<DashboardView />);
+
+    const hero = screen.getByTestId("dashboard-hero");
+    expect(within(hero).getByRole("heading", { name: "Matematika · X-A" })).toBeInTheDocument();
+    expect(within(hero).queryByText("failed.title")).not.toBeInTheDocument();
+  });
+
+  it("shows the failure notice when the action inbox count failed and nothing else is due", () => {
+    inboxSummary.mockReturnValue({ total: 0, isLoading: false, isError: true });
+    render(<DashboardView />);
+    expect(
+      within(screen.getByTestId("dashboard-hero")).getByRole("heading", { name: "failed.title" }),
     ).toBeInTheDocument();
   });
 

@@ -36,7 +36,13 @@ export function useDeputyBlock(_me: Me, active: boolean): PersonaBlock {
   const access = useInboxAccess();
   if (!active) return EMPTY_BLOCK;
 
-  const block: PersonaBlock = { tiles: [], main: [], side: [], pending: summary.isLoading };
+  const block: PersonaBlock = {
+    tiles: [],
+    main: [],
+    side: [],
+    pending: summary.isLoading,
+    failed: summary.isError,
+  };
   const queues = QUEUES.filter(({ key }) => access[key]);
   const reports = { label: t("reportsAction"), href: REPORTS_HREF };
 

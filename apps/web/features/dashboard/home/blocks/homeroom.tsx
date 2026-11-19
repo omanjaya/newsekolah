@@ -67,6 +67,13 @@ export function useHomeroomBlock(me: Me, active: boolean): PersonaBlock {
     main: [],
     side: [],
     pending: (permitsOn && leaveQueue.isLoading) || attendance.isLoading,
+    failed: (permitsOn && leaveQueue.isError) || attendance.isError,
+  };
+  // One retry for the whole card: it refetches whichever of its two reads
+  // failed, so the card never stacks two identical error boxes.
+  const retryFailed = () => {
+    if (attendance.isError) void attendance.refetch();
+    if (leaveQueue.isError) void leaveQueue.refetch();
   };
 
   if (leaveQueue.isSuccess) {
@@ -117,11 +124,10 @@ export function useHomeroomBlock(me: Me, active: boolean): PersonaBlock {
           pending={pending}
           pendingLoading={leaveQueue.isLoading}
           pendingError={leaveQueue.isError ? leaveQueue.error : null}
-          onRetryPending={() => void leaveQueue.refetch()}
           counts={counts}
           countsLoading={attendance.isLoading}
           countsError={attendance.isError ? attendance.error : null}
-          onRetryCounts={() => void attendance.refetch()}
+          onRetry={retryFailed}
         />
       ),
     },
@@ -136,11 +142,10 @@ function HomeroomClassCard({
   pending,
   pendingLoading,
   pendingError,
-  onRetryPending,
   counts,
   countsLoading,
   countsError,
-  onRetryCounts,
+  onRetry,
 }: {
   className: string;
   /** False when the school switched permits off: the leave section and its link go away. */
@@ -148,11 +153,11 @@ function HomeroomClassCard({
   pending: LeaveRequestSummary[];
   pendingLoading: boolean;
   pendingError: unknown;
-  onRetryPending: () => void;
   counts: Record<string, number>;
   countsLoading: boolean;
   countsError: unknown;
-  onRetryCounts: () => void;
+  /** Refetches every read of the card that failed. */
+  onRetry: () => void;
 }): ReactElement {
   const t = useTranslations("app.dashboardTeaching.homeroom");
   // Reuses the existing leave-category and homeroom status-code catalogs
@@ -178,14 +183,15 @@ function HomeroomClassCard({
         {countsLoading ? (
           <Skeleton className="h-6 w-2/3" aria-busy="true" />
         ) : countsError ? (
-          <QueryError retry={onRetryCounts} error={countsError} />
+          <QueryError retry={onRetry} error={countsError} />
         ) : codes.length === 0 ? (
           <p className="text-body-sm text-fg-muted">{t("card.noStatus")}</p>
         ) : (
           <ul className="flex flex-wrap gap-2" aria-label={t("card.statusLabel")}>
             {codes.map(([code, count]) => {
               const status = CODE_STATUS[code];
-              const label = `${statusT(`codes.${code}`)} ${count}`;
+              // Each count is students: "Belum lengkap: 2 siswa", never a bare 2.
+              const label = t("card.statusChip", { label: statusT(`codes.${code}`), count });
               return (
                 <li key={code}>
                   {status ? (
@@ -205,9 +211,13 @@ function HomeroomClassCard({
             <SkeletonList rows={2} framed={false} />
           </div>
         ) : pendingError ? (
-          <div className="px-5 pb-5">
-            <QueryError retry={onRetryPending} error={pendingError} />
-          </div>
+          // When the counts failed too, their error box above already
+          // retries this read as well.
+          countsError ? null : (
+            <div className="px-5 pb-5">
+              <QueryError retry={onRetry} error={pendingError} />
+            </div>
+          )
         ) : pending.length === 0 ? (
           <div className="px-5 pb-5">
             <EmptyState variant="compact" icon={<CheckCheck />} title={t("card.empty")} />

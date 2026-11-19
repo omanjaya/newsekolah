@@ -16,14 +16,15 @@ import {
   TextLink,
   cn,
 } from "@newsekolah/ui";
-import { Bell } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Bell, RotateCw } from "lucide-react";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
-import { useIsDesktop, useIsTwoColumn } from "../../../components/use-is-desktop";
+import { useIsDesktop, useIsWideTwoColumn } from "../../../components/use-is-desktop";
 import { isModuleEnabled } from "../../../lib/modules/feature-modules";
 import { navAccessFromMe } from "../../../lib/navigation-access";
 import { canOpenPath } from "../../../lib/navigation-permissions";
@@ -45,11 +46,19 @@ import { useLibrarianBlock } from "../home/blocks/librarian";
 import { usePicketBlock } from "../home/blocks/picket";
 import { useStudentBlock } from "../home/blocks/student";
 import { useTeacherBlock } from "../home/blocks/teacher";
-import { collectBlocks, guardHero, guardTiles } from "../home/compose";
+import { collectBlocks, guardHero, guardTiles, isCalmHero } from "../home/compose";
 import { entrance, useFirstEntrance } from "../home/entrance";
 import { resolvePersonas } from "../home/personas";
 import { buildShortcuts } from "../home/shortcuts";
-import type { HeroCandidate, Me, PersonaBlock, PersonaKey, TileSpec } from "../home/types";
+import {
+  isHeroLink,
+  type HeroCandidate,
+  type Me,
+  type PersonaBlock,
+  type PersonaKey,
+  type ShownHero,
+  type TileSpec,
+} from "../home/types";
 
 /**
  * Stand-in `Me` while `/v1/me` is still loading. Every persona hook is
@@ -86,7 +95,7 @@ function countable(value: string): number | string {
  * "now" card across the reader's personas (or a calm one when nothing is
  * due) with exactly one primary action, a compact stat row, the personas'
  * task cards, and announcements. A main column and a side column from
- * `lg`; one column below it, in that order except that the reader's own
+ * `xl`; one column below it, in that order except that the reader's own
  * check-in card comes straight after the figures.
  */
 export function DashboardView(): ReactElement {
@@ -96,7 +105,8 @@ export function DashboardView(): ReactElement {
   const tQuick = useTranslations("app.quickActions");
   const format = useFormatter();
   const isDesktop = useIsDesktop();
-  const twoColumn = useIsTwoColumn();
+  const twoColumn = useIsWideTwoColumn();
+  const queryClient = useQueryClient();
 
   const personas = me ? resolvePersonas(me) : new Set<PersonaKey>();
   const active = (key: PersonaKey) => personas.has(key);
@@ -217,7 +227,32 @@ export function DashboardView(): ReactElement {
           meta: t("fallback.meta"),
           action: { label: t("fallback.action"), href: "/notifications" },
         };
-  const hero = guardHero(collected.hero ?? fallback, canOpen);
+  const candidate = collected.hero ?? fallback;
+  // A block whose reads failed contributed nothing, so a calm hero (or the
+  // fallback) would read as a false all-clear above the error boxes: say
+  // what happened instead, with one retry for every failed read. An urgent
+  // hero from a block that did load keeps its place (audit shell-home-3).
+  // The inbox fallback with items waiting is real work, not an all-clear.
+  const calm = candidate === fallback ? inbox.total === 0 : isCalmHero(candidate);
+  const hero: ShownHero =
+    (collected.failed || inbox.isError) && calm
+      ? {
+          key: "common.failed",
+          priority: 0,
+          tone: "warning",
+          eyebrow: t("failed.eyebrow"),
+          title: t("failed.title"),
+          meta: t("failed.meta"),
+          action: {
+            label: t("failed.action"),
+            onClick: () =>
+              void queryClient.refetchQueries({
+                type: "active",
+                predicate: (query) => query.state.status === "error",
+              }),
+          },
+        }
+      : guardHero(candidate, canOpen);
 
   const shortcuts = buildShortcuts({
     me,
@@ -256,8 +291,12 @@ export function DashboardView(): ReactElement {
       })}
       title={<span className="block truncate">{t("greeting", { name: firstName })}</span>}
     >
-      <div className="grid items-start gap-4 lg:grid-cols-12 lg:gap-6">
-        <div className="flex min-w-0 flex-col gap-4 lg:col-span-8" data-testid="dashboard-main">
+      {/* Two columns from xl only, the side one a fixed usable width and the
+          main one the rest: at lg an 8/4 split beside the open sidebar left
+          the side column about 228px, truncating the shortcuts and wrapping
+          the stat tiles (audit shell-home-5). */}
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-6">
+        <div className="flex min-w-0 flex-col gap-4" data-testid="dashboard-main">
           {collected.pending ? (
             <HomeSkeleton tiles={Math.max(tiles.length, 2)} strip={!isDesktop} />
           ) : (
@@ -298,7 +337,7 @@ export function DashboardView(): ReactElement {
           {announcementsOn && announcementsInMain && <AnnouncementsCard />}
         </div>
 
-        <div className="flex min-w-0 flex-col gap-4 lg:col-span-4" data-testid="dashboard-side">
+        <div className="flex min-w-0 flex-col gap-4" data-testid="dashboard-side">
           {checkInSlot && twoColumn && (
             <div data-testid={`dashboard-card-${checkInSlot.key}`}>{checkInSlot.node}</div>
           )}
@@ -327,6 +366,7 @@ export function DashboardView(): ReactElement {
                       </IconCircle>
                     }
                     title={shortcut.label}
+                    titleLines={2}
                   />
                 ))}
               </List>
@@ -352,7 +392,7 @@ function AnnouncementsCard(): ReactElement {
   );
 }
 
-function HomeHero({ hero, enter }: { hero: HeroCandidate; enter: boolean }): ReactElement {
+function HomeHero({ hero, enter }: { hero: ShownHero; enter: boolean }): ReactElement {
   return (
     <HeroCard
       {...entrance(enter, 0)}
@@ -364,11 +404,16 @@ function HomeHero({ hero, enter }: { hero: HeroCandidate; enter: boolean }): Rea
       chip={hero.chip}
       live={hero.live}
       action={
-        hero.action && (
+        hero.action &&
+        (isHeroLink(hero.action) ? (
           <Button asChild className="w-full sm:w-auto">
             <Link href={hero.action.href}>{hero.action.label}</Link>
           </Button>
-        )
+        ) : (
+          <Button className="w-full sm:w-auto" icon={<RotateCw />} onClick={hero.action.onClick}>
+            {hero.action.label}
+          </Button>
+        ))
       }
       secondaryAction={
         hero.secondaryAction && (

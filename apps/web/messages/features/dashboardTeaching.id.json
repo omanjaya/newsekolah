@@ -14,11 +14,11 @@
     },
     "hero": {
       "nowEyebrow": "Sedang berlangsung",
-      "nowMeta": "{start}–{end} · presensi belum dikirim",
+      "nowMeta": "{range} · presensi belum dikirim",
       "nowChip": "berjalan {hours, plural, =0 {{minutes} menit} other {{minutes, plural, =0 {{hours} jam} other {{hours} jam {minutes} menit}}}}",
       "nowAction": "Isi presensi",
       "nextEyebrow": "Berikutnya",
-      "nextMeta": "{start}–{end}",
+      "nextMeta": "{range}",
       "nextChip": "{hours, plural, =0 {{minutes} menit} other {{minutes, plural, =0 {{hours} jam} other {{hours} jam {minutes} menit}}}} lagi",
       "nextAction": "Buka presensi",
       "nextChipAt": "mulai {start}",
@@ -40,7 +40,8 @@
       "noStatus": "Belum ada data presensi hari ini",
       "statusTitle": "Presensi {className} hari ini",
       "statusTitleFallback": "Presensi kelas hari ini",
-      "statusLabel": "Status presensi hari ini"
+      "statusLabel": "Status presensi hari ini",
+      "statusChip": "{label}: {count} siswa"
     },
     "tiles": {
       "leaveLabel": "Izin kelas menunggu",

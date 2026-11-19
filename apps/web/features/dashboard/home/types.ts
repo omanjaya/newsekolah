@@ -22,6 +22,19 @@ export interface HeroLink {
   href: string;
 }
 
+/** A hero action that runs in place instead of navigating (retrying a failed load). */
+export interface HeroButton {
+  label: string;
+  onClick: () => void;
+}
+
+export type HeroAction = HeroLink | HeroButton;
+
+/** Whether an action navigates (a link) rather than running in place. */
+export function isHeroLink(action: HeroAction): action is HeroLink {
+  return "href" in action;
+}
+
 export interface HeroCandidate {
   key: string;
   priority: number; // use HERO_PRIORITY
@@ -45,6 +58,14 @@ export interface HeroCandidate {
    */
   coversTiles?: readonly string[];
 }
+
+/**
+ * What the home renders in the hero slot: a persona's candidate, or the
+ * home's own notice that part of it failed to load, whose one action
+ * retries in place rather than navigating. Persona blocks only ever offer
+ * links, so `HeroCandidate` keeps `action` a `HeroLink`.
+ */
+export type ShownHero = Omit<HeroCandidate, "action"> & { action?: HeroAction };
 
 export interface TileSpec {
   key: string; // unique across personas, e.g. "teacher.pending"
@@ -75,6 +96,12 @@ export interface PersonaBlock {
   side: BlockSlot[];
   /** The queries behind the hero or the tiles are still loading. */
   pending?: boolean;
+  /**
+   * A query behind the hero or the tiles failed, so what the block would
+   * have said is unknown: the home must not read a calm hero as "nothing
+   * is due" (see `isCalmHero`).
+   */
+  failed?: boolean;
 }
 
 export const EMPTY_BLOCK: PersonaBlock = { tiles: [], main: [], side: [] };
