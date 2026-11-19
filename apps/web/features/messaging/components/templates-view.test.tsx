@@ -47,4 +47,21 @@ describe("TemplatesView", () => {
     await user.click(screen.getByRole("button", { name: "form.delete" }));
     expect(await screen.findByText("confirmDeleteBody:Tagihan jatuh tempo")).toBeInTheDocument();
   });
+
+  it("keeps the header's add action to an icon on a phone, so the description has the width", () => {
+    render(<TemplatesView />);
+    const [phone, wide] = screen.getAllByRole("button", { name: "addNew" });
+    expect(phone).toHaveClass("sm:hidden");
+    expect(wide).toHaveClass("max-sm:hidden");
+  });
+
+  it("asks for the template language from a list of codes, not a free-text field", async () => {
+    const user = userEvent.setup();
+    render(<TemplatesView />);
+    await user.click(screen.getByRole("button", { name: "form.edit" }));
+    expect(screen.queryByRole("textbox", { name: "form.localeLabel" })).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "form.localeLabel" })).toHaveTextContent(
+      "form.localeOption",
+    );
+  });
 });
