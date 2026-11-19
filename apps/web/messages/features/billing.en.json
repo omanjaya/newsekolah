@@ -269,7 +269,7 @@
     "noBillsTitle": "No bills this year yet",
     "noBillsBody": "Arrears appear here once this academic year's bills are issued.",
     "noBillsGenerateBody": "Issue this academic year's bills, and arrears appear here.",
-    "goToGenerate": "Open Issuing",
+    "goToGenerate": "Issue bills",
     "columns": {
       "student": "Student",
       "class": "Class",

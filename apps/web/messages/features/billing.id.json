@@ -269,7 +269,7 @@
     "noBillsTitle": "Belum ada tagihan tahun ini",
     "noBillsBody": "Tunggakan muncul di sini setelah tagihan tahun ajaran ini diterbitkan.",
     "noBillsGenerateBody": "Terbitkan tagihan tahun ajaran ini, lalu tunggakan muncul di sini.",
-    "goToGenerate": "Buka Penerbitan",
+    "goToGenerate": "Terbitkan tagihan",
     "columns": {
       "student": "Siswa",
       "class": "Kelas",
