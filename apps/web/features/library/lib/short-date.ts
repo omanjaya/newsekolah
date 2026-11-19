@@ -24,7 +24,9 @@ export function formatShortDate(
 /**
  * "25 Sep – 2 Okt": a loan's span, joined by an en dash like every range.
  * Each end drops the year inside the current one, which a phone row needs
- * and formatDateRange (always with the year) does not do.
+ * and formatDateRange (always with the year) does not do. A span within one
+ * day (a loan returned the day it was borrowed) prints that day once, as
+ * the shared formatDateRange does.
  */
 export function formatShortDateRange(
   from: string,
@@ -32,5 +34,7 @@ export function formatShortDateRange(
   locale: Locale,
   options: { timeZone?: string; today?: string } = {},
 ): string {
-  return `${formatShortDate(from, locale, options)} – ${formatShortDate(to, locale, options)}`;
+  const start = formatShortDate(from, locale, options);
+  const end = formatShortDate(to, locale, options);
+  return start === end ? start : `${start} – ${end}`;
 }
