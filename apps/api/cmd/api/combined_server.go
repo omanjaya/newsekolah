@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
+
 	academichttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/transport/http"
 	activitieshttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/activities/transport/http"
 	analyticshttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/analytics/transport/http"
@@ -64,6 +66,45 @@ type combinedServer struct {
 // as every other error, instead of oapi-codegen's default plain-text body.
 func decodeErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
 	httpx.WriteError(w, r, httpx.WrapError(http.StatusBadRequest, "VALIDATION_FAILED", err))
+}
+
+// paramErrorHandler renders a path, query, header or cookie parameter the
+// generated chi wrapper could not bind (a malformed UUID in /leave-requests/abc,
+// a non-numeric page) as the VALIDATION_FAILED envelope, with one detail
+// naming the parameter, instead of oapi-codegen's default text/plain 400.
+// Clients can then tell "this id can never exist" apart from a server fault.
+func paramErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
+	httpx.WriteError(w, r, httpx.WrapError(http.StatusBadRequest, "VALIDATION_FAILED", err).
+		WithDetails(paramErrorDetail(err)))
+}
+
+// paramErrorDetail maps each bind error type the generated wrapper emits to
+// the field-level code convention the request validator already uses.
+func paramErrorDetail(err error) httpx.ErrorDetail {
+	var (
+		invalidFormat *api.InvalidParamFormatError
+		required      *api.RequiredParamError
+		requiredHdr   *api.RequiredHeaderError
+		unmarshaling  *api.UnmarshalingParamError
+		tooMany       *api.TooManyValuesForParamError
+		cookie        *api.UnescapedCookieParamError
+	)
+	switch {
+	case errors.As(err, &invalidFormat):
+		return httpx.ErrorDetail{Field: invalidFormat.ParamName, Code: "INVALID_FORMAT"}
+	case errors.As(err, &required):
+		return httpx.ErrorDetail{Field: required.ParamName, Code: "REQUIRED"}
+	case errors.As(err, &requiredHdr):
+		return httpx.ErrorDetail{Field: requiredHdr.ParamName, Code: "REQUIRED"}
+	case errors.As(err, &unmarshaling):
+		return httpx.ErrorDetail{Field: unmarshaling.ParamName, Code: "INVALID_FORMAT"}
+	case errors.As(err, &tooMany):
+		return httpx.ErrorDetail{Field: tooMany.ParamName, Code: "INVALID"}
+	case errors.As(err, &cookie):
+		return httpx.ErrorDetail{Field: cookie.ParamName, Code: "INVALID_FORMAT"}
+	default:
+		return httpx.ErrorDetail{Code: "INVALID"}
+	}
 }
 
 // responseErrorHandler renders whatever the strict handler chain returned

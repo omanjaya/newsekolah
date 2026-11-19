@@ -25,6 +25,7 @@ import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import { type WorkflowInstance, useMyExitPermitsQuery } from "../api";
 import { formatShortWeekdayDate } from "../lib/permit-dates";
 import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
@@ -178,6 +179,8 @@ function MyExitPermits(): ReactElement {
   const onCard = active ?? exited;
   const history = items.filter((item) => item !== onCard);
   const timeZone = me?.tenant.timezone;
+  // The school's today, so a row in its current year drops the year.
+  const today = todayInZone(timeZone);
 
   return (
     // No header action: the idle card carries "Ajukan izin keluar", and
@@ -233,7 +236,7 @@ function MyExitPermits(): ReactElement {
                     // each wraps whole on a phone, never "keluar" / "15.49".
                     title={inst.destination}
                     meta={[
-                      formatShortWeekdayDate(inst.opened_at, locale, timeZone),
+                      formatShortWeekdayDate(inst.opened_at, locale, timeZone, today),
                       inst.exited_at
                         ? t("exitedMeta", {
                             time: formatTime(inst.exited_at, { locale, timeZone }),

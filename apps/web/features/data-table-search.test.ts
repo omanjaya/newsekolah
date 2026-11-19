@@ -8,7 +8,10 @@ import { describe, expect, it } from "vitest";
  * nama pengguna"), not the bare default "Cari": sibling lists disagreed,
  * and the reader could not tell whether a username or a NIS would match.
  * A table whose search a reader cannot use (codes, ids, dates) turns it
- * off with `searchable={false}` instead.
+ * off with `searchable={false}` instead, and its "nothing matches" state
+ * then says so too: a FilteredEmptyState there passes `searchable={false}`
+ * (or its own description), so it never suggests "another keyword" the
+ * reader has no box to type into.
  */
 const FEATURES = join(__dirname);
 
@@ -34,6 +37,16 @@ function dataTableTags(source: string): string[] {
   return tags;
 }
 
+/** Each `<FilteredEmptyState ... />` element in a source, up to its end. */
+function filteredEmptyStates(source: string): string[] {
+  return [...source.matchAll(/<FilteredEmptyState\b[\s\S]*?\/>/g)].map(([match]) => match);
+}
+
+/** Whether a FilteredEmptyState's hint can only speak of filters. */
+function hintFitsNoSearch(element: string): boolean {
+  return element.includes("searchable={false}") || /\sdescription=/.test(element);
+}
+
 function hasSearch(tag: string): boolean {
   if (tag.includes("searchable={false}")) return false;
   return /mode="local"|onGlobalFilterChange|searchable[\s=>]/.test(tag);
@@ -54,6 +67,24 @@ describe("DataTable search boxes", () => {
     const offenders = tables
       .filter(({ tag }) => hasSearch(tag) && !tag.includes("searchPlaceholder"))
       .map(({ path }) => relative(FEATURES, path));
+    expect(offenders).toEqual([]);
+  });
+
+  it("do not suggest another keyword when the table has no search box", () => {
+    const offenders = sourceFiles(FEATURES).flatMap((path) => {
+      const source = readFileSync(path, "utf8");
+      const tags = dataTableTags(source);
+      // A screen whose every table lacks a search box: each of its
+      // "nothing matches" states, wherever it is built. Otherwise only
+      // the ones written inside a search-less table's own tag.
+      const candidates =
+        tags.length > 0 && tags.every((tag) => !hasSearch(tag))
+          ? filteredEmptyStates(source)
+          : tags.filter((tag) => !hasSearch(tag)).flatMap(filteredEmptyStates);
+      return candidates
+        .filter((element) => !hintFitsNoSearch(element))
+        .map(() => relative(FEATURES, path));
+    });
     expect(offenders).toEqual([]);
   });
 });

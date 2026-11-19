@@ -206,6 +206,7 @@ export function WebhookDeliveriesPanel({
       emptyState={
         endpointId !== "" ? (
           <FilteredEmptyState
+            searchable={false}
             onReset={() => {
               onEndpointChange("");
               resetPaging();

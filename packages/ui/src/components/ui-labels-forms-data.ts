@@ -72,6 +72,10 @@ export interface FormsDataUiLabels {
   tableFilterDateFrom: string;
   tableFilterDateTo: string;
   tableFilterDateInvalid: string;
+  /** A date range pill with only a start: the range runs on from it, e.g. "sejak 19 Nov 2026". */
+  tableFilterDateSince: (date: string) => string;
+  /** A date range pill with only an end: the range runs up to it, e.g. "sampai 10 Nov 2026". */
+  tableFilterDateUntil: (date: string) => string;
 
   scannerManualLabel: string;
   scannerManualPlaceholder: string;
@@ -155,6 +159,8 @@ export const DEFAULT_FORMS_DATA_UI_LABELS: FormsDataUiLabels = {
   tableFilterDateFrom: "Dari",
   tableFilterDateTo: "Sampai",
   tableFilterDateInvalid: "Tanggal mulai harus sebelum atau sama dengan tanggal akhir",
+  tableFilterDateSince: (date) => `sejak ${date}`,
+  tableFilterDateUntil: (date) => `sampai ${date}`,
 
   scannerManualLabel: "Kode",
   scannerManualPlaceholder: "Ketik atau tempel kode",

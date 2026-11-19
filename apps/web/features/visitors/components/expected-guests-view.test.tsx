@@ -132,4 +132,13 @@ describe("ExpectedGuestsView filters", () => {
     expect(screen.getByRole("button", { name: "Coba lagi" })).toBeInTheDocument();
     expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
   });
+
+  // The list has the only-pending filter but no search box.
+  it("does not suggest another keyword when the filter matches nothing", () => {
+    window.history.replaceState(null, "", "/visitors/expected?only_pending=true");
+    render(<ExpectedGuestsView />);
+
+    expect(screen.getAllByText("Ubah atau hapus filter yang aktif.").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/kata kunci/)).not.toBeInTheDocument();
+  });
 });

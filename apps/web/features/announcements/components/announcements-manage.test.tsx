@@ -129,6 +129,9 @@ describe("AnnouncementsManage empty and row states", () => {
     expect(screen.queryByText("manageEmptyTitle")).not.toBeInTheDocument();
     // FilteredEmptyState's own copy (the shared UiLabels default).
     expect(screen.getAllByText("Tidak ada yang cocok").length).toBeGreaterThan(0);
+    // The list has a status filter but no search box.
+    expect(screen.getAllByText("Ubah atau hapus filter yang aktif.").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/kata kunci/)).not.toBeInTheDocument();
     const [reset] = screen.getAllByRole("button", { name: "Hapus semua filter" });
     if (!reset) throw new Error("no reset");
     await user.click(reset);

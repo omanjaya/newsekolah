@@ -33,4 +33,14 @@ describe("ReadInPlaceDialog", () => {
     );
     expect(idMessages.readInPlace.memberPlaceholder).not.toMatch(/opsional/i);
   });
+
+  // Side by side, one label wrapped to two lines and the other did not.
+  it("stacks the two reader fields, each full width, with the button after them", () => {
+    render(<ReadInPlaceDialog copyId="c1" onOpenChange={vi.fn()} />);
+
+    const form = screen.getByRole("button", { name: "start" }).closest("form");
+    expect(form).toHaveClass("flex-col");
+    expect(form).not.toHaveClass("flex-wrap");
+    expect(screen.getByRole("button", { name: "start" })).toHaveClass("self-end");
+  });
 });

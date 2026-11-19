@@ -28,17 +28,30 @@ export function countDays(startsOn: string, endsOn: string): number {
   return Math.max(1, days + 1);
 }
 
-/** A moment's day, short and with the weekday: "Kam, 25 Sep 2026", in the school's time zone. */
+/**
+ * A moment's day, short and with the weekday, in the school's time zone:
+ * "Kam, 25 Sep" within the school's current year (`today`, "YYYY-MM-DD"),
+ * "Kam, 25 Sep 2025" outside it or without `today`. The year is dropped
+ * where it says nothing, as the shared formatShortDate does, so the day
+ * fits a narrow phone row whole.
+ */
 export function formatShortWeekdayDate(
   value: string,
   locale: Locale,
   timeZone: string | undefined,
+  today?: string,
 ): string {
+  const date = new Date(value);
+  const yearOf = (instant: Date) =>
+    new Intl.DateTimeFormat("en-CA", { year: "numeric", timeZone }).format(instant);
+  // Midday UTC is the same calendar year in every school's zone.
+  const sameYear =
+    today !== undefined && yearOf(date) === yearOf(new Date(`${today.slice(0, 10)}T12:00:00Z`));
   return new Intl.DateTimeFormat(INTL_LOCALE[locale], {
     weekday: "short",
     day: "numeric",
     month: "short",
-    year: "numeric",
+    year: sameYear ? undefined : "numeric",
     timeZone,
-  }).format(new Date(value));
+  }).format(date);
 }

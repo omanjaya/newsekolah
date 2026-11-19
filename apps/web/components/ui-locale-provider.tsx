@@ -85,6 +85,8 @@ export function useAppUiLabels(): UiLabels {
       tableFilterDateFrom: t("table.filterDateFrom"),
       tableFilterDateTo: t("table.filterDateTo"),
       tableFilterDateInvalid: t("table.filterDateInvalid"),
+      tableFilterDateSince: (date) => t("table.filterDateSince", { date }),
+      tableFilterDateUntil: (date) => t("table.filterDateUntil", { date }),
 
       scannerManualLabel: t("scanner.manualLabel"),
       scannerManualPlaceholder: t("scanner.manualPlaceholder"),
@@ -148,6 +150,7 @@ export function useAppUiLabels(): UiLabels {
       loading: states("loading"),
       emptyFilteredTitle: t("empty.filteredTitle"),
       emptyFilteredDescription: t("empty.filteredDescription"),
+      emptyFilteredFiltersOnlyDescription: t("empty.filteredFiltersOnlyDescription"),
       emptyFilteredReset: t("empty.filteredReset"),
       statePageCode: (code) => t("statePage.code", { code }),
       alertDismiss: t("alert.dismiss"),

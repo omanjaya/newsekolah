@@ -187,6 +187,51 @@ describe("AuditLogsView filters", () => {
     );
   });
 
+  it("adds one history entry for a picked preset, so Back never leaves half a range", async () => {
+    const user = userEvent.setup();
+    render(<AuditLogsView />);
+    const push = vi.spyOn(window.history, "pushState");
+
+    await user.click(screen.getByRole("button", { name: "filters.dateRange" }));
+    await user.click(await screen.findByRole("button", { name: "last7Days" }));
+
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(new URLSearchParams(window.location.search).get("from")).toBeTruthy();
+    expect(new URLSearchParams(window.location.search).get("to")).toBeTruthy();
+    push.mockRestore();
+  });
+
+  it("reads a reversed range from the URL in calendar order", () => {
+    window.history.replaceState(null, "", "/audit?from=2026-11-19&to=2026-11-01");
+    render(<AuditLogsView />);
+
+    expect(mocks.useAuditLogsQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        from: "2026-10-31T17:00:00.000Z",
+        to: "2026-11-19T16:59:59.999Z",
+      }),
+    );
+    expect(
+      screen.getByRole("button", { name: "filters.dateRange: 1-19 Nov 2026" }),
+    ).toBeInTheDocument();
+  });
+
+  it("words a from-only range as open-ended", () => {
+    window.history.replaceState(null, "", "/audit?from=2026-11-19");
+    render(<AuditLogsView />);
+    expect(
+      screen.getByRole("button", { name: "filters.dateRange: sejak 19 Nov 2026" }),
+    ).toBeInTheDocument();
+  });
+
+  // The toolbar has filters but no search box.
+  it("does not suggest another keyword when the filters match nothing", () => {
+    window.history.replaceState(null, "", "/audit?from=2026-11-19");
+    render(<AuditLogsView />);
+    expect(screen.getAllByText("Ubah atau hapus filter yang aktif.").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/kata kunci/)).not.toBeInTheDocument();
+  });
+
   it("shows a retry control instead of an empty log when the request fails", () => {
     mocks.useAuditLogsQuery.mockReturnValue({
       data: undefined,

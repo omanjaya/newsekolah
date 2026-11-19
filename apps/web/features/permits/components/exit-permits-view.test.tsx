@@ -1,6 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as TenantDate from "../../../lib/tenant-date";
 import type { MyExitPermit } from "../api";
 
 import { ExitPermitsView } from "./exit-permits-view";
@@ -35,6 +36,11 @@ vi.mock("../../../lib/session/session-provider", () => ({
   }),
 }));
 vi.mock("../lib/use-can-submit-permit", () => ({ useCanSubmitPermit: () => mocks.canSubmit }));
+// The school's today, so the history rows' current year is fixed.
+vi.mock("../../../lib/tenant-date", async (importOriginal) => ({
+  ...(await importOriginal<typeof TenantDate>()),
+  todayInZone: () => "2026-11-19",
+}));
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
@@ -210,6 +216,9 @@ describe("ExitPermitsView history rows", () => {
     const [exited, cancelled] = screen.getAllByRole("listitem");
     expect(exited).toHaveTextContent("Apotek");
     expect(exited).toHaveTextContent("exitedMeta 15.49");
+    // The current year goes unsaid, so the day fits a 320px row whole.
+    expect(screen.getAllByText("Rab, 18 Nov").length).toBeGreaterThan(0);
+    expect(exited).not.toHaveTextContent("2026");
     // On a phone the line breaks between the day and the gate time, never inside one.
     expect(screen.getByText("exitedMeta 15.49")).toHaveClass("truncate");
     expect(exited).not.toHaveTextContent("openedAt");

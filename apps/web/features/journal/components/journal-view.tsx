@@ -26,7 +26,7 @@ import {
 } from "../../../components/report-export-dialog";
 import { formatCalendarDate } from "../../../lib/format-calendar-date";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
-import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useDateRangeFilter } from "../../../lib/hooks/use-date-range-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
@@ -71,8 +71,7 @@ export function JournalView(): ReactElement {
   const canViewAll = useCan("view_journals_all");
 
   const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
-  const [from, setFrom] = useDateFilter("from", "");
-  const [to, setTo] = useDateFilter("to", "");
+  const [{ from, to }, setRange] = useDateRangeFilter();
   const presets = useDateRangePresets();
   const [search, setSearch] = useRememberedViewState("journal-search", "");
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
@@ -122,9 +121,8 @@ export function JournalView(): ReactElement {
       type: "dateRange",
       from,
       to,
-      onChangeRange: ({ from: nextFrom, to: nextTo }) => {
-        setFrom(nextFrom);
-        setTo(nextTo);
+      onChangeRange: (range) => {
+        setRange(range);
         resetPaging();
       },
       presets,

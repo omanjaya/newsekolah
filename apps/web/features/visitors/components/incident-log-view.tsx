@@ -22,7 +22,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
-import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useDateRangeFilter } from "../../../lib/hooks/use-date-range-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
@@ -54,8 +54,7 @@ export function IncidentLogView(): ReactElement {
   const today = todayInZone(timeZone);
   const defaultFrom = shiftIsoDate(today, -30);
 
-  const [from, setFrom] = useDateFilter("from", defaultFrom);
-  const [to, setTo] = useDateFilter("to", today);
+  const [{ from, to }, setRange] = useDateRangeFilter({ defaultFrom, defaultTo: today });
   const presets = useDateRangePresets();
   const [onlyOpen, setOnlyOpen] = useUrlState<"" | "true">("only_open", ["", "true"], "");
   const [creating, setCreating] = useState(false);
@@ -89,10 +88,7 @@ export function IncidentLogView(): ReactElement {
       type: "dateRange",
       from,
       to,
-      onChangeRange: ({ from: nextFrom, to: nextTo }) => {
-        setFrom(nextFrom);
-        setTo(nextTo);
-      },
+      onChangeRange: setRange,
       presets,
       today,
     },
@@ -214,8 +210,7 @@ export function IncidentLogView(): ReactElement {
                 description={empty.description}
                 onReset={() => {
                   setOnlyOpen("");
-                  setFrom(defaultFrom);
-                  setTo(today);
+                  setRange({ from: defaultFrom, to: today });
                 }}
               />
             ) : canManage ? (

@@ -129,6 +129,18 @@ describe("FilteredEmptyState", () => {
     expect(onReset).toHaveBeenCalledOnce();
   });
 
+  // A list with only filters offers no keyword to change.
+  it("drops the keyword hint on a list with no search box", () => {
+    const { rerender } = render(<FilteredEmptyState searchable={false} />);
+    expect(screen.getByText("Ubah atau hapus filter yang aktif.")).toBeInTheDocument();
+    expect(screen.queryByText(/kata kunci/)).not.toBeInTheDocument();
+
+    rerender(<FilteredEmptyState />);
+    expect(
+      screen.getByText("Coba kata kunci lain atau hapus filter yang aktif."),
+    ).toBeInTheDocument();
+  });
+
   it("has no button without a reset handler", () => {
     render(<FilteredEmptyState />);
     expect(screen.queryByRole("button")).not.toBeInTheDocument();

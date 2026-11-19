@@ -15,6 +15,12 @@ export interface FilteredEmptyStateProps extends Omit<
   onReset?: () => void;
   title?: string;
   resetLabel?: string;
+  /**
+   * Whether the list has a search box. Without one the default hint only
+   * speaks of filters, never of "another keyword" the reader cannot type.
+   * Defaults to true.
+   */
+  searchable?: boolean;
 }
 
 /**
@@ -27,6 +33,7 @@ export function FilteredEmptyState({
   title,
   description,
   resetLabel,
+  searchable = true,
   ...props
 }: FilteredEmptyStateProps): ReactElement {
   const labels = useUiLabels();
@@ -35,7 +42,10 @@ export function FilteredEmptyState({
       {...props}
       icon={<SearchX />}
       title={title ?? labels.emptyFilteredTitle}
-      description={description ?? labels.emptyFilteredDescription}
+      description={
+        description ??
+        (searchable ? labels.emptyFilteredDescription : labels.emptyFilteredFiltersOnlyDescription)
+      }
       action={
         onReset && (
           <Button variant="secondary" size="sm" onClick={onReset}>

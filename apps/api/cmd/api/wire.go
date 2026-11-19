@@ -486,9 +486,12 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	router.Use(impersonationActionLogger(identityModule.Service))
 	router.Use(simulationTimeMiddleware(identityModule.Service))
 
-	api.HandlerFromMux(strict, router)
+	api.HandlerWithOptions(strict, api.ChiServerOptions{
+		BaseRouter:       router,
+		ErrorHandlerFunc: paramErrorHandler,
+	})
 
-	// Mounted after HandlerFromMux so these two routes replace its
+	// Mounted after HandlerWithOptions so these two routes replace its
 	// generated GET /ws/me and GET /ws/monitor stubs (backed by
 	// attendance's honest-501 strict handler) with the real WebSocket
 	// upgrade -- see the doc comment on mountRealtimeRoutes in ws.go for
