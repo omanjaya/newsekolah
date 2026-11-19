@@ -6,7 +6,7 @@
   "introPermits": "Point the camera at a classroom entry, late arrival, exit permit, or gate QR code. The matching action runs automatically.",
   "introLibrary": "Point the camera at a library visit QR code. The visit is recorded automatically.",
   "scanLabel": "QR code",
-  "placeholder": "Paste the full code from the QR",
+  "placeholder": "Paste the QR code",
   "submit": "Submit code",
   "cameraDone": "Done",
   "cameraLabel": "Scan with camera",

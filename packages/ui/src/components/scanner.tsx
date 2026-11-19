@@ -473,7 +473,11 @@ function ManualEntry({
                   if (!isScanPending()) submit();
                 }}
                 className={cn(
-                  "min-w-0 flex-1",
+                  // On a phone the field gets what the button leaves (about
+                  // 170px at 390px): callers keep their placeholders that
+                  // short, and a longer one (a translation) ends in an
+                  // ellipsis instead of being cut mid-word.
+                  "min-w-0 flex-1 text-ellipsis",
                   kiosk && "h-16 px-4 text-title-lg font-sans font-normal md:pointer-fine:h-16",
                 )}
               />

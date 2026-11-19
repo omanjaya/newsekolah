@@ -1438,7 +1438,7 @@
         }
       },
       "scan": {
-        "placeholder": "Code from a barcode scanner",
+        "placeholder": "Scanner code",
         "submit": "Submit code",
         "cameraLabel": "Scan with camera",
         "failedTitle": "Code not accepted",
@@ -1448,7 +1448,7 @@
         "navLabel": "Scan classroom entry",
         "intro": "Point the camera at the QR your teacher shows at the front of the class to record your attendance for the running lesson.",
         "scanLabel": "Classroom-entry QR code (barcode scanner)",
-        "placeholder": "Code from a barcode scanner",
+        "placeholder": "Scanner code",
         "submit": "Submit code",
         "successTitle": "Recorded",
         "successBody": "Checked into {teacher}'s class at {time}.",

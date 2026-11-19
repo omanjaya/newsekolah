@@ -1438,7 +1438,7 @@
         }
       },
       "scan": {
-        "placeholder": "Kode dari alat pemindai",
+        "placeholder": "Kode dari pemindai",
         "submit": "Kirim kode",
         "cameraLabel": "Pindai dengan kamera",
         "failedTitle": "Kode tidak diterima",
@@ -1448,7 +1448,7 @@
         "navLabel": "Pindai masuk kelas",
         "intro": "Arahkan kamera ke QR yang ditampilkan guru di depan kelas untuk mencatat kehadiran Anda pada pelajaran yang sedang berjalan.",
         "scanLabel": "Kode QR masuk kelas (alat pemindai)",
-        "placeholder": "Kode dari alat pemindai",
+        "placeholder": "Kode dari pemindai",
         "submit": "Kirim kode",
         "successTitle": "Berhasil dicatat",
         "successBody": "Tercatat masuk kelas {teacher} pukul {time}.",

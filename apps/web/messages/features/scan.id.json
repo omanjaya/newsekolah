@@ -6,7 +6,7 @@
   "introPermits": "Arahkan kamera ke kode QR masuk kelas, keterlambatan, izin keluar, atau gerbang. Tindakan yang sesuai dijalankan otomatis.",
   "introLibrary": "Arahkan kamera ke kode QR kunjungan perpustakaan. Kunjungan dicatat otomatis.",
   "scanLabel": "Kode QR",
-  "placeholder": "Tempel kode lengkap dari QR",
+  "placeholder": "Tempel kode QR",
   "submit": "Kirim kode",
   "cameraDone": "Selesai",
   "cameraLabel": "Pindai dengan kamera",
