@@ -91,6 +91,34 @@ describe("Scanner", () => {
     expect(onScan).not.toHaveBeenCalled();
   });
 
+  // On a phone the button used to stack under the field, between it and
+  // its message: the two now share one row at every width.
+  it("puts the missing-code message right under the field, the button beside it", async () => {
+    render(<Scanner onScan={vi.fn()} />);
+    const send = screen.getByRole("button", { name: "Kirim" });
+    await userEvent.click(send);
+    const field = screen.getByLabelText("Kode");
+    const row = send.parentElement;
+    expect(row).toContainElement(field);
+    expect(row).toHaveClass("flex");
+    expect(row?.className).not.toMatch(/flex-col/);
+    const message = screen.getByText("Ketik atau tempel kode lebih dulu.");
+    expect(row?.contains(message)).toBe(false);
+  });
+
+  it("forgets the missing-code message when the field is closed and reopened", async () => {
+    installCamera(() => Promise.resolve({ getTracks: () => [] }));
+    render(<Scanner onScan={vi.fn()} autoStart={false} />);
+    await userEvent.click(screen.getByRole("button", { name: "Masukkan kode manual" }));
+    await userEvent.click(screen.getByRole("button", { name: "Kirim" }));
+    expect(screen.getByText("Ketik atau tempel kode lebih dulu.")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Tutup input manual" }));
+    await userEvent.click(screen.getByRole("button", { name: "Masukkan kode manual" }));
+    expect(screen.getByLabelText("Kode")).not.toHaveAttribute("aria-invalid");
+    expect(screen.queryByText("Ketik atau tempel kode lebih dulu.")).not.toBeInTheDocument();
+  });
+
   it("clears the missing-code message once a code is typed and sent", async () => {
     const onScan = vi.fn();
     render(<Scanner onScan={onScan} />);
