@@ -29,6 +29,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
@@ -102,6 +103,8 @@ export function DutiesView(): ReactElement {
       <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
         {assignments.isLoading ? (
           <SkeletonList rows={5} leading framed />
+        ) : assignments.isError && !assignments.data ? (
+          <QueryError retry={() => assignments.refetch()} error={assignments.error} />
         ) : rows.length === 0 ? (
           <EmptyState
             icon={<ShieldCheck aria-hidden="true" />}
