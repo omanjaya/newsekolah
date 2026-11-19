@@ -164,10 +164,6 @@ export function BillsListView(): ReactElement {
         rowCount={rows.length}
         searchable={false}
         filters={filters}
-        filtersLabels={{
-          reset: t("filters.reset"),
-          removeFilter: (label) => t("filters.removeFilter", { label }),
-        }}
         isLoading={isLoading}
         error={isError ? error : undefined}
         onRetry={() => void refetch()}

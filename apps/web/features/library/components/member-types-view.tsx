@@ -141,6 +141,7 @@ export function MemberTypesView(): ReactElement {
   return (
     <>
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/library/components/member-types-view:1"
         mode="local"
         data={items}

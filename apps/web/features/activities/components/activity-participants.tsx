@@ -1,7 +1,17 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Avatar, Button, ConfirmDialog, EmptyState, Select, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  Avatar,
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  Field,
+  Select,
+  useSubmitValidation,
+  useToast,
+} from "@newsekolah/ui";
 import { Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, type ReactElement } from "react";
@@ -31,6 +41,8 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
   const [scope, setScope] = useState("student");
   const [target, setTarget] = useState("");
   const [pendingRemove, setPendingRemove] = useState<string | null>(null);
+  const { ref: formRef, attempted, check, reset } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
   const fail = (error: unknown) => {
     toast.error(error instanceof ApiError ? errorMessage(error.code) : errorMessage("UNKNOWN"));
   };
@@ -40,10 +52,12 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
   return (
     <div className="flex flex-col gap-4">
       <form
+        ref={formRef}
         className="flex flex-col gap-3"
+        noValidate
         onSubmit={(e) => {
           e.preventDefault();
-          if (!target) return;
+          if (!check(Boolean(target))) return;
           const body =
             scope === "class"
               ? { class_id: target }
@@ -53,6 +67,7 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
           add.mutate(body, {
             onSuccess: () => {
               setTarget("");
+              reset();
               toast.success(t("added"));
             },
             onError: fail,
@@ -68,25 +83,27 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
           }}
           options={["student", "class", "grade_level"].map((value) => ({ value, label: t(value) }))}
         />
-        {scope === "student" ? (
-          <StudentPicker value={target} onChange={setTarget} />
-        ) : (
-          <Select
-            aria-label={t("choose")}
-            placeholder={t("choose")}
-            value={target}
-            onValueChange={setTarget}
-            options={(scope === "class"
-              ? (classes.data?.data ?? [])
-              : (grades.data?.data ?? [])
-            ).map((item) => ({ value: item.id, label: item.name }))}
-          />
-        )}
-        <Button
-          type="submit"
-          disabled={!target || event.isLoading || event.isError}
-          loading={add.isPending}
+        <Field
+          label={t("choose")}
+          hideLabel
+          required
+          error={attempted && !target ? tValidation("required") : undefined}
         >
+          {scope === "student" ? (
+            <StudentPicker value={target} onChange={setTarget} />
+          ) : (
+            <Select
+              placeholder={t("choose")}
+              value={target}
+              onValueChange={setTarget}
+              options={(scope === "class"
+                ? (classes.data?.data ?? [])
+                : (grades.data?.data ?? [])
+              ).map((item) => ({ value: item.id, label: item.name }))}
+            />
+          )}
+        </Field>
+        <Button type="submit" disabled={event.isLoading || event.isError} loading={add.isPending}>
           {t("add")}
         </Button>
       </form>

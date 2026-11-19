@@ -313,6 +313,7 @@ export function UsersView(): ReactElement {
     >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           stateKey="features/school/components/users-view:1"
           mode="cursor"
           data={items}
@@ -336,10 +337,6 @@ export function UsersView(): ReactElement {
             resetPagination();
           }}
           filters={filters}
-          filtersLabels={{
-            reset: t("filters.reset"),
-            removeFilter: (label) => t("filters.removeFilter", { label }),
-          }}
           isLoading={isLoading}
           error={error}
           onRetry={() => void refetch()}

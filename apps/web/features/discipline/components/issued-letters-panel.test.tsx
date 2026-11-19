@@ -80,7 +80,7 @@ describe("IssuedLettersPanel filters", () => {
     const user = userEvent.setup();
     render(<IssuedLettersPanel />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useWarningLettersQuery).toHaveBeenLastCalledWith(undefined, {
       limit: 50,
       offset: 0,

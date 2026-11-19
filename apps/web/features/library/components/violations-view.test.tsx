@@ -87,7 +87,7 @@ describe("ViolationsView filters", () => {
     const user = userEvent.setup();
     render(<ViolationsView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useLibraryViolationsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ kind: "" }),
       true,

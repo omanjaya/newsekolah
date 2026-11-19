@@ -70,9 +70,7 @@
       "availability": "Available only",
       "sort": "Sort",
       "sortTitle": "Title A-Z",
-      "sortNewest": "Newest",
-      "reset": "Reset filters",
-      "removeFilter": "Remove {label} filter"
+      "sortNewest": "Newest"
     },
     "columns": {
       "title": "Title",
@@ -181,6 +179,7 @@
     "emptyBody": "Add physical copies, each with its own barcode.",
     "batchForm": {
       "count": "Number of copies",
+      "countRange": "Enter 1 to 200 copies",
       "save": "Add",
       "saved": "{count} copies added"
     },
@@ -293,6 +292,7 @@
       "print": "Print"
     },
     "overdue": {
+      "searchPlaceholder": "Search member, title, or barcode",
       "heading": "Overdue",
       "columns": {
         "member": "Member",
@@ -466,6 +466,8 @@
     "emptyTitle": "No members registered yet",
     "emptyBody": "Register a user as a library member to get started.",
     "statusUpdated": "Member status updated",
+    "cardValidUntil": "Valid until {date}",
+    "cardLateReturns": "{count, plural, one {# late return} other {# late returns}}",
     "columns": {
       "name": "Name",
       "type": "Type",
@@ -478,9 +480,7 @@
       "status": "Status",
       "statusAll": "All statuses",
       "type": "Member type",
-      "typeAll": "All types",
-      "clear": "Clear filters",
-      "removeFilter": "Remove {label} filter"
+      "typeAll": "All types"
     },
     "more": "More",
     "status": {
@@ -510,6 +510,7 @@
     "studentProfile": "Open student profile"
   },
   "memberTypes": {
+    "searchPlaceholder": "Search member type name",
     "navLabel": "Member types",
     "eyebrow": "Library",
     "title": "Member types",
@@ -644,9 +645,7 @@
       "status": "Status",
       "statusAll": "All statuses",
       "kind": "Type",
-      "kindAll": "All types",
-      "clear": "Clear filters",
-      "removeFilter": "Remove {label} filter"
+      "kindAll": "All types"
     },
     "kinds": {
       "late": "Late",
@@ -729,6 +728,7 @@
       "call_number": "Call number"
     },
     "preview": {
+      "searchPlaceholder": "Search title or note",
       "summary": {
         "newTitles": "New titles",
         "existingTitles": "Existing titles",
@@ -798,9 +798,7 @@
       "category": "Category",
       "categoryAll": "All categories",
       "location": "Location",
-      "locationAll": "All locations",
-      "clear": "Clear filters",
-      "removeFilter": "Remove filter {label}"
+      "locationAll": "All locations"
     },
     "status": {
       "available": "Available",
@@ -833,8 +831,6 @@
     "fromLabel": "From date",
     "toLabel": "To date",
     "dateRange": "Date range",
-    "reset": "Reset filter",
-    "removeFilter": "Remove {label} filter",
     "invalidRange": "The from date must be on or before the to date",
     "groupSizeValue": "{count} people",
     "emptyTitle": "No visits in this range",
@@ -907,6 +903,7 @@
     "ongoing": "ongoing"
   },
   "stocktake": {
+    "searchPlaceholder": "Search stocktake name",
     "eyebrow": "Library",
     "title": "Stocktake",
     "startNew": "Start a new session",
@@ -988,6 +985,7 @@
       "ddcClasses": "DDC classes"
     },
     "materialTypes": {
+      "searchPlaceholder": "Search material type name or code",
       "add": "Add material type",
       "editTitle": "Edit material type",
       "columns": {
@@ -1022,6 +1020,7 @@
       "rowActions": "Actions for {name}"
     },
     "acquisitionSources": {
+      "searchPlaceholder": "Search acquisition source name or code",
       "add": "Add source",
       "editTitle": "Edit acquisition source",
       "columns": {
@@ -1052,6 +1051,7 @@
       "rowActions": "Actions for {name}"
     },
     "partners": {
+      "searchPlaceholder": "Search partner name or code",
       "add": "Add partner",
       "editTitle": "Edit partner",
       "columns": {
@@ -1085,6 +1085,7 @@
       "rowActions": "Actions for {name}"
     },
     "collectionCategories": {
+      "searchPlaceholder": "Search category name or code",
       "add": "Add category",
       "editTitle": "Edit collection category",
       "columns": {
@@ -1115,6 +1116,7 @@
       "rowActions": "Actions for {name}"
     },
     "locations": {
+      "searchPlaceholder": "Search location name or code",
       "add": "Add location",
       "editTitle": "Edit shelf location",
       "columns": {
@@ -1217,6 +1219,7 @@
       "description": "One month in one PDF, ready to print or send to the principal."
     },
     "loans": {
+      "searchPlaceholder": "Search title or member",
       "title": "Loans within the date range",
       "columns": {
         "copy": "Copy",
@@ -1228,6 +1231,7 @@
       "emptyTitle": "No loans in this range"
     },
     "overdueMembers": {
+      "searchPlaceholder": "Search member name",
       "title": "Overdue members",
       "unknownMember": "Unknown member",
       "emptyTitle": "No overdue members",
@@ -1238,6 +1242,7 @@
       }
     },
     "mostBorrowed": {
+      "searchPlaceholder": "Search title",
       "title": "Most-borrowed titles",
       "emptyTitle": "No loans in this range yet",
       "columns": {
@@ -1289,6 +1294,7 @@
       "summaryLabel": "Member summary"
     },
     "accessionRegister": {
+      "searchPlaceholder": "Search accession number or barcode",
       "emptyTitle": "No additions in this range",
       "columns": {
         "accessionNumber": "Accession no.",
@@ -1633,6 +1639,7 @@
     "loanRules": "Loan rules"
   },
   "titleDetail": {
+    "searchPlaceholder": "Search copy barcode",
     "notFoundTitle": "This title cannot be opened",
     "tabsLabel": "Title sections",
     "tabs": {

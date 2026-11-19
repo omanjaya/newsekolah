@@ -1,7 +1,7 @@
 "use client";
 
 import type { Locale } from "@newsekolah/i18n";
-import { formatDate } from "@newsekolah/i18n";
+import { formatShortDate } from "@newsekolah/i18n";
 import {
   Badge,
   Card,
@@ -77,7 +77,7 @@ export function StudentLeaveCard({
               key={item.instance_id}
               href={`${leaveHref}/${item.instance_id}`}
               title={tLeave(`categories.${item.category}`)}
-              meta={formatDate(item.opened_at, { locale, timeZone })}
+              meta={formatShortDate(item.opened_at, { locale, timeZone })}
               trailing={<WorkflowStatusBadge status={item.status} />}
             />
           ))}
@@ -128,7 +128,7 @@ export function StudentLibraryCard({
               <ListRow
                 key={loan.id}
                 title={loan.title_name ?? loan.title_id}
-                meta={t("loanDue", { date: formatDate(loan.due_on, { locale, timeZone }) })}
+                meta={t("loanDue", { date: formatShortDate(loan.due_on, { locale, timeZone }) })}
                 trailing={
                   lateDays > 0 ? (
                     <Badge tone="danger" size="sm">

@@ -123,6 +123,7 @@ export function StocktakeView(): ReactElement {
       secondaryActions={shortcuts}
     >
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/library/components/stocktake-view:1"
         mode="local"
         data={sessions}

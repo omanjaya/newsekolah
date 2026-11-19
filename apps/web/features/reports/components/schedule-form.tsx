@@ -1,7 +1,15 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, DialogFooter, Field, NumberInput, Select, useToast } from "@newsekolah/ui";
+import {
+  Button,
+  DialogFooter,
+  Field,
+  NumberInput,
+  Select,
+  useSubmitValidation,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -64,6 +72,10 @@ export function ScheduleForm({
     recipients.length > 0 &&
     (cadence !== "weekly" || weekday !== "") &&
     (cadence !== "monthly" || dayOfMonth !== "");
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
+  const requiredError = (missing: boolean) =>
+    attempted && missing ? tValidation("required") : undefined;
 
   function submitSchedule() {
     const body = {
@@ -98,13 +110,16 @@ export function ScheduleForm({
 
   return (
     <form
+      ref={formRef}
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
+        if (!check(canSubmit)) return;
         submitSchedule();
       }}
     >
-      <Field label={t("reportKind")}>
+      <Field label={t("reportKind")} required error={requiredError(reportKind === "")}>
         <Select
           options={(reports.data?.data ?? []).map((r) => {
             const kindKey = r.kind.replaceAll(".", "_");
@@ -188,7 +203,7 @@ export function ScheduleForm({
       </Field>
 
       {cadence === "weekly" && (
-        <Field label={t("weekday")}>
+        <Field label={t("weekday")} required error={requiredError(weekday === "")}>
           <Select
             options={WEEKDAY_VALUES.map((d) => ({
               value: String(d),
@@ -201,7 +216,12 @@ export function ScheduleForm({
         </Field>
       )}
       {cadence === "monthly" && (
-        <Field label={t("dayOfMonth")} hint={t("dayOfMonthHint")}>
+        <Field
+          label={t("dayOfMonth")}
+          hint={t("dayOfMonthHint")}
+          required
+          error={requiredError(dayOfMonth === "")}
+        >
           <NumberInput
             min={1}
             max={31}
@@ -225,7 +245,7 @@ export function ScheduleForm({
         />
       </Field>
 
-      <Field label={t("recipients")}>
+      <Field label={t("recipients")} required error={requiredError(recipients.length === 0)}>
         <ScheduleRecipientsInput value={recipients} onChange={setRecipients} />
       </Field>
 
@@ -233,7 +253,7 @@ export function ScheduleForm({
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={pending} disabled={!canSubmit}>
+        <Button type="submit" loading={pending}>
           {t("submit")}
         </Button>
       </DialogFooter>

@@ -11,8 +11,13 @@ interface Box {
   h: number;
 }
 
-/** Room left beside an item revealed in a scrolled strip: the width of the edge fade. */
-const REVEAL_MARGIN = 24;
+/**
+ * Room left beside an item revealed in a scrolled strip: the longest edge
+ * fade (an underline strip's 48px, a 20px clear band under its chevron
+ * included), so the active item always lands fully opaque, clear of the
+ * band and the chevron.
+ */
+const REVEAL_MARGIN = 48;
 
 /**
  * How long a strip's last indicator box is worth travelling from: long
@@ -72,8 +77,8 @@ function writeBox(indicator: HTMLElement, size: Box, at: Box, scale: number) {
 
 /**
  * How much of the first item cut by a strip's edge must show, so it reads
- * as "more this way" past the edge fade (24px at the start, up to 48px at
- * an underline strip's end on a phone) instead of a ghost of one letter.
+ * as "more this way" past the edge fade (40px on a pill strip, 48px on an
+ * underline strip) instead of a ghost of one letter.
  * The item's box includes its own padding (12px), so 56 puts the start of
  * its label at the inner edge of the widest fade; 40 left the label inside
  * it, a faint ghost.

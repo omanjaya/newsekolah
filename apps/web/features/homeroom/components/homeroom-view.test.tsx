@@ -108,7 +108,7 @@ describe("HomeroomView filters", () => {
     const user = userEvent.setup();
     render(<HomeroomView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
 
     expect(lastRosterCallArgs()).toEqual([
       expect.objectContaining({ statusCode: undefined }),

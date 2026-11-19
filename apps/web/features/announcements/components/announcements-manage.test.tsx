@@ -64,7 +64,7 @@ describe("AnnouncementsManage filters", () => {
     const user = userEvent.setup();
     render(<AnnouncementsManage creating={false} onCreatingChange={vi.fn()} />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useAnnouncementsQuery).toHaveBeenLastCalledWith("", "");
     expect(new URLSearchParams(window.location.search).get("status")).toBe("");
   });

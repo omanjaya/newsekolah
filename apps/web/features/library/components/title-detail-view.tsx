@@ -237,6 +237,7 @@ export function TitleDetailView({ titleId }: { titleId: string }): ReactElement 
 
         <TabsContent value="copies">
           <DataTable
+            toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
             stateKey="features/library/components/title-detail-view:copies"
             mode="local"
             data={copies}

@@ -13,10 +13,6 @@
   },
   "feeTypes": {
     "includeInactive": "Tampilkan yang nonaktif",
-    "filters": {
-      "reset": "Reset filter",
-      "removeFilter": "Hapus filter {label}"
-    },
     "add": "Tambah jenis biaya",
     "saved": "Jenis biaya tersimpan",
     "deleted": "Jenis biaya dinonaktifkan",
@@ -230,10 +226,6 @@
     "statusAll": "Semua status",
     "classLabel": "Kelas",
     "classAll": "Semua kelas",
-    "filters": {
-      "reset": "Reset filter",
-      "removeFilter": "Hapus filter {label}"
-    },
     "unknownStudent": "Siswa tidak diketahui",
     "emptyTitle": "Belum ada tagihan",
     "emptyBody": "Tagihan yang diterbitkan muncul di sini.",

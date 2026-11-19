@@ -177,10 +177,6 @@ export function FeeTypesView(): ReactElement {
         rowCount={items.length}
         searchable={false}
         filters={filters}
-        filtersLabels={{
-          reset: t("filters.reset"),
-          removeFilter: (label) => t("filters.removeFilter", { label }),
-        }}
         toolbarActions={
           canManage ? (
             <Button icon={<Plus />} onClick={startCreate}>

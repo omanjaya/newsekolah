@@ -107,7 +107,7 @@ describe("CopiesBrowserView filters", () => {
     const user = userEvent.setup();
     render(<CopiesBrowserView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useLibraryCopiesFilteredQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ categoryId: "" }),
     );

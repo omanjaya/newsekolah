@@ -110,8 +110,6 @@
     "empty": "No records in this date range",
     "date": "Date",
     "dateRange": "Date range",
-    "reset": "Reset filters",
-    "removeFilter": "Remove {label} filter",
     "invalidRange": "The start date must be on or before the end date"
   },
   "recap": {

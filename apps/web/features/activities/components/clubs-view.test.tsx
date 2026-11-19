@@ -65,7 +65,7 @@ describe("ClubsView filters", () => {
     const user = userEvent.setup();
     render(<ClubsView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useExtracurricularsQuery).toHaveBeenLastCalledWith(false);
     expect(new URLSearchParams(window.location.search).get("include_inactive")).toBe("");
   });

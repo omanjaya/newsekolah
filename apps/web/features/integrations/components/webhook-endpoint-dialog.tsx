@@ -11,6 +11,7 @@ import {
   Input,
   Textarea,
   useToast,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -60,12 +61,14 @@ export function WebhookEndpointDialog({
 
   const isEditing = endpoint !== undefined;
   const pending = createEndpoint.isPending || updateEndpoint.isPending;
-  const canSubmit = url.trim() !== "" && selected.size > 0 && !pending;
+  const { ref: bodyRef, attempted, check } = useSubmitValidation<HTMLDivElement>();
+  const tValidation = useTranslations("validation");
   const offered = offeredWebhookEvents(eventTypes.data?.data ?? [], (module) =>
     isModuleEnabled(me, module),
   );
 
   async function handleSave() {
+    if (!check(url.trim() !== "" && selected.size > 0)) return;
     const body = { url, description: description || undefined, event_types: Array.from(selected) };
     try {
       if (isEditing) {
@@ -99,14 +102,18 @@ export function WebhookEndpointDialog({
             >
               {t("cancel")}
             </Button>
-            <Button disabled={!canSubmit} loading={pending} onClick={() => void handleSave()}>
+            <Button loading={pending} onClick={() => void handleSave()}>
               {t("submit")}
             </Button>
           </>
         }
       >
-        <div className="flex flex-col gap-5">
-          <Field label={t("urlLabel")} required>
+        <div ref={bodyRef} className="flex flex-col gap-5">
+          <Field
+            label={t("urlLabel")}
+            required
+            error={attempted && !url.trim() ? tValidation("required") : undefined}
+          >
             <Input
               type="url"
               value={url}
@@ -133,6 +140,7 @@ export function WebhookEndpointDialog({
             label={t("eventTypesLabel")}
             required
             hint={t("eventTypesHint", { count: selected.size })}
+            error={attempted && selected.size === 0 ? t("eventTypesRequired") : undefined}
           >
             {(control) => (
               <Card

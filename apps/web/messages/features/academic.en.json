@@ -32,10 +32,6 @@
     "active": "Active",
     "archived": "Archived",
     "showArchived": "Show archived",
-    "filters": {
-      "reset": "Reset filters",
-      "removeFilter": "Remove {label} filter"
-    },
     "columns": {
       "label": "Name",
       "period": "Period",
@@ -90,6 +86,7 @@
     "activateBody": "\"{name}\" becomes the active term; the other terms of this year become inactive."
   },
   "gradeLevels": {
+    "searchPlaceholder": "Search grade level name or code",
     "eyebrow": "School data",
     "title": "Grade levels",
     "add": "Add grade level",
@@ -124,6 +121,7 @@
     "emptyBody": "Add grade levels one at a time, or apply a template for the school's education level."
   },
   "tracks": {
+    "searchPlaceholder": "Search track name or code",
     "eyebrow": "School data",
     "title": "Tracks",
     "description": "Student majors or tracks, for example science, social studies or languages in senior high.",
@@ -148,6 +146,7 @@
     "emptyBody": "Add a track if the school offers majors, such as science or social studies."
   },
   "rooms": {
+    "searchPlaceholder": "Search room name or code",
     "eyebrow": "School data",
     "title": "Rooms",
     "add": "Add room",
@@ -172,6 +171,7 @@
     "emptyBody": "Add rooms so classes can be assigned to one."
   },
   "subjectOfferings": {
+    "searchPlaceholder": "Search subject or grade level",
     "eyebrow": "School data",
     "title": "Subject offerings",
     "year": "Academic year",
@@ -216,6 +216,7 @@
     "emptyBody": "Pick an academic year and a teacher to view and manage their teaching assignments."
   },
   "enrollmentImport": {
+    "searchPlaceholder": "Search student, class, or note",
     "title": "Class assignment import",
     "description": "Download the template, fill in each student's class, then upload it to review before applying.",
     "year": "Academic year",

@@ -1,7 +1,7 @@
 "use client";
 
 import type { Locale } from "@newsekolah/i18n";
-import { formatDate } from "@newsekolah/i18n";
+import { formatShortDate } from "@newsekolah/i18n";
 import {
   Badge,
   Card,
@@ -250,7 +250,7 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
         overdue > 0
           ? t("loansOverdueHint", { count: overdue })
           : nearestDue
-            ? t("loansHint", { date: formatDate(nearestDue, { locale, timeZone }) })
+            ? t("loansHint", { date: formatShortDate(nearestDue, { locale, timeZone }) })
             : undefined,
       icon: BookOpen,
       tone: overdue > 0 ? "red" : "purple",

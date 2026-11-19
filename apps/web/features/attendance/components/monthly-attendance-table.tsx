@@ -73,6 +73,8 @@ export function MonthlyAttendanceTable({
       <DataTable
         stateKey="features/attendance/components/monthly-report-tab:1"
         mode="local"
+        // One row per school day, read by status colour: nothing to search.
+        searchable={false}
         data={rows}
         columns={columns}
         rowCount={rows.length}

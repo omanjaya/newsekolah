@@ -63,9 +63,7 @@
     "documentTitle": "Expected visitors",
     "filters": {
       "date": "Date",
-      "onlyPending": "Pending only",
-      "reset": "Reset filter",
-      "removeFilter": "Remove {label} filter"
+      "onlyPending": "Pending only"
     },
     "day": {
       "previous": "Previous day",
@@ -132,8 +130,6 @@
     "filters": {
       "includeClosed": "Show closed incidents",
       "onlyOpen": "Open only",
-      "reset": "Reset filter",
-      "removeFilter": "Remove {label} filter",
       "dateRange": "Date range",
       "from": "From date",
       "to": "To date",

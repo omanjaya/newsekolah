@@ -18,6 +18,7 @@ import {
   Switch,
   domainIcons,
   useToast,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Pencil, Plus, Trash2 } from "lucide-react";
@@ -144,6 +145,7 @@ export function MaterialTypesTab(): ReactElement {
         }}
       />
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/library/components/material-types-tab:1"
         mode="local"
         data={items}
@@ -254,15 +256,22 @@ function MaterialTypeForm({
   const [isActive, setIsActive] = useState(materialType?.is_active ?? true);
   const [sortOrder, setSortOrder] = useState(String(materialType?.sort_order ?? 0));
   const [error, setError] = useState("");
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
+  const requiredError = (value: string) =>
+    attempted && !value.trim() ? tValidation("required") : undefined;
 
   const mutation = materialType ? update : create;
 
   return (
     <form
+      ref={formRef}
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         setError("");
+        if (!check(Boolean(code.trim() && name.trim()))) return;
         const body: LibraryMaterialTypeWrite = {
           code: code.trim(),
           name: name.trim(),
@@ -284,23 +293,21 @@ function MaterialTypeForm({
         }
       }}
     >
-      <Field label={t("code")}>
+      <Field label={t("code")} required error={requiredError(code)}>
         <Input
           value={code}
           onChange={(e) => {
             setCode(e.target.value);
           }}
-          required
           maxLength={20}
         />
       </Field>
-      <Field label={t("name")}>
+      <Field label={t("name")} required error={requiredError(name)}>
         <Input
           value={name}
           onChange={(e) => {
             setName(e.target.value);
           }}
-          required
           maxLength={100}
         />
       </Field>
@@ -349,7 +356,7 @@ function MaterialTypeForm({
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={mutation.isPending} disabled={!code.trim() || !name.trim()}>
+        <Button type="submit" loading={mutation.isPending}>
           {t("save")}
         </Button>
       </DialogFooter>

@@ -245,10 +245,6 @@ export function TodayBoardView({
         // to act on; an active filter keeps them, so it can be cleared.
         searchable={hasBoard}
         filters={hasBoard ? filters : undefined}
-        filtersLabels={{
-          reset: t("history.reset"),
-          removeFilter: (label) => t("history.removeFilter", { label }),
-        }}
         toolbarLabels={{ searchPlaceholder: t("today.searchPlaceholder") }}
         isLoading={board.isLoading}
         error={board.isError ? board.error : undefined}

@@ -118,18 +118,20 @@ export function SubjectOfferingsView({ page }: { page: HubPageProps }): ReactEle
   const columns = useMemo<ColumnDef<SubjectOffering>[]>(
     () => [
       {
+        // Read through accessors (not only cells) so the search box finds
+        // a subject or grade level by its name.
         id: "subject",
         header: t("columns.subject"),
         enableSorting: false,
-        cell: ({ row }) => subjectMap.get(row.original.subject_id)?.name ?? "-",
+        accessorFn: (offering) => subjectMap.get(offering.subject_id)?.name ?? "-",
       },
       {
         id: "gradeLevel",
         header: t("columns.gradeLevel"),
         enableSorting: false,
-        cell: ({ row }) =>
-          row.original.grade_level_id
-            ? (gradeLevelMap.get(row.original.grade_level_id)?.name ?? "-")
+        accessorFn: (offering) =>
+          offering.grade_level_id
+            ? (gradeLevelMap.get(offering.grade_level_id)?.name ?? "-")
             : t("allGrades"),
       },
       { accessorKey: "hours_per_week", header: t("columns.hoursPerWeek"), enableSorting: false },
@@ -204,6 +206,7 @@ export function SubjectOfferingsView({ page }: { page: HubPageProps }): ReactEle
         />
       </Field>
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/academic/components/subject-offerings-view:1"
         mode="local"
         data={rows}

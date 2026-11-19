@@ -63,9 +63,7 @@
     "documentTitle": "Tamu terjadwal",
     "filters": {
       "date": "Tanggal",
-      "onlyPending": "Hanya yang menunggu",
-      "reset": "Reset filter",
-      "removeFilter": "Hapus filter {label}"
+      "onlyPending": "Hanya yang menunggu"
     },
     "day": {
       "previous": "Hari sebelumnya",
@@ -132,8 +130,6 @@
     "filters": {
       "includeClosed": "Tampilkan yang sudah ditutup",
       "onlyOpen": "Hanya yang terbuka",
-      "reset": "Reset filter",
-      "removeFilter": "Hapus filter {label}",
       "dateRange": "Rentang tanggal",
       "from": "Dari tanggal",
       "to": "Sampai tanggal",

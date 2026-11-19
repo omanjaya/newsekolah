@@ -102,6 +102,8 @@ export function AchievementsView(): ReactElement {
         accessorKey: "student_user_id",
         header: t("columns.student"),
         enableSorting: false,
+        // The value is an id; the name is resolved inside the cell.
+        enableGlobalFilter: false,
         cell: ({ row }) => <AchievementStudentCell id={row.original.student_user_id} />,
       },
       { accessorKey: "competition_name", header: t("columns.competition"), enableSorting: false },
@@ -183,6 +185,7 @@ export function AchievementsView(): ReactElement {
     >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           stateKey="features/activities/components/achievements-view:1"
           mode="local"
           data={achievements}
@@ -195,10 +198,6 @@ export function AchievementsView(): ReactElement {
           globalFilter={search}
           onGlobalFilterChange={setSearch}
           filters={filters}
-          filtersLabels={{
-            reset: t("filters.reset"),
-            removeFilter: (label) => t("filters.removeFilter", { label }),
-          }}
           isLoading={isLoading}
           error={error}
           onRetry={() => void refetch()}

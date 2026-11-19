@@ -201,6 +201,7 @@ export function DailyReportTab(): ReactElement {
             </div>
           )}
           <DataTable
+            toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
             stateKey="features/attendance/components/daily-report-tab:1"
             mode="local"
             data={rows}

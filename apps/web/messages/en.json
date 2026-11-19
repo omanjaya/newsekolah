@@ -279,7 +279,7 @@
           "pageSize": "Rows per page",
           "previous": "Go to previous page",
           "next": "Go to next page",
-          "filtersReset": "Reset filters",
+          "filtersReset": "Clear all filters",
           "filterRemove": "Remove filter {label}",
           "filterDateFrom": "From",
           "filterDateTo": "To",
@@ -356,7 +356,7 @@
         "empty": {
           "filteredTitle": "Nothing matches",
           "filteredDescription": "Try another keyword or clear the active filters.",
-          "filteredReset": "Clear filters"
+          "filteredReset": "Clear all filters"
         },
         "statePage": {
           "code": "Code {code}"
@@ -815,10 +815,6 @@
       "unread": "New",
       "manageEmptyTitle": "No announcements created yet",
       "manageEmptyBody": "Create a draft, pick the audience, then publish or schedule it.",
-      "filters": {
-        "reset": "Reset filter",
-        "removeFilter": "Remove {label} filter"
-      },
       "columns": {
         "title": "Title",
         "status": "Status",
@@ -1283,11 +1279,6 @@
       "searchPlaceholder": "Search name or NIS",
       "statusFilterLabel": "Status",
       "statusFilterAll": "All statuses",
-      "statusFilterClear": "Clear filter",
-      "filters": {
-        "reset": "Reset filters",
-        "removeFilter": "Remove {label} filter"
-      },
       "noGuardian": "No guardian on file",
       "noViolations": "None",
       "violationSummary": "{count} violations, {points} points",
@@ -1709,6 +1700,7 @@
     },
     "school": {
       "users": {
+        "searchPlaceholder": "Search name, username, NIS, or NIP",
         "eyebrow": "School data",
         "title": "Teachers, staff and students",
         "columns": {
@@ -1732,9 +1724,7 @@
         "filters": {
           "kind": "Kind",
           "status": "Status",
-          "role": "Role",
-          "reset": "Reset filter",
-          "removeFilter": "Remove {label} filter"
+          "role": "Role"
         },
         "includeArchived": "Show archived",
         "emptyTitle": "No users yet",
@@ -1784,6 +1774,7 @@
           "noCustomRoles": "No custom roles yet. Create one under Settings > Roles and access."
         },
         "import": {
+          "searchPlaceholder": "Search name or username",
           "title": "Import users",
           "description": "Download the template, fill it in outside the system, upload it back, then check the outcome before anything is actually created.",
           "step1Body": "The template includes an example row and a Referensi sheet listing the accepted codes for each column (gender, blood type, role, and so on).",
@@ -1868,6 +1859,7 @@
         "noStudents": "No students in this class yet",
         "searchStudent": "Search student",
         "rowActionsMenu": "More actions for {name}",
+        "cardJoined": "Joined {date}",
         "noUnassigned": "Every student already has a class.",
         "assigned": "{n} students placed",
         "assignCount": "Place ({n})",
@@ -1967,6 +1959,7 @@
         }
       },
       "subjects": {
+        "searchPlaceholder": "Search subject name or code",
         "eyebrow": "School data",
         "title": "Subjects",
         "add": "Add subject",

@@ -167,10 +167,6 @@ export function IssuedLettersPanel(): ReactElement {
           onGlobalFilterChange={paging.resetting(setSearch)}
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
-          filtersLabels={{
-            reset: t("filters.reset"),
-            removeFilter: (label) => t("filters.removeFilter", { label }),
-          }}
           isLoading={isLoading}
           getRowId={(item) => item.id}
           onRowActivate={(item) => {

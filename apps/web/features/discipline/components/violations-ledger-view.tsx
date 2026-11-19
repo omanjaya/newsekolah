@@ -245,8 +245,6 @@ export function ViolationsLedgerView({
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           filters={filters}
           filtersLabels={{
-            reset: t("filters.reset"),
-            removeFilter: (label) => t("filters.removeFilter", { label }),
             dateRangeFrom: t("filters.from"),
             dateRangeTo: t("filters.to"),
             dateRangeInvalid: t("filters.invalidRange"),

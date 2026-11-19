@@ -14,6 +14,7 @@ import {
   SkeletonList,
   domainIcons,
   useToast,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import { Ban, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -63,6 +64,8 @@ export function TeachingPanel({
   const setActive = useUpdateTeachingAssignmentMutation();
   const [subjectId, setSubjectId] = useState("");
   const [teacherId, setTeacherId] = useState("");
+  const { ref: formRef, attempted, check, reset } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
   const [showInactive, setShowInactive] = useState(false);
   const [pendingRemove, setPendingRemove] = useState<TeachingRow | null>(null);
   const rows = useMemo(
@@ -166,11 +169,13 @@ export function TeachingPanel({
       )}
       {canManage && (
         <form
+          ref={formRef}
+          noValidate
           aria-label={t("addTeachingTitle")}
-          className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end"
+          className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-start"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!subjectId || !teacherId) return;
+            if (!check(Boolean(subjectId && teacherId))) return;
             create.mutate(
               {
                 academic_year_id: year.id,
@@ -182,6 +187,7 @@ export function TeachingPanel({
                 onSuccess: () => {
                   setSubjectId("");
                   setTeacherId("");
+                  reset();
                   toast.success(t("teachingAdded"));
                 },
                 onError: fail,
@@ -189,7 +195,11 @@ export function TeachingPanel({
             );
           }}
         >
-          <Field label={t("subjectLabel")}>
+          <Field
+            label={t("subjectLabel")}
+            required
+            error={attempted && !subjectId ? tValidation("required") : undefined}
+          >
             <Select
               options={(subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }))}
               value={subjectId}
@@ -197,7 +207,11 @@ export function TeachingPanel({
               placeholder={t("pickSubject")}
             />
           </Field>
-          <Field label={t("teacherLabel")}>
+          <Field
+            label={t("teacherLabel")}
+            required
+            error={attempted && !teacherId ? tValidation("required") : undefined}
+          >
             <DirectoryPicker
               profileKind="teacher"
               value={teacherId}
@@ -205,15 +219,19 @@ export function TeachingPanel({
               labels={teacherLabels}
             />
           </Field>
-          <Button
-            type="submit"
-            variant="secondary"
-            icon={<Plus />}
-            loading={create.isPending}
-            disabled={!subjectId || !teacherId}
-          >
-            {t("addTeaching")}
-          </Button>
+          {/*
+            Top-aligned with an empty label row of the same type role, so the
+            button stays level with both controls when a Field below grows
+            an error line after Submit (bottom alignment tipped them apart).
+          */}
+          <div className="flex flex-col gap-2">
+            <span aria-hidden="true" className="hidden text-label md:block">
+              &nbsp;
+            </span>
+            <Button type="submit" variant="secondary" icon={<Plus />} loading={create.isPending}>
+              {t("addTeaching")}
+            </Button>
+          </div>
         </form>
       )}
       <ConfirmDialog

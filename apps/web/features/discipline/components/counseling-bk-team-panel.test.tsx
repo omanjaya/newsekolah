@@ -68,7 +68,7 @@ describe("CounselingBKTeamPanel filters", () => {
     const user = userEvent.setup();
     render(<CounselingBKTeamPanel onOpen={vi.fn()} />);
 
-    await user.click(screen.getByRole("button", { name: "bkTeam.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useBKTeamCounselingsQuery).toHaveBeenLastCalledWith("", {
       limit: 50,
       offset: 0,

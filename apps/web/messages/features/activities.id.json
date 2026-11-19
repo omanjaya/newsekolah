@@ -4,13 +4,10 @@
   "navLabelEvents": "Agenda kegiatan",
   "navLabelAchievements": "Prestasi",
   "clubs": {
+    "searchPlaceholder": "Cari nama ekstrakurikuler",
     "eyebrow": "Kegiatan",
     "title": "Ekstrakurikuler",
     "includeInactive": "Tampilkan yang tidak aktif",
-    "filters": {
-      "reset": "Reset filter",
-      "removeFilter": "Hapus filter {label}"
-    },
     "add": "Tambah ekstrakurikuler",
     "edit": "Ubah",
     "rowActions": "Aksi untuk {name}",
@@ -143,6 +140,7 @@
     }
   },
   "events": {
+    "searchPlaceholder": "Cari nama atau lokasi kegiatan",
     "eyebrow": "Kegiatan",
     "title": "Agenda kegiatan",
     "add": "Tambah kegiatan",
@@ -197,12 +195,11 @@
     }
   },
   "achievements": {
+    "searchPlaceholder": "Cari nama lomba",
     "eyebrow": "Kegiatan",
     "title": "Prestasi siswa",
     "filters": {
-      "class": "Kelas",
-      "reset": "Reset filter",
-      "removeFilter": "Hapus filter {label}"
+      "class": "Kelas"
     },
     "add": "Catat prestasi",
     "saved": "Prestasi tersimpan",

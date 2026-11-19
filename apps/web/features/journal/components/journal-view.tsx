@@ -24,6 +24,7 @@ import {
   ReportExportDialog,
   type ReportExportOptions,
 } from "../../../components/report-export-dialog";
+import { formatCalendarDate } from "../../../lib/format-calendar-date";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
@@ -173,10 +174,9 @@ export function JournalView(): ReactElement {
 
   const columns = useJournalColumns({
     t,
-    // lesson_date is a calendar date (YYYY-MM-DD); reading it at local
-    // midnight keeps the day from shifting across time zones.
+    // lesson_date is a calendar date (YYYY-MM-DD): that day for everyone.
     formatDate: (lessonDate) =>
-      format.dateTime(new Date(`${lessonDate}T00:00:00`), {
+      formatCalendarDate(format, lessonDate, {
         weekday: "short",
         day: "numeric",
         month: "short",
@@ -272,8 +272,6 @@ export function JournalView(): ReactElement {
             }}
             filters={filters}
             filtersLabels={{
-              reset: t("filters.reset"),
-              removeFilter: (label) => t("filters.removeFilter", { label }),
               dateRangeFrom: t("filters.from"),
               dateRangeTo: t("filters.to"),
               dateRangeInvalid: t("filters.invalidRange"),

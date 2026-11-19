@@ -302,6 +302,7 @@ export function TenantsView(): ReactElement {
       </StatGrid>
 
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/platform/components/tenants-view:2"
         mode="local"
         data={items}

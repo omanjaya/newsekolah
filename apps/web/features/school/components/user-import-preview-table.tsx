@@ -127,6 +127,7 @@ export function UserImportPreviewTable({
 
   return (
     <DataTable
+      toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
       mode="local"
       stateKey="features/school/components/user-import-preview-table:1"
       data={data}

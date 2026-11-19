@@ -85,7 +85,11 @@ export const TabsList = forwardRef<HTMLDivElement, TabsListProps>(function TabsL
         )}
         {...props}
       >
-        <div ref={scrollerRef} data-strip="" className={stripScrollerClass(variant)}>
+        <div
+          ref={scrollerRef}
+          data-strip=""
+          className={stripScrollerClass(variant, { edgeCues: true })}
+        >
           <span ref={indicatorRef} aria-hidden="true" className={stripIndicatorClass(variant)} />
           {children}
         </div>

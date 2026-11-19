@@ -124,6 +124,7 @@ export function ImportPreviewTable({
       )}
 
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/library/components/import-preview-table:1"
         mode="local"
         data={preview.rows}

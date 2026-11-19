@@ -11,6 +11,7 @@ import {
   DialogContent,
   Select,
   Textarea,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -55,6 +56,8 @@ export function ViolationRecordDialog({
   const [suspendDays, setSuspendDays] = useState("0");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
+  const { ref: formRef, attempted, check, reset: resetValidation } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
 
   function reset() {
     setMemberUserId(initialMemberUserId);
@@ -64,6 +67,7 @@ export function ViolationRecordDialog({
     setSuspendDays("0");
     setNotes("");
     setError("");
+    resetValidation();
   }
 
   return (
@@ -76,11 +80,13 @@ export function ViolationRecordDialog({
     >
       <DialogContent title={t("title")} size="md">
         <form
+          ref={formRef}
           className="flex flex-col gap-4"
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
             setError("");
-            if (!memberUserId) return;
+            if (!check(Boolean(memberUserId))) return;
             create.mutate(
               {
                 member_user_id: memberUserId,
@@ -106,8 +112,11 @@ export function ViolationRecordDialog({
             );
           }}
         >
-          {/* Simpan waits for the member: the asterisk says why. */}
-          <Field label={t("member")} required>
+          <Field
+            label={t("member")}
+            required
+            error={attempted && !memberUserId ? tValidation("required") : undefined}
+          >
             <DirectoryPicker
               value={memberUserId}
               onValueChange={setMemberUserId}
@@ -171,12 +180,14 @@ export function ViolationRecordDialog({
               type="button"
               variant="secondary"
               onClick={() => {
+                // Cancel resets like Escape does: the dialog stays mounted.
+                reset();
                 onOpenChange(false);
               }}
             >
               {t("cancel")}
             </Button>
-            <Button type="submit" loading={create.isPending} disabled={!memberUserId}>
+            <Button type="submit" loading={create.isPending}>
               {t("submit")}
             </Button>
           </DialogFooter>

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@newsekolah/i18n";
+import { formatDate, formatDateRange } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
   Alert,
@@ -120,7 +120,7 @@ export function StudentPermitsTab({ studentId }: { studentId: string }): ReactEl
               key={item.instance_id}
               title={tLeave(`categories.${item.category}`)}
               meta={item.reason}
-              trailing={`${formatDate(item.starts_on, { locale })} - ${formatDate(item.ends_on, { locale })}`}
+              trailing={formatDateRange(item.starts_on, item.ends_on, { locale })}
               onClick={() => {
                 setOpenId(item.instance_id);
               }}

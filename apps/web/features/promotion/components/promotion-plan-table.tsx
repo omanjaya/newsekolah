@@ -16,6 +16,7 @@ import {
   Select,
   domainIcons,
   selectionColumn,
+  useSubmitValidation,
   type DataTableProps,
 } from "@newsekolah/ui";
 import type { RowSelectionState } from "@tanstack/react-table";
@@ -61,6 +62,13 @@ export function PromotionPlanTable({
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [pickingClass, setPickingClass] = useState(false);
   const [bulkClass, setBulkClass] = useState("");
+  const {
+    ref: bulkFormRef,
+    attempted: bulkAttempted,
+    check: checkBulk,
+    reset: resetBulkValidation,
+  } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
   const unresolved = rows.filter((row) => row.unresolved).length;
   const classLabel = useMemo(
     () => new Map(fromClasses.map((option) => [option.value, option.label])),
@@ -230,6 +238,7 @@ export function PromotionPlanTable({
               icon={<School />}
               onClick={() => {
                 setBulkClass("");
+                resetBulkValidation();
                 setPickingClass(true);
               }}
             >
@@ -251,9 +260,12 @@ export function PromotionPlanTable({
           size="sm"
         >
           <form
+            ref={bulkFormRef}
             className="flex flex-col gap-4"
+            noValidate
             onSubmit={(event) => {
               event.preventDefault();
+              if (!checkBulk(Boolean(bulkClass))) return;
               onOverride(
                 selected.map((row) => ({
                   student_user_id: row.student_user_id,
@@ -265,7 +277,11 @@ export function PromotionPlanTable({
               setPickingClass(false);
             }}
           >
-            <Field label={t("table.targetClass")} required>
+            <Field
+              label={t("table.targetClass")}
+              required
+              error={bulkAttempted && !bulkClass ? tValidation("required") : undefined}
+            >
               <Select
                 options={toClasses}
                 value={bulkClass}
@@ -282,9 +298,7 @@ export function PromotionPlanTable({
               >
                 {t("cancel")}
               </Button>
-              <Button type="submit" disabled={!bulkClass}>
-                {t("apply")}
-              </Button>
+              <Button type="submit">{t("apply")}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

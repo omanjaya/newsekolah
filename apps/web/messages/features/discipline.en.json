@@ -16,8 +16,6 @@
       "from": "From date",
       "to": "To date",
       "includeVoided": "Show voided",
-      "reset": "Reset filter",
-      "removeFilter": "Remove {label} filter",
       "dateRange": "Date range",
       "invalidRange": "The from date must be on or before the to date"
     },
@@ -99,12 +97,9 @@
     "pointsValue": "{points} pts"
   },
   "catalog": {
+    "searchPlaceholder": "Search violation code or name",
     "includeInactive": "Show inactive",
     "add": "Add type",
-    "filters": {
-      "reset": "Reset filter",
-      "removeFilter": "Clear {label} filter"
-    },
     "columns": {
       "code": "Code",
       "name": "Name",
@@ -164,9 +159,7 @@
     },
     "filters": {
       "class": "Class",
-      "classAll": "All classes",
-      "reset": "Reset filter",
-      "removeFilter": "Remove {label} filter"
+      "classAll": "All classes"
     },
     "columns": {
       "student": "Student",
@@ -186,9 +179,7 @@
         "class": "Class",
         "classAll": "All classes",
         "level": "Level",
-        "levelAll": "All levels",
-        "reset": "Reset filter",
-        "removeFilter": "Clear {label} filter"
+        "levelAll": "All levels"
       },
       "searchPlaceholder": "Search by name, NIS or class",
       "columns": {
@@ -243,8 +234,6 @@
     "bkTeam": {
       "topicFilter": "Topic",
       "topicAll": "Every topic",
-      "reset": "Reset filter",
-      "removeFilter": "Remove {label} filter",
       "emptyTitle": "No notes shared with the BK team",
       "emptyBody": "Notes any counselor marks visible to the whole BK team appear here. You need to be a duty counselor to see them."
     },

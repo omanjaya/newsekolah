@@ -43,17 +43,34 @@ export function stripTrackClass(variant: StripVariant, fullWidth?: boolean | "ph
  *
  * Below 640px an underline strip runs out into the 16px page gutter on
  * both sides (its first tab stays where it was), so the next tab peeks in
- * from the screen's edge instead of ending flush with the column, and its
- * end fades over 48px rather than 24. A pill strip keeps its capsule.
+ * from the screen's edge instead of ending flush with the column. A pill
+ * strip keeps its capsule.
+ *
+ * A strip that renders StripEdgeCues (`edgeCues`) starts each faded edge
+ * with a 20px clear band under its chevron, so the chevron never covers a
+ * label: the text under it is fully masked out, whatever surface the strip
+ * sits on. The fade then runs to 40px (pill) or 48px (underline), the same
+ * on both edges. A strip without cues (SegmentedControl) keeps the plain
+ * 24px fade, so none of its labels sit in an empty band.
  */
-export function stripScrollerClass(variant: StripVariant): string {
+export function stripScrollerClass(
+  variant: StripVariant,
+  { edgeCues = false }: { edgeCues?: boolean } = {},
+): string {
   return cn(
     "peer/strip relative flex min-w-0 flex-1 flex-nowrap overflow-x-auto overscroll-x-contain scrollbar-none scroll-fade-x",
+    edgeCues && "[--scroll-fade-clear:var(--space-5)]",
     variant === "pill"
-      ? "p-1"
+      ? cn(
+          "p-1",
+          edgeCues &&
+            "[--scroll-fade-start-size:var(--space-10)] [--scroll-fade-end-size:var(--space-10)]",
+        )
       : cn(
           "gap-1 shadow-[inset_0_-1px_0_var(--color-line)]",
-          "max-sm:-mx-4 max-sm:scroll-px-4 max-sm:px-4 [--scroll-fade-end-size:var(--space-12)]",
+          "max-sm:-mx-4 max-sm:scroll-px-4 max-sm:px-4",
+          edgeCues &&
+            "[--scroll-fade-start-size:var(--space-12)] [--scroll-fade-end-size:var(--space-12)]",
         ),
   );
 }
@@ -82,10 +99,13 @@ export function stripIndicatorClass(variant: StripVariant): string {
  * technology, which reaches every item anyway. Rendered right after the
  * scroller, inside the track, so it reads the scroller's
  * `data-overflow-*` marks through `peer/strip` and never re-renders.
+ * It stays inside the scroller's clear band (`--scroll-fade-clear`, 20px:
+ * a 16px glyph plus 2px of inset), where the labels are masked out, so it
+ * never draws over text.
  */
 export function StripEdgeCues({ variant }: { variant: StripVariant }): ReactNode {
   const cue =
-    "pointer-events-none absolute inset-y-0 flex items-center text-fg-muted opacity-0 transition-opacity duration-fast [&_svg]:size-4";
+    "pointer-events-none absolute inset-y-0 flex w-5 items-center text-fg-muted opacity-0 transition-opacity duration-fast [&_svg]:size-4";
   return (
     <>
       <span
@@ -105,7 +125,7 @@ export function StripEdgeCues({ variant }: { variant: StripVariant }): ReactNode
         data-strip-cue="end"
         className={cn(
           cue,
-          "right-0 pr-0.5 peer-data-[overflow-end]/strip:opacity-100",
+          "right-0 justify-end pr-0.5 peer-data-[overflow-end]/strip:opacity-100",
           variant === "underline" && "max-sm:-right-4",
         )}
       >

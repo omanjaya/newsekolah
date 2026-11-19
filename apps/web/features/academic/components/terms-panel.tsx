@@ -24,6 +24,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { formatCalendarDateRange } from "../../../lib/format-calendar-date";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   type AcademicYear,
@@ -34,7 +35,6 @@ import {
   useTermsQuery,
   useUpdateTermMutation,
 } from "../api";
-import { formatCalendarDate } from "../lib/format-calendar-date";
 
 interface TermDraft {
   name: string;
@@ -136,7 +136,7 @@ export function TermsPanel({
                 <ListRow
                   key={term.id}
                   title={term.name}
-                  meta={`${formatCalendarDate(format, term.starts_on)} - ${formatCalendarDate(format, term.ends_on)}`}
+                  meta={formatCalendarDateRange(format, term.starts_on, term.ends_on)}
                   trailing={
                     term.is_active ? (
                       <Badge tone="success" dot>

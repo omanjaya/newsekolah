@@ -124,6 +124,7 @@ export function ViolationCatalogView(): ReactElement {
   return (
     <>
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/discipline/components/violation-catalog-view:1"
         mode="local"
         data={items}
@@ -135,10 +136,6 @@ export function ViolationCatalogView(): ReactElement {
         onSortingChange={() => undefined}
         globalFilter=""
         filters={filters}
-        filtersLabels={{
-          reset: t("filters.reset"),
-          removeFilter: (label) => t("filters.removeFilter", { label }),
-        }}
         toolbarActions={
           <Button
             icon={<Plus />}

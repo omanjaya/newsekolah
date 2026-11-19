@@ -84,11 +84,13 @@ describe("NavTabs", () => {
   it("runs an underline strip into the phone's gutter so the next tab peeks in", () => {
     render(<NavTabs aria-label="Bagian" items={ITEMS} variant="underline" />);
     const scroller = screen.getByRole("navigation").firstElementChild;
-    // Out to the screen's edges, the first tab where it was, a longer end fade.
+    // Out to the screen's edges, the first tab where it was, and the same
+    // long fade at both edges.
     expect(scroller).toHaveClass(
       "max-sm:-mx-4",
       "max-sm:px-4",
       "max-sm:scroll-px-4",
+      "[--scroll-fade-start-size:var(--space-12)]",
       "[--scroll-fade-end-size:var(--space-12)]",
     );
   });
@@ -97,6 +99,26 @@ describe("NavTabs", () => {
     render(<NavTabs aria-label="Bagian" items={ITEMS} variant="pill" />);
     expect(screen.getByRole("navigation").firstElementChild).not.toHaveClass("max-sm:-mx-4");
   });
+
+  // The chevrons were drawn over nearly opaque text ("<Ekstrakurikuler",
+  // "Rekap k>"). The scroller now masks a clear band at each faded edge,
+  // as wide as the cue, so the cue only ever sits over masked-out content.
+  it.each(["pill", "underline"] as const)(
+    "keeps each %s cue inside a clear band where labels are masked out",
+    (variant) => {
+      const { container } = render(<NavTabs aria-label="Bagian" items={ITEMS} variant={variant} />);
+      const scroller = container.querySelector("[data-strip]");
+      expect(scroller).toHaveClass("[--scroll-fade-clear:var(--space-5)]");
+      const start = container.querySelector('[data-strip-cue="start"]');
+      const end = container.querySelector('[data-strip-cue="end"]');
+      // w-5 is 20px, the band's width; the glyph hugs the outer edge.
+      expect(start).toHaveClass("w-5", "left-0");
+      expect(end).toHaveClass("w-5", "right-0", "justify-end");
+      // The fade runs past the band, so labels ease in rather than cut off.
+      expect(scroller?.className).toMatch(/\[--scroll-fade-start-size:var\(--space-1[02]\)\]/);
+      expect(scroller?.className).toMatch(/\[--scroll-fade-end-size:var\(--space-1[02]\)\]/);
+    },
+  );
 
   it("forwards a ref and other attributes to the landmark, like TabsList", () => {
     const ref = createRef<HTMLElement>();

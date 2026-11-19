@@ -129,7 +129,7 @@ describe("UsersView filters", () => {
     const user = userEvent.setup();
     render(<UsersView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useUsersQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ profile_kind: undefined }),
     );

@@ -14,6 +14,7 @@
     "openToday": "Open today's sessions"
   },
   "daily": {
+    "searchPlaceholder": "Search student name",
     "class": "Class",
     "classPlaceholder": "Choose a class",
     "gradeLevel": "Grade level",

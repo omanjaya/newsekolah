@@ -2,7 +2,16 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import { formatTime, type Locale } from "@newsekolah/i18n";
-import { Alert, Button, DatePicker, DialogFooter, Field, Select, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  Button,
+  DatePicker,
+  DialogFooter,
+  Field,
+  Select,
+  useSubmitValidation,
+  useToast,
+} from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -117,6 +126,10 @@ export function JournalForm({
     lessonDate !== "" &&
     topic.trim() !== "" &&
     activities.trim() !== "";
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
+  const requiredError = (value: string) =>
+    attempted && !value.trim() ? tValidation("required") : undefined;
 
   // Offers a local draft once per owner and resolved class/subject/date --
   // a from-scratch entry only knows its key once the pickers settle, while
@@ -190,9 +203,12 @@ export function JournalForm({
 
   return (
     <form
+      ref={formRef}
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
+        if (!check(canSubmit)) return;
         submit();
       }}
     >
@@ -216,7 +232,7 @@ export function JournalForm({
           })}
         </Alert>
       )}
-      <Field label={t("class")}>
+      <Field label={t("class")} required error={requiredError(effectiveClassId)}>
         <Select
           options={classOptions}
           value={effectiveClassId}
@@ -226,7 +242,7 @@ export function JournalForm({
           aria-label={t("class")}
         />
       </Field>
-      <Field label={t("subject")}>
+      <Field label={t("subject")} required error={requiredError(effectiveSubjectId)}>
         <Select
           options={subjectOptions}
           value={effectiveSubjectId}
@@ -236,7 +252,7 @@ export function JournalForm({
           aria-label={t("subject")}
         />
       </Field>
-      <Field label={t("date")}>
+      <Field label={t("date")} required error={requiredError(lessonDate)}>
         <DatePicker
           value={lessonDate}
           onChange={setLessonDate}
@@ -253,13 +269,14 @@ export function JournalForm({
         onTopicChange={setTopic}
         onActivitiesChange={setActivities}
         onReflectionChange={setReflection}
+        requiredError={requiredError}
       />
 
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={upsert.isPending} disabled={!canSubmit}>
+        <Button type="submit" loading={upsert.isPending}>
           {t("submit")}
         </Button>
       </DialogFooter>

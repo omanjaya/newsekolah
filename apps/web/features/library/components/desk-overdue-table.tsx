@@ -225,6 +225,7 @@ export function DeskOverdueTable(): ReactElement {
         }
       />
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/library/components/desk-overdue-table:1"
         mode="local"
         // The overdue queue renders as cards on a phone; ten a page keeps it

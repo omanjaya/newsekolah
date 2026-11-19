@@ -8,10 +8,12 @@ import {
   Card,
   Checkbox,
   Field,
+  FieldError,
   Input,
   Select,
   Textarea,
   useToast,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -66,13 +68,21 @@ export function MentorMeetingNoteForm({
 
   const pending = create.isPending || update.isPending;
   const attendeeIdList = [...attendeeIds];
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
+  const requiredError = (value: string) =>
+    attempted && !value.trim() ? tValidation("required") : undefined;
 
   return (
     <form
+      ref={formRef}
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        if (!metAt || attendeeIdList.length === 0 || !topic.trim() || !content.trim()) return;
+        const complete =
+          Boolean(metAt && topic.trim() && content.trim()) && attendeeIdList.length > 0;
+        if (!check(complete)) return;
         const body = {
           met_at: new Date(metAt).toISOString(),
           kind,
@@ -103,6 +113,7 @@ export function MentorMeetingNoteForm({
         dateLabel={t("metDate")}
         timeLabel={t("metTime")}
         required
+        error={requiredError(metAt)}
       />
       <Field label={t("kind")}>
         <Select
@@ -133,22 +144,24 @@ export function MentorMeetingNoteForm({
             />
           ))}
         </Card>
-        {attendeeIdList.length === 0 && (
-          <span className="text-caption text-fg-muted">{t("attendeesRequired")}</span>
-        )}
+        {attendeeIdList.length === 0 &&
+          (attempted ? (
+            <FieldError>{t("attendeesRequired")}</FieldError>
+          ) : (
+            <span className="text-caption text-fg-muted">{t("attendeesRequired")}</span>
+          ))}
       </fieldset>
-      <Field label={t("topic")}>
+      <Field label={t("topic")} required error={requiredError(topic)}>
         <Input
           value={topic}
           onChange={(e) => {
             setTopic(e.target.value);
           }}
           placeholder={t("topicPlaceholder")}
-          required
           maxLength={200}
         />
       </Field>
-      <Field label={t("content")}>
+      <Field label={t("content")} required error={requiredError(content)}>
         <Textarea
           rows={5}
           value={content}
@@ -156,7 +169,6 @@ export function MentorMeetingNoteForm({
             setContent(e.target.value);
           }}
           placeholder={t("contentPlaceholder")}
-          required
         />
       </Field>
       <Field label={t("agreedActions")}>
@@ -173,7 +185,7 @@ export function MentorMeetingNoteForm({
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={pending} disabled={attendeeIdList.length === 0}>
+        <Button type="submit" loading={pending}>
           {t("submit")}
         </Button>
       </DialogFooter>

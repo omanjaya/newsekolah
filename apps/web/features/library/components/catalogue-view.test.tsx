@@ -106,7 +106,7 @@ describe("CatalogueView filters", () => {
     const user = userEvent.setup();
     render(<CatalogueView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useLibraryTitlesQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ availability: "" }),
     );

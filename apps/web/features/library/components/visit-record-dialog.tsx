@@ -11,6 +11,7 @@ import {
   DialogContent,
   Input,
   Select,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -48,6 +49,8 @@ export function VisitRecordDialog({
   const [purpose, setPurpose] = useState("");
   const [groupSize, setGroupSize] = useState("1");
   const [error, setError] = useState("");
+  const { ref: formRef, attempted, check, reset: resetValidation } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
 
   function reset() {
     setKind("member");
@@ -56,6 +59,7 @@ export function VisitRecordDialog({
     setPurpose("");
     setGroupSize("1");
     setError("");
+    resetValidation();
   }
 
   const canSubmit = kind === "member" ? Boolean(memberUserId) : visitorName.trim() !== "";
@@ -70,11 +74,13 @@ export function VisitRecordDialog({
     >
       <DialogContent title={t("title")} size="md">
         <form
+          ref={formRef}
           className="flex flex-col gap-4"
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
             setError("");
-            if (!canSubmit) return;
+            if (!check(canSubmit)) return;
             record.mutate(
               {
                 kind,
@@ -109,7 +115,11 @@ export function VisitRecordDialog({
             />
           </Field>
           {kind === "member" ? (
-            <Field label={t("member")} required>
+            <Field
+              label={t("member")}
+              required
+              error={attempted && !memberUserId ? tValidation("required") : undefined}
+            >
               <DirectoryPicker
                 value={memberUserId}
                 onValueChange={setMemberUserId}
@@ -118,14 +128,17 @@ export function VisitRecordDialog({
               />
             </Field>
           ) : (
-            <Field label={kind === "group" ? t("groupName") : t("visitorName")} required>
+            <Field
+              label={kind === "group" ? t("groupName") : t("visitorName")}
+              required
+              error={attempted && !visitorName.trim() ? tValidation("required") : undefined}
+            >
               <Input
                 value={visitorName}
                 onChange={(e) => {
                   setVisitorName(e.target.value);
                 }}
                 maxLength={150}
-                required
               />
             </Field>
           )}
@@ -156,12 +169,14 @@ export function VisitRecordDialog({
               type="button"
               variant="secondary"
               onClick={() => {
+                // Cancel resets like Escape does: the dialog stays mounted.
+                reset();
                 onOpenChange(false);
               }}
             >
               {t("cancel")}
             </Button>
-            <Button type="submit" loading={record.isPending} disabled={!canSubmit}>
+            <Button type="submit" loading={record.isPending}>
               {t("submit")}
             </Button>
           </DialogFooter>

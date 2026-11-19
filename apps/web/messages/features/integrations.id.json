@@ -44,7 +44,8 @@
       "copyFailed": "Token tidak dapat disalin otomatis, salin secara manual",
       "done": "Sudah disimpan",
       "cancel": "Batal",
-      "permissionsHint": "{count} izin dipilih. Hanya izin yang Anda miliki sendiri."
+      "permissionsHint": "{count} izin dipilih. Hanya izin yang Anda miliki sendiri.",
+      "permissionsRequired": "Pilih minimal satu izin"
     },
     "morePermissions": "+{count} izin",
     "rowActions": "Aksi untuk kunci {name}"
@@ -79,7 +80,8 @@
       "created": "Endpoint dibuat",
       "updated": "Endpoint diperbarui",
       "cancel": "Batal",
-      "eventTypesHint": "{count} peristiwa dipilih."
+      "eventTypesHint": "{count} peristiwa dipilih.",
+      "eventTypesRequired": "Pilih minimal satu peristiwa"
     },
     "moreEvents": "+{count} peristiwa",
     "rowActions": "Aksi untuk {url}"
@@ -87,10 +89,6 @@
   "deliveries": {
     "filterEndpoint": "Endpoint",
     "filterEndpointAll": "Semua endpoint",
-    "filters": {
-      "reset": "Atur ulang filter",
-      "removeFilter": "Hapus filter {label}"
-    },
     "retry": "Kirim ulang",
     "retryEnqueued": "Pengiriman ulang dijadwalkan",
     "emptyTitle": "Belum ada riwayat pengiriman",

@@ -11,6 +11,7 @@ import {
   Select,
   Textarea,
   useToast,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -61,6 +62,8 @@ export function TitleForm({
   const [abstract, setAbstract] = useState(initial?.abstract ?? "");
   const [coverAssetId, setCoverAssetId] = useState(initial?.cover_asset_id ?? "");
   const [materialTypeId, setMaterialTypeId] = useState(initial?.material_type_id ?? "");
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
 
   function applyLookup(bibliography: LibraryExternalBibliography) {
     setTitle(bibliography.title);
@@ -78,9 +81,12 @@ export function TitleForm({
 
   return (
     <form
+      ref={formRef}
       className="flex flex-col gap-6"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
+        if (!check(Boolean(title.trim()))) return;
         const body: LibraryTitleWrite = {
           control_number: initial?.control_number,
           responsibility: initial?.responsibility,
@@ -137,13 +143,17 @@ export function TitleForm({
         />
       </FormSection>
       <FormSection title={t("sections.identity")}>
-        <Field label={t("title")} required className="col-span-full">
+        <Field
+          label={t("title")}
+          required
+          error={attempted && !title.trim() ? tValidation("required") : undefined}
+          className="col-span-full"
+        >
           <Input
             value={title}
             onChange={(e) => {
               setTitle(e.target.value);
             }}
-            required
             maxLength={300}
           />
         </Field>
@@ -269,11 +279,7 @@ export function TitleForm({
         <Button variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button
-          type="submit"
-          loading={create.isPending || update.isPending}
-          disabled={!title.trim()}
-        >
+        <Button type="submit" loading={create.isPending || update.isPending}>
           {t("save")}
         </Button>
       </DialogFooter>

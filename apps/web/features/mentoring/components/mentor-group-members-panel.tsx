@@ -9,8 +9,10 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
+  Field,
   RowActionsMenu,
   domainIcons,
+  useSubmitValidation,
   useToast,
   type RowActionsMenuItem,
 } from "@newsekolah/ui";
@@ -70,6 +72,13 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
   const studentMap = useDirectoryNames(members.map((m) => m.student_user_id));
   const candidateLabels = useDirectoryPickerLabels(t("addPlaceholder"));
   const memberIds = new Set(members.map((m) => m.student_user_id));
+  const { ref: addFormRef, attempted, check, reset: resetValidation } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
+  const candidateError = !candidateId
+    ? tValidation("required")
+    : memberIds.has(candidateId)
+      ? t("alreadyMember")
+      : undefined;
   const atCapacity = limit.data !== undefined && members.length >= limit.data.limit;
 
   const columns = useMemo<ColumnDef<MentorGroupMember>[]>(() => {
@@ -189,51 +198,68 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
         open={adding}
         onOpenChange={(open) => {
           setAdding(open);
-          if (!open) setCandidateId("");
+          if (!open) {
+            setCandidateId("");
+            resetValidation();
+          }
         }}
       >
         <DialogContent title={t("addTitle")}>
-          <div className="flex flex-col gap-4">
-            <DirectoryPicker
-              profileKind="student"
-              value={candidateId}
-              onValueChange={setCandidateId}
-              labels={candidateLabels}
-              className="w-full"
-            />
+          <form
+            ref={addFormRef}
+            className="flex flex-col gap-4"
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!check(candidateError === undefined)) return;
+              assign.mutate(candidateId, {
+                onSuccess: () => {
+                  toast.success(t("added"));
+                  setAdding(false);
+                  setCandidateId("");
+                  resetValidation();
+                },
+                onError: (error) => {
+                  toast.error(
+                    error instanceof ApiError
+                      ? apiErrorMessage(error.code)
+                      : apiErrorMessage("UNKNOWN"),
+                  );
+                },
+              });
+            }}
+          >
+            <Field
+              label={t("addPlaceholder")}
+              hideLabel
+              required
+              error={attempted ? candidateError : undefined}
+            >
+              <DirectoryPicker
+                profileKind="student"
+                value={candidateId}
+                onValueChange={setCandidateId}
+                labels={candidateLabels}
+                className="w-full"
+              />
+            </Field>
             <DialogFooter>
               <Button
+                type="button"
                 variant="secondary"
                 onClick={() => {
                   setAdding(false);
+                  setCandidateId("");
+                  resetValidation();
                 }}
               >
                 {t("cancel")}
               </Button>
-              <Button
-                loading={assign.isPending}
-                disabled={!candidateId || memberIds.has(candidateId)}
-                onClick={() => {
-                  assign.mutate(candidateId, {
-                    onSuccess: () => {
-                      toast.success(t("added"));
-                      setAdding(false);
-                      setCandidateId("");
-                    },
-                    onError: (error) => {
-                      toast.error(
-                        error instanceof ApiError
-                          ? apiErrorMessage(error.code)
-                          : apiErrorMessage("UNKNOWN"),
-                      );
-                    },
-                  });
-                }}
-              >
+              <Button type="submit" loading={assign.isPending}>
                 {t("addConfirm")}
               </Button>
             </DialogFooter>
-          </div>
+          </form>
         </DialogContent>
       </Dialog>
 

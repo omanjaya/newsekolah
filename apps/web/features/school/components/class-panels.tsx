@@ -16,8 +16,8 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { formatCalendarDate } from "../../../lib/format-calendar-date";
 import { useCan } from "../../../lib/session/session-provider";
-import { formatCalendarDate } from "../../academic/lib/format-calendar-date";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { StudentLink } from "../../students/components/student-link";
 import { useEnrollmentsQuery } from "../api";
@@ -116,7 +116,16 @@ export function EnrollmentPanel({
         accessorFn: (row) => row.enrollment.joined_on,
         header: t("columns.joined"),
         meta: { card: "meta" },
-        cell: ({ row }) => formatCalendarDate(format, row.original.enrollment.joined_on),
+        // Unlabelled on the phone card, so it says what the date is there.
+        cell: ({ row }) => {
+          const date = formatCalendarDate(format, row.original.enrollment.joined_on);
+          return (
+            <>
+              <span className="max-md:hidden">{date}</span>
+              <span className="md:hidden">{t("cardJoined", { date })}</span>
+            </>
+          );
+        },
       },
     ];
     if (!canChangeEnrollment) return list;

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { MemberBulkRegisterDialog } from "./member-bulk-register-dialog";
@@ -41,5 +42,25 @@ describe("MemberBulkRegisterDialog", () => {
 
     expect(useClassesQuery).toHaveBeenCalledWith(true);
     expect(screen.getByText("classOptional")).toBeInTheDocument();
+  });
+
+  // The dialog stays mounted while closed. Cancel used to skip the reset
+  // Escape does, so an empty attempt's errors waited for the next open.
+  it("forgets an empty attempt when Cancel closes it", async () => {
+    mocks.canViewClasses = false;
+    useClassesQuery.mockReturnValue({ data: undefined, isLoading: false });
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    const { rerender } = render(<MemberBulkRegisterDialog open onOpenChange={onOpenChange} />);
+
+    await user.click(screen.getByRole("button", { name: "submit" }));
+    expect(screen.getByText("required")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "cancel" }));
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+    rerender(<MemberBulkRegisterDialog open={false} onOpenChange={onOpenChange} />);
+    rerender(<MemberBulkRegisterDialog open onOpenChange={onOpenChange} />);
+
+    expect(screen.queryByText("required")).not.toBeInTheDocument();
   });
 });

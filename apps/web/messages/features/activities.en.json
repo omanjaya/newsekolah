@@ -4,13 +4,10 @@
   "navLabelEvents": "Activity agenda",
   "navLabelAchievements": "Achievements",
   "clubs": {
+    "searchPlaceholder": "Search club name",
     "eyebrow": "Activities",
     "title": "Extracurriculars",
     "includeInactive": "Show inactive",
-    "filters": {
-      "reset": "Reset filter",
-      "removeFilter": "Remove {label} filter"
-    },
     "add": "Add extracurricular",
     "edit": "Edit",
     "rowActions": "Actions for {name}",
@@ -143,6 +140,7 @@
     }
   },
   "events": {
+    "searchPlaceholder": "Search event name or location",
     "eyebrow": "Activities",
     "title": "Activity agenda",
     "add": "Add activity",
@@ -197,12 +195,11 @@
     }
   },
   "achievements": {
+    "searchPlaceholder": "Search competition name",
     "eyebrow": "Activities",
     "title": "Student achievements",
     "filters": {
-      "class": "Class",
-      "reset": "Reset filter",
-      "removeFilter": "Remove {label} filter"
+      "class": "Class"
     },
     "add": "Record achievement",
     "saved": "Achievement saved",

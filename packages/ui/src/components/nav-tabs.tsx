@@ -120,7 +120,11 @@ const NavTabsStrip = forwardRef<HTMLElement, NavTabsProps>(function NavTabsStrip
       className={cn(stripTrackClass(variant, fullWidth), className)}
       {...props}
     >
-      <div ref={scrollerRef} data-strip="" className={stripScrollerClass(variant)}>
+      <div
+        ref={scrollerRef}
+        data-strip=""
+        className={stripScrollerClass(variant, { edgeCues: true })}
+      >
         <span ref={indicatorRef} aria-hidden="true" className={stripIndicatorClass(variant)} />
         <ul className={cn("flex", fullWidth && "flex-1", variant === "underline" && "gap-1")}>
           {items.map((item) => (

@@ -96,7 +96,7 @@ describe("AtRiskPanel filters", () => {
     const user = userEvent.setup();
     render(<AtRiskPanel />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useSPCandidatesQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ classId: "" }),
     );

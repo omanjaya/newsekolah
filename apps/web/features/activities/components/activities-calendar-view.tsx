@@ -146,6 +146,7 @@ export function ActivitiesCalendarView(): ReactElement {
     >
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           stateKey="features/activities/components/activities-calendar-view:1"
           mode="local"
           data={events}

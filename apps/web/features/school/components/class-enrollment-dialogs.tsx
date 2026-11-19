@@ -16,6 +16,7 @@ import {
   SkeletonList,
   domainIcons,
   useToast,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -222,8 +223,18 @@ export function MoveStudentsDialog({
   const [running, setRunning] = useState(false);
   const targets = (classes.data?.data ?? []).filter((c) => c.id !== classId);
   const open = students.length > 0;
+  const { ref: formRef, attempted, check, reset } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
+
+  // Cancel, Escape and the overlay all close through here, so a reopened
+  // dialog never shows the last attempt's errors (it stays mounted).
+  function close() {
+    reset();
+    onClose();
+  }
 
   async function submit() {
+    if (!check(Boolean(toClassId && effectiveOn))) return;
     setRunning(true);
     const done = await runForEach(
       students,
@@ -238,6 +249,7 @@ export function MoveStudentsDialog({
     if (done > 0) {
       toast.success(students.length === 1 ? t("moved") : t("movedCount", { n: done }));
       setToClassId("");
+      reset();
       onDone();
     }
   }
@@ -246,7 +258,7 @@ export function MoveStudentsDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) onClose();
+        if (!next) close();
       }}
     >
       <DialogContent
@@ -255,13 +267,19 @@ export function MoveStudentsDialog({
         size="md"
       >
         <form
+          ref={formRef}
           className="flex flex-col gap-4"
+          noValidate
           onSubmit={(event) => {
             event.preventDefault();
             void submit();
           }}
         >
-          <Field label={t("moveTargetClass")} required>
+          <Field
+            label={t("moveTargetClass")}
+            required
+            error={attempted && !toClassId ? tValidation("required") : undefined}
+          >
             <Select
               options={targets.map((c) => ({ value: c.id, label: c.name }))}
               value={toClassId}
@@ -269,7 +287,11 @@ export function MoveStudentsDialog({
               placeholder={t("moveTargetPlaceholder")}
             />
           </Field>
-          <Field label={t("moveEffectiveOn")} required>
+          <Field
+            label={t("moveEffectiveOn")}
+            required
+            error={attempted && !effectiveOn ? tValidation("required") : undefined}
+          >
             <DatePicker
               value={effectiveOn}
               onChange={setEffectiveOn}
@@ -277,10 +299,10 @@ export function MoveStudentsDialog({
             />
           </Field>
           <DialogFooter>
-            <Button variant="secondary" onClick={onClose}>
+            <Button variant="secondary" onClick={close}>
               {t("form.cancel")}
             </Button>
-            <Button type="submit" disabled={!toClassId || !effectiveOn} loading={running}>
+            <Button type="submit" loading={running}>
               {t("moveSubmit")}
             </Button>
           </DialogFooter>
@@ -310,8 +332,18 @@ export function LeaveStudentsDialog({
   const [leftOn, setLeftOn] = useState(() => todayInZone(me?.tenant.timezone));
   const [running, setRunning] = useState(false);
   const open = students.length > 0;
+  const { ref: formRef, attempted, check, reset } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
+
+  // Cancel, Escape and the overlay all close through here, so a reopened
+  // dialog never shows the last attempt's errors (it stays mounted).
+  function close() {
+    reset();
+    onClose();
+  }
 
   async function submit() {
+    if (!check(Boolean(leftOn))) return;
     setRunning(true);
     const done = await runForEach(
       students,
@@ -322,6 +354,7 @@ export function LeaveStudentsDialog({
     setRunning(false);
     if (done > 0) {
       toast.success(students.length === 1 ? t("studentLeft") : t("leftCount", { n: done }));
+      reset();
       onDone();
     }
   }
@@ -330,7 +363,7 @@ export function LeaveStudentsDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) onClose();
+        if (!next) close();
       }}
     >
       <DialogContent
@@ -339,13 +372,19 @@ export function LeaveStudentsDialog({
         size="md"
       >
         <form
+          ref={formRef}
           className="flex flex-col gap-4"
+          noValidate
           onSubmit={(event) => {
             event.preventDefault();
             void submit();
           }}
         >
-          <Field label={t("leaveOn")} required>
+          <Field
+            label={t("leaveOn")}
+            required
+            error={attempted && !leftOn ? tValidation("required") : undefined}
+          >
             <DatePicker
               value={leftOn}
               onChange={setLeftOn}
@@ -353,10 +392,10 @@ export function LeaveStudentsDialog({
             />
           </Field>
           <DialogFooter>
-            <Button variant="secondary" onClick={onClose}>
+            <Button variant="secondary" onClick={close}>
               {t("form.cancel")}
             </Button>
-            <Button type="submit" variant="danger" disabled={!leftOn} loading={running}>
+            <Button type="submit" variant="danger" loading={running}>
               {t("leaveSubmit")}
             </Button>
           </DialogFooter>

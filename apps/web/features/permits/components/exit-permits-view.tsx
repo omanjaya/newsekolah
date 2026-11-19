@@ -26,7 +26,7 @@ import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { type WorkflowInstance, useMyExitPermitsQuery } from "../api";
-import { formatShortDate } from "../lib/permit-dates";
+import { formatShortWeekdayDate } from "../lib/permit-dates";
 import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
 
 import { ActiveExitPermitCard, CreateForm, ExitPermitDetail } from "./exit-permit-detail";
@@ -188,7 +188,7 @@ function MyExitPermits(): ReactElement {
                         <domainIcons.exitPermit />
                       </IconCircle>
                     }
-                    title={formatShortDate(inst.opened_at, locale, timeZone)}
+                    title={formatShortWeekdayDate(inst.opened_at, locale, timeZone)}
                     meta={t("openedAt", {
                       time: formatTime(inst.opened_at, { locale, timeZone }),
                     })}

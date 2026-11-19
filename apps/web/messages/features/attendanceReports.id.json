@@ -14,6 +14,7 @@
     "openToday": "Buka sesi hari ini"
   },
   "daily": {
+    "searchPlaceholder": "Cari nama siswa",
     "class": "Kelas",
     "classPlaceholder": "Pilih kelas",
     "gradeLevel": "Angkatan",

@@ -97,7 +97,7 @@ describe("BillsListView filters", () => {
     const user = userEvent.setup();
     render(<BillsListView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useBillsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ classId: "" }),
       expect.anything(),

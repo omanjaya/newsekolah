@@ -1,4 +1,4 @@
-import type { Locale } from "@newsekolah/i18n";
+import { formatDateRange, type Locale } from "@newsekolah/i18n";
 
 const INTL_LOCALE: Record<Locale, string> = { id: "id-ID", en: "en-GB" };
 
@@ -15,20 +15,11 @@ function dateOnly(value: string): Date {
 
 /**
  * A leave's dates, said once: "25 Sep 2026" for one day, "25–27 Sep 2026"
- * within a month, "30 Sep – 2 Okt 2026" across months (Intl's own range
- * format, so each locale joins them its own way).
+ * within a month, "30 Sep – 2 Okt 2026" across months. The shared range
+ * format, so leave dates read like every other range in the app.
  */
 export function formatDayRange(startsOn: string, endsOn: string, locale: Locale): string {
-  const format = new Intl.DateTimeFormat(INTL_LOCALE[locale], {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-  const start = dateOnly(startsOn);
-  const end = dateOnly(endsOn);
-  if (end.getTime() <= start.getTime()) return format.format(start);
-  return format.formatRange(start, end);
+  return formatDateRange(startsOn.slice(0, 10), endsOn.slice(0, 10), { locale });
 }
 
 /** How many calendar days a leave covers, both ends included (at least 1). */
@@ -38,7 +29,7 @@ export function countDays(startsOn: string, endsOn: string): number {
 }
 
 /** A moment's day, short and with the weekday: "Kam, 25 Sep 2026", in the school's time zone. */
-export function formatShortDate(
+export function formatShortWeekdayDate(
   value: string,
   locale: Locale,
   timeZone: string | undefined,

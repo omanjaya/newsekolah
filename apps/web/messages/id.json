@@ -279,7 +279,7 @@
           "pageSize": "Baris per halaman",
           "previous": "Ke halaman sebelumnya",
           "next": "Ke halaman berikutnya",
-          "filtersReset": "Reset filter",
+          "filtersReset": "Hapus semua filter",
           "filterRemove": "Hapus filter {label}",
           "filterDateFrom": "Dari",
           "filterDateTo": "Sampai",
@@ -356,7 +356,7 @@
         "empty": {
           "filteredTitle": "Tidak ada yang cocok",
           "filteredDescription": "Coba kata kunci lain atau hapus filter yang aktif.",
-          "filteredReset": "Hapus filter"
+          "filteredReset": "Hapus semua filter"
         },
         "statePage": {
           "code": "Kode {code}"
@@ -815,10 +815,6 @@
       "unread": "Baru",
       "manageEmptyTitle": "Belum ada pengumuman dibuat",
       "manageEmptyBody": "Buat draf, pilih penerima, lalu terbitkan atau jadwalkan.",
-      "filters": {
-        "reset": "Reset filter",
-        "removeFilter": "Hapus filter {label}"
-      },
       "columns": {
         "title": "Judul",
         "status": "Status",
@@ -1283,11 +1279,6 @@
       "searchPlaceholder": "Cari nama atau NIS",
       "statusFilterLabel": "Status",
       "statusFilterAll": "Semua status",
-      "statusFilterClear": "Hapus filter",
-      "filters": {
-        "reset": "Reset filter",
-        "removeFilter": "Hapus filter {label}"
-      },
       "noGuardian": "Belum ada data wali",
       "noViolations": "Tidak ada",
       "violationSummary": "{count} pelanggaran, {points} poin",
@@ -1709,6 +1700,7 @@
     },
     "school": {
       "users": {
+        "searchPlaceholder": "Cari nama, nama pengguna, NIS, atau NIP",
         "eyebrow": "Data sekolah",
         "title": "Guru, pegawai, dan siswa",
         "columns": {
@@ -1732,9 +1724,7 @@
         "filters": {
           "kind": "Jenis",
           "status": "Status",
-          "role": "Peran",
-          "reset": "Reset filter",
-          "removeFilter": "Hapus filter {label}"
+          "role": "Peran"
         },
         "includeArchived": "Tampilkan yang diarsipkan",
         "emptyTitle": "Belum ada pengguna",
@@ -1784,6 +1774,7 @@
           "noCustomRoles": "Belum ada peran khusus. Buat di Pengaturan > Peran dan akses."
         },
         "import": {
+          "searchPlaceholder": "Cari nama atau nama pengguna",
           "title": "Impor pengguna",
           "description": "Unduh templat, isi di luar sistem, unggah kembali, lalu periksa hasilnya sebelum benar-benar dibuat.",
           "step1Body": "Templat berisi contoh baris dan lembar Referensi berisi kode yang diterima untuk setiap kolom (jenis kelamin, golongan darah, peran, dan sejenisnya).",
@@ -1868,6 +1859,7 @@
         "noStudents": "Belum ada siswa di kelas ini",
         "searchStudent": "Cari nama siswa",
         "rowActionsMenu": "Aksi lain untuk {name}",
+        "cardJoined": "Bergabung {date}",
         "noUnassigned": "Semua siswa sudah punya kelas.",
         "assigned": "{n} siswa ditempatkan",
         "assignCount": "Tempatkan ({n})",
@@ -1967,6 +1959,7 @@
         }
       },
       "subjects": {
+        "searchPlaceholder": "Cari nama atau kode mapel",
         "eyebrow": "Data sekolah",
         "title": "Mata pelajaran",
         "add": "Tambah mapel",

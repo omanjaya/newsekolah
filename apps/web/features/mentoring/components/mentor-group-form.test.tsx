@@ -35,7 +35,12 @@ describe("MentorGroupForm mentor picker", () => {
 
     const picker = screen.getByRole("combobox", { name: "mentorPlaceholder" });
     expect(picker).toHaveAttribute("data-kind", "teacher");
-    expect(screen.getByRole("button", { name: "submit" })).toBeDisabled();
+    // Submit stays enabled: pressing it early explains what is missing.
+    await user.click(screen.getByRole("button", { name: "submit" }));
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(screen.getAllByText("required")).toHaveLength(2);
+    // The first invalid control takes focus (the stub picker carries no field wiring).
+    expect(screen.getByRole("textbox", { name: "name" })).toHaveFocus();
     await user.click(picker);
     await user.type(screen.getByRole("textbox", { name: "name" }), "Kelompok A");
     await user.click(screen.getByRole("button", { name: "submit" }));

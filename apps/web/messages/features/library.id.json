@@ -70,9 +70,7 @@
       "availability": "Hanya tersedia",
       "sort": "Urutkan",
       "sortTitle": "Judul A-Z",
-      "sortNewest": "Terbaru",
-      "reset": "Reset filter",
-      "removeFilter": "Hapus filter {label}"
+      "sortNewest": "Terbaru"
     },
     "columns": {
       "title": "Judul",
@@ -181,6 +179,7 @@
     "emptyBody": "Tambahkan eksemplar fisik dengan barcode masing-masing.",
     "batchForm": {
       "count": "Jumlah eksemplar",
+      "countRange": "Isi 1 sampai 200 eksemplar",
       "save": "Tambahkan",
       "saved": "{count} eksemplar ditambahkan"
     },
@@ -293,6 +292,7 @@
       "print": "Cetak"
     },
     "overdue": {
+      "searchPlaceholder": "Cari anggota, judul, atau barcode",
       "heading": "Terlambat",
       "columns": {
         "member": "Anggota",
@@ -466,6 +466,8 @@
     "emptyTitle": "Belum ada anggota terdaftar",
     "emptyBody": "Daftarkan pengguna sebagai anggota perpustakaan untuk mulai.",
     "statusUpdated": "Status anggota diperbarui",
+    "cardValidUntil": "Berlaku s.d. {date}",
+    "cardLateReturns": "Terlambat {count} kali",
     "columns": {
       "name": "Nama",
       "type": "Jenis",
@@ -478,9 +480,7 @@
       "status": "Status",
       "statusAll": "Semua status",
       "type": "Jenis anggota",
-      "typeAll": "Semua jenis",
-      "clear": "Bersihkan filter",
-      "removeFilter": "Hapus filter {label}"
+      "typeAll": "Semua jenis"
     },
     "more": "Lainnya",
     "status": {
@@ -510,6 +510,7 @@
     "studentProfile": "Buka profil siswa"
   },
   "memberTypes": {
+    "searchPlaceholder": "Cari nama jenis anggota",
     "navLabel": "Jenis anggota",
     "eyebrow": "Perpustakaan",
     "title": "Jenis anggota",
@@ -644,9 +645,7 @@
       "status": "Status",
       "statusAll": "Semua status",
       "kind": "Jenis",
-      "kindAll": "Semua jenis",
-      "clear": "Bersihkan filter",
-      "removeFilter": "Hapus filter {label}"
+      "kindAll": "Semua jenis"
     },
     "kinds": {
       "late": "Terlambat",
@@ -729,6 +728,7 @@
       "call_number": "Nomor panggil"
     },
     "preview": {
+      "searchPlaceholder": "Cari judul atau keterangan",
       "summary": {
         "newTitles": "Judul baru",
         "existingTitles": "Judul sudah ada",
@@ -798,9 +798,7 @@
       "category": "Kategori",
       "categoryAll": "Semua kategori",
       "location": "Lokasi",
-      "locationAll": "Semua lokasi",
-      "clear": "Bersihkan filter",
-      "removeFilter": "Hapus filter {label}"
+      "locationAll": "Semua lokasi"
     },
     "status": {
       "available": "Tersedia",
@@ -833,8 +831,6 @@
     "fromLabel": "Dari tanggal",
     "toLabel": "Sampai tanggal",
     "dateRange": "Rentang tanggal",
-    "reset": "Reset filter",
-    "removeFilter": "Hapus filter {label}",
     "invalidRange": "Tanggal mulai harus sebelum atau sama dengan tanggal akhir",
     "groupSizeValue": "{count} orang",
     "emptyTitle": "Belum ada kunjungan pada rentang ini",
@@ -907,6 +903,7 @@
     "ongoing": "sedang berlangsung"
   },
   "stocktake": {
+    "searchPlaceholder": "Cari nama stok opname",
     "eyebrow": "Perpustakaan",
     "title": "Stok opname",
     "startNew": "Mulai sesi baru",
@@ -988,6 +985,7 @@
       "ddcClasses": "Kelas DDC"
     },
     "materialTypes": {
+      "searchPlaceholder": "Cari nama atau kode jenis bahan",
       "add": "Tambah jenis bahan",
       "editTitle": "Ubah jenis bahan",
       "columns": {
@@ -1022,6 +1020,7 @@
       "rowActions": "Aksi untuk {name}"
     },
     "acquisitionSources": {
+      "searchPlaceholder": "Cari nama atau kode sumber perolehan",
       "add": "Tambah sumber",
       "editTitle": "Ubah sumber perolehan",
       "columns": {
@@ -1052,6 +1051,7 @@
       "rowActions": "Aksi untuk {name}"
     },
     "partners": {
+      "searchPlaceholder": "Cari nama atau kode mitra",
       "add": "Tambah mitra",
       "editTitle": "Ubah mitra",
       "columns": {
@@ -1085,6 +1085,7 @@
       "rowActions": "Aksi untuk {name}"
     },
     "collectionCategories": {
+      "searchPlaceholder": "Cari nama atau kode kategori",
       "add": "Tambah kategori",
       "editTitle": "Ubah kategori koleksi",
       "columns": {
@@ -1115,6 +1116,7 @@
       "rowActions": "Aksi untuk {name}"
     },
     "locations": {
+      "searchPlaceholder": "Cari nama atau kode lokasi",
       "add": "Tambah lokasi",
       "editTitle": "Ubah lokasi rak",
       "columns": {
@@ -1217,6 +1219,7 @@
       "description": "Rekap satu bulan dalam satu berkas PDF, siap dicetak atau dikirim ke kepala sekolah."
     },
     "loans": {
+      "searchPlaceholder": "Cari judul atau anggota",
       "title": "Peminjaman dalam rentang tanggal",
       "columns": {
         "copy": "Eksemplar",
@@ -1228,6 +1231,7 @@
       "emptyTitle": "Tidak ada peminjaman pada rentang ini"
     },
     "overdueMembers": {
+      "searchPlaceholder": "Cari nama anggota",
       "title": "Anggota terlambat",
       "unknownMember": "Anggota tidak dikenali",
       "emptyTitle": "Tidak ada anggota terlambat",
@@ -1238,6 +1242,7 @@
       }
     },
     "mostBorrowed": {
+      "searchPlaceholder": "Cari judul",
       "title": "Judul paling sering dipinjam",
       "emptyTitle": "Belum ada peminjaman pada rentang ini",
       "columns": {
@@ -1289,6 +1294,7 @@
       "summaryLabel": "Ringkasan anggota"
     },
     "accessionRegister": {
+      "searchPlaceholder": "Cari nomor induk atau barcode",
       "emptyTitle": "Tidak ada penambahan pada rentang ini",
       "columns": {
         "accessionNumber": "No. induk",
@@ -1633,6 +1639,7 @@
     "loanRules": "Aturan peminjaman"
   },
   "titleDetail": {
+    "searchPlaceholder": "Cari barcode eksemplar",
     "notFoundTitle": "Judul tidak bisa dibuka",
     "tabsLabel": "Bagian judul",
     "tabs": {

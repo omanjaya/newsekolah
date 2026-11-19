@@ -96,6 +96,7 @@ export function LoansReportTable({
 
   return (
     <DataTable
+      toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
       stateKey="features/library/components/library-reports-view:loans"
       mode="local"
       data={loans}
@@ -164,6 +165,7 @@ export function OverdueMembersReportTable(): ReactElement {
 
   return (
     <DataTable
+      toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
       stateKey="features/library/components/library-reports-view:overdue-members"
       mode="local"
       data={members}
@@ -222,6 +224,7 @@ export function MostBorrowedReportTable({
 
   return (
     <DataTable
+      toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
       stateKey="features/library/components/library-reports-view:most-borrowed"
       mode="local"
       data={titles}

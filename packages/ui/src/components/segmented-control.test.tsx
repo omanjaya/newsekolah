@@ -50,6 +50,18 @@ describe("SegmentedControl", () => {
     expect(group.style.getPropertyValue("--segment-index")).toBe("3");
   });
 
+  // The clear band and the longer fades are for strips that draw edge
+  // chevrons (Tabs, NavTabs). A segmented control has no chevrons, so a
+  // band there would only hide the edge labels.
+  it("keeps the plain edge fade, with no clear band for edge cues", () => {
+    render(<SegmentedControl aria-label="Mode" options={options} defaultValue="all" />);
+    const scroller = screen.getByRole("radiogroup", { name: "Mode" }).closest(".scroll-fade-x");
+    expect(scroller).not.toBeNull();
+    expect(scroller?.className).not.toContain("--scroll-fade-clear");
+    expect(scroller?.className).not.toContain("--scroll-fade-start-size");
+    expect(scroller?.className).not.toContain("--scroll-fade-end-size");
+  });
+
   it("follows a controlled value and posts it under a name", () => {
     const { rerender } = render(
       <form aria-label="Filter">

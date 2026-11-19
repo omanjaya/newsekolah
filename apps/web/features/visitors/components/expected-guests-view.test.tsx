@@ -68,7 +68,7 @@ describe("ExpectedGuestsView filters", () => {
     const user = userEvent.setup();
     render(<ExpectedGuestsView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useExpectedGuestsQuery).toHaveBeenLastCalledWith(expect.any(String), true);
     expect(new URLSearchParams(window.location.search).get("only_pending")).toBe("");
   });

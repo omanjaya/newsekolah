@@ -68,7 +68,7 @@ describe("AchievementsView filters", () => {
     const user = userEvent.setup();
     render(<AchievementsView />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useAchievementsQuery).toHaveBeenLastCalledWith(undefined, undefined);
     expect(new URLSearchParams(window.location.search).get("class_id")).toBe("");
   });

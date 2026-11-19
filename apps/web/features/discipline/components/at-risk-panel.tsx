@@ -218,10 +218,6 @@ export function AtRiskPanel(): ReactElement {
             setPagination((p) => ({ ...p, pageIndex: 0 }));
           }}
           filters={filters}
-          filtersLabels={{
-            reset: t("filters.reset"),
-            removeFilter: (label) => t("filters.removeFilter", { label }),
-          }}
           isLoading={candidates.isLoading}
           getRowId={(item) => item.student_user_id}
           onRowActivate={(item) => {

@@ -123,7 +123,7 @@ const DEFAULT_UI_LABELS: UiLabels = {
   loading: "Memuat",
   emptyFilteredTitle: "Tidak ada yang cocok",
   emptyFilteredDescription: "Coba kata kunci lain atau hapus filter yang aktif.",
-  emptyFilteredReset: "Hapus filter",
+  emptyFilteredReset: "Hapus semua filter",
   statePageCode: (code) => `Kode ${code}`,
   alertDismiss: "Tutup pesan",
   statDeltaUp: "Naik",

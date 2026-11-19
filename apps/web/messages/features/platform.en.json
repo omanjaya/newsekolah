@@ -1,5 +1,6 @@
 {
   "tenants": {
+    "searchPlaceholder": "Search school name",
     "eyebrow": "Platform",
     "title": "Platform console",
     "subtitle": "Every school on this deployment, its health and its active modules.",

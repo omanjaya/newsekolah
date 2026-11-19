@@ -12,8 +12,6 @@
   "filterClassAll": "Semua kelas",
   "searchPlaceholder": "Cari topik atau kegiatan",
   "filters": {
-    "reset": "Reset filter",
-    "removeFilter": "Hapus filter {label}",
     "dateRange": "Tanggal",
     "from": "Dari",
     "to": "Sampai",

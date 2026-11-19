@@ -76,6 +76,7 @@
     "addTitle": "Add a group member",
     "addPlaceholder": "Select a student",
     "addConfirm": "Add",
+    "alreadyMember": "This student is already in the group.",
     "added": "Student added to the group",
     "cancel": "Cancel",
     "countOfLimit": "{count} of {limit} members",
@@ -88,6 +89,7 @@
     "unknownStudent": "Unknown student"
   },
   "notes": {
+    "searchPlaceholder": "Search meeting topic",
     "add": "Record a meeting",
     "columns": {
       "metAt": "Date",

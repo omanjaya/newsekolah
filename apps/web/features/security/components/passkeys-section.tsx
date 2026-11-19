@@ -20,6 +20,7 @@ import {
   ListRow,
   RowActionsMenu,
   SkeletonList,
+  useSubmitValidation,
   useToast,
 } from "@newsekolah/ui";
 import { Fingerprint, Pencil, Plus, Trash2 } from "lucide-react";
@@ -60,6 +61,8 @@ function NameDialog({
 }): ReactElement {
   const t = useTranslations("app.security.passkeys");
   const [name, setName] = useState(initial);
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
   return (
     <Dialog
       open={open}
@@ -69,13 +72,20 @@ function NameDialog({
     >
       <DialogContent title={title} description={description} size="sm">
         <form
+          ref={formRef}
           className="flex flex-col gap-5"
+          noValidate
           onSubmit={(event) => {
             event.preventDefault();
-            if (name.trim()) onSubmit(name.trim());
+            if (!check(name.trim() !== "")) return;
+            onSubmit(name.trim());
           }}
         >
-          <Field label={t("nameLabel")}>
+          <Field
+            label={t("nameLabel")}
+            required
+            error={attempted && !name.trim() ? tValidation("required") : undefined}
+          >
             <Input
               value={name}
               placeholder={t("namePlaceholder")}
@@ -89,7 +99,7 @@ function NameDialog({
             <Button variant="secondary" onClick={onClose}>
               {t("cancel")}
             </Button>
-            <Button type="submit" loading={pending} disabled={!name.trim()}>
+            <Button type="submit" loading={pending}>
               {confirmLabel}
             </Button>
           </DialogFooter>

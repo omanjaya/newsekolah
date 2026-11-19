@@ -63,7 +63,7 @@ describe("WebhookDeliveriesPanel filters", () => {
     const user = userEvent.setup();
     render(<WebhookDeliveriesPanel endpointId="endpoint-a" onEndpointChange={onEndpointChange} />);
 
-    await user.click(screen.getByRole("button", { name: "filters.removeFilter" }));
+    await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(onEndpointChange).toHaveBeenCalledWith("");
   });
 

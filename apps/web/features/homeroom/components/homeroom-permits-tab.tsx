@@ -1,7 +1,7 @@
 "use client";
 
 import type { Locale } from "@newsekolah/i18n";
-import { formatDate } from "@newsekolah/i18n";
+import { formatDateRange } from "@newsekolah/i18n";
 import {
   Badge,
   Card,
@@ -57,7 +57,7 @@ export function HomeroomPermitsTab({
           <ListRow
             key={item.instance_id}
             title={formatDisplayName(item.student_name)}
-            meta={`${formatDate(item.starts_on, { locale, timeZone })} – ${formatDate(item.ends_on, { locale, timeZone })}`}
+            meta={formatDateRange(item.starts_on, item.ends_on, { locale, timeZone })}
             trailing={review}
             href={`/leave-requests/${item.instance_id}`}
           />
