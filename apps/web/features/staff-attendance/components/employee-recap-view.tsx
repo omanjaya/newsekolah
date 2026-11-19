@@ -111,6 +111,7 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
         setTo(nextTo);
       },
       presets,
+      today,
     },
   ];
 

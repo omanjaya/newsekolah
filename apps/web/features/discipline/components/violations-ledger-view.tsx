@@ -25,7 +25,8 @@ import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import { useClassesQuery } from "../../reference/api";
 import { useDirectoryNamePeek, useDirectoryNames } from "../../reference/directory-names";
 import { type ViolationRecord, useViolationsQuery } from "../api";
@@ -50,6 +51,7 @@ export function ViolationsLedgerView({
   const locale = useLocale() as Locale;
   const router = useRouter();
   const canRecord = useCan("record_violations");
+  const { me } = useSession();
 
   const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
   const [from, setFrom] = useDateFilter("from", "");
@@ -117,6 +119,7 @@ export function ViolationsLedgerView({
         paging.resetPage();
       },
       presets,
+      today: todayInZone(me?.tenant.timezone),
     },
   ];
 

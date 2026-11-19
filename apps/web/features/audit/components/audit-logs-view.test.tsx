@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as TenantDate from "../../../lib/tenant-date";
 import { pickDate } from "../../../test/pick-date";
 
 const mocks = vi.hoisted(() => ({
@@ -19,6 +20,12 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { id: "me", tenant: { timezone: "Asia/Jakarta" } } }),
+}));
+// The school's today, deliberately not the device's, so the calendar must
+// take it from the tenant clock rather than `new Date()`.
+vi.mock("../../../lib/tenant-date", async (importOriginal) => ({
+  ...(await importOriginal<typeof TenantDate>()),
+  todayInZone: () => "2020-02-14",
 }));
 vi.mock("../../reference/components/directory-picker", async () => {
   const { directoryPickerStubModule } = await import("../../../test/directory-picker-stub");
@@ -134,6 +141,20 @@ describe("AuditLogsView filters", () => {
     );
     expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-09-01");
     expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-09-15");
+  });
+
+  it("marks the school's today, not the device's, in the date range calendars", async () => {
+    const user = userEvent.setup();
+    render(<AuditLogsView />);
+
+    await user.click(screen.getByRole("button", { name: "filters.dateRange" }));
+    await user.click(screen.getByRole("combobox", { name: "filters.from" }));
+    const grid = await screen.findByRole("grid");
+
+    const marked = within(grid)
+      .getAllByRole("gridcell")
+      .filter((cell) => cell.getAttribute("aria-current") === "date");
+    expect(marked.map((cell) => cell.dataset.date)).toEqual(["2020-02-14"]);
   });
 
   it("clears both bounds from the date range chip's remove control", async () => {

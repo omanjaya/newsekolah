@@ -82,6 +82,7 @@ export function VisitsView(): ReactElement {
         paging.resetPage();
       },
       presets,
+      today,
     },
   ];
 
