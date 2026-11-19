@@ -293,8 +293,9 @@ function focusFirstLink(container: HTMLElement | null) {
 /**
  * One group as a single rail icon that opens its pages in a flyout panel.
  * A mouse hovering it peeks; a click, a tap or a key pins it open and moves
- * focus to its first page, also when the peek is already showing. A small chevron tells it apart from the rail's
- * plain links, which navigate at once. Render it inside `RailFlyouts`.
+ * focus to its first page, also when the peek is already showing. A small
+ * chevron tells it apart from the rail's plain links, which navigate at once.
+ * Render it inside `RailFlyouts`.
  */
 export function GroupFlyout({
   group,
