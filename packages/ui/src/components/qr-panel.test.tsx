@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
 
-import { QrPanel, QrPanelSkeleton } from "./qr-panel.js";
+import { LONG_LIVED_SECONDS, QrPanel, QrPanelSkeleton } from "./qr-panel.js";
 
 const NOW = new Date("2026-11-14T08:00:00Z").getTime();
 
@@ -182,6 +182,56 @@ describe("QrPanel", () => {
     );
     expect(onRenew).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Buat kode baru" })).toHaveClass("bg-accent");
+  });
+
+  it("reads a long-lived code as the time it stops working, not a seconds count", () => {
+    const { container } = render(
+      <QrPanel
+        payload="sion:gate:abc"
+        code=""
+        expiresAt={inSeconds(8 * 3600)}
+        onRenew={vi.fn()}
+        renewing={false}
+        validUntilLabel={(expiresAt) => `Berlaku sampai ${expiresAt}`}
+      />,
+    );
+    expect(screen.getByText(`Berlaku sampai ${inSeconds(8 * 3600)}`)).toBeInTheDocument();
+    expect(screen.queryByText(/detik/)).not.toBeInTheDocument();
+    // No ring, and no "new code" while the code still works.
+    expect(container.querySelector("circle")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Buat kode baru" })).not.toBeInTheDocument();
+  });
+
+  it("formats a long-lived code's expiry with the locale by default, and offers a new code once it runs out", () => {
+    render(
+      <QrPanel
+        payload="sion:gate:abc"
+        code=""
+        expiresAt={inSeconds(LONG_LIVED_SECONDS + 1)}
+        onRenew={vi.fn()}
+        renewing={false}
+      />,
+    );
+    expect(screen.getByText(/^Berlaku sampai pukul \d{2}\.\d{2}$/)).toBeInTheDocument();
+    act(() => {
+      vi.advanceTimersByTime((LONG_LIVED_SECONDS + 2) * 1000);
+    });
+    expect(screen.getAllByText("Kode kedaluwarsa").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Buat kode baru" })).toBeInTheDocument();
+  });
+
+  it("keeps the seconds countdown for a short-lived code", () => {
+    render(
+      <QrPanel
+        payload="sion:desk:abc"
+        code=""
+        expiresAt={inSeconds(LONG_LIVED_SECONDS)}
+        onRenew={vi.fn()}
+        renewing={false}
+      />,
+    );
+    expect(screen.getByText(`Berlaku ${LONG_LIVED_SECONDS} detik lagi`)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Buat kode baru" })).toBeInTheDocument();
   });
 
   it("holds the panel's shape while loading", () => {

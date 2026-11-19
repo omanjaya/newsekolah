@@ -10,6 +10,7 @@ const GATE_TOKEN = "gate-token-of-forty-three-characters-xxxxxxx";
 const mocks = vi.hoisted(() => ({
   detail: undefined as ExitPermitDetail | undefined,
   cancel: vi.fn(),
+  scrollIntoView: vi.fn(),
   gate: undefined as { token: string; expires_at: string } | undefined,
 }));
 
@@ -80,6 +81,9 @@ function detail(status: "in_progress" | "approved"): ExitPermitDetail {
 }
 
 beforeEach(() => {
+  // jsdom has no layout, so no scrollIntoView.
+  Element.prototype.scrollIntoView = mocks.scrollIntoView;
+  mocks.scrollIntoView.mockReset();
   mocks.cancel.mockReset();
   mocks.cancel.mockResolvedValue(undefined);
   mocks.gate = undefined;
@@ -119,5 +123,28 @@ describe("ActiveExitPermitCard", () => {
     render(<ActiveExitPermitCard id={PERMIT_ID} />);
     expect(screen.getByRole("img", { name: "gateQrLabel" })).toBeInTheDocument();
     expect(screen.queryByText(GATE_TOKEN)).not.toBeInTheDocument();
+  });
+
+  it("shows a day-long gate QR as a time, first, scrolled into view, with the stages folded", async () => {
+    mocks.detail = detail("approved");
+    mocks.gate = {
+      token: GATE_TOKEN,
+      expires_at: new Date(Date.now() + 8 * 3600_000).toISOString(),
+    };
+    render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(screen.getByText("validUntil")).toBeInTheDocument();
+    expect(screen.queryByText("expiresIn")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "renew" })).not.toBeInTheDocument();
+    expect(mocks.scrollIntoView).toHaveBeenCalled();
+
+    // The QR comes before the finished stages, which sit behind one line.
+    const qr = screen.getByRole("img", { name: "gateQrLabel" });
+    const stages = screen.getByRole("button", { name: "stagesApproved" });
+    expect(qr.compareDocumentPosition(stages) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(stages).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getAllByText("Guru piket")[0]).not.toBeVisible();
+    await userEvent.click(stages);
+    expect(screen.getAllByText("Guru piket")[0]).toBeVisible();
   });
 });

@@ -314,6 +314,7 @@
           "code": "QR code",
           "expired": "Code expired",
           "expiresIn": "Valid for {seconds, plural, one {# more second} other {# more seconds}}",
+          "validUntil": "Valid until {time}",
           "renew": "New code",
           "manualCode": "Can't scan? Use this code"
         },
@@ -912,7 +913,7 @@
       "help": {
         "classroom_entry": "Students scan this code when entering class to record their presence in the running session. The code renews itself when it runs out.",
         "late_arrival": "Students who arrive late scan this code. Their names go straight into the late queue on this page.",
-        "exit": "Students with an exit permit scan this code from the Scan QR button on their permit. Each approved student is listed under Recorded today. Counselor and leadership stages are approved from Needs action."
+        "exit": "Students with an exit permit scan this code from the Scan QR button on their permit. Each approved student is listed under Recorded on this screen. Counselor and leadership stages are approved from Needs action."
       },
       "manualForm": {
         "intro": "For a student with no phone on hand: pick the kind, find the student, and record it here.",
@@ -924,9 +925,9 @@
         "changeStudent": "Change",
         "destination": "Destination",
         "destinationPlaceholder": "E.g. clinic, picking up a sibling",
-        "startPeriod": "Start period",
-        "endPeriod": "End period",
-        "selectPeriod": "Select a period",
+        "startPeriod": "From period",
+        "endPeriod": "To period",
+        "selectPeriod": "Pick",
         "noPeriods": "No periods have been set up yet.",
         "reason": "Reason for lateness",
         "reasonPlaceholder": "E.g. traffic, overslept",
@@ -936,6 +937,7 @@
         "recordedExit": "Exit permit recorded for {student}",
         "recordedLate": "Late arrival recorded for {student}",
         "submit": "Record",
+        "cancel": "Cancel",
         "title": "Record without the student's phone",
         "kindLabel": "Record kind",
         "studentRequired": "Pick a student first."
@@ -1442,7 +1444,8 @@
       "qr": {
         "expiresIn": "Valid for {seconds} more seconds",
         "expired": "This code has expired",
-        "renew": "Generate a new code"
+        "renew": "Generate a new code",
+        "validUntil": "Valid until {time}"
       },
       "exit": {
         "eyebrow": "Student affairs",
@@ -1522,6 +1525,7 @@
         },
         "waitManual": "Waiting for {stage} to review.",
         "gateQrLabel": "Exit permit gate QR code",
+        "stagesApproved": "{count, plural, one {# stage approved} other {# stages approved}}",
         "lessons": "Periods",
         "opened": "Requested",
         "exitedLabel": "Through the gate",

@@ -103,6 +103,7 @@ export function useAppUiLabels(): UiLabels {
       qrCode: t("qr.code"),
       qrExpired: t("qr.expired"),
       qrExpiresIn: (seconds) => t("qr.expiresIn", { seconds }),
+      qrValidUntil: (time) => t("qr.validUntil", { time }),
       qrRenew: t("qr.renew"),
       qrManualCode: t("qr.manualCode"),
 
