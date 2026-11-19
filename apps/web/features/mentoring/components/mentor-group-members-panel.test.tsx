@@ -81,7 +81,9 @@ describe("MentorGroupMembersPanel add picker", () => {
     await user.click(screen.getAllByRole("button", { name: "add" }).at(0) ?? document.body);
     await user.click(screen.getByRole("combobox", { name: "addPlaceholder" }));
 
-    expect(screen.getByRole("button", { name: "addConfirm" })).toBeDisabled();
+    // Submit stays enabled and says why it will not add them.
+    await user.click(screen.getByRole("button", { name: "addConfirm" }));
+    expect(screen.getByText("alreadyMember")).toBeInTheDocument();
     expect(mocks.assign).not.toHaveBeenCalled();
   });
 });

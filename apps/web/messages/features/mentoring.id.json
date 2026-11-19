@@ -76,6 +76,7 @@
     "addTitle": "Tambah anggota kelompok",
     "addPlaceholder": "Pilih siswa",
     "addConfirm": "Tambahkan",
+    "alreadyMember": "Siswa ini sudah menjadi anggota kelompok.",
     "added": "Siswa ditambahkan ke kelompok",
     "cancel": "Batal",
     "countOfLimit": "{count} dari {limit} anggota",

@@ -8,6 +8,7 @@ import {
   Field,
   Select,
   Textarea,
+  useSubmitValidation,
   useToast,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
@@ -36,12 +37,17 @@ export function MemberProfileForm({
   const [memberTypeId, setMemberTypeId] = useState(member.member_type_id);
   const [validUntil, setValidUntil] = useState(member.valid_until ?? "");
   const [notes, setNotes] = useState(member.notes ?? "");
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
 
   return (
     <form
+      ref={formRef}
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(event) => {
         event.preventDefault();
+        if (!check(Boolean(memberTypeId))) return;
         update.mutate(
           {
             userId: member.user_id,
@@ -65,7 +71,11 @@ export function MemberProfileForm({
         );
       }}
     >
-      <Field label={t("memberType")}>
+      <Field
+        label={t("memberType")}
+        required
+        error={attempted && !memberTypeId ? tValidation("required") : undefined}
+      >
         <Select
           value={memberTypeId}
           onValueChange={setMemberTypeId}
@@ -89,7 +99,7 @@ export function MemberProfileForm({
         <Button variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={update.isPending} disabled={!memberTypeId || types.isError}>
+        <Button type="submit" loading={update.isPending} disabled={types.isError}>
           {t("save")}
         </Button>
       </DialogFooter>
