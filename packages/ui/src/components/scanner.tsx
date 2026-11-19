@@ -9,6 +9,7 @@ import {
   useSyncExternalStore,
   type ReactElement,
   type ReactNode,
+  type RefObject,
 } from "react";
 
 import { createDuplicateScanGuard } from "../hooks/duplicate-scan-guard.js";
@@ -150,11 +151,20 @@ export function Scanner({
   // hydration does, so the viewfinder appears without a mismatch.
   const supported = useSyncExternalStore(subscribeNever, isCameraSupported, () => false);
   const cameraOffered = camera && supported;
+  // The manual field's "type a code first" state lives here, not in the
+  // field: any accepted scan (camera, hardware scanner or typed) answers it.
+  const {
+    ref: manualRef,
+    attempted: manualAttempted,
+    check: checkManual,
+    reset: resetManual,
+  } = useSubmitValidation<HTMLDivElement>();
 
   // One scan at a time, in order: a slow handler is never overlapped by the
   // next code read in the same second.
   const submit = useCallback(
     (event: BarcodeScanEvent) => {
+      resetManual();
       queue.current = queue.current.then(async () => {
         let ok: boolean;
         try {
@@ -171,7 +181,7 @@ export function Scanner({
         }, FLASH_MS);
       });
     },
-    [onScan],
+    [onScan, resetManual],
   );
 
   const { status, retry } = useCameraScanner({
@@ -219,6 +229,8 @@ export function Scanner({
   const submitManual = () => {
     const code = value.trim();
     if (!code || disabled) return;
+    // A repeat inside the duplicate window is dropped, but it was still a send.
+    resetManual();
     if (!guard.current.accept(code, Date.now())) return;
     setValue("");
     submit({ code, source: "manual", at: Date.now() });
@@ -274,6 +286,9 @@ export function Scanner({
       value={value}
       onChange={setValue}
       onSubmit={submitManual}
+      entryRef={manualRef}
+      attempted={manualAttempted}
+      check={checkManual}
       isScanPending={hardware.isScanPending}
       disabled={disabled}
       label={manualLabel ?? labels.scannerManualLabel}
@@ -366,6 +381,9 @@ function ManualEntry({
   value,
   onChange,
   onSubmit,
+  entryRef,
+  attempted,
+  check,
   isScanPending,
   disabled,
   label,
@@ -379,6 +397,14 @@ function ManualEntry({
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
+  /**
+   * The form convention: the button stays enabled on an empty field, and
+   * pressing it says what is missing and puts the caret back in the field.
+   * The Scanner owns this state and clears it on every accepted scan.
+   */
+  entryRef: RefObject<HTMLDivElement | null>;
+  attempted: boolean;
+  check: (valid: boolean) => boolean;
   /** A hardware scanner just typed here: its Enter is the scanner hook's, not this field's. */
   isScanPending: () => boolean;
   disabled: boolean;
@@ -388,9 +414,6 @@ function ManualEntry({
 }): ReactElement {
   const labels = useUiLabels();
   const inputRef = useRef<HTMLInputElement>(null);
-  // The form convention: the button stays enabled on an empty field, and
-  // pressing it says what is missing and puts the caret back in the field.
-  const { ref: entryRef, attempted, check, reset } = useSubmitValidation<HTMLDivElement>();
   const empty = value.trim() === "";
   // Opening the fallback (from the toggle or a camera that cannot be used)
   // puts the caret in it; a field shown from the start waits for a tap.
@@ -398,9 +421,9 @@ function ManualEntry({
     if (open && collapsible) inputRef.current?.focus();
   }, [open, collapsible]);
   const submit = () => {
+    // A send clears the message (the field empties after it, which is not a
+    // new mistake to flag), as does any scan from the camera or a scanner.
     if (!check(!empty)) return;
-    // The field empties after a send: that is not a new mistake to flag.
-    reset();
     onSubmit();
   };
   return (

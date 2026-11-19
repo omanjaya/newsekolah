@@ -107,6 +107,42 @@ describe("Scanner", () => {
     expect(screen.queryByText("Ketik atau tempel kode lebih dulu.")).not.toBeInTheDocument();
   });
 
+  it("clears the missing-code message when a hardware scanner sends a code", async () => {
+    const onScan = vi.fn();
+    render(<Scanner onScan={onScan} />);
+    await userEvent.click(screen.getByRole("button", { name: "Kirim" }));
+    expect(screen.getByText("Ketik atau tempel kode lebih dulu.")).toBeInTheDocument();
+    // userEvent's default typing is scanner speed: the whole code in a few ms.
+    await userEvent.type(screen.getByLabelText("Kode"), "sion:gate:abc{Enter}");
+    await waitFor(() => {
+      expect(onScan).toHaveBeenCalledWith(expect.objectContaining({ source: "scanner" }));
+    });
+    expect(screen.getByLabelText("Kode")).toHaveValue("");
+    expect(screen.queryByText("Ketik atau tempel kode lebih dulu.")).not.toBeInTheDocument();
+  });
+
+  it("clears the missing-code message when the camera reads a code", async () => {
+    const codes = ["A"];
+    class FakeDetector {
+      detect() {
+        const next = codes.shift();
+        return Promise.resolve(next ? [{ rawValue: next }] : []);
+      }
+    }
+    Object.defineProperty(window, "BarcodeDetector", { configurable: true, value: FakeDetector });
+    HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+    installCamera(() => Promise.resolve({ getTracks: () => [{ stop: vi.fn() }] }));
+    const onScan = vi.fn().mockResolvedValue(true);
+    render(<Scanner onScan={onScan} manualEntry="open" autoStart={false} />);
+    await userEvent.click(screen.getByRole("button", { name: "Kirim" }));
+    expect(screen.getByText("Ketik atau tempel kode lebih dulu.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Nyalakan kamera" }));
+    await waitFor(() => {
+      expect(onScan).toHaveBeenCalledWith(expect.objectContaining({ code: "A", source: "camera" }));
+    });
+    expect(screen.queryByText("Ketik atau tempel kode lebih dulu.")).not.toBeInTheDocument();
+  });
+
   it("disables the manual send button only while the scanner is busy", () => {
     render(<Scanner onScan={vi.fn()} disabled />);
     expect(screen.getByRole("button", { name: "Kirim" })).toBeDisabled();
