@@ -304,7 +304,7 @@ function MonitorDisplay({
               <SectionHeader
                 titleId="monitor-sessions-title"
                 title={t("sessionsTitle")}
-                action={currentPeriod && <CurrentPeriod period={currentPeriod} />}
+                description={currentPeriod ? <CurrentPeriod period={currentPeriod} /> : undefined}
               />
               <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {sessions.map((session, index) => (
@@ -352,7 +352,11 @@ function MonitorPageHeading(): ReactElement {
   return <PageHeader title={t("navLabel")} compactTitle={false} className="sr-only" />;
 }
 
-/** The lesson period the board is showing, in the school's time zone. */
+/**
+ * The lesson period the board is showing, in the school's time zone. It is
+ * the section's description line, so it wraps under the title on a phone
+ * instead of squeezing it, and inherits that line's type role.
+ */
 function CurrentPeriod({ period }: { period: MonitorPeriod }): ReactElement {
   const t = useTranslations("app.monitor");
   const format = useFormatter();
@@ -364,7 +368,7 @@ function CurrentPeriod({ period }: { period: MonitorPeriod }): ReactElement {
       timeZone: me?.tenant.timezone,
     });
   return (
-    <span className="text-heading text-fg-muted tabular-nums">
+    <span className="tabular-nums">
       {t("currentPeriod", {
         name: period.name,
         start: clock(period.starts_at),
