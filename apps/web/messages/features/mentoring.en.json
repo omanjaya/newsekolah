@@ -142,6 +142,7 @@
   "studentView": {
     "eyebrow": "Mentoring",
     "backToGroup": "Back to group",
+    "notFoundTitle": "Student not found",
     "attendance": {
       "title": "This month's attendance",
       "empty": "No attendance recorded this month yet.",

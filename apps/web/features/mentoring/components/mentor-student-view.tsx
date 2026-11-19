@@ -6,6 +6,8 @@ import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { RecordNotFoundPage } from "../../../components/record-not-found";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useMentorGroupQuery, useMentorStudentSnapshotQuery } from "../api";
 
@@ -35,6 +37,17 @@ export function MentorStudentView({
   const snapshot = useMentorStudentSnapshotQuery(studentId);
   const group = useMentorGroupQuery(groupId);
   const groupLabel = group.data?.name ?? t("backToGroup");
+
+  // An unknown or malformed student id is a missing record, not a failure to retry.
+  if (snapshot.isError && !snapshot.data && isNotFoundError(snapshot.error)) {
+    return (
+      <RecordNotFoundPage
+        title={t("notFoundTitle")}
+        backHref={`/mentoring/groups/${groupId}`}
+        backLabel={t("backToGroup")}
+      />
+    );
+  }
 
   if (snapshot.isError && !snapshot.data) {
     return (
