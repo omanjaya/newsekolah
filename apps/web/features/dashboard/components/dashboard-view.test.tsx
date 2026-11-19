@@ -325,6 +325,21 @@ describe("DashboardView", () => {
     );
   });
 
+  it("keeps a failed card's own retry while another block still holds the hero as a skeleton", () => {
+    teacherBlock.mockReturnValue({
+      ...emptyBlock(),
+      failed: true,
+      main: [{ key: "teacher.today", node: <QueryError retry={() => undefined} /> }],
+    });
+    homeroomBlock.mockReturnValue({ ...emptyBlock(), pending: true });
+    render(<DashboardView />);
+
+    expect(screen.getByTestId("dashboard-skeleton")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "failed.action" })).not.toBeInTheDocument();
+    const card = screen.getByTestId("dashboard-card-teacher.today");
+    expect(within(card).getByRole("button", { name: "actions.retry" })).toBeInTheDocument();
+  });
+
   it("keeps a card's own retry when the home has nothing to retry", () => {
     teacherBlock.mockReturnValue({
       ...emptyBlock(),

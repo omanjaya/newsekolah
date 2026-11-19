@@ -295,7 +295,10 @@ export function DashboardView(): ReactElement {
           main one the rest: at lg an 8/4 split beside the open sidebar left
           the side column about 228px, truncating the shortcuts and wrapping
           the stat tiles (audit shell-home-5). */}
-      <SharedRetry active={retryAt !== null}>
+      {/* The cards keep their own retry until the home's one is on screen:
+          while a slow read holds the hero as a skeleton, a card that already
+          failed would otherwise have no retry anywhere. */}
+      <SharedRetry active={retryAt !== null && !collected.pending}>
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-6">
           <div className="flex min-w-0 flex-col gap-4" data-testid="dashboard-main">
             {collected.pending ? (
