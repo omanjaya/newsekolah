@@ -55,6 +55,7 @@
     "minLength": "At least {min, number} characters",
     "maxLength": "At most {max, number} characters",
     "usernameRequired": "Username is required",
+    "usernameOrEmailRequired": "Username or email is required",
     "passwordRequired": "Password is required",
     "passwordMin": "Password must be at least {min, number} characters",
     "passwordMax": "Password must be at most {max, number} characters",

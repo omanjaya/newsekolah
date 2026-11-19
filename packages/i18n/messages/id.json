@@ -55,6 +55,7 @@
     "minLength": "Minimal {min, number} karakter",
     "maxLength": "Maksimal {max, number} karakter",
     "usernameRequired": "Nama pengguna wajib diisi",
+    "usernameOrEmailRequired": "Nama pengguna atau email wajib diisi",
     "passwordRequired": "Kata sandi wajib diisi",
     "passwordMin": "Kata sandi minimal {min, number} karakter",
     "passwordMax": "Kata sandi maksimal {max, number} karakter",
