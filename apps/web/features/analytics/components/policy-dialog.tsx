@@ -9,11 +9,12 @@ import {
   Button,
   Dialog,
   DialogContent,
+  SectionHeader,
   Skeleton,
   useToast,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
-import { useState, type ReactElement } from "react";
+import { useId, useState, type ReactElement } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { isModuleEnabled } from "../../../lib/modules/feature-modules";
@@ -127,9 +128,13 @@ function PolicyForm({
     >
       <p className="text-body-sm text-fg-muted">{t("description")}</p>
       {error && <Alert variant="danger" title={error} />}
-      {groups.map((group) => (
-        <PolicyFieldGroup key={group.id} group={group} draft={draft} onChange={setDraft} />
-      ))}
+      {/* More room between the sections than between the fields inside
+          one, so each heading reads as the start of a new group. */}
+      <div className="flex flex-col gap-6">
+        {groups.map((group) => (
+          <PolicyFieldGroup key={group.id} group={group} draft={draft} onChange={setDraft} />
+        ))}
+      </div>
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
@@ -144,8 +149,10 @@ function PolicyForm({
 
 /**
  * One section of the policy form. The school-day window stands alone on a
- * full row; every other section is a fieldset whose legend names the
- * signal, so its watch and at-risk fields read as a pair on one row.
+ * full row; every other section is a group named by its heading, so its
+ * watch and at-risk fields read as a pair on one row. The heading is a
+ * SectionHeader (the heading role, under the dialog's own title), a step
+ * above the field labels it groups, not one more of them.
  */
 function PolicyFieldGroup({
   group,
@@ -157,6 +164,7 @@ function PolicyFieldGroup({
   onChange: (next: Record<PolicyField, string>) => void;
 }): ReactElement {
   const t = useTranslations("app.analytics.policy");
+  const titleId = useId();
   const inputs = group.fields.map((key) => {
     const rate = key.endsWith("_rate");
     const decimal = rate || key.startsWith("grade_drop_");
@@ -178,9 +186,9 @@ function PolicyFieldGroup({
   });
   if (group.id === "window") return <>{inputs}</>;
   return (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="mb-2 text-label text-fg">{t(`groups.${group.id}`)}</legend>
+    <div role="group" aria-labelledby={titleId} className="flex flex-col gap-3">
+      <SectionHeader as="h3" title={t(`groups.${group.id}`)} titleId={titleId} />
       <div className="grid grid-cols-2 gap-3">{inputs}</div>
-    </fieldset>
+    </div>
   );
 }
