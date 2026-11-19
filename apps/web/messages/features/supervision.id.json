@@ -180,6 +180,10 @@
     }
   },
   "observationDetail": {
+    "notFoundTitle": "Observasi tidak ditemukan",
+    "notFoundBody": "Tautan ini mungkin salah atau observasinya sudah dihapus. Kembali ke daftar untuk mencarinya.",
+    "backToCycles": "Kembali ke supervisi",
+    "backToMyReport": "Kembali ke supervisi saya",
     "title": "Hasil observasi",
     "scale": "Skala {min}–{max}",
     "averageOfScale": "Rata-rata {average} pada skala {min}–{max}",

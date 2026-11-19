@@ -110,6 +110,24 @@ describe("LeaveRequestDetail", () => {
       );
     });
 
+    it("treats a malformed id from a truncated link as not found, not a retryable failure", () => {
+      permissions = new Set();
+      queryError = new ApiError({
+        status: 400,
+        code: "VALIDATION_FAILED",
+        message: "invalid",
+        details: [{ field: "id", code: "INVALID_FORMAT" }],
+      });
+      render(<LeaveRequestDetail id="abc" layout="page" />);
+
+      expect(screen.getByText("notFoundTitle")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "notFoundBackToMine" })).toHaveAttribute(
+        "href",
+        "/leave-requests",
+      );
+    });
+
     it("leads a reviewer to the leave queue", () => {
       permissions = new Set(["review_leave_requests"]);
       queryError = new ApiError({ status: 403, code: "FORBIDDEN", message: "forbidden" });

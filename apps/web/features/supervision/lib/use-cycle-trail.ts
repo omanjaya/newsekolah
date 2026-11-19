@@ -4,7 +4,7 @@ import type { BreadcrumbItem } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 
-const CYCLES_HREF = "/supervision/cycles";
+export const CYCLES_HREF = "/supervision/cycles";
 
 export function cycleHref(cycleId: string): string {
   return `${CYCLES_HREF}/${encodeURIComponent(cycleId)}`;
