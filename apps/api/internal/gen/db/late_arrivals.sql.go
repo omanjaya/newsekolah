@@ -12,35 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const countLateArrivalsForReview = `-- name: CountLateArrivalsForReview :one
-select count(*)::int as total
-from late_arrivals la
-join workflow_instances wi on wi.id = la.instance_id
-where la.tenant_id = $1 and wi.status = 'in_progress'
-  and (
-    la.duty_teacher_user_id = $2
-    or exists (
-      select 1 from user_roles ur
-      join role_permissions rp on rp.role_id = ur.role_id
-      where ur.tenant_id = $1 and ur.user_id = $2 and rp.permission_code = 'manage_attendance'
-    )
-  )
-`
-
-type CountLateArrivalsForReviewParams struct {
-	TenantID          uuid.UUID   `json:"tenant_id"`
-	DutyTeacherUserID pgtype.UUID `json:"duty_teacher_user_id"`
-}
-
-// Size of ListLateArrivalsForReview's queue for the same caller. Keep the
-// where clause identical to that query.
-func (q *Queries) CountLateArrivalsForReview(ctx context.Context, arg CountLateArrivalsForReviewParams) (int32, error) {
-	row := q.db.QueryRow(ctx, countLateArrivalsForReview, arg.TenantID, arg.DutyTeacherUserID)
-	var total int32
-	err := row.Scan(&total)
-	return total, err
-}
-
 const createLateArrival = `-- name: CreateLateArrival :one
 insert into late_arrivals (instance_id, tenant_id, reason, occurrence_number, required_action, homeroom_reported, duty_teacher_user_id)
 values ($1, $2, $3, $4, $5, $6, $7)
@@ -151,11 +122,86 @@ func (q *Queries) GetLateArrival(ctx context.Context, arg GetLateArrivalParams) 
 	return i, err
 }
 
-const listLateArrivalsForReview = `-- name: ListLateArrivalsForReview :many
-select la.instance_id, la.tenant_id, la.reason, la.occurrence_number, la.required_action, la.homeroom_reported, la.completed_at, la.duty_teacher_user_id, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.opened_at
+const listLateArrivalsAtScanStage = `-- name: ListLateArrivalsAtScanStage :many
+select la.instance_id, la.tenant_id, la.reason, la.occurrence_number, la.required_action, la.homeroom_reported, la.completed_at, la.duty_teacher_user_id, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.opened_at,
+  wi.academic_year_id, (wd.stages -> wi.current_stage_index)::jsonb as current_stage
 from late_arrivals la
 join workflow_instances wi on wi.id = la.instance_id
+join workflow_definitions wd on wd.id = wi.definition_id
 where la.tenant_id = $1 and wi.status = 'in_progress'
+  and (wd.stages -> wi.current_stage_index ->> 'verification') = 'qr_scan'
+order by wi.opened_at
+`
+
+type ListLateArrivalsAtScanStageRow struct {
+	InstanceID        uuid.UUID          `json:"instance_id"`
+	TenantID          uuid.UUID          `json:"tenant_id"`
+	Reason            string             `json:"reason"`
+	OccurrenceNumber  int32              `json:"occurrence_number"`
+	RequiredAction    string             `json:"required_action"`
+	HomeroomReported  bool               `json:"homeroom_reported"`
+	CompletedAt       pgtype.Timestamptz `json:"completed_at"`
+	DutyTeacherUserID pgtype.UUID        `json:"duty_teacher_user_id"`
+	SubjectUserID     uuid.UUID          `json:"subject_user_id"`
+	ClassID           pgtype.UUID        `json:"class_id"`
+	CurrentStageIndex int32              `json:"current_stage_index"`
+	Status            string             `json:"status"`
+	OpenedAt          pgtype.Timestamptz `json:"opened_at"`
+	AcademicYearID    uuid.UUID          `json:"academic_year_id"`
+	CurrentStage      []byte             `json:"current_stage"`
+}
+
+// Every open flow whose current stage needs an approver's QR (the default
+// chain's leadership and class_teacher stages). Who may approve each one
+// depends on its stage's approver rule, which for teacher_of_class_now is
+// a schedule lookup SQL cannot express, so the service narrows this list
+// to the caller with the same rule evaluation the scan itself runs
+// (Service.ListLateArrivalsForReview). Late arrivals are same-day flows
+// (ExpireHangingInstances closes them at midnight), so this stays small.
+func (q *Queries) ListLateArrivalsAtScanStage(ctx context.Context, tenantID uuid.UUID) ([]ListLateArrivalsAtScanStageRow, error) {
+	rows, err := q.db.Query(ctx, listLateArrivalsAtScanStage, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLateArrivalsAtScanStageRow{}
+	for rows.Next() {
+		var i ListLateArrivalsAtScanStageRow
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.TenantID,
+			&i.Reason,
+			&i.OccurrenceNumber,
+			&i.RequiredAction,
+			&i.HomeroomReported,
+			&i.CompletedAt,
+			&i.DutyTeacherUserID,
+			&i.SubjectUserID,
+			&i.ClassID,
+			&i.CurrentStageIndex,
+			&i.Status,
+			&i.OpenedAt,
+			&i.AcademicYearID,
+			&i.CurrentStage,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLateArrivalsForReview = `-- name: ListLateArrivalsForReview :many
+select la.instance_id, la.tenant_id, la.reason, la.occurrence_number, la.required_action, la.homeroom_reported, la.completed_at, la.duty_teacher_user_id, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.opened_at,
+  wi.academic_year_id, (wd.stages -> wi.current_stage_index)::jsonb as current_stage
+from late_arrivals la
+join workflow_instances wi on wi.id = la.instance_id
+join workflow_definitions wd on wd.id = wi.definition_id
+where la.tenant_id = $1 and wi.status = 'in_progress'
+  and (wd.stages -> wi.current_stage_index ->> 'verification') = 'manual'
   and (
     la.duty_teacher_user_id = $2
     or exists (
@@ -186,13 +232,18 @@ type ListLateArrivalsForReviewRow struct {
 	CurrentStageIndex int32              `json:"current_stage_index"`
 	Status            string             `json:"status"`
 	OpenedAt          pgtype.Timestamptz `json:"opened_at"`
+	AcademicYearID    uuid.UUID          `json:"academic_year_id"`
+	CurrentStage      []byte             `json:"current_stage"`
 }
 
-// Regression fix (docs/analysis/backend-inventory.md 1.16): the queue is
-// scoped to the teacher whose own token opened each flow, matching
-// ReviewLateArrival's actor check; a caller who holds manage_attendance
-// through a directly assigned role (not a duty), the "admin" case, sees
-// every open flow.
+// The picket teacher's review queue: open flows whose current stage is a
+// manual one (the default chain's duty_teacher review), scoped to the
+// teacher whose own token opened each flow, matching ReviewLateArrival's
+// actor check (regression fix, docs/analysis/backend-inventory.md 1.16).
+// A caller who holds manage_attendance through a directly assigned role
+// (not a duty), the "admin" case, sees every such flow. A flow already
+// past its review (waiting for leadership's or the class teacher's QR) is
+// not listed here: ListLateArrivalsAtScanStage feeds those approvers.
 func (q *Queries) ListLateArrivalsForReview(ctx context.Context, arg ListLateArrivalsForReviewParams) ([]ListLateArrivalsForReviewRow, error) {
 	rows, err := q.db.Query(ctx, listLateArrivalsForReview, arg.TenantID, arg.DutyTeacherUserID)
 	if err != nil {
@@ -216,6 +267,8 @@ func (q *Queries) ListLateArrivalsForReview(ctx context.Context, arg ListLateArr
 			&i.CurrentStageIndex,
 			&i.Status,
 			&i.OpenedAt,
+			&i.AcademicYearID,
+			&i.CurrentStage,
 		); err != nil {
 			return nil, err
 		}

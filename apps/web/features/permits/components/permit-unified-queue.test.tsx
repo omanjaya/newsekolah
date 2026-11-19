@@ -48,8 +48,15 @@ vi.mock("../api", () => ({
     variables: undefined,
   }),
 }));
-vi.mock("./exit-permit-panels", () => ({ ApprovePanel: () => null, GatePanel: () => null }));
-vi.mock("./late-arrivals-view", () => ({ LateArrivalReviewForm: () => null }));
+vi.mock("./exit-permit-panels", () => ({ GatePanel: () => null }));
+vi.mock("./approve-panel", () => ({
+  ApprovePanel: ({ kind, instanceId }: { kind: string; instanceId: string }) => (
+    <div data-testid="approve-panel">{`${kind}:${instanceId}`}</div>
+  ),
+}));
+vi.mock("./late-arrivals-view", () => ({
+  LateArrivalReviewForm: () => <div data-testid="late-review-form" />,
+}));
 vi.mock("./leave-request-detail", () => ({ LeaveRequestDetail: () => null }));
 
 const emptyResult = { data: { data: [] }, isLoading: false, isError: false, refetch: vi.fn() };
@@ -79,6 +86,26 @@ function lateItem(id: string) {
     occurrence_number: 1,
     required_action: "none" as const,
     opened_at: "2026-09-29T00:10:00Z",
+    current_stage: {
+      key: "duty_teacher",
+      label: "Guru piket",
+      approver_rule: "any_teacher",
+      verification: "manual" as const,
+    },
+  };
+}
+
+/** A late arrival past its review, waiting for the caller's own approval QR. */
+function lateItemAtLeadership(id: string) {
+  return {
+    ...lateItem(id),
+    current_stage_index: 1,
+    current_stage: {
+      key: "leadership",
+      label: "Pimpinan",
+      approver_rule: "duty:leadership",
+      verification: "qr_scan" as const,
+    },
   };
 }
 
@@ -178,6 +205,48 @@ describe("permit queue bento layout", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "open" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+});
+
+describe("permit queue late arrival actions", () => {
+  it("opens the review form for a late arrival waiting at the picket review", async () => {
+    mocks.late.mockReturnValue({ ...emptyResult, data: { data: [lateItem("a")] } });
+    render(<PermitUnifiedQueue />);
+    await userEvent.click(screen.getByRole("button", { name: "open" }));
+    expect(screen.getByTestId("late-review-form")).toBeInTheDocument();
+    expect(screen.queryByTestId("approve-panel")).not.toBeInTheDocument();
+  });
+
+  it("opens the approver's stage QR for a late arrival waiting at a QR stage", async () => {
+    mocks.late.mockReturnValue({ ...emptyResult, data: { data: [lateItemAtLeadership("b")] } });
+    render(<PermitUnifiedQueue />);
+    await userEvent.click(screen.getByRole("button", { name: "open" }));
+    expect(screen.getByTestId("approve-panel")).toHaveTextContent("late_arrival:b");
+    expect(screen.queryByTestId("late-review-form")).not.toBeInTheDocument();
+  });
+
+  it("opens the exit permit's own stage QR for an approver, with no code to type", async () => {
+    mocks.can.mockImplementation((permission: string) => permission === "issue_scan_tokens");
+    mocks.exit.mockReturnValue({
+      ...emptyResult,
+      data: {
+        data: [
+          {
+            instance_id: "e",
+            student_user_id: "student-e",
+            student_name: "Siswa e",
+            class_name: "10 A",
+            status: "in_progress",
+            current_stage_index: 1,
+            destination: "Puskesmas",
+            opened_at: "2026-09-29T00:10:00Z",
+          },
+        ],
+      },
+    });
+    render(<PermitUnifiedQueue />);
+    await userEvent.click(screen.getByRole("button", { name: "open" }));
+    expect(screen.getByTestId("approve-panel")).toHaveTextContent("exit_permit:e");
   });
 });
 

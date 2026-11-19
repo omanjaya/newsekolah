@@ -85,3 +85,22 @@ type IssueResult struct {
 	RawValue  string
 	ExpiresAt time.Time
 }
+
+// AcceptsUnboundApproval reports whether a stage may be satisfied by an
+// approve_stage token minted with no context (no workflow instance): the
+// picket desk's rotating "izin keluar" QR (docs/07-ui-ux.md section 4,
+// "Guru piket"). The student's scan names the instance instead, and the
+// service binds the token to it when it consumes it.
+//
+// Only an exit permit's qr_scan stage whose rule is any_teacher qualifies.
+// That rule is the one eligibility check that does not depend on which
+// instance is approved (every active teacher passes it for every permit),
+// so an unbound token grants its issuer nothing a bound one would not.
+// Every other rule (a duty, the class's teacher now, the homeroom teacher)
+// and every other kind keeps requiring a token bound to the instance, and
+// a manual stage is never satisfied by any scan.
+func AcceptsUnboundApproval(kind Kind, stage Stage) bool {
+	return kind == KindExitPermit &&
+		stage.ApproverRule == RuleAnyTeacher &&
+		stage.Verification == VerificationQRScan
+}

@@ -23,11 +23,13 @@ import (
 // exitPermitStages is the exit-permit chain this demo tenant runs, one
 // duty-scoped stage short of domain.DefaultStages(domain.KindExitPermit):
 // it drops "class_teacher" (approver_rule "teacher_of_class_now"), the one
-// stage no duty holder and no review screen exists for (docs/analysis/
-// realtime-plan-2026-09-25.md section 4.4's note on `dutySlugForStage`
-// having no group topic for it, and section 5's exit-permit queue query
-// -- apps/api/internal/modules/permits/queries/exit_permits.sql's
-// ListExitPermitsForApproval -- never lists it either). Keeping it would
+// stage no duty holder exists for (docs/analysis/realtime-plan-2026-09-25.md
+// section 4.4's note on `dutySlugForStage` having no group topic for it,
+// and apps/api/internal/modules/permits/queries/exit_permits.sql's
+// ListExitPermitsForApproval never lists it). The late-arrival chain keeps
+// its class_teacher stage: the late queue lists that stage for whichever
+// teacher the schedule names (Service.ListLateArrivalsForReview), who
+// approves it from there with a stage QR. Keeping it in the exit chain would
 // make the chain's second stage satisfiable only by whichever teacher is
 // scheduled into the student's class at the literal minute a reviewer
 // acts, which the multi-actor "school day" simulation

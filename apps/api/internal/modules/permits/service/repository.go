@@ -53,7 +53,7 @@ type Repository interface {
 	UpdateLateArrivalReview(ctx context.Context, tenantID, instanceID uuid.UUID, reason string, action domain.RequiredAction, homeroomReported bool) (domain.LateArrival, error)
 	MarkLateArrivalCompleted(ctx context.Context, tenantID, instanceID uuid.UUID, completedAt time.Time) (domain.LateArrival, error)
 	ListLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]LateArrivalReviewItem, error)
-	CountLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) (int, error)
+	ListLateArrivalsAtScanStage(ctx context.Context, tenantID uuid.UUID) ([]LateArrivalReviewItem, error)
 
 	// Leave requests.
 	CreateLeaveRequest(ctx context.Context, r domain.LeaveRequest) (domain.LeaveRequest, error)

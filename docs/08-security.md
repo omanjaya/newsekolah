@@ -85,7 +85,7 @@ Ini bukan pelemahan isolasi tenant: ketiga endpoint tersebut sudah didesain publ
 - CSRF: cookie refresh `SameSite=Lax` + header `Origin` dicek pada endpoint refresh; API mutasi memakai bearer dari memori.
 - Validasi input di dua lapis: skema OpenAPI (bentuk) dan domain (aturan). Semua query parameter bertipe.
 - Injeksi SQL tidak mungkin lewat sqlc (parameter terikat); `gosec` di CI.
-- Token QR dan gate: hash di DB, TTL pendek (30 detik untuk kelas, sampai akhir periode untuk gerbang), `purpose` terikat, konsumsi atomik dengan `UPDATE ... WHERE consumed_at IS NULL RETURNING`, job pembersihan.
+- Token QR dan gate: hash di DB, TTL pendek (30 detik untuk kelas, sampai akhir periode untuk gerbang), `purpose` terikat, konsumsi atomik dengan `UPDATE ... WHERE consumed_at IS NULL RETURNING`, job pembersihan. Token `approve_stage` tanpa konteks (QR meja piket izin keluar) hanya diterbitkan untuk guru aktif dan hanya bisa memajukan tahap `qr_scan` ber-`any_teacher` pada izin keluar; aturan penyetuju dan `distinct_from` tetap dievaluasi terhadap penerbitnya (lihat [02-system-design.md](02-system-design.md) bagian 6.2).
 - Nomor dokumen (surat izin, SP) dari sequence per tenant per tahun di DB, bukan `COUNT(*)+1`.
 - Idempotency-Key untuk POST dari mobile (jaringan sekolah tidak stabil) disimpan 24 jam di Redis.
 

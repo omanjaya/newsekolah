@@ -290,9 +290,6 @@ type Querier interface {
 	CountInProgressWorkflowInstances(ctx context.Context, arg CountInProgressWorkflowInstancesParams) (int64, error)
 	CountIncidentsBySeverityInRange(ctx context.Context, arg CountIncidentsBySeverityInRangeParams) ([]CountIncidentsBySeverityInRangeRow, error)
 	CountJournalsFiltered(ctx context.Context, arg CountJournalsFilteredParams) (int64, error)
-	// Size of ListLateArrivalsForReview's queue for the same caller. Keep the
-	// where clause identical to that query.
-	CountLateArrivalsForReview(ctx context.Context, arg CountLateArrivalsForReviewParams) (int32, error)
 	CountLateReturnsBetween(ctx context.Context, arg CountLateReturnsBetweenParams) (int32, error)
 	// Size of ListLeaveRequestsForReview's queue (no class filter). Keep the
 	// where clause identical to that query.
@@ -1152,11 +1149,22 @@ type Querier interface {
 	// scoping but adding the date range/text search/pagination the old system
 	// had (class_journals.go L85-107) and this rebuild had dropped.
 	ListJournalsFiltered(ctx context.Context, arg ListJournalsFilteredParams) ([]ClassJournal, error)
-	// Regression fix (docs/analysis/backend-inventory.md 1.16): the queue is
-	// scoped to the teacher whose own token opened each flow, matching
-	// ReviewLateArrival's actor check; a caller who holds manage_attendance
-	// through a directly assigned role (not a duty), the "admin" case, sees
-	// every open flow.
+	// Every open flow whose current stage needs an approver's QR (the default
+	// chain's leadership and class_teacher stages). Who may approve each one
+	// depends on its stage's approver rule, which for teacher_of_class_now is
+	// a schedule lookup SQL cannot express, so the service narrows this list
+	// to the caller with the same rule evaluation the scan itself runs
+	// (Service.ListLateArrivalsForReview). Late arrivals are same-day flows
+	// (ExpireHangingInstances closes them at midnight), so this stays small.
+	ListLateArrivalsAtScanStage(ctx context.Context, tenantID uuid.UUID) ([]ListLateArrivalsAtScanStageRow, error)
+	// The picket teacher's review queue: open flows whose current stage is a
+	// manual one (the default chain's duty_teacher review), scoped to the
+	// teacher whose own token opened each flow, matching ReviewLateArrival's
+	// actor check (regression fix, docs/analysis/backend-inventory.md 1.16).
+	// A caller who holds manage_attendance through a directly assigned role
+	// (not a duty), the "admin" case, sees every such flow. A flow already
+	// past its review (waiting for leadership's or the class teacher's QR) is
+	// not listed here: ListLateArrivalsAtScanStage feeds those approvers.
 	ListLateArrivalsForReview(ctx context.Context, arg ListLateArrivalsForReviewParams) ([]ListLateArrivalsForReviewRow, error)
 	ListLatestLoans(ctx context.Context, arg ListLatestLoansParams) ([]LibraryLoan, error)
 	ListLeaveDocuments(ctx context.Context, arg ListLeaveDocumentsParams) ([]LeaveDocument, error)

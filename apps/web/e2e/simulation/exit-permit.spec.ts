@@ -20,18 +20,23 @@ import {
  * picket ("Guru piket", any active teacher) -> counselor ("Guru BK",
  * duty:counselor) -> leadership ("Pimpinan", duty:leadership) -- dropping
  * the product-wide default's "class_teacher" stage, which no duty holder
- * or review screen this product ships actually covers (see that file's
- * comment). Once all three approve, the security gate duty scans the
- * student out.
+ * covers (see that file's comment). Once all three approve, the security
+ * gate duty scans the student out.
  *
  * The first stage (picket) never appears in anyone's review queue
  * (apps/api/internal/modules/permits/queries/exit_permits.sql's own
- * comment: "no listing needed there") -- the picket duty teacher instead
- * types the student's shown permit code straight into the approve desk
- * (/exit-permits). The remaining two stages DO list in the reviewer's
- * inbox (/inbox), since their approver_rule is duty-scoped; following one
- * up opens the same desk on that permit. The student scans each stage's
- * QR from a sheet on their own card, which moves on without a reload.
+ * comment: "no listing needed there") -- the picket desk (/exit-permits,
+ * or /duty in its izin keluar mode) shows one rotating approval QR bound to
+ * no permit, and the student's scan binds it to their own. The remaining
+ * two stages DO list in the reviewer's inbox (/inbox), since their
+ * approver_rule is duty-scoped; following one up opens that permit's own
+ * stage QR. The student scans each stage's QR from a sheet on their own
+ * card, which moves on without a reload.
+ *
+ * No QR prints its token underneath (nobody types 43 characters), and a
+ * headless browser has no camera picture to read, so the run takes each
+ * token from the response that minted it and types it where a hardware
+ * scanner would.
  *
  * The student is the run's own. permits allows one exit permit per student
  * per tenant-local day, counting one that already went through the gate
@@ -121,35 +126,44 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
     expect(permitId).toBeTruthy();
 
     // The student's own card moves to the first stage without a reload,
-    // and shows the permit code the picket teacher types in.
+    // and shows no permit code: nobody dictates an id any more.
     await assertNoNavigation(student.page, async () => {
       await expect(student.page.getByText("Menunggu: Guru piket")).toBeVisible({
         timeout: 20_000,
       });
-      await expect(student.page.getByText(permitId, { exact: true })).toBeVisible();
+      await expect(student.page.getByText(permitId, { exact: true })).toHaveCount(0);
     });
 
-    // Stage 1: picket. Never listed in a queue -- the teacher types the
-    // code the student shows into the approve desk.
-    await picket.page.goto("/exit-permits");
-    await picket.page.getByLabel("Kode izin siswa").fill(permitId);
-    await picket.page.getByRole("button", { name: "Tampilkan QR persetujuan" }).click();
-    const picketCode = await readQrCode(picket.page, APPROVE_QR);
+    // Stage 1: picket. Never listed in a queue -- the desk shows one
+    // rotating approval QR, bound to no permit.
+    const picketCode = await mintedToken(picket.page, "/v1/scan-tokens", () =>
+      picket.page.goto("/exit-permits"),
+    );
+    await expectQr(picket.page, DESK_APPROVE_QR);
 
     await scanStage(student.page, "Guru piket", picketCode, "Menunggu: Guru BK");
+    // The desk QR named nobody: the server tells the picket teacher who it
+    // approved, and the desk lists the student under its QR.
+    await expect(
+      picket.page.getByRole("listitem").filter({ hasText: newcomer.name }),
+    ).toContainText("Izin keluar disetujui", { timeout: 20_000 });
 
     // Stage 2: counselor. Listed in the counselor's inbox; following it up
-    // opens the approve desk on this permit, which mints the stage QR.
+    // opens this permit's own stage QR.
     const counselorCard = await openInboxPermit(counselor.page, newcomer.name, "Berjalan");
-    await counselorCard.getByRole("button", { name: "Tindak lanjuti" }).click();
-    const counselorCode = await readQrCode(counselor.page.getByRole("dialog"), APPROVE_QR);
+    const counselorCode = await mintedToken(counselor.page, "/v1/scan-tokens", () =>
+      counselorCard.getByRole("button", { name: "Tindak lanjuti" }).click(),
+    );
+    await expectQr(counselor.page.getByRole("dialog"), "Kode QR persetujuan Guru BK");
 
     await scanStage(student.page, "Guru BK", counselorCode, "Menunggu: Pimpinan");
 
     // Stage 3: leadership. Same inbox pattern as the counselor.
     const leadershipCard = await openInboxPermit(leadership.page, newcomer.name, "Berjalan");
-    await leadershipCard.getByRole("button", { name: "Tindak lanjuti" }).click();
-    const leadershipCode = await readQrCode(leadership.page.getByRole("dialog"), APPROVE_QR);
+    const leadershipCode = await mintedToken(leadership.page, "/v1/scan-tokens", () =>
+      leadershipCard.getByRole("button", { name: "Tindak lanjuti" }).click(),
+    );
+    await expectQr(leadership.page.getByRole("dialog"), "Kode QR persetujuan Pimpinan");
 
     await assertNoNavigation(student.page, async () => {
       await scanStage(student.page, "Pimpinan", leadershipCode, "Siap keluar gerbang");
@@ -162,15 +176,15 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
     // before any gate scan has happened.
     await openInboxPermit(security.page, newcomer.name, "Disetujui");
 
-    // The student shows the gate QR; the visible code text under it is the
-    // raw token only (packages/ui/src/components/qr-panel.tsx), so the
-    // gate's manual-entry fallback (which needs the instance id too, since
-    // it has no other way to resolve it -- GatePanel's onScan) is built
-    // from the token plus the permit id already captured above, exactly
-    // the "sion:<kind>:<instanceId>:<token>" shape the QR itself encodes
+    // The student shows the gate QR. The gate's scanner field takes the
+    // whole payload a hardware scanner types (GatePanel's onScan needs the
+    // permit id as well as the token), so it is built in the
+    // "sion:<kind>:<instanceId>:<token>" shape the QR itself encodes
     // (apps/web/features/permits/api.ts's encodeScanPayload).
-    await student.page.getByRole("button", { name: "Tampilkan QR gerbang" }).click();
-    const gateToken = await readQrCode(student.page, GATE_QR);
+    const gateToken = await mintedToken(student.page, "/gate-token", () =>
+      student.page.getByRole("button", { name: "Tampilkan QR gerbang" }).click(),
+    );
+    await expectQr(student.page, GATE_QR);
     await passGate(security.page, `sion:gate:${permitId}:${gateToken}`);
 
     // The student's already open card follows the gate scan live, to its
@@ -190,7 +204,7 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
   }
 });
 
-const APPROVE_QR = "Kode QR persetujuan izin keluar";
+const DESK_APPROVE_QR = "Kode QR persetujuan piket izin keluar";
 const GATE_QR = "Kode QR gerbang izin keluar";
 /** The seeded homeroom class (cmd/seed), "siswa"'s own. */
 const CLASS_NAME = "X-A";
@@ -306,25 +320,36 @@ async function signInFirstTime(
 }
 
 /**
- * The code typed under a QR (packages/ui QrPanel), read from the panel the
- * QR's own label names: minting is async, so this waits for that panel
- * instead of reading whatever was on screen the instant after the click.
+ * The raw token the response to `action` minted (POST `pathPart`): the QR
+ * prints none under it, and a headless browser has no camera picture.
  */
-async function readQrCode(scope: Page | Locator, label: string): Promise<string> {
-  const code = scope.locator(
-    `[data-slot="qr-panel"]:has([role="img"][aria-label="${label}"]) code`,
+async function mintedToken(
+  page: Page,
+  pathPart: string,
+  action: () => Promise<unknown>,
+): Promise<string> {
+  const minted = page.waitForResponse(
+    (res) => res.request().method() === "POST" && res.url().includes(pathPart) && res.ok(),
+    { timeout: 20_000 },
   );
-  await expect(code).toHaveCount(1, { timeout: 20_000 });
-  const text = ((await code.textContent()) ?? "").trim();
-  expect(text).not.toBe("");
-  return text;
+  await action();
+  const body = (await (await minted).json()) as { token: string };
+  expect(body.token).toBeTruthy();
+  return body.token;
+}
+
+/** The QR labelled `label` is on screen, with no code printed under it. */
+async function expectQr(scope: Page | Locator, label: string): Promise<void> {
+  const panel = scope.locator(`[data-slot="qr-panel"]:has([role="img"][aria-label="${label}"])`);
+  await expect(panel).toHaveCount(1, { timeout: 20_000 });
+  await expect(panel.locator("code")).toHaveCount(0);
 }
 
 /**
  * The student scans an approving teacher's QR for `stage` from the sheet
- * the card opens, typing the code under it (a headless browser has no
- * camera picture to read), and the card moves on to `next` without a
- * reload.
+ * the card opens, typing the token where a hardware scanner would (a
+ * headless browser has no camera picture to read), and the card moves on
+ * to `next` without a reload.
  */
 async function scanStage(student: Page, stage: string, code: string, next: string): Promise<void> {
   await assertNoNavigation(student, async () => {
@@ -332,7 +357,7 @@ async function scanStage(student: Page, stage: string, code: string, next: strin
     await student.getByRole("button", { name: `Pindai QR ${stage}`, exact: true }).click();
     const sheet = student.getByRole("dialog", { name: `Pindai QR ${stage}` });
     await expect(sheet).toBeVisible();
-    await typeScannedCode(sheet, `Pindai QR ${stage}: masukkan kode`, code);
+    await typeScannedCode(sheet, `Kode QR ${stage} (alat pemindai)`, code);
     await expect(sheet).toBeHidden({ timeout: 20_000 });
     await expect(student.getByText(next, { exact: true })).toBeVisible({ timeout: 20_000 });
   });
@@ -368,6 +393,6 @@ async function openInboxPermit(page: Page, studentName: string, status: string):
 async function passGate(security: Page, payload: string): Promise<void> {
   await security.goto("/exit-permits");
   const desk = security.locator('[data-slot="scanner"]').filter({ hasText: "Pindai QR gerbang" });
-  await typeScannedCode(desk, "Kode QR gerbang", payload);
+  await typeScannedCode(desk, "Kode QR gerbang (alat pemindai)", payload);
   await expect(desk.getByText("Siswa diizinkan keluar")).toBeVisible({ timeout: 20_000 });
 }

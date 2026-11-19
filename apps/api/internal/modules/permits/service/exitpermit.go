@@ -121,16 +121,31 @@ func (s *Service) validatePeriodRange(ctx context.Context, tenantID, startPeriod
 // stage's approving teacher's QR code. The token's issuer (the teacher who
 // displayed the code), not the scanning student, is who the approver rule
 // is evaluated against -- see docs/02-system-design.md section 6.2.
+//
+// The token is either bound to this permit (a counselor's or leadership's
+// QR, minted from their queue) or unbound: the picket desk's rotating QR,
+// minted for no permit at all. An unbound token binds to the permit the
+// student's scan names, and only for a stage domain.AcceptsUnboundApproval
+// allows (the any_teacher duty_teacher stage); the approver rule and
+// DistinctFrom are checked against its issuer exactly as for a bound one,
+// and it is consumed once, here, like every other token.
 func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scannerUserID uuid.UUID, rawToken string) (domain.Instance, error) {
 	var updated domain.Instance
 	var isLast bool
 	var nextStageKey string
+	// deskApproval is set when an unbound desk token approved the stage:
+	// its issuer has no other way to learn who it approved.
+	var deskApproval *deskApprovedPayload
+	var deskIssuer uuid.UUID
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		inst, ok, err := s.repo.GetInstance(ctx, tenantID, instanceID)
 		if err != nil {
 			return err
 		}
 		if !ok {
+			return domain.ErrInstanceNotFound
+		}
+		if inst.Kind != domain.KindExitPermit {
 			return domain.ErrInstanceNotFound
 		}
 		if inst.SubjectUserID != scannerUserID {
@@ -140,6 +155,7 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 		token, err := s.ConsumeScanToken(ctx, ConsumeScanTokenInput{
 			TenantID: tenantID, RawValue: rawToken, Purpose: domain.PurposeApproveStage,
 			ContextID: uuid.NullUUID{UUID: instanceID, Valid: true}, ConsumedByUserID: scannerUserID,
+			AllowUnbound: true,
 		})
 		if err != nil {
 			return err
@@ -149,9 +165,18 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 		updated, def, isLast, err = s.approveCurrentStage(ctx, stageTransitionInput{
 			tenantID: tenantID, instanceID: instanceID, actorUserID: token.IssuedByUserID,
 			scanTokenID: uuid.NullUUID{UUID: token.ID, Valid: true}, onLastStageStatus: domain.StatusApproved,
+			verification: domain.VerificationQRScan, unboundToken: !token.ContextID.Valid,
 		})
 		if err != nil {
 			return err
+		}
+		if !token.ContextID.Valid {
+			approved, stageErr := def.StageAt(inst.CurrentStageIndex)
+			if stageErr != nil {
+				return stageErr
+			}
+			deskIssuer = token.IssuedByUserID
+			deskApproval = &deskApprovedPayload{InstanceID: instanceID, Stage: approved.Key, StudentUserID: inst.SubjectUserID}
 		}
 
 		if isLast {
@@ -176,6 +201,12 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 		s.publish(ctx, ExitPermitStageChanged{TenantID: tenantID, InstanceID: instanceID, StudentUserID: updated.SubjectUserID, StageKey: nextStageKey})
 		s.publishToUserTopic(ctx, tenantID, updated.SubjectUserID, "exit_permit.stage_changed", instanceStageEventPayload{InstanceID: instanceID, Stage: nextStageKey})
 		s.publishToDutyStage(ctx, tenantID, uuid.NullUUID{}, nextStageKey, "exit_permit.stage_changed", instanceStageEventPayload{InstanceID: instanceID, Stage: nextStageKey})
+	}
+	if deskApproval != nil {
+		// The desk QR is single use and bound to nobody: tell the teacher
+		// who showed it which student it just approved, so their desk logs
+		// the approval and shows the next student a fresh code at once.
+		s.publishToUserTopic(ctx, tenantID, deskIssuer, "exit_permit.desk_approved", *deskApproval)
 	}
 	return updated, nil
 }

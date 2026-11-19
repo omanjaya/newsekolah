@@ -6160,7 +6160,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Student scans the current approver's token to advance a stage */
+        /**
+         * Student scans the current approver's token to advance a stage
+         * @description Accepts a token bound to this permit, or the picket desk's unbound token while the permit waits at its any_teacher qr_scan stage. A stage the token cannot satisfy answers 409 WORKFLOW_STAGE_MISMATCH.
+         */
         post: operations["scanExitPermitStage"];
         delete?: never;
         options?: never;
@@ -6290,7 +6293,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Open late arrivals awaiting the duty teacher's review */
+        /**
+         * Open late arrivals waiting on the caller
+         * @description Flows at a manual stage the caller reviews (the teacher whose token opened them, or a role-granted manage_attendance holder), plus flows at a qr_scan stage whose approver rule the caller satisfies now (leadership, the class teacher), who approve them by showing a stage QR. current_stage tells the two apart.
+         */
         get: operations["listLateArrivalsForReview"];
         put?: never;
         post?: never;
@@ -6326,7 +6332,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Duty teacher records the review and moves the flow to leadership */
+        /**
+         * Duty teacher records the review and moves the flow to leadership
+         * @description Only a manual stage can be reviewed; any other answers 409 WORKFLOW_STAGE_MISMATCH.
+         */
         post: operations["reviewLateArrival"];
         delete?: never;
         options?: never;
@@ -11222,6 +11231,7 @@ export interface components {
             class_id?: string;
             status: components["schemas"]["WorkflowStatus"];
             current_stage_index: number;
+            current_stage: components["schemas"]["WorkflowStage"];
             reason: string;
             occurrence_number: number;
             required_action: components["schemas"]["RequiredAction"];
@@ -24725,7 +24735,7 @@ export interface operations {
                     purpose: components["schemas"]["ScanPurpose"];
                     /**
                      * Format: uuid
-                     * @description Workflow instance the token approves (required for approve_stage).
+                     * @description Workflow instance the token approves. An approve_stage token without one is the picket desk's exit-permit QR: only an active teacher may mint it, it lives 30 seconds, it is single use, and it can only approve an exit permit's any_teacher qr_scan stage (duty_teacher), binding to the permit the student's scan names.
                      */
                     context_id?: string;
                 };

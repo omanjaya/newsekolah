@@ -132,8 +132,8 @@ func (r *Repository) MarkLateArrivalCompleted(ctx context.Context, tenantID, ins
 	return toLateArrival(row), nil
 }
 
-// ListLateArrivalsForReview returns today's open late arrivals with their
-// workflow state, scoped to the duty teacher who opened each one (or every
+// ListLateArrivalsForReview returns the open late arrivals waiting at a
+// manual stage, scoped to the duty teacher who opened each one (or every
 // one, for a caller whose manage_attendance is role-granted -- see
 // queries/late_arrivals.sql).
 func (r *Repository) ListLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]service.LateArrivalReviewItem, error) {
@@ -145,17 +145,48 @@ func (r *Repository) ListLateArrivalsForReview(ctx context.Context, tenantID, ca
 	}
 	out := make([]service.LateArrivalReviewItem, len(rows))
 	for i, row := range rows {
-		out[i] = service.LateArrivalReviewItem{
-			LateArrival: domain.LateArrival{
-				InstanceID: row.InstanceID, TenantID: row.TenantID, Reason: row.Reason, OccurrenceNumber: int(row.OccurrenceNumber),
-				RequiredAction: domain.RequiredAction(row.RequiredAction), HomeroomReported: row.HomeroomReported, CompletedAt: pdatabase.TimePtr(row.CompletedAt),
-				DutyTeacherUserID: pdatabase.UUIDOrNil(row.DutyTeacherUserID),
-			},
-			SubjectUserID: row.SubjectUserID, ClassID: pdatabase.UUIDOrNil(row.ClassID),
-			CurrentStageIndex: int(row.CurrentStageIndex), Status: domain.Status(row.Status), OpenedAt: pdatabase.TimeOrZero(row.OpenedAt),
+		if out[i], err = toLateArrivalReviewItem(row); err != nil {
+			return nil, err
 		}
 	}
 	return out, nil
+}
+
+// ListLateArrivalsAtScanStage returns every open late arrival waiting at a
+// qr_scan stage, for the service to narrow to one approver.
+func (r *Repository) ListLateArrivalsAtScanStage(ctx context.Context, tenantID uuid.UUID) ([]service.LateArrivalReviewItem, error) {
+	rows, err := r.queries(ctx).ListLateArrivalsAtScanStage(ctx, tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("list late arrivals at a scan stage: %w", err)
+	}
+	out := make([]service.LateArrivalReviewItem, len(rows))
+	for i, row := range rows {
+		// Both queries select the same columns, so sqlc emits identical rows.
+		if out[i], err = toLateArrivalReviewItem(db.ListLateArrivalsForReviewRow(row)); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+// toLateArrivalReviewItem refuses a row whose current stage does not
+// decode: a zero Stage would read as neither manual nor qr_scan and drop
+// the flow from every approver's queue without a trace.
+func toLateArrivalReviewItem(row db.ListLateArrivalsForReviewRow) (service.LateArrivalReviewItem, error) {
+	var stage domain.Stage
+	if err := jsonUnmarshal(row.CurrentStage, &stage); err != nil {
+		return service.LateArrivalReviewItem{}, fmt.Errorf("decode late arrival current stage: %w", err)
+	}
+	return service.LateArrivalReviewItem{
+		LateArrival: domain.LateArrival{
+			InstanceID: row.InstanceID, TenantID: row.TenantID, Reason: row.Reason, OccurrenceNumber: int(row.OccurrenceNumber),
+			RequiredAction: domain.RequiredAction(row.RequiredAction), HomeroomReported: row.HomeroomReported, CompletedAt: pdatabase.TimePtr(row.CompletedAt),
+			DutyTeacherUserID: pdatabase.UUIDOrNil(row.DutyTeacherUserID),
+		},
+		SubjectUserID: row.SubjectUserID, ClassID: pdatabase.UUIDOrNil(row.ClassID), AcademicYearID: row.AcademicYearID,
+		CurrentStageIndex: int(row.CurrentStageIndex), CurrentStage: stage,
+		Status: domain.Status(row.Status), OpenedAt: pdatabase.TimeOrZero(row.OpenedAt),
+	}, nil
 }
 
 // Leave requests.
@@ -689,17 +720,6 @@ func nonNilStrings(s []string) []string {
 		return []string{}
 	}
 	return s
-}
-
-// CountLateArrivalsForReview is the size of ListLateArrivalsForReview's queue.
-func (r *Repository) CountLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) (int, error) {
-	n, err := r.queries(ctx).CountLateArrivalsForReview(ctx, db.CountLateArrivalsForReviewParams{
-		TenantID: tenantID, DutyTeacherUserID: pdatabase.NullUUID(uuid.NullUUID{UUID: callerUserID, Valid: true}),
-	})
-	if err != nil {
-		return 0, fmt.Errorf("count late arrivals for review: %w", err)
-	}
-	return int(n), nil
 }
 
 // CountLeaveRequestsForReview is the size of ListLeaveRequestsForReview's queue without a class filter.

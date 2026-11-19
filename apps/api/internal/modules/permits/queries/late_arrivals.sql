@@ -30,15 +30,21 @@ where wi.tenant_id = $1
 limit 1;
 
 -- name: ListLateArrivalsForReview :many
--- Regression fix (docs/analysis/backend-inventory.md 1.16): the queue is
--- scoped to the teacher whose own token opened each flow, matching
--- ReviewLateArrival's actor check; a caller who holds manage_attendance
--- through a directly assigned role (not a duty), the "admin" case, sees
--- every open flow.
-select la.*, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.opened_at
+-- The picket teacher's review queue: open flows whose current stage is a
+-- manual one (the default chain's duty_teacher review), scoped to the
+-- teacher whose own token opened each flow, matching ReviewLateArrival's
+-- actor check (regression fix, docs/analysis/backend-inventory.md 1.16).
+-- A caller who holds manage_attendance through a directly assigned role
+-- (not a duty), the "admin" case, sees every such flow. A flow already
+-- past its review (waiting for leadership's or the class teacher's QR) is
+-- not listed here: ListLateArrivalsAtScanStage feeds those approvers.
+select la.*, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.opened_at,
+  wi.academic_year_id, (wd.stages -> wi.current_stage_index)::jsonb as current_stage
 from late_arrivals la
 join workflow_instances wi on wi.id = la.instance_id
+join workflow_definitions wd on wd.id = wi.definition_id
 where la.tenant_id = $1 and wi.status = 'in_progress'
+  and (wd.stages -> wi.current_stage_index ->> 'verification') = 'manual'
   and (
     la.duty_teacher_user_id = $2
     or exists (
@@ -49,18 +55,19 @@ where la.tenant_id = $1 and wi.status = 'in_progress'
   )
 order by wi.opened_at;
 
--- name: CountLateArrivalsForReview :one
--- Size of ListLateArrivalsForReview's queue for the same caller. Keep the
--- where clause identical to that query.
-select count(*)::int as total
+-- name: ListLateArrivalsAtScanStage :many
+-- Every open flow whose current stage needs an approver's QR (the default
+-- chain's leadership and class_teacher stages). Who may approve each one
+-- depends on its stage's approver rule, which for teacher_of_class_now is
+-- a schedule lookup SQL cannot express, so the service narrows this list
+-- to the caller with the same rule evaluation the scan itself runs
+-- (Service.ListLateArrivalsForReview). Late arrivals are same-day flows
+-- (ExpireHangingInstances closes them at midnight), so this stays small.
+select la.*, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.opened_at,
+  wi.academic_year_id, (wd.stages -> wi.current_stage_index)::jsonb as current_stage
 from late_arrivals la
 join workflow_instances wi on wi.id = la.instance_id
+join workflow_definitions wd on wd.id = wi.definition_id
 where la.tenant_id = $1 and wi.status = 'in_progress'
-  and (
-    la.duty_teacher_user_id = $2
-    or exists (
-      select 1 from user_roles ur
-      join role_permissions rp on rp.role_id = ur.role_id
-      where ur.tenant_id = $1 and ur.user_id = $2 and rp.permission_code = 'manage_attendance'
-    )
-  );
+  and (wd.stages -> wi.current_stage_index ->> 'verification') = 'qr_scan'
+order by wi.opened_at;

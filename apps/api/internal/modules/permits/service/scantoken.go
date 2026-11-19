@@ -17,7 +17,9 @@ import (
 // binds the token to what it is for: a workflow_instances.id for
 // approve_stage/gate_exit, a classes.id for classroom_entry (used by the
 // attendance module after merge), or nothing for a purpose that does not
-// need one.
+// need one. An approve_stage token with no context is the picket desk's
+// exit-permit QR: see domain.AcceptsUnboundApproval for the one stage it
+// can satisfy.
 type IssueScanTokenInput struct {
 	TenantID       uuid.UUID
 	Purpose        domain.Purpose
@@ -52,6 +54,19 @@ func (s *Service) IssueScanToken(ctx context.Context, in IssueScanTokenInput) (d
 
 	var token domain.ScanToken
 	err := s.withTx(ctx, in.TenantID, func(ctx context.Context) error {
+		// An unbound approve_stage token can only ever satisfy an
+		// any_teacher stage, so refuse to mint one for an issuer who is not
+		// an active teacher: their QR could never approve anything, and the
+		// student would only learn that after scanning it.
+		if in.Purpose == domain.PurposeApproveStage && !in.ContextID.Valid {
+			teacher, err := s.repo.IsActiveTeacher(ctx, in.TenantID, in.IssuedByUserID)
+			if err != nil {
+				return err
+			}
+			if !teacher {
+				return domain.ErrApproverNotEligible
+			}
+		}
 		var err error
 		token, err = s.repo.CreateScanToken(ctx, domain.ScanToken{
 			TenantID: in.TenantID, Purpose: in.Purpose, ContextID: in.ContextID,
@@ -74,6 +89,11 @@ type ConsumeScanTokenInput struct {
 	Purpose          domain.Purpose
 	ContextID        uuid.NullUUID
 	ConsumedByUserID uuid.UUID
+	// AllowUnbound accepts a token minted with no context even though
+	// ContextID names one: the caller then owns checking that the stage it
+	// advances accepts an unbound token (domain.AcceptsUnboundApproval). A
+	// token bound to a different context is refused either way.
+	AllowUnbound bool
 }
 
 // ConsumeScanToken redeems a token in one atomic UPDATE (Repository's
@@ -106,8 +126,13 @@ func (s *Service) ConsumeScanToken(ctx context.Context, in ConsumeScanTokenInput
 	if token.Purpose != in.Purpose {
 		return domain.ScanToken{}, domain.ErrTokenPurposeMismatch
 	}
-	if in.ContextID.Valid && (!token.ContextID.Valid || token.ContextID.UUID != in.ContextID.UUID) {
-		return domain.ScanToken{}, domain.ErrTokenContextMismatch
+	if in.ContextID.Valid {
+		if token.ContextID.Valid && token.ContextID.UUID != in.ContextID.UUID {
+			return domain.ScanToken{}, domain.ErrTokenContextMismatch
+		}
+		if !token.ContextID.Valid && !in.AllowUnbound {
+			return domain.ScanToken{}, domain.ErrTokenContextMismatch
+		}
 	}
 	return token, nil
 }

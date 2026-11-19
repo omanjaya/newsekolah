@@ -35,8 +35,16 @@ vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
   return {
     ...actual,
-    Scanner: ({ onScan, result }: UiModule.ScannerProps) => (
+    Scanner: ({
+      onScan,
+      result,
+      manualLabel,
+      manualPlaceholder,
+      children,
+    }: UiModule.ScannerProps) => (
       <div>
+        <span data-testid="manual-field">{`${manualLabel} | ${manualPlaceholder}`}</span>
+        {children}
         <button
           type="button"
           onClick={() => void onScan({ code: "TOKEN-1", source: "manual", at: 0 })}
@@ -85,6 +93,14 @@ it("says why a scan failed", async () => {
   await user.click(screen.getByRole("button", { name: "scan" }));
 
   expect(await screen.findByRole("status")).toHaveTextContent("errorTitle error.TOKEN_EXPIRED");
+});
+
+it("words the typed field for a hardware scanner and says what to do without a camera", () => {
+  render(<ClassroomEntryView />);
+
+  // The teacher's QR prints no code under it, so nothing asks for one.
+  expect(screen.getByTestId("manual-field")).toHaveTextContent("scanLabel | placeholder");
+  expect(screen.getByText("cannotScanHint")).toBeInTheDocument();
 });
 
 it("does not offer the scanner to an account that is not a student's", () => {

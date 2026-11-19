@@ -123,11 +123,21 @@ Skema lengkap di [06-database-schema.md](06-database-schema.md).
 ### 6.2 Izin keluar dengan QR
 
 1. Siswa membuat instance workflow `exit_permit`; service memeriksa kuota dan izin aktif.
-2. Setiap tahap: guru menampilkan QR (scan token `purpose=approve_stage`, konteks jenis workflow); siswa memindai; service memverifikasi token, evaluasi `approver_rule` tahap saat ini, catat event, maju ke tahap berikutnya.
+2. Setiap tahap: penyetuju menampilkan QR (scan token `purpose=approve_stage`); siswa menekan "Pindai QR <tahap>" di kartu izinnya dan memindai; service memverifikasi token, mengevaluasi `approver_rule` dan `distinct_from` tahap saat ini terhadap penerbit token, mencatat event, lalu maju ke tahap berikutnya. Pemindaian hanya memenuhi tahap `qr_scan`; tahap `manual` tidak bisa dilompati dengan QR.
+   - Tahap piket (`any_teacher`) memakai QR meja piket yang berputar: token tanpa konteks, hanya diterbitkan untuk guru aktif, berlaku 30 detik, sekali pakai. Pemindaian siswa mengikatnya ke izin yang dikirim kartu siswa, dan service hanya menerimanya bila tahap saat ini adalah tahap `qr_scan` ber-`any_teacher` pada izin keluar (`domain.AcceptsUnboundApproval`). Aturan itu satu-satunya yang tidak bergantung pada izin mana yang disetujui, jadi token tanpa konteks tidak memberi penerbitnya wewenang baru. Tidak ada kode izin yang didiktekan. Karena QR itu tidak menyebut siswa, service mengirim `exit_permit.desk_approved` (id izin, tahap, id siswa) ke topik pengguna guru penerbitnya: meja piket langsung menampilkan kode baru untuk siswa berikutnya dan mencatat nama siswa yang disetujui.
+   - Tahap lain (BK, pimpinan) muncul di antrean Perlu tindakan penyetujunya; membukanya menerbitkan token yang terikat pada izin itu.
+   - Tidak ada QR yang mencetak token mentahnya di bawahnya (43 karakter, tidak diketik orang). Kolom ketik di pemindai hanya untuk alat pemindai yang mengetik payload lengkap; siswa tanpa kamera dicatat manual oleh guru piket.
 3. Tahap terakhir menghasilkan gate token (purpose `gate_exit`, kedaluwarsa akhir periode); satpam memindai; instance selesai.
 4. Job akhir hari menutup instance yang menggantung sebagai `expired` sehingga tidak memblokir presensi esok hari.
 
-### 6.3 Onboarding sekolah baru (SaaS)
+### 6.3 Terlambat
+
+1. Siswa memindai QR terlambat di meja piket (purpose `late_arrival`); instance `late_arrival` terbuka dengan guru penerbit token sebagai peninjau.
+2. Tahap piket (`manual`): guru itu, atau pemegang `manage_attendance` dari peran, meninjau lewat formulir (alasan, pelanggaran, lapor wali kelas). Formulir hanya memenuhi tahap `manual`.
+3. Tahap `qr_scan` berikutnya (default: pimpinan, lalu guru kelas yang mengajar sekarang): antrean terlambat mencantumkan alur itu untuk setiap orang yang lolos `approver_rule` dan `distinct_from` tahap tersebut saat ini, dengan evaluasi yang sama seperti saat pemindaian. Penyetuju membuka QR tahap yang terikat pada alur itu; siswa memindainya dari kartunya. Duty `leadership` membawa `issue_scan_tokens`, sehingga kepala sekolah yang diberi duty itu bisa menerbitkan QR tahap pimpinan walau perannya tidak.
+4. Selama alur berjalan, siswa dilewati dari penyimpanan presensi hari itu (6.1 langkah 4).
+
+### 6.4 Onboarding sekolah baru (SaaS)
 
 1. Operator platform membuat tenant (slug, jenjang, zona waktu, paket modul) di konsol; admin sekolah menerima tautan set-password.
 2. Wizard admin: profil dan logo, tahun ajaran, template jam pelajaran, import guru dan siswa (Excel/Dapodik), penugasan wali kelas, undang pengguna.

@@ -18,7 +18,7 @@ import {
 } from "@newsekolah/ui";
 import { Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
@@ -29,8 +29,10 @@ import { type WorkflowInstance, useMyExitPermitsQuery } from "../api";
 import { formatShortWeekdayDate } from "../lib/permit-dates";
 import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
 
+import { DeskLog, useDeskLog } from "./desk-log";
+import { DeskQrPanel } from "./desk-qr-panel";
 import { ActiveExitPermitCard, CreateForm, ExitPermitDetail } from "./exit-permit-detail";
-import { ApprovePanel, GatePanel } from "./exit-permit-panels";
+import { GatePanel } from "./exit-permit-panels";
 import { ReviewInboxBanner } from "./review-inbox-banner";
 import { WorkflowStatusBadge } from "./workflow-stepper";
 
@@ -48,7 +50,11 @@ function isActive(inst: WorkflowInstance): boolean {
  */
 export function ExitPermitsView(): ReactElement {
   const canSubmit = useCanSubmitPermit();
-  const canApprove = useCan("issue_scan_tokens");
+  const { me } = useSession();
+  // issue_scan_tokens alone is not enough: staff (TU, satpam) hold it for
+  // other QRs, but the desk approval QR approves an any_teacher stage and
+  // the server mints it only for an active teacher.
+  const canApprove = useCan("issue_scan_tokens") && me?.profile_kind === "teacher";
   const canGate = useCan("scan_exit_permits");
   if (canSubmit) return <MyExitPermits />;
   if (canApprove || canGate) return <ExitPermitDesk canApprove={canApprove} canGate={canGate} />;
@@ -108,11 +114,45 @@ function ExitPermitDesk({
       {mode === "gate" && canGate ? (
         <GatePanel modeSwitch={modeSwitch} />
       ) : canApprove ? (
-        <ApprovePanel modeSwitch={modeSwitch} />
+        <ApproveDesk modeSwitch={modeSwitch} />
       ) : (
         <GatePanel modeSwitch={modeSwitch} />
       )}
     </AppPage>
+  );
+}
+
+/**
+ * The picket stage's approval, the same rotating QR as the duty desk's
+ * izin keluar mode: the student scans it from their permit, so nobody
+ * types a permit code. Later stages (BK, pimpinan) are approved from the
+ * Perlu tindakan inbox, which opens each permit's own stage QR.
+ */
+function ApproveDesk({ modeSwitch }: { modeSwitch?: ReactNode }): ReactElement {
+  const t = useTranslations("app.permits.exit.approve");
+  const { entries, remember } = useDeskLog();
+  return (
+    <section className="flex w-full max-w-xl flex-col gap-4" aria-labelledby="exit-approve-title">
+      <SectionHeader
+        titleId="exit-approve-title"
+        title={t("title")}
+        description={t("hint")}
+        action={modeSwitch}
+      />
+      <DeskQrPanel
+        purpose="approve_stage"
+        label={t("qrLabel")}
+        help={t("help")}
+        onApproved={(approval) => {
+          remember({
+            key: `exitApproved:${approval.instanceId}`,
+            kind: "exitApproved",
+            studentUserId: approval.studentUserId,
+          });
+        }}
+      />
+      <DeskLog entries={entries} />
+    </section>
   );
 }
 

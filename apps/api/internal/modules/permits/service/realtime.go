@@ -24,6 +24,16 @@ type instanceStageEventPayload struct {
 	Stage      string    `json:"stage"`
 }
 
+// deskApprovedPayload tells the teacher whose desk QR (an unbound
+// approve_stage token) a student just scanned which permit and stage it
+// approved. The student is named by id only, like every payload here; the
+// desk resolves the name through the directory it already reads.
+type deskApprovedPayload struct {
+	InstanceID    uuid.UUID `json:"instance_id"`
+	Stage         string    `json:"stage"`
+	StudentUserID uuid.UUID `json:"student_user_id"`
+}
+
 // dutySlugForStage maps a workflow stage key to the real duty_types.slug
 // (authz.DutyTypeDefaults) whose holders should be pushed a live update
 // when the workflow reaches or leaves it. A stage's Key is not itself a

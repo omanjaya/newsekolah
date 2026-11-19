@@ -28,6 +28,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import {
@@ -74,6 +75,12 @@ export function LateArrivalsView(): ReactElement {
 function MyLateArrival(): ReactElement {
   const current = useCurrentLateArrivalQuery();
   if (current.isLoading) return <Skeleton className="h-96 w-full rounded-xl" />;
+  // Only a 404 means "no late arrival open" (the query maps it to null);
+  // any other failure must not offer a second check-in to a student who
+  // may already be checked in.
+  if (current.isError) {
+    return <QueryError retry={() => void current.refetch()} error={current.error} />;
+  }
   return current.data ? <ActiveLateArrival detail={current.data} /> : <LateCheckIn />;
 }
 
@@ -136,7 +143,11 @@ function LateCheckIn(): ReactElement {
       manualPlaceholder={tScan("placeholder")}
       submitLabel={tScan("submit")}
       result={result}
-    />
+    >
+      {/* The desk QR prints no code to type: the field is for a hardware
+          scanner, and a student who cannot scan is recorded by hand. */}
+      <p className="text-body-sm text-fg-muted">{t("cannotScanHint")}</p>
+    </Scanner>
   );
 }
 

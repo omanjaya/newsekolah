@@ -902,7 +902,7 @@
       "navLabel": "Today's duty",
       "eyebrow": "Student affairs",
       "title": "Today's duty",
-      "intro": "Show the QR for each purpose. Every code is single-use and renews itself when it expires. Exit permit approvals live on the Exit permits page, Approve tab.",
+      "intro": "Show the QR for what you need. Each code is single use and renews itself when it expires.",
       "purposes": {
         "classroom_entry": "Class entry",
         "late_arrival": "Late",
@@ -911,7 +911,8 @@
       },
       "help": {
         "classroom_entry": "Students scan this code when entering class to record their presence in the running session. The code renews itself when it runs out.",
-        "late_arrival": "Students who arrive late scan this code. Their names go straight into the late queue on this page."
+        "late_arrival": "Students who arrive late scan this code. Their names go straight into the late queue on this page.",
+        "exit": "Students with an exit permit scan this code from the Scan QR button on their permit. Each approved student is listed under Recorded today. Counselor and leadership stages are approved from Needs action."
       },
       "manualForm": {
         "intro": "For a student with no phone on hand: pick the kind, find the student, and record it here.",
@@ -943,11 +944,12 @@
       "modeLabel": "Duty mode",
       "qrLabel": {
         "classroom_entry": "Class entry QR code",
-        "late_arrival": "Late arrival QR code"
+        "late_arrival": "Late arrival QR code",
+        "exit": "Exit permit duty approval QR code"
       },
       "queue": {
         "title": "Late queue",
-        "description": "Students who scanned the late QR and wait for your review.",
+        "description": "Late students waiting for your review or your approval QR.",
         "openInbox": "View all",
         "emptyTitle": "Nobody is late yet",
         "emptyBody": "Students who scan the late QR show up here.",
@@ -955,12 +957,13 @@
       },
       "log": {
         "title": "Recorded on this screen",
-        "description": "Manual records and reviews from this screen since it opened.",
+        "description": "Manual records, reviews and approvals from this screen since it opened.",
         "empty": "Nothing recorded from this screen yet",
         "kinds": {
           "exit": "Exit permit recorded",
           "late": "Late arrival recorded",
-          "review": "Late arrival reviewed"
+          "review": "Late arrival reviewed",
+          "exitApproved": "Exit permit approved"
         }
       }
     },
@@ -1417,7 +1420,7 @@
         }
       },
       "scan": {
-        "placeholder": "Paste or type the code under the QR",
+        "placeholder": "Code from a barcode scanner",
         "submit": "Submit code",
         "cameraLabel": "Scan with camera",
         "failedTitle": "Code not accepted"
@@ -1425,15 +1428,16 @@
       "classroomEntry": {
         "navLabel": "Scan classroom entry",
         "intro": "Point the camera at the QR your teacher shows at the front of the class to record your attendance for the running lesson.",
-        "scanLabel": "Classroom entry code",
-        "placeholder": "The code under the QR",
+        "scanLabel": "Classroom-entry QR code (barcode scanner)",
+        "placeholder": "Code from a barcode scanner",
         "submit": "Submit code",
         "successTitle": "Recorded",
         "successBody": "Checked into {teacher}'s class at {time}.",
         "errorTitle": "Scan failed",
         "studentsOnlyTitle": "Students only",
         "studentsOnlyBody": "Students use this page to scan the classroom-entry QR shown by a teacher. Your account is not a student account.",
-        "backHome": "Go home"
+        "backHome": "Go home",
+        "cannotScanHint": "Can't scan? Ask the teacher to mark you present on the class roster."
       },
       "qr": {
         "expiresIn": "Valid for {seconds} more seconds",
@@ -1457,8 +1461,7 @@
         "finished": "Finished",
         "detailTitle": "Exit permit",
         "student": "Student",
-        "code": "Permit code",
-        "scanStageLabel": "Scan the {stage} QR: enter the code",
+        "scanStageLabel": "{stage} QR code (barcode scanner)",
         "stageDone": "Stage approved",
         "showGateQr": "Show gate QR",
         "exitedTitle": "Left through the gate",
@@ -1470,7 +1473,7 @@
           "from": "From period",
           "to": "To period",
           "pick": "Pick",
-          "stagesHint": "After submitting, show your permit code to the teacher at each stage, then scan the approval QR they show. The gate QR appears after the last stage.",
+          "stagesHint": "After submitting, see the teacher at each stage, then scan the approval QR they show. The gate QR appears after the last stage.",
           "requiredError": "Destination and period range are required.",
           "created": "Exit permit requested",
           "submit": "Submit",
@@ -1479,18 +1482,14 @@
           "description": "Write where you are going and which periods you will miss."
         },
         "approve": {
-          "hint": "Ask the student for their permit code, type or scan it, then let the student scan the approval QR that appears.",
-          "permitCode": "Student's permit code",
-          "showQr": "Show approval QR",
-          "title": "Approve an exit permit stage",
-          "permitCodePlaceholder": "Type or paste the permit code",
-          "qrLabel": "Exit permit approval QR code",
-          "class": "Class",
-          "destination": "Destination"
+          "title": "Approve the duty stage",
+          "hint": "Students scan this QR from the Scan QR button on their permit. Counselor and leadership stages are approved from Needs action.",
+          "qrLabel": "Exit permit duty approval QR code",
+          "help": "One code per student. It renews itself once scanned or when it runs out, and each approved student is listed below."
         },
         "gate": {
           "hint": "Point the camera at the gate QR on the student's phone. The result shows under the camera.",
-          "payloadLabel": "Gate QR code",
+          "payloadLabel": "Gate QR code (barcode scanner)",
           "needPayload": "The gate code must come from the student's QR.",
           "passed": "Student cleared to leave",
           "lastTitle": "Last exit",
@@ -1521,16 +1520,21 @@
           "scanStage": "Scan the {stage} QR",
           "scanHint": "Ask the {stage} to show the approval QR, then point the camera at it."
         },
-        "codeHint": "Show this code to the approving teacher.",
         "waitManual": "Waiting for {stage} to review.",
         "gateQrLabel": "Exit permit gate QR code",
         "lessons": "Periods",
         "opened": "Requested",
         "exitedLabel": "Through the gate",
         "idleTitle": "No exit permit in progress",
-        "idleBody": "Need to leave school during lessons? Request a permit, show your permit code to the teacher at each stage, then scan the approval QR they show. The gate QR appears after the last stage.",
+        "idleBody": "Need to leave school during lessons? Request a permit, see the teacher at each stage, then scan the approval QR they show. The gate QR appears after the last stage.",
         "historyTitle": "Exit permit history",
-        "modeLabel": "Task on this page"
+        "modeLabel": "Task on this page",
+        "cancelConfirm": {
+          "title": "Cancel this exit permit?",
+          "body": "Approvals already given are lost, and this permit cannot be resumed.",
+          "confirm": "Cancel permit",
+          "keep": "Go back"
+        }
       },
       "late": {
         "eyebrow": "Student affairs",
@@ -1540,7 +1544,7 @@
         "noneTitle": "No active late arrival",
         "noneBody": "If you arrive late, scan the late-arrival QR at the duty desk and enter its code here.",
         "reasonLabel": "Reason",
-        "scanDutyLabel": "Late-arrival QR code from the duty teacher",
+        "scanDutyLabel": "Late-arrival QR code (barcode scanner)",
         "opened": "Late arrival recorded. Wait for the duty teacher's review.",
         "occurrence": "Occurrence",
         "occurrenceValue": "#{n}",
@@ -1550,7 +1554,7 @@
           "call_parent": "Call parent",
           "send_home": "Send home"
         },
-        "scanStageLabel": "Scan the {stage} QR: enter the code",
+        "scanStageLabel": "{stage} QR code (barcode scanner)",
         "stageDone": "Stage completed",
         "waitManual": "Waiting for {stage} to review.",
         "queueEmptyTitle": "No late arrivals waiting",
@@ -1561,7 +1565,7 @@
         "review": "Review",
         "reviewTitle": "Review late arrival",
         "homeroomReported": "Reported to the homeroom teacher",
-        "reviewHint": "After review, the student scans the leadership QR to close the flow.",
+        "reviewHint": "After review, the student scans the next stage's QR, which its approver shows from Needs action.",
         "reviewed": "Review saved",
         "cancel": "Cancel",
         "submitReview": "Save review",
@@ -1576,7 +1580,10 @@
           "title": "Recorded at {time}",
           "scanStage": "Scan the {stage} QR",
           "scanHint": "Ask the {stage} to show the QR, then point the camera at it."
-        }
+        },
+        "cannotScanHint": "Can't scan? Ask the duty teacher to record you with Manual record.",
+        "showQr": "Show QR",
+        "approveTitle": "{stage} approval QR"
       },
       "leave": {
         "eyebrow": "Student affairs",
@@ -1684,6 +1691,15 @@
         "lateWaiting": "Waiting",
         "lateToday": "Recorded today",
         "leaveWaiting": "Waiting on you"
+      },
+      "approve": {
+        "qrLabel": "Approval QR code",
+        "qrLabelStage": "{stage} approval QR code",
+        "hint": "Ask the student to press the Scan QR button on their permit, then scan this code.",
+        "hintStage": "Ask the student to press Scan the {stage} QR on their permit, then scan this code.",
+        "class": "Class",
+        "destination": "Destination",
+        "reason": "Reason"
       }
     },
     "verify": {
