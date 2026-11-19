@@ -40,10 +40,23 @@ import { LateArrivalReviewForm } from "./late-arrivals-view";
 import { LeaveRequestDetail } from "./leave-request-detail";
 import { PermitQueueCard } from "./permit-queue-card";
 
-/** Server-scoped queues only: personal history remains in each service's workflow. */
-export function PermitUnifiedQueue(): ReactElement {
+/**
+ * Server-scoped queues only: personal history remains in each service's workflow.
+ *
+ * `onSheetOpenChange` tells the host when a row's sheet opens and closes.
+ * The sheet keeps its row in local state, so a refetch that drops the row
+ * (the stage it approves has passed) leaves it open; a host that swaps the
+ * whole queue out when nothing is left waiting (the inbox's all-clear)
+ * waits for the sheet to close, so its success line can be read.
+ */
+export function PermitUnifiedQueue({
+  onSheetOpenChange,
+}: {
+  onSheetOpenChange?: (open: boolean) => void;
+} = {}): ReactElement {
   const t = useTranslations("app.serviceWorkspace");
   const tLeave = useTranslations("app.permits.leave");
+  const tLate = useTranslations("app.permits.late");
   const tApprove = useTranslations("app.permits.approve");
   const exitQueue = useTranslations("app.permits.exit.queue");
   const locale = useLocale() as Locale;
@@ -60,6 +73,10 @@ export function PermitUnifiedQueue(): ReactElement {
   const review = useReviewLeaveRequestMutation();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<PermitQueueRow | null>(null);
+  const select = (row: PermitQueueRow | null) => {
+    setSelected(row);
+    onSheetOpenChange?.(row !== null);
+  };
   const [pendingId, setPendingId] = useState<string | null>(null);
   const sources: {
     type: PermitQueueRow["type"];
@@ -157,8 +174,12 @@ export function PermitUnifiedQueue(): ReactElement {
         ? { kind: "exit_permit" as const, stage: selected.exit.current_stage?.label }
         : null;
   const closeSelected = () => {
-    setSelected(null);
+    select(null);
   };
+  // A late arrival at the picket review takes the review form, titled and
+  // naming the student (and class) as the duty desk's review sheet is.
+  const selectedLateReview =
+    selected?.type === "late" && selected.late.current_stage.verification !== "qr_scan";
 
   const bulk = useBulkLeaveApproval(
     visible.filter((row) => row.type === "leave").map((row) => row.id),
@@ -188,7 +209,7 @@ export function PermitUnifiedQueue(): ReactElement {
             rejectLeave(row.id, reason);
           }}
           onOpenDetail={() => {
-            setSelected(row);
+            select(row);
           }}
         />
       ),
@@ -280,7 +301,7 @@ export function PermitUnifiedQueue(): ReactElement {
       <Dialog
         open={selected !== null}
         onOpenChange={(open) => {
-          if (!open) setSelected(null);
+          if (!open) select(null);
         }}
       >
         <DialogContent
@@ -289,12 +310,14 @@ export function PermitUnifiedQueue(): ReactElement {
               ? selectedApproval.stage
                 ? tApprove("titleStage", { stage: selectedApproval.stage })
                 : tApprove("title")
-              : selected
-                ? t(selected.type)
-                : t("permits")
+              : selectedLateReview
+                ? tLate("reviewTitle")
+                : selected
+                  ? t(selected.type)
+                  : t("permits")
           }
           description={
-            selected && selectedApproval
+            selected && (selectedApproval || selectedLateReview)
               ? [nameFor(selected), selected.className].filter(Boolean).join(" · ")
               : undefined
           }
@@ -317,7 +340,7 @@ export function PermitUnifiedQueue(): ReactElement {
           {/* A late arrival past its picket review waits for this
               approver's own QR (leadership, the class teacher), above;
               at the picket review it takes the review form. */}
-          {selected?.type === "late" && selected.late.current_stage.verification !== "qr_scan" && (
+          {selected?.type === "late" && selectedLateReview && (
             <LateArrivalReviewForm item={selected.late} onDone={closeSelected} />
           )}
         </DialogContent>

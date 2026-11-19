@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActionInboxView } from "./action-inbox-view";
@@ -28,7 +28,16 @@ vi.mock("../../../lib/session/session-provider", () => ({
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../use-action-inbox-count", () => ({ useActionInboxSummary: mocks.summary }));
 vi.mock("../../permits/components/permit-unified-queue", () => ({
-  PermitUnifiedQueue: () => <div data-testid="permit-queue" />,
+  PermitUnifiedQueue: ({ onSheetOpenChange }: { onSheetOpenChange?: (open: boolean) => void }) => (
+    <div data-testid="permit-queue">
+      <button type="button" onClick={() => onSheetOpenChange?.(true)}>
+        open-sheet
+      </button>
+      <button type="button" onClick={() => onSheetOpenChange?.(false)}>
+        close-sheet
+      </button>
+    </div>
+  ),
 }));
 vi.mock("./warning-letter-candidates-section", () => ({
   WarningLetterCandidatesSection: () => <div data-testid="sp-section" />,
@@ -100,6 +109,23 @@ describe("ActionInboxView", () => {
     expect(screen.queryByTestId("permit-queue")).not.toBeInTheDocument();
     // A reviewer has no leave history: /leave-requests would send them back here.
     expect(screen.queryByRole("link", { name: "historyLeave" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the queue mounted while a sheet is open after the last item clears", () => {
+    mocks.permissions = new Set(["issue_scan_tokens"]);
+    const { rerender } = render(<ActionInboxView />);
+    fireEvent.click(screen.getByRole("button", { name: "open-sheet" }));
+
+    // The approval (or its live push) drops the count to zero: the sheet
+    // must stay up so its success line can be read.
+    mocks.summary.mockReturnValue(summary({ leave: 0, warningLetters: 0, total: 0 }));
+    rerender(<ActionInboxView />);
+    expect(screen.getByTestId("permit-queue")).toBeInTheDocument();
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "close-sheet" }));
+    expect(screen.getByText("emptyTitle")).toBeInTheDocument();
+    expect(screen.queryByTestId("permit-queue")).not.toBeInTheDocument();
   });
 
   it("offers the warning letters as the history of an all-clear issuer", () => {

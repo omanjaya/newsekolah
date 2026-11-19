@@ -5,6 +5,7 @@ import { CheckCheck, House } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
+import { useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { navAccessFromMe } from "../../../lib/navigation-access";
@@ -83,8 +84,14 @@ export function ActionInboxView(): ReactElement {
   const summary = useActionInboxSummary();
   const showPermits = access.leave || access.exit || access.late;
   const nothingToShow = !showPermits && !access.warningLetters;
+  // A permit sheet stays up until its reader closes it: approving the last
+  // waiting item (or the live push that follows) drops the count to zero,
+  // and swapping the queue for the all-clear then would unmount the sheet
+  // before its success line could be read.
+  const [permitSheetOpen, setPermitSheetOpen] = useState(false);
   // A failed queue must stay visible with its retry, so only an error-free zero is "all clear".
-  const allClear = !summary.isLoading && !summary.isError && summary.total === 0;
+  const allClear =
+    !summary.isLoading && !summary.isError && summary.total === 0 && !permitSheetOpen;
   const canSubmitPermit = useCanSubmitPermit();
   const navAccess = navAccessFromMe(me);
   const historyContext: HistoryContext = {
@@ -134,7 +141,7 @@ export function ActionInboxView(): ReactElement {
               title={t("permits")}
               count={summary.leave + summary.exit + summary.late}
             >
-              <PermitUnifiedQueue />
+              <PermitUnifiedQueue onSheetOpenChange={setPermitSheetOpen} />
             </InboxSection>
           )}
           {access.warningLetters && (

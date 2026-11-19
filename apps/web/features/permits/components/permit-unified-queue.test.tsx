@@ -230,6 +230,36 @@ describe("permit queue late arrival actions", () => {
     expect(screen.queryByTestId("approve-panel")).not.toBeInTheDocument();
   });
 
+  it("titles the picket review sheet and names the student and class, as the duty desk does", async () => {
+    mocks.directory.mockReturnValue(new Map([["student-a", { id: "student-a", name: "Siswa a" }]]));
+    mocks.late.mockReturnValue({
+      ...emptyResult,
+      data: { data: [{ ...lateItem("a"), class_name: "X-A" }] },
+    });
+    render(<PermitUnifiedQueue />);
+    await userEvent.click(screen.getByRole("button", { name: "open" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveAccessibleName("reviewTitle");
+    expect(dialog).toHaveAccessibleDescription("Siswa a · X-A");
+  });
+
+  it("keeps the approval sheet open when a refetch drops its row, and tells the host", async () => {
+    const onSheetOpenChange = vi.fn();
+    mocks.late.mockReturnValue({ ...emptyResult, data: { data: [lateItemAtLeadership("b")] } });
+    const { rerender } = render(<PermitUnifiedQueue onSheetOpenChange={onSheetOpenChange} />);
+    await userEvent.click(screen.getByRole("button", { name: "open" }));
+    expect(onSheetOpenChange).toHaveBeenLastCalledWith(true);
+
+    // The student's scan passed the stage: the queue no longer lists it.
+    mocks.late.mockReturnValue(emptyResult);
+    rerender(<PermitUnifiedQueue onSheetOpenChange={onSheetOpenChange} />);
+    expect(screen.getByTestId("approve-panel")).toHaveTextContent("late_arrival:b");
+
+    await userEvent.click(screen.getByRole("button", { name: "student-scanned" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(onSheetOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
   it("opens the approver's stage QR for a late arrival waiting at a QR stage", async () => {
     mocks.late.mockReturnValue({ ...emptyResult, data: { data: [lateItemAtLeadership("b")] } });
     render(<PermitUnifiedQueue />);
