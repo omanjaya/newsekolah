@@ -256,11 +256,8 @@ func (s *Service) approveCurrentStage(ctx context.Context, in stageTransitionInp
 	if err != nil {
 		return domain.Instance{}, domain.Definition{}, false, err
 	}
-	if in.verification != "" && stage.Verification != in.verification {
-		return domain.Instance{}, domain.Definition{}, false, domain.ErrStageVerificationMismatch
-	}
-	if in.unboundToken && !domain.AcceptsUnboundApproval(inst.Kind, stage) {
-		return domain.Instance{}, domain.Definition{}, false, domain.ErrStageVerificationMismatch
+	if err := checkStageVerification(in, inst, stage); err != nil {
+		return domain.Instance{}, domain.Definition{}, false, err
 	}
 	if err := s.evaluateApproverRule(ctx, def, inst, stage, in.actorUserID); err != nil {
 		return domain.Instance{}, domain.Definition{}, false, err
@@ -291,6 +288,19 @@ func (s *Service) approveCurrentStage(ctx context.Context, in stageTransitionInp
 		return domain.Instance{}, domain.Definition{}, false, err
 	}
 	return updated, def, isLast, nil
+}
+
+// checkStageVerification rejects an approval made through a different
+// verification than the current stage asks for, or through an unbound
+// token on a stage that does not accept one.
+func checkStageVerification(in stageTransitionInput, inst domain.Instance, stage domain.Stage) error {
+	if in.verification != "" && stage.Verification != in.verification {
+		return domain.ErrStageVerificationMismatch
+	}
+	if in.unboundToken && !domain.AcceptsUnboundApproval(inst.Kind, stage) {
+		return domain.ErrStageVerificationMismatch
+	}
+	return nil
 }
 
 // rejectInstance closes an in-progress instance as rejected, recording
