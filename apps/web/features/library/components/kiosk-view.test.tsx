@@ -1,5 +1,5 @@
 import { ApiError } from "@newsekolah/api-client";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type * as KioskSessionModule from "../kiosk-session";
@@ -13,7 +13,12 @@ import { KioskView } from "./kiosk-view";
 
 const findMemberByCode = vi.fn();
 
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("next-intl", () => ({
+  useTranslations:
+    () =>
+    (key: string, values?: Record<string, unknown>): string =>
+      values ? `${key} ${Object.values(values).join(" ")}` : key,
+}));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
@@ -155,5 +160,36 @@ describe("KioskView", () => {
       await screen.findByRole("heading", { level: 1, name: "active.title" }),
     ).toBeInTheDocument();
     expect(findMemberByCode).toHaveBeenCalledTimes(1);
+  });
+
+  it("starts a new session's countdown at the full limit, not from a stale clock", async () => {
+    vi.useFakeTimers();
+    try {
+      render(<KioskView />);
+      scanCard(MEMBER_USER_ID);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(screen.getByText("active.resetsIn 20")).toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(7_000);
+      });
+      expect(screen.getByText("active.resetsIn 13")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "active.done" }));
+      // Idle for a while: nothing ticks without a session.
+      act(() => {
+        vi.advanceTimersByTime(7_000);
+      });
+
+      scanCard(MEMBER_USER_ID);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(screen.getByText("active.resetsIn 20")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

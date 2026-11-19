@@ -42,20 +42,36 @@ interface KioskFeedback {
   key: number;
 }
 
-/** Whole seconds until `deadline`, ticking once a second while there is one. */
-function useSecondsLeft(deadline: number | null): number | null {
-  const [now, setNow] = useState(() => Date.now());
+/** A session's idle countdown: when it (re)started and when it runs out. */
+interface Countdown {
+  startedAt: number;
+  deadline: number;
+}
+
+/**
+ * Whole seconds left on `countdown`, ticking once a second while there is
+ * one. A new countdown is read from its own start until the first tick, not
+ * from the last tick of an earlier one: that stale clock showed a fresh
+ * 20-second session as "27 seconds" for its first second.
+ */
+function useSecondsLeft(countdown: Countdown | null): number | null {
+  const [tick, setTick] = useState<{ countdown: Countdown | null; now: number | null }>({
+    countdown,
+    now: null,
+  });
+  if (tick.countdown !== countdown) setTick({ countdown, now: null });
   useEffect(() => {
-    if (deadline === null) return;
+    if (countdown === null) return;
     const timer = window.setInterval(() => {
-      setNow(Date.now());
+      setTick({ countdown, now: Date.now() });
     }, 1000);
     return () => {
       window.clearInterval(timer);
     };
-  }, [deadline]);
-  if (deadline === null) return null;
-  return Math.max(0, Math.ceil((deadline - now) / 1000));
+  }, [countdown]);
+  if (countdown === null) return null;
+  const now = tick.countdown === countdown && tick.now !== null ? tick.now : countdown.startedAt;
+  return Math.max(0, Math.ceil((countdown.deadline - now) / 1000));
 }
 
 /** Tailwind `lg`: from here the scanner's side column sits beside the camera instead of under it. */
@@ -102,14 +118,14 @@ export function KioskView(): ReactElement {
 
   const [memberUserId, setMemberUserIdState] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<KioskFeedback | null>(null);
-  const [resetAt, setResetAt] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState<Countdown | null>(null);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackCount = useRef(0);
   // Read synchronously by the card handler: a scan queued behind a lookup
   // runs with the render it was read in, before the new session shows.
   const memberRef = useRef<string | null>(null);
   const cardLookupPending = useRef(false);
-  const secondsLeft = useSecondsLeft(memberUserId ? resetAt : null);
+  const secondsLeft = useSecondsLeft(memberUserId ? countdown : null);
 
   const session = useKioskMemberSession(memberUserId);
   const borrow = useBorrowLoanMutation();
@@ -128,11 +144,12 @@ export function KioskView(): ReactElement {
 
   const scheduleReset = useCallback(() => {
     if (resetTimer.current) clearTimeout(resetTimer.current);
-    setResetAt(Date.now() + IDLE_RESET_MS);
+    const startedAt = Date.now();
+    setCountdown({ startedAt, deadline: startedAt + IDLE_RESET_MS });
     resetTimer.current = setTimeout(() => {
       setMemberUserId(null);
       setFeedback(null);
-      setResetAt(null);
+      setCountdown(null);
     }, IDLE_RESET_MS);
   }, [setMemberUserId]);
 
@@ -147,7 +164,7 @@ export function KioskView(): ReactElement {
     if (resetTimer.current) clearTimeout(resetTimer.current);
     setMemberUserId(null);
     setFeedback(null);
-    setResetAt(null);
+    setCountdown(null);
   }, [setMemberUserId]);
 
   const showError = (error: unknown) => {
