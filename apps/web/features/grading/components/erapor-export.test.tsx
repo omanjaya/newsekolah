@@ -26,13 +26,13 @@ vi.mock("../api", () => ({
 
 import { EraporExport } from "./erapor-export";
 
-function failWith(code: string) {
+function failWith(code: string, status = 403) {
   previewMock.mockReturnValue({
     data: undefined,
     isLoading: false,
     isError: true,
     isRefetching: false,
-    error: new ApiError({ status: 403, code, message: code }),
+    error: new ApiError({ status, code, message: code }),
     refetch,
   });
 }
@@ -74,7 +74,7 @@ describe("EraporExport preview states", () => {
   });
 
   it("keeps a real failure as an error with a retry", async () => {
-    failWith("INTERNAL_ERROR");
+    failWith("INTERNAL_ERROR", 500);
     const user = userEvent.setup();
     render(<EraporExport canPublish onOpenGradebook={vi.fn()} />);
 
@@ -82,6 +82,14 @@ describe("EraporExport preview states", () => {
     expect(screen.getByText("previewError")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "retry" }));
     expect(refetch).toHaveBeenCalledOnce();
+  });
+
+  it("offers no retry for a refusal a retry cannot change", () => {
+    failWith("NOT_TEACHING_THIS_CLASS");
+    render(<EraporExport canPublish={false} onOpenGradebook={vi.fn()} />);
+
+    expect(screen.getByText("error.NOT_TEACHING_THIS_CLASS")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "retry" })).not.toBeInTheDocument();
   });
 
   it("lets the file format picker fill the column on a phone like its siblings", () => {

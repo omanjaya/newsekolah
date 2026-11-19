@@ -31,6 +31,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { isRetryableError } from "../../../lib/query/retryable-error";
 import { useClassesQuery, useSubjectsQuery } from "../../reference/api";
 import {
   type EraporFormat,
@@ -197,16 +198,21 @@ export function EraporExport({ canPublish, onOpenGradebook }: EraporExportProps)
               : apiErrorMessage("UNKNOWN")
           }
           action={
-            <Button
-              size="sm"
-              variant="secondary"
-              loading={preview.isRefetching}
-              onClick={() => {
-                void preview.refetch();
-              }}
-            >
-              {t("retry")}
-            </Button>
+            // A 4xx (say NOT_TEACHING_THIS_CLASS for a class outside the
+            // teacher's subjects) answers the same on every retry; only a
+            // transient failure gets the button.
+            isRetryableError(preview.error) && (
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={preview.isRefetching}
+                onClick={() => {
+                  void preview.refetch();
+                }}
+              >
+                {t("retry")}
+              </Button>
+            )
           }
         >
           {t("previewError")}
