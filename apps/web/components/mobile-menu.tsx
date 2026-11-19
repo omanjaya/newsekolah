@@ -136,7 +136,7 @@ export function MobileMenu({
               className="flex h-11 w-full items-center gap-3 rounded-md border border-border bg-surface-sunken px-3 text-left text-body text-fg-muted transition-colors focus-visible:-outline-offset-2 active:bg-state-pressed"
             >
               <Search aria-hidden="true" className="size-5 shrink-0" />
-              <span className="min-w-0 flex-1 truncate">{t("app.shell.phoneMenu.search")}</span>
+              <span className="min-w-0 flex-1 truncate">{palette.placeholder}</span>
             </button>
           )}
 

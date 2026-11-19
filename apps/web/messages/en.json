@@ -99,11 +99,11 @@
       },
       "palette": {
         "placeholder": "Search pages, students or actions",
+        "placeholderPages": "Search pages or actions",
         "recent": "Recently visited",
         "results": "Pages"
       },
       "phoneMenu": {
-        "search": "Search pages, students or actions",
         "edit": "Edit favorites",
         "done": "Done",
         "favoriteAdd": "Add {name} to favorites",

@@ -25,6 +25,12 @@ import { useQuickActions } from "../lib/use-quick-actions";
 
 interface CommandPaletteContextValue {
   open: () => void;
+  /**
+   * What the search finds, for every field and button that opens it (the
+   * header, the phone menu): students only for a reader who may open a
+   * student's profile, so a student is not promised a search they lack.
+   */
+  placeholder: string;
 }
 
 const CommandPaletteContext = createContext<CommandPaletteContextValue | null>(null);
@@ -181,6 +187,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
     () => canOpenPath(studentProfileHref("search"), navAccessFromMe(me)),
     [me],
   );
+  const placeholder = t(canOpenStudentProfile ? "placeholder" : "placeholderPages");
   const studentIcon = useMemo(() => <domainIcons.users aria-hidden="true" />, []);
   const openStudent = useCallback(
     (studentId: string) => {
@@ -300,7 +307,10 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
   // Same rationale as SessionProvider/TenantProvider: keep the value's
   // identity stable so consumers of `useCommandPalette()` don't re-render on
   // every render of this provider (docs/16-audit-performa-web.md item 3).
-  const value = useMemo<CommandPaletteContextValue>(() => ({ open }), [open]);
+  const value = useMemo<CommandPaletteContextValue>(
+    () => ({ open, placeholder }),
+    [open, placeholder],
+  );
 
   return (
     <CommandPaletteContext.Provider value={value}>
@@ -312,8 +322,8 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
           groups={groups}
           shouldFilter={false}
           onSearchChange={handleSearchChange}
-          placeholder={t("placeholder")}
-          label={t("placeholder")}
+          placeholder={placeholder}
+          label={placeholder}
         />
       )}
     </CommandPaletteContext.Provider>

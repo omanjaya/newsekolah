@@ -2,7 +2,6 @@
 
 import { IconButton, Kbd, Skeleton, cn, useCollapsedTitle } from "@newsekolah/ui";
 import { Search } from "lucide-react";
-import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
@@ -112,7 +111,6 @@ function PhoneBrand(): ReactElement {
  * Theme moved into the account menu.
  */
 export function Header(): ReactElement {
-  const tPalette = useTranslations("app.shell.palette");
   const commandPalette = useCommandPalette();
   const modifier = useModifierKey();
   const scrolled = useScrolled();
@@ -141,7 +139,7 @@ export function Header(): ReactElement {
         )}
       >
         <Search className="size-4 shrink-0" aria-hidden="true" />
-        <span className="min-w-0 flex-1 truncate text-left">{tPalette("placeholder")}</span>
+        <span className="min-w-0 flex-1 truncate text-left">{commandPalette.placeholder}</span>
         {modifier && (
           <span aria-hidden="true" className="flex shrink-0 items-center gap-0.5">
             <Kbd>{modifier}</Kbd>
@@ -154,7 +152,7 @@ export function Header(): ReactElement {
         <RoleTestingSwitcher />
         <IconButton
           icon={<Search />}
-          aria-label={tPalette("placeholder")}
+          aria-label={commandPalette.placeholder}
           tooltip={false}
           variant="surface"
           size="lg"

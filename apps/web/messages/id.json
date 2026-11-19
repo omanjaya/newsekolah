@@ -99,11 +99,11 @@
       },
       "palette": {
         "placeholder": "Cari halaman, siswa, atau aksi",
+        "placeholderPages": "Cari halaman atau aksi",
         "recent": "Terakhir dibuka",
         "results": "Halaman"
       },
       "phoneMenu": {
-        "search": "Cari halaman, siswa, atau aksi",
         "edit": "Atur favorit",
         "done": "Selesai",
         "favoriteAdd": "Tambahkan {name} ke favorit",
