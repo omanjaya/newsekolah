@@ -53,6 +53,17 @@ export function presentRateOfCounts(counts: Readonly<Record<string, number>>): n
 }
 
 /**
+ * True when a class's day has students and none of them has a lesson
+ * (every count is "NONE"): a weekend or holiday. There is nothing to
+ * record, so the day reads "no lessons", neither "not recorded yet" nor
+ * "everyone accounted for" (audit r4-n4).
+ */
+export function isNoLessonDay(counts: Readonly<Record<string, number>>): boolean {
+  const codes = Object.entries(counts).filter(([, count]) => count > 0);
+  return codes.length > 0 && codes.every(([code]) => code === "NONE");
+}
+
+/**
  * Tallies a student's month calendar into the home-screen attendance stats:
  * the four tiles (hadir%, sakit, izin, alpha) come straight out of `counts`,
  * plus the fuller legend (also INCOMPLETE, MIXED, and D for dispensasi,

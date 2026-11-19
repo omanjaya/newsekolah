@@ -22,7 +22,7 @@ import type { ReactElement } from "react";
 import { QueryError } from "../../../../components/query-error";
 import { isModuleEnabled } from "../../../../lib/modules/feature-modules";
 import { todayInZone, useHomeroomAttendanceQuery } from "../../../attendance/api";
-import { presentRateOfCounts } from "../../../attendance/lib/attendance-stats";
+import { isNoLessonDay, presentRateOfCounts } from "../../../attendance/lib/attendance-stats";
 import { useLeaveReviewQueueQuery, type LeaveRequestSummary } from "../../../permits/api";
 import { EMPTY_BLOCK, HERO_PRIORITY, type Me, type PersonaBlock } from "../types";
 
@@ -104,15 +104,18 @@ export function useHomeroomBlock(me: Me, active: boolean): PersonaBlock {
   if (attendance.isSuccess && total > 0) {
     // The attendance page's own rule: only recorded students count, so a
     // morning before anyone filled attendance in reads "not recorded yet",
-    // not "0%" (audit r3-n15).
+    // not "0%" (audit r3-n15). A day without lessons has nothing to
+    // record, so it says that instead of "not recorded yet" (audit r4-n4).
     const rate = presentRateOfCounts(counts);
+    const noLessons = isNoLessonDay(counts);
     block.tiles.push({
       key: "homeroom.rate",
       priority: 70,
       label: t("tiles.rateLabel"),
       value: rate === undefined ? "-" : `${rate}%`,
-      hint:
-        rate === undefined
+      hint: noLessons
+        ? t("tiles.rateNoLessonsHint")
+        : rate === undefined
           ? t("tiles.rateNotRecordedHint")
           : className
             ? t("tiles.rateHint", { className })

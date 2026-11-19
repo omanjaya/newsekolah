@@ -47,6 +47,7 @@
       "leaveLabel": "Class leave requests waiting",
       "rateLabel": "Class attendance",
       "rateHint": "present in {className} today",
+      "rateNoLessonsHint": "no lessons today",
       "rateNotRecordedHint": "not recorded yet today"
     },
     "hero": {

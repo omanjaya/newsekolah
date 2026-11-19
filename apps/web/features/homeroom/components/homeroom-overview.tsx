@@ -8,6 +8,7 @@ import { useRef, type ReactElement } from "react";
 
 import { SharedRetry } from "../../../components/query-error";
 import { useFocusAfterRetry } from "../../../lib/hooks/use-focus-after-retry";
+import { isNoLessonDay } from "../../attendance/lib/attendance-stats";
 
 import { HomeroomDashboard } from "./homeroom-dashboard";
 import { readFailure } from "./homeroom-queue-card";
@@ -85,6 +86,9 @@ export function HomeroomOverview({
   const absent = counts.A ?? 0;
   const incomplete = counts.INCOMPLETE ?? 0;
   const attention = attentionRows.length;
+  // A weekend or holiday: nobody needs attention because there was nothing
+  // to record, which must not read as everyone accounted for (audit r4-n4).
+  const noLessons = !dashboard.isLoading && isNoLessonDay(counts);
   const isToday = date === today;
   const dayLabel = format.dateTime(new Date(`${date}T00:00:00Z`), {
     weekday: "short",
@@ -127,10 +131,18 @@ export function HomeroomOverview({
             tone={dashboard.isLoading || attention === 0 ? "accent-soft" : "warning"}
             eyebrow={attention > 0 ? attentionEyebrow : calmEyebrow}
             title={
-              attention > 0 ? t("attentionCount", { count: attention }) : t("attentionNoneTitle")
+              attention > 0
+                ? t("attentionCount", { count: attention })
+                : noLessons
+                  ? t("noLessonsTitle")
+                  : t("attentionNoneTitle")
             }
             meta={
-              attention > 0 ? t("attentionBreakdown", { absent, incomplete }) : t("attentionEmpty")
+              attention > 0
+                ? t("attentionBreakdown", { absent, incomplete })
+                : noLessons
+                  ? t("noLessonsMeta")
+                  : t("attentionEmpty")
             }
             action={
               attention > 0 ? (

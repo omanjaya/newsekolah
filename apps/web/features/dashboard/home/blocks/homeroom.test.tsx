@@ -89,6 +89,24 @@ describe("useHomeroomBlock", () => {
     expect(rateTile?.hint).toBe("tiles.rateHint");
   });
 
+  // A weekend read "not recorded yet" although there was nothing to record
+  // (audit r4-n4).
+  it("says there are no lessons on a day without any", () => {
+    attendanceQuery.mockReturnValue({
+      data: { data: [], total: 2, status_counts: { NONE: 2 } },
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useHomeroomBlock(meWithHomeroom(), true));
+
+    const rateTile = result.current.tiles.find((tile) => tile.key === "homeroom.rate");
+    expect(rateTile?.value).toBe("-");
+    expect(rateTile?.hint).toBe("tiles.rateNoLessonsHint");
+  });
+
   it("says 'not recorded yet', not 0%, while nobody in the class is recorded", () => {
     attendanceQuery.mockReturnValue({
       data: { data: [], total: 2, status_counts: { INCOMPLETE: 2 } },

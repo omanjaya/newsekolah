@@ -47,6 +47,7 @@
       "leaveLabel": "Izin kelas menunggu",
       "rateLabel": "Presensi kelas",
       "rateHint": "hadir {className} hari ini",
+      "rateNoLessonsHint": "tidak ada jadwal hari ini",
       "rateNotRecordedHint": "belum tercatat hari ini"
     },
     "hero": {

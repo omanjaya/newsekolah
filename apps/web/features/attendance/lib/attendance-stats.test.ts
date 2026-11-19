@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { monthAttendanceStats, presentRateOfCounts } from "./attendance-stats";
+import { isNoLessonDay, monthAttendanceStats, presentRateOfCounts } from "./attendance-stats";
 
 const TODAY = "2026-09-25";
 
@@ -80,5 +80,15 @@ describe("presentRateOfCounts", () => {
   it("is undefined while nobody in the class is recorded", () => {
     expect(presentRateOfCounts({ INCOMPLETE: 2 })).toBeUndefined();
     expect(presentRateOfCounts({})).toBeUndefined();
+  });
+});
+
+describe("isNoLessonDay", () => {
+  it("is true only when every student in the class has no lesson", () => {
+    expect(isNoLessonDay({ NONE: 30 })).toBe(true);
+    expect(isNoLessonDay({ NONE: 30, H: 0 })).toBe(true);
+    expect(isNoLessonDay({ NONE: 29, INCOMPLETE: 1 })).toBe(false);
+    expect(isNoLessonDay({ H: 30 })).toBe(false);
+    expect(isNoLessonDay({})).toBe(false);
   });
 });

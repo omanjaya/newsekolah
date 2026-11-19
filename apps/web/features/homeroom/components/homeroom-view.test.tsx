@@ -323,6 +323,26 @@ describe("HomeroomView overview", () => {
     expect(screen.queryByText("attentionTitle")).not.toBeInTheDocument();
   });
 
+  // A weekend read as "everyone accounted for" (audit r4-n4).
+  it("says the class has no lessons on a day without any, not that everyone is accounted for", () => {
+    mocks.useHomeroomAttendanceQuery.mockReturnValue({
+      data: {
+        data: [
+          { student_user_id: "s1", name: "Siswa Satu", status_code: "NONE" },
+          { student_user_id: "s2", name: "Siswa Dua", status_code: "NONE" },
+        ],
+        total: 2,
+        status_counts: { NONE: 2 },
+      },
+      isLoading: false,
+    });
+    render(<HomeroomView />);
+
+    expect(screen.getByRole("heading", { name: "noLessonsTitle" })).toBeInTheDocument();
+    expect(screen.getByText("noLessonsMeta")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "attentionNoneTitle" })).not.toBeInTheDocument();
+  });
+
   it("names the chosen day instead of 'today' on another date", () => {
     mocks.date = "2026-09-28";
     const { unmount } = render(<HomeroomView />);

@@ -1311,6 +1311,8 @@
       "loadFailedTitle": "Ringkasan kelas belum dimuat",
       "loadFailedMeta": "Periksa koneksi lalu coba lagi.",
       "attentionEmpty": "Semua siswa hadir atau presensinya sudah lengkap.",
+      "noLessonsTitle": "Tidak ada jadwal",
+      "noLessonsMeta": "Kelas ini tidak punya pelajaran pada hari ini, jadi tidak ada presensi yang perlu dicatat.",
       "contactCall": "Telepon wali {name}",
       "contactWhatsapp": "WhatsApp wali {name}",
       "pendingLeaveTitle": "Izin menunggu persetujuan",

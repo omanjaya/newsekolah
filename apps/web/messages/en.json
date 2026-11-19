@@ -1311,6 +1311,8 @@
       "loadFailedTitle": "The class summary did not load",
       "loadFailedMeta": "Check your connection, then try again.",
       "attentionEmpty": "Every student is present or their attendance is complete.",
+      "noLessonsTitle": "No lessons",
+      "noLessonsMeta": "This class has no lessons on this day, so there is no attendance to record.",
       "contactCall": "Call {name}'s guardian",
       "contactWhatsapp": "WhatsApp {name}'s guardian",
       "pendingLeaveTitle": "Leave requests awaiting review",
