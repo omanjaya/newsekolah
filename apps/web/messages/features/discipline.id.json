@@ -372,7 +372,9 @@
     "recordsCount": "{count, plural, other {# catatan}}",
     "recordCounseling": "Catat konseling",
     "nis": "NIS {nis}",
-    "openProfile": "Lihat profil siswa"
+    "openProfile": "Lihat profil siswa",
+    "nameLoadError": "Nama siswa gagal dimuat.",
+    "retry": "Coba lagi"
   },
   "pointsMeter": {
     "label": "{points} poin terhadap ambang surat peringatan",

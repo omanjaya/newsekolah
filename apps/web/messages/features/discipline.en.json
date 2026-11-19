@@ -372,7 +372,9 @@
     "recordsCount": "{count, plural, one {# record} other {# records}}",
     "recordCounseling": "Record counseling",
     "nis": "Student no. {nis}",
-    "openProfile": "Open the student profile"
+    "openProfile": "Open the student profile",
+    "nameLoadError": "Could not load the student's name.",
+    "retry": "Try again"
   },
   "pointsMeter": {
     "label": "{points} points against the warning letter thresholds",
