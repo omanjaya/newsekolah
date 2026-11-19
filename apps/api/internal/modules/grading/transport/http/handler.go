@@ -90,8 +90,8 @@ func (h *GradingHandler) canManageSettings(ctx context.Context) bool {
 // requireTeaches scope -- only a role meant to oversee the whole school
 // (principal, admin) reads every class through this. Used only for the
 // read endpoints (GetGradebook, ExportGradebook, ListGradeRanges,
-// ListTPMappings, the e-Rapor previews/exports); every write endpoint
-// keeps canManageAny.
+// ListTPMappings, GetStarLedger, ListClassStarBalances, the e-Rapor
+// previews/exports); every write endpoint keeps canManageAny.
 func (h *GradingHandler) canViewAny(ctx context.Context) bool {
 	if h.perms == nil {
 		return false
@@ -424,7 +424,7 @@ func (h *GradingHandler) GetStarLedger(ctx context.Context, request api.GetStarL
 	if request.Params.Limit != nil {
 		limit = *request.Params.Limit
 	}
-	events, balance, err := h.service.StarLedger(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), request.StudentId, true, limit)
+	events, balance, err := h.service.StarLedger(ctx, tenantID(ctx), userID(ctx), h.canViewAny(ctx), request.StudentId, true, limit)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -436,7 +436,7 @@ func (h *GradingHandler) GetStarLedger(ctx context.Context, request api.GetStarL
 }
 
 func (h *GradingHandler) ListClassStarBalances(ctx context.Context, request api.ListClassStarBalancesRequestObject) (api.ListClassStarBalancesResponseObject, error) {
-	balances, err := h.service.ClassStarBalances(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), request.ClassId)
+	balances, err := h.service.ClassStarBalances(ctx, tenantID(ctx), userID(ctx), h.canViewAny(ctx), request.ClassId)
 	if err != nil {
 		return nil, mapError(err)
 	}

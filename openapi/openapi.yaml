@@ -6195,7 +6195,7 @@ paths:
       tags:
         - grading
       operationId: getStarLedger
-      x-permission: manage_grades
+      x-permission: view_grades
       summary: One student's star ledger and balance
       parameters:
         - name: studentId
@@ -6237,7 +6237,7 @@ paths:
       tags:
         - grading
       operationId: listClassStarBalances
-      x-permission: manage_grades
+      x-permission: view_grades
       summary: Star balances of one class
       parameters:
         - name: classId

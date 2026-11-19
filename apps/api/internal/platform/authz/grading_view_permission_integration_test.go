@@ -20,7 +20,8 @@ import (
 // same doc cmd/api/wire.go loads), not just a synthetic one: a principal
 // (RoleDefaults' principal, which carries view_grades but not
 // manage_grades) can reach every read operation the task calls out
-// (gradebook, its export, and the e-Rapor preview/export) but is forbidden
+// (gradebook, its export, the star balances and ledger, and the e-Rapor
+// preview/export) but is forbidden
 // from the two write operations that still gate on manage_grades alone
 // (saving scores, publishing) -- reusing rlsPermissionProvider from
 // role_defaults_integration_test.go so the permission lookup goes through
@@ -54,7 +55,7 @@ func TestGradingViewPermission_PrincipalReadsButNeverWrites(t *testing.T) {
 	// grading.yaml.
 	for _, operationID := range []string{
 		"GetGradebook", "ExportGradebook", "PreviewEraporExport", "ExportErapor", "ExportEraporLegacy",
-		"ListGradeRanges", "ListTPMappings",
+		"ListGradeRanges", "ListTPMappings", "ListClassStarBalances", "GetStarLedger",
 	} {
 		require.NoError(t, authz.Authorize(ctx, ops, provider, operationID, principalIdentity),
 			"principal (view_grades) must be able to call %s", operationID)
@@ -63,6 +64,7 @@ func TestGradingViewPermission_PrincipalReadsButNeverWrites(t *testing.T) {
 	for _, operationID := range []string{
 		"SaveComponentScores", "SetGradePublication", "CreateAssessmentComponent",
 		"UpdateAssessmentComponent", "DeleteAssessmentComponent", "SetManualReportScore",
+		"GiveStar",
 	} {
 		err := authz.Authorize(ctx, ops, provider, operationID, principalIdentity)
 		require.Equal(t, httpx.ErrForbidden, err, "principal (view_grades only) must be forbidden from %s", operationID)
