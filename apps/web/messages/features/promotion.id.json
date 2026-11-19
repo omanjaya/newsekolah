@@ -18,7 +18,9 @@
     "targetClass": "Kelas tujuan",
     "chooseClass": "Pilih kelas",
     "actionFor": "Status {name}",
-    "targetFor": "Kelas tujuan {name}"
+    "targetFor": "Kelas tujuan {name}",
+    "studentLoading": "Memuat nama siswa",
+    "studentUnknown": "Siswa tidak ditemukan"
   },
   "action": {
     "promote": "Naik kelas",

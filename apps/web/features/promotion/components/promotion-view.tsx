@@ -32,7 +32,7 @@ import {
   YearPairStep,
   useYearPair,
 } from "../../academic/components/year-pair-step";
-import { useDirectoryNames } from "../../reference/directory-names";
+import { useDirectoryLookup } from "../../reference/directory-names";
 import {
   type PromotionAction,
   type PromotionOverride,
@@ -95,8 +95,17 @@ export function PromotionView(): ReactElement {
 
   // Batch directory lookup instead of one GET /v1/users/{id} per row: a
   // school-wide plan can list ~900 students.
-  const studentMap = useDirectoryNames((plan ?? []).map((item) => item.student_user_id));
-  const studentName = useCallback((id: string) => studentMap.get(id)?.name ?? id, [studentMap]);
+  const students = useDirectoryLookup((plan ?? []).map((item) => item.student_user_id));
+  // Never the raw id: undefined while the lookup is loading (the table shows
+  // a skeleton), a translated placeholder once it settled without a match.
+  const studentName = useCallback(
+    (id: string): string | undefined => {
+      const name = students.names.get(id)?.name;
+      if (name) return name;
+      return students.isLoading ? undefined : t("table.studentUnknown");
+    },
+    [students.names, students.isLoading, t],
+  );
 
   const preview = usePreviewPromotionMutation();
   const commit = useCommitPromotionMutation();
@@ -181,7 +190,7 @@ export function PromotionView(): ReactElement {
     // No title or description of its own: the area's header (h1 "Tahun
     // ajaran", eyebrow "Data sekolah") stays put between its tabs, and the
     // current tab names this page.
-    <AppPage variant="wide" nav={<AcademicWorkspaceLinks area="years" />}>
+    <AppPage nav={<AcademicWorkspaceLinks area="years" />}>
       <WizardProgress
         current={step}
         labels={[tFlow("stepYears"), tFlow("stepReview"), tFlow("stepDone")]}
