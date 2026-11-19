@@ -2063,6 +2063,8 @@
         "since": "sejak {date}",
         "showEnded": "Tampilkan yang sudah berakhir",
         "end": "Akhiri",
+        "endAction": "Akhiri tugas",
+        "rowActions": "Aksi untuk {name}, {duty}",
         "endBody": "Akhiri penugasan {duty}. Riwayat penugasan tetap tersimpan dan bisa diaktifkan kembali.",
         "endsOn": "Berakhir pada",
         "ended": "Tugas diakhiri",
@@ -2106,6 +2108,8 @@
           "deleted": "Jenis tugas dihapus",
           "permissionsTitle": "Izin selama bertugas",
           "permissionsBody": "Diberikan hanya kepada pemegang tugas ini, di luar izin dari perannya, dan hanya selama penugasan aktif.",
+          "permissionsReadOnly": "Hanya pengguna yang dapat mengelola peran dan izin yang bisa mengubah daftar ini.",
+          "noPermissions": "Tidak ada izin tambahan.",
           "form": {
             "nameError": "Nama wajib diisi dan harus mengandung minimal 2 huruf atau angka.",
             "nameTaken": "Nama ini sudah dipakai jenis tugas lain. Pilih nama yang berbeda."

@@ -2063,6 +2063,8 @@
         "since": "since {date}",
         "showEnded": "Show ended",
         "end": "End",
+        "endAction": "End duty",
+        "rowActions": "Actions for {name}, {duty}",
         "endBody": "End the {duty} assignment. Its history is kept and it can be reactivated later.",
         "endsOn": "Ends on",
         "ended": "Duty ended",
@@ -2106,6 +2108,8 @@
           "deleted": "Duty type deleted",
           "permissionsTitle": "Permissions while active",
           "permissionsBody": "Granted only to whoever holds this duty, on top of their role, and only while the assignment is active.",
+          "permissionsReadOnly": "Only users who can manage roles and permissions can change this list.",
+          "noPermissions": "No additional permissions.",
           "form": {
             "nameError": "Name is required and must contain at least 2 letters or digits.",
             "nameTaken": "Another duty type already uses this name. Choose a different name."

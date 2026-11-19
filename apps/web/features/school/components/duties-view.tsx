@@ -16,15 +16,15 @@ import {
   EmptyState,
   Field,
   FormError,
-  IconButton,
   List,
+  RowActionsMenu,
   Select,
   SkeletonList,
   Switch,
   useDebouncedCallback,
   useToast,
 } from "@newsekolah/ui";
-import { Plus, RotateCcw, ShieldCheck, Trash2 } from "lucide-react";
+import { CalendarX2, Plus, RotateCcw, ShieldCheck, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -86,7 +86,7 @@ export function DutiesView(): ReactElement {
           <p className="text-body-sm text-fg-muted tabular-nums">
             {assignments.data ? t("activeCount", { n: activeRows.length }) : null}
           </p>
-          <Field label={t("showEnded")} orientation="horizontal">
+          <Field label={t("showEnded")} orientation="inline">
             <Switch checked={showEnded} onCheckedChange={setShowEnded} />
           </Field>
         </div>
@@ -118,7 +118,7 @@ export function DutiesView(): ReactElement {
               return (
                 <li
                   key={a.id}
-                  className="group flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-state-hover md:flex-row md:items-center md:justify-between"
+                  className="group relative flex flex-col gap-2 py-3 pr-14 pl-4 transition-colors hover:bg-state-hover md:flex-row md:items-center md:justify-between md:pr-4"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     {name !== "-" && <Avatar size={32} name={name} />}
@@ -150,47 +150,51 @@ export function DutiesView(): ReactElement {
                       </span>
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1 self-start md:self-auto">
-                    {a.is_active ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setEnding(a);
-                        }}
-                      >
-                        {t("end")}
-                      </Button>
-                    ) : (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          icon={<RotateCcw />}
-                          loading={update.isPending && update.variables.id === a.id}
-                          onClick={() => {
-                            update.mutate(
-                              { id: a.id, body: { is_active: true } },
+                  <div className="absolute top-2 right-2 md:static md:shrink-0">
+                    {/* One "..." menu per row, named after the holder and the
+                        duty, like the other school lists' row actions. */}
+                    <RowActionsMenu
+                      ariaLabel={t("rowActions", { name, duty: a.duty_name })}
+                      items={
+                        a.is_active
+                          ? [
                               {
-                                onSuccess: () => {
-                                  toast.success(t("reactivated"));
+                                label: t("endAction"),
+                                icon: <CalendarX2 />,
+                                tone: "danger",
+                                onClick: () => {
+                                  setEnding(a);
                                 },
-                                onError: fail,
                               },
-                            );
-                          }}
-                        >
-                          {t("reactivate")}
-                        </Button>
-                        <IconButton
-                          icon={<Trash2 />}
-                          aria-label={t("remove")}
-                          onClick={() => {
-                            setRemoving(a);
-                          }}
-                        />
-                      </>
-                    )}
+                            ]
+                          : [
+                              {
+                                label: t("reactivate"),
+                                icon: <RotateCcw />,
+                                disabled: update.isPending && update.variables.id === a.id,
+                                onClick: () => {
+                                  update.mutate(
+                                    { id: a.id, body: { is_active: true } },
+                                    {
+                                      onSuccess: () => {
+                                        toast.success(t("reactivated"));
+                                      },
+                                      onError: fail,
+                                    },
+                                  );
+                                },
+                              },
+                              {
+                                label: t("remove"),
+                                icon: <Trash2 />,
+                                tone: "danger",
+                                onClick: () => {
+                                  setRemoving(a);
+                                },
+                              },
+                            ]
+                      }
+                    />
                   </div>
                 </li>
               );
