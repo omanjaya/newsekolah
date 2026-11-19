@@ -1,5 +1,5 @@
 import type * as ReactQuery from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Bell } from "lucide-react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -196,7 +196,7 @@ describe("DashboardView", () => {
   });
 
   it("says part of the home failed instead of a false all-clear, with one retry", async () => {
-    refetchQueries.mockReset();
+    refetchQueries.mockReset().mockResolvedValue(undefined);
     teacherBlock.mockReturnValue({ ...emptyBlock(), failed: true });
     render(<DashboardView />);
 
@@ -213,6 +213,32 @@ describe("DashboardView", () => {
     expect(filters.type).toBe("active");
     expect(filters.predicate({ state: { status: "error" } })).toBe(true);
     expect(filters.predicate({ state: { status: "success" } })).toBe(false);
+  });
+
+  it("shows the retry is running until the refetch settles", async () => {
+    let settle: () => void = () => undefined;
+    refetchQueries.mockReset().mockReturnValue(
+      new Promise<void>((resolve) => {
+        settle = resolve;
+      }),
+    );
+    teacherBlock.mockReturnValue({ ...emptyBlock(), failed: true });
+    render(<DashboardView />);
+
+    const hero = screen.getByTestId("dashboard-hero");
+    const retry = within(hero).getByRole("button", { name: "failed.action" });
+    expect(retry).not.toHaveAttribute("aria-busy", "true");
+    await userEvent.click(retry);
+
+    expect(retry).toHaveAttribute("aria-busy", "true");
+    expect(retry).toBeDisabled();
+
+    await act(async () => {
+      settle();
+      await Promise.resolve();
+    });
+    expect(retry).not.toHaveAttribute("aria-busy", "true");
+    expect(retry).toBeEnabled();
   });
 
   it("replaces a calm persona hero with the failure notice when a block failed", () => {

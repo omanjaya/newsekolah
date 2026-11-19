@@ -16,7 +16,6 @@ import {
   TextLink,
   cn,
 } from "@newsekolah/ui";
-import { useQueryClient } from "@tanstack/react-query";
 import { Bell, RotateCw } from "lucide-react";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
@@ -59,6 +58,7 @@ import {
   type ShownHero,
   type TileSpec,
 } from "../home/types";
+import { useRetryFailedQueries } from "../home/use-retry-failed";
 
 /**
  * Stand-in `Me` while `/v1/me` is still loading. Every persona hook is
@@ -106,7 +106,7 @@ export function DashboardView(): ReactElement {
   const format = useFormatter();
   const isDesktop = useIsDesktop();
   const twoColumn = useIsWideTwoColumn();
-  const queryClient = useQueryClient();
+  const { retrying, retry } = useRetryFailedQueries();
 
   const personas = me ? resolvePersonas(me) : new Set<PersonaKey>();
   const active = (key: PersonaKey) => personas.has(key);
@@ -245,11 +245,8 @@ export function DashboardView(): ReactElement {
           meta: t("failed.meta"),
           action: {
             label: t("failed.action"),
-            onClick: () =>
-              void queryClient.refetchQueries({
-                type: "active",
-                predicate: (query) => query.state.status === "error",
-              }),
+            loading: retrying,
+            onClick: retry,
           },
         }
       : guardHero(candidate, canOpen);
@@ -410,7 +407,12 @@ function HomeHero({ hero, enter }: { hero: ShownHero; enter: boolean }): ReactEl
             <Link href={hero.action.href}>{hero.action.label}</Link>
           </Button>
         ) : (
-          <Button className="w-full sm:w-auto" icon={<RotateCw />} onClick={hero.action.onClick}>
+          <Button
+            className="w-full sm:w-auto"
+            icon={<RotateCw />}
+            loading={hero.action.loading}
+            onClick={hero.action.onClick}
+          >
             {hero.action.label}
           </Button>
         ))

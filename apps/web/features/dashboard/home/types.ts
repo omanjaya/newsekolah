@@ -26,6 +26,8 @@ export interface HeroLink {
 export interface HeroButton {
   label: string;
   onClick: () => void;
+  /** The action is running (a retry still waiting on its answers). */
+  loading?: boolean;
 }
 
 export type HeroAction = HeroLink | HeroButton;
