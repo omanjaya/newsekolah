@@ -165,7 +165,11 @@ describe("AchievementsView search and empty states", () => {
 
     expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
     expect(screen.getByText("Tidak ada yang cocok")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Hapus filter" }));
+    // The toolbar and the empty state both offer clear-all; use the empty state's.
+    const resets = screen.getAllByRole("button", { name: "Hapus semua filter" });
+    const reset = resets.at(-1);
+    if (!reset) throw new Error("no reset");
+    await user.click(reset);
     expect(new URLSearchParams(window.location.search).get("class_id")).toBe("");
   });
 });

@@ -128,7 +128,7 @@ describe("AnnouncementsManage empty and row states", () => {
     expect(screen.queryByText("manageEmptyTitle")).not.toBeInTheDocument();
     // FilteredEmptyState's own copy (the shared UiLabels default).
     expect(screen.getAllByText("Tidak ada yang cocok").length).toBeGreaterThan(0);
-    const [reset] = screen.getAllByRole("button", { name: "Hapus filter" });
+    const [reset] = screen.getAllByRole("button", { name: "Hapus semua filter" });
     if (!reset) throw new Error("no reset");
     await user.click(reset);
     expect(mocks.useAnnouncementsQuery).toHaveBeenLastCalledWith("", "");
