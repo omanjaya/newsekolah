@@ -180,10 +180,11 @@
     "cancel": "Cancel",
     "save": "Save",
     "saved": "Subject saved for the academic year",
-    "deleted": "Subject removed from this academic year",
+    "deleted": "{name} for {gradeLevel} removed from this academic year",
     "rowActions": "More actions for {name}, {gradeLevel}",
     "deleteTitle": "Remove this subject from the academic year?",
-    "deleteBody": "\"{name}\" will be removed from this academic year.",
+    "deleteBody": "\"{name}\" for {gradeLevel} will be removed from this academic year. The same subject in other grade levels is not affected.",
+    "deleteBodyAllGrades": "\"{name}\" for all grade levels will be removed from this academic year.",
     "pickSubject": "Pick a subject",
     "allGrades": "All grade levels",
     "columns": {

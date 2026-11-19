@@ -138,6 +138,8 @@ type Querier interface {
 	AcademicListPromotionCandidates(ctx context.Context, arg AcademicListPromotionCandidatesParams) ([]AcademicListPromotionCandidatesRow, error)
 	AcademicListRooms(ctx context.Context, arg AcademicListRoomsParams) ([]AcademicListRoomsRow, error)
 	AcademicListSchoolDays(ctx context.Context, arg AcademicListSchoolDaysParams) ([]SchoolDay, error)
+	// In reading order: the offerings for every grade first, then grade by
+	// grade in the school's own sequence, each grade's subjects by name.
 	AcademicListSubjectOfferings(ctx context.Context, arg AcademicListSubjectOfferingsParams) ([]SubjectOffering, error)
 	AcademicListSubjects(ctx context.Context, arg AcademicListSubjectsParams) ([]AcademicListSubjectsRow, error)
 	AcademicListTeachingAssignments(ctx context.Context, arg AcademicListTeachingAssignmentsParams) ([]AcademicListTeachingAssignmentsRow, error)

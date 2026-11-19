@@ -1,10 +1,11 @@
 import type * as UiModule from "@newsekolah/ui";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { useMemo } from "react";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  gradeLevels: undefined as { data: { id: string; name: string }[] } | undefined,
+  gradeLevels: undefined as { data: { id: string; name: string; sequence?: number }[] } | undefined,
 }));
 
 vi.mock("next-intl", () => ({
@@ -38,6 +39,7 @@ vi.mock("../api-offerings", () => ({
       data: [
         { id: "o-10", subject_id: "physics", grade_level_id: "g10", hours_per_week: 4 },
         { id: "o-11", subject_id: "physics", grade_level_id: "g11", hours_per_week: 3 },
+        { id: "o-all", subject_id: "physics", grade_level_id: null, hours_per_week: 2 },
       ],
     },
     isLoading: false,
@@ -108,5 +110,56 @@ describe("SubjectOfferingsView", () => {
     expect(
       screen.getAllByRole("button", { name: "rowActions Fisika | Kelas XI" }).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("names the grade level in the delete confirmation", async () => {
+    mocks.gradeLevels = { data: [{ id: "g10", name: "Kelas X" }] };
+    const user = userEvent.setup();
+    render(<SubjectOfferingsView page={PAGE} />);
+
+    const [menuButton] = screen.getAllByRole("button", { name: "rowActions Fisika | Kelas X" });
+    if (!menuButton) throw new Error("no row actions for Fisika, Kelas X");
+    await user.click(menuButton);
+    await user.click(
+      within(await screen.findByRole("menu")).getByRole("menuitem", { name: "delete" }),
+    );
+    // Only this grade's offering goes; the copy must say which grade.
+    expect(await screen.findByText("deleteBody Fisika | Kelas X")).toBeInTheDocument();
+  });
+
+  it("says an offering to every grade goes for all grades", async () => {
+    const user = userEvent.setup();
+    render(<SubjectOfferingsView page={PAGE} />);
+
+    const [menuButton] = screen.getAllByRole("button", { name: "rowActions Fisika | allGrades" });
+    if (!menuButton) throw new Error("no row actions for the all-grades offering");
+    await user.click(menuButton);
+    await user.click(
+      within(await screen.findByRole("menu")).getByRole("menuitem", { name: "delete" }),
+    );
+    expect(await screen.findByText("deleteBodyAllGrades Fisika")).toBeInTheDocument();
+  });
+
+  it("sorts by grade level in the school's sequence, not by name", async () => {
+    // By name "Kelas XI" would come after "Kelas X"; the sequence puts it first.
+    mocks.gradeLevels = {
+      data: [
+        { id: "g10", name: "Kelas X", sequence: 2 },
+        { id: "g11", name: "Kelas XI", sequence: 1 },
+      ],
+    };
+    const user = userEvent.setup();
+    render(<SubjectOfferingsView page={PAGE} />);
+
+    const table = screen.getByRole("table");
+    await user.click(within(table).getByRole("button", { name: "columns.gradeLevel" }));
+    const order = within(table)
+      .getAllByRole("button", { name: /^rowActions / })
+      .map((button) => button.getAttribute("aria-label"));
+    expect(order).toEqual([
+      "rowActions Fisika | allGrades",
+      "rowActions Fisika | Kelas XI",
+      "rowActions Fisika | Kelas X",
+    ]);
   });
 });

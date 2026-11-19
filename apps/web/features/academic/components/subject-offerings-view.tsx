@@ -15,7 +15,7 @@ import {
   Select,
   useToast,
 } from "@newsekolah/ui";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, SortingFn } from "@tanstack/react-table";
 import { BookMarked, Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -45,6 +45,36 @@ interface OfferingDraft {
 }
 
 const EMPTY_DRAFT: OfferingDraft = { subjectId: "", gradeLevelId: "", hoursPerWeek: "2" };
+
+type Lookup<T> = ReadonlyMap<string, T>;
+
+/** The subject's name, or "-" while subjects load. */
+function subjectNameOf(offering: SubjectOffering, subjects: Lookup<{ name: string }>): string {
+  return subjects.get(offering.subject_id)?.name ?? "-";
+}
+
+/** The grade level's name, `allGrades` for an offering to every grade, or "-" while grades load. */
+function gradeLevelNameOf(
+  offering: SubjectOffering,
+  gradeLevels: Lookup<{ name: string }>,
+  allGrades: string,
+): string {
+  if (!offering.grade_level_id) return allGrades;
+  return gradeLevels.get(offering.grade_level_id)?.name ?? "-";
+}
+
+/**
+ * The grade level's place in the school's sequence, so a sort by grade
+ * reads X, XI, XII rather than by name; an offering for every grade comes
+ * first.
+ */
+function gradeSequenceOf(
+  offering: SubjectOffering,
+  gradeLevels: Lookup<{ sequence?: number }>,
+): number {
+  if (!offering.grade_level_id) return -1;
+  return gradeLevels.get(offering.grade_level_id)?.sequence ?? Number.MAX_SAFE_INTEGER;
+}
 
 /** Which subjects are taught in an academic year, optionally scoped to one grade level. */
 export function SubjectOfferingsView({ page }: { page: HubPageProps }): ReactElement {
@@ -115,29 +145,33 @@ export function SubjectOfferingsView({ page }: { page: HubPageProps }): ReactEle
     }
   }
 
+  const gradeLevelName = (offering: SubjectOffering) =>
+    gradeLevelNameOf(offering, gradeLevelMap, t("allGrades"));
+
   const columns = useMemo<ColumnDef<SubjectOffering>[]>(() => {
-    const subjectName = (offering: SubjectOffering) =>
-      subjectMap.get(offering.subject_id)?.name ?? "-";
-    const gradeLevelName = (offering: SubjectOffering) =>
-      offering.grade_level_id
-        ? (gradeLevelMap.get(offering.grade_level_id)?.name ?? "-")
-        : t("allGrades");
+    const subjectName = (offering: SubjectOffering) => subjectNameOf(offering, subjectMap);
+    const gradeName = (offering: SubjectOffering) =>
+      gradeLevelNameOf(offering, gradeLevelMap, t("allGrades"));
+    // The API lists offerings grade by grade, each grade's subjects by
+    // name; the subject, grade and hours headers re-sort them.
+    const byGradeSequence: SortingFn<SubjectOffering> = (a, b) =>
+      gradeSequenceOf(a.original, gradeLevelMap) - gradeSequenceOf(b.original, gradeLevelMap);
     return [
       {
         // Read through accessors (not only cells) so the search box finds
         // a subject or grade level by its name.
         id: "subject",
         header: t("columns.subject"),
-        enableSorting: false,
         accessorFn: subjectName,
+        sortingFn: "text",
       },
       {
         id: "gradeLevel",
         header: t("columns.gradeLevel"),
-        enableSorting: false,
-        accessorFn: gradeLevelName,
+        accessorFn: gradeName,
+        sortingFn: byGradeSequence,
       },
-      { accessorKey: "hours_per_week", header: t("columns.hoursPerWeek"), enableSorting: false },
+      { accessorKey: "hours_per_week", header: t("columns.hoursPerWeek"), sortingFn: "basic" },
       {
         id: "actions",
         header: t("columns.actions"),
@@ -147,7 +181,7 @@ export function SubjectOfferingsView({ page }: { page: HubPageProps }): ReactEle
             <RowActionsMenu
               ariaLabel={t("rowActions", {
                 name: subjectName(row.original),
-                gradeLevel: gradeLevelName(row.original),
+                gradeLevel: gradeName(row.original),
               })}
               items={[
                 {
@@ -307,8 +341,15 @@ export function SubjectOfferingsView({ page }: { page: HubPageProps }): ReactEle
         }}
         title={t("deleteTitle")}
         description={
+          // Name the grade: only that grade's offering goes, the subject
+          // stays in the year for the other grades.
           pendingDelete
-            ? t("deleteBody", { name: subjectMap.get(pendingDelete.subject_id)?.name ?? "" })
+            ? pendingDelete.grade_level_id
+              ? t("deleteBody", {
+                  name: subjectNameOf(pendingDelete, subjectMap),
+                  gradeLevel: gradeLevelName(pendingDelete),
+                })
+              : t("deleteBodyAllGrades", { name: subjectNameOf(pendingDelete, subjectMap) })
             : ""
         }
         confirmLabel={t("delete")}
@@ -318,7 +359,12 @@ export function SubjectOfferingsView({ page }: { page: HubPageProps }): ReactEle
           if (!pendingDelete) return;
           try {
             await remove.mutateAsync(pendingDelete.id);
-            toast.success(t("deleted"));
+            toast.success(
+              t("deleted", {
+                name: subjectNameOf(pendingDelete, subjectMap),
+                gradeLevel: gradeLevelName(pendingDelete),
+              }),
+            );
           } catch (error) {
             fail(error);
           } finally {
