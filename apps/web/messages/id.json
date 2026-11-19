@@ -1258,7 +1258,6 @@
         "rosterLabel": "Daftar siswa"
       },
       "editor": {
-        "timeRange": "Jam {start}-{end}",
         "saveSummary": "{total} siswa · {changed} diubah dari hadir",
         "recapSummary": "Tahun ini: {summary}",
         "recapAllClear": "Tahun ini: tidak ada catatan."
@@ -1308,6 +1307,9 @@
       "statIncomplete": "Belum lengkap",
       "statPendingLeave": "Izin menunggu",
       "attentionTitle": "Perlu perhatian hari ini",
+      "attentionTitleOn": "Perlu perhatian, {date}",
+      "loadFailedTitle": "Ringkasan kelas belum dimuat",
+      "loadFailedMeta": "Periksa koneksi lalu coba lagi.",
       "attentionEmpty": "Semua siswa hadir atau presensinya sudah lengkap.",
       "contactCall": "Telepon wali {name}",
       "contactWhatsapp": "WhatsApp wali {name}",

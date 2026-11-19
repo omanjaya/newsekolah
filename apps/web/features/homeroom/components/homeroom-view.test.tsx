@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,9 +7,13 @@ const mocks = vi.hoisted(() => ({
   permissions: new Set<string>(),
   disabledModules: [] as string[],
   rememberedSearch: "",
+  date: "2026-09-29",
 }));
 
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key,
+  useFormatter: () => ({ dateTime: () => "Sen, 28 Sep" }),
+}));
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../reference/api", () => ({
   useClassesQuery: () => ({ data: { data: [{ id: "class-1", name: "X-A" }] } }),
@@ -19,7 +23,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 vi.mock("../../../lib/hooks/use-date-filter", () => ({
-  useDateFilter: (_key: string, fallback: string) => [fallback, vi.fn()],
+  useDateFilter: () => [mocks.date, vi.fn()],
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (permission: string) => mocks.permissions.has(permission),
@@ -209,6 +213,7 @@ describe("HomeroomView overview", () => {
   beforeEach(() => {
     mocks.disabledModules.length = 0;
     mocks.rememberedSearch = "";
+    mocks.date = "2026-09-29";
     mocks.useHomeroomAttendanceQuery.mockReset();
     mocks.useHomeroomAttendanceQuery.mockReturnValue({
       data: {
@@ -316,5 +321,55 @@ describe("HomeroomView overview", () => {
     expect(screen.getByRole("heading", { name: "attentionNoneTitle" })).toBeInTheDocument();
     expect(screen.getByText("today")).toBeInTheDocument();
     expect(screen.queryByText("attentionTitle")).not.toBeInTheDocument();
+  });
+
+  it("names the chosen day instead of 'today' on another date", () => {
+    mocks.date = "2026-09-28";
+    const { unmount } = render(<HomeroomView />);
+    expect(screen.getByText("attentionTitleOn")).toBeInTheDocument();
+    expect(screen.queryByText("attentionTitle")).not.toBeInTheDocument();
+    unmount();
+
+    mocks.useHomeroomAttendanceQuery.mockReturnValue({
+      data: { data: [], total: 1, status_counts: { H: 1 } },
+      isLoading: false,
+    });
+    render(<HomeroomView />);
+    const hero = screen
+      .getByRole("heading", { name: "attentionNoneTitle" })
+      .closest("section, div");
+    expect(hero?.parentElement).toHaveTextContent("Sen, 28 Sep");
+  });
+
+  it("moves focus to the class attendance list when a stat cell opens it", async () => {
+    const user = userEvent.setup();
+    render(<HomeroomView />);
+
+    await user.click(screen.getByRole("button", { name: /statAbsent/ }));
+
+    expect(screen.getByRole("tabpanel")).toHaveFocus();
+  });
+
+  it("says the day did not load instead of a false all-clear, with one retry", async () => {
+    const refetch = vi.fn();
+    mocks.useHomeroomAttendanceQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      isError: true,
+      error: new Error("500"),
+      refetch,
+    });
+    const user = userEvent.setup();
+    render(<HomeroomView />);
+
+    expect(screen.getByRole("heading", { name: "loadFailedTitle" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "attentionNoneTitle" })).not.toBeInTheDocument();
+    // The day's three figures are unknown, not zero; the leave queue loaded.
+    const stats = screen.getByRole("group", { name: "statsLabel" });
+    expect(within(stats).getAllByText("-")).toHaveLength(3);
+
+    await user.click(screen.getByRole("button", { name: "actions.retry" }));
+    expect(refetch).toHaveBeenCalled();
   });
 });

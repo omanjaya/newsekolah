@@ -59,6 +59,7 @@ vi.mock("next-intl", () => ({
   useFormatter: () => ({ dateTime: () => "Sabtu, 26 September" }),
 }));
 
+import { QueryError } from "../../../components/query-error";
 import { resetHomeEntranceForTests } from "../home/entrance";
 import { HERO_PRIORITY, type Me, type PersonaBlock } from "../home/types";
 
@@ -89,6 +90,16 @@ function tile(key: string, priority: number, href?: string) {
     icon: Bell,
     tone: "green" as const,
     ...(href ? { href } : {}),
+  };
+}
+
+function urgentHero() {
+  return {
+    key: "teacher.now",
+    priority: HERO_PRIORITY.teacherNowPending,
+    eyebrow: "Sekarang",
+    title: "Matematika · X-A",
+    action: { label: "Isi presensi", href: "/attendance" },
   };
 }
 
@@ -276,6 +287,86 @@ describe("DashboardView", () => {
     const hero = screen.getByTestId("dashboard-hero");
     expect(within(hero).getByRole("heading", { name: "Matematika · X-A" })).toBeInTheDocument();
     expect(within(hero).queryByText("failed.title")).not.toBeInTheDocument();
+  });
+
+  it("says a read failed under an urgent hero that stayed, with the home's one retry", async () => {
+    refetchQueries.mockReset().mockResolvedValue(undefined);
+    teacherBlock.mockReturnValue({ ...emptyBlock(), hero: urgentHero() });
+    studentBlock.mockReturnValue({ ...emptyBlock(), failed: true });
+    render(<DashboardView />);
+
+    const notice = screen.getByTestId("dashboard-failed-notice");
+    expect(notice).toHaveTextContent("failed.title");
+    expect(notice).toHaveTextContent("failed.meta");
+    expect(screen.getAllByRole("button", { name: "failed.action" })).toHaveLength(1);
+    await userEvent.click(within(notice).getByRole("button", { name: "failed.action" }));
+    expect(refetchQueries).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows no failure notice while every read loaded", () => {
+    teacherBlock.mockReturnValue({ ...emptyBlock(), hero: urgentHero() });
+    render(<DashboardView />);
+    expect(screen.queryByTestId("dashboard-failed-notice")).not.toBeInTheDocument();
+  });
+
+  it("leaves each failed card's own retry out while the home offers one", () => {
+    teacherBlock.mockReturnValue({
+      ...emptyBlock(),
+      failed: true,
+      main: [{ key: "teacher.today", node: <QueryError retry={() => undefined} /> }],
+    });
+    render(<DashboardView />);
+
+    const card = screen.getByTestId("dashboard-card-teacher.today");
+    expect(within(card).getByRole("alert")).toHaveTextContent("title");
+    expect(within(card).queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /failed\.action|actions\.retry/ })).toHaveLength(
+      1,
+    );
+  });
+
+  it("keeps a failed card's own retry while another block still holds the hero as a skeleton", () => {
+    teacherBlock.mockReturnValue({
+      ...emptyBlock(),
+      failed: true,
+      main: [{ key: "teacher.today", node: <QueryError retry={() => undefined} /> }],
+    });
+    homeroomBlock.mockReturnValue({ ...emptyBlock(), pending: true });
+    render(<DashboardView />);
+
+    expect(screen.getByTestId("dashboard-skeleton")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "failed.action" })).not.toBeInTheDocument();
+    const card = screen.getByTestId("dashboard-card-teacher.today");
+    expect(within(card).getByRole("button", { name: "actions.retry" })).toBeInTheDocument();
+  });
+
+  it("keeps a card's own retry when the home has nothing to retry", () => {
+    teacherBlock.mockReturnValue({
+      ...emptyBlock(),
+      main: [{ key: "teacher.today", node: <QueryError retry={() => undefined} /> }],
+    });
+    render(<DashboardView />);
+    const card = screen.getByTestId("dashboard-card-teacher.today");
+    expect(within(card).getByRole("button", { name: "actions.retry" })).toBeInTheDocument();
+  });
+
+  it("moves focus to the hero's action once a retry replaces the button that had it", async () => {
+    refetchQueries.mockReset().mockResolvedValue(undefined);
+    teacherBlock.mockReturnValue({ ...emptyBlock(), failed: true });
+    const { rerender } = render(<DashboardView />);
+
+    const retry = screen.getByRole("button", { name: "failed.action" });
+    await userEvent.click(retry);
+    expect(retry).toHaveFocus();
+
+    teacherBlock.mockReturnValue({ ...emptyBlock(), hero: urgentHero() });
+    await act(async () => {
+      rerender(<DashboardView />);
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByRole("button", { name: "failed.action" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Isi presensi" })).toHaveFocus();
   });
 
   it("shows the failure notice when the action inbox count failed and nothing else is due", () => {

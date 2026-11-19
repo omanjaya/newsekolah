@@ -74,8 +74,8 @@ describe("Alert", () => {
     const action = screen.getByRole("button", { name: "Coba lagi" }).parentElement;
     const dismiss = screen.getByRole("button", { name: "Tutup" }).parentElement;
     // One line tall (the title's 20px), the control centred on it.
-    expect(action).toHaveClass("sm:h-5", "items-center");
-    expect(dismiss).toHaveClass("h-5", "items-center", "sm:-ml-2");
+    expect(action).toHaveClass("@md:h-5", "items-center");
+    expect(dismiss).toHaveClass("h-5", "items-center", "@md:-ml-2");
     expect(action?.parentElement?.className).not.toMatch(/items-center/);
   });
 
@@ -101,7 +101,7 @@ describe("Alert", () => {
     expect(discard.parentElement).toBe(slot);
     expect(slot?.firstElementChild).toBe(restore);
     // Under the text on a phone they may wrap; on the title line they do not.
-    expect(slot).toHaveClass("flex-wrap", "sm:flex-nowrap", "gap-2");
+    expect(slot).toHaveClass("flex-wrap", "@md:flex-nowrap", "gap-2");
   });
 
   // A flex column would make every text run and inline element its own
@@ -116,6 +116,26 @@ describe("Alert", () => {
     expect(description).toHaveClass("text-body-sm");
     expect(description?.className).not.toMatch(/\b(flex|grid|flex-col)\b/);
     expect(description).toHaveTextContent('Judul "Laskar Pelangi" sudah ada di katalog. Lihat');
+  });
+
+  // The action sits beside the text by the alert's own width, not the
+  // screen's: in a 20rem side column on a desktop it stacks under the
+  // message instead of squeezing it to a word per line (audit r3-n16).
+  it("stacks the action by the alert's own width, not the viewport's", () => {
+    render(
+      <Alert
+        tone="danger"
+        title="Data gagal dimuat"
+        action={<button type="button">Coba lagi</button>}
+      >
+        Terjadi kesalahan, coba lagi.
+      </Alert>,
+    );
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveClass("@container");
+    const row = screen.getByRole("button", { name: "Coba lagi" }).parentElement?.parentElement;
+    expect(row).toHaveClass("flex-col", "@md:flex-row");
+    expect(row?.className).not.toMatch(/\bsm:/);
   });
 
   it("takes `tone` as the name of its colour, `variant` still honoured", () => {

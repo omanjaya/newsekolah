@@ -6,10 +6,12 @@ import { UsersRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { studentProfileHref } from "../../students/href";
 
 import { GuardianContactActions } from "./guardian-contact-actions";
+import type { ReadFailure } from "./homeroom-queue-card";
 
 type Entry = components["schemas"]["AttendanceHomeroomEntry"];
 
@@ -17,13 +19,17 @@ type Entry = components["schemas"]["AttendanceHomeroomEntry"];
 export function HomeroomParentsTab({
   rows,
   isLoading,
+  failure = null,
 }: {
   rows: Entry[];
   isLoading: boolean;
+  /** The day's class read failed: say so rather than "no students yet". */
+  failure?: ReadFailure | null;
 }): ReactElement {
   const t = useTranslations("app.homeroom");
 
   if (isLoading) return <SkeletonList rows={6} />;
+  if (failure) return <QueryError retry={failure.retry} error={failure.error} />;
   if (rows.length === 0) {
     return <EmptyState icon={<UsersRound aria-hidden="true" />} title={t("emptyTitle")} />;
   }

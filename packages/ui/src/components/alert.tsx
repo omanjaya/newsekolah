@@ -34,9 +34,10 @@ export interface AlertProps extends Omit<ComponentPropsWithRef<"div">, "title"> 
   icon?: ReactNode;
   /**
    * One or two `size="sm"` buttons (the main one first, as a fragment) or a
-   * link: on a wide screen they sit on the title line beside the close
-   * button, on a phone under the text, wrapping if they must. A draft offer
-   * ("Pulihkan", "Buang") is the two-button case.
+   * link: in a wide alert they sit on the title line beside the close
+   * button; in a narrow one (a phone, or a side column on a desktop) under
+   * the text, wrapping if they must. A draft offer ("Pulihkan", "Buang") is
+   * the two-button case.
    */
   action?: ReactNode;
   /** Shows a close button. */
@@ -77,29 +78,36 @@ export function Alert({
   return (
     <div
       role={tone === "danger" ? "alert" : "status"}
-      className={cn("flex items-start gap-3 rounded-md px-4 py-3", colors.soft, className)}
+      className={cn(
+        "@container flex items-start gap-3 rounded-md px-4 py-3",
+        colors.soft,
+        className,
+      )}
       {...props}
     >
       <span className={cn("shrink-0 [&>svg]:size-5", ICON_COLOR[tone])} aria-hidden="true">
         {icon ?? <Icon />}
       </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:gap-4">
+      <div className="flex min-w-0 flex-1 flex-col gap-3 @md:flex-row @md:gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           {title !== undefined && <p className="text-body font-semibold">{title}</p>}
           {hasDescription && (
             <div className={cn(DESCRIPTION_CLASS, colors.softMuted)}>{children}</div>
           )}
         </div>
-        {/* The trailing controls (the action from 640px up, and the close
-            button) sit on the first line of text, as the icon does, in
-            every alert: one line or three, titled or not. Each slot is as
-            tall as that line and centres its 32px control on it,
-            overflowing into the padding instead of pushing the text down.
-            On a phone the action drops under the text. */}
+        {/* The trailing controls (the action once the alert is 28rem wide,
+            and the close button) sit on the first line of text, as the
+            icon does, in every alert: one line or three, titled or not.
+            Each slot is as tall as that line and centres its 32px control
+            on it, overflowing into the padding instead of pushing the text
+            down. In a narrower alert the action drops under the text: the
+            width is the alert's own, not the screen's, so a 20rem side
+            column on a desktop never squeezes the message into a word per
+            line beside the button (audit r3-n16). */}
         {action && (
           <div
             data-slot="alert-action"
-            className="flex shrink-0 flex-wrap items-center gap-2 sm:h-5 sm:flex-nowrap"
+            className="flex shrink-0 flex-wrap items-center gap-2 @md:h-5 @md:flex-nowrap"
           >
             {action}
           </div>
@@ -109,7 +117,7 @@ export function Alert({
         // Beside an action the two read as one trailing group, 4px apart.
         <div
           data-slot="alert-dismiss"
-          className={cn("flex h-5 shrink-0 items-center", action && "sm:-ml-2")}
+          className={cn("flex h-5 shrink-0 items-center", action && "@md:-ml-2")}
         >
           <button
             type="button"

@@ -73,6 +73,38 @@ describe("useHomeroomBlock", () => {
     expect(rateTile?.value).toBe("50%");
   });
 
+  it("leaves students not recorded yet out of the rate", () => {
+    attendanceQuery.mockReturnValue({
+      data: { data: [], total: 4, status_counts: { H: 1, A: 1, INCOMPLETE: 2 } },
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useHomeroomBlock(meWithHomeroom(), true));
+
+    const rateTile = result.current.tiles.find((tile) => tile.key === "homeroom.rate");
+    expect(rateTile?.value).toBe("50%");
+    expect(rateTile?.hint).toBe("tiles.rateHint");
+  });
+
+  it("says 'not recorded yet', not 0%, while nobody in the class is recorded", () => {
+    attendanceQuery.mockReturnValue({
+      data: { data: [], total: 2, status_counts: { INCOMPLETE: 2 } },
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useHomeroomBlock(meWithHomeroom(), true));
+
+    const rateTile = result.current.tiles.find((tile) => tile.key === "homeroom.rate");
+    expect(rateTile?.value).toBe("-");
+    expect(rateTile?.hint).toBe("tiles.rateNotRecordedHint");
+  });
+
   it("shows no hero and a zero tile when the class's leave queue is empty", () => {
     attendanceQuery.mockReturnValue({
       data: { data: [], total: 0, status_counts: {} },

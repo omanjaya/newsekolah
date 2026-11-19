@@ -74,4 +74,21 @@ describe("HomeroomDisciplineTab paging", () => {
     expect(screen.getByText("disciplineEmpty")).toBeInTheDocument();
     expect(screen.getByText("disciplineEmptyBody")).toBeInTheDocument();
   });
+
+  it("says the record failed to load instead of 'no violations'", async () => {
+    const refetch = vi.fn();
+    mocks.useViolationsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error("500"),
+      refetch,
+    });
+    render(<HomeroomDisciplineTab classId="class-7a" />);
+
+    expect(screen.queryByText("disciplineEmpty")).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "actions.retry" }));
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
 });

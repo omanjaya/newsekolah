@@ -1258,7 +1258,6 @@
         "rosterLabel": "Students"
       },
       "editor": {
-        "timeRange": "Period {start}-{end}",
         "saveSummary": "{total} students · {changed} changed from present",
         "recapSummary": "This year: {summary}",
         "recapAllClear": "This year: nothing to note."
@@ -1308,6 +1307,9 @@
       "statIncomplete": "Incomplete",
       "statPendingLeave": "Pending leave",
       "attentionTitle": "Needs attention today",
+      "attentionTitleOn": "Needs attention, {date}",
+      "loadFailedTitle": "The class summary did not load",
+      "loadFailedMeta": "Check your connection, then try again.",
       "attentionEmpty": "Every student is present or their attendance is complete.",
       "contactCall": "Call {name}'s guardian",
       "contactWhatsapp": "WhatsApp {name}'s guardian",
