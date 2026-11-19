@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createApiClient } from "./client.js";
 import { ApiError } from "./errors.js";
@@ -733,5 +733,132 @@ describe("switching identity while a refresh is on its way", () => {
     expect(appToken).toBe("new-session");
     expect(await client.GET("/v1/me")).toEqual({ id: "new-session" });
     expect(seen).toEqual([null, "Bearer new-session"]);
+  });
+});
+
+// Every browser tab keeps its own access token but sends the same refresh
+// cookie, and each refresh rotates it, revoking the session the other tabs'
+// tokens name. Without coordination two tabs revoke each other in turn, and
+// two refreshes sent with the same cookie read as refresh-token reuse,
+// which revokes the whole session family (cross-tab.ts).
+describe("several tabs sharing one refresh cookie", () => {
+  const openChannels: BroadcastChannel[] = [];
+
+  /** Web Locks as one browser provides them: one holder at a time, in order. */
+  function createLockManager() {
+    let tail: Promise<unknown> = Promise.resolve();
+    return {
+      request(name: string, callback: (lock: { name: string }) => unknown) {
+        const run = tail.then(() => callback({ name }));
+        tail = run.catch(() => undefined);
+        return run;
+      },
+    };
+  }
+
+  beforeEach(() => {
+    vi.stubGlobal("navigator", { locks: createLockManager() });
+    vi.stubGlobal(
+      "BroadcastChannel",
+      class extends BroadcastChannel {
+        constructor(name: string) {
+          super(name);
+          openChannels.push(this);
+        }
+      },
+    );
+  });
+  afterEach(() => {
+    for (const channel of openChannels.splice(0)) channel.close();
+    vi.unstubAllGlobals();
+  });
+
+  function revokedUnlessRotated() {
+    return http.get(`${BASE_URL}/v1/me`, ({ request }) =>
+      request.headers.get("authorization") === "Bearer rotated-token"
+        ? HttpResponse.json({ id: "u1" })
+        : HttpResponse.json(errorBody("AUTH_SESSION_REVOKED"), { status: 401 }),
+    );
+  }
+
+  function createTab(staleToken: string) {
+    const tab = { token: staleToken, onAccessToken: vi.fn(), onUnauthorized: vi.fn() };
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => tab.token,
+      clientHeader: "web/1.0.0",
+      onAccessToken: (token) => {
+        tab.onAccessToken(token);
+        tab.token = token;
+      },
+      onUnauthorized: tab.onUnauthorized,
+    });
+    return { tab, client };
+  }
+
+  it("refreshes once for two tabs whose sessions were revoked together", async () => {
+    let refreshCalls = 0;
+    server.use(
+      revokedUnlessRotated(),
+      http.post(`${BASE_URL}/v1/auth/refresh`, async () => {
+        refreshCalls += 1;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return HttpResponse.json({ access_token: "rotated-token" });
+      }),
+    );
+    const first = createTab("first-tab-token");
+    const second = createTab("second-tab-token");
+
+    const results = await Promise.all([first.client.GET("/v1/me"), second.client.GET("/v1/me")]);
+
+    expect(results).toEqual([{ id: "u1" }, { id: "u1" }]);
+    expect(refreshCalls).toBe(1);
+    expect(first.tab.token).toBe("rotated-token");
+    expect(second.tab.token).toBe("rotated-token");
+    expect(first.tab.onUnauthorized).not.toHaveBeenCalled();
+    expect(second.tab.onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it("takes the token another tab announced instead of rotating the cookie again", async () => {
+    let refreshCalls = 0;
+    server.use(
+      revokedUnlessRotated(),
+      http.post(`${BASE_URL}/v1/auth/refresh`, () => {
+        refreshCalls += 1;
+        return HttpResponse.json({ access_token: "rotated-token" });
+      }),
+    );
+    const first = createTab("first-tab-token");
+    const second = createTab("second-tab-token");
+
+    expect(await first.client.GET("/v1/me")).toEqual({ id: "u1" });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    // The announcement waits until the second tab's own token stops
+    // working: a tab in the middle of an impersonation keeps its own.
+    expect(second.tab.onAccessToken).not.toHaveBeenCalled();
+    expect(await second.client.GET("/v1/me")).toEqual({ id: "u1" });
+
+    expect(refreshCalls).toBe(1);
+    expect(second.tab.onAccessToken).toHaveBeenCalledWith("rotated-token");
+  });
+
+  it("refreshes on its own once the app ended the session it was announced for", async () => {
+    let refreshCalls = 0;
+    server.use(
+      revokedUnlessRotated(),
+      http.post(`${BASE_URL}/v1/auth/refresh`, () => {
+        refreshCalls += 1;
+        return HttpResponse.json({ access_token: "rotated-token" });
+      }),
+    );
+    const first = createTab("first-tab-token");
+    const second = createTab("second-tab-token");
+
+    await first.client.GET("/v1/me");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    second.client.forgetAccessToken();
+    await second.client.GET("/v1/me");
+
+    expect(refreshCalls).toBe(2);
   });
 });

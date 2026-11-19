@@ -12,9 +12,15 @@ Typed API client generated from `openapi/openapi.yaml`.
   - `X-Client` (caller-supplied, e.g. `web/1.4.0` or `mobile/ios/1.4.0`).
   - `X-Tenant` when `tenantSlug` is set.
   - `Idempotency-Key` (a UUID) on every `POST`/`PUT`/`PATCH`/`DELETE`.
-  - On a `401` with `error.code === "AUTH_TOKEN_EXPIRED"`, a single-flight
-    call to `/v1/auth/refresh` (cookie for web, `tokenStore.getRefreshToken()`
+  - On a `401` with `AUTH_TOKEN_EXPIRED`, `AUTH_SESSION_REVOKED` or
+    `AUTH_TOKEN_INVALID` (or one sent with no token), a single-flight call
+    to `/v1/auth/refresh` (cookie for web, `tokenStore.getRefreshToken()`
     body for mobile) followed by exactly one retry of the original request.
+  - On the web, the tabs of one origin share the refresh cookie, so their
+    refreshes take turns under a Web Lock and each announces its new
+    access token on a BroadcastChannel; a tab whose token stops working
+    takes the announced one instead of rotating the cookie again
+    (`src/cross-tab.ts`, docs/08-security.md section 2).
   - Throws `ApiError { status, code, message, details, requestId }` for any
     other failure, instead of returning `{ data, error }`.
   - `AbortSignal` passes straight through via the standard `init.signal`
@@ -39,4 +45,5 @@ Typed API client generated from `openapi/openapi.yaml`.
 - `pnpm generate`: regenerate `src/gen/schema.d.ts` from the OpenAPI contract.
 - `pnpm build`: bundle `index` and `hooks/index` with tsup.
 - `pnpm test`: Vitest + msw, covering header injection, idempotency keys,
-  non-401 errors, and the refresh/retry/single-flight behavior.
+  non-401 errors, the refresh/retry/single-flight behavior, and several
+  tabs sharing one refresh cookie.

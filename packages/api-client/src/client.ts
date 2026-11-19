@@ -5,6 +5,7 @@ import createClient, {
 } from "openapi-fetch";
 import type { HttpMethod, PathsWithMethod } from "openapi-typescript-helpers";
 
+import { createBrowserRefreshCoordinator } from "./cross-tab.js";
 import { ApiError, type ApiErrorDetail } from "./errors.js";
 import type { paths } from "./gen/schema.js";
 import { cookieTokenStore, type TokenStore } from "./token-store.js";
@@ -15,10 +16,12 @@ const MUTATING_METHODS: readonly HttpMethod[] = ["post", "put", "patch", "delete
  * 401 codes that say the access token is dead, not that the request was
  * wrong, so a refresh is worth one try. AUTH_SESSION_REVOKED is the common
  * one in practice: another tab's refresh rotates the session and revokes
- * the row this tab's token names. The shared refresh cookie already names
- * the new session, so the refresh recovers silently; when the session was
- * really ended, the refresh fails and onUnauthorized sends the reader to
- * sign in instead of leaving every screen on a retry that cannot work.
+ * the row this tab's token names. That tab announced its new token, so
+ * this one takes it instead of rotating the shared cookie again; without
+ * that hand-over (cross-tab.ts) the tabs would revoke each other in turn.
+ * When the session was really ended, the refresh fails and onUnauthorized
+ * sends the reader to sign in instead of leaving every screen on a retry
+ * that cannot work.
  */
 const REFRESHABLE_CODES: ReadonlySet<string> = new Set([
   "AUTH_TOKEN_EXPIRED",
@@ -172,6 +175,13 @@ async function parseErrorFromResponse(response: Response): Promise<ParsedError> 
   }
 }
 
+interface RefreshOptions {
+  /** False for the page load's refresh: no session yet is not a lost one. */
+  notifyOnFailure?: boolean;
+  /** The access token the server just refused, or null when none was sent. */
+  failedToken?: string | null;
+}
+
 /**
  * Wraps the generated openapi-fetch client with the cross-cutting behavior
  * every request needs: auth headers, tenant scoping, idempotency, a single
@@ -196,30 +206,82 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
   // the app.
   let endedSessions = 0;
 
+  // Web only: the tabs of one origin share the refresh cookie, so their
+  // refreshes take turns and hand each other the result (cross-tab.ts).
+  // Mobile has one token store per app and refreshes on its own.
+  // latestSessionToken is the newest access token known for the cookie's
+  // current session: this client's own last refresh, or a later one
+  // another tab announced. Dropped with lastRefreshed.
+  let latestSessionToken: string | null = null;
+  const coordinator =
+    tokenStore === cookieTokenStore
+      ? createBrowserRefreshCoordinator((accessToken) => {
+          // Taken only once this tab's own token stops working (see
+          // tokenNewerThan), never pushed into the app right away: a tab
+          // in the middle of an impersonation or a sign-in keeps its own.
+          latestSessionToken = accessToken;
+        })
+      : null;
+
   function forgetAccessToken(): void {
     endedSessions += 1;
     lastRefreshed = null;
+    latestSessionToken = null;
     // The next refresh starts on its own instead of joining one whose
     // answer will be dropped.
     refreshInFlight = null;
   }
 
-  async function refreshAccessToken(notifyOnFailure = true): Promise<string | null> {
+  function exclusive<T>(task: () => Promise<T>): Promise<T> {
+    return coordinator ? coordinator.exclusive(task) : task();
+  }
+
+  /**
+   * The token another tab announced after `failedToken` was issued, if
+   * any. Called while holding the refresh lock: the tab that held it before
+   * announced its token just before letting go, so one turn of the event
+   * loop first gives that announcement the chance to arrive. If it is
+   * still late, this tab refreshes once more in its turn, which is safe:
+   * the turns keep the shared cookie from being sent twice.
+   */
+  async function tokenNewerThan(failedToken: string | null): Promise<string | null> {
+    if (!coordinator) return null;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    return latestSessionToken !== null && latestSessionToken !== failedToken
+      ? latestSessionToken
+      : null;
+  }
+
+  async function refreshAccessToken({
+    notifyOnFailure = true,
+    failedToken = null,
+  }: RefreshOptions = {}): Promise<string | null> {
     const flight = (refreshInFlight ??= (async () => {
       const startedIn = endedSessions;
       const sessionEnded = () => endedSessions !== startedIn;
-      const refreshToken = await tokenStore.getRefreshToken();
-      const response = await fetch(`${options.baseUrl}/v1/auth/refresh`, {
-        method: "POST",
-        credentials,
-        headers: { "content-type": "application/json" },
-        body: refreshToken ? JSON.stringify({ refresh_token: refreshToken }) : undefined,
+      const data = await exclusive(async () => {
+        const announced = await tokenNewerThan(failedToken);
+        if (announced) return { access_token: announced };
+        const refreshToken = await tokenStore.getRefreshToken();
+        const response = await fetch(`${options.baseUrl}/v1/auth/refresh`, {
+          method: "POST",
+          credentials,
+          headers: { "content-type": "application/json" },
+          body: refreshToken ? JSON.stringify({ refresh_token: refreshToken }) : undefined,
+        });
+        if (!response.ok) return null;
+        const body = (await response.json()) as { access_token: string; refresh_token?: string };
+        // Announced even when this tab no longer wants it: the rotation
+        // has already revoked the session the other tabs' tokens name.
+        coordinator?.announce(body.access_token);
+        return body;
       });
       // The app ended the session while this was on its way: nothing about
       // it is stored, and the app is not told, since it already knows.
       if (sessionEnded()) return null;
-      if (!response.ok) {
+      if (!data) {
         lastRefreshed = null;
+        latestSessionToken = null;
         await tokenStore.clear();
         // Checked again after the await: a session that started meanwhile
         // is not the one that failed, and must not be signed out for it.
@@ -229,8 +291,6 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
         }
         return null;
       }
-      const data = (await response.json()) as { access_token: string; refresh_token?: string };
-      if (sessionEnded()) return null;
       await tokenStore.setTokens({
         accessToken: data.access_token,
         refreshToken: data.refresh_token,
@@ -240,6 +300,7 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       // module variable this package cannot see, so a client that only
       // wrote to the token store would refresh on every single request.
       lastRefreshed = data.access_token;
+      latestSessionToken = data.access_token;
       options.onAccessToken?.(data.access_token);
       return data.access_token;
     })());
@@ -282,7 +343,7 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       if (!(await hasSomethingToRefresh())) {
         return;
       }
-      await refreshAccessToken(false);
+      await refreshAccessToken({ notifyOnFailure: false });
     })();
     await bootRefresh;
   }
@@ -340,14 +401,14 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       // sent while a stale token is in memory must still come back as
       // AUTH_INVALID_CREDENTIALS, untouched.
       const { code } = await parseErrorFromResponse(response);
-      const hadToken = request.headers.has("Authorization");
+      const sentToken = request.headers.get("Authorization")?.replace(/^Bearer /, "") ?? null;
       const isRefreshCall = request.url.endsWith("/v1/auth/refresh");
-      if (isRefreshCall || (hadToken && !REFRESHABLE_CODES.has(code))) {
+      if (isRefreshCall || (sentToken !== null && !REFRESHABLE_CODES.has(code))) {
         return response;
       }
       // refreshAccessToken already clears the token store and calls
       // onUnauthorized on failure; nothing more to do here than give up.
-      const newToken = await refreshAccessToken();
+      const newToken = await refreshAccessToken({ failedToken: sentToken });
       if (!newToken) {
         return response;
       }
