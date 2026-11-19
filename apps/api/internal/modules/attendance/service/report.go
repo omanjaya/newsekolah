@@ -105,12 +105,15 @@ func (s *Service) toDailyReportSessions(ctx context.Context, tenantID uuid.UUID,
 
 // periodLabel joins a session's start and end period names into one
 // display string, collapsing to a single name when the session spans only
-// one period.
+// one period. The ends are joined by a spaced en dash ("Jam 1 – Jam 3"),
+// the way the web writes every period and clock range (periodSpanLabel,
+// clockRange), so a lesson reads the same on the schedule and on the
+// attendance screens.
 func periodLabel(start, end string) string {
 	if start == end || end == "" {
 		return start
 	}
-	return start + " - " + end
+	return start + " – " + end
 }
 
 // dailyReportColumns are the daily report's stable column keys, with
