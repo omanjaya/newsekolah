@@ -55,4 +55,19 @@ describe("monthAttendanceStats", () => {
     const stats = monthAttendanceStats(days, TODAY);
     expect(stats.counts).toEqual({ INCOMPLETE: 1, MIXED: 1 });
   });
+
+  it("has no rate while every past day is unrecorded, rather than reading 0%", () => {
+    const days = [day("2026-09-01", "INCOMPLETE"), day("2026-09-02", "INCOMPLETE")];
+    expect(monthAttendanceStats(days, TODAY).presentRate).toBeUndefined();
+  });
+
+  it("leaves unrecorded days out of the rate's denominator", () => {
+    const days = [
+      day("2026-09-01", "H"),
+      day("2026-09-02", "A"),
+      day("2026-09-03", "INCOMPLETE"),
+      day("2026-09-04", "MIXED"),
+    ];
+    expect(monthAttendanceStats(days, TODAY).presentRate).toBe(50);
+  });
 });
