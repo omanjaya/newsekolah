@@ -36,6 +36,8 @@
   "substituteFor": "covering for",
   "noSessionsTitle": "No sessions running",
   "noSessionsBody": "No period is currently in progress.",
+  "noLessonsInPeriodTitle": "No class has a lesson",
+  "noLessonsInPeriodBody": "{period} is under way, but no class has a lesson scheduled in it.",
   "gateTitle": "Connect this display",
   "gateBody": "This screen shows attendance for every class in session and refreshes on its own. Enter the display token once for this device.",
   "countsLabel": "Student attendance today",

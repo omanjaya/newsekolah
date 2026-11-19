@@ -187,6 +187,33 @@ describe("MonitorView display", () => {
     expect(screen.queryByRole("heading", { name: "sessionsTitle" })).not.toBeInTheDocument();
     expect(screen.getByText("XII-A")).toBeInTheDocument();
   });
+
+  it("names a running period that no class has a lesson in", () => {
+    // Bell times set, timetables not entered yet.
+    snapshot = {
+      isError: false,
+      isLoading: false,
+      error: null,
+      data: {
+        status_counts: {},
+        current_period: {
+          name: "Jam ke-3",
+          starts_at: "2026-11-19T01:40:00Z",
+          ends_at: "2026-11-19T02:20:00Z",
+        },
+        sessions: [
+          { class_name: "XII-A", subject_name: "", teacher_name: "", status: "no_schedule" },
+        ],
+      },
+    };
+    render(<MonitorView />);
+    expect(screen.getByText("noLessonsInPeriodTitle")).toBeInTheDocument();
+    expect(
+      screen.getByText("noLessonsInPeriodBody(currentPeriod(Jam ke-3|08:40|09:20))"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("noSessionsTitle")).not.toBeInTheDocument();
+    expect(screen.getByText("XII-A")).toBeInTheDocument();
+  });
 });
 
 describe("MonitorView snapshot errors", () => {

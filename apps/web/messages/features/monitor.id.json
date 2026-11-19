@@ -36,6 +36,8 @@
   "substituteFor": "menggantikan",
   "noSessionsTitle": "Tidak ada sesi yang berlangsung",
   "noSessionsBody": "Belum ada jam pelajaran yang sedang berjalan saat ini.",
+  "noLessonsInPeriodTitle": "Belum ada kelas yang belajar",
+  "noLessonsInPeriodBody": "{period} sedang berjalan, tetapi belum ada kelas yang punya jadwal pelajaran di jam ini.",
   "gateTitle": "Hubungkan layar monitor",
   "gateBody": "Layar ini menampilkan presensi setiap kelas yang sedang belajar dan diperbarui sendiri. Masukkan token tampilan sekali untuk perangkat ini.",
   "countsLabel": "Presensi siswa hari ini",
