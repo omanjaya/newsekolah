@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -345,16 +345,35 @@ describe("GradingView TP and e-Rapor panels", () => {
     expect(sheet).toHaveAttribute("data-can-manage", "true");
   });
 
+  // Radix shows the chosen panel a render after the tab changes, and a
+  // browser does not focus a hidden element: focusing it at once left
+  // focus on <body> (audit r5-r4-n10). jsdom focuses hidden elements, so
+  // the test refuses them as a browser does.
   it("moves focus into the sheet panel once the e-Rapor panel opens the gradebook", async () => {
-    grantManageGrades();
-    window.history.replaceState(null, "", "/?tab=erapor");
-    const user = userEvent.setup();
-    render(<GradingView />);
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- called with its element below
+    const realFocus = HTMLElement.prototype.focus;
+    const spy = vi.spyOn(HTMLElement.prototype, "focus").mockImplementation(function (
+      this: HTMLElement,
+      options?: FocusOptions,
+    ) {
+      if (this.closest("[hidden]")) return;
+      realFocus.call(this, options);
+    });
+    try {
+      grantManageGrades();
+      window.history.replaceState(null, "", "/?tab=erapor");
+      const user = userEvent.setup();
+      render(<GradingView />);
 
-    await user.click(screen.getByRole("button", { name: "open-gradebook" }));
-    const panel = screen.getByRole("tabpanel");
-    expect(panel).toContainElement(screen.getByTestId("gradebook-sheet"));
-    expect(panel).toHaveFocus();
+      await user.click(screen.getByRole("button", { name: "open-gradebook" }));
+      const panel = screen.getByRole("tabpanel");
+      expect(panel).toContainElement(screen.getByTestId("gradebook-sheet"));
+      await waitFor(() => {
+        expect(panel).toHaveFocus();
+      });
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("does not move focus on an ordinary tab switch", async () => {
