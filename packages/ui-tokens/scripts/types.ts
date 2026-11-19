@@ -80,6 +80,16 @@ export interface ThemeColors {
   /** Skeleton placeholder fill and its moving highlight (both rgba). */
   skeleton: string;
   skeletonShine: string;
+  /**
+   * A printed page drawn on screen (a letterhead or document preview):
+   * white paper with dark ink in both themes, because what prints is
+   * always white. The same values in light and dark.
+   */
+  paper: string;
+  paperFg: string;
+  paperFgMuted: string;
+  /** Placeholder text lines and rules on the paper. */
+  paperLine: string;
   category: Record<CategoryName, CategoryColor>;
   status: Record<StatusName, StatusColor>;
 }

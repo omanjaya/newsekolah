@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -91,5 +91,25 @@ describe("ReportHeaderView", () => {
     if (!second) throw new Error("Missing the second line");
     await user.type(second, "SMA Harapan");
     expect(screen.getByRole("radiogroup", { name: "emphasisLabel" })).toBeInTheDocument();
+  });
+
+  it("draws the letterhead on white paper, whatever the theme", async () => {
+    const user = userEvent.setup();
+    renderView();
+    await user.type(screen.getByRole("textbox", { name: "lineLabel" }), "SMA Harapan");
+    const printed = screen
+      .getAllByText("SMA Harapan")
+      .find((element) => element.closest(".bg-paper"));
+    expect(printed).toBeDefined();
+    expect(printed).toHaveClass("text-paper-fg");
+  });
+
+  it("names the phone preview once, in the sheet, not again on a card inside it", async () => {
+    const user = userEvent.setup();
+    renderView();
+    await user.click(screen.getByRole("button", { name: "preview.title" }));
+    const sheet = screen.getByRole("dialog", { name: "preview.title" });
+    expect(within(sheet).queryByRole("heading", { name: "title" })).not.toBeInTheDocument();
+    expect(within(sheet).getByText("liveHint")).toBeInTheDocument();
   });
 });

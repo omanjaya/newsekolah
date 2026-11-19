@@ -37,11 +37,13 @@ export function TemplatePreview({
     <div className="flex flex-col gap-4">
       <div className="rounded-md bg-surface-sunken p-3">
         {html.trim() ? (
+          // White paper in both themes, as it prints: the light colour
+          // scheme keeps the body's default black text on the paper.
           <iframe
             title={t("previewLabel")}
             sandbox=""
             srcDoc={html}
-            className="aspect-[1/1.2] w-full rounded-xs bg-surface shadow-1"
+            className="aspect-[1/1.2] w-full rounded-xs bg-paper shadow-1 scheme-light"
           />
         ) : (
           <EmptyState

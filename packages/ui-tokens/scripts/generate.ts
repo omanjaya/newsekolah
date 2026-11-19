@@ -68,6 +68,10 @@ const THEME_KEYS: [keyof ThemeColors, string][] = [
   ["focusRing", "focus-ring"],
   ["skeleton", "skeleton"],
   ["skeletonShine", "skeleton-shine"],
+  ["paper", "paper"],
+  ["paperFg", "paper-fg"],
+  ["paperFgMuted", "paper-fg-muted"],
+  ["paperLine", "paper-line"],
 ];
 
 /** Semantic feedback colors resolved to real values (not aliases) for one theme. */

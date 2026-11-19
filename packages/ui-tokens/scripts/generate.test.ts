@@ -72,6 +72,16 @@ describe("generated tokens", () => {
     expect(level(dark.surfaceOverlay)).toBeLessThan(level(dark.surfaceRaised));
   });
 
+  it("keeps the paper the same in both themes, since what prints is always white", () => {
+    const source = JSON.parse(readFileSync(resolve(packageRoot, "tokens.json"), "utf-8")) as {
+      color: Record<"light" | "dark", Record<string, string>>;
+    };
+    for (const key of ["paper", "paperFg", "paperFgMuted", "paperLine"]) {
+      expect(source.color.dark[key]).toBe(source.color.light[key]);
+    }
+    expect(css).toContain("--color-paper: #FFFFFF;");
+  });
+
   it("writes semantic colors as real values, not aliases", () => {
     expect(css).toContain("--color-danger: #B3261E;");
     expect(css).toContain("--color-success-soft-fg: #0B3B2E;");
