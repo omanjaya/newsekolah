@@ -20,13 +20,15 @@ returning *;
 -- permits.AttendanceBlocker: a student mid-flow cannot be marked present
 -- for today's attendance until this resolves, per
 -- docs/analysis/backend-inventory.md 1.16 ("selama belum completed siswa
--- tidak bisa ditandai hadir").
+-- tidak bisa ditandai hadir"). $3 is the tenant-local day attendance is
+-- saving, so it is compared with local_date: opened_date is the UTC day,
+-- which for a UTC+8 school is still yesterday before 08:00 local.
 select wi.* from workflow_instances wi
 where wi.tenant_id = $1
   and wi.kind = 'late_arrival'
   and wi.subject_user_id = $2
   and wi.status = 'in_progress'
-  and wi.opened_date = $3
+  and wi.local_date = $3
 limit 1;
 
 -- name: ListLateArrivalsForReview :many

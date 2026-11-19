@@ -663,7 +663,9 @@ type Querier interface {
 	// permits.AttendanceBlocker: a student mid-flow cannot be marked present
 	// for today's attendance until this resolves, per
 	// docs/analysis/backend-inventory.md 1.16 ("selama belum completed siswa
-	// tidak bisa ditandai hadir").
+	// tidak bisa ditandai hadir"). $3 is the tenant-local day attendance is
+	// saving, so it is compared with local_date: opened_date is the UTC day,
+	// which for a UTC+8 school is still yesterday before 08:00 local.
 	GetInProgressLateArrivalToday(ctx context.Context, arg GetInProgressLateArrivalTodayParams) (WorkflowInstance, error)
 	// Any not-yet-terminal instance of this kind for this subject, used to
 	// reject a new submission with a clear 409 before the DB constraint would.

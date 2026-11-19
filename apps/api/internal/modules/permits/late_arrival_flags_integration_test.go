@@ -3,6 +3,7 @@ package permits
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -71,10 +72,11 @@ func TestLateArrivalStopsBlockingAttendanceWhilePermitsIsOff(t *testing.T) {
 
 	w := seedRealtimeWorld(t, ctx, pg.AdminPool, "late-block-"+uuid.NewString())
 	opened := openLateArrival(t, ctx, svc, w)
-	today := opened.Instance.LocalDate
-	if today.IsZero() {
-		today = opened.Instance.OpenedAt
-	}
+	// The school's own calendar day, as attendance passes it: before 08:00
+	// in a UTC+8 school this differs from the UTC day of opened_at.
+	var today time.Time
+	require.NoError(t, pg.AdminPool.QueryRow(ctx,
+		`select local_date from workflow_instances where id = $1`, opened.Instance.ID).Scan(&today))
 
 	blocked, reason, err := blocker.IsBlocked(ctx, w.tenantID, w.studentID, today)
 	require.NoError(t, err)
@@ -94,6 +96,38 @@ func TestLateArrivalStopsBlockingAttendanceWhilePermitsIsOff(t *testing.T) {
 	blocked, _, err = blocker.IsBlocked(ctx, w.tenantID, w.studentID, today)
 	require.NoError(t, err)
 	require.True(t, blocked, "permits back on: it blocks again")
+}
+
+// TestLateArrivalBlocksOnTheSchoolDayBeforeEightLocal pins a late arrival
+// at 07:30 in a UTC+8 school, which is 23:30 UTC on the day before. The
+// attendance save for the school's own day must still be blocked: the
+// check reads the tenant-local day, not the UTC day of opened_at.
+func TestLateArrivalBlocksOnTheSchoolDayBeforeEightLocal(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	svc, platformSvc := flaggedLateArrivals(pg.AppPool, &recordingDiscipline{})
+	blocker := wiring.PermitsBlocker{Svc: svc, Flags: platformSvc}
+
+	w := seedRealtimeWorld(t, ctx, pg.AdminPool, "late-local-"+uuid.NewString())
+	opened := openLateArrival(t, ctx, svc, w)
+
+	schoolDay := time.Date(2026, 11, 20, 0, 0, 0, 0, time.UTC)
+	_, err := pg.AdminPool.Exec(ctx,
+		`update tenants set timezone = 'Asia/Makassar' where id = $1`, w.tenantID)
+	require.NoError(t, err)
+	_, err = pg.AdminPool.Exec(ctx,
+		`update workflow_instances set opened_at = '2026-11-19T23:30:00Z', local_date = '2026-11-20' where id = $1`,
+		opened.Instance.ID)
+	require.NoError(t, err)
+
+	blocked, reason, err := blocker.IsBlocked(ctx, w.tenantID, w.studentID, schoolDay)
+	require.NoError(t, err)
+	require.True(t, blocked, "07:30 local is the school's 20 November, though it is 19 November in UTC")
+	require.Equal(t, "late_arrival_in_progress", reason)
+
+	blocked, _, err = blocker.IsBlocked(ctx, w.tenantID, w.studentID, schoolDay.AddDate(0, 0, -1))
+	require.NoError(t, err)
+	require.False(t, blocked, "the UTC day of opened_at is not the school's day")
 }
 
 // TestLateArrivalReviewDropsViolationsWhileDisciplineIsOff reviews one late

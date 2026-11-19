@@ -266,7 +266,7 @@ func (r *Repository) ExpireHangingInstances(ctx context.Context, tenantID uuid.U
 
 func (r *Repository) HasInProgressLateArrivalOn(ctx context.Context, tenantID, subjectUserID uuid.UUID, date time.Time) (bool, error) {
 	_, err := r.queries(ctx).GetInProgressLateArrivalToday(ctx, db.GetInProgressLateArrivalTodayParams{
-		TenantID: tenantID, SubjectUserID: subjectUserID, OpenedDate: pdatabase.Date(date),
+		TenantID: tenantID, SubjectUserID: subjectUserID, LocalDate: pdatabase.Date(date),
 	})
 	if notFound(err) {
 		return false, nil

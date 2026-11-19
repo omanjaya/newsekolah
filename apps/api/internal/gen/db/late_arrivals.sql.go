@@ -58,22 +58,24 @@ where wi.tenant_id = $1
   and wi.kind = 'late_arrival'
   and wi.subject_user_id = $2
   and wi.status = 'in_progress'
-  and wi.opened_date = $3
+  and wi.local_date = $3
 limit 1
 `
 
 type GetInProgressLateArrivalTodayParams struct {
 	TenantID      uuid.UUID   `json:"tenant_id"`
 	SubjectUserID uuid.UUID   `json:"subject_user_id"`
-	OpenedDate    pgtype.Date `json:"opened_date"`
+	LocalDate     pgtype.Date `json:"local_date"`
 }
 
 // permits.AttendanceBlocker: a student mid-flow cannot be marked present
 // for today's attendance until this resolves, per
 // docs/analysis/backend-inventory.md 1.16 ("selama belum completed siswa
-// tidak bisa ditandai hadir").
+// tidak bisa ditandai hadir"). $3 is the tenant-local day attendance is
+// saving, so it is compared with local_date: opened_date is the UTC day,
+// which for a UTC+8 school is still yesterday before 08:00 local.
 func (q *Queries) GetInProgressLateArrivalToday(ctx context.Context, arg GetInProgressLateArrivalTodayParams) (WorkflowInstance, error) {
-	row := q.db.QueryRow(ctx, getInProgressLateArrivalToday, arg.TenantID, arg.SubjectUserID, arg.OpenedDate)
+	row := q.db.QueryRow(ctx, getInProgressLateArrivalToday, arg.TenantID, arg.SubjectUserID, arg.LocalDate)
 	var i WorkflowInstance
 	err := row.Scan(
 		&i.ID,

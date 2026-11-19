@@ -211,7 +211,7 @@ describe("ExitPermitsView history rows", () => {
     expect(exited).toHaveTextContent("Apotek");
     expect(exited).toHaveTextContent("exitedMeta 15.49");
     // On a phone the line breaks between the day and the gate time, never inside one.
-    expect(screen.getByText("exitedMeta 15.49")).toHaveClass("whitespace-nowrap");
+    expect(screen.getByText("exitedMeta 15.49")).toHaveClass("truncate");
     expect(exited).not.toHaveTextContent("openedAt");
     // Never through the gate: the request time stands in.
     expect(cancelled).toHaveTextContent("Rumah");
