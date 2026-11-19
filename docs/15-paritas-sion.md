@@ -338,11 +338,13 @@ Keputusan yang tadinya menunggu pemilik produk (guru mendapat 403 di "Supervisi 
 
 Aplikasi web dijalankan dengan build produksi dan data seed, lalu diaudit langsung di peramban (Playwright, 390 dan 1440 px, terang dan gelap, sepuluh peran). Setiap area punya auditor sendiri. Setiap temuan diperiksa ulang oleh verifikator yang berusaha membantahnya; yang tidak lolos dibuang. Semua perbaikan dikerjakan per kelompok berkas di worktree terpisah, ditinjau secara adversarial, lalu digabung di `claude/vibrant-knuth-13rzv2`.
 
-| Putaran                                                            | Temuan terkonfirmasi (ditolak)                        | Hasil                                                                 |
-| ------------------------------------------------------------------ | ----------------------------------------------------- | --------------------------------------------------------------------- |
-| Audit 1                                                            | 63 (26)                                               | 63 diperbaiki                                                         |
-| Audit 2 (cek ulang 63 perbaikan, lalu layar yang belum terjangkau) | 99 (27); 3 di antaranya "belum tuntas" dari putaran 1 | 99 diperbaiki; verifikasi langsung: 85 tuntas, 10 sebagian, 4 regresi |
-| Perbaikan 3                                                        | 53 sisa dan temuan baru dari verifikasi               | sedang dikerjakan                                                     |
+| Putaran                                                            | Temuan terkonfirmasi (ditolak)                        | Hasil                                                                     |
+| ------------------------------------------------------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------- |
+| Audit 1                                                            | 63 (26)                                               | 63 diperbaiki                                                             |
+| Audit 2 (cek ulang 63 perbaikan, lalu layar yang belum terjangkau) | 99 (27); 3 di antaranya "belum tuntas" dari putaran 1 | 99 diperbaiki; verifikasi langsung: 85 tuntas, 10 sebagian, 4 regresi     |
+| Perbaikan 3                                                        | 53 sisa dan temuan baru dari verifikasi               | 53 diperbaiki; verifikasi langsung (bersama dua crash): 51 dari 59 tuntas |
+| Perbaikan 4                                                        | 38 (8 sisa, 30 baru, sebagian ganda)                  | 38 diperbaiki; verifikasi langsung: 31 tuntas, 7 sebagian                 |
+| Perbaikan 5                                                        | 27 (7 sisa, 20 baru, hampir semua polesan)            | sedang dikerjakan                                                         |
 
 Skor audit 2 terhadap patokan "sangat profesional": konsistensi 8,2; autentikasi dan halaman publik 8; shell dan beranda, mengajar, izin dan kedisiplinan, administrasi sekolah, pengaturan 7,5; perpustakaan 7,2; nilai dan siswa 6,5.
 
@@ -357,6 +359,8 @@ Yang paling berdampak:
 Validasi di cabang gabungan putaran 2 (`cc186b3`): `pnpm openapi:check`, `pnpm typecheck`, `pnpm lint` lulus; `pnpm test` lulus (web 423 berkas, 2.432 uji; ui 730 uji); `go build`, `go vet`, dan `go test ./...` dengan integrasi Postgres lulus. Suite e2e Playwright tidak dijalankan.
 
 Belum terlihat langsung karena data seed kosong dan audit tidak boleh mengubah data: notifikasi berisi, kotak masuk berisi, kelompok mentoring, ekstrakurikuler, prestasi, nilai terbit, pengajuan izin sakit, pelanggaran dan surat peringatan, tamu, siklus supervisi, tagihan, jadwal laporan, templat dokumen, stok opname. Perbaikan untuk layar itu diperiksa di kode saja.
+
+Temuan nyata di luar UI yang tertangkap selama putaran ini: pemblokir presensi untuk siswa terlambat membandingkan tanggal lokal sekolah dengan `opened_date` (tanggal UTC), sehingga keterlambatan sebelum pukul 08.00 WITA tidak memblokir presensi hari itu; kini memakai `local_date`, dengan uji regresi pukul 07.30 lokal. Uji `TestLateArrivalStopsBlockingAttendanceWhilePermitsIsOff` yang gagal setiap malam setelah pukul 16.00 UTC berasal dari kekeliruan tanggal yang sama. Pembatas laju Redis bergeser terus di bawah lalu lintas tetap (kini jendela tetap). Galat bind parameter jalur (UUID rusak) kini dijawab amplop JSON `VALIDATION_FAILED`, bukan teks polos.
 
 Catatan lingkungan: setelah build ulang, server `next start` lama harus benar-benar dimatikan. Server lama yang masih memegang port 3000 menyajikan HTML yang menunjuk chunk yang sudah diganti (400), sehingga tidak ada halaman yang terhidrasi.
 
