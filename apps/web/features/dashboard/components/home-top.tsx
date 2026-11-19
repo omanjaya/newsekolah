@@ -6,9 +6,9 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRef, type ReactElement } from "react";
 
+import { useFocusAfterRetry } from "../../../lib/hooks/use-focus-after-retry";
 import { entrance } from "../home/entrance";
 import { isHeroLink, type ShownHero } from "../home/types";
-import { useFocusAfterRetry } from "../home/use-retry-failed";
 
 /** Where the home's one retry sits, or `null` while every read loaded. */
 export type RetryAt = "hero" | "notice" | null;
@@ -57,7 +57,7 @@ export function HomeTop({
               icon={<RotateCw />}
               loading={retrying}
               onClick={retry}
-              data-home-retry=""
+              data-retry-focus=""
             >
               {t("failed.action")}
             </Button>
@@ -93,7 +93,7 @@ function HomeHero({ hero, enter }: { hero: ShownHero; enter: boolean }): ReactEl
             icon={<RotateCw />}
             loading={hero.action.loading}
             onClick={hero.action.onClick}
-            data-home-retry=""
+            data-retry-focus=""
           >
             {hero.action.label}
           </Button>
