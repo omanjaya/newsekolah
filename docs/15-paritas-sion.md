@@ -285,10 +285,10 @@ Hasil di kepala cabang `717238aa` (setelah empat belas perbaikan terakhir), dija
 
 Yang sengaja dibiarkan untuk diputuskan pemilik:
 
-- Kartu presensi kerja yang kosong tampil di urutan kedua atau ketiga pada beranda HP setiap pegawai di sekolah yang belum mengatur jadwal kerja.
-- Beranda perpustakaan di HP menumpuk dua kisi angka (sebelas angka) sebelum isi.
-- Aksi kepala halaman pada halaman sempit (`/settings/sso`, `/settings/document-templates`) masih berada di tepi kolom lebar.
-- Isi templat surat masih berupa HTML mentah bagi admin sekolah.
+- ~~Kartu presensi kerja yang kosong tampil di urutan kedua atau ketiga pada beranda HP setiap pegawai di sekolah yang belum mengatur jadwal kerja.~~ (selesai 19 November)
+- ~~Beranda perpustakaan di HP menumpuk dua kisi angka (sebelas angka) sebelum isi.~~ (selesai 19 November)
+- ~~Aksi kepala halaman pada halaman sempit (`/settings/sso`, `/settings/document-templates`) masih berada di tepi kolom lebar.~~ (selesai 19 November)
+- ~~Isi templat surat masih berupa HTML mentah bagi admin sekolah.~~ (selesai 19 November)
 
 Tindak lanjut yang dicatat, belum dikerjakan:
 
