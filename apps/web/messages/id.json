@@ -284,6 +284,8 @@
           "filterDateFrom": "Dari",
           "filterDateTo": "Sampai",
           "filterDateInvalid": "Tanggal mulai harus sebelum atau sama dengan tanggal akhir",
+          "filterDateSince": "sejak {date}",
+          "filterDateUntil": "sampai {date}",
           "emptyTitle": "Belum ada data"
         },
         "scanner": {
@@ -358,6 +360,7 @@
         "empty": {
           "filteredTitle": "Tidak ada yang cocok",
           "filteredDescription": "Coba kata kunci lain atau hapus filter yang aktif.",
+          "filteredFiltersOnlyDescription": "Ubah atau hapus filter yang aktif.",
           "filteredReset": "Hapus semua filter"
         },
         "statePage": {

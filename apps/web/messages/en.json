@@ -284,6 +284,8 @@
           "filterDateFrom": "From",
           "filterDateTo": "To",
           "filterDateInvalid": "The start date must be on or before the end date",
+          "filterDateSince": "from {date}",
+          "filterDateUntil": "until {date}",
           "emptyTitle": "No data yet"
         },
         "scanner": {
@@ -358,6 +360,7 @@
         "empty": {
           "filteredTitle": "Nothing matches",
           "filteredDescription": "Try another keyword or clear the active filters.",
+          "filteredFiltersOnlyDescription": "Change or clear the active filters.",
           "filteredReset": "Clear all filters"
         },
         "statePage": {

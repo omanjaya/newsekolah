@@ -218,6 +218,41 @@ describe("DataTableFilters", () => {
       expect(screen.getByRole("button", { name: "Hapus filter Tanggal" })).toBeInTheDocument();
     });
 
+    // A lone bound is an open-ended range, not that one day.
+    it("words a from-only or to-only range as open-ended", () => {
+      const { rerender } = render(
+        <DataTableFilters filters={[dateRangeFilter({ from: "2026-11-19" })]} />,
+      );
+      expect(
+        screen.getByRole("button", { name: "Tanggal: sejak 19 Nov 2026" }),
+      ).toBeInTheDocument();
+
+      rerender(<DataTableFilters filters={[dateRangeFilter({ to: "2026-11-10" })]} />);
+      expect(
+        screen.getByRole("button", { name: "Tanggal: sampai 10 Nov 2026" }),
+      ).toBeInTheDocument();
+
+      rerender(
+        <DataTableFilters
+          filters={[dateRangeFilter({ from: "2026-11-19" })]}
+          labels={{ dateRangeSince: (date) => `from ${date}` }}
+        />,
+      );
+      expect(screen.getByRole("button", { name: "Tanggal: from 19 Nov 2026" })).toBeInTheDocument();
+    });
+
+    it("prints a same-day range as one date and a reversed pair in calendar order", () => {
+      const { rerender } = render(
+        <DataTableFilters filters={[dateRangeFilter({ from: "2026-11-19", to: "2026-11-19" })]} />,
+      );
+      expect(screen.getByRole("button", { name: "Tanggal: 19 Nov 2026" })).toBeInTheDocument();
+
+      rerender(
+        <DataTableFilters filters={[dateRangeFilter({ from: "2026-11-19", to: "2026-11-01" })]} />,
+      );
+      expect(screen.getByRole("button", { name: "Tanggal: 1-19 Nov 2026" })).toBeInTheDocument();
+    });
+
     it("applies a caller-supplied preset and closes the popover", async () => {
       const user = userEvent.setup();
       const onChangeRange = vi.fn();

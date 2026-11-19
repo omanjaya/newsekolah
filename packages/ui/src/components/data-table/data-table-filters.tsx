@@ -10,6 +10,7 @@ import { Field, FieldError } from "../field.js";
 import { ResponsivePopover } from "../responsive-popover.js";
 import { useUiLabels } from "../ui-labels.js";
 
+import { formatDateRange } from "./data-table-date-range-format.js";
 import {
   FilterPillShell,
   PILL_MENU_TRIGGER_CLASS,
@@ -110,6 +111,10 @@ export interface DataTableFiltersLabels {
   dateRangeTo: string;
   /** type="dateRange": shown when "from" is after "to". */
   dateRangeInvalid: string;
+  /** type="dateRange": the pill's value for a range with only a start, e.g. "sejak 19 Nov 2026". */
+  dateRangeSince: (date: string) => string;
+  /** type="dateRange": the pill's value for a range with only an end, e.g. "sampai 10 Nov 2026". */
+  dateRangeUntil: (date: string) => string;
 }
 
 /**
@@ -129,6 +134,8 @@ export const DEFAULT_DATA_TABLE_FILTERS_LABELS: DataTableFiltersLabels = {
   dateRangeFrom: "Dari",
   dateRangeTo: "Sampai",
   dateRangeInvalid: "Tanggal mulai harus sebelum atau sama dengan tanggal akhir",
+  dateRangeSince: (date) => `sejak ${date}`,
+  dateRangeUntil: (date) => `sampai ${date}`,
 };
 
 export interface DataTableFiltersProps {
@@ -180,6 +187,8 @@ export function DataTableFilters({
     dateRangeFrom: uiLabels.tableFilterDateFrom,
     dateRangeTo: uiLabels.tableFilterDateTo,
     dateRangeInvalid: uiLabels.tableFilterDateInvalid,
+    dateRangeSince: uiLabels.tableFilterDateSince,
+    dateRangeUntil: uiLabels.tableFilterDateUntil,
     ...labelsOverride,
   };
   const hasActiveFilter = filters.some(isFilterActive);
@@ -210,6 +219,8 @@ export function DataTableFilters({
             fromLabel={labels.dateRangeFrom}
             toLabel={labels.dateRangeTo}
             invalidLabel={labels.dateRangeInvalid}
+            sinceLabel={labels.dateRangeSince}
+            untilLabel={labels.dateRangeUntil}
           />
         ) : filter.type === "month" ? (
           <MonthFilterPill
@@ -338,52 +349,22 @@ function DataTableFilterPill({
   );
 }
 
-/**
- * "YYYY-MM-DD" -> "6 Sep" / "6 Sep 2026". The month name comes from `Intl`
- * in the page's language (so it is never a hardcoded locale's spelling), but the
- * day-month-year order is fixed here rather than left to a full `Intl`
- * format, which in several locales would reorder it (e.g. "Sep 6, 2026").
- */
-function formatDayMonth(value: string, withYear: boolean): string {
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  // The page's own language (set by the app on <html lang>), not the
-  // browser's, so an English-language browser still reads "Okt" on an
-  // Indonesian page.
-  const locale =
-    typeof document !== "undefined" ? document.documentElement.lang || undefined : undefined;
-  const month = new Intl.DateTimeFormat(locale, { month: "short" }).format(date);
-  return withYear
-    ? `${date.getDate()} ${month} ${date.getFullYear()}`
-    : `${date.getDate()} ${month}`;
-}
-
-function formatDateRange(from: string, to: string): string {
-  if (from && to) {
-    if (from === to) return formatDayMonth(from, true);
-    const fromDate = new Date(`${from}T00:00:00`);
-    const toDate = new Date(`${to}T00:00:00`);
-    const sameYear = fromDate.getFullYear() === toDate.getFullYear();
-    const sameMonth = sameYear && fromDate.getMonth() === toDate.getMonth();
-    if (sameMonth) return `${fromDate.getDate()}-${formatDayMonth(to, true)}`;
-    return `${formatDayMonth(from, !sameYear)} - ${formatDayMonth(to, true)}`;
-  }
-  if (from) return formatDayMonth(from, true);
-  return formatDayMonth(to, true);
-}
-
 function DateRangeFilterPill({
   filter,
   removeLabel,
   fromLabel,
   toLabel,
   invalidLabel,
+  sinceLabel,
+  untilLabel,
 }: {
   filter: DataTableFilterDef;
   removeLabel: string;
   fromLabel: string;
   toLabel: string;
   invalidLabel: string;
+  sinceLabel: (date: string) => string;
+  untilLabel: (date: string) => string;
 }): ReactElement {
   const [open, setOpen] = useState(false);
   const committedFrom = filter.from ?? "";
@@ -408,7 +389,7 @@ function DateRangeFilterPill({
   const active = isFilterActive(filter);
   const invalid = draftFrom !== "" && draftTo !== "" && draftFrom > draftTo;
   const triggerLabel = hasRange
-    ? `${filter.label}: ${formatDateRange(committedFrom, committedTo)}`
+    ? `${filter.label}: ${formatDateRange(committedFrom, committedTo, sinceLabel, untilLabel)}`
     : filter.label;
 
   function commit(nextFrom: string, nextTo: string) {

@@ -53,6 +53,8 @@ export interface UiLabels extends FormsDataUiLabels {
   loading: string;
   emptyFilteredTitle: string;
   emptyFilteredDescription: string;
+  /** The same hint for a list that has filters but no search box: no "another keyword". */
+  emptyFilteredFiltersOnlyDescription: string;
   emptyFilteredReset: string;
   /** The small error code under a full-page state, for support ("Kode 404"). */
   statePageCode: (code: string) => string;
@@ -123,6 +125,7 @@ const DEFAULT_UI_LABELS: UiLabels = {
   loading: "Memuat",
   emptyFilteredTitle: "Tidak ada yang cocok",
   emptyFilteredDescription: "Coba kata kunci lain atau hapus filter yang aktif.",
+  emptyFilteredFiltersOnlyDescription: "Ubah atau hapus filter yang aktif.",
   emptyFilteredReset: "Hapus semua filter",
   statePageCode: (code) => `Kode ${code}`,
   alertDismiss: "Tutup pesan",
