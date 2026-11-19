@@ -17,7 +17,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { History, RotateCw } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
@@ -60,88 +60,100 @@ export function WebhookDeliveriesPanel({
     endpointId,
     cursor,
   );
-  const retry = useRetryWebhookDeliveryMutation();
+  const {
+    mutateAsync: retryDelivery,
+    isPending: retryPending,
+    variables: retryingId,
+  } = useRetryWebhookDeliveryMutation();
 
   function resetPaging() {
     setCursors([""]);
   }
 
-  async function handleRetry(delivery: WebhookDelivery) {
-    try {
-      await retry.mutateAsync(delivery.id);
-      toast.success(t("retryEnqueued"));
-    } catch (err) {
-      toast.error(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
-    }
-  }
-
-  const columns: ColumnDef<WebhookDelivery>[] = [
-    {
-      accessorKey: "event_type",
-      header: t("columns.eventType"),
-      meta: { card: "title" },
-      cell: ({ row }) => (
-        <span className="flex flex-col">
-          <span>{eventLabel(row.original.event_type)}</span>
-          <span className="font-mono text-caption text-fg-muted">{row.original.event_type}</span>
-        </span>
-      ),
-    },
-    {
-      id: "status",
-      header: t("columns.status"),
-      meta: { card: "meta", skeleton: "badge" },
-      cell: ({ row }) => {
-        const status = row.original.status;
-        return (
-          <Badge size="sm" tone={deliveryStatusTone(status)}>
-            {t(STATUS_LABEL[status])}
-          </Badge>
+  const handleRetry = useCallback(
+    async (delivery: WebhookDelivery) => {
+      try {
+        await retryDelivery(delivery.id);
+        toast.success(t("retryEnqueued"));
+      } catch (err) {
+        toast.error(
+          err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"),
         );
+      }
+    },
+    [retryDelivery, toast, t, apiErrorMessage],
+  );
+
+  const columns = useMemo<ColumnDef<WebhookDelivery>[]>(
+    () => [
+      {
+        accessorKey: "event_type",
+        header: t("columns.eventType"),
+        meta: { card: "title" },
+        cell: ({ row }) => (
+          <span className="flex flex-col">
+            <span>{eventLabel(row.original.event_type)}</span>
+            <span className="font-mono text-caption text-fg-muted">{row.original.event_type}</span>
+          </span>
+        ),
       },
-    },
-    {
-      accessorKey: "created_at",
-      header: t("columns.when"),
-      meta: { card: "subtitle" },
-      cell: ({ row }) => (
-        <span className="whitespace-nowrap">
-          {formatDateTime(row.original.created_at, { locale, timeZone })}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "attempt_count",
-      header: t("columns.attempts"),
-      meta: { align: "end" },
-      cell: ({ row }) => <span className="tabular-nums">{row.original.attempt_count}</span>,
-    },
-    {
-      id: "reason",
-      header: t("columns.reason"),
-      cell: ({ row }) => {
-        const { last_error: lastError, last_status_code: statusCode } = row.original;
-        const reason = lastError !== "" ? lastError : statusCode ? `HTTP ${statusCode}` : "-";
-        return <span className="text-fg-muted">{reason}</span>;
+      {
+        id: "status",
+        header: t("columns.status"),
+        meta: { card: "meta", skeleton: "badge" },
+        cell: ({ row }) => {
+          const status = row.original.status;
+          return (
+            <Badge size="sm" tone={deliveryStatusTone(status)}>
+              {t(STATUS_LABEL[status])}
+            </Badge>
+          );
+        },
       },
-    },
-    {
-      id: "actions",
-      header: t("columns.actions"),
-      cell: ({ row }) =>
-        row.original.status === "failed" ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<RotateCw />}
-            loading={retry.isPending && retry.variables === row.original.id}
-            onClick={() => void handleRetry(row.original)}
-          >
-            {t("retry")}
-          </Button>
-        ) : null,
-    },
-  ];
+      {
+        accessorKey: "created_at",
+        header: t("columns.when"),
+        meta: { card: "subtitle" },
+        cell: ({ row }) => (
+          <span className="whitespace-nowrap">
+            {formatDateTime(row.original.created_at, { locale, timeZone })}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "attempt_count",
+        header: t("columns.attempts"),
+        meta: { align: "end" },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.attempt_count}</span>,
+      },
+      {
+        id: "reason",
+        header: t("columns.reason"),
+        cell: ({ row }) => {
+          const { last_error: lastError, last_status_code: statusCode } = row.original;
+          const reason = lastError !== "" ? lastError : statusCode ? `HTTP ${statusCode}` : "-";
+          return <span className="text-fg-muted">{reason}</span>;
+        },
+      },
+      {
+        id: "actions",
+        header: t("columns.actions"),
+        cell: ({ row }) =>
+          row.original.status === "failed" ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<RotateCw />}
+              loading={retryPending && retryingId === row.original.id}
+              onClick={() => void handleRetry(row.original)}
+            >
+              {t("retry")}
+            </Button>
+          ) : null,
+      },
+    ],
+    [t, eventLabel, locale, timeZone, retryPending, retryingId, handleRetry],
+  );
 
   const items = data?.data ?? [];
   // A failed read with no error object still counts as failed.

@@ -16,7 +16,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Ban, KeyRound, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
@@ -55,92 +55,95 @@ export function APIKeysPanel(): ReactElement {
     }
   }
 
-  const columns: ColumnDef<APIKey>[] = [
-    {
-      accessorKey: "name",
-      header: t("columns.name"),
-      meta: { card: "title" },
-      cell: ({ row }) => <span className="font-medium text-fg">{row.original.name}</span>,
-    },
-    {
-      id: "permissions",
-      header: t("columns.permissions"),
-      meta: { card: "subtitle", label: t("columns.permissions") },
-      cell: ({ row }) => {
-        const labels = row.original.permissions.map(permissionLabel);
-        const rest = labels.length - SHOWN_PERMISSIONS;
-        return (
-          <span className="flex flex-wrap items-center gap-1" title={labels.join(", ")}>
-            {labels.slice(0, SHOWN_PERMISSIONS).map((label) => (
-              <Badge key={label} size="sm">
-                {label}
-              </Badge>
-            ))}
-            {rest > 0 && (
-              <Badge size="sm" appearance="outline">
-                {t("morePermissions", { count: rest })}
-              </Badge>
-            )}
-          </span>
-        );
+  const columns = useMemo<ColumnDef<APIKey>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        header: t("columns.name"),
+        meta: { card: "title" },
+        cell: ({ row }) => <span className="font-medium text-fg">{row.original.name}</span>,
       },
-    },
-    {
-      id: "status",
-      header: t("columns.status"),
-      meta: { card: "meta", skeleton: "badge" },
-      cell: ({ row }) => {
-        const key = row.original;
-        if (key.revoked_at) {
+      {
+        id: "permissions",
+        header: t("columns.permissions"),
+        meta: { card: "subtitle", label: t("columns.permissions") },
+        cell: ({ row }) => {
+          const labels = row.original.permissions.map(permissionLabel);
+          const rest = labels.length - SHOWN_PERMISSIONS;
           return (
-            <Badge size="sm" tone="danger">
-              {t("statusRevoked")}
+            <span className="flex flex-wrap items-center gap-1" title={labels.join(", ")}>
+              {labels.slice(0, SHOWN_PERMISSIONS).map((label) => (
+                <Badge key={label} size="sm">
+                  {label}
+                </Badge>
+              ))}
+              {rest > 0 && (
+                <Badge size="sm" appearance="outline">
+                  {t("morePermissions", { count: rest })}
+                </Badge>
+              )}
+            </span>
+          );
+        },
+      },
+      {
+        id: "status",
+        header: t("columns.status"),
+        meta: { card: "meta", skeleton: "badge" },
+        cell: ({ row }) => {
+          const key = row.original;
+          if (key.revoked_at) {
+            return (
+              <Badge size="sm" tone="danger">
+                {t("statusRevoked")}
+              </Badge>
+            );
+          }
+          if (key.expires_at && new Date(key.expires_at) <= new Date()) {
+            return (
+              <Badge size="sm" tone="warning">
+                {t("statusExpired")}
+              </Badge>
+            );
+          }
+          return (
+            <Badge size="sm" tone="success">
+              {t("statusActive")}
             </Badge>
           );
-        }
-        if (key.expires_at && new Date(key.expires_at) <= new Date()) {
-          return (
-            <Badge size="sm" tone="warning">
-              {t("statusExpired")}
-            </Badge>
-          );
-        }
-        return (
-          <Badge size="sm" tone="success">
-            {t("statusActive")}
-          </Badge>
-        );
+        },
       },
-    },
-    {
-      id: "lastUsed",
-      header: t("columns.lastUsed"),
-      cell: ({ row }) =>
-        row.original.last_used_at
-          ? formatDateTime(row.original.last_used_at, { locale, timeZone })
-          : t("neverUsed"),
-    },
-    {
-      id: "actions",
-      header: t("columns.actions"),
-      cell: ({ row }) =>
-        row.original.revoked_at ? null : (
-          <RowActionsMenu
-            ariaLabel={t("rowActions", { name: row.original.name })}
-            items={[
-              {
-                label: t("revoke"),
-                icon: <Ban />,
-                tone: "danger",
-                onClick: () => {
-                  setRevoking(row.original);
+      {
+        id: "lastUsed",
+        header: t("columns.lastUsed"),
+        cell: ({ row }) =>
+          row.original.last_used_at
+            ? formatDateTime(row.original.last_used_at, { locale, timeZone })
+            : t("neverUsed"),
+      },
+      {
+        id: "actions",
+        header: t("columns.actions"),
+        cell: ({ row }) =>
+          row.original.revoked_at ? null : (
+            <RowActionsMenu
+              ariaLabel={t("rowActions", { name: row.original.name })}
+              items={[
+                {
+                  label: t("revoke"),
+                  icon: <Ban />,
+                  tone: "danger",
+                  onClick: () => {
+                    setRevoking(row.original);
+                  },
                 },
-              },
-            ]}
-          />
-        ),
-    },
-  ];
+              ]}
+            />
+          ),
+      },
+    ],
+    [t, permissionLabel, locale, timeZone],
+  );
 
   const items = data?.data ?? [];
   // A failed read with no error object still counts as failed.

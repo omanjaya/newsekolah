@@ -63,6 +63,12 @@ export interface DataTableProps<TData> {
    */
   mode?: "local" | "server" | "cursor";
   data: TData[];
+  /**
+   * Memoize the column set (`useMemo` with the values its accessors and
+   * cells read). A new array rebuilds every row, so an accessor that reads
+   * a lookup picks up its new value, but an array built inline on every
+   * render also rebuilds the rows on every parent render.
+   */
   columns: ColumnDef<TData>[];
   rowCount?: number;
   pagination?: PaginationState;

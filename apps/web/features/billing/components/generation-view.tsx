@@ -20,7 +20,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarCheck, CircleSlash, Eye, FilePlus2, Wallet } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
@@ -64,38 +64,42 @@ export function GenerationView(): ReactElement {
   const total = rows.reduce((sum, c) => sum + c.amount_minor, 0);
   const step = result ? 3 : preview ? (rows.length > 0 ? 2 : 1) : 0;
 
-  const columns: ColumnDef<BillCandidate>[] = [
-    {
-      id: "student",
-      header: t("columns.student"),
-      enableSorting: false,
-      meta: { card: "title" },
-      cell: ({ row }) => studentMap.get(row.original.student_user_id)?.name ?? t("unknownStudent"),
-    },
-    {
-      accessorKey: "fee_type_name",
-      header: t("columns.feeType"),
-      enableSorting: false,
-      meta: { card: "subtitle" },
-    },
-    {
-      id: "period",
-      header: t("columns.period"),
-      enableSorting: false,
-      cell: ({ row }) => periodLabel(row.original.period),
-    },
-    {
-      id: "amount",
-      header: t("columns.amount"),
-      enableSorting: false,
-      meta: { align: "end" },
-      cell: ({ row }) => (
-        <span className="tabular-nums">
-          {money(row.original.amount_minor, GENERATION_CURRENCY)}
-        </span>
-      ),
-    },
-  ];
+  const columns = useMemo<ColumnDef<BillCandidate>[]>(
+    () => [
+      {
+        id: "student",
+        header: t("columns.student"),
+        enableSorting: false,
+        meta: { card: "title" },
+        cell: ({ row }) =>
+          studentMap.get(row.original.student_user_id)?.name ?? t("unknownStudent"),
+      },
+      {
+        accessorKey: "fee_type_name",
+        header: t("columns.feeType"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+      },
+      {
+        id: "period",
+        header: t("columns.period"),
+        enableSorting: false,
+        cell: ({ row }) => periodLabel(row.original.period),
+      },
+      {
+        id: "amount",
+        header: t("columns.amount"),
+        enableSorting: false,
+        meta: { align: "end" },
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {money(row.original.amount_minor, GENERATION_CURRENCY)}
+          </span>
+        ),
+      },
+    ],
+    [t, studentMap, periodLabel, money],
+  );
 
   function runPreview() {
     setResult(null);

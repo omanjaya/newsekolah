@@ -1,5 +1,6 @@
 import idShared from "@newsekolah/i18n/messages/id.json";
 import { useTranslations } from "next-intl";
+import { useCallback } from "react";
 
 /**
  * Every `ApiError.code` the shared `errors.*` catalog translates. Derived
@@ -16,11 +17,15 @@ const KNOWN_ERROR_CODES: ReadonlySet<string> = new Set(Object.keys(idShared.erro
  * catalog does not recognize fall back to `fallback` when one is given (a
  * batch row's server `reason`, better than nothing) and otherwise to
  * `errors.UNKNOWN`, rather than throwing or leaking a raw code to the user.
+ * Stable per locale, so a memoized handler or column set can depend on it.
  */
 export function useApiErrorMessage() {
   const t = useTranslations("errors");
-  return (code: string, fallback?: string): string => {
-    if (KNOWN_ERROR_CODES.has(code)) return t(code);
-    return fallback ?? t("UNKNOWN");
-  };
+  return useCallback(
+    (code: string, fallback?: string): string => {
+      if (KNOWN_ERROR_CODES.has(code)) return t(code);
+      return fallback ?? t("UNKNOWN");
+    },
+    [t],
+  );
 }

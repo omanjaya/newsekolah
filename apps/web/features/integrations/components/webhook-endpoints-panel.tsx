@@ -14,7 +14,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { History, Pencil, Plus, Trash2, Webhook } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
@@ -58,92 +58,95 @@ export function WebhookEndpointsPanel({
     }
   }
 
-  const columns: ColumnDef<WebhookEndpoint>[] = [
-    {
-      accessorKey: "url",
-      header: t("columns.url"),
-      meta: { card: "title" },
-      cell: ({ row }) => (
-        <span className="break-all font-mono text-body-sm text-fg">{row.original.url}</span>
-      ),
-    },
-    {
-      id: "eventTypes",
-      header: t("columns.eventTypes"),
-      meta: { card: "subtitle", label: t("columns.eventTypes") },
-      cell: ({ row }) => {
-        const events = row.original.event_types;
-        const rest = events.length - SHOWN_EVENTS;
-        return (
-          <span
-            className="flex flex-wrap items-center gap-1"
-            title={events.map((eventType) => eventLabel(eventType)).join(", ")}
-          >
-            {events.slice(0, SHOWN_EVENTS).map((eventType) => (
-              <Badge key={eventType} size="sm" title={eventType}>
-                {eventLabel(eventType)}
-              </Badge>
-            ))}
-            {rest > 0 && (
-              <Badge size="sm" appearance="outline">
-                {t("moreEvents", { count: rest })}
-              </Badge>
-            )}
-          </span>
-        );
+  const columns = useMemo<ColumnDef<WebhookEndpoint>[]>(
+    () => [
+      {
+        accessorKey: "url",
+        header: t("columns.url"),
+        meta: { card: "title" },
+        cell: ({ row }) => (
+          <span className="break-all font-mono text-body-sm text-fg">{row.original.url}</span>
+        ),
       },
-    },
-    {
-      id: "status",
-      header: t("columns.status"),
-      meta: { card: "meta", skeleton: "badge" },
-      cell: ({ row }) => {
-        const endpoint = row.original;
-        return endpoint.status === "disabled" ? (
-          <Badge size="sm" tone="danger" title={endpoint.disabled_reason}>
-            {t("statusDisabled")}
-          </Badge>
-        ) : (
-          <Badge size="sm" tone="success">
-            {t("statusActive")}
-          </Badge>
-        );
+      {
+        id: "eventTypes",
+        header: t("columns.eventTypes"),
+        meta: { card: "subtitle", label: t("columns.eventTypes") },
+        cell: ({ row }) => {
+          const events = row.original.event_types;
+          const rest = events.length - SHOWN_EVENTS;
+          return (
+            <span
+              className="flex flex-wrap items-center gap-1"
+              title={events.map((eventType) => eventLabel(eventType)).join(", ")}
+            >
+              {events.slice(0, SHOWN_EVENTS).map((eventType) => (
+                <Badge key={eventType} size="sm" title={eventType}>
+                  {eventLabel(eventType)}
+                </Badge>
+              ))}
+              {rest > 0 && (
+                <Badge size="sm" appearance="outline">
+                  {t("moreEvents", { count: rest })}
+                </Badge>
+              )}
+            </span>
+          );
+        },
       },
-    },
-    {
-      id: "actions",
-      header: t("columns.actions"),
-      cell: ({ row }) => (
-        <RowActionsMenu
-          ariaLabel={t("rowActions", { url: row.original.url })}
-          items={[
-            {
-              label: t("viewDeliveries"),
-              icon: <History />,
-              onClick: () => {
-                onSelectEndpoint(row.original.id);
+      {
+        id: "status",
+        header: t("columns.status"),
+        meta: { card: "meta", skeleton: "badge" },
+        cell: ({ row }) => {
+          const endpoint = row.original;
+          return endpoint.status === "disabled" ? (
+            <Badge size="sm" tone="danger" title={endpoint.disabled_reason}>
+              {t("statusDisabled")}
+            </Badge>
+          ) : (
+            <Badge size="sm" tone="success">
+              {t("statusActive")}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: t("columns.actions"),
+        cell: ({ row }) => (
+          <RowActionsMenu
+            ariaLabel={t("rowActions", { url: row.original.url })}
+            items={[
+              {
+                label: t("viewDeliveries"),
+                icon: <History />,
+                onClick: () => {
+                  onSelectEndpoint(row.original.id);
+                },
               },
-            },
-            {
-              label: t("edit"),
-              icon: <Pencil />,
-              onClick: () => {
-                setDialogTarget(row.original);
+              {
+                label: t("edit"),
+                icon: <Pencil />,
+                onClick: () => {
+                  setDialogTarget(row.original);
+                },
               },
-            },
-            {
-              label: t("delete"),
-              icon: <Trash2 />,
-              tone: "danger",
-              onClick: () => {
-                setDeleting(row.original);
+              {
+                label: t("delete"),
+                icon: <Trash2 />,
+                tone: "danger",
+                onClick: () => {
+                  setDeleting(row.original);
+                },
               },
-            },
-          ]}
-        />
-      ),
-    },
-  ];
+            ]}
+          />
+        ),
+      },
+    ],
+    [t, eventLabel, onSelectEndpoint],
+  );
 
   const items = data?.data ?? [];
   // A failed read with no error object still counts as failed.
