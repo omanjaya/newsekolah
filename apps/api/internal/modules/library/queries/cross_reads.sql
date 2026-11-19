@@ -22,6 +22,9 @@ select date, end_date from academic_calendar_events
 where tenant_id = $1 and kind = 'holiday' and date <= $3 and end_date >= $2;
 
 -- name: LookupLibraryMembers :many
+-- A member whose number, NIS or username equals the query comes first: the
+-- substring match is capped, and a short code (a hand-set member number
+-- such as "12") must not lose its holder behind names that only contain it.
 select u.id as user_id, u.name as user_name, u.username, coalesce(sp.nis, '') as nis, coalesce(lm.member_no, '') as member_no
 from users u
 left join student_profiles sp on sp.user_id = u.id
@@ -29,7 +32,10 @@ left join library_members lm on lm.user_id = u.id and lm.tenant_id = u.tenant_id
 where u.tenant_id = $1 and u.deleted_at is null
   and (u.name ilike '%' || sqlc.arg(query)::text || '%' or u.username ilike '%' || sqlc.arg(query)::text || '%'
     or sp.nis ilike '%' || sqlc.arg(query)::text || '%' or lm.member_no ilike '%' || sqlc.arg(query)::text || '%')
-order by u.name
+order by coalesce(lower(lm.member_no) = lower(sqlc.arg(query)::text)
+    or lower(sp.nis) = lower(sqlc.arg(query)::text)
+    or lower(u.username) = lower(sqlc.arg(query)::text), false) desc,
+  u.name
 limit $2;
 
 -- name: LookupLibraryCopies :many

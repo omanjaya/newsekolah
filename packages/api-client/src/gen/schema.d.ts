@@ -21690,7 +21690,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Matches (at most 8, members and copies combined) */
+            /** @description Matches (at most 8, members and copies combined), a member whose member_no, NIS or username equals q first */
             200: {
                 headers: {
                     [name: string]: unknown;

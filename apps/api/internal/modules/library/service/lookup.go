@@ -19,7 +19,9 @@ type LookupResult struct {
 
 // Lookup is the circulation desk's typeahead: matches on member name,
 // member_no, NIS, username, copy barcode, or title, capped at 8 combined
-// results (old app: GET /lookup).
+// results (old app: GET /lookup). A member whose number, NIS or username
+// equals the query is listed first, so an exact card code resolves even
+// when more than 8 others merely contain it.
 func (s *Service) Lookup(ctx context.Context, tenantID uuid.UUID, query string) ([]LookupResult, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err

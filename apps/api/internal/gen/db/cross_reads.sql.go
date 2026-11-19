@@ -1057,7 +1057,10 @@ left join library_members lm on lm.user_id = u.id and lm.tenant_id = u.tenant_id
 where u.tenant_id = $1 and u.deleted_at is null
   and (u.name ilike '%' || $3::text || '%' or u.username ilike '%' || $3::text || '%'
     or sp.nis ilike '%' || $3::text || '%' or lm.member_no ilike '%' || $3::text || '%')
-order by u.name
+order by coalesce(lower(lm.member_no) = lower($3::text)
+    or lower(sp.nis) = lower($3::text)
+    or lower(u.username) = lower($3::text), false) desc,
+  u.name
 limit $2
 `
 
@@ -1075,6 +1078,9 @@ type LookupLibraryMembersRow struct {
 	MemberNo string    `json:"member_no"`
 }
 
+// A member whose number, NIS or username equals the query comes first: the
+// substring match is capped, and a short code (a hand-set member number
+// such as "12") must not lose its holder behind names that only contain it.
 func (q *Queries) LookupLibraryMembers(ctx context.Context, arg LookupLibraryMembersParams) ([]LookupLibraryMembersRow, error) {
 	rows, err := q.db.Query(ctx, lookupLibraryMembers, arg.TenantID, arg.Limit, arg.Query)
 	if err != nil {

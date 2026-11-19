@@ -1429,6 +1429,9 @@ type Querier interface {
 	// every Indonesian timezone.
 	LoginHistogramByHour(ctx context.Context, arg LoginHistogramByHourParams) ([]LoginHistogramByHourRow, error)
 	LookupLibraryCopies(ctx context.Context, arg LookupLibraryCopiesParams) ([]LookupLibraryCopiesRow, error)
+	// A member whose number, NIS or username equals the query comes first: the
+	// substring match is capped, and a short code (a hand-set member number
+	// such as "12") must not lose its holder behind names that only contain it.
 	LookupLibraryMembers(ctx context.Context, arg LookupLibraryMembersParams) ([]LookupLibraryMembersRow, error)
 	MarkAllNotificationsRead(ctx context.Context, arg MarkAllNotificationsReadParams) error
 	MarkAnnouncementRead(ctx context.Context, arg MarkAnnouncementReadParams) error

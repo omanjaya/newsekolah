@@ -63,6 +63,8 @@ export function useLibraryTitleNameMutation() {
  * flow's member-card step): `/v1/library/lookup` is a fuzzy multi-match
  * search, so only a member whose number, NIS or username equals the code is
  * accepted (see `matchMemberByCode`); anything else is none or ambiguous.
+ * The endpoint lists exact matches first, so its cap of 8 never drops the
+ * holder of a short code that other members' names merely contain.
  * `fields` narrows which identifiers count (the self-service kiosk accepts
  * only the printed member number).
  */

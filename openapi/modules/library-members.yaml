@@ -563,7 +563,7 @@ paths:
           }
       responses:
         "200":
-          description: Matches (at most 8, members and copies combined)
+          description: Matches (at most 8, members and copies combined), a member whose member_no, NIS or username equals q first
           content:
             application/json:
               schema:
