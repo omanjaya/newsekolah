@@ -447,7 +447,7 @@
       "title": "Daftar anggota massal",
       "description": "Mendaftarkan setiap pengguna pada peran ini yang belum menjadi anggota.",
       "role": "Peran",
-      "classOptional": "Kelas (opsional)",
+      "class": "Kelas",
       "classAll": "Semua kelas",
       "memberType": "Jenis anggota",
       "memberTypePlaceholder": "Pilih jenis anggota",
@@ -501,8 +501,8 @@
       "userPlaceholder": "Pilih pengguna",
       "memberType": "Jenis anggota",
       "memberTypePlaceholder": "Pilih jenis anggota",
-      "memberNo": "Nomor anggota (opsional)",
-      "memberNoPlaceholder": "Dibuat otomatis bila dikosongkan",
+      "memberNo": "Nomor anggota",
+      "memberNoPlaceholder": "Dibuat otomatis jika kosong",
       "notes": "Catatan",
       "cancel": "Batal",
       "submit": "Daftarkan"
@@ -867,7 +867,7 @@
       "groupName": "Nama rombongan",
       "groupSize": "Jumlah orang",
       "purpose": "Keperluan",
-      "purposePlaceholder": "Opsional",
+      "purposePlaceholder": "Misalnya membaca atau mengerjakan tugas",
       "cancel": "Batal",
       "submit": "Simpan"
     }
