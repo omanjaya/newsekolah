@@ -5,7 +5,7 @@
   "description": "Izinkan staf dan guru masuk dengan akun Google Workspace sekolah.",
   "statusTitle": "Di halaman masuk",
   "statusOn": "Aktif",
-  "statusOff": "Tidak aktif",
+  "statusOff": "Nonaktif",
   "statusUnset": "Belum diatur",
   "statusBody": "Saat aktif, tombol \"Masuk dengan Google\" muncul di halaman masuk untuk sekolah ini.",
   "enabledToggleLabel": "Tampilkan tombol Masuk dengan Google",

@@ -162,6 +162,9 @@ Beranda per anak: status hari ini, izin aktif, pengumuman, notifikasi. Persetuju
 - Notifikasi: preferensi per kategori dan kanal; ringkasan harian sebagai opsi agar tidak membanjiri guru.
 - Mode gelap mengikuti sistem, dapat dipaksa; kontras diperiksa otomatis.
 - Bahasa: Indonesia baku ringan, kata kerja pada tombol, tanpa tanda seru dan emoji.
+- Glosarium istilah antarmuka (satu kata untuk satu konsep di semua layar):
+  - **Unduh**: setiap aksi yang memberi pengguna sebuah berkas ("Unduh katalog", "Unduh nilai", "Unduh laporan", "Unduh templat"), bukan "Ekspor". Format berkas disebut dengan kata biasa ("Excel", "PDF") hanya bila pengguna memilih di antara beberapa format; tanpa akhiran seperti "(XLSX)". "Ekspor" hanya untuk pekerjaan server yang terpisah (ekspor data sekolah di platform).
+  - **Nonaktif**: status sesuatu yang dimatikan (lencana status, fitur seperti SSO dan verifikasi dua langkah), sepasang dengan aksi "Nonaktifkan"; filter berbunyi "Tampilkan yang nonaktif". Tidak memakai "Tidak aktif".
 
 ## 6. Aksesibilitas
 

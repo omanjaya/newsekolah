@@ -62,7 +62,7 @@
     "searchPlaceholder": "Search title, author, or ISBN",
     "addTitle": "Add title",
     "browseCopies": "Browse copies",
-    "exportCatalogue": "Export catalogue (XLSX)",
+    "exportCatalogue": "Download catalogue",
     "more": "More",
     "filters": {
       "materialType": "Material type",
@@ -690,7 +690,7 @@
       "result": "Result"
     },
     "uploadDescription": "Download the template, fill it in, then upload the completed file.",
-    "downloadTemplate": "Download XLSX template",
+    "downloadTemplate": "Download template",
     "uploadLabel": "Upload a collection file",
     "selectedFile": "Selected file: {name}",
     "emptyFile": "The file has no data rows. Check the filled template again.",
@@ -923,7 +923,7 @@
       "closed": "Closed"
     },
     "emptyTitle": "No stocktake sessions yet",
-    "downloadReport": "Download report (XLSX)",
+    "downloadReport": "Download report",
     "progress": {
       "heading": "Stocktake progress",
       "live": "Refreshes every 5 seconds while the session is open.",

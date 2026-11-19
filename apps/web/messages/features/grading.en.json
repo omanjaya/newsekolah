@@ -34,7 +34,7 @@
     "unpublishConfirmBody": "Students and parents will no longer see this subject's grades until it is published again.",
     "confirmPublish": "Publish",
     "confirmUnpublish": "Hide",
-    "exportGradebook": "Export scores",
+    "exportGradebook": "Download scores",
     "exportDefaultTitle": "Gradebook",
     "exportColumnName": "Student Name",
     "exportColumnAverage": "Average",

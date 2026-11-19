@@ -7,7 +7,7 @@
     "searchPlaceholder": "Cari nama ekstrakurikuler",
     "eyebrow": "Kegiatan",
     "title": "Ekstrakurikuler",
-    "includeInactive": "Tampilkan yang tidak aktif",
+    "includeInactive": "Tampilkan yang nonaktif",
     "add": "Tambah ekstrakurikuler",
     "edit": "Ubah",
     "rowActions": "Aksi untuk {name}",
@@ -24,7 +24,7 @@
     },
     "status": {
       "active": "Aktif",
-      "inactive": "Tidak aktif"
+      "inactive": "Nonaktif"
     },
     "weekdays": {
       "sunday": "Minggu",
@@ -55,11 +55,11 @@
     },
     "delete": "Hapus",
     "deleteTitle": "Hapus ekstrakurikuler?",
-    "deleteBody": "Ekstrakurikuler diarsipkan dan tidak bisa dibuka dari daftar. Riwayat keanggotaan dan presensi tetap tersimpan. Gunakan status tidak aktif jika masih perlu dibuka kembali.",
+    "deleteBody": "Ekstrakurikuler diarsipkan dan tidak bisa dibuka dari daftar. Riwayat keanggotaan dan presensi tetap tersimpan. Gunakan status nonaktif jika masih perlu dibuka kembali.",
     "deleted": "Ekstrakurikuler dihapus",
     "policy": {
       "title": "Kebijakan keanggotaan",
-      "description": "Batas jumlah ekstrakurikuler per siswa. Isi 0 untuk tanpa batas. Berlaku saat pendaftaran anggota berikutnya. Keanggotaan di ekstrakurikuler tidak aktif tetap dihitung; keanggotaan di ekstrakurikuler yang dihapus tidak dihitung.",
+      "description": "Batas jumlah ekstrakurikuler per siswa. Isi 0 untuk tanpa batas. Berlaku saat pendaftaran anggota berikutnya. Keanggotaan di ekstrakurikuler nonaktif tetap dihitung; keanggotaan di ekstrakurikuler yang dihapus tidak dihitung.",
       "limit": "Maksimum ekstrakurikuler",
       "saved": "Kebijakan tersimpan",
       "loadError": "Kebijakan gagal dimuat.",
