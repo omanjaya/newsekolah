@@ -233,6 +233,7 @@ export function ExpectedGuestsView(): ReactElement {
           emptyState={
             onlyPending === "true" ? (
               <FilteredEmptyState
+                searchable={false}
                 onReset={() => {
                   setOnlyPending("");
                 }}

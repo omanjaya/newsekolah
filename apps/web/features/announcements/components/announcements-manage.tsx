@@ -280,6 +280,7 @@ export function AnnouncementsManage({
         emptyState={
           status ? (
             <FilteredEmptyState
+              searchable={false}
               onReset={() => {
                 setStatus("");
                 setCursors([""]);

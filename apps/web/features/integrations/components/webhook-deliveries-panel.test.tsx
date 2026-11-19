@@ -79,4 +79,12 @@ describe("WebhookDeliveriesPanel filters", () => {
     expect(screen.getAllByRole("button", { name: "Coba lagi" }).length).toBeGreaterThan(0);
     expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
   });
+
+  // The log has an endpoint filter but no search box.
+  it("does not suggest another keyword when the filter matches nothing", () => {
+    render(<WebhookDeliveriesPanel endpointId="endpoint-a" onEndpointChange={vi.fn()} />);
+
+    expect(screen.getAllByText("Ubah atau hapus filter yang aktif.").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/kata kunci/)).not.toBeInTheDocument();
+  });
 });

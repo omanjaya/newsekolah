@@ -120,4 +120,13 @@ describe("BillsListView filters", () => {
       expect.anything(),
     );
   });
+
+  // The list has filters but no search box.
+  it("does not suggest another keyword when the filters match nothing", () => {
+    window.history.replaceState(null, "", "/billing/bills?status=unpaid");
+    render(<BillsListView />);
+
+    expect(screen.getAllByText("Ubah atau hapus filter yang aktif.").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/kata kunci/)).not.toBeInTheDocument();
+  });
 });

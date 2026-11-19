@@ -189,6 +189,7 @@ export function BillsListView(): ReactElement {
         emptyState={
           filtered ? (
             <FilteredEmptyState
+              searchable={false}
               onReset={() => {
                 setPeriod("");
                 setStatus("");
