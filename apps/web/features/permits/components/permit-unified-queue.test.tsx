@@ -1,5 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { endExitAnimation, playExitAnimations } from "@newsekolah/ui/test/exit-animation";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState, type ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PermitUnifiedQueue } from "./permit-unified-queue";
@@ -358,6 +360,82 @@ describe("permit queue late arrival actions", () => {
     });
     expect(heading).toHaveAttribute("tabindex", "-1");
     heading.remove();
+  });
+
+  // Closing cleared the row at once, so the sheet sliding out blanked to
+  // the fallback title with no body (audit r6-n14), and the host heard of
+  // the close before the slide, so the inbox's all-clear unmounted the
+  // sheet mid-animation (audit r6-n15).
+  it("keeps its row while it animates closed and reports the close once it is gone", async () => {
+    const restore = playExitAnimations();
+    try {
+      mocks.directory.mockReturnValue(
+        new Map([["student-a", { id: "student-a", name: "Siswa a" }]]),
+      );
+      mocks.late.mockReturnValue({
+        ...emptyResult,
+        data: { data: [{ ...lateItem("a"), class_name: "X-A" }] },
+      });
+      const onSheetOpenChange = vi.fn();
+      const user = userEvent.setup({ pointerEventsCheck: 0 });
+      render(<PermitUnifiedQueue onSheetOpenChange={onSheetOpenChange} />);
+      await user.click(screen.getByRole("button", { name: "open" }));
+      const dialog = await screen.findByRole("dialog");
+      await user.keyboard("{Escape}");
+
+      expect(dialog).toHaveAttribute("data-state", "closed");
+      expect(dialog).toHaveAccessibleName("reviewTitle");
+      expect(dialog).toHaveAccessibleDescription("Siswa a · X-A");
+      expect(within(dialog).getByTestId("late-review-form")).toBeInTheDocument();
+      expect(onSheetOpenChange).toHaveBeenLastCalledWith(true);
+
+      endExitAnimation(dialog);
+      await waitFor(() => {
+        expect(onSheetOpenChange).toHaveBeenLastCalledWith(false);
+      });
+      expect(dialog).not.toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it("lets a host swap the queue out after the last approval, with focus on what replaced it", async () => {
+    function Host({ cleared }: { cleared: boolean }): ReactElement {
+      const [sheetOpen, setSheetOpen] = useState(false);
+      return cleared && !sheetOpen ? (
+        <p id="all-clear">all-clear</p>
+      ) : (
+        <PermitUnifiedQueue
+          onSheetOpenChange={setSheetOpen}
+          returnFocusFallback={() => document.getElementById("all-clear")}
+        />
+      );
+    }
+    const restore = playExitAnimations();
+    try {
+      mocks.late.mockReturnValue({ ...emptyResult, data: { data: [lateItemAtLeadership("b")] } });
+      const user = userEvent.setup({ pointerEventsCheck: 0 });
+      const { rerender } = render(<Host cleared={false} />);
+      await user.click(screen.getByRole("button", { name: "open" }));
+      const dialog = await screen.findByRole("dialog");
+
+      // The scan went through: nothing waits any more.
+      mocks.late.mockReturnValue(emptyResult);
+      rerender(<Host cleared />);
+      await user.click(within(dialog).getByRole("button", { name: "student-scanned" }));
+
+      // Still sliding out, still saying what it said.
+      expect(dialog).toHaveAttribute("data-state", "closed");
+      expect(within(dialog).getByTestId("approve-panel")).toBeInTheDocument();
+      expect(screen.queryByText("all-clear")).not.toBeInTheDocument();
+
+      endExitAnimation(dialog);
+      await waitFor(() => {
+        expect(screen.getByText("all-clear")).toHaveFocus();
+      });
+    } finally {
+      restore();
+    }
   });
 
   it("opens the approver's stage QR for a late arrival waiting at a QR stage", async () => {

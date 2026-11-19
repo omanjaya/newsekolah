@@ -135,6 +135,16 @@ export function HomeroomView(): ReactElement {
   const rows = data?.data ?? [];
   const isFiltered = search !== "" || statusCode !== "";
 
+  // A day still to come has had no lessons (ISO dates compare as
+  // strings): its unrecorded sessions are "not yet", so nobody needs
+  // attention and no guardian a call (audit r6-n4).
+  const upcoming = date > today;
+
+  // On a day still to come the INCOMPLETE option reads "not yet", as the
+  // rows' badges do, so a deep link or a pick never shows "incomplete"
+  // over them.
+  const statusOptionLabel = (code: (typeof STATUS_FILTER_CODES)[number]): string =>
+    upcoming && code === "INCOMPLETE" ? t("upcomingCode") : t(`codes.${code}`);
   const filters: DataTableFilterDef[] = [
     {
       id: "status",
@@ -144,13 +154,16 @@ export function HomeroomView(): ReactElement {
         replaceStatusCode(value as (typeof STATUS_VALUES)[number]);
         setPagination((p) => ({ ...p, pageIndex: 0 }));
       },
-      options: STATUS_FILTER_CODES.map((code) => ({ value: code, label: t(`codes.${code}`) })),
+      options: STATUS_FILTER_CODES.map((code) => ({ value: code, label: statusOptionLabel(code) })),
     },
   ];
 
   const attentionRows = useMemo(
-    () => (dashboard.data?.data ?? []).filter((row) => ATTENTION_CODES.has(row.status_code)),
-    [dashboard.data],
+    () =>
+      upcoming
+        ? []
+        : (dashboard.data?.data ?? []).filter((row) => ATTENTION_CODES.has(row.status_code)),
+    [dashboard.data, upcoming],
   );
   const disciplineRows = useMemo(
     () => (dashboard.data?.data ?? []).filter((row) => (row.violation_count ?? 0) > 0),
@@ -188,6 +201,9 @@ export function HomeroomView(): ReactElement {
         meta: { card: "meta" },
         cell: ({ row }) => {
           const code = row.original.status_code;
+          if (upcoming && code === "INCOMPLETE") {
+            return <Badge tone="neutral">{t("upcomingCode")}</Badge>;
+          }
           const token = statusToken(code);
           return token ? (
             <StatusBadge status={token} label={t(`codes.${code}`)} />
@@ -201,7 +217,7 @@ export function HomeroomView(): ReactElement {
         header: t("columns.sessions"),
         enableSorting: false,
         cell: ({ row }) => (
-          <span className={row.original.complete ? undefined : "text-warning"}>
+          <span className={row.original.complete || upcoming ? undefined : "text-warning"}>
             {row.original.submitted_sessions}/{row.original.expected_sessions}
           </span>
         ),
@@ -248,7 +264,7 @@ export function HomeroomView(): ReactElement {
           ]
         : []),
     ],
-    [t, disciplineOn],
+    [t, disciplineOn, upcoming],
   );
 
   const access = navAccessFromMe(me);

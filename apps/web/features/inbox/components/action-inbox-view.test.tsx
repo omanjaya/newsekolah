@@ -30,10 +30,12 @@ vi.mock("../use-action-inbox-count", () => ({ useActionInboxSummary: mocks.summa
 vi.mock("../../permits/components/permit-unified-queue", async () => {
   const { Dialog, DialogContent } = await import("@newsekolah/ui");
   const { useState } = await import("react");
+  const { flushSync } = await import("react-dom");
   /**
    * The queue's sheet in miniature: a real dialog opened from a row's
    * button, which closes itself (as an approved stage does) after the
-   * row, and its button, left the queue.
+   * row, and its button, left the queue. As the real queue does, it
+   * reports the close once the sheet has gone, before focus is placed.
    */
   function PermitUnifiedQueue({
     onSheetOpenChange,
@@ -64,13 +66,20 @@ vi.mock("../../permits/components/permit-unified-queue", async () => {
           </button>
         )}
         <Dialog open={open}>
-          <DialogContent title="sheet" returnFocusFallback={returnFocusFallback}>
+          <DialogContent
+            title="sheet"
+            returnFocusFallback={returnFocusFallback}
+            onCloseAutoFocus={() => {
+              flushSync(() => {
+                onSheetOpenChange?.(false);
+              });
+            }}
+          >
             <button
               type="button"
               onClick={() => {
                 setRowGone(true);
                 setOpen(false);
-                onSheetOpenChange?.(false);
               }}
             >
               approved-close
@@ -184,7 +193,10 @@ describe("ActionInboxView", () => {
     rerender(<ActionInboxView />);
     fireEvent.click(screen.getByRole("button", { name: "approved-close" }));
 
-    const allClear = screen.getByText("emptyTitle").closest<HTMLElement>("#inbox-all-clear");
+    // The swap waits for the sheet to go, so it is not cut short.
+    const allClear = (await screen.findByText("emptyTitle")).closest<HTMLElement>(
+      "#inbox-all-clear",
+    );
     expect(allClear).not.toBeNull();
     await waitFor(() => {
       expect(allClear).toHaveFocus();

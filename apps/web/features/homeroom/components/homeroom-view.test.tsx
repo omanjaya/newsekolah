@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   rememberedSearch: "",
   date: "2026-09-29",
   setDate: vi.fn(),
+  attentionRows: [] as unknown[],
 }));
 
 vi.mock("next-intl", () => ({
@@ -56,7 +57,12 @@ vi.mock("../../attendance/lib/status-tokens", () => ({ statusToken: () => undefi
 vi.mock("../../permits/api", () => ({
   useLeaveReviewQueueQuery: () => ({ data: { data: [] }, isLoading: false }),
 }));
-vi.mock("./homeroom-dashboard", () => ({ HomeroomDashboard: () => null }));
+vi.mock("./homeroom-dashboard", () => ({
+  HomeroomDashboard: ({ attentionRows }: { attentionRows: unknown[] }) => {
+    mocks.attentionRows = attentionRows;
+    return null;
+  },
+}));
 vi.mock("./homeroom-permits-tab", () => ({ HomeroomPermitsTab: () => <div>permits-panel</div> }));
 vi.mock("./homeroom-discipline-tab", () => ({
   HomeroomDisciplineTab: () => <div>discipline-panel</div>,
@@ -86,6 +92,7 @@ describe("HomeroomView filters", () => {
       isLoading: false,
     });
     mocks.permissions = new Set();
+    mocks.date = "2026-09-29";
     window.history.replaceState(null, "", "/homeroom?tab=attendance");
   });
 
@@ -124,6 +131,20 @@ describe("HomeroomView filters", () => {
     expect(
       screen.getByRole("button", { name: "statusFilterLabel: codes.INCOMPLETE" }),
     ).toBeInTheDocument();
+  });
+
+  // A day still to come reads "not yet" on the chip and in the list, as
+  // the rows' badges do, never "incomplete" (audit r6-n4).
+  it("labels the INCOMPLETE filter as not yet on a day still to come", async () => {
+    mocks.date = "2026-09-30";
+    window.history.replaceState(null, "", "/homeroom?tab=attendance&status=INCOMPLETE");
+    const user = userEvent.setup();
+    render(<HomeroomView />);
+
+    const chip = screen.getByRole("button", { name: "statusFilterLabel: upcomingCode" });
+    await user.click(chip);
+    expect(await screen.findByRole("button", { name: "upcomingCode" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "codes.INCOMPLETE" })).not.toBeInTheDocument();
   });
 
   it("clears the status filter from its chip's remove control", async () => {
@@ -388,6 +409,40 @@ describe("HomeroomView overview", () => {
 
     expect(screen.getByText("noLessonsMetaOn")).toBeInTheDocument();
     expect(screen.queryByText("noLessonsMeta")).not.toBeInTheDocument();
+  });
+
+  // The API reports a day still to come as INCOMPLETE: its sessions are
+  // not submitted because they have not happened (audit r6-n4).
+  it("lists nobody for a guardian call on a day still to come", async () => {
+    mocks.date = "2026-09-30";
+    mocks.useHomeroomAttendanceQuery.mockReturnValue({
+      data: {
+        data: [
+          {
+            student_user_id: "s1",
+            name: "Siswa Satu",
+            status_code: "INCOMPLETE",
+            complete: false,
+            submitted_sessions: 0,
+            expected_sessions: 2,
+          },
+        ],
+        total: 1,
+        status_counts: { INCOMPLETE: 1 },
+      },
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<HomeroomView />);
+
+    expect(screen.getByRole("heading", { name: "upcomingTitle" })).toBeInTheDocument();
+    expect(screen.queryByText("attentionTitleOn")).not.toBeInTheDocument();
+    // No guardian to call: the contact card gets nobody.
+    expect(mocks.attentionRows).toEqual([]);
+
+    await user.click(screen.getByRole("tab", { name: "tabs.attendance" }));
+    expect(screen.getAllByText("upcomingCode").length).toBeGreaterThan(0);
+    expect(screen.queryByText("codes.INCOMPLETE")).not.toBeInTheDocument();
   });
 
   it("names the chosen day instead of 'today' on another date", () => {

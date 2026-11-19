@@ -19,6 +19,7 @@ import { Inbox } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
 import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
@@ -48,7 +49,10 @@ import { PermitQueueCard } from "./permit-queue-card";
  * The sheet keeps its row in local state, so a refetch that drops the row
  * (the stage it approves has passed) leaves it open; a host that swaps the
  * whole queue out when nothing is left waiting (the inbox's all-clear)
- * waits for the sheet to close, so its success line can be read.
+ * waits for the sheet to close, so its success line can be read. The
+ * close is reported once the sheet has finished sliding out, so the swap
+ * never cuts its animation short (audit r6-n15), and the sheet keeps its
+ * row's title and body while it animates closed (audit r6-n14).
  *
  * When the sheet closes after its row left the queue (the approval it
  * showed went through), focus moves to the next row's "Tindak lanjuti",
@@ -80,17 +84,34 @@ export function PermitUnifiedQueue({
   const late = useLateArrivalQueueQuery(canLate);
   const review = useReviewLeaveRequestMutation();
   const [search, setSearch] = useState("");
+  // The sheet's row stays after the sheet starts closing, so its title
+  // and body do not blank while it animates out; `sheetOpen` alone says
+  // whether it is up.
   const [selected, setSelected] = useState<PermitQueueRow | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   // Where the open sheet's row sat in the list, so focus can land on the
   // row that takes its place once the row is gone.
   const selectedIndex = useRef(0);
   const listRef = useRef<HTMLUListElement>(null);
-  // Closing passes no index, so the opener's position survives until
-  // focus has moved.
-  const select = (row: PermitQueueRow | null, index?: number) => {
-    if (row !== null && index !== undefined) selectedIndex.current = index;
+  const openSheet = (row: PermitQueueRow, index: number) => {
+    selectedIndex.current = index;
     setSelected(row);
-    onSheetOpenChange?.(row !== null);
+    setSheetOpen(true);
+    onSheetOpenChange?.(true);
+  };
+  // Closing keeps the row and the opener's position until focus has moved.
+  const closeSelected = () => {
+    setSheetOpen(false);
+  };
+  // Radix runs this once the sheet has animated out and unmounted, just
+  // before focus is placed. The host may swap the queue out now (the
+  // inbox's all-clear), and does so at once, so the focus fallback below
+  // finds what replaced the queue.
+  const afterSheetClosed = () => {
+    flushSync(() => {
+      setSelected(null);
+      onSheetOpenChange?.(false);
+    });
   };
   const [pendingId, setPendingId] = useState<string | null>(null);
   const sources: {
@@ -192,9 +213,6 @@ export function PermitUnifiedQueue({
       : selected?.type === "exit" && selected.status === "in_progress" && canApprove
         ? { kind: "exit_permit" as const, stage: selected.exit.current_stage?.label }
         : null;
-  const closeSelected = () => {
-    select(null);
-  };
   // The opener left with its row: the row now in its place, else the last.
   const focusAfterSheet = () => {
     const openers = listRef.current?.querySelectorAll<HTMLElement>("[data-queue-open]");
@@ -234,7 +252,7 @@ export function PermitUnifiedQueue({
             rejectLeave(row.id, reason);
           }}
           onOpenDetail={() => {
-            select(row, index);
+            openSheet(row, index);
           }}
         />
       ),
@@ -324,12 +342,13 @@ export function PermitUnifiedQueue({
         </ul>
       )}
       <Dialog
-        open={selected !== null}
+        open={sheetOpen}
         onOpenChange={(open) => {
-          if (!open) select(null);
+          if (!open) closeSelected();
         }}
       >
         <DialogContent
+          onCloseAutoFocus={afterSheetClosed}
           returnFocusFallback={focusAfterSheet}
           title={
             selectedApproval
