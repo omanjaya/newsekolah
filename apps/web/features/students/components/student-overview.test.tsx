@@ -1,3 +1,4 @@
+import { ApiError } from "@newsekolah/api-client";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,6 +8,7 @@ const risk = vi.hoisted(() => ({
   current_average: 0,
   previous_average: 0,
   has_grade_trend: false,
+  error: undefined as ApiError | undefined,
 }));
 
 vi.mock("next-intl", () => ({
@@ -33,25 +35,29 @@ vi.mock("../../mentoring/api", () => ({
 vi.mock("../../school/api", () => ({ useUserQuery: () => ({ data: undefined }) }));
 vi.mock("../../analytics/api", () => ({
   useStudentRiskQuery: () => ({
-    data: {
-      level: risk.level,
-      score: 0,
-      computed_at: risk.computed_at,
-      reasons: [],
-      signals: {
-        has_attendance: false,
-        absent_days: 0,
-        considered_days: 0,
-        discipline_points: 0,
-        active_violation_count: 0,
-        warning_letter_count: 0,
-        has_grade_trend: risk.has_grade_trend,
-        previous_average: risk.previous_average,
-        current_average: risk.current_average,
-      },
-    },
+    data: risk.error
+      ? undefined
+      : {
+          level: risk.level,
+          score: 0,
+          computed_at: risk.computed_at,
+          reasons: [],
+          signals: {
+            has_attendance: false,
+            absent_days: 0,
+            considered_days: 0,
+            discipline_points: 0,
+            active_violation_count: 0,
+            warning_letter_count: 0,
+            has_grade_trend: risk.has_grade_trend,
+            previous_average: risk.previous_average,
+            current_average: risk.current_average,
+          },
+        },
     isLoading: false,
-    isError: false,
+    isError: risk.error !== undefined,
+    error: risk.error,
+    refetch: vi.fn(),
   }),
 }));
 
@@ -63,6 +69,7 @@ describe("StudentOverviewTab risk figures", () => {
     risk.has_grade_trend = false;
     risk.current_average = 0;
     risk.previous_average = 0;
+    risk.error = undefined;
   });
 
   it("writes the grade average with one decimal and the Indonesian comma", () => {
@@ -80,5 +87,19 @@ describe("StudentOverviewTab risk figures", () => {
     render(<StudentOverviewTab studentId="s-1" />);
 
     expect(screen.getByText(/freshness .*14 Nov/)).toBeInTheDocument();
+  });
+
+  it("reads a missing early-warning result as no result, not a failure to retry", () => {
+    risk.error = new ApiError({
+      status: 404,
+      code: "ANALYTICS_RESULT_NOT_FOUND",
+      message: "not found",
+    });
+    render(<StudentOverviewTab studentId="s-1" />);
+
+    expect(screen.getByText("noResultTitle")).toBeInTheDocument();
+    expect(screen.getByText("noResultBody")).toBeInTheDocument();
+    expect(screen.queryByText("ANALYTICS_RESULT_NOT_FOUND")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 });

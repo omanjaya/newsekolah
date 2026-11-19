@@ -20,12 +20,20 @@ import {
   cn,
   domainIcons,
 } from "@newsekolah/ui";
-import { CalendarCheck, FileWarning, MessagesSquare, ShieldAlert, TrendingUp } from "lucide-react";
+import {
+  CalendarCheck,
+  FileWarning,
+  MessagesSquare,
+  ShieldAlert,
+  ShieldCheck,
+  TrendingUp,
+} from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import type { CSSProperties, ReactElement } from "react";
 import { useMemo } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { formatCalendarDate } from "../../../lib/format-calendar-date";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useCan, useSession } from "../../../lib/session/session-provider";
@@ -90,12 +98,24 @@ export function StudentOverviewTab({ studentId }: { studentId: string }): ReactE
 
 function RiskStats({ studentId }: { studentId: string }): ReactElement {
   const t = useTranslations("app.studentProfile.overview");
+  const tRisk = useTranslations("app.analytics.detail");
   const locale = useLocale() as Locale;
   const { me } = useSession();
   const disciplineOn = useModuleEnabled("discipline");
   const gradingOn = useModuleEnabled("grading");
   const risk = useStudentRiskQuery(studentId);
   const loading = risk.isLoading;
+  // No stored result for this student this year (not computed yet, or
+  // outside the reader's class): an answer, not a failure to retry.
+  if (!risk.data && isNotFoundError(risk.error)) {
+    return (
+      <EmptyState
+        icon={<ShieldCheck aria-hidden="true" />}
+        title={tRisk("noResultTitle")}
+        description={tRisk("noResultBody")}
+      />
+    );
+  }
   if (risk.isError && !risk.data) {
     return <QueryError retry={() => void risk.refetch()} error={risk.error} />;
   }
