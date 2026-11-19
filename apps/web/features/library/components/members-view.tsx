@@ -126,6 +126,7 @@ export function MembersView(): ReactElement {
         id: "name",
         header: t("columns.name"),
         enableSorting: false,
+        meta: { card: "title", skeleton: "avatar" },
         cell: ({ row }) => {
           const name = directoryMap.get(row.original.user_id)?.name ?? t("unknownUser");
           return (
@@ -143,15 +144,19 @@ export function MembersView(): ReactElement {
         },
       },
       {
+        // On a phone the card is as compact as a user card: type, status,
+        // validity and any late returns share one unlabelled meta line.
         id: "type",
         header: t("columns.type"),
         enableSorting: false,
+        meta: { card: "meta" },
         cell: ({ row }) => memberTypeMap.get(row.original.member_type_id)?.name ?? "-",
       },
       {
         id: "status",
         header: t("columns.status"),
         enableSorting: false,
+        meta: { card: "meta", skeleton: "badge" },
         // The normal state is quiet text, as in the users table; a badge
         // marks only the exceptions (pending, suspended, cleared...).
         cell: ({ row }) =>
@@ -167,21 +172,36 @@ export function MembersView(): ReactElement {
         id: "validUntil",
         header: t("columns.validUntil"),
         enableSorting: false,
-        cell: ({ row }) =>
-          row.original.valid_until ? formatShortDate(row.original.valid_until, locale) : "-",
+        meta: { card: "meta" },
+        // Unlabelled on the card, so it says what the date is there; no
+        // date is a dash in the table and nothing on the card.
+        cell: ({ row }) => {
+          if (!row.original.valid_until) return <span className="max-md:hidden">-</span>;
+          const date = formatShortDate(row.original.valid_until, locale);
+          return (
+            <>
+              <span className="max-md:hidden">{date}</span>
+              <span className="md:hidden">{t("cardValidUntil", { date })}</span>
+            </>
+          );
+        },
       },
       {
         // Past loans returned late, not current lateness: a dash for none.
         id: "lateReturns",
         header: t("columns.lateReturns"),
         enableSorting: false,
-        meta: { align: "end" },
-        cell: ({ row }) =>
-          row.original.late_return_count > 0 ? (
-            <Badge tone="warning">{row.original.late_return_count}</Badge>
-          ) : (
-            <span className="text-fg-muted">-</span>
-          ),
+        meta: { align: "end", card: "meta", skeleton: "badge" },
+        cell: ({ row }) => {
+          const count = row.original.late_return_count;
+          if (count === 0) return <span className="text-fg-muted max-md:hidden">-</span>;
+          return (
+            <Badge tone="warning">
+              <span className="max-md:hidden">{count}</span>
+              <span className="md:hidden">{t("cardLateReturns", { count })}</span>
+            </Badge>
+          );
+        },
       },
       {
         id: "actions",

@@ -109,6 +109,19 @@ describe("EnrollmentPanel roster", () => {
     expect(within(table).queryByText("Cici")).not.toBeInTheDocument();
   });
 
+  // The phone card showed a bare date under the NIS; it now says what the
+  // date is. The table keeps the date alone under its column header.
+  it("labels the joined date on the phone card only, on the enrolment day itself", () => {
+    const { container } = render(<EnrollmentPanel classId="class-1" canManage />);
+    const table = screen.getByRole("table");
+    expect(within(table).getAllByText("2026-07-13").length).toBeGreaterThan(0);
+    const cards = container.querySelector(".md\\:hidden ul");
+    expect(cards).not.toBeNull();
+    expect(
+      within(cards as HTMLElement).getAllByText('cardJoined {"date":"2026-07-13"}').length,
+    ).toBeGreaterThan(0);
+  });
+
   it("marks every ticked student as left in one go and reports the count", async () => {
     const user = userEvent.setup();
     render(<EnrollmentPanel classId="class-1" canManage />);

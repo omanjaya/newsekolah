@@ -116,7 +116,16 @@ export function EnrollmentPanel({
         accessorFn: (row) => row.enrollment.joined_on,
         header: t("columns.joined"),
         meta: { card: "meta" },
-        cell: ({ row }) => formatCalendarDate(format, row.original.enrollment.joined_on),
+        // Unlabelled on the phone card, so it says what the date is there.
+        cell: ({ row }) => {
+          const date = formatCalendarDate(format, row.original.enrollment.joined_on);
+          return (
+            <>
+              <span className="max-md:hidden">{date}</span>
+              <span className="md:hidden">{t("cardJoined", { date })}</span>
+            </>
+          );
+        },
       },
     ];
     if (!canChangeEnrollment) return list;

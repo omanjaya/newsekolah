@@ -465,6 +465,8 @@
     "emptyTitle": "No members registered yet",
     "emptyBody": "Register a user as a library member to get started.",
     "statusUpdated": "Member status updated",
+    "cardValidUntil": "Valid until {date}",
+    "cardLateReturns": "{count, plural, one {# late return} other {# late returns}}",
     "columns": {
       "name": "Name",
       "type": "Type",

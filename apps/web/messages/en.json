@@ -1858,6 +1858,7 @@
         "noStudents": "No students in this class yet",
         "searchStudent": "Search student",
         "rowActionsMenu": "More actions for {name}",
+        "cardJoined": "Joined {date}",
         "noUnassigned": "Every student already has a class.",
         "assigned": "{n} students placed",
         "assignCount": "Place ({n})",

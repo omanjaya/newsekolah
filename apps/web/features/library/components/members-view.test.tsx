@@ -160,6 +160,44 @@ describe("MembersView filters", () => {
     expect(screen.getByRole("button", { name: "printFiltered" })).toBeInTheDocument();
   });
 
+  // The phone card had four labelled rows ("Riwayat terlambat -"), twice a
+  // user card's height. It is now a title and one unlabelled meta line.
+  it("puts a member on a compact phone card: no labelled rows, late returns only when any", () => {
+    mocks.useLibraryMembersQuery.mockReturnValue({
+      data: {
+        data: [
+          {
+            user_id: "user-1",
+            member_no: "M1",
+            member_type_id: "type-student",
+            status: "active",
+            valid_until: "2027-06-30",
+            late_return_count: 0,
+          },
+          {
+            user_id: "user-2",
+            member_no: "M2",
+            member_type_id: "type-teacher",
+            status: "active",
+            late_return_count: 2,
+          },
+        ],
+      },
+      isLoading: false,
+    });
+    const { container } = render(<MembersView />);
+
+    const cards = container.querySelectorAll(".md\\:hidden > div > ul > li");
+    expect(cards).toHaveLength(2);
+    for (const card of cards) expect(card.querySelector("dl")).toBeNull();
+    const [first, second] = [...cards];
+    expect(first).toHaveTextContent("status.active");
+    expect(first).toHaveTextContent("cardValidUntil");
+    expect(first).not.toHaveTextContent("cardLateReturns");
+    expect(second).toHaveTextContent("cardLateReturns");
+    expect(second).not.toHaveTextContent("cardValidUntil");
+  });
+
   it("leads with registering a member and keeps the rest as header actions", () => {
     render(<MembersView />);
 

@@ -1858,6 +1858,7 @@
         "noStudents": "Belum ada siswa di kelas ini",
         "searchStudent": "Cari nama siswa",
         "rowActionsMenu": "Aksi lain untuk {name}",
+        "cardJoined": "Bergabung {date}",
         "noUnassigned": "Semua siswa sudah punya kelas.",
         "assigned": "{n} siswa ditempatkan",
         "assignCount": "Tempatkan ({n})",

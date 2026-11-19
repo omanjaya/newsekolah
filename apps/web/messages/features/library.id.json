@@ -465,6 +465,8 @@
     "emptyTitle": "Belum ada anggota terdaftar",
     "emptyBody": "Daftarkan pengguna sebagai anggota perpustakaan untuk mulai.",
     "statusUpdated": "Status anggota diperbarui",
+    "cardValidUntil": "Berlaku s.d. {date}",
+    "cardLateReturns": "Terlambat {count} kali",
     "columns": {
       "name": "Nama",
       "type": "Jenis",
