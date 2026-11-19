@@ -229,47 +229,67 @@ describe("PageHeader", () => {
   });
 
   // A menu of one item hid the only way to a sibling page behind "...".
-  it("shows a single secondary action with an icon as its own button on a phone", async () => {
+  it("keeps an action marked showOnPhone a labelled button on a phone", async () => {
     const onPrint = vi.fn();
     const { container, rerender } = render(
       <PageHeader
         title="Presensi kerja"
-        secondaryActions={[{ label: "Presensi pegawai", icon: <Printer />, href: "/staff" }]}
+        secondaryActions={[
+          { label: "Presensi pegawai", icon: <Printer />, href: "/staff", showOnPhone: true },
+        ]}
       />,
     );
     expect(screen.queryByRole("button", { name: "Aksi lainnya" })).not.toBeInTheDocument();
-    const block = screen.getByRole("heading", { level: 1, name: "Presensi kerja" }).parentElement;
-    const [phone, wide] = screen.getAllByRole("link", { name: "Presensi pegawai" });
-    expect(phone?.closest("[data-slot=page-header-heading]")).toBe(block);
-    expect(phone?.parentElement).toHaveClass("sm:hidden");
-    expect(phone).toHaveAttribute("href", "/staff");
-    expect(wide?.closest("[data-slot=page-header-actions]")).toHaveClass("hidden", "sm:flex");
+    const link = screen.getByRole("link", { name: "Presensi pegawai" });
+    expect(link).toHaveAttribute("href", "/staff");
+    expect(link.parentElement).toHaveClass("contents");
+    expect(link.parentElement).not.toHaveClass("hidden");
+    const row = link.closest("[data-slot=page-header-actions]");
+    expect(row).toHaveClass("flex");
+    expect(row).not.toHaveClass("hidden");
     await expectNoAxeViolations(container);
 
     rerender(
       <PageHeader
         title="Presensi kerja"
-        secondaryActions={[{ label: "Cetak", icon: <Printer />, onSelect: onPrint }]}
+        secondaryActions={[
+          { label: "Cetak", icon: <Printer />, onSelect: onPrint, showOnPhone: true },
+          { label: "Riwayat", href: "/h" },
+        ]}
       />,
     );
-    const [phoneButton] = screen.getAllByRole("button", { name: "Cetak" });
-    if (!phoneButton) throw new Error("expected the phone's action button");
-    await userEvent.click(phoneButton);
+    await userEvent.click(screen.getByRole("button", { name: "Cetak" }));
     expect(onPrint).toHaveBeenCalledOnce();
+    // The unmarked action is a button from 640px up and an item of the phone's menu.
+    expect(screen.getByRole("link", { name: "Riwayat" }).parentElement).toHaveClass(
+      "hidden",
+      "sm:contents",
+    );
+    expect(screen.getAllByRole("button", { name: "Aksi lainnya" })).toHaveLength(1);
   });
 
-  it("keeps a lone destructive or icon-less action in the overflow menu", () => {
+  it("keeps a lone unmarked or destructive action in the phone's overflow menu", () => {
     const { rerender } = render(
+      <PageHeader title="X-A" secondaryActions={[{ label: "Cetak", icon: <Printer /> }]} />,
+    );
+    expect(screen.getAllByRole("button", { name: "Aksi lainnya" })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Cetak" }).parentElement).toHaveClass("hidden");
+    rerender(
       <PageHeader
         title="X-A"
         secondaryActions={[
-          { label: "Arsipkan", icon: <Trash2 />, onSelect: () => undefined, destructive: true },
+          {
+            label: "Arsipkan",
+            icon: <Trash2 />,
+            onSelect: () => undefined,
+            destructive: true,
+            showOnPhone: true,
+          },
         ]}
       />,
     );
     expect(screen.getAllByRole("button", { name: "Aksi lainnya" }).length).toBeGreaterThan(0);
-    rerender(<PageHeader title="X-A" secondaryActions={[{ label: "Riwayat", href: "/h" }]} />);
-    expect(screen.getAllByRole("button", { name: "Aksi lainnya" })).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "Arsipkan" })).not.toBeInTheDocument();
   });
 
   it("keeps the actions row on a phone for a primary action", () => {
