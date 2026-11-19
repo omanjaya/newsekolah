@@ -67,7 +67,9 @@ export default function GlobalError({
             {/* eslint-disable-next-line design-system/no-raw-elements -- no stylesheet here, see the note at the top */}
             <h1 className="ge-title">Aplikasi gagal dimuat</h1>
             <p className="ge-text">
-              Muat ulang halaman ini, dan bila tetap gagal, beri tahu admin sekolah kode di bawah.
+              {error.digest
+                ? "Muat ulang halaman ini, dan bila tetap gagal, beri tahu admin sekolah kode di bawah."
+                : "Muat ulang halaman ini. Bila tetap gagal, hubungi admin sekolah."}
             </p>
           </div>
           {/* eslint-disable-next-line design-system/no-raw-elements -- no stylesheet here, see the note at the top */}

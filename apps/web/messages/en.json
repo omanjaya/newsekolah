@@ -759,6 +759,7 @@
     "error": {
       "title": "This page failed to load",
       "body": "Reload the page, and if it still fails, give the school's admin the code below.",
+      "bodyNoCode": "Reload the page. If it still fails, contact the school's admin.",
       "digestLabel": "Code: {digest}",
       "backHome": "Back to home"
     },

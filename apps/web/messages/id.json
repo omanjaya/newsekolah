@@ -759,6 +759,7 @@
     "error": {
       "title": "Halaman gagal dimuat",
       "body": "Muat ulang halaman ini, dan bila tetap gagal, beri tahu admin sekolah kode di bawah.",
+      "bodyNoCode": "Muat ulang halaman ini. Bila tetap gagal, hubungi admin sekolah.",
       "digestLabel": "Kode: {digest}",
       "backHome": "Kembali ke beranda"
     },

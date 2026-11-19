@@ -16,7 +16,8 @@ export interface RenderErrorStateProps {
 /**
  * What an error boundary shows when a page throws while rendering: retry
  * first, home second, and the error's digest as the code to quote to
- * support (it matches the server log line).
+ * support (it matches the server log line). An error thrown in the
+ * browser has no digest, so its copy does not promise a code below.
  */
 export function RenderErrorState({ error, reset }: RenderErrorStateProps): ReactElement {
   const t = useTranslations("app.error");
@@ -30,7 +31,7 @@ export function RenderErrorState({ error, reset }: RenderErrorStateProps): React
     <StatePage
       kind="error"
       title={t("title")}
-      description={t("body")}
+      description={t(error.digest ? "body" : "bodyNoCode")}
       code={error.digest}
       action={
         <Button icon={<RotateCw />} onClick={reset}>
