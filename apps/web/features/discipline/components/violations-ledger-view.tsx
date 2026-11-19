@@ -21,7 +21,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
-import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useDateRangeFilter } from "../../../lib/hooks/use-date-range-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
@@ -54,8 +54,7 @@ export function ViolationsLedgerView({
   const { me } = useSession();
 
   const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
-  const [from, setFrom] = useDateFilter("from", "");
-  const [to, setTo] = useDateFilter("to", "");
+  const [{ from, to }, setRange] = useDateRangeFilter();
   const presets = useDateRangePresets();
   const [includeVoidedParam, setIncludeVoidedParam] = useUrlState<"" | "true">(
     "include_voided",
@@ -79,8 +78,7 @@ export function ViolationsLedgerView({
   function resetFilters() {
     setSearch("");
     setClassId("");
-    setFrom("");
-    setTo("");
+    setRange({ from: "", to: "" });
     setIncludeVoidedParam("");
     paging.resetPage();
   }
@@ -113,9 +111,8 @@ export function ViolationsLedgerView({
       type: "dateRange",
       from,
       to,
-      onChangeRange: ({ from: nextFrom, to: nextTo }) => {
-        setFrom(nextFrom);
-        setTo(nextTo);
+      onChangeRange: (range) => {
+        setRange(range);
         paging.resetPage();
       },
       presets,

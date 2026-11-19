@@ -19,7 +19,7 @@ import type { ReactElement } from "react";
 import { cloneElement, useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
-import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useDateRangeFilter } from "../../../lib/hooks/use-date-range-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useCan } from "../../../lib/session/session-provider";
@@ -46,8 +46,10 @@ export function VisitsView(): ReactElement {
   const canRecord = useCan("manage_library_circulation");
   const canViewMembers = useCan("manage_library_members");
 
-  const [from, setFrom] = useDateFilter("from", startOfIsoMonth(today));
-  const [to, setTo] = useDateFilter("to", today);
+  const [{ from, to }, setRange] = useDateRangeFilter({
+    defaultFrom: startOfIsoMonth(today),
+    defaultTo: today,
+  });
   const presets = useDateRangePresets();
   const [recording, setRecording] = useState(false);
 
@@ -76,9 +78,8 @@ export function VisitsView(): ReactElement {
       // The month so far is the page's own period, not a filter the reader set.
       defaultFrom: startOfIsoMonth(today),
       defaultTo: today,
-      onChangeRange: ({ from: nextFrom, to: nextTo }) => {
-        setFrom(nextFrom);
-        setTo(nextTo);
+      onChangeRange: (range) => {
+        setRange(range);
         paging.resetPage();
       },
       presets,

@@ -18,7 +18,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
-import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useDateRangeFilter } from "../../../lib/hooks/use-date-range-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useSession } from "../../../lib/session/session-provider";
@@ -55,8 +55,7 @@ export function AuditLogsView(): ReactElement {
     ["", ...AUDIT_ENTITY_TYPES],
     "",
   );
-  const [from, setFrom] = useDateFilter("from", "");
-  const [to, setTo] = useDateFilter("to", "");
+  const [{ from, to }, setRange] = useDateRangeFilter();
   const presets = useDateRangePresets();
   const [cursors, setCursors] = useState<string[]>([""]);
   const cursor = cursors[cursors.length - 1] ?? "";
@@ -93,8 +92,7 @@ export function AuditLogsView(): ReactElement {
   function clearFilters() {
     setActorUserId("");
     setEntityType("");
-    setFrom("");
-    setTo("");
+    setRange({ from: "", to: "" });
     resetPaging();
   }
 
@@ -117,9 +115,8 @@ export function AuditLogsView(): ReactElement {
       type: "dateRange",
       from,
       to,
-      onChangeRange: ({ from: nextFrom, to: nextTo }) => {
-        setFrom(nextFrom);
-        setTo(nextTo);
+      onChangeRange: (range) => {
+        setRange(range);
         resetPaging();
       },
       presets,
@@ -299,7 +296,8 @@ export function AuditLogsView(): ReactElement {
           }}
           emptyState={
             filtering ? (
-              <FilteredEmptyState onReset={clearFilters} />
+              // The audit log has filters but no search box.
+              <FilteredEmptyState searchable={false} onReset={clearFilters} />
             ) : (
               <EmptyState
                 icon={<History aria-hidden="true" />}

@@ -29,6 +29,7 @@ import {
   type ReportExportOptions,
 } from "../../../components/report-export-dialog";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useDateRangeFilter } from "../../../lib/hooks/use-date-range-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
@@ -92,8 +93,10 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
   const [employeeId, setEmployeeId] = useState("");
   const today = todayInZone(timeZone);
   const [view, setView] = useUrlState<RecapView>("recap_view", VIEWS, "month");
-  const [from, setFrom] = useDateFilter("from", today.slice(0, 8) + "01");
-  const [to, setTo] = useDateFilter("to", today);
+  const [{ from, to }, setRange] = useDateRangeFilter({
+    defaultFrom: today.slice(0, 8) + "01",
+    defaultTo: today,
+  });
   const presets = useDateRangePresets();
   const [month, setMonth] = useDateFilter("month", today.slice(0, 7), true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -106,10 +109,7 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
       type: "dateRange",
       from,
       to,
-      onChangeRange: ({ from: nextFrom, to: nextTo }) => {
-        setFrom(nextFrom);
-        setTo(nextTo);
-      },
+      onChangeRange: setRange,
       presets,
       today,
     },
