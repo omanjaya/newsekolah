@@ -37,6 +37,7 @@ import { useClassesQuery } from "../../reference/api";
 import { StudentLink } from "../../students/components/student-link";
 
 import { HomeroomDisciplineTab } from "./homeroom-discipline-tab";
+import { HomeroomOutOfTerm, isOutsideHomeroomTerm } from "./homeroom-out-of-term";
 import { HomeroomOverview, type AttentionCode } from "./homeroom-overview";
 import { HomeroomParentsTab } from "./homeroom-parents-tab";
 import { HomeroomPermitsTab } from "./homeroom-permits-tab";
@@ -81,7 +82,9 @@ export function HomeroomView(): ReactElement {
   const [date, setDate] = useDateFilter("date", today);
   const classes = useClassesQuery();
   const [search, setSearch] = useRememberedViewState("homeroom-search", "");
-  const [statusCode, setStatusCode] = useUrlState<(typeof STATUS_VALUES)[number]>(
+  // A filter change replaces the history entry: Back leaves the list
+  // rather than stepping through every filter tried (audit r5-n4).
+  const [statusCode, , replaceStatusCode] = useUrlState<(typeof STATUS_VALUES)[number]>(
     "status",
     STATUS_VALUES,
     "",
@@ -136,7 +139,7 @@ export function HomeroomView(): ReactElement {
       label: t("statusFilterLabel"),
       value: statusCode,
       onChange: (value) => {
-        setStatusCode(value as (typeof STATUS_VALUES)[number]);
+        replaceStatusCode(value as (typeof STATUS_VALUES)[number]);
         setPagination((p) => ({ ...p, pageIndex: 0 }));
       },
       options: STATUS_FILTER_CODES.map((code) => ({ value: code, label: t(`codes.${code}`) })),
@@ -285,13 +288,25 @@ export function HomeroomView(): ReactElement {
    */
   function showStatus(code: AttentionCode) {
     setSearch("");
-    setStatusCode(code);
     setPagination((p) => ({ ...p, pageIndex: 0 }));
     // The control that opened the list goes away with the tab: focus moves
     // to the list's panel rather than falling to <body> (audit r3-n22).
     focusAttendance.current = true;
+    // One history entry: the tab change pushes it and the filter is
+    // written into that same entry, so Back returns to the summary as it
+    // was, not to a summary carrying a hidden filter (audit r5-n4).
     setTab("attendance");
+    replaceStatusCode(code);
   }
+
+  // The way back to today, offered where a dated tab explains that the
+  // chosen day lies outside the reader's homeroom term (audit r5-n5).
+  const showToday =
+    date === today
+      ? undefined
+      : () => {
+          changeDate(today);
+        };
 
   return (
     <Tabs value={tab} onValueChange={setTab} className="contents">
@@ -341,39 +356,44 @@ export function HomeroomView(): ReactElement {
             showLeave={permitsOn}
             showDiscipline={disciplineOn}
             onShowStatus={showStatus}
+            onShowToday={showToday}
           />
         </TabsContent>
         <TabsContent ref={attendancePanel} value="attendance" className="pt-0">
-          <DataTable
-            stateKey="features/homeroom/components/homeroom-view:1"
-            data={rows}
-            columns={columns}
-            rowCount={data?.total ?? 0}
-            pagination={pagination}
-            onPaginationChange={setPagination}
-            sorting={[]}
-            onSortingChange={() => undefined}
-            globalFilter={search}
-            onGlobalFilterChange={(value) => {
-              setSearch(value);
-              setPagination((p) => ({ ...p, pageIndex: 0 }));
-            }}
-            filters={filters}
-            isLoading={isLoading}
-            error={isError ? error : undefined}
-            onRetry={() => {
-              void refetch();
-            }}
-            getRowId={(r) => r.student_user_id}
-            toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
-            emptyState={
-              <EmptyState
-                icon={<UsersRound aria-hidden="true" />}
-                title={isFiltered ? t("noMatchTitle") : t("emptyTitle")}
-                description={isFiltered ? t("noMatchBody") : t("emptyBody")}
-              />
-            }
-          />
+          {isOutsideHomeroomTerm(error) ? (
+            <HomeroomOutOfTerm date={date} onShowToday={showToday} />
+          ) : (
+            <DataTable
+              stateKey="features/homeroom/components/homeroom-view:1"
+              data={rows}
+              columns={columns}
+              rowCount={data?.total ?? 0}
+              pagination={pagination}
+              onPaginationChange={setPagination}
+              sorting={[]}
+              onSortingChange={() => undefined}
+              globalFilter={search}
+              onGlobalFilterChange={(value) => {
+                setSearch(value);
+                setPagination((p) => ({ ...p, pageIndex: 0 }));
+              }}
+              filters={filters}
+              isLoading={isLoading}
+              error={isError ? error : undefined}
+              onRetry={() => {
+                void refetch();
+              }}
+              getRowId={(r) => r.student_user_id}
+              toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
+              emptyState={
+                <EmptyState
+                  icon={<UsersRound aria-hidden="true" />}
+                  title={isFiltered ? t("noMatchTitle") : t("emptyTitle")}
+                  description={isFiltered ? t("noMatchBody") : t("emptyBody")}
+                />
+              }
+            />
+          )}
         </TabsContent>
         {permitsOn && (
           <TabsContent value="permits" className="pt-0">
@@ -386,11 +406,15 @@ export function HomeroomView(): ReactElement {
           </TabsContent>
         )}
         <TabsContent value="parents" className="pt-0">
-          <HomeroomParentsTab
-            rows={dashboard.data?.data ?? []}
-            isLoading={dashboard.isLoading}
-            failure={readFailure(dashboard)}
-          />
+          {isOutsideHomeroomTerm(dashboard.error) ? (
+            <HomeroomOutOfTerm date={date} onShowToday={showToday} />
+          ) : (
+            <HomeroomParentsTab
+              rows={dashboard.data?.data ?? []}
+              isLoading={dashboard.isLoading}
+              failure={readFailure(dashboard)}
+            />
+          )}
         </TabsContent>
       </AppPage>
     </Tabs>

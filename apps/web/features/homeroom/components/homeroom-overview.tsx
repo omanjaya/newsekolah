@@ -11,6 +11,7 @@ import { useFocusAfterRetry } from "../../../lib/hooks/use-focus-after-retry";
 import { isNoLessonDay } from "../../attendance/lib/attendance-stats";
 
 import { HomeroomDashboard } from "./homeroom-dashboard";
+import { isOutsideHomeroomTerm, useLongDayLabel } from "./homeroom-out-of-term";
 import { readFailure } from "./homeroom-queue-card";
 
 type Entry = components["schemas"]["AttendanceHomeroomEntry"];
@@ -39,7 +40,8 @@ function figure(value: number, failed: boolean): number | string {
  * fails, the hero says so with one retry for every failed read, the
  * figures read "-" and the cards show the error instead of an all-clear
  * (audit r3-n18). On another day than today the copy names that day
- * (audit r3-n21).
+ * (audit r3-n21). A day outside the reader's homeroom term says so, with
+ * no retry that could never succeed (audit r5-n5).
  */
 export function HomeroomOverview({
   date,
@@ -53,6 +55,7 @@ export function HomeroomOverview({
   showLeave,
   showDiscipline,
   onShowStatus,
+  onShowToday,
 }: {
   date: string;
   today: string;
@@ -66,6 +69,8 @@ export function HomeroomOverview({
   showLeave: boolean;
   showDiscipline: boolean;
   onShowStatus: (code: AttentionCode) => void;
+  /** Steps back to today; left out when the chosen day is today. */
+  onShowToday?: () => void;
 }): ReactElement {
   const t = useTranslations("app.homeroom");
   const common = useTranslations("common");
@@ -73,9 +78,11 @@ export function HomeroomOverview({
   const region = useRef<HTMLDivElement>(null);
 
   const failed = dashboard.isError;
+  // Not a failure to retry: the reader held no homeroom duty on that day.
+  const outOfTerm = failed && isOutsideHomeroomTerm(dashboard.error);
   const leaveFailed = showLeave && leaveQueue.isError;
   const retrying = dashboard.isFetching || (leaveFailed && leaveQueue.isFetching);
-  const keepFocus = useFocusAfterRetry(region, retrying, failed ? "hero" : null);
+  const keepFocus = useFocusAfterRetry(region, retrying, failed && !outOfTerm ? "hero" : null);
   const retry = () => {
     keepFocus();
     void dashboard.refetch();
@@ -90,6 +97,7 @@ export function HomeroomOverview({
   // to record, which must not read as everyone accounted for (audit r4-n4).
   const noLessons = !dashboard.isLoading && isNoLessonDay(counts);
   const isToday = date === today;
+  const longDayLabel = useLongDayLabel(date);
   const dayLabel = format.dateTime(new Date(`${date}T00:00:00Z`), {
     weekday: "short",
     day: "numeric",
@@ -106,9 +114,23 @@ export function HomeroomOverview({
   return (
     // The hero's retry stands for every failed read, so the cards' error
     // boxes leave theirs out while it shows.
-    <SharedRetry active={failed}>
+    <SharedRetry active={failed && !outOfTerm}>
       <div ref={region} className="flex flex-col gap-6">
-        {failed ? (
+        {outOfTerm ? (
+          <HeroCard
+            tone="neutral"
+            eyebrow={calmEyebrow}
+            title={t("outOfTermTitle")}
+            meta={t("outOfTermMeta", { date: longDayLabel })}
+            action={
+              onShowToday ? (
+                <Button variant="secondary" onClick={onShowToday}>
+                  {t("outOfTermAction")}
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : failed ? (
           <HeroCard
             tone="warning"
             eyebrow={calmEyebrow}
@@ -141,7 +163,9 @@ export function HomeroomOverview({
               attention > 0
                 ? t("attentionBreakdown", { absent, incomplete })
                 : noLessons
-                  ? t("noLessonsMeta")
+                  ? isToday
+                    ? t("noLessonsMeta")
+                    : t("noLessonsMetaOn", { date: longDayLabel })
                   : t("attentionEmpty")
             }
             action={
@@ -207,17 +231,22 @@ export function HomeroomOverview({
           )}
         </StatGrid>
 
-        <HomeroomDashboard
-          attentionRows={attentionRows}
-          disciplineRows={disciplineRows}
-          pendingLeave={pendingLeave}
-          dashboardLoading={dashboard.isLoading}
-          leaveLoading={leaveQueue.isLoading}
-          dashboardFailure={readFailure(dashboard)}
-          leaveFailure={showLeave ? readFailure(leaveQueue) : null}
-          showLeave={showLeave}
-          showDiscipline={showDiscipline}
-        />
+        {/* Out of term the cards could only repeat the refusal, worded as
+            "only homeroom teachers can see this", which is wrong for this
+            reader. */}
+        {!outOfTerm && (
+          <HomeroomDashboard
+            attentionRows={attentionRows}
+            disciplineRows={disciplineRows}
+            pendingLeave={pendingLeave}
+            dashboardLoading={dashboard.isLoading}
+            leaveLoading={leaveQueue.isLoading}
+            dashboardFailure={readFailure(dashboard)}
+            leaveFailure={showLeave ? readFailure(leaveQueue) : null}
+            showLeave={showLeave}
+            showDiscipline={showDiscipline}
+          />
+        )}
       </div>
     </SharedRetry>
   );

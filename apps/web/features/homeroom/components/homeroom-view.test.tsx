@@ -1,3 +1,4 @@
+import { ApiError } from "@newsekolah/api-client";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   disabledModules: [] as string[],
   rememberedSearch: "",
   date: "2026-09-29",
+  setDate: vi.fn(),
 }));
 
 vi.mock("next-intl", () => ({
@@ -23,7 +25,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 vi.mock("../../../lib/hooks/use-date-filter", () => ({
-  useDateFilter: () => [mocks.date, vi.fn()],
+  useDateFilter: () => [mocks.date, mocks.setDate],
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (permission: string) => mocks.permissions.has(permission),
@@ -96,6 +98,19 @@ describe("HomeroomView filters", () => {
 
     expect(lastRosterCallArgs()).toEqual([expect.objectContaining({ statusCode: "A" }), true]);
     expect(new URLSearchParams(window.location.search).get("status")).toBe("A");
+  });
+
+  // Each filter tried was a Back step of its own (audit r5-n4).
+  it("replaces the history entry when the status filter changes", async () => {
+    const user = userEvent.setup();
+    render(<HomeroomView />);
+    const before = window.history.length;
+
+    await user.click(screen.getByRole("button", { name: "statusFilterLabel" }));
+    await user.click(await screen.findByRole("button", { name: "codes.A" }));
+
+    expect(new URLSearchParams(window.location.search).get("status")).toBe("A");
+    expect(window.history.length).toBe(before);
   });
 
   it("reads an initial status=INCOMPLETE URL param back into the filter bar", () => {
@@ -278,6 +293,21 @@ describe("HomeroomView overview", () => {
     ]);
   });
 
+  // The tab and the filter were two pushes, so the first Back landed on
+  // the summary carrying a hidden status filter (audit r5-n4).
+  it("opens a list from the summary in one history step, leaving the summary entry as it was", async () => {
+    const user = userEvent.setup();
+    render(<HomeroomView />);
+    const before = window.history.length;
+
+    await user.click(screen.getByRole("button", { name: /statAbsent/ }));
+
+    expect(window.history.length).toBe(before + 1);
+    const params = new URLSearchParams(window.location.search);
+    expect(params.get("tab")).toBe("attendance");
+    expect(params.get("status")).toBe("A");
+  });
+
   it("opens each attention list from its own stat cell", async () => {
     mocks.useHomeroomAttendanceQuery.mockReturnValue({
       data: {
@@ -341,6 +371,23 @@ describe("HomeroomView overview", () => {
     expect(screen.getByRole("heading", { name: "noLessonsTitle" })).toBeInTheDocument();
     expect(screen.getByText("noLessonsMeta")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "attentionNoneTitle" })).not.toBeInTheDocument();
+  });
+
+  // "pada hari ini" means today, not the chosen day (audit r5-n1).
+  it("names the chosen day when another day has no lessons", () => {
+    mocks.date = "2026-09-26";
+    mocks.useHomeroomAttendanceQuery.mockReturnValue({
+      data: {
+        data: [{ student_user_id: "s1", name: "Siswa Satu", status_code: "NONE" }],
+        total: 1,
+        status_counts: { NONE: 1 },
+      },
+      isLoading: false,
+    });
+    render(<HomeroomView />);
+
+    expect(screen.getByText("noLessonsMetaOn")).toBeInTheDocument();
+    expect(screen.queryByText("noLessonsMeta")).not.toBeInTheDocument();
   });
 
   it("names the chosen day instead of 'today' on another date", () => {
@@ -410,5 +457,56 @@ describe("HomeroomView overview", () => {
 
     await user.click(screen.getByRole("button", { name: "actions.retry" }));
     expect(refetch).toHaveBeenCalled();
+  });
+
+  // A 403 for a day outside the homeroom term read as a connection error
+  // with a retry that could never succeed (audit r5-n5).
+  it("explains a day outside the homeroom term, with no retry", async () => {
+    mocks.date = "2026-07-04";
+    mocks.setDate.mockReset();
+    const refetch = vi.fn();
+    mocks.useHomeroomAttendanceQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      isError: true,
+      error: new ApiError({ status: 403, code: "ATTENDANCE_NOT_HOMEROOM", message: "forbidden" }),
+      refetch,
+    });
+    const user = userEvent.setup();
+    const { unmount } = render(<HomeroomView />);
+
+    expect(screen.getByRole("heading", { name: "outOfTermTitle" })).toBeInTheDocument();
+    expect(screen.getByText("outOfTermMeta")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "loadFailedTitle" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "actions.retry" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "outOfTermAction" }));
+    expect(mocks.setDate).toHaveBeenCalledWith("2026-09-29");
+    unmount();
+
+    // The dated tabs say the same instead of the table's or the list's error.
+    for (const tab of ["attendance", "parents"]) {
+      window.history.replaceState(null, "", `/homeroom?tab=${tab}`);
+      const view = render(<HomeroomView />);
+      expect(screen.getByText("outOfTermTitle")).toBeInTheDocument();
+      expect(screen.queryByText("parents-panel")).not.toBeInTheDocument();
+      view.unmount();
+    }
+  });
+
+  it("offers no way back to today when today itself is outside the term", () => {
+    mocks.useHomeroomAttendanceQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      isError: true,
+      error: new ApiError({ status: 403, code: "ATTENDANCE_NOT_HOMEROOM", message: "forbidden" }),
+      refetch: vi.fn(),
+    });
+    render(<HomeroomView />);
+
+    expect(screen.getByRole("heading", { name: "outOfTermTitle" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "outOfTermAction" })).not.toBeInTheDocument();
   });
 });
