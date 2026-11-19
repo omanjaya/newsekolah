@@ -80,6 +80,7 @@ export { useHydrated } from "./hooks/use-hydrated.js";
 export { useMediaQuery } from "./hooks/use-media-query.js";
 export { useScanFeedback, type ScanFeedback } from "./hooks/use-scan-feedback.js";
 export { useScrollEdges, type UseScrollEdgesOptions } from "./hooks/use-scroll-edges.js";
+export { useSubmitValidation, type SubmitValidation } from "./hooks/use-submit-validation.js";
 export { Textarea, type TextareaProps } from "./components/textarea.js";
 export { Select, type SelectOption, type SelectProps } from "./components/select.js";
 export { Combobox, type ComboboxOption, type ComboboxProps } from "./components/combobox.js";

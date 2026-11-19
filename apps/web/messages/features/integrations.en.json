@@ -44,7 +44,8 @@
       "copyFailed": "Could not copy automatically, copy it manually",
       "done": "Saved it",
       "cancel": "Cancel",
-      "permissionsHint": "{count, plural, one {# permission} other {# permissions}} selected. Only permissions you hold yourself."
+      "permissionsHint": "{count, plural, one {# permission} other {# permissions}} selected. Only permissions you hold yourself.",
+      "permissionsRequired": "Choose at least one permission"
     },
     "morePermissions": "+{count} more",
     "rowActions": "Actions for key {name}"
@@ -79,7 +80,8 @@
       "created": "Endpoint created",
       "updated": "Endpoint updated",
       "cancel": "Cancel",
-      "eventTypesHint": "{count, plural, one {# event} other {# events}} selected."
+      "eventTypesHint": "{count, plural, one {# event} other {# events}} selected.",
+      "eventTypesRequired": "Choose at least one event"
     },
     "moreEvents": "+{count} more",
     "rowActions": "Actions for {url}"

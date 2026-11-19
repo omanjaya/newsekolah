@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   Select,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -37,6 +38,7 @@ export function MemberBulkRegisterDialog({
 }): ReactElement {
   const t = useTranslations("app.library.members.bulkRegister");
   const tRole = useTranslations("app.library.members.roles");
+  const tValidation = useTranslations("validation");
   const apiErrorMessage = useApiErrorMessage();
   const memberTypes = useLibraryMemberTypesQuery();
   // Narrowing bulk registration to one class is a convenience, not a
@@ -52,6 +54,7 @@ export function MemberBulkRegisterDialog({
   const [memberTypeId, setMemberTypeId] = useState("");
   const [result, setResult] = useState<LibraryBulkRegisterResult | null>(null);
   const [error, setError] = useState("");
+  const { ref: formRef, attempted, check, reset: resetValidation } = useSubmitValidation();
 
   const typeOptions = (memberTypes.data?.data ?? []).map((mt) => ({
     value: mt.id,
@@ -64,6 +67,7 @@ export function MemberBulkRegisterDialog({
     setError("");
     setClassId("");
     setMemberTypeId("");
+    resetValidation();
   }
 
   return (
@@ -107,11 +111,13 @@ export function MemberBulkRegisterDialog({
           </div>
         ) : (
           <form
+            ref={formRef}
             className="flex flex-col gap-4"
+            noValidate
             onSubmit={(e) => {
               e.preventDefault();
               setError("");
-              if (!memberTypeId) return;
+              if (!check(Boolean(memberTypeId))) return;
               bulkRegister.mutate(
                 {
                   member_type_id: memberTypeId,
@@ -153,7 +159,11 @@ export function MemberBulkRegisterDialog({
                 />
               </Field>
             )}
-            <Field label={t("memberType")}>
+            <Field
+              label={t("memberType")}
+              required
+              error={attempted && !memberTypeId ? tValidation("required") : undefined}
+            >
               <Select
                 options={typeOptions}
                 value={memberTypeId}
@@ -173,7 +183,7 @@ export function MemberBulkRegisterDialog({
               >
                 {t("cancel")}
               </Button>
-              <Button type="submit" loading={bulkRegister.isPending} disabled={!memberTypeId}>
+              <Button type="submit" loading={bulkRegister.isPending}>
                 {t("submit")}
               </Button>
             </DialogFooter>

@@ -11,6 +11,7 @@ import {
   SegmentedControl,
   Textarea,
   useToast,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import { Minus, Plus, Star } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -55,9 +56,10 @@ export function StarDialog({
 
   const parsedAmount = Number(amount);
   const validAmount = Number.isInteger(parsedAmount) && parsedAmount >= 1 && parsedAmount <= 999;
+  const { ref: formRef, attempted, check } = useSubmitValidation();
 
   async function submit() {
-    if (!validAmount) return;
+    if (!check(validAmount)) return;
     try {
       await giveStar.mutateAsync({
         student_user_id: studentId,
@@ -83,7 +85,9 @@ export function StarDialog({
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent title={t("title", { name: studentName })}>
         <form
+          ref={formRef}
           className="flex flex-col gap-4"
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
             void submit();
@@ -105,7 +109,12 @@ export function StarDialog({
               { value: "take", label: t("take"), icon: <Minus /> },
             ]}
           />
-          <Field label={t("amount")} hint={t("amountHint")}>
+          <Field
+            label={t("amount")}
+            required
+            hint={attempted && !validAmount ? undefined : t("amountHint")}
+            error={attempted && !validAmount ? t("amountHint") : undefined}
+          >
             <NumberInput
               min={1}
               max={999}
@@ -137,7 +146,7 @@ export function StarDialog({
             >
               {t("cancel")}
             </Button>
-            <Button type="submit" loading={giveStar.isPending} disabled={!validAmount}>
+            <Button type="submit" loading={giveStar.isPending}>
               {t("save")}
             </Button>
           </DialogFooter>

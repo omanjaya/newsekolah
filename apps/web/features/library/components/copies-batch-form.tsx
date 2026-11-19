@@ -1,6 +1,14 @@
 "use client";
 
-import { NumberInput, FormError, Field, Button, Select, useToast } from "@newsekolah/ui";
+import {
+  NumberInput,
+  FormError,
+  Field,
+  Button,
+  Select,
+  useSubmitValidation,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -40,14 +48,18 @@ export function CopiesBatchForm({
   const [error, setError] = useState("");
 
   const countValue = Number(count);
-  const canSubmit = Number.isInteger(countValue) && countValue >= 1 && countValue <= 200;
+  const countValid = Number.isInteger(countValue) && countValue >= 1 && countValue <= 200;
+  const { ref: formRef, attempted, check } = useSubmitValidation();
 
   return (
     <form
+      ref={formRef}
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         setError("");
+        if (!check(countValid)) return;
         const body: LibraryCopiesBatchWrite = {
           count: countValue,
           condition,
@@ -71,7 +83,11 @@ export function CopiesBatchForm({
         );
       }}
     >
-      <Field label={t("count")}>
+      <Field
+        label={t("count")}
+        required
+        error={attempted && !countValid ? t("countRange") : undefined}
+      >
         <NumberInput
           min={1}
           max={200}
@@ -79,7 +95,6 @@ export function CopiesBatchForm({
           onChange={(next) => {
             setCount(next === null ? "" : String(next));
           }}
-          required
         />
       </Field>
       <Field label={tCopies("form.condition")}>
@@ -139,7 +154,7 @@ export function CopiesBatchForm({
         </Field>
       </div>
       {error && <FormError>{error}</FormError>}
-      <Button type="submit" loading={createBatch.isPending} disabled={!canSubmit}>
+      <Button type="submit" loading={createBatch.isPending}>
         {t("save")}
       </Button>
     </form>

@@ -21,6 +21,7 @@ import {
   Textarea,
   domainIcons,
   useToast,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus, Trash2 } from "lucide-react";
@@ -234,13 +235,20 @@ function LoanRuleForm({ onDone }: { onDone: () => void }): ReactElement {
   const [maxLoanDays, setMaxLoanDays] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
+  const requiredError = (value: string) =>
+    attempted && !value ? tValidation("required") : undefined;
 
   return (
     <form
+      ref={formRef}
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         setError("");
+        if (!check(Boolean(startsOn && endsOn))) return;
         const body: LibraryLoanRuleWrite = {
           member_type_id: memberTypeId || undefined,
           starts_on: startsOn,
@@ -270,10 +278,10 @@ function LoanRuleForm({ onDone }: { onDone: () => void }): ReactElement {
         />
       </Field>
       <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-        <Field label={t("startsOn")} required>
+        <Field label={t("startsOn")} required error={requiredError(startsOn)}>
           <DatePicker value={startsOn} onChange={setStartsOn} required />
         </Field>
-        <Field label={t("endsOn")} required>
+        <Field label={t("endsOn")} required error={requiredError(endsOn)}>
           <DatePicker value={endsOn} onChange={setEndsOn} min={startsOn || undefined} required />
         </Field>
       </div>
@@ -306,7 +314,7 @@ function LoanRuleForm({ onDone }: { onDone: () => void }): ReactElement {
         <Button variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={create.isPending} disabled={!startsOn || !endsOn}>
+        <Button type="submit" loading={create.isPending}>
           {t("save")}
         </Button>
       </DialogFooter>

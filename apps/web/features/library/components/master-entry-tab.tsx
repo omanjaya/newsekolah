@@ -18,6 +18,7 @@ import {
   Switch,
   domainIcons,
   useToast,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -270,15 +271,22 @@ function MasterEntryForm({
   const [isActive, setIsActive] = useState(entry?.is_active ?? true);
   const [sortOrder, setSortOrder] = useState(String(entry?.sort_order ?? 0));
   const [error, setError] = useState("");
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
+  const requiredError = (value: string) =>
+    attempted && !value.trim() ? tValidation("required") : undefined;
 
   const pending = entry ? update.isPending : create.isPending;
 
   return (
     <form
+      ref={formRef}
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         setError("");
+        if (!check(Boolean(code.trim() && name.trim()))) return;
         const body: LibraryMasterEntryWrite = {
           code: code.trim(),
           name: name.trim(),
@@ -299,23 +307,21 @@ function MasterEntryForm({
         }
       }}
     >
-      <Field label={t("form.code")}>
+      <Field label={t("form.code")} required error={requiredError(code)}>
         <Input
           value={code}
           onChange={(e) => {
             setCode(e.target.value);
           }}
-          required
           maxLength={20}
         />
       </Field>
-      <Field label={t("form.name")}>
+      <Field label={t("form.name")} required error={requiredError(name)}>
         <Input
           value={name}
           onChange={(e) => {
             setName(e.target.value);
           }}
-          required
           maxLength={100}
         />
       </Field>
@@ -336,7 +342,7 @@ function MasterEntryForm({
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("form.cancel")}
         </Button>
-        <Button type="submit" loading={pending} disabled={!code.trim() || !name.trim()}>
+        <Button type="submit" loading={pending}>
           {t("form.save")}
         </Button>
       </DialogFooter>

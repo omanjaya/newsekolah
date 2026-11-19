@@ -11,6 +11,7 @@ import {
   Field,
   Input,
   useToast,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import { Copy } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -47,6 +48,13 @@ export function CreateAPIKeyDialog({
   const [copyFailed, setCopyFailed] = useState(false);
 
   const permissionLabel = usePermissionLabel();
+  const {
+    ref: bodyRef,
+    attempted,
+    check,
+    reset: resetValidation,
+  } = useSubmitValidation<HTMLDivElement>();
+  const tValidation = useTranslations("validation");
   const ownPermissions = [...(me?.permissions ?? [])].sort((a, b) =>
     permissionLabel(a).localeCompare(permissionLabel(b)),
   );
@@ -56,6 +64,7 @@ export function CreateAPIKeyDialog({
     setSelected(new Set());
     setCreated(null);
     setCopyFailed(false);
+    resetValidation();
   }
 
   function close() {
@@ -64,6 +73,7 @@ export function CreateAPIKeyDialog({
   }
 
   async function handleCreate() {
+    if (!check(name.trim() !== "" && selected.size > 0)) return;
     try {
       const response = await createKey.mutateAsync({
         name,
@@ -85,8 +95,6 @@ export function CreateAPIKeyDialog({
       setCopyFailed(true);
     }
   }
-
-  const canSubmit = name.trim() !== "" && selected.size > 0 && !createKey.isPending;
 
   return (
     <Dialog
@@ -134,18 +142,18 @@ export function CreateAPIKeyDialog({
               <Button variant="secondary" onClick={close}>
                 {t("cancel")}
               </Button>
-              <Button
-                disabled={!canSubmit}
-                loading={createKey.isPending}
-                onClick={() => void handleCreate()}
-              >
+              <Button loading={createKey.isPending} onClick={() => void handleCreate()}>
                 {t("submit")}
               </Button>
             </>
           }
         >
-          <div className="flex flex-col gap-5">
-            <Field label={t("nameLabel")} required>
+          <div ref={bodyRef} className="flex flex-col gap-5">
+            <Field
+              label={t("nameLabel")}
+              required
+              error={attempted && !name.trim() ? tValidation("required") : undefined}
+            >
               <Input
                 value={name}
                 maxLength={120}
@@ -159,6 +167,7 @@ export function CreateAPIKeyDialog({
               label={t("permissionsLabel")}
               required
               hint={t("permissionsHint", { count: selected.size })}
+              error={attempted && selected.size === 0 ? t("permissionsRequired") : undefined}
             >
               {(control) => (
                 <Card

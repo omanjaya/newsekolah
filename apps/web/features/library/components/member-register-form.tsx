@@ -1,7 +1,15 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { DialogFooter, FormError, Field, Button, Input, Select } from "@newsekolah/ui";
+import {
+  DialogFooter,
+  FormError,
+  Field,
+  Button,
+  Input,
+  Select,
+  useSubmitValidation,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -24,6 +32,7 @@ export function MemberRegisterForm({
 }): ReactElement {
   const t = useTranslations("app.library.members.registerForm");
   const tRole = useTranslations("app.library.members.roles");
+  const tValidation = useTranslations("validation");
   const apiErrorMessage = useApiErrorMessage();
   const memberTypes = useLibraryMemberTypesQuery();
   const register = useRegisterLibraryMemberMutation();
@@ -34,6 +43,8 @@ export function MemberRegisterForm({
   const [memberNo, setMemberNo] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
+  const { ref, attempted, check } = useSubmitValidation();
+  const required = (value: string) => (attempted && !value ? tValidation("required") : undefined);
 
   const userLabels = useDirectoryPickerLabels(t("userPlaceholder"));
   const typeOptions = (memberTypes.data?.data ?? []).map((mt) => ({
@@ -43,11 +54,13 @@ export function MemberRegisterForm({
 
   return (
     <form
+      ref={ref}
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         setError("");
-        if (!userId || !memberTypeId) return;
+        if (!check(Boolean(userId && memberTypeId))) return;
         register.mutate(
           {
             user_id: userId,
@@ -78,7 +91,7 @@ export function MemberRegisterForm({
           }}
         />
       </Field>
-      <Field label={t("user")}>
+      <Field label={t("user")} required error={required(userId)}>
         <DirectoryPicker
           key={role}
           profileKind={role}
@@ -88,7 +101,7 @@ export function MemberRegisterForm({
           showUsername
         />
       </Field>
-      <Field label={t("memberType")}>
+      <Field label={t("memberType")} required error={required(memberTypeId)}>
         <Select
           options={typeOptions}
           value={memberTypeId}
@@ -127,7 +140,7 @@ export function MemberRegisterForm({
         >
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={register.isPending} disabled={!userId || !memberTypeId}>
+        <Button type="submit" loading={register.isPending}>
           {t("submit")}
         </Button>
       </DialogFooter>

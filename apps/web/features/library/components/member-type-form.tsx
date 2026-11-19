@@ -1,7 +1,16 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { DialogFooter, NumberInput, FormError, Field, Button, Input, Select } from "@newsekolah/ui";
+import {
+  DialogFooter,
+  NumberInput,
+  FormError,
+  Field,
+  Button,
+  Input,
+  Select,
+  useSubmitValidation,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -50,15 +59,22 @@ export function MemberTypeForm({
   const [validityMonths, setValidityMonths] = useState(String(memberType?.validity_months ?? 12));
   const [defaultForRole, setDefaultForRole] = useState(memberType?.default_for_role ?? "");
   const [error, setError] = useState("");
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
+  const requiredError = (value: string) =>
+    attempted && !value.trim() ? tValidation("required") : undefined;
 
   const mutation = memberType ? update : create;
 
   return (
     <form
+      ref={formRef}
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         setError("");
+        if (!check(Boolean(name.trim()))) return;
         const body: LibraryMemberTypeWrite = {
           name: name.trim(),
           max_loan_items: numberField(maxLoanItems, 1),
@@ -85,13 +101,12 @@ export function MemberTypeForm({
         }
       }}
     >
-      <Field label={t("name")}>
+      <Field label={t("name")} required error={requiredError(name)}>
         <Input
           value={name}
           onChange={(e) => {
             setName(e.target.value);
           }}
-          required
           maxLength={100}
         />
       </Field>
@@ -191,7 +206,7 @@ export function MemberTypeForm({
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={mutation.isPending} disabled={!name.trim()}>
+        <Button type="submit" loading={mutation.isPending}>
           {t("save")}
         </Button>
       </DialogFooter>

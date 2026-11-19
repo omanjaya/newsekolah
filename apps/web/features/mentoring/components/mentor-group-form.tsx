@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { DialogFooter, Field, Button, Input, useToast } from "@newsekolah/ui";
+import { DialogFooter, Field, Button, Input, useSubmitValidation, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -35,13 +35,19 @@ export function MentorGroupForm({
   const [name, setName] = useState(initial?.name ?? "");
 
   const pending = create.isPending || update.isPending;
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
+  const requiredError = (value: string) =>
+    attempted && !value.trim() ? tValidation("required") : undefined;
 
   return (
     <form
+      ref={formRef}
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        if (!mentorUserId || !name.trim()) return;
+        if (!check(Boolean(mentorUserId && name.trim()))) return;
         const body = { mentor_user_id: mentorUserId, name: name.trim() };
         const onSuccess = () => {
           toast.success(t("saved"));
@@ -59,7 +65,7 @@ export function MentorGroupForm({
         }
       }}
     >
-      <Field label={t("mentor")}>
+      <Field label={t("mentor")} required error={requiredError(mentorUserId)}>
         <DirectoryPicker
           profileKind="teacher"
           value={mentorUserId}
@@ -67,14 +73,13 @@ export function MentorGroupForm({
           labels={mentorLabels}
         />
       </Field>
-      <Field label={t("name")}>
+      <Field label={t("name")} required error={requiredError(name)}>
         <Input
           value={name}
           onChange={(e) => {
             setName(e.target.value);
           }}
           placeholder={t("namePlaceholder")}
-          required
           maxLength={100}
         />
       </Field>
@@ -82,7 +87,7 @@ export function MentorGroupForm({
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={pending} disabled={!mentorUserId || !name.trim()}>
+        <Button type="submit" loading={pending}>
           {t("submit")}
         </Button>
       </DialogFooter>

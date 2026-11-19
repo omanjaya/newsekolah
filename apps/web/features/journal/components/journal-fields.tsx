@@ -21,6 +21,7 @@ export function JournalFields({
   onTopicChange,
   onActivitiesChange,
   onReflectionChange,
+  requiredError,
 }: {
   previousTopic?: string;
   topic: string;
@@ -30,6 +31,11 @@ export function JournalFields({
   onTopicChange: (value: string) => void;
   onActivitiesChange: (value: string) => void;
   onReflectionChange: (value: string) => void;
+  /**
+   * Marks topic and activities required and returns the error to show
+   * for a value (the quick-fill form passes it once Submit was pressed).
+   */
+  requiredError?: (value: string) => string | undefined;
 }): ReactElement {
   const t = useTranslations("app.journal.fields");
   return (
@@ -39,7 +45,7 @@ export function JournalFields({
           {t("previousTopic")}: {previousTopic}
         </p>
       )}
-      <Field label={t("topic")}>
+      <Field label={t("topic")} required={!!requiredError} error={requiredError?.(topic)}>
         <Input
           value={topic}
           onChange={(e) => {
@@ -50,7 +56,7 @@ export function JournalFields({
           aria-label={t("topic")}
         />
       </Field>
-      <Field label={t("activities")}>
+      <Field label={t("activities")} required={!!requiredError} error={requiredError?.(activities)}>
         <Textarea
           rows={3}
           value={activities}

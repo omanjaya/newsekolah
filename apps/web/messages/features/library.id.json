@@ -179,6 +179,7 @@
     "emptyBody": "Tambahkan eksemplar fisik dengan barcode masing-masing.",
     "batchForm": {
       "count": "Jumlah eksemplar",
+      "countRange": "Isi 1 sampai 200 eksemplar",
       "save": "Tambahkan",
       "saved": "{count} eksemplar ditambahkan"
     },

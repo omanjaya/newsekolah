@@ -179,6 +179,7 @@
     "emptyBody": "Add physical copies, each with its own barcode.",
     "batchForm": {
       "count": "Number of copies",
+      "countRange": "Enter 1 to 200 copies",
       "save": "Add",
       "saved": "{count} copies added"
     },

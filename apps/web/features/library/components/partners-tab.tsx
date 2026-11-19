@@ -18,6 +18,7 @@ import {
   Switch,
   domainIcons,
   useToast,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Pencil, Plus, Trash2 } from "lucide-react";
@@ -252,15 +253,22 @@ function PartnerForm({
   const [isActive, setIsActive] = useState(partner?.is_active ?? true);
   const [sortOrder, setSortOrder] = useState(String(partner?.sort_order ?? 0));
   const [error, setError] = useState("");
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
+  const requiredError = (value: string) =>
+    attempted && !value.trim() ? tValidation("required") : undefined;
 
   const mutation = partner ? update : create;
 
   return (
     <form
+      ref={formRef}
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         setError("");
+        if (!check(Boolean(code.trim() && name.trim()))) return;
         const body: LibraryPartnerWrite = {
           code: code.trim(),
           name: name.trim(),
@@ -282,23 +290,21 @@ function PartnerForm({
         }
       }}
     >
-      <Field label={t("code")}>
+      <Field label={t("code")} required error={requiredError(code)}>
         <Input
           value={code}
           onChange={(e) => {
             setCode(e.target.value);
           }}
-          required
           maxLength={20}
         />
       </Field>
-      <Field label={t("name")}>
+      <Field label={t("name")} required error={requiredError(name)}>
         <Input
           value={name}
           onChange={(e) => {
             setName(e.target.value);
           }}
-          required
           maxLength={150}
         />
       </Field>
@@ -345,7 +351,7 @@ function PartnerForm({
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={mutation.isPending} disabled={!code.trim() || !name.trim()}>
+        <Button type="submit" loading={mutation.isPending}>
           {t("save")}
         </Button>
       </DialogFooter>

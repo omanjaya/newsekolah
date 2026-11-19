@@ -13,6 +13,7 @@ import {
   Select,
   Textarea,
   useToast,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -138,13 +139,19 @@ export function CounselingForm({
   }
 
   const pending = create.isPending || update.isPending;
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
+  const requiredError = (value: string) =>
+    attempted && !value.trim() ? tValidation("required") : undefined;
 
   return (
     <form
+      ref={formRef}
       className="flex flex-col gap-4"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        if (!studentId || !sessionAt) return;
+        if (!check(Boolean(studentId && sessionAt && title.trim() && content.trim()))) return;
         const body = {
           student_user_id: studentId,
           session_at: new Date(sessionAt).toISOString(),
@@ -192,7 +199,7 @@ export function CounselingForm({
           </div>
         </Alert>
       )}
-      <Field label={t("student")} required>
+      <Field label={t("student")} required error={requiredError(studentId)}>
         <DirectoryPicker
           profileKind="student"
           value={studentId}
@@ -207,6 +214,7 @@ export function CounselingForm({
         dateLabel={t("sessionDate")}
         timeLabel={t("sessionTime")}
         required
+        error={requiredError(sessionAt)}
       />
       <Field label={t("kind")}>
         <Select
@@ -255,18 +263,17 @@ export function CounselingForm({
           />
         </Field>
       )}
-      <Field label={t("title")} required>
+      <Field label={t("title")} required error={requiredError(title)}>
         <Input
           value={title}
           onChange={(e) => {
             setTitle(e.target.value);
           }}
           placeholder={t("titlePlaceholder")}
-          required
           maxLength={200}
         />
       </Field>
-      <Field label={t("content")} required>
+      <Field label={t("content")} required error={requiredError(content)}>
         <Textarea
           rows={5}
           value={content}
@@ -274,7 +281,6 @@ export function CounselingForm({
             setContent(e.target.value);
           }}
           placeholder={t("contentPlaceholder")}
-          required
         />
       </Field>
       <Field label={t("followUpPlan")}>
@@ -300,7 +306,7 @@ export function CounselingForm({
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={pending} disabled={!studentId}>
+        <Button type="submit" loading={pending}>
           {t("submit")}
         </Button>
       </DialogFooter>
