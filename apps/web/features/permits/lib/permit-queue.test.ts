@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { ExitPermitSummary, LeaveRequestSummary } from "../api";
+import type { ExitPermitSummary, LateArrivalSummary, LeaveRequestSummary } from "../api";
 
 import { mergePermitQueues } from "./permit-queue";
 
@@ -32,6 +32,29 @@ describe("combined permit queue", () => {
     expect(rows).toHaveLength(2);
     expect(rows.map((row) => row.type)).toEqual(["exit", "leave"]);
     expect(rows.map((row) => row.status)).toEqual(["approved", "in_progress"]);
+  });
+
+  it("carries a late arrival's class, so the class filter and card see it", () => {
+    const late: LateArrivalSummary = {
+      instance_id: "late-id",
+      student_user_id: "student",
+      class_name: "7B",
+      status: "in_progress",
+      current_stage_index: 0,
+      current_stage: {
+        key: "duty_teacher",
+        label: "Guru piket",
+        approver_rule: "any_teacher",
+        verification: "manual",
+      },
+      reason: "Macet",
+      occurrence_number: 1,
+      required_action: "none",
+      opened_at: "2026-09-29T06:00:00Z",
+    };
+    expect(mergePermitQueues({ late: [late] })).toEqual([
+      expect.objectContaining({ type: "late", className: "7B" }),
+    ]);
   });
 
   it("accepts unavailable sources and preserves only supplied scope", () => {

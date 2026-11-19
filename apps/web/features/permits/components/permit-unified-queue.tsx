@@ -44,6 +44,7 @@ import { PermitQueueCard } from "./permit-queue-card";
 export function PermitUnifiedQueue(): ReactElement {
   const t = useTranslations("app.serviceWorkspace");
   const tLeave = useTranslations("app.permits.leave");
+  const tApprove = useTranslations("app.permits.approve");
   const exitQueue = useTranslations("app.permits.exit.queue");
   const locale = useLocale() as Locale;
   const { me } = useSession();
@@ -145,6 +146,19 @@ export function PermitUnifiedQueue(): ReactElement {
       },
     );
   }
+
+  // A row whose sheet shows this approver's stage QR: the sheet is titled
+  // with the stage and names the student (and class) before the QR, as the
+  // duty desk's does.
+  const selectedApproval =
+    selected?.type === "late" && selected.late.current_stage.verification === "qr_scan"
+      ? { kind: "late_arrival" as const, stage: selected.late.current_stage.label }
+      : selected?.type === "exit" && selected.status === "in_progress" && canApprove
+        ? { kind: "exit_permit" as const, stage: selected.exit.current_stage?.label }
+        : null;
+  const closeSelected = () => {
+    setSelected(null);
+  };
 
   const bulk = useBulkLeaveApproval(
     visible.filter((row) => row.type === "leave").map((row) => row.id),
@@ -269,10 +283,30 @@ export function PermitUnifiedQueue(): ReactElement {
           if (!open) setSelected(null);
         }}
       >
-        <DialogContent title={selected ? t(selected.type) : t("permits")}>
+        <DialogContent
+          title={
+            selectedApproval
+              ? selectedApproval.stage
+                ? tApprove("titleStage", { stage: selectedApproval.stage })
+                : tApprove("title")
+              : selected
+                ? t(selected.type)
+                : t("permits")
+          }
+          description={
+            selected && selectedApproval
+              ? [nameFor(selected), selected.className].filter(Boolean).join(" · ")
+              : undefined
+          }
+        >
           {selected?.type === "leave" && <LeaveRequestDetail id={selected.id} />}
-          {selected?.type === "exit" && selected.status === "in_progress" && canApprove && (
-            <ApprovePanel key={selected.id} kind="exit_permit" instanceId={selected.id} />
+          {selected && selectedApproval && (
+            <ApprovePanel
+              key={selected.id}
+              kind={selectedApproval.kind}
+              instanceId={selected.id}
+              onApproved={closeSelected}
+            />
           )}
           {selected?.type === "exit" &&
             (selected.status !== "in_progress" || !canApprove) &&
@@ -281,17 +315,10 @@ export function PermitUnifiedQueue(): ReactElement {
             <p>{exitQueue("awaitingGate")}</p>
           )}
           {/* A late arrival past its picket review waits for this
-              approver's own QR (leadership, the class teacher). */}
-          {selected?.type === "late" && selected.late.current_stage.verification === "qr_scan" && (
-            <ApprovePanel key={selected.id} kind="late_arrival" instanceId={selected.id} />
-          )}
+              approver's own QR (leadership, the class teacher), above;
+              at the picket review it takes the review form. */}
           {selected?.type === "late" && selected.late.current_stage.verification !== "qr_scan" && (
-            <LateArrivalReviewForm
-              item={selected.late}
-              onDone={() => {
-                setSelected(null);
-              }}
-            />
+            <LateArrivalReviewForm item={selected.late} onDone={closeSelected} />
           )}
         </DialogContent>
       </Dialog>

@@ -13,9 +13,11 @@ import { decodeScanPayload } from "../api";
  * Scanning an approving teacher's QR for one workflow stage, as a bottom
  * sheet on a phone (docs/07-ui-ux.md section 3, Scanner): the camera
  * first, the typed code as the fallback, and a failed scan said in place
- * so the student can try again without losing the sheet.
+ * so the student can try again without losing the sheet. The success toast
+ * can depend on the scan's result: the last stage of a flow says the flow
+ * is done rather than naming one more stage.
  */
-export function StageScanDialog({
+export function StageScanDialog<T>({
   open,
   onOpenChange,
   title,
@@ -31,10 +33,11 @@ export function StageScanDialog({
   description: string;
   /** The typed fallback's label: "Pindai QR Guru piket: masukkan kode". */
   manualLabel: string;
-  successMessage: string;
+  /** The toast after an accepted scan, as is or from the scan's result. */
+  successMessage: string | ((result: NoInfer<T>) => string);
   pending: boolean;
   /** Sends the scanned stage token; rejects with the API error. */
-  onToken: (token: string) => Promise<unknown>;
+  onToken: (token: string) => Promise<T>;
 }): ReactElement {
   const t = useTranslations("app.permits.scan");
   const toast = useToast();
@@ -43,8 +46,8 @@ export function StageScanDialog({
 
   async function handleScan(event: BarcodeScanEvent): Promise<boolean> {
     try {
-      await onToken(decodeScanPayload(event.code).token);
-      toast.success(successMessage);
+      const result = await onToken(decodeScanPayload(event.code).token);
+      toast.success(typeof successMessage === "string" ? successMessage : successMessage(result));
       setFailure(null);
       onOpenChange(false);
       return true;

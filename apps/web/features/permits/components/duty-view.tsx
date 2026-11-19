@@ -187,6 +187,7 @@ export function DutyView(): ReactElement {
 function LateQueue({ onReviewed }: { onReviewed: (studentName: string) => void }): ReactElement {
   const t = useTranslations("app.duty.queue");
   const tLate = useTranslations("app.permits.late");
+  const tApprove = useTranslations("app.permits.approve");
   const locale = useLocale() as Locale;
   const { me } = useSession();
   const canLate = me?.profile_kind === "teacher" || me?.profile_kind === "staff";
@@ -200,6 +201,9 @@ function LateQueue({ onReviewed }: { onReviewed: (studentName: string) => void }
   const showsQr = reviewing?.current_stage.verification === "qr_scan";
   const nameOf = (item: LateArrivalSummary) =>
     names.get(item.student_user_id)?.name ?? tLate("unknownStudent");
+  const close = () => {
+    setReviewing(null);
+  };
 
   return (
     <Card>
@@ -241,6 +245,9 @@ function LateQueue({ onReviewed }: { onReviewed: (studentName: string) => void }
               title={nameOf(item)}
               titleLines={2}
               meta={[
+                // A picket teacher works across the whole school, where a
+                // name alone can be two students.
+                item.class_name,
                 t("occurrence", {
                   n: item.occurrence_number,
                   time: formatTime(item.opened_at, { locale, timeZone: me?.tenant.timezone }),
@@ -275,10 +282,14 @@ function LateQueue({ onReviewed }: { onReviewed: (studentName: string) => void }
         <DialogContent
           title={
             reviewing && showsQr
-              ? tLate("approveTitle", { stage: reviewing.current_stage.label })
+              ? tApprove("titleStage", { stage: reviewing.current_stage.label })
               : tLate("reviewTitle")
           }
-          description={reviewing ? nameOf(reviewing) : undefined}
+          description={
+            reviewing
+              ? [nameOf(reviewing), reviewing.class_name].filter(Boolean).join(" · ")
+              : undefined
+          }
         >
           {reviewing &&
             (showsQr ? (
@@ -286,13 +297,14 @@ function LateQueue({ onReviewed }: { onReviewed: (studentName: string) => void }
                 key={reviewing.instance_id}
                 kind="late_arrival"
                 instanceId={reviewing.instance_id}
+                onApproved={close}
               />
             ) : (
               <LateArrivalReviewForm
                 item={reviewing}
                 onDone={() => {
                   onReviewed(nameOf(reviewing));
-                  setReviewing(null);
+                  close();
                 }}
               />
             ))}

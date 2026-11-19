@@ -1423,7 +1423,8 @@
         "placeholder": "Kode dari alat pemindai",
         "submit": "Kirim kode",
         "cameraLabel": "Pindai dengan kamera",
-        "failedTitle": "Kode tidak diterima"
+        "failedTitle": "Kode tidak diterima",
+        "stageApproved": "Tahap {stage} disetujui"
       },
       "classroomEntry": {
         "navLabel": "Pindai masuk kelas",
@@ -1546,8 +1547,6 @@
         "reasonLabel": "Alasan",
         "scanDutyLabel": "Kode QR terlambat (alat pemindai)",
         "opened": "Keterlambatan tercatat. Tunggu peninjauan guru piket.",
-        "occurrence": "Keterlambatan ke",
-        "occurrenceValue": "ke-{n}",
         "requiredAction": "Tindak lanjut",
         "actions": {
           "none": "Tidak ada",
@@ -1555,7 +1554,6 @@
           "send_home": "Dipulangkan"
         },
         "scanStageLabel": "Kode QR {stage} (alat pemindai)",
-        "stageDone": "Tahap selesai",
         "waitManual": "Menunggu {stage} meninjau.",
         "queueEmptyTitle": "Tidak ada keterlambatan menunggu",
         "queueEmptyBody": "Siswa yang memindai QR terlambat Anda akan masuk ke antrean ini.",
@@ -1583,7 +1581,8 @@
         },
         "cannotScanHint": "Tidak bisa memindai? Minta guru piket mencatat Anda lewat Catat manual.",
         "showQr": "Tampilkan QR",
-        "approveTitle": "QR persetujuan {stage}"
+        "completedBody": "Semua tahap disetujui. Silakan masuk kelas.",
+        "finished": "Keterlambatan selesai. Silakan masuk kelas."
       },
       "leave": {
         "eyebrow": "Kesiswaan",
@@ -1699,7 +1698,10 @@
         "hintStage": "Minta siswa menekan Pindai QR {stage} di layar izinnya, lalu memindai kode ini.",
         "class": "Kelas",
         "destination": "Tujuan",
-        "reason": "Alasan"
+        "reason": "Alasan",
+        "title": "QR persetujuan",
+        "titleStage": "QR persetujuan {stage}",
+        "approvedFor": "{name} disetujui untuk tahap {stage}."
       }
     },
     "verify": {

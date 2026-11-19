@@ -3,11 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   current: {},
+  byId: {},
+  byIdCalls: [] as string[],
+  scanDialog: vi.fn(),
 }));
 
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, values?: Record<string, string>) =>
+    values?.stage ? `${key}:${values.stage}` : key,
 }));
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../components/query-error", () => ({
@@ -20,10 +24,23 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 vi.mock("../lib/use-can-submit-permit", () => ({ useCanSubmitPermit: () => true }));
+vi.mock("./workflow-stepper", () => ({
+  WorkflowStepper: () => null,
+  WorkflowSteps: () => <div data-testid="steps" />,
+}));
+vi.mock("./stage-scan-dialog", () => ({
+  StageScanDialog: (props: unknown) => {
+    mocks.scanDialog(props);
+    return null;
+  },
+}));
 vi.mock("../api", () => ({
   decodeScanPayload: (raw: string) => ({ token: raw }),
   useCurrentLateArrivalQuery: () => mocks.current,
-  useLateArrivalQuery: () => ({ data: undefined }),
+  useLateArrivalQuery: (id: string) => {
+    mocks.byIdCalls.push(id);
+    return id === "" ? { data: undefined, isLoading: false, isError: false } : mocks.byId;
+  },
   useOpenLateArrivalMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useReviewLateArrivalMutation: () => ({ mutate: vi.fn(), isPending: false }),
   useScanLateArrivalStageMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -31,8 +48,36 @@ vi.mock("../api", () => ({
 
 import { LateArrivalsView } from "./late-arrivals-view";
 
+const leadership = {
+  key: "leadership",
+  label: "Pimpinan",
+  approver_rule: "duty:leadership",
+  verification: "qr_scan",
+};
+
+function detail(status: string) {
+  return {
+    instance: {
+      id: "late-1",
+      status,
+      current_stage_index: status === "in_progress" ? 1 : 2,
+      current_stage: status === "in_progress" ? leadership : undefined,
+      subject_user_id: "me",
+      opened_at: "2026-11-19T00:10:00Z",
+      stages: [],
+    },
+    reason: "Macet",
+    occurrence_number: 1,
+    required_action: "none",
+    homeroom_reported: false,
+  };
+}
+
 beforeEach(() => {
   mocks.current = { isLoading: false, isError: false, data: null, refetch: vi.fn() };
+  mocks.byId = { data: undefined, isLoading: true, isError: false, refetch: vi.fn() };
+  mocks.byIdCalls = [];
+  mocks.scanDialog.mockReset();
 });
 
 describe("LateArrivalsView for a student", () => {
@@ -56,5 +101,42 @@ describe("LateArrivalsView for a student", () => {
     render(<LateArrivalsView />);
     expect(screen.getByTestId("query-error")).toBeInTheDocument();
     expect(screen.queryByText("scanTitle")).not.toBeInTheDocument();
+  });
+
+  it("states the occurrence once, in the eyebrow, not again in the details", () => {
+    mocks.current = { ...mocks.current, data: detail("in_progress") };
+    render(<LateArrivalsView />);
+    expect(screen.getByText("hero.eyebrow")).toBeInTheDocument();
+    expect(screen.queryByText("occurrence")).not.toBeInTheDocument();
+    expect(screen.getByText("requiredAction")).toBeInTheDocument();
+  });
+
+  it("keeps the finished flow on screen after the last scan instead of a second check-in", () => {
+    mocks.current = { ...mocks.current, data: detail("in_progress") };
+    const { rerender } = render(<LateArrivalsView />);
+    expect(screen.queryByText("completedBody")).not.toBeInTheDocument();
+
+    // The last stage's scan closes the flow: "current" no longer returns it.
+    mocks.current = { ...mocks.current, data: null };
+    mocks.byId = { data: detail("completed"), isLoading: false, isError: false, refetch: vi.fn() };
+    rerender(<LateArrivalsView />);
+
+    expect(mocks.byIdCalls.at(-1)).toBe("late-1");
+    expect(screen.getByText("completedBody")).toBeInTheDocument();
+    expect(screen.getByText("status.completed")).toBeInTheDocument();
+    expect(screen.queryByText("scanTitle")).not.toBeInTheDocument();
+  });
+
+  it("names the approved stage on a scan, and says the flow is done on the last one", () => {
+    mocks.current = { ...mocks.current, data: detail("in_progress") };
+    render(<LateArrivalsView />);
+
+    const props = mocks.scanDialog.mock.calls.at(-1)?.[0] as {
+      successMessage: (result: { instance: { status: string } }) => string;
+    };
+    expect(props.successMessage({ instance: { status: "in_progress" } })).toBe(
+      "stageApproved:Pimpinan",
+    );
+    expect(props.successMessage({ instance: { status: "completed" } })).toBe("finished");
   });
 });
