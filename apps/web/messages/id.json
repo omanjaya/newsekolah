@@ -1515,6 +1515,7 @@
         },
         "periodRange": "{from} sampai {to}",
         "openedAt": "Diajukan pukul {time}",
+        "exitedMeta": "keluar {time}",
         "hero": {
           "activeEyebrow": "Izin keluar berjalan",
           "approvedEyebrow": "Siap keluar gerbang",

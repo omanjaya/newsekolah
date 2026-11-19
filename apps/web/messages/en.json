@@ -1515,6 +1515,7 @@
         },
         "periodRange": "{from} to {to}",
         "openedAt": "Requested at {time}",
+        "exitedMeta": "left at {time}",
         "hero": {
           "activeEyebrow": "Exit permit in progress",
           "approvedEyebrow": "Ready for the gate",
