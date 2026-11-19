@@ -25,6 +25,7 @@ import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { formatCalendarDate } from "../../../lib/format-calendar-date";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
@@ -83,7 +84,7 @@ export function CalendarView(): ReactElement {
   const events = useMemo(() => query.data?.data ?? [], [query.data]);
   const monthEvents = useMemo(() => eventsInMonth(events, month), [events, month]);
   const dayEvents = useMemo(() => eventsOn(events, selected), [events, selected]);
-  const selectedLabel = format.dateTime(new Date(`${selected}T00:00:00`), {
+  const selectedLabel = formatCalendarDate(format, selected, {
     weekday: "long",
     day: "numeric",
     month: "long",

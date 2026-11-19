@@ -26,9 +26,9 @@ import type { CSSProperties, ReactElement } from "react";
 import { useMemo } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { formatCalendarDate } from "../../../lib/format-calendar-date";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useCan } from "../../../lib/session/session-provider";
-import { formatCalendarDate } from "../../academic/lib/format-calendar-date";
 import { useStudentRiskQuery } from "../../analytics/api";
 import { StudentRiskPanel } from "../../analytics/components/student-risk-panel";
 import { useStudentDisciplineQuery } from "../../discipline/api";
@@ -356,7 +356,17 @@ function StudentHistory({ studentId }: { studentId: string }): ReactElement | nu
               }
               title={event.title}
               meta={event.meta}
-              trailing={formatCalendarDate(format, event.at.slice(0, 10))}
+              trailing={
+                // A violation carries the day it happened; a letter or a
+                // session is an instant, placed in the school's zone.
+                event.at.length === 10
+                  ? formatCalendarDate(format, event.at)
+                  : format.dateTime(new Date(event.at), {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })
+              }
             />
           ))}
         </List>

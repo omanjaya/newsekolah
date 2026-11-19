@@ -16,8 +16,8 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { formatCalendarDate } from "../../../lib/format-calendar-date";
 import { useCan } from "../../../lib/session/session-provider";
-import { formatCalendarDate } from "../../academic/lib/format-calendar-date";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { StudentLink } from "../../students/components/student-link";
 import { useEnrollmentsQuery } from "../api";

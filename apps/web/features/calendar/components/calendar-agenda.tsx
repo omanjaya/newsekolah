@@ -4,21 +4,14 @@ import { List, ListRow, cn } from "@newsekolah/ui";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { formatCalendarDateRange } from "../../../lib/format-calendar-date";
 import type { CalendarEvent } from "../api";
 import { EVENT_KIND_TONE, EVENT_KINDS, TONE_DOT } from "../lib/event-kinds";
 
-function atMidnight(iso: string): Date {
-  return new Date(`${iso}T00:00:00`);
-}
-
-/** "14 Nov" for one day, "14-16 Nov" or "28 Nov-2 Des" for a range. */
+/** "14 Nov 2026" for one day, "14–16 Nov 2026" or "28 Nov – 2 Des 2026" for a range. */
 export function useFormatEventRange(): (event: CalendarEvent) => string {
   const format = useFormatter();
-  return (event) => {
-    const day = { day: "numeric", month: "short", year: "numeric" } as const;
-    if (event.end_date === event.date) return format.dateTime(atMidnight(event.date), day);
-    return format.dateTimeRange(atMidnight(event.date), atMidnight(event.end_date), day);
-  };
+  return (event) => formatCalendarDateRange(format, event.date, event.end_date);
 }
 
 /** A soft dot in the event kind's hue. */

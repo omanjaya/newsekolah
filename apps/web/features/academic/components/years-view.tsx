@@ -18,6 +18,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
+import { formatCalendarDateRange } from "../../../lib/format-calendar-date";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
@@ -29,7 +30,6 @@ import {
   useCreateAcademicYearMutation,
   useUpdateAcademicYearMutation,
 } from "../api";
-import { formatCalendarDate } from "../lib/format-calendar-date";
 
 import { AcademicWorkspaceLinks } from "./academic-workspace-links";
 import { TermsPanel } from "./terms-panel";
@@ -115,8 +115,7 @@ export function YearsView(): ReactElement {
         meta: { card: "subtitle" },
         cell: ({ row }) => (
           <span className="text-fg-muted tabular-nums">
-            {formatCalendarDate(format, row.original.starts_on)} -{" "}
-            {formatCalendarDate(format, row.original.ends_on)}
+            {formatCalendarDateRange(format, row.original.starts_on, row.original.ends_on)}
           </span>
         ),
       },
