@@ -13,11 +13,7 @@
     "open": "Open student",
     "issue": "Issue {level}",
     "issued": "{level} issued.",
-    "meta": "{nis} · {className} · {points} pts",
-    "issueConfirm": {
-      "title": "Issue {level} to {student}?",
-      "body": "A letter number is assigned and the letter goes on the student's record. An issued letter cannot be withdrawn from this screen."
-    }
+    "meta": "{nis} · {className} · {points} pts"
   },
   "backHome": "Back to home",
   "historyLeave": "View leave history",

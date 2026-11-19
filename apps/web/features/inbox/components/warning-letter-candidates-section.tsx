@@ -44,6 +44,8 @@ interface PendingIssue {
  */
 export function WarningLetterCandidatesSection(): ReactElement {
   const t = useTranslations("app.inbox.warningLetters");
+  // The confirmation is the Kandidat SP tab's own, so the two never drift.
+  const tAtRisk = useTranslations("app.discipline.warningLetters.atRisk");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const policy = useDisciplinePolicyQuery();
@@ -137,11 +139,11 @@ export function WarningLetterCandidatesSection(): ReactElement {
         onOpenChange={(open) => {
           if (!open) setPendingIssue(null);
         }}
-        title={t("issueConfirm.title", {
+        title={tAtRisk("issueConfirm.title", {
           level: pendingIssue?.label ?? "",
           student: pendingIssue?.candidate.student_name ?? "",
         })}
-        description={t("issueConfirm.body")}
+        description={tAtRisk("issueConfirm.body")}
         confirmLabel={t("issue", { level: pendingIssue?.label ?? "" })}
         confirming={issue.isPending}
         onConfirm={confirmIssue}
