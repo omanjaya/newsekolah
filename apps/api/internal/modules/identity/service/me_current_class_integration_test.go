@@ -85,6 +85,50 @@ func TestMeCurrentClass(t *testing.T) {
 	require.Nil(t, me.CurrentClass)
 }
 
+// TestMeDutyScopeLabel proves a class-scoped duty on GET /v1/me carries the
+// class's name, so a homeroom teacher's home can say "Wali kelas X-A", and
+// a school-scoped duty carries none.
+func TestMeDutyScopeLabel(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	pool := pg.AdminPool
+	insertID := func(sql string, args ...any) uuid.UUID {
+		t.Helper()
+		var id uuid.UUID
+		require.NoError(t, pool.QueryRow(ctx, sql+" returning id", args...).Scan(&id))
+		return id
+	}
+
+	tenantID := insertTestTenant(t, pool, "me-duty-label-test")
+	year := insertID(`insert into academic_years (tenant_id,label,starts_on,ends_on) values ($1,'2026/2027','2026-01-01','2027-12-31')`, tenantID)
+	grade := insertID(`insert into grade_levels (tenant_id,code,name,sequence) values ($1,'X','X',1)`, tenantID)
+	class := insertID(`insert into classes (tenant_id,academic_year_id,grade_level_id,name) values ($1,$2,$3,'X-A')`, tenantID, year, grade)
+	homeroom := insertID(`insert into duty_types (tenant_id,slug,name,scope_kind) values ($1,'homeroom','Wali kelas','class')`, tenantID)
+	picket := insertID(`insert into duty_types (tenant_id,slug,name,scope_kind) values ($1,'picket','Piket','school')`, tenantID)
+
+	teacher := insertTestUser(t, pool, tenantID, "homeroom-teacher")
+	_, err := pool.Exec(ctx, `insert into duty_assignments (tenant_id,academic_year_id,duty_type_id,user_id,scope_class_id,starts_on) values ($1,$2,$3,$4,$5,'2026-01-01')`,
+		tenantID, year, homeroom, teacher, class)
+	require.NoError(t, err)
+	_, err = pool.Exec(ctx, `insert into duty_assignments (tenant_id,academic_year_id,duty_type_id,user_id,starts_on) values ($1,$2,$3,$4,'2026-01-01')`,
+		tenantID, year, picket, teacher)
+	require.NoError(t, err)
+
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool), fixedYear{id: year}, nil, nil, clock.Real{}, service.Config{}, auth.NewRefreshToken, service.Extras{})
+	me, err := svc.Me(ctx, tenantID, teacher, uuid.NullUUID{})
+	require.NoError(t, err)
+
+	bySlug := map[string]service.DutyView{}
+	for _, d := range me.Duties {
+		bySlug[d.Slug] = d
+	}
+	require.Contains(t, bySlug, "homeroom")
+	require.Equal(t, class, bySlug["homeroom"].ScopeID.UUID)
+	require.Equal(t, "X-A", bySlug["homeroom"].ScopeLabel)
+	require.Contains(t, bySlug, "picket")
+	require.Empty(t, bySlug["picket"].ScopeLabel)
+}
+
 // TestCreateDutyTypeDuplicateSlug proves a taken slug surfaces as
 // domain.ErrDutyTypeExists (mapped to 409) instead of a raw unique
 // violation (500), including a slug held by a soft-deleted duty type.

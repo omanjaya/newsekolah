@@ -340,3 +340,20 @@ func (r *Repository) ActiveClassForStudent(ctx context.Context, tenantID, studen
 	}
 	return service.ClassRef{ID: row.ClassID, Name: row.ClassName}, true, nil
 }
+
+// ClassNames returns the name of each live class among ids, keyed by ID;
+// a deleted or unknown class is simply absent from the map.
+func (r *Repository) ClassNames(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]string, error) {
+	names := make(map[uuid.UUID]string, len(ids))
+	if len(ids) == 0 {
+		return names, nil
+	}
+	rows, err := r.queries(ctx).ListClassNamesByIDs(ctx, db.ListClassNamesByIDsParams{TenantID: tenantID, ClassIds: ids})
+	if err != nil {
+		return nil, fmt.Errorf("list class names: %w", err)
+	}
+	for _, row := range rows {
+		names[row.ID] = row.Name
+	}
+	return names, nil
+}

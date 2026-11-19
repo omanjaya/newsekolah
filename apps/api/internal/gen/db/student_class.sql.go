@@ -36,3 +36,42 @@ func (q *Queries) GetActiveClassForStudent(ctx context.Context, arg GetActiveCla
 	err := row.Scan(&i.ClassID, &i.ClassName)
 	return i, err
 }
+
+const listClassNamesByIDs = `-- name: ListClassNamesByIDs :many
+select id, name
+from classes
+where tenant_id = $1 and id = any($2::uuid[]) and deleted_at is null
+`
+
+type ListClassNamesByIDsParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	ClassIds []uuid.UUID `json:"class_ids"`
+}
+
+type ListClassNamesByIDsRow struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+// Names the classes a user's class-scoped duties point at (a homeroom
+// teacher's class), so /v1/me can label each duty without the client
+// looking the class up.
+func (q *Queries) ListClassNamesByIDs(ctx context.Context, arg ListClassNamesByIDsParams) ([]ListClassNamesByIDsRow, error) {
+	rows, err := q.db.Query(ctx, listClassNamesByIDs, arg.TenantID, arg.ClassIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListClassNamesByIDsRow{}
+	for rows.Next() {
+		var i ListClassNamesByIDsRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
