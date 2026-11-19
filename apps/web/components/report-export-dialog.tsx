@@ -95,42 +95,61 @@ interface StoredChoice {
 }
 
 function storageKey(reportKey: string): string {
+  return `newsekolah:report-export:v2:${reportKey}`;
+}
+
+/**
+ * Where choices were kept before only renamed labels were remembered. Its
+ * entries hold every label, the untouched defaults of their day included
+ * ("Nama Siswa" in Title Case, whatever the reader's language), and cannot
+ * tell a rename from a stale default. They are read once for their order,
+ * inclusion, format and letterhead, never for their labels.
+ */
+function legacyStorageKey(reportKey: string): string {
   return `newsekolah:report-export:${reportKey}`;
 }
 
 function readStoredChoice(reportKey: string): StoredChoice | null {
   try {
-    const raw = window.localStorage.getItem(storageKey(reportKey));
-    if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return null;
-    const record = parsed as Record<string, unknown>;
-    if (!Array.isArray(record.columns)) return null;
-
-    const columns: StoredChoice["columns"] = [];
-    for (const entry of record.columns as unknown[]) {
-      if (!entry || typeof entry !== "object") continue;
-      const item = entry as Record<string, unknown>;
-      if (typeof item.key !== "string") continue;
-      columns.push({
-        key: item.key,
-        label: typeof item.label === "string" ? item.label : "",
-        included: item.included !== false,
-      });
-    }
-    return {
-      format: record.format === "pdf" ? "pdf" : "xlsx",
-      showLetterhead: record.showLetterhead !== false,
-      columns,
-    };
+    const current = parseStoredChoice(window.localStorage.getItem(storageKey(reportKey)));
+    if (current) return current;
+    const legacy = parseStoredChoice(window.localStorage.getItem(legacyStorageKey(reportKey)));
+    if (!legacy) return null;
+    return { ...legacy, columns: legacy.columns.map((c) => ({ ...c, label: "" })) };
   } catch {
     return null;
   }
 }
 
+function parseStoredChoice(raw: string | null): StoredChoice | null {
+  if (!raw) return null;
+  const parsed: unknown = JSON.parse(raw);
+  if (!parsed || typeof parsed !== "object") return null;
+  const record = parsed as Record<string, unknown>;
+  if (!Array.isArray(record.columns)) return null;
+
+  const columns: StoredChoice["columns"] = [];
+  for (const entry of record.columns as unknown[]) {
+    if (!entry || typeof entry !== "object") continue;
+    const item = entry as Record<string, unknown>;
+    if (typeof item.key !== "string") continue;
+    columns.push({
+      key: item.key,
+      label: typeof item.label === "string" ? item.label : "",
+      included: item.included !== false,
+    });
+  }
+  return {
+    format: record.format === "pdf" ? "pdf" : "xlsx",
+    showLetterhead: record.showLetterhead !== false,
+    columns,
+  };
+}
+
 function writeStoredChoice(reportKey: string, choice: StoredChoice): void {
   try {
     window.localStorage.setItem(storageKey(reportKey), JSON.stringify(choice));
+    window.localStorage.removeItem(legacyStorageKey(reportKey));
   } catch {
     // Best-effort only: private browsing, quota, or a disabled store all
     // just mean the next dialog open falls back to the report's defaults.

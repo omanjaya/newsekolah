@@ -182,6 +182,53 @@ describe("ReportExportDialog", () => {
     ]);
   });
 
+  it("drops the labels of a choice saved before renames alone were kept, but keeps its order", async () => {
+    // Saved by the earlier dialog, which stored every label: the defaults
+    // of its day in Title Case Indonesian, whatever the reader's language.
+    window.localStorage.setItem(
+      "newsekolah:report-export:test.report",
+      JSON.stringify({
+        format: "pdf",
+        showLetterhead: false,
+        columns: [
+          { key: "name", label: "Nama Siswa", included: true },
+          { key: "no", label: "No", included: true },
+          { key: "status", label: "Status", included: false },
+        ],
+      }),
+    );
+    const onExport = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ReportExportDialog
+        open
+        onOpenChange={vi.fn()}
+        reportKey="test.report"
+        defaultTitle="Test Report"
+        availableColumns={[
+          { key: "no", label: "No" },
+          { key: "name", label: "Nama siswa" },
+          { key: "status", label: "Status" },
+        ]}
+        onExport={onExport}
+      />,
+    );
+
+    expect(
+      screen.getByRole("textbox", { name: 'columnLabel:{"column":"Nama siswa"}' }),
+    ).toHaveValue("Nama siswa");
+    await userEvent.click(screen.getByRole("button", { name: "export" }));
+
+    expect(onExport).toHaveBeenCalledWith({
+      format: "pdf",
+      title: "Test Report",
+      showLetterhead: false,
+      columns: [{ key: "name" }, { key: "no" }],
+    });
+    // The choice moves to the current store, and the old entry goes.
+    expect(window.localStorage.getItem("newsekolah:report-export:test.report")).toBeNull();
+    expect(window.localStorage.getItem("newsekolah:report-export:v2:test.report")).not.toBeNull();
+  });
+
   it("hides the column list and exports without needing one when columnsCustomizable is false", async () => {
     const onExport = vi.fn().mockResolvedValue(undefined);
     render(
