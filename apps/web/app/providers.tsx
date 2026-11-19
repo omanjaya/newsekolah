@@ -14,7 +14,7 @@ import { syncCurrentLocale } from "../lib/i18n/current-locale";
 import { QueryProvider } from "../lib/query/query-provider";
 import { isExcludedPath } from "../lib/session/access-cookie";
 import { AccountBoundary } from "../lib/session/account-boundary";
-import { markAuthRedirect } from "../lib/session/auth-redirect-flag";
+import { isAuthRedirecting, markAuthRedirect } from "../lib/session/auth-redirect-flag";
 import { endSession } from "../lib/session/end-session";
 import { SessionProvider } from "../lib/session/session-provider";
 import { signInPath } from "../lib/session/sign-in-path";
@@ -56,6 +56,15 @@ export function AppProviders({
       // Public pages (OPAC, certificate verification, password reset) work
       // without a session, so a failed boot refresh leaves them where they are.
       if (isExcludedPath(current)) return;
+      // The first expiry already chose where sign-in goes and why. A request
+      // that started after it (the removed `me` refetching, a poll) fails the
+      // same way before that navigation lands, but no longer finds `me`, so
+      // replacing again would drop the session-ended notice. Only clear what
+      // it may have put back in the cache.
+      if (isAuthRedirecting()) {
+        endSession(client, queryClient);
+        return;
+      }
       // Marked before the mutations in flight at the moment the session died
       // reject and hit the mutation cache's default error toast (see
       // auth-redirect-flag.ts) -- must happen before router.replace, not after.

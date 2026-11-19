@@ -3,7 +3,7 @@ import type * as Ui from "@newsekolah/ui";
 import { QueryClient } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getAccessToken, setAccessToken } from "../lib/api/access-token";
 import type { ExpiredSession } from "../lib/api/client";
@@ -65,11 +65,23 @@ vi.mock("@newsekolah/ui", async (importOriginal) => {
   };
 });
 
+/** Moves a minute on per test, past the previous redirect's window. */
+let clock = Date.now();
+
 beforeEach(() => {
+  // Each test starts after the previous redirect's window
+  // (lib/session/auth-redirect-flag.ts) has closed.
+  clock += 60_000;
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(clock);
   vi.clearAllMocks();
   navigation.pathname = "/dashboard";
   handlers.onUnauthorized = undefined;
   setAccessToken(null);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("AppProviders", () => {
@@ -124,6 +136,22 @@ describe("a session that runs out mid-visit", () => {
     expect(navigation.replace).toHaveBeenCalledWith(
       "/login?next=%2Fdashboard&reason=session-ended",
     );
+  });
+
+  // A request that started after the first expiry (the removed `me`
+  // refetching) fails too before the navigation lands. It finds no `me`,
+  // but must not replace the first target and drop the notice.
+  it("keeps the session-ended notice when a second request expires", () => {
+    const { queryClient } = expireOn("/dashboard");
+    queryClient.setQueryData(UNREAD_KEY, { count: 3 });
+    const client = { forgetAccessToken: vi.fn() } as unknown as NewsekolahApiClient;
+    handlers.onUnauthorized?.({ client, queryClient });
+
+    expect(navigation.replace).toHaveBeenCalledTimes(1);
+    expect(navigation.replace).toHaveBeenLastCalledWith(
+      "/login?next=%2Fdashboard&reason=session-ended",
+    );
+    expect(queryClient.getQueryData(UNREAD_KEY)).toBeUndefined();
   });
 
   // Nobody was known to be signed in (the boot refresh failed before `me`
