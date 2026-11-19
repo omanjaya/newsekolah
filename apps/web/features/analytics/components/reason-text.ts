@@ -1,4 +1,5 @@
-import { useTranslations } from "next-intl";
+import { formatNumber, type Locale } from "@newsekolah/i18n";
+import { useLocale, useTranslations } from "next-intl";
 
 import type { RiskReason } from "../api";
 
@@ -13,21 +14,26 @@ import type { RiskReason } from "../api";
  */
 export function useReasonText(): (reason: RiskReason) => string {
   const t = useTranslations("app.analytics.detail.reasons");
+  const locale = useLocale() as Locale;
   return (reason) => {
     if (!t.has(reason.code)) return t("unknown");
-    return t(reason.code, formatParams(reason.params));
+    return t(reason.code, formatParams(reason.params, locale));
   };
 }
 
-/** Rounds a fractional param (a report-score average) to one decimal so
- * the sentence reads "72.5", not a long float; integer params (day and
- * point counts) pass through unchanged. */
-function formatParams(params: Record<string, unknown>): Record<string, string | number> {
+/** Rounds a fractional param (a report-score average) to one decimal in
+ * the reader's locale, so the sentence reads "72,5" (id) or "72.5" (en),
+ * not a long float; integer params (day and point counts) pass through
+ * unchanged. */
+function formatParams(
+  params: Record<string, unknown>,
+  locale: Locale,
+): Record<string, string | number> {
   const out: Record<string, string | number> = {};
   for (const [key, value] of Object.entries(params)) {
     out[key] =
       typeof value === "number" && !Number.isInteger(value)
-        ? value.toFixed(1)
+        ? formatNumber(value, { locale, fractionDigits: 1 })
         : (value as string | number);
   }
   return out;

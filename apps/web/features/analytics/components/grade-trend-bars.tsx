@@ -1,7 +1,8 @@
 "use client";
 
+import { formatNumber, type Locale } from "@newsekolah/i18n";
 import { cn } from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 export interface GradeTrendBarsProps {
@@ -20,11 +21,13 @@ export interface GradeTrendBarsProps {
  */
 export function GradeTrendBars({ previous, current }: GradeTrendBarsProps): ReactElement {
   const t = useTranslations("app.analytics.detail.signals");
+  const locale = useLocale() as Locale;
+  const format = (value: number) => formatNumber(value, { locale, fractionDigits: 1 });
   const max = Math.max(previous, current, 1);
   const dropped = current < previous;
   const label = t("gradeTrendValue", {
-    previous: previous.toFixed(1),
-    current: current.toFixed(1),
+    previous: format(previous),
+    current: format(current),
   });
 
   // Under the signal's figure (student-risk-panel.tsx), which states the
@@ -34,12 +37,14 @@ export function GradeTrendBars({ previous, current }: GradeTrendBarsProps): Reac
       <GradeBar
         labelText={t("gradeTrendPrevious")}
         value={previous}
+        valueText={format(previous)}
         max={max}
         colorClass="bg-fg-muted"
       />
       <GradeBar
         labelText={t("gradeTrendCurrent")}
         value={current}
+        valueText={format(current)}
         max={max}
         colorClass={dropped ? "bg-danger" : "bg-success"}
       />
@@ -50,11 +55,13 @@ export function GradeTrendBars({ previous, current }: GradeTrendBarsProps): Reac
 function GradeBar({
   labelText,
   value,
+  valueText,
   max,
   colorClass,
 }: {
   labelText: string;
   value: number;
+  valueText: string;
   max: number;
   colorClass: string;
 }): ReactElement {
@@ -68,7 +75,7 @@ function GradeBar({
         />
       </div>
       <span className="w-10 shrink-0 text-right text-caption tabular-nums text-fg">
-        {value.toFixed(1)}
+        {valueText}
       </span>
     </div>
   );

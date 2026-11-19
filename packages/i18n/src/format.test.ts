@@ -44,4 +44,10 @@ describe("formatNumber", () => {
     expect(formatNumber(12345, { locale: "id" })).toBe("12.345");
     expect(formatNumber(12345, { locale: "en" })).toBe("12,345");
   });
+
+  it("writes a fixed number of decimals with the locale's separator", () => {
+    expect(formatNumber(78.46, { locale: "id", fractionDigits: 1 })).toBe("78,5");
+    expect(formatNumber(78.46, { locale: "en", fractionDigits: 1 })).toBe("78.5");
+    expect(formatNumber(80, { locale: "id", fractionDigits: 1 })).toBe("80,0");
+  });
 });

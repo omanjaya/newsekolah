@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDateTime, type Locale } from "@newsekolah/i18n";
+import { formatDateTime, formatNumber, type Locale } from "@newsekolah/i18n";
 import {
   Alert,
   Card,
@@ -27,7 +27,7 @@ import { useMemo } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { formatCalendarDate } from "../../academic/lib/format-calendar-date";
 import { useStudentRiskQuery } from "../../analytics/api";
 import { StudentRiskPanel } from "../../analytics/components/student-risk-panel";
@@ -91,6 +91,7 @@ export function StudentOverviewTab({ studentId }: { studentId: string }): ReactE
 function RiskStats({ studentId }: { studentId: string }): ReactElement {
   const t = useTranslations("app.studentProfile.overview");
   const locale = useLocale() as Locale;
+  const { me } = useSession();
   const disciplineOn = useModuleEnabled("discipline");
   const gradingOn = useModuleEnabled("grading");
   const risk = useStudentRiskQuery(studentId);
@@ -158,7 +159,7 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
             tone="blue"
             label={t("averageGrade")}
             value={signals?.has_grade_trend ? signals.current_average : "–"}
-            formatValue={(value) => value.toLocaleString(locale, { maximumFractionDigits: 1 })}
+            formatValue={(value) => formatNumber(value, { locale, fractionDigits: 1 })}
             hint={signals?.has_grade_trend ? undefined : t("noGrades")}
             delta={
               gradeDelta === undefined || gradeDelta === 0
@@ -178,7 +179,12 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
           title={t("noRisk")}
           action={
             <span className="text-caption text-fg-muted">
-              {t("freshness", { time: formatDateTime(risk.data.computed_at, { locale }) })}
+              {t("freshness", {
+                time: formatDateTime(risk.data.computed_at, {
+                  locale,
+                  timeZone: me?.tenant.timezone,
+                }),
+              })}
             </span>
           }
         />

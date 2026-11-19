@@ -78,9 +78,29 @@ export function formatRelative(
   return rtf.format(Math.round(diffSeconds / 60), "minute");
 }
 
-/** Locale-aware number formatting, e.g. for table cells with tabular figures. */
-export function formatNumber(value: number, options: FormatOptions): string {
-  return new Intl.NumberFormat(INTL_LOCALE[options.locale]).format(value);
+export interface NumberFormatOptions {
+  locale: Locale;
+  /**
+   * Exactly this many decimals, e.g. 1 for a grade average ("78,5" in id,
+   * "78.5" in en). Omitted, the number keeps the decimals it has (up to
+   * Intl's default of three).
+   */
+  fractionDigits?: number;
+}
+
+/**
+ * Locale-aware number formatting, e.g. for table cells with tabular
+ * figures. Use it instead of `toFixed`, which always writes a decimal
+ * point, wrong in the Indonesian UI.
+ */
+export function formatNumber(value: number, options: NumberFormatOptions): string {
+  const { fractionDigits } = options;
+  return new Intl.NumberFormat(
+    INTL_LOCALE[options.locale],
+    fractionDigits === undefined
+      ? undefined
+      : { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits },
+  ).format(value);
 }
 
 /**
